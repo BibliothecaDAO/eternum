@@ -3,6 +3,7 @@ import { type Call, hash, num, type ProviderInterface } from "starknet";
 import {
   type ChestContent,
   decodeChest,
+  decodeChestBand,
   decodeChestContent,
   decodeCredits,
   decodeBlitzSeason,
@@ -216,6 +217,9 @@ export const ledgerReader = (provider: ProviderInterface, ledger: string) => {
     result: async (key: GameKey, owner: string) =>
       decodePlayerResult(await view("get_player_result", [...keyCalldata(key), owner])),
     chest: async (tokenId: bigint) => decodeChest(await view("get_chest", u256(tokenId))),
+    /** A rank band's token reward under a preset: its shares of that preset's entry fee, and its odds. */
+    chestBand: async (presetId: number, band: number) =>
+      decodeChestBand(await view("get_chest_band", [String(presetId), String(band)])),
     /** What a finished chest delivered: its ChestOpened event, searched from the block its request fixed. */
     chestContent: async (tokenId: bigint, fromBlock: number): Promise<ChestContent | null> => {
       const { events } = await provider.getEvents({

@@ -42,6 +42,8 @@ const SEALED: Reward = {
   held: true,
   content: null,
   seasonEnd: Math.floor(Date.now() / 1000) + 86_400,
+  // The best band at an entry of 100: four entries, drawn while the season runs.
+  token: { shares: 4, entryFee: 100n * WEI },
   registration: {
     registered: true,
     sword: true,
@@ -89,12 +91,14 @@ afterEach(async () => {
   signed.owners = [];
 });
 
-it("shows the sword's doubled gain and a sealed chest's band only, opened by the holder's one signature", async () => {
+it("shows the sword's doubled gain and a sealed chest's band and token multiple, opened by the holder's one signature", async () => {
   const panel = await mount(SEALED);
   expect(panel.textContent).toContain("+36");
   expect(panel.textContent).toContain("×2");
   expect(panel.textContent).toContain("Top 10%");
-  expect(panel.textContent).toContain("LORDS until");
+  // What it can pay is a multiple of the entry, never an amount.
+  expect(panel.textContent).toContain("4× entry until");
+  expect(panel.textContent).not.toContain("400");
   expect(panel.querySelector('img[src*="blitz-chests"]')?.getAttribute("src")).toBe(
     "/images/blitz-chests/band-0-sealed.webp",
   );
@@ -123,8 +127,9 @@ it("offers Open alone on a sealed chest, waits on the draw, and shows what an op
     content: { kind: "cosmetic", attributes: "0x4040d01" },
   });
   expect(item.textContent).toContain("Overgrown Wreath");
-  const lords = await mount({ ...SEALED, chest: OPENED, held: false, content: { kind: "lords", amount: 700n * WEI } });
-  expect(lords.textContent).toContain("700");
+  const lords = await mount({ ...SEALED, chest: OPENED, held: false, content: { kind: "lords", amount: 400n * WEI } });
+  expect(lords.textContent).toContain("4×the entry");
+  expect(lords.textContent).toContain("400 LORDS");
   const pending = await mount({ ...SEALED, result: { ...SEALED.result, rank: 0, chestId: 0n }, chest: null });
   expect(pending.textContent).toContain("Arrives with the results");
 });
@@ -134,4 +139,18 @@ it("reads and opens the chest of the seat's roster wallet, whatever the payout w
   await press(panel, "Open");
   await press(panel, "Sign");
   expect(signed.owners).toEqual(["0xa11"]);
+});
+
+it("says nothing of tokens on a sealed chest whose rank band draws none", async () => {
+  const lowest = await mount({ ...SEALED, chest: { ...CHEST, band: 4 }, token: { shares: 0, entryFee: 100n * WEI } });
+  expect(lowest.textContent).toContain("Bottom 25%");
+  expect(lowest.textContent).not.toMatch(/entry until|LORDS/);
+  // After its season a token band's chest says it pays none now; a band that never drew any still says nothing.
+  const late = await mount({
+    ...SEALED,
+    chest: { ...CHEST, band: 4 },
+    token: { shares: 0, entryFee: 0n },
+    seasonEnd: 1,
+  });
+  expect(late.textContent).not.toContain("No LORDS now");
 });

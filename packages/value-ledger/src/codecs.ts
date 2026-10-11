@@ -183,6 +183,16 @@ export const decodeChest = (fields: readonly string[]) => {
   };
 };
 
+/**
+ * ChestBandPreset: metadata, odds (common, uncommon, rare, epic, legendary, lords, sword, shield), lords_shares. A rank
+ * band's token reward: `lordsShares` entry fees of the chest's season preset, drawn `lordsOdds` times in ten thousand
+ * and paid whole or not at all. A band that draws no tokens has neither.
+ */
+export const decodeChestBand = (fields: readonly string[]) => {
+  if (fields.length !== 10) throw new Error("invalid_chest_band");
+  return { lordsOdds: ledgerInteger(fields[6]!), lordsShares: ledgerInteger(fields[9]!) };
+};
+
 /** get_season_winner returns the wallet and its allocated u256 share. */
 export const decodeSeasonWinner = (fields: readonly string[]) => {
   if (fields.length !== 3 || unsigned(fields[0]!) === 0n) throw new Error("invalid_season_winner");

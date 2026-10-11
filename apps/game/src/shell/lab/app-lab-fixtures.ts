@@ -416,6 +416,9 @@ const SWORD = {
 };
 const CHEST = { seasonId: 3, band: 0, requested: false, finished: false, requester: "0x0", requestBlock: 0 };
 const OPENED = { ...CHEST, requested: true, finished: true, requester: LAB_WALLET, requestBlock: 812_300 };
+/** The slot's entry, and each rank band's token reward in shares of it, best band first: the two lowest draw none. */
+const ENTRY_FEE = 500n * WEI;
+const TOKEN_SHARES = [4, 2, 1, 0, 0];
 const SEALED: Reward = {
   result: RESULT,
   collection: "0xc4e57",
@@ -423,18 +426,26 @@ const SEALED: Reward = {
   held: true,
   content: null,
   seasonEnd: NOW + 52 * DAY,
+  token: { shares: TOKEN_SHARES[CHEST.band], entryFee: ENTRY_FEE },
   registration: SWORD,
 };
+/** A sealed chest of a rank band, with that band's token reward. */
+const sealedOf = (band: number): Reward => ({
+  ...SEALED,
+  chest: { ...CHEST, band },
+  token: { shares: TOKEN_SHARES[band], entryFee: ENTRY_FEE },
+});
 
 /** The payout wallet's result and chest on each reward screen: what the ledger would answer. */
 export const LAB_REWARDS: Partial<Record<keyof typeof LAB_SCREENS, Reward>> = {
   "reward-pending": { ...SEALED, result: { ...RESULT, rank: 0, chestId: 0n }, chest: null },
   // The middle band, the chest the owner picked.
-  "reward-sealed": { ...SEALED, chest: { ...CHEST, band: 2 } },
-  "reward-after-season": { ...SEALED, chest: { ...CHEST, band: 3 }, seasonEnd: NOW - DAY },
+  "reward-sealed": sealedOf(2),
+  "reward-after-season": { ...sealedOf(1), seasonEnd: NOW - DAY },
   "reward-opening": { ...SEALED, chest: { ...OPENED, band: 2, finished: false }, held: false },
   "reward-epic": { ...SEALED, chest: OPENED, held: false, content: { kind: "cosmetic", attributes: "0x4040d01" } },
-  "reward-lords": { ...SEALED, chest: OPENED, held: false, content: { kind: "lords", amount: 700n * WEI } },
+  // The best band's token reward: four entries.
+  "reward-lords": { ...SEALED, chest: OPENED, held: false, content: { kind: "lords", amount: 4n * ENTRY_FEE } },
   "reward-credit": {
     ...SEALED,
     result: { ...RESULT, mmrAfter: 1732 },

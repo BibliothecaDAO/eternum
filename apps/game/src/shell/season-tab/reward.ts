@@ -30,7 +30,18 @@ export interface Reward {
   content: ChestContent | null;
   /** The chest's season end: after it, the season's chest LORDS are swept into the prize pool. */
   seasonEnd: number;
+  /**
+   * The chest's token reward: `shares` entry fees of its season's preset (`entryFee`, in the token's smallest unit),
+   * paid whole while the season's reserve holds them, else replaced by another reward. No shares for a rank band that
+   * draws no tokens, and none without a chest.
+   */
+  token: TokenReward;
   registration: Registration;
+}
+
+export interface TokenReward {
+  shares: number;
+  entryFee: bigint;
 }
 
 type RewardState = "pending" | "sealed" | "opening" | "opened" | "traded";
@@ -66,7 +77,7 @@ const readReward = async (read: EnvironmentLedger, keys: PlayedGameKeys, wallet:
     read.registration(keys.slot, wallet),
     read.chestCollection(),
   ]);
-  const none = { collection, chest: null, held: false, content: null, seasonEnd: 0, registration };
+  const none = { collection, chest: null, held: false, content: null, seasonEnd: 0, token: NO_TOKENS, registration };
   if (result.rank === 0 || result.chestId === 0n) return { result, ...none };
   const chest = await read.chest(result.chestId);
   const [season, held, content] = await Promise.all([
@@ -77,5 +88,24 @@ const readReward = async (read: EnvironmentLedger, keys: PlayedGameKeys, wallet:
       : read.chestOwner(collection, result.chestId).then((owner) => isSameStarknetAddress(owner, wallet)),
     chest.finished ? read.chestContent(result.chestId, chest.requestBlock) : null,
   ]);
-  return { result, collection, chest, held, content, seasonEnd: season.end, registration };
+  const token = await readTokenReward(read, season.presetId, chest.band);
+  return { result, collection, chest, held, content, seasonEnd: season.end, token, registration };
 };
+
+const NO_TOKENS: TokenReward = { shares: 0, entryFee: 0n };
+
+/**
+ * A rank band's token reward under its season's preset: the band's shares of that preset's entry fee. A band the
+ * preset gives no odds of tokens has no shares to show, whatever it stores.
+ */
+const readTokenReward = async (read: EnvironmentLedger, presetId: number, band: number): Promise<TokenReward> => {
+  const [terms, drawn] = await Promise.all([read.preset(presetId), read.chestBand(presetId, band)]);
+  return { shares: drawn.lordsOdds > 0 ? drawn.lordsShares : 0, entryFee: terms.seat };
+};
+
+/**
+ * How many entry fees a delivered token reward is. The ledger pays a chest's tokens as whole shares of its slot's
+ * entry, so this is a whole number; null where no entry fee divides the amount, and the amount then stands alone.
+ */
+export const entryMultipleOf = (amount: bigint, entryFee: bigint): number | null =>
+  entryFee > 0n && amount % entryFee === 0n ? Number(amount / entryFee) : null;

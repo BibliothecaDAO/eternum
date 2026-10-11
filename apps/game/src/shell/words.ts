@@ -295,7 +295,10 @@ export const REWARD_WORDS = {
   /** A chest's rank band (0 best .. 4), the one fact it shows sealed. */
   band: ["Top 10%", "Top 25%", "Top half", "Top 75%", "Bottom 25%"],
   opening: "Opening…",
-  lordsUntil: (date: string) => `LORDS until ${date}`,
+  /** A sealed chest's token reward, as a multiple of its slot's entry: what it can pay, and until when. */
+  entryUntil: (shares: number, date: string) => `${shares}× entry until ${date}`,
+  /** Under an opened chest's multiple: "4×" of the entry. */
+  theEntry: "the entry",
   noLords: "No LORDS now",
 } as const;
 

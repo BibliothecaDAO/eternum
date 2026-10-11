@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 
 import { openChestCalls } from "../value/ledger";
-import { type Reward, rewardState } from "./reward";
+import { entryMultipleOf, type Reward, rewardState } from "./reward";
 
 const WEI = 10n ** 18n;
 const WALLET = "0x4a1";
@@ -22,6 +22,7 @@ it("waits for the results, offers a held chest, waits on the draw after the requ
     held: true,
     content: null,
     seasonEnd: 0,
+    token: { shares: 4, entryFee: 100n * WEI },
     registration: {
       registered: true,
       sword: true,
@@ -46,4 +47,12 @@ it("waits for the results, offers a held chest, waits on the draw after the requ
   expect(rewardState(reward({ held: false }), WALLET)).toBe("traded");
   // Opened by whoever bought it: gone from this player.
   expect(rewardState(reward({ chest: { ...requested, requester: "0xb0b" }, held: false }), WALLET)).toBe("traded");
+});
+
+it("counts a token reward in entries of its slot, whatever the entry costs", () => {
+  expect(entryMultipleOf(400n * WEI, 100n * WEI)).toBe(4);
+  expect(entryMultipleOf(500n * WEI, 500n * WEI)).toBe(1);
+  // No entry fee divides these: the sum stands alone.
+  expect(entryMultipleOf(700n * WEI, 500n * WEI)).toBeNull();
+  expect(entryMultipleOf(700n * WEI, 0n)).toBeNull();
 });

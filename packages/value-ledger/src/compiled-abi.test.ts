@@ -6,6 +6,7 @@ import { readLedgerSlot, readLedgerRegistration } from "./blitz-slots";
 import {
   decodeBlitzSeason,
   decodeChest,
+  decodeChestBand,
   decodeCredits,
   decodeFrontierSeason,
   decodeLedgerPreset,
@@ -219,6 +220,24 @@ describe("committed contract readbacks", () => {
         }),
       ),
     ).toEqual({ seasonId: 3, band: 2, requested: true, finished: false, requester: "17", requestBlock: 20 });
+    expect(
+      decodeChestBand(
+        response(ledgerAbi, "get_chest_band", {
+          metadata: 9,
+          odds: {
+            common: 4000,
+            uncommon: 2500,
+            rare: 1500,
+            epic: 700,
+            legendary: 300,
+            lords: 500,
+            sword: 250,
+            shield: 250,
+          },
+          lords_shares: 4,
+        }),
+      ),
+    ).toEqual({ lordsOdds: 500, lordsShares: 4 });
     expect(
       decodeFrontierSeason(
         response(ledgerAbi, "get_frontier", {

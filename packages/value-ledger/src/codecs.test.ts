@@ -2,6 +2,7 @@ import { expect, it } from "vitest";
 
 import {
   decodeChest,
+  decodeChestBand,
   decodeChestContent,
   decodeCredits,
   decodeFrontierSeason,
@@ -175,6 +176,18 @@ it("decodes the complete chest shape and rejects absent or malformed records", (
     [...chest.slice(0, 6), String(1n << 60n)],
   ])
     expect(() => decodeChest(fields)).toThrow();
+});
+
+it("decodes a rank band's token reward as shares of the entry and its odds, at the band's exact width", () => {
+  // metadata, then common, uncommon, rare, epic, legendary, lords, sword, shield, then the token reward's shares.
+  const band = ["0x4040d01", "4000", "2500", "1500", "700", "300", "500", "250", "250", "4"];
+  expect(decodeChestBand(band)).toEqual({ lordsOdds: 500, lordsShares: 4 });
+  expect(decodeChestBand(["0", "5000", "3000", "1000", "500", "0", "0", "250", "250", "0"])).toEqual({
+    lordsOdds: 0,
+    lordsShares: 0,
+  });
+  // The band that carried a fixed amount was one felt wider.
+  for (const fields of [band.slice(1), [...band, "0"]]) expect(() => decodeChestBand(fields)).toThrow();
 });
 
 it("decodes one winner and its full allocated share and rejects incomplete or absent winners", () => {

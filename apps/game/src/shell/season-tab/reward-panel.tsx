@@ -13,7 +13,7 @@ import { useNowSeconds } from "../use-now";
 import type { ChestContent } from "@realms-world/value-ledger/codecs";
 import { type EnvironmentLedger, lordsOf, openChestCalls } from "../value/ledger";
 import { REWARD_WORDS } from "../words";
-import { type PlayedGameKeys, type Reward, rewardState, useReward } from "./reward";
+import { entryMultipleOf, type PlayedGameKeys, type Reward, rewardState, useReward } from "./reward";
 
 const WalletSign = lazy(() =>
   import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletSign })),
@@ -27,7 +27,8 @@ const chestArt = (band: number, opened: boolean) =>
  * After a paid Blitz: the rated game's MMR change with the sword or shield applied, and the mystery chest the result
  * minted for the player's rank band. Both belong to the seat's wallet, the one the shard's roster froze at slot close,
  * whatever the payout wallet is now.
- * A sealed chest shows its band and nothing else. Open is one signature from that wallet; the draw then lands by
+ * A sealed chest shows its band and, where that band draws tokens, how many times the entry they are. Open is one
+ * signature from that wallet; the draw then lands by
  * itself about ten blocks later, and the reveal plays inside this panel. A chest not opened stays in the collection,
  * tradeable.
  * Nothing is drawn for an account that held no seat in the game.
@@ -113,7 +114,9 @@ const ChestPlate = ({
   if (state === "opened")
     return (
       <Plate icon="Ch" title={REWARD_WORDS.chest}>
-        <Stage>{reward.content ? <Prize content={reward.content} /> : <Loading />}</Stage>
+        <Stage>
+          {reward.content ? <Prize content={reward.content} entryFee={reward.token.entryFee} /> : <Loading />}
+        </Stage>
       </Plate>
     );
   if (state === "opening")
@@ -148,24 +151,29 @@ const ChestPlate = ({
   return (
     <Plate icon="Ch" title={REWARD_WORDS.chest}>
       <ChestArt band={band} glow={state === "sealed"} />
-      <p className="flex flex-wrap gap-2">
-        <LordsUntil seasonEnd={reward.seasonEnd} now={now} />
-      </p>
+      {reward.token.shares > 0 && (
+        <p className="flex flex-wrap gap-2">
+          <TokensUntil shares={reward.token.shares} seasonEnd={reward.seasonEnd} now={now} />
+        </p>
+      )}
       {open ?? <Button role="primary" word={REWARD_WORDS.open} icon="Ch" onClick={() => setSigning(true)} />}
     </Plate>
   );
 };
 
-/** The one rule a sealed chest carries: it can pay LORDS only while its season runs. */
-const LordsUntil = ({ seasonEnd, now }: { seasonEnd: number; now: number }) =>
+/**
+ * What a sealed chest of a token band can pay, as a multiple of its slot's entry and never an amount, and the one
+ * rule it carries: only while its season runs.
+ */
+const TokensUntil = ({ shares, seasonEnd, now }: { shares: number; seasonEnd: number; now: number }) =>
   now < seasonEnd ? (
-    <Chip icon="Lo" word={REWARD_WORDS.lordsUntil(formatDate(seasonEnd))} tone="text-kit-gold2" />
+    <Chip icon="Lo" word={REWARD_WORDS.entryUntil(shares, formatDate(seasonEnd))} tone="text-kit-gold2" />
   ) : (
     <Chip icon="Lo" word={REWARD_WORDS.noLords} tone="text-kit-muted" struck />
   );
 
-/** What the chest delivered: an item, LORDS (possibly none once its season's reserve ran out), or a credit. */
-const Prize = ({ content }: { content: ChestContent }) => {
+/** What the chest delivered: an item, tokens as a multiple of the slot's entry with the sum sent, or a credit. */
+const Prize = ({ content, entryFee }: { content: ChestContent; entryFee: bigint }) => {
   if (content.kind === "cosmetic") {
     const item = getChestAssetFromAttributesRaw(content.attributes);
     return (
@@ -179,15 +187,7 @@ const Prize = ({ content }: { content: ChestContent }) => {
       </Card>
     );
   }
-  if (content.kind === "lords")
-    return (
-      <Card>
-        <KitIcon code="Lo" size={96} />
-        <b className="font-display text-[60px] leading-none text-kit-gold2">{formatExact(lordsOf(content.amount))}</b>
-        <span className="font-ui text-[22px] text-kit-muted">{REWARD_WORDS.lords}</span>
-        <Chip icon="Ok" word={REWARD_WORDS.lordsSent} tone="text-kit-sage" />
-      </Card>
-    );
+  if (content.kind === "lords") return <TokenPrize amount={content.amount} entryFee={entryFee} />;
   return (
     <Card>
       <KitIcon code={content.kind === "sword" ? "At" : "Sd"} size={96} />
@@ -195,6 +195,26 @@ const Prize = ({ content }: { content: ChestContent }) => {
         {content.kind === "sword" ? REWARD_WORDS.swordCredit : REWARD_WORDS.shieldCredit}
       </b>
       <Chip icon="Lo" word={REWARD_WORDS.nextEntry} tone="text-kit-muted" />
+    </Card>
+  );
+};
+
+/**
+ * Tokens from a chest: how many times the entry they are, with the sum sent beside. Where no entry fee divides the
+ * sum, the sum stands alone.
+ */
+const TokenPrize = ({ amount, entryFee }: { amount: bigint; entryFee: bigint }) => {
+  const multiple = entryMultipleOf(amount, entryFee);
+  const sum = formatExact(lordsOf(amount));
+  return (
+    <Card>
+      <KitIcon code="Lo" size={96} />
+      <b className="font-display text-[60px] leading-none text-kit-gold2">{multiple === null ? sum : `${multiple}×`}</b>
+      <span className="font-ui text-[22px] text-kit-muted">
+        {multiple === null ? REWARD_WORDS.lords : REWARD_WORDS.theEntry}
+      </span>
+      {multiple !== null && <Chip icon="Lo" word={`${sum} ${REWARD_WORDS.lords}`} tone="text-kit-gold2" />}
+      <Chip icon="Ok" word={REWARD_WORDS.lordsSent} tone="text-kit-sage" />
     </Card>
   );
 };

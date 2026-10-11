@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-11",
+    title: "Chest tokens count in entries",
+    description:
+      "A Blitz chest's token reward is now a multiple of its game's entry: four, two or one entry for the top three rank bands, never less than an entry. A sealed chest shows that multiple, an opened one shows it with the sum sent, and the two lowest bands draw cosmetics and credits only.",
+    type: "balance",
+  },
+  {
+    date: "2026-10-11",
     title: "Sign in with email",
     description: "Sign in with an emailed code, with Discord shown only when it is available.",
     type: "improvement",
