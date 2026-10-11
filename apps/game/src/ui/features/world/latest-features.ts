@@ -42,13 +42,6 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-10-11",
-    title: "Factory page makes unranked games only",
-    description:
-      "The factory page no longer edits the season calendar or shows Blitz slots: ranked games are opened by the operator, and a game made on the page has no slot, no pot and no rating.",
-    type: "improvement",
-  },
-  {
-    date: "2026-10-11",
     title: "A linked wallet receives at once",
     description:
       "A newly linked payout wallet no longer waits 24 hours: withdrawals and prizes reach it as soon as it is linked with its signature and the emailed code.",
