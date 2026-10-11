@@ -4,12 +4,14 @@ import { createRoot } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 
-vi.hoisted(() => vi.stubGlobal("fetch", async () => new Response(null, { status: 401 })));
-vi.mock("@/ui/features/factory-v2/api/factory-worker", () => ({
-  fetchPlaytestSlots: async () => {
-    throw new Error("not_found");
-  },
-}));
+// The launch service refuses the slot list with its own code; every other service answers nobody.
+vi.hoisted(() =>
+  vi.stubGlobal("fetch", async (input: string | URL) =>
+    String(input).includes("/api/slots")
+      ? Response.json({ error: "not_found" }, { status: 404 })
+      : new Response(null, { status: 401 }),
+  ),
+);
 
 import { setViewportWidth } from "../frame/test-viewport";
 import { BlitzListPage } from "./blitz-pages";

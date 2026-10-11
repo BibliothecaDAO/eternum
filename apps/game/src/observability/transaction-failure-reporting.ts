@@ -19,7 +19,6 @@ type ClientTransactionSurface =
   | "settlement"
   | "amm"
   | "prediction_market"
-  | "factory"
   | "game_review"
   | "cosmetics"
   | "admin";

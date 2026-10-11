@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
+import type { PlaytestSlot } from "./blitz-slot";
 
 import { blitzRows, gameKeyOf, gameSlotKeyOf, leadBlitzRow, seatedGameOf, slotKeyOf } from "./blitz-rows";
 import type { DirectoryGame } from "./herald";

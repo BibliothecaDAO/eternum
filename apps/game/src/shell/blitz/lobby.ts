@@ -1,6 +1,6 @@
 import { formatClockTime } from "@/ui/design-system/kit/time";
 
-import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
+import type { PlaytestSlot } from "../blitz-slot";
 
 import { type BlitzRow, slotRow } from "../blitz-rows";
 import type { DirectoryGame } from "../herald";

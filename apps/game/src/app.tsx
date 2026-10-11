@@ -8,7 +8,6 @@ import { SceneRoute } from "./scene-route";
 import { PwaInstallRuntime } from "./pwa/pwa-install-control";
 import { appQueryClient } from "./runtime/query-client";
 import { AppShell } from "./shell/app-shell";
-import { FactoryPage } from "./shell/factory";
 import { LearnPage } from "./shell/learn/learn-page";
 import { PostPage } from "./shell/learn/post-page";
 import { IS_DEV_ENVIRONMENT } from "./shell/frame/environment";
@@ -119,7 +118,6 @@ export const appRoutes = (
           </LazyRoute>
         }
       />
-      <Route path="factory" element={<FactoryPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Route>
     <Route path={SIGN_IN_PATH} element={<SignInPage />} />

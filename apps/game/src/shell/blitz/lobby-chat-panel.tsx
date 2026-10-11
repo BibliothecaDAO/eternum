@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
-import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
+import type { PlaytestSlot } from "../blitz-slot";
 import { YOU } from "@/ui/design-system/kit/words";
 import type { WorldChatMessage } from "@bibliothecadao/types";
 import { displayPlayerName } from "@bibliothecadao/eternum";

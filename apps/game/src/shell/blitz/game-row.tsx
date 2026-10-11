@@ -4,7 +4,7 @@ import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 
-import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
+import type { PlaytestSlot } from "../blitz-slot";
 
 import type { BlitzRow } from "../blitz-rows";
 import { ClockChip } from "../clock-chip";

@@ -5,11 +5,9 @@ import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 
-import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
-
 import { RatingFigure } from "../rating-mark";
 import { useRatings } from "../ratings";
-import { BLITZ_SEATS } from "../blitz-slot";
+import { BLITZ_SEATS, type PlaytestSlot } from "../blitz-slot";
 import { BLITZ_WORDS } from "../words";
 import { useSlotRegistered } from "./entry";
 import type { Seat } from "./lobby";

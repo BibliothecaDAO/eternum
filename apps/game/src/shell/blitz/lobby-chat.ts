@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
-import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
+import type { PlaytestSlot } from "../blitz-slot";
 import { normalizeStarknetAddress } from "@realms-world/identity";
 import { fetchApi } from "@/runtime/app-api";
 

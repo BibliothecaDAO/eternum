@@ -5,25 +5,21 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 
 // The directory answers no game and the session none: the lobby under test is a slot's, read from the launch list.
-vi.hoisted(() =>
-  vi.stubGlobal("fetch", async (input: string | URL) =>
-    String(input).includes("/api/directory") ? Response.json({ shards: [] }) : new Response(null, { status: 401 }),
-  ),
-);
-vi.mock("@/ui/features/factory-v2/api/factory-worker", () => ({
-  fetchPlaytestSlots: async () => ({
-    slots: [
-      {
-        slotId: 3,
-        chainId: "0x52",
-        name: "blitz-1630",
-        closesAt: new Date(Date.now() + 3_600_000).toISOString(),
-        frozenAt: null,
-        closed: false,
-      },
-    ],
-  }),
-}));
+vi.hoisted(() => {
+  const slot = {
+    slotId: 3,
+    chainId: "0x52",
+    name: "blitz-1630",
+    closesAt: new Date(Date.now() + 3_600_000).toISOString(),
+    frozenAt: null,
+    closed: false,
+  };
+  vi.stubGlobal("fetch", async (input: string | URL) => {
+    if (String(input).includes("/api/directory")) return Response.json({ shards: [] });
+    if (String(input).includes("/api/slots")) return Response.json({ slots: [slot] });
+    return new Response(null, { status: 401 });
+  });
+});
 // The chat itself has its own tests; here only where the lobby puts it.
 vi.mock("./lobby-chat-panel", () => ({
   LobbyChatPanel: ({ slot }: { slot: { name: string } }) => <section aria-label="Chat">{slot.name}</section>,

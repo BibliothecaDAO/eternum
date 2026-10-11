@@ -6,7 +6,7 @@ import { useIdentitySession } from "@/hooks/context/identity-session";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Button } from "@/ui/design-system/kit/button";
 
-import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
+import type { PlaytestSlot } from "../blitz-slot";
 
 import { type BlitzRow, seatedGameOf, slotKeyOf } from "../blitz-rows";
 import { ClockChip } from "../clock-chip";

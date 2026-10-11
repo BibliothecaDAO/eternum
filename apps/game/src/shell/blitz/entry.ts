@@ -4,7 +4,7 @@ import { feltEquals } from "@bibliothecadao/eternum/game-client";
 import { isSameStarknetAddress } from "@realms-world/identity";
 import type { Credits, Registration } from "@realms-world/value-ledger/codecs";
 
-import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
+import type { PlaytestSlot } from "../blitz-slot";
 import { readBrowserWallets } from "@/ui/modules/identity/browser-wallets";
 
 import { slotKeyOf } from "../blitz-rows";

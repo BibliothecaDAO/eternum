@@ -41,7 +41,7 @@ vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
   }),
 }));
 
-import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
+import type { PlaytestSlot } from "../blitz-slot";
 
 import { useRefundSlots } from "./entry";
 

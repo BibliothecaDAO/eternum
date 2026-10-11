@@ -1,9 +1,8 @@
-import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
 import { canEnterGame, isGameOver, isMember, rosterWalletOf } from "@/runtime/world/directory";
 import { feltEquals } from "@bibliothecadao/eternum/game-client";
 import { isSameStarknetAddress } from "@realms-world/identity";
 
-import { BLITZ_SEATS } from "./blitz-slot";
+import { BLITZ_SEATS, type PlaytestSlot } from "./blitz-slot";
 import type { DirectoryGame } from "./herald";
 import type { GameKey, SlotKey } from "./value/ledger";
 
