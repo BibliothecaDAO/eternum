@@ -101,7 +101,7 @@ export const decodePlayerResult = (felts: readonly string[]): PlayerResult => {
   };
 };
 
-/** ChestContent: kind, cosmetic, lords; kind 0 cosmetic, 1 sword credit, 2 shield credit, 3 LORDS (possibly zero). */
+/** ChestContent: kind, cosmetic, lords; kind 0 cosmetic, 1 sword credit, 2 shield credit, 3 LORDS settled by the ledger. */
 export const decodeChestContent = (felts: readonly string[]): ChestContent => {
   const read = fields(felts);
   const kind = read.number();

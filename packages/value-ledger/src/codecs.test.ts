@@ -93,7 +93,6 @@ it("reads a result and what an opened chest delivered, in the interface's order"
   });
   // ChestContent (the ChestOpened event's data): kind, cosmetic, lords (2).
   expect(decodeChestContent(["0", "0x4040d01", "0", "0"])).toEqual({ kind: "cosmetic", attributes: "0x4040d01" });
-  expect(decodeChestContent(["3", "0", String(700n * WEI), "0"])).toEqual({ kind: "lords", amount: 700n * WEI });
   expect(decodeChestContent(["2", "0", "0", "0"])).toEqual({ kind: "shield" });
   expect(() => decodeChestContent(["9", "0", "0", "0"])).toThrow("Unknown chest kind 9");
 });

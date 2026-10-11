@@ -1,4 +1,5 @@
-import { ledgerCall, ledgerEvent } from "../../../packages/value-ledger/test-support/ledger-abi";
+import { response } from "../../../packages/value-ledger/test-support/abi";
+import { ledgerAbi, ledgerCall, ledgerEvent } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
 import { chestLedgerReads, finishChestOnLedger } from "./chest-ledger";
@@ -32,9 +33,19 @@ const connection = {
   accountAddress: "0x20",
   privateKey: "unused-test-key",
 };
+const chest = (finished = false) =>
+  response(ledgerAbi, "get_chest", {
+    exists: true,
+    season_id: 1,
+    band: 2,
+    requested: true,
+    finished,
+    requester: "0x123",
+    request_block: 100,
+  });
 beforeEach(() => {
   vi.clearAllMocks();
-  rpc.call.mockResolvedValue(["1", "1", "2", "1", "0", "0x123", "100"]);
+  rpc.call.mockResolvedValue(chest());
   rpc.execute.mockResolvedValue({ transaction_hash: "0xabc" });
   rpc.wait.mockResolvedValue({ isReverted: () => false });
   rpc.number.mockResolvedValue(111);
@@ -48,7 +59,15 @@ it("finishes the original token with no caller-supplied draw or recipient and ma
     calldata: ledgerCall("open_finish", { token_id: { low: 7, high: 1 } }),
   });
   expect(rpc.wait).toHaveBeenCalledWith("0xabc");
-  rpc.call.mockResolvedValue(["1", "1", "2", "1", "1", "0x123", "100"]);
+  expect(rpc.call).toHaveBeenCalledExactlyOnceWith(
+    {
+      contractAddress: "0x10",
+      entrypoint: "get_chest",
+      calldata: ledgerCall("get_chest", { token_id: { low: 7, high: 1 } }),
+    },
+    "latest",
+  );
+  rpc.call.mockResolvedValue(chest(true));
   await Effect.runPromise(finishChestOnLedger(connection, "7"));
   expect(rpc.execute).toHaveBeenCalledOnce();
 });
@@ -58,7 +77,10 @@ it("keeps reverted or malformed chest finishes unsuccessful", async () => {
   rpc.call.mockResolvedValue(["1"]);
   await expect(Effect.runPromise(chestLedgerReads(connection).chest("7"))).rejects.toThrow();
 });
-it("decodes both lifecycle events from the durable completed-block boundary", async () => {
+it.each([
+  { kind: 3, cosmetic: 0, lords: { low: 4n * 100n * 10n ** 18n, high: 0 } },
+  { kind: 1, cosmetic: 0, lords: { low: 0n, high: 0 } },
+])("completes the chest queue for either the settled shares or the non-token fallback: $kind", async (content) => {
   rpc.events.mockResolvedValue({
     events: [
       {
@@ -70,7 +92,7 @@ it("decodes both lifecycle events from the durable completed-block boundary", as
         ...ledgerEvent("ChestOpened", {
           token_id: { low: 7, high: 0 },
           wallet: "0x123",
-          content: { kind: 1, cosmetic: 0, lords: { low: 0, high: 0 } },
+          content,
         }),
       },
     ],
