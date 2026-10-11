@@ -118,16 +118,25 @@ describe("launcher rosters and off-timetable slots", () => {
     });
   const soon = () => new Date(Math.floor(Date.now() / 1000) * 1000 + 60_000).toISOString();
 
-  test("a launcher creates a slot with an immutable closing time", async () => {
+  test("only the operator creates a slot with an immutable closing time", async () => {
     const { app } = createApp(signedIn(ALLOWED_ADDRESS));
     const closesAt = soon();
-    expect((await app.request(post("/api/slots", { name: "campaign-1", closesAt }))).status).toBe(202);
-    expect((await app.request(post("/api/slots", { name: "campaign-1", closesAt: soon() + "x" }))).status).toBe(400);
+    expect((await app.request(post("/api/slots", { name: "campaign-1", closesAt }))).status).toBe(403);
+    expect(
+      (await app.request(post("/api/slots", { name: "campaign-1", closesAt }, { token: OPERATOR_TOKEN }))).status,
+    ).toBe(202);
+    expect(
+      (await app.request(post("/api/slots", { name: "campaign-1", closesAt: soon() + "x" }, { token: OPERATOR_TOKEN })))
+        .status,
+    ).toBe(400);
     const moved = new Date(Date.parse(closesAt) + 60_000).toISOString();
-    expect((await app.request(post("/api/slots", { name: "campaign-1", closesAt: moved }))).status).toBe(409);
+    expect(
+      (await app.request(post("/api/slots", { name: "campaign-1", closesAt: moved }, { token: OPERATOR_TOKEN })))
+        .status,
+    ).toBe(409);
   });
 
-  test("launchers and the operator set the season calendar, which anyone reads", async () => {
+  test("only the operator sets the season calendar, which anyone reads", async () => {
     const operator = createApp(signedOut);
     const put = (body: unknown, auth: { cookie?: string; token?: string }) =>
       new Request("https://play.realms.party/api/factory/calendar/frontier", {
@@ -143,7 +152,7 @@ describe("launcher rosters and off-timetable slots", () => {
     expect((await operator.app.request(put(season, { token: OPERATOR_TOKEN }))).status).toBe(200);
     const backwards = { startsAt: season.endsAt, endsAt: season.startsAt };
     expect((await operator.app.request(put(backwards, { token: OPERATOR_TOKEN }))).status).toBe(409);
-    const player = createApp(signedIn());
+    const player = createApp(signedIn(ALLOWED_ADDRESS));
     expect((await player.app.request(put(season, { cookie: "session=valid" }))).status).toBe(403);
     const read = await player.app.request("https://play.realms.party/api/factory/calendar");
     expect(await read.json()).toEqual({ phases: [{ phase: "frontier", ...season }] });
@@ -527,4 +536,35 @@ test("refuses deleting a paid-slot run even with operator credentials", async ()
   expect(await store.delete("game", "madara.blitz", "paid-delete")).toBe(false);
   await store.enqueue("game", { environment: "madara.eternum", gameName: "ordinary-delete" });
   expect(await store.delete("game", "madara.eternum", "ordinary-delete")).toBe(true);
+});
+
+test("only the operator continues paid games and results, while a launcher keeps unranked game recovery", async () => {
+  const { app, store } = createApp(signedIn(ALLOWED_ADDRESS));
+  for (const [kind, request] of [
+    ["game", { environment: "madara.blitz", gameName: "paid-retry", slotId: 12, groupIndex: 0 }],
+    ["result", { environment: "madara.blitz", gameName: "paid-retry", gameId: 1 }],
+  ] as const) {
+    const run = await store.enqueue(kind, request);
+    await database.db.prepare("UPDATE launch_runs SET status = 'running' WHERE id = ?").bind(run.id).run();
+    await store.fail(run.id, "unavailable");
+    const url = `https://play.realms.party/api/factory/${kind === "game" ? "runs" : "results"}/madara.blitz/paid-retry/actions/continue`;
+    expect(
+      (await app.request(url, { method: "POST", headers: { origin: ALLOWED_ORIGIN, cookie: "session=valid" } })).status,
+    ).toBe(403);
+    expect((await store.find(kind, "madara.blitz", "paid-retry"))!.status).toBe("failed");
+    expect(
+      (await app.request(url, { method: "POST", headers: { authorization: `Bearer ${OPERATOR_TOKEN}` } })).status,
+    ).toBe(202);
+  }
+  const run = await store.enqueue("game", { environment: "madara.frontier", gameName: "factory-retry" });
+  await database.db.prepare("UPDATE launch_runs SET status = 'running' WHERE id = ?").bind(run.id).run();
+  await store.fail(run.id, "unavailable");
+  expect(
+    (
+      await app.request("https://play.realms.party/api/factory/runs/madara.frontier/factory-retry/actions/continue", {
+        method: "POST",
+        headers: { origin: ALLOWED_ORIGIN, cookie: "session=valid" },
+      })
+    ).status,
+  ).toBe(202);
 });

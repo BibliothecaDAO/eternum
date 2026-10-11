@@ -1,9 +1,16 @@
 import { expect, test, vi } from "vitest";
+import { Hono } from "hono";
+import type { LaunchAppEnv } from "./auth";
 import { createCalendarRoutes } from "./calendar-routes";
 
 test.each(["startsAt", "endsAt"])("rejects sub-second %s before persisting the calendar", async (field) => {
   const set = vi.fn();
-  const app = createCalendarRoutes({ list: async () => [], set });
+  const app = new Hono<LaunchAppEnv>();
+  app.use("*", async (context, next) => {
+    context.set("caller", { kind: "operator" });
+    return next();
+  });
+  app.route("/", createCalendarRoutes({ list: async () => [], set }));
   const response = await app.request("/frontier", {
     method: "PUT",
     headers: { "content-type": "application/json" },

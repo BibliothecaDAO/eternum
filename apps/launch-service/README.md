@@ -5,15 +5,16 @@ membership. `VALUE_IDENTITY` supplies the directory; `VALUE_RELAY` supplies conf
 economic writes. A request can select `?chainId=<official shard>`; with one live shard the selection is unique. Multiple
 live shards require a chain. No Worker shard URL or separate ledger URL/address is configured.
 
-Launch mutations require an allowlisted linked wallet or the operator token. The timetable exposes `slotId`; completed
-game directory rows carry that same field (null outside Blitz). The environment address book supplies the ledger and L2
+Only the operator token opens slots, edits the season calendar or continues paid game/result runs. An allowlisted linked
+wallet can create, continue and delete factory game runs without a slot. The timetable exposes `slotId`; completed game
+directory rows carry that same field (null outside Blitz). The environment address book supplies the ledger and L2
 chain. No directory row carries economic addresses or a free/paid entry payload.
 
 Blitz registration belongs to an uncapped ledger slot. At close, the relay reads confirmed registrations in pages
-of 100. Identity history resolves each payer at its registration block time, without the payout hold. The earliest
-registration for each account gets a seat; unlinked and duplicate payers become refundable. Balanced groups retain
-registration order and contain at most 24 players. An empty slot creates no game. D1 keeps schedule and job metadata,
-never a roster copy. Launcher one-offs use the same paid `/api/slots` route; direct Blitz factory runs are refused.
+of 100. Identity history resolves each payer at its registration block time. The earliest registration for each account
+gets a seat; unlinked and duplicate payers become refundable. Balanced groups retain registration order and contain at
+most 24 players. An empty slot creates no game. D1 keeps schedule and job metadata, never a roster copy. Operator
+one-offs use the same paid `/api/slots` route; direct Blitz factory runs are refused.
 
 The registrar serializes its device's shard writes. Each game is created with its complete roster, then the existing
 automatic realm seating completes. A retry re-resolves the historical cohort and verifies an existing game's roster

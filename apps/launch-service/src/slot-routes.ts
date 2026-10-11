@@ -2,7 +2,7 @@ import { isPublicGameName } from "./schemas";
 import { BLITZ_SLOT_NAME_PATTERN } from "@realms-world/identity";
 import { Schema } from "effect";
 import { Hono, type Context } from "hono";
-import { isLauncher, type LaunchAccess, type LaunchAppEnv } from "./auth";
+import type { LaunchAppEnv } from "./auth";
 import { SlotConflict, SlotNotFound, type SlotStore } from "./slots";
 
 const CreateSlotRequest = Schema.Struct({
@@ -26,7 +26,7 @@ const readBody = async <S extends Schema.Top>(context: Context<LaunchAppEnv>, sc
 };
 
 /** Slot discovery and operator scheduling; players pay registration on the ledger. */
-export function createSlotRoutes(store: SlotStore, access: Pick<LaunchAccess, "launcherAllowlist">) {
+export function createSlotRoutes(store: SlotStore) {
   const app = new Hono<LaunchAppEnv>();
   app.onError((error, context) => {
     if (error instanceof SlotNotFound) return context.json({ error: error.message }, 404);
@@ -35,8 +35,6 @@ export function createSlotRoutes(store: SlotStore, access: Pick<LaunchAccess, "l
     console.error("playtest_slot_failed", error);
     return context.json({ error: "Slot unavailable" }, 503);
   });
-  const forbidden = (context: Context<LaunchAppEnv>) =>
-    context.json({ error: "This identity is not allowed to launch games." }, 403);
 
   app.get("/", async (context) => context.json({ slots: await store.list() }));
   app.get("/:name", async (context) => {
@@ -47,7 +45,7 @@ export function createSlotRoutes(store: SlotStore, access: Pick<LaunchAccess, "l
   });
 
   app.post("/", async (context) => {
-    if (!isLauncher(context.get("caller"), access)) return forbidden(context);
+    if (context.get("caller")?.kind !== "operator") return context.json({ error: "Operator token required." }, 403);
     const { name, closesAt } = await readBody(context, CreateSlotRequest);
     await store.create(name, closesAt);
     return context.json({ name, status: "opening" }, 202);

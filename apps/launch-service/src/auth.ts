@@ -30,7 +30,7 @@ export interface LaunchAccess {
   operatorToken: string;
 }
 
-/** Launchers are the operator and allowlisted wallets: one rule for games and for rosters. */
+/** Factory game runs accept the operator and allowlisted wallets; official scheduling needs the operator token. */
 export const isLauncher = (caller: Caller, config: Pick<LaunchAccess, "launcherAllowlist">): boolean =>
   caller.kind === "operator" || (caller.wallet !== null && config.launcherAllowlist.has(caller.wallet));
 

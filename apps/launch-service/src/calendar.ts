@@ -3,7 +3,7 @@ import { frontierPreset } from "../../../config/source/frontier/native";
 import { seasonSeconds } from "../../../packages/core/src/utils/days";
 
 /**
- * The season calendar: when each phase of the season runs. Launchers set each phase's start and end, and the cron tick
+ * The season calendar: when each phase of the season runs. The operator sets each phase's start and end, and the cron tick
  * reads them; a Frontier season's length is its preset's.
  */
 export type SeasonPhaseName = "frontier" | "blitz";

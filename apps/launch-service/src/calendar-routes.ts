@@ -12,13 +12,14 @@ const PhaseRequest = Schema.Struct({ startsAt: Instant, endsAt: Instant });
 const PHASES = new Set(["frontier", "blitz"]);
 
 /**
- * /api/factory/calendar: the season calendar, public to read. Launchers (and operator automation) set a phase's start
- * and end; /api/factory/* already refuses writes from anyone else.
+ * /api/factory/calendar: the season calendar, public to read. Only the operator token sets a phase's start
+ * and end.
  */
 export function createCalendarRoutes(calendar: CalendarStore) {
   const app = new Hono<LaunchAppEnv>();
   app.get("/", async (context) => context.json({ phases: await calendar.list() }));
   app.put("/:phase", async (context) => {
+    if (context.get("caller")?.kind !== "operator") return context.json({ error: "Operator token required." }, 403);
     const phase = context.req.param("phase");
     if (!PHASES.has(phase)) return context.json({ error: "Unknown season phase" }, 404);
     let dates: typeof PhaseRequest.Type;

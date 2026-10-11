@@ -65,7 +65,7 @@ const findRun = async (context: Context, store: LaunchServiceStore, kind: Launch
 };
 
 const continueRun = async (
-  context: Context,
+  context: Context<LaunchAppEnv>,
   dependencies: Pick<LaunchAppDependencies, "store" | "registrar">,
   kind: LaunchKind,
   name: string,
@@ -73,6 +73,8 @@ const continueRun = async (
   const environment = readEnvironment(context.req.param("environment"));
   const run = await dependencies.store.find(kind, environment, name);
   if (!run) return context.json({ error: "Launch run not found." }, 404);
+  if (context.get("caller").kind !== "operator" && (run.slotId !== null || kind === "result"))
+    return context.json({ error: "Operator token required." }, 403);
   return respondWithRun(context, dependencies, kind, run.request);
 };
 
@@ -107,7 +109,7 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   app.use("/api/factory/*", requireLauncher(dependencies.config));
   app.route("/api/factory/operator/launcher", launcherOperatorRoutes(dependencies.operatorLauncher));
   app.route("/api/factory/calendar", createCalendarRoutes(dependencies.calendar));
-  app.route("/api/slots", createSlotRoutes(dependencies.slots, dependencies.config));
+  app.route("/api/slots", createSlotRoutes(dependencies.slots));
 
   // The deploy verifies this route: it names the running code and reads nothing else, so the shard's state, which health
   // reports, cannot fail a deploy.
