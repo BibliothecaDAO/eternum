@@ -193,6 +193,12 @@ export function deliverySteps(context: Deployment): Step[] {
         };
       },
       apply: async () => {
+        await command({ argv: ["git", "fetch", "origin", "stack/node-first"] });
+        const [head, remote] = (await command({ argv: ["git", "rev-parse", "HEAD", "origin/stack/node-first"] }))
+          .trim()
+          .split("\n");
+        if (!head || head !== remote)
+          throw new PublicError("HEAD must equal origin/stack/node-first before committing the address book.");
         const book = `contracts/common/addresses/${context.target.book}`;
         const staged = (await command({ argv: ["git", "diff", "--cached", "--name-only"] }))
           .trim()

@@ -438,8 +438,9 @@ export async function main(args = process.argv.slice(2)) {
 if (import.meta.main)
   main().catch((error) => {
     if (error instanceof PublicError) console.error(error.message);
-    console.error(
-      "Deployment stopped. No SDK, subprocess or secret-bearing error was printed. Inspect the last named step; rerun after its prerequisite is ready.",
-    );
+    else
+      console.error(
+        "Deployment stopped. No SDK, subprocess or secret-bearing error was printed. Inspect the last named step; rerun after its prerequisite is ready.",
+      );
     process.exitCode = 1;
   });
