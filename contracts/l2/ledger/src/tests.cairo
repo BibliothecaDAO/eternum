@@ -85,7 +85,7 @@ fn default_preset() -> Preset {
         sword_price: 500,
         shield_price: 500,
         mmr: MmrParams {
-            enabled: true, mean: 1500, spread: 450, max_delta: 45, k: 50, regression_bps: 150, min_players: 6,
+            enabled: true, mean: 1500, spread: 450, max_delta: 45, k: 50, regression_bps: 150,
         },
     }
 }
@@ -519,7 +519,6 @@ fn conserves_maximum_shard_roster_pool() {
 fn tie_fixture_one_one_three_preserves_mmr() {
     let mut preset = default_preset();
     preset.paid_fraction_bps = 10_000;
-    preset.mmr.min_players = 3;
     let fixture = deploy_fixture(preset);
     register_players(@fixture, 3);
     apply_results(@fixture, array![row(player(0), 1), row(player(1), 1), row(player(2), 3)]);
@@ -534,7 +533,6 @@ fn tie_fixture_one_one_three_preserves_mmr() {
 fn tie_fixture_one_two_two_four_preserves_mmr() {
     let mut preset = default_preset();
     preset.paid_fraction_bps = 10_000;
-    preset.mmr.min_players = 4;
     let fixture = deploy_fixture(preset);
     register_players(@fixture, 4);
     apply_results(@fixture, array![row(player(0), 1), row(player(1), 2), row(player(2), 2), row(player(3), 4)]);
@@ -550,7 +548,7 @@ fn tie_fixture_one_two_two_four_preserves_mmr() {
 }
 
 #[test]
-fn paid_flags_below_the_mmr_minimum_keep_the_purchase_and_finalize_once() {
+fn a_single_player_keeps_the_rating_and_the_paid_flag_purchase() {
     let fixture = deploy_fixture(default_preset());
     let owner = player(0);
     fund_and_approve_player(@fixture, owner, 1_000);
@@ -564,9 +562,11 @@ fn paid_flags_below_the_mmr_minimum_keep_the_purchase_and_finalize_once() {
     assert!(registration.sword, "sword purchase should be recorded");
     assert!(registration.paid == 1000, "the purchase amount must stay in the registration snapshot");
     assert!(
-        fixture.ledger.get_result_commitment(GAME_KEY) != 0, "the game must settle even below the rating threshold",
+        fixture.ledger.get_result_commitment(GAME_KEY) != 0, "the single-player game must settle",
     );
     assert!(fixture.ledger.get_player_result(GAME_KEY, owner).rank == 1);
+    assert!(fixture.ledger.get_season(1).participant_count == 1);
+    assert!(fixture.ledger.get_season_mmr(1, owner) == 1000);
     assert!(
         fixture
             .ledger
@@ -576,6 +576,20 @@ fn paid_flags_below_the_mmr_minimum_keep_the_purchase_and_finalize_once() {
             .get_player_result(GAME_KEY, owner)
             .mmr_after,
     );
+}
+
+#[test]
+fn two_player_slot_results_update_both_season_ratings() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 2);
+    apply_results(@fixture, ranked_players(2));
+    let winner = fixture.ledger.get_player_result(GAME_KEY, player(0));
+    let loser = fixture.ledger.get_player_result(GAME_KEY, player(1));
+    assert!(winner.mmr_before == 1000 && winner.mmr_after > 1000 && winner.mmr_after <= 1045);
+    assert!(loser.mmr_before == 1000 && loser.mmr_after < 1000 && loser.mmr_after >= 955);
+    assert!(fixture.ledger.get_season(1).participant_count == 2);
+    assert!(fixture.ledger.get_season_mmr(1, player(0)) == winner.mmr_after);
+    assert!(fixture.ledger.get_season_mmr(1, player(1)) == loser.mmr_after);
 }
 
 fn funded_frontier() -> Fixture {

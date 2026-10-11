@@ -17,6 +17,9 @@ pub impl MmrCalculatorImpl of MmrCalculatorTrait {
     fn calculate_player_mmr(
         params: MmrParams, current_mmr: u128, rank: u16, tie_count: u16, player_count: u16, median_mmr: u128,
     ) -> u128 {
+        if player_count <= 1 {
+            return current_mmr;
+        }
         let expected = Self::expected_percentile(current_mmr, median_mmr, params.spread.into());
         let actual = Self::actual_percentile(rank, tie_count, player_count);
         let raw_delta = Self::raw_delta(expected, actual, params.k.into(), player_count);
@@ -123,7 +126,7 @@ mod tests {
     use super::MmrCalculatorImpl;
 
     fn params() -> MmrParams {
-        MmrParams { enabled: true, mean: 1500, spread: 450, max_delta: 45, k: 50, regression_bps: 150, min_players: 6 }
+        MmrParams { enabled: true, mean: 1500, spread: 450, max_delta: 45, k: 50, regression_bps: 150 }
     }
 
     #[test]
@@ -137,6 +140,22 @@ mod tests {
         let tied = MmrCalculatorImpl::actual_percentile(1, 2, 4);
         let expected = FixedTrait::new_unscaled(1, false) / FixedTrait::new_unscaled(6, false);
         assert!(tied == expected, "rank 1 tie should average positions 0 and 1");
+    }
+
+    #[test]
+    fn a_single_player_keeps_the_rating_without_mean_regression() {
+        for rating in array![100_u128, 1000, 1500, 10000] {
+            assert!(MmrCalculatorImpl::calculate_player_mmr(params(), rating, 1, 1, 1, rating) == rating);
+        }
+    }
+
+    #[test]
+    fn two_players_gain_and_lose_within_the_cap() {
+        let winner = MmrCalculatorImpl::calculate_player_mmr(params(), 1500, 1, 1, 2, 1500);
+        let loser = MmrCalculatorImpl::calculate_player_mmr(params(), 1500, 2, 1, 2, 1500);
+        assert!(winner > 1500 && winner - 1500 <= 45);
+        assert!(loser < 1500 && 1500 - loser <= 45);
+        assert!(MmrCalculatorImpl::calculate_player_mmr(params(), 1500, 1, 2, 2, 1500) == 1500);
     }
 
     #[test]

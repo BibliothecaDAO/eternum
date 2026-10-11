@@ -937,7 +937,7 @@ pub mod GameLedger {
             assert!(preset.mmr.regression_bps <= 10_000, "Ledger: invalid MMR regression");
             if preset.mmr.enabled {
                 assert!(
-                    preset.mmr.spread > 0 && preset.mmr.max_delta > 0 && preset.mmr.k > 0 && preset.mmr.min_players > 1,
+                    preset.mmr.spread > 0 && preset.mmr.max_delta > 0 && preset.mmr.k > 0,
                     "Ledger: invalid MMR parameters",
                 );
             }
@@ -1343,7 +1343,7 @@ pub mod GameLedger {
         fn apply_mmr(
             ref self: ContractState, slot_key: SlotKey, key: GameKey, ranked: Span<RankedPlayer>, preset: Preset,
         ) {
-            if !preset.mmr.enabled || ranked.len() < preset.mmr.min_players.into() {
+            if !preset.mmr.enabled {
                 return;
             }
 

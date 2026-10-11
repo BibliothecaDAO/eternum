@@ -8,7 +8,6 @@ pub struct MmrParams {
     pub max_delta: u8,
     pub k: u8,
     pub regression_bps: u16,
-    pub min_players: u8,
 }
 
 #[derive(Copy, Drop, Serde, starknet::Store)]
