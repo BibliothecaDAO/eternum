@@ -6,7 +6,7 @@ import {
   isLauncher,
   requireIdentity,
   requireLauncher,
-  requireOperator,
+  isOperator,
   type IdentityResolver,
   type LaunchAccess,
   type LaunchAppEnv,
@@ -16,7 +16,7 @@ import type { CalendarStore } from "./calendar";
 import { createCalendarRoutes } from "./calendar-routes";
 import type { SlotStore } from "./slots";
 import { toFactoryRunRecord, type LaunchRun } from "./model";
-import { CreateGameRequestSchema, type LaunchJobRequest, type LaunchKind } from "./schemas";
+import { CreateGameRequestSchema, isFrontierSeasonName, type LaunchJobRequest, type LaunchKind } from "./schemas";
 import { launcherOperatorRoutes, type OperatorLauncher } from "./launcher-routes";
 import type { LaunchServiceStore } from "./store";
 
@@ -65,6 +65,12 @@ const findRun = async (context: Context, store: LaunchServiceStore, kind: Launch
   return run ? context.json(toFactoryRunRecord(run)) : context.json({ error: "Launch run not found." }, 404);
 };
 
+const requireRunOperator = (context: Context<LaunchAppEnv>, run: LaunchRun) => {
+  if (isOperator(context.get("caller"))) return;
+  if (run.slotId !== null || run.kind === "result" || isFrontierSeasonName(run.name))
+    return context.json({ error: "Operator token required." }, 403);
+};
+
 const continueRun = async (
   context: Context<LaunchAppEnv>,
   dependencies: Pick<LaunchAppDependencies, "store" | "registrar">,
@@ -74,15 +80,17 @@ const continueRun = async (
   const environment = readEnvironment(context.req.param("environment"));
   const run = await dependencies.store.find(kind, environment, name);
   if (!run) return context.json({ error: "Launch run not found." }, 404);
-  if (run.slotId !== null || kind === "result") {
-    const refused = await requireOperator(context, async () => {});
-    if (refused) return refused;
-  }
+  const refused = requireRunOperator(context, run);
+  if (refused) return refused;
   return respondWithRun(context, dependencies, kind, run.request);
 };
 
-const deleteRun = async (context: Context, store: LaunchServiceStore, kind: LaunchKind, name: string) => {
+const deleteRun = async (context: Context<LaunchAppEnv>, store: LaunchServiceStore, kind: LaunchKind, name: string) => {
   const environment = readEnvironment(context.req.param("environment"));
+  const run = await store.find(kind, environment, name);
+  if (!run) return context.json({ error: "Launch run not found." }, 409);
+  const refused = requireRunOperator(context, run);
+  if (refused) return refused;
   const deleted = await store.delete(kind, environment, name);
   return deleted
     ? context.json({ deleted: true })
@@ -118,8 +126,7 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   // reports, cannot fail a deploy.
   app.get("/api/factory/version", (context) => context.json({ service: "launch", ...dependencies.deployment }));
 
-  // A failed launch stays failed until a launcher continues it, a Frontier season included: the schedule creates the
-  // season once and never requeues it. Health names every failed run so that wait is never silent.
+  // The schedule never requeues a failed season; its operator must continue it. Health names every failed run.
   app.get("/api/factory/health", async (context) => {
     try {
       const [failed, stranded] = await Promise.all([

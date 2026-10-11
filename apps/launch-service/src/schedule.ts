@@ -38,7 +38,7 @@ const closesInside = (window: SeasonPhase, closesAt: string) => isRunning(window
 
 /**
  * The season is created once, whatever becomes of its run, so a tick never resets a launch in progress; a season whose
- * launch failed is continued by a launcher like any failed run.
+ * launch failed is continued only by the operator.
  */
 export const scheduleFrontierSeason = (store: LaunchServiceStore, season: SeasonPhase) =>
   store.schedule("game", frontierSeasonRequest(season));

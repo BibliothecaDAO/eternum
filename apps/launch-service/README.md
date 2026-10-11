@@ -5,10 +5,12 @@ membership. `VALUE_IDENTITY` supplies the directory; `VALUE_RELAY` supplies conf
 economic writes. A request can select `?chainId=<official shard>`; with one live shard the selection is unique. Multiple
 live shards require a chain. No Worker shard URL or separate ledger URL/address is configured.
 
-Only the operator token opens slots, edits the season calendar or continues paid game/result runs. An allowlisted linked
-wallet can create, continue and delete factory game runs without a slot. The timetable exposes `slotId`; completed game
-directory rows carry that same field (null outside Blitz). The environment address book supplies the ledger and L2
-chain. No directory row carries economic addresses or a free/paid entry payload.
+Only the operator token opens slots, edits the season calendar, continues paid game/result runs, or continues and
+deletes scheduled Frontier season runs. An allowlisted linked wallet can create, continue and delete only factory game
+runs. The schedule owns `frontier-<start timestamp>` names; factory creation refuses them before any season is
+scheduled. The timetable exposes `slotId`; completed game directory rows carry that same field (null outside Blitz). The
+environment address book supplies the ledger and L2 chain. No directory row carries economic addresses or a free/paid
+entry payload.
 
 Blitz registration belongs to an uncapped ledger slot. At close, the relay reads confirmed registrations in pages
 of 100. Identity history resolves each payer at its registration block time. The earliest registration for each account

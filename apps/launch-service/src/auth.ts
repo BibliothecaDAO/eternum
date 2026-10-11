@@ -30,13 +30,15 @@ export interface LaunchAccess {
   operatorToken: string;
 }
 
+export const isOperator = (caller: Caller | undefined): caller is { kind: "operator" } => caller?.kind === "operator";
+
 /** Factory game runs accept the operator and allowlisted wallets; official scheduling needs the operator token. */
 export const isLauncher = (caller: Caller, config: Pick<LaunchAccess, "launcherAllowlist">): boolean =>
-  caller.kind === "operator" || (caller.wallet !== null && config.launcherAllowlist.has(caller.wallet));
+  isOperator(caller) || (caller.wallet !== null && config.launcherAllowlist.has(caller.wallet));
 
 /** Official scheduling and recovery share the same operator boundary. */
 export const requireOperator: MiddlewareHandler<LaunchAppEnv> = async (context, next) => {
-  if (context.get("caller")?.kind !== "operator") return context.json({ error: "Operator token required." }, 403);
+  if (!isOperator(context.get("caller"))) return context.json({ error: "Operator token required." }, 403);
   await next();
 };
 

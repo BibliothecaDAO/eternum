@@ -34,7 +34,7 @@ export interface LaunchServiceStore extends LaunchRunStore {
   playerDirectoryGames(): Promise<{ chainId: string; games: { gameId: number; slotId: number | null }[] }[]>;
   /** Unfinished work stranded by a change to the configured shard. */
   pendingOtherChains(): Promise<LaunchRun[]>;
-  /** Every run that failed and waits for a launcher to continue it, in any environment. */
+  /** Every failed run awaiting recovery, in any environment. */
   failed(): Promise<LaunchRun[]>;
   find(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<LaunchRun | null>;
   /** The run to execute now: one interrupted while running, else the oldest due queued run. Either costs an attempt. */

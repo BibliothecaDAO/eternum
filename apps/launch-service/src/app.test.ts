@@ -3,6 +3,7 @@ import { Effect } from "effect";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createLaunchApp } from "./app";
 import { scheduleFrontierSeason } from "./schedule";
+import { frontierSeasonRequest } from "./schemas";
 import type { IdentityResolver } from "./auth";
 import { IdentityUnavailable } from "./errors";
 import { D1CalendarStore } from "./calendar-store";
@@ -376,7 +377,7 @@ describe("launch service authorization", () => {
     expect(run && "devModeOn" in run.request ? run.request.devModeOn : undefined).toBe(false);
   });
 
-  test("names a failed Frontier season in health until a launcher continues it", async () => {
+  test("names a failed Frontier season in health until the operator continues it", async () => {
     const { app, store } = createApp(signedOut);
     const season = await scheduleFrontierSeason(store, {
       phase: "frontier",
@@ -391,7 +392,14 @@ describe("launch service authorization", () => {
     expect(await failedRuns()).toEqual([
       expect.objectContaining({ environment: "madara.frontier", name: season.name, error: "rpc down" }),
     ]);
-    await store.enqueue("game", season.request);
+    expect(
+      (
+        await app.request(
+          `https://play.realms.party/api/factory/runs/madara.frontier/${season.name}/actions/continue`,
+          { method: "POST", headers: { authorization: `Bearer ${OPERATOR_TOKEN}` } },
+        )
+      ).status,
+    ).toBe(202);
     expect(await failedRuns()).toEqual([]);
   });
 });
@@ -579,4 +587,90 @@ test("applies the shared operator boundary to launcher enrolment", async () => {
   expect((await app.request(url, { ...request, headers: { authorization: `Bearer ${OPERATOR_TOKEN}` } })).status).toBe(
     200,
   );
+});
+
+const frontierSeason = {
+  phase: "frontier" as const,
+  startsAt: "2027-01-01T00:00:00.000Z",
+  endsAt: "2027-05-01T00:00:00.000Z",
+};
+
+test.each(["continue", "delete"])("only the operator can %s a failed scheduled season", async (action) => {
+  const { app, store } = createApp(signedIn(ALLOWED_ADDRESS));
+  const season = await scheduleFrontierSeason(store, frontierSeason);
+  await store.startNext(Date.now());
+  await store.fail(season.id, "rpc down");
+  const failed = await store.find("game", "madara.frontier", season.name);
+  const url = `https://play.realms.party/api/factory/runs/madara.frontier/${season.name}/actions/${action}`;
+  expect(
+    (
+      await app.request(url, {
+        method: "POST",
+        headers: { origin: ALLOWED_ORIGIN, cookie: "session=valid" },
+      })
+    ).status,
+  ).toBe(403);
+  expect(await store.find("game", "madara.frontier", season.name)).toEqual(failed);
+  expect(
+    (
+      await app.request(url, {
+        method: "POST",
+        headers: { authorization: `Bearer ${OPERATOR_TOKEN}` },
+      })
+    ).status,
+  ).toBe(action === "continue" ? 202 : 200);
+  const recovered = await store.find("game", "madara.frontier", season.name);
+  if (action === "continue") expect(recovered?.status).toBe("queued");
+  else expect(recovered).toBeNull();
+});
+
+test.each(["continue", "delete"])(
+  "an allowlisted wallet can %s a run made through the factory route",
+  async (action) => {
+    const { app, store } = createApp(signedIn(ALLOWED_ADDRESS));
+    const headers = { origin: ALLOWED_ORIGIN, cookie: "session=valid", "content-type": "application/json" };
+    const request = { environment: "madara.frontier", gameName: "frontier-player-game" };
+    expect(
+      (
+        await app.request("https://play.realms.party/api/factory/runs", {
+          method: "POST",
+          headers,
+          body: JSON.stringify(request),
+        })
+      ).status,
+    ).toBe(202);
+    const run = (await store.startNext(Date.now()))!;
+    await store.fail(run.id, "rpc down");
+    expect(
+      (
+        await app.request(
+          `https://play.realms.party/api/factory/runs/madara.frontier/${request.gameName}/actions/${action}`,
+          {
+            method: "POST",
+            headers,
+          },
+        )
+      ).status,
+    ).toBe(action === "continue" ? 202 : 200);
+  },
+);
+
+test("factory creation cannot squat or overwrite a scheduled season's name", async () => {
+  const { app, store } = createApp(signedIn(ALLOWED_ADDRESS));
+  const request = frontierSeasonRequest(frontierSeason);
+  const create = (headers: Record<string, string>) =>
+    app.request("https://play.realms.party/api/factory/runs", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ ...request, durationSeconds: 1 }),
+    });
+  const callers: Record<string, string>[] = [
+    { origin: ALLOWED_ORIGIN, cookie: "session=valid" },
+    { authorization: `Bearer ${OPERATOR_TOKEN}` },
+  ];
+  for (const headers of callers) expect((await create(headers)).status).toBe(400);
+  expect(await store.find("game", "madara.frontier", request.gameName)).toBeNull();
+  const season = await scheduleFrontierSeason(store, frontierSeason);
+  for (const headers of callers) expect((await create(headers)).status).toBe(400);
+  expect(await store.find("game", "madara.frontier", request.gameName)).toEqual(season);
 });

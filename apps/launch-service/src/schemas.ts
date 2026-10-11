@@ -4,6 +4,8 @@ import { nativePresetIdFor, nativePresets } from "../../../config/source/native"
 import { Schema } from "effect";
 
 export const isPublicGameName = (name: string) => !name.startsWith("check-");
+/** The schedule owns this namespace even before its calendar entry or durable run exists. */
+export const isFrontierSeasonName = (name: string) => /^frontier--?\d+$/.test(name);
 const NonEmptyString = Schema.NonEmptyString;
 const OptionalNumberRecord = Schema.optional(Schema.Record(Schema.String, Schema.Number));
 
@@ -22,6 +24,9 @@ export const CreateGameRequestSchema = Schema.Struct({
   ...SharedOptions,
   gameName: NonEmptyString.check(
     Schema.makeFilter((name: string) => isPublicGameName(name) || "check- names are reserved for deployment"),
+    Schema.makeFilter(
+      (name: string) => !isFrontierSeasonName(name) || "Frontier season names are reserved for the schedule",
+    ),
   ),
   gameStartTime: Schema.optional(NonEmptyString),
 }).check(
