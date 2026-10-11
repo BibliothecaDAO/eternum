@@ -7,15 +7,16 @@ remains unchanged.
 
 Frontier is funded once, before its end, and unlocks through the end of the current seeded game day. Funding after the
 start immediately unlocks elapsed days and the current day; it never unlocks future days.
-`fund_frontier(shard, season_id, preset_id, start, seed, amount)` reads the same native preset's `day_unit_seconds` and
-`season_bags` as the shard. Start and seed come from the funded game's single launch record; there is no independent end
-argument. End derives as `start + season_bags * 20 * day_unit_seconds`. The shared calendar's five-day bags hold each
-length 2..6 once. Frontier keeps its own window, independent of Blitz/MMR season windows. Ledger time is its Starknet
-block timestamp; shard time is Madara's block timestamp. Numeric day boundaries match exactly for equal launch inputs
-and timestamps. There is no documented hard bound on cross-chain clock lag: the relay must retain a confirmed claim
-while L2's unlocked amount is insufficient and submit once the independent L2 gate fits. Do not trust a relay-supplied
-future timestamp or unlock future days to conceal clock lag. Operator payments are immediate, retry-safe and bounded by
-the cumulative unlock. They carry no treasury cut. Only the admin unpauses; the pauser can pause payouts.
+`fund_frontier(shard, season_id, preset_id, start, end, seed, amount)` takes the start, end and seed from the confirmed
+shard game. The preset supplies `day_unit_seconds` and the claim window; it carries no season length. The supplied
+window must be positive and contain a whole number of five-day bags, each lasting `20 * day_unit_seconds`; each bag
+holds the lengths 2..6 once. Unlock and the claim deadline use the stored end. Frontier keeps its own window,
+independent of Blitz/MMR season windows. Ledger time is its Starknet block timestamp; shard time is Madara's block
+timestamp. Numeric day boundaries match exactly for equal launch inputs and timestamps. There is no documented hard
+bound on cross-chain clock lag: the relay must retain a confirmed claim while L2's unlocked amount is insufficient and
+submit once the independent L2 gate fits. Do not trust a relay-supplied future timestamp or unlock future days to
+conceal clock lag. Operator payments are immediate, retry-safe and bounded by the cumulative unlock. They carry no
+treasury cut. Only the admin unpauses; the pauser can pause payouts.
 
 The immutable `claim_window_seconds` preset defaults to seven days. The shard stops new withdrawals one hour before
 `season.end + claim_window_seconds`, leaving the constant 3600-second reporting grace period. The ledger accepts a first
@@ -182,17 +183,17 @@ pnpm --dir contracts/l2/ledger/scripts fund:frontier dev 42 1000000
 ```
 
 The command checks the shard chain ID, reads Herald's confirmed GameRegistry, ChestRules and SliceRules, and checks the
-game against the shard RPC at that same block. It compares the day length, derived end and claim window with ledger
-preset (2 for dev; the native preset ID for production), and submits approval plus the requested deposit in one
-transaction. The preset carries no pool. It waits for confirmation, rereads `get_frontier` and its preset, and refuses a
-different start, seed, end, pool or day rule. Its public result includes the transaction hash and verified funding. A
-season already running may be funded; a season at or past its end cannot. No caller-entered seed, start or end can
-override the confirmed game.
+game against the shard RPC at that same block. It compares the day length and claim window with ledger preset (2 for
+dev; the native preset ID for production), and submits approval plus the requested deposit with the game's start and end
+in one transaction. The preset carries no pool. It waits for confirmation, rereads `get_frontier` and its preset, and
+refuses a different start, seed, end, pool or day rule. Its public result includes the transaction hash and verified
+funding. A season already running may be funded; a season at or past its end cannot. No caller-entered seed, start or
+end can override the confirmed game.
 
-The relay reads the confirmed ledger deposit and publishes its pool to the shard once, after checking the game start and
-seed. Before publication the pool is zero and no ruin chest exists. Confirm a positive `LordsBudget.pool` in Herald
-before expecting chest payouts. The release uses that deposited pool and the existing day schedule; publication after
-the start releases elapsed days immediately, and unused daily tokens roll over.
+The relay reads the confirmed ledger deposit and publishes its pool to the shard once, after checking the game start,
+end and seed. Before publication the pool is zero and no ruin chest exists. Confirm a positive `LordsBudget.pool` in
+Herald before expecting chest payouts. The release uses that deposited pool and the existing day schedule; publication
+after the start releases elapsed days immediately, and unused daily tokens roll over.
 
 `pnpm --dir contracts/l2/ledger/scripts test` checks deployment publication, setup separation, compiled funding
 calldata, confirmed reads, mismatches and readback without a signer or live deployment.

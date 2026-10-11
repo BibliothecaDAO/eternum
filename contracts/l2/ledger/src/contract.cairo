@@ -30,7 +30,14 @@ pub trait IGameLedger<TState> {
     fn pause(ref self: TState);
     fn unpause(ref self: TState);
     fn fund_frontier(
-        ref self: TState, shard: felt252, season_id: u32, preset_id: u32, start: u64, seed: felt252, amount: u256,
+        ref self: TState,
+        shard: felt252,
+        season_id: u32,
+        preset_id: u32,
+        start: u64,
+        end: u64,
+        seed: felt252,
+        amount: u256,
     );
     fn pay(ref self: TState, shard: felt252, season_id: u32, claim_id: felt252, wallet: ContractAddress, amount: u256);
     fn report_withdrawal(ref self: TState, shard: felt252, season_id: u32, claim_id: felt252, amount: u256);
@@ -414,6 +421,7 @@ pub mod GameLedger {
             season_id: u32,
             preset_id: u32,
             start: u64,
+            end: u64,
             seed: felt252,
             amount: u256,
         ) {
@@ -421,11 +429,9 @@ pub mod GameLedger {
             assert!(shard != 0, "Ledger: zero shard");
             assert!(!self.frontier_days.entry((shard, season_id)).read().funded, "Ledger: season already funded");
             let preset = self.get_preset(preset_id);
-            assert!(preset.day_unit_seconds != 0 && preset.season_bags != 0, "Ledger: Frontier days disabled");
-            let duration: u64 = crate::days::UNITS_PER_BAG
-                * Into::<u32, u64>::into(preset.day_unit_seconds)
-                * preset.season_bags.into();
-            let end = start + duration;
+            assert!(preset.day_unit_seconds != 0, "Ledger: Frontier days disabled");
+            assert!(end > start, "Ledger: invalid season window");
+            crate::days::season_days(end - start, preset.day_unit_seconds);
             assert!(
                 Into::<u64, u128>::into(end) + preset.claim_window_seconds.into() <= 0xffffffffffffffff,
                 "Ledger: claim deadline exceeds u64",
@@ -892,11 +898,6 @@ pub mod GameLedger {
         }
 
         fn assert_valid_preset(self: @ContractState, preset: Preset) {
-            assert!((preset.day_unit_seconds == 0) == (preset.season_bags == 0), "Ledger: incomplete calendar");
-            let duration = Into::<u32, u128>::into(preset.day_unit_seconds)
-                * Into::<u64, u128>::into(crate::days::UNITS_PER_BAG)
-                * preset.season_bags.into();
-            assert!(duration <= 0xffffffffffffffff, "Ledger: season duration exceeds u64");
             assert!(
                 preset.day_unit_seconds == 0
                     || preset.claim_window_seconds > crate::days::FRONTIER_REPORT_GRACE_SECONDS,

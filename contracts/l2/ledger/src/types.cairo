@@ -21,7 +21,6 @@ pub struct Preset {
     pub shield_price: u256,
     pub mmr: MmrParams,
     pub day_unit_seconds: u32,
-    pub season_bags: u32,
     pub claim_window_seconds: u32,
 }
 
