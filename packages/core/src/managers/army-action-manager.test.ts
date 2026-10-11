@@ -193,6 +193,35 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     expect(ActionPaths.getActionType(spireActionPath ?? [])).toBe(ActionType.SpireTravel);
   });
 
+  it("offers no move onto a shrine or well, which the contract refuses as an occupied tile", () => {
+    const { manager, components, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } =
+      createTestSetup();
+    const [shrineHex, wellHex, openHex] = getNeighborHexes(oldFeltStart.col, oldFeltStart.row);
+    for (const [hex, occupierType] of [
+      [shrineHex, TileOccupier.Shrine],
+      [wellHex, TileOccupier.Well],
+    ] as const) {
+      components.TileOpt.set(
+        toTileEntityKey(false, hex.col, hex.row),
+        buildTileOptData({ ...hex, biome: 1, occupierType, occupierId: 900 + occupierType }),
+      );
+    }
+
+    const actionPaths = manager.findActionPaths(
+      structureHexes,
+      armyHexes,
+      exploredHexes,
+      chestHexes,
+      0,
+      0,
+      0x123n as any,
+    );
+
+    expect(actionPaths.get(ActionPaths.posKey(shrineHex))).toBeUndefined();
+    expect(actionPaths.get(ActionPaths.posKey(wellHex))).toBeUndefined();
+    expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(openHex)) ?? [])).toBe(ActionType.Move);
+  });
+
   it.each([false, true])("uses stride-one portal access on the army's layer (alt=%s)", (alt) => {
     const { manager, components, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } =
       createTestSetup();

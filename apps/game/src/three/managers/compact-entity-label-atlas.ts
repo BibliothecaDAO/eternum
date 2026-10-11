@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { CompactEntityLabelVariant } from "./compact-entity-label-policy";
+import { FONTS } from "@/tokens";
 
 export interface CompactLabelAtlasRecord {
   geometry: THREE.PlaneGeometry;
@@ -67,7 +68,7 @@ const LABEL_STYLES: Record<CompactEntityLabelVariant, CompactEntityLabelStyle> =
 
 const ATLAS_TEXTURE_SIZE = 2_048;
 const LABEL_FONT_SIZE = 16;
-const LABEL_FONT = `${LABEL_FONT_SIZE}px Cinzel, serif`;
+const LABEL_FONT = `${LABEL_FONT_SIZE}px ${FONTS.ui}`;
 const LABEL_PADDING_X = 12;
 const LABEL_RADIUS = 10;
 const LABEL_HEIGHT = 34;

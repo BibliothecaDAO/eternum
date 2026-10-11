@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#130F0C" />
+    <title>Realms — Status</title>
+    <!-- The status page: its own static site on status.realms.world, so it stands when the app does not. One file with
+         no build, no app bundle and no font service; it reads the monitor's /status.json (apps/status/functions) every
+         minute and ages what it holds on its own clock, so an old document never shows a fresh green. Colours are the
+         game client's token file (apps/game/src/tokens.ts). -->
+    <style>
+      :root {
+        color-scheme: dark;
+        --ground: #130f0c;
+        --plate: #201a16;
+        --plate2: #2a221c;
+        --line: #46351c;
+        --line2: #6b5230;
+        --cream: #f4ebdc;
+        --muted: #a2926f;
+        --gold: #dfaa54;
+        --sage: #b5bd75;
+        --amber: #e39001;
+        --red: #fc4c4c;
+        background: var(--ground);
+        color: var(--cream);
+        font:
+          15px/1.45 system-ui,
+          sans-serif;
+      }
+      body {
+        margin: 0;
+      }
+      main {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 32px 16px 48px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      header img {
+        height: 40px;
+      }
+      header a {
+        margin-left: auto;
+        color: var(--gold);
+        text-decoration: none;
+        font-weight: 600;
+      }
+      .plate {
+        background: var(--plate);
+        border: 1px solid var(--line2);
+        border-radius: 16px;
+        box-shadow: 0 18px 44px rgb(0 0 0 / 0.45);
+      }
+      .overall {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 20px 22px;
+      }
+      .overall h1 {
+        flex: 1 1 0;
+        min-width: 0;
+        margin: 0;
+        font:
+          700 24px/1.2 Georgia,
+          serif;
+      }
+      .overall .age {
+        margin-left: auto;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .dot {
+        flex: none;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--muted);
+      }
+      .dot.up {
+        background: var(--sage);
+      }
+      .dot.degraded {
+        background: var(--amber);
+      }
+      .dot.down {
+        background: var(--red);
+      }
+      .components {
+        list-style: none;
+        margin: 0;
+        padding: 6px 22px;
+      }
+      .component {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px 16px;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .component:last-child {
+        border-bottom: 0;
+      }
+      .component .name {
+        font-weight: 600;
+      }
+      .component .state {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        justify-self: end;
+        color: var(--muted);
+        font-size: 14px;
+        white-space: nowrap;
+      }
+      .component .state b {
+        color: var(--cream);
+        font-weight: 600;
+      }
+      .days {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: repeat(90, 1fr);
+        gap: 2px;
+        height: 28px;
+      }
+      .days span {
+        border-radius: 2px;
+        background: var(--plate2);
+      }
+      .days .good {
+        background: var(--sage);
+      }
+      .days .fair {
+        background: var(--amber);
+      }
+      .days .poor {
+        background: var(--red);
+      }
+      .span {
+        grid-column: 1 / -1;
+        display: flex;
+        justify-content: space-between;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      h2 {
+        margin: 8px 0 0;
+        font:
+          700 20px Georgia,
+          serif;
+      }
+      .incidents {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .incident {
+        padding: 16px 22px;
+      }
+      .incident .title {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 4px 12px;
+        font-weight: 600;
+      }
+      .incident .title span,
+      .incident time,
+      .muted {
+        color: var(--muted);
+        font-weight: 400;
+        font-size: 14px;
+      }
+      .incident ol {
+        margin: 8px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      .incident li {
+        margin-top: 4px;
+      }
+      @media (max-width: 600px) {
+        .overall {
+          flex-wrap: wrap;
+        }
+        .overall .age {
+          margin-left: 28px;
+          width: 100%;
+        }
+        .days {
+          height: 22px;
+          gap: 1px;
+        }
+        .component {
+          grid-template-columns: 1fr;
+        }
+        .component .state {
+          justify-self: start;
+          flex-wrap: wrap;
+          white-space: normal;
+        }
+        .span {
+          justify-content: center;
+        }
+        .span span:first-child,
+        .span span:last-child {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <img src="/realms-lockup.svg" alt="Realms" />
+        <a href="https://play.realms.party/">Play</a>
+      </header>
+      <section class="plate overall" aria-live="polite">
+        <span class="dot" id="overall-dot"></span>
+        <h1 id="overall">Reading the status…</h1>
+        <span class="age" id="age"></span>
+      </section>
+      <section class="plate" id="components-plate" hidden>
+        <ul class="components" id="components"></ul>
+      </section>
+      <h2 id="incidents-title" hidden>Incidents</h2>
+      <ul class="incidents" id="incidents"></ul>
+      <noscript><p class="muted">This page needs JavaScript to read the status.</p></noscript>
+    </main>
+    <script>
+      // The monitor's document is fresh for five minutes (and up to one minute ahead of this clock); past that, or with
+      // none at all, the status is unknown, whatever the document last said.
+      const FRESH_SECONDS = 300;
+      const AHEAD_SECONDS = 60;
+      const REFRESH_MS = 60_000;
+      const TICK_MS = 15_000;
+      const STATE_WORDS = { up: "Running", degraded: "Slow", down: "Down" };
+      const OVERALL_WORDS = { up: "All running", degraded: "Some things are slow", down: "Something is down" };
+      const INCIDENT_WORDS = {
+        investigating: "Investigating",
+        identified: "Identified",
+        monitoring: "Monitoring",
+        resolved: "Resolved",
+      };
+      const RANK = { up: 0, degraded: 1, down: 2 };
+
+      // The last document read, and the newest observation time the site has named (a stale answer names one too).
+      let held = null;
+      let lastSeen = null;
+
+      const nowSeconds = () => Math.floor(Date.now() / 1000);
+      const isFresh = (checkedAt) => {
+        const age = nowSeconds() - checkedAt;
+        return age <= FRESH_SECONDS && age >= -AHEAD_SECONDS;
+      };
+      const time = (seconds) =>
+        new Date(seconds * 1000).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+      const day = (seconds) =>
+        new Date(seconds * 1000).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+      const moment = (seconds) => `${day(seconds)}, ${time(seconds)}`;
+      const ago = (seconds) => {
+        const age = Math.max(0, nowSeconds() - seconds);
+        return age < 60 ? "Checked just now" : `Checked ${Math.floor(age / 60)} min ago`;
+      };
+
+      const element = (tag, className, text) => {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text !== undefined) node.textContent = text;
+        return node;
+      };
+
+      const isDocument = (value) =>
+        value && value.version === 1 && Number.isSafeInteger(value.checked_at) && Array.isArray(value.components);
+
+      async function refresh() {
+        try {
+          const response = await fetch("/status.json", { cache: "no-store" });
+          const body = await response.json();
+          if (response.ok && isDocument(body)) {
+            held = body;
+            lastSeen = Math.max(lastSeen ?? 0, body.checked_at);
+          } else if (body && Number.isSafeInteger(body.checked_at)) {
+            lastSeen = Math.max(lastSeen ?? 0, body.checked_at);
+          }
+        } catch {
+          // No answer: the page keeps what it holds and lets its own clock age it.
+        }
+        draw();
+      }
+
+      function draw() {
+        const fresh = held !== null && isFresh(held.checked_at);
+        drawOverall(fresh);
+        drawComponents(fresh);
+        drawIncidents();
+      }
+
+      function drawOverall(fresh) {
+        const dot = document.getElementById("overall-dot");
+        const line = document.getElementById("overall");
+        const age = document.getElementById("age");
+        if (!fresh) {
+          dot.className = "dot";
+          line.textContent = lastSeen ? `Status unknown since ${time(lastSeen)}` : "Status unknown";
+          age.textContent = "";
+          return;
+        }
+        const worst = held.components.reduce((top, row) => (RANK[row.status] > RANK[top] ? row.status : top), "up");
+        dot.className = `dot ${worst}`;
+        line.textContent = OVERALL_WORDS[worst];
+        age.textContent = ago(held.checked_at);
+      }
+
+      function drawComponents(fresh) {
+        // With no document ever read there is nothing to list: the overall line says so alone.
+        document.getElementById("components-plate").hidden = held === null;
+        const list = document.getElementById("components");
+        list.replaceChildren(...(held ? held.components.map((row) => componentRow(row, fresh)) : []));
+      }
+
+      // A row's state is shown only while the document is fresh; its history stays, since past days do not age.
+      function componentRow(row, fresh) {
+        const item = element("li", "component");
+        item.append(element("span", "name", row.name));
+        const state = element("span", "state");
+        if (fresh) {
+          state.append(element("span", `dot ${row.status}`), element("b", "", STATE_WORDS[row.status]));
+          state.append(document.createTextNode(` since ${moment(row.since)}`));
+          state.append(document.createTextNode(row.latency_ms === null ? " · —" : ` · ${row.latency_ms} ms`));
+        } else {
+          state.append(element("span", "dot"), element("b", "", "—"));
+        }
+        item.append(state, dayBars(row.days), daySpan(row.days));
+        return item;
+      }
+
+      // A day is good at 99.5 % or more, fair from 95 %, poor below; a day with no observation is left empty.
+      const dayClass = (uptime) => (uptime === null ? "" : uptime >= 0.995 ? "good" : uptime >= 0.95 ? "fair" : "poor");
+
+      function dayBars(days) {
+        const bars = element("div", "days");
+        bars.setAttribute("aria-hidden", "true");
+        for (const entry of days) {
+          const bar = element("span", dayClass(entry.uptime));
+          bar.title = `${entry.date}: ${entry.uptime === null ? "no data" : `${(entry.uptime * 100).toFixed(2)} %`}`;
+          bars.append(bar);
+        }
+        return bars;
+      }
+
+      function daySpan(days) {
+        const known = days.filter((entry) => entry.uptime !== null);
+        const mean = known.length ? known.reduce((sum, entry) => sum + entry.uptime, 0) / known.length : null;
+        const span = element("div", "span");
+        span.append(
+          element("span", "", "90 days ago"),
+          element("span", "", mean === null ? "—" : `${(mean * 100).toFixed(2)} % up on the days observed`),
+          element("span", "", "Today"),
+        );
+        return span;
+      }
+
+      // Open incidents first, then the recent resolved ones, each newest first as the document lists them.
+      function drawIncidents() {
+        const incidents = held ? held.incidents : [];
+        const ordered = [
+          ...incidents.filter((row) => row.status !== "resolved"),
+          ...incidents.filter((row) => row.status === "resolved"),
+        ];
+        document.getElementById("incidents-title").hidden = ordered.length === 0;
+        document.getElementById("incidents").replaceChildren(...ordered.map(incidentItem));
+      }
+
+      function incidentItem(row) {
+        const item = element("li", "plate incident");
+        const title = element("div", "title", row.title);
+        const when =
+          row.resolved_at === null
+            ? `since ${moment(row.started_at)}`
+            : `${moment(row.started_at)} – ${moment(row.resolved_at)}`;
+        title.append(element("span", "", `${INCIDENT_WORDS[row.status]} · ${when}`));
+        const updates = element("ol");
+        for (const update of row.updates) {
+          const entry = element("li");
+          entry.append(element("time", "", time(update.at)), document.createTextNode(` ${update.text}`));
+          updates.append(entry);
+        }
+        item.append(title, updates);
+        return item;
+      }
+
+      refresh();
+      setInterval(refresh, REFRESH_MS);
+      setInterval(draw, TICK_MS);
+    </script>
+  </body>
+</html>

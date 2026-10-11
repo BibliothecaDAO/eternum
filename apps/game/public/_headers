@@ -5,11 +5,23 @@
   Cache-Control: no-cache
 /index.html
   Cache-Control: no-cache
-/play
+/blitz
   Cache-Control: no-cache
-/results
+/blitz/*
   Cache-Control: no-cache
-/account
+/frontier
+  Cache-Control: no-cache
+/eternum
+  Cache-Control: no-cache
+/dominion
+  Cache-Control: no-cache
+/season
+  Cache-Control: no-cache
+/results/*
+  Cache-Control: no-cache
+/profile
+  Cache-Control: no-cache
+/profile/*
   Cache-Control: no-cache
 /sign-in
   Cache-Control: no-cache
@@ -34,8 +46,6 @@
   Cache-Control: no-cache
 /learn
   Cache-Control: no-cache
-/news
-  Cache-Control: no-cache
 /scroll
   Cache-Control: no-cache
 /scroll/*
@@ -43,4 +53,6 @@
 /terms
   Cache-Control: no-cache
 /privacy
+  Cache-Control: no-cache
+/credits
   Cache-Control: no-cache

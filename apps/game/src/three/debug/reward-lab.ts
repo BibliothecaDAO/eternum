@@ -4,8 +4,7 @@ import { RiftPresentation } from "../rewards/rift-presentation";
 import { resolveRewardNightAmount } from "../rewards/reward-lighting";
 import { CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js";
 import { RewardSummoning } from "../rewards/reward-summoning";
-import { AnimationMixer, Color, Group, Mesh, PerspectiveCamera, Scene, Vector3, type Object3D } from "three";
-import { type ChestBeat, ChestOpeningBeats } from "../rewards/chest-opening-beats";
+import { AnimationMixer, Color, Group, Mesh, PerspectiveCamera, Scene, type Object3D } from "three";
 import { ChestModelPath, RiftModelPath } from "../constants/scene-constants";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { clone } from "three/addons/utils/SkeletonUtils.js";
@@ -65,7 +64,6 @@ export interface RewardLab {
   summon(): void;
   openChest(): void;
   /** Holds the C2 study for a Frontier chest moment read from `readBeat`; returns where the chest sits on screen. */
-  holdChest(readBeat: () => ChestBeat | null): { x: number; y: number } | null;
   dispose(): void;
 }
 
@@ -116,7 +114,6 @@ class RewardReviewScene implements RewardLab {
   private lastStats = this.previous;
   private frames = 0;
   private needsRender = true;
-  private held?: { actor: RewardActor; beats: ChestOpeningBeats; readBeat: () => ChestBeat | null };
   private settings: RewardLabSettings = {
     selection: "all",
     empty: false,
@@ -229,35 +226,6 @@ class RewardReviewScene implements RewardLab {
       actor.object.add(actor.relics.label);
     }
     this.needsRender = true;
-  }
-
-  holdChest(readBeat: () => ChestBeat | null): { x: number; y: number } | null {
-    const actor = this.actors.find((candidate) => candidate.summoning);
-    if (!actor?.summoning) return null;
-    this.clearRelicReveals();
-    actor.summoning.seek(1);
-    this.held = { actor, beats: new ChestOpeningBeats(actor.object, actor.summoning), readBeat };
-    this.needsRender = true;
-    const point = actor.object.getWorldPosition(new Vector3());
-    point.y += 0.5;
-    point.project(this.camera);
-    const box = this.container.getBoundingClientRect();
-    return { x: box.left + ((point.x + 1) / 2) * box.width, y: box.top + ((1 - point.y) / 2) * box.height };
-  }
-
-  /** Plays the held chest's beat after its summoning's update; the chest is released once opened and sunk. */
-  private playHeldChest(now: number): void {
-    if (!this.held) return;
-    const { actor, beats, readBeat } = this.held;
-    const beat = readBeat();
-    if (beat) beats.update(beat, now);
-    const done = beats.hasOpened ? Boolean(actor.summoning?.isAbsorbed) : !beat;
-    if (!done) return;
-    actor.summoning?.clearGlow();
-    actor.object.scale.setScalar(1);
-    actor.object.rotation.z = 0;
-    actor.summoning?.seek(1);
-    this.held = undefined;
   }
 
   summon(): void {
@@ -408,12 +376,11 @@ class RewardReviewScene implements RewardLab {
     }
     if (!this.settings.paused) this.seconds = (this.seconds + delta) % 8;
     const cameraMoved = this.controls.update();
-    if (!this.settings.paused || this.needsRender || cameraMoved || this.held) {
+    if (!this.settings.paused || this.needsRender || cameraMoved) {
       this.sampleAnimation();
       for (const actor of this.actors) {
         actor.presentation?.faceCamera(this.camera.position);
-        // A chest held for a moment runs on real time even when the study is paused.
-        actor.summoning?.update(this.settings.paused && this.held?.actor !== actor ? 0 : delta);
+        actor.summoning?.update(this.settings.paused ? 0 : delta);
         if (actor.relics && actor.summoning) {
           actor.relics.update(actor.summoning.openingElapsed);
           if (actor.summoning.isAbsorbed) {
@@ -422,7 +389,6 @@ class RewardReviewScene implements RewardLab {
           }
         }
       }
-      this.playHeldChest(now);
       this.environment.frame(this.settings.paused ? 0 : delta, this.controls.target, this.settings.lighting);
       this.runtime.renderer.info.reset();
       this.runtime.renderer.render(this.scene, this.camera);

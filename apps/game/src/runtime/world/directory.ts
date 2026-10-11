@@ -1,8 +1,11 @@
 import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
+import { fetchApi } from "@/runtime/app-api";
 
 /** A shard game whose launch records may temporarily be unavailable. */
 export interface DirectoryEntry extends HeraldGameDirectoryEntry {
   error?: "unavailable";
+  /** A paid Blitz game's slot on the ledger, from its launch record; null for every other game. */
+  slotId?: number | null;
 }
 
 export type DirectoryShardStatus = "active" | "draining" | "retired";
@@ -24,7 +27,7 @@ export interface DirectoryShard {
  */
 export const fetchDirectory = async (player: string | null = null): Promise<DirectoryShard[]> => {
   const query = player ? `?player=${encodeURIComponent(player)}` : "";
-  const response = await fetch(`/api/directory${query}`, { cache: "no-store" });
+  const response = await fetchApi(`/api/directory${query}`, { cache: "no-store" });
   if (!response.ok) throw new Error(`Directory answered ${response.status}`);
   const { shards } = (await response.json()) as { shards: DirectoryShard[] };
   return shards;
@@ -32,7 +35,11 @@ export const fetchDirectory = async (player: string | null = null): Promise<Dire
 
 /** Blitz membership is the roster fact; open-entry modes count anyone registered. Needs the entry read for a player. */
 export const isMember = (game: HeraldGameDirectoryEntry): boolean =>
-  game.mode === "blitz" ? game.player_state?.roster_wallet != null : game.player_state?.registered === true;
+  game.mode === "blitz" ? rosterWalletOf(game) !== null : game.player_state?.registered === true;
+
+/** The wallet the player's Blitz seat was frozen with at slot close (it holds the seat's result and chest); null off the roster. */
+export const rosterWalletOf = (game: HeraldGameDirectoryEntry): string | null =>
+  game.player_state?.roster_wallet ?? null;
 
 /** Over at Herald's chain clock: ended, or settled with its recorded result. */
 export const isGameOver = (game: HeraldGameDirectoryEntry): boolean =>
@@ -76,7 +83,7 @@ export const fetchDirectoryHistory = async ({
   const query = new URLSearchParams({ limit: String(limit) });
   if (cursor) query.set("cursor", cursor);
   if (player) query.set("player", player);
-  const response = await fetch(`/api/directory/history?${query}`, { cache: "no-store" });
+  const response = await fetchApi(`/api/directory/history?${query}`, { cache: "no-store" });
   if (!response.ok) throw new Error(`History answered ${response.status}`);
   return (await response.json()) as DirectoryHistoryPage;
 };

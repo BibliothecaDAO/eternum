@@ -26,6 +26,7 @@ import {
   configManager,
   Position,
   hasTileOccupier,
+  isTileOccupierArmy,
   isTileOccupierChest,
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
@@ -83,6 +84,7 @@ const SelectedWorldmapEntityContent = ({
   const isReservedHyperstructure = isTileOccupierReservedHyperstructure(occupierType);
   const isStructure = isTileOccupierStructure(occupierType);
   const isChest = isTileOccupierChest(occupierType);
+  const isArmy = isTileOccupierArmy(occupierType);
   const isExplored = !!tile && Number(tile.biome) !== 0;
   const mapLayer = useUIStore((state) => state.mapLayer);
   const setMapLayer = useUIStore((state) => state.setMapLayer);
@@ -165,7 +167,7 @@ const SelectedWorldmapEntityContent = ({
             onSimulateBattle={handleSimulateBattle}
           />
         </div>
-      ) : (
+      ) : isArmy ? (
         <SelectedArmyTilePanel
           armyEntityId={occupierEntityId}
           biome={biome}
@@ -173,6 +175,9 @@ const SelectedWorldmapEntityContent = ({
           headerAction={headerAction}
           onSimulateBattle={handleSimulateBattle}
         />
+      ) : (
+        // A shrine or well is used from Frontier's own card; here its tile reads like any other.
+        <UnoccupiedTileQuadrants biome={biome} coordsLabel={coordsLabel} headerAction={headerAction} />
       )}
     </div>
   );

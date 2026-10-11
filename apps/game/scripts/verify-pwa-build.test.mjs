@@ -1,4 +1,3 @@
-// @vitest-environment node
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
@@ -6,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { PWA_PRECACHE_FILES } from "../build/pwa-assets.mjs";
 import { verifyPwaBuild } from "./verify-pwa-build.mjs";
-const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
+import { test } from "node:test";
 
 async function writeFixture(dist) {
   await mkdir(join(dist, "images"));
@@ -21,7 +20,7 @@ async function writeFixture(dist) {
     await writeFile(join(dist, url), bytes);
     entries.push({ url, revision: createHash("md5").update(bytes).digest("hex") });
   }
-  await writeFile(join(dist, "index.html"), '<meta name="theme-color" content="#F6C297">');
+  await writeFile(join(dist, "index.html"), '<meta name="theme-color" content="#130F0C">');
   await writeFile(
     join(dist, "_headers"),
     ["sw.js", "offline.html", "manifest.webmanifest"].map((file) => `/${file}\n  Cache-Control: no-cache`).join("\n"),
@@ -33,7 +32,7 @@ async function writeFixture(dist) {
       scope: "/",
       start_url: "/",
       display: "standalone",
-      theme_color: "#F6C297",
+      theme_color: "#130F0C",
       icons: PWA_PRECACHE_FILES.filter((file) => file.endsWith(".png")).map((url) => ({
         src: `/${url}`,
         sizes: url.includes("192") ? "192x192" : "512x512",

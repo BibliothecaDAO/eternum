@@ -6,6 +6,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { configManager } from "@bibliothecadao/eternum";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
@@ -74,7 +75,7 @@ const extractCraftedRelicId = (receipt: unknown, structureId: ID): ResourcesIds 
     }
 
     try {
-      const relicId = Number(BigInt(relicIdValue as string | number | bigint));
+      const relicId = safeInteger(relicIdValue as string | number | bigint);
       if (Number.isInteger(relicId) && relicId > 0) {
         return relicId as ResourcesIds;
       }

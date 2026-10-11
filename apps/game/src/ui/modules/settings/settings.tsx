@@ -1,5 +1,4 @@
 import { AudioCategory, useAudio } from "@/audio";
-import { GuideSettings } from "@/ui/features/frontier/guide/guide-settings";
 import {
   identityClient,
   signOutIdentitySession,
@@ -30,8 +29,9 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress } from "@bibliothecadao/types";
 import { Pencil } from "@/ui/design-system/atoms/game-icons";
 import { type ReactNode, useState } from "react";
-import { NotificationSettings } from "./notification-settings";
+import { NotificationsCard } from "@/shell/profile/notifications";
 import { PwaInstallControl } from "@/pwa/pwa-install-control";
+import { shortAddress } from "@/ui/design-system/kit/address";
 
 export const SETTINGS_POPOVER_ID = "settings";
 const effectsCategories = Object.values(AudioCategory).filter((category) => category !== AudioCategory.MUSIC);
@@ -40,18 +40,15 @@ const effectsCategories = Object.values(AudioCategory).filter((category) => cate
 export const SettingsPanel = () => (
   <div className="flex flex-col gap-4 p-1">
     <ProfileHeader />
-    <GuideSettings />
     <AudioSettings />
     <VideoSettings />
-    <NotificationSettings />
+    <NotificationsCard />
     <ShortcutsSection />
     <PwaInstallControl />
     <RendererSettings />
     <SessionActions />
   </div>
 );
-
-const shortAddress = (address: string) => `${address.slice(0, 6)}…${address.slice(-4)}`;
 
 function ProfileHeader() {
   const { session } = useIdentitySession();

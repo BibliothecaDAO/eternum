@@ -44,14 +44,10 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         onDoubleClick={(e) => e.stopPropagation()}
         onMouseMove={(e) => e.stopPropagation()}
         id="world"
-        data-screen-shake
         className="world-selector fixed antialiased top-0 left-0 z-0 w-screen h-dvh overflow-hidden ornate-borders pointer-events-none"
       >
         {/* Game systems */}
         <GameSystems backgroundImage={backgroundImage} />
-
-        {/* Action feedback overlays */}
-        <ActionInfo />
 
         {/* HUD (heads-up display) elements */}
         {FLIGHT_TRACE_ENABLED ? (
@@ -148,6 +144,8 @@ const ArenaHud = () => {
   const lane = useCompactLane();
   return (
     <>
+      {/* The hovered order's costs; Frontier's action bar shows them in its own HUD. */}
+      <ActionInfo />
       <TopHeader />
       {lane ? (
         <CompactHud lane={lane} />

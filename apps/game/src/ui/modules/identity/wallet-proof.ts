@@ -14,7 +14,12 @@ import {
   type WalletAccount,
 } from "starknet";
 
-/** Deployment data comes from the chosen wallet; the server independently reconstructs and verifies its authority. */
+import { L2_CHAIN } from "@/runtime/l2-rpc";
+
+/**
+ * The wallet's link proof, signed for the build's L2. Deployment data comes from the chosen wallet; the server
+ * independently reconstructs and verifies its authority.
+ */
 export const walletProofForAccount = async (
   account: AccountInterface,
   provider: ProviderInterface,
@@ -29,7 +34,7 @@ export const walletProofForAccount = async (
           stark.formatSignature(await account.signMessage(message as Parameters<typeof account.signMessage>[0]));
   return {
     address: addAddressPadding(account.address),
-    chainId: "SN_MAIN",
+    chainId: L2_CHAIN.name,
     domain: window.location.host,
     uri: window.location.origin,
     signTypedData,

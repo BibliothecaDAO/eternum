@@ -6,6 +6,7 @@ import {
   TransactionType,
 } from "@bibliothecadao/provider";
 import { useGame } from "@/hooks/context/game-context";
+import { toast } from "@/ui/features/event-feed/notify";
 import {
   addClientTransactionBreadcrumb,
   reportClientTransactionFailure,

@@ -45,13 +45,6 @@ export function researchChoice(learned: bigint, row: number, tier: number): numb
   return field(learned, offset + width * BigInt(tier - 1), width);
 }
 
-/** Knowledge holding one row alone at `tier`, every choice on its first side (Fields, Tools, Drill, camps). */
-export function rowAtTier(row: number, tier: number): bigint {
-  const slot = tierFields[row];
-  if (!slot) throw new Error(`Unknown research row ${row}`);
-  return BigInt(tier) << slot[0];
-}
-
 /** Unknown realm knowledge stays unknown. */
 export function realmLearned(
   store: Pick<NativeFactStore, "get">,

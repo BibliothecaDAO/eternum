@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react";
 import fs from "node:fs";
 import path, { resolve } from "path";
 import { visualizer } from "rollup-plugin-visualizer";
-import { ConfigEnv, defineConfig, loadEnv, PluginOption, UserConfig } from "vite";
+import { ConfigEnv, defineConfig, loadEnv, Plugin, PluginOption, UserConfig } from "vite";
 import mkcert from "vite-plugin-mkcert";
 import { VitePWA } from "vite-plugin-pwa";
 import topLevelAwait from "vite-plugin-top-level-await";
@@ -12,21 +12,42 @@ import wasm from "vite-plugin-wasm";
 import { resolveRendererViteAliases } from "./src/three/renderer-vite-config";
 import { PWA_PRECACHE_BUDGET_BYTES, PWA_PRECACHE_FILES } from "./build/pwa-assets.mjs";
 import { createPwaReleasePlugin } from "./build/pwa-release";
+import { isDevEnvironment } from "./src/shell/frame/environment";
+import { l2EnvironmentProblem } from "./src/runtime/l2-environment";
+import { COLORS } from "./src/tokens";
 
 /**
- * The identity RPC is the team's keyed mainnet URL and is never committed: a build without it would ship a public,
- * rate-limited node that fails sign-in under load. Checked once Vite has resolved its env, so the dev server and the
- * build fail at once, by name; tools that only read this file for its settings (knip) are not stopped by it.
+ * The environment's one L2 RPC: the team's https Alchemy endpoint for the network of the build's environment (Sepolia
+ * for dev, mainnet for production, from contracts/common/addresses), never committed and never a public node. Checked once
+ * Vite has resolved its env, so the dev server and the build (and so the deploy, before its upload) fail at once, by
+ * name; tools that only read this file for its settings (knip) are not stopped by it.
  */
-const requireIdentityRpcUrl = (): PluginOption => ({
-  name: "require-identity-rpc-url",
+const requireL2Environment = (): PluginOption => ({
+  name: "require-l2-environment",
   configResolved(config) {
-    if (!config.env.VITE_PUBLIC_IDENTITY_RPC_URL?.trim()) {
-      throw new Error(
-        "VITE_PUBLIC_IDENTITY_RPC_URL is required: the team's Alchemy mainnet URL, from .env.local or the CLIENT_IDENTITY_RPC_URL secret",
-      );
-    }
+    const problem = l2EnvironmentProblem(config.env.VITE_PUBLIC_ENVIRONMENT, config.env.VITE_PUBLIC_IDENTITY_RPC_URL);
+    if (problem) throw new Error(problem);
   },
+});
+
+/**
+ * The dev environment's install name and icons (the hatched corner) and its page title, so an installed dev app never
+ * passes for the real one. The page's own Dev mark is drawn by the shell (EnvMark).
+ */
+const appIdentity = (devEnvironment: boolean) => {
+  const icons = devEnvironment ? "game-dev-" : "game-";
+  return {
+    name: devEnvironment ? "Realms dev" : "Realms",
+    icon: (file: string) => `/images/${icons}${file}`,
+  };
+};
+
+const appIdentityHtml = (identity: ReturnType<typeof appIdentity>): Plugin => ({
+  name: "app-identity-html",
+  transformIndexHtml: (html) =>
+    html
+      .replace("<title>Realms</title>", `<title>${identity.name}</title>`)
+      .replaceAll("/images/game-", identity.icon("")),
 });
 
 /** The dev environment's app and its identity Worker, which every development build signs in against. */
@@ -37,6 +58,7 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
   const isServe = command === "serve";
   const isBuild = command === "build";
   const appEnv = loadEnv(mode, process.cwd(), "");
+  const identity = appIdentity(isDevEnvironment(appEnv.VITE_PUBLIC_ENVIRONMENT));
   const enableAnalyzer = process.env.ANALYZE === "true";
   const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN;
   const sentryOrg = process.env.SENTRY_ORG;
@@ -51,7 +73,12 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
     process.env.VITE_PUBLIC_GAME_VERSION ||
     undefined;
 
-  const plugins = [requireIdentityRpcUrl(), svgr({ dimensions: false, svgo: false, typescript: true }), react()];
+  const plugins = [
+    requireL2Environment(),
+    appIdentityHtml(identity),
+    svgr({ dimensions: false, svgo: false, typescript: true }),
+    react(),
+  ];
 
   if (shouldUseMkcert(isServe)) {
     plugins.unshift(mkcert() as any);
@@ -91,18 +118,23 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
         },
         manifest: {
           id: "/",
-          name: "Realms",
-          short_name: "Realms",
+          name: identity.name,
+          short_name: identity.name,
           description: "Fully onchain strategy: Frontier expeditions and Blitz battles",
-          theme_color: "#F6C297",
-          background_color: "#F6C297",
+          theme_color: COLORS.ground,
+          background_color: COLORS.ground,
           display: "standalone",
           scope: "/",
           start_url: "/",
           icons: [
-            { src: "/images/game-pwa-192x192.png", sizes: "192x192", type: "image/png", purpose: "any" },
-            { src: "/images/game-pwa-512x512.png", sizes: "512x512", type: "image/png", purpose: "any" },
-            { src: "/images/game-maskable-icon-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+            { src: identity.icon("pwa-192x192.png"), sizes: "192x192", type: "image/png", purpose: "any" },
+            { src: identity.icon("pwa-512x512.png"), sizes: "512x512", type: "image/png", purpose: "any" },
+            {
+              src: identity.icon("maskable-icon-512x512.png"),
+              sizes: "512x512",
+              type: "image/png",
+              purpose: "maskable",
+            },
           ],
         },
       }) as any,

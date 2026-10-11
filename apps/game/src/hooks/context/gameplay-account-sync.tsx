@@ -11,6 +11,7 @@ import { IdentityRequestError } from "@realms-world/identity";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { DOORWAY_WORDS } from "@/shell/words";
 
 // The account is joined when a player enters a game to play: its deploy happens at game entry, not in the first click,
 // and never for a shard the player only opens or spectates.
@@ -98,11 +99,14 @@ export const isAccountStatePrompt = (provisioningError: string | null): boolean 
 // detail (an RPC dump, a transaction's params) goes to the console only.
 const ACCOUNT_SETUP_FAILED = "Your account could not be set up for this game. Try again in a moment.";
 
+/** The device limit names the step the player takes (the doorway offers Devices), never a menu path in a sentence. */
+export const DEVICE_LIMIT_REACHED = DOORWAY_WORDS.deviceLimit;
+
 const ACCOUNT_REFUSALS: Record<string, string> = {
   device_revoked: DEVICE_REMOVED,
   account_not_secured: "Secure your account by signing in with Discord or an email code.",
   not_your_account: "This game account does not belong to your sign-in. Sign in to the account that owns it.",
-  device_limit: "Your account has reached its device limit. Remove an old device from Account > Devices.",
+  device_limit: DEVICE_LIMIT_REACHED,
 };
 
 const accountStateOf = (error: unknown): string | null => {

@@ -1,6 +1,6 @@
-import { fetchHeraldLeaderboard, type GameRef, type Shard } from "@bibliothecadao/eternum/shard";
+import { fetchHeraldLeaderboard, type GameRef } from "@bibliothecadao/eternum/shard";
 import { realmsAccountAddress } from "@realms-world/identity/account";
-import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
 
@@ -8,101 +8,33 @@ import {
   canEnterGame,
   fetchDirectory,
   fetchDirectoryHistory,
-  type DirectoryShard,
+  listedShards,
   type DirectoryEntry,
 } from "@/runtime/world/directory";
-import { readShardDirectory } from "@/runtime/world/shard-directory";
-import { listPastedShards, openPastedShards, requireOpenShard } from "@/runtime/world/shards";
+import { requireOpenShard } from "@/runtime/world/shards";
+import { fetchApi } from "@/runtime/app-api";
 
 /** A directory entry with the shard it came from, so the shell can address the game as (chain id, game id). */
 export interface DirectoryGame extends DirectoryEntry {
   chainId: string;
 }
 
-/** A shard the shell shows: one our directory lists, or one the player pasted. */
-interface ShardListing {
-  url: string;
-  chainId: string;
-  status: "active" | "draining" | "pasted";
-  available: boolean;
-}
-
 interface ShardDirectory {
   /** Live and upcoming games; a settled game lives in the history instead. */
   games: DirectoryGame[];
-  /** Settled games on the shards the player pasted, which our history does not list. */
-  pastedFinished: DirectoryGame[];
-  shards: ShardListing[];
-  /** Shards known but not readable, by URL and reason: the directory's own, and pasted ones that would not open. */
-  failures: { url: string; error: Error }[];
 }
 
-export const DIRECTORY_QUERY_KEY = ["shell", "directory"] as const;
+const DIRECTORY_QUERY_KEY = ["shell", "directory"] as const;
 
 /**
- * Our directory from the Worker (its games, its caching, its per-shard partial failures), plus the directories of the
- * shards the player pasted, read from those shards themselves since our directory does not list them. No listed
- * shard's Herald is contacted here: a game's shard opens only when the game is entered.
+ * Our directory from the Worker, the one list of shards and their games. No shard's Herald is contacted here: a game's
+ * shard opens only when the game is entered.
  */
-export const fetchDirectories = async (player: string | null): Promise<ShardDirectory> => {
-  const [listing, pastedFailures] = await Promise.all([fetchDirectory(player), openPastedShards()]);
-  const listed = listing.filter(
-    (shard): shard is DirectoryShard & { status: "active" | "draining" } => shard.status !== "retired",
-  );
-  const pasted = listPastedShards().filter((shard) => !listed.some((entry) => entry.url === shard.url));
-  const { games: pastedGames, failures: readFailures } = await readPastedDirectories(pasted, player);
-  return {
-    games: [
-      ...listed.flatMap((shard) => (shard.games ?? []).map((game) => ({ ...game, chainId: shard.chainId }))),
-      ...pastedGames.filter((game) => !isSettled(game)),
-    ],
-    pastedFinished: pastedGames.filter(isSettled).toSorted((a, b) => b.clock.end_at - a.clock.end_at),
-    shards: [
-      ...listed.map((shard) => ({
-        url: shard.url,
-        chainId: shard.chainId,
-        status: shard.status,
-        available: shard.games !== null,
-      })),
-      ...pasted.map((shard) => ({
-        url: shard.url,
-        chainId: shard.chainId,
-        status: "pasted" as const,
-        available: !readFailures.some((failure) => failure.url === shard.url),
-      })),
-    ],
-    failures: [
-      ...listed
-        .filter((shard) => shard.games === null)
-        .map((shard) => ({ url: shard.url, error: new Error("unavailable right now") })),
-      ...pastedFailures,
-      ...readFailures,
-    ],
-  };
-};
-
-/** One unreadable pasted Herald contributes a failure, while every healthy sibling still contributes its games. */
-const readPastedDirectories = async (pasted: readonly Shard[], player: string | null) => {
-  const pastedDirectories = await Promise.allSettled(
-    pasted.map((shard) => readShardDirectory(shard.chainId, player).then((directory) => ({ shard, directory }))),
-  );
-  const readFailures = pastedDirectories.flatMap((result, index) =>
-    result.status === "rejected"
-      ? [
-          {
-            url: pasted[index].url,
-            error: result.reason instanceof Error ? result.reason : new Error(String(result.reason)),
-          },
-        ]
-      : [],
-  );
-  const pastedGames = pastedDirectories.flatMap((result) =>
-    result.status === "fulfilled"
-      ? result.value.directory.games.map((game) => ({ ...game, chainId: result.value.shard.chainId }))
-      : [],
-  );
-  return { games: pastedGames, failures: readFailures };
-};
+export const fetchDirectories = async (player: string | null): Promise<ShardDirectory> => ({
+  games: listedShards(await fetchDirectory(player)).flatMap((shard) =>
+    (shard.games ?? []).map((game) => ({ ...game, chainId: shard.chainId })),
+  ),
+});
 
 interface GuardianIdentity {
   publicKey: string;
@@ -111,7 +43,7 @@ interface GuardianIdentity {
 
 /** Our guardian's key and the account class: with the Realms id they place the player's account on every shard we run. */
 const fetchGuardian = async (): Promise<GuardianIdentity> => {
-  const response = await fetch("/api/guardian");
+  const response = await fetchApi("/api/guardian");
   if (!response.ok) throw new Error(`Guardian answered ${response.status}`);
   return (await response.json()) as GuardianIdentity;
 };
@@ -132,7 +64,7 @@ export const useRealmsPlayer = () => {
 };
 
 /**
- * Every listed and pasted shard's games, for the signed-in player when there is one: each game then says whether the
+ * Every listed shard's games, for the signed-in player when there is one: each game then says whether the
  * player is in it. The read waits for the session, and a signed-in player's waits for their account address, so no
  * screen of theirs ever reads the anonymous directory in between and mistakes it for their own.
  */
@@ -150,19 +82,6 @@ export const useDirectory = () => {
   });
 };
 
-const HISTORY_PAGE_SIZE = 20;
-
-/** Settled games on our shards, newest first, a page at a time; with a player, only that player's games. */
-export const useHistory = (player: string | null = null) =>
-  useInfiniteQuery({
-    queryKey: ["shell", "history", player],
-    queryFn: ({ pageParam }) => fetchDirectoryHistory({ limit: HISTORY_PAGE_SIZE, cursor: pageParam, player }),
-    initialPageParam: null as string | null,
-    getNextPageParam: (page) => page.next,
-    staleTime: 30_000,
-    retry: 1,
-  });
-
 /** The first few settled games, as a short list shows them (the latest result, a player's recent matches). */
 export const useRecentResults = (limit: number, player: string | null = null) =>
   useQuery({
@@ -171,6 +90,32 @@ export const useRecentResults = (limit: number, player: string | null = null) =>
     staleTime: 30_000,
     retry: 1,
   });
+
+/**
+ * Every settled game a player took part in, newest first: their own history followed to its last page, so nothing of
+ * theirs falls off the end of a recent page. Asked only for a player (without one it would be every game ever).
+ */
+export const usePlayerHistory = (player: string | null) =>
+  useQuery({
+    queryKey: ["shell", "history", "player", player],
+    queryFn: () => readPlayerHistory(player as string),
+    enabled: player !== null,
+    staleTime: 30_000,
+    retry: 1,
+  });
+
+const HISTORY_PAGE = 100;
+
+const readPlayerHistory = async (player: string) => {
+  const games: Awaited<ReturnType<typeof fetchDirectoryHistory>>["games"] = [];
+  let cursor: string | null = null;
+  do {
+    const page = await fetchDirectoryHistory({ limit: HISTORY_PAGE, cursor, player });
+    games.push(...page.games);
+    cursor = page.next;
+  } while (cursor !== null);
+  return games;
+};
 
 /**
  * A game's standings in its mode's shape: Frontier's season board, or live points while a game runs and the recorded
@@ -197,6 +142,3 @@ const soonest = (games: readonly DirectoryGame[]): DirectoryGame | undefined =>
  */
 export const nextOpenGame = (games: readonly DirectoryGame[]): DirectoryGame | undefined =>
   soonest(games.filter(canEnterGame)) ?? soonest(games.filter((game) => !game.error && OPEN_STATUSES.has(game.status)));
-
-/** A settled game has its recorded result and belongs to the history, not the game list. */
-const isSettled = (game: DirectoryGame): boolean => game.status === "Settled";

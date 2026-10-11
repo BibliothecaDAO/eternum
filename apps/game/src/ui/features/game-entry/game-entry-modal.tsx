@@ -21,8 +21,10 @@ import { submitSettlement } from "@/services/settlement";
 import { fetchSettlementSnapshot, type SettlementSnapshot } from "@/runtime/world/herald-pre-session-reader";
 import { isGameOver, isMember } from "@/runtime/world/directory";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
-import { BlitzPreparing } from "@/shell/blitz-preparing";
-import { TimeLeftChip } from "@/shell/live-chips";
+import { gamePainting, modeLabel } from "@/shell/game-links";
+import { StateChip } from "@/shell/play/state-chip";
+import { BLITZ_WORDS } from "@/shell/words";
+import { ClockChip } from "@/shell/clock-chip";
 import { getRealmNameById } from "@bibliothecadao/eternum";
 import { seasonRealm } from "@/shell/season";
 import { realmStill } from "@/shell/mode-art";
@@ -230,7 +232,6 @@ export const GameEntryModal = ({
   const endAt = worldMeta?.clock.end_at;
   const seasonNotEnded = endAt == null || endAt === 0 || nowSeconds <= endAt;
   const seasonTimingValid = isDevMode || (seasonHasStarted && seasonNotEnded);
-  const secondsUntilSeasonStart = seasonStartAt == null ? null : Math.max(0, seasonStartAt - nowSeconds);
   const blitzEntry = useMemo(() => {
     if (!isBlitzMode || !worldMeta?.player_state) return null;
     return resolveBlitzEntry({ isMember: isMember(worldMeta), ready: worldMeta.ready, ended: isGameOver(worldMeta) });
@@ -588,12 +589,19 @@ export const GameEntryModal = ({
     <DoorwayScreen
       view={view}
       realm={realm}
+      title={worldMeta ? modeLabel(worldMeta) : undefined}
+      painting={worldMeta ? gamePainting(worldMeta) : undefined}
       onRetry={settleStage === "error" ? () => void handleSettle() : handleRetry}
       onSignIn={() => requestSignIn()}
       onSpectate={handleSpectate}
     >
-      {phase === "settlement-waiting" && <TimeLeftChip seconds={secondsUntilSeasonStart ?? undefined} />}
-      {phase === "settlement" && isBlitzMode && worldMeta && <BlitzPreparing game={worldMeta} member />}
+      {phase === "settlement-waiting" && <ClockChip prefix="starts" at={seasonStartAt ?? undefined} now={nowSeconds} />}
+      {phase === "settlement" && isBlitzMode && worldMeta && (
+        <StateChip
+          icon="Ok"
+          text={`${BLITZ_WORDS.preparing} ${Math.min(worldMeta.player_count, worldMeta.roster_count)}/${worldMeta.roster_count}`}
+        />
+      )}
       {phase === "settlement" && isSeasonMode && !foundsOnItsOwn && settleStage === "idle" && (
         <>
           {isEternumDevMode && (

@@ -1,5 +1,8 @@
-import { BankedHolding } from "@/ui/features/frontier/frontier-status-strip";
-import { SiteClearCardView } from "@/ui/features/frontier/sites/site-clear-card";
+import { StatusStrip } from "@/ui/features/frontier/hud/status-strip";
+import { bankedCounterTarget } from "@/ui/motion/moments/banked-flight";
+import { SiteClearCard } from "@/ui/features/frontier/sites/site-clear-card";
+import { closeSiteClearCard, useSiteClearCard } from "@/ui/features/frontier/sites/site-clear-moment";
+import { AnimatePresence } from "framer-motion";
 import { playSiteClear } from "@/ui/features/frontier/sites/site-clear-moment";
 import type { SiteClear } from "@/ui/features/frontier/sites/site-outcome";
 import { ResourcesIds } from "@bibliothecadao/types";
@@ -7,9 +10,9 @@ import { type ReactNode, useRef, useState } from "react";
 
 /** Site payouts as the world update listener reads them from SitePayout stories, in whole units. */
 const STORIES: Record<"camp" | "rift" | "ruin", SiteClear> = {
-  camp: { kind: "Camp", reward: { resourceId: ResourcesIds.Labor, amount: 550 } },
-  rift: { kind: "Rift", reward: { resourceId: ResourcesIds.Essence, amount: 3_300 } },
-  ruin: { kind: "Ruin", reward: null },
+  camp: { siteId: 1, kind: "Camp", reward: { resourceId: ResourcesIds.Labor, amount: 550 } },
+  rift: { siteId: 2, kind: "Rift", reward: { resourceId: ResourcesIds.Essence, amount: 3_300 } },
+  ruin: { siteId: 3, kind: "Ruin", reward: null },
 };
 const TROOPS_LOST = 420;
 
@@ -42,12 +45,17 @@ export const SiteLab = () => {
   return (
     <div className="flex w-full flex-col items-center gap-4">
       {/* The card sits in the thumb zone in the HUD; here it takes the top of the panel so it stays in view. */}
-      <SiteClearCardView />
+      <LabClearCard />
       {counters && (
-        <dl className="flex items-center gap-4 rounded-lg border border-gold/20 px-3 py-2">
-          <BankedHolding resourceId={ResourcesIds.Essence} amount={balances[ResourcesIds.Essence]} />
-          <BankedHolding resourceId={ResourcesIds.Labor} amount={balances[ResourcesIds.Labor]} />
-        </dl>
+        <div className="w-[390px]">
+          <StatusStrip
+            clock={NO_CLOCK}
+            stores={[
+              labStore("essence", ResourcesIds.Essence, balances[ResourcesIds.Essence]),
+              labStore("labor", ResourcesIds.Labor, balances[ResourcesIds.Labor]),
+            ]}
+          />
+        </div>
       )}
       <div ref={site} className="rounded-xl border border-[#b8801a]/70 bg-[#3a2a12] px-6 py-4 text-sm">
         Guarded site
@@ -67,3 +75,42 @@ const LabButton = ({ onClick, children }: { onClick: () => void; children: React
     {children}
   </button>
 );
+
+/** The lab has no game clock: the strip's dial and clock line read as unknown. */
+const NO_CLOCK = {
+  day: undefined,
+  endsAt: undefined,
+  secondsLeft: undefined,
+  tomorrowSeconds: undefined,
+  shareLeft: undefined,
+  tone: "calm",
+} as const;
+
+const labStore = (kind: "essence" | "labor", resourceId: ResourcesIds, amount: number | undefined) => ({
+  kind,
+  amount,
+  limit: undefined,
+  tone: "calm" as const,
+  flyTarget: bankedCounterTarget(resourceId),
+});
+
+/** The clear card the lab's clear plays; the lab has no game, so the XP reads unknown. */
+const LabClearCard = () => {
+  const card = useSiteClearCard();
+  return (
+    <AnimatePresence>
+      {card && (
+        <SiteClearCard
+          key={card.shownAt}
+          site={card.clear.kind}
+          paid={
+            card.clear.reward && { icon: card.clear.kind === "Camp" ? "La" : "Es", amount: card.clear.reward.amount }
+          }
+          xp={undefined}
+          troopsLost={card.troopsLost}
+          onClose={closeSiteClearCard}
+        />
+      )}
+    </AnimatePresence>
+  );
+};

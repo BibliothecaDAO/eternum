@@ -1,4 +1,4 @@
-export type FeatureType = "feature" | "improvement" | "balance" | "fix";
+type FeatureType = "feature" | "improvement" | "balance" | "fix";
 
 interface LatestFeature {
   date: string;
@@ -34,6 +34,54 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-10-11",
+    title: "Withdraw after the season ends",
+    description:
+      "When a Frontier season is over, its last card shows the LORDS still in your realm, until when you can withdraw them, and Withdraw. A finished season's Results lead back to it.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-10",
+    title: "Ratings on the Blitz roster",
+    description:
+      "A Blitz game's lobby shows each seated player's rating again, read for the wallet their seat was drawn with.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-10",
+    title: "Chat in a Blitz slot's lobby",
+    description:
+      "Once your payout wallet is registered in a slot, you can write in its lobby chat. Everyone signed in can read it.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-10",
+    title: "Withdraw LORDS and claim Realm labor",
+    description:
+      "In Frontier, tap your LORDS to withdraw them to your payout wallet and follow the payment to its transaction. Realms in that wallet give labor once a day: add a Realm by its number in the Menu's Realms, then claim them all from there or from the Realms chip.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-10",
+    title: "Blitz slots show who registered",
+    description:
+      "A Blitz slot shows how many players registered instead of a row of seats. Your entry reads Registered until the slot closes, then Seated with the way to your game, or Not seated with your refund to take. A closed slot stays in the Blitz list while it owes you a refund.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-10",
+    title: "Your Blitz winnings follow your seat",
+    description:
+      "Results, chests and season prizes are read and claimed with the wallet your seat was played with, even after you change your payout wallet, and the Season tab follows your own games, so a new season's first game never hides a prize still to claim.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-10",
+    title: "Free Blitz signup removed",
+    description: "Blitz no longer offers free signup from the lobby. Entry is paid through a linked Starknet wallet.",
+    type: "fix",
+  },
+  {
     date: "2026-10-09",
     title: "Clearer Blitz results",
     description:
@@ -56,9 +104,51 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-10-09",
+    title: "Link Ready by Email",
+    description:
+      "Added Ready's email wallet to the wallets you can link in Account, so a phone, or a browser without a wallet extension, can link one without installing anything.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-09",
     title: "Link wallets before deployment",
     description:
       "Link supported Ready and Braavos wallets with a signed message and email code before sending a transaction.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-09",
+    title: "Your LORDS under the strip",
+    description:
+      "Frontier now shows the LORDS your realm holds right under the strip, so the chests you open and the refills you buy read at a glance.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-09",
+    title: "Desktop panels dock under the bar",
+    description:
+      "On desktop every Frontier panel now opens under the place bar, as tall as what it shows, with a close mark or a back arrow, and the bar stays in reach.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-08",
+    title: "Frontier, redrawn for phone and desktop",
+    description:
+      "Frontier's match is rebuilt around the map: one strip with your stores and the day's clock, armies you upgrade with XP, a castle's tree of building tiers and training buildings, Deploy that counts the troops coming home, ruins whose chest opens as you clear them, Today and the Season in the Menu, a guide that points at what it names, and a desktop layout with the same parts at the corners.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-07",
+    title: "Shrines and wells read right",
+    description:
+      "Selecting a shrine or well no longer opens an army panel, and armies are no longer offered a move onto one.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-07",
+    title: "A new home for Realms",
+    description:
+      "Play opens on one card with your next step (Resume your Frontier day, Enter your Blitz, see a finished season) and the four ages of the lore beside it, each with its own painting and page.",
     type: "feature",
   },
   {
@@ -246,14 +336,6 @@ const allLatestFeatures: LatestFeature[] = [
     description:
       "Panels no longer offer actions the game turns off: no transfer shortcut, pause switch, production refill, relic list or defense army where the game has none.",
     type: "fix",
-  },
-  {
-    date: "2026-09-25",
-    title: "One marked plot per ring",
-    description:
-      "Each ring of your Frontier realm board has one marked plot, lit and set on greener ground, where a building gives twice its output, capacity or population. Neighbour bonuses are gone.",
-    type: "feature",
-    gameSlug: "frontier",
   },
   {
     date: "2026-09-25",

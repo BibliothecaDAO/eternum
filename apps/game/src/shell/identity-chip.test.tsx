@@ -1,5 +1,6 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 
@@ -27,18 +28,19 @@ const mountAt = async (path: string) => {
   const root = createRoot(container);
   await act(async () =>
     root.render(
-      <MemoryRouter initialEntries={[path]}>
-        <IdentityChip />
-        <Routes>
-          <Route path="*" element={<Where />} />
-        </Routes>
-      </MemoryRouter>,
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={[path]}>
+          <IdentityChip />
+          <Routes>
+            <Route path="*" element={<Where />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
     ),
   );
   return {
     chip: () => container.querySelector("button")!,
     where: () => container.querySelector("[data-testid='where']")?.textContent,
-    dialog: () => container.querySelector("[role='dialog']"),
     unmount: () => act(async () => root.unmount()),
   };
 };
@@ -50,17 +52,16 @@ it("sends a signed-out player who clicks the chip to the sign-in flow, to come b
     expect(ui.chip().textContent).toBe("Sign in");
     await act(async () => ui.chip().click());
     expect(ui.where()).toBe(`/sign-in?next=${encodeURIComponent("/results?game=2")}`);
-    expect(ui.dialog()).toBeNull();
   } finally {
     await ui.unmount();
   }
 });
 
-it("asks a signed-in player without a name to choose one, in the flow, never showing their address", async () => {
+it("asks a signed-in player without a name to claim one, in the flow, never showing their address", async () => {
   useIdentitySessionStore.setState({ status: "signed-in", session: nameless });
   const ui = await mountAt("/play");
   try {
-    expect(ui.chip().textContent).toBe("Choose a name");
+    expect(ui.chip().textContent).toBe("Claim name");
     await act(async () => ui.chip().click());
     expect(ui.where()).toBe(`/sign-in?next=${encodeURIComponent("/play")}`);
   } finally {

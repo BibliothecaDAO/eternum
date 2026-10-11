@@ -15,8 +15,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { presentedMineKind } from "@bibliothecadao/eternum";
-import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { safeInteger } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 interface PlayerStructureView {
   entity_id: number;

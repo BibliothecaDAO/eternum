@@ -1,7 +1,7 @@
 import type { SitePayoutSystemUpdate } from "@bibliothecadao/eternum";
 
-/** What the site-cleared moment shows: the site, and what it paid home; a fallen realm pays its chest instead. */
-export type SiteClear = Pick<SitePayoutSystemUpdate, "kind" | "reward">;
+/** What the site-cleared moment shows: the site, and what it paid home; a ruin pays its chest, stragglers only XP. */
+export type SiteClear = Pick<SitePayoutSystemUpdate, "siteId" | "kind" | "reward">;
 
 const MIN_SPRITES = 6;
 const MAX_SPRITES = 20;

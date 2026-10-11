@@ -1,7 +1,8 @@
 import { IdentityRequestError } from "@realms-world/identity";
+import { L2_CHAIN } from "@/runtime/l2-rpc";
 
 /** What the player asked for; each names its own failure. */
-export type IdentityAction = "discord" | "send-code" | "code" | "link" | "unlink";
+export type IdentityAction = "discord" | "send-code" | "code" | "link" | "unlink" | "portrait";
 
 export class WrongNetworkError extends Error {}
 
@@ -10,8 +11,7 @@ const NAMED_REFUSALS: Record<string, string> = {
   OTP_EXPIRED: "That code has expired. Ask for a new one.",
   TOO_MANY_ATTEMPTS: "Too many tries with that code. Ask for a new one.",
   too_many_codes: "Too many codes for this address. Wait a minute and ask again.",
-  WALLET_NOT_DEPLOYED:
-    "This wallet is not deployed on Starknet mainnet. Deploy it in your wallet app, then link it again.",
+  WALLET_NOT_DEPLOYED: `This wallet is not deployed on ${L2_CHAIN.label}. Deploy it in your wallet app, then link it again.`,
   WALLET_LINKED_ELSEWHERE: "This wallet is linked to another Realms account.",
   email_not_verified: "Your Discord email is not verified. Verify it in Discord, or sign in with an email code.",
   email_not_found: "Your Discord account has no email. Add one in Discord, or sign in with an email code.",
@@ -24,6 +24,7 @@ const FALLBACK: Record<IdentityAction, string> = {
   code: "Sign-in did not complete. Try again in a moment.",
   link: "The wallet was not linked. Try again in a moment.",
   unlink: "The wallet was not unlinked. Try again in a moment.",
+  portrait: "The portrait was not saved. Try again in a moment.",
 };
 
 /** One sentence per failure the player can act on; the detail goes to the console. */
@@ -31,6 +32,15 @@ export const failureSentence = (action: IdentityAction, cause: unknown): string 
   console.error("identity_action_failed", { action, error: cause instanceof Error ? cause.message : cause });
   const code = cause instanceof IdentityRequestError ? cause.code : undefined;
   if (code && NAMED_REFUSALS[code]) return NAMED_REFUSALS[code];
-  if (cause instanceof WrongNetworkError) return "Switch this wallet to Starknet mainnet.";
+  if (cause instanceof WrongNetworkError) return `Switch this wallet to ${L2_CHAIN.label}.`;
   return FALLBACK[action];
+};
+
+/** The server names why a name was refused (NAME_TAKEN, NAME_INVALID:<rule>); the player reads one sentence. */
+export const nameRefusal = (cause: unknown): string => {
+  const reason = cause instanceof Error ? cause.message : "";
+  if (reason === "NAME_TAKEN") return "That name is taken. Try another.";
+  if (reason.startsWith("NAME_INVALID:")) return `Names use ${reason.slice("NAME_INVALID:".length)}.`;
+  console.error("identity_name_claim_failed", { error: reason });
+  return "The name was not saved. Try again in a moment.";
 };

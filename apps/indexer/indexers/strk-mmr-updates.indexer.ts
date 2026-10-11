@@ -45,7 +45,7 @@ export function createIndexer<
       header: "on_data_or_on_new_block",
       events: [
         {
-          address: valuePlaneAddress("mmrToken") as `0x${string}`,
+          address: valuePlaneAddress("mmrToken", "mainnet") as `0x${string}`,
           keys: [MMR_UPDATED_SELECTOR],
         },
       ],

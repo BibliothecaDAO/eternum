@@ -1,6 +1,7 @@
 import type { GameReviewData } from "@/services/review/game-review-service";
 import { AssetRarity } from "@/ui/features/cosmetics/chest-opening/utils/cosmetics";
 import { getPlayerDisplayName } from "@/services/identity/player-profiles";
+import { APP_HOST } from "@/config/app-address";
 
 type TemplateVariables = {
   // player name and tribe
@@ -43,11 +44,7 @@ export const formatSocialText = (template: string, variables: Partial<TemplateVa
   );
 };
 
-const tweetFooterLines = [
-  "@realmsgg",
-  "The most insane fully onchain game, live on Starknet",
-  "blitz.realms.world",
-] as const;
+const tweetFooterLines = ["@realmsgg", "The most insane fully onchain game, live on Starknet", APP_HOST] as const;
 
 const tweetFooter = tweetFooterLines.join("\n");
 

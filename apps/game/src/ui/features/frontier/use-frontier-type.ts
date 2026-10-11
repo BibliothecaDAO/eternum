@@ -5,8 +5,7 @@ let holders = 0;
 
 /**
  * The player app's visual system while the shell or a Frontier surface is mounted (index.css `html.frontier-type`):
- * Atkinson Hyperlegible body, Lexend headings and numbers, sentence case, and the Frontier tokens (chip, card, sheet,
- * primary). It sits on <html> so popovers, sheets and menus rendered outside the surface follow. Surfaces overlap (the
+ * the token file's faces, sentence case, and the Frontier tokens (chip, card, sheet, primary). It sits on <html> so popovers, sheets and menus rendered outside the surface follow. Surfaces overlap (the
  * doorway leaves after the Frontier HUD has mounted), so the class is counted, never toggled.
  */
 export const useFrontierType = (): void => {

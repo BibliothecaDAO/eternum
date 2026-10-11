@@ -4,8 +4,10 @@ name: Deploy Client
 # live client, and it moves to the native client only as the cutover's switch step, never on a push to next. Each
 # environment names its Pages project (vars.CLOUDFLARE_PAGES_PROJECT), the origin the client is served from
 # (vars.CLIENT_ORIGIN, whose /api belongs to that environment's identity Worker) and its zone (vars.CLIENT_ZONE), and
-# holds its identity RPC secret; the custom domain is attached in the Pages dashboard once. The build reads
-# .env.production plus the identity RPC secret and stamps the version from the ref.
+# holds the Alchemy RPC secret for the environment's L2; the custom domain is attached in the Pages dashboard once. The
+# L2 itself and its ledger come from the environment's address book (contracts/common/addresses), which the build reads
+# by VITE_PUBLIC_ENVIRONMENT. The build reads .env.production plus the identity RPC secret and stamps the version from
+# the ref.
 on:
   workflow_dispatch:
     inputs:
@@ -74,17 +76,17 @@ jobs:
       - name: Build packages
         run: pnpm run build:packages
 
-      - name: Test deployment verification and chunk recovery
+      # The client deploy's own script tests run in the client job (test-client.yml) on every change to them.
+      - name: Test chunk recovery, the offline cache and the shipped assets
         run: |
-          node --test apps/game/scripts/verify-client-deployment.test.mjs
-          node --test apps/game/scripts/ensure-pwa-cache-rule.test.mjs
-          node --test apps/game/scripts/verify-pwa-build.test.mjs
           pnpm --dir apps/game test src/utils/chunk-load-recovery.test.ts src/pwa
           pnpm --dir apps/game verify:assets
 
       - name: Build client
         env:
           VITE_PUBLIC_GAME_VERSION: ${{ github.event.inputs.version || github.sha }}
+          # The app's one environment constant: production, or the dev environment's Dev mark, install icon and labs.
+          VITE_PUBLIC_ENVIRONMENT: ${{ inputs.environment }}
           VITE_PUBLIC_SENTRY_DSN: ${{ secrets.CLIENT_SENTRY_DSN }}
         run: pnpm --dir apps/game build
 

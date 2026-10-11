@@ -1,25 +1,29 @@
+import { useGame } from "@/hooks/context/game-context";
+import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { getActiveGame } from "@/runtime/world";
 import { startRealmVisit } from "@/sync/active-game-client";
-import { Trophy } from "@/ui/design-system/atoms/game-icons";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { configManager } from "@bibliothecadao/eternum";
-import { safeInteger, fetchHeraldLeaderboard, requireShard } from "@bibliothecadao/eternum/game-client";
+import { PlayerName } from "@/ui/design-system/kit/player-name";
+import type { Tier } from "@/ui/design-system/kit/tier-chip";
+import { configManager, dayOf, type ExpeditionRules } from "@bibliothecadao/eternum";
+import { fetchHeraldLeaderboard, requireShard, safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import { useQuery } from "@tanstack/react-query";
-import { Chip } from "../frontier-chips";
-import { FlagGlyph } from "../glyphs";
-import { SeasonTable } from "./season-table";
-import { boardRows, ownRank } from "./standings";
-import { FrontierSheet } from "../frontier-sheet";
+import { type ReactNode, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-// The board shares the popover store's one-open rule, so opening any other surface closes it.
-const BOARD_ID = "frontier-season-board";
+import { GuideSlot } from "../guide/frontier-guide";
+import { type SeasonDetail, SeasonDetailSheet } from "./season-detail";
+import { SeasonList, type SeasonListRow } from "./season-list";
+import { type PodiumPlace, SeasonOverCard, type SeasonTotals } from "./season-over-card";
+import { findOwnEntry, ownRank, wholeLords, wholeResource } from "./standings";
+
+type Entry = HeraldFrontierLeaderboardEntry;
+
 const REFRESH_MS = 30_000;
 const LIST_LENGTH = 50;
-const PEEK_LENGTH = 5;
 
 /**
  * Frontier's season board from Herald's read model: sites cleared, then deepest depth, then who reached the count
@@ -42,100 +46,158 @@ export const useSeasonBoard = () => {
 
 const useViewer = () => useAccountStore((state) => state.account?.address ?? null);
 
-/** The rank as the chip shows it: "—" while unknown, "#12" once known, the trophy alone for a viewer without a realm. */
-const rankValue = (rank: number | null | undefined): string =>
-  rank === undefined ? "—" : rank === null ? "" : `#${rank}`;
+/** The player's season rank as the Menu's Season row shows it: "—" while unknown, none for a viewer without a realm. */
+export const useSeasonRank = (): string => {
+  const rank = ownRank(useSeasonBoard().data, useViewer());
+  return rank === undefined ? "—" : rank === null ? "" : `#${rank}`;
+};
 
-/** The rank chip in the strip's chip row (mockup 7): the trophy and the player's season rank, opening the board. */
-export const SeasonBoardChip = () => {
-  const toggle = usePopoverStore((state) => state.toggle);
-  const open = usePopoverStore((state) => state.openId === BOARD_ID);
+/**
+ * Season over the board: today's common chest, the first fifty realms and the player's own, a row's detail with
+ * Visit. Visiting closes the page for the visited realm.
+ */
+export const FrontierSeason = ({ rules, onBack }: { rules: ExpeditionRules; onBack: () => void }) => {
   const board = useSeasonBoard();
-  const rank = rankValue(ownRank(board.data, useViewer()));
-
+  const viewer = useViewer();
+  const chest = useCommonChest(rules);
+  const [opened, setOpened] = useState<string | null>(null);
+  const entries = board.data ?? [];
+  const own = findOwnEntry(entries, viewer);
+  const { rows, pinned } = useSeasonListRows(board.data, LIST_LENGTH);
+  const chosen = entries.find((entry) => entry.address === opened);
+  const visit = (entry: Entry) => {
+    startRealmVisit({ player: entry.address, structureId: safeInteger(entry.structure_id) });
+    onBack();
+  };
   return (
     <>
-      <button
-        type="button"
-        aria-label="Season board"
-        aria-expanded={open}
-        onClick={() => toggle(BOARD_ID)}
-        className="pointer-events-auto flex min-h-11 items-center lg:min-h-9"
-      >
-        <Chip label="Season rank" icon={<Trophy />} value={rank} />
-      </button>
-      {open && <SeasonBoardSheet rank={rank} />}
+      <SeasonList
+        rank={ownRank(board.data, viewer)}
+        chest={chest}
+        rows={rows}
+        pinned={pinned}
+        state={board.isError ? "failed" : board.isPending ? "loading" : "ready"}
+        onRetry={() => void board.refetch()}
+        onOpen={setOpened}
+        onBack={onBack}
+      />
+      {chosen && (
+        <EntryDetail
+          entry={chosen}
+          onVisit={chosen === own ? undefined : () => visit(chosen)}
+          onClose={() => setOpened(null)}
+        />
+      )}
     </>
   );
 };
 
-/** Desktop's panel under the chip row (§3.10): the top five and the player's own row, opening the full board. */
-export const SeasonBoardPeek = () => {
-  const open = usePopoverStore((state) => state.open);
-  const board = useSeasonBoard();
-  const viewer = useViewer();
-
-  return (
-    <button
-      type="button"
-      aria-label="Season leaders"
-      onClick={() => open(BOARD_ID)}
-      className="frontier-card pointer-events-auto hidden w-72 flex-col gap-1 p-2 text-left font-sans lg:flex"
-    >
-      {!board.data ? (
-        <span className="frontier-chip-number px-1.5">—</span>
-      ) : (
-        <ol className="w-full space-y-0.5">
-          {boardRows(board.data, viewer, PEEK_LENGTH).map(({ entry, own }) => (
-            <PeekRow key={entry.address} entry={entry} own={own} />
-          ))}
-        </ol>
-      )}
-    </button>
-  );
+/**
+ * Today's common chest: the common tier's shares at the day's LORDS price, as lords_budget.cairo prices a chest. The
+ * budget rolls to a new day at its first chest, so a row from an earlier day says nothing of today's price.
+ */
+const useCommonChest = (rules: ExpeditionRules): { tier: Tier; lords: number } | undefined => {
+  const { setup } = useGame();
+  useNativeRevision(CHEST_MODELS);
+  const now = useNowSeconds();
+  const gameId = configManager.getActiveGameId();
+  const budget = setup.store.get("LordsBudget", { game_id: gameId });
+  const chestRules = setup.store.get("ChestRules", { game_id: gameId });
+  const today = dayOf(rules, now);
+  if (!budget || !chestRules || !today || Number(budget.day) !== today.index) return undefined;
+  return { tier: 1, lords: Number(BigInt(chestRules.shares.common) * budget.price) };
 };
 
-/** The full board as a bottom sheet (§3.10): the top fifty, the player's own row always in view, a name to visit. */
-const SeasonBoardSheet = ({ rank }: { rank: string }) => {
-  const board = useSeasonBoard();
-  const viewer = useViewer();
-  const close = usePopoverStore((state) => state.close);
-  const visit = (entry: HeraldFrontierLeaderboardEntry) => {
-    startRealmVisit({ player: entry.address, structureId: safeInteger(entry.structure_id) });
-    close(BOARD_ID);
+const CHEST_MODELS = ["LordsBudget", "ChestRules"] as const;
+
+/**
+ * The season's first rows as SeasonRow draws them, the player's own lit in place, or pinned under them when it ranks
+ * below.
+ */
+export const useSeasonListRows = (
+  entries: readonly Entry[] | undefined,
+  length: number,
+): { rows: SeasonListRow[]; pinned: SeasonListRow | undefined } => {
+  const own = findOwnEntry(entries ?? [], useViewer());
+  const top = (entries ?? []).slice(0, length);
+  return {
+    rows: top.map((entry) => listRow(entry, entry === own)),
+    pinned: own && !top.includes(own) ? listRow(own, true) : undefined,
   };
+};
 
+const listRow = (entry: Entry, own: boolean): SeasonListRow => ({
+  key: entry.address,
+  rank: entry.rank,
+  order: entry.order,
+  name: <PlayerName account={entry.address} you={own} portrait />,
+  sitesCleared: entry.sites_cleared.total,
+  lords: wholeLords(entry.rewards.lords),
+  own,
+});
+
+const EntryDetail = ({ entry, onVisit, onClose }: { entry: Entry; onVisit?: () => void; onClose: () => void }) => {
+  const label = usePlayerDisplayName(entry.address) ?? entry.address;
+  return <SeasonDetailSheet detail={seasonDetail(entry)} label={label} onVisit={onVisit} onClose={onClose} />;
+};
+
+const seasonDetail = (entry: Entry): SeasonDetail => ({
+  rank: entry.rank,
+  order: entry.order,
+  name: <PlayerName account={entry.address} />,
+  sites: {
+    total: entry.sites_cleared.total,
+    camps: entry.sites_cleared.camps,
+    rifts: entry.sites_cleared.rifts,
+    ruins: entry.sites_cleared.ruins,
+    stragglers: entry.sites_cleared.stragglers,
+  },
+  chests: entry.chests_earned,
+  lords: wholeLords(entry.rewards.lords),
+  reach: entry.deepest_depth,
+  essence: wholeResource(entry.rewards.essence),
+  labor: wholeResource(entry.rewards.labor),
+});
+
+/**
+ * The season-over card once the game has ended. The ending is not yet a recorded fact: the mist lifted stands until
+ * Herald names it, as on the app's Results.
+ */
+export const SeasonOver = ({ withdraw, onSeason }: { withdraw?: ReactNode; onSeason: () => void }) => {
+  useNowSeconds();
+  const navigate = useNavigate();
+  const board = useSeasonBoard();
+  const viewer = useViewer();
+  if (!configManager.isGameOver()) return null;
+  const entries = board.data;
+  const own = entries && findOwnEntry(entries, viewer);
   return (
-    <FrontierSheet label="Season board" onClose={() => close(BOARD_ID)} workspace>
-      <header className="flex justify-center">
-        <Chip label="Season rank" icon={<Trophy />} value={rank} />
-      </header>
-      {board.data ? (
-        <SeasonTable rows={boardRows(board.data, viewer, LIST_LENGTH)} useName={usePlayerDisplayName} onVisit={visit} />
-      ) : (
-        <p className="frontier-hero text-center">—</p>
-      )}
-    </FrontierSheet>
+    <SeasonOverCard
+      ending="lifted"
+      place={own?.rank}
+      field={entries?.length}
+      podium={(entries ?? []).slice(0, 3).map((entry) => podiumPlace(entry, entry === own))}
+      totals={own && seasonTotals(own)}
+      withdraw={withdraw}
+      guide={<GuideSlot host="season-over" facts={{ seasonOver: true }} />}
+      onSeason={onSeason}
+      onExit={() => navigate("/")}
+    />
   );
 };
 
-const PeekRow = ({ entry, own }: { entry: HeraldFrontierLeaderboardEntry; own: boolean }) => {
-  const name = usePlayerDisplayName(entry.address) ?? "—";
-  return (
-    <li
-      className={cn(
-        "flex items-center gap-2 rounded-lg px-1.5 py-0.5 text-[14px] text-[#eadfc8]",
-        own && "bg-[#f6ac1d]/15",
-      )}
-    >
-      <span className="w-7 shrink-0 text-center font-[Lexend] font-extrabold tabular-nums text-[#a2926f]">
-        {entry.rank}
-      </span>
-      <span className="min-w-0 flex-1 truncate font-[Lexend] font-extrabold">{name}</span>
-      <span className="flex items-center gap-1 tabular-nums" aria-label={`${entry.sites_cleared.total} sites cleared`}>
-        <FlagGlyph className="size-4" />
-        {entry.sites_cleared.total}
-      </span>
-    </li>
-  );
-};
+const podiumPlace = (entry: Entry, own: boolean): PodiumPlace => ({
+  key: entry.address,
+  rank: entry.rank,
+  name: <PlayerName account={entry.address} you={own} portrait />,
+  sitesCleared: entry.sites_cleared.total,
+});
+
+const seasonTotals = (entry: Entry): SeasonTotals => ({
+  sitesCleared: entry.sites_cleared.total,
+  chests: entry.chests_earned,
+  lords: wholeLords(entry.rewards.lords),
+  reach: entry.deepest_depth,
+  essence: wholeResource(entry.rewards.essence),
+  labor: wholeResource(entry.rewards.labor),
+});

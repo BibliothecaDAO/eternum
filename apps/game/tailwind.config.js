@@ -1,5 +1,7 @@
 const plugin = require("tailwindcss/plugin");
 
+import { COLORS, FONT_FACES, FONTS } from "./src/tokens";
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
@@ -48,7 +50,8 @@ export default {
         },
       }),
       colors: {
-        gold: "#dfaa54",
+        kit: COLORS,
+        gold: COLORS.gold,
         crimson: "#582C4D",
         relic: "#a78bfa", // purple-300
         relic2: "#c084f5", // purple-400
@@ -155,6 +158,7 @@ export default {
         "old-map": "url(public/textures/paper/worldmap-bg.png)",
         "dark-wood": "linear-gradient(rgba(12, 10, 8, 0.7), rgba(12, 10, 8, 0.7))", // Modern: solid dark-brown/70 instead of texture
       },
+      fontFamily: FONTS,
       fontSize: {
         xs: ".975rem",
         xxs: ".825rem",
@@ -333,6 +337,16 @@ export default {
   ],
   plugins: [
     require("@tailwindcss/typography"),
+    // The token file's values as CSS variables, and its faces, for stylesheets and code that cannot take a class.
+    plugin(function ({ addBase }) {
+      addBase({ "@font-face": FONT_FACES });
+      addBase({
+        ":root": {
+          ...Object.fromEntries(Object.entries(COLORS).map(([name, value]) => [`--${name}`, value])),
+          ...Object.fromEntries(Object.entries(FONTS).map(([name, value]) => [`--font-${name}`, value])),
+        },
+      });
+    }),
     plugin(function ({ addUtilities, theme, e }) {
       const textShadowUtilities = {
         ".text-shadow-glow-yellow-xs": {

@@ -1,13 +1,26 @@
 import { BuildingType } from "@bibliothecadao/types";
 
 /**
- * The research tree as its sheet draws it (design §3.9, mockup 3): each node's state, Essence price and effect, and
- * what a building tier changes. Built from facts by the research reader; the sheet owns no rule of its own.
+ * The castle's tree as its page draws it (wireframe 09): a row per building type that stands, and the castle rows
+ * (shrine, well, the three reaches) with their state and Essence price. Built from facts by the research reader; the
+ * page owns no rule of its own.
  */
 export interface ResearchPlan {
   /** The realm's Essence in whole units; unknown shows as "—". */
   essence: number | undefined;
   nodes: readonly ResearchNodeView[];
+  types: readonly TypeRowView[];
+}
+
+/** A building type's research row, for a type standing on the realm: its tier, the sides taken, its next price. */
+export interface TypeRowView {
+  row: number;
+  category: BuildingType;
+  /** The row's tier above common, 0 (common) to 4 (legendary). */
+  tier: number;
+  learned: bigint;
+  /** The next tier's Essence and labor in whole units; undefined at legendary. */
+  next: { essence: number; labor: number } | undefined;
 }
 
 export interface ResearchNodeView {
@@ -18,24 +31,8 @@ export interface ResearchNodeView {
   state: "learned" | "open" | "locked";
   /** Whole Essence. */
   price: number;
-  effect:
-    | { kind: "tier"; category: BuildingType; tier: 2 | 3 }
-    | { kind: "site"; site: "Shrine" | "Well" }
-    | { kind: "depth"; depth: 1 | 2 | 3 };
-  /** What a building tier changes, now and with it: a hut's population room 6 → 12. */
-  gain?: { icon: string; now: number; next: number };
+  effect: { kind: "site"; site: "Shrine" | "Well" } | { kind: "depth"; depth: 1 | 2 | 3 };
 }
-
-/** The tree's building columns; each holds its tier II and III nodes. */
-export const TREE_BUILDINGS = [
-  BuildingType.ResourceWheat,
-  BuildingType.WorkersHut,
-  BuildingType.ResourceLabor,
-  BuildingType.ResourceKnightT1,
-] as const;
-
-export const tierNode = (plan: ResearchPlan, category: BuildingType, tier: 2 | 3) =>
-  plan.nodes.find(({ effect }) => effect.kind === "tier" && effect.category === category && effect.tier === tier);
 
 export const siteNode = (plan: ResearchPlan, site: "Shrine" | "Well") =>
   plan.nodes.find(({ effect }) => effect.kind === "site" && effect.site === site);
@@ -43,6 +40,9 @@ export const siteNode = (plan: ResearchPlan, site: "Shrine" | "Well") =>
 export const depthNode = (plan: ResearchPlan, depth: 1 | 2 | 3) =>
   plan.nodes.find(({ effect }) => effect.kind === "depth" && effect.depth === depth);
 
-/** The node the sheet opens on: the first one open to research, else the first. */
-export const firstOpenNode = (plan: ResearchPlan): ResearchNodeView | undefined =>
-  plan.nodes.find(({ state }) => state === "open") ?? plan.nodes[0];
+/** Whether the realm can research a castle row now: one is open and its Essence is held. The nav's Research dot. */
+export const canResearchNow = (plan: ResearchPlan | undefined): boolean => {
+  const essence = plan?.essence;
+  if (!plan || essence === undefined) return false;
+  return plan.nodes.some(({ state, price }) => state === "open" && price <= essence);
+};

@@ -45,3 +45,10 @@ export const getActiveGame = (): GameProfile | null => {
   const key = readStorageValue(ACTIVE_KEY);
   return key ? (readGameProfiles()[key] ?? null) : null;
 };
+
+/** The game this client plays, asked for from inside it: there, none is a fault. */
+export const requireActiveGame = (): GameProfile => {
+  const game = getActiveGame();
+  if (!game) throw new Error("No active game");
+  return game;
+};

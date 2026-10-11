@@ -1,10 +1,7 @@
 import { normalizeLeaderboardAddress } from "@/services/leaderboard/landing-leaderboard-service";
 import { RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
 
-/**
- * What the player's day added up to, for the top of Frontier's log: reveals and what they paid, sites cleared and
- * chests opened, folded from the player's own stories within today's epoch. The log's look comes from the visual redo.
- */
+/** A story as the day's totals read it: whose it is and when. */
 interface OwnStory {
   story: string;
   storyPayload: Record<string, unknown>;
@@ -12,30 +9,44 @@ interface OwnStory {
   timestampMs: number;
 }
 
-interface DayTotals {
+interface StoryTotals {
   reveals: number;
-  sitesCleared: number;
+  cleared: number;
   chests: number;
   essence: number;
   labor: number;
+  lords: number;
 }
 
 const PRECISION = BigInt(RESOURCE_PRECISION);
 
-export const totalToday = (
-  stories: readonly OwnStory[],
+type DayBounds = { startMs: number; endMs: number };
+
+/** The player's own stories within one day, in the order given. */
+export const ownStoriesOfDay = <Story extends OwnStory>(
+  stories: readonly Story[],
   player: string,
-  day: { startMs: number; endMs: number },
-): DayTotals => {
+  day: DayBounds,
+): Story[] => {
   const own = normalizeLeaderboardAddress(player);
-  const totals: DayTotals = { reveals: 0, sitesCleared: 0, chests: 0, essence: 0, labor: 0 };
-  for (const { story, storyPayload, owner, timestampMs } of stories) {
-    if (normalizeLeaderboardAddress(owner) !== own || timestampMs < day.startMs || timestampMs >= day.endMs) continue;
+  return stories.filter(
+    ({ owner, timestampMs }) =>
+      normalizeLeaderboardAddress(owner) === own && timestampMs >= day.startMs && timestampMs < day.endMs,
+  );
+};
+
+/**
+ * What the player's day added up to: reveals and what they paid, sites cleared, the ruin's chest and the LORDS it paid,
+ * folded from the player's own stories within the day.
+ */
+export const totalToday = (stories: readonly OwnStory[], player: string, day: DayBounds): StoryTotals => {
+  const totals: StoryTotals = { reveals: 0, cleared: 0, chests: 0, essence: 0, labor: 0, lords: 0 };
+  for (const { story, storyPayload } of ownStoriesOfDay(stories, player, day)) {
     if (story === "ExplorationReward") {
       totals.reveals += 1;
       addReward(totals, storyPayload.resource_type, storyPayload.amount);
     } else if (story === "SitePayout") {
-      totals.sitesCleared += 1;
+      totals.cleared += 1;
       // A ruin's clear is the day's chest.
       if (Number(storyPayload.category) === StructureType.Ruin) totals.chests += 1;
       const reward = someReward(storyPayload.reward);
@@ -45,10 +56,11 @@ export const totalToday = (
   return totals;
 };
 
-const addReward = (totals: DayTotals, resourceType: unknown, amount: unknown): void => {
+const addReward = (totals: StoryTotals, resourceType: unknown, amount: unknown): void => {
   const whole = Number(BigInt(String(amount)) / PRECISION);
   if (Number(resourceType) === ResourcesIds.Essence) totals.essence += whole;
   else if (Number(resourceType) === ResourcesIds.Labor) totals.labor += whole;
+  else if (Number(resourceType) === ResourcesIds.Lords) totals.lords += whole;
 };
 
 /** A payout's reward in either option form Herald writes: the value itself, {"Some": value}, or none. */

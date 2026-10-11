@@ -25,7 +25,6 @@ import {
   type TroopTier,
   type TroopType,
 } from "@bibliothecadao/types";
-import { SITE_ART } from "./site-art";
 
 const PRECISION = BigInt(RESOURCE_PRECISION);
 
@@ -40,28 +39,30 @@ export interface SiteAttack {
 }
 
 /**
- * What Frontier's tile card shows of a site (design §3.12, mockup 5), read from facts with no UI of its own: its art
- * and name, its guard as troops and tier (never strength), what clearing it pays, the attack's stamina, and the whole
+ * What Frontier's tile card shows of a site (wireframe 06), read from facts with no UI of its own: its kind and name
+ * (a ruin by its beast), its guard as troops and tier (never strength), what clearing it pays, the attack's stamina, and the whole
  * fight from the army in reach as exact exchanges. The guard's count is unknown until its slots arrive; a fight only
  * exists for an army in reach.
  */
 export interface SiteCardPlan {
-  art: string;
   name: string;
   guard: { type: TroopType; tier: TroopTier; count: number } | null | undefined;
   kind: SiteKind;
   xp: number;
   /** A ruin's stored tier and whole LORDS; unknown until its chest fact arrives. */
   chest: { tier: number; amount: number } | null | undefined;
-  /** Whole units that fit at home; null for XP-only sites, undefined until the relevant home facts arrive. */
-  payout: { resourceId: ResourcesIds; amount: number } | null | undefined;
+  /**
+   * Whole units paid home and what fits beside what the store holds; null for XP-only sites, undefined until the home's
+   * facts arrive.
+   */
+  payout: { resourceId: ResourcesIds; amount: number; fits: number } | null | undefined;
   attackStamina: number;
   fight: SiteFight | undefined;
 }
 
-type SiteFight =
+export type SiteFight =
   | { outcome: "refused" }
-  | { outcome: "wins" | "loses" | "stalls"; exchanges: number; troopsLost: number };
+  | { outcome: "wins" | "loses" | "stalls"; exchanges: number; troopsLost: number; guardLeft: number };
 
 export const readSiteCard = (
   store: NativeFactStore,
@@ -79,11 +80,10 @@ export const readSiteCard = (
       ? chest && { resourceType: ResourcesIds.Lords, amount: chest.amount * PRECISION }
       : siteReward(kind, site);
   return {
-    art: SITE_ART[kind],
     name: siteName(store, kind, site, siteTile),
     guard: guards === undefined ? undefined : guard ? troopsOf(guard.troops) : null,
     kind,
-    xp: Math.floor(Math.sqrt(25 * Number(site.initial_guard_count / PRECISION)) / 2),
+    xp: siteClearXp(site),
     chest: chest && { tier: chest.tier, amount: Number(chest.amount) },
     payout: reward && fittingPayout(store, site.game_id, reward, attack),
     attackStamina: activeCombatRules().stamina.stamina_attack_req,
@@ -91,7 +91,11 @@ export const readSiteCard = (
   };
 };
 
-/** A capped reward keeps only the room left after the home's accrued production settles. */
+/** The XP a clear pays, as the contract's clear_xp computes it from the guard the site started with. */
+export const siteClearXp = (site: Pick<NativeRows["ExpeditionSite"], "initial_guard_count">): number =>
+  Math.floor(Math.sqrt(25 * Number(site.initial_guard_count / PRECISION)) / 2);
+
+/** A capped reward fits only the room left after the home's accrued production settles. */
 const fittingPayout = (
   store: NativeFactStore,
   gameId: number,
@@ -99,7 +103,7 @@ const fittingPayout = (
   attack: SiteAttack | null,
 ): SiteCardPlan["payout"] => {
   const raw = Number(reward.amount) / Number(PRECISION);
-  if (reward.resourceType !== ResourcesIds.Labor) return { resourceId: reward.resourceType, amount: raw };
+  if (reward.resourceType !== ResourcesIds.Labor) return { resourceId: reward.resourceType, amount: raw, fits: raw };
   const actor = store.subscriptionScope().known?.actor;
   const home =
     attack?.army.owner ??
@@ -116,9 +120,9 @@ const fittingPayout = (
   );
   if (!held) return undefined;
   const limit = manager.storeLimit(reward.resourceType);
-  if (limit === undefined) return { resourceId: reward.resourceType, amount: raw };
-  const amount = Math.min(raw, Math.max(0, (Number(limit) - held.balance) / Number(PRECISION)));
-  return { resourceId: reward.resourceType, amount };
+  if (limit === undefined) return { resourceId: reward.resourceType, amount: raw, fits: raw };
+  const fits = Math.min(raw, Math.max(0, (Number(limit) - held.balance) / Number(PRECISION)));
+  return { resourceId: reward.resourceType, amount: raw, fits };
 };
 
 /** A site by its kind; a ruin by the Loot Survivor beast that holds it at its depth. */
@@ -177,5 +181,6 @@ const forecastSiteFight = (
     outcome: forecast.outcome,
     exchanges: forecast.exchanges,
     troopsLost: Number(forecast.attackerLoss / PRECISION),
+    guardLeft: Number((guard.count - forecast.defenderLoss) / PRECISION),
   };
 };

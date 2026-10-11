@@ -8,7 +8,7 @@ import { forgetDeviceKey } from "@bibliothecadao/eternum";
 import { useRequestSignIn } from "./sign-in/sign-in-route";
 
 const buttonClass =
-  "rounded-lg border border-gold/40 px-3 py-2 font-cinzel text-[12px] uppercase tracking-[0.1em] text-gold hover:bg-gold/10 disabled:opacity-50";
+  "rounded-lg border border-gold/40 px-3 py-2 font-ui text-[12px] uppercase tracking-[0.1em] text-gold hover:bg-gold/10 disabled:opacity-50";
 
 /** A device removed from the account signs in again, as a new device with a fresh key. */
 export const AccountStatePrompt = () => {

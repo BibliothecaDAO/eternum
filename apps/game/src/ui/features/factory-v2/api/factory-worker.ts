@@ -1,12 +1,13 @@
 import type { PlaytestSlot } from "../../../../../../../apps/launch-service/src/slots";
 import type { toFactoryRunRecord } from "../../../../../../../apps/launch-service/src/model";
 import type { SeasonPhase, SeasonPhaseName } from "../../../../../../../apps/launch-service/src/calendar";
+import { fetchApi } from "@/runtime/app-api";
 export type { PlaytestSlot, SeasonPhase, SeasonPhaseName };
 type FactoryRun = ReturnType<typeof toFactoryRunRecord>;
 
 /** The launch routes are served under the app's own /api beside identity, so the session cookie reaches them. */
 async function request<T>(path: string, body?: unknown, method = body === undefined ? "GET" : "POST"): Promise<T> {
-  const response = await fetch(path, {
+  const response = await fetchApi(path, {
     method,
     credentials: "include",
     ...(body === undefined ? {} : { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
@@ -17,8 +18,8 @@ async function request<T>(path: string, body?: unknown, method = body === undefi
 }
 
 export const fetchPlaytestSlots = () => request<{ slots: PlaytestSlot[] }>("/api/slots");
-export const registerPlaytestSlot = (name: string) =>
-  request<PlaytestSlot>(`/api/slots/${encodeURIComponent(name)}/register`, {});
+/** Whether the signed-in caller launches: the factory page shows itself to launchers only. */
+export const fetchLauncherStatus = () => request<{ launcher: boolean }>("/api/factory/launcher");
 export const fetchFactoryRuns = (environment: "madara.blitz" | "madara.eternum" | "madara.frontier") =>
   request<{ runs: FactoryRun[] }>(`/api/factory/runs?environment=${environment}`);
 export const createEternumGame = (gameName: string, gameStartTime: string) =>

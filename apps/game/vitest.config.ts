@@ -18,6 +18,7 @@ export default defineConfig({
     environmentMatchGlobs: [
       ["src/three/**/*.test.ts", "node"],
       ["src/three/**/__tests__/*.test.ts", "node"],
+      ["scripts/**/*.test.mjs", "node"],
     ],
     setupFiles: "./src/setupTests.ts",
     css: true,

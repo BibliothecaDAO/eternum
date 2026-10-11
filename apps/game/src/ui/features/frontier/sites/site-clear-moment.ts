@@ -5,7 +5,7 @@ import { findBankedCounter, flyToBankedCounter } from "@/ui/motion/moments/banke
 import { playHaptic } from "@/ui/motion/motion-settings";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { create } from "zustand";
-import { formatAmount } from "../frontier-format";
+import { formatAmount } from "@/ui/design-system/kit/amount";
 import { payoutSprites, type SiteClear } from "./site-outcome";
 
 /**

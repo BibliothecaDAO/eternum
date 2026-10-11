@@ -17,7 +17,7 @@ describe("identity failure sentences", () => {
 it("explains how to link an undeployed wallet while transient failures still offer retry", () => {
   vi.spyOn(console, "error").mockImplementation(() => {});
   expect(failureSentence("link", new IdentityRequestError(400, "WALLET_NOT_DEPLOYED"))).toBe(
-    "This wallet is not deployed on Starknet mainnet. Deploy it in your wallet app, then link it again.",
+    "This wallet is not deployed on Starknet Sepolia. Deploy it in your wallet app, then link it again.",
   );
   expect(failureSentence("link", new Error("RPC unavailable"))).toBe(
     "The wallet was not linked. Try again in a moment.",

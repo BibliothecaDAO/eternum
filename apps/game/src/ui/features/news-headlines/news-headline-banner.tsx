@@ -116,7 +116,7 @@ export function NewsHeadlineBanner({ headline, onDismiss, onNavigate }: NewsHead
                 <div className={cn("text-[9px] font-semibold uppercase tracking-[0.38em]", theme.accentTextClassName)}>
                   {theme.eyebrow}
                 </div>
-                <div className="mt-1 font-[Cinzel] text-sm font-semibold uppercase tracking-[0.2em] text-gold">
+                <div className="mt-1 font-ui text-sm font-semibold uppercase tracking-[0.2em] text-gold">
                   {headline.title}
                 </div>
                 <div className="mt-1 text-[12px] leading-[1.35] text-gold/78">{description}</div>

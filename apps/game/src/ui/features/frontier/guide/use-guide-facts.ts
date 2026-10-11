@@ -7,29 +7,32 @@ import {
   configManager,
   entityMapPosition,
   expeditionDepth,
-  realmLearned,
   getBalance,
   getBuildingQuantity,
   getGuardsByStructure,
+  realmLearned,
+  researchTier,
   isCurrentExpeditionArmy,
   liveHomeArmies,
   StaminaManager,
   structureMapPosition,
 } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import { FARM, LABOR, TROOPS, WHEAT, WORKSHOP } from "@/ui/design-system/kit/words";
+import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import {
   BuildingType,
   RESOURCE_PRECISION,
   ResourcesIds,
   StructureType,
-  TileOccupier,
   type TroopTier,
   type TroopType,
 } from "@bibliothecadao/types";
 import { knownBalance } from "@/ui/utils/utils";
-import { affordableUpgrades } from "../attributes/attributes";
 import { useMemo } from "react";
-import { troopsOnHand, type useExpeditionRules } from "../frontier-home";
+import { affordableUpgrades } from "../attributes/attributes";
+import { troopsAtHome, type useExpeditionRules } from "../frontier-home";
+import { readRealmStore } from "../realm-stores";
 import type { GuideFacts } from "./guide-script";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
@@ -47,9 +50,13 @@ const GUIDE_MODELS = [
   "ExpeditionSite",
   "RealmKnowledge",
   "ResearchPrice",
+  "BoardRules",
 ] as const;
 
-/** What the guide answers to, read from the store at chain time; it never listens for events. */
+/**
+ * What the guide answers to, read from the store at chain time; it never listens for events. The losing fight and the
+ * season's end are told by the cards that host those lines.
+ */
 export const useGuideFacts = (rules: ExpeditionRules, realm: NativeRows["Structure"] | null): GuideFacts => {
   const { setup } = useGame();
   const revision = useNativeRevision(GUIDE_MODELS);
@@ -89,9 +96,10 @@ const readGuideFacts = (
   });
   const exploreCost = configManager.getExploreStaminaCost();
   return {
+    ...HOSTED,
     realm: true,
     barracks: getBuildingQuantity(safeInteger(realm.entity_id), BuildingType.ResourceKnightT1, store) > 0,
-    troopsAtHome: troopsOnHand(store, safeInteger(realm.entity_id), clock.tick),
+    troopsAtHome: troopsAtHome(store, realm, rules, clock.now, clock.tick),
     armies: armies.length,
     armyActed: stamina.some((bar) => bar.current < bar.max),
     camp: guardedCampToday(store, rules, realm, clock.now),
@@ -99,45 +107,105 @@ const readGuideFacts = (
     onMap: clock.onMap,
     armiesTired:
       stamina.length === armies.length && stamina.length > 0 && stamina.every((bar) => bar.current < exploreCost),
-    pickWaiting: armies.some((army) => {
-      const progress = store.get("ArmyProgress", { game_id: army.game_id, explorer_id: army.explorer_id });
-      const xpRules = store.get("ArmyProgressionRules", { game_id: army.game_id });
-      return progress !== undefined && xpRules !== undefined && affordableUpgrades(progress, xpRules).length > 0;
-    }),
+    armyTierAffordable: armies.some((army) => canBuyAttributeTier(store, army)),
+    typeTierAffordable: firstTypeTierAffordable(store, realm, clock.tick),
+    storeFull: fullStore(store, realm, rules, clock),
     ...readSiteFirsts(store, realm.game_id),
-    firstResearchAffordable: canAffordFirstResearch(store, realm, clock.tick),
-    armyBelowSurface: armies.some(
+    armyBeyondSpire: armies.some(
       (army) => expeditionDepth(rules, { y: entityMapPosition(store, army.game_id, army.explorer_id).y }) >= 1,
     ),
   };
 };
 
-/** Nothing learned yet, and the realm's Essence covers the cheapest first tier on the table. */
-const canAffordFirstResearch = (store: NativeFactStore, realm: NativeRows["Structure"], tick: number): boolean => {
-  if (realmLearned(store, realm.game_id, realm.entity_id) !== 0n) return false;
-  const prices = [...store.inGame("ResearchPrice", realm.game_id)]
-    .filter(({ tier }) => tier === 1)
-    .map(({ essence }) => Number(essence) / RESOURCE_PRECISION);
-  const essence = knownBalance(getBalance(safeInteger(realm.entity_id), ResourcesIds.Essence, tick, store).balance);
-  return prices.length > 0 && essence !== undefined && essence >= Math.min(...prices);
+/** An army whose XP buys a tier of an attribute now. */
+const canBuyAttributeTier = (store: NativeFactStore, army: NativeRows["ExplorerTroops"]): boolean => {
+  const progress = store.get("ArmyProgress", { game_id: army.game_id, explorer_id: army.explorer_id });
+  const xpRules = store.get("ArmyProgressionRules", { game_id: army.game_id });
+  return progress !== undefined && xpRules !== undefined && affordableUpgrades(progress, xpRules).length > 0;
 };
 
-/** The expedition's sites and chests as the guide's firsts read them. */
+/**
+ * The expedition's sites as the guide's firsts read them, a site's kind being its structure's category: a site
+ * cleared, a ruin or stragglers standing in view, and a ruin cleared, whose chest has paid.
+ */
 const readSiteFirsts = (store: NativeFactStore, gameId: number) => {
   const sites = [...store.inGame("ExpeditionSite", gameId)];
+  const isKind = (site: NativeRows["ExpeditionSite"], category: StructureType) =>
+    store.get("Structure", { game_id: gameId, entity_id: site.entity_id })?.base.category === category;
   return {
     siteCleared: sites.some((site) => site.cleared),
-    fallenRealm: sites.some(
-      (site) =>
-        !site.cleared &&
-        store.get("Structure", { game_id: gameId, entity_id: site.entity_id })?.base.category === StructureType.Ruin,
-    ),
-    closedChest: [...store.inGame("TileOccupancy", gameId)].some((tile) => tile.category === TileOccupier.Chest),
+    ruin: sites.some((site) => !site.cleared && isKind(site, StructureType.Ruin)),
+    stragglers: sites.some((site) => !site.cleared && isKind(site, StructureType.Stragglers)),
+    chestPaid: sites.some((site) => site.cleared && isKind(site, StructureType.Ruin)),
   };
 };
 
+/** The Farm's or the Workshop's first tier, when its building stands and the realm holds its Essence and labor. */
+const firstTypeTierAffordable = (
+  store: NativeFactStore,
+  realm: NativeRows["Structure"],
+  tick: number,
+): string | null => {
+  const learned = realmLearned(store, realm.game_id, realm.entity_id);
+  if (learned === undefined) return null;
+  const held = (resource: ResourcesIds) =>
+    knownBalance(getBalance(safeInteger(realm.entity_id), resource, tick, store).balance);
+  for (const { row, category, word } of FIRST_TIERS) {
+    // The castle's own workshop is not a building of the type.
+    const own =
+      getBuildingQuantity(safeInteger(realm.entity_id), category, store) -
+      (category === BuildingType.ResourceLabor ? 1 : 0);
+    if (own < 1 || researchTier(learned, row) > 0) continue;
+    const price = store.get("ResearchPrice", { game_id: realm.game_id, row, tier: 1 });
+    const essence = held(ResourcesIds.Essence);
+    const labor = held(ResourcesIds.Labor);
+    if (
+      price &&
+      essence !== undefined &&
+      labor !== undefined &&
+      essence >= whole(price.essence) &&
+      labor >= whole(price.labor)
+    )
+      return word;
+  }
+  return null;
+};
+
+const FIRST_TIERS = [
+  { row: research.ROW_FARM, category: BuildingType.ResourceWheat, word: FARM.toLowerCase() },
+  { row: research.ROW_WORKSHOP, category: BuildingType.ResourceLabor, word: WORKSHOP.toLowerCase() },
+] as const;
+
+const whole = (amount: bigint): number => Number(amount / BigInt(RESOURCE_PRECISION));
+
+/** The first of wheat, labor and troops whose store is at its limit, by its word; none while every one has room. */
+const fullStore = (
+  store: NativeFactStore,
+  realm: NativeRows["Structure"],
+  rules: ExpeditionRules,
+  clock: { now: number; tick: number },
+): string | null => {
+  const full = FULL_STORES.find(({ store: kind }) => readRealmStore(store, realm, rules, kind, clock).tone === "ember");
+  return full?.word ?? null;
+};
+
+const FULL_STORES = [
+  { store: ResourcesIds.Wheat, word: WHEAT.toLowerCase() },
+  { store: ResourcesIds.Labor, word: LABOR.toLowerCase() },
+  { store: "troops" as const, word: TROOPS.toLowerCase() },
+];
+
+/** What the hosting cards tell: the fight on the open site card, the season's end on its card. */
+const HOSTED = { losingFight: false, seasonOver: false } as const;
+
 const NO_REALM: GuideFacts = {
+  ...HOSTED,
+  stragglers: false,
+  typeTierAffordable: null,
+  chestPaid: false,
+  storeFull: null,
   realm: false,
+  armyTierAffordable: false,
   barracks: false,
   troopsAtHome: undefined,
   armies: 0,
@@ -146,12 +214,9 @@ const NO_REALM: GuideFacts = {
   castleAffordable: false,
   onMap: false,
   armiesTired: false,
-  pickWaiting: false,
   siteCleared: false,
-  closedChest: false,
-  fallenRealm: false,
-  firstResearchAffordable: false,
-  armyBelowSurface: false,
+  ruin: false,
+  armyBeyondSpire: false,
 };
 
 const guardedCampToday = (

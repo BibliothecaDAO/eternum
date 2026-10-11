@@ -1,6 +1,5 @@
-// @vitest-environment node
 import assert from "node:assert/strict";
-const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
+import { test } from "node:test";
 import { ensurePwaCacheRule } from "./ensure-pwa-cache-rule.mjs";
 
 function fixture(initialRules = []) {

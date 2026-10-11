@@ -74,7 +74,7 @@ it.each([
   ["device_revoked", "device_removed"],
   ["account_not_secured", "Secure your account by signing in with Discord or an email code."],
   ["not_your_account", "This game account does not belong to your sign-in. Sign in to the account that owns it."],
-  ["device_limit", "Your account has reached its device limit. Remove an old device from Account > Devices."],
+  ["device_limit", "Device limit reached."],
 ])("shows the recovery for guardian refusal %s", async (code, expected) => {
   joinRealmsAccount.mockRejectedValueOnce(new IdentityRequestError(403, code));
   await openAt("/g/0xa1/1");

@@ -74,4 +74,21 @@ describe("Frontier's build options", () => {
     store.applyFacts([{ model: "RealmKnowledge", key: "0x77", value: null }] as never);
     expect(readBuildOptions(store, realm, true, 350)).toBeUndefined();
   });
+
+  it("offers each training building once the Barracks row reaches the board's gate tier, trained at its own tier", () => {
+    const { store, realm } = realmBoard();
+    const warHall = () =>
+      readBuildOptions(store, realm, true, 350)!.find(({ category }) => category === BuildingType.WarHall)!;
+    const gate = store.require("BoardRules", { game_id: 1 }).training_gate_tier;
+    expect(warHall()).toMatchObject({ standing: { gate }, effect: { kind: "trains", attribute: "Battle" }, tier: 1 });
+    // research.cairo: the Barracks row's tier sits at 0x4000.
+    store.applyFacts([
+      {
+        model: "RealmKnowledge",
+        key: "0x77",
+        value: { game_id: 1, structure_id: realm.entity_id, learned: BigInt(gate) * 0x4000n },
+      },
+    ] as never);
+    expect(warHall().standing).toBe("open");
+  });
 });

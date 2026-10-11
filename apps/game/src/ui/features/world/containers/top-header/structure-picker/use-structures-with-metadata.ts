@@ -63,7 +63,6 @@ export const useStructuresWithMetadata = ({
       structures
         .filter((structure) => resolveStructureUiCapabilities(structure.structure).hasPopulationDetails)
         .map((structure) => safeInteger(structure.entityId))
-        .filter((entityId) => Number.isFinite(entityId))
         .toSorted((left, right) => left - right),
     [structures],
   );

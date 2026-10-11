@@ -250,14 +250,8 @@ import {
 } from "./worldmap-terrain-commit-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
 import { ARMY_SELECT_REQUEST_EVENT, readArmySelectRequest } from "./worldmap-army-select-request";
+import { ORDER_REQUEST_EVENT, pinsOrder, readOrderRequest } from "./worldmap-order-request";
 import { onChestOpenRequest } from "./worldmap-chest-open-request";
-import {
-  beginChestOpening,
-  cancelChestOpening,
-  confirmChestOpening,
-  type ChestOpening,
-  readChestBeat,
-} from "@/ui/features/frontier/chest/chest-moment";
 import { shouldQueueArmySelectionRecovery } from "./worldmap-army-tab-selection";
 import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
 import {
@@ -906,6 +900,12 @@ export default class WorldmapScene extends WarpTravel {
     const entityId = readArmySelectRequest(event);
     if (entityId === null) return;
     void this.selectRequestedArmy(entityId);
+  };
+  private orderRequestHandler = (event: Event) => {
+    if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
+    if (!canIssueOrders()) return;
+    const tile = readOrderRequest(event);
+    if (tile) this.actAtHex(tile);
   };
   private minimapZoomHandler = (event: Event) => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
@@ -1837,6 +1837,7 @@ export default class WorldmapScene extends WarpTravel {
     window.addEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
     window.addEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
     window.addEventListener(ARMY_SELECT_REQUEST_EVENT, this.armySelectRequestHandler);
+    window.addEventListener(ORDER_REQUEST_EVENT, this.orderRequestHandler);
     this.stopChestOpenRequests = onChestOpenRequest(({ explorerId, hex }) => {
       if (this.sceneManager.getCurrentScene() === SceneName.WorldMap) void this.openChest(explorerId, hex);
     });
@@ -2578,6 +2579,11 @@ export default class WorldmapScene extends WarpTravel {
       resolveSpawnActionPath(hexCoords, getLiveWorldmapEntityActions().actionPaths)
     )
       return;
+    if (hexCoords && this.pinsOrderTarget(hexCoords)) {
+      // The tile becomes the order's target: its path and costs show, and the HUD's verb runs it.
+      this.state.updateEntityActionHoveredHex(hexCoords);
+      return;
+    }
     const viewer = accountAddress();
     const { army, structure, chest } = hexCoords
       ? this.getHexagonEntity(hexCoords)
@@ -2686,6 +2692,22 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
+    this.actAtHex(hexCoords);
+  }
+
+  /** Whether a tap on this tile pins an order for the selected army: a tile it can explore or move to. */
+  private pinsOrderTarget(hexCoords: HexPosition): boolean {
+    if (!canIssueOrders()) return false;
+    const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
+    if (selectedEntityId === null || selectedEntityId === undefined) return false;
+    return pinsOrder(actionPaths.get(ActionPaths.posKey(hexCoords, true)));
+  }
+
+  /** Runs the selected army's order at this tile: a right-click, or the HUD's verb for a pinned order. */
+  private actAtHex(hexCoords: HexPosition) {
+    const account = useAccountStore.getState().account;
+    const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
+    const clickedHexKey = ActionPaths.posKey(hexCoords, true);
     if (selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0 && hexCoords) {
       const actionPathLookup = resolveEntityActionPathLookup({
         hasSelectedEntity: true,
@@ -3692,36 +3714,13 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
-   * The one chest opener, for a tap here or the HUD's request: in a game of expedition chests (it has ChestRules) the
-   * chest's moment holds on the tile while the command goes out, and ends if it is refused; a relic crate only sends it.
-   * The result comes back as its story.
+   * The one chest opener, for a tap here or the HUD's request: a relic crate's command goes out, and its result comes
+   * back as its story. Frontier has no chest on a tile: a ruin's chest opens at its clear.
    */
   private async openChest(explorerId: ID, hex: HexPosition): Promise<void> {
     const account = useAccountStore.getState().account;
     if (!account) return;
-    const expedition = this.game.store.get("ChestRules", { game_id: configManager.getActiveGameId() }) !== undefined;
-    const opening = {
-      gameId: configManager.getActiveGameId(),
-      explorerId,
-      hex: { ...hex, alt: useUIStore.getState().mapLayer },
-    };
-    if (expedition) this.holdExpeditionChest(opening);
-    const sent = await openRelicCrate({ systemCalls: this.game.systemCalls, account, explorerId, hex });
-    if (expedition) {
-      if (sent) confirmChestOpening(opening);
-      else cancelChestOpening(opening);
-    }
-  }
-
-  /** The chest's hold: the moment starts from the chest on screen and the world's chest plays its beats. */
-  private holdExpeditionChest(opening: ChestOpening): void {
-    const { hex } = opening;
-    const tile = { col: hex.col - FELT_CENTER(), row: hex.row - FELT_CENTER() };
-    beginChestOpening(projectHexToScreen(tile, this.camera), {
-      opening,
-      focus: () => this.moveCameraToColRow(tile.col, tile.row, 0.4),
-    });
-    this.chestManager.holdChest(hex, readChestBeat);
+    await openRelicCrate({ systemCalls: this.game.systemCalls, account, explorerId, hex });
   }
 
   private keepMovementDestinationSelected(targetHex: HexPosition): void {
@@ -8114,6 +8113,7 @@ export default class WorldmapScene extends WarpTravel {
     window.removeEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
     window.removeEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
     window.removeEventListener(ARMY_SELECT_REQUEST_EVENT, this.armySelectRequestHandler);
+    window.removeEventListener(ORDER_REQUEST_EVENT, this.orderRequestHandler);
     this.stopChestOpenRequests?.();
     this.clearCache();
 

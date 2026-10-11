@@ -42,8 +42,7 @@ describe("an army's progress", () => {
 
   it("can Upgrade any attribute whose next tier its XP covers", () => {
     expect(affordableUpgrades({ ...ARMY, xp: 99 }, RULES)).toEqual([]);
-    // Scouting waits for the frontend's kind choice.
-    expect(affordableUpgrades({ ...ARMY, xp: 150, battle: 2 }, RULES)).toEqual(["Logistics", "Homecoming"]);
+    expect(affordableUpgrades({ ...ARMY, xp: 150, battle: 2 }, RULES)).toEqual(["Logistics", "Scouting", "Homecoming"]);
     expect(
       affordableUpgrades({ ...ARMY, xp: 5000, battle: 5, logistics: 5, scouting: 5, homecoming: 5 }, RULES),
     ).toEqual([]);

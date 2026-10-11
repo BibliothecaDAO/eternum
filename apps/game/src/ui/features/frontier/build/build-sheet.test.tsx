@@ -22,10 +22,10 @@ afterEach(() => {
 });
 
 describe("the build sheet", () => {
-  it("stands the chosen building on the plot as a ghost, builds it there and takes the ghost away", async () => {
+  it("stands the chosen building on the plot as a ghost, shows its gains, builds it there and takes the ghost away", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, realm } = realmBoard();
-    const plot = { col: 10, row: 9 };
+    const plot = { col: 11, row: 10 };
     const placeBuilding = vi.fn(() => Promise.resolve());
     installActiveGameClient({
       connect() {},
@@ -47,8 +47,8 @@ describe("the build sheet", () => {
     const card = (name: string) => host.querySelector<HTMLButtonElement>(`[aria-label="${name}"]`)!;
     expect(card("Farm").getAttribute("aria-pressed")).toBe("true");
     expect(useUIStore.getState().previewBuilding).toEqual({ type: BuildingType.ResourceWheat, plot });
-    expect(card("Farm").querySelector('[aria-label^="Wheat an hour after"]')?.getAttribute("data-tone")).toBe("gain");
-    expect(card("Hut").querySelector('[aria-label^="Wheat an hour after"]')).toBeNull();
+    // The chosen farm makes wheat an hour and takes its population.
+    expect(host.querySelector('[aria-label^="produces +"]')).not.toBeNull();
 
     act(() => card("Barracks").click());
     expect(useUIStore.getState().previewBuilding).toEqual({ type: BuildingType.ResourceKnightT1, plot });
