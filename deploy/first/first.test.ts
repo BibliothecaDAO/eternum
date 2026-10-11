@@ -2,7 +2,7 @@ import { afterEach, expect, mock, test } from "bun:test";
 import { chmodSync, existsSync, lstatSync, mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Account, hash, type RpcProvider } from "starknet";
+import { Account, hash, num, type RpcProvider } from "starknet";
 import { PrivateStore } from "./private-store";
 import { runSteps, type Step } from "./run";
 import { environments, validateInputs, ACCOUNT_CLASS, WEI, root, type Inputs } from "./settings";
@@ -322,20 +322,28 @@ test("metadata presence follows all confirmed event pages; differing metadata re
     (call) => call.entrypoint === "set_attrs_raw_to_ipfs_cid",
   )!;
   const args = operation.calldata as string[];
-  const getEvents = mock(async (request: { continuation_token?: string }) =>
+  const event = {
+    keys: [hash.getSelectorFromName("AttrsRawToIPFSCIDUpdated"), ...args.slice(0, -1).map(num.toHex)],
+  };
+  const getEvents = mock(async (request: { continuation_token?: string; keys: string[][] }) =>
     request.continuation_token
-      ? { events: [{ keys: [hash.getSelectorFromName("AttrsRawToIPFSCIDUpdated"), ...args.slice(0, -1)] }] }
+      ? {
+          events: [event].filter((event) =>
+            request.keys.every((keys, index) =>
+              keys.every((key) => /^0x[0-9a-f]+$/i.test(key) && BigInt(key) === BigInt(event.keys[index]!)),
+            ),
+          ),
+        }
       : { events: [], continuation_token: "second" },
   );
+  expect(BigInt(args[0]!)).toBeGreaterThan(9n);
   expect(await setupPresent({ getEvents } as unknown as RpcProvider, operation, 19)).toBe(true);
   expect(getEvents).toHaveBeenCalledTimes(2);
-  await expect(
-    setupPresent(
-      { getEvents: async () => ({ events: [{ keys: ["0x1", args[0]!, "2"] }] }) } as unknown as RpcProvider,
-      operation,
-      19,
-    ),
-  ).rejects.toThrow("metadata differs");
+  expect((await getEvents({ continuation_token: "second", keys: [[event.keys[0]!], [args[0]!]] })).events).toEqual([]);
+  event.keys[2] = "0x2";
+  await expect(setupPresent({ getEvents } as unknown as RpcProvider, operation, 19)).rejects.toThrow(
+    "metadata differs",
+  );
 });
 
 test("every service uses one RPC; deployer and cold admin keys never enter Worker values", () => {

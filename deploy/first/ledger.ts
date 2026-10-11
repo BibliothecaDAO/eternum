@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, renameSync } from "node:fs";
 import { join } from "node:path";
-import { Account, byteArray, CallData, hash, json, type Call, type RpcProvider } from "starknet";
+import { Account, byteArray, CallData, hash, json, num, type Call, type RpcProvider } from "starknet";
 import { buildLedgerEconomicPreset } from "../../config/deployer/clean/ledger/economics";
 import { buildMysteryChestPreset } from "../../contracts/l2/ledger/scripts/chest-preset.js";
 import { addressBook, root, type Environment, type Inputs, type Target } from "./settings";
@@ -206,7 +206,7 @@ async function metadataPresent(provider: RpcProvider, operation: Call, head: num
       address: operation.contractAddress,
       from_block: { block_number: 0 },
       to_block: { block_number: head },
-      keys: [[hash.getSelectorFromName("AttrsRawToIPFSCIDUpdated")], [args[0]!]],
+      keys: [[hash.getSelectorFromName("AttrsRawToIPFSCIDUpdated")], [num.toHex(args[0]!)]],
       chunk_size: 100,
       ...(continuation_token ? { continuation_token } : {}),
     });
