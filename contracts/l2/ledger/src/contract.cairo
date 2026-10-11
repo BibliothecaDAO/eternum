@@ -48,7 +48,6 @@ pub trait IGameLedger<TState> {
     fn post_season_top(ref self: TState, season_id: u32, winners: Array<ContractAddress>);
     fn challenge_season(ref self: TState, season_id: u32, omitted: ContractAddress);
     fn claim_season(ref self: TState, season_id: u32, position: u32);
-    fn correct_season_mmr(ref self: TState, season_id: u32, updates: Array<(ContractAddress, u128)>);
     fn get_season_mmr(self: @TState, season_id: u32, owner: ContractAddress) -> u128;
     fn get_season_winner(self: @TState, season_id: u32, index: u32) -> (ContractAddress, u256);
     fn season_claimed(self: @TState, season_id: u32, owner: ContractAddress) -> bool;
@@ -187,7 +186,6 @@ pub mod GameLedger {
         SeasonTopPosted: SeasonTopPosted,
         SeasonChallenged: SeasonChallenged,
         SeasonPaid: SeasonPaid,
-        SeasonMmrCorrected: SeasonMmrCorrected,
         ResultsApplied: ResultsApplied,
         ChestMinted: ChestMinted,
         ChestOpened: ChestOpened,
@@ -352,13 +350,6 @@ pub mod GameLedger {
         #[key]
         owner: ContractAddress,
         amount: u256,
-    }
-
-    #[derive(Drop, starknet::Event)]
-    struct SeasonMmrCorrected {
-        #[key]
-        season_id: u32,
-        updates: Span<(ContractAddress, u128)>,
     }
 
     #[constructor]
@@ -624,16 +615,11 @@ pub mod GameLedger {
             assert!(
                 self.season_position(season_id, season.top_count, omitted).is_none(), "Ledger: winner already listed",
             );
-            let preset = self.presets.entry(season.preset_id).read();
-            let short = season
-                .top_count < SeasonWriterImpl::winner_count(season.participant_count, preset.paid_fraction_bps);
-            if !short {
-                let cutoff = self.season_winners.entry((season_id, season.top_count - 1)).read();
-                assert!(
-                    SeasonWriterImpl::outranks(omitted, mmr, cutoff, self.get_season_mmr(season_id, cutoff)),
-                    "Ledger: does not beat cutoff",
-                );
-            }
+            let cutoff = self.season_winners.entry((season_id, season.top_count - 1)).read();
+            assert!(
+                SeasonWriterImpl::outranks(omitted, mmr, cutoff, self.get_season_mmr(season_id, cutoff)),
+                "Ledger: does not beat cutoff",
+            );
             season.challenged = true;
             self.seasons.entry(season_id).write(season);
             self.emit(SeasonChallenged { season_id, omitted });
@@ -656,24 +642,6 @@ pub mod GameLedger {
             self.season_claims.entry((season_id, owner)).write(true);
             self.send_lords(owner, amount);
             self.emit(SeasonPaid { season_id, owner, amount });
-        }
-
-        fn correct_season_mmr(ref self: ContractState, season_id: u32, updates: Array<(ContractAddress, u128)>) {
-            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
-            let mut season = self.get_season(season_id);
-            assert!(!season.settlement_started, "Ledger: season payout started");
-            assert!(!updates.is_empty(), "Ledger: empty MMR correction");
-            let mut token_updates = array![];
-            for (owner, mmr) in updates.span() {
-                self.get_season_mmr(season_id, *owner);
-                assert!(*mmr >= 100, "Ledger: MMR below token floor");
-                self.season_mmrs.entry((season_id, *owner)).write(*mmr);
-                token_updates.append((*owner, Into::<u128, u256>::into(*mmr) * MMR_PRECISION));
-            }
-            season.challenged = season.posted;
-            self.seasons.entry(season_id).write(season);
-            IMMRTokenDispatcher { contract_address: self.mmr_token.read() }.update_mmr_batch(token_updates);
-            self.emit(SeasonMmrCorrected { season_id, updates: updates.span() });
         }
 
         fn get_season_mmr(self: @ContractState, season_id: u32, owner: ContractAddress) -> u128 {
@@ -1248,19 +1216,14 @@ pub mod GameLedger {
                 season.posted && starknet::get_block_timestamp() >= season.review_until, "Ledger: season under review",
             );
             assert!(!season.challenged, "Ledger: season challenged");
-            let preset = self.presets.entry(season.preset_id).read();
-            assert!(
-                season.top_count == Self::winner_count(season.participant_count, preset.paid_fraction_bps),
-                "Ledger: incomplete top list",
-            );
         }
 
         fn validate_season_top(
             self: @ContractState, season_id: u32, season: BlitzSeason, winners: Span<ContractAddress>, preset: Preset,
         ) {
             assert!(
-                winners.len() <= Self::winner_count(season.participant_count, preset.paid_fraction_bps),
-                "Ledger: too many winners",
+                winners.len() == Self::winner_count(season.participant_count, preset.paid_fraction_bps),
+                "Ledger: incomplete top list",
             );
             for index in 0..winners.len() {
                 let owner = *winners.at(index);
