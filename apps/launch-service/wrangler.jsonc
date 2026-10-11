@@ -1,5 +1,5 @@
-// The launch Worker. It serves /api/factory/* and /api/slots/* on the app's origin, beside identity, which owns the
-// session it checks. Official shards come from the identity directory. Its registrar account
+// The launch Worker serves /api/factory/* and /api/slots/* on the app's origin.
+// Official shards come from the identity directory. Its registrar account
 // is enrolled per shard; its writes require the operator token, and
 // DEPLOYER_PRIVATE_KEY and OPERATOR_TOKEN its secrets; the deploy workflow sets them. When Frontier and Blitz run is the
 // season calendar in D1, which the operator edits. Production deploys only at the cutover, when the box's launch service stops: two schedulers
