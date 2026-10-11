@@ -7,8 +7,10 @@ import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { SIGN_IN_WORDS } from "../words";
 
 /**
- * Six boxes over one real one-time-code input, so a pasted or autofilled code, a phone's code suggestion and backspace
- * all behave as in any code field. A refused code turns the boxes ember until the player types again.
+ * A box for each digit of the emailed code (its length is the identity service's) over one real one-time-code input, so
+ * a pasted or autofilled code, a phone's code suggestion and backspace all behave as in any code field. The boxes share
+ * the width they are given, so the whole code fits a phone. A refused code turns the boxes ember until the player types
+ * again.
  */
 export const CodeBoxes = ({
   code,
@@ -21,7 +23,7 @@ export const CodeBoxes = ({
   disabled: boolean;
   onType: (value: string) => void;
 }) => (
-  <label className="relative flex justify-center gap-2">
+  <label className="relative flex justify-center gap-1.5">
     <span className="sr-only">{SIGN_IN_WORDS.code}</span>
     <input
       type="text"
@@ -40,7 +42,7 @@ export const CodeBoxes = ({
         key={index}
         aria-hidden
         className={cn(
-          "flex h-16 w-12 items-center justify-center rounded-xl border-2 bg-kit-plate font-ui text-[30px] font-extrabold text-kit-cream",
+          "flex h-16 min-w-0 max-w-12 flex-1 items-center justify-center rounded-xl border-2 bg-kit-plate font-ui text-[28px] font-extrabold text-kit-cream",
           refused ? "border-kit-red" : index === code.length ? "border-kit-peach" : "border-kit-line",
           disabled && "opacity-50",
         )}

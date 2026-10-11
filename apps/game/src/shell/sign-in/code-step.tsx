@@ -11,8 +11,8 @@ import { CodeBoxes } from "./fields";
 import { FailureLine } from "./failure-line";
 
 /**
- * The code step (spec 02): the address the code went to (tap to change it), six boxes that sign in on the sixth digit,
- * and when the code expires; at that moment the clock becomes New code on the same spot. When the Worker did not say
+ * The code step (spec 02): the address the code went to (tap to change it), the code's boxes that sign in on its last
+ * digit, and when the code expires; at that moment the clock becomes New code on the same spot. When the Worker did not say
  * when the code expires, the clock is a dash and New code stands beside it, since no moment will bring it.
  */
 export const CodeStep = ({
