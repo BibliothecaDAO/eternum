@@ -2289,8 +2289,7 @@ pub fn assert_zero_pool_never_funds_a_ruin_or_payout_over_a_day() {
     let (d, game_id, key) = setup_frontier_chests_with_preset(Some(rules), frontier);
     let context = crate::tests::context(d.games, game_id);
     let clock = crate::logic::lords_budget::SeasonClock {
-        game: context.game.unbox(),
-        day_unit_seconds: context.rules.unbox().day_unit_seconds,
+        game: context.game.unbox(), day_unit_seconds: context.rules.unbox().day_unit_seconds,
     };
     let day = crate::days::day_of(clock.game, clock.day_unit_seconds, 352);
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
@@ -2505,10 +2504,7 @@ fn frontier_finds_at_most_one_ruin_a_day_and_holds_its_chest_against_the_budget(
     // The preset fixes the price, and the chest's LORDS are held open until its clear.
     let rules = relics.chest_rules(game_id).unwrap();
     assert_eq!(rules.price, 50);
-    assert_eq!(
-        chest.amount,
-        rules.price * crate::relics::tier_value(rules.shares, chest.tier).into(),
-    );
+    assert_eq!(chest.amount, rules.price * crate::relics::tier_value(rules.shares, chest.tier).into());
     assert_eq!(budget.open, chest.amount);
     let counter = crate::expeditions::ExpeditionDiscoveryKey {
         game_id,

@@ -108,10 +108,7 @@ pub fn unlocked(rules: ChestRules, clock: SeasonClock, day: u64) -> u128 {
 
 fn season_clock(context: ExecutionContext) -> SeasonClock {
     let rules = context.rules.unbox();
-    SeasonClock {
-        game: context.game.unbox(),
-        day_unit_seconds: rules.day_unit_seconds,
-    }
+    SeasonClock { game: context.game.unbox(), day_unit_seconds: rules.day_unit_seconds }
 }
 
 pub fn chest_rules(game_id: u32) -> ChestRules {

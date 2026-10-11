@@ -142,10 +142,6 @@
       {
         "name": "regression_bps",
         "type": "core::integer::u16"
-      },
-      {
-        "name": "min_players",
-        "type": "core::integer::u8"
       }
     ]
   },
@@ -848,22 +844,6 @@
           {
             "name": "position",
             "type": "core::integer::u32"
-          }
-        ],
-        "outputs": [],
-        "state_mutability": "external"
-      },
-      {
-        "type": "function",
-        "name": "correct_season_mmr",
-        "inputs": [
-          {
-            "name": "season_id",
-            "type": "core::integer::u32"
-          },
-          {
-            "name": "updates",
-            "type": "core::array::Array::<(core::starknet::contract_address::ContractAddress, core::integer::u128)>"
           }
         ],
         "outputs": [],
@@ -1969,33 +1949,6 @@
     ]
   },
   {
-    "type": "struct",
-    "name": "core::array::Span::<(core::starknet::contract_address::ContractAddress, core::integer::u128)>",
-    "members": [
-      {
-        "name": "snapshot",
-        "type": "@core::array::Array::<(core::starknet::contract_address::ContractAddress, core::integer::u128)>"
-      }
-    ]
-  },
-  {
-    "type": "event",
-    "name": "game_ledger::contract::GameLedger::SeasonMmrCorrected",
-    "kind": "struct",
-    "members": [
-      {
-        "name": "season_id",
-        "type": "core::integer::u32",
-        "kind": "key"
-      },
-      {
-        "name": "updates",
-        "type": "core::array::Span::<(core::starknet::contract_address::ContractAddress, core::integer::u128)>",
-        "kind": "data"
-      }
-    ]
-  },
-  {
     "type": "event",
     "name": "game_ledger::contract::GameLedger::ResultsApplied",
     "kind": "struct",
@@ -2214,11 +2167,6 @@
       {
         "name": "SeasonPaid",
         "type": "game_ledger::contract::GameLedger::SeasonPaid",
-        "kind": "nested"
-      },
-      {
-        "name": "SeasonMmrCorrected",
-        "type": "game_ledger::contract::GameLedger::SeasonMmrCorrected",
         "kind": "nested"
       },
       {

@@ -2946,9 +2946,9 @@
           "feltLength": 1
         },
         {
-          "name": "price_ceiling",
+          "name": "price",
           "type": "core::integer::u128",
-          "id": "0x70726963655f6365696c696e67",
+          "id": "0x7072696365",
           "feltLength": 1
         },
         {
@@ -2958,12 +2958,6 @@
           "feltLength": 5
         },
         {
-          "name": "estimate_days",
-          "type": "core::integer::u16",
-          "id": "0x657374696d6174655f64617973",
-          "feltLength": 1
-        },
-        {
           "name": "claim_window_seconds",
           "type": "core::integer::u32",
           "id": "0x636c61696d5f77696e646f775f7365636f6e6473",
@@ -2971,7 +2965,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 9,
+      "valueLength": 8,
       "derivedFrom": "preset"
     },
     {
@@ -3003,28 +2997,10 @@
           "type": "core::integer::u64",
           "id": "0x646179",
           "feltLength": 1
-        },
-        {
-          "name": "price",
-          "type": "core::integer::u128",
-          "id": "0x7072696365",
-          "feltLength": 1
-        },
-        {
-          "name": "estimate",
-          "type": "core::integer::u128",
-          "id": "0x657374696d617465",
-          "feltLength": 1
-        },
-        {
-          "name": "rolled_shares",
-          "type": "core::integer::u128",
-          "id": "0x726f6c6c65645f736861726573",
-          "feltLength": 1
         }
       ],
       "keyLength": 1,
-      "valueLength": 6
+      "valueLength": 3
     },
     {
       "name": "SiteChest",
@@ -10748,16 +10724,12 @@
           "type": "core::integer::u128"
         },
         {
-          "name": "price_ceiling",
+          "name": "price",
           "type": "core::integer::u128"
         },
         {
           "name": "shares",
           "type": "world_native::relics::ChestTiers"
-        },
-        {
-          "name": "estimate_days",
-          "type": "core::integer::u16"
         },
         {
           "name": "claim_window_seconds",
@@ -10820,18 +10792,6 @@
         {
           "name": "day",
           "type": "core::integer::u64"
-        },
-        {
-          "name": "price",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "estimate",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "rolled_shares",
-          "type": "core::integer::u128"
         }
       ]
     },
@@ -12758,5 +12718,5 @@
       ]
     }
   },
-  "identity": "7f98941735255e76df55064d59888a20c44d273bf7ae080d5436962ca44604b8"
+  "identity": "cb0be6ce8c394452229022c1542ffb63ae4a0bdf8b00a491032b8516048dc06b"
 }
