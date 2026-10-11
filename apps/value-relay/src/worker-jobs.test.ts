@@ -57,7 +57,7 @@ vi.mock("./shard-rpc", async (original) => ({
     page = shard.page;
   },
 }));
-vi.mock("./shard-labor", () => ({ currentLaborDay: () => Effect.succeed(4), writeLaborGrant: shard.grant }));
+vi.mock("./shard-labor", () => ({ currentLaborDay: () => Effect.succeed(4), writeLaborGrants: shard.grant }));
 vi.mock("./shard-enrolment", () => ({ enrolShardOperator: vi.fn(), shardOperatorAddress: () => "0x5" }));
 beforeEach(() => {
   vi.clearAllMocks();
@@ -103,7 +103,13 @@ it("records unavailable ledger work while shard ingestion and owned Realm labor 
   expect(await relay.tick("0x1")).toMatchObject({ value: { status: "ready" } });
   expect(data.get("progress")).toMatchObject({ nextBlock: 1 });
   shard.grant.mockReturnValue(Effect.succeed(undefined));
-  const claim = { gameId: 7, home: "0x8", chainId: "0x1", realmsId: "0x2", account: "0x3", realmId: "8", day: 4 };
+  const claim = {
+    realms: [{ gameId: 7, home: "0x8", realmId: "8" }],
+    chainId: "0x1",
+    realmsId: "0x2",
+    account: "0x3",
+    day: 4,
+  };
   await relay.labor(claim);
   expect(shard.grant).toHaveBeenCalledWith(expect.anything(), claim);
   const tick = vi.fn();

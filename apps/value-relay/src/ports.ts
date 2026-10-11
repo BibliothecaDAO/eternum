@@ -93,11 +93,10 @@ export interface LaborGrant {
   home: string;
   amount: string;
 }
+export const MAX_LABOR_REALMS = 100;
 export interface LaborClaim {
-  gameId: number;
-  home: string;
+  realms: readonly { gameId: number; realmId: string; home: string }[];
   chainId: string;
-  realmId: string;
   day: number;
   realmsId: string;
   account: string;
@@ -125,7 +124,7 @@ export interface RelayPorts {
     blockHash(number: number): RelayEffect<string>;
     eventsPage(from: number, to: number, cursor: string | null): RelayEffect<ConfirmedBlock>;
     withdrawal(chainId: string, transactionHash: string): RelayEffect<Withdrawal | null>;
-    grantLabor(claim: LaborClaim): RelayEffect<LaborGrant>;
+    grantLabor(claim: LaborClaim): RelayEffect<LaborGrant[]>;
   };
   identity: {
     accountForRealmsId(realmsId: string): RelayEffect<string | null>;

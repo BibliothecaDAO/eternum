@@ -100,7 +100,7 @@ const fixture = () => {
       eventsPage: () => Effect.succeed(block),
       withdrawal: () => Effect.succeed(withdrawal),
       result: () => Effect.succeed(result),
-      grantLabor: vi.fn(() => Effect.succeed({ gameId: 1, account: "0x3", home: "9", amount: "1000000000000" })),
+      grantLabor: vi.fn(() => Effect.succeed([{ gameId: 1, account: "0x3", home: "9", amount: "1000000000000" }])),
     },
     identity: {
       matchesPayDecision: (decision) => Effect.succeed(BigInt(decision.wallet) === 0x123n),
@@ -203,7 +203,13 @@ describe("confirmed value relay", () => {
   );
   it("checks Realm ownership on every labor claim", async () => {
     const f = fixture();
-    const claim = { gameId: 1, home: "9", chainId: "0x1", realmId: "7", day: 20000, realmsId: "0x2", account: "0x3" };
+    const claim = {
+      realms: [{ gameId: 1, home: "9", realmId: "7" }],
+      chainId: "0x1",
+      day: 20000,
+      realmsId: "0x2",
+      account: "0x3",
+    };
     await Effect.runPromise(grantDailyLabor(f.ports, claim));
     f.ports.realms.ownerOf = () => Effect.succeed("0x456");
     await expect(Effect.runPromise(grantDailyLabor(f.ports, claim))).rejects.toThrow();
@@ -383,7 +389,13 @@ it("sets aside a permanently refused claim and pays the next claim without retry
 it("refuses a labor claim whose recipient account is not derived from its authenticated Realms id", async () => {
   const f = fixture();
   Object.assign(f.ports.identity, { accountForRealmsId: () => Effect.succeed("0x3") });
-  const claim = { gameId: 1, home: "9", chainId: "0x1", realmId: "7", day: 0, realmsId: "0x2", account: "0xbad" };
+  const claim = {
+    realms: [{ gameId: 1, home: "9", realmId: "7" }],
+    chainId: "0x1",
+    day: 0,
+    realmsId: "0x2",
+    account: "0xbad",
+  };
   await expect(Effect.runPromise(grantDailyLabor(f.ports, claim))).rejects.toMatchObject({
     operation: "labor_account_mismatch",
   });
@@ -534,4 +546,24 @@ it("voids closed unpaid reports even when the account has no payout wallet and n
   expect(f.ports.identity.linkedWallet).not.toHaveBeenCalled();
   await Effect.runPromise(runRelay("0x1", f.ports, f.store));
   expect(f.single.pay).not.toHaveBeenCalled();
+});
+
+it("refuses the entire labor batch when its last Realm is not owned", async () => {
+  const f = fixture();
+  f.ports.realms.ownerOf = (id) => Effect.succeed(id === "7" ? "0x123" : "0x456");
+  await expect(
+    Effect.runPromise(
+      grantDailyLabor(f.ports, {
+        realms: [
+          { gameId: 1, realmId: "7", home: "9" },
+          { gameId: 1, realmId: "8", home: "9" },
+        ],
+        chainId: "0x1",
+        day: 0,
+        realmsId: "0x2",
+        account: "0x3",
+      }),
+    ),
+  ).rejects.toMatchObject({ operation: "realm_not_owned" });
+  expect(f.ports.shard.grantLabor).not.toHaveBeenCalled();
 });

@@ -16,7 +16,7 @@ import { seasonLedgerReads, postSeasonTop } from "./season-ledger";
 import { ledgerBatches } from "./ledger-batches";
 import { onIdentityChain } from "./ledger-chain";
 import { openSlotOnLedger, refundSlotOnLedger, markSlotRefundable } from "./blitz-launch";
-import { currentLaborDay, writeLaborGrant } from "./shard-labor";
+import { currentLaborDay, writeLaborGrants } from "./shard-labor";
 import { handleLaborRequest } from "./labor-route";
 import { ShardReader } from "./shard-rpc";
 import { frontierReceiptBindings } from "./frontier-binding";
@@ -397,7 +397,7 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
         relayOperation("grant on official shard", async () => {
           await requireActiveChain(env.IDENTITY, claim.chainId);
           return Effect.runPromise(
-            writeLaborGrant(
+            writeLaborGrants(
               {
                 connection: connectionOf(shard),
                 operatorAddress: shardOperatorAddress(shard),

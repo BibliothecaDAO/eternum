@@ -26,6 +26,7 @@ const registration = (overrides: Record<string, unknown> = {}) =>
     paid: { low: 500, high: 0 },
     refundable: false,
     game_id: 0,
+    registered_at: 90,
     ...overrides,
   });
 const slotState = (cancelled = false) =>

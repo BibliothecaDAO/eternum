@@ -114,6 +114,7 @@ it("checks current-wallet registration when opening a slot room, never per messa
           paid: { low: registered ? 500 : 0, high: 0 },
           refundable: false,
           game_id: 0,
+          registered_at: registered ? 90 : 0,
         }),
       });
     },
