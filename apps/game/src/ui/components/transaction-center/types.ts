@@ -1,10 +1,4 @@
 import { TransactionType } from "@bibliothecadao/provider";
-import { env } from "../../../../env";
-
-export const getExplorerTxUrl = (hash: string): string | null =>
-  env.VITE_PUBLIC_EXPLORER_URL ? `${env.VITE_PUBLIC_EXPLORER_URL.replace(/\/$/, "")}/tx/${hash}` : null;
-
-export const getExplorerName = (): string => "Explorer";
 
 export const getTxMessage = (type: TransactionType): string => {
   switch (type) {

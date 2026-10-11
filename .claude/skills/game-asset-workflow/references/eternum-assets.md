@@ -38,10 +38,11 @@ A Blender connector is optional for these scripts. Preserve reusable texture inp
 builder's `.context` locations for local studies, baked intermediates, and captures. Check that required inputs exist in
 a fresh checkout rather than depending silently on a previous session's temporary files.
 
-For visual iteration, launch the client with graphics tools enabled and open the reported local HTTPS URL at `/lab`:
+For visual iteration, launch the client and open the reported local HTTPS URL at `/lab?dev`: `?dev` turns the graphics
+tools on for that browser until `?dev=0`.
 
 ```bash
-VITE_PUBLIC_GRAPHICS_DEV=true pnpm --dir apps/game dev --host 127.0.0.1 --port 4186
+pnpm --dir apps/game dev --host 127.0.0.1 --port 4186
 ```
 
 Use a browser with working WebGL, accept the local development certificate, and verify there are no shader or model

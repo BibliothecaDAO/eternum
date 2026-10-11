@@ -97,11 +97,8 @@ Use this workflow before capturing screenshots or validating account-specific ga
 npx -y node@20.19.0 $(which pnpm) --dir /path/to/repo/apps/game dev --host 127.0.0.1 --port 4174
 ```
 
-When debugging Three.js, world-map rendering, or graphics state, enable the graphics debug mode:
-
-```bash
-VITE_PUBLIC_GRAPHICS_DEV=true npx -y node@20.19.0 $(which pnpm) --dir /path/to/repo/apps/game dev --host 127.0.0.1 --port 4174
-```
+When debugging Three.js, world-map rendering, or graphics state, enable the graphics debug mode by opening the app with
+`?dev` once (the browser keeps it; `?dev=0` clears it). No build setting turns it on.
 
 If `npx` reports duplicate workspace names from the monorepo, run the command from `/tmp` and pass the absolute `pnpm`
 path as shown above.
