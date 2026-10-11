@@ -1,29 +1,19 @@
-import { slotValueFixture, registrationIdentityFixture } from "./test-database";
-import { Effect } from "effect";
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { createLaunchApp } from "./app";
-import { scheduleFrontierSeason } from "./schedule";
-import { frontierSeasonRequest } from "./schemas";
-import type { IdentityResolver } from "./auth";
-import { IdentityUnavailable } from "./errors";
-import { D1CalendarStore } from "./calendar-store";
-import { D1SlotStore } from "./slot-store";
-import { D1LaunchStore } from "./store";
-import { completeFreeFixture, createLaunchTestDatabase, testChain, TEST_CHAIN } from "./test-database";
 import { day, frontierSeasonEnd } from "./test-dates";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { createLaunchApp } from "./app";
+import { D1LaunchStore } from "./store";
+import { D1SlotStore } from "./slot-store";
+import { D1CalendarStore } from "./calendar-store";
+import {
+  createLaunchTestDatabase,
+  testChain,
+  slotValueFixture,
+  registrationIdentityFixture,
+  TEST_CHAIN,
+} from "./test-database";
 
-const ALLOWED_ORIGIN = "https://play.realms.party";
-const ALLOWED_ADDRESS = "0x123";
-
-const PLAYER = "0x7";
-const OPERATOR_TOKEN = "operator-test-token";
-
-/** A signed-in Realms account, with the wallet linked to it, if any. */
-const signedIn = (wallet: string | null = null): IdentityResolver => ({
-  resolve: () => Effect.succeed({ realmsId: PLAYER, wallet }),
-});
-const signedOut: IdentityResolver = { resolve: () => Effect.succeed(null) };
-
+const token = { authorization: "Bearer operator-test-token", "content-type": "application/json" };
+const session = { cookie: "session=valid", origin: "https://play.realms.party", "content-type": "application/json" };
 let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
 beforeEach(async () => {
   database = await createLaunchTestDatabase();
@@ -32,677 +22,145 @@ afterEach(async () => {
   vi.restoreAllMocks();
   await database.close();
 });
-
-const createApp = (
-  resolver: IdentityResolver,
-  slots = new D1SlotStore(
-    database.db,
-    new D1LaunchStore(database.db, testChain()),
-    slotValueFixture(1),
-    registrationIdentityFixture,
-  ),
-) => {
+const fixture = () => {
   const store = new D1LaunchStore(database.db, testChain());
+  const value = slotValueFixture(1);
+  const slots = new D1SlotStore(database.db, store, value, registrationIdentityFixture);
   const calendar = new D1CalendarStore(database.db);
-  return {
-    app: createLaunchApp({
-      config: {
-        allowedOrigins: new Set([ALLOWED_ORIGIN]),
-        launcherAllowlist: new Set([ALLOWED_ADDRESS]),
-        operatorToken: OPERATOR_TOKEN,
-      },
-      deployment: { environment: "staging", version: "test" },
-      identity: resolver,
-      store,
-      slots,
-      calendar,
-      // The registrar runs in workerd (worker.test.ts); here a queued run only needs somewhere to arm.
-      registrar: { armFor: async () => {} },
-      operatorLauncher: {
-        enrol: async () => ({ chainId: "0x1", launcherAccount: "0x123" }),
-      },
-    }),
+  const armFor = vi.fn();
+  const app = createLaunchApp({
+    config: { operatorToken: "operator-test-token" },
+    deployment: { environment: "staging", version: "test" },
     store,
     slots,
     calendar,
-  };
+    registrar: { armFor },
+    operatorLauncher: { enrol: async () => ({ chainId: "0x1", launcherAccount: "0x123" }) },
+  });
+  return { app, store, slots, calendar, value, armFor };
 };
-
-test("the removed free registration route returns404 even for a signed-in player", async () => {
-  const { app, slots } = createApp(signedIn());
-  await slots.create("friday", new Date(Math.floor(Date.now() / 1000) * 1000 + 60000).toISOString());
-  expect(
-    (
-      await app.request(
-        new Request("https://play.realms.party/api/slots/friday/register", {
-          method: "POST",
-          headers: { origin: ALLOWED_ORIGIN, cookie: "session=valid", "content-type": "application/json" },
-          body: "{}",
-        }),
-      )
-    ).status,
-  ).toBe(404);
-});
-
-describe("paid slot discovery", () => {
-  test("reads one authoritative slot anonymously without scanning other rosters, and fails loudly", async () => {
-    const { app, slots } = createApp(signedOut);
-    await slots.create("friday", day(0).toISOString());
-    await slots.create("saturday", day(1).toISOString());
-    vi.spyOn(slots, "list").mockRejectedValue(new Error("A scoped read must not scan the directory"));
-    const response = await app.request("https://play.realms.party/api/slots/friday");
-    expect(response.status).toBe(200);
-    expect(response.headers.get("cache-control")).toBe("no-store");
-    expect(await response.json()).toMatchObject({
-      name: "friday",
-      chainId: TEST_CHAIN,
-    });
-    expect((await app.request("https://play.realms.party/api/slots/missing")).status).toBe(404);
-    expect((await app.request("https://play.realms.party/api/slots/Invalid")).status).toBe(400);
-    vi.spyOn(slots, "get").mockRejectedValue(new Error("Slot read unavailable"));
-    const failure = await app.request("https://play.realms.party/api/slots/friday");
-    expect(failure.status).toBe(503);
-    expect(failure.headers.get("cache-control")).toBe("no-store");
-  });
-});
-
-describe("launcher rosters and off-timetable slots", () => {
-  const post = (path: string, body: unknown, auth: { cookie?: string; token?: string } = { cookie: "session=valid" }) =>
-    new Request(`https://play.realms.party${path}`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        ...(auth.cookie ? { origin: ALLOWED_ORIGIN, cookie: auth.cookie } : {}),
-        ...(auth.token ? { authorization: `Bearer ${auth.token}` } : {}),
-      },
-      body: JSON.stringify(body),
-    });
-  const soon = () => new Date(Math.floor(Date.now() / 1000) * 1000 + 60_000).toISOString();
-
-  test("only the operator creates a slot with an immutable closing time", async () => {
-    const { app } = createApp(signedIn(ALLOWED_ADDRESS));
-    const closesAt = soon();
-    expect((await app.request(post("/api/slots", { name: "campaign-1", closesAt }))).status).toBe(403);
-    expect(
-      (await app.request(post("/api/slots", { name: "campaign-1", closesAt }, { token: OPERATOR_TOKEN }))).status,
-    ).toBe(202);
-    expect(
-      (await app.request(post("/api/slots", { name: "campaign-1", closesAt: soon() + "x" }, { token: OPERATOR_TOKEN })))
-        .status,
-    ).toBe(400);
-    const moved = new Date(Date.parse(closesAt) + 60_000).toISOString();
-    expect(
-      (await app.request(post("/api/slots", { name: "campaign-1", closesAt: moved }, { token: OPERATOR_TOKEN })))
-        .status,
-    ).toBe(409);
-  });
-
-  test("only the operator sets the season calendar, which anyone reads", async () => {
-    const operator = createApp(signedOut);
-    const put = (body: unknown, auth: { cookie?: string; token?: string }) =>
-      new Request("https://play.realms.party/api/factory/calendar/frontier", {
-        method: "PUT",
-        headers: {
-          "content-type": "application/json",
-          ...(auth.cookie ? { origin: ALLOWED_ORIGIN, cookie: auth.cookie } : {}),
-          ...(auth.token ? { authorization: `Bearer ${auth.token}` } : {}),
-        },
-        body: JSON.stringify(body),
-      });
-    const season = { startsAt: day(0).toISOString(), endsAt: frontierSeasonEnd(day(0)) };
-    expect((await operator.app.request(put(season, { token: OPERATOR_TOKEN }))).status).toBe(200);
-    const backwards = { startsAt: season.endsAt, endsAt: season.startsAt };
-    expect((await operator.app.request(put(backwards, { token: OPERATOR_TOKEN }))).status).toBe(409);
-    const player = createApp(signedIn(ALLOWED_ADDRESS));
-    expect((await player.app.request(put(season, { cookie: "session=valid" }))).status).toBe(403);
-    const read = await player.app.request("https://play.realms.party/api/factory/calendar");
-    expect(await read.json()).toEqual({ phases: [{ phase: "frontier", ...season }] });
-  });
-
-  test("publishes game ids only after calendar and Blitz roster launches complete", async () => {
-    const { app, calendar, slots, store } = createApp(signedOut);
-    const now = Math.ceil(Date.now() / 1_000) * 1_000;
-    // A season starts on Frontier's 120 s armies tick.
-    const startsAt = new Date(Math.ceil((now + 60_000) / 120_000) * 120_000);
-    const season = {
-      phase: "frontier" as const,
-      startsAt: startsAt.toISOString(),
-      endsAt: frontierSeasonEnd(startsAt),
-    };
-    await calendar.set(season, now);
-    await scheduleFrontierSeason(store, season);
-    const frontier = (await store.startNext(Date.now() + 1_000))!;
-    await completeFreeFixture(store, frontier.id, {
-      environment: "madara.frontier",
-      chain: "madara",
-      gameType: "frontier",
-      gameName: frontier.name,
-      startTime: Math.floor(Date.parse(season.startsAt) / 1_000),
-      startTimeIso: season.startsAt,
-      rpcUrl: "http://rpc.test",
-      gameId: 11,
-      configMode: "batched",
-      configSteps: [],
-      dryRun: false,
-    });
-
-    const closeAt = new Date(Math.floor(now / 1000) * 1000 + 60_000).toISOString();
-    await slots.create("directory-blitz", closeAt);
-    await database.db
-      .prepare("UPDATE playtest_slots SET closes_at = ?")
-      .bind(Date.now() - 1_000)
-      .run();
-    await slots.freeze("directory-blitz");
-    const blitz = (await store.startNext(Date.now() + 1_000))!;
-    await completeFreeFixture(store, blitz.id, {
-      environment: "madara.blitz",
-      chain: "madara",
-      gameType: "blitz",
-      gameName: blitz.name,
-      startTime: Math.floor(now / 1_000),
-      startTimeIso: new Date(now).toISOString(),
-      rpcUrl: "http://rpc.test",
-      gameId: 12,
-      finalizeAt: Math.floor(now / 1_000) + 3_600,
-      configMode: "batched",
-      configSteps: [],
-      dryRun: false,
-    });
-
-    const directory = await app.request("https://play.realms.party/api/factory/directory-games");
-    expect(directory.status).toBe(200);
-    expect(await directory.json()).toEqual({
-      chains: [
-        {
-          chainId: frontier.chainId,
-          games: [
-            { gameId: 11, slotId: null },
-            { gameId: 12, slotId: (await slots.get("directory-blitz")).slotId },
-          ],
-        },
-      ],
-    });
-  });
-
-  test("the operator token acts as a launcher, and nobody else registers accounts or creates slots", async () => {
-    const operator = createApp(signedOut);
-    const token = { token: OPERATOR_TOKEN };
-    expect((await operator.app.request(post("/api/slots", { name: "bots", closesAt: soon() }, token))).status).toBe(
-      202,
-    );
-    expect((await operator.app.request(post("/api/slots/bots/register", { accounts: ["0xb07"] }, token))).status).toBe(
-      404,
-    );
-    expect(
-      (await operator.app.request(post("/api/slots", { name: "x", closesAt: soon() }, { token: "wrong" }))).status,
-    ).toBe(401);
-
-    const player = createApp(signedIn());
-    expect((await player.app.request(post("/api/slots", { name: "mine", closesAt: soon() }))).status).toBe(403);
-  });
-});
-
-const launchRequest = () =>
-  new Request("https://play.realms.party/api/factory/runs", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      cookie: "better-auth.session_token=valid",
-      origin: ALLOWED_ORIGIN,
-    },
-    body: JSON.stringify({ environment: "madara.eternum", gameName: "bltz-effect-test" }),
-  });
-
-describe("launch service authorization", () => {
-  test("says whether the signed-in caller launches, so the factory page shows itself to launchers only", async () => {
-    const launcher = async (resolver: IdentityResolver, cookie: string | null = "session=1") => {
-      const response = await createApp(resolver).app.request("https://play.realms.party/api/factory/launcher", {
-        headers: cookie ? { cookie } : {},
-      });
-      expect(response.headers.get("cache-control")).toBe("private, no-store");
-      expect(response.status).toBe(200);
-      return response.json();
-    };
-    expect(await launcher(signedIn(ALLOWED_ADDRESS))).toEqual({ launcher: true });
-    expect(await launcher(signedIn("0x456"))).toEqual({ launcher: false });
-    expect(await launcher(signedIn())).toEqual({ launcher: false });
-    expect(await launcher(signedOut)).toEqual({ launcher: false });
-    expect(await launcher(signedIn(ALLOWED_ADDRESS), null)).toEqual({ launcher: false });
-  });
-
-  test("does not cache the launcher answer when identity resolution is unavailable", async () => {
-    const identity: IdentityResolver = {
-      resolve: () => Effect.fail(new IdentityUnavailable({ cause: "identity unavailable" })),
-    };
-    const response = await createApp(identity).app.request("https://play.realms.party/api/factory/launcher", {
-      headers: { cookie: "session=1" },
-    });
-    expect(response.status).toBe(503);
-    expect(response.headers.get("cache-control")).toBe("private, no-store");
-    expect(await response.json()).toEqual({ error: "Identity service unavailable." });
-  });
-
-  test("rejects a mutation without a verified session", async () => {
-    const { app } = createApp(signedOut);
-    const response = await app.request(launchRequest());
-    expect(response.status).toBe(401);
-  });
-
-  test("rejects an allowlisted session from a spoofed or omitted origin", async () => {
-    const { app } = createApp(signedIn(ALLOWED_ADDRESS));
-    const spoofed = launchRequest();
-    spoofed.headers.set("origin", "https://attacker.example");
-    expect((await app.request(spoofed)).status).toBe(403);
-
-    const omitted = launchRequest();
-    omitted.headers.delete("origin");
-    expect((await app.request(omitted)).status).toBe(403);
-  });
-
-  test("rejects a signed-in address outside the launcher allowlist", async () => {
-    const { app } = createApp(signedIn("0x456"));
-    expect((await app.request(launchRequest())).status).toBe(403);
-    const noWallet = createApp(signedIn()).app;
-    expect((await noWallet.request(launchRequest())).status).toBe(403);
-  });
-
-  test("returns the requested format when launching and listing Eternum games", async () => {
-    const { app } = createApp(signedIn(ALLOWED_ADDRESS));
-    const request = launchRequest();
-    const response = await app.request(
-      new Request(request.url, {
-        method: "POST",
-        headers: request.headers,
-        body: JSON.stringify({ environment: "madara.eternum", gameName: "eternum-factory-test", version: "3" }),
-      }),
-    );
-    expect(response.status).toBe(202);
-    expect(await response.json()).toMatchObject({ gameType: "eternum", environment: "madara.eternum" });
-    const listed = await app.request("https://play.realms.party/api/factory/runs?environment=madara.eternum");
-    expect(await listed.json()).toMatchObject({ runs: [{ gameType: "eternum", gameName: "eternum-factory-test" }] });
-  });
-
-  test("queues an authorized launch and keeps reads public", async () => {
-    const { app } = createApp(signedIn(ALLOWED_ADDRESS));
-    const created = await app.request(launchRequest());
-    expect(created.status).toBe(202);
-    expect(await created.json()).toMatchObject({
-      environment: "madara.eternum",
-      gameName: "bltz-effect-test",
-      // A queued run reads as queued, with when it is due, never as running.
-      status: "queued",
-      dueAt: expect.any(String),
-      steps: [{ id: "create-world", status: "pending", latestEvent: expect.stringMatching(/^Queued until /) }, {}],
-      workflow: { workflowName: "box-native" },
-    });
-
-    const listed = await app.request("https://play.realms.party/api/factory/runs?environment=madara.eternum");
-    expect(listed.status).toBe(200);
-    expect(await listed.json()).toMatchObject({ runs: [{ gameName: "bltz-effect-test" }] });
-  });
-
-  test("rejects Duel and unregistered presets at the schema", async () => {
-    const { app } = createApp(signedIn(ALLOWED_ADDRESS));
-    const duel = new Request(launchRequest(), {
-      body: JSON.stringify({ environment: "madara.blitz", gameName: "bltz-duel-game", version: "4" }),
-    });
-    expect((await app.request(duel)).status).toBe(400);
-    const request = launchRequest();
-    request.headers.set("content-type", "application/json");
-    const invalid = new Request(request, {
-      body: JSON.stringify({
-        environment: "madara.blitz",
-        gameName: "bltz-invalid-profile",
-        version: "5",
-      }),
-    });
-
-    expect((await app.request(invalid)).status).toBe(400);
-  });
-
-  test("launches a real game dev-off and stores devModeOn:false", async () => {
-    const { app, store } = createApp(signedIn(ALLOWED_ADDRESS));
-    const request = launchRequest();
-    request.headers.set("content-type", "application/json");
-    const realGame = new Request(request, {
-      body: JSON.stringify({
-        environment: "madara.eternum",
-        gameName: "bltz-real-game",
-        devModeOn: false,
-      }),
-    });
-
-    expect((await app.request(realGame)).status).toBe(202);
-    const run = await store.find("game", "madara.eternum", "bltz-real-game");
-    expect(run && "devModeOn" in run.request ? run.request.devModeOn : undefined).toBe(false);
-  });
-
-  test("names a failed Frontier season in health until the operator continues it", async () => {
-    const { app, store } = createApp(signedOut);
-    const season = await scheduleFrontierSeason(store, {
-      phase: "frontier",
-      startsAt: "2027-01-01T00:00:00.000Z",
-      endsAt: "2027-05-01T00:00:00.000Z",
-    });
-    const started = (await store.startNext(Date.now()))!;
-    await store.fail(started.id, "rpc down");
-    const failedRuns = async () =>
-      ((await (await app.request("https://play.realms.party/api/factory/health")).json()) as { failedRuns: unknown[] })
-        .failedRuns;
-    expect(await failedRuns()).toEqual([
-      expect.objectContaining({ environment: "madara.frontier", name: season.name, error: "rpc down" }),
-    ]);
+const close = () => new Date(Math.floor(Date.now() / 1000) * 1000 + 60000).toISOString();
+test("the create-run and launcher-discovery routes are gone even for the operator", async () => {
+  const { app, store } = fixture();
+  expect((await app.request("/api/factory/launcher")).status).toBe(404);
+  for (const environment of ["madara.eternum", "madara.frontier", "madara.blitz"]) {
     expect(
       (
-        await app.request(
-          `https://play.realms.party/api/factory/runs/madara.frontier/${season.name}/actions/continue`,
-          { method: "POST", headers: { authorization: `Bearer ${OPERATOR_TOKEN}` } },
-        )
+        await app.request("/api/factory/runs", {
+          method: "POST",
+          headers: token,
+          body: JSON.stringify({ environment, gameName: "free-game" }),
+        })
       ).status,
-    ).toBe(202);
-    expect(await failedRuns()).toEqual([]);
-  });
+    ).toBe(404);
+    expect(await store.list(environment as never)).toEqual([]);
+  }
 });
-
-test("health warns about queued and running work left on another chain", async () => {
-  const { app, store } = createApp(signedOut);
-  const run = await store.enqueue("game", { environment: "madara.blitz", gameName: "old-chain" });
-  await database.db.prepare("UPDATE launch_runs SET chain_id = '0xdead' WHERE id = ?").bind(run.id).run();
-  const response = await app.request("https://play.realms.party/api/factory/health");
-  expect(response.status).toBe(503);
-  expect(await response.json()).toMatchObject({
-    strandedRuns: [{ chainId: "0xdead", name: "old-chain", status: "queued" }],
-  });
+test.each([
+  ["POST", "/api/slots"],
+  ["POST", "/api/slots/game-2147483648/refund"],
+  ["PUT", "/api/factory/calendar/frontier"],
+  ["POST", "/api/factory/operator/launcher/enrol"],
+  ["POST", "/api/factory/runs/madara.frontier/frontier-7/actions/continue"],
+  ["POST", "/api/factory/runs/madara.eternum/old/actions/delete"],
+  ["POST", "/api/factory/results/madara.blitz/old/actions/continue"],
+])("requires an operator token for %s %s", async (method, url) => {
+  const { app } = fixture();
+  for (const headers of [session, {}, { authorization: "Bearer wrong" }] as Record<string, string>[])
+    expect((await app.request(url, { method, headers, body: "{}" })).status).toBe(403);
 });
-
-test("version names the deployed code whatever state its shard work is in", async () => {
-  const { app, store } = createApp(signedOut);
-  const run = await store.enqueue("game", { environment: "madara.blitz", gameName: "old-chain" });
-  await database.db.prepare("UPDATE launch_runs SET chain_id = '0xdead' WHERE id = ?").bind(run.id).run();
-  expect((await app.request("https://play.realms.party/api/factory/health")).status).toBe(503);
-  const response = await app.request("https://play.realms.party/api/factory/version");
-  expect(response.status).toBe(200);
-  expect(await response.json()).toEqual({ service: "launch", environment: "staging", version: "test" });
-});
-
-test("deployment launcher routes require the operator token, never an allowlisted wallet", async () => {
-  const request = (path: string, headers: Record<string, string>) =>
-    new Request(ALLOWED_ORIGIN + path, {
-      method: "POST",
-      headers: { "content-type": "application/json", ...headers },
-      body: JSON.stringify({ chainId: "0x1", heraldUrl: "https://shard.test" }),
-    });
-  const app = createApp(signedIn(ALLOWED_ADDRESS)).app;
-  const path = "/api/factory/operator/launcher/enrol";
-  expect((await app.request(request(path, { origin: ALLOWED_ORIGIN, cookie: "valid" }))).status).toBe(403);
-  expect((await app.request(request(path, { authorization: "Bearer wrong" }))).status).toBe(401);
-  const enrolled = await app.request(request(path, { authorization: "Bearer " + OPERATOR_TOKEN }));
-  expect(enrolled.status).toBe(200);
-  expect(await enrolled.json()).toEqual({ chainId: "0x1", launcherAccount: "0x123" });
+test("operator slots and public discovery preserve the shard key and immutable schedule", async () => {
+  const { app, slots } = fixture();
+  const closesAt = close();
   expect(
     (
-      await app.request(
-        request("/api/factory/operator/launcher/check", {
-          authorization: "Bearer " + OPERATOR_TOKEN,
-        }),
-      )
+      await app.request("/api/slots", {
+        method: "POST",
+        headers: token,
+        body: JSON.stringify({ name: "friday", closesAt }),
+      })
     ).status,
-  ).toBe(404);
+  ).toBe(202);
+  const found = await app.request("/api/slots/friday");
+  expect(await found.json()).toMatchObject({ chainId: TEST_CHAIN, name: "friday", closesAt });
+  expect(found.headers.get("cache-control")).toBe("no-store");
+  vi.spyOn(slots, "list").mockRejectedValue(new Error("no scan"));
+  expect((await app.request("/api/slots/friday")).status).toBe(200);
+  expect((await app.request("/api/slots/missing")).status).toBe(404);
 });
-
-test("normal launch requests cannot use the deployment's reserved check names", async () => {
-  const app = createApp(signedIn(ALLOWED_ADDRESS)).app;
-  const request = new Request(launchRequest(), {
-    body: JSON.stringify({ environment: "madara.blitz", gameName: "check-player-hidden" }),
-  });
-  expect((await app.request(request)).status).toBe(400);
-});
-
-test("a public slot cannot queue a game under the deployment check prefix", async () => {
-  const app = createApp(signedIn(ALLOWED_ADDRESS)).app;
-  const response = await app.request(
-    new Request(ALLOWED_ORIGIN + "/api/slots", {
-      method: "POST",
-      headers: { authorization: "Bearer " + OPERATOR_TOKEN, "content-type": "application/json" },
-      body: JSON.stringify({
-        name: "check-hidden",
-        closesAt: new Date(Math.floor(Date.now() / 1000) * 1000 + 60000).toISOString(),
-      }),
-    }),
-  );
-  expect(response.status).toBe(400);
-  expect((await database.db.prepare("SELECT COUNT(*) AS n FROM playtest_slots").first<{ n: number }>())!.n).toBe(0);
-});
-
-test("refuses a slot whose derived run name is reserved before inserting any row", async () => {
-  const app = createApp(signedIn(ALLOWED_ADDRESS)).app;
-  const response = await app.request(
-    new Request(ALLOWED_ORIGIN + "/api/slots", {
-      method: "POST",
-      headers: { authorization: "Bearer " + OPERATOR_TOKEN, "content-type": "application/json" },
-      body: JSON.stringify({
-        name: "check",
-        closesAt: new Date(Math.floor(Date.now() / 1000) * 1000 + 60000).toISOString(),
-      }),
-    }),
-  );
-  expect(response.status).toBe(400);
-  expect((await database.db.prepare("SELECT COUNT(*) AS n FROM playtest_slots").first<{ n: number }>())!.n).toBe(0);
-});
-
-test("direct Blitz creation points launchers to ordinary paid slots", async () => {
-  const { app, store } = createApp(signedIn(ALLOWED_ADDRESS));
-  const response = await app.request(
-    new Request(launchRequest(), { body: JSON.stringify({ environment: "madara.blitz", gameName: "paid-only" }) }),
-  );
-  expect(response.status).toBe(400);
-  expect(await store.list("madara.blitz")).toEqual([]);
-});
-
-test("only the operator can enable refunds for a named slot, with an explicit retry boundary", async () => {
-  const value = { ...slotValueFixture(), refundSlot: vi.fn().mockResolvedValue(60) };
-  const slots = new D1SlotStore(
-    database.db,
-    new D1LaunchStore(database.db, testChain()),
-    value,
-    registrationIdentityFixture,
-  );
-  const { app } = createApp(signedIn(ALLOWED_ADDRESS), slots);
-  await slots.create("recovery", day(0).toISOString());
-  const url = "https://play.realms.party/api/slots/recovery/refund";
+test.each(["check-probe", "game-2147483648", "frontier-123"])("reserves %s before inserting a slot", async (name) => {
+  const { app, slots } = fixture();
   expect(
-    (await app.request(url, { method: "POST", headers: { origin: ALLOWED_ORIGIN, cookie: "session=valid" } })).status,
-  ).toBe(403);
-  expect((await app.request(url, { method: "POST", headers: { authorization: "Bearer wrong" } })).status).toBe(401);
-  expect(value.refundSlot).not.toHaveBeenCalled();
-  const headers = { authorization: `Bearer ${OPERATOR_TOKEN}` };
-  const waiting = await app.request(url, { method: "POST", headers });
-  expect(waiting.status).toBe(409);
-  expect(await waiting.json()).toEqual({ refundsEnabled: false, retryAfterSeconds: 60 });
-  expect(value.refundSlot).toHaveBeenCalledWith({ chainId: TEST_CHAIN, slotId: (await slots.get("recovery")).slotId });
-  value.refundSlot.mockResolvedValue(null);
-  expect(await (await app.request(url, { method: "POST", headers })).json()).toEqual({
-    refundsEnabled: true,
-    retryAfterSeconds: null,
-  });
+    (
+      await app.request("/api/slots", {
+        method: "POST",
+        headers: token,
+        body: JSON.stringify({ name, closesAt: close() }),
+      })
+    ).status,
+  ).toBe(400);
+  expect(await slots.list()).toEqual([]);
+});
+test("the operator sets calendar phases while reads stay public", async () => {
+  const { app } = fixture();
   expect(
-    (await app.request("https://play.realms.party/api/slots/missing/refund", { method: "POST", headers })).status,
-  ).toBe(404);
-  value.refundSlot.mockRejectedValue(new Error("ledger unavailable"));
-  expect((await app.request(url, { method: "POST", headers })).status).toBe(503);
+    (
+      await app.request("/api/factory/calendar/frontier", {
+        method: "PUT",
+        headers: token,
+        body: JSON.stringify({
+          startsAt: day(0).toISOString(),
+          endsAt: frontierSeasonEnd(day(0)),
+        }),
+      })
+    ).status,
+  ).toBe(200);
+  expect((await app.request("/api/factory/calendar")).status).toBe(200);
 });
-
-test("refuses deleting a paid-slot run even with operator credentials", async () => {
-  const { app, store } = createApp(signedIn(ALLOWED_ADDRESS));
-  await store.enqueue("game", { environment: "madara.blitz", gameName: "paid-delete", slotId: 12, groupIndex: 0 });
-  const response = await app.request(
-    "https://play.realms.party/api/factory/runs/madara.blitz/paid-delete/actions/delete",
-    { method: "POST", headers: { authorization: `Bearer ${OPERATOR_TOKEN}` } },
-  );
-  expect(response.status).toBe(409);
-  expect(await store.find("game", "madara.blitz", "paid-delete")).not.toBeNull();
-  expect(await store.delete("game", "madara.blitz", "paid-delete")).toBe(false);
-  await store.enqueue("game", { environment: "madara.eternum", gameName: "ordinary-delete" });
-  expect(await store.delete("game", "madara.eternum", "ordinary-delete")).toBe(true);
-});
-
-test("only the operator continues paid games and results, while a launcher keeps unranked game recovery", async () => {
-  const { app, store } = createApp(signedIn(ALLOWED_ADDRESS));
+test("only operator recovery continues a failed run in every format and results", async () => {
+  const { app, store, armFor } = fixture();
   for (const [kind, request] of [
-    ["game", { environment: "madara.blitz", gameName: "paid-retry", slotId: 12, groupIndex: 0 }],
-    ["result", { environment: "madara.blitz", gameName: "paid-retry", gameId: 1 }],
+    ["game", { environment: "madara.blitz", gameName: "paid", slotId: 12, groupIndex: 0 }],
+    ["game", { environment: "madara.frontier", gameName: "frontier-1" }],
+    ["game", { environment: "madara.eternum", gameName: "old-factory" }],
+    ["result", { environment: "madara.blitz", gameName: "paid", gameId: 1 }],
   ] as const) {
     const run = await store.enqueue(kind, request);
-    await database.db.prepare("UPDATE launch_runs SET status = 'running' WHERE id = ?").bind(run.id).run();
+    await database.db.prepare("UPDATE launch_runs SET status='running' WHERE id=?").bind(run.id).run();
     await store.fail(run.id, "unavailable");
-    const url = `https://play.realms.party/api/factory/${kind === "game" ? "runs" : "results"}/madara.blitz/paid-retry/actions/continue`;
-    expect(
-      (await app.request(url, { method: "POST", headers: { origin: ALLOWED_ORIGIN, cookie: "session=valid" } })).status,
-    ).toBe(403);
-    expect((await store.find(kind, "madara.blitz", "paid-retry"))!.status).toBe("failed");
-    expect(
-      (await app.request(url, { method: "POST", headers: { authorization: `Bearer ${OPERATOR_TOKEN}` } })).status,
-    ).toBe(202);
+    const url = `/api/factory/${kind === "game" ? "runs" : "results"}/${request.environment}/${request.gameName}/actions/continue`;
+    expect((await app.request(url, { method: "POST", headers: session })).status).toBe(403);
+    expect((await store.find(kind, request.environment, request.gameName))!.status).toBe("failed");
+    expect((await app.request(url, { method: "POST", headers: token })).status).toBe(202);
   }
-  const run = await store.enqueue("game", { environment: "madara.eternum", gameName: "factory-retry" });
-  await database.db.prepare("UPDATE launch_runs SET status = 'running' WHERE id = ?").bind(run.id).run();
-  await store.fail(run.id, "unavailable");
-  expect(
-    (
-      await app.request("https://play.realms.party/api/factory/runs/madara.eternum/factory-retry/actions/continue", {
-        method: "POST",
-        headers: { origin: ALLOWED_ORIGIN, cookie: "session=valid" },
-      })
-    ).status,
-  ).toBe(202);
+  expect(armFor).toHaveBeenCalledTimes(4);
 });
-
-test("applies the shared operator boundary to launcher enrolment", async () => {
-  const { app } = createApp(signedIn(ALLOWED_ADDRESS));
-  const url = "https://play.realms.party/api/factory/operator/launcher/enrol";
-  const request = { method: "POST", body: JSON.stringify({ chainId: "0x1", heraldUrl: "https://herald.test" }) };
+test("operator deletion refuses paid slots and allows an ordinary failed run", async () => {
+  const { app, store } = fixture();
+  await store.enqueue("game", { environment: "madara.blitz", gameName: "paid", slotId: 12, groupIndex: 0 });
   expect(
-    (await app.request(url, { ...request, headers: { origin: ALLOWED_ORIGIN, cookie: "session=valid" } })).status,
-  ).toBe(403);
-  expect((await app.request(url, { ...request, headers: { authorization: `Bearer ${OPERATOR_TOKEN}` } })).status).toBe(
-    200,
-  );
-});
-
-const frontierSeason = {
-  phase: "frontier" as const,
-  startsAt: "2027-01-01T00:00:00.000Z",
-  endsAt: "2027-05-01T00:00:00.000Z",
-};
-
-test.each(["continue", "delete"])("only the operator can %s a failed scheduled season", async (action) => {
-  const { app, store } = createApp(signedIn(ALLOWED_ADDRESS));
-  const season = await scheduleFrontierSeason(store, frontierSeason);
-  await store.startNext(Date.now());
-  await store.fail(season.id, "rpc down");
-  const failed = await store.find("game", "madara.frontier", season.name);
-  const url = `https://play.realms.party/api/factory/runs/madara.frontier/${season.name}/actions/${action}`;
-  expect(
-    (
-      await app.request(url, {
-        method: "POST",
-        headers: { origin: ALLOWED_ORIGIN, cookie: "session=valid" },
-      })
-    ).status,
-  ).toBe(403);
-  expect(await store.find("game", "madara.frontier", season.name)).toEqual(failed);
-  expect(
-    (
-      await app.request(url, {
-        method: "POST",
-        headers: { authorization: `Bearer ${OPERATOR_TOKEN}` },
-      })
-    ).status,
-  ).toBe(action === "continue" ? 202 : 200);
-  const recovered = await store.find("game", "madara.frontier", season.name);
-  if (action === "continue") expect(recovered?.status).toBe("queued");
-  else expect(recovered).toBeNull();
-});
-
-test.each(["continue", "delete"])(
-  "an allowlisted wallet can %s a run made through the factory route",
-  async (action) => {
-    const { app, store } = createApp(signedIn(ALLOWED_ADDRESS));
-    const headers = { origin: ALLOWED_ORIGIN, cookie: "session=valid", "content-type": "application/json" };
-    const request = { environment: "madara.eternum", gameName: "eternum-player-game" };
-    expect(
-      (
-        await app.request("https://play.realms.party/api/factory/runs", {
-          method: "POST",
-          headers,
-          body: JSON.stringify(request),
-        })
-      ).status,
-    ).toBe(202);
-    const run = (await store.startNext(Date.now()))!;
-    await store.fail(run.id, "rpc down");
-    expect(
-      (
-        await app.request(
-          `https://play.realms.party/api/factory/runs/madara.eternum/${request.gameName}/actions/${action}`,
-          {
-            method: "POST",
-            headers,
-          },
-        )
-      ).status,
-    ).toBe(action === "continue" ? 202 : 200);
-  },
-);
-
-test("factory creation cannot squat or overwrite a scheduled season's name", async () => {
-  const { app, store } = createApp(signedIn(ALLOWED_ADDRESS));
-  const request = frontierSeasonRequest(frontierSeason);
-  const create = (headers: Record<string, string>) =>
-    app.request("https://play.realms.party/api/factory/runs", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ ...request, durationSeconds: 1 }),
-    });
-  const callers: Record<string, string>[] = [
-    { origin: ALLOWED_ORIGIN, cookie: "session=valid" },
-    { authorization: `Bearer ${OPERATOR_TOKEN}` },
-  ];
-  for (const headers of callers) expect((await create(headers)).status).toBe(400);
-  expect(await store.find("game", "madara.frontier", request.gameName)).toBeNull();
-  const season = await scheduleFrontierSeason(store, frontierSeason);
-  for (const headers of callers) expect((await create(headers)).status).toBe(400);
-  expect(await store.find("game", "madara.frontier", request.gameName)).toEqual(season);
-});
-
-test("only the operator creates and recovers a Frontier run, regardless of its name", async () => {
-  const { app, store } = createApp(signedIn(ALLOWED_ADDRESS));
-  const url = "https://play.realms.party/api/factory/runs";
-  const session = { origin: ALLOWED_ORIGIN, cookie: "session=valid" };
-  const operator = { authorization: `Bearer ${OPERATOR_TOKEN}` };
-  const request = { environment: "madara.frontier", gameName: "ordinary-name" };
-  expect((await app.request(url, { method: "POST", headers: session, body: JSON.stringify(request) })).status).toBe(
-    403,
-  );
-  expect(await store.list("madara.frontier")).toEqual([]);
-  expect((await app.request(url, { method: "POST", headers: operator, body: JSON.stringify(request) })).status).toBe(
-    202,
-  );
-  const run = (await store.startNext(Date.now()))!;
-  await store.fail(run.id, "rpc down");
-  for (const action of ["continue", "delete"]) {
-    expect(
-      (
-        await app.request(`${url}/madara.frontier/ordinary-name/actions/${action}`, {
-          method: "POST",
-          headers: session,
-        })
-      ).status,
-    ).toBe(403);
-    expect((await store.find("game", "madara.frontier", request.gameName))?.status).toBe("failed");
-  }
-  expect(
-    (await app.request(`${url}/madara.frontier/ordinary-name/actions/continue`, { method: "POST", headers: operator }))
+    (await app.request("/api/factory/runs/madara.blitz/paid/actions/delete", { method: "POST", headers: token }))
       .status,
-  ).toBe(202);
+  ).toBe(409);
+  await store.enqueue("game", { environment: "madara.frontier", gameName: "frontier-1" });
+  const url = "/api/factory/runs/madara.frontier/frontier-1/actions/delete";
+  expect((await app.request(url, { method: "POST", headers: session })).status).toBe(403);
+  expect((await app.request(url, { method: "POST", headers: token })).status).toBe(200);
+});
+test("operator refunds retain the ledger's retry boundary", async () => {
+  const { app, slots, value } = fixture();
+  await slots.create("friday", close());
+  const refund = vi.spyOn(value, "refundSlot").mockResolvedValueOnce(60).mockResolvedValueOnce(null);
+  expect((await app.request("/api/slots/friday/refund", { method: "POST", headers: token })).status).toBe(409);
+  expect((await app.request("/api/slots/friday/refund", { method: "POST", headers: token })).status).toBe(200);
+  expect(refund).toHaveBeenCalledWith({ chainId: TEST_CHAIN, slotId: 1 });
+});
+test("health and version remain public and identify the deployment", async () => {
+  const { app } = fixture();
+  for (const route of ["health", "version"])
+    expect(await (await app.request(`/api/factory/${route}`)).json()).toMatchObject({
+      service: "launch",
+      environment: "staging",
+      version: "test",
+    });
 });

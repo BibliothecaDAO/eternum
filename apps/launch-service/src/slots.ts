@@ -17,6 +17,7 @@ export interface SlotStore {
   refund(name: string): Promise<number | null>;
   freeze(name: string): Promise<PlaytestSlot>;
   freezeDueSlots(): Promise<void>;
+  discoverPlayerSlots(): Promise<void>;
 }
 
 export class SlotConflict extends Error {}

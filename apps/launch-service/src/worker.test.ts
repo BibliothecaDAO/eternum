@@ -83,7 +83,6 @@ beforeAll(async () => {
         bindings: {
           ENVIRONMENT: "staging",
           BASE_URL: ORIGIN,
-          LAUNCHER_ALLOWLIST: LAUNCHER,
           DEPLOYER_PRIVATE_KEY: "0x1",
           OPERATOR_TOKEN: "operator-test-token",
           VERSION: { id: "workerd-test", tag: "", timestamp: "" },
@@ -121,7 +120,7 @@ beforeAll(async () => {
       {
         name: "directory",
         modules: true,
-        script: `import { WorkerEntrypoint } from "cloudflare:workers"; export class ValueRelay extends WorkerEntrypoint { openSlot(){} } export class ValueIdentity extends WorkerEntrypoint { shards(){return [{chainId:${JSON.stringify(SHARD_CHAIN)},url:${JSON.stringify(SHARD_URL)},status:"active"}];} } export default {fetch(){return new Response(null,{status:404});}};`,
+        script: `import { WorkerEntrypoint } from "cloudflare:workers"; export class ValueRelay extends WorkerEntrypoint { openSlot(){} slot(){return {exists:false};} registrations(){return {slot:{exists:true,seasonId:1,presetId:1,close:100,end:160,registeredCount:1,cancelled:false},blockNumber:10,blockHash:"0xabc",secondsUntilClose:0,next:null,registrations:[{wallet:"0x1",registeredAt:90}]};} } export class ValueIdentity extends WorkerEntrypoint { accountsAtRegistration(){return ["0x101"];} shards(){return [{chainId:${JSON.stringify(SHARD_CHAIN)},url:${JSON.stringify(SHARD_URL)},status:"active"}];} } export default {fetch(){return new Response(null,{status:404});}};`,
       },
     ],
   });
@@ -168,12 +167,10 @@ it("opens a Blitz window, ticks the schedule, queues an authorized launch and re
     version: "workerd-test",
   });
 
-  const launched = await mf.dispatchFetch(`${ORIGIN}/api/factory/runs`, {
-    method: "POST",
-    headers: { origin: ORIGIN, cookie: "better-auth.session_token=s1", "content-type": "application/json" },
-    body: JSON.stringify({ environment: "madara.eternum", gameName: "bltz-workerd" }),
-  });
-  expect(launched.status).toBe(202);
+  await db
+    .prepare("UPDATE playtest_slots SET closes_at=?")
+    .bind(Date.now() - 1000)
+    .run();
 
   await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
   const deadline = Date.now() + 10_000;
@@ -213,12 +210,13 @@ it("launches a game that is ready now while a result waits an hour for its game'
   await tick(); // a pass finds nothing due and sleeps until the result's hour
   await new Promise((resolve) => setTimeout(resolve, 1_000));
 
-  const launched = await mf.dispatchFetch(`${ORIGIN}/api/factory/runs`, {
-    method: "POST",
-    headers: { origin: ORIGIN, cookie: "better-auth.session_token=s1", "content-type": "application/json" },
-    body: JSON.stringify({ environment: "madara.eternum", gameName: "bltz-ready" }),
-  });
-  expect(launched.status).toBe(202);
+  await db
+    .prepare(
+      `INSERT INTO launch_runs (id,chain_id,kind,environment,name,request,status,available_at,created_at,updated_at)
+    VALUES ('ready-game',?,'game','madara.eternum','bltz-ready',?,'queued',?,?,?)`,
+    )
+    .bind(SHARD_CHAIN, JSON.stringify({ environment: "madara.eternum", gameName: "bltz-ready" }), now, now, now)
+    .run();
   await tick();
 
   const deadline = Date.now() + 10_000;

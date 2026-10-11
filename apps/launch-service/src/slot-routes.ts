@@ -2,13 +2,16 @@ import { isPublicGameName } from "./schemas";
 import { BLITZ_SLOT_NAME_PATTERN } from "@realms-world/identity";
 import { Schema } from "effect";
 import { Hono, type Context } from "hono";
-import { requireOperator, type LaunchAppEnv } from "./auth";
 import { SlotConflict, SlotNotFound, type SlotStore } from "./slots";
 
 const CreateSlotRequest = Schema.Struct({
   name: Schema.String.pipe(
     Schema.check(Schema.isPattern(BLITZ_SLOT_NAME_PATTERN)),
-    Schema.check(Schema.makeFilter((name: string) => isPublicGameName(name) && isPublicGameName(`${name}-1`))),
+    Schema.check(
+      Schema.makeFilter(
+        (name: string) => isPublicGameName(name) && isPublicGameName(`${name}-1`) && !/^(game|frontier)-/.test(name),
+      ),
+    ),
   ),
   closesAt: Schema.String.pipe(Schema.check(Schema.makeFilter((value: string) => Number.isFinite(Date.parse(value))))),
 });
@@ -16,7 +19,7 @@ const CreateSlotRequest = Schema.Struct({
 class InvalidSlotRequest extends Error {}
 
 /** A body read against its schema; an empty body is an empty object. */
-const readBody = async <S extends Schema.Top>(context: Context<LaunchAppEnv>, schema: S): Promise<S["Type"]> => {
+const readBody = async <S extends Schema.Top>(context: Context, schema: S): Promise<S["Type"]> => {
   const text = await context.req.text();
   try {
     return Schema.decodeUnknownSync(schema as never)(text.trim() ? JSON.parse(text) : {}) as S["Type"];
@@ -27,7 +30,7 @@ const readBody = async <S extends Schema.Top>(context: Context<LaunchAppEnv>, sc
 
 /** Slot discovery and operator scheduling; players pay registration on the ledger. */
 export function createSlotRoutes(store: SlotStore) {
-  const app = new Hono<LaunchAppEnv>();
+  const app = new Hono();
   app.onError((error, context) => {
     if (error instanceof SlotNotFound) return context.json({ error: error.message }, 404);
     if (error instanceof SlotConflict) return context.json({ error: error.message }, 409);
@@ -44,13 +47,13 @@ export function createSlotRoutes(store: SlotStore) {
     return context.json(await store.get(name));
   });
 
-  app.post("/", requireOperator, async (context) => {
+  app.post("/", async (context) => {
     const { name, closesAt } = await readBody(context, CreateSlotRequest);
     await store.create(name, closesAt);
     return context.json({ name, status: "opening" }, 202);
   });
 
-  app.post("/:name/refund", requireOperator, async (context) => {
+  app.post("/:name/refund", async (context) => {
     const name = context.req.param("name");
     if (!BLITZ_SLOT_NAME_PATTERN.test(name)) return context.json({ error: "Invalid slot name" }, 400);
     const retryAfterSeconds = await store.refund(name);

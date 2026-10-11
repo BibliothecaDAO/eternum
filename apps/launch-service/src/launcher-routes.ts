@@ -1,6 +1,5 @@
 import { Effect, Schema } from "effect";
 import { Hono } from "hono";
-import { requireOperator, type LaunchAppEnv } from "./auth";
 
 const Target = Schema.Struct({
   chainId: Schema.String.check(Schema.isPattern(/^0x[0-9a-f]+$/i)),
@@ -12,8 +11,7 @@ export interface OperatorLauncher {
 
 /** This surface only enrolls its own signer. */
 export const launcherOperatorRoutes = (launcher: OperatorLauncher) => {
-  const app = new Hono<LaunchAppEnv>();
-  app.use("*", requireOperator);
+  const app = new Hono();
   const handle =
     <A>(schema: Schema.ConstraintDecoder<A, never>, run: (input: A) => Promise<unknown>) =>
     async (context: import("hono").Context) => {

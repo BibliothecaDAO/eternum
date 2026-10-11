@@ -1,6 +1,5 @@
 import { Schema } from "effect";
 import { Hono } from "hono";
-import { requireOperator, type LaunchAppEnv } from "./auth";
 import { CalendarConflict, type CalendarStore } from "./calendar";
 
 const Instant = Schema.String.pipe(
@@ -16,9 +15,9 @@ const PHASES = new Set(["frontier", "blitz"]);
  * and end.
  */
 export function createCalendarRoutes(calendar: CalendarStore) {
-  const app = new Hono<LaunchAppEnv>();
+  const app = new Hono();
   app.get("/", async (context) => context.json({ phases: await calendar.list() }));
-  app.put("/:phase", requireOperator, async (context) => {
+  app.put("/:phase", async (context) => {
     const phase = context.req.param("phase");
     if (!PHASES.has(phase)) return context.json({ error: "Unknown season phase" }, 404);
     let dates: typeof PhaseRequest.Type;

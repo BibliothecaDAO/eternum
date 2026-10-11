@@ -1,18 +1,15 @@
 import { environmentL2 } from "@realms-world/chain";
 import { Schema } from "effect";
-import { normalizeAddress } from "./address";
 
 /**
  * The launch Worker's environment, decoded loudly so a misconfigured deployment fails on its first request or tick.
- * The shard it launches on and its launchers are set per environment at deploy; `DEPLOYER_PRIVATE_KEY` and
+ * The shard it launches on is selected from the directory; `DEPLOYER_PRIVATE_KEY` and
  * `OPERATOR_TOKEN` are secrets and are never committed.
  */
 const LaunchVars = Schema.Struct({
   ENVIRONMENT: Schema.Literals(["staging", "production"]),
   /** The app's origin; the launch routes are served under its /api, beside identity. */
   BASE_URL: Schema.NonEmptyString,
-  /** Comma-separated Starknet addresses allowed to launch games; a wildcard is refused. */
-  LAUNCHER_ALLOWLIST: Schema.NonEmptyString,
   DEPLOYER_PRIVATE_KEY: Schema.NonEmptyString,
   /** The environment's one operator token, which operator automation presents as a launcher. */
   OPERATOR_TOKEN: Schema.NonEmptyString,
@@ -20,8 +17,7 @@ const LaunchVars = Schema.Struct({
 
 type LaunchVars = Schema.Schema.Type<typeof LaunchVars>;
 
-export interface LaunchEnv extends Omit<LaunchVars, "LAUNCHER_ALLOWLIST"> {
-  launchers: ReadonlySet<string>;
+export interface LaunchEnv extends LaunchVars {
   DB: D1Database;
   /** The identity Worker, which owns sessions; reached by service binding only. */
   IDENTITY: Fetcher;
@@ -37,11 +33,10 @@ export interface LaunchEnv extends Omit<LaunchVars, "LAUNCHER_ALLOWLIST"> {
 const decodeLaunchVars = Schema.decodeUnknownSync(LaunchVars, { onExcessProperty: "ignore" });
 
 export const decodeLaunchEnv = (raw: Record<string, unknown>): LaunchEnv => {
-  const { LAUNCHER_ALLOWLIST, ...vars } = decodeLaunchVars(raw);
+  const vars = decodeLaunchVars(raw);
   environmentL2(vars.ENVIRONMENT);
   return {
     ...vars,
-    launchers: launchersOf(LAUNCHER_ALLOWLIST),
     DB: raw.DB as D1Database,
     IDENTITY: raw.IDENTITY as Fetcher,
     VALUE_IDENTITY: raw.VALUE_IDENTITY as LaunchEnv["VALUE_IDENTITY"],
@@ -49,13 +44,4 @@ export const decodeLaunchEnv = (raw: Record<string, unknown>): LaunchEnv => {
     REGISTRAR: raw.REGISTRAR as LaunchEnv["REGISTRAR"],
     VERSION: raw.VERSION as WorkerVersionMetadata,
   };
-};
-
-const launchersOf = (allowlist: string): ReadonlySet<string> => {
-  const entries = allowlist
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
-  if (entries.includes("*")) throw new Error("LAUNCHER_ALLOWLIST must name launcher addresses, not *");
-  return new Set(entries.map(normalizeAddress));
 };

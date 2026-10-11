@@ -5,18 +5,17 @@ membership. `VALUE_IDENTITY` supplies the directory; `VALUE_RELAY` supplies conf
 economic writes. A request can select `?chainId=<official shard>`; with one live shard the selection is unique. Multiple
 live shards require a chain. No Worker shard URL or separate ledger URL/address is configured.
 
-Only the operator token opens slots, edits the season calendar, continues paid game/result runs, or continues and
-deletes scheduled Frontier season runs. An allowlisted linked wallet can create, continue and delete only factory game
-runs. The schedule owns `frontier-<start timestamp>` names; factory creation refuses them before any season is
-scheduled. The timetable exposes `slotId`; completed game directory rows carry that same field (null outside Blitz). The
-environment address book supplies the ledger and L2 chain. No directory row carries economic addresses or a free/paid
-entry payload.
+Every Worker write requires the operator token. Players open and pay for a Blitz slot on the ledger; the existing minute
+tick lists up to five new player slots per shard, named `game-<number>`. That namespace and the schedule's
+`frontier-<start timestamp>` names are reserved. There is no factory create-run route or wallet authority. The timetable
+exposes `slotId`; completed game directory rows carry that same field (null outside Blitz). The environment address book
+supplies the ledger and L2 chain. No directory row carries economic addresses or a free/paid entry payload.
 
 Blitz registration belongs to an uncapped ledger slot. At close, the relay reads confirmed registrations in pages
 of 100. Identity history resolves each payer at its registration block time. The earliest registration for each account
 gets a seat; unlinked and duplicate payers become refundable. Balanced groups retain registration order and contain at
 most 24 players. An empty slot creates no game. D1 keeps schedule and job metadata, never a roster copy. Operator
-one-offs use the same paid `/api/slots` route; direct Blitz factory runs are refused.
+one-offs use the same paid `/api/slots` route; the factory create-run route is removed.
 
 The registrar serializes its device's shard writes. Each game is created with its complete roster, then the existing
 automatic realm seating completes. A retry re-resolves the historical cohort and verifies an existing game's roster
@@ -29,11 +28,11 @@ Normal game names cannot start with `check-`. Operator-only `/api/factory/operat
 own signer. Deployment registers the shard as pending, enrolls the Worker, hands it the launcher role, and reads that
 role back on chain before activation. Pending shards stay invisible to players.
 
-Runtime settings include `BASE_URL`, `ENVIRONMENT`, `LAUNCHER_ALLOWLIST`, and the `DEPLOYER_PRIVATE_KEY` and
-`OPERATOR_TOKEN` secrets. `wrangler.jsonc` declares the identity, relay, D1 and registrar bindings. No hosting, secret
-provisioning or live deployment is performed by this change.
+Runtime settings include `BASE_URL`, `ENVIRONMENT`, and the `DEPLOYER_PRIVATE_KEY` and `OPERATOR_TOKEN` secrets.
+`wrangler.jsonc` declares the identity, relay, D1 and registrar bindings. No hosting, secret provisioning or live
+deployment is performed by this change.
 
 To recover a named paid slot, POST `/api/slots/:name/refund?chainId=0x...` with the operator Bearer token. This enables
 ledger refunds by cancelling before close or aborting after end; players then claim their own refund. Between close and
 end it returns 409 with `retryAfterSeconds`; retry after that delay. A 200 with `refundsEnabled: true` confirms refunds
-are enabled (repeating is safe). A linked launcher wallet alone cannot use this recovery route.
+are enabled (repeating is safe). A linked wallet alone cannot use this recovery route.

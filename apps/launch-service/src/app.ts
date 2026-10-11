@@ -1,42 +1,27 @@
 import { isGameEnvironmentId, type GameEnvironmentId } from "../../../config/shared/game-environments";
-import { Effect, Result, Schema } from "effect";
 import { Hono, type Context } from "hono";
 import { logger } from "hono/logger";
-import {
-  isLauncher,
-  requireIdentity,
-  requireLauncher,
-  isOperator,
-  type IdentityResolver,
-  type LaunchAccess,
-  type LaunchAppEnv,
-} from "./auth";
+import { requireOperator } from "./auth";
 import { createSlotRoutes } from "./slot-routes";
 import type { CalendarStore } from "./calendar";
 import { createCalendarRoutes } from "./calendar-routes";
 import type { SlotStore } from "./slots";
 import { toFactoryRunRecord, type LaunchRun } from "./model";
-import { CreateGameRequestSchema, isFrontierSeasonName, type LaunchJobRequest, type LaunchKind } from "./schemas";
+import { type LaunchJobRequest, type LaunchKind } from "./schemas";
 import { launcherOperatorRoutes, type OperatorLauncher } from "./launcher-routes";
 import type { LaunchServiceStore } from "./store";
 
 interface LaunchAppDependencies {
-  config: LaunchAccess;
+  config: { operatorToken: string };
   operatorLauncher: OperatorLauncher;
   /** What the version and health routes report, so a deploy can tell its own answers from its predecessor's. */
   deployment: { environment: string; version: string };
-  identity: IdentityResolver;
   store: LaunchServiceStore;
   slots: SlotStore;
   calendar: CalendarStore;
   /** The registrar that executes runs: every run queued here arms it for the run's due time. */
   registrar: { armFor(dueAt: number): Promise<void> };
 }
-
-const decodeBody = async <A>(context: Context, schema: Schema.ConstraintDecoder<A, never>): Promise<A> => {
-  const payload = await context.req.json();
-  return Effect.runPromise(Schema.decodeUnknownEffect(schema)(payload));
-};
 
 const readEnvironment = (value: string | undefined): GameEnvironmentId => {
   if (!value || !isGameEnvironmentId(value)) throw new Error("Unsupported game environment");
@@ -65,19 +50,8 @@ const findRun = async (context: Context, store: LaunchServiceStore, kind: Launch
   return run ? context.json(toFactoryRunRecord(run)) : context.json({ error: "Launch run not found." }, 404);
 };
 
-const requireRunOperator = (context: Context<LaunchAppEnv>, run: LaunchRun) => {
-  if (isOperator(context.get("caller"))) return;
-  if (
-    run.slotId !== null ||
-    run.kind === "result" ||
-    run.environment === "madara.frontier" ||
-    isFrontierSeasonName(run.name)
-  )
-    return context.json({ error: "Operator token required." }, 403);
-};
-
 const continueRun = async (
-  context: Context<LaunchAppEnv>,
+  context: Context,
   dependencies: Pick<LaunchAppDependencies, "store" | "registrar">,
   kind: LaunchKind,
   name: string,
@@ -85,17 +59,13 @@ const continueRun = async (
   const environment = readEnvironment(context.req.param("environment"));
   const run = await dependencies.store.find(kind, environment, name);
   if (!run) return context.json({ error: "Launch run not found." }, 404);
-  const refused = requireRunOperator(context, run);
-  if (refused) return refused;
   return respondWithRun(context, dependencies, kind, run.request);
 };
 
-const deleteRun = async (context: Context<LaunchAppEnv>, store: LaunchServiceStore, kind: LaunchKind, name: string) => {
+const deleteRun = async (context: Context, store: LaunchServiceStore, kind: LaunchKind, name: string) => {
   const environment = readEnvironment(context.req.param("environment"));
   const run = await store.find(kind, environment, name);
   if (!run) return context.json({ error: "Launch run not found." }, 409);
-  const refused = requireRunOperator(context, run);
-  if (refused) return refused;
   const deleted = await store.delete(kind, environment, name);
   return deleted
     ? context.json({ deleted: true })
@@ -119,10 +89,9 @@ const strandedRunReport = ({ chainId, kind, environment, name, status }: LaunchR
 });
 
 export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
-  const app = new Hono<LaunchAppEnv>();
+  const app = new Hono();
   app.use("*", logger());
-  app.use("/api/*", requireIdentity(dependencies.identity, dependencies.config));
-  app.use("/api/factory/*", requireLauncher(dependencies.config));
+  app.use("/api/*", requireOperator(dependencies.config.operatorToken));
   app.route("/api/factory/operator/launcher", launcherOperatorRoutes(dependencies.operatorLauncher));
   app.route("/api/factory/calendar", createCalendarRoutes(dependencies.calendar));
   app.route("/api/slots", createSlotRoutes(dependencies.slots));
@@ -152,20 +121,6 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
     }
   });
 
-  // Whether the signed-in caller launches, so the factory page shows itself to launchers only. A read decides nothing:
-  // every write is still refused by requireLauncher.
-  app.get("/api/factory/launcher", async (context) => {
-    context.header("Cache-Control", "private, no-store");
-    const cookie = context.req.header("cookie");
-    if (!cookie) return context.json({ launcher: false });
-    const resolved = await Effect.runPromise(Effect.result(dependencies.identity.resolve(cookie)));
-    if (Result.isFailure(resolved)) return context.json({ error: "Identity service unavailable." }, 503);
-    const identity = resolved.success;
-    return context.json({
-      launcher: identity !== null && isLauncher({ kind: "session", ...identity }, dependencies.config),
-    });
-  });
-
   app.get("/api/factory/directory-games", async (context) => {
     try {
       return context.json({ chains: await dependencies.store.playerDirectoryGames() });
@@ -182,19 +137,6 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
       return context.json({ runs: runs.map(toFactoryRunRecord) });
     } catch (error) {
       return context.json({ error: error instanceof Error ? error.message : String(error) }, 400);
-    }
-  });
-
-  app.post("/api/factory/runs", async (context) => {
-    try {
-      const request = await decodeBody(context, CreateGameRequestSchema);
-      if (request.environment === "madara.blitz")
-        return context.json({ error: "Blitz launches use paid slots at /api/slots" }, 400);
-      if (request.environment === "madara.frontier" && !isOperator(context.get("caller")))
-        return context.json({ error: "Operator token required." }, 403);
-      return respondWithRun(context, dependencies, "game", request);
-    } catch (error) {
-      return context.json({ error: String(error) }, 400);
     }
   });
 

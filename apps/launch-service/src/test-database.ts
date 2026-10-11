@@ -1,3 +1,5 @@
+import { absentLedgerSlot } from "../../../packages/value-ledger/test-support/ledger-abi";
+import { decodeLedgerSlot } from "../../../packages/value-ledger/src/codecs";
 import { readdirSync, readFileSync } from "node:fs";
 import { Miniflare } from "miniflare";
 
@@ -52,9 +54,10 @@ export const slotValueFixture = (count = 0) => {
     cancelled: false,
   };
   return {
-    slot: async () => slot,
+    slot: async (key?: { chainId: string; slotId: number }) =>
+      key && key.slotId >= 2147483648 ? decodeLedgerSlot(absentLedgerSlot()) : slot,
     openSlot: async () => {},
-    refundSlot: async () => null,
+    refundSlot: async (): Promise<number | null> => null,
     markRefundable: async () => {},
     registrations: async () => ({
       slot,

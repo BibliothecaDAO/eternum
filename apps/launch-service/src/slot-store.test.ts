@@ -1,3 +1,5 @@
+import { absentLedgerSlot } from "../../../packages/value-ledger/test-support/ledger-abi";
+import { decodeLedgerSlot } from "../../../packages/value-ledger/src/codecs";
 import { slotValueFixture, registrationIdentityFixture } from "./test-database";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { D1SlotStore } from "./slot-store";
@@ -155,7 +157,7 @@ it("publishes the same stored shard key used to open the ledger slot", async () 
 it("deletes a failed schedule only after the ledger confirms absence", async () => {
   const value = slotValueFixture();
   vi.spyOn(value, "openSlot").mockRejectedValue(new Error("ledger rejected open"));
-  const absent = { ...(await value.slot()), exists: false };
+  const absent = decodeLedgerSlot(absentLedgerSlot());
   vi.spyOn(value, "slot").mockResolvedValue(absent);
   const store = new D1SlotStore(
     database.db,
@@ -197,3 +199,56 @@ it.each(["exists", "unavailable"])(
     expect(read).toHaveBeenCalledTimes(1);
   },
 );
+
+it("discovers bounded paid player slots on two shards without opening them, then keeps official ids low", async () => {
+  const value = slotValueFixture(1);
+  const read = vi.spyOn(value, "slot").mockImplementation(async (key) => ({
+    ...(await slotValueFixture(1).slot()),
+    seasonId: 0,
+    exists: key!.slotId < 2147483654,
+  }));
+  const open = vi.spyOn(value, "openSlot");
+  const launches = new D1LaunchStore(database.db, testChain("0x1"));
+  const one = new D1SlotStore(database.db, launches, value, registrationIdentityFixture);
+  const two = new D1SlotStore(
+    database.db,
+    new D1LaunchStore(database.db, testChain("0x2")),
+    value,
+    registrationIdentityFixture,
+  );
+  await one.discoverPlayerSlots();
+  expect(read).toHaveBeenCalledTimes(5);
+  expect(await one.list()).toHaveLength(5);
+  await one.discoverPlayerSlots();
+  expect(await one.list()).toHaveLength(6);
+  await two.discoverPlayerSlots();
+  expect((await two.get("game-2147483648")).chainId).toBe("0x2");
+  expect(open).not.toHaveBeenCalled();
+  await one.create("official", soon());
+  expect((await one.get("official")).slotId).toBe(1);
+  await database.db
+    .prepare("UPDATE playtest_slots SET closes_at=? WHERE chain_id='0x1' AND slot_id=2147483648")
+    .bind(Date.now() - 1000)
+    .run();
+  await one.freeze("game-2147483648");
+  expect(await launches.find("game", "madara.blitz", "game-2147483648-1")).toMatchObject({ slotId: 2147483648 });
+});
+it("discovery retries a failed ledger read without inserting an unpaid slot or skipping its number", async () => {
+  const value = slotValueFixture();
+  const absent = decodeLedgerSlot(absentLedgerSlot());
+  const read = vi.spyOn(value, "slot").mockRejectedValueOnce(new Error("ledger unavailable")).mockResolvedValue(absent);
+  const store = new D1SlotStore(
+    database.db,
+    new D1LaunchStore(database.db, testChain()),
+    value,
+    registrationIdentityFixture,
+  );
+  await expect(store.discoverPlayerSlots()).rejects.toThrow("ledger unavailable");
+  expect(await store.list()).toEqual([]);
+  await store.discoverPlayerSlots();
+  expect(read.mock.calls.slice(-2)).toEqual([
+    [{ chainId: TEST_CHAIN, slotId: 2147483648 }],
+    [{ chainId: TEST_CHAIN, slotId: 2147483648 }],
+  ]);
+  expect(await store.list()).toEqual([]);
+});

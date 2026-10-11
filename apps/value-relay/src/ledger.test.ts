@@ -119,8 +119,9 @@ it("decodes confirmed payments and pins the event head across pagination", async
   await Effect.runPromise(reads.paidClaims(page.next));
   expect(rpc.events.mock.calls[1]![0]).toMatchObject({ to_block: { block_number: 1000 }, continuation_token: "next" });
 });
-it("decodes result commitments and refuses malformed payment events", async () => {
+it.each([0, 1])("decodes result commitments for season %s without reading a missing season", async (seasonId) => {
   const reads = ledgerMonitorReads("https://ledger.test", "0x10");
+  expect(rpc.call).not.toHaveBeenCalled();
   rpc.events.mockResolvedValueOnce({
     events: [
       {
@@ -129,7 +130,7 @@ it("decodes result commitments and refuses malformed payment events", async () =
         ...ledgerEvent("ResultsApplied", {
           key: { shard: 1, game_id: 7 },
           slot_id: 12,
-          season_id: 1,
+          season_id: seasonId,
           result_commitment: result.commitment,
           pool: { low: 0, high: 0 },
         }),
@@ -139,6 +140,7 @@ it("decodes result commitments and refuses malformed payment events", async () =
   expect((await Effect.runPromise(reads.postedResults(null))).rows).toEqual([
     { chainId: "0x1", gameId: 7, commitment: result.commitment },
   ]);
+  expect(rpc.call).not.toHaveBeenCalled();
   rpc.events.mockResolvedValueOnce({
     events: [
       {

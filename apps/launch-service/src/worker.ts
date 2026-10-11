@@ -2,7 +2,6 @@ import { WorkerEntrypoint } from "cloudflare:workers";
 import { activeShards } from "@realms-world/value-ledger";
 import { Effect } from "effect";
 import { createLaunchApp } from "./app";
-import { createIdentityResolver } from "./auth";
 import { D1CalendarStore } from "./calendar-store";
 import { decodeLaunchEnv, type LaunchEnv } from "./env";
 import { shardChainOf } from "./executor";
@@ -11,7 +10,7 @@ import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore } from "./store";
 
 /**
- * The launch Worker, served under the app's /api beside identity: /api/factory/* for launchers and /api/slots/* for
+ * The launch Worker, served under the app's /api beside identity: /api/factory/* for operators and /api/slots/* for
  * players. Its cron tick follows the season calendar: it creates the Frontier season game at its start and the next
  * Blitz slot inside the Blitz window, freezes closed slots, and wakes the registrar that executes launches.
  */
@@ -52,12 +51,9 @@ const launchAppOf = (env: LaunchEnv, chainId?: string | null) => {
   const { launches, slots, calendar } = launchStoresOf(env, chainId);
   return createLaunchApp({
     config: {
-      allowedOrigins: new Set([new URL(env.BASE_URL).origin]),
-      launcherAllowlist: env.launchers,
       operatorToken: env.OPERATOR_TOKEN,
     },
     deployment: { environment: env.ENVIRONMENT, version: env.VERSION.id },
-    identity: createIdentityResolver(env.BASE_URL, (url, init) => env.IDENTITY.fetch(url, init)),
     store: launches,
     slots,
     calendar,
