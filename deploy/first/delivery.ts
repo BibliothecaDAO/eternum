@@ -435,7 +435,7 @@ export function deliverySteps(context: Deployment): Step[] {
               },
             ],
             context.store,
-            "test-tokens",
+            `test-tokens-${state.gameId}`,
             context.output,
           );
         const calls = buildFrontierFundingCalls(context.assets!.ledger, context.assets!.lords, {
