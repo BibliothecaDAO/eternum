@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-11",
+    title: "Factory page makes unranked games only",
+    description:
+      "The factory page no longer edits the season calendar or shows Blitz slots: ranked games are opened by the operator, and a game made on the page has no slot, no pot and no rating.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-11",
     title: "Eight-digit email codes",
     description:
       "The code emailed to sign in, and to link, replace or unlink your payout wallet, is now eight digits, and its boxes fit a phone on one line.",

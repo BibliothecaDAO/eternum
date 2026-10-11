@@ -1,8 +1,7 @@
 import type { PlaytestSlot } from "../../../../../../../apps/launch-service/src/slots";
 import type { toFactoryRunRecord } from "../../../../../../../apps/launch-service/src/model";
-import type { SeasonPhase, SeasonPhaseName } from "../../../../../../../apps/launch-service/src/calendar";
 import { fetchApi } from "@/runtime/app-api";
-export type { PlaytestSlot, SeasonPhase, SeasonPhaseName };
+export type { PlaytestSlot };
 type FactoryRun = ReturnType<typeof toFactoryRunRecord>;
 
 /** The launch routes are served under the app's own /api beside identity, so the session cookie reaches them. */
@@ -20,7 +19,8 @@ async function request<T>(path: string, body?: unknown, method = body === undefi
 export const fetchPlaytestSlots = () => request<{ slots: PlaytestSlot[] }>("/api/slots");
 /** Whether the signed-in caller launches: the factory page shows itself to launchers only. */
 export const fetchLauncherStatus = () => request<{ launcher: boolean }>("/api/factory/launcher");
-export const fetchFactoryRuns = (environment: "madara.blitz" | "madara.eternum" | "madara.frontier") =>
+/** A launcher's runs: the Eternum games made here and the Frontier season's launch. Blitz runs are the operator's. */
+export const fetchFactoryRuns = (environment: "madara.eternum" | "madara.frontier") =>
   request<{ runs: FactoryRun[] }>(`/api/factory/runs?environment=${environment}`);
 export const createEternumGame = (gameName: string, gameStartTime: string) =>
   request<FactoryRun>("/api/factory/runs", {
@@ -31,10 +31,4 @@ export const createEternumGame = (gameName: string, gameStartTime: string) =>
     devModeOn: false,
   });
 export const retryFactoryRun = (run: FactoryRun) =>
-  request<FactoryRun>(
-    `/api/factory/${run.kind === "result" ? "results" : "runs"}/${run.environment}/${encodeURIComponent(run.gameName)}/actions/continue`,
-    {},
-  );
-export const fetchSeasonCalendar = () => request<{ phases: SeasonPhase[] }>("/api/factory/calendar");
-export const saveSeasonPhase = (phase: SeasonPhaseName, startsAt: string, endsAt: string) =>
-  request<SeasonPhase>(`/api/factory/calendar/${phase}`, { startsAt, endsAt }, "PUT");
+  request<FactoryRun>(`/api/factory/runs/${run.environment}/${encodeURIComponent(run.gameName)}/actions/continue`, {});

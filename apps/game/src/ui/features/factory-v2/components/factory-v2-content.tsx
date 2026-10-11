@@ -1,23 +1,19 @@
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { useRequestSignIn } from "@/shell/sign-in/sign-in-route";
-import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import {
-  createEternumGame,
-  fetchFactoryRuns,
-  fetchPlaytestSlots,
-  fetchSeasonCalendar,
-  retryFactoryRun,
-  saveSeasonPhase,
-  type SeasonPhase,
-  type SeasonPhaseName,
-} from "../api/factory-worker";
+import { createEternumGame, fetchFactoryRuns, retryFactoryRun } from "../api/factory-worker";
 import { FACTORY_GAME_LIST_REFRESH_EVENT } from "../game-list-refresh-event";
 
 const inputStyle = "w-full rounded border border-gold/30 bg-black/40 px-3 py-2 text-gold";
 const buttonStyle = "rounded border border-gold/40 px-4 py-2 text-gold disabled:opacity-40 hover:bg-gold/10";
-const RUN_ENVIRONMENTS = ["madara.blitz", "madara.eternum", "madara.frontier"] as const;
+// Official games are the operator's: Blitz slots, their games and results, and the season calendar are not on this page.
+const RUN_ENVIRONMENTS = ["madara.eternum", "madara.frontier"] as const;
 
+/**
+ * A launcher's own games: an Eternum game scheduled here, and the launches a launcher may continue. A game made here
+ * has no slot, no pot and no rating.
+ */
 export const FactoryV2Content = () => {
   const { status } = useIdentitySession();
   const signIn = useRequestSignIn();
@@ -32,7 +28,6 @@ export const FactoryV2Content = () => {
       refetchInterval: 3_000,
     })),
   });
-  const slots = useQuery({ queryKey: ["playtestSlots"], queryFn: fetchPlaytestSlots, refetchInterval: 3_000 });
   const action = useMutation({
     mutationFn: (execute: () => Promise<unknown>) => execute(),
     onSuccess: async () => {
@@ -51,7 +46,7 @@ export const FactoryV2Content = () => {
     setNotice("");
     action.mutate(() => createEternumGame(name, date.toISOString()));
   };
-  const error = action.error ?? runs.find((query) => query.error)?.error ?? slots.error;
+  const error = action.error ?? runs.find((query) => query.error)?.error;
   const allRuns = runs.flatMap((query) => query.data?.runs ?? []);
   // A failed launch waits for a launcher, a Frontier season included, so it leads the page rather than hiding in the list.
   const needsAttention = allRuns.filter((run) => run.status === "attention");
@@ -59,8 +54,8 @@ export const FactoryV2Content = () => {
     <section className="space-y-5 rounded-2xl border border-gold/20 bg-black/60 p-5 text-gold">
       <h2 className="text-xl">Schedule play</h2>
       <p className="text-sm text-gold/70">
-        The season calendar decides when Frontier runs and when free Blitz slots open: slots follow the daily timetable
-        inside the Blitz window and form games of up to 24 players on their own. Eternum games are scheduled here.
+        Eternum games are scheduled here; a game made here has no slot, no pot and no rating. Ranked Blitz slots and the
+        season calendar are the operator's.
       </p>
       {status !== "signed-in" ? (
         <button className={buttonStyle} onClick={() => signIn()}>
@@ -100,14 +95,6 @@ export const FactoryV2Content = () => {
         </p>
       )}
       {notice && <p role="status">{notice}</p>}
-      <SeasonCalendar canEdit={status === "signed-in"} />
-      {slots.data?.slots
-        .filter((slot) => !slot.frozenAt)
-        .map((slot) => (
-          <p key={slot.name} className="border-t border-gold/20 pt-3">
-            {slot.name} · closes {new Date(slot.closesAt).toLocaleString()}
-          </p>
-        ))}
       {needsAttention.length > 0 && (
         <div role="alert" className="space-y-2 rounded border border-red-400/60 p-3">
           <h3 className="text-lg text-red-300">Needs attention</h3>
@@ -124,16 +111,13 @@ export const FactoryV2Content = () => {
       {allRuns.map((run) => (
         <article key={run.runId} className="space-y-2 rounded border border-gold/20 p-3">
           <p>
-            {run.gameName} · {run.kind === "result" ? "Results" : "Creation"} · {run.status}
+            {run.gameName} · {run.status}
           </p>
           {run.steps.map((step) => (
             <p key={step.id} className="text-sm text-gold/70">
               {step.title}: {step.latestEvent}
             </p>
           ))}
-          {run.artifacts.resultCommitment && (
-            <p className="break-all text-xs">Result: {run.artifacts.resultCommitment}</p>
-          )}
           {run.recovery.canContinue && status === "signed-in" && (
             <button
               className={buttonStyle}
@@ -146,91 +130,5 @@ export const FactoryV2Content = () => {
         </article>
       ))}
     </section>
-  );
-};
-
-const CALENDAR_PHASES: { phase: SeasonPhaseName; title: string }[] = [
-  { phase: "frontier", title: "Frontier season" },
-  { phase: "blitz", title: "Blitz window" },
-];
-
-/** The season calendar: each phase's planned start and end. A running Frontier season's dates are fixed. */
-const SeasonCalendar = ({ canEdit }: { canEdit: boolean }) => {
-  const queryClient = useQueryClient();
-  const calendar = useQuery({ queryKey: ["seasonCalendar"], queryFn: fetchSeasonCalendar });
-  const save = useMutation({
-    mutationFn: ({ phase, startsAt, endsAt }: SeasonPhase) => saveSeasonPhase(phase, startsAt, endsAt),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["seasonCalendar"] }),
-  });
-  return (
-    <div className="space-y-3 border-t border-gold/20 pt-3">
-      <h3 className="text-lg">Season calendar</h3>
-      {CALENDAR_PHASES.map(({ phase, title }) => (
-        <CalendarPhase
-          key={`${phase}:${calendar.dataUpdatedAt}`}
-          title={title}
-          current={calendar.data?.phases.find((entry) => entry.phase === phase)}
-          canEdit={canEdit}
-          saving={save.isPending}
-          onSave={(startsAt, endsAt) => save.mutate({ phase, startsAt, endsAt })}
-        />
-      ))}
-      {save.error && (
-        <p role="alert" className="text-red-400">
-          {save.error.message}
-        </p>
-      )}
-    </div>
-  );
-};
-
-/** An ISO instant as a datetime-local input's value, in the launcher's own time zone. */
-const toLocalInput = (iso: string | undefined) =>
-  iso ? new Date(Date.parse(iso) - new Date(iso).getTimezoneOffset() * 60_000).toISOString().slice(0, 16) : "";
-
-const CalendarPhase = (props: {
-  title: string;
-  current: SeasonPhase | undefined;
-  canEdit: boolean;
-  saving: boolean;
-  onSave: (startsAt: string, endsAt: string) => void;
-}) => {
-  const [start, setStart] = useState(toLocalInput(props.current?.startsAt));
-  const [end, setEnd] = useState(toLocalInput(props.current?.endsAt));
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    props.onSave(new Date(start).toISOString(), new Date(end).toISOString());
-  };
-  return (
-    <form onSubmit={submit} className="grid max-w-xl gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-      <p className="sm:col-span-3">{props.title}</p>
-      <label className="text-sm">
-        Starts (local time)
-        <input
-          className={inputStyle}
-          required
-          type="datetime-local"
-          value={start}
-          onChange={(e) => setStart(e.target.value)}
-          disabled={!props.canEdit}
-        />
-      </label>
-      <label className="text-sm">
-        Ends (local time)
-        <input
-          className={inputStyle}
-          required
-          type="datetime-local"
-          value={end}
-          onChange={(e) => setEnd(e.target.value)}
-          disabled={!props.canEdit}
-        />
-      </label>
-      {props.canEdit && (
-        <button className={buttonStyle} disabled={props.saving}>
-          Save
-        </button>
-      )}
-    </form>
   );
 };

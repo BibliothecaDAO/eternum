@@ -17,8 +17,9 @@ const FactoryV2Content = lazy(() =>
 );
 
 /**
- * The operators' page (spec 15): scheduling seasons, Blitz windows and Eternum games, and following launches. Only a
- * launcher sees it; a player, signed in or not, gets Nothing here. The launch service answers who launches (the same
+ * The launchers' page (spec 15): scheduling Eternum games and following their launches; official games (Blitz slots,
+ * the season calendar) are the operator's and are not set here. Only a launcher sees it; a player, signed in or not,
+ * gets Nothing here. The launch service answers who launches (the same
  * rule that refuses every write), so the page holds no list of its own.
  */
 export const FactoryPage = () => {

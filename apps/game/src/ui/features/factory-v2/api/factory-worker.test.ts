@@ -15,14 +15,14 @@ it("sends Eternum requests through the authenticated service", async () => {
     devModeOn: false,
   });
 });
-it("retries finalization separately from creation and surfaces service errors", async () => {
+it("continues a failed game run and surfaces service errors", async () => {
   const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ runs: [] }) });
   vi.stubGlobal("fetch", fetch);
-  await fetchFactoryRuns("madara.blitz");
-  await retryFactoryRun({ kind: "result", environment: "madara.blitz", gameName: "evening-1" } as Parameters<
+  await fetchFactoryRuns("madara.eternum");
+  await retryFactoryRun({ kind: "game", environment: "madara.eternum", gameName: "long-game" } as Parameters<
     typeof retryFactoryRun
   >[0]);
-  expect(fetch.mock.calls[1][0]).toBe("/api/factory/results/madara.blitz/evening-1/actions/continue");
+  expect(fetch.mock.calls[1][0]).toBe("/api/factory/runs/madara.eternum/long-game/actions/continue");
   fetch.mockResolvedValue({ ok: false, status: 403, json: async () => ({ error: "Launcher permission required" }) });
   await expect(createEternumGame("long-game", "2099-01-02T12:00:00Z")).rejects.toThrow("Launcher permission required");
 });
