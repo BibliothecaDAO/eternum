@@ -35,11 +35,11 @@ const storage = {
   },
 };
 const env = {
-  VALUE_IDENTITY: { shards: async () => [{ chainId, url: heraldUrl, status: "pending" as const }] },
+  IDENTITY: { shards: async () => [{ chainId, url: heraldUrl, status: "pending" as const }] },
   BASE_URL: "https://app.test",
-  DEPLOYER_PRIVATE_KEY: "0x1",
+  LAUNCH_DEPLOYER_PRIVATE_KEY: "0x1",
   OPERATOR_TOKEN: "test",
-  IDENTITY: { fetch: vi.fn(async () => Response.json({ accountClassHash: "0x2", publicKey: "0x9" })) },
+  IDENTITY_HTTP: { fetch: vi.fn(async () => Response.json({ accountClassHash: "0x2", publicKey: "0x9" })) },
 };
 const deploy = () => new LauncherDeployment(env, storage);
 beforeEach(() => {
@@ -75,7 +75,7 @@ it("refuses a proxy on another chain or an identity with different pins before e
   mock.chain.mockResolvedValue("0x2");
   await expect(deploy().enrol({ chainId, heraldUrl })).rejects.toThrow("launcher_chain_differs");
   mock.chain.mockResolvedValue(chainId);
-  env.IDENTITY.fetch.mockResolvedValueOnce(Response.json({ accountClassHash: "0x999", publicKey: "0x9" }));
+  env.IDENTITY_HTTP.fetch.mockResolvedValueOnce(Response.json({ accountClassHash: "0x999", publicKey: "0x9" }));
   await expect(deploy().enrol({ chainId, heraldUrl })).rejects.toThrow("launcher_identity_differs");
   expect(mock.join).not.toHaveBeenCalled();
 });

@@ -1,9 +1,9 @@
 # Launch service
 
 The launch Worker serves `/api/factory/*` and `/api/slots/*` beside identity. Identity owns sessions and official shard
-membership. `VALUE_IDENTITY` supplies the directory; `VALUE_RELAY` supplies confirmed, chain-guarded ledger reads and
-economic writes. A request can select `?chainId=<official shard>`; with one live shard the selection is unique. Multiple
-live shards require a chain. No Worker shard URL or separate ledger URL/address is configured.
+membership. `IDENTITY` supplies the directory; `VALUE_RELAY` supplies confirmed, chain-guarded ledger reads and economic
+writes. A request can select `?chainId=<official shard>`; with one live shard the selection is unique. Multiple live
+shards require a chain. No Worker shard URL or separate ledger URL/address is configured.
 
 Every Worker write requires the operator token. The operator opens Blitz slots; players register on the ledger. The
 schedule's `frontier-<start timestamp>` names are reserved. There is no factory create-run route or wallet authority.
@@ -29,7 +29,7 @@ Normal game names cannot start with `check-`. Operator-only `/api/factory/operat
 own signer. Deployment registers the shard as pending, enrolls the Worker, hands it the launcher role, and reads that
 role back on chain before activation. Pending shards stay invisible to players.
 
-Runtime settings include `BASE_URL`, `ENVIRONMENT`, and the `DEPLOYER_PRIVATE_KEY` and `OPERATOR_TOKEN` secrets.
+Runtime settings include `BASE_URL`, `ENVIRONMENT`, and the `LAUNCH_DEPLOYER_PRIVATE_KEY` and `OPERATOR_TOKEN` secrets.
 `wrangler.jsonc` declares the identity, relay, D1 and registrar bindings. No hosting, secret provisioning or live
 deployment is performed by this change.
 

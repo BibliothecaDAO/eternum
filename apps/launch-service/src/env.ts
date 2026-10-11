@@ -3,14 +3,14 @@ import { Schema } from "effect";
 
 /**
  * The launch Worker's environment, decoded loudly so a misconfigured deployment fails on its first request or tick.
- * The shard it launches on is selected from the directory; `DEPLOYER_PRIVATE_KEY` and
+ * The shard it launches on is selected from the directory; `LAUNCH_DEPLOYER_PRIVATE_KEY` and
  * `OPERATOR_TOKEN` are secrets and are never committed.
  */
 const LaunchVars = Schema.Struct({
   ENVIRONMENT: Schema.Literals(["staging", "production"]),
   /** The app's origin; the launch routes are served under its /api, beside identity. */
   BASE_URL: Schema.NonEmptyString,
-  DEPLOYER_PRIVATE_KEY: Schema.NonEmptyString,
+  LAUNCH_DEPLOYER_PRIVATE_KEY: Schema.NonEmptyString,
   /** The environment's one operator token, which operator automation presents as a launcher. */
   OPERATOR_TOKEN: Schema.NonEmptyString,
 });
@@ -20,8 +20,8 @@ type LaunchVars = Schema.Schema.Type<typeof LaunchVars>;
 export interface LaunchEnv extends LaunchVars {
   DB: D1Database;
   /** The identity Worker, which owns sessions; reached by service binding only. */
-  IDENTITY: Fetcher;
-  VALUE_IDENTITY: import("@realms-world/value-ledger").ShardDirectory &
+  IDENTITY_HTTP: Fetcher;
+  IDENTITY: import("@realms-world/value-ledger").ShardDirectory &
     import("@realms-world/value-ledger").RegistrationIdentity;
   VALUE_RELAY: import("./paid-blitz").BlitzValuePort;
   /** The one registrar that executes launches, one at a time. */
@@ -38,8 +38,8 @@ export const decodeLaunchEnv = (raw: Record<string, unknown>): LaunchEnv => {
   return {
     ...vars,
     DB: raw.DB as D1Database,
-    IDENTITY: raw.IDENTITY as Fetcher,
-    VALUE_IDENTITY: raw.VALUE_IDENTITY as LaunchEnv["VALUE_IDENTITY"],
+    IDENTITY_HTTP: raw.IDENTITY_HTTP as Fetcher,
+    IDENTITY: raw.IDENTITY as LaunchEnv["IDENTITY"],
     VALUE_RELAY: raw.VALUE_RELAY as LaunchEnv["VALUE_RELAY"],
     REGISTRAR: raw.REGISTRAR as LaunchEnv["REGISTRAR"],
     VERSION: raw.VERSION as WorkerVersionMetadata,

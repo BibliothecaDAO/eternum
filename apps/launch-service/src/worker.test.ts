@@ -75,15 +75,15 @@ beforeAll(async () => {
         d1Databases: { DB: "launch" },
         durableObjects: { REGISTRAR: { className: "EnrolledRegistrar", useSQLite: true } },
         serviceBindings: {
-          VALUE_IDENTITY: { name: "directory", entrypoint: "ValueIdentity" },
+          IDENTITY: { name: "directory", entrypoint: "ValueIdentity" },
           VALUE_RELAY: { name: "directory", entrypoint: "ValueRelay" },
-          IDENTITY: () =>
+          IDENTITY_HTTP: () =>
             Response.json({ session: { id: "s1" }, user: { id: "u1", realmsId: "0x7", address: LAUNCHER } }),
         },
         bindings: {
           ENVIRONMENT: "staging",
           BASE_URL: ORIGIN,
-          DEPLOYER_PRIVATE_KEY: "0x1",
+          LAUNCH_DEPLOYER_PRIVATE_KEY: "0x1",
           OPERATOR_TOKEN: "operator-test-token",
           VERSION: { id: "workerd-test", tag: "", timestamp: "" },
         },

@@ -1,7 +1,7 @@
 // The launch Worker serves /api/factory/* and /api/slots/* on the app's origin.
 // Official shards come from the identity directory. Its registrar account
 // is enrolled per shard; its writes require the operator token, and
-// DEPLOYER_PRIVATE_KEY and OPERATOR_TOKEN its secrets; the deploy workflow sets them. When Frontier and Blitz run is the
+// LAUNCH_DEPLOYER_PRIVATE_KEY and OPERATOR_TOKEN its secrets; the deploy workflow sets them. When Frontier and Blitz run is the
 // season calendar in D1, which the operator edits. Production deploys only at the cutover, when the box's launch service stops: two schedulers
 // would each freeze the same slots.
 {
@@ -23,8 +23,8 @@
       "vars": { "ENVIRONMENT": "staging", "BASE_URL": "https://play.dev-realms.party" },
       "d1_databases": [{ "binding": "DB", "database_name": "realms-launch-staging", "migrations_dir": "migrations" }],
       "services": [
-        { "binding": "IDENTITY", "service": "realms-identity-staging" },
-        { "binding": "VALUE_IDENTITY", "service": "realms-identity-staging", "entrypoint": "ValueIdentity" },
+        { "binding": "IDENTITY_HTTP", "service": "realms-identity-staging" },
+        { "binding": "IDENTITY", "service": "realms-identity-staging", "entrypoint": "ValueIdentity" },
         { "binding": "VALUE_RELAY", "service": "realms-value-relay-staging", "entrypoint": "ValueLaunch" },
       ],
       "durable_objects": { "bindings": [{ "name": "REGISTRAR", "class_name": "Registrar" }] },
@@ -43,8 +43,8 @@
         { "binding": "DB", "database_name": "realms-launch-production", "migrations_dir": "migrations" },
       ],
       "services": [
-        { "binding": "IDENTITY", "service": "realms-identity" },
-        { "binding": "VALUE_IDENTITY", "service": "realms-identity", "entrypoint": "ValueIdentity" },
+        { "binding": "IDENTITY_HTTP", "service": "realms-identity" },
+        { "binding": "IDENTITY", "service": "realms-identity", "entrypoint": "ValueIdentity" },
         { "binding": "VALUE_RELAY", "service": "realms-value-relay", "entrypoint": "ValueLaunch" },
       ],
       "durable_objects": { "bindings": [{ "name": "REGISTRAR", "class_name": "Registrar" }] },

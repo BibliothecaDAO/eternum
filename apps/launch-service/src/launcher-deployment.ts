@@ -10,11 +10,11 @@ interface Target {
   heraldUrl: string;
 }
 interface Environment {
-  VALUE_IDENTITY: import("@realms-world/value-ledger").ShardDirectory;
+  IDENTITY: import("@realms-world/value-ledger").ShardDirectory;
   BASE_URL: string;
-  DEPLOYER_PRIVATE_KEY: string;
+  LAUNCH_DEPLOYER_PRIVATE_KEY: string;
   OPERATOR_TOKEN: string;
-  IDENTITY: Pick<Fetcher, "fetch">;
+  IDENTITY_HTTP: Pick<Fetcher, "fetch">;
 }
 interface Storage {
   get<T>(key: string): Promise<T | undefined>;
@@ -39,14 +39,14 @@ export class LauncherDeployment {
   async account(chainId: string): Promise<string> {
     const enrolled = await this.storage.get<Enrolled>(this.accountKey(chainId));
     if (!enrolled) throw new Error("launcher_role_not_granted");
-    const { shard } = await readLaunchShard(this.env.VALUE_IDENTITY, chainId);
+    const { shard } = await readLaunchShard(this.env.IDENTITY, chainId);
     if (shard.status === "retired") throw new Error("launcher_target_differs");
     const native = new LaunchShard({
       rpcUrl: shard.rpcUrl,
       chainId: shard.chainId,
       gamesAddress: shard.contracts.games!,
       accountAddress: enrolled.launcherAccount,
-      privateKey: this.env.DEPLOYER_PRIVATE_KEY,
+      privateKey: this.env.LAUNCH_DEPLOYER_PRIVATE_KEY,
     });
     if (BigInt(await native.view<bigint>("launcher", [])) !== BigInt(enrolled.launcherAccount))
       throw new Error("launcher_role_not_granted");
@@ -63,7 +63,7 @@ export class LauncherDeployment {
       launcherAccount,
       classHash: shard.accountClassHash,
       guardian: shard.guardianPublicKey,
-      deviceKey: deviceKeyOf(this.env.DEPLOYER_PRIVATE_KEY).publicKey,
+      deviceKey: deviceKeyOf(this.env.LAUNCH_DEPLOYER_PRIVATE_KEY).publicKey,
       world: shard.contracts.games!,
     };
     if (previous) {
@@ -78,7 +78,7 @@ export class LauncherDeployment {
   private async assertIdentity(shard: Awaited<ReturnType<typeof readLaunchShard>>["shard"]) {
     if (BigInt(await rpcAt(shard.rpcUrl).getChainId()) !== BigInt(shard.chainId))
       throw new Error("launcher_chain_differs");
-    const identity = await this.env.IDENTITY.fetch(new URL("/api/guardian", this.env.BASE_URL));
+    const identity = await this.env.IDENTITY_HTTP.fetch(new URL("/api/guardian", this.env.BASE_URL));
     if (!identity.ok) throw new Error("launcher_identity_unavailable");
     const pins = (await identity.json()) as { accountClassHash: string; publicKey: string };
     if (
@@ -92,9 +92,9 @@ export class LauncherDeployment {
       provider: rpcAt(shard.rpcUrl) as unknown as Parameters<typeof joinRealmsAccount>[0]["provider"],
       shard,
       realmsId,
-      device: deviceKeyOf(this.env.DEPLOYER_PRIVATE_KEY),
+      device: deviceKeyOf(this.env.LAUNCH_DEPLOYER_PRIVATE_KEY),
       approve: async (change) => {
-        const response = await this.env.IDENTITY.fetch(new URL("/api/devices/bots", this.env.BASE_URL), {
+        const response = await this.env.IDENTITY_HTTP.fetch(new URL("/api/devices/bots", this.env.BASE_URL), {
           method: "POST",
           headers: { authorization: `Bearer ${this.env.OPERATOR_TOKEN}`, "content-type": "application/json" },
           body: JSON.stringify({ label: LABEL, ...change }),
@@ -105,7 +105,7 @@ export class LauncherDeployment {
     });
   }
   private async target(input: Target) {
-    const { shard } = await readLaunchShard(this.env.VALUE_IDENTITY, input.chainId);
+    const { shard } = await readLaunchShard(this.env.IDENTITY, input.chainId);
     if (
       shard.status === "retired" ||
       new URL(input.heraldUrl).href.replace(/\/$/, "") !== new URL(shard.url).href.replace(/\/$/, "")

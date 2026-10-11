@@ -18,9 +18,9 @@ interface LaunchExecutorService {
 }
 export class LaunchExecutor extends Context.Service<LaunchExecutor, LaunchExecutorService>()("launch/LaunchExecutor") {}
 export const launchTargetOf = (env: LaunchEnv, accountAddress: string): LaunchTarget => ({
-  directory: env.VALUE_IDENTITY,
+  directory: env.IDENTITY,
   accountAddress,
-  privateKey: env.DEPLOYER_PRIVATE_KEY,
+  privateKey: env.LAUNCH_DEPLOYER_PRIVATE_KEY,
 });
 
 /** Directory membership owns selection; runtime ABI owns command encoding. */
@@ -29,8 +29,8 @@ export const readLaunchShard = async (directory: ShardDirectory, chainId: string
   return { shard, world: { world: { address: shard.contracts.games! } } };
 };
 export const shardChainOf = (env: LaunchEnv, requested?: string | null) => async () => {
-  if (requested) return (await requireActiveChain(env.VALUE_IDENTITY, requested)).chainId;
-  const shards = await activeShards(env.VALUE_IDENTITY);
+  if (requested) return (await requireActiveChain(env.IDENTITY, requested)).chainId;
+  const shards = await activeShards(env.IDENTITY);
   if (shards.length !== 1) throw new Error("select_official_shard_chain");
   return shards[0]!.chainId;
 };

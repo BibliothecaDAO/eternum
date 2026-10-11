@@ -39,11 +39,11 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
     console.log("registrar_alarm", { at: new Date().toISOString() });
     const env = decodeLaunchEnv(this.env);
     let next: number | null = null;
-    for (const shard of await activeShards(env.VALUE_IDENTITY)) {
+    for (const shard of await activeShards(env.IDENTITY)) {
       const store = new D1LaunchStore(
         env.DB,
         async () => shard.chainId,
-        () => activeShards(env.VALUE_IDENTITY).then((rows) => rows.map((row) => row.chainId)),
+        () => activeShards(env.IDENTITY).then((rows) => rows.map((row) => row.chainId)),
       );
       let accountAddress: string;
       try {

@@ -21,7 +21,7 @@ export default {
   async scheduled(_controller: ScheduledController, rawEnv: Record<string, unknown>): Promise<void> {
     const env = decodeLaunchEnv(rawEnv);
     try {
-      for (const shard of await activeShards(env.VALUE_IDENTITY)) {
+      for (const shard of await activeShards(env.IDENTITY)) {
         const { launches, slots, calendar } = launchStoresOf(env, shard.chainId);
         await Effect.runPromise(runLaunchSchedule(launches, slots, calendar, new Date()));
       }
@@ -34,11 +34,11 @@ export default {
 /** The launch service's stores on one D1, keyed to the chain the shard's /manifest names. */
 const launchStoresOf = (env: LaunchEnv, chainId?: string | null) => {
   const launches = new D1LaunchStore(env.DB, shardChainOf(env, chainId), () =>
-    activeShards(env.VALUE_IDENTITY).then((rows) => rows.map((row) => row.chainId)),
+    activeShards(env.IDENTITY).then((rows) => rows.map((row) => row.chainId)),
   );
   return {
     launches,
-    slots: new D1SlotStore(env.DB, launches, env.VALUE_RELAY, env.VALUE_IDENTITY),
+    slots: new D1SlotStore(env.DB, launches, env.VALUE_RELAY, env.IDENTITY),
     calendar: new D1CalendarStore(env.DB),
   };
 };

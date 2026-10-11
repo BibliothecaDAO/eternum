@@ -43,7 +43,7 @@ const setup = () => {
   const context = { storage: { setAlarm } };
   const registrar = new Registrar(context as unknown as DurableObjectState, {
     DB: {},
-    VALUE_IDENTITY: { shards: async () => [{ chainId: "0x1", url: "https://shard.test", status: "active" }] },
+    IDENTITY: { shards: async () => [{ chainId: "0x1", url: "https://shard.test", status: "active" }] },
   });
   return { registrar, setAlarm };
 };

@@ -117,13 +117,13 @@ jobs:
         if: matrix.worker == 'apps/launch-service'
         working-directory: ${{ matrix.worker }}
         env:
-          DEPLOYER_PRIVATE_KEY: ${{ secrets.LAUNCH_DEPLOYER_PRIVATE_KEY }}
+          LAUNCH_DEPLOYER_PRIVATE_KEY: ${{ secrets.LAUNCH_DEPLOYER_PRIVATE_KEY }}
           OPERATOR_TOKEN: ${{ secrets.OPERATOR_TOKEN }}
         run: |
           set -euo pipefail
-          [ -n "$DEPLOYER_PRIVATE_KEY" ] || { echo "::error::LAUNCH_DEPLOYER_PRIVATE_KEY is not set for the $TARGET environment"; exit 1; }
+          [ -n "$LAUNCH_DEPLOYER_PRIVATE_KEY" ] || { echo "::error::LAUNCH_DEPLOYER_PRIVATE_KEY is not set for the $TARGET environment"; exit 1; }
           [ -n "$OPERATOR_TOKEN" ] || { echo "::error::OPERATOR_TOKEN is not set for the $TARGET environment"; exit 1; }
-          jq -n '{DEPLOYER_PRIVATE_KEY: env.DEPLOYER_PRIVATE_KEY, OPERATOR_TOKEN: env.OPERATOR_TOKEN}' |
+          jq -n '{LAUNCH_DEPLOYER_PRIVATE_KEY: env.LAUNCH_DEPLOYER_PRIVATE_KEY, OPERATOR_TOKEN: env.OPERATOR_TOKEN}' |
             pnpm exec wrangler secret bulk --env "$TARGET"
 
       - name: Deploy
