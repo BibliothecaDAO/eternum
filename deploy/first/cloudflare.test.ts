@@ -33,6 +33,7 @@ test.each([
   [`/accounts/${account}/pages/projects/missing/domains`, "Pages", 404, 8000007],
   ["/zones?name=private.example", "zone", 403, 10000],
   ["/zones/private-zone/dns_records?name=private.example", "DNS", 403, 10000],
+  ["/zones/private-zone/rulesets", "Cache Rules", 403, 10000],
 ] as const)("refusal for %s exposes only family, status and numeric codes", async (path, family, status, code) => {
   globalThis.fetch = (async (_url, _init) => refused(status, code)) as typeof fetch;
   const failure = await platform()
@@ -74,7 +75,10 @@ test("prerequisites read each required family once, using GET only", async () =>
     expect(init?.method).toBe("GET");
     const path = String(url).split("/client/v4")[1]!;
     paths.push(path);
-    return Response.json({ success: true, result: path === "/accounts" ? [{ id: account }] : [] });
+    return Response.json({
+      success: true,
+      result: path === "/accounts" ? [{ id: account }] : path.startsWith("/zones?") ? [{ id: "test-zone" }] : [],
+    });
   }) as typeof fetch;
   await platform().checkAccess();
   expect(paths.sort()).toEqual(
@@ -85,45 +89,59 @@ test("prerequisites read each required family once, using GET only", async () =>
       `/accounts/${account}/r2/buckets`,
       `/accounts/${account}/workers/scripts`,
       `/zones?name=${environments.dev.zone}`,
+      "/zones/test-zone/rulesets",
     ].sort(),
   );
 });
 
-test("R2 refusal stops Deployment prerequisites before any funded step or write", async () => {
-  globalThis.fetch = (async (url, init) => {
-    expect(init?.method).toBe("GET");
-    if (String(url).endsWith("/r2/buckets")) return refused(403, 10042);
-    return Response.json({ success: true, result: String(url).endsWith("/accounts") ? [{ id: account }] : [] });
-  }) as typeof fetch;
-  const steps = preparationSteps({ target: environments.dev, platform: platform(true) } as Deployment);
-  const index = steps.findIndex((step) => step.name === "Deployment prerequisites");
-  expect(index).toBeLessThan(steps.findIndex((step) => step.name === "Fund and deploy accounts"));
-  let laterReads = 0;
-  let writes = 0;
-  await expect(
-    runSteps(
-      [
-        steps[index]!,
-        {
-          name: "Funded step",
-          payer: "deployer",
-          cost: "STRK",
-          inspect: async () => {
-            laterReads++;
-            return { done: false, detail: "" };
+test.each([
+  ["/r2/buckets", "R2 buckets", 10042],
+  ["/rulesets", "Cache Rules", 10000],
+] as const)(
+  "%s refusal stops Deployment prerequisites before any funded step or write",
+  async (suffix, family, code) => {
+    globalThis.fetch = (async (url, init) => {
+      expect(init?.method).toBe("GET");
+      if (String(url).endsWith(suffix)) return refused(403, code);
+      return Response.json({
+        success: true,
+        result: String(url).endsWith("/accounts")
+          ? [{ id: account }]
+          : String(url).includes("/zones?")
+            ? [{ id: "test-zone" }]
+            : [],
+      });
+    }) as typeof fetch;
+    const steps = preparationSteps({ target: environments.dev, platform: platform(true) } as Deployment);
+    const index = steps.findIndex((step) => step.name === "Deployment prerequisites");
+    expect(index).toBeLessThan(steps.findIndex((step) => step.name === "Fund and deploy accounts"));
+    let laterReads = 0;
+    let writes = 0;
+    await expect(
+      runSteps(
+        [
+          steps[index]!,
+          {
+            name: "Funded step",
+            payer: "deployer",
+            cost: "STRK",
+            inspect: async () => {
+              laterReads++;
+              return { done: false, detail: "" };
+            },
+            apply: async () => {
+              writes++;
+            },
           },
-          apply: async () => {
-            writes++;
-          },
-        },
-      ],
-      true,
-      () => {},
-    ),
-  ).rejects.toThrow(namedError("R2 buckets", 403, 10042));
-  expect(laterReads).toBe(0);
-  expect(writes).toBe(0);
-});
+        ],
+        true,
+        () => {},
+      ),
+    ).rejects.toThrow(namedError(family, 403, code));
+    expect(laterReads).toBe(0);
+    expect(writes).toBe(0);
+  },
+);
 
 test("dry-run output keeps the sanitized refusal instead of hiding its cause", async () => {
   globalThis.fetch = (async (_url, _init) => refused(403, 10042)) as typeof fetch;
@@ -148,4 +166,14 @@ test("dry-run output keeps the sanitized refusal instead of hiding its cause", a
   );
   expect(lines[1]).toContain(namedError("R2 buckets", 403, 10042));
   expect(lines.join("\n")).not.toContain(privateMessage);
+});
+
+test("a zone not visible to the token refuses the cache rules probe", async () => {
+  const paths: string[] = [];
+  globalThis.fetch = (async (url, _init) => {
+    paths.push(String(url));
+    return Response.json({ success: true, result: String(url).endsWith("/accounts") ? [{ id: account }] : [] });
+  }) as typeof fetch;
+  await expect(platform().checkAccess()).rejects.toThrow("Cloudflare zone unavailable; check Zone read permission");
+  expect(paths.some((path) => path.endsWith("/rulesets"))).toBe(false);
 });

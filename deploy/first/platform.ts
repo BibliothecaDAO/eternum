@@ -73,6 +73,7 @@ function cloudflareFamily(path: string) {
   if (/^\/accounts\/[^/]+\/r2(?:\/|$)/.test(path)) return "R2 buckets";
   if (/^\/accounts\/[^/]+\/pages(?:\/|$)/.test(path)) return "Pages";
   if (/^\/zones\/[^/]+\/dns_records(?:[/?]|$)/.test(path)) return "DNS";
+  if (/^\/zones\/[^/]+\/rulesets(?:[/?]|$)/.test(path)) return "Cache Rules";
   if (/^\/zones(?:[/?]|$)/.test(path)) return "zone";
   return "accounts";
 }
@@ -252,7 +253,10 @@ export class RelayDiagnostics extends WorkerEntrypoint {}`;
     return { id, databases, pages, buckets, zones };
   }
   async checkAccess() {
-    await this.readResources();
+    const { zones } = await this.readResources();
+    if (zones.length !== 1)
+      throw new PublicError("Cloudflare zone unavailable; check Zone read permission for the environment’s zone.");
+    await this.cf(`/zones/${zones[0]!.id}/rulesets`);
   }
   async resourcesPresent() {
     const { id, databases, pages, buckets, zones } = await this.readResources();

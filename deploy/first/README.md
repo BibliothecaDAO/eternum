@@ -36,11 +36,12 @@ been made for these new accounts or the revised reward contracts.
 Install Bun 1.4, Node 22, pnpm 10.25, git, GitHub CLI and SSH. Install the repository's locked dependencies.
 Authenticate `gh` with repository and Actions read permissions (plus permission to push the public address book). The
 Cloudflare token must be scoped to exactly one account. Required permissions: Account — Workers Scripts edit, D1 edit,
-Pages edit, Workers R2 Storage edit; Zone for the environment's zone — DNS edit, Workers Routes edit. Enable R2 on the
-account once. Prerequisites read D1, Pages, R2, the zone and Workers scripts before any STRK is spent; these reads
-cannot verify write permissions. Refusals name the resource family, HTTP status and numeric Cloudflare codes, never the
-response text. The Resend key needs the environment's verified email sending domain. The one Alchemy URL is also used in
-the browser build and is therefore public to players.
+Pages edit, Workers R2 Storage edit; Zone for the environment's zone — Zone read, DNS edit, Workers Routes edit, Cache
+Rules edit (shown as 'Cache Settings' in the token screen). Enable R2 on the account once. Prerequisites read D1, Pages,
+R2, the zone, Workers scripts and the zone’s rulesets list before any STRK is spent; these reads cannot verify write
+permissions. Refusals name the resource family, HTTP status and numeric Cloudflare codes, never the response text. The
+Resend key needs the environment's verified email sending domain. The one Alchemy URL is also used in the browser build
+and is therefore public to players.
 
 `environments.json` is the one dev/production table for this command. Dev uses the reviewed
 `deploy/release/staging.json`, SSH alias `realms-dev`, and the existing dev tunnel. Production uses the public

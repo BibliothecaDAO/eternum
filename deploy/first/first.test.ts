@@ -507,7 +507,7 @@ globalThis.fetch = async (url, init={}) => {
  }
  if (target.startsWith('https://api.cloudflare.com/client/v4/')) {
   if ((init.method ?? 'GET') !== 'GET') return deny();
-  let result = target.endsWith('/accounts') ? [{id:'test-account'}] : target.endsWith('/r2/buckets') ? {buckets:[]} : [];
+  let result = target.endsWith('/accounts') ? [{id:'test-account'}] : target.endsWith('/r2/buckets') ? {buckets:[]} : target.includes('/zones?name=') ? [{id:'test-zone'}] : [];
   return Response.json({success:true,result});
  }
  return deny();
