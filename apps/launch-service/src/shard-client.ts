@@ -1,4 +1,4 @@
-import { readBlitzRoster } from "@realms-world/value-ledger";
+import { BLITZ_SLOT_PREPARATION_SECONDS, readBlitzRoster } from "@realms-world/value-ledger";
 import { RegistrationOpen } from "./blitz-roster";
 import { ShardOperator, batchRemaining, type ShardTarget } from "@realms-world/value-ledger/shard";
 import { CairoOption, CairoOptionVariant, shortString } from "starknet";
@@ -119,6 +119,7 @@ export class LaunchShard extends ShardOperator {
       blitzRegistrationOverrides: request.blitzRegistrationOverrides,
     });
     const startMainAt = Math.floor(Date.parse(request.gameStartTime) / 1000);
+    const startSettlingAt = startMainAt - (request.environment === "madara.blitz" ? BLITZ_SLOT_PREPARATION_SECONDS : 0);
     const common = buildCreateGameParams(config, {
       gameName: request.gameName,
       presetId,
@@ -133,13 +134,13 @@ export class LaunchShard extends ShardOperator {
     return {
       name: common.name,
       preset_id: presetId,
-      start_settling_at: startMainAt,
+      start_settling_at: startSettlingAt,
       start_main_at: startMainAt,
       duration_seconds: common.duration_seconds,
       end_grace_seconds: common.end_grace_seconds,
       dev_mode_on: common.dev_mode_on,
       roster: players,
-      registration_start: Math.min(Math.floor(createdAt / 1000), startMainAt - 1),
+      registration_start: Math.min(Math.floor(createdAt / 1000), startSettlingAt - 1),
       biome_climate: common.biome_climate_config,
       map_override: new CairoOption(
         request.mapConfigOverrides ? CairoOptionVariant.Some : CairoOptionVariant.None,
