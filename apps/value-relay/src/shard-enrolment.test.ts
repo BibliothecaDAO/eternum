@@ -25,6 +25,10 @@ const target = { chainId: "0x1", heraldUrl: "https://shard.test" };
 const env = {
   IDENTITY: { shards: async () => [] },
   IDENTITY_HTTP: { fetch: vi.fn(async () => Response.json({ accountClassHash: "0x2", publicKey: "0x9" })) },
+  ENVIRONMENT: "staging",
+  L2_RPC_URL: "https://ledger.test",
+  LEDGER_OPERATOR_ADDRESS: "0x1",
+  LEDGER_OPERATOR_PRIVATE_KEY: "0x2",
   BASE_URL: "https://app.test",
   OPERATOR_TOKEN: "test-token",
   SHARD_LEDGER_OPERATOR_PRIVATE_KEY: "test-key",

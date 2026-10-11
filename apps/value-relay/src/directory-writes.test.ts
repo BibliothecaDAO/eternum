@@ -1,4 +1,7 @@
-vi.mock("./environment", () => ({ ledgerAddress: () => "0x10" }));
+vi.mock("./environment", async (original) => ({
+  ...(await original<typeof import("./environment")>()),
+  ledgerAddress: () => "0x10",
+}));
 import { Effect } from "effect";
 import { expect, it, vi } from "vitest";
 import { ValueRelay } from "./worker";

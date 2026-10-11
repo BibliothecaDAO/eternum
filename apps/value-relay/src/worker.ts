@@ -1,5 +1,5 @@
 import { enrolShardOperator, shardOperatorAddress } from "./shard-enrolment";
-import { ledgerAddress } from "./environment";
+import { decodeRelaySettings, ledgerAddress, type RelaySettings } from "./environment";
 import {
   activeShards,
   requireActiveChain,
@@ -34,15 +34,8 @@ import { runRelay, grantDailyLabor } from "./relay";
 import { DurableRelayStore } from "./state";
 import { RelayFailure, relayOperation, type RelayPorts, type LaborClaim } from "./ports";
 
-interface RelayEnv {
-  OPERATOR_TOKEN: string;
-  BASE_URL: string;
+interface RelayEnv extends RelaySettings {
   IDENTITY_HTTP: Fetcher;
-  SHARD_LEDGER_OPERATOR_PRIVATE_KEY: string;
-  LEDGER_RPC_URL: string;
-  ENVIRONMENT: import("@realms-world/chain").ValueEnvironment;
-  LEDGER_OPERATOR_ADDRESS: string;
-  LEDGER_OPERATOR_PRIVATE_KEY: string;
   ROSTER_MONITOR: { verifyRoster(chainId: string, gameId: number): Promise<number> };
   IDENTITY: ShardDirectory & {
     l2ChainId(): Promise<string>;
@@ -75,7 +68,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     return this.ledgerSigning.withPermit(
       relayOperation("verify official value chain", async () => {
         for (const chain of new Set(chains)) await requireActiveChain(this.env.IDENTITY, chain);
-      }).pipe(Effect.andThen(onIdentityChain(this.env.LEDGER_RPC_URL, this.env.IDENTITY, operation))),
+      }).pipe(Effect.andThen(onIdentityChain(this.env.L2_RPC_URL, this.env.IDENTITY, operation))),
     );
   }
   async ledgerTick() {
@@ -85,7 +78,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
         Effect.gen(function* () {
           const seasons = yield* Effect.result(
             onIdentityChain(
-              relay.env.LEDGER_RPC_URL,
+              relay.env.L2_RPC_URL,
               relay.env.IDENTITY,
               relayEffect("post season leaderboard", () =>
                 processSeasonTops(
@@ -143,13 +136,13 @@ export class ValueRelay extends DurableObject<RelayEnv> {
             await relay.ctx.storage.put("chain", chain);
             const value = await Effect.runPromise(
               Effect.result(
-                onIdentityChain(relay.env.LEDGER_RPC_URL, relay.env.IDENTITY, runRelay(chain, ports, relay.store)),
+                onIdentityChain(relay.env.L2_RPC_URL, relay.env.IDENTITY, runRelay(chain, ports, relay.store)),
               ),
             );
             const funding = await Effect.runPromise(
               Effect.result(
                 onIdentityChain(
-                  relay.env.LEDGER_RPC_URL,
+                  relay.env.L2_RPC_URL,
                   relay.env.IDENTITY,
                   relay.shardSigning.withPermit(
                     relayOperation("publish Frontier pools", () => relay.publishPools(chain)),
@@ -189,7 +182,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
         privateKey: this.env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
       },
       shard.url,
-      { rpcUrl: this.env.LEDGER_RPC_URL, address: ledgerAddress(this.env.ENVIRONMENT) },
+      { rpcUrl: this.env.L2_RPC_URL, address: ledgerAddress(this.env.ENVIRONMENT) },
     );
   }
   async alarm() {
@@ -267,7 +260,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
             paid: async (withdrawal) =>
               (
                 await Effect.runPromise(
-                  onIdentityChain(this.env.LEDGER_RPC_URL, this.env.IDENTITY, ports.ledger.payment(withdrawal)),
+                  onIdentityChain(this.env.L2_RPC_URL, this.env.IDENTITY, ports.ledger.payment(withdrawal)),
                 )
               )?.paid ?? false,
           });
@@ -326,10 +319,10 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     await this.requireLaunchSlot(key);
     return Effect.runPromise(
       onIdentityChain(
-        this.env.LEDGER_RPC_URL,
+        this.env.L2_RPC_URL,
         this.env.IDENTITY,
         relayOperation("read ledger slot", () =>
-          readLedgerSlot(rpcAt(this.env.LEDGER_RPC_URL), ledgerAddress(this.env.ENVIRONMENT), key, "latest"),
+          readLedgerSlot(rpcAt(this.env.L2_RPC_URL), ledgerAddress(this.env.ENVIRONMENT), key, "latest"),
         ),
       ),
     );
@@ -338,10 +331,10 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     await this.requireLaunchSlot(query);
     return Effect.runPromise(
       onIdentityChain(
-        this.env.LEDGER_RPC_URL,
+        this.env.L2_RPC_URL,
         this.env.IDENTITY,
         relayOperation("read closed slot registrations", () =>
-          readRegistrationPage(rpcAt(this.env.LEDGER_RPC_URL), ledgerAddress(this.env.ENVIRONMENT), query),
+          readRegistrationPage(rpcAt(this.env.L2_RPC_URL), ledgerAddress(this.env.ENVIRONMENT), query),
         ),
       ),
     );
@@ -403,11 +396,11 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
     ledger: {
       payment: (row) =>
         relayEffect("read ledger payment", () =>
-          ledgerPaymentRead(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT))(row),
+          ledgerPaymentRead(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT))(row),
         ),
       voided: (row) =>
         relayEffect("read ledger voided", () =>
-          ledgerWithdrawalVoided(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT))(row),
+          ledgerWithdrawalVoided(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT))(row),
         ),
       reportMany: (rows) => relayOperation("report withdrawal page", () => ledgerOf(env).reportMany(rows)),
       payMany: (rows) => relayOperation("pay withdrawal page", () => ledgerOf(env).payMany(rows)),
@@ -418,7 +411,7 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
         reader,
         frontierReceiptBindings(
           reader,
-          () => ({ rpcUrl: env.LEDGER_RPC_URL, address: ledgerAddress(env.ENVIRONMENT) }),
+          () => ({ rpcUrl: env.L2_RPC_URL, address: ledgerAddress(env.ENVIRONMENT) }),
           env.IDENTITY,
           shard.url,
         ),
@@ -441,14 +434,14 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
   };
 };
 const ledgerCredentialsOf = (env: RelayEnv) => ({
-  rpcUrl: env.LEDGER_RPC_URL,
+  rpcUrl: env.L2_RPC_URL,
   contractAddress: ledgerAddress(env.ENVIRONMENT),
   accountAddress: env.LEDGER_OPERATOR_ADDRESS,
   privateKey: env.LEDGER_OPERATOR_PRIVATE_KEY,
 });
 
 const chestPortsOf = (env: RelayEnv, permit: LedgerPermit) => ({
-  ...chestLedgerReads({ rpcUrl: env.LEDGER_RPC_URL, contractAddress: ledgerAddress(env.ENVIRONMENT) }),
+  ...chestLedgerReads({ rpcUrl: env.L2_RPC_URL, contractAddress: ledgerAddress(env.ENVIRONMENT) }),
   finish: (tokenId: string) => permit(finishChestOnLedger(ledgerCredentialsOf(env), tokenId)),
 });
 
@@ -497,7 +490,8 @@ export class ValueLaunch extends WorkerEntrypoint<RelayEnv> {
   }
 }
 export default {
-  async fetch(request: Request, env: RelayEnv): Promise<Response> {
+  async fetch(request: Request, raw: RelayEnv): Promise<Response> {
+    const env = { ...raw, ...decodeRelaySettings(raw) };
     if (new URL(request.url).pathname === "/api/value/operator/shard/enrol" && request.method === "POST") {
       if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN)))
         return Response.json({ error: "unauthorized" }, { status: 401 });
@@ -562,11 +556,13 @@ export default {
         grant: (claim) => relayOf(env, claim.chainId).labor(claim),
       });
     }
-    if (new URL(request.url).pathname !== "/health") return new Response(null, { status: 404 });
+    if (new URL(request.url).pathname !== "/api/value/health" || request.method !== "GET")
+      return new Response(null, { status: 404 });
     const health = await healthOf(env);
     return Response.json(health, { status: health.success ? 200 : 503, headers: { "cache-control": "no-store" } });
   },
-  async scheduled(_controller: ScheduledController, env: RelayEnv): Promise<void> {
+  async scheduled(_controller: ScheduledController, raw: RelayEnv): Promise<void> {
+    const env = { ...raw, ...decodeRelaySettings(raw) };
     try {
       await ledgerOf(env).ledgerTick();
     } catch {

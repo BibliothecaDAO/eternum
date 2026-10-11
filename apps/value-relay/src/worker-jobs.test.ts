@@ -1,7 +1,10 @@
 const pools = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock("./frontier-pools", () => ({ publishFrontierPools: pools }));
 const address = vi.hoisted(() => vi.fn(() => "0x10"));
-vi.mock("./environment", () => ({ ledgerAddress: address }));
+vi.mock("./environment", async (original) => ({
+  ...(await original<typeof import("./environment")>()),
+  ledgerAddress: address,
+}));
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
 import worker, { ValueRelay } from "./worker";
@@ -119,6 +122,13 @@ it("records unavailable ledger work while shard ingestion and owned Realm labor 
   await worker.scheduled(
     {} as ScheduledController,
     {
+      ENVIRONMENT: "staging",
+      BASE_URL: "https://app.test",
+      L2_RPC_URL: "https://ledger.test",
+      OPERATOR_TOKEN: "test",
+      SHARD_LEDGER_OPERATOR_PRIVATE_KEY: "0x1",
+      LEDGER_OPERATOR_ADDRESS: "0x2",
+      LEDGER_OPERATOR_PRIVATE_KEY: "0x3",
       RELAY: { idFromName: (id: string) => id, get: () => ({ ledgerTick: () => relay.ledgerTick(), tick }) },
       IDENTITY: {},
     } as never,

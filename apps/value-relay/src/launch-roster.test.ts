@@ -1,4 +1,7 @@
-vi.mock("./environment", () => ({ ledgerAddress: () => "0x10" }));
+vi.mock("./environment", async (original) => ({
+  ...(await original<typeof import("./environment")>()),
+  ledgerAddress: () => "0x10",
+}));
 import { beforeEach, expect, it, vi } from "vitest";
 import { ValueRelay } from "./worker";
 const rpc = vi.hoisted(() => ({ chain: vi.fn(), block: vi.fn(), call: vi.fn() }));
@@ -24,7 +27,7 @@ const relay = () =>
       blockConcurrencyWhile: async (run: () => Promise<unknown>) => run(),
     } as unknown as DurableObjectState,
     {
-      LEDGER_RPC_URL: "https://ledger.test",
+      L2_RPC_URL: "https://ledger.test",
       ENVIRONMENT: "staging",
       IDENTITY: {
         l2ChainId: async () => "0x2",

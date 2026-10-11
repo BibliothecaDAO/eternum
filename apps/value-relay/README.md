@@ -21,17 +21,22 @@ Realms id and account. The Worker reads the UTC day from the shard and `owner_of
 The shard owns labor eligibility and limits. No daily cap is copied into services.
 
 The independent monitor reads confirmed ledger events through checked-through cursors, verifies receipts, recorded
-payment authority, result commitments and shard conservation, and pauses on disagreement or repeated unavailable
-verification. Later wallet changes cannot rewrite an earlier payment decision. It never uses the relay's queue as proof
-and never unpauses the ledger.
+payment authority, result commitments and shard conservation, and pauses only on proven disagreement. Unavailable
+verification makes health red. Later wallet changes cannot rewrite an earlier payment decision. It never uses the
+relay's queue as proof and never unpauses the ledger.
 
 The ledger address and chain come from `contracts/common/addresses/dev.json` or `mainnet.json` through the shared
-environment reader. The ledger runtime settings are the secret `LEDGER_RPC_URL`, `LEDGER_OPERATOR_ADDRESS` and the
+environment reader. The ledger runtime settings are the secret `L2_RPC_URL`, `LEDGER_OPERATOR_ADDRESS` and the
 `LEDGER_OPERATOR_PRIVATE_KEY` secret. Labor uses the fixed relay bot account enrolled through
 `POST /api/value/operator/shard/enrol` and the `SHARD_LEDGER_OPERATOR_PRIVATE_KEY` secret. The operator route accepts
 only `{chainId,heraldUrl}` for an official shard, returns `{chainId,ledgerOperatorAccount}`, and shares the shard
 signing lock with labor grants. The monitor has its own `PAUSER_ACCOUNT_ADDRESS` and `PAUSER_PRIVATE_KEY`. All ledger
 jobs verify the identity environment's L2 chain. No signing key belongs on a shard host.
+
+Both Workers validate their required settings before serving HTTP or starting a scheduled tick. The deployment script
+supplies generated account keys, account addresses and the shared operator token; the owner supplies one `L2_RPC_URL`.
+Health is available on the existing app routes: `GET /api/value/health` and `GET /api/operator/monitor/health`. No
+separate health hostname or secret is required.
 
 ## Restored shard recovery
 
