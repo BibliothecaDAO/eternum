@@ -2,7 +2,7 @@ import { isPublicGameName } from "./schemas";
 import { BLITZ_SLOT_NAME_PATTERN } from "@realms-world/identity";
 import { Schema } from "effect";
 import { Hono, type Context } from "hono";
-import type { LaunchAppEnv } from "./auth";
+import { requireOperator, type LaunchAppEnv } from "./auth";
 import { SlotConflict, SlotNotFound, type SlotStore } from "./slots";
 
 const CreateSlotRequest = Schema.Struct({
@@ -44,15 +44,13 @@ export function createSlotRoutes(store: SlotStore) {
     return context.json(await store.get(name));
   });
 
-  app.post("/", async (context) => {
-    if (context.get("caller")?.kind !== "operator") return context.json({ error: "Operator token required." }, 403);
+  app.post("/", requireOperator, async (context) => {
     const { name, closesAt } = await readBody(context, CreateSlotRequest);
     await store.create(name, closesAt);
     return context.json({ name, status: "opening" }, 202);
   });
 
-  app.post("/:name/refund", async (context) => {
-    if (context.get("caller")?.kind !== "operator") return context.json({ error: "Operator token required." }, 403);
+  app.post("/:name/refund", requireOperator, async (context) => {
     const name = context.req.param("name");
     if (!BLITZ_SLOT_NAME_PATTERN.test(name)) return context.json({ error: "Invalid slot name" }, 400);
     const retryAfterSeconds = await store.refund(name);

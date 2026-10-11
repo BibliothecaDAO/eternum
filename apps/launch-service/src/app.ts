@@ -6,6 +6,7 @@ import {
   isLauncher,
   requireIdentity,
   requireLauncher,
+  requireOperator,
   type IdentityResolver,
   type LaunchAccess,
   type LaunchAppEnv,
@@ -73,8 +74,10 @@ const continueRun = async (
   const environment = readEnvironment(context.req.param("environment"));
   const run = await dependencies.store.find(kind, environment, name);
   if (!run) return context.json({ error: "Launch run not found." }, 404);
-  if (context.get("caller").kind !== "operator" && (run.slotId !== null || kind === "result"))
-    return context.json({ error: "Operator token required." }, 403);
+  if (run.slotId !== null || kind === "result") {
+    const refused = await requireOperator(context, async () => {});
+    if (refused) return refused;
+  }
   return respondWithRun(context, dependencies, kind, run.request);
 };
 

@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 import { Hono } from "hono";
-import type { LaunchAppEnv } from "./auth";
+import { requireOperator, type LaunchAppEnv } from "./auth";
 
 const Target = Schema.Struct({
   chainId: Schema.String.check(Schema.isPattern(/^0x[0-9a-f]+$/i)),
@@ -13,10 +13,7 @@ export interface OperatorLauncher {
 /** This surface only enrolls its own signer. */
 export const launcherOperatorRoutes = (launcher: OperatorLauncher) => {
   const app = new Hono<LaunchAppEnv>();
-  app.use("*", async (context, next) => {
-    if (context.get("caller")?.kind !== "operator") return context.json({ error: "Operator token required." }, 403);
-    return next();
-  });
+  app.use("*", requireOperator);
   const handle =
     <A>(schema: Schema.ConstraintDecoder<A, never>, run: (input: A) => Promise<unknown>) =>
     async (context: import("hono").Context) => {

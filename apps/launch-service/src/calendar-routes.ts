@@ -1,6 +1,6 @@
 import { Schema } from "effect";
 import { Hono } from "hono";
-import type { LaunchAppEnv } from "./auth";
+import { requireOperator, type LaunchAppEnv } from "./auth";
 import { CalendarConflict, type CalendarStore } from "./calendar";
 
 const Instant = Schema.String.pipe(
@@ -18,8 +18,7 @@ const PHASES = new Set(["frontier", "blitz"]);
 export function createCalendarRoutes(calendar: CalendarStore) {
   const app = new Hono<LaunchAppEnv>();
   app.get("/", async (context) => context.json({ phases: await calendar.list() }));
-  app.put("/:phase", async (context) => {
-    if (context.get("caller")?.kind !== "operator") return context.json({ error: "Operator token required." }, 403);
+  app.put("/:phase", requireOperator, async (context) => {
     const phase = context.req.param("phase");
     if (!PHASES.has(phase)) return context.json({ error: "Unknown season phase" }, 404);
     let dates: typeof PhaseRequest.Type;

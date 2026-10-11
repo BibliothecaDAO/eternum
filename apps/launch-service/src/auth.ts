@@ -34,6 +34,12 @@ export interface LaunchAccess {
 export const isLauncher = (caller: Caller, config: Pick<LaunchAccess, "launcherAllowlist">): boolean =>
   caller.kind === "operator" || (caller.wallet !== null && config.launcherAllowlist.has(caller.wallet));
 
+/** Official scheduling and recovery share the same operator boundary. */
+export const requireOperator: MiddlewareHandler<LaunchAppEnv> = async (context, next) => {
+  if (context.get("caller")?.kind !== "operator") return context.json({ error: "Operator token required." }, 403);
+  await next();
+};
+
 export const requireIdentity =
   (identity: IdentityResolver, config: LaunchAccess): MiddlewareHandler<LaunchAppEnv> =>
   async (context, next) => {

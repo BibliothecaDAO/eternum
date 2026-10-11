@@ -568,3 +568,15 @@ test("only the operator continues paid games and results, while a launcher keeps
     ).status,
   ).toBe(202);
 });
+
+test("applies the shared operator boundary to launcher enrolment", async () => {
+  const { app } = createApp(signedIn(ALLOWED_ADDRESS));
+  const url = "https://play.realms.party/api/factory/operator/launcher/enrol";
+  const request = { method: "POST", body: JSON.stringify({ chainId: "0x1", heraldUrl: "https://herald.test" }) };
+  expect(
+    (await app.request(url, { ...request, headers: { origin: ALLOWED_ORIGIN, cookie: "session=valid" } })).status,
+  ).toBe(403);
+  expect((await app.request(url, { ...request, headers: { authorization: `Bearer ${OPERATOR_TOKEN}` } })).status).toBe(
+    200,
+  );
+});
