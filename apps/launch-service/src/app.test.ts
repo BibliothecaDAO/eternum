@@ -250,7 +250,7 @@ const launchRequest = () =>
       cookie: "better-auth.session_token=valid",
       origin: ALLOWED_ORIGIN,
     },
-    body: JSON.stringify({ environment: "madara.frontier", gameName: "bltz-effect-test" }),
+    body: JSON.stringify({ environment: "madara.eternum", gameName: "bltz-effect-test" }),
   });
 
 describe("launch service authorization", () => {
@@ -327,7 +327,7 @@ describe("launch service authorization", () => {
     const created = await app.request(launchRequest());
     expect(created.status).toBe(202);
     expect(await created.json()).toMatchObject({
-      environment: "madara.frontier",
+      environment: "madara.eternum",
       gameName: "bltz-effect-test",
       // A queued run reads as queued, with when it is due, never as running.
       status: "queued",
@@ -336,7 +336,7 @@ describe("launch service authorization", () => {
       workflow: { workflowName: "box-native" },
     });
 
-    const listed = await app.request("https://play.realms.party/api/factory/runs?environment=madara.frontier");
+    const listed = await app.request("https://play.realms.party/api/factory/runs?environment=madara.eternum");
     expect(listed.status).toBe(200);
     expect(await listed.json()).toMatchObject({ runs: [{ gameName: "bltz-effect-test" }] });
   });
@@ -366,14 +366,14 @@ describe("launch service authorization", () => {
     request.headers.set("content-type", "application/json");
     const realGame = new Request(request, {
       body: JSON.stringify({
-        environment: "madara.frontier",
+        environment: "madara.eternum",
         gameName: "bltz-real-game",
         devModeOn: false,
       }),
     });
 
     expect((await app.request(realGame)).status).toBe(202);
-    const run = await store.find("game", "madara.frontier", "bltz-real-game");
+    const run = await store.find("game", "madara.eternum", "bltz-real-game");
     expect(run && "devModeOn" in run.request ? run.request.devModeOn : undefined).toBe(false);
   });
 
@@ -564,12 +564,12 @@ test("only the operator continues paid games and results, while a launcher keeps
       (await app.request(url, { method: "POST", headers: { authorization: `Bearer ${OPERATOR_TOKEN}` } })).status,
     ).toBe(202);
   }
-  const run = await store.enqueue("game", { environment: "madara.frontier", gameName: "factory-retry" });
+  const run = await store.enqueue("game", { environment: "madara.eternum", gameName: "factory-retry" });
   await database.db.prepare("UPDATE launch_runs SET status = 'running' WHERE id = ?").bind(run.id).run();
   await store.fail(run.id, "unavailable");
   expect(
     (
-      await app.request("https://play.realms.party/api/factory/runs/madara.frontier/factory-retry/actions/continue", {
+      await app.request("https://play.realms.party/api/factory/runs/madara.eternum/factory-retry/actions/continue", {
         method: "POST",
         headers: { origin: ALLOWED_ORIGIN, cookie: "session=valid" },
       })
@@ -629,7 +629,7 @@ test.each(["continue", "delete"])(
   async (action) => {
     const { app, store } = createApp(signedIn(ALLOWED_ADDRESS));
     const headers = { origin: ALLOWED_ORIGIN, cookie: "session=valid", "content-type": "application/json" };
-    const request = { environment: "madara.frontier", gameName: "frontier-player-game" };
+    const request = { environment: "madara.eternum", gameName: "eternum-player-game" };
     expect(
       (
         await app.request("https://play.realms.party/api/factory/runs", {
@@ -644,7 +644,7 @@ test.each(["continue", "delete"])(
     expect(
       (
         await app.request(
-          `https://play.realms.party/api/factory/runs/madara.frontier/${request.gameName}/actions/${action}`,
+          `https://play.realms.party/api/factory/runs/madara.eternum/${request.gameName}/actions/${action}`,
           {
             method: "POST",
             headers,
@@ -673,4 +673,36 @@ test("factory creation cannot squat or overwrite a scheduled season's name", asy
   const season = await scheduleFrontierSeason(store, frontierSeason);
   for (const headers of callers) expect((await create(headers)).status).toBe(400);
   expect(await store.find("game", "madara.frontier", request.gameName)).toEqual(season);
+});
+
+test("only the operator creates and recovers a Frontier run, regardless of its name", async () => {
+  const { app, store } = createApp(signedIn(ALLOWED_ADDRESS));
+  const url = "https://play.realms.party/api/factory/runs";
+  const session = { origin: ALLOWED_ORIGIN, cookie: "session=valid" };
+  const operator = { authorization: `Bearer ${OPERATOR_TOKEN}` };
+  const request = { environment: "madara.frontier", gameName: "ordinary-name" };
+  expect((await app.request(url, { method: "POST", headers: session, body: JSON.stringify(request) })).status).toBe(
+    403,
+  );
+  expect(await store.list("madara.frontier")).toEqual([]);
+  expect((await app.request(url, { method: "POST", headers: operator, body: JSON.stringify(request) })).status).toBe(
+    202,
+  );
+  const run = (await store.startNext(Date.now()))!;
+  await store.fail(run.id, "rpc down");
+  for (const action of ["continue", "delete"]) {
+    expect(
+      (
+        await app.request(`${url}/madara.frontier/ordinary-name/actions/${action}`, {
+          method: "POST",
+          headers: session,
+        })
+      ).status,
+    ).toBe(403);
+    expect((await store.find("game", "madara.frontier", request.gameName))?.status).toBe("failed");
+  }
+  expect(
+    (await app.request(`${url}/madara.frontier/ordinary-name/actions/continue`, { method: "POST", headers: operator }))
+      .status,
+  ).toBe(202);
 });

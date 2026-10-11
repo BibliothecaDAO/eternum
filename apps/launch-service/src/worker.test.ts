@@ -171,7 +171,7 @@ it("opens a Blitz window, ticks the schedule, queues an authorized launch and re
   const launched = await mf.dispatchFetch(`${ORIGIN}/api/factory/runs`, {
     method: "POST",
     headers: { origin: ORIGIN, cookie: "better-auth.session_token=s1", "content-type": "application/json" },
-    body: JSON.stringify({ environment: "madara.frontier", gameName: "bltz-workerd" }),
+    body: JSON.stringify({ environment: "madara.eternum", gameName: "bltz-workerd" }),
   });
   expect(launched.status).toBe(202);
 
@@ -216,7 +216,7 @@ it("launches a game that is ready now while a result waits an hour for its game'
   const launched = await mf.dispatchFetch(`${ORIGIN}/api/factory/runs`, {
     method: "POST",
     headers: { origin: ORIGIN, cookie: "better-auth.session_token=s1", "content-type": "application/json" },
-    body: JSON.stringify({ environment: "madara.frontier", gameName: "bltz-ready" }),
+    body: JSON.stringify({ environment: "madara.eternum", gameName: "bltz-ready" }),
   });
   expect(launched.status).toBe(202);
   await tick();

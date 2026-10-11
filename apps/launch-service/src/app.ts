@@ -67,7 +67,12 @@ const findRun = async (context: Context, store: LaunchServiceStore, kind: Launch
 
 const requireRunOperator = (context: Context<LaunchAppEnv>, run: LaunchRun) => {
   if (isOperator(context.get("caller"))) return;
-  if (run.slotId !== null || run.kind === "result" || isFrontierSeasonName(run.name))
+  if (
+    run.slotId !== null ||
+    run.kind === "result" ||
+    run.environment === "madara.frontier" ||
+    isFrontierSeasonName(run.name)
+  )
     return context.json({ error: "Operator token required." }, 403);
 };
 
@@ -185,6 +190,8 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
       const request = await decodeBody(context, CreateGameRequestSchema);
       if (request.environment === "madara.blitz")
         return context.json({ error: "Blitz launches use paid slots at /api/slots" }, 400);
+      if (request.environment === "madara.frontier" && !isOperator(context.get("caller")))
+        return context.json({ error: "Operator token required." }, 403);
       return respondWithRun(context, dependencies, "game", request);
     } catch (error) {
       return context.json({ error: String(error) }, 400);
