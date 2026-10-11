@@ -27,7 +27,6 @@ import {
   realmsADay,
 } from "@/ui/design-system/kit/words";
 
-import type { PayoutWallet } from "@realms-world/identity";
 import type { RealmLaborPlan, RealmLaborState } from "./realm-labor";
 
 /** The Realms collection's size: a Realm's number runs from 1 to this. */
@@ -54,7 +53,8 @@ export const RealmsSheet = ({
   onLinkWallet,
   onClose,
 }: {
-  wallet: PayoutWallet;
+  /** The linked wallet's address; null when the account has none. */
+  wallet: string | null;
   plan: RealmLaborPlan;
   perRealm: number;
   cap: number;
@@ -74,9 +74,9 @@ export const RealmsSheet = ({
     <header className="flex items-center gap-2.5">
       <KitIcon code="Cs" size={28} />
       <h2 className="frontier-title flex-1 !text-[20px]">{REALMS}</h2>
-      {wallet.status !== "no_wallet" && <Chip icons={["Wt"]} label={REALMS} value={shortAddress(wallet.address)} />}
+      {wallet !== null && <Chip icons={["Wt"]} label={REALMS} value={shortAddress(wallet)} />}
     </header>
-    {wallet.status === "no_wallet" ? (
+    {wallet === null ? (
       <>
         <ReasonPlate reason={{ kind: "failed", line: NO_WALLET }} />
         <Button role="primary" icon="Xs" word={LINK_WALLET} onClick={onLinkWallet} />

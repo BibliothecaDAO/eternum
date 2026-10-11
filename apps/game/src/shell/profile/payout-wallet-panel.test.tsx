@@ -23,12 +23,8 @@ vi.mock("@/ui/modules/identity/wallet-actions", () => ({
 import { identityClient } from "@/hooks/context/identity-session";
 import { IdentityRequestError } from "@realms-world/identity";
 
-import { formatMoment } from "@/ui/design-system/kit/time";
-
 import { PayoutWalletPanel } from "./payout-wallet-panel";
 
-const HOUR = 3_600_000;
-const NOW = 1_000 * HOUR;
 const mounted: (() => Promise<void>)[] = [];
 
 const mount = async (wallet: Parameters<typeof PayoutWalletPanel>[0]["wallet"], onChanged = () => {}) => {
@@ -60,19 +56,15 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-it("shows a held wallet's time left, and a player with none the two ways to one", async () => {
-  const held = await mount({
-    status: "on_hold",
-    address: "0x04a1000000000000000000000000000000000000000000000000000000009c2e",
-    until: NOW + 17 * HOUR + 42 * 60_000,
-  });
-  expect(held.textContent).toContain("On hold");
-  // The hold is the time the new wallet receives from, and nothing more: no countdown, no ring.
-  expect(held.textContent).toContain(`Receives from ${formatMoment((NOW + 17 * HOUR + 42 * 60_000) / 1000)}`);
-  expect(held.textContent).not.toContain("17h 42m");
-  expect(held.textContent).toContain("you@mail.test");
+it("shows a linked wallet as receiving at once, with no wait, and a player with none the two ways to one", async () => {
+  const linked = await mount("0x04a1000000000000000000000000000000000000000000000000000000009c2e");
+  expect(linked.textContent).toContain("0x04a1…9c2e");
+  expect(linked.textContent).toContain("Prizes go here");
+  // Linking is the wallet and the emailed code, and nothing after them: no hold, no time to receive from.
+  expect([...linked.querySelectorAll("ol > li")].map((step) => step.textContent)).toEqual(["Wallet", "Email code"]);
+  expect(linked.textContent).not.toMatch(/hold|Receives from/i);
 
-  const none = await mount({ status: "no_wallet" });
+  const none = await mount(null);
   expect(none.textContent).toContain("I have a wallet");
   expect(none.textContent).toContain("Ready · Braavos · Controller");
   expect(none.textContent).toContain("I need one");
@@ -85,7 +77,7 @@ it("unlinks only with the emailed code, and names a wrong code", async () => {
     .mockRejectedValueOnce(new IdentityRequestError(400, "INVALID_OTP"))
     .mockResolvedValueOnce(undefined);
   const onChanged = vi.fn();
-  const panel = await mount({ status: "ready", address: "0x4a1" }, onChanged);
+  const panel = await mount("0x4a1", onChanged);
 
   await press(panel, "Unlink");
   expect(sent).toHaveBeenCalledWith("you@mail.test");
@@ -105,7 +97,7 @@ it("links a wallet with its SIWS proof and the emailed code, through the service
   vi.spyOn(identityClient, "sendSignInCode").mockResolvedValue({ success: true, expires_at: 0 });
   const link = vi.spyOn(identityClient, "linkWallet").mockResolvedValue("0x4a1");
   const onChanged = vi.fn();
-  const panel = await mount({ status: "no_wallet" }, onChanged);
+  const panel = await mount(null, onChanged);
 
   await act(async () =>
     [...panel.querySelectorAll("button")].find((button) => button.textContent?.includes("I have a wallet"))!.click(),

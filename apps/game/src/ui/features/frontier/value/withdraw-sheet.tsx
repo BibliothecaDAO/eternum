@@ -6,21 +6,17 @@ import { Chip } from "@/ui/design-system/kit/chip";
 import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { Sheet } from "@/ui/design-system/kit/sheet";
-import { formatMoment } from "@/ui/design-system/kit/time";
 import {
   ALL,
   CONTINUE,
   LINK_WALLET,
   LORDS,
-  RECEIVES_FROM,
   NO_WALLET,
   SENDING,
   TRANSACTION,
   WITHDRAW,
   paidWhenResumed,
 } from "@/ui/design-system/kit/words";
-
-import type { PayoutWallet } from "@realms-world/identity";
 
 /**
  * Where a withdrawal stands: choosing the amount, sent (the LORDS have left the game's count), paid on Starknet with its
@@ -34,8 +30,8 @@ export type WithdrawStep =
 
 /**
  * Withdraw (value screens, a): the realm's LORDS leave the game for the wallet linked to the account, shown and never
- * typed, at once and with no cap. No wallet sends the player to link one in the app; a new wallet waits out its hold;
- * paused payouts, and the season's closed withdrawals, refuse before anything leaves.
+ * typed, at once and with no cap. No wallet sends the player to link one in the app; paused payouts, and the season's
+ * closed withdrawals, refuse before anything leaves.
  */
 export const WithdrawSheet = ({
   held,
@@ -49,7 +45,8 @@ export const WithdrawSheet = ({
   onClose,
 }: {
   held: number | undefined;
-  wallet: PayoutWallet;
+  /** The linked wallet's address; null when the account has none. */
+  wallet: string | null;
   /** Why nothing can leave now, whatever the wallet: said in place of the amount's choice. */
   refusal: string | null;
   step: WithdrawStep;
@@ -92,10 +89,9 @@ const WithdrawBody = ({
   if (step.kind === "sending") return <Sending amount={step.amount} held={held} wallet={wallet} />;
   if (step.kind === "paid") return <Paid step={step} wallet={wallet} onClose={onClose} />;
   if (step.kind === "waiting") return <Waiting amount={step.amount} held={held} wallet={wallet} />;
-  if (wallet.status === "no_wallet") return <NoWallet held={held} onLinkWallet={onLinkWallet} />;
-  if (refusal) return <Refused held={held} address={wallet.address} line={refusal} />;
-  if (wallet.status === "on_hold") return <OnHold held={held} address={wallet.address} until={wallet.until} />;
-  return <Pick held={held} address={wallet.address} amount={amount} onAmount={onAmount} onWithdraw={onWithdraw} />;
+  if (wallet === null) return <NoWallet held={held} onLinkWallet={onLinkWallet} />;
+  if (refusal) return <Refused held={held} address={wallet} line={refusal} />;
+  return <Pick held={held} address={wallet} amount={amount} onAmount={onAmount} onWithdraw={onWithdraw} />;
 };
 
 /** Choose the amount (or all of it), see the count after and where the LORDS go, then Withdraw carrying the amount. */
@@ -152,18 +148,6 @@ const NoWallet = ({ held, onLinkWallet }: { held: number | undefined; onLinkWall
   </>
 );
 
-/** A newly linked wallet receives from the end of its 24-hour hold: that time, and nothing else, is what shows. */
-const OnHold = ({ held, address, until }: { held: number | undefined; address: string; until: number }) => (
-  <>
-    <Hero icon="Lo" value={formatExact(held)} />
-    <div className="flex flex-col items-center gap-1.5">
-      <WalletChip address={address} />
-      <Chip icons={["Hg"]} label={RECEIVES_FROM} value={formatMoment(until / 1000)} />
-    </div>
-    <Button role="primary" word={WITHDRAW} disabled />
-  </>
-);
-
 const Refused = ({ held, address, line }: { held: number | undefined; address: string; line: string }) => (
   <>
     <Hero icon="Lo" value={formatExact(held)} />
@@ -175,7 +159,7 @@ const Refused = ({ held, address, line }: { held: number | undefined; address: s
   </>
 );
 
-const Sending = ({ amount, held, wallet }: { amount: number; held: number | undefined; wallet: PayoutWallet }) => (
+const Sending = ({ amount, held, wallet }: { amount: number; held: number | undefined; wallet: string | null }) => (
   <>
     <Hero icon="Lo" value={formatExact(amount)} />
     <Leaving held={held} wallet={wallet} />
@@ -183,7 +167,7 @@ const Sending = ({ amount, held, wallet }: { amount: number; held: number | unde
   </>
 );
 
-const Waiting = ({ amount, held, wallet }: { amount: number; held: number | undefined; wallet: PayoutWallet }) => (
+const Waiting = ({ amount, held, wallet }: { amount: number; held: number | undefined; wallet: string | null }) => (
   <>
     <Hero icon="Hg" value={formatExact(amount)} />
     <Leaving held={held} wallet={wallet} />
@@ -197,14 +181,14 @@ const Paid = ({
   onClose,
 }: {
   step: Extract<WithdrawStep, { kind: "paid" }>;
-  wallet: PayoutWallet;
+  wallet: string | null;
   onClose: () => void;
 }) => (
   <>
     <Hero icon="Wt" value={`+${formatExact(step.amount)}`} />
-    {wallet.status !== "no_wallet" && (
+    {wallet !== null && (
       <div className="flex justify-center">
-        <WalletChip address={wallet.address} paid />
+        <WalletChip address={wallet} paid />
       </div>
     )}
     <div className="flex gap-2">
@@ -223,13 +207,13 @@ const Paid = ({
 );
 
 /** The count left in the game, and the wallet the LORDS are on their way to. */
-const Leaving = ({ held, wallet }: { held: number | undefined; wallet: PayoutWallet }) => (
+const Leaving = ({ held, wallet }: { held: number | undefined; wallet: string | null }) => (
   <div className="flex items-center justify-center gap-1.5">
     <Chip icons={["Lo"]} label={LORDS} value={formatExact(held)} />
     <span aria-hidden className="text-[16px] text-kit-muted">
       →
     </span>
-    {wallet.status !== "no_wallet" && <WalletChip address={wallet.address} />}
+    {wallet !== null && <WalletChip address={wallet} />}
   </div>
 );
 

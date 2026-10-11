@@ -5,7 +5,6 @@ import { identityClient } from "@/hooks/context/identity-session";
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { Button } from "@/ui/design-system/kit/button";
 import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
-import { formatMoment } from "@/ui/design-system/kit/time";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { failureSentence } from "@/ui/modules/identity/identity-failures";
 
@@ -13,7 +12,6 @@ import { useLayout } from "../frame/layout";
 import { Loading } from "../loading";
 import { CodeBoxes } from "../sign-in/fields";
 import { WALLET_WORDS } from "../words";
-import type { PayoutWallet } from "@realms-world/identity";
 
 const WalletPicker = lazy(() =>
   import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletPicker })),
@@ -37,20 +35,21 @@ type Step =
 
 /**
  * The payout wallet (design 3): linking or replacing takes the new wallet's signature and a 6-digit code sent to the
- * account's email; unlinking takes the code alone, so a player who lost the wallet can still unlink it. A newly linked
- * wallet receives nothing for 24 hours. A player with no wallet is sent to Ready, whose email wallet needs no install.
- * We create no wallet and hold no key.
+ * account's email; unlinking takes the code alone, so a player who lost the wallet can still unlink it. A linked wallet
+ * receives at once. A player with no wallet is sent to Ready, whose email wallet needs no install. We create no wallet
+ * and hold no key.
  */
 export const PayoutWalletPanel = ({
   wallet,
   email,
   onChanged,
 }: {
-  wallet: PayoutWallet;
+  /** The linked wallet's address; null when the account has none. */
+  wallet: string | null;
   email: string;
   onChanged: () => void;
 }) => {
-  const [step, setStep] = useState<Step>(wallet.status === "no_wallet" ? { kind: "choose" } : { kind: "linked" });
+  const [step, setStep] = useState<Step>(wallet === null ? { kind: "choose" } : { kind: "linked" });
   const changed = () => {
     setStep({ kind: "linked" });
     onChanged();
@@ -60,10 +59,9 @@ export const PayoutWalletPanel = ({
       <Title icon={step.kind === "code" && step.change.kind === "unlink" ? "Lk" : "Wt"}>
         {step.kind === "code" && step.change.kind === "unlink" ? WALLET_WORDS.unlinkTitle : WALLET_WORDS.payoutWallet}
       </Title>
-      {step.kind === "linked" && wallet.status !== "no_wallet" ? (
+      {step.kind === "linked" && wallet !== null ? (
         <Linked
-          wallet={wallet}
-          email={email}
+          address={wallet}
           onReplace={() => setStep({ kind: "choose" })}
           onUnlink={() => setStep({ kind: "code", change: { kind: "unlink" } })}
         />
@@ -278,40 +276,12 @@ const CodeStep = ({ change, email, onDone }: { change: Change; email: string; on
   );
 };
 
-/** A linked wallet: on its hold with the time it receives from, or ready; Replace and Unlink each take a new code. */
-const Linked = ({
-  wallet,
-  email,
-  onReplace,
-  onUnlink,
-}: {
-  wallet: Exclude<PayoutWallet, { status: "no_wallet" }>;
-  email: string;
-  onReplace: () => void;
-  onUnlink: () => void;
-}) => (
+/** A linked wallet, which receives at once; Replace and Unlink each take a new code. */
+const Linked = ({ address, onReplace, onUnlink }: { address: string; onReplace: () => void; onUnlink: () => void }) => (
   <>
-    <Track at={wallet.status === "on_hold" ? 2 : 3} />
-    <WalletCard
-      address={wallet.address}
-      chip={
-        wallet.status === "on_hold"
-          ? { icon: "Hg", word: WALLET_WORDS.onHold, tone: "hold" }
-          : { icon: "Ok", word: WALLET_WORDS.canReceive, tone: "ok" }
-      }
-    />
-    {wallet.status === "on_hold" ? (
-      <div className="flex flex-col gap-3">
-        <Line icon="Lo">
-          {WALLET_WORDS.receivesFrom} <b>{formatMoment(wallet.until / 1000)}</b>
-        </Line>
-        <Line icon="Em">
-          {WALLET_WORDS.noticeSentTo} <b>{email}</b>
-        </Line>
-      </div>
-    ) : (
-      <PrizesGoHere />
-    )}
+    <Track at={STEPS.length} />
+    <WalletCard address={address} chip={{ icon: "Ok", word: WALLET_WORDS.canReceive }} />
+    <PrizesGoHere />
     <div className="grid grid-cols-2 gap-3">
       <Button role="outline" word={WALLET_WORDS.replace} icon="Sp" onClick={onReplace} />
       <Button role="outline" word={WALLET_WORDS.unlink} icon="Lk" onClick={onUnlink} />
@@ -322,10 +292,9 @@ const Linked = ({
 const STEPS: { icon: IconCode; word: string }[] = [
   { icon: "Wt", word: WALLET_WORDS.stepWallet },
   { icon: "Em", word: WALLET_WORDS.stepCode },
-  { icon: "Hg", word: WALLET_WORDS.stepHold },
 ];
 
-/** Wallet, email code, hold: the step under way lit, those behind ticked, -1 for none begun, 3 for all done. */
+/** Wallet, then email code: the step under way lit, those behind ticked, -1 for none begun, past the last for done. */
 const Track = ({ at }: { at: number }) => (
   <ol className="flex items-start justify-between px-1">
     {STEPS.map(({ icon, word }, index) => (
@@ -368,23 +337,12 @@ const Track = ({ at }: { at: number }) => (
   </ol>
 );
 
-const WalletCard = ({
-  address,
-  chip,
-}: {
-  address: string;
-  chip: { icon: IconCode; word: string; tone: "ok" | "hold" } | null;
-}) => (
+const WalletCard = ({ address, chip }: { address: string; chip: { icon: IconCode; word: string } | null }) => (
   <div className="flex min-h-[64px] items-center gap-3 rounded-[14px] border border-kit-line2 bg-kit-ground/60 px-3.5">
     <KitIcon code="Wt" size={38} />
     <span className="whitespace-nowrap font-body text-[18px] font-bold text-kit-cream">{shortAddress(address)}</span>
     {chip && (
-      <span
-        className={cn(
-          "ml-auto inline-flex h-9 items-center gap-1.5 rounded-full border bg-kit-ink pl-2 pr-3 font-body text-[15px] font-bold",
-          chip.tone === "ok" ? "border-kit-sage text-kit-sage" : "border-kit-amber text-kit-gold2",
-        )}
-      >
+      <span className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-full border border-kit-sage bg-kit-ink pl-2 pr-3 font-body text-[15px] font-bold text-kit-sage">
         <KitIcon code={chip.icon} size={20} />
         {chip.word}
       </span>

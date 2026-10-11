@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-11",
+    title: "A linked wallet receives at once",
+    description:
+      "A newly linked payout wallet no longer waits 24 hours: withdrawals and prizes reach it as soon as it is linked with its signature and the emailed code.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-11",
     title: "Refunds for a replaced wallet",
     description:
       "A Blitz refund owed to a wallet you have since replaced now shows in the Blitz list when that wallet is connected in this browser, and is taken with it.",

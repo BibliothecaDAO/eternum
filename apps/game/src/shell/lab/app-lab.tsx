@@ -89,8 +89,7 @@ const LabScreenView = ({ screen }: { screen: LabScreen }) => {
  */
 const useLabSession = (screen: LabScreen) => {
   useEffect(() => {
-    const payoutWallet = LAB_PAYOUT_WALLETS[screen];
-    const session = payoutWallet ? { ...LAB_SESSION, user: { ...LAB_SESSION.user, payoutWallet } } : LAB_SESSION;
+    const session = { ...LAB_SESSION, user: { ...LAB_SESSION.user, address: LAB_PAYOUT_WALLETS[screen] ?? null } };
     useIdentitySessionStore.getState().applySession(LAB_SCREENS[screen].signedIn ? session : null);
   }, [screen]);
 };
@@ -105,12 +104,12 @@ const createLabClient = (screen: LabScreen) => {
   client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 7], LAB_BLITZ_BOARD);
   const wallet = LAB_PAYOUT_WALLETS[screen];
   const terms = LAB_ENTRY_TERMS[screen];
-  if (terms && wallet?.status === "ready") client.setQueryData(entryTermsKey(LAB_SLOT_KEY, wallet.address), terms);
+  if (terms && wallet) client.setQueryData(entryTermsKey(LAB_SLOT_KEY, wallet), terms);
   client.setQueryData(slotRegisteredKey(LAB_SLOT_KEY), LAB_SLOT_REGISTERED);
   // The list's refund row: the closed slot owes the wallet on the screen that left it unseated.
-  if (wallet?.status === "ready") {
-    client.setQueryData(registeredSlotsKey(wallet.address), [LAB_SLOT_KEY]);
-    client.setQueryData(refundOwedKey(LAB_SLOT_KEY, wallet.address), screen === "entry-unseated");
+  if (wallet) {
+    client.setQueryData(registeredSlotsKey(wallet), [LAB_SLOT_KEY]);
+    client.setQueryData(refundOwedKey(LAB_SLOT_KEY, wallet), screen === "entry-unseated");
   }
   const reward = LAB_REWARDS[screen];
   const prize = LAB_SEASON_PRIZES[screen];

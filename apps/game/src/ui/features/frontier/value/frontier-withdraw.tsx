@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import { useGame } from "@/hooks/context/game-context";
 import { useIdentitySession } from "@/hooks/context/identity-session";
-import { payoutWalletOf } from "@/hooks/context/payout-wallet";
+import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { l2TransactionUrl } from "@/runtime/l2-rpc";
@@ -42,8 +42,7 @@ export const FrontierWithdraw = ({ realm, onClose }: { realm: NativeRows["Struct
     paused,
   });
   const held = useRealmLords(realm);
-  const wallet = session && payoutWalletOf(session.user);
-  if (!wallet) return null;
+  if (!session) return null;
 
   const withdraw = async () => {
     if (!account.account || !ledger) return;
@@ -67,7 +66,7 @@ export const FrontierWithdraw = ({ realm, onClose }: { realm: NativeRows["Struct
   return (
     <WithdrawSheet
       held={held}
-      wallet={wallet}
+      wallet={payoutAddressOf(session.user)}
       refusal={refusal}
       step={withdrawStepOf({ sending, sent, paidIn, paused })}
       amount={amount}

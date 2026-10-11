@@ -4,7 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 
 const top = vi.hoisted(() => ({ current: {} as Record<string, unknown>, askedFor: null as string | null }));
-const payout = vi.hoisted(() => ({ current: { status: "ready", address: "0xc" } as Record<string, unknown> }));
+const payout = vi.hoisted(() => ({ current: "0xc" as string | null }));
 vi.mock("../ratings", async (actual) => ({
   ...(await actual<typeof import("../ratings")>()),
   useRatingTop: (_limit: number, wallet: string | null) => {
@@ -13,7 +13,7 @@ vi.mock("../ratings", async (actual) => ({
   },
 }));
 vi.mock("@/hooks/context/identity-session", () => ({
-  useIdentitySession: () => ({ session: { user: { realmsId: "0x1", payoutWallet: payout.current } } }),
+  useIdentitySession: () => ({ session: { user: { realmsId: "0x1", address: payout.current } } }),
 }));
 vi.mock("@/ui/design-system/kit/player-name", () => ({
   // The kit's name rule, as far as these rows need it: You, a name the host handed it, or a lookup by account.
@@ -49,7 +49,7 @@ const answered = (self: unknown) => ({
 let unmount: (() => Promise<void>) | null = null;
 afterEach(async () => {
   await unmount?.();
-  payout.current = { status: "ready", address: "0xc" };
+  payout.current = "0xc";
 });
 
 const mount = async () => {
@@ -91,7 +91,7 @@ it("lights the reader's row in place when it ranks among the top", async () => {
 });
 
 it("tells a reader with no wallet how to carry a rating, never a rating of its own", async () => {
-  payout.current = { status: "no_wallet" };
+  payout.current = null;
   top.current = answered(null);
   const container = await mount();
   expect(top.askedFor).toBeNull();

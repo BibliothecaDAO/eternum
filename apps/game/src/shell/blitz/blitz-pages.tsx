@@ -1,9 +1,7 @@
 import { type ReactNode, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
-import type { PayoutWallet } from "@realms-world/identity";
-
-import { payoutWalletOf } from "@/hooks/context/payout-wallet";
+import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Button } from "@/ui/design-system/kit/button";
@@ -27,7 +25,7 @@ import { LiveChip, StateChip } from "../play/state-chip";
 import { ServiceFailure } from "../service-failure";
 import { FailureLine } from "../sign-in/failure-line";
 import { type EnvironmentLedger, environmentLedger } from "../value/ledger";
-import { BLITZ_WORDS, ENTRY_WORDS, WALLET_WORDS, WORDS } from "../words";
+import { BLITZ_WORDS, ENTRY_WORDS, WORDS } from "../words";
 import { chatMembershipOf, useEntryTerms } from "./entry";
 import { PaidEntry } from "./entry-panel";
 import { GameRow, SeatsChip } from "./game-row";
@@ -153,7 +151,7 @@ export const BlitzLobbyPage = () => {
   const step = lobbyStep(row);
   const clock = <LobbyClock row={row} step={step} now={facts.now} />;
   const desktop = layout === "desktop";
-  const wallet = session ? payoutWalletOf(session.user) : null;
+  const wallet = session ? payoutAddressOf(session.user) : null;
   const action =
     row.kind === "game" ? (
       <LobbyAction row={row} step={step} desktop={desktop} />
@@ -291,11 +289,10 @@ const LobbyAction = ({ row, step, desktop }: { row: BlitzRow; step: LobbyStep; d
  * A slot's chat. Who writes is the server's decision, taken when the room opens on the payout wallet's registration in
  * the slot, so the room is opened again whenever that wallet or its registration changes.
  */
-const SlotChat = ({ slot, wallet }: { slot: PlaytestSlot; wallet: PayoutWallet | null }) => {
+const SlotChat = ({ slot, wallet }: { slot: PlaytestSlot; wallet: string | null }) => {
   const ledger = environmentLedger();
-  const address = linkedAddressOf(wallet);
-  if (!ledger || !address) return <LobbyChatPanel slot={slot} membership={chatMembershipOf(address, undefined)} />;
-  return <RegistrantChat ledger={ledger} slot={slot} address={address} />;
+  if (!ledger || !wallet) return <LobbyChatPanel slot={slot} membership={chatMembershipOf(wallet, undefined)} />;
+  return <RegistrantChat ledger={ledger} slot={slot} address={wallet} />;
 };
 
 const RegistrantChat = ({
@@ -323,7 +320,8 @@ const SlotEntry = ({
   games,
 }: {
   slot: PlaytestSlot;
-  wallet: PayoutWallet | null;
+  /** The payout wallet's address; null when the player has linked none. */
+  wallet: string | null;
   owed: string | undefined;
   games: readonly DirectoryGame[];
 }) => {
@@ -332,13 +330,8 @@ const SlotEntry = ({
   if (owed && owed !== refundWallet) setRefundWallet(owed);
   const ledger = environmentLedger();
   if (!ledger) return <FailureLine line={ENTRY_WORDS.unreadable} />;
-  if (!wallet && !refundWallet) return <FailureLine line={WALLET_WORDS.unavailableLine} />;
   const key = slotKeyOf(slot);
-  const owner = refundWallet ?? linkedAddressOf(wallet);
+  const owner = refundWallet ?? wallet;
   const game = owner ? seatedGameOf(games, key, owner) : undefined;
   return <PaidEntry ledger={ledger} slot={key} owner={owner} game={game} />;
 };
-
-/** The payout wallet's address; null without a session or a linked wallet. */
-const linkedAddressOf = (wallet: PayoutWallet | null): string | null =>
-  wallet && wallet.status !== "no_wallet" ? wallet.address : null;

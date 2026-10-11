@@ -2,7 +2,6 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { PayoutWallet } from "@realms-world/identity";
 import { type HeldRealm, planRealmLabor } from "./realm-labor";
 import { RealmsSheet } from "./realms-sheet";
 import { type WithdrawStep, WithdrawSheet } from "./withdraw-sheet";
@@ -26,21 +25,19 @@ afterEach(() => {
 });
 
 const ADDRESS = "0x04a1d2c3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f99f3c";
-const READY: PayoutWallet = { status: "ready", address: ADDRESS };
-const NOW = 1_800_000_000_000;
 const button = (word: string) =>
   [...host.querySelectorAll<HTMLButtonElement>("button")].find((each) => each.textContent?.startsWith(word));
 
 describe("Withdraw", () => {
   const render = (
-    over: Partial<{ wallet: PayoutWallet; refusal: string; step: WithdrawStep; amount: number }>,
+    over: Partial<{ wallet: string | null; refusal: string; step: WithdrawStep; amount: number }>,
     ways = { onAmount: vi.fn(), onWithdraw: vi.fn(), onLinkWallet: vi.fn() },
   ) => {
     act(() =>
       root.render(
         <WithdrawSheet
           held={1_240}
-          wallet={over.wallet ?? READY}
+          wallet={over.wallet === undefined ? ADDRESS : over.wallet}
           refusal={over.refusal ?? null}
           step={over.step ?? { kind: "pick" }}
           amount={over.amount ?? 500}
@@ -52,25 +49,21 @@ describe("Withdraw", () => {
     return ways;
   };
 
-  it("sends the chosen amount, or all of it, to the linked wallet it shows", () => {
+  it("sends the chosen amount, or all of it, to the linked wallet it shows, with no wait on the wallet", () => {
     const ways = render({});
     expect(host.textContent).toContain("0x04a1…9f3c");
+    expect(host.innerHTML).not.toContain("Receives from");
     act(() => button("All")!.click());
     expect(ways.onAmount).toHaveBeenCalledWith(1_240);
     act(() => button("Withdraw")!.click());
     expect(ways.onWithdraw).toHaveBeenCalledTimes(1);
   });
 
-  it("sends a player with no wallet to link one, and lets nothing leave before a new wallet's hold ends", () => {
-    const ways = render({ wallet: { status: "no_wallet" } });
+  it("sends a player with no wallet to link one", () => {
+    const ways = render({ wallet: null });
     expect(button("Withdraw")).toBeUndefined();
     act(() => button("Link wallet")!.click());
     expect(ways.onLinkWallet).toHaveBeenCalledTimes(1);
-    const until = NOW + (18 * 60 + 40) * 60_000;
-    render({ wallet: { status: "on_hold", address: ADDRESS, until } });
-    // The hold shows as the moment the new wallet can receive, its day included, nothing more.
-    expect(host.querySelector(`[aria-label="Receives from ${formatMoment(until / 1000)}"]`)).not.toBeNull();
-    expect(button("Withdraw")!.disabled).toBe(true);
   });
 
   it("says why nothing can leave, and that a withdrawal recorded in a pause pays when payouts resume", () => {
@@ -183,7 +176,7 @@ describe("the Realm holder's labor", () => {
       act(() =>
         root.render(
           <RealmsSheet
-            wallet={READY}
+            wallet={ADDRESS}
             plan={planRealmLabor({ realms, perRealm: 1_000, cap, labor: { held: 0, limit: 18_000 } })}
             perRealm={1_000}
             cap={cap}
@@ -225,7 +218,7 @@ describe("the Realm holder's labor", () => {
       act(() =>
         root.render(
           <RealmsSheet
-            wallet={READY}
+            wallet={ADDRESS}
             plan={planRealmLabor({
               realms: [realm(1, true), realm(2), realm(3)],
               perRealm: 1_000,

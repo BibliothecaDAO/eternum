@@ -7,7 +7,6 @@ import { expect, it, vi } from "vitest";
 vi.hoisted(() => vi.stubGlobal("fetch", async () => new Response(null, { status: 401 })));
 
 import { identityClient } from "@/hooks/context/identity-session";
-import { formatMoment } from "@/ui/design-system/kit/time";
 
 import { AccountCard } from "./account-card";
 
@@ -45,63 +44,48 @@ it("asks before signing out, with Keep as the safe choice", async () => {
   }
 });
 
-it("shows a session without a payout wallet as a fault, with no uncoded link or unlink", async () => {
+it("shows the linked payout wallet by its address, changed only with a code, and Link wallet to an account with none", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   vi.spyOn(identityClient, "listSignInProviders").mockResolvedValue([]);
-  const logged = vi.spyOn(console, "error").mockImplementation(() => {});
-  const linked = { ...session, user: { ...session.user, address: "0xabc" } } as Session;
-  const container = document.createElement("div");
-  document.body.append(container);
-  const root = createRoot(container);
-  await act(async () =>
-    root.render(
-      <MemoryRouter>
-        <AccountCard session={linked} />
-      </MemoryRouter>,
-    ),
-  );
-  try {
-    expect(container.textContent).toContain("Payout wallet");
-    expect(container.textContent).toContain("Unavailable");
-    expect(logged).toHaveBeenCalledWith("identity_payout_wallet_missing", { user: "u" });
-    const row = [...container.querySelectorAll("button")].find((button) =>
-      button.textContent?.includes("Payout wallet"),
+  const linked = { ...session, user: { ...session.user, address: "0x04a1d2c3e4f59f3c" } } as Session;
+  const mount = async (shown: Session) => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    await act(async () =>
+      root.render(
+        <MemoryRouter>
+          <AccountCard session={shown} />
+        </MemoryRouter>,
+      ),
     );
-    await act(async () => row!.click());
-    expect(document.body.textContent).toContain("Your account did not say which wallet pays you.");
-    const words = [...document.querySelectorAll("button")].map((button) => button.textContent);
-    expect(words).not.toContain("Unlink");
-    expect(words).not.toContain("Link wallet");
-  } finally {
-    await act(async () => root.unmount());
-    container.remove();
-    logged.mockRestore();
-  }
-});
+    return {
+      container,
+      unmount: async () => {
+        await act(async () => root.unmount());
+        container.remove();
+      },
+    };
+  };
+  const payoutRow = (container: HTMLElement) =>
+    [...container.querySelectorAll("button")].find((button) => button.textContent?.includes("Payout wallet"))!;
 
-it("shows a held payout wallet as the time it receives from, nothing more", async () => {
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  vi.spyOn(identityClient, "listSignInProviders").mockResolvedValue([]);
-  const until = Date.now() + 5 * 3_600_000;
-  const held = {
-    ...session,
-    user: { ...session.user, payoutWallet: { status: "on_hold", address: "0x4a1", until } },
-  } as unknown as Session;
-  const container = document.createElement("div");
-  document.body.append(container);
-  const root = createRoot(container);
-  await act(async () =>
-    root.render(
-      <MemoryRouter>
-        <AccountCard session={held} />
-      </MemoryRouter>,
-    ),
-  );
+  const account = await mount(linked);
   try {
-    expect(container.textContent).toContain(`Receives from ${formatMoment(until / 1000)}`);
-    expect(container.textContent).not.toContain("left");
+    // The wallet receives at once: its row is its address, never a time to wait for.
+    expect(payoutRow(account.container).textContent).toContain("0x04a1…9f3c");
+    await act(async () => payoutRow(account.container).click());
+    const words = [...document.querySelectorAll("button")].map((button) => button.textContent);
+    expect(words).toContain("Replace");
+    expect(words).toContain("Unlink");
   } finally {
-    await act(async () => root.unmount());
-    container.remove();
+    await account.unmount();
+  }
+
+  const unlinked = await mount(session);
+  try {
+    expect(payoutRow(unlinked.container).textContent).toContain("Link wallet");
+  } finally {
+    await unlinked.unmount();
   }
 });

@@ -55,7 +55,6 @@ import { useRef, useState } from "react";
 import { RefillButton, RefillConfirm } from "@/ui/features/frontier/army/refill";
 import type { PotDay } from "@/ui/features/frontier/value/day-pot";
 import { LordsPurse, PurseRow, RealmsChip } from "@/ui/features/frontier/value/lords-purse";
-import type { PayoutWallet } from "@realms-world/identity";
 import { type HeldRealm, planRealmLabor } from "@/ui/features/frontier/value/realm-labor";
 import { RealmsSheet } from "@/ui/features/frontier/value/realms-sheet";
 import { type WithdrawStep, WithdrawSheet } from "@/ui/features/frontier/value/withdraw-sheet";
@@ -197,7 +196,6 @@ const RUIN_CARD: LabSite = {
  */
 const LAB_PRESET = { realmLabor: 1_000, realmsADay: 5 };
 const WALLET_ADDRESS = "0x04a1d2c3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f99f3c";
-const READY: PayoutWallet = { status: "ready", address: WALLET_ADDRESS };
 const REALMS_HELD: readonly HeldRealm[] = [
   { realmId: 1_088, name: "Stolsli", order: 9, claimedToday: true },
   { realmId: 4_512, name: "Uw Rohi", order: 3, claimedToday: false },
@@ -210,9 +208,9 @@ const SEVEN_REALMS: readonly HeldRealm[] = [
   { realmId: 5_990, name: "Orrin", order: 12, claimedToday: false },
   { realmId: 7_421, name: "Tamsel", order: 14, claimedToday: false },
 ];
-type LabWithdraw = { held: number; wallet: PayoutWallet; refusal?: string; step: WithdrawStep; amount: number };
-type LabRealms = { wallet: PayoutWallet; realms: readonly HeldRealm[]; labor: number; limit: number };
-const WITHDRAW_500: LabWithdraw = { held: 1_240, wallet: READY, step: { kind: "pick" }, amount: 500 };
+type LabWithdraw = { held: number; wallet: string | null; refusal?: string; step: WithdrawStep; amount: number };
+type LabRealms = { wallet: string | null; realms: readonly HeldRealm[]; labor: number; limit: number };
+const WITHDRAW_500: LabWithdraw = { held: 1_240, wallet: WALLET_ADDRESS, step: { kind: "pick" }, amount: 500 };
 /** Days 8 to 12 of the pot: about 14,300 unlocked a day; days 10 and 11 were quiet and roll 18,600 into day 12. */
 const QUIET_THEN_BUSY: readonly PotDay[] = [
   { day: 8, unlocked: 14_300, carried: 0, spent: 14_000, price: 32 },
@@ -709,17 +707,7 @@ const STATES = {
     stores: STORES,
     armies: ARMIES,
     purse: { lords: 1_240 },
-    withdraw: { ...WITHDRAW_500, wallet: { status: "no_wallet" } },
-  },
-  "withdraw-hold": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1_240 },
-    withdraw: {
-      ...WITHDRAW_500,
-      wallet: { status: "on_hold", address: WALLET_ADDRESS, until: (NOW + 18 * HOUR + 40 * 60) * 1000 },
-    },
+    withdraw: { ...WITHDRAW_500, wallet: null },
   },
   "withdraw-sending": {
     clock: CLOCK,
@@ -765,7 +753,7 @@ const STATES = {
     stores: STORES,
     armies: ARMIES,
     purse: { lords: 1_240, realms: 2_000 },
-    realms: { wallet: READY, realms: REALMS_HELD, labor: 9_640, limit: 18_000 },
+    realms: { wallet: WALLET_ADDRESS, realms: REALMS_HELD, labor: 9_640, limit: 18_000 },
   },
   "realms-claimed": {
     clock: CLOCK,
@@ -773,7 +761,7 @@ const STATES = {
     armies: ARMIES,
     purse: { lords: 1_240 },
     realms: {
-      wallet: READY,
+      wallet: WALLET_ADDRESS,
       realms: REALMS_HELD.map((realm) => ({ ...realm, claimedToday: true })),
       labor: 9_640,
       limit: 18_000,
@@ -784,21 +772,21 @@ const STATES = {
     stores: STORES,
     armies: ARMIES,
     purse: { lords: 1_240, realms: 2_000 },
-    realms: { wallet: READY, realms: REALMS_HELD, labor: 17_600, limit: 18_000 },
+    realms: { wallet: WALLET_ADDRESS, realms: REALMS_HELD, labor: 17_600, limit: 18_000 },
   },
   "realms-cap": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
     purse: { lords: 1_240, realms: 4_000 },
-    realms: { wallet: READY, realms: SEVEN_REALMS, labor: 9_640, limit: 18_000 },
+    realms: { wallet: WALLET_ADDRESS, realms: SEVEN_REALMS, labor: 9_640, limit: 18_000 },
   },
   "realms-none": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
     purse: { lords: 1_240 },
-    realms: { wallet: READY, realms: [], labor: 9_640, limit: 18_000 },
+    realms: { wallet: WALLET_ADDRESS, realms: [], labor: 9_640, limit: 18_000 },
   },
   "chest-busy": {
     clock: CLOCK,

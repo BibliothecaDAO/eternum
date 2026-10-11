@@ -4,7 +4,6 @@ import { realmsAccountAddress } from "@realms-world/identity/account";
 import type { Session } from "@realms-world/identity";
 
 import type { DirectoryGame } from "../herald";
-import type { PayoutWallet } from "@realms-world/identity";
 
 import type { EntryTerms } from "../blitz/entry";
 import type { SlotKey } from "../value/ledger";
@@ -139,7 +138,6 @@ export const LAB_SCREENS = {
   "blitz-seat": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "season-over": { signedIn: true, games: [endedFrontier, liveBlitz(false), eternum] },
   "wallet-none": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "wallet-hold": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "wallet-ready": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "entry-choose": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "entry-short": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
@@ -167,33 +165,30 @@ export const LAB_SCREENS = {
   "season-out": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
 } as const;
 
-/** The payout wallet the identity service reports on each screen's session; screens without one report none. */
-export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, PayoutWallet>> = {
-  "wallet-none": { status: "no_wallet" },
-  "wallet-hold": { status: "on_hold", address: LAB_WALLET, until: (NOW + 17 * 3600 + 42 * 60) * 1000 },
-  "wallet-ready": { status: "ready", address: LAB_WALLET },
-  "entry-choose": { status: "ready", address: LAB_WALLET },
-  "entry-short": { status: "ready", address: LAB_WALLET },
-  "entry-registered": { status: "ready", address: LAB_WALLET },
-  "entry-drawing": { status: "ready", address: LAB_WALLET },
-  "entry-seated": { status: "ready", address: LAB_WALLET },
-  "entry-unseated": { status: "ready", address: LAB_WALLET },
-  "entry-cancelled": { status: "ready", address: LAB_WALLET },
-  "entry-refunded": { status: "ready", address: LAB_WALLET },
-  "entry-no-wallet": { status: "no_wallet" },
-  "reward-pending": { status: "ready", address: LAB_WALLET },
-  "reward-sealed": { status: "ready", address: LAB_WALLET },
-  "reward-after-season": { status: "ready", address: LAB_WALLET },
-  "reward-opening": { status: "ready", address: LAB_WALLET },
-  "reward-epic": { status: "ready", address: LAB_WALLET },
-  "reward-lords": { status: "ready", address: LAB_WALLET },
-  "reward-credit": { status: "ready", address: LAB_WALLET },
-  "season-running": { status: "ready", address: LAB_WALLET },
-  "season-review": { status: "ready", address: LAB_WALLET },
-  "season-claim": { status: "ready", address: LAB_WALLET },
-  "season-held": { status: "ready", address: LAB_WALLET },
-  "season-claimed": { status: "ready", address: LAB_WALLET },
-  "season-out": { status: "ready", address: LAB_WALLET },
+/** The payout wallet linked on each screen's session; a screen not named here has none. */
+export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, string>> = {
+  "wallet-ready": LAB_WALLET,
+  "entry-choose": LAB_WALLET,
+  "entry-short": LAB_WALLET,
+  "entry-registered": LAB_WALLET,
+  "entry-drawing": LAB_WALLET,
+  "entry-seated": LAB_WALLET,
+  "entry-unseated": LAB_WALLET,
+  "entry-cancelled": LAB_WALLET,
+  "entry-refunded": LAB_WALLET,
+  "reward-pending": LAB_WALLET,
+  "reward-sealed": LAB_WALLET,
+  "reward-after-season": LAB_WALLET,
+  "reward-opening": LAB_WALLET,
+  "reward-epic": LAB_WALLET,
+  "reward-lords": LAB_WALLET,
+  "reward-credit": LAB_WALLET,
+  "season-running": LAB_WALLET,
+  "season-review": LAB_WALLET,
+  "season-claim": LAB_WALLET,
+  "season-held": LAB_WALLET,
+  "season-claimed": LAB_WALLET,
+  "season-out": LAB_WALLET,
 };
 
 const WEI = 10n ** 18n;
