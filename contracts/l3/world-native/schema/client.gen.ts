@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "9790e58a0d08a6eb767327960bc53674e0c0e249fb384c1ba3e02ccaecccc0c4";
+export const nativeFactSchemaIdentity = "90df4c2462c67b80d61cf88d10a3b23a51ebb17bad33916c10eb71f11a3c05e9";
 export const nativeRuleConstants = {
   "ATTRIBUTE_CAP": 5,
   "BATTLE_UNCOMMON_BPS": 1000,
@@ -181,8 +181,8 @@ export interface NativeRows {
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly empty_reveals: number; readonly ruin_found: boolean };
   LaborRules: { readonly game_id: number; readonly amount: bigint; readonly account_daily_limit: number };
   LaborGrant: { readonly realm_id: number; readonly day: bigint; readonly game_id: number; readonly account: bigint; readonly home: bigint; readonly amount: bigint };
-  ChestRules: { readonly game_id: number; readonly price: bigint; readonly shares: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly epic: number; readonly legendary: number }; readonly claim_window_seconds: number };
-  LordsBudget: { readonly game_id: number; readonly pool: bigint; readonly pool_left: bigint; readonly open: bigint; readonly day: bigint };
+  ChestRules: { readonly game_id: number; readonly price_ceiling: bigint; readonly shares: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly epic: number; readonly legendary: number }; readonly claim_window_seconds: number };
+  LordsBudget: { readonly game_id: number; readonly pool: bigint; readonly pool_left: bigint; readonly open: bigint; readonly day: bigint; readonly price: bigint; readonly rolled_shares: bigint; readonly yesterday_shares: bigint; readonly yesterday_ticks: bigint };
   SiteChest: { readonly game_id: number; readonly entity_id: bigint; readonly tier: number; readonly amount: bigint; readonly reservation_day: bigint };
   LordsWithdrawal: { readonly game_id: number; readonly claim_id: bigint; readonly account: bigint; readonly amount: bigint };
   RelicDiscovery: { readonly game_id: number; readonly last_at: bigint };
@@ -598,7 +598,7 @@ export const nativeFactModels = {
     "scope": "game",
     "fields": {
       "game_id": "u32",
-      "price": "u128",
+      "price_ceiling": "u128",
       "shares": {
         "common": "u16",
         "uncommon": "u16",
@@ -619,7 +619,11 @@ export const nativeFactModels = {
       "pool": "u128",
       "pool_left": "u128",
       "open": "u128",
-      "day": "u64"
+      "day": "u64",
+      "price": "u128",
+      "rolled_shares": "u128",
+      "yesterday_shares": "u128",
+      "yesterday_ticks": "u64"
     }
   },
   "SiteChest": {

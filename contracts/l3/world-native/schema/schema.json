@@ -2927,9 +2927,9 @@
       ],
       "members": [
         {
-          "name": "price",
+          "name": "price_ceiling",
           "type": "core::integer::u128",
-          "id": "0x7072696365",
+          "id": "0x70726963655f6365696c696e67",
           "feltLength": 1
         },
         {
@@ -2984,10 +2984,34 @@
           "type": "core::integer::u64",
           "id": "0x646179",
           "feltLength": 1
+        },
+        {
+          "name": "price",
+          "type": "core::integer::u128",
+          "id": "0x7072696365",
+          "feltLength": 1
+        },
+        {
+          "name": "rolled_shares",
+          "type": "core::integer::u128",
+          "id": "0x726f6c6c65645f736861726573",
+          "feltLength": 1
+        },
+        {
+          "name": "yesterday_shares",
+          "type": "core::integer::u128",
+          "id": "0x7965737465726461795f736861726573",
+          "feltLength": 1
+        },
+        {
+          "name": "yesterday_ticks",
+          "type": "core::integer::u64",
+          "id": "0x7965737465726461795f7469636b73",
+          "feltLength": 1
         }
       ],
       "keyLength": 1,
-      "valueLength": 4
+      "valueLength": 8
     },
     {
       "name": "SiteChest",
@@ -10707,7 +10731,7 @@
       "name": "world_native::relics::ChestRules",
       "members": [
         {
-          "name": "price",
+          "name": "price_ceiling",
           "type": "core::integer::u128"
         },
         {
@@ -10778,6 +10802,22 @@
         },
         {
           "name": "day",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "price",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "rolled_shares",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "yesterday_shares",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "yesterday_ticks",
           "type": "core::integer::u64"
         }
       ]
@@ -12705,5 +12745,5 @@
       ]
     }
   },
-  "identity": "9790e58a0d08a6eb767327960bc53674e0c0e249fb384c1ba3e02ccaecccc0c4"
+  "identity": "90df4c2462c67b80d61cf88d10a3b23a51ebb17bad33916c10eb71f11a3c05e9"
 }

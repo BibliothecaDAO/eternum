@@ -98,7 +98,7 @@ fn assert_all_zero_chest_rules_refuse_registration() {
         .chests =
             Some(
                 crate::relics::ChestRules {
-                    price: 0,
+                    price_ceiling: 0,
                     claim_window_seconds: 0,
                     shares: crate::relics::ChestTiers { common: 0, uncommon: 0, rare: 0, epic: 0, legendary: 0 },
                 },

@@ -33,9 +33,9 @@ def record_chunk(quiet, clear, first, past, previous):
     if len(records) != 1:
         raise ValueError("Producer must emit exactly one checkpoint")
     values = [int(token.strip(), 0) for token in records[0].split(",") if token.strip()]
-    if len(values) != 17 or values[:5] != fields[:5]:
+    if len(values) != 25 or values[:5] != fields[:5]:
         raise ValueError("Checkpoint shape or scenario does not match its input")
-    if previous is not None and values[5:11] != previous:
+    if previous is not None and values[5:15] != previous:
         raise ValueError("Checkpoint lost the preceding budget or running totals")
     print(f"Recorded density=2000 quiet={quiet} clear={clear} days={first}..{past - 1}", flush=True)
     return values
@@ -54,7 +54,7 @@ def main():
                 first = chunk * chunk_days
                 record = record_chunk(quiet, clear, first, first + chunk_days, previous)
                 records.append(record)
-                previous = record[11:17]
+                previous = record[15:25]
     finally:
         INPUT.unlink(missing_ok=True)
     DIRECTORY.mkdir(parents=True, exist_ok=True)

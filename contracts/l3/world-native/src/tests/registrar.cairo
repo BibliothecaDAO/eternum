@@ -2308,7 +2308,9 @@ pub fn assert_zero_pool_never_funds_a_ruin_or_payout_over_a_day() {
     let (d, game_id, key) = setup_frontier_chests_with_preset(Some(rules), frontier);
     let context = crate::tests::context(d.games, game_id);
     let clock = crate::logic::lords_budget::SeasonClock {
-        game: context.game.unbox(), day_unit_seconds: context.rules.unbox().day_unit_seconds,
+        game: context.game.unbox(),
+        day_unit_seconds: context.rules.unbox().day_unit_seconds,
+        tick: context.rules.unbox().tick_config.armies_tick_in_seconds,
     };
     let day = crate::days::day_of(clock.game, clock.day_unit_seconds, 352);
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
@@ -2473,7 +2475,10 @@ fn an_exhausted_budget_never_funds_a_ruin_or_payout() {
         d.games,
         || {
             let day = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, time).index;
-            let exhausted = crate::relics::LordsBudget { pool: 1000000, pool_left: 0, open: 0, day };
+            let exhausted = crate::relics::LordsBudget {
+                pool_left: 0,
+                ..crate::logic::lords_budget::first_day(crate::logic::lords_budget::chest_rules(game_id), 1000000, day),
+            };
             crate::state::write().relics.rollover_budget.write(game_id, Some(exhausted));
         },
     );
@@ -2519,10 +2524,10 @@ fn frontier_finds_at_most_one_ruin_a_day_and_holds_its_chest_against_the_budget(
     let relics = IRelicsDispatcher { contract_address: d.games };
     let chest = relics.site_chest(ResourceKey { game_id, entity_id: ruin.entity_id }).unwrap();
     let budget = relics.lords_budget(game_id).unwrap();
-    // The preset fixes the price, and the chest's LORDS are held open until its clear.
+    // The first day uses the ceiling, and the chest's LORDS are held open until its clear.
     let rules = relics.chest_rules(game_id).unwrap();
-    assert_eq!(rules.price, 50);
-    assert_eq!(chest.amount, rules.price * crate::relics::tier_value(rules.shares, chest.tier).into());
+    assert_eq!(rules.price_ceiling, 50);
+    assert_eq!(chest.amount, rules.price_ceiling * crate::relics::tier_value(rules.shares, chest.tier).into());
     assert_eq!(budget.open, chest.amount);
     let counter = crate::expeditions::ExpeditionDiscoveryKey {
         game_id,

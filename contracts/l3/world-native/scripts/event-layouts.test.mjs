@@ -51,10 +51,27 @@ test("Games exposes the published player frame, roles and frozen roster ABI", as
   ]);
   assert.deepEqual(method("publish_frontier_pool").outputs, []);
   assert.deepEqual(abi.find(({ name }) => name === "world_native::relics::ChestRules").members, [
-    { name: "price", type: "core::integer::u128" },
+    { name: "price_ceiling", type: "core::integer::u128" },
     { name: "shares", type: "world_native::relics::ChestTiers" },
     { name: "claim_window_seconds", type: "core::integer::u32" },
   ]);
+  const relics = JSON.parse(
+    await readFile(new URL("../target/dev/world_native_RelicsLogic.contract_class.json", import.meta.url), "utf8"),
+  ).abi;
+  assert.deepEqual(relics.find(({ name }) => name === "world_native::relics::LordsBudget").members, [
+    { name: "pool", type: "core::integer::u128" },
+    { name: "pool_left", type: "core::integer::u128" },
+    { name: "open", type: "core::integer::u128" },
+    { name: "day", type: "core::integer::u64" },
+    { name: "price", type: "core::integer::u128" },
+    { name: "rolled_shares", type: "core::integer::u128" },
+    { name: "yesterday_shares", type: "core::integer::u128" },
+    { name: "yesterday_ticks", type: "core::integer::u64" },
+  ]);
+  assert.equal(
+    methods.some(({ name }) => name === "lords_budget"),
+    false,
+  );
   assert.deepEqual(method("grant_labor").inputs, [
     { name: "realms", type: "core::array::Array::<world_native::entry::LaborRealm>" },
     { name: "day", type: "core::integer::u64" },

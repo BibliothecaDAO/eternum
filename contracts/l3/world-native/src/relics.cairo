@@ -70,10 +70,10 @@ pub fn roll_tier(odds: ChestTiers, seed: u256) -> u8 {
     4
 }
 
-// A chest pays its tier's shares at the preset's fixed whole-LORDS price.
+// A chest pays its tier's shares at the day's frozen price, capped by the preset.
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct ChestRules {
-    pub price: u128,
+    pub price_ceiling: u128,
     pub shares: ChestTiers,
     pub claim_window_seconds: u32,
 }
@@ -93,6 +93,10 @@ pub struct LordsBudget {
     pub pool_left: u128,
     pub open: u128,
     pub day: u64,
+    pub price: u128,
+    pub rolled_shares: u128,
+    pub yesterday_shares: u128,
+    pub yesterday_ticks: u64,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
