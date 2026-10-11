@@ -321,7 +321,7 @@ describe("identity Worker", () => {
     const before = await userCount();
     const first = createBrowser();
     expect((await signInWithCode(first, "lord@realms.test")).status).toBe(200);
-    expect(sentCodes.get("lord@realms.test")).toMatch(/^\d{8}$/);
+    expect(sentCodes.get("lord@realms.test")).toMatch(/^\d{6}$/);
     const created = await first.session();
     expect(created?.user.realmsId).toBe(realmsIdOf(created!.user.id));
 
@@ -379,7 +379,7 @@ describe("identity Worker", () => {
     ).toBe(status);
   });
 
-  it("refuses a wrong code, an expired code and a code after three wrong tries", async () => {
+  it("refuses a wrong or expired code", async () => {
     const browser = createBrowser();
     const signIn = (email: string, otp: string | undefined) =>
       browser.request("/api/auth/sign-in/email-otp", { body: { email, otp } });
@@ -387,7 +387,7 @@ describe("identity Worker", () => {
       browser.request("/api/auth/email-otp/send-verification-otp", { body: { email, type: "sign-in" } });
 
     await ask("wrong@realms.test");
-    const wrongCode = sentCodes.get("wrong@realms.test") === "00000000" ? "11111111" : "00000000";
+    const wrongCode = sentCodes.get("wrong@realms.test") === "000000" ? "111111" : "000000";
     expect((await signIn("wrong@realms.test", wrongCode)).status).toBe(400);
 
     await ask("late@realms.test");
@@ -396,11 +396,27 @@ describe("identity Worker", () => {
       .run();
     expect((await signIn("late@realms.test", sentCodes.get("late@realms.test"))).status).toBe(400);
 
-    await ask("guess@realms.test");
-    for (let attempt = 0; attempt < 3; attempt += 1) await signIn("guess@realms.test", "999999");
-    const afterGuesses = await signIn("guess@realms.test", sentCodes.get("guess@realms.test"));
-    expect(afterGuesses.status).not.toBe(200);
     expect(await browser.session()).toBeNull();
+  });
+
+  it("refuses the fourth try after three wrong codes and lets the player request a fresh code", async () => {
+    const browser = createBrowser();
+    const email = "guess@realms.test";
+    const ask = () =>
+      browser.request("/api/auth/email-otp/send-verification-otp", { body: { email, type: "sign-in" } });
+    const signIn = (otp: string) => browser.request("/api/auth/sign-in/email-otp", { body: { email, otp } });
+
+    expect((await ask()).status).toBe(200);
+    const code = sentCodes.get(email)!;
+    expect(code).toMatch(/^\d{6}$/);
+    const wrong = code === "000000" ? "111111" : "000000";
+    for (let attempt = 0; attempt < 3; attempt += 1) expect((await signIn(wrong)).status).toBe(400);
+    expect((await signIn(code)).status).toBe(403);
+    expect(await browser.session()).toBeNull();
+
+    expect((await ask()).status).toBe(200);
+    expect((await signIn(sentCodes.get(email)!)).status).toBe(200);
+    expect((await browser.session())?.user.email).toBe(email);
   });
 
   it("sends an address only a few sign-in codes a minute", async () => {
@@ -1042,18 +1058,18 @@ describe("identity Worker", () => {
     ).toEqual([]);
   });
 
-  it("requires a fresh eight-digit code from the account email for every wallet mutation", async () => {
+  it("requires a fresh six-digit code from the account email for every wallet mutation", async () => {
     const browser = createBrowser();
     await signInWithCode(browser, "wallet-factor@realms.test");
     const address = createWallet();
     expect((await proveWallet(browser, address, "link")).status).toBe(200);
     expect(notices).toHaveBeenLastCalledWith("wallet-factor@realms.test", expect.any(String), expect.any(String));
-    for (const otp of [undefined, "123456", "1234567", "123456789", "abcdefgh"]) {
+    for (const otp of [undefined, "12345", "1234567", "12345678", "abcdef"]) {
       expect((await browser.request("/api/auth/siws/unlink", { body: { otp } })).status).toBe(400);
     }
     const otp = await walletCode(browser);
-    expect(otp).toMatch(/^\d{8}$/);
-    const wrong = otp === "00000000" ? "11111111" : "00000000";
+    expect(otp).toMatch(/^\d{6}$/);
+    const wrong = otp === "000000" ? "111111" : "000000";
     expect((await browser.request("/api/auth/siws/unlink", { body: { otp: wrong } })).status).toBe(400);
     expect((await browser.session())!.user.address).not.toBeNull();
     expect((await browser.request("/api/auth/siws/unlink", { body: { otp } })).status).toBe(200);
@@ -1064,6 +1080,31 @@ describe("identity Worker", () => {
       .bind(new Date(Date.now() - 1000).toISOString(), "sign-in-otp-wallet-factor@realms.test")
       .run();
     expect((await browser.request("/api/auth/siws/unlink", { body: { otp: expired } })).status).toBe(400);
+  });
+
+  it("blocks wallet changes after three wrong codes and accepts a freshly requested code", async () => {
+    const browser = createBrowser();
+    const email = "wallet-guesses@realms.test";
+    await signInWithCode(browser, email);
+    expect((await proveWallet(browser, createWallet(), "link")).status).toBe(200);
+    const address = (await browser.session())!.user.address;
+    const code = await walletCode(browser);
+    const wrong = code === "000000" ? "111111" : "000000";
+    const unlink = (otp: string) => browser.request("/api/auth/siws/unlink", { body: { otp } });
+
+    for (let attempt = 0; attempt < 3; attempt += 1) expect((await unlink(wrong)).status).toBe(400);
+    expect((await unlink(code)).status).toBe(403);
+    expect((await browser.session())!.user.address).toBe(address);
+
+    expect(
+      (
+        await browser.request("/api/auth/email-otp/send-verification-otp", {
+          body: { email, type: "sign-in" },
+        })
+      ).status,
+    ).toBe(200);
+    expect((await unlink(sentCodes.get(email)!)).status).toBe(200);
+    expect((await browser.session())!.user.address).toBeNull();
   });
 
   it("consumes one code once across concurrent changes and retries undelivered notices", async () => {
