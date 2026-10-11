@@ -68,10 +68,10 @@ it("reads a season and a preset in the interface's order, prices and pools exact
     end: 3600,
     pool: String(9n * WEI),
   });
-  // entry fee (2), protocol cut, chest share, paid fraction, decay, sword (2), shield (2), mmr (6), day unit, bags,
+  // entry fee (2), protocol cut, chest share, paid fraction, decay, sword (2), shield (2), mmr (6), day unit,
   // claim window.
   const preset = [String(500n * WEI), "0", "2000", "500", "1000", "9600", String(500n * WEI), "0", String(450n * WEI)];
-  const tail = ["0", "1", "1000", "200", "45", "32", "150", "60", "10", "3600"];
+  const tail = ["0", "1", "1000", "200", "45", "32", "150", "60", "3600"];
   expect(decodeLedgerPreset([...preset, ...tail])).toMatchObject({
     entryFee: String(500n * WEI),
     protocolCut: 2000,
@@ -111,12 +111,11 @@ it("decodes the Frontier backing and preset calendar once with exact widths and 
   });
   expect(() => decodeFrontierSeason(Array(10).fill("0"))).toThrow("invalid_frontier_season");
   expect(() => decodeFrontierSeason([...funded.slice(0, 7), "2", ...funded.slice(8)])).toThrow();
-  const preset = Array.from({ length: 19 }, () => "0");
+  const preset = Array.from({ length: 18 }, () => "0");
   preset[4] = "2000";
   preset[16] = "60";
-  preset[17] = "10";
-  preset[18] = "3600";
-  expect(decodeLedgerPreset(preset)).toMatchObject({ paidFraction: 2000, dayUnit: 60, bags: 10, claimWindow: 3600 });
+  preset[17] = "3600";
+  expect(decodeLedgerPreset(preset)).toMatchObject({ paidFraction: 2000, dayUnit: 60, claimWindow: 3600 });
   expect(() => decodeLedgerPreset(preset.slice(1))).toThrow();
 });
 

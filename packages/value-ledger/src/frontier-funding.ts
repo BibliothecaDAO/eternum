@@ -39,7 +39,7 @@ export function assertFrontierPreset(preset: ReturnType<typeof decodeLedgerPrese
     BigInt(native.seed) <= 0n ||
     preset.dayUnit !== native.dayUnit ||
     preset.claimWindow !== native.claimWindow ||
-    BigInt(native.end - native.start) !== 20n * BigInt(native.dayUnit) * BigInt(preset.bags)
+    BigInt(native.end - native.start) % (20n * BigInt(native.dayUnit)) !== 0n
   )
     throw new Error("frontier_funding_differs_from_game");
 }

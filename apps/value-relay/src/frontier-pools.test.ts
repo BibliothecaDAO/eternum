@@ -154,7 +154,6 @@ beforeEach(() => {
             shield_price: { low: 0, high: 0 },
             mmr: { enabled: false, mean: 0, spread: 0, max_delta: 0, k: 0, regression_bps: 0 },
             day_unit_seconds: 5,
-            season_bags: 1,
             claim_window_seconds: 604800,
           },
     ),
@@ -197,10 +196,11 @@ it("does not read funding or invoke when the snapshot already has a published po
   expect(rpc.ledger).not.toHaveBeenCalled();
   expect(rpc.execute).not.toHaveBeenCalled();
 });
-it.each(["start", "seed", "fraction", "empty", "ended"])(
+it.each(["start", "end", "seed", "fraction", "empty", "ended"])(
   "never publishes invalid or ended funding: %s",
   async (kind) => {
     if (kind === "start") start = 11;
+    if (kind === "end") end = 210;
     if (kind === "seed") seed = 154;
     if (kind === "fraction") deposit++;
     if (kind === "empty") deposit = 0n;

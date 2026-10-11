@@ -25,27 +25,33 @@ const stores = () => {
   return { launches, slots, calendar, tick };
 };
 
-test("the calendar creates the Frontier season game once, at its start, running to its planned end", async () => {
-  const { launches, calendar, tick } = stores();
-  const season = {
-    phase: "frontier" as const,
-    startsAt: day(0).toISOString(),
-    endsAt: frontierSeasonEnd(day(0)),
-  };
-  await calendar.set(season, Date.now());
+test.each([1, 2, 21, 30])(
+  "the calendar creates a %i-bag Frontier game once with the operator’s dates",
+  async (bags) => {
+    const { launches, calendar, tick } = stores();
+    const season = {
+      phase: "frontier" as const,
+      startsAt: day(0).toISOString(),
+      endsAt: frontierSeasonEnd(day(0), bags),
+    };
+    await calendar.set(season, Date.now());
 
-  await tick(day(-1, 23, 59));
-  expect(await launches.list("madara.frontier")).toEqual([]);
-  await tick(day(0));
-  await tick(day(0, 0, 1));
-  await tick(day(70, 0, 1));
-  const runs = await launches.list("madara.frontier");
-  expect(runs).toHaveLength(1);
-  expect(runs[0]).toMatchObject({
-    name: `frontier-${day(0).getTime() / 1_000}`,
-    request: { gameStartTime: season.startsAt, durationSeconds: 70 * 86_400 },
-  });
-});
+    await tick(day(-1, 23, 59));
+    expect(await launches.list("madara.frontier")).toEqual([]);
+    await tick(day(0));
+    await tick(day(0, 0, 1));
+    await tick(day(70, 0, 1));
+    const runs = await launches.list("madara.frontier");
+    expect(runs).toHaveLength(1);
+    expect(runs[0]).toMatchObject({
+      name: `frontier-${day(0).getTime() / 1_000}`,
+      request: {
+        gameStartTime: season.startsAt,
+        durationSeconds: (Date.parse(season.endsAt) - Date.parse(season.startsAt)) / 1000,
+      },
+    });
+  },
+);
 
 test("Blitz slots are scheduled only inside the Blitz window, and none outside it", async () => {
   const { slots, calendar, tick } = stores();
@@ -95,16 +101,24 @@ test("a phase moves until it starts; a started Frontier season keeps its start a
   expect(await calendar.set(next, Date.parse("2027-03-22T00:00:00Z"))).toEqual(next);
 });
 
-test("a Frontier season lasts its 21 bags of days from an armies tick, or the calendar refuses it", async () => {
+test.each([0, 0.5, 1.5, 9.3])("refuses %s bags and names the two nearest valid ends without writing", async (bags) => {
   const { calendar } = stores();
   const startsAt = day(0).toISOString();
-  await expect(
-    calendar.set({ phase: "frontier", startsAt, endsAt: day(31).toISOString() }, Date.now()),
-  ).rejects.toThrow("lasts 21 bags of days");
+  const lower = Math.max(1, Math.floor(bags));
+  const bagMs = Date.parse(frontierSeasonEnd(startsAt, 1)) - Date.parse(startsAt);
+  const endsAt = new Date(Date.parse(startsAt) + bags * bagMs).toISOString();
+  await expect(calendar.set({ phase: "frontier", startsAt, endsAt }, Date.now())).rejects.toThrow(
+    `nearest valid ends: ${frontierSeasonEnd(startsAt, lower)}, ${frontierSeasonEnd(startsAt, lower + 1)}`,
+  );
+  expect(await calendar.list()).toEqual([]);
+});
+
+test("refuses a Frontier start off the armies tick", async () => {
+  const { calendar } = stores();
   const offTick = new Date(day(0).getTime() + 1_000);
   await expect(
     calendar.set(
-      { phase: "frontier", startsAt: offTick.toISOString(), endsAt: frontierSeasonEnd(offTick) },
+      { phase: "frontier", startsAt: offTick.toISOString(), endsAt: frontierSeasonEnd(offTick, 2) },
       Date.now(),
     ),
   ).rejects.toThrow("starts on a 120 s tick");

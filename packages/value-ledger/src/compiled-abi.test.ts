@@ -148,7 +148,6 @@ describe("committed contract readbacks", () => {
       shield_price: { low: 13, high: 3 },
       mmr: { enabled: true, mean: 1000, spread: 200, max_delta: 45, k: 32, regression_bps: 150 },
       day_unit_seconds: 60,
-      season_bags: 10,
       claim_window_seconds: 3600,
     });
     expect(decodeLedgerPreset(fields)).toEqual({
@@ -160,7 +159,6 @@ describe("committed contract readbacks", () => {
       swordPrice: String(12n + (2n << 128n)),
       shieldPrice: String(13n + (3n << 128n)),
       dayUnit: 60,
-      bags: 10,
       claimWindow: 3600,
     });
     expect(() => decodeLedgerPreset([...fields.slice(0, 16), "6", ...fields.slice(16)])).toThrow(

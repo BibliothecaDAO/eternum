@@ -258,10 +258,10 @@ export const decodeFrontierSeason = (fields: readonly string[]) => {
 };
 /**
  * Preset: entry_fee (2), protocol_cut_bps, chest_lords_bps, paid_fraction_bps, decay_bps, sword_price (2),
- * shield_price (2), mmr (6), day_unit, bags, claim_window.
+ * shield_price (2), mmr (6), day_unit, claim_window.
  */
 export const decodeLedgerPreset = (fields: readonly string[]) => {
-  if (fields.length !== 19) throw new Error("invalid_ledger_preset");
+  if (fields.length !== 18) throw new Error("invalid_ledger_preset");
   return {
     entryFee: ledgerU256(fields[0]!, fields[1]!),
     protocolCut: ledgerInteger(fields[2]!),
@@ -271,8 +271,7 @@ export const decodeLedgerPreset = (fields: readonly string[]) => {
     swordPrice: ledgerU256(fields[6]!, fields[7]!),
     shieldPrice: ledgerU256(fields[8]!, fields[9]!),
     dayUnit: ledgerInteger(fields[16]!),
-    bags: ledgerInteger(fields[17]!),
-    claimWindow: ledgerInteger(fields[18]!),
+    claimWindow: ledgerInteger(fields[17]!),
   };
 };
 

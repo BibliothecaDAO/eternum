@@ -7,7 +7,7 @@ import { response } from "../test-support/abi";
 const terms = { start: 10, end: 110, seed: "0x99", dayUnit: 5, claimWindow: 604800 };
 const call = vi.fn();
 let closed = false;
-let bags = 1;
+let end = 110;
 const provider = {
   getBlock: async () => ({ block_number: 12, block_hash: "0xaa", status: "ACCEPTED_ON_L2", timestamp: 50 }),
   callContract: call,
@@ -15,14 +15,14 @@ const provider = {
 const read = (native = terms) => readFrontierFunding(provider, "0x10", { chainId: "0x1", gameId: 7 }, native);
 beforeEach(() => {
   closed = false;
-  bags = 1;
+  end = 110;
   call.mockReset();
   call.mockImplementation(async ({ entrypoint }) =>
     entrypoint === "get_frontier"
       ? response(ledgerAbi, entrypoint, {
           funded: true,
           start: 10,
-          end: 110,
+          end,
           pool: { low: 100n * 10n ** 18n, high: 0 },
           paid: { low: 0, high: 0 },
           closed,
@@ -39,7 +39,6 @@ beforeEach(() => {
           shield_price: { low: 0, high: 0 },
           mmr: { enabled: false, mean: 0, spread: 0, max_delta: 0, k: 0, regression_bps: 0 },
           day_unit_seconds: 5,
-          season_bags: bags,
           claim_window_seconds: 604800,
         }),
   );
@@ -51,7 +50,7 @@ it("binds the funded pool and every native clock rule at one confirmed ledger he
     ["get_preset", 12],
   ]);
 });
-it.each([{ start: 11 }, { end: 111 }, { seed: "0x98" }, { dayUnit: 10 }, { claimWindow: 604801 }])(
+it.each([{ start: 11 }, { end: 210 }, { seed: "0x98" }, { dayUnit: 10 }, { claimWindow: 604801 }])(
   "refuses different native terms %j",
   async (change) => {
     await expect(read({ ...terms, ...change })).rejects.toThrow("frontier_funding_differs_from_game");
@@ -67,9 +66,13 @@ it("binds historical claims after their funded pool closes", async () => {
   closed = true;
   expect(await read()).toMatchObject({ closed: true, claimDeadline: 604910 });
 });
-it("refuses a different ledger bag count", async () => {
-  bags = 2;
-  await expect(read()).rejects.toThrow("frontier_funding_differs_from_game");
+it.each([1, 2, 21, 30])("binds %i whole bags from the game without a preset duration", async (bags) => {
+  end = terms.start + bags * 20 * terms.dayUnit;
+  expect(await read({ ...terms, end })).toMatchObject({ end, claimDeadline: end + terms.claimWindow });
+});
+it("refuses partial bags even if the ledger and game agree", async () => {
+  end = 111;
+  await expect(read({ ...terms, end })).rejects.toThrow("frontier_funding_differs_from_game");
 });
 
 it("returns the ledger deposit independently of any preset funding amount", async () => {

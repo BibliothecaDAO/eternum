@@ -113,7 +113,7 @@ test("one Frontier season is created once by every tick and continued like any f
   expect(run.request).toMatchObject({
     version: "5",
     gameStartTime: seasonStart,
-    durationSeconds: seasonSeconds(frontierPreset.seasonBags, frontierPreset.dayUnitSeconds),
+    durationSeconds: seasonSeconds(21, frontierPreset.dayUnitSeconds),
   });
   await store.retry(run.id, "rpc down", 60_000);
   // A tick while the season waits to retry must not reset its attempts or its delay.

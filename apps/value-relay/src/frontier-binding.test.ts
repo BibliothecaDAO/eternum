@@ -97,7 +97,7 @@ beforeEach(() => {
   rpc.shardCall.mockResolvedValue(["0x5", "5", "0", "1", "0", "0", "10", "110", "0", "0x99"]);
   rpc.ledgerCall.mockImplementation(async (query) =>
     query.entrypoint === "get_preset"
-      ? ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "5", "1", "604800"]
+      ? ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "5", "604800"]
       : ["1", "10", "110", "100000000000000000000", "0", "0", "0", "0", "2", "0x99"],
   );
 });
@@ -195,6 +195,13 @@ it("keeps a funding mismatch unavailable when the snapshot pool differs", async 
       }),
     ),
   );
+  await expect(Effect.runPromise(bind().frontierSeason(7, 50))).rejects.toMatchObject({
+    operation: "resolve_frontier_funding",
+  });
+});
+
+it("refuses a different whole-bag end in the shared relay and monitor receipt binding", async () => {
+  rpc.shardCall.mockResolvedValue(["0x5", "5", "0", "1", "0", "0", "10", "210", "0", "0x99"]);
   await expect(Effect.runPromise(bind().frontierSeason(7, 50))).rejects.toMatchObject({
     operation: "resolve_frontier_funding",
   });
