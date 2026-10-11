@@ -463,8 +463,7 @@ it.each(["Frontier", "check-frontier-abc"])(
     const models = ["ChestRules", "LordsBudget", "LordsWithdrawal"];
     const chests = {
       pool: 1000n,
-      price_ceiling: 50n,
-      estimate_days: 5n,
+      price: 50n,
       claim_window_seconds: 604800n,
       shares: { common: 1n, uncommon: 2n, rare: 4n, epic: 10n, legendary: 20n },
     };
@@ -482,9 +481,6 @@ it.each(["Frontier", "check-frontier-abc"])(
             pool_left: 900n,
             open: 20n,
             day: 1n,
-            price: 1n,
-            estimate: 10n,
-            rolled_shares: 20n,
           }),
           rowEvent("LordsWithdrawal", ["1", "85"], { account: 273n, amount: 100n }),
           gameEvent("1", "1", "0", "5", name),
