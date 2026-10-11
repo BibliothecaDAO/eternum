@@ -1,7 +1,7 @@
 /**
- * The environment a build serves, from the one build constant deploy-client.yml sets per GitHub environment
- * (VITE_PUBLIC_ENVIRONMENT), never from the hostname. Anything but production is the dev environment, so a build that
- * lost the constant wears the Dev mark rather than passing for production.
+ * The environment a build serves, from the one build constant the deployment command sets (VITE_PUBLIC_ENVIRONMENT),
+ * never from the hostname. Anything but production is the dev environment, so a build that lost the constant wears the
+ * Dev mark rather than passing for production.
  */
 export const isDevEnvironment = (buildConstant: string | undefined): boolean => buildConstant !== "production";
 

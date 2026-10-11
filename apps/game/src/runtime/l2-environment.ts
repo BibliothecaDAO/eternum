@@ -17,7 +17,7 @@ const NETWORKS = { SN_MAIN: "mainnet" } as const;
 export const l2EnvironmentProblem = (environment: string | undefined, rpcUrl: string | undefined): string | null => {
   const { chain } = environmentL2(valueEnvironmentOf(environment));
   if (!rpcUrl?.trim())
-    return `VITE_PUBLIC_L2_RPC_URL is required: the team's Alchemy URL for ${chain}, from .env.local or the L2_RPC_URL secret`;
+    return `VITE_PUBLIC_L2_RPC_URL is required: the team's Alchemy URL for ${chain}, from .env.local or the deployment command`;
   return isAlchemyFor(rpcUrl, NETWORKS[chain])
     ? null
     : `VITE_PUBLIC_L2_RPC_URL must be the https Alchemy endpoint for ${chain} (starknet-${NETWORKS[chain]}.g.alchemy.com)`;
