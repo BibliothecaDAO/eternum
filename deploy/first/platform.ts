@@ -4,6 +4,7 @@ import { accountIdentity, newKey, type Keys } from "./chain";
 import { root, type Inputs, type Target } from "./settings";
 import type { PrivateStore } from "./private-store";
 import { command } from "./process";
+import { PublicError } from "./dates";
 
 export const workers = [
   { id: "guardian", directory: "apps/guardian", config: "wrangler.jsonc", name: "realms-guardian" },
@@ -66,6 +67,31 @@ export function workerSecrets(worker: Worker, inputs: Inputs, secrets: Secrets, 
       return { L2_RPC_URL: inputs.rpc };
   }
 }
+function cloudflareFamily(path: string) {
+  if (/^\/accounts\/[^/]+\/workers\/scripts(?:\/|$)/.test(path)) return "Workers scripts";
+  if (/^\/accounts\/[^/]+\/d1(?:\/|$)/.test(path)) return "D1";
+  if (/^\/accounts\/[^/]+\/r2(?:\/|$)/.test(path)) return "R2 buckets";
+  if (/^\/accounts\/[^/]+\/pages(?:\/|$)/.test(path)) return "Pages";
+  if (/^\/zones\/[^/]+\/dns_records(?:[/?]|$)/.test(path)) return "DNS";
+  if (/^\/zones(?:[/?]|$)/.test(path)) return "zone";
+  return "accounts";
+}
+async function cloudflareResult<T>(response: Response, path: string): Promise<T> {
+  const body = (await response.json().catch(() => undefined)) as
+    | { success?: boolean; result?: T; errors?: { code?: unknown }[] }
+    | undefined;
+  if (!response.ok || body?.success !== true) {
+    const codes = Array.isArray(body?.errors)
+      ? body.errors
+          .map((error) => error?.code)
+          .filter((code) => typeof code === "number" && Number.isSafeInteger(code) && code >= 0)
+      : [];
+    throw new PublicError(
+      `Cloudflare refused ${cloudflareFamily(path)}: ${response.status}${codes.length ? ` (${codes.join(", ")})` : ""}. Check that the token has this permission and that the product is enabled on the account.`,
+    );
+  }
+  return body.result as T;
+}
 export class Platform {
   constructor(
     readonly target: Target,
@@ -82,9 +108,7 @@ export class Platform {
       headers: { Authorization: `Bearer ${this.inputs.cloudflareToken}`, "Content-Type": "application/json" },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
-    const result = (await response.json()) as { success: boolean; result: T };
-    if (!response.ok || !result.success) throw new Error("Cloudflare request failed");
-    return result.result;
+    return cloudflareResult<T>(response, path);
   }
   async accountId() {
     if (this.account) return this.account;
@@ -178,17 +202,14 @@ export class RelayDiagnostics extends WorkerEntrypoint {}`;
       const data = new FormData();
       data.append("metadata", JSON.stringify({ main_module: "bootstrap.js", compatibility_date: "2026-09-15" }));
       data.append("bootstrap.js", new Blob([module], { type: "application/javascript+module" }), "bootstrap.js");
-      const response = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${await this.accountId()}/workers/scripts/${name}`,
-        {
-          method: "PUT",
-          redirect: "error",
-          headers: { Authorization: `Bearer ${this.inputs.cloudflareToken}` },
-          body: data,
-        },
-      );
-      if (!response.ok || !((await response.json()) as { success: boolean }).success)
-        throw new Error("Worker bootstrap failed");
+      const path = `/accounts/${await this.accountId()}/workers/scripts/${name}`;
+      const response = await fetch(`https://api.cloudflare.com/client/v4${path}`, {
+        method: "PUT",
+        redirect: "error",
+        headers: { Authorization: `Bearer ${this.inputs.cloudflareToken}` },
+        body: data,
+      });
+      await cloudflareResult(response, path);
     }
   }
   private fingerprints(values: Record<string, string>) {
@@ -219,11 +240,22 @@ export class RelayDiagnostics extends WorkerEntrypoint {}`;
       this.store.write(`uploaded-${worker.id}.json`, { ...sent, ...this.fingerprints(missing) });
     }
   }
-  async resourcesPresent() {
+  private async readResources() {
     const id = await this.accountId();
-    const databases = await this.cf<{ name: string }[]>(`/accounts/${id}/d1/database`);
-    const pages = await this.cf<{ name: string }[]>(`/accounts/${id}/pages/projects`);
-    const buckets = await this.cf<{ buckets: { name: string }[] }>(`/accounts/${id}/r2/buckets`);
+    const [databases, pages, buckets, zones] = await Promise.all([
+      this.cf<{ name: string }[]>(`/accounts/${id}/d1/database`),
+      this.cf<{ name: string }[]>(`/accounts/${id}/pages/projects`),
+      this.cf<{ buckets: { name: string }[] }>(`/accounts/${id}/r2/buckets`),
+      this.cf<{ id: string }[]>(`/zones?name=${this.target.zone}`),
+      this.scripts(),
+    ]);
+    return { id, databases, pages, buckets, zones };
+  }
+  async checkAccess() {
+    await this.readResources();
+  }
+  async resourcesPresent() {
+    const { id, databases, pages, buckets, zones } = await this.readResources();
     const baseReady =
       ["realms-identity", "realms-launch"].every((name) =>
         databases.some((db) => db.name === `${name}-${this.target.worker}`),
@@ -233,7 +265,6 @@ export class RelayDiagnostics extends WorkerEntrypoint {}`;
     if (!baseReady) return false;
     const hostname = new URL(this.target.origin).hostname;
     const domains = await this.cf<{ name: string }[]>(`/accounts/${id}/pages/projects/${this.target.pages}/domains`);
-    const zones = await this.cf<{ id: string }[]>(`/zones?name=${this.target.zone}`);
     if (zones.length !== 1) throw new Error("Cloudflare zone unavailable");
     const records = await this.cf<{ type: string; content: string }[]>(
       `/zones/${zones[0]!.id}/dns_records?name=${hostname}`,

@@ -143,7 +143,7 @@ export function preparationSteps(context: Deployment): Step[] {
           return waiting(
             `Review and commit deploy/release/${context.target.release}.json and provision ${context.target.box} before funding an account`,
           );
-        await context.platform.accountId();
+        await context.platform.checkAccess();
         await command({ argv: ["gh", "api", "repos/{owner}/{repo}"] });
         await boxRead(
           context.target,
@@ -151,7 +151,7 @@ export function preparationSteps(context: Deployment): Step[] {
         );
         return {
           done: true,
-          detail: "Cloudflare account, GitHub access, reviewed release and provisioned box checked",
+          detail: "Cloudflare resource reads, GitHub access, reviewed release and provisioned box checked",
         };
       },
       apply: async () => {},

@@ -490,8 +490,11 @@ test("the actual default command cannot write files, submit RPC or generate keys
 import { mock } from 'bun:test';
 import * as fs from 'node:fs';
 const originalOpen = fs.openSync;
+const originalRead = fs.readFileSync;
 const deny = () => { process.stderr.write('FORBIDDEN_WRITE'); throw new Error('dry mutation'); };
-mock.module('node:fs', () => ({...fs, writeFileSync:deny, mkdirSync:deny, renameSync:deny, unlinkSync:deny,
+mock.module('node:fs', () => ({...fs,
+ readFileSync:(path, ...rest)=>String(path).endsWith('/contracts/common/addresses/dev.json') ? '{}' : originalRead(path,...rest),
+ writeFileSync:deny, mkdirSync:deny, renameSync:deny, unlinkSync:deny,
  openSync:(path, flags, ...rest)=> { if (flags !== fs.constants.O_RDONLY + fs.constants.O_NOFOLLOW && flags !== fs.constants.O_RDONLY) return deny(); return originalOpen(path,flags,...rest); }}));
 const operations = [];
 globalThis.fetch = async (url, init={}) => {

@@ -1,3 +1,5 @@
+import { PublicError } from "./dates";
+
 export interface Observation {
   done: boolean;
   waiting?: string;
@@ -19,7 +21,9 @@ export async function runSteps(steps: Step[], apply: boolean, output: (line: str
       before = await step.inspect();
     } catch (error) {
       if (apply) throw error;
-      output(`${step.name}: unavailable; read failed; signer ${step.payer}; ${step.cost}`);
+      output(
+        `${step.name}: ${error instanceof PublicError ? error.message : "unavailable; read failed"}; signer ${step.payer}; ${step.cost}`,
+      );
       continue;
     }
     output(
