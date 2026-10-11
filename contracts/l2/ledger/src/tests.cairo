@@ -2351,3 +2351,14 @@ fn only_operator_cancels_player_slots_and_paused_refunds_return_each_payment() {
     assert!(fixture.ledger.get_slot(key).pool == 0);
     assert!(safe.refund(key).is_err());
 }
+
+#[test]
+fn ranked_season_pool_keeps_its_u128_capacity() {
+    let entry_fee = 0x1000000000000000000000000;
+    let fixture = deploy_fixture(Preset { entry_fee, ..default_preset() });
+    fund_and_approve_player(@fixture, player(0), entry_fee);
+    start_cheat_caller_address(fixture.ledger_address, player(0));
+    fixture.ledger.register(SLOT_KEY, false, false);
+    apply_results(@fixture, array![row(player(0), 1)]);
+    assert!(fixture.ledger.get_season(1).pool == entry_fee);
+}

@@ -1012,7 +1012,7 @@ pub mod GameLedger {
                 season.chest_reserve += chest_lords;
                 season.pool += net_pool - chest_lords;
                 assert!(
-                    season.pool + season.chest_reserve <= 0xffffffffffffffffffffffff,
+                    season.pool + season.chest_reserve <= 0xffffffffffffffffffffffffffffffff,
                     "Ledger: season pool exceeds u128",
                 );
                 self.seasons.entry(slot.season_id).write(season);
