@@ -8,7 +8,7 @@ import { readFrontierGame } from "../../contracts/l2/ledger/scripts/commands/dep
 import { readFrontierFunding, assertFrontierPreset } from "../../packages/value-ledger/src/frontier-funding";
 import { isMissing, send, balance } from "./chain";
 import { nativeDocument, boxRead, remoteCheckout, releaseDirectory } from "./box";
-import { workers } from "./platform";
+import { workersReady, deployWorkers, clientReady, deployClient } from "./publish";
 import { command, shell } from "./process";
 import { seconds, PublicError } from "./dates";
 import { root, WEI } from "./settings";
@@ -89,12 +89,7 @@ async function workflowDone(context: Deployment, workflow: string, revision: str
       ],
     }),
   ) as { conclusion: string; status: string; event: string; displayTitle: string }[];
-  return runs.some(
-    (run) =>
-      run.conclusion === "success" &&
-      (workflow !== "validation.yml" || run.event === "push") &&
-      (workflow !== "deploy-client.yml" || run.displayTitle.startsWith(`Deploy client to ${context.target.worker} `)),
-  );
+  return runs.some((run) => run.conclusion === "success" && (workflow !== "validation.yml" || run.event === "push"));
 }
 async function games(context: Deployment) {
   const release = releaseInputs(context)!;
@@ -250,26 +245,14 @@ export function deliverySteps(context: Deployment): Step[] {
       inspect: async () => {
         const revision = await releaseReady(context);
         if (!revision || !context.platform) return wait("Released revision and Cloudflare credentials needed");
-        const versions = await Promise.all(workers.map((worker) => context.platform!.deployedRevision(worker)));
         return {
-          done: versions.every((version) => version === revision),
+          done: await workersReady(context.platform, revision),
           detail: "migrate D1 and deploy all six Workers at the release revision; preserve existing secrets",
         };
       },
       apply: async () => {
         const revision = (await releaseReady(context))!;
-        // The address-book commit is contained in the merge; a clean worktree must use that exact tree.
-        const localTree = (await command({ argv: ["git", "rev-parse", "HEAD^{tree}"] })).trim();
-        await command({ argv: ["git", "fetch", "origin", revision] });
-        const releasedTree = (await command({ argv: ["git", "rev-parse", `${revision}^{tree}`] })).trim();
-        if (localTree !== releasedTree) throw new Error("Checkout the released source before deploying Workers");
-        await command({ argv: ["pnpm", "run", "build:packages"] });
-        for (const worker of workers) {
-          if ((await context.platform!.deployedRevision(worker)) === revision) continue;
-          if (["identity", "launch"].includes(worker.id))
-            await context.platform!.wrangler(worker, ["d1", "migrations", "apply", "DB", "--remote"]);
-          await context.platform!.wrangler(worker, ["deploy", "--tag", revision]);
-        }
+        await deployWorkers(context.platform!, revision);
       },
     },
     {
@@ -321,24 +304,14 @@ export function deliverySteps(context: Deployment): Step[] {
         const revision = await releaseReady(context);
         return revision
           ? {
-              done: await workflowDone(context, "deploy-client.yml", revision),
-              detail: "client workflow builds from the public address book, deploys Pages and verifies modules/routes",
+              done: await clientReady(context.platform!, revision),
+              detail:
+                "build locally, verify chain/RPC and assets, publish Pages with wrangler, then verify live modules/routes",
             }
           : wait("Release needed");
       },
       apply: async () => {
-        await command({
-          argv: [
-            "gh",
-            "workflow",
-            "run",
-            "deploy-client.yml",
-            "--ref",
-            releaseInputs(context)!.package,
-            "-f",
-            `environment=${context.target.worker}`,
-          ],
-        });
+        await deployClient(context.platform!, (await releaseReady(context))!);
       },
     },
     {

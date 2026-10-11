@@ -1,15 +1,5 @@
 import { afterEach, expect, mock, test } from "bun:test";
-import {
-  readFileSync,
-  chmodSync,
-  existsSync,
-  lstatSync,
-  mkdtempSync,
-  mkdirSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from "node:fs";
+import { chmodSync, existsSync, lstatSync, mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Account, hash, type RpcProvider } from "starknet";
@@ -369,7 +359,6 @@ test("dry platform refuses every write entry before any network or subprocess ca
   await expect(platform.cf("/anything", "POST", {})).rejects.toThrow("Dry run");
   await expect(platform.bootstrapWorkers()).rejects.toThrow("Dry run");
   await expect(platform.wrangler(workers[0], ["deploy"])).rejects.toThrow("Dry run");
-  await expect(platform.installGithub(secrets, keys)).rejects.toThrow("Dry run");
   expect(fetch).not.toHaveBeenCalled();
 });
 
@@ -512,8 +501,7 @@ mock.module(${JSON.stringify(join(root, "deploy/first/process.ts"))}, () => ({sh
   return String(input).includes("print('present')") ? 'present' : '';
  }
  if (argv[0] === 'git' && argv[1] === 'ls-remote') return '';
- if (argv[0] === 'gh' && argv[1] === 'api') return argv[2].endsWith('/environments') ? '{"environments":[]}' : '{}';
- if (argv[0] === 'gh' && argv[1] === 'secret' && argv[2] === 'list') return '[]';
+ if (argv[0] === 'gh' && argv[1] === 'api' && argv[2] === 'repos/{owner}/{repo}') return '{}';
  return deny();
 }}));
 `,
@@ -579,31 +567,3 @@ test("resuming an existing ledger refuses different saved accounts", async () =>
   allowed = false;
   await expect(verifyLedgerAccounts(provider, assets.ledger, "0x30", "0x31")).rejects.toThrow("different accounts");
 });
-
-test.each(["dev", "production"] as const)(
-  "client workflow derives %s coordinates from the deployment table",
-  async (environment) => {
-    const { base } = storage();
-    const workflow = readFileSync(join(root, ".github/workflows/deploy-client.yml"), "utf8");
-    const script = workflow.split("node --input-type=module <<'JS'\n")[1]!.split("          JS")[0]!;
-    const path = join(base, "github-env");
-    const child = Bun.spawn(["node", "--input-type=module"], {
-      cwd: root,
-      stdin: new Blob([script]),
-      stdout: "pipe",
-      stderr: "pipe",
-      env: {
-        PATH: process.env.PATH!,
-        TARGET: environments[environment].worker,
-        VITE_PUBLIC_L2_RPC_URL: input.rpc,
-        GITHUB_ENV: path,
-      },
-    });
-    expect(await child.exited).toBe(0);
-    expect(await new Response(child.stdout).text()).toBe("");
-    expect(await new Response(child.stderr).text()).toBe("");
-    expect(readFileSync(path, "utf8")).toBe(
-      `CLIENT_ORIGIN=${environments[environment].origin}\nCLIENT_ZONE=${environments[environment].zone}\nPAGES_PROJECT=${environments[environment].pages}\n`,
-    );
-  },
-);

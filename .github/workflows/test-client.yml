@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    # The live renderer smokes moved to deploy-client.yml: a PR gate must
+    # Live deployment checks run in deploy/first: a PR gate must
     # stay hermetic — external infra (a live node blip) must not be
     # able to fail it — and "does the built artifact boot" is a question
     # answered where the artifact ships.

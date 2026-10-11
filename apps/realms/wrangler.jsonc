@@ -1,7 +1,7 @@
 // The identity Worker. Staging serves play.dev-realms.party/api, on the dev domain's own zone; production serves
 // play.realms.party/api at the cutover. Either way the app and its identity routes share one origin.
 // Each environment has its own D1 database and its own secrets (BETTER_AUTH_SECRET, L2_RPC_URL), which the
-// deploy workflow sets from that environment's GitHub secrets.
+// owner's deployment command supplies directly to this Worker on standard input.
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "realms-identity",

@@ -345,13 +345,13 @@ export function preparationSteps(context: Deployment): Step[] {
       apply: async () => context.platform!.prepareResources(),
     },
     {
-      name: "Worker and GitHub secrets",
+      name: "Worker secrets",
       payer: "none",
       cost: "0 STRK",
       inspect: async () => {
         if (!context.platform || !context.secrets || !context.keys || !context.inputs)
           return waiting("Private credentials unavailable");
-        let complete = await context.platform.githubReady(context.secrets, context.keys);
+        let complete = true;
         for (const worker of workers) {
           complete &&= await context.platform.secretsPresent(
             worker,
@@ -373,7 +373,6 @@ export function preparationSteps(context: Deployment): Step[] {
             worker,
             workerSecrets(worker, context.inputs!, context.secrets!, context.keys!),
           );
-        await context.platform!.installGithub(context.secrets!, context.keys!);
       },
     },
     {

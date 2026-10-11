@@ -41,8 +41,8 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
 
-      - name: Check staging Worker deployment follows next without path gaps
-        run: bun test ./.github/scripts/deploy-workers.test.ts
+      - name: Check workflows cannot read stored secrets
+        run: bun test ./.github/scripts/workflow-credentials.test.ts
 
       - name: Check committed env files name no third-party RPC
         run: |

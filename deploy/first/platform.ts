@@ -92,7 +92,7 @@ export class Platform {
     if (accounts.length !== 1) throw new Error("Scope the Cloudflare token to exactly one account");
     return (this.account = accounts[0]!.id);
   }
-  async deployedRevision(worker: Worker) {
+  async deployedVersion(worker: Worker) {
     const name = worker.name + this.target.workerSuffix;
     if (!(await this.scripts()).some((script) => script.id === name)) return undefined;
     const deployments = await this.cf<{ deployments: { versions: { version_id: string; percentage: number }[] }[] }>(
@@ -103,7 +103,33 @@ export class Platform {
     const version = await this.cf<{ annotations?: Record<string, string> }>(
       `/accounts/${await this.accountId()}/workers/scripts/${name}/versions/${versions[0].version_id}`,
     );
-    return version.annotations?.["workers/tag"];
+    return { id: versions[0].version_id, revision: version.annotations?.["workers/tag"] };
+  }
+  async deployedRevision(worker: Worker) {
+    return (await this.deployedVersion(worker))?.revision;
+  }
+  async clientRevision() {
+    const project = await this.cf<{
+      canonical_deployment?: {
+        environment: string;
+        latest_stage: { name: string; status: string };
+        deployment_trigger: { metadata: { commit_hash: string } };
+      };
+    }>(`/accounts/${await this.accountId()}/pages/projects/${this.target.pages}`);
+    const deployment = project.canonical_deployment;
+    return deployment?.environment === "production" &&
+      deployment.latest_stage.name === "deploy" &&
+      deployment.latest_stage.status === "success"
+      ? deployment.deployment_trigger.metadata.commit_hash
+      : undefined;
+  }
+  async cloudflareEnvironment() {
+    return {
+      CLOUDFLARE_API_TOKEN: this.inputs.cloudflareToken,
+      CLOUDFLARE_ACCOUNT_ID: await this.accountId(),
+      WRANGLER_LOG_PATH: "/dev/null",
+      XDG_CONFIG_HOME: this.store.directory,
+    };
   }
   async scripts() {
     return this.cf<{ id: string }[]>(`/accounts/${await this.accountId()}/workers/scripts`);
@@ -131,10 +157,7 @@ export class Platform {
       cwd: resolve(root, worker.directory),
       input,
       env: {
-        CLOUDFLARE_API_TOKEN: this.inputs.cloudflareToken,
-        CLOUDFLARE_ACCOUNT_ID: await this.accountId(),
-        WRANGLER_LOG_PATH: "/dev/null",
-        XDG_CONFIG_HOME: this.store.directory,
+        ...(await this.cloudflareEnvironment()),
       },
     });
   }
@@ -196,58 +219,12 @@ export class RelayDiagnostics extends WorkerEntrypoint {}`;
       this.store.write(`uploaded-${worker.id}.json`, { ...sent, ...this.fingerprints(missing) });
     }
   }
-  private async githubEnvironmentPresent() {
-    const result = JSON.parse(await command({ argv: ["gh", "api", "repos/{owner}/{repo}/environments"] })) as {
-      environments: { name: string }[];
-    };
-    return result.environments.some((environment) => environment.name === this.target.worker);
-  }
-  async githubSecrets() {
-    if (!(await this.githubEnvironmentPresent())) return [];
-    return JSON.parse(
-      await command({ argv: ["gh", "secret", "list", "--env", this.target.worker, "--json", "name"] }),
-    ) as { name: string }[];
-  }
-  private async githubValues(secrets: Secrets, keys: Keys) {
-    // Guardian belongs only to its Worker. The deployer and cold admin keys never enter this map.
-    return {
-      CLOUDFLARE_API_TOKEN: this.inputs.cloudflareToken,
-      CLOUDFLARE_ACCOUNT_ID: await this.accountId(),
-      ...Object.assign(
-        {},
-        ...workers
-          .filter((worker) => worker.id !== "guardian")
-          .map((worker) => workerSecrets(worker, this.inputs, secrets, keys)),
-      ),
-    } as Record<string, string>;
-  }
-  async githubReady(secrets: Secrets, keys: Keys) {
-    const existing = new Set((await this.githubSecrets()).map((secret) => secret.name));
-    const sent = this.store.read<Record<string, string>>("uploaded-github.json") ?? {};
-    return Object.entries(this.fingerprints(await this.githubValues(secrets, keys))).every(
-      ([name, digest]) => existing.has(name) && sent[name] === digest,
-    );
-  }
-  async installGithub(secrets: Secrets, keys: Keys) {
-    if (!this.apply) throw new Error("Dry run cannot write GitHub");
-    const values = await this.githubValues(secrets, keys);
-    const fingerprints = this.fingerprints(values);
-    const existing = new Set((await this.githubSecrets()).map((secret) => secret.name));
-    const sent = this.store.read<Record<string, string>>("uploaded-github.json") ?? {};
-    for (const [name, value] of Object.entries(values))
-      if (!existing.has(name) || sent[name] !== fingerprints[name]) {
-        await command({ argv: ["gh", "secret", "set", name, "--env", this.target.worker], input: value });
-        sent[name] = fingerprints[name]!;
-        this.store.write("uploaded-github.json", sent);
-      }
-  }
   async resourcesPresent() {
     const id = await this.accountId();
     const databases = await this.cf<{ name: string }[]>(`/accounts/${id}/d1/database`);
     const pages = await this.cf<{ name: string }[]>(`/accounts/${id}/pages/projects`);
     const buckets = await this.cf<{ buckets: { name: string }[] }>(`/accounts/${id}/r2/buckets`);
     const baseReady =
-      (await this.githubEnvironmentPresent()) &&
       ["realms-identity", "realms-launch"].every((name) =>
         databases.some((db) => db.name === `${name}-${this.target.worker}`),
       ) &&
@@ -268,19 +245,6 @@ export class RelayDiagnostics extends WorkerEntrypoint {}`;
   }
   async prepareResources() {
     if (!this.apply) throw new Error("Dry run cannot create deployment resources");
-    if (!(await this.githubEnvironmentPresent()))
-      await command({
-        argv: [
-          "gh",
-          "api",
-          "--method",
-          "PUT",
-          `repos/{owner}/{repo}/environments/${this.target.worker}`,
-          "--input",
-          "-",
-        ],
-        input: "{}",
-      });
     const id = await this.accountId();
     const databases = await this.cf<{ name: string }[]>(`/accounts/${id}/d1/database`);
     for (const name of ["realms-identity", "realms-launch"])

@@ -34,11 +34,12 @@ been made for these new accounts or the revised reward contracts.
 ## Before running
 
 Install Bun 1.4, Node 22, pnpm 10.25, git, GitHub CLI and SSH. Install the repository's locked dependencies.
-Authenticate `gh` with repository, Actions and environment-secret permissions. The Cloudflare token must be scoped to
-exactly one account and have Workers, D1, R2, Pages and zone DNS access. The Resend key needs the environment's verified
-email sending domain. The one Alchemy URL is also used in the browser build and is therefore public to players.
+Authenticate `gh` with repository and Actions read permissions (plus permission to push the public address book). The
+Cloudflare token must be scoped to exactly one account and have Workers, D1, R2, Pages and zone DNS access. The Resend
+key needs the environment's verified email sending domain. The one Alchemy URL is also used in the browser build and is
+therefore public to players.
 
-`environments.json` is the one dev/production table for this command and the client workflow. Dev uses the reviewed
+`environments.json` is the one dev/production table for this command. Dev uses the reviewed
 `deploy/release/staging.json`, SSH alias `realms-dev`, and the existing dev tunnel. Production uses the public
 `mainnet.json` asset addresses and requires a reviewed `deploy/release/production.json`, SSH alias `realms-production`
 and its own working tunnel/host before first deployment. The command does not format a disk, invent production host
@@ -68,9 +69,10 @@ run on the owner's laptop. No mainnet private key or Alchemy URL goes to that ho
 8. Create missing D1 databases, the status R2 bucket, Pages project and domain. Refuse conflicting existing DNS.
    First-install Worker placeholders have no routes and return 503; their named entrypoints break the binding cycle.
    Existing Workers are preserved until their actual deployment step.
-9. Deliver generated Worker and GitHub secrets on standard input. An existing secret name alone cannot prove its value:
-   local upload fingerprints plus remote names determine which uploads need repeating. Guardian is the exception: its
-   existing key is always preserved. The deployer and cold keys are never delivered to either service.
+9. Deliver each Worker's generated secrets directly to that Worker on standard input. An existing secret name alone
+   cannot prove its value: local upload fingerprints plus remote names determine which uploads need repeating. Guardian
+   is the exception: its existing key is always preserved. Nothing is uploaded to GitHub. The deployer and cold keys
+   stay on the owner's machine.
 10. Install the operator token on the box if absent. Its protected file is checked against the saved environment token.
 11. Commit and push **only** the public environment address book to `stack/node-first`. Unrelated staged changes stop
     this step. Print the exact `gh pr merge <number> --merge` command; wait for the owner to merge and rerun.
@@ -82,8 +84,9 @@ run on the owner's laptop. No mainnet private key or Alchemy URL goes to that ho
     the reviewed new shard. Preserve old data and volumes. The existing deployment check proves gameplay and the
     on-chain launcher/ledger-operator handoff before activation. An unrelated container or conflicting new-chain data
     stops the command.
-15. Dispatch the client workflow for the release; its checks verify emitted files and published routes. Rerun after the
-    workflow completes. Origin, zone name and Pages project come from the table, not GitHub variables.
+15. Build and publish the client locally with wrangler. Check its chain/RPC, recovery tests, source assets, emitted PWA
+    assets, cache rules and published modules/routes. Remove public sourcemaps before upload. Origin, zone and Pages
+    project come from the table. A matching remote release is checked without uploading it again.
 16. Show both seasons and the deposit, then set missing calendar phases to the exact entered dates. Existing phases are
     preserved. No automatic date is chosen. Leave the process running: it waits for the launch cron and the confirmed
     Frontier game, reads the box's **own `data/native-world.json`**, checks its chain against Herald, and verifies the
@@ -133,3 +136,17 @@ transaction and read no live private key:
 pnpm test:deployment
 python3 -m unittest discover -s deploy/athanor/scripts -p 'test_*.py'
 ```
+
+## Remove unused GitHub secrets
+
+A push to `next` deploys nothing. The Worker and client deploy workflows are deleted. The release image workflow uses
+only the built-in `GITHUB_TOKEN`; the deployment command never reads or writes GitHub secrets or environments. GitHub is
+used only to read validation/release/merge state and to push the public address book through git.
+
+The owner can delete these stored deployment secrets from repository and environment settings; none has a workflow
+reader: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `L2_RPC_URL`, `BETTER_AUTH_SECRET`, `OPERATOR_TOKEN`,
+`RESEND_API_KEY`, `WEB_PUSH_VAPID_PUBLIC_KEY`, `WEB_PUSH_VAPID_PRIVATE_KEY`, `DISCORD_CLIENT_ID`,
+`DISCORD_CLIENT_SECRET`, `CLIENT_SENTRY_DSN`, `LAUNCH_DEPLOYER_PRIVATE_KEY`. If copied by an earlier deployment, also
+delete `LEDGER_OPERATOR_PRIVATE_KEY`, `LEDGER_OPERATOR_ADDRESS`, `SHARD_LEDGER_OPERATOR_PRIVATE_KEY`,
+`PAUSER_PRIVATE_KEY` and `PAUSER_ACCOUNT_ADDRESS`. Keep the actual Worker secrets in Cloudflare; this is removal of
+their unnecessary GitHub copies. The command does not perform these deletions or call `gh secret`.

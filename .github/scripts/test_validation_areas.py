@@ -24,7 +24,6 @@ class CiFileOwnership(unittest.TestCase):
     def test_static_owned_ci_files_select_no_further_area(self):
         for path in (
             ".github/workflows/validation.yml",
-            ".github/workflows/deploy-workers.yml",
             ".github/workflows/shard-images.yml",
             ".github/scripts/validation_areas.py",
         ):
