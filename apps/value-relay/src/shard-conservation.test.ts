@@ -4,6 +4,9 @@ import { shardConservationPort } from "./shard-conservation";
 import { runMonitor, type MonitorProgress } from "./monitor";
 import type { ConfirmedSnapshot } from "./shard-snapshot";
 import { RelayFailure, type MonitorPorts } from "./ports";
+import { CallData } from "starknet";
+import schema from "../../../contracts/l3/world-native/schema/schema.json";
+import { gamesAbi } from "../../../packages/value-ledger/test-support/abi";
 
 const rpc = vi.hoisted(() => ({ chain: vi.fn(), block: vi.fn() }));
 vi.mock("@realms-world/value-ledger", async (original) => ({
@@ -31,8 +34,8 @@ const snapshot = (poolLeft = "83", amount = "17"): ConfirmedSnapshot => ({
           key: "7",
           value: {
             game_id: 7,
-            price: "10",
-            shares: {},
+            price_ceiling: "10",
+            shares: { common: 1, uncommon: 2, rare: 3, epic: 4, legendary: 5 },
             claim_window_seconds: 604800,
           },
         },
@@ -49,6 +52,10 @@ const snapshot = (poolLeft = "83", amount = "17"): ConfirmedSnapshot => ({
             pool_left: poolLeft,
             open: "3",
             day: "1",
+            price: "2",
+            rolled_shares: "7",
+            yesterday_shares: "50",
+            yesterday_ticks: "10",
           },
         },
       ],
@@ -71,6 +78,46 @@ beforeEach(() => {
     timestamp: 1000,
     status: "ACCEPTED_ON_L2",
   }));
+});
+it("uses complete chest and budget fixtures matching the committed shard schema", () => {
+  for (const { model: name, rows } of snapshot().models.slice(0, 2)) {
+    const model = schema.models.find((model) => model.name === name)!;
+    const fields = [...model.keys, ...model.members];
+    const value = rows[0]!.value;
+    expect(Object.keys(value).sort()).toEqual(fields.map(({ name }) => name).sort());
+    const calldata = new CallData([
+      ...gamesAbi,
+      { type: "function", name: "fixture", inputs: fields, outputs: [], state_mutability: "view" },
+    ]).compile("fixture", value as never);
+    expect(calldata.map(BigInt)).toEqual(
+      name === "ChestRules" ? [7n, 10n, 1n, 2n, 3n, 4n, 5n, 604800n] : [7n, 100n, 83n, 3n, 1n, 2n, 7n, 50n, 10n],
+    );
+  }
+});
+it.each(["price", "rolled_shares", "yesterday_shares", "yesterday_ticks"])(
+  "requires an exact unsigned budget %s without changing conservation arithmetic",
+  async (field) => {
+    const state = snapshot();
+    const budget = state.models[1]!.rows[0]!.value;
+    const read = () => Effect.runPromise(shardConservationPort(connection, "https://shard.test", network(state))());
+    budget[field] = "0";
+    expect((await read())[0]).toMatchObject({ pool: "100", receipts: "17", netIssued: "17" });
+    for (const invalid of [-1, Number(2n ** 80n), String(2n ** BigInt(field === "yesterday_ticks" ? 64 : 128))]) {
+      budget[field] = invalid;
+      await expect(read()).rejects.toThrow();
+    }
+    delete budget[field];
+    await expect(read()).rejects.toThrow();
+  },
+);
+it("refuses the retired fixed-price rules instead of defaulting a missing ceiling", async () => {
+  const state = snapshot();
+  const rules = state.models[0]!.rows[0]!.value;
+  rules.price = rules.price_ceiling;
+  delete rules.price_ceiling;
+  await expect(
+    Effect.runPromise(shardConservationPort(connection, "https://shard.test", network(state))()),
+  ).rejects.toThrow();
 });
 it("uses one confirmed budget and the sum of immutable receipts in whole LORDS, without counting open reservations", async () => {
   const read = network();
@@ -113,8 +160,8 @@ it("rejects previous receipt and budget schemas, duplicate claims, wrong games a
   malformed[2]!.models[2]!.rows.push(malformed[2]!.models[2]!.rows[0]!);
   malformed[3]!.models[2]!.rows[0]!.value.game_id = 8;
   malformed[4]!.confirmed_block = 9;
-  Object.assign(malformed[5]!.models[1]!.rows[0]!.value, { price: "1", estimate: "20", rolled_shares: "4" });
-  Object.assign(malformed[6]!.models[0]!.rows[0]!.value, { price_ceiling: "10", estimate_days: 5 });
+  Object.assign(malformed[5]!.models[1]!.rows[0]!.value, { estimate: "20" });
+  Object.assign(malformed[6]!.models[0]!.rows[0]!.value, { estimate_days: 5 });
   for (const state of malformed)
     await expect(
       Effect.runPromise(shardConservationPort(connection, "https://shard.test", network(state))()),

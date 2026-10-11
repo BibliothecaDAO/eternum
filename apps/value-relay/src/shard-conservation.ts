@@ -40,14 +40,29 @@ export const shardConservationPort =
 const balanceOf = (snapshot: ConfirmedSnapshot, gameId: number): Omit<ConservationBalance, "chainId"> => {
   const rules = singleRow(snapshot, "ChestRules");
   const budget = optionalRow(snapshot, "LordsBudget");
-  requireFields(rules, ["game_id", "price", "shares", "claim_window_seconds"]);
-  if (budget) requireFields(budget, ["game_id", "pool", "pool_left", "open", "day"]);
+  requireFields(rules, ["game_id", "price_ceiling", "shares", "claim_window_seconds"]);
+  if (budget)
+    requireFields(budget, [
+      "game_id",
+      "pool",
+      "pool_left",
+      "open",
+      "day",
+      "price",
+      "rolled_shares",
+      "yesterday_shares",
+      "yesterday_ticks",
+    ]);
   const pool = budget ? rowUint(budget.pool, 128) : 0n;
   const poolLeft = budget ? rowUint(budget.pool_left, 128) : 0n;
-  rowUint(rules.price, 128);
+  rowUint(rules.price_ceiling, 128);
   if (budget) {
     rowUint(budget.open, 128);
     rowUint(budget.day, 64);
+    rowUint(budget.price, 128);
+    rowUint(budget.rolled_shares, 128);
+    rowUint(budget.yesterday_shares, 128);
+    rowUint(budget.yesterday_ticks, 64);
   }
   const receipts = snapshot.models.find((model) => model.model === "LordsWithdrawal")!;
   const claims = new Set<string>();

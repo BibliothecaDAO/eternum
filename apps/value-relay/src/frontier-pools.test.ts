@@ -54,7 +54,17 @@ const snapshot = (id: number) => ({
     },
     {
       model: "ChestRules",
-      rows: [{ key: String(id), value: { game_id: id, price: "10", shares: {}, claim_window_seconds: 604800 } }],
+      rows: [
+        {
+          key: String(id),
+          value: {
+            game_id: id,
+            price_ceiling: "10",
+            shares: { common: 1, uncommon: 2, rare: 3, epic: 4, legendary: 5 },
+            claim_window_seconds: 604800,
+          },
+        },
+      ],
     },
     { model: "SliceRules", rows: [{ key: String(id), value: { game_id: id, day_unit_seconds: 5 } }] },
     {
@@ -65,7 +75,17 @@ const snapshot = (id: number) => ({
           : [
               {
                 key: String(id),
-                value: { game_id: id, pool: snapshotPool, pool_left: snapshotPool, open: "0", day: "0" },
+                value: {
+                  game_id: id,
+                  pool: snapshotPool,
+                  pool_left: snapshotPool,
+                  open: "0",
+                  day: "0",
+                  price: "10",
+                  rolled_shares: "0",
+                  yesterday_shares: "0",
+                  yesterday_ticks: "0",
+                },
               },
             ],
     },
