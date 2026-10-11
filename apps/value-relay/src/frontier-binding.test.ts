@@ -33,11 +33,9 @@ vi.mock("@realms-world/value-ledger", async (original) => ({
 }));
 const reader = new ShardReader({ rpcUrl: "https://shard.test", gamesAddress: "0x77", chainId: "0x1" });
 const bind = () =>
-  frontierReceiptBindings(
-    reader,
-    { rpcUrl: "https://ledger.test", address: "0x10" },
-    { realmsIdForAccount: async () => "0x2" },
-  );
+  frontierReceiptBindings(reader, () => ({ rpcUrl: "https://ledger.test", address: "0x10" }), {
+    realmsIdForAccount: async () => "0x2",
+  });
 beforeEach(() => {
   vi.clearAllMocks();
   rpc.blockHash = "0xa";

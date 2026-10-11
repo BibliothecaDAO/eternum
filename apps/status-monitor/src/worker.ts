@@ -1,4 +1,4 @@
-import { environmentL2, valuePlaneAddress, type ValueEnvironment } from "@realms-world/chain";
+import { environmentL2, type ValueEnvironment } from "@realms-world/chain";
 import { Effect } from "effect";
 import { isStatusDocument, STATE_KEY, type MonitorState } from "./model";
 import { probeServices, type PublicValueTargets } from "./probes";
@@ -58,6 +58,7 @@ const valueTargetsOf = (env: Env): PublicValueTargets => {
     relayHealthUrl: env.RELAY_HEALTH_URL,
     guardianHealthUrl: env.GUARDIAN_HEALTH_URL,
     ledgerRpcUrl: env.LEDGER_RPC_URL,
-    ledgerAddress: valuePlaneAddress("ledger", environmentL2(env.ENVIRONMENT).network),
+    ledgerAddress: environmentL2(env.ENVIRONMENT).ledger,
+    playUrl: env.ENVIRONMENT === "staging" ? "https://play.dev-realms.party" : "https://play.realms.party",
   };
 };

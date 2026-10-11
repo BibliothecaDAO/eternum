@@ -1,6 +1,5 @@
 import type { Probe, Status, Target } from "./model";
 
-const PLAY = "https://play.realms.party";
 const DEADLINE_MS = 5000;
 const SLOW_MS = 1000;
 const HEX = /^0x[0-9a-fA-F]{1,64}$/;
@@ -10,7 +9,8 @@ export interface PublicValueTargets {
   relayHealthUrl: string;
   guardianHealthUrl: string;
   ledgerRpcUrl: string;
-  ledgerAddress: string;
+  ledgerAddress: string | null;
+  playUrl: string;
 }
 const IS_PAUSED = "0x238d7ea31550fece8f0a8a601e3ae1a7c59cb3b6cc976ceb721e31ebd9c36f9";
 
@@ -19,16 +19,16 @@ export async function probeServices(network: typeof fetch, now: number, known: T
   let targets = known;
   let directoryReadable = false;
   const [play, accounts, directory, blitz, chat, guardian, relay, ledger] = await Promise.all([
-    measure("play", "Play", network, probePlay),
-    measure("accounts", "Sign in and accounts", network, probeAccounts),
+    measure("play", "Play", network, (read) => probePlay(read, value.playUrl)),
+    measure("accounts", "Sign in and accounts", network, (read) => probeAccounts(read, value.playUrl)),
     measure("directory", "Games list", network, async (read) => {
-      const listing = await readDirectory(read);
+      const listing = await readDirectory(read, value.playUrl);
       targets = listing.targets;
       directoryReadable = true;
       return listing.available ? "up" : "down";
     }),
-    measure("blitz", "Blitz lobbies", network, probeSlots),
-    measure("chat", "Chat", network, probeChat),
+    measure("blitz", "Blitz lobbies", network, (read) => probeSlots(read, value.playUrl)),
+    measure("chat", "Chat", network, (read) => probeChat(read, value.playUrl)),
     measure("guardian", "Device guardian", network, (read) => probeGuardian(read, value.guardianHealthUrl)),
     measure("relay", "Value relay", network, (read) => probeRelay(read, value.relayHealthUrl, now)),
     probeLedger(network, value, now),
@@ -41,21 +41,21 @@ export async function probeServices(network: typeof fetch, now: number, known: T
   return { targets, probes: [play, accounts, directory, blitz, chat, guardian, relay, ledger, ...worlds] };
 }
 
-async function probePlay(read: Reader): Promise<Status> {
-  const html = await (await read(PLAY + "/")).text();
+async function probePlay(read: Reader, playUrl: string): Promise<Status> {
+  const html = await (await read(playUrl + "/")).text();
   const script = [...html.matchAll(/<script\b([^>]*)>/gi)].find((tag) => /\btype\s*=\s*(["'])module\1/i.test(tag[1]!));
   const path = script?.[1]?.match(/\bsrc\s*=\s*(["'])(.*?)\1/i)?.[2];
   if (!path) throw new Error("Module missing");
-  const url = publicUrl(new URL(path, PLAY).href);
-  if (url.origin !== PLAY) throw new Error("Module origin mismatch");
+  const url = publicUrl(new URL(path, playUrl).href);
+  if (url.origin !== playUrl) throw new Error("Module origin mismatch");
   const module = await read(url.href);
   if (!/javascript|ecmascript/i.test(module.headers.get("content-type") ?? "")) throw new Error("Invalid module type");
   if (!(await module.text()).trim()) throw new Error("Empty module");
   return "up";
 }
 
-async function probeAccounts(read: Reader): Promise<Status> {
-  requireReady(await body(read, PLAY + "/api/health/accounts"));
+async function probeAccounts(read: Reader, playUrl: string): Promise<Status> {
+  requireReady(await body(read, playUrl + "/api/health/accounts"));
   return "up";
 }
 
@@ -121,8 +121,8 @@ async function probeLedger(network: typeof fetch, targets: PublicValueTargets, n
   };
 }
 
-async function readDirectory(read: Reader) {
-  const directory = await body(read, PLAY + "/api/directory");
+async function readDirectory(read: Reader, playUrl: string) {
+  const directory = await body(read, playUrl + "/api/directory");
   if (!Array.isArray(directory.shards)) throw new Error("Directory missing");
   const targets = directory.shards.map(parseTarget);
   const available = directory.shards.every(
@@ -134,14 +134,14 @@ async function readDirectory(read: Reader) {
   return { targets, available };
 }
 
-async function probeSlots(read: Reader): Promise<Status> {
-  const slots = await body(read, PLAY + "/api/slots");
+async function probeSlots(read: Reader, playUrl: string): Promise<Status> {
+  const slots = await body(read, playUrl + "/api/slots");
   if (!Array.isArray(slots.slots)) throw new Error("Slots missing");
   return "up";
 }
 
-async function probeChat(read: Reader): Promise<Status> {
-  requireReady(await body(read, PLAY + "/api/chat/health"));
+async function probeChat(read: Reader, playUrl: string): Promise<Status> {
+  requireReady(await body(read, playUrl + "/api/chat/health"));
   return "up";
 }
 

@@ -1,4 +1,5 @@
-vi.mock("./environment", () => ({ ledgerAddress: () => "0x10" }));
+const address = vi.hoisted(() => vi.fn(() => "0x10"));
+vi.mock("./environment", () => ({ ledgerAddress: address }));
 import { beforeEach, expect, it, vi } from "vitest";
 import worker, { ValueMonitor } from "./monitor-worker";
 
@@ -47,6 +48,7 @@ const fixture = () => {
 };
 beforeEach(() => {
   vi.clearAllMocks();
+  address.mockReturnValue("0x10");
 });
 it("reports a failed value read without a green health result", async () => {
   const f = fixture();
@@ -108,4 +110,16 @@ it("requires an operator token and a recorded reason to clear a monitor halt wit
   });
   expect(f.data.get("reset:sequence")).toBe(1);
   expect(f.data.get("reset:1")).toMatchObject({ reason: "Receipt RPC corrected; replay verified", previous: progress });
+});
+
+it("records the missing ledger after running shard conservation", async () => {
+  address.mockImplementation(() => {
+    throw new Error("ledger not deployed");
+  });
+  const f = fixture();
+  const observation = await f.monitor.tick();
+  expect(observation).toMatchObject({ value: null, value_error: "ledger paid claims unavailable" });
+  expect(f.data.get("progress")).toMatchObject({ unverifiedTicks: 1 });
+  expect(f.data.get("observation")).toEqual(observation);
+  expect((await f.monitor.health()).success).toBe(false);
 });

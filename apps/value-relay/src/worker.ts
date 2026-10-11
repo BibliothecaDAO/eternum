@@ -111,15 +111,20 @@ export class ValueRelay extends DurableObject<RelayEnv> {
             ),
           );
           const chests = yield* Effect.result(
-            finishRequestedChests(
-              chestPortsOf(relay.env, (effect) => relay.ledgerPermit(effect)),
-              relay.chests,
+            relayOperation("ledger chests unavailable", () =>
+              Effect.runPromise(
+                finishRequestedChests(
+                  chestPortsOf(relay.env, (effect) => relay.ledgerPermit(effect)),
+                  relay.chests,
+                ),
+              ),
             ),
           );
           const observation = {
             seasons: Result.isSuccess(seasons) ? seasons.success : { error: seasons.failure.operation },
             checked_at: Math.floor(Date.now() / 1000),
             chests: Result.isSuccess(chests) ? chests.success : null,
+            chest_error: Result.isFailure(chests) ? chests.failure.operation : null,
           };
           yield* relayOperation("publish relay health", () => relay.ctx.storage.put("lastTick", observation));
           return observation;
@@ -174,9 +179,13 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   reportMany(rows: readonly import("./ports").Withdrawal[]) {
     return Effect.runPromise(
       this.ledgerPermit(
-        ledgerBatches(ledgerCredentialsOf(this.env), (decisions) =>
-          this.env.IDENTITY.recordPayDecisions(decisions),
-        ).reportMany(rows),
+        relayOperation("reportMany ledger claims", () =>
+          Effect.runPromise(
+            ledgerBatches(ledgerCredentialsOf(this.env), (decisions) =>
+              this.env.IDENTITY.recordPayDecisions(decisions),
+            ).reportMany(rows),
+          ),
+        ),
         rows.map((row) => row.chainId),
       ),
     );
@@ -184,9 +193,13 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   payMany(rows: readonly import("./ports").PayableClaim[]) {
     return Effect.runPromise(
       this.ledgerPermit(
-        ledgerBatches(ledgerCredentialsOf(this.env), (decisions) =>
-          this.env.IDENTITY.recordPayDecisions(decisions),
-        ).payMany(rows),
+        relayOperation("payMany ledger claims", () =>
+          Effect.runPromise(
+            ledgerBatches(ledgerCredentialsOf(this.env), (decisions) =>
+              this.env.IDENTITY.recordPayDecisions(decisions),
+            ).payMany(rows),
+          ),
+        ),
         rows.map((row) => row.withdrawal.chainId),
       ),
     );
@@ -276,7 +289,12 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     const shard = (await this.env.IDENTITY.shards()).find((row) => BigInt(row.chainId) === BigInt(key.chainId));
     if (shard?.status !== "active") throw new Error("new_slot_requires_active_shard");
     return Effect.runPromise(
-      this.ledgerPermit(openSlotOnLedger(ledgerCredentialsOf(this.env), key, window), [key.chainId]),
+      this.ledgerPermit(
+        relayOperation("write ledger slot", () =>
+          Effect.runPromise(openSlotOnLedger(ledgerCredentialsOf(this.env), key, window)),
+        ),
+        [key.chainId],
+      ),
     );
   }
   async slot(key: LedgerSlotKey) {
@@ -306,12 +324,24 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   async markRefundable(key: LedgerSlotKey, wallets: readonly string[]) {
     await this.requireLaunchSlot(key);
     return Effect.runPromise(
-      this.ledgerPermit(markSlotRefundable(ledgerCredentialsOf(this.env), key, wallets), [key.chainId]),
+      this.ledgerPermit(
+        relayOperation("write ledger slot", () =>
+          Effect.runPromise(markSlotRefundable(ledgerCredentialsOf(this.env), key, wallets)),
+        ),
+        [key.chainId],
+      ),
     );
   }
   async refundSlot(key: LedgerSlotKey) {
     await this.requireLaunchSlot(key);
-    return Effect.runPromise(this.ledgerPermit(refundSlotOnLedger(ledgerCredentialsOf(this.env), key), [key.chainId]));
+    return Effect.runPromise(
+      this.ledgerPermit(
+        relayOperation("write ledger slot", () =>
+          Effect.runPromise(refundSlotOnLedger(ledgerCredentialsOf(this.env), key)),
+        ),
+        [key.chainId],
+      ),
+    );
   }
   private async requireLaunchSlot(key: LedgerSlotKey) {
     if (!Number.isInteger(key.slotId) || key.slotId <= 0 || key.slotId > 0xffffffff)
@@ -350,8 +380,14 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
     identity: identityAdapter(env.IDENTITY),
     realms: { ownerOf: (realmId) => relayOperation("read Realm owner", () => env.IDENTITY.realmOwnerOf(realmId)) },
     ledger: {
-      payment: (row) => ledgerPaymentRead(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT))(row),
-      voided: (row) => ledgerWithdrawalVoided(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT))(row),
+      payment: (row) =>
+        relayOperation("read ledger payment", () =>
+          Effect.runPromise(ledgerPaymentRead(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT))(row)),
+        ),
+      voided: (row) =>
+        relayOperation("read ledger voided", () =>
+          Effect.runPromise(ledgerWithdrawalVoided(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT))(row)),
+        ),
       reportMany: (rows) => relayOperation("report withdrawal page", () => ledgerOf(env).reportMany(rows)),
       payMany: (rows) => relayOperation("pay withdrawal page", () => ledgerOf(env).payMany(rows)),
       postResult: (row) => relayOperation("post shard result", () => ledgerOf(env).postResult(row)),
@@ -361,7 +397,7 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
         reader,
         frontierReceiptBindings(
           reader,
-          { rpcUrl: env.LEDGER_RPC_URL, address: ledgerAddress(env.ENVIRONMENT) },
+          () => ({ rpcUrl: env.LEDGER_RPC_URL, address: ledgerAddress(env.ENVIRONMENT) }),
           env.IDENTITY,
         ),
       ),
@@ -509,7 +545,11 @@ export default {
     return Response.json(health, { status: health.success ? 200 : 503, headers: { "cache-control": "no-store" } });
   },
   async scheduled(_controller: ScheduledController, env: RelayEnv): Promise<void> {
-    await ledgerOf(env).ledgerTick();
+    try {
+      await ledgerOf(env).ledgerTick();
+    } catch {
+      console.error("ledger_tick_unavailable");
+    }
     for (const shard of await activeShards(env.IDENTITY)) {
       try {
         await relayOf(env, shard.chainId).tick(shard.chainId);

@@ -7,7 +7,7 @@ type Ledger = { rpcUrl: string; address: string };
 /** Frontier funding uses the shard game id as its season id. */
 export const frontierReceiptBindings = (
   reader: ShardReader,
-  ledger: Ledger,
+  ledgerOf: () => Ledger,
   identity: { realmsIdForAccount(account: string): Promise<string | null> },
 ) => ({
   realmsIdForAccount: (account: string) => identity.realmsIdForAccount(account),
@@ -21,6 +21,7 @@ export const frontierReceiptBindings = (
           shardHead,
         );
       if (game.length !== 10) throw new Error("game_registry_abi_differs");
+      const ledger = ledgerOf();
       const provider = rpcAt(ledger.rpcUrl);
       const head = await readConfirmedLedgerHead(provider);
       const season = decodeFrontierSeason(

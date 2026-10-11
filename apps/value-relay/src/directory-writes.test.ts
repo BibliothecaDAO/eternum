@@ -61,8 +61,7 @@ it("serializes ledger reports for different official shards and rechecks retirem
   await first;
   await refusal;
   expect(maximum).toBe(1);
-  expect(submit).toHaveBeenCalledTimes(2);
-  // Construction of an Effect is harmless; the queued second chain never enters its transaction body.
+  expect(submit).toHaveBeenCalledTimes(1);
   expect(running).toBe(0);
   expect(executed).toEqual(["0x1"]);
 });

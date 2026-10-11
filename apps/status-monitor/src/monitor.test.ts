@@ -1,6 +1,7 @@
+import * as chain from "@realms-world/chain";
 import { expect, it, vi } from "vitest";
 import { Miniflare } from "miniflare";
-import { monitor } from "./worker";
+import worker, { monitor } from "./worker";
 import { probeServices } from "./probes";
 import { nextMonitorState } from "./state";
 import { onRequestGet } from "../../status/functions/status.json";
@@ -8,6 +9,7 @@ import { onRequestGet } from "../../status/functions/status.json";
 const now = 1791456000;
 const world = { url: "https://shard.public.test", chainId: "0xa", status: "active" };
 const valueTargets = {
+  playUrl: "https://play.realms.party",
   relayHealthUrl: "https://relay.public.test/health",
   guardianHealthUrl: "https://guardian.public.test/health",
   ledgerRpcUrl: "https://ledger-rpc.public.test",
@@ -320,4 +322,32 @@ it("probes a single-RPC shard manifest without a removed admission endpoint", as
   const result = await probeServices(read, now, [], valueTargets);
   expect(result.probes.find((p) => p.id === "shard:0xa")!.status).toBe("up");
   expect(read.mock.calls.some((call) => String(call[0]).includes("admission"))).toBe(false);
+});
+
+it("publishes an undeployed ledger as down and probes the staging play site", async () => {
+  const environment = vi
+    .spyOn(chain, "environmentL2")
+    .mockReturnValue({ network: "sepolia", chain: "SN_SEPOLIA", ledger: null });
+  const put = vi.fn().mockResolvedValue({ etag: "one" });
+  const read = vi.fn(network());
+  vi.stubGlobal("fetch", read);
+  try {
+    await worker.scheduled({} as ScheduledController, {
+      STATUS_BUCKET: { get: async () => null, put } as unknown as R2Bucket,
+      ENVIRONMENT: "staging",
+      RELAY_HEALTH_URL: valueTargets.relayHealthUrl,
+      GUARDIAN_HEALTH_URL: valueTargets.guardianHealthUrl,
+      LEDGER_RPC_URL: valueTargets.ledgerRpcUrl,
+    });
+    const published = JSON.parse(put.mock.calls[0]![1]);
+    expect(published.document.components.find((row: { id: string }) => row.id === "ledger")).toMatchObject({
+      status: "down",
+      paused: null,
+    });
+    expect(read.mock.calls.some(([url]) => String(url) === "https://play.dev-realms.party/api/slots")).toBe(true);
+    expect(read.mock.calls.some(([url]) => String(url).startsWith("https://play.realms.party"))).toBe(false);
+  } finally {
+    vi.unstubAllGlobals();
+    environment.mockRestore();
+  }
 });

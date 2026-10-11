@@ -250,7 +250,7 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
               reader,
               frontierReceiptBindings(
                 reader,
-                { rpcUrl: env.LEDGER_RPC_URL, address: ledgerAddress(env.ENVIRONMENT) },
+                () => ({ rpcUrl: env.LEDGER_RPC_URL, address: ledgerAddress(env.ENVIRONMENT) }),
                 env.IDENTITY,
               ),
             ).withdrawal(chainId, hash),
@@ -273,13 +273,29 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
         }),
     },
     ledger: {
-      ...ledgerMonitorReads(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT)),
-      pause: ledgerPauserAdapter({
-        rpcUrl: env.LEDGER_RPC_URL,
-        contractAddress: ledgerAddress(env.ENVIRONMENT),
-        accountAddress: env.PAUSER_ACCOUNT_ADDRESS,
-        privateKey: env.PAUSER_PRIVATE_KEY,
-      }),
+      paidClaims: (cursor: string | null, fromBlock?: number) =>
+        relayOperation("ledger paid claims unavailable", () =>
+          Effect.runPromise(
+            ledgerMonitorReads(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT)).paidClaims(cursor, fromBlock),
+          ),
+        ),
+      postedResults: (cursor: string | null, fromBlock?: number) =>
+        relayOperation("ledger results unavailable", () =>
+          Effect.runPromise(
+            ledgerMonitorReads(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT)).postedResults(cursor, fromBlock),
+          ),
+        ),
+      pause: () =>
+        relayOperation("ledger pause unavailable", () =>
+          Effect.runPromise(
+            ledgerPauserAdapter({
+              rpcUrl: env.LEDGER_RPC_URL,
+              contractAddress: ledgerAddress(env.ENVIRONMENT),
+              accountAddress: env.PAUSER_ACCOUNT_ADDRESS,
+              privateKey: env.PAUSER_PRIVATE_KEY,
+            })(),
+          ),
+        ),
     },
   };
 };

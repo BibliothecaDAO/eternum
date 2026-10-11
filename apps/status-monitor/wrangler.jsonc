@@ -8,5 +8,12 @@
   "vars": { "ENVIRONMENT": "production" },
   "observability": { "enabled": true },
   "r2_buckets": [{ "binding": "STATUS_BUCKET", "bucket_name": "realms-status" }],
+  "env": {
+    "staging": {
+      "name": "realms-status-monitor-staging",
+      "vars": { "ENVIRONMENT": "staging" },
+      "r2_buckets": [{ "binding": "STATUS_BUCKET", "bucket_name": "realms-status-staging" }],
+    },
+  },
   "triggers": { "crons": ["* * * * *"] },
 }
