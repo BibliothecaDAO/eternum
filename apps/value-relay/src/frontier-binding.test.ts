@@ -58,7 +58,11 @@ beforeEach(() => {
           },
           {
             model: "ChestRules",
-            rows: [{ key: "7", value: { game_id: 7, pool: "100", claim_window_seconds: 604800 } }],
+            rows: [{ key: "7", value: { game_id: 7, claim_window_seconds: 604800 } }],
+          },
+          {
+            model: "LordsBudget",
+            rows: [{ key: "7", value: { game_id: 7, pool: "100", pool_left: "100", open: "0", day: "0" } }],
           },
           { model: "SliceRules", rows: [{ key: "7", value: { game_id: 7, day_unit_seconds: 5 } }] },
         ],
@@ -130,7 +134,11 @@ it("keeps a funding mismatch unavailable when the snapshot pool differs", async 
           },
           {
             model: "ChestRules",
-            rows: [{ key: "7", value: { game_id: 7, pool: "101", claim_window_seconds: 604800 } }],
+            rows: [{ key: "7", value: { game_id: 7, claim_window_seconds: 604800 } }],
+          },
+          {
+            model: "LordsBudget",
+            rows: [{ key: "7", value: { game_id: 7, pool: "101", pool_left: "100", open: "0", day: "0" } }],
           },
           { model: "SliceRules", rows: [{ key: "7", value: { game_id: 7, day_unit_seconds: 5 } }] },
         ],

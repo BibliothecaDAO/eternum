@@ -1,4 +1,5 @@
-import { ledgerCall, ledgerEvent } from "../../../packages/value-ledger/test-support/ledger-abi";
+import { response } from "../../../packages/value-ledger/test-support/abi";
+import { ledgerAbi, ledgerCall, ledgerEvent } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { Effect } from "effect";
 import { hash } from "starknet";
 import { beforeEach, expect, it, vi } from "vitest";
@@ -158,4 +159,31 @@ it("keeps a result queued unless the confirmed ledger state records the same com
   rpc.call.mockResolvedValueOnce(game(false)).mockResolvedValue(game(true, "0xbad"));
   await expect(Effect.runPromise(ledgerResultAdapter(credentials, 12)(result))).rejects.toThrow();
   expect(rpc.execute).toHaveBeenCalledOnce();
+});
+
+it("reads the funded deposit through the committed ledger ABI at a confirmed head", async () => {
+  const pool = 123n * 10n ** 18n;
+  rpc.call.mockResolvedValue(
+    response(ledgerAbi, "get_frontier", {
+      funded: true,
+      start: 10,
+      end: 110,
+      pool: { low: pool, high: 0 },
+      paid: { low: 0, high: 0 },
+      closed: false,
+      preset_id: 2,
+      seed: 153,
+    }),
+  );
+  expect(
+    await Effect.runPromise(ledgerMonitorReads(credentials.rpcUrl, credentials.contractAddress).frontierPool("0x1", 7)),
+  ).toBe(String(pool));
+  expect(rpc.call).toHaveBeenCalledWith(
+    { contractAddress: "0x10", entrypoint: "get_frontier", calldata: ["0x1", "7"] },
+    1000,
+  );
+  rpc.call.mockRejectedValue(new Error("Ledger: unknown Frontier season"));
+  await expect(
+    Effect.runPromise(ledgerMonitorReads(credentials.rpcUrl, credentials.contractAddress).frontierPool("0x1", 7)),
+  ).rejects.toMatchObject({ operation: "read ledger Frontier pool" });
 });

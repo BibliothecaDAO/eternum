@@ -4,7 +4,7 @@ import { readFrontierFunding } from "./frontier-funding";
 import { ledgerAbi } from "../test-support/ledger-abi";
 import { response } from "../test-support/abi";
 
-const terms = { start: 10, end: 110, seed: "0x99", pool: "100", dayUnit: 5, claimWindow: 604800 };
+const terms = { start: 10, end: 110, seed: "0x99", dayUnit: 5, claimWindow: 604800 };
 const call = vi.fn();
 let closed = false;
 let bags = 1;
@@ -51,7 +51,7 @@ it("binds the funded pool and every native clock rule at one confirmed ledger he
     ["get_preset", 12],
   ]);
 });
-it.each([{ start: 11 }, { end: 111 }, { seed: "0x98" }, { pool: "99" }, { dayUnit: 10 }, { claimWindow: 604801 }])(
+it.each([{ start: 11 }, { end: 111 }, { seed: "0x98" }, { dayUnit: 10 }, { claimWindow: 604801 }])(
   "refuses different native terms %j",
   async (change) => {
     await expect(read({ ...terms, ...change })).rejects.toThrow("frontier_funding_differs_from_game");
@@ -70,4 +70,8 @@ it("binds historical claims after their funded pool closes", async () => {
 it("refuses a different ledger bag count", async () => {
   bags = 2;
   await expect(read()).rejects.toThrow("frontier_funding_differs_from_game");
+});
+
+it("returns the ledger deposit independently of any preset funding amount", async () => {
+  expect((await read()).pool).toBe(String(100n * 10n ** 18n));
 });

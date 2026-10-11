@@ -1,3 +1,5 @@
+const pools = vi.hoisted(() => vi.fn(async () => {}));
+vi.mock("./frontier-pools", () => ({ publishFrontierPools: pools }));
 const address = vi.hoisted(() => vi.fn(() => "0x10"));
 vi.mock("./environment", () => ({ ledgerAddress: address }));
 import { Effect } from "effect";
@@ -102,6 +104,7 @@ it("records unavailable ledger work while shard ingestion and owned Realm labor 
   });
   expect(await relay.tick("0x1")).toMatchObject({ value: { status: "ready" } });
   expect(data.get("progress")).toMatchObject({ nextBlock: 1 });
+  expect((await relay.shardHealth()).success).toBe(false);
   shard.grant.mockReturnValue(Effect.succeed([{ gameId: 7, account: "0x3", home: "0x8", amount: "1" }]));
   const claim = {
     realms: [{ gameId: 7, home: "0x8", realmId: "8" }],
@@ -150,8 +153,75 @@ it("continues a full confirmed page through its alarm and stops when caught up",
   shard.page.mockResolvedValueOnce({ ...page, next: "cursor" }).mockResolvedValue(page);
   expect(await relay.tick("0x1")).toMatchObject({ value: { status: "ready", more: true } });
   expect(storage.setAlarm).toHaveBeenCalledOnce();
+  expect(pools).toHaveBeenCalledOnce();
+  expect(pools).toHaveBeenCalledWith(
+    expect.objectContaining({ chainId: "0x1", accountAddress: "0x5" }),
+    undefined,
+    expect.objectContaining({ address: "0x10" }),
+  );
   await relay.alarm();
   expect(shard.page).toHaveBeenLastCalledWith(0, 0, "cursor");
   expect(storage.setAlarm).toHaveBeenCalledOnce();
   expect(data.get("progress")).toMatchObject({ nextBlock: 1 });
+});
+
+it("serializes pool publication with labor on the same shard signer", async () => {
+  let release!: () => void;
+  let entered!: () => void;
+  const holding = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const started = new Promise<void>((resolve) => {
+    entered = resolve;
+  });
+  pools.mockImplementationOnce(async () => {
+    entered();
+    await holding;
+  });
+  const data = new Map<string, unknown>();
+  const storage = {
+    get: async (key: string) => data.get(key),
+    put: async (key: string, value: unknown) => {
+      data.set(key, value);
+    },
+    list: async () => new Map(),
+    transaction: async (run: (tx: unknown) => Promise<unknown>): Promise<unknown> => run(storage),
+  };
+  const relay = new ValueRelay(
+    { storage } as unknown as DurableObjectState,
+    {
+      IDENTITY: {
+        l2ChainId: async () => "0x1",
+        accountForRealmsId: async () => "0x3",
+        linkedWallet: async () => "0x4",
+        realmOwnerOf: async () => "0x4",
+      },
+    } as never,
+  );
+  shard.head.mockResolvedValue(0);
+  shard.page.mockResolvedValue({
+    block: { block_number: 0, block_hash: "0x1", status: "ACCEPTED_ON_L2" },
+    first: { parent_hash: "0x0" },
+    anchors: [{ number: 0, hash: "0x1" }],
+    rows: [],
+    next: null,
+  });
+  shard.grant.mockReturnValue(Effect.succeed([{ gameId: 7, account: "0x3", home: "0x8", amount: "1" }]));
+  const ticking = relay.tick("0x1");
+  await started;
+  const claiming = relay.labor({
+    realms: [{ gameId: 7, home: "0x8", realmId: "8" }],
+    chainId: "0x1",
+    realmsId: "0x2",
+    account: "0x3",
+    day: 4,
+  });
+  try {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(shard.grant).not.toHaveBeenCalled();
+  } finally {
+    release();
+  }
+  await Promise.all([ticking, claiming]);
+  expect(shard.grant).toHaveBeenCalledOnce();
 });

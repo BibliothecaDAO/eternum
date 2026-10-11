@@ -154,6 +154,7 @@ export interface MonitorPorts {
     conservation(): RelayEffect<readonly ConservationBalance[]>;
   };
   ledger: {
+    frontierPool(chainId: string, gameId: number): RelayEffect<string>;
     paidClaims(after: string | null, fromBlock?: number): RelayEffect<LedgerPage<PaidClaim>>;
     postedResults(after: string | null, fromBlock?: number): RelayEffect<LedgerPage<BlitzCommitment>>;
     pause(): RelayEffect<void>;
@@ -161,7 +162,8 @@ export interface MonitorPorts {
 }
 
 export interface ConservationBalance {
-  chainId?: string;
+  chainId: string;
+  pool: string;
   gameId: number;
   confirmedBlock: number;
   receipts: string;

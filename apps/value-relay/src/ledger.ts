@@ -1,4 +1,10 @@
-import { rpcAt, ledgerInteger, ledgerU256, readConfirmedLedgerHead } from "@realms-world/value-ledger";
+import {
+  decodeFrontierSeason,
+  rpcAt,
+  ledgerInteger,
+  ledgerU256,
+  readConfirmedLedgerHead,
+} from "@realms-world/value-ledger";
 import { Account, hash, RpcProvider, type EmittedEvent } from "starknet";
 import { blitzCommitment } from "@realms-world/value-ledger/commitment";
 import {
@@ -72,8 +78,23 @@ const resultCommitment = async (provider: RpcProvider, address: string, result: 
 export const ledgerMonitorReads = (
   rpcUrl: string,
   address: string,
-): Pick<MonitorPorts["ledger"], "paidClaims" | "postedResults"> => {
+): Pick<MonitorPorts["ledger"], "paidClaims" | "postedResults" | "frontierPool"> => {
   return {
+    frontierPool: (chainId, gameId) =>
+      relayOperation("read ledger Frontier pool", async () => {
+        const provider = rpcAt(rpcUrl);
+        const head = await readConfirmedLedgerHead(provider);
+        return decodeFrontierSeason(
+          await provider.callContract(
+            {
+              contractAddress: address,
+              entrypoint: "get_frontier",
+              calldata: [chainId, String(gameId)],
+            },
+            head.number,
+          ),
+        ).pool;
+      }),
     paidClaims: (cursor, fromBlock = 0) =>
       relayOperation("read ledger paid claims", async () => {
         const provider = rpcAt(rpcUrl);

@@ -1,6 +1,8 @@
-import { rpcAt, readFrontierFunding, ledgerInteger } from "@realms-world/value-ledger";
+import { rpcAt, readFrontierFunding } from "@realms-world/value-ledger";
 import { ShardReader } from "./shard-rpc";
-import { readConfirmedSnapshot, singleRow } from "./shard-snapshot";
+import { readConfirmedSnapshot, optionalRow } from "./shard-snapshot";
+import { frontierTerms } from "./frontier-games";
+import { uint } from "./shard-rpc";
 import { relayOperation } from "./ports";
 
 type Ledger = { rpcUrl: string; address: string };
@@ -19,24 +21,19 @@ export const frontierReceiptBindings = (
         "GameRegistry",
         "ChestRules",
         "SliceRules",
+        "LordsBudget",
       ]);
-      const game = singleRow(snapshot, "GameRegistry");
-      const chests = singleRow(snapshot, "ChestRules");
-      const rules = singleRow(snapshot, "SliceRules");
+      const budget = optionalRow(snapshot, "LordsBudget");
+      const pool = budget ? uint(String(budget.pool), 128) : 0n;
+      if (pool === 0n) throw new Error("frontier_pool_unpublished");
       const ledger = ledgerOf();
       const funding = await readFrontierFunding(
         rpcAt(ledger.rpcUrl),
         ledger.address,
         { chainId: reader.connection.chainId, gameId },
-        {
-          start: ledgerInteger(String(game.start_main_at)),
-          end: ledgerInteger(String(game.end_at)),
-          seed: String(game.seed),
-          pool: String(chests.pool),
-          dayUnit: ledgerInteger(String(rules.day_unit_seconds)),
-          claimWindow: ledgerInteger(String(chests.claim_window_seconds)),
-        },
+        frontierTerms(snapshot),
       );
+      if (pool * 10n ** 18n !== BigInt(funding.pool)) throw new Error("frontier_pool_differs_from_ledger");
       if (!Number.isSafeInteger(confirmedAt) || confirmedAt < 0 || confirmedAt >= funding.claimDeadline)
         throw new Error("withdrawal_created_outside_claim_window");
       return gameId;

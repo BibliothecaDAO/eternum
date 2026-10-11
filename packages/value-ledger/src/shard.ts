@@ -125,7 +125,10 @@ const confirmedShardReceipt = async (provider: RpcProvider, transactionHash: str
       "block_number" in receipt &&
       ["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(receipt.finality_status)
     ) {
-      if (receipt.isReverted()) throw new Error("shard_invoke_reverted");
+      if (receipt.isReverted())
+        throw new Error("shard_invoke_reverted", {
+          cause: "revert_reason" in receipt ? receipt.revert_reason : undefined,
+        });
       return receipt;
     }
     await new Promise((resolve) => setTimeout(resolve, 250));

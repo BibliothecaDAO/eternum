@@ -19,6 +19,7 @@ import { openSlotOnLedger, refundSlotOnLedger, markSlotRefundable } from "./blit
 import { currentLaborDay, writeLaborGrants } from "./shard-labor";
 import { handleLaborRequest } from "./labor-route";
 import { ShardReader } from "./shard-rpc";
+import { publishFrontierPools } from "./frontier-pools";
 import { frontierReceiptBindings } from "./frontier-binding";
 import { shardWithdrawalPorts } from "./shard-withdrawals";
 import { chestLedgerReads, finishChestOnLedger } from "./chest-ledger";
@@ -145,8 +146,20 @@ export class ValueRelay extends DurableObject<RelayEnv> {
                 onIdentityChain(relay.env.LEDGER_RPC_URL, relay.env.IDENTITY, runRelay(chain, ports, relay.store)),
               ),
             );
+            const funding = await Effect.runPromise(
+              Effect.result(
+                onIdentityChain(
+                  relay.env.LEDGER_RPC_URL,
+                  relay.env.IDENTITY,
+                  relay.shardSigning.withPermit(
+                    relayOperation("publish Frontier pools", () => relay.publishPools(chain)),
+                  ),
+                ),
+              ),
+            );
             const observation = {
               checked_at: Math.floor(Date.now() / 1000),
+              funding_error: Result.isFailure(funding) ? funding.failure.operation : null,
               value: Result.isSuccess(value)
                 ? value.success
                 : { status: "unavailable", reason: value.failure.operation },
@@ -166,6 +179,18 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     };
     await this.ctx.storage.put("shardTick", observation);
     return observation;
+  }
+  private async publishPools(chainId: string) {
+    const shard = await readRegisteredShard(this.env.IDENTITY, chainId);
+    return publishFrontierPools(
+      {
+        ...connectionOf(shard),
+        accountAddress: shardOperatorAddress(shard),
+        privateKey: this.env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
+      },
+      shard.url,
+      { rpcUrl: this.env.LEDGER_RPC_URL, address: ledgerAddress(this.env.ENVIRONMENT) },
+    );
   }
   async alarm() {
     await this.tick();
@@ -214,12 +239,17 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   }
   async shardHealth() {
     const progress = await this.store.progress();
-    const observation = await this.ctx.storage.get<{ checked_at: number; value: { status: string } }>("shardTick");
+    const observation = await this.ctx.storage.get<{
+      checked_at: number;
+      value: { status: string };
+      funding_error: string | null;
+    }>("shardTick");
     return {
       ...progress,
       ...observation,
       success:
         observation?.value.status === "ready" &&
+        observation.funding_error === null &&
         !progress.halted &&
         Date.now() / 1000 - (observation?.checked_at ?? 0) <= 300,
     };

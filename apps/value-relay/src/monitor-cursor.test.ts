@@ -29,6 +29,7 @@ it("keeps checked-through block and page continuation across ticks without rerea
     identity: { matchesPayDecision: () => Effect.succeed(true) },
     shard: { conservation: () => Effect.succeed([]), withdrawal, result: () => Effect.succeed(null) },
     ledger: {
+      frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
       paidClaims,
       postedResults: () => Effect.succeed({ rows: [], next: null, head: 10 }),
       pause: () => Effect.void,
@@ -73,6 +74,7 @@ it("an exact row reset skips only that claim and still faults on the next unchec
     identity: { matchesPayDecision: () => Effect.succeed(false) },
     shard: { conservation: () => Effect.succeed([]), withdrawal: checked, result: () => Effect.succeed(null) },
     ledger: {
+      frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
       paidClaims: () => Effect.succeed({ rows, head: 10, next: null }),
       postedResults: () => Effect.succeed({ rows: [], head: 10, next: null }),
       pause: () => Effect.void,

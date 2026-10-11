@@ -1,14 +1,7 @@
-import { nativeGameModeOf } from "../../../config/source/common/native-preset-modes";
 import { relayOperation, type MonitorPorts, type ConservationBalance } from "./ports";
-import { ShardReader, sameFelt, felt, uint, type ShardConnection } from "./shard-rpc";
-import { readConfirmedSnapshot, singleRow, readHeraldJson, type ConfirmedSnapshot } from "./shard-snapshot";
-
-interface Directory {
-  chain: string;
-  world_address: string;
-  confirmed_block: number;
-  games: { game_id: number; preset_id: number; mode: string; status: string; clock: { end_at: number } }[];
-}
+import { felt, uint, type ShardConnection } from "./shard-rpc";
+import { readConfirmedSnapshot, singleRow, optionalRow, type ConfirmedSnapshot } from "./shard-snapshot";
+import { readFrontierGames } from "./frontier-games";
 
 /** One confirmed snapshot per Frontier game supplies both immutable receipts and the current net issue budget. */
 export const shardConservationPort =
@@ -20,35 +13,13 @@ export const shardConservationPort =
   ): MonitorPorts["shard"]["conservation"] =>
   () =>
     relayOperation("audit shard LORDS conservation", async () => {
-      const reader = new ShardReader(connection);
-      await reader.head();
-      const directory = await readHeraldJson<Directory>(heraldUrl, "/games", network);
-      if (
-        !sameFelt(directory.chain, connection.chainId) ||
-        !sameFelt(directory.world_address, connection.gamesAddress) ||
-        !Array.isArray(directory.games)
-      )
-        throw new Error("conservation_directory_differs");
-      await reader.header(directory.confirmed_block);
+      const directory = await readFrontierGames(connection, heraldUrl, network);
       const cursor = cache ? ((await cache.get<number>(`conservation:cursor:${connection.chainId}`)) ?? 0) : 0;
       const balances: ConservationBalance[] = [];
-      const games = new Set<number>();
-      const ordered = [...directory.games].sort((a, b) => a.game_id - b.game_id);
-      const frontier = ordered.filter((game) => game.mode === "frontier");
-      const remaining = frontier.filter((game) => game.game_id > cursor);
-      const page = (remaining.length ? remaining : frontier).slice(0, 25);
-      for (const game of ordered) {
-        const gameId = Number(uint(String(game.game_id), 32));
-        if (!gameId || games.has(gameId) || nativeGameModeOf(Number(uint(String(game.preset_id), 32))) !== game.mode)
-          throw new Error("invalid_conservation_game");
-        games.add(gameId);
-        if (game.mode !== "frontier" || !page.includes(game)) continue;
-        if (
-          !Number.isSafeInteger(game.clock?.end_at) ||
-          game.clock.end_at < 0 ||
-          !["Registration", "Live", "Ended", "Settled"].includes(game.status)
-        )
-          throw new Error("conservation_game_clock_missing");
+      const remaining = directory.games.filter((game) => game.game_id > cursor);
+      const page = (remaining.length ? remaining : directory.games).slice(0, 25);
+      for (const game of page) {
+        const gameId = game.game_id;
         const snapshot = await readConfirmedSnapshot(
           connection,
           heraldUrl,
@@ -56,25 +27,23 @@ export const shardConservationPort =
           ["ChestRules", "LordsBudget", "LordsWithdrawal"],
           network,
         );
-        if (snapshot.confirmed_block < directory.confirmed_block)
+        if (snapshot.confirmed_block < directory.confirmedBlock)
           throw new Error("conservation_snapshot_behind_directory");
         const balance = balanceOf(snapshot, gameId);
-        balances.push(balance);
+        balances.push({ ...balance, chainId: connection.chainId });
       }
       if (cache)
         await cache.put(`conservation:cursor:${connection.chainId}`, page.length === 25 ? page.at(-1)!.game_id : 0);
       return balances;
     });
 
-const balanceOf = (snapshot: ConfirmedSnapshot, gameId: number): ConservationBalance => {
+const balanceOf = (snapshot: ConfirmedSnapshot, gameId: number): Omit<ConservationBalance, "chainId"> => {
   const rules = singleRow(snapshot, "ChestRules");
-  const budget = snapshot.models.find((model) => model.model === "LordsBudget")!.rows.length
-    ? singleRow(snapshot, "LordsBudget")
-    : null;
-  requireFields(rules, ["game_id", "pool", "price", "shares", "claim_window_seconds"]);
-  if (budget) requireFields(budget, ["game_id", "pool_left", "open", "day"]);
-  const pool = rowUint(rules.pool, 128);
-  const poolLeft = budget ? rowUint(budget.pool_left, 128) : pool;
+  const budget = optionalRow(snapshot, "LordsBudget");
+  requireFields(rules, ["game_id", "price", "shares", "claim_window_seconds"]);
+  if (budget) requireFields(budget, ["game_id", "pool", "pool_left", "open", "day"]);
+  const pool = budget ? rowUint(budget.pool, 128) : 0n;
+  const poolLeft = budget ? rowUint(budget.pool_left, 128) : 0n;
   rowUint(rules.price, 128);
   if (budget) {
     rowUint(budget.open, 128);
@@ -95,6 +64,7 @@ const balanceOf = (snapshot: ConfirmedSnapshot, gameId: number): ConservationBal
   return {
     gameId,
     confirmedBlock: snapshot.confirmed_block,
+    pool: String(pool),
     receipts: String(withdrawn),
     netIssued: String(pool - poolLeft),
   };

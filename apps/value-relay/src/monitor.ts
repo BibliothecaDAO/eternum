@@ -55,13 +55,26 @@ const checkConservation = (ports: MonitorPorts, store: MonitorStore) =>
   Effect.gen(function* () {
     const balances = yield* ports.shard.conservation();
     const progress = yield* relayOperation("read conservation checkpoint", () => store.load());
+    let unavailable: RelayFailure | null = null;
     for (const balance of balances) {
-      const row = `conservation:${balance.chainId ? `${balance.chainId}:` : ""}${balance.gameId}:${balance.confirmedBlock}:${balance.receipts}:${balance.netIssued}`;
+      const row = `conservation:${balance.chainId}:${balance.gameId}:${balance.confirmedBlock}:${balance.receipts}:${balance.netIssued}`;
       if (BigInt(balance.receipts) > BigInt(balance.netIssued) && progress.skippedConservation !== row) {
         yield* recordFault(store, { row });
         return `lords_conservation:${balance.gameId}:${balance.confirmedBlock}`;
       }
+      if (BigInt(balance.pool) === 0n) continue;
+      const deposit = yield* Effect.result(ports.ledger.frontierPool(balance.chainId, balance.gameId));
+      if (Result.isFailure(deposit)) {
+        unavailable ??= deposit.failure;
+        continue;
+      }
+      const poolRow = `conservation:pool:${balance.chainId}:${balance.gameId}:${balance.pool}:${deposit.success}`;
+      if (BigInt(balance.pool) * 10n ** 18n !== BigInt(deposit.success) && progress.skippedConservation !== poolRow) {
+        yield* recordFault(store, { row: poolRow });
+        return `frontier_pool_mismatch:${balance.chainId}:${balance.gameId}`;
+      }
     }
+    if (unavailable) return yield* Effect.fail(unavailable);
     return null;
   });
 

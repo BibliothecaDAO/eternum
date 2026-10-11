@@ -267,12 +267,18 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
           for (const row of await activeShards(env.IDENTITY)) {
             const { reader, shard } = await shardPorts(row.chainId);
             const rows = await Effect.runPromise(shardConservationPort(reader.connection, shard.url, fetch, storage)());
-            balances.push(...rows.map((row) => ({ ...row, chainId: shard.chainId })));
+            balances.push(...rows);
           }
           return balances;
         }),
     },
     ledger: {
+      frontierPool: (chainId: string, gameId: number) =>
+        relayOperation("ledger Frontier funding unavailable", () =>
+          Effect.runPromise(
+            ledgerMonitorReads(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT)).frontierPool(chainId, gameId),
+          ),
+        ),
       paidClaims: (cursor: string | null, fromBlock?: number) =>
         relayOperation("ledger paid claims unavailable", () =>
           Effect.runPromise(

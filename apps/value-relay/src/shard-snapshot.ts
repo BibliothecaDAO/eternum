@@ -52,3 +52,9 @@ export const singleRow = (snapshot: ConfirmedSnapshot, name: string) => {
   if (!model || model.rows.length !== 1) throw new Error("snapshot_row_missing");
   return model.rows[0]!.value;
 };
+
+export const optionalRow = (snapshot: ConfirmedSnapshot, name: string) => {
+  const model = snapshot.models.find((model) => model.model === name);
+  if (!model || model.rows.length > 1) throw new Error("snapshot_row_missing");
+  return model.rows[0]?.value ?? null;
+};
