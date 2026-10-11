@@ -76,7 +76,9 @@ run on the owner's laptop. No mainnet private key or Alchemy URL goes to that ho
 10. Install the operator token on the box if absent. Its protected file is checked against the saved environment token.
 11. Commit and push **only** the public environment address book to `stack/node-first`. Unrelated staged changes stop
     this step. Before committing, fetch and require HEAD to equal origin/stack/node-first; a mismatch stops with one
-    public explanation. Print the exact `gh pr merge <number> --merge` command; wait for the owner to merge and rerun.
+    public explanation. If the commit succeeded but its push failed, a rerun accepts exactly one commit above the branch
+    head that changes only this book, reports it and retries the push without another commit. Print the exact
+    `gh pr merge <number> --merge` command; wait for the owner to merge and rerun.
 12. Observe successful push validation on the merged `next` commit. Print the exact `git tag` and `git push` commands
     for the package tag in the release file. Wait for the owner and the `shard-images.yml` release. Never move a tag.
 13. Build workspace packages, migrate D1 and deploy all six Workers from the released tree. Worker version tags prove

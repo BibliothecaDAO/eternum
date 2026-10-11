@@ -176,6 +176,33 @@ async function currentCalendar(context: Deployment) {
   }
   return phases;
 }
+async function requireAddressBookHead(context: Deployment, book: string, dirty: boolean) {
+  await command({ argv: ["git", "fetch", "origin", "stack/node-first"] });
+  const [head, remote] = (await command({ argv: ["git", "rev-parse", "HEAD", "origin/stack/node-first"] }))
+    .trim()
+    .split("\n");
+  if (head && head === remote) {
+    context.output("HEAD matches origin/stack/node-first; the public address book can be published.");
+    return;
+  }
+  if (dirty) throw new PublicError("HEAD must equal origin/stack/node-first before committing the address book.");
+  const parents = (await command({ argv: ["git", "rev-list", "--parents", "-n", "1", "HEAD"] })).trim().split(/\s+/);
+  const changed = (await command({ argv: ["git", "diff", "--name-only", "origin/stack/node-first", "HEAD", "--"] }))
+    .trim()
+    .split("\n");
+  if (
+    !remote ||
+    parents.length !== 2 ||
+    parents[0] !== head ||
+    parents[1] !== remote ||
+    changed.length !== 1 ||
+    changed[0] !== book
+  )
+    throw new PublicError(
+      "HEAD is neither origin/stack/node-first nor one address-book-only commit ahead; nothing was pushed.",
+    );
+  context.output("Found one unpushed address-book-only commit above origin/stack/node-first; retrying its push.");
+}
 export function deliverySteps(context: Deployment): Step[] {
   const wait = (detail: string) => ({ done: false, waiting: detail, detail });
   return [
@@ -193,12 +220,6 @@ export function deliverySteps(context: Deployment): Step[] {
         };
       },
       apply: async () => {
-        await command({ argv: ["git", "fetch", "origin", "stack/node-first"] });
-        const [head, remote] = (await command({ argv: ["git", "rev-parse", "HEAD", "origin/stack/node-first"] }))
-          .trim()
-          .split("\n");
-        if (!head || head !== remote)
-          throw new PublicError("HEAD must equal origin/stack/node-first before committing the address book.");
         const book = `contracts/common/addresses/${context.target.book}`;
         const staged = (await command({ argv: ["git", "diff", "--cached", "--name-only"] }))
           .trim()
@@ -207,6 +228,7 @@ export function deliverySteps(context: Deployment): Step[] {
         if (staged.some((path) => path !== book))
           throw new Error("Unrelated staged changes must be handled before publishing the address book");
         const dirty = (await command({ argv: ["git", "status", "--porcelain", "--", book] })).trim();
+        await requireAddressBookHead(context, book, !!dirty);
         if (dirty) {
           await command({ argv: ["git", "add", "--", book] });
           await command({
