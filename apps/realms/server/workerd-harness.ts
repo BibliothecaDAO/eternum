@@ -1,3 +1,4 @@
+import { SIGN_IN_CODE_LENGTH } from "@realms-world/identity";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -95,7 +96,7 @@ export const startWorker = async (options: {
     outboundService: async (request: Request) => {
       if (request.url !== EMAIL_PROVIDER) return options.outbound(request);
       const email = (await request.json()) as { to: string[]; text: string };
-      inbox.set(email.to[0]!, email.text.match(/\b\d{6}\b/)![0]);
+      inbox.set(email.to[0]!, email.text.match(new RegExp(`\\b\\d{${SIGN_IN_CODE_LENGTH}}\\b`))![0]);
       return Response.json({ id: "sent" });
     },
   });

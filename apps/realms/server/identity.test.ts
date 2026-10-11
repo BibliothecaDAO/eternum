@@ -321,6 +321,7 @@ describe("identity Worker", () => {
     const before = await userCount();
     const first = createBrowser();
     expect((await signInWithCode(first, "lord@realms.test")).status).toBe(200);
+    expect(sentCodes.get("lord@realms.test")).toMatch(/^\d{8}$/);
     const created = await first.session();
     expect(created?.user.realmsId).toBe(realmsIdOf(created!.user.id));
 
@@ -355,7 +356,7 @@ describe("identity Worker", () => {
       browser.request("/api/auth/email-otp/send-verification-otp", { body: { email, type: "sign-in" } });
 
     await ask("wrong@realms.test");
-    const wrongCode = sentCodes.get("wrong@realms.test") === "000000" ? "111111" : "000000";
+    const wrongCode = sentCodes.get("wrong@realms.test") === "00000000" ? "11111111" : "00000000";
     expect((await signIn("wrong@realms.test", wrongCode)).status).toBe(400);
 
     await ask("late@realms.test");
@@ -1010,17 +1011,18 @@ describe("identity Worker", () => {
     ).toEqual([]);
   });
 
-  it("requires a fresh six-digit code from the account email for every wallet mutation", async () => {
+  it("requires a fresh eight-digit code from the account email for every wallet mutation", async () => {
     const browser = createBrowser();
     await signInWithCode(browser, "wallet-factor@realms.test");
     const address = createWallet();
     expect((await proveWallet(browser, address, "link")).status).toBe(200);
     expect(notices).toHaveBeenLastCalledWith("wallet-factor@realms.test", expect.any(String), expect.any(String));
-    for (const otp of [undefined, "12345", "abcdef"]) {
+    for (const otp of [undefined, "123456", "1234567", "123456789", "abcdefgh"]) {
       expect((await browser.request("/api/auth/siws/unlink", { body: { otp } })).status).toBe(400);
     }
     const otp = await walletCode(browser);
-    const wrong = otp === "000000" ? "111111" : "000000";
+    expect(otp).toMatch(/^\d{8}$/);
+    const wrong = otp === "00000000" ? "11111111" : "00000000";
     expect((await browser.request("/api/auth/siws/unlink", { body: { otp: wrong } })).status).toBe(400);
     expect((await browser.session())!.user.address).not.toBeNull();
     expect((await browser.request("/api/auth/siws/unlink", { body: { otp } })).status).toBe(200);

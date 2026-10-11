@@ -2,7 +2,12 @@ import type { AuthContext, BetterAuthPlugin, Session, User } from "better-auth";
 import { APIError, createAuthEndpoint, sessionMiddleware } from "better-auth/api";
 import { z } from "zod";
 
-import { normalizeStarknetAddress, parseSiwsTypedData, payoutWalletStatement } from "@realms-world/identity";
+import {
+  normalizeStarknetAddress,
+  parseSiwsTypedData,
+  payoutWalletStatement,
+  SIGN_IN_CODE_LENGTH,
+} from "@realms-world/identity";
 
 import { changeWallet } from "./wallet-changes";
 import { authorizeSiwsNonce, SiwsVerificationError } from "./siws-verification";
@@ -37,7 +42,7 @@ const NONCE_LIFETIME_MS = 15 * 60 * 1000;
 /** An endpoint behind the session middleware: it knows who is signed in. */
 type SignedInContext = { context: AuthContext & { session: { session: Session; user: User & { realmsId?: string } } } };
 
-const EmailCode = z.string().regex(/^\d{6}$/);
+const EmailCode = z.string().length(SIGN_IN_CODE_LENGTH).regex(/^\d+$/);
 const realmsIdOf = (ctx: SignedInContext) => {
   const id = ctx.context.session.user.realmsId;
   if (!id) throw new APIError("INTERNAL_SERVER_ERROR", { message: "account_identity_missing" });

@@ -145,12 +145,12 @@ it("binds wallet links to the server's Realms id and carries the email code for 
     domain: "realms.test",
     uri: "https://realms.test",
     signTypedData,
-    code: "123456",
+    code: "12345678",
   });
   expect(signTypedData.mock.calls[0]![0].message.statement).toBe("Link this payout wallet to Realms account 0xabc");
-  expect(JSON.parse(String(fetch.mock.calls[1]![1]!.body))).toMatchObject({ otp: "123456" });
-  await client.unlinkWallet("654321");
-  expect(JSON.parse(String(fetch.mock.calls[2]![1]!.body))).toEqual({ otp: "654321" });
+  expect(JSON.parse(String(fetch.mock.calls[1]![1]!.body))).toMatchObject({ otp: "12345678" });
+  await client.unlinkWallet("87654321");
+  expect(JSON.parse(String(fetch.mock.calls[2]![1]!.body))).toEqual({ otp: "87654321" });
 });
 
 it("carries deployment data alongside the account-bound SIWS signature and email code when linking", async () => {
@@ -169,9 +169,9 @@ it("carries deployment data alongside the account-bound SIWS signature and email
     chainId: "SN_MAIN",
     domain: "play.realms.party",
     uri: "https://play.realms.party",
-    code: "123456",
+    code: "12345678",
     deployment,
     signTypedData: async () => ["1", "2"],
   });
-  expect(requests.at(-1)?.body).toMatchObject({ address: "0x123", signature: ["1", "2"], otp: "123456", deployment });
+  expect(requests.at(-1)?.body).toMatchObject({ address: "0x123", signature: ["1", "2"], otp: "12345678", deployment });
 });

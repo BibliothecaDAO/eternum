@@ -1,3 +1,5 @@
+import { SIGN_IN_CODE_LENGTH } from "@realms-world/identity";
+
 /** Delivers a one-time sign-in code to an email address; the provider sits behind this one call. */
 export type SendSignInCode = (email: string, code: string) => Promise<void>;
 
@@ -9,7 +11,7 @@ export const resendSignInCodes =
       apiKey,
       email,
       `${code} is your Realms sign-in code`,
-      `Your Realms sign-in code is ${code}. It expires in 5 minutes. If you did not ask for it, you can ignore this email.`,
+      `Your ${SIGN_IN_CODE_LENGTH}-digit Realms sign-in code is ${code}. It expires in 5 minutes. If you did not ask for it, you can ignore this email.`,
     );
 
 export async function sendIdentityEmail(
