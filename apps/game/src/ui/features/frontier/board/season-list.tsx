@@ -7,10 +7,12 @@ import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
 import {
   BACK,
   LORDS,
+  PER_SHARE,
   POOL_NOT_PUBLISHED,
   SEASON,
   SEASON_ERROR,
   SEASON_POOL,
+  SHARE_CEILING,
   TODAY,
   TRY_AGAIN,
 } from "@/ui/design-system/kit/words";
@@ -31,11 +33,11 @@ export type SeasonListRow = {
 const SKELETON_ROWS = 8;
 
 /**
- * Season (wireframe 13), a page from the Menu, so it has Back: the title with a common chest's LORDS and the player's
- * rank, the season's pool with what today releases of it (or that it is not published yet), then the realms by sites
- * cleared with LORDS beside, the player's own row lit in place or pinned at the foot when
- * it ranks below the rows shown. A row opens its detail. When the season did not answer, the card says so, with Try
- * again.
+ * Season (wireframe 13), a page from the Menu, so it has Back: the title with what a common chest pays today and the
+ * player's rank, the season's pool with what today releases of it and a share's price (or that the pool is not
+ * published yet), then the realms by sites cleared with LORDS beside, the player's own row lit in place or pinned at
+ * the foot when it ranks below the rows shown. A row opens its detail. When the season did not answer, the card says
+ * so, with Try again.
  */
 export const SeasonList = ({
   rank,
@@ -50,7 +52,7 @@ export const SeasonList = ({
 }: {
   /** The player's rank; null for a player without a realm on the list, undefined while it loads. */
   rank: number | null | undefined;
-  /** A common chest: its tier and the LORDS it pays this season; absent until the game's chest rules are read. */
+  /** A common chest: its tier and the LORDS it pays at today's price; absent until the day's price is set. */
   chest?: { tier: Tier; lords: number };
   /** The season's pool; null while none is published, absent until the game's facts are known. */
   pool?: SeasonPoolFigures | null;
@@ -100,12 +102,22 @@ export const SeasonList = ({
   </section>
 );
 
-/** The season's pool in whole LORDS, and what today releases of it (absent before the season starts and after it ends). */
-export type SeasonPoolFigures = { lords: number; today: number | undefined };
+/**
+ * The season's pool in whole LORDS and what today releases of it (absent before the season starts and after it ends),
+ * then a share's price: today's once the day has opened, and the ceiling no day's price passes.
+ */
+export type SeasonPoolFigures = {
+  lords: number;
+  today: number | undefined;
+  price: number | undefined;
+  ceiling: number | undefined;
+};
 
 /**
- * The pool the season pays its chests from: the LORDS deposited for it, and today's share of them. Before the deposit
- * is published to the game there is no pool, said in the figures' place.
+ * The pool the season pays its chests from, two figures to a row: the LORDS deposited for it and today's share of
+ * them, then what a share of a chest pays today and the most a day can set it to. A day sets its price at its first
+ * ruin, so until then, and outside the season, the figures that stand are fewer and close up. Before the deposit is
+ * published to the game there is no pool, said in the figures' place.
  */
 const PoolLine = ({ pool }: { pool: SeasonPoolFigures | null }) =>
   pool === null ? (
@@ -114,9 +126,11 @@ const PoolLine = ({ pool }: { pool: SeasonPoolFigures | null }) =>
       {POOL_NOT_PUBLISHED}
     </p>
   ) : (
-    <dl className="flex h-9 shrink-0 items-center gap-x-5 whitespace-nowrap px-1 text-[14px]">
+    <dl className="grid shrink-0 grid-cols-[auto_auto] justify-start gap-x-5 gap-y-1.5 whitespace-nowrap px-1 py-1.5 text-[14px]">
       <PoolFigure word={SEASON_POOL} value={formatExact(pool.lords)} />
       {pool.today !== undefined && <PoolFigure word={TODAY} value={`+${formatExact(pool.today)}`} />}
+      {pool.price !== undefined && <PoolFigure word={PER_SHARE} value={formatExact(pool.price)} />}
+      {pool.ceiling !== undefined && <PoolFigure word={SHARE_CEILING} value={formatExact(pool.ceiling)} />}
     </dl>
   );
 

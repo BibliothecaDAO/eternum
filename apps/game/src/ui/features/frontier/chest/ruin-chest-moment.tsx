@@ -12,7 +12,7 @@ const GLOW_PX: Record<Tier, number> = { 1: 0, 2: 12, 3: 22, 4: 34, 5: 48 };
 
 /**
  * A ruin's chest opening in the clear's result (wireframe 07): over a scrim, the chest, the exact LORDS it pays (the
- * figure stored with it when it was found: its tier's shares at the preset's price), its tier, the clear's XP and the
+ * figure stored with it when it was found: its tier's shares at that day's price), its tier, the clear's XP and the
  * troops lost. No button: a tap anywhere goes on.
  */
 export const RuinChestMoment = ({

@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-11",
+    title: "A chest's price follows the day",
+    description:
+      "A Frontier day now sets what a share of a ruin chest pays from the LORDS it has and the chests the day before rolled, never above the season's ceiling. The Season page shows today's price per share beside the ceiling, and its common chest reads at today's price once the day's first ruin is found.",
+    type: "balance",
+  },
+  {
+    date: "2026-10-11",
     title: "The season's pool on the Season page",
     description:
       "A Frontier season's Season page now shows the pool of LORDS deposited for the season and how much of it today releases to ruin chests. Before the deposit is published it says so, and no ruin holds a chest until then.",
@@ -60,13 +67,6 @@ const allLatestFeatures: LatestFeature[] = [
     description:
       "Claim all on the Realms sheet now claims every ready Realm's labor in a single request, so several Realms take no longer than one.",
     type: "improvement",
-  },
-  {
-    date: "2026-10-11",
-    title: "One chest price all season",
-    description:
-      "A ruin chest pays its tier's shares at one LORDS price set for the season, so the Season page's common chest reads the same every day instead of following a daily price.",
-    type: "balance",
   },
   {
     date: "2026-10-11",

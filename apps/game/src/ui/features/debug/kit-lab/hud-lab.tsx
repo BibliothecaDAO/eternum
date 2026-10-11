@@ -375,8 +375,12 @@ const SEASON_ROWS: SeasonListRow[] = SEASON_NAMES.map((name, index) => ({
   lords: SEASON_LORDS[index],
   own: false,
 }));
-/** A million LORDS deposited for a 100-unit season: Day 12 spans five units and releases a twentieth of it. */
-const SEASON_POOL_FIGURES = { lords: 1_000_000, today: 50_000 };
+/**
+ * A million LORDS deposited for a 100-unit season: Day 12 spans five units and releases a twentieth of it. Yesterday's
+ * rolls set today's share at 12 LORDS, under the ceiling of 16; a common chest holds two shares.
+ */
+const SEASON_POOL_FIGURES = { lords: 1_000_000, today: 50_000, price: 12, ceiling: 16 };
+const SEASON_COMMON_CHEST = { tier: 1 as const, lords: 24 };
 const OWN_ROW: SeasonListRow = { key: "you", rank: 12, order: 12, name: YOU, sitesCleared: 88, lords: 192, own: true };
 
 /** The guide's lab lines, by the step they show. */
@@ -876,7 +880,7 @@ export const HudLab = () => {
             <>
               <SeasonList
                 rank={12}
-                chest={{ tier: 1, lords: 32 }}
+                chest={lab.season === "unpublished" ? undefined : SEASON_COMMON_CHEST}
                 pool={lab.season === "unpublished" ? null : SEASON_POOL_FIGURES}
                 rows={SEASON_ROWS}
                 pinned={OWN_ROW}

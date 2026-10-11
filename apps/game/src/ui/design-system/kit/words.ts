@@ -151,6 +151,9 @@ export const CLAIMED_TODAY = "Claimed today";
 /** The Season page's pool: the LORDS deposited for the season; what today releases of them stands under Today. */
 export const SEASON_POOL = "Pool";
 export const POOL_NOT_PUBLISHED = "Pool not published yet";
+/** What one share of a chest pays today, and the most any day can set that price to. */
+export const PER_SHARE = "Per share";
+export const SHARE_CEILING = "Max";
 export const fitOf = (fits: string, of: string) => `${fits} of ${of} fit`;
 export const REALMS_ELSEWHERE = "Only Realms in this Starknet wallet count. Not on Ethereum, not in another wallet.";
 /** A Realm joins the list by its number, the first time it gives its labor. */

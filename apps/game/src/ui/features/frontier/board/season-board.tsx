@@ -6,14 +6,8 @@ import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { getActiveGame } from "@/runtime/world";
 import { startRealmVisit } from "@/sync/active-game-client";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
-import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import { configManager, dayOf, type ExpeditionRules } from "@bibliothecadao/eternum";
-import {
-  fetchHeraldLeaderboard,
-  type NativeRows,
-  requireShard,
-  safeInteger,
-} from "@bibliothecadao/eternum/game-client";
+import { fetchHeraldLeaderboard, requireShard, safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
@@ -21,9 +15,9 @@ import { useNavigate } from "react-router-dom";
 
 import { GuideSlot } from "../guide/frontier-guide";
 import { type SeasonDetail, SeasonDetailSheet } from "./season-detail";
-import { SeasonList, type SeasonListRow, type SeasonPoolFigures } from "./season-list";
+import { SeasonList, type SeasonListRow } from "./season-list";
 import { type PodiumPlace, SeasonOverCard, type SeasonTotals } from "./season-over-card";
-import { publishedPoolOf, releasedInDay } from "./season-pool";
+import { type SeasonLords, seasonLordsOf } from "./season-pool";
 import { findOwnEntry, ownRank, wholeLords, wholeResource } from "./standings";
 
 type Entry = HeraldFrontierLeaderboardEntry;
@@ -59,14 +53,14 @@ export const useSeasonRank = (): string => {
 };
 
 /**
- * Season over the board: the season's pool and what today releases of it, a common chest's LORDS, the first fifty
- * realms and the player's own, a row's detail with Visit. Visiting closes the page for the visited realm.
+ * Season over the board: the season's pool, what today releases of it and a share's price today, a common chest at
+ * that price, the first fifty realms and the player's own, a row's detail with Visit. Visiting closes the page for the
+ * visited realm.
  */
 export const FrontierSeason = ({ rules, onBack }: { rules: ExpeditionRules; onBack: () => void }) => {
   const board = useSeasonBoard();
   const viewer = useViewer();
-  const chest = useCommonChest();
-  const pool = useSeasonPool(rules);
+  const { pool, chest } = useSeasonLords(rules);
   const [opened, setOpened] = useState<string | null>(null);
   const entries = board.data ?? [];
   const own = findOwnEntry(entries, viewer);
@@ -100,45 +94,27 @@ export const FrontierSeason = ({ rules, onBack }: { rules: ExpeditionRules; onBa
   );
 };
 
-/** A common chest for the whole season; undefined until the game's chest rules are known. */
-const useCommonChest = (): { tier: Tier; lords: number } | undefined => {
-  const { setup } = useGame();
-  useNativeRevision(CHEST_MODELS);
-  const chestRules = setup.store.get("ChestRules", { game_id: configManager.getActiveGameId() });
-  return chestRules && commonChestOf(chestRules);
-};
-
 /**
- * What a common chest pays: the common tier's shares at the one LORDS price a share the preset sets, as
- * lords_budget.cairo prices a chest. The price is fixed for the season; no day changes it.
+ * The season's LORDS from the game's own facts: the pool published to its budget row with what today releases of it by
+ * the season's day schedule, a share's price today (the budget row's) under the ceiling the chest rules set, and a
+ * common chest at that price. The pool is null while nothing is published and undefined until the game itself is known.
  */
-export const commonChestOf = (chestRules: Pick<NativeRows["ChestRules"], "shares" | "price">) => ({
-  tier: 1 as const,
-  lords: Number(BigInt(chestRules.shares.common) * chestRules.price),
-});
-
-const CHEST_MODELS = ["ChestRules"] as const;
-
-/**
- * The season's pool from the game's own facts: the amount published to its budget row, and what today releases of it
- * by the season's day schedule. Null while nothing is published; undefined until the game itself is known. No preset
- * is asked for a pool.
- */
-const useSeasonPool = (rules: ExpeditionRules): SeasonPoolFigures | null | undefined => {
+const useSeasonLords = (rules: ExpeditionRules): Partial<SeasonLords> => {
   const { setup } = useGame();
-  useNativeRevision(POOL_MODELS);
+  useNativeRevision(LORDS_MODELS);
   const now = useNowSeconds();
   const gameId = configManager.getActiveGameId();
   const game = setup.store.get("GameRegistry", { game_id: gameId });
-  if (!game) return undefined;
-  const pool = publishedPoolOf(setup.store.get("LordsBudget", { game_id: gameId }));
-  if (pool === null) return null;
+  if (!game) return {};
   const season = { start: Number(game.start_main_at), end: Number(game.end_at) };
-  const today = now < season.end ? dayOf(rules, now) : null;
-  return { lords: Number(pool), today: today ? Number(releasedInDay(pool, season, today)) : undefined };
+  const facts = {
+    budget: setup.store.get("LordsBudget", { game_id: gameId }),
+    chestRules: setup.store.get("ChestRules", { game_id: gameId }),
+  };
+  return seasonLordsOf(facts, season, now < season.end ? dayOf(rules, now) : null);
 };
 
-const POOL_MODELS = ["GameRegistry", "LordsBudget"] as const;
+const LORDS_MODELS = ["GameRegistry", "LordsBudget", "ChestRules"] as const;
 
 /**
  * The season's first rows as SeasonRow draws them, the player's own lit in place, or pinned under them when it ranks
