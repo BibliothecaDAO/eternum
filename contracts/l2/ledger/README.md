@@ -131,12 +131,18 @@ Setup grants updater/minter/pauser roles, configures metadata, registers Blitz (
 Blitz season 1. Deployment neither reads nor funds a Frontier game. Its only season window is the separate Blitz
 season's existing start/end inputs; no Frontier clock, seed, pool or shard is a deployment input.
 
-Build release artifacts first, using each package's pinned toolchain:
+All three value-plane packages (ledger, MMR and collectibles) build with **Scarb 2.13.1** and test with **Starknet
+Foundry 0.51.2**. All three packages and collectible CI use the root `.tool-versions`. Select those versions on `PATH`
+(`scarb --version`, `snforge --version`) before building. The ledger suite declares the production `RealmsCollectible`
+class from its path dependency, including its metadata and minter-role checks. Deployment validation runs
+`snforge test --release` in both the ledger and collectible packages.
+
+Build the three release artifact sets before deployment:
 
 ```sh
-(cd contracts/l2/ledger && flock /tmp/eternum-scarb.lock scarb build --release)
-(cd contracts/l2/mmr && flock /tmp/eternum-scarb.lock scarb build --release)
-(cd contracts/l2/collectibles && flock /tmp/eternum-scarb.lock scarb build --release)
+(cd contracts/l2/ledger && flock /tmp/eternum-scarb.lock scarb --release build)
+(cd contracts/l2/mmr && flock /tmp/eternum-scarb.lock scarb --release build)
+(cd contracts/l2/collectibles && flock /tmp/eternum-scarb.lock scarb --release build)
 ```
 
 For deployment supply `ENVIRONMENT=staging`, `DEV_RPC_URL` (mainnet), `DEV_ACCOUNT_ADDRESS`, `DEV_ACCOUNT_PRIVATE_KEY`,

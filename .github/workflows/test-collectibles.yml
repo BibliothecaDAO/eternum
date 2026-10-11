@@ -10,15 +10,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: software-mansion/setup-scarb@v1
         with:
-          tool-versions: contracts/l2/collectibles/.tool-versions
+          tool-versions: .tool-versions
           scarb-lock: contracts/l2/collectibles/Scarb.lock
       - uses: ./.github/actions/fetch-cairo-dependencies
         with:
           working-directory: contracts/l2/collectibles
       - uses: foundry-rs/setup-snfoundry@v3
         with:
-          tool-versions: contracts/l2/collectibles/.tool-versions
-      - run: scarb build
+          tool-versions: .tool-versions
+      - run: scarb --release build
         working-directory: contracts/l2/collectibles
-      - run: snforge test
+      - run: snforge test --release
         working-directory: contracts/l2/collectibles

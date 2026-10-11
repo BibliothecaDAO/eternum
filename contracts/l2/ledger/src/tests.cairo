@@ -1,3 +1,6 @@
+use collectibles::contract::{
+    IRealmsCollectibleMetadataDispatcher, IRealmsCollectibleMetadataDispatcherTrait, MINTER_ROLE,
+};
 use core::num::traits::Zero;
 use game_ledger::contract::{
     IGameLedgerDispatcher, IGameLedgerDispatcherTrait, IGameLedgerSafeDispatcher, IGameLedgerSafeDispatcherTrait,
@@ -112,15 +115,22 @@ fn deploy_ledger() -> Fixture {
     TREASURY().serialize(ref constructor);
     lords_address.serialize(ref constructor);
     mmr_address.serialize(ref constructor);
-    let collectible_class = declare("TestCollectible").unwrap().contract_class();
-    let (loot_chest, _) = collectible_class.deploy(@array![]).unwrap();
-    let (cosmetics, _) = collectible_class.deploy(@array![]).unwrap();
+    let loot_chest = deploy_collection("devChest");
+    let cosmetics = deploy_collection("devCosmetics");
     loot_chest.serialize(ref constructor);
     cosmetics.serialize(ref constructor);
     let (ledger_address, _) = ledger_class.deploy(@constructor).unwrap();
     let ledger = IGameLedgerDispatcher { contract_address: ledger_address };
-    ITestCollectibleDispatcher { contract_address: loot_chest }.set_minter(ledger_address);
-    ITestCollectibleDispatcher { contract_address: cosmetics }.set_minter(ledger_address);
+    grant_collection_minter(loot_chest, ledger_address);
+    grant_collection_minter(cosmetics, ledger_address);
+    let mut chest_metadata = array![];
+    for band in test_bands() {
+        chest_metadata.append(band.metadata);
+    }
+    configure_collection_metadata(loot_chest, chest_metadata);
+    for items in test_items() {
+        configure_collection_metadata(cosmetics, items);
+    }
 
     Fixture {
         ledger_address,
@@ -875,73 +885,36 @@ fn result_commitment_binds_the_shard_namespace() {
     );
 }
 
-#[starknet::interface]
-trait ITestCollectible<TState> {
-    fn set_minter(ref self: TState, minter: ContractAddress);
-    fn get_metadata_raw(self: @TState, token_id: u256) -> u128;
+fn deploy_collection(name: ByteArray) -> ContractAddress {
+    let collectible_class = declare("RealmsCollectible").unwrap().contract_class();
+    let mut constructor = array![];
+    name.serialize(ref constructor);
+    name.serialize(ref constructor);
+    let empty: ByteArray = "";
+    empty.serialize(ref constructor);
+    let description: ByteArray = "Dev test collection (no value)";
+    description.serialize(ref constructor);
+    for _ in 0_u32..6 {
+        ADMIN().serialize(ref constructor);
+    }
+    0_u128.serialize(ref constructor);
+    let (address, _) = collectible_class.deploy(@constructor).unwrap();
+    address
 }
 
-#[starknet::contract]
-mod TestCollectible {
-    use core::num::traits::Zero;
-    use game_ledger::contract::ICollectible;
-    use openzeppelin::introspection::src5::SRC5Component;
-    use openzeppelin::token::erc721::{ERC721Component, ERC721HooksEmptyImpl};
-    use starknet::ContractAddress;
-    use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
-    component!(path: ERC721Component, storage: erc721, event: ERC721Event);
-    component!(path: SRC5Component, storage: src5, event: SRC5Event);
-    #[abi(embed_v0)]
-    impl ERC721Impl = ERC721Component::ERC721Impl<ContractState>;
-    impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
-    #[storage]
-    struct Storage {
-        minter: ContractAddress,
-        counter: u256,
-        attributes: Map<u256, u128>,
-        #[substorage(v0)]
-        erc721: ERC721Component::Storage,
-        #[substorage(v0)]
-        src5: SRC5Component::Storage,
+fn grant_collection_minter(collection: ContractAddress, minter: ContractAddress) {
+    start_cheat_caller_address(collection, ADMIN());
+    IAccessControlDispatcher { contract_address: collection }.grant_role(MINTER_ROLE, minter);
+    stop_cheat_caller_address(collection);
+}
+
+fn configure_collection_metadata(collection: ContractAddress, attributes: Array<u128>) {
+    start_cheat_caller_address(collection, ADMIN());
+    let metadata = IRealmsCollectibleMetadataDispatcher { contract_address: collection };
+    for attribute in attributes {
+        metadata.set_attrs_raw_to_ipfs_cid(attribute, "test-cid", false);
     }
-    #[event]
-    #[derive(Drop, starknet::Event)]
-    enum Event {
-        #[flat]
-        ERC721Event: ERC721Component::Event,
-        #[flat]
-        SRC5Event: SRC5Component::Event,
-    }
-    #[constructor]
-    fn constructor(ref self: ContractState) {
-        self.erc721.initializer("Test collectible", "TEST", "");
-    }
-    #[abi(embed_v0)]
-    impl CollectibleImpl of ICollectible<ContractState> {
-        fn mint(ref self: ContractState, recipient: ContractAddress, attributes_raw: u128) {
-            self.mint_with_id(recipient, attributes_raw);
-        }
-        fn mint_with_id(ref self: ContractState, recipient: ContractAddress, attributes_raw: u128) -> u256 {
-            assert!(starknet::get_caller_address() == self.minter.read(), "only minter");
-            let token_id = self.counter.read() + 1;
-            self.counter.write(token_id);
-            self.attributes.entry(token_id).write(attributes_raw);
-            self.erc721.mint(recipient, token_id);
-            token_id
-        }
-        fn burn(ref self: ContractState, token_id: u256) {
-            self.erc721.update(Zero::zero(), token_id, starknet::get_caller_address());
-        }
-    }
-    #[abi(embed_v0)]
-    impl TestCollectibleImpl of super::ITestCollectible<ContractState> {
-        fn set_minter(ref self: ContractState, minter: ContractAddress) {
-            self.minter.write(minter);
-        }
-        fn get_metadata_raw(self: @ContractState, token_id: u256) -> u128 {
-            self.attributes.entry(token_id).read()
-        }
-    }
+    stop_cheat_caller_address(collection);
 }
 
 fn test_items() -> Array<Array<u128>> {
@@ -1083,7 +1056,8 @@ fn a_permissionless_cosmetic_finish_mints_to_the_requester() {
     let cosmetics = IERC721Dispatcher { contract_address: fixture.cosmetics_address };
     assert!(cosmetics.owner_of(1) == player(0));
     assert!(
-        ITestCollectibleDispatcher { contract_address: fixture.cosmetics_address }.get_metadata_raw(1) == 0x1011401,
+        IRealmsCollectibleMetadataDispatcher { contract_address: fixture.cosmetics_address }
+            .get_metadata_raw(1) == 0x1011401,
     );
     assert!(fixture.ledger.get_chest(1).request_block == 100);
 }
@@ -1491,7 +1465,7 @@ fn twenty_four_players_mint_exactly_five_percentile_kinds() {
     for index in 0_u16..24 {
         let chest = fixture.ledger.get_chest((index + 1).into());
         assert!(chest.season_id == 1 && !chest.requested && !chest.finished);
-        let metadata = ITestCollectibleDispatcher { contract_address: fixture.chest_address }
+        let metadata = IRealmsCollectibleMetadataDispatcher { contract_address: fixture.chest_address }
             .get_metadata_raw((index + 1).into());
         assert!(metadata == 0x301 + chest.band.into());
         let old = *counts.at(chest.band.into());
@@ -1532,7 +1506,7 @@ fn all_eight_outcomes_use_the_immutable_band_presets() {
         if outcome < 5 {
             let items = test_items();
             assert!(
-                ITestCollectibleDispatcher { contract_address: fixture.cosmetics_address }
+                IRealmsCollectibleMetadataDispatcher { contract_address: fixture.cosmetics_address }
                     .get_metadata_raw(1) == *items
                     .at(outcome.into())
                     .at(0),
@@ -1652,6 +1626,7 @@ fn a_cosmetic_rarity_selects_from_all_its_items_using_an_independent_hash() {
         bands.append(ChestBandPreset { metadata: 0x301 + band.into(), odds: odds_for(0), lords_amount: 700 });
     }
     let items = array![array![1, 2, 3], array![4], array![5], array![6], array![7]];
+    configure_collection_metadata(fixture.cosmetics_address, array![1, 2, 3, 4, 5, 6, 7]);
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.register_preset(PRESET_ID, default_preset(), bands, items);
     assert!(fixture.ledger.get_cosmetic_items(PRESET_ID, 0) == array![1_u128, 2, 3]);
@@ -1662,7 +1637,9 @@ fn a_cosmetic_rarity_selects_from_all_its_items_using_an_independent_hash() {
     register_players(@fixture, 1);
     apply_results(@fixture, ranked_players(1));
     open_reward(@fixture, player(0), 1);
-    assert!(ITestCollectibleDispatcher { contract_address: fixture.cosmetics_address }.get_metadata_raw(1) == 2);
+    assert!(
+        IRealmsCollectibleMetadataDispatcher { contract_address: fixture.cosmetics_address }.get_metadata_raw(1) == 2,
+    );
 }
 
 #[test]

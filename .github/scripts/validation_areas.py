@@ -134,11 +134,13 @@ AREAS = {
         "contracts/l2/ammv2/**"
     ],
     "collectibles": [
+        ".tool-versions",
         ".github/workflows/test-collectibles.yml",
         ".github/actions/fetch-cairo-dependencies/**",
         "contracts/l2/collectibles/**"
     ],
     "mmr": [
+        ".tool-versions",
         ".github/workflows/test-mmr.yml",
         ".github/actions/fetch-cairo-dependencies/**",
         "contracts/l2/mmr/**"
