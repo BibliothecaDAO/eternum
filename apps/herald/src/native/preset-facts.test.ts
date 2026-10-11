@@ -80,7 +80,8 @@ describe("verified preset configuration facts", () => {
     world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
     const rules = world.fold.gameRows("ChestRules", "1")[0]!.value;
     expect(rules).not.toHaveProperty("pool");
-    expect(Number(rules.price)).toBe(50);
+    expect(rules).not.toHaveProperty("price");
+    expect(Number(rules.price_ceiling)).toBe(50);
     expect(world.fold.gameRows("LordsBudget", "1")).toEqual([]);
     const tiers = ["common", "uncommon", "rare", "epic", "legendary"];
     const shares = rules.shares as Record<string, unknown>;

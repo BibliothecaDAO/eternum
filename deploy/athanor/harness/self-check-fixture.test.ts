@@ -185,7 +185,7 @@ test("Frontier deployment checks and normal games encode chest rules without a f
   expect(production.chests).not.toHaveProperty("pool");
   const definition = buildNativePreset(loadNativePresetConfiguration("madara.frontier", check.id), check.id);
   expect(definition.economy.chests.unwrap()).toEqual({
-    price: 50n,
+    price_ceiling: 50n,
     shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
     claim_window_seconds: 604800,
   });

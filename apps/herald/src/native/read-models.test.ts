@@ -462,9 +462,19 @@ it.each(["Frontier", "check-frontier-abc"])(
     const state = world();
     const models = ["ChestRules", "LordsBudget", "LordsWithdrawal"];
     const chests = {
-      price: 50n,
+      price_ceiling: 50n,
       claim_window_seconds: 604800n,
       shares: { common: 1n, uncommon: 2n, rare: 4n, epic: 10n, legendary: 20n },
+    };
+    const budget = {
+      pool: 1000n,
+      pool_left: 900n,
+      open: 20n,
+      day: 1n,
+      price: 25n,
+      rolled_shares: 40n,
+      yesterday_shares: 80n,
+      yesterday_ticks: 12n,
     };
     state.native.applyReceipt(
       state.fold,
@@ -476,12 +486,7 @@ it.each(["Frontier", "check-frontier-abc"])(
             buildNativePreset(loadNativePresetConfiguration("madara.frontier", 5), 5).rules,
           ),
           rowEvent("ChestRules", ["1"], chests),
-          rowEvent("LordsBudget", ["1"], {
-            pool: 1000n,
-            pool_left: 900n,
-            open: 20n,
-            day: 1n,
-          }),
+          rowEvent("LordsBudget", ["1"], budget),
           rowEvent("LordsWithdrawal", ["1", "85"], { account: 273n, amount: 100n }),
           gameEvent("1", "1", "0", "5", name),
         ]),
@@ -489,6 +494,8 @@ it.each(["Frontier", "check-frontier-abc"])(
       11,
       0,
     );
+    const decodedBudget = state.fold.gameRows("LordsBudget", "1")[0]!.value;
+    for (const [field, value] of Object.entries(budget)) expect(BigInt(String(decodedBudget[field]))).toBe(value);
     const before = state.fold.snapshot("1", 11, models).models;
     state.fold.evictFinalizedGames();
     expect(state.fold.finalizedGameIds()).toContain("1");
