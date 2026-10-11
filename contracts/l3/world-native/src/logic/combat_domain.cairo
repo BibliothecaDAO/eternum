@@ -23,12 +23,11 @@ pub mod CombatLogic {
             actor: ContractAddress,
             command: Battle,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
+        ) -> () {
             let context = crate::commands::load_context(game_id, context);
 
-            crate::logic::combat::battle_guard(game_id, actor, command, context, ref story_cursor);
-            ((), story_cursor)
+            crate::logic::combat::battle_guard(game_id, actor, command, context);
+            ()
         }
     }
     #[abi(embed_v0)]
@@ -39,12 +38,11 @@ pub mod CombatLogic {
             actor: ContractAddress,
             command: crate::combat_actions::AttackExplorer,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
+        ) -> () {
             let context = crate::commands::load_context(game_id, context);
 
-            crate::logic::combat::battle(game_id, actor, command, context, ref story_cursor);
-            ((), story_cursor)
+            crate::logic::combat::battle(game_id, actor, command, context);
+            ()
         }
         fn guard_attack(
             ref self: ContractState,
@@ -52,12 +50,11 @@ pub mod CombatLogic {
             actor: ContractAddress,
             command: crate::combat_actions::GuardAttack,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
+        ) -> () {
             let context = crate::commands::load_context(game_id, context);
 
-            crate::logic::combat::guard_attack(game_id, actor, command, context, ref story_cursor);
-            ((), story_cursor)
+            crate::logic::combat::guard_attack(game_id, actor, command, context);
+            ()
         }
     }
 }

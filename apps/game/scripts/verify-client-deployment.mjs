@@ -1,4 +1,5 @@
 import { readClientModuleEntries } from "./client-build-files.mjs";
+import { readShellRoutes, sampleShellRoute } from "./shell-routes.mjs";
 import { createHash } from "node:crypto";
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
@@ -6,6 +7,12 @@ import { pathToFileURL } from "node:url";
 import { setTimeout } from "node:timers/promises";
 
 const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
+
+/** A game deep link with its query: the one route the shell's patterns do not exercise on their own. */
+const GAME_ROUTE = "/g/0x1/1/map?spectate=true";
+
+/** Every page the built app publishes (its _redirects, held to the router), one sample URL each, and a game link. */
+const publishedRoutes = async (dist) => [...(await readShellRoutes(dist)).map(sampleShellRoute), GAME_ROUTE];
 
 export async function verifyClientDeployment(dist, origin) {
   const checks = await checkPublishedAssets(dist, origin);
@@ -17,7 +24,7 @@ export async function verifyClientDeployment(dist, origin) {
   ])
     checks.push(await checkMutableInstallAsset(dist, origin, path, type));
   const entry = await readClientModuleEntries(dist);
-  for (const route of ["/", "/play", "/g/0x1/1/map?spectate=true", "/factory"]) {
+  for (const route of await publishedRoutes(dist)) {
     checks.push(await checkPublishedRoute(origin, route, entry));
   }
   checks.push(await checkMissingAsset(origin));

@@ -1,55 +1,217 @@
-import { hash } from "starknet";
-import { describe, expect, it } from "vitest";
-import type { GameSyncTransaction } from "../sync/game-sync-types";
-import { NativeFactStore } from "./native-fact-store";
-import { ActionOutcomeUnreportedError, waitForTransactionOutcome } from "./transaction-outcome";
+import { byteArray, hash, shortString } from "starknet";
+import { describe, expect, it, vi } from "vitest";
 
-const ticket = { gameId: "1", actor: "0x111", nonce: "2", order: "7" };
+import { waitForActionOutcome } from "./transaction-outcome";
 
-const fixture = (nextNonce: number) => {
-  const store = new NativeFactStore();
-  store.applyFacts([
-    {
-      model: "ActionNonce",
-      key: hash.computePoseidonHashOnElements([1n, 0x111n]),
-      value: { game_id: 1, actor: "0x111", next_nonce: String(nextNonce) },
-    },
-  ]);
-  const resyncListeners = new Set<() => void>();
-  let report!: (transaction: GameSyncTransaction) => void;
-  const runtime = {
-    waitForTransaction: () =>
-      new Promise<GameSyncTransaction>((resolve) => {
-        report = resolve;
-      }),
-    subscribeResynced: (listener: () => void) => {
-      resyncListeners.add(listener);
-      return () => resyncListeners.delete(listener);
+const GAMES = "0x77";
+const TX = "0xabc";
+const byteArrayFields = (text: string) => {
+  const encoded = byteArray.byteArrayFromString(text);
+  return [
+    String(encoded.data.length),
+    ...encoded.data.map(String),
+    String(encoded.pending_word),
+    String(encoded.pending_word_len),
+  ];
+};
+const receipt = (overrides: Record<string, unknown> = {}) => ({
+  transaction_hash: TX,
+  block_number: 12,
+  execution_status: "SUCCEEDED",
+  finality_status: "PRE_CONFIRMED",
+  events: [] as unknown[],
+  ...overrides,
+});
+const rpcAnswering = (answer: ReturnType<typeof receipt>) => ({
+  getTransactionReceipt: vi.fn(async () => answer as never),
+});
+const running = new AbortController().signal;
+/** The runtime's contract: a resync reaches its listeners, and a new listener hears the last applied snapshot. */
+const runtimeWith = (status: Promise<{ block: number | null; hash: string; status: string }>) => {
+  const listeners = new Set<(throughBlock: number) => void>();
+  let snapshotThroughBlock: number | null = null;
+  return {
+    waitForTransaction: vi.fn(() => status),
+    subscribeResynced: vi.fn((listener: (throughBlock: number) => void) => {
+      listeners.add(listener);
+      if (snapshotThroughBlock !== null) listener(snapshotThroughBlock);
+      return () => listeners.delete(listener);
+    }),
+    resync: (throughBlock: number) => {
+      snapshotThroughBlock = throughBlock;
+      listeners.forEach((listener) => listener(throughBlock));
     },
   };
-  const resync = () => resyncListeners.forEach((listener) => listener());
-  return { store, runtime, resync, report: (transaction: GameSyncTransaction) => report(transaction), resyncListeners };
 };
 
-describe("waitForTransactionOutcome", () => {
-  it("fails an action a reconnect's snapshot shows recorded, since Herald will never stream its status", async () => {
-    const { store, runtime, resync, resyncListeners } = fixture(3);
-    const outcome = waitForTransactionOutcome(runtime, store, "0xabc", ticket);
-
-    resync();
-
-    await expect(outcome).rejects.toBeInstanceOf(ActionOutcomeUnreportedError);
-    expect(resyncListeners.size).toBe(0);
+describe("an action's outcome", () => {
+  it("ends a reverted action with its revert reason, without waiting for Herald", async () => {
+    const runtime = runtimeWith(new Promise(() => {}));
+    const rpc = rpcAnswering(receipt({ execution_status: "REVERTED", revert_reason: "stale release" }));
+    await expect(waitForActionOutcome(runtime, rpc, GAMES, TX, running)).resolves.toMatchObject({
+      status: "REVERTED",
+      revertReason: "stale release",
+    });
   });
 
-  it("keeps waiting for an action the snapshot does not show recorded, then takes its streamed status", async () => {
-    const { store, runtime, resync, report, resyncListeners } = fixture(2);
-    const outcome = waitForTransactionOutcome(runtime, store, "0xabc", ticket);
+  it("ends an action the game refused with the game's reason: nothing of it applied", async () => {
+    const runtime = runtimeWith(new Promise(() => {}));
+    const rejected = {
+      from_address: GAMES,
+      keys: [hash.getSelectorFromName("GameplayRejected"), "0x1", "0x7", "0x111", TX],
+      data: [shortString.encodeShortString("GAMEPLAY_REJECTED"), ...byteArrayFields("explorer is dead")],
+    };
+    const rpc = rpcAnswering(receipt({ events: [rejected] }));
+    await expect(waitForActionOutcome(runtime, rpc, GAMES, TX, running)).resolves.toMatchObject({
+      status: "REJECTED",
+      revertReason: "explorer is dead",
+    });
+  });
 
-    resync();
-    report({ hash: "0xabc", block: 9, status: "ACCEPTED_ON_L2" } as GameSyncTransaction);
+  it("never treats a malformed library result as applied: it ends refused with its class", async () => {
+    const runtime = runtimeWith(new Promise(() => {}));
+    const invalid = {
+      from_address: GAMES,
+      keys: [hash.getSelectorFromName("GameplayRejected"), "0x1", "0x7", "0x111", TX],
+      data: [shortString.encodeShortString("INVALID_GAMEPLAY_RESULT"), ...byteArrayFields("INVALID_GAMEPLAY_RESULT")],
+    };
+    await expect(
+      waitForActionOutcome(runtime, rpcAnswering(receipt({ events: [invalid] })), GAMES, TX, running),
+    ).resolves.toMatchObject({
+      status: "REJECTED",
+      revertReason: "INVALID_GAMEPLAY_RESULT",
+    });
+  });
 
-    await expect(outcome).resolves.toMatchObject({ hash: "0xabc" });
-    expect(resyncListeners.size).toBe(0);
+  it("settles an applied action once Herald has applied it, with what a batch still has to do", async () => {
+    let applied!: (status: { block: number; hash: string; status: string }) => void;
+    const runtime = runtimeWith(new Promise((resolve) => (applied = resolve)));
+    const progress = {
+      from_address: GAMES,
+      keys: [hash.getSelectorFromName("BatchProgress"), "0x7"],
+      data: ["0x111", TX, "3"],
+    };
+    const outcome = waitForActionOutcome(runtime, rpcAnswering(receipt({ events: [progress] })), GAMES, TX, running);
+    await vi.waitFor(() => expect(runtime.waitForTransaction).toHaveBeenCalledWith(TX));
+    applied({ block: 12, hash: TX, status: "PRE_CONFIRMED" });
+    await expect(outcome).resolves.toEqual({ hash: TX, block: 12, status: "SUCCEEDED", batchRemaining: "3" });
+  });
+
+  it("settles an applied action from a fresh snapshot that covers its receipt's block", async () => {
+    const runtime = runtimeWith(new Promise(() => {}));
+    const outcome = waitForActionOutcome(runtime, rpcAnswering(receipt({ block_number: 12 })), GAMES, TX, running);
+    await vi.waitFor(() => expect(runtime.subscribeResynced).toHaveBeenCalled());
+    runtime.resync(12);
+    await expect(outcome).resolves.toMatchObject({ status: "SUCCEEDED" });
+  });
+
+  it("settles from Herald's applied status while the receipt cannot be read", async () => {
+    vi.useFakeTimers();
+    const runtime = runtimeWith(Promise.resolve({ block: 12, hash: TX, status: "PRE_CONFIRMED" }));
+    const rpc = { getTransactionReceipt: vi.fn(async () => Promise.reject(new Error("RPC read unavailable"))) };
+    const outcome = waitForActionOutcome(runtime, rpc, GAMES, TX, running);
+    await vi.advanceTimersByTimeAsync(2_000);
+    await expect(outcome).resolves.toEqual({ hash: TX, block: 12, status: "SUCCEEDED" });
+    expect(vi.getTimerCount()).toBe(0);
+    vi.useRealTimers();
+  });
+
+  it("ends an action Herald says applied nothing as refused with its reason, without the receipt", async () => {
+    const runtime = runtimeWith(
+      Promise.resolve({ block: 12, hash: TX, status: "REJECTED", revertReason: "explorer is dead" }),
+    );
+    const rpc = { getTransactionReceipt: vi.fn(() => new Promise<never>(() => {})) };
+    await expect(waitForActionOutcome(runtime, rpc, GAMES, TX, running)).resolves.toEqual({
+      hash: TX,
+      block: 12,
+      status: "REJECTED",
+      revertReason: "explorer is dead",
+    });
+  });
+
+  it("falls back to the snapshot watch when the session ends Herald's wait, never failing the action", async () => {
+    const runtime = runtimeWith(Promise.reject(new Error("Game sync session was replaced")));
+    const outcome = waitForActionOutcome(runtime, rpcAnswering(receipt({ block_number: 12 })), GAMES, TX, running);
+    await vi.waitFor(() => expect(runtime.subscribeResynced).toHaveBeenCalled());
+    runtime.resync(12);
+    await expect(outcome).resolves.toMatchObject({ status: "SUCCEEDED", block: 12 });
+  });
+
+  it("stays pending after a reconnect whose snapshot is older than the receipt, until Herald applies it", async () => {
+    let applied!: (status: { block: number; hash: string; status: string }) => void;
+    const runtime = runtimeWith(new Promise((resolve) => (applied = resolve)));
+    let settled = false;
+    const outcome = waitForActionOutcome(runtime, rpcAnswering(receipt({ block_number: 12 })), GAMES, TX, running);
+    void outcome.then(() => (settled = true));
+    await vi.waitFor(() => expect(runtime.subscribeResynced).toHaveBeenCalled());
+    // The snapshot describes block 11: the action's facts are not in the store yet.
+    runtime.resync(11);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(settled).toBe(false);
+    applied({ block: 12, hash: TX, status: "ACCEPTED_ON_L2" });
+    await expect(outcome).resolves.toEqual({ hash: TX, block: 12, status: "SUCCEEDED" });
+  });
+
+  it("settles from a reconnect that finished while the receipt was still being read", async () => {
+    const runtime = runtimeWith(new Promise(() => {}));
+    let answerReceipt!: (value: ReturnType<typeof receipt>) => void;
+    const rpc = {
+      getTransactionReceipt: vi.fn(() => new Promise<never>((resolve) => (answerReceipt = resolve as never))),
+    };
+    const outcome = waitForActionOutcome(runtime, rpc, GAMES, TX, running);
+    await vi.waitFor(() => expect(rpc.getTransactionReceipt).toHaveBeenCalled());
+    // The status was missed and the fresh snapshot covering block 12 applied before the receipt came back.
+    runtime.resync(12);
+    answerReceipt(receipt({ block_number: 12 }));
+    await expect(outcome).resolves.toMatchObject({ status: "SUCCEEDED", block: 12 });
+  });
+
+  it("promotes a pre-confirmed receipt with no block once a snapshot's re-read finds its block", async () => {
+    const runtime = runtimeWith(new Promise(() => {}));
+    const rpc = {
+      getTransactionReceipt: vi
+        .fn()
+        .mockResolvedValueOnce(receipt({ block_number: undefined }))
+        .mockResolvedValue(receipt({ block_number: 12, finality_status: "ACCEPTED_ON_L2" })),
+    };
+    const outcome = waitForActionOutcome(runtime, rpc, GAMES, TX, running);
+    await vi.waitFor(() => expect(runtime.subscribeResynced).toHaveBeenCalled());
+    runtime.resync(12);
+    await expect(outcome).resolves.toMatchObject({ status: "SUCCEEDED", block: 12 });
+  });
+
+  it("never settles a pre-confirmed receipt with no block from a snapshot; only Herald's status does", async () => {
+    let applied!: (status: { block: number | null; hash: string; status: string }) => void;
+    const runtime = runtimeWith(new Promise((resolve) => (applied = resolve)));
+    let settled = false;
+    const outcome = waitForActionOutcome(
+      runtime,
+      rpcAnswering(receipt({ block_number: undefined })),
+      GAMES,
+      TX,
+      running,
+    );
+    void outcome.then(() => (settled = true));
+    await vi.waitFor(() => expect(runtime.subscribeResynced).toHaveBeenCalled());
+    runtime.resync(Number.MAX_SAFE_INTEGER);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(settled).toBe(false);
+    applied({ block: null, hash: TX, status: "PRE_CONFIRMED" });
+    await expect(outcome).resolves.toMatchObject({ status: "SUCCEEDED" });
+  });
+
+  it("stays pending while the receipt is not found, and stops when the client does", async () => {
+    vi.useFakeTimers();
+    const runtime = runtimeWith(new Promise(() => {}));
+    const rpc = { getTransactionReceipt: vi.fn(async () => Promise.reject(new Error("Transaction hash not found"))) };
+    const client = new AbortController();
+    const outcome = waitForActionOutcome(runtime, rpc, GAMES, TX, client.signal);
+    const ended = expect(outcome).rejects.toThrow("disposed");
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(rpc.getTransactionReceipt.mock.calls.length).toBeGreaterThan(1);
+    client.abort(new Error("Game client disposed"));
+    await ended;
+    expect(vi.getTimerCount()).toBe(0);
+    vi.useRealTimers();
   });
 });

@@ -9,13 +9,13 @@ use crate::registrar::IRegistrarSafeDispatcherTrait;
 use crate::resources::ResourceKey;
 use crate::structures::{IStructureOperationsDispatcher, StructureRecord};
 use crate::tests::state::StructureObservationTrait;
-use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, set_fixture, setup_with_rules};
+use super::resource_commands::{assert_terminal_rejection, execute, set_fixture, setup_with_rules};
 
 pub fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
-    let mut rules = super::recorded::rules();
+    let mut rules = super::play_fixture::rules();
     rules.faith_enabled = true;
-    rules.mode_rules = super::recorded::ETERNUM_RULES;
-    rules.command_mask = super::recorded::ETERNUM_COMMAND_MASK;
+    rules.mode_rules = super::play_fixture::ETERNUM_RULES;
+    rules.command_mask = super::play_fixture::ETERNUM_COMMAND_MASK;
     rules.entry_rule = crate::rules::ENTRY_ENTITLEMENT;
     let mut preset = super::resource_commands::fixture_preset(rules);
     preset.structures.faith = config();
@@ -71,7 +71,7 @@ fn pledges_accrue_rates_and_claims_cap_at_season_end_without_double_counting() {
     assert_eq!(state.claim_per_sec, 600);
     assert_eq!(state.owner_claim_per_sec, 180);
     assert_eq!(state.num_structures_pledged, 2);
-    assert!(execute_recorded_at(deployment, Command::ClaimWonderPoints(wonder.entity_id), 100, 5000));
+    assert!(execute(deployment, Command::ClaimWonderPoints(wonder.entity_id), 100));
     assert_eq!(view(deployment).wonder_faith(wonder).claimed_points, 35000);
     assert!(execute(deployment, claim(deployment.actor, wonder), 100));
     assert_eq!(points(deployment, deployment.actor, wonder).points_claimed, 35000);
@@ -148,14 +148,14 @@ fn subservient_wonders_cannot_receive_pledges_and_submission_requires_no_followe
 fn faith_configuration_requires_authority_and_isolates_games() {
     let (deployment, _, _) = setup();
     let registry = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
-    let mut preset = super::resource_commands::fixture_preset(super::recorded::rules());
+    let mut preset = super::resource_commands::fixture_preset(super::play_fixture::rules());
     assert!(registry.register_preset(20000, preset).is_err());
     start_cheat_caller_address(deployment.games, super::authority());
     assert!(registry.register_preset(10003, preset).is_err());
     preset.structures.faith = FaithRules { owner_share_bps: 10001, ..config() };
     assert!(registry.register_preset(20000, preset).is_err());
     preset.structures.faith = FaithRules { realm_rate: 101, ..config() };
-    super::recorded::seed_game_with_preset(
+    super::play_fixture::seed_game_with_preset(
         deployment.games, 4, crate::game::IGameDispatcher { contract_address: deployment.games }.game(3), preset,
     );
     let safe = IFaithSafeDispatcher { contract_address: deployment.games };
@@ -209,19 +209,19 @@ fn faith_requires_eternum_and_enabled_pledges_and_obeys_each_time_boundary() {
     assert_terminal_rejection(deployment, pledge(wonder, wonder), 200);
     let config = crate::rules::SliceRules {
         faith_enabled: false,
-        mode_rules: super::recorded::ETERNUM_RULES,
+        mode_rules: super::play_fixture::ETERNUM_RULES,
         entry_rule: crate::rules::ENTRY_ENTITLEMENT,
-        command_mask: super::recorded::ETERNUM_COMMAND_MASK,
-        ..super::recorded::rules(),
+        command_mask: super::play_fixture::ETERNUM_COMMAND_MASK,
+        ..super::play_fixture::rules(),
     };
     let (disabled, wonder, _) = setup_with_rules(config);
     assert_terminal_rejection(disabled, pledge(wonder, wonder), 40);
     let config = crate::rules::SliceRules {
         faith_enabled: true,
-        mode_rules: super::recorded::BLITZ_RULES,
+        mode_rules: super::play_fixture::BLITZ_RULES,
         entry_rule: crate::rules::ENTRY_ROSTER,
-        command_mask: super::recorded::BLITZ_COMMAND_MASK,
-        ..super::recorded::rules(),
+        command_mask: super::play_fixture::BLITZ_COMMAND_MASK,
+        ..super::play_fixture::rules(),
     };
     let (blitz, wonder, _) = setup_with_rules(config);
     assert_terminal_rejection(blitz, pledge(wonder, wonder), 40);

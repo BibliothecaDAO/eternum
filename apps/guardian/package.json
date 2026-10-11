@@ -6,14 +6,19 @@
     ".": "./src/guardian.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
+    "effect": "4.0.0-rc.108",
     "starknet": "catalog:web",
     "@realms-world/identity": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260922.1",
+    "miniflare": "4.20260730.0",
+    "vitest": "^3.2.4",
+    "@types/node": "^22.19.13",
     "typescript": "catalog:web",
     "wrangler": "4.136.3"
   }

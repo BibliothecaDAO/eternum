@@ -1,4 +1,3 @@
-import type { NativeExecutionOutcome } from "@bibliothecadao/types";
 import type { GameSyncScheduler } from "./scheduler";
 
 /** One Herald fact: a model row named by its Herald key. A null value removes the row. */
@@ -58,7 +57,8 @@ export interface GameSyncSubscriptionHandlers {
   /** A snapshot replaces every row of every model it lists; its models follow until onSnapshotEnd. */
   onSnapshotStart: () => void;
   onSnapshotModel: (model: string, facts: GameSyncFact[], progress: GameSyncSnapshotChunkProgress) => void;
-  onSnapshotEnd: () => boolean | Promise<boolean>;
+  /** The snapshot ended; it describes the game as of `throughBlock`, the confirmed block its handshake named. */
+  onSnapshotEnd: (throughBlock: number) => boolean | Promise<boolean>;
   /** Selecting an actor replaces the rows of the actor-scoped models. */
   onScope: (facts: GameSyncFact[], expedition: boolean) => boolean | Promise<boolean>;
   onFacts: (batch: GameSyncFactBatch) => void;
@@ -88,7 +88,6 @@ export interface GameSyncHead {
 }
 
 export interface GameSyncTransaction {
-  executions?: NativeExecutionOutcome[];
   block: number | null;
   hash: string;
   revertReason?: string;

@@ -6,6 +6,9 @@ use core::num::traits::Pow;
 use core::poseidon::poseidon_hash_span;
 use crate::game::GameRegistry;
 
+// Leave time for confirmed withdrawals to reach the ledger before reports close.
+pub const FRONTIER_REPORT_GRACE_SECONDS: u32 = 3600;
+
 pub const DAYS_PER_BAG: u64 = 5;
 pub const UNITS_PER_BAG: u64 = 20;
 // Two orders for where 4 goes beside 3, three for 5, four for 6, then four places for the short day.

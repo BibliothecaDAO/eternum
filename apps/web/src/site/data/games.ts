@@ -1,3 +1,5 @@
+import { appUrl } from "@/site/lib/app-links";
+
 export interface Game {
   id: number;
   slug: string;
@@ -43,7 +45,7 @@ export const games: Game[] = [
     isLive: true,
     studio: "Realms Games",
     links: {
-      homepage: "https://blitz.realms.world/",
+      homepage: appUrl("/blitz"),
       discord: "https://discord.gg/realmsworld",
       twitter: "https://x.com/realmsgg",
       github: "https://github.com/BibliothecaDAO/eternum",
@@ -78,7 +80,7 @@ export const games: Game[] = [
     video: "https://www.youtube.com/embed/EDt8vGBDcYg", // Example video URL - replace with actual
 
     links: {
-      homepage: "https://eternum.realms.world/",
+      homepage: appUrl("/eternum"),
       discord: "https://discord.gg/realmsworld",
       twitter: "https://x.com/realmsgg",
       github: "https://github.com/BibliothecaDAO/eternum",

@@ -3,6 +3,7 @@ import { configManager, getExplorerOwner, getIsBlitz, getStructureName } from "@
 import { getPlayerDisplayName } from "@/hooks/use-player-profile";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { ContractAddress, type ID, StructureType } from "@bibliothecadao/types";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 interface WorldEventStructure {
   entityId: number;
@@ -92,7 +93,7 @@ export const createWorldEventEntityReader = (
 
     return [...projection.getStructures(false), ...projection.getStructures(true)].flatMap((spatial) => {
       if (spatial.entityId === null) return [];
-      const structure = getStructure(Number(spatial.entityId));
+      const structure = getStructure(safeInteger(spatial.entityId));
       return structure?.ownerAddress === normalizedOwner ? [structure] : [];
     });
   };

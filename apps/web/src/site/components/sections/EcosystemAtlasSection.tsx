@@ -3,6 +3,7 @@ import { games } from "@/site/data/games";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, ArrowUpRight, Bot, Coins, ExternalLink, Gamepad2, Shield, Swords } from "lucide-react";
 import { Button } from "@/site/components/ui/button";
+import { appUrl } from "@/site/lib/app-links";
 
 const homepageGameOrder = ["blitz", "loot-survivor", "zkube", "realms-eternum"];
 
@@ -103,7 +104,7 @@ export function EcosystemAtlasSection() {
 
                 <div className="flex flex-wrap gap-3 mb-6">
                   <Button size="lg" variant="war" className="shadow-lg shadow-primary/20" asChild>
-                    <a href="https://blitz.realms.world" target="_blank" rel="noopener noreferrer">
+                    <a href={appUrl("/blitz")} target="_blank" rel="noopener noreferrer">
                       Enter Blitz
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </a>

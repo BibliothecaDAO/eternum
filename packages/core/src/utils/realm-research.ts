@@ -45,18 +45,11 @@ export function researchChoice(learned: bigint, row: number, tier: number): numb
   return field(learned, offset + width * BigInt(tier - 1), width);
 }
 
-/** Knowledge holding one row alone at `tier`, every choice on its first side (Fields, Tools, Drill, camps). */
-export function rowAtTier(row: number, tier: number): bigint {
-  const slot = tierFields[row];
-  if (!slot) throw new Error(`Unknown research row ${row}`);
-  return BigInt(tier) << slot[0];
-}
-
 /** Unknown realm knowledge stays unknown. */
 export function realmLearned(
   store: Pick<NativeFactStore, "get">,
   gameId: number,
-  structureId: number,
+  structureId: number | bigint,
 ): bigint | undefined {
   return store.get("RealmKnowledge", { game_id: gameId, structure_id: structureId })?.learned;
 }
@@ -65,7 +58,7 @@ export function realmLearned(
 export function researchedDepth(
   store: Pick<NativeFactStore, "get">,
   gameId: number,
-  structureId: number,
+  structureId: number | bigint,
 ): number | undefined {
   const learned = realmLearned(store, gameId, structureId);
   return learned === undefined ? undefined : researchTier(learned, research.ROW_DEPTH);
@@ -87,7 +80,7 @@ export const researchRowCategory: Readonly<Partial<Record<number, number>>> = {
 export function buildingTypeTier(
   store: Pick<NativeFactStore, "get">,
   gameId: number,
-  structureId: number,
+  structureId: number | bigint,
   category: number,
 ): number {
   const row = researchRowOf(category);

@@ -78,7 +78,7 @@ it("an army move does not notify directory clients; structure moves and empty-bl
     checkpointEveryBlocks: 100,
     checkpointStore: { save: async () => {} },
     rpc: {
-      getBlockWithReceipts: async (block: number | "pre_confirmed") =>
+      readBlock: async (block: number | "pre_confirmed") =>
         block === "pre_confirmed"
           ? { block_number: Math.max(10, ...blocks.keys()) + 1, timestamp: 50, transactions: [] }
           : blocks.get(block)!,

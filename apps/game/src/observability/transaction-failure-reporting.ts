@@ -19,7 +19,6 @@ type ClientTransactionSurface =
   | "settlement"
   | "amm"
   | "prediction_market"
-  | "factory"
   | "game_review"
   | "cosmetics"
   | "admin";
@@ -205,10 +204,7 @@ const buildFingerprint = ({
   normalizedReason: string;
   failureKind?: TransactionSubmitFailureKind;
 }) => {
-  if (
-    stage === "submit" &&
-    (failureKind === "provider_connection_destroyed" || failureKind === "action_outcome_unknown")
-  ) {
+  if (stage === "submit" && (failureKind === "provider_connection_destroyed" || failureKind === "not_sent")) {
     return ["client-transaction-submission", failureKind, surface, transactionType ?? operation];
   }
 

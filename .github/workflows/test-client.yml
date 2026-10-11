@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    # The live renderer smokes moved to deploy-client.yml: a PR gate must
+    # Live deployment checks run in deploy/first: a PR gate must
     # stay hermetic — external infra (a live node blip) must not be
     # able to fail it — and "does the built artifact boot" is a question
     # answered where the artifact ships.
@@ -44,6 +44,11 @@ jobs:
 
       - name: Run game client tests
         run: pnpm --dir ./apps/game test
+
+      - name: Test the client deploy's checks
+        run: >-
+          node --test apps/game/scripts/ensure-pwa-cache-rule.test.mjs
+          apps/game/scripts/verify-client-deployment.test.mjs apps/game/scripts/verify-pwa-build.test.mjs
 
       - name: Test native store, commands and sync recovery
         run: pnpm --dir packages/core exec vitest run

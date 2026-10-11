@@ -1,4 +1,3 @@
-// @vitest-environment node
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";

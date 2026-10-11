@@ -9,7 +9,7 @@ import { ActionPaths, ActionType, configManager, createGameActions } from "../..
 
 const parkedRealm = {
   game_id: 7,
-  entity_id: 42,
+  entity_id: 3,
   base: {
     coord_x: 0xffffffff - 3,
     coord_y: 0xffffffff,
@@ -53,7 +53,7 @@ describe("structure paths", () => {
     vi.spyOn(timestamp, "getBlockTimestamp").mockReturnValue({ currentBlockTimestamp: 129_600 + 10 } as never);
 
     const input = {
-      structureId: 42,
+      structureId: 3,
       armyHexes: new Map(),
       exploredHexes: new Map<number, Map<number, BiomeType>>(),
       playerAddress: 1n,

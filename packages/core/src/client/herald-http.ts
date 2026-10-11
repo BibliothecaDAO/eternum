@@ -1,9 +1,9 @@
 import type {
   HeraldGameDirectory,
+  HeraldFrontierDayRanks,
   HeraldGameLeaderboard,
   HeraldGameSnapshot,
   HeraldHistoryPage,
-  HeraldTransactionCount,
 } from "../sync/herald-http-types";
 
 import type { Shard } from "./shard";
@@ -92,16 +92,6 @@ export const fetchHeraldGameHistory = async (
   return fetchHeraldJson(url.toString(), `Herald history for ${shard.url} game ${gameId}`);
 };
 
-export const fetchHeraldTransactionCount = async (shard: Shard, gameId: number): Promise<HeraldTransactionCount> => {
-  if (!Number.isSafeInteger(gameId) || gameId <= 0) {
-    throw new Error(`Herald transaction count requires a positive game id; received ${gameId}`);
-  }
-  return fetchHeraldJson(
-    buildHeraldUrl(shard, `/games/${gameId}/transactions/count`),
-    `Herald transaction count for ${shard.url} game ${gameId}`,
-  );
-};
-
 export const snapshotModelRows = (snapshot: HeraldGameSnapshot, model: string): Array<Record<string, unknown>> => {
   const selected = snapshot.models.find((entry) => entry.model === model);
   if (!selected) throw new Error(`Herald snapshot omitted requested model ${model}`);
@@ -124,6 +114,25 @@ export const fetchHeraldLeaderboard = async (shard: Shard, gameId: number): Prom
     buildHeraldUrl(shard, `/games/${gameId}/leaderboard`),
     `Herald leaderboard for ${shard.url} game ${gameId}`,
   );
+};
+
+/**
+ * A Frontier day's closing ranks, frozen at the block before it ended; null while the day has not closed (Herald's
+ * day_ranks_not_closed).
+ */
+export const fetchHeraldDayRanks = async (
+  shard: Shard,
+  gameId: number,
+  dayIndex: number,
+): Promise<HeraldFrontierDayRanks | null> => {
+  if (!Number.isSafeInteger(dayIndex) || dayIndex < 0)
+    throw new Error(`Herald day ranks require a day index; received ${dayIndex}`);
+  const url = buildHeraldUrl(shard, `/games/${gameId}/days/${dayIndex}/ranks`);
+  const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+  if (response.status === 404) return null;
+  if (!response.ok)
+    throw new Error(`Herald day ${dayIndex} ranks for ${shard.url} game ${gameId} failed: ${response.status}`);
+  return (await response.json()) as HeraldFrontierDayRanks;
 };
 
 const directoryStreams = new Map<string, { source: EventSource; listeners: Set<() => void> }>();

@@ -1,11 +1,8 @@
-import { env } from "../../env";
-
 /**
  * Runtime developer mode: the FPS/memory stats panel, the Leva graphics GUI,
- * the stats recorder, and the sync readout. The build-time
- * VITE_PUBLIC_GRAPHICS_DEV flag still forces it on for dev builds; deployed
- * builds toggle it per browser with `?dev` (persisted) or `?dev=0` to clear.
- * Consumers read the flag at module init, so changing it takes a reload.
+ * the stats recorder, and the sync readout. No build sets it: any build, local
+ * or deployed, toggles it per browser with `?dev` (persisted) or `?dev=0` to
+ * clear. Consumers read the flag at module init, so changing it takes a reload.
  */
 const STORAGE_KEY = "eternum:dev-mode";
 
@@ -24,7 +21,7 @@ const readRuntimeFlag = (): boolean => {
   }
 };
 
-export const DEV_MODE_ENABLED: boolean = env.VITE_PUBLIC_GRAPHICS_DEV === true || readRuntimeFlag();
+export const DEV_MODE_ENABLED: boolean = readRuntimeFlag();
 
 /**
  * Opt-in console verbosity for the high-volume debug streams (chunk traces,

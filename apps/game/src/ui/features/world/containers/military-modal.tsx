@@ -14,6 +14,7 @@ import type { StructureWithMetadata } from "@/ui/features/world/containers/top-h
 import { Direction, type ID } from "@bibliothecadao/types";
 import { Swords } from "@/ui/design-system/atoms/game-icons";
 import { memo, useCallback, useEffect, useState } from "react";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 interface MilitaryModalProps {
   structureEntityId: ID;
@@ -141,7 +142,7 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
           <UnifiedArmyCreationBody
             key={bodyKey}
             embedded
-            structureId={Number(focusedRealmId)}
+            structureId={safeInteger(focusedRealmId)}
             isExplorer={initialIsExplorer}
             direction={initialDirection}
             initialGuardSlot={initialGuardSlot}

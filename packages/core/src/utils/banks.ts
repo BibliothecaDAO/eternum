@@ -1,3 +1,4 @@
+import { safeInteger } from "./safe-integer";
 import { EntityType, type ID, StructureType } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { configManager } from "../managers/config-manager";
@@ -20,7 +21,7 @@ export const getClosestBank = (entityId: ID, store: NativeFactStore): ClosestBan
       const bankPosition = structureMapPosition(store, bank);
       if (!bankPosition) return [];
       const distance = calculateDistance(bankPosition, position) * 2;
-      return [{ bankId: bank.entity_id, distance, travelTime: Math.floor((distance * speed) / 60) }];
+      return [{ bankId: safeInteger(bank.entity_id), distance, travelTime: Math.floor((distance * speed) / 60) }];
     })
     .toSorted((a, b) => a.distance - b.distance || a.bankId - b.bankId)[0];
 };

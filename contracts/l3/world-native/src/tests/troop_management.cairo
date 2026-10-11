@@ -15,10 +15,10 @@ use crate::tests::state::{
 };
 use crate::troop_management::{Army, GuardSlot, ManageTroops, RecruitExplorer, RecruitGuard, TransferTroops};
 use crate::troops::{ExplorerKey, ExplorerTroops, TroopTier, TroopType};
-use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, grant, set_fixture};
+use super::resource_commands::{assert_terminal_rejection, execute, grant, set_fixture};
 
-fn setup_homes() -> (super::Deployment, ResourceKey, ResourceKey, u32, u32) {
-    let mut rules = super::recorded::rules();
+fn setup_homes() -> (super::Deployment, ResourceKey, ResourceKey, u64, u64) {
+    let mut rules = super::play_fixture::rules();
     rules.troop_limit_config.guard_resurrection_delay = 60;
     let (d, home, other_home) = super::resource_commands::setup_with_rules(rules);
     grant(d, home, 26, 1000 * RESOURCE_PRECISION);
@@ -59,13 +59,13 @@ fn setup_homes() -> (super::Deployment, ResourceKey, ResourceKey, u32, u32) {
     let ids = structures.home_armies(home);
     (d, home, other_home, *ids.at(0), *ids.at(1))
 }
-fn setup() -> (super::Deployment, ResourceKey, u32, u32) {
+fn setup() -> (super::Deployment, ResourceKey, u64, u64) {
     let (d, home, _, first, second) = setup_homes();
     (d, home, first, second)
 }
 
 #[test]
-fn recorded_spatial_commands_match_replay_views() {
+fn spatial_commands_match_replay_views() {
     let (d, home, other, first, second) = setup_homes();
     grant(d, home, 35, 1000 * RESOURCE_PRECISION);
     grant(d, home, 36, 1000 * RESOURCE_PRECISION);
@@ -101,7 +101,7 @@ fn recorded_spatial_commands_match_replay_views() {
     }
     super::spatial_replay::compare("armies", frames);
 }
-fn troop(d: super::Deployment, id: u32) -> Option<ExplorerTroops> {
+fn troop(d: super::Deployment, id: u64) -> Option<ExplorerTroops> {
     GameState { contract_address: d.games }.resolved_explorer(ExplorerKey { game_id: 3, explorer_id: id })
 }
 fn guard(d: super::Deployment, home: ResourceKey, slot: u8) -> crate::guards::Guard {
@@ -133,24 +133,23 @@ fn count(d: super::Deployment, home: ResourceKey) -> u128 {
 }
 
 #[test]
-fn recruitment_spends_troop_resources_and_updates_capacity_with_recorded_stamina() {
+fn recruitment_spends_troop_resources_and_updates_capacity_with_block_time_stamina() {
     let (d, home, first, _) = setup();
     let before = count(d, home);
     let capacity = resource(d).resource_weight(ResourceKey { game_id: 3, entity_id: first }).capacity;
     assert!(
-        execute_recorded_at(
+        execute(
             d,
             manage(
                 ManageTroops::RecruitExplorer(RecruitExplorer { explorer_id: first, amount: 2 * RESOURCE_PRECISION }),
             ),
             140,
-            10000,
         ),
     );
     assert_eq!(troop(d, first).unwrap().troops.count, 12 * RESOURCE_PRECISION);
     assert_eq!(resource(d).resource_weight(ResourceKey { game_id: 3, entity_id: first }).capacity, capacity * 12 / 10);
     assert_eq!(count(d, home), before - 2 * RESOURCE_PRECISION);
-    assert!(execute_recorded_at(d, recruit(home, 0, 3), 140, 10000));
+    assert!(execute(d, recruit(home, 0, 3), 140));
     assert_eq!(guard(d, home, 0).troops.count, 3 * RESOURCE_PRECISION);
     assert_eq!(guard(d, home, 0).troops.stamina.inline().amount, 0);
     assert_eq!(count(d, home), before - 5 * RESOURCE_PRECISION);
@@ -179,11 +178,15 @@ fn explorer_transfer_preserves_the_worse_stamina_and_cooldown_and_deletes_an_emp
     assert_eq!(target.stamina.inline().amount, 2);
     assert_eq!(target.battle_cooldown_end, 190);
     assert_eq!(IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home), array![second].span());
-    let tile = crate::tests::state::MapObservationTrait::tile(
+    let _tile = crate::tests::state::MapObservationTrait::tile(
         crate::map::IMapLogicDispatcher { contract_address: d.games }, crate::geometry::tile_key(3, old_position),
     )
         .unwrap();
-    assert_eq!(tile.data % 0x20000000000, 0);
+    assert!(
+        crate::map::IMapLogicDispatcher { contract_address: d.games }
+            .occupancy(crate::geometry::tile_key(3, old_position))
+            .is_none(),
+    );
     super::state::assert_spatial_indexes(
         d.games,
         3,
@@ -279,7 +282,7 @@ fn biome_damage_and_travel_modifiers_retain_every_category_and_biome() {
         array![0_u8, 2, 2, 0, 1, 2, 2, 0, 2, 2, 1, 2, 1, 1, 2, 1, 1, 0].span(),
         array![0_u8, 2, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0].span(),
     ];
-    let rules = super::recorded::rules();
+    let rules = super::play_fixture::rules();
     let categories = array![TroopType::Knight, TroopType::Paladin, TroopType::Crossbowman];
     for category in 0_u32..3 {
         for biome in 0_u8..18 {
@@ -383,7 +386,7 @@ fn guard_slot_bounds_reject_recruitment_and_both_transfer_ends_without_spending(
 #[test]
 fn recruitment_and_transfers_enforce_army_size_before_any_balance_or_capacity_change() {
     let (d, home, first, second) = setup();
-    let rules = super::recorded::rules();
+    let rules = super::play_fixture::rules();
     let maximum = crate::troops::max_army_size(rules.troop_limit_config, 0, TroopTier::T1);
     grant(d, home, 26, Into::<u32, u128>::into(maximum) * RESOURCE_PRECISION);
     let balance = count(d, home);
@@ -465,7 +468,6 @@ fn troop_actions_emit_one_unique_story_each_and_rejections_emit_none() {
     assert!(execute(d, manage(ManageTroops::RemoveExplorer(third)), 140));
     expected.append(Story::ExplorerDeleteStory(crate::troop_management::ExplorerRemoved { explorer_id: third }));
     assert_terminal_rejection(d, manage(ManageTroops::RemoveGuard(slot)), 140);
-    let mut ids: core::dict::Felt252Dict<u128> = Default::default();
     let mut index = 0;
     for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
         if *event.keys.at(0) != selector!("StoryEvent") {
@@ -474,9 +476,6 @@ fn troop_actions_emit_one_unique_story_each_and_rejections_emit_none() {
         let mut keys = event.keys.span().slice(1, event.keys.len() - 1);
         let mut data = event.data.span();
         let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
-        let id: felt252 = Into::<u64, felt252>::into(story.order) * 0x100000000 + story.index.into();
-        assert!(story.order != 0 && ids.get(id) == 0, "duplicate story identity");
-        ids.insert(id, 1);
         assert_eq!(story.story, *expected.at(index));
         assert_eq!(story.timestamp, 140);
         index += 1;
@@ -571,14 +570,8 @@ fn multi_tile_move_spends_each_steps_stamina_and_rejects_a_blocked_path_atomical
     crate::tests::state::assert_spatial_indexes(
         d.games, 3, array![home.entity_id, first].span(), array![start, after.coord].span(),
     );
-    assert_eq!(map.tile(crate::geometry::tile_key(3, start)).unwrap().data % 0x20000000000, 0);
-    assert_eq!(
-        map
-            .tile(crate::geometry::tile_key(3, crate::troops::Coord { x: start.x + 1, ..start }))
-            .unwrap()
-            .data % 0x20000000000,
-        0,
-    );
+    assert!(map.occupancy(crate::geometry::tile_key(3, start)).is_none());
+    assert!(map.occupancy(crate::geometry::tile_key(3, crate::troops::Coord { x: start.x + 1, ..start })).is_none());
     let occupied = map.tile(crate::geometry::tile_key(3, after.coord)).unwrap();
     let wheat = ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 35 };
     let fish = ResourceSlot { resource_type: 36, ..wheat };

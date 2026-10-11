@@ -4,6 +4,7 @@ export interface Probe {
   name: string;
   status: Status;
   latency_ms: number | null;
+  paused?: boolean | null;
 }
 export interface Target {
   url: string;
@@ -61,6 +62,7 @@ export function isStatusDocument(value: unknown): value is StatusDocument {
         Number.isSafeInteger(row.since) &&
         row.since <= doc.checked_at &&
         (row.latency_ms === null || (Number.isFinite(row.latency_ms) && row.latency_ms >= 0)) &&
+        (row.paused === undefined || row.paused === null || typeof row.paused === "boolean") &&
         Array.isArray(row.days) &&
         row.days.length === 90 &&
         row.days.every(

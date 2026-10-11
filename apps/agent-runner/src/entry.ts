@@ -1,3 +1,4 @@
+import { safeInteger } from "../../../packages/core/src/utils/safe-integer";
 import {
   FELT_CENTER,
   getBuildingCount,
@@ -110,7 +111,7 @@ const settledStructureIds = (client: GameClient, player: string): ID[] | undefin
   if (!entered) return undefined;
   return [...client.setup.store.structuresOwnedBy(client.gameId, BigInt(player))]
     .filter((row) => row.base.category === StructureType.Realm)
-    .map((row) => row.entity_id);
+    .map((row) => safeInteger(row.entity_id));
 };
 
 const structureCoord = (client: GameClient, structureId: ID): Coord | undefined => {

@@ -1,3 +1,4 @@
+import { safeInteger } from "./safe-integer";
 import { type ID, ResourcesIds, StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
@@ -35,7 +36,7 @@ export const getRealmCountPerHyperstructure = (store: NativeFactStore): Map<ID, 
         const rowDistance = position.y - center.y;
         return colDistance ** 2 + rowDistance ** 2 <= radiusSquared;
       }).length;
-      realmCounts.set(hyperstructure.entity_id, getEffectiveHyperstructureRealmCount(count));
+      realmCounts.set(safeInteger(hyperstructure.entity_id), getEffectiveHyperstructureRealmCount(count));
     });
 
   return realmCounts;
@@ -49,7 +50,7 @@ export const getHyperstructureProgress = (hyperstructureId: number, store: Nativ
   const amounts = getHyperstructureTotalContributableAmounts(hyperstructureId, store);
   const required = amounts.reduce((sum, row) => sum + BigInt(row.amount) * BigInt(RESOURCE_PRECISION), 0n);
   const current = [...store.inGame("HyperstructureProgress", game)]
-    .filter((row) => row.entity_id === hyperstructureId)
+    .filter((row) => row.entity_id === BigInt(hyperstructureId))
     .reduce((sum, row) => sum + row.contributed, 0n);
   if (!completed && required === 0n && current > 0n) {
     throw new Error(`Hyperstructure ${hyperstructureId} has contributions without resource requirements`);
@@ -203,7 +204,7 @@ const hyperstructureSuffixes = [
 ];
 
 export const getHyperstructureName = (structure: NativeRows["Structure"]): string => {
-  const seed = structure.entity_id;
+  const seed = safeInteger(structure.entity_id);
 
   // Same hash function as chest naming for consistency
   const hash = (n: number) => {

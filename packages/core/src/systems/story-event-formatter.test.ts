@@ -105,9 +105,10 @@ describe("owner naming", () => {
 });
 
 it("names a LORDS withdrawal by its whole amount", () => {
-  expect(
-    buildStoryEventPresentation(story("LordsWithdrawn", { player: "0x1", structure_id: 3, amount: 200 })),
-  ).toMatchObject({ title: "LORDS withdrawn", description: "200 LORDS to L2" });
+  expect(buildStoryEventPresentation(story("LordsWithdrawn", { account: "0x1", amount: 200 }))).toMatchObject({
+    title: "LORDS withdrawn",
+    description: "200 LORDS to L2",
+  });
 });
 
 it("formats native battle sides and positive Ethereal rolls without a legacy row projection", () => {
@@ -274,7 +275,7 @@ describe("every story the chain can tell", () => {
     ExplorerDeleteStory: { explorer_id: 7 },
     GuardDeleteStory: { structure_id: 5, slot: 0 },
     TroopsTransferred: { source: { Explorer: 7 }, target: { Explorer: 8 }, amount },
-    LordsWithdrawn: { player: "0x111", structure_id: 5, amount },
+    LordsWithdrawn: { account: "0x111", amount },
     TierBought: { explorer_id: 7, attribute: "Battle", tier: 2, price: 100 },
     SitePayout: {
       structure_id: 5,

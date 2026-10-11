@@ -1,7 +1,9 @@
+import { DeviceSigner } from "./device-signer";
+export { DeviceSigner } from "./device-signer";
 import { utils as starknetKeyUtils } from "@scure/starknet";
-import { signGameplayIntent } from "@bibliothecadao/provider";
 import { botRealmsId, realmsAccountAddress, type DeviceChange } from "@realms-world/identity/account";
-import { Account, BlockTag, ec, hash, num, Signer, type ProviderInterface } from "starknet";
+import { Account, BlockTag, ec, hash, num, type ProviderInterface } from "starknet";
+import { operatorRequest } from "./operator-request";
 
 /**
  * A player's gameplay account on a shard: `RealmsAccount` (contracts/l3/player-account), deployed from no deployer with
@@ -50,9 +52,9 @@ export interface OperatorIdentity {
 const approveBotDevice =
   (identity: OperatorIdentity, label: string): GuardianApproval =>
   async (change) => {
-    const response = await fetch(`${identity.url}/devices/bots`, {
+    const response = await operatorRequest(`${identity.url}/devices/bots`, identity.operatorToken, {
       method: "POST",
-      headers: { authorization: `Bearer ${identity.operatorToken}`, "content-type": "application/json" },
+      headers: { "content-type": "application/json" },
       body: JSON.stringify({
         label,
         chainId: change.chainId,
@@ -317,19 +319,6 @@ async function forEachShard(
         ]
       : [],
   );
-}
-
-/** Signs as the account's device; with an approval, the signature also carries the guardian's `[r, s]` to join. */
-export class DeviceSigner extends Signer {
-  constructor(
-    private readonly device: DeviceKey,
-    private readonly approval: string[] = [],
-  ) {
-    super(device.privateKey);
-  }
-  override async signRaw(digest: string): Promise<string[]> {
-    return [...signGameplayIntent(digest, this.device.privateKey), ...this.approval];
-  }
 }
 
 const realmsAccount = (provider: ProviderInterface, address: string, device: DeviceKey, approval?: string[]) =>

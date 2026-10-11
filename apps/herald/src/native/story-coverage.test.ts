@@ -1,3 +1,4 @@
+import { shortString } from "starknet";
 import { describe, expect, it } from "vitest";
 import { toJsonValue } from "../model-registry";
 import { battleEvent, manifest, raw, schema, setup } from "./fixtures";
@@ -136,8 +137,8 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
     expected: { explorer_id: 7n, attribute: "Logistics", kind: null, tier: 3n, price: 200n },
   },
   LordsWithdrawn: {
-    fields: [17, 3, 200],
-    expected: { player: 17n, structure_id: 3n, amount: 200n },
+    fields: [17, 200],
+    expected: { account: 17n, amount: 200n },
   },
   ExplorerCreateStory: {
     fields: [7, 3, 1, 2, 100, 4],
@@ -164,22 +165,18 @@ const standalone = {
     keys: ["1"],
     data: ["17", "2", "8"],
     key: { game_id: 1n },
-    value: { actor: 17n, nonce: 2n, remaining: 8n },
+    value: { actor: 17n, tx_hash: 2n, remaining: 8n },
   },
-  ExecutionRecorded: {
-    keys: [],
-    data: ["1", "17", "2", "0", "9", "2", "77", "0", "0x646f6d61696e2072656a6563746564", "15"],
-    key: {},
-    value: {
-      game_id: 1n,
-      actor: 17n,
-      nonce: 2n,
-      nonce_consumed: false,
-      order: 9n,
-      status: 2n,
-      status_class: 77n,
-      reason: "domain rejected",
-    },
+  GameplayRejected: {
+    keys: ["1", "1", "17", "85"],
+    data: [
+      shortString.encodeShortString("GAMEPLAY_REJECTED"),
+      "0",
+      shortString.encodeShortString("domain rejected"),
+      "15",
+    ],
+    key: { game_id: 1n, actor: 17n, tx_hash: 85n },
+    value: { status_class: BigInt(shortString.encodeShortString("GAMEPLAY_REJECTED")), reason: "domain rejected" },
   },
   PointsAwarded: {
     keys: ["1", "1", "17"],
@@ -188,9 +185,9 @@ const standalone = {
     value: { activity: "Hyperstructure", points: 50n, player_points: 100n, season_points: 200n },
   },
   RaidEvent: {
-    keys: ["1", "1", "42", "0", "7", "3"],
+    keys: ["2", "1", "7", "3"],
     data: ["1", "17", "34", "100", "90", "1", "1", "100", "140"],
-    key: { game_id: 1n, order: 42n, index: 0n, explorer_id: 7n, structure_id: 3n },
+    key: { game_id: 1n, explorer_id: 7n, structure_id: 3n },
     value: {
       success: true,
       player: 17n,
@@ -214,7 +211,10 @@ function assertDecoded(event: ReturnType<typeof raw>, key: unknown, value: Recor
   if (decoded.kind !== "event") throw new Error("Expected native event");
   expect(toJsonValue(decoded.key)).toEqual(toJsonValue(key));
   expect(toJsonValue(decoded.value)).toEqual(
-    toJsonValue({ ...value, event_position: { transaction_hash: "0x55", event_index: 0 } }),
+    toJsonValue({
+      ...value,
+      event_position: { block_number: 10, transaction_hash: "0x55", transaction_index: 0, event_index: 0 },
+    }),
   );
 }
 
@@ -226,10 +226,10 @@ describe("compiled native history coverage", () => {
         assertDecoded(
           raw({
             from_address: manifest.world.address,
-            keys: [...layout.prefix, "1", "1", "100", "0", "0", "17", "0", "3", "0x55"],
+            keys: [...layout.prefix, "2", "1", "0", "17", "0", "3", "0x55"],
             data: [String(variant), ...fields.map(String), "140"],
           }),
-          { game_id: 1n, order: 100n, index: 0n, owner: 17n, entity_id: 3n, tx_hash: 85n },
+          { game_id: 1n, owner: 17n, entity_id: 3n, tx_hash: 85n },
           { story: { [name]: expected }, timestamp: 140n },
         );
       }
@@ -255,7 +255,7 @@ describe("compiled native history coverage", () => {
   it("decodes both combatants and the location in a battle", () => {
     assertDecoded(
       raw(battleEvent()),
-      { game_id: 1n, order: 42n, index: 0n, attacker_id: 7n, defender_id: 8n, attacker_owner: 2n, defender_owner: 3n },
+      { game_id: 1n, attacker_id: 7n, defender_id: 8n, attacker_owner: 2n, defender_owner: 3n },
       {
         winner_id: 7n,
         coord: { alt: false, x: 12n, y: 34n },

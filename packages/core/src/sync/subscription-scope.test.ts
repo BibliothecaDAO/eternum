@@ -31,7 +31,7 @@ describe("visited realm scope", () => {
       expect(rowInGameSyncScope(model, { structure_id: "2", epoch: 0 }, scope)).toBe(true);
     expect(rowInGameSyncScope("TileOpt", { alt: false, col: 1600, row: 2700 }, scope)).toBe(false);
     expect(rowInGameSyncScope("TileOccupancy", rows[6].value, scope)).toBe(true);
-    expect(rowInGameSyncScope("ActionNonce", { actor: "11" }, scope)).toBe(false);
+    expect(rowInGameSyncScope("GameplayRejected", { actor: "11" }, scope)).toBe(false);
   });
 
   it("keeps morning muster on the acting realm even when the visitor has an army", () => {

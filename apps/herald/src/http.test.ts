@@ -101,7 +101,6 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
       total: 1,
     }),
     reviewSnapshot: async () => snapshot,
-    transactionCount: async (gameId) => ({ count: 9, game_id: gameId }),
   },
   undecodableEventCount: () => 2,
 };
@@ -144,7 +143,7 @@ describe("herald HTTP", () => {
     expect((await handler(new Request("http://herald/games?player=not-an-address"))).status).toBe(400);
   });
 
-  it("serves paginated history and per-game transaction tallies", async () => {
+  it("serves paginated history", async () => {
     const history = await (
       await handler(new Request("http://herald/games/7/history?model=StoryEvent&limit=25&offset=5"))
     ).json();
@@ -154,11 +153,6 @@ describe("herald HTTP", () => {
       limit: 25,
       offset: 5,
       total: 1,
-    });
-
-    await expect((await handler(new Request("http://herald/games/7/transactions/count"))).json()).resolves.toEqual({
-      count: 9,
-      game_id: "7",
     });
   });
 
@@ -204,7 +198,6 @@ it("passes a battle-only history filter to the store before pagination", async (
       queryEvents,
       activity: () => new Map(),
       reviewSnapshot: async () => snapshot,
-      transactionCount: async () => ({ game_id: "7", count: 0 }),
     },
   });
   const response = await battleHandler(
@@ -468,4 +461,20 @@ it("serves immutable per-day ranks, with explicit unavailable and unclosed respo
   frontierDayRanks.mockRejectedValueOnce(new Error("history unavailable"));
   expect((await request("0")).status).toBe(503);
   expect((await request("9007199254740992")).status).toBe(400);
+});
+
+it("hidden check games never enter the directory clock or require public directory rules", async () => {
+  const handle = createHeraldRequestHandler({
+    ...httpState,
+    fold: {
+      ...httpState.fold,
+      modelRows: (model) =>
+        model === "GameRegistry"
+          ? [{ key: "8", value: { game_id: "8", name: "0x" + Buffer.from("check-frontier-abc").toString("hex") } }]
+          : [],
+    },
+  });
+  const response = await handle(new Request("http://herald/games"));
+  expect(response.status).toBe(200);
+  expect((await response.json()).games).toEqual([]);
 });

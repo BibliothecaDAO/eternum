@@ -1,16 +1,9 @@
 #!/usr/bin/env bun
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type Account, addAddressPadding, RpcProvider } from "starknet";
-import {
-  deviceKeyOf,
-  joinBotAccount,
-  joinRealmsAccount,
-  type DeviceKey,
-  type RealmsAccountShard,
-} from "@bibliothecadao/eternum";
-import type { OperatorEnrolment } from "../../../packages/identity/src/operator-enrolment";
+import { deviceKeyOf, joinBotAccount, type RealmsAccountShard } from "@bibliothecadao/eternum";
 import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
 import type { ShardRecord } from "../../../apps/herald/src/shard-manifest";
@@ -69,8 +62,7 @@ function writeDeploymentResult(result: GameplayDeploymentResult): void {
 }
 
 async function deployGameplayContracts(): Promise<GameplayDeploymentResult> {
-  // Say which operator approval is missing before the chain is touched: an enrolment file or the operator token.
-  if (!readOperatorEnrolment()) operatorIdentity();
+  operatorIdentity();
   const provider = new RpcProvider({ nodeUrl: RPC_URL });
   const manifest = readShardManifest<{ shard: ShardRecord }>(process.env.NATIVE_WORLD_MANIFEST);
   await assertProviderChain(provider, manifest, "RPC_URL");
@@ -90,24 +82,9 @@ async function deployGameplayContracts(): Promise<GameplayDeploymentResult> {
   return result;
 }
 
-/**
- * The operator's Realms account, under the shard's guardian, with the deployer key as its one device. A community
- * operator enrolled their own Realms account before initialization (enrol-operator.ts); our own shards' operator is the
- * bot named by the deployer address, approved through the identity Worker's operator route.
- */
+/** The operator is the bot named by the deployer address, approved by the identity Worker's operator route. */
 async function prepareOperator(provider: RpcProvider, shard: RealmsAccountShard): Promise<string> {
   const device = deviceKeyOf(DEPLOYER_PRIVATE_KEY);
-  const enrolment = readOperatorEnrolment();
-  if (enrolment) {
-    const operator = await joinRealmsAccount({
-      provider,
-      shard,
-      realmsId: enrolment.realmsId,
-      device,
-      approve: enrolledApproval(enrolment, device),
-    });
-    return operator.address;
-  }
   const operator = await joinBotAccount({
     provider,
     shard,
@@ -118,31 +95,10 @@ async function prepareOperator(provider: RpcProvider, shard: RealmsAccountShard)
   return operator.address;
 }
 
-function readOperatorEnrolment(): OperatorEnrolment | null {
-  const path = requiredEnvironment("OPERATOR_ENROLMENT_PATH");
-  return existsSync(path) ? (JSON.parse(readFileSync(path, "utf8")) as OperatorEnrolment) : null;
-}
-
-/** The enrolment approves exactly one change: this deployer key as the account's first device. */
-const enrolledApproval =
-  (enrolment: OperatorEnrolment, device: DeviceKey) =>
-  async (change: { action: string; deviceKey: string; counter: number }): Promise<string[]> => {
-    if (change.action !== "ADD" || change.counter !== 1 || BigInt(change.deviceKey) !== BigInt(device.publicKey)) {
-      throw new Error("The operator enrolment approves only the deployer key as the first device of a new account");
-    }
-    if (BigInt(enrolment.deviceKey) !== BigInt(device.publicKey)) {
-      throw new Error("The operator enrolment was made for another deployer key; enrol this shard's operator again");
-    }
-    return enrolment.signature;
-  };
-
 function operatorIdentity() {
   const operatorToken = process.env.OPERATOR_TOKEN?.trim();
   if (!operatorToken) {
-    throw new Error(
-      "The operator enrols through the shard's guardian: run deploy/athanor/scripts/enrol-operator.ts before " +
-        "initialization, or set OPERATOR_TOKEN in our own environments",
-    );
+    throw new Error("Missing protected operator credential; run deploy/athanor/scripts/operator-command.py");
   }
   return { url: requiredEnvironment("IDENTITY_URL"), operatorToken };
 }

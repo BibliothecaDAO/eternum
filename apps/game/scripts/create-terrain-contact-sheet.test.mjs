@@ -1,4 +1,3 @@
-// @vitest-environment node
 import { describe, expect, it } from "vitest";
 
 import { orderTerrainContactSheetFilenames } from "./terrain-verification/create-terrain-contact-sheet.mjs";

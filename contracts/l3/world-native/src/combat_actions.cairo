@@ -3,19 +3,19 @@ use crate::troop_management::GuardSlot;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct AttackExplorer {
-    pub attacker_id: u32,
-    pub defender_id: u32,
+    pub attacker_id: u64,
+    pub defender_id: u64,
     pub steal_resources: Span<ResourceAmount>,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct GuardAttack {
     pub guard: GuardSlot,
-    pub explorer_id: u32,
+    pub explorer_id: u64,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct Raid {
-    pub explorer_id: u32,
-    pub structure_id: u32,
+    pub explorer_id: u64,
+    pub structure_id: u64,
     pub steal_resources: Span<ResourceAmount>,
 }
 #[derive(Copy, Drop, Serde)]
@@ -34,7 +34,6 @@ pub fn battle_side(
     BattleSide { player, category: after.category, tier: after.tier, before, after: after.count, roll }
 }
 
-
 #[derive(Drop, starknet::Event)]
 pub struct RaidEvent {
     #[key]
@@ -42,13 +41,9 @@ pub struct RaidEvent {
     #[key]
     pub game_id: u32,
     #[key]
-    pub order: u64,
+    pub explorer_id: u64,
     #[key]
-    pub index: u32,
-    #[key]
-    pub explorer_id: u32,
-    #[key]
-    pub structure_id: u32,
+    pub structure_id: u64,
     pub success: bool,
     pub player: starknet::ContractAddress,
     pub target_owner: starknet::ContractAddress,
@@ -66,16 +61,14 @@ pub trait IBattles<T> {
         actor: starknet::ContractAddress,
         command: crate::combat_actions::AttackExplorer,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn guard_attack(
         ref self: T,
         game_id: u32,
         actor: starknet::ContractAddress,
         command: crate::combat_actions::GuardAttack,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }
 #[starknet::interface]
 pub trait IRaids<T> {
@@ -85,7 +78,6 @@ pub trait IRaids<T> {
         actor: starknet::ContractAddress,
         command: crate::combat_actions::Raid,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn village_last_raided(self: @T, key: crate::resources::ResourceKey) -> u64;
 }

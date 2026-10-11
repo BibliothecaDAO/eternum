@@ -6,13 +6,7 @@ const _rawEnv = import.meta.env as Record<string, string | undefined>;
 const optionalUrlOrEmpty = z.union([z.string().url(), z.literal("")]).optional();
 
 const envSchema = z.object({
-  VITE_PUBLIC_IDENTITY_RPC_URL: z.string().url(),
-  VITE_PUBLIC_EXPLORER_URL: optionalUrlOrEmpty.default(""),
-  VITE_PUBLIC_GRAPHICS_DEV: z
-    .string()
-    .transform((v) => v === "true")
-    .optional()
-    .default("false"),
+  VITE_PUBLIC_L2_RPC_URL: z.string().url(),
   VITE_PUBLIC_RENDERER_BUILD_MODE: z.string().optional().default("webgpu-auto").transform(resolveRendererBuildMode),
   // Version
   VITE_PUBLIC_GAME_VERSION: z.string().optional().default(""),

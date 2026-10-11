@@ -86,16 +86,18 @@ const hasMaterialChange = (delta: WorldDelta): boolean =>
 const fingerprintStructure = (client: GameClient, structure: Structure): string => {
   const base = structure.structure.base;
   const resources = [...client.setup.store.inGame("ResourceBalance", client.gameId)].filter(
-    (row) => row.entity_id === structure.entityId,
+    (row) => row.entity_id === BigInt(structure.entityId),
   );
   const production = [...client.setup.store.inGame("ResourceProduction", client.gameId)].filter(
-    (row) => row.entity_id === structure.entityId,
+    (row) => row.entity_id === BigInt(structure.entityId),
   );
   const buildings = client.views.buildingTiles(structure.entityId).existingBuildings().length;
   return [
     base.level,
     JSON.stringify(
-      [...client.setup.store.inGame("Guard", client.gameId)].filter((row) => row.structure_id === structure.entityId),
+      [...client.setup.store.inGame("Guard", client.gameId)].filter(
+        (row) => row.structure_id === BigInt(structure.entityId),
+      ),
       bigintAsString,
     ),
     liveHomeArmies(client.setup.store, structure.entityId, client.gameId).length,

@@ -87,12 +87,11 @@ it("keeps pending and completed actions and travelling caravans in Events", () =
   ]);
 });
 
-it("leaves routine production in Activity but keeps failed and stuck production visible", () => {
-  const production = (id: string, status: "pending" | "success" | "reverted", isStuck = false) => ({
+it("leaves routine production in Activity but keeps failed and still-checking production visible", () => {
+  const production = (id: string, status: "pending" | "checking" | "success" | "reverted") => ({
     kind: "transaction" as const,
     id,
     at: 10,
-    isStuck,
     transaction: {
       hash: id,
       submittedAt: 10,
@@ -103,9 +102,9 @@ it("leaves routine production in Activity but keeps failed and stuck production 
   });
   const feed: FeedRows = {
     arrived: [],
-    inFlight: [production("pending", "pending"), production("stuck", "pending", true)],
+    inFlight: [production("pending", "pending"), production("checking", "checking")],
     recent: [production("done", "success"), production("failed", "reverted")],
   };
-  expect(selectImportantFeedRows([], feed, "all", "0x1").map((row) => row.id)).toEqual(["stuck", "failed"]);
+  expect(selectImportantFeedRows([], feed, "all", "0x1").map((row) => row.id)).toEqual(["checking", "failed"]);
   expect(feed.recent).toHaveLength(2);
 });

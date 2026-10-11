@@ -3,10 +3,15 @@ import { presentsOperatorToken } from "@realms-world/identity";
 import type { IdentityAuth } from "./auth";
 import { routeChat } from "./chat/routes";
 import { handleBotDeviceApproval, handleDeviceChange } from "./devices";
-import { handleAdmitShard, handleDirectory, handleDirectoryHistory, handleShardStatus } from "./directory";
-import type { IdentityEnv } from "./env";
+import {
+  handleAdmitShard,
+  handleDirectory,
+  handleDirectoryHistory,
+  handleRegisterPendingShard,
+  handleShardStatus,
+} from "./directory";
+import { ACCOUNT_CLASS_HASH, socialProvidersOf, type IdentityEnv } from "./env";
 import { json } from "./http";
-import { consumeSignInBudget } from "./sign-in-budget";
 import { handleNotificationPreferences } from "./notification-preferences";
 import { handleProfile, handleProfiles } from "./profiles";
 import { handleRatings } from "./ratings";
@@ -18,7 +23,9 @@ import { handlePushSubscriptions } from "./push-notifications";
 interface WorkerPlatform {
   cache: Cache;
   fetchShard: typeof fetch;
-  readLaunchDirectory: () => Promise<{ chains: { chainId: string; gameIds: number[] }[] }>;
+  readLaunchDirectory: () => Promise<{
+    chains: { chainId: string; games: { gameId: number; slotId: number | null }[] }[];
+  }>;
 }
 
 /** Every /api route: identity under /api/auth, then devices, profiles, chat, notification settings and the directory. */
@@ -30,12 +37,16 @@ export const routeIdentityRequest = async (
 ) => {
   const { pathname } = new URL(request.url);
   const sendsCode = pathname === "/api/auth/email-otp/send-verification-otp";
-  const verifiesCode = pathname === "/api/auth/sign-in/email-otp";
+  const verifiesCode = ["/api/auth/sign-in/email-otp", "/api/auth/email-otp/check-verification-otp"].includes(pathname);
   const requestsCodeAccess = request.method === "POST" && (sendsCode || verifiesCode);
-  if (requestsCodeAccess && !(await withinSignInBudget(env, request, sendsCode))) {
-    return json({ error: sendsCode ? "too_many_codes" : "too_many_attempts" }, 429);
+  if (requestsCodeAccess) {
+    const refusal = await codeAccess(env, request, sendsCode);
+    if (refusal) return refusal;
+    if (sendsCode) return sendCodeWithExpiry(request, auth);
   }
-  if (requestsCodeAccess && sendsCode) return sendCodeWithExpiry(request, auth);
+  if (pathname === "/api/auth/get-session" && request.method === "GET") return accountSession(request, auth);
+  if (pathname === "/api/auth/providers" && request.method === "GET")
+    return json({ providers: Object.keys(socialProvidersOf(env)) });
   if (pathname.startsWith("/api/auth/")) return auth.handler(request);
   if (requiresSameOrigin(request, pathname) && request.headers.get("origin") !== new URL(env.BASE_URL).origin) {
     return json({ error: "invalid_origin" }, 403);
@@ -45,12 +56,16 @@ export const routeIdentityRequest = async (
       auth,
       db: env.DB,
       guardian: env.GUARDIAN,
-      accountClassHash: env.ACCOUNT_CLASS_HASH,
+      accountClassHash: ACCOUNT_CLASS_HASH,
     });
   }
   if (pathname === "/api/devices/bots" && request.method === "POST") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
-    return handleBotDeviceApproval(request, { guardian: env.GUARDIAN, accountClassHash: env.ACCOUNT_CLASS_HASH });
+    return handleBotDeviceApproval(request, {
+      db: env.DB,
+      guardian: env.GUARDIAN,
+      accountClassHash: ACCOUNT_CLASS_HASH,
+    });
   }
   if ((pathname === "/api/ratings" || pathname === "/api/ratings/top") && request.method === "GET") {
     if (!(await withinPublicBudget(env, "ratings", request))) return json({ error: "too_many_requests" }, 429);
@@ -81,16 +96,17 @@ export const routeIdentityRequest = async (
   }
   if (pathname.startsWith("/api/directory/shards") && request.method === "POST") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
-    if (pathname === "/api/directory/shards") {
-      return handleAdmitShard(request, env.DB, platform.fetchShard, {
-        accountClassHash: env.ACCOUNT_CLASS_HASH,
+    if (pathname === "/api/directory/shards" || pathname === "/api/directory/shards/pending") {
+      const admit = pathname.endsWith("/pending") ? handleRegisterPendingShard : handleAdmitShard;
+      return admit(request, env.DB, platform.fetchShard, {
+        accountClassHash: ACCOUNT_CLASS_HASH,
         guardianPublicKey: await env.GUARDIAN.publicKey(),
       });
     }
     if (pathname === "/api/directory/shards/status") return handleShardStatus(request, env.DB);
   }
   if (pathname === "/api/guardian" && request.method === "GET") {
-    return json({ publicKey: await env.GUARDIAN.publicKey(), accountClassHash: env.ACCOUNT_CLASS_HASH });
+    return json({ publicKey: await env.GUARDIAN.publicKey(), accountClassHash: ACCOUNT_CLASS_HASH });
   }
   if (pathname === "/api/health" && request.method === "GET") {
     return json({ service: "realms-identity", environment: env.ENVIRONMENT, version: env.VERSION.id });
@@ -105,26 +121,30 @@ const withinPublicBudget = async (env: IdentityEnv, route: string, request: Requ
   return (await budget.limit({ key: `${route}:${client}` })).success;
 };
 
-/** A sign-in code costs an email: each client and each address gets a few a minute. */
-const withinSignInBudget = async (env: IdentityEnv, request: Request, sendsCode: boolean) => {
-  if (!(await withinPublicBudget(env, "sign-in-code", request))) return false;
+/** Each client and address may request only a few codes per minute. */
+const codeAccess = async (env: IdentityEnv, request: Request, sendsCode: boolean) => {
+  if (!(await withinPublicBudget(env, "sign-in-code", request))) return json({ error: "too_many_attempts" }, 429);
+  if (!sendsCode) return null;
   const { email } = (await request
     .clone()
     .json()
     .catch(() => ({}))) as { email?: unknown };
   const address = typeof email === "string" ? email.trim().toLowerCase() : "";
-  if (!address) return true; // The auth handler rejects malformed requests without sending or verifying a code.
-  if (sendsCode && !(await env.SIGN_IN_CODE_RATE_LIMIT.limit({ key: address })).success) return false;
-  return consumeSignInBudget(env.DB, address);
+  if (address && !(await env.SIGN_IN_CODE_RATE_LIMIT.limit({ key: address })).success)
+    return json({ error: "too_many_codes" }, 429);
+  return null;
 };
 
 const isOperator = (env: IdentityEnv, request: Request) => presentsOperatorToken(request, env.OPERATOR_TOKEN);
 
 /** Cookie authority is accepted only from the app itself; operator endpoints authenticate a bearer token below. */
 const requiresSameOrigin = (request: Request, pathname: string): boolean => {
-  const operatorRoute = ["/api/devices/bots", "/api/directory/shards", "/api/directory/shards/status"].includes(
-    pathname,
-  );
+  const operatorRoute = [
+    "/api/devices/bots",
+    "/api/directory/shards",
+    "/api/directory/shards/status",
+    "/api/directory/shards/pending",
+  ].includes(pathname);
   if (operatorRoute) return false;
   return (
     !["GET", "HEAD", "OPTIONS"].includes(request.method) ||
@@ -151,4 +171,12 @@ const sendCodeWithExpiry = async (request: Request, auth: IdentityAuth): Promise
     { ...((await response.json()) as Record<string, unknown>), expires_at: verification.expiresAt.getTime() / 1000 },
     { status: response.status, headers },
   );
+};
+
+/** Sessions always expose the current link, with no cached eligibility state. */
+const accountSession = async (request: Request, auth: IdentityAuth): Promise<Response> => {
+  const response = await auth.handler(request);
+  const headers = new Headers(response.headers);
+  headers.set("cache-control", "no-store");
+  return new Response(response.body, { status: response.status, headers });
 };

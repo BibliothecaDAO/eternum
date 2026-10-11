@@ -1,3 +1,4 @@
+import { environmentL2 } from "@realms-world/chain";
 import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
 import { emailOTP } from "better-auth/plugins";
@@ -9,23 +10,27 @@ import {
   suggestedNameOf,
 } from "@realms-world/identity";
 
-import type { IdentityEnv } from "./env";
+import { socialProvidersOf, type IdentityEnv } from "./env";
 import { isNameTaken } from "./names";
 import { realmsIdOf } from "./realms-id";
 import { resendSignInCodes, type SendSignInCode } from "./sign-in-codes";
+import { resendWalletNotices } from "./wallet-notices";
 import { siws } from "./siws-plugin";
-import { verifyWalletOnMainnet, type VerifyWalletSignature } from "./wallet-signature";
+import { verifyWalletOnL2, type VerifyWalletSignature } from "./wallet-signature";
 
 const DAY_SECONDS = 24 * 60 * 60;
 
-/** What the identity service reaches outside its database: mainnet for wallet signatures, and the email provider. */
+/** What the identity service reaches outside its database: the environment L2 for wallet signatures, and the email provider. */
 interface IdentityServices {
   verifyWalletSignature: VerifyWalletSignature;
   sendSignInCode: SendSignInCode;
+  sendWalletNotice?: (email: string, address: string | null, id: string) => Promise<void>;
 }
 
-const identityServicesOf = (env: Pick<IdentityEnv, "IDENTITY_RPC_URL" | "RESEND_API_KEY">): IdentityServices => ({
-  verifyWalletSignature: verifyWalletOnMainnet(env.IDENTITY_RPC_URL),
+const identityServicesOf = (
+  env: Pick<IdentityEnv, "ENVIRONMENT" | "L2_RPC_URL" | "RESEND_API_KEY">,
+): IdentityServices => ({
+  verifyWalletSignature: verifyWalletOnL2(env),
   sendSignInCode: resendSignInCodes(env.RESEND_API_KEY),
 });
 
@@ -66,14 +71,25 @@ export const createIdentityAuth = (
     | "DB"
     | "BASE_URL"
     | "BETTER_AUTH_SECRET"
-    | "IDENTITY_RPC_URL"
+    | "ENVIRONMENT"
+    | "L2_RPC_URL"
     | "DISCORD_CLIENT_ID"
     | "DISCORD_CLIENT_SECRET"
     | "RESEND_API_KEY"
   >,
   services: IdentityServices = identityServicesOf(env),
-) =>
-  betterAuth({
+) => {
+  const emailCodes = emailOTP({
+    otpLength: SIGN_IN_CODE_LENGTH,
+    expiresIn: SIGN_IN_CODE_SECONDS,
+    allowedAttempts: 3,
+    storeOTP: "hashed",
+    sendVerificationOTP: async ({ email, otp, type }) => {
+      if (type !== "sign-in") throw new APIError("BAD_REQUEST", { message: "SIGN_IN_CODES_ONLY" });
+      await services.sendSignInCode(email, otp);
+    },
+  });
+  return betterAuth({
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BASE_URL,
     basePath: "/api/auth",
@@ -81,9 +97,7 @@ export const createIdentityAuth = (
     // A month, renewed by a day's use, so a phone stays signed in. Every session read comes from the database: a cached
     // copy of the account went stale for an hour after a wallet link or a name change made on another device.
     session: { expiresIn: 30 * DAY_SECONDS, updateAge: DAY_SECONDS },
-    socialProviders: {
-      discord: { clientId: env.DISCORD_CLIENT_ID, clientSecret: env.DISCORD_CLIENT_SECRET },
-    },
+    socialProviders: socialProvidersOf(env),
     // Other realms.party services set better-auth's default cookie names for the whole domain; a browser sends that
     // older cookie first, and it would hide this service's session. Our cookies carry their own name.
     advanced: { cookiePrefix: "realms-identity" },
@@ -114,19 +128,18 @@ export const createIdentityAuth = (
       },
     },
     plugins: [
-      // A sign-in code for an email signs in its account, and creates it on the email's first sign-in.
-      emailOTP({
-        otpLength: SIGN_IN_CODE_LENGTH,
-        expiresIn: SIGN_IN_CODE_SECONDS,
-        allowedAttempts: 3,
-        storeOTP: "hashed",
-        sendVerificationOTP: async ({ email, otp, type }) => {
-          if (type !== "sign-in") throw new APIError("BAD_REQUEST", { message: "SIGN_IN_CODES_ONLY" });
-          await services.sendSignInCode(email, otp);
-        },
+      emailCodes,
+      siws({
+        origin: env.BASE_URL,
+        chainId: environmentL2(env.ENVIRONMENT).chain,
+        verifySignature: services.verifyWalletSignature,
+        db: env.DB,
+        checkCode: (context, email, otp) =>
+          emailCodes.endpoints.checkVerificationOTP({ context, body: { email, otp, type: "sign-in" } }),
+        sendNotice: services.sendWalletNotice ?? resendWalletNotices(env.RESEND_API_KEY),
       }),
-      siws({ origin: env.BASE_URL, verifySignature: services.verifyWalletSignature }),
     ],
   });
+};
 
 export type IdentityAuth = ReturnType<typeof createIdentityAuth>;

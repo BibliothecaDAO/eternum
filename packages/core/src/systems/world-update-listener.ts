@@ -1,3 +1,4 @@
+import { safeInteger } from "../utils/safe-integer";
 import { BuildingType, type ID, type ResourcesIds } from "@bibliothecadao/types";
 import type { GameClientSetup } from "../client/game-client";
 import { configManager } from "../managers/config-manager";
@@ -34,7 +35,8 @@ export class WorldUpdateListener {
           for (const change of changes) {
             if (change.model !== "Building") continue;
             const row = change.current ?? change.previous;
-            if (!row || row.game_id !== configManager.getActiveGameId() || row.structure_id !== structureId) continue;
+            if (!row || row.game_id !== configManager.getActiveGameId() || row.structure_id !== BigInt(structureId))
+              continue;
             callback({
               buildingType: change.current?.category ?? BuildingType.None,
               innerCol: row.inner_col,
@@ -54,7 +56,7 @@ export class WorldUpdateListener {
             if (
               change.model === "Structure" &&
               change.current?.game_id === configManager.getActiveGameId() &&
-              change.current.entity_id === entityId
+              change.current.entity_id === BigInt(entityId)
             )
               callback({ entityId, level: change.current.base.level });
           }
@@ -166,7 +168,7 @@ export class WorldUpdateListener {
           const owner = event.owner;
           callback({
             explorerId,
-            explorerStructureId: explorer?.owner ?? 0,
+            explorerStructureId: explorer ? safeInteger(explorer.owner) : 0,
             explorerOwnerAddress: owner === undefined || owner === null ? null : BigInt(String(owner)),
             resourceId: integer(payload.resource_type) as ResourcesIds,
             rawAmount: BigInt(String(payload.amount)),

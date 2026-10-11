@@ -30,6 +30,7 @@ pub struct PresetStorage<
     TWithdrawalTerms,
     TRetention,
     TExplorationReward,
+    TLaborRules,
 > {
     pub rules: TSliceRules,
     pub resource_rules: Map<u8, (u128, u128)>,
@@ -71,7 +72,7 @@ pub struct PresetStorage<
     pub hyper_shards: u128,
     pub hyper_costs: Map<u32, TConstructionResource>,
     pub relic_rules: Map<u8, TRelicRule>,
-    pub chest_rules: Option<TChestRules>,
+    pub rollover_chest_rules: Option<TChestRules>,
     pub discovery_rules: Option<TFrontierDiscoveryRules>,
     pub progression_rules: Option<TArmyProgressionRules>,
     pub artificer_cost: u128,
@@ -82,4 +83,5 @@ pub struct PresetStorage<
     pub exploration_reward_count: u32,
     pub exploration_rewards: Map<u32, TExplorationReward>,
     pub season_win_points: u128,
+    pub labor_rules: Option<TLaborRules>,
 }

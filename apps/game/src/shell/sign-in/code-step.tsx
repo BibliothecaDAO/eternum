@@ -1,113 +1,85 @@
-import { SIGN_IN_CODE_LENGTH, SIGN_IN_CODE_SECONDS } from "@realms-world/identity";
-import { useEffect, useState } from "react";
+import { SIGN_IN_CODE_LENGTH } from "@realms-world/identity";
+import { useState } from "react";
 
-import { Hourglass, Mail } from "@/ui/design-system/atoms/game-icons";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Chip } from "@/ui/features/frontier/frontier-chips";
-import { formatShortClock } from "@/ui/features/frontier/frontier-format";
+import { Button } from "@/ui/design-system/kit/button";
+import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+
+import { ClockChip } from "../clock-chip";
+import { useNowSeconds } from "../use-now";
+import { SIGN_IN_WORDS } from "../words";
+import { CodeBoxes } from "./fields";
+import { FailureLine } from "./failure-line";
 
 /**
- * The code step (design o3, second screen): the address the code went to, six boxes that sign in on the sixth digit,
- * and the code's time left. At zero the clock becomes the way to a new code. Tapping the address goes back to change
- * it.
+ * The code step (spec 02): the address the code went to (tap to change it), six boxes that sign in on the sixth digit,
+ * and when the code expires; at that moment the clock becomes New code on the same spot. When the Worker did not say
+ * when the code expires, the clock is a dash and New code stands beside it, since no moment will bring it.
  */
 export const CodeStep = ({
   email,
-  sentAt,
-  pending,
+  expiresAt,
+  checking,
+  sending,
   error,
   onCode,
   onNewCode,
   onChangeEmail,
+  onTyping,
 }: {
   email: string;
-  sentAt: number;
-  pending: boolean;
+  /** Unix seconds the code stops working, as the identity Worker stored it; undefined when it did not say. */
+  expiresAt: number | undefined;
+  checking: boolean;
+  sending: boolean;
   error: string | null;
   /** Signs in with the code; false when it was refused, and the boxes clear for another try. */
   onCode: (code: string) => Promise<boolean>;
   onNewCode: () => void;
   onChangeEmail: () => void;
+  /** Typing again clears the last refusal. */
+  onTyping: () => void;
 }) => {
   const [code, setCode] = useState("");
-  const secondsLeft = useCodeSecondsLeft(sentAt);
+  const now = useNowSeconds();
+  const expired = expiresAt !== undefined && now >= expiresAt;
+  const newCode = (
+    <Button
+      role="outline"
+      word={SIGN_IN_WORDS.newCode}
+      icon="Em"
+      onClick={onNewCode}
+      loading={sending ? SIGN_IN_WORDS.sending : undefined}
+    />
+  );
 
   const type = (value: string) => {
+    onTyping();
     const digits = value.replace(/\D/g, "").slice(0, SIGN_IN_CODE_LENGTH);
     setCode(digits);
     if (digits.length === SIGN_IN_CODE_LENGTH) void onCode(digits).then((signedIn) => signedIn || setCode(""));
   };
 
   return (
-    <div className="flex flex-col items-center gap-6 pt-16">
-      <Mail className="size-14" />
-      <button type="button" onClick={onChangeEmail} className="frontier-title max-w-full truncate">
-        {email}
+    <div className="flex flex-col items-center gap-5 pt-4">
+      <button
+        type="button"
+        onClick={onChangeEmail}
+        className="flex min-h-12 max-w-full items-center gap-2 font-ui text-[17px] font-bold text-kit-cream"
+      >
+        <KitIcon code="Em" size={22} />
+        <span className="truncate">{email}</span>
+        <KitIcon code="Ed" size={20} />
       </button>
-      <CodeBoxes code={code} disabled={pending || secondsLeft === 0} onType={type} />
-      {secondsLeft > 0 ? (
-        <Chip label="Code time left" icon={<Hourglass />} value={formatShortClock(secondsLeft)} />
+      <CodeBoxes code={code} refused={error !== null} disabled={checking || expired} onType={type} />
+      {expired ? (
+        newCode
+      ) : checking ? (
+        <p className="font-ui text-[15px] font-bold text-kit-muted">{SIGN_IN_WORDS.checking}</p>
       ) : (
-        <button type="button" onClick={onNewCode} disabled={pending} className="frontier-chip gap-2 px-4 py-1.5">
-          <Mail className="size-6" />
-          <span className="font-[Lexend] font-extrabold text-[#eadfc8]">New code</span>
-        </button>
+        <ClockChip prefix="expires" at={expiresAt} now={now} />
       )}
-      {error && <p className="text-center text-[15px] text-[#f08a6a]">{error}</p>}
+      {expiresAt === undefined && !checking && newCode}
+      <FailureLine line={error} />
     </div>
   );
-};
-
-/**
- * Six boxes over one real one-time-code input, so a pasted or autofilled code, a phone's code suggestion and
- * backspace all behave as they do in any code field.
- */
-const CodeBoxes = ({
-  code,
-  disabled,
-  onType,
-}: {
-  code: string;
-  disabled: boolean;
-  onType: (value: string) => void;
-}) => (
-  <label className="relative flex gap-2">
-    <span className="sr-only">Sign-in code</span>
-    <input
-      type="text"
-      inputMode="numeric"
-      autoComplete="one-time-code"
-      autoFocus
-      maxLength={SIGN_IN_CODE_LENGTH}
-      value={code}
-      disabled={disabled}
-      onChange={(event) => onType(event.target.value)}
-      className="peer absolute inset-0 z-10 w-full cursor-text opacity-0"
-    />
-    {Array.from({ length: SIGN_IN_CODE_LENGTH }, (_, index) => (
-      <span
-        key={index}
-        aria-hidden
-        className={cn(
-          "flex h-16 w-12 items-center justify-center rounded-xl border-2 bg-[#15100a] font-[Lexend] text-[30px] font-extrabold text-[#fff3c4]",
-          index === code.length
-            ? "border-[#f6ac1d] peer-focus:shadow-[0_0_14px_rgba(246,172,29,0.45)]"
-            : "border-[#46351c]",
-          disabled && "opacity-50",
-        )}
-      >
-        {code[index] ?? ""}
-      </span>
-    ))}
-  </label>
-);
-
-/** Seconds until a code sent at `sentAt` stops signing in, by the identity service's own lifetime. */
-const useCodeSecondsLeft = (sentAt: number): number => {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
-  return Math.max(0, SIGN_IN_CODE_SECONDS - Math.floor((now - sentAt) / 1000));
 };

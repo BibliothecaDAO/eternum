@@ -54,7 +54,7 @@ it("preserves the whole Blitz game's facts through snapshot, overlay, confirmati
     confirmedBlock: 9,
     confirmedFold: fold,
     rpc: {
-      getBlockWithReceipts: async (block: unknown) =>
+      readBlock: async (block: unknown) =>
         block === "pre_confirmed"
           ? { block_number: confirmed.block_number + 1, timestamp: 121, transactions: [] }
           : confirmed,

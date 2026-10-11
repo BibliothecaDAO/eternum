@@ -5,7 +5,7 @@ export default defineConfig({
   // export): the game client imports the error extractor directly so pulling it
   // never evaluates the package barrel, which loads transaction execution and queueing. The module is stateless, so esm
   // code-splitting keeping it one shared chunk is hygiene, not correctness.
-  entry: ["src/index.ts", "src/classify-transaction-error.ts"],
+  entry: ["src/index.ts", "src/batch-progress.ts", "src/classify-transaction-error.ts"],
   target: "esnext",
   format: ["esm"],
   dts: true,

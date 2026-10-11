@@ -1,35 +1,8 @@
 import { resolveDeploymentEnvironment } from "../../../config/deployer/clean/environment";
 import { defaultPresetForEnvironment } from "../../../config/deployer/clean/constants";
 import { nativePresetIdFor, nativePresets } from "../../../config/source/native";
-import { Schema } from "effect";
 
-const NonEmptyString = Schema.NonEmptyString;
-const OptionalNumberRecord = Schema.optional(Schema.Record(Schema.String, Schema.Number));
-
-const SharedOptions = {
-  environment: Schema.Literals(["madara.blitz", "madara.eternum", "madara.frontier"]),
-  version: Schema.optional(Schema.String),
-  devModeOn: Schema.optional(Schema.Boolean),
-  singleRealmMode: Schema.optional(Schema.Boolean),
-  durationSeconds: Schema.optional(Schema.Number),
-  mapConfigOverrides: OptionalNumberRecord,
-  biomeClimateOverrides: OptionalNumberRecord,
-  blitzRegistrationOverrides: OptionalNumberRecord,
-};
-
-export const CreateGameRequestSchema = Schema.Struct({
-  ...SharedOptions,
-  gameName: NonEmptyString,
-  rosterAccounts: Schema.optional(Schema.Array(Schema.String.pipe(Schema.check(Schema.isPattern(/^0x[0-9a-fA-F]+$/))))),
-  gameStartTime: Schema.optional(NonEmptyString),
-}).check(
-  Schema.makeFilter((request) =>
-    request.version === undefined || isRegisteredPresetForEnvironment(request.environment, request.version)
-      ? undefined
-      : { path: ["version"], issue: "Preset is not registered for the requested game format" },
-  ),
-);
-
+export const isPublicGameName = (name: string) => !name.startsWith("check-");
 interface SharedLaunchOptions {
   environment: "madara.blitz" | "madara.eternum" | "madara.frontier";
   version?: string;
@@ -42,7 +15,8 @@ interface SharedLaunchOptions {
 }
 
 export interface CreateGameRequest extends SharedLaunchOptions {
-  rosterAccounts?: readonly string[];
+  slotId?: number;
+  groupIndex?: number;
   gameName: string;
   gameStartTime?: string;
 }
@@ -94,6 +68,7 @@ export function applyDurableLaunchDefaults(
 ): LaunchJobRequest {
   if (kind === "result") return request;
   if (!("gameName" in request) || "gameId" in request) throw new Error("Invalid game request");
+  if (!isPublicGameName(request.gameName)) throw new Error("check- names are reserved for deployment");
   const version =
     request.version ?? (defaultPresetForEnvironment(request.environment) as NonNullable<CreateGameRequest["version"]>);
   if (!isRegisteredPresetForEnvironment(request.environment, version)) {

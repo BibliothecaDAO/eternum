@@ -1,5 +1,6 @@
+import { slotValueFixture, registrationIdentityFixture } from "./test-database";
 import { Effect } from "effect";
-import { afterEach, beforeEach, expect, test } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { D1CalendarStore } from "./calendar-store";
 import { runLaunchSchedule } from "./schedule";
 import { D1SlotStore } from "./slot-store";
@@ -12,38 +13,45 @@ beforeEach(async () => {
   database = await createLaunchTestDatabase();
 });
 afterEach(async () => {
+  vi.restoreAllMocks();
   await database.close();
 });
 
 const stores = () => {
   const launches = new D1LaunchStore(database.db, testChain());
-  const slots = new D1SlotStore(database.db, launches);
+  const slots = new D1SlotStore(database.db, launches, slotValueFixture(1), registrationIdentityFixture);
   const calendar = new D1CalendarStore(database.db);
   const tick = (now: Date) => Effect.runPromise(runLaunchSchedule(launches, slots, calendar, now));
   return { launches, slots, calendar, tick };
 };
 
-test("the calendar creates the Frontier season game once, at its start, running to its planned end", async () => {
-  const { launches, calendar, tick } = stores();
-  const season = {
-    phase: "frontier" as const,
-    startsAt: day(0).toISOString(),
-    endsAt: frontierSeasonEnd(day(0)),
-  };
-  await calendar.set(season, Date.now());
+test.each([1, 2, 21, 30])(
+  "the calendar creates a %i-bag Frontier game once with the operator’s dates",
+  async (bags) => {
+    const { launches, calendar, tick } = stores();
+    const season = {
+      phase: "frontier" as const,
+      startsAt: day(0).toISOString(),
+      endsAt: frontierSeasonEnd(day(0), bags),
+    };
+    await calendar.set(season, Date.now());
 
-  await tick(day(-1, 23, 59));
-  expect(await launches.list("madara.frontier")).toEqual([]);
-  await tick(day(0));
-  await tick(day(0, 0, 1));
-  await tick(day(70, 0, 1));
-  const runs = await launches.list("madara.frontier");
-  expect(runs).toHaveLength(1);
-  expect(runs[0]).toMatchObject({
-    name: `frontier-${day(0).getTime() / 1_000}`,
-    request: { gameStartTime: season.startsAt, durationSeconds: 70 * 86_400 },
-  });
-});
+    await tick(day(-1, 23, 59));
+    expect(await launches.list("madara.frontier")).toEqual([]);
+    await tick(day(0));
+    await tick(day(0, 0, 1));
+    await tick(day(70, 0, 1));
+    const runs = await launches.list("madara.frontier");
+    expect(runs).toHaveLength(1);
+    expect(runs[0]).toMatchObject({
+      name: `frontier-${day(0).getTime() / 1_000}`,
+      request: {
+        gameStartTime: season.startsAt,
+        durationSeconds: (Date.parse(season.endsAt) - Date.parse(season.startsAt)) / 1000,
+      },
+    });
+  },
+);
 
 test("Blitz slots are scheduled only inside the Blitz window, and none outside it", async () => {
   const { slots, calendar, tick } = stores();
@@ -54,6 +62,7 @@ test("Blitz slots are scheduled only inside the Blitz window, and none outside i
   await tick(day(9, 12));
   await tick(day(11, 12));
   expect((await slots.list()).map(({ name }) => name)).toEqual([blitzSlotName(day(9, 20))]);
+  expect((await slots.list())[0]!.closesAt).toBe(day(9, 19, 55).toISOString());
 });
 
 test("a phase moves until it starts; a started Frontier season keeps its start and its end", async () => {
@@ -92,16 +101,24 @@ test("a phase moves until it starts; a started Frontier season keeps its start a
   expect(await calendar.set(next, Date.parse("2027-03-22T00:00:00Z"))).toEqual(next);
 });
 
-test("a Frontier season lasts its 21 bags of days from an armies tick, or the calendar refuses it", async () => {
+test.each([0, 0.5, 1.5, 9.3])("refuses %s bags and names the two nearest valid ends without writing", async (bags) => {
   const { calendar } = stores();
   const startsAt = day(0).toISOString();
-  await expect(
-    calendar.set({ phase: "frontier", startsAt, endsAt: day(31).toISOString() }, Date.now()),
-  ).rejects.toThrow("lasts 21 bags of days");
+  const lower = Math.max(1, Math.floor(bags));
+  const bagMs = Date.parse(frontierSeasonEnd(startsAt, 1)) - Date.parse(startsAt);
+  const endsAt = new Date(Date.parse(startsAt) + bags * bagMs).toISOString();
+  await expect(calendar.set({ phase: "frontier", startsAt, endsAt }, Date.now())).rejects.toThrow(
+    `nearest valid ends: ${frontierSeasonEnd(startsAt, lower)}, ${frontierSeasonEnd(startsAt, lower + 1)}`,
+  );
+  expect(await calendar.list()).toEqual([]);
+});
+
+test("refuses a Frontier start off the armies tick", async () => {
+  const { calendar } = stores();
   const offTick = new Date(day(0).getTime() + 1_000);
   await expect(
     calendar.set(
-      { phase: "frontier", startsAt: offTick.toISOString(), endsAt: frontierSeasonEnd(offTick) },
+      { phase: "frontier", startsAt: offTick.toISOString(), endsAt: frontierSeasonEnd(offTick, 2) },
       Date.now(),
     ),
   ).rejects.toThrow("starts on a 120 s tick");
@@ -116,8 +133,7 @@ test("a malformed stored Frontier season cannot stop Blitz creation or freezing"
     .bind(day(0).getTime() + 500, day(31).getTime(), Date.now())
     .run();
   await calendar.set({ phase: "blitz", startsAt: day(0).toISOString(), endsAt: day(31).toISOString() }, Date.now());
-  await slots.create("due", new Date(Date.now() + 60_000).toISOString());
-  await slots.register("due", [{ realmsId: null, account: "0x123" }]);
+  await slots.create("due", new Date(Math.floor(Date.now() / 1000) * 1000 + 60_000).toISOString());
   await database.db.prepare("UPDATE playtest_slots SET closes_at = 0").run();
   await tick(day(1));
   expect((await slots.list()).map(({ name }) => name)).toContain(blitzSlotName(day(1, 11)));
@@ -127,8 +143,7 @@ test("a malformed stored Frontier season cannot stop Blitz creation or freezing"
 test("a conflicting timetable slot cannot stop a due roster from freezing", async () => {
   const { launches, slots, calendar, tick } = stores();
   await calendar.set({ phase: "blitz", startsAt: day(0).toISOString(), endsAt: day(31).toISOString() }, Date.now());
-  await slots.create("due", new Date(Date.now() + 60_000).toISOString());
-  await slots.register("due", [{ realmsId: null, account: "0x123" }]);
+  await slots.create("due", new Date(Math.floor(Date.now() / 1000) * 1000 + 60_000).toISOString());
   await database.db.prepare("UPDATE playtest_slots SET closes_at = 0").run();
   await slots.create(blitzSlotName(day(1, 11)), day(1, 10).toISOString());
   await tick(day(1));

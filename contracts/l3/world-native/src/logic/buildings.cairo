@@ -183,7 +183,7 @@ pub mod BuildingState {
             self.emit(RowSet { version: 1, model: 'Building', keys: keys.span(), values: values.span() });
         }
         fn write_counts(
-            ref self: ComponentState<TContractState>, game_id: u32, entity_id: u32, counts: StructureBuildings,
+            ref self: ComponentState<TContractState>, game_id: u32, entity_id: u64, counts: StructureBuildings,
         ) {
             self.data.buildings.structure_buildings.write((game_id, entity_id), counts);
             let mut values = array![];

@@ -15,8 +15,6 @@ STATIC = [
     ".github/workflows/validation.yml",
     ".github/workflows/static.yml",
     ".github/workflows/landing-validated.yml",
-    ".github/workflows/deploy-client.yml",
-    ".github/workflows/deploy-workers.yml",
     ".github/workflows/shard-images.yml",
     ".github/scripts/**",
     ".github/ISSUE_TEMPLATE/**",
@@ -27,12 +25,17 @@ AREAS = {
         "apps/game/**",
         "apps/herald/src/**",
         "apps/launch-service/src/**",
+        "apps/launch-service/migrations/0007_game_entry.sql",
+        "apps/launch-service/migrations/0008_unproven_blitz_entries.sql",
         "apps/launch-service/wrangler.jsonc",
         "packages/**",
         "config/**",
+        "deploy/first/environments.json",
+        "contracts/l2/ledger/scripts/chest-preset.js",
+        "contracts/l2/ledger/schema/**",
+        "contracts/l2/ledger/src/contract.cairo",
         "contracts/l3/world-native/schema/**",
         "contracts/l3/world-native/tests/fixtures/**",
-        "contracts/l3/randomness-protocol/tests/fixtures/**",
         "contracts/common/addresses/**",
         "contracts/utils/**"
     ],
@@ -41,9 +44,12 @@ AREAS = {
         "apps/herald/**",
         "packages/**",
         "config/**",
+        "deploy/first/environments.json",
+        "contracts/l2/ledger/scripts/chest-preset.js",
+        "contracts/l2/ledger/schema/**",
+        "contracts/l2/ledger/src/contract.cairo",
         "contracts/l3/world-native/schema/**",
         "contracts/l3/world-native/tests/fixtures/**",
-        "contracts/l3/randomness-protocol/tests/fixtures/**",
         "contracts/common/addresses/**",
         "contracts/utils/**"
     ],
@@ -51,6 +57,7 @@ AREAS = {
         ".github/workflows/test-services.yml",
         "apps/launch-service/**",
         "apps/realms/**",
+        "apps/value-relay/**",
         "apps/status-monitor/**",
         "apps/indexer/**",
         "apps/status/**",
@@ -60,24 +67,47 @@ AREAS = {
         "apps/herald/src/shard-manifest.ts",
         "packages/**",
         "config/**",
+        "deploy/first/environments.json",
+        "contracts/l2/ledger/scripts/chest-preset.js",
+        "contracts/l2/ledger/schema/**",
+        "contracts/l2/ledger/src/contract.cairo",
         "contracts/l3/world-native/schema/**",
         "contracts/l3/world-native/tests/fixtures/**",
-        "contracts/l3/randomness-protocol/tests/fixtures/**",
         "contracts/common/addresses/**",
         "contracts/utils/**"
     ],
+    "portal": [
+        ".github/workflows/test-portal.yml",
+        "apps/web/**",
+        "packages/db/**",
+        "packages/chain/**",
+        "packages/identity/**",
+        "contracts/common/addresses/**"
+    ],
     "native": [
         ".github/workflows/test-native.yml",
-        "apps/gateway/**",
         "apps/herald/src/**",
         "apps/launch-service/src/**",
+        "apps/launch-service/migrations/0007_game_entry.sql",
+        "apps/launch-service/migrations/0008_unproven_blitz_entries.sql",
         "apps/launch-service/wrangler.jsonc",
         "contracts/l3/**",
         "contracts/common/addresses/**",
         "contracts/utils/**",
         "packages/**",
         "config/**",
+        "deploy/first/environments.json",
+        "contracts/l2/ledger/scripts/chest-preset.js",
+        "contracts/l2/ledger/schema/**",
+        "contracts/l2/ledger/src/contract.cairo",
         "deploy/athanor/**",
+        "deploy/first/**",
+        "apps/game/package.json",
+        "apps/game/src/runtime/l2-environment.ts",
+        "apps/game/src/shell/frame/environment.ts",
+        "contracts/l2/ledger/scripts/commands/deployment/**",
+        "contracts/scripts-runtime/**",
+        "apps/value-relay/src/**",
         "deploy/release/**",
         "deploy/shard/**",
         "scripts/generate-realm-metadata.py"
@@ -90,13 +120,22 @@ AREAS = {
         "apps/herald/src/shard-manifest.ts",
         "contracts/l3/world-native/schema/**",
         "contracts/l3/world-native/tests/fixtures/**",
-        "contracts/l3/randomness-protocol/tests/fixtures/**",
         "contracts/common/addresses/**",
         "contracts/utils/**",
         "deploy/athanor/**",
+        "deploy/first/**",
+        "apps/game/package.json",
+        "apps/game/src/runtime/l2-environment.ts",
+        "apps/game/src/shell/frame/environment.ts",
+        "contracts/l2/ledger/scripts/commands/deployment/**",
+        "contracts/scripts-runtime/**",
+        "apps/value-relay/src/**",
         "deploy/shard/**",
         "packages/**",
-        "config/**"
+        "config/**",
+        "deploy/first/environments.json",
+        "contracts/l2/ledger/schema/**",
+        "contracts/l2/ledger/scripts/chest-preset.js"
     ],
     "terrain": [
         ".github/workflows/verify-terrain.yml",
@@ -112,11 +151,13 @@ AREAS = {
         "contracts/l2/ammv2/**"
     ],
     "collectibles": [
+        ".tool-versions",
         ".github/workflows/test-collectibles.yml",
         ".github/actions/fetch-cairo-dependencies/**",
         "contracts/l2/collectibles/**"
     ],
     "mmr": [
+        ".tool-versions",
         ".github/workflows/test-mmr.yml",
         ".github/actions/fetch-cairo-dependencies/**",
         "contracts/l2/mmr/**"
@@ -148,10 +189,16 @@ def matches(path, patterns):
     return any(fnmatch.fnmatch(path, pattern) for pattern in patterns)
 
 
-def selected_areas(files, every_area):
-    """The areas a diff of these files runs; a landing push, or a diff with no base, runs every area."""
+# These checks run when their own inputs change; core checks run on every landing push.
+PATH_SCOPED = {"amm", "season_pass", "terrain", "portal"}
+
+
+def selected_areas(files, every_area, landing=False):
+    """Select changed inputs; landing pushes additionally require all core areas."""
     return {
-        area: every_area or any(matches(path, SHARED + patterns) for path in files) for area, patterns in AREAS.items()
+        area: (every_area or (landing and area not in PATH_SCOPED)
+               or any(matches(path, SHARED + patterns) for path in files))
+        for area, patterns in AREAS.items()
     }
 
 

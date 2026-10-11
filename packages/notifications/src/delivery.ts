@@ -1,3 +1,5 @@
+import { isSameStarknetAddress } from "../../identity/src/address";
+
 export interface LocalNotificationPayload {
   version: 1;
   id: string;
@@ -83,7 +85,10 @@ function boundedText(value: unknown, max: number): value is string {
   return typeof value === "string" && value.length > 0 && value.length <= max && !/[\u0000-\u001f\u007f]/.test(value);
 }
 
-/** The Cairo emitters allocate adjacent UUIDs, attacker first and defender second, with no intervening UUID call. */
+/**
+ * A delayed transfer emits its two perspectives back to back (sender first, receiver second), so they are consecutive
+ * events of one transaction: the story identity's last part is the event's index in the receipt.
+ */
 export function logicalStoryIdentity(
   sourceId: string,
   story: string,
@@ -108,7 +113,7 @@ export function logicalStoryIdentity(
 
 function sameFelt(left: unknown, right: unknown): boolean {
   if (left === undefined || left === null || right === undefined || right === null) return false;
-  return BigInt(String(left)) === BigInt(String(right));
+  return isSameStarknetAddress(String(left), String(right));
 }
 
 export function notificationMatchesGame(clientUrl: string, target: string, origin: string): boolean {

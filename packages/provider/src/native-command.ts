@@ -3,8 +3,6 @@ import {
   CairoCustomEnum,
   CairoOption,
   CairoOptionVariant,
-  hash,
-  shortString,
   uint256,
   type Abi,
   type BigNumberish,
@@ -57,40 +55,4 @@ function encodeValue(type: string, value: unknown, types: Map<string, AbiType>):
     return Object.fromEntries(members.map(({ name, type }) => [name, encodeValue(type, fields[name], types)]));
   }
   return value;
-}
-
-function nativeTaggedHash(tag: string, fields: readonly BigNumberish[]): string {
-  return hash.computePoseidonHashOnElements([shortString.encodeShortString(tag), 1, ...fields]);
-}
-
-export function frameNativeIntent(input: {
-  chain: BigNumberish;
-  deployment: BigNumberish;
-  gameId: BigNumberish;
-  actor: BigNumberish;
-  nonce: BigNumberish;
-  releaseId: BigNumberish;
-  presetCommitment: BigNumberish;
-  validFrom: BigNumberish;
-  validUntil: BigNumberish;
-  lastOrder: BigNumberish;
-  arguments: readonly string[];
-}): string[] {
-  return [
-    shortString.encodeShortString("ETERNUM_ACTION"),
-    2,
-    input.chain,
-    input.deployment,
-    input.gameId,
-    input.actor,
-    input.nonce,
-    nativeTaggedHash("ETERNUM_COMMAND", input.arguments),
-    input.releaseId,
-    input.presetCommitment,
-    input.validFrom,
-    input.validUntil,
-    input.lastOrder,
-    input.arguments.length,
-    ...input.arguments,
-  ].map((value) => `0x${BigInt(value).toString(16)}`);
 }

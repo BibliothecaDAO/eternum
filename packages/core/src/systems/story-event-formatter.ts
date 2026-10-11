@@ -486,7 +486,7 @@ function readStructure(structureId: unknown, components?: NativeFactStore) {
   const entityId = toBigIntSafe(structureId);
   if (!components || entityId === null) return undefined;
   try {
-    return components.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: Number(entityId) });
+    return components.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: BigInt(entityId) });
   } catch {
     return undefined;
   }
@@ -498,7 +498,7 @@ function readExplorer(explorerId: unknown, components?: NativeFactStore) {
   try {
     return components.get("ExplorerTroops", {
       game_id: configManager.getActiveGameId(),
-      explorer_id: Number(entityId),
+      explorer_id: BigInt(entityId),
     });
   } catch {
     return undefined;

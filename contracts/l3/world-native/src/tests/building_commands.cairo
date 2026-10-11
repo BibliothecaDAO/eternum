@@ -1,4 +1,3 @@
-use snforge_std::fs::{FileTrait, read_txt};
 use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
 use crate::buildings::{BuildingKey, BuildingRule, BuildingRuleConfig, ChangeBuilding, CreateBuilding};
 use crate::commands::Command;
@@ -9,9 +8,7 @@ use crate::structures::IStructureOperationsDispatcher;
 use crate::tests::state::{ResourceObservationTrait, StructureObservationTrait};
 use crate::troops::Coord;
 use crate::upgrades::{UpgradeLimits, UpgradeRecipe};
-use super::resource_commands::{
-    assert_terminal_rejection, execute, execute_recorded_at, resource_facts, set_fixture, setup,
-};
+use super::resource_commands::{assert_terminal_rejection, execute, resource_facts, set_fixture, setup};
 
 pub fn rules() -> Span<BuildingRuleConfig> {
     let mut values = array![];
@@ -40,7 +37,7 @@ pub fn rules() -> Span<BuildingRuleConfig> {
     values.span()
 }
 pub fn building_preset(board: Option<crate::buildings::BoardRules>) -> crate::presets::PresetDefinition {
-    let mut preset = super::resource_commands::fixture_preset(super::recorded::rules());
+    let mut preset = super::resource_commands::fixture_preset(super::play_fixture::rules());
     let mut configured = array![];
     for rule in rules() {
         configured
@@ -129,7 +126,7 @@ fn change(home: ResourceKey) -> ChangeBuilding {
 }
 
 #[test]
-fn recorded_board_commands_match_replay_views() {
+fn building_commands_match_replay_views() {
     let (d, home) = building_world(None);
     let entities = array![home.entity_id].span();
     let tiles = array![IStructureOperationsDispatcher { contract_address: d.games }.position(home).unwrap()].span();
@@ -196,12 +193,12 @@ fn failed_building_payment_rolls_back_placement_population_rate_and_resources() 
 }
 
 #[test]
-fn delayed_building_actions_use_recorded_time_after_the_game_ends() {
+fn building_pause_and_resume_use_block_time() {
     let (deployment, home) = building_world(None);
     let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     let slot = ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 35 };
-    assert!(execute_recorded_at(deployment, create(home, 37), 40, 1000));
-    assert!(execute_recorded_at(deployment, Command::PauseBuildingProduction(change(home)), 70, 1001));
+    assert!(execute(deployment, create(home, 37), 40));
+    assert!(execute(deployment, Command::PauseBuildingProduction(change(home)), 70));
     assert_eq!(resources.resource_balance(slot), 120);
     assert_eq!(resources.resource_production(slot).building_count, 0);
 }
@@ -269,13 +266,13 @@ fn storehouse_capacity_is_retained_while_paused_and_cannot_be_removed_while_need
 fn arena_storehouse_world(blitz: bool) -> (super::Deployment, ResourceKey) {
     let rules = if blitz {
         crate::rules::SliceRules {
-            mode_rules: super::recorded::BLITZ_RULES,
+            mode_rules: super::play_fixture::BLITZ_RULES,
             entry_rule: crate::rules::ENTRY_ROSTER,
-            command_mask: super::recorded::BLITZ_COMMAND_MASK,
-            ..super::recorded::rules(),
+            command_mask: super::play_fixture::BLITZ_COMMAND_MASK,
+            ..super::play_fixture::rules(),
         }
     } else {
-        super::recorded::rules()
+        super::play_fixture::rules()
     };
     let mut preset = super::resource_commands::fixture_preset(rules);
     preset.structures = building_preset(None).structures;
@@ -416,7 +413,7 @@ fn building_placement_rejects_invalid_paths_categories_and_occupied_tiles() {
 }
 
 #[test]
-fn building_actions_require_ownership_and_the_recorded_game_window() {
+fn building_actions_require_ownership_and_the_game_window() {
     let (deployment, home) = building_world(None);
     let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
     let before = resource_facts(deployment, home);
@@ -586,31 +583,6 @@ fn board_output(deployment: super::Deployment, home: ResourceKey, category: u8) 
             .into(),
         _ => panic!("unsupported board effect fixture"),
     }
-}
-
-#[test]
-fn building_ring_matches_shared_vectors_through_the_highest_castle_ring() {
-    let input = read_txt(@FileTrait::new("tests/fixtures/frontier-ring-v1.txt"));
-    let mut fields = input.span();
-    let version: u32 = Serde::deserialize(ref fields).unwrap();
-    let count: u32 = Serde::deserialize(ref fields).unwrap();
-    assert_eq!(version, 1);
-    let highest_ring: u32 = building_preset(None).structures.upgrade_limits.realm_max.into() + 1;
-    assert_eq!(count, 12 * highest_ring);
-    let mut highest_ring_rows = 0;
-    for _ in 0..count {
-        let (realm_id, ring, x, y): (u16, u8, u32, u32) = Serde::deserialize(ref fields).unwrap();
-        assert!(ring > 0 && ring.into() <= highest_ring, "vector ring outside preset");
-        if ring.into() == highest_ring {
-            highest_ring_rows += 1;
-        }
-        let expected = Coord { alt: false, x, y };
-        assert_eq!(crate::building_ring::marked_plot(realm_id, ring.into()), expected);
-        assert_eq!(crate::geometry::distance(Coord { alt: false, x: 10, y: 10 }, expected), ring.into());
-        assert!(crate::building_ring::is_marked_plot(realm_id, expected));
-    }
-    assert_eq!(highest_ring_rows, 12);
-    assert!(fields.is_empty(), "trailing building ring vectors");
 }
 
 #[test]
@@ -927,15 +899,9 @@ fn a_copy_costs_its_base_times_one_plus_the_square_of_the_copies_before_it() {
 }
 
 #[test]
-fn the_marked_plot_changes_nothing_and_board_buildings_never_pause() {
+fn board_buildings_never_pause() {
     let (d, home, _) = research_world();
-    let wheat = 35_u8;
-    let marked = crate::building_ring::marked_plot(1, 1);
-    assert_eq!(marked, crate::geometry::neighbor(Coord { alt: false, x: 10, y: 10 }, 4));
     assert!(execute(d, build_toward(home, crate::research::FARM, 0), 40));
-    let plain = rate(d, home, wheat);
-    assert!(execute(d, build_toward(home, crate::research::FARM, 4), 40));
-    assert_eq!(rate(d, home, wheat), 2 * plain);
     assert_terminal_rejection(d, Command::PauseBuildingProduction(change(home)), 40);
 }
 

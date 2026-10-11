@@ -1,3 +1,4 @@
+import { SIGN_IN_CODE_LENGTH } from "@realms-world/identity";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -19,23 +20,37 @@ const STAGING_CONFIG = unstable_readConfig({
 export const ORIGIN = new URL(String(STAGING_CONFIG.vars.BASE_URL)).origin;
 const EMAIL_PROVIDER = "https://api.resend.com/emails";
 
-export const buildWorkerBundle = (): string => {
+export const buildWorkerBundle = (aliases: Record<string, string> = {}): string => {
   const bundle = join(mkdtempSync(join(tmpdir(), "identity-bundle-")), "bundle");
-  execFileSync("pnpm", ["exec", "wrangler", "deploy", "--dry-run", "--env", "staging", "--outdir", bundle], {
-    cwd: new URL("..", import.meta.url).pathname,
-    stdio: "ignore",
-  });
+  execFileSync(
+    "pnpm",
+    [
+      "exec",
+      "wrangler",
+      "deploy",
+      "--dry-run",
+      "--env",
+      "staging",
+      "--outdir",
+      bundle,
+      ...Object.entries(aliases).flatMap(([name, path]) => ["--alias", `${name}:${path}`]),
+    ],
+    {
+      cwd: new URL("..", import.meta.url).pathname,
+      stdio: "ignore",
+    },
+  );
   return bundle;
 };
 
 export const startWorker = async (options: {
   bundle: string;
+  environment?: "staging" | "production";
+  ratingHistoryUrl?: string;
   storage: string;
   vapid: { publicKey: string; privateKey: string };
   outbound: (request: Request) => Response | Promise<Response>;
   launchDirectory?: (request: Request) => Response | Promise<Response>;
-  /** The shard notifiers' poll interval; tests poll fast so their waits stay short. */
-  notifierPollMs?: number;
 }) => {
   const mf = new Miniflare({
     name: WORKER_NAME,
@@ -58,19 +73,16 @@ export const startWorker = async (options: {
       SIGN_IN_CODE_RATE_LIMIT: { namespace_id: "1003", simple: { limit: 1000, period: 60 } },
     },
     bindings: {
-      ENVIRONMENT: "staging",
+      ENVIRONMENT: options.environment ?? "staging",
       BASE_URL: ORIGIN,
-      ACCOUNT_CLASS_HASH: "0x1",
+      VERSION: { id: "workerd-test", tag: "", timestamp: "" },
       BETTER_AUTH_SECRET: "workerd-test-secret-workerd-test-secret",
-      IDENTITY_RPC_URL: "http://127.0.0.1:1",
+      ...(options.ratingHistoryUrl ? { RATING_HISTORY_URL: options.ratingHistoryUrl } : {}),
+      L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
       OPERATOR_TOKEN: "unused",
-      DISCORD_CLIENT_ID: "unused",
-      DISCORD_CLIENT_SECRET: "unused",
       RESEND_API_KEY: "unused",
       WEB_PUSH_VAPID_PUBLIC_KEY: options.vapid.publicKey,
       WEB_PUSH_VAPID_PRIVATE_KEY: options.vapid.privateKey,
-      WEB_PUSH_VAPID_SUBJECT: "mailto:ops@realms.party",
-      SHARD_NOTIFIER_POLL_MS: String(options.notifierPollMs ?? 3_000),
     },
     serviceBindings: {
       LAUNCH: (request: Request) => options.launchDirectory?.(request) ?? Response.json({ chains: [] }),
@@ -78,7 +90,7 @@ export const startWorker = async (options: {
     outboundService: async (request: Request) => {
       if (request.url !== EMAIL_PROVIDER) return options.outbound(request);
       const email = (await request.json()) as { to: string[]; text: string };
-      inbox.set(email.to[0]!, email.text.match(/\b\d{6}\b/)![0]);
+      inbox.set(email.to[0]!, email.text.match(new RegExp(`\\b\\d{${SIGN_IN_CODE_LENGTH}}\\b`))![0]);
       return Response.json({ id: "sent" });
     },
   });

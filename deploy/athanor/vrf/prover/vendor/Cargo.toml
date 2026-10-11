@@ -1,0 +1,10 @@
+[package]
+name = "realms-stark-vrf-math"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+[dependencies]
+ark-ec = "0.5.0"
+ark-ff = "0.5.0"
+starknet-crypto = "0.8.1"
+thiserror = "2"

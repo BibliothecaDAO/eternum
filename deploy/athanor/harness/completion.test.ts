@@ -5,38 +5,6 @@ import { join, resolve } from "node:path";
 
 const root = resolve(import.meta.dir, "../../..");
 
-it("a queued ticket-socket open after disposal neither resubscribes nor dereferences the closed channel", async () => {
-  const code = `
-    import { config } from "starknet";
-    import { createNativeTicketSubmission } from ${JSON.stringify(join(root, "packages/provider/src/native-ticket.ts"))};
-    import { catchUncaughtFailures, workerBoundaryEvidence } from ${JSON.stringify(join(import.meta.dir, "worker-boundary.ts"))};
-    catchUncaughtFailures();
-    let socket;
-    class PendingSocket extends EventTarget {
-      readyState = 0; closed = 0; sent = [];
-      constructor(url) { super(); this.url = url; socket = this; }
-      send(data) { this.sent.push(data); }
-      close() { this.closed++; this.readyState = 3; queueMicrotask(() => this.dispatchEvent(new Event("close"))); }
-    }
-    config.set("websocket", PendingSocket);
-    const submit = createNativeTicketSubmission("http://node.test/rpc");
-    const pending = submit({ intent: ["0x1"], signature: ["0x2"] }).catch(error => error.message);
-    submit.dispose();
-    submit.dispose();
-    socket.dispatchEvent(new Event("open"));
-    await pending;
-    setTimeout(() => console.log(JSON.stringify({ closed: socket.closed, sent: socket.sent, boundary: workerBoundaryEvidence() })), 10);
-  `;
-  const child = Bun.spawn([process.execPath, "-e", code], { cwd: root, stdout: "pipe", stderr: "pipe" });
-  const [status, output] = await Promise.all([child.exited, new Response(child.stdout).text()]);
-  expect(status).toBe(0);
-  expect(JSON.parse(output.trim().split("\n").at(-1)!)).toMatchObject({
-    closed: 1,
-    sent: [],
-    boundary: { uncaughtFailures: [] },
-  });
-});
-
 it.each(["exception", "rejection", "exit", "exit-hook", "exit-code-hook", "workload", "clean"])(
   "publishes only after actual process exit, including a late %s",
   async (kind) => {
@@ -65,17 +33,20 @@ it.each(["exception", "rejection", "exit", "exit-hook", "exit-code-hook", "workl
     `;
     const supervisor = `
       import { superviseHarnessProcess } from ${JSON.stringify(join(import.meta.dir, "terminal-report.ts"))};
-      const outcome = await superviseHarnessProcess([process.execPath, "-e", ${JSON.stringify(code)}], process.env);
+      const outcome = await superviseHarnessProcess([process.execPath, "--tsconfig-override", ${JSON.stringify(resolve(import.meta.dir, "tsconfig.json"))}, "-e", ${JSON.stringify(code)}], process.env);
       console.log(JSON.stringify({ result: outcome.reports[0] }));
       process.exitCode = outcome.exitCode;
     `;
     try {
-      const child = Bun.spawn([process.execPath, "-e", supervisor], {
-        cwd: root,
-        env: { ...process.env, HARNESS_OUTPUT_DIRECTORY: output },
-        stdout: "pipe",
-        stderr: "pipe",
-      });
+      const child = Bun.spawn(
+        [process.execPath, "--tsconfig-override", resolve(import.meta.dir, "tsconfig.json"), "-e", supervisor],
+        {
+          cwd: root,
+          env: { ...process.env, HARNESS_OUTPUT_DIRECTORY: output },
+          stdout: "pipe",
+          stderr: "pipe",
+        },
+      );
       const [status, stdout] = await Promise.all([child.exited, new Response(child.stdout).text()]);
       expect(status).toBe(kind === "exit" || kind === "exit-code-hook" ? 7 : kind === "clean" ? 0 : 1);
       const messages = stdout
@@ -114,16 +85,19 @@ it("a roster's metrics survive a later nonzero driver exit without any successfu
   `;
   const supervisor = `
     import { superviseHarnessProcess } from ${JSON.stringify(terminal)};
-    const outcome = await superviseHarnessProcess([process.execPath, "-e", ${JSON.stringify(code)}], process.env);
+    const outcome = await superviseHarnessProcess([process.execPath, "--tsconfig-override", ${JSON.stringify(resolve(import.meta.dir, "tsconfig.json"))}, "-e", ${JSON.stringify(code)}], process.env);
     console.log(JSON.stringify(outcome.reports)); process.exitCode = outcome.exitCode;
   `;
   try {
-    const child = Bun.spawn([process.execPath, "-e", supervisor], {
-      cwd: root,
-      env: { ...process.env, HARNESS_OUTPUT_DIRECTORY: output },
-      stdout: "pipe",
-      stderr: "pipe",
-    });
+    const child = Bun.spawn(
+      [process.execPath, "--tsconfig-override", resolve(import.meta.dir, "tsconfig.json"), "-e", supervisor],
+      {
+        cwd: root,
+        env: { ...process.env, HARNESS_OUTPUT_DIRECTORY: output },
+        stdout: "pipe",
+        stderr: "pipe",
+      },
+    );
     const [status, stdout] = await Promise.all([child.exited, new Response(child.stdout).text()]);
     expect(status).toBe(7);
     expect(JSON.parse(stdout.trim())).toMatchObject([{ passed: false }]);
@@ -162,7 +136,10 @@ it.each(["throw", "code"])(
     console.log(JSON.stringify(result.reports)); process.exitCode = result.exitCode || (result.reports.every(report => report.passed) ? 0 : 1);
   `;
     try {
-      const child = Bun.spawn([process.execPath, "-e", supervisor], { cwd: root, stdout: "pipe", stderr: "pipe" });
+      const child = Bun.spawn(
+        [process.execPath, "--tsconfig-override", resolve(import.meta.dir, "tsconfig.json"), "-e", supervisor],
+        { cwd: root, stdout: "pipe", stderr: "pipe" },
+      );
       const [status, stdout] = await Promise.all([child.exited, new Response(child.stdout).text()]);
       expect(status).toBe(kind === "throw" ? 1 : 7);
       expect(JSON.parse(stdout.trim())).toMatchObject([{ passed: false }]);

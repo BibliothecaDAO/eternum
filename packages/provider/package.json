@@ -13,6 +13,10 @@
     "./errors": {
       "types": "./dist/classify-transaction-error.d.ts",
       "import": "./dist/classify-transaction-error.js"
+    },
+    "./batch-progress": {
+      "types": "./dist/batch-progress.d.ts",
+      "import": "./dist/batch-progress.js"
     }
   },
   "main": "./dist/index.js",

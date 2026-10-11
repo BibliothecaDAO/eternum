@@ -8,6 +8,7 @@ import { SETTLEMENT_RELATIONSHIPS, type SettlementRelationship } from "@/three/s
 import { RefreshCw } from "@/ui/design-system/atoms/game-icons";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { useSearchParams } from "react-router-dom";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 import {
   mountProceduralTerrainDebugRenderer,
@@ -25,6 +26,10 @@ import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
 import { DEFAULT_TERRAIN_LAB_PREVIEW, type TerrainLabPreview } from "@/three/debug/terrain-lab-preview";
 import { MODEL_TYPE_TO_FILE } from "@/three/constants/army-constants";
+
+/** A typed id: whole, positive and at most fifteen digits, so always exact; anything else leaves the current one. */
+const typedEntityId = (value: string): number | undefined =>
+  /^[1-9][0-9]{0,14}$/.test(value) ? safeInteger(value) : undefined;
 
 const EMPTY_STATS: ProceduralTerrainDebugStats = {
   preparedFrontierCells: 0,
@@ -406,7 +411,10 @@ export const ProceduralTerrainDebugView = () => {
                     min={1}
                     step={1}
                     value={hyperstructureId}
-                    onChange={(event) => setHyperstructureId(Math.max(1, Math.floor(Number(event.target.value) || 1)))}
+                    onChange={(event) => {
+                      const id = typedEntityId(event.target.value);
+                      if (id !== undefined) setHyperstructureId(id);
+                    }}
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-sm">

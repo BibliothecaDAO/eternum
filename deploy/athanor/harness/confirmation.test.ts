@@ -1,10 +1,6 @@
 import { statusSubscription } from "./test-observations";
 import { describe, expect, it, spyOn } from "bun:test";
 import type { HarnessProvider } from "./provider";
-import { EventEmitter } from "node:events";
-import type { GameClient } from "@bibliothecadao/eternum";
-import type { Account } from "starknet";
-import { createHarnessGame } from "./harness-game";
 import { trackTransaction } from "./driver";
 
 const never = new Promise(() => {});
@@ -117,59 +113,5 @@ describe("transaction confirmation deadline", () => {
     } finally {
       now.mockRestore();
     }
-  });
-  it("accepts setup sends without a Herald barrier and completed action barriers", async () => {
-    const setup = await track(undefined);
-    expect(setup.outcome).toBe("completed");
-    expect(setup.admissionToVisibleMs).toBeUndefined();
-    expect(setup.heraldConfirmedLagMs).toBeUndefined();
-    const unreported = await track(Promise.resolve());
-    expect(unreported.outcome).toBe("completed");
-    // No provider figure is reported as none, never recomputed on the harness's clock.
-    expect(unreported.admissionToVisibleMs).toBeUndefined();
-  });
-});
-
-describe("shared client submission barrier", () => {
-  it("does not confuse a queued action's pending response with applied Herald state", async () => {
-    const provider = new EventEmitter();
-    let applied!: () => void;
-    const barrier = new Promise<void>((resolve) => {
-      applied = resolve;
-    });
-    const hashes: string[] = [];
-    const client = {
-      gameId: 1,
-      setup: { store: {}, systemCalls: {}, network: { provider } },
-      runtime: {
-        waitForTransaction: (hash: string) => {
-          hashes.push(hash);
-          return barrier.then(() => ({
-            status: "ACCEPTED_ON_L2",
-            executions: [
-              { gameId: "1", actor: "0xabc", nonce: "0", order: "1", status: "SUCCEEDED", statusClass: "", reason: "" },
-            ],
-          }));
-        },
-      },
-    } as unknown as GameClient;
-    const game = createHarnessGame(client);
-    const submission = await game.submit({ address: "0xabc" } as Account, async () => {
-      provider.emit("transactionSubmitted", {
-        signerAddress: "0xabc",
-        transactionHash: "0x123",
-        ticket: { gameId: "1", actor: "0xabc", nonce: "0", order: "1" },
-      });
-      return { statusReceipt: "PENDING", transaction_hash: "0x123" };
-    });
-    expect(hashes).toEqual(["0x123"]);
-    let completed = false;
-    void submission.confirmed!.then(() => {
-      completed = true;
-    });
-    await Promise.resolve();
-    expect(completed).toBe(false);
-    applied();
-    await submission.confirmed;
   });
 });

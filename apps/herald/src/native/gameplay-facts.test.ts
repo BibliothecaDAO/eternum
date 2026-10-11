@@ -83,7 +83,7 @@ describe("gameplay-only native facts", () => {
       fromBlock: 10,
       toBlock: 11,
       rpc: {
-        getBlockWithReceipts: async (block) => ({
+        readBlock: async (block) => ({
           block_number: Number(block),
           timestamp: 100,
           transactions: [{ receipt: Number(block) === 10 ? first : last, transaction: { type: "INVOKE" } }],

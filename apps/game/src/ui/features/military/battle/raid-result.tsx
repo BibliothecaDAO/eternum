@@ -11,6 +11,7 @@ import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AttackTarget } from "./types";
+import { storyPayloadId } from "@/utils/native-id";
 
 // Add the tweet formatting function
 const getFormattedRaidTweet = ({
@@ -79,8 +80,8 @@ export const RaidResult = ({
     ? raids.find(
         (event) =>
           BigInt(event.tx_hash) === BigInt(transactionHash) &&
-          Number(event.storyPayload.explorer_id) === raiderId &&
-          Number(event.storyPayload.structure_id) === target.id,
+          storyPayloadId(event.storyPayload.explorer_id) === raiderId &&
+          storyPayloadId(event.storyPayload.structure_id) === target.id,
       )?.storyPayload
     : undefined;
   const initialStolenResources =

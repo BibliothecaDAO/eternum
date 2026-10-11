@@ -10,6 +10,10 @@ export function loadNativeWorld(input: {
   schemaPath: string;
   seed: string;
   authority: string;
+  launcher: string;
+  ledgerOperator: string;
+  vrfPublicKey: { x: string; y: string };
+  l2GasBound: string;
   authentication: NativeAuthentication;
   release: NativeReleaseFacts;
   previous?: NativeWorldManifest;
@@ -37,8 +41,23 @@ export function loadNativeWorld(input: {
   if (migration && BigInt(migration.classHash) !== BigInt(input.release.migrationClassHash))
     throw new Error("Release migration facts do not match the compiled ReleaseMigration artifact");
   validateReleaseArtifacts(input.release, schema, artifact.classHash, logic, input.authentication.account_class);
+  const verifier = {
+    name: "verifier",
+    ...readClassArtifact(
+      resolve(input.artifacts, "../../../vrf-verifier/target/dev/realms_vrf_verifier_Verifier.contract_class.json"),
+      resolve(
+        input.artifacts,
+        "../../../vrf-verifier/target/dev/realms_vrf_verifier_Verifier.compiled_contract_class.json",
+      ),
+    ),
+  };
+  if (BigInt(verifier.classHash) !== BigInt(input.release.classes.verifier))
+    throw new Error("Verifier artifact differs from release pin");
   const constructorCalldata = new CallData(artifact.sierra.abi).compile("constructor", {
-    authority: input.authority,
+    owner: input.authority,
+    launcher: input.launcher,
+    vrf_public_key: input.vrfPublicKey,
+    l2_gas_bound: input.l2GasBound,
     authentication: input.authentication,
     release_id: input.release.releaseId,
     release: { classes: input.release.classes.logic, migration: input.release.migrationClassHash },
@@ -52,6 +71,11 @@ export function loadNativeWorld(input: {
   return {
     seed: input.seed,
     authority: input.authority,
+    launcher: input.launcher,
+    ledgerOperator: input.ledgerOperator,
+    vrfPublicKey: input.vrfPublicKey,
+    l2GasBound: input.l2GasBound,
+    verifier,
     authentication: input.authentication,
     schema,
     games: { ...artifact, address, salt, constructorCalldata },

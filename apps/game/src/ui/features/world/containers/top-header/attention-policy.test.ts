@@ -5,7 +5,7 @@ import { resolveStructureAttention, nextAttentionItem } from "./attention-policy
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 const structure = (entityId: number) => ({ entityId }) as Structure;
 const guard = (entityId: number, end: number) =>
-  ({ structure_id: entityId, troops: { battle_cooldown_end: end } }) as NativeRows["Guard"];
+  ({ structure_id: BigInt(entityId), troops: { battle_cooldown_end: end } }) as NativeRows["Guard"];
 it("counts attacked structures once and deduplicates navigation with arrival targets", () => {
   const result = resolveStructureAttention([structure(3), structure(2), structure(1)], [3, 1, 1, 99], 100, [
     guard(3, 110),

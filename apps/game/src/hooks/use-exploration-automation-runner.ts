@@ -29,6 +29,7 @@ import {
   shouldRepeatExplore,
 } from "./exploration-automation-planner";
 import { accountAddress } from "@/hooks/store/use-account-store";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 const REPEAT_EXPLORE_DELAY_MS = 3_000;
 
@@ -155,7 +156,7 @@ export const useExplorationAutomationRunner = () => {
       try {
         for (const entry of due) {
           try {
-            const explorerId = Number(entry.explorerId);
+            const explorerId = safeInteger(entry.explorerId);
             if (!Number.isFinite(explorerId) || explorerId <= 0) {
               update(entry.id, { blockedReason: "invalid-explorer", lastError: null });
               scheduleNext(entry.id, nowMs);

@@ -15,7 +15,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { presentedMineKind } from "@bibliothecadao/eternum";
-import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 interface PlayerStructureView {
   entity_id: number;
@@ -54,7 +54,7 @@ export const PlayerId = ({
         if (!position) return [];
         return [
           {
-            entity_id: Number(structure.entity_id),
+            entity_id: safeInteger(structure.entity_id),
             coord_x: position.x,
             coord_y: position.y,
             category: Number(structure.base.category) as StructureType,

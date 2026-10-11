@@ -30,7 +30,7 @@ export class D1CalendarStore implements CalendarStore {
   async set(phase: SeasonPhase, now: number): Promise<SeasonPhase> {
     const startsAt = Date.parse(phase.startsAt);
     const endsAt = Date.parse(phase.endsAt);
-    if (!(endsAt > startsAt)) throw new CalendarConflict("A phase ends after it starts");
+    if (phase.phase !== "frontier" && !(endsAt > startsAt)) throw new CalendarConflict("A phase ends after it starts");
     const current = await this.db
       .prepare("SELECT * FROM season_phases WHERE phase = ?")
       .bind(phase.phase)

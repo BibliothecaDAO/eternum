@@ -16,6 +16,7 @@ import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-fact
 import { memo, useCallback, useMemo } from "react";
 
 import { TooltipContent, type ActionFoodCosts } from "./tooltip-content";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 export const ActionInfo = memo(() => {
   const hoveredHex = useUIStore(useCallback((state) => state.entityActions.hoveredHex, []));
@@ -72,7 +73,7 @@ export const ActionInfo = memo(() => {
         actionPath={actionPath}
         costsPerStep={costs}
         selectedEntityId={selectedEntityId}
-        structureEntityId={selectedEntityTroops?.owner || 0}
+        structureEntityId={selectedEntityTroops ? safeInteger(selectedEntityTroops.owner) : 0}
         getBalance={(entityId, resourceId) => getBalance(entityId, resourceId, currentDefaultTick, store)}
       />
     </BaseThreeTooltip>

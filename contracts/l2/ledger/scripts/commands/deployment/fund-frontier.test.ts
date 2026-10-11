@@ -1,0 +1,278 @@
+import { afterEach, beforeEach, expect, mock, spyOn, test } from "bun:test";
+import { type Account, type RpcProvider } from "starknet";
+import { gamesAbi, response } from "../../../../../../packages/value-ledger/test-support/abi";
+import { ledgerAbi, ledgerCall } from "../../../../../../packages/value-ledger/test-support/ledger-abi";
+import { ShardReader } from "../../../../../../apps/value-relay/src/shard-rpc";
+import devBook from "../../../../../common/addresses/dev.json";
+import productionBook from "../../../../../common/addresses/mainnet.json";
+import { fundFrontier } from "./fund-frontier";
+
+const savedDev = { ...devBook };
+const savedProduction = { ...productionBook };
+const shard = { chainId: "0x7", gamesAddress: "0x77", rpcUrl: "https://shard.test" };
+const head = { status: "ACCEPTED_ON_L2", block_number: 10, block_hash: "0xaa", parent_hash: "0x9", timestamp: 150 };
+const game = {
+  name: 1,
+  preset_id: 5,
+  settled: false,
+  ready: true,
+  dev_mode_on: false,
+  start_settling_at: 100,
+  start_main_at: 100,
+  end_at: 300,
+  end_grace_seconds: 0,
+  seed: 99,
+};
+let models: { model: string; rows: { key: string; value: Record<string, unknown> }[] }[];
+let block = head;
+let preset: string[];
+let season: string[];
+const execute = mock(async (_calls: unknown) => ({ transaction_hash: "0xabc" }));
+const receipt = mock(async () => ({ execution_status: "SUCCEEDED", block_number: 11 }));
+const shardCall = mock(async () => response(gamesAbi, "game", game));
+const ledgerRead = mock(async ({ entrypoint }: { entrypoint: string }) => {
+  if (entrypoint === "get_preset") return preset;
+  if (entrypoint === "get_frontier") return season;
+  if (entrypoint === "lords") return ["0x111"];
+  throw new Error(`Unexpected read ${entrypoint}`);
+});
+const provider = {
+  getChainId: async () => shard.chainId,
+  getBlock: async () => block,
+  getClassAt: async () => ({ abi: gamesAbi }),
+  callContract: shardCall,
+} as unknown as RpcProvider;
+const account = {
+  getChainId: async () => "0x534e5f4d41494e",
+  getBlock: async () => ({ ...head, block_number: 11 }),
+  callContract: ledgerRead,
+  execute,
+  waitForTransaction: receipt,
+} as unknown as Account;
+const run = (amount = "1000000") => fundFrontier(account, provider, shard, "https://herald.test", 42, "dev", amount);
+let header: ReturnType<typeof spyOn>;
+let fetchMock: ReturnType<typeof spyOn>;
+beforeEach(() => {
+  Object.assign(devBook, { ledger: "0x123", lords: "0x111" });
+  Object.assign(productionBook, { ledger: "0x456", lords: "0x222" });
+  block = head;
+  execute.mockClear();
+  receipt.mockClear();
+  shardCall.mockClear();
+  ledgerRead.mockClear();
+  receipt.mockResolvedValue({ execution_status: "SUCCEEDED", block_number: 11 });
+  shardCall.mockImplementation(async () => response(gamesAbi, "game", game));
+  models = [
+    { model: "GameRegistry", rows: [{ key: "42", value: { game_id: 42, ...game } }] },
+    {
+      model: "ChestRules",
+      rows: [{ key: "42", value: { game_id: 42, claim_window_seconds: 604800 } }],
+    },
+    { model: "SliceRules", rows: [{ key: "42", value: { game_id: 42, day_unit_seconds: 10 } }] },
+  ];
+  preset = response(ledgerAbi, "get_preset", {
+    entry_fee: { low: 0, high: 0 },
+    protocol_cut_bps: 0,
+    chest_lords_bps: 0,
+    paid_fraction_bps: 0,
+    decay_bps: 0,
+    sword_price: { low: 0, high: 0 },
+    shield_price: { low: 0, high: 0 },
+    mmr: { enabled: false, mean: 1500, spread: 450, max_delta: 45, k: 50, regression_bps: 150 },
+    day_unit_seconds: 10,
+    claim_window_seconds: 604800,
+  });
+  season = response(ledgerAbi, "get_frontier", {
+    funded: true,
+    start: 100,
+    end: 300,
+    pool: { low: 10n ** 24n, high: 0 },
+    paid: { low: 0, high: 0 },
+    closed: false,
+    preset_id: 2,
+    seed: 99,
+  });
+  header = spyOn(ShardReader.prototype, "header").mockResolvedValue(head as never);
+  fetchMock = spyOn(globalThis, "fetch").mockImplementation(
+    Object.assign(
+      async () =>
+        Response.json({
+          game_id: "42",
+          confirmed_block: 10,
+          models,
+        }),
+      { preconnect: fetch.preconnect },
+    ),
+  );
+});
+afterEach(() => {
+  Object.assign(devBook, savedDev);
+  Object.assign(productionBook, savedProduction);
+  header.mockRestore();
+  fetchMock.mockRestore();
+});
+
+test("funds a confirmed running game, with exactly the requested deposit and compiled ledger calldata", async () => {
+  expect(await run()).toMatchObject({
+    gameId: 42,
+    transactionHash: "0xabc",
+    frontier: { pool: String(10n ** 24n), end: 300 },
+  });
+  expect(shardCall).toHaveBeenCalledWith({ contractAddress: "0x77", entrypoint: "game", calldata: ["42"] }, 10);
+  expect(execute).toHaveBeenCalledTimes(1);
+  expect(execute.mock.calls[0]![0]).toEqual([
+    { contractAddress: "0x111", entrypoint: "approve", calldata: ["291", String(10n ** 24n), "0"] },
+    {
+      contractAddress: "0x123",
+      entrypoint: "fund_frontier",
+      calldata: ledgerCall("fund_frontier", {
+        shard: 7,
+        season_id: 42,
+        preset_id: 2,
+        start: 100,
+        end: 300,
+        seed: 99,
+        amount: { low: 10n ** 24n, high: 0 },
+      }),
+    },
+  ]);
+  expect(ledgerRead).toHaveBeenCalledWith(
+    { contractAddress: "0x123", entrypoint: "get_frontier", calldata: ["0x7", "42"] },
+    11,
+  );
+});
+
+test.each([16, 17])("refuses mismatched ledger day/window terms before signing (%i)", async (index) => {
+  preset[index] = String(BigInt(preset[index]!) + 1n);
+  await expect(run()).rejects.toThrow("frontier_funding_differs_from_game");
+  expect(execute).not.toHaveBeenCalled();
+});
+test.each(["start_main_at", "end_at", "seed", "preset_id"])(
+  "refuses a mismatched confirmed game field %s",
+  async (field) => {
+    models[0]!.rows[0]!.value[field] = 999;
+    await expect(run()).rejects.toThrow("Herald game differs");
+    expect(execute).not.toHaveBeenCalled();
+  },
+);
+test.each(["0", "-1", "1.5", "1e6", "0x10", "", " 1", "01"])(
+  "refuses nonpositive or nondecimal whole amount %s before reads",
+  async (amount) => {
+    await expect(run(amount)).rejects.toThrow("Amount must be positive whole LORDS");
+    expect(execute).not.toHaveBeenCalled();
+    expect(shardCall).not.toHaveBeenCalled();
+  },
+);
+test("refuses a whole amount whose wei exceeds u128 before reads", async () => {
+  const tooLarge = ((1n << 128n) - 1n) / 10n ** 18n + 1n;
+  await expect(run(String(tooLarge))).rejects.toThrow("Deposit must fit u128 wei");
+  expect(execute).not.toHaveBeenCalled();
+  expect(shardCall).not.toHaveBeenCalled();
+});
+test.each([1n, ((1n << 128n) - 1n) / 10n ** 18n])("funds operator amount %s without a preset pool", async (amount) => {
+  const wei = amount * 10n ** 18n;
+  season[3] = String(wei);
+  const result = await run(String(amount));
+  expect(result.frontier.pool).toBe(String(wei));
+  expect(execute.mock.calls[0]![0]).toMatchObject([
+    { entrypoint: "approve", calldata: ["291", String(wei), "0"] },
+    { entrypoint: "fund_frontier" },
+  ]);
+});
+test("refuses a confirmed readback with a different deposited amount", async () => {
+  season[3] = String(2n * 10n ** 18n);
+  await expect(run("1")).rejects.toThrow("Frontier deposit differs from requested amount");
+});
+test("refuses a missing game, unconfirmed snapshot or missing chest rules before signing", async () => {
+  shardCall.mockRejectedValueOnce(new Error("game does not exist"));
+  await expect(run()).rejects.toThrow("game does not exist");
+  block = { ...head, status: "PRE_CONFIRMED" };
+  await expect(run()).rejects.toThrow("ledger_head_unconfirmed");
+  block = head;
+  models[1]!.rows = [];
+  await expect(run()).rejects.toThrow("snapshot_row_missing");
+  expect(execute).not.toHaveBeenCalled();
+});
+test("refuses an ended season before approving tokens", async () => {
+  spyOn(account, "getBlock").mockResolvedValueOnce({ ...head, timestamp: 300 } as never);
+  await expect(run()).rejects.toThrow("Frontier season has ended");
+  expect(execute).not.toHaveBeenCalled();
+});
+test("refuses a reverted receipt or a different readback", async () => {
+  receipt.mockResolvedValueOnce({ execution_status: "REVERTED", block_number: 11 });
+  await expect(run()).rejects.toThrow("Funding not confirmed");
+  season[9] = "100";
+  await expect(run()).rejects.toThrow("frontier_funding_differs_from_game");
+});
+
+test("refuses a wrong shard chain before any ledger approval", async () => {
+  const wrong = { ...provider, getChainId: async () => "0x8" } as unknown as RpcProvider;
+  await expect(fundFrontier(account, wrong, shard, "https://herald.test", 42, "dev", "1000000")).rejects.toThrow(
+    "manifest shard",
+  );
+  expect(execute).not.toHaveBeenCalled();
+});
+test.each([0, -1, 0x100000000, 1.5])("refuses invalid game id %s before reads", async (id) => {
+  await expect(fundFrontier(account, provider, shard, "https://herald.test", id, "dev", "1000000")).rejects.toThrow(
+    "Invalid shard game id",
+  );
+  expect(shardCall).not.toHaveBeenCalled();
+  expect(execute).not.toHaveBeenCalled();
+});
+
+test("production funding uses only its own book and the native preset ID", async () => {
+  ledgerRead.mockResolvedValueOnce(preset).mockResolvedValueOnce(["0x222"]);
+  season[8] = "5";
+  await fundFrontier(account, provider, shard, "https://herald.test", 42, "production", "1000000");
+  expect(ledgerRead).toHaveBeenCalledWith({ contractAddress: "0x456", entrypoint: "get_preset", calldata: ["5"] }, 11);
+  const calls = execute.mock.calls[0]![0] as { calldata: string[] }[];
+  expect(calls[1]!.calldata[2]).toBe("5");
+  expect(execute.mock.calls[0]![0]).toMatchObject([
+    { contractAddress: "0x222", calldata: ["1110", String(10n ** 24n), "0"] },
+    { contractAddress: "0x456" },
+  ]);
+});
+
+test.each(["dev", "production"] as const)(
+  "%s funding refuses a ledger token from the other book",
+  async (environment) => {
+    ledgerRead.mockResolvedValueOnce(preset).mockResolvedValueOnce([environment === "dev" ? "0x222" : "0x111"]);
+    await expect(
+      fundFrontier(account, provider, shard, "https://herald.test", 42, environment, "1000000"),
+    ).rejects.toThrow("Ledger token differs");
+    expect(execute).not.toHaveBeenCalled();
+  },
+);
+
+test.each([
+  ["dev", "ledger"],
+  ["dev", "lords"],
+  ["production", "ledger"],
+  ["production", "lords"],
+] as const)("%s funding requires its own book address for %s", async (environment, field) => {
+  (environment === "dev" ? devBook : productionBook)[field] = "";
+  await expect(
+    fundFrontier(account, provider, shard, "https://herald.test", 42, environment, "1000000"),
+  ).rejects.toThrow(field);
+  expect(execute).not.toHaveBeenCalled();
+  expect(shardCall).not.toHaveBeenCalled();
+});
+
+test.each(["dev", "production"] as const)(
+  "%s funding refuses Sepolia before any shard read or approval",
+  async (environment) => {
+    const wrong = { ...account, getChainId: async () => "0x534e5f5345504f4c4941" } as unknown as Account;
+    await expect(
+      fundFrontier(wrong, provider, shard, "https://herald.test", 42, environment, "1000000"),
+    ).rejects.toThrow("chain");
+    expect(execute).not.toHaveBeenCalled();
+    expect(shardCall).not.toHaveBeenCalled();
+  },
+);
+
+test("funding refuses a network name instead of an environment", async () => {
+  await expect(
+    fundFrontier(account, provider, shard, "https://herald.test", 42, "mainnet" as "dev", "1000000"),
+  ).rejects.toThrow("environment");
+  expect(execute).not.toHaveBeenCalled();
+});

@@ -19,9 +19,9 @@ const StaminaResourceCost = ({
   const storeArmiesTick = useBlockTimestampStore((state) => state.currentArmiesTick);
   const currentArmiesTick = currentArmiesTickProp ?? storeArmiesTick;
 
-  const staminaManager = useStaminaManager(selectedEntityId || 0);
+  const staminaManager = useStaminaManager(selectedEntityId);
 
-  const stamina = useMemo(() => staminaManager.getStamina(currentArmiesTick), [currentArmiesTick, staminaManager]);
+  const stamina = useMemo(() => staminaManager?.getStamina(currentArmiesTick), [currentArmiesTick, staminaManager]);
 
   const pathInfo = useMemo(() => {
     if (!stamina) return;

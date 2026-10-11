@@ -71,6 +71,11 @@ export enum BuildingType {
   ResourceFish = 38,
   ResourceEssence = 39,
   ResourceResearch = 40,
+  // Frontier's training buildings, one of each on a realm board: each trains a new army's attribute.
+  WarHall = 41,
+  SupplyYard = 42,
+  ScoutsLodge = 43,
+  Hearth = 44,
 }
 
 export const BuildingTypeToString: Record<BuildingType, string> = {
@@ -115,6 +120,10 @@ export const BuildingTypeToString: Record<BuildingType, string> = {
   [BuildingType.ResourceFish]: "Fishing Village",
   [BuildingType.ResourceEssence]: "Essence Mine",
   [BuildingType.ResourceResearch]: "Research Lab",
+  [BuildingType.WarHall]: "War Hall",
+  [BuildingType.SupplyYard]: "Supply Yard",
+  [BuildingType.ScoutsLodge]: "Scouts' Lodge",
+  [BuildingType.Hearth]: "Hearth",
 };
 
 export function getBuildingFromResource(resourceId: ResourcesIds): BuildingType {

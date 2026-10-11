@@ -35,10 +35,6 @@ export function TransactionAudioCues() {
     };
 
     const handleTransactionFailed = (payload: TransactionFailurePayload) => {
-      if (payload.failureKind === "action_outcome_unknown") {
-        AudioManager.getInstance().play("ui.tx_fail");
-        return;
-      }
       const classified = classifyTransactionError("error" in payload ? payload.error : payload.message);
       if (classified.kind === "user_cancelled") {
         verboseLog("Transaction cancelled by user:", payload.type);

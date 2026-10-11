@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { createRoutesFromChildren, matchRoutes, type RouteObject } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
+import { parseShellRoutes } from "../scripts/shell-routes.mjs";
 import { appRoutes } from "./app";
 
 /**
@@ -26,20 +27,16 @@ const matchesPagesPattern = (pattern: string, path: string) => {
   return new RegExp(`^${source}$`).test(path);
 };
 
-const shellRewrites = readHostingFile("_redirects")
-  .split("\n")
-  .map((line) => line.trim().split(/\s+/))
-  .filter(([from, to, status]) => from?.startsWith("/") && to === "/" && status === "200")
-  .map(([from]) => from);
+/** The shell's pages as the deploy check reads them too (scripts/shell-routes.mjs): one parser, one list. */
+const shellRewrites = parseShellRoutes(readHostingFile("_redirects"));
 
 const noCachePaths = readHostingFile("_headers")
   .split(/\n(?=\/)/)
   .filter((block) => /Cache-Control:\s*no-cache/i.test(block))
   .map((block) => block.split("\n")[0].trim());
 
-/** `/` is the shell's own file; every other path reaches it only through a rewrite. */
-const servesShell = (path: string) =>
-  path === "/" || shellRewrites.some((pattern) => matchesPagesPattern(pattern, path));
+/** `/` is the shell's own file, first on the list; every other page reaches it only through a rewrite. */
+const servesShell = (path: string) => shellRewrites.some((pattern) => matchesPagesPattern(pattern, path));
 
 const joinPath = (parent: string, path: string) => (path.startsWith("/") ? path : `${parent}/${path}`);
 

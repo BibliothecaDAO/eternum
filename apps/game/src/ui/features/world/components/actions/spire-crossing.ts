@@ -19,6 +19,6 @@ export const resolveSpireCrossing = (
 ): SpireCrossing => {
   if (explorerLayer === undefined) return { kind: "unknown" };
   const toEthereal = !explorerLayer;
-  if (!destination || Number(destination.occupier_id) === 0) return { kind: "clear", toEthereal };
+  if (!destination || BigInt(destination.occupier_id) === 0n) return { kind: "clear", toEthereal };
   return { kind: "blocked", toEthereal, by: destination.occupier_is_structure ? "structure" : "army" };
 };

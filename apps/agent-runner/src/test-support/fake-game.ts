@@ -223,7 +223,6 @@ export const seedGameRegistry = (
     game_id: GAME_ID,
     name: 0n,
     preset_id: 3,
-    creator: 0n,
     settled: input.status === "Ended",
     ready: true,
     dev_mode_on: true,

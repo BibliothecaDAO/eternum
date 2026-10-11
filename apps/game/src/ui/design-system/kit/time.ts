@@ -1,0 +1,40 @@
+/**
+ * The kit's one way to write time. Days run 8 to 24 hours, so a duration is hours and minutes and never days; a moment is
+ * the device's local clock time. Unknown is a dash.
+ */
+
+const DASH = "—";
+
+/** A duration as "7h 14m", "12h" or "42m", counted up to the next whole minute so time still left never reads 0m. */
+export const formatDuration = (seconds: number | undefined): string => {
+  if (seconds === undefined) return DASH;
+  const minutes = Math.max(0, Math.ceil(seconds / 60));
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (hours === 0) return `${rest}m`;
+  return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`;
+};
+
+const CLOCK = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+
+/** A moment (unix seconds) as the device's local clock time, "21:40". */
+export const formatClockTime = (unixSeconds: number | undefined): string =>
+  unixSeconds === undefined ? DASH : CLOCK.format(new Date(unixSeconds * 1000));
+
+const DAY_MONTH = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" });
+const DAY_MONTH_YEAR = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
+
+/** A day (unix seconds) as the device's local "7 Oct", with the year only when it is not this year's. */
+export const formatDate = (unixSeconds: number | undefined, nowSeconds = Date.now() / 1000): string => {
+  if (unixSeconds === undefined) return DASH;
+  const date = new Date(unixSeconds * 1000);
+  const sameYear = date.getFullYear() === new Date(nowSeconds * 1000).getFullYear();
+  return (sameYear ? DAY_MONTH : DAY_MONTH_YEAR).format(date);
+};
+
+/**
+ * A moment a day or more away (unix seconds) as its local day and clock time, "11 Oct 14:32": a clock time alone
+ * would read as already past once that time has gone by today.
+ */
+export const formatMoment = (unixSeconds: number | undefined, nowSeconds = Date.now() / 1000): string =>
+  unixSeconds === undefined ? DASH : `${formatDate(unixSeconds, nowSeconds)} ${formatClockTime(unixSeconds)}`;

@@ -17,6 +17,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { buildVillageTimerSummary } from "@/ui/shared/lib/village-timers";
 import { ID, StructureType } from "@bibliothecadao/types";
 import { configManager, formatTime, toHexString } from "@bibliothecadao/eternum";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { playerAvatarUrl } from "@/hooks/use-player-profile";
 import { LeftView } from "@/types";
 
@@ -110,9 +111,7 @@ const StructureBannerEntityDetailContent = memo(
     const rawCategory = structure?.base?.category;
     const handleOpenTransferPanel = useCallback(() => {
       if (!structure?.entity_id) return;
-      const entityId = Number(structure.entity_id);
-      if (!Number.isFinite(entityId)) return;
-      setTransferPanelSourceId(entityId);
+      setTransferPanelSourceId(safeInteger(structure.entity_id));
       setLogisticsActiveTab("transfer");
       setLeftNavigationView(LeftView.ResourceArrivals);
     }, [setLeftNavigationView, setLogisticsActiveTab, setTransferPanelSourceId, structure?.entity_id]);
@@ -276,7 +275,7 @@ const StructureBannerEntityDetailContent = memo(
               troops={guards}
               slotsUsed={guardSlotsUsed}
               slotsMax={guardSlotsMax}
-              structureId={Number(structure.entity_id ?? 0)}
+              structureId={safeInteger(structure.entity_id)}
               canManageDefense={isMine}
               variant={defenseDisplayVariant}
               hideSlotSummary

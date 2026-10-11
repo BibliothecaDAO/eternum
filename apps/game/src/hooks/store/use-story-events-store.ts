@@ -1,5 +1,6 @@
 import { getPlayerName } from "@/hooks/use-player-profile";
 import { fetchHeraldGameHistory, requireShard } from "@bibliothecadao/eternum/game-client";
+import { storyPayloadId } from "@/utils/native-id";
 import { getActiveGame } from "@/runtime/world";
 import { buildStoryEventPresentation, configManager, hasStoryPresentation } from "@bibliothecadao/eternum";
 import * as Sentry from "@sentry/react";
@@ -12,14 +13,22 @@ import {
   type StoryEventScope,
 } from "@bibliothecadao/eternum/game-sync";
 import { useGame } from "@/hooks/context/game-context";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { create } from "zustand";
 import { useConnectionStore } from "./use-connection-store";
 
+/** Where a story's event sits on the chain; a pre-confirmed one has no block yet. */
+interface ChainPosition {
+  block: number | null;
+  transactionIndex: number;
+  eventIndex: number;
+}
+
 interface StoryEventData {
   scopeKey: string;
   confirmation: GameSyncEventConfirmation | null;
+  position: ChainPosition;
   entity_id: number | null;
   event_id: string;
   owner: string | null;
@@ -67,15 +76,9 @@ const useStoryEventsStore = create<StoryEventsState>((set) => ({
 const asRecord = (value: unknown): Record<string, unknown> | null =>
   typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 
-const toOptionalNumber = (value: unknown): number | null => {
-  if (value === null || value === undefined) return null;
-  try {
-    const number = Number(BigInt(String(value)));
-    return Number.isSafeInteger(number) ? number : null;
-  } catch {
-    return null;
-  }
-};
+/** A story's entity id, exact or loud: a malformed one is a broken story, never a silently missing entity. */
+const storyEntityId = (value: unknown): number | null =>
+  value === null || value === undefined ? null : storyPayloadId(value);
 
 const storyVariant = (story: unknown): { payload: Record<string, unknown>; type: string } | null => {
   if (typeof story === "string") return { payload: {}, type: story };
@@ -96,18 +99,26 @@ const storyEventFromValue = (
   const variant = model === "StoryEvent" ? storyVariant(value.story) : { type: model, payload: value };
   if (!variant || !EVENT_MODELS.has(model)) return null;
   const eventId = storyEventIdentity(scope, value);
-  // An event names its transaction by its stream position, or a StoryEvent by its own tx_hash; every model carries the
-  // chain's timestamp. Missing either is a malformed event, never "undefined" or the epoch.
-  const transactionHash = asRecord(value.event_position)?.transaction_hash ?? value.tx_hash;
-  if (typeof transactionHash !== "string" || value.timestamp === undefined || value.timestamp === null) {
-    throw new Error(`${model} arrived without its transaction or timestamp`);
+  // An event names its transaction and its place on the chain by its position, and carries the chain's timestamp.
+  // Missing any of them is a malformed event, never "undefined", the epoch or the first place.
+  const position = asRecord(value.event_position);
+  const transactionHash = position?.transaction_hash ?? value.tx_hash;
+  const chainPosition = position ? chainPositionOf(position) : null;
+  if (
+    typeof transactionHash !== "string" ||
+    !chainPosition ||
+    value.timestamp === undefined ||
+    value.timestamp === null
+  ) {
+    throw new Error(`${model} arrived without its transaction, chain position or timestamp`);
   }
   const owner = value.owner ?? value.player ?? asRecord(value.attacker)?.player;
   return {
     scopeKey: storyEventScopeKey(scope),
     confirmation: confirmation ?? null,
+    position: chainPosition,
     owner: owner === null || owner === undefined ? null : String(owner),
-    entity_id: toOptionalNumber(value.entity_id ?? value.explorer_id ?? value.attacker_id),
+    entity_id: storyEntityId(value.entity_id ?? value.explorer_id ?? value.attacker_id),
     tx_hash: transactionHash,
     story: variant.type,
     timestamp: String(value.timestamp),
@@ -124,10 +135,25 @@ export const toStreamStoryEvent = (
 ): StreamStoryEvent | null =>
   EVENT_MODELS.has(event.model) ? storyEventFromValue(event.model, event.value, scope, confirmation) : null;
 
+const chainPositionOf = (position: Record<string, unknown>): ChainPosition | null => {
+  const { block_number: block, transaction_index: transactionIndex, event_index: eventIndex } = position;
+  const isIndex = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) >= 0;
+  if ((block !== null && !isIndex(block)) || !isIndex(transactionIndex) || !isIndex(eventIndex)) return null;
+  return { block, transactionIndex, eventIndex };
+};
+
 const historyStoryEvent = (event: HeraldHistoryEvent, scope: StoryEventScope): StreamStoryEvent | null =>
   storyEventFromValue(
     event.model,
-    { ...event.value, event_position: { transaction_hash: event.transaction_hash, event_index: event.event_index } },
+    {
+      ...event.value,
+      event_position: {
+        block_number: event.block_number,
+        transaction_hash: event.transaction_hash,
+        transaction_index: event.transaction_index,
+        event_index: event.event_index,
+      },
+    },
     scope,
     { block: event.block_number, preconfirmed: false },
   );
@@ -179,6 +205,41 @@ const processStoryEvent = (
   return { ...event, id: event.event_id, timestampMs, presentation };
 };
 
+/** What one story read asks for: its game's scope, and optionally one story and one owner. */
+type StoryRead = { scopeKey: string; story?: string; owner?: string };
+
+const matchesRead = (event: StoryEventData, read: StoryRead): boolean =>
+  event.scopeKey === read.scopeKey &&
+  (!read.story || event.story === read.story) &&
+  (!read.owner || (event.owner !== null && BigInt(event.owner) === BigInt(read.owner)));
+
+/**
+ * Newest first by place on the chain: a pre-confirmed story (no block yet) above every block, then block, transaction
+ * and event, the order the contract wrote them in. Never by time: one block holds many stories at one timestamp.
+ */
+const newestOnChainFirst = (left: StoryEventData, right: StoryEventData): number =>
+  blockRank(right.position) - blockRank(left.position) ||
+  right.position.transactionIndex - left.position.transactionIndex ||
+  right.position.eventIndex - left.position.eventIndex;
+
+const blockRank = (position: ChainPosition): number => position.block ?? Number.MAX_SAFE_INTEGER;
+
+/** The latest `limit` stories, each once at its most confirmed copy, newest on the chain first. */
+const latestStories = (events: StoryEventData[], limit: number): StoryEventData[] => {
+  const latest = new Map<string, StoryEventData>();
+  for (const event of events) {
+    const previous = latest.get(event.event_id);
+    if (!previous || eventConfirmationRank(event.confirmation) > eventConfirmationRank(previous.confirmation))
+      latest.set(event.event_id, event);
+  }
+  return [...latest.values()].toSorted(newestOnChainFirst).slice(0, limit);
+};
+
+/**
+ * Stories as the stream delivers them, recovered from Herald's history: a read fetches history at each handshake (the
+ * first connect and every reconnect), never on a block, and keeps what the stream delivers for it, so a story outlives
+ * the stream's mixed ring.
+ */
 export const useStoryEvents = (limit: number = 100, story?: string, owner?: string) => {
   const {
     setup: { store },
@@ -188,12 +249,12 @@ export const useStoryEvents = (limit: number = 100, story?: string, owner?: stri
   const gameId = configManager.getActiveGameId();
   const scope = { chainId: shard.chainId, worldAddress: shard.worldAddress, gameId };
   const scopeKey = storyEventScopeKey(scope);
-
-  const confirmedBlock = useConnectionStore((state) => (story ? state.lastConfirmedBlock : null));
-  const handshake = useConnectionStore((state) => (story ? state.lastGlobalHandshake : null));
+  const handshake = useConnectionStore((state) => state.lastGlobalHandshake);
+  const queryClient = useQueryClient();
+  const queryKey = ["heraldStoryEvents", shard.url, scopeKey, limit, story, owner];
 
   const query = useQuery({
-    queryKey: ["heraldStoryEvents", shard.url, scopeKey, limit, story, owner],
+    queryKey,
     queryFn: async (): Promise<StoryEventData[]> => {
       const page = await fetchHeraldGameHistory(shard, gameId, {
         limit,
@@ -211,25 +272,29 @@ export const useStoryEvents = (limit: number = 100, story?: string, owner?: stri
 
   const { refetch, isError } = query;
   useEffect(() => {
-    // Filtered history must recover battles after they leave the mixed stream ring.
-    if (story && !isError) void refetch({ cancelRefetch: false });
-  }, [confirmedBlock, handshake, story, refetch, isError]);
+    if (!isError) void refetch({ cancelRefetch: false });
+  }, [handshake, refetch, isError]);
 
-  const data = useMemo(() => {
-    const events = new Map<string, StoryEventData>();
-    for (const event of [...streamed, ...(query.data ?? [])]) {
-      if (event.scopeKey !== scopeKey || (story && event.story !== story)) continue;
-      if (owner && (event.owner === null || BigInt(event.owner) !== BigInt(owner))) continue;
-      const previous = events.get(event.event_id);
-      if (!previous || eventConfirmationRank(event.confirmation) > eventConfirmationRank(previous.confirmation))
-        events.set(event.event_id, event);
-    }
-    return [...events.values()]
-      .sort((left, right) => Number(BigInt(right.timestamp) - BigInt(left.timestamp)))
-      .slice(0, limit)
-      .filter(isPresentableStory)
-      .map((event) => processStoryEvent(event, store));
-  }, [store, limit, query.data, streamed, story, scopeKey, owner]);
+  const delivered = useMemo(
+    () => streamed.filter((event) => matchesRead(event, { scopeKey, story, owner })),
+    [streamed, scopeKey, story, owner],
+  );
+  // The read's key follows the same filter, so a new delivery is the one thing that changes what it keeps.
+  useEffect(() => {
+    if (delivered.length === 0) return;
+    queryClient.setQueryData<StoryEventData[]>(
+      queryKey,
+      (held) => held && latestStories([...delivered, ...held], limit),
+    );
+  }, [delivered]);
+
+  const data = useMemo(
+    () =>
+      latestStories([...delivered, ...(query.data ?? [])], limit)
+        .filter(isPresentableStory)
+        .map((event) => processStoryEvent(event, store)),
+    [store, limit, query.data, delivered],
+  );
 
   return { ...query, data };
 };

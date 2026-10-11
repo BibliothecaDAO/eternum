@@ -1,22 +1,23 @@
+import { normalizeStarknetAddress } from "@realms-world/identity";
 import { setTimeout as sleep } from "node:timers/promises";
 import {
   createGameClient,
-  createNativeTicketSubmission,
   setChainProvenTimestampSource,
   setBlockTimestampSource,
-  type CreateGameClientInput,
   type GameClient,
 } from "@bibliothecadao/eternum";
 import { fetchHeraldGameDirectory, type GameClientObserver, type Shard } from "@bibliothecadao/eternum/game-client";
 import { createMicrotaskGameSyncScheduler, type GameSyncTransaction } from "@bibliothecadao/eternum/game-sync";
 import type { NativeWorldBindings } from "@bibliothecadao/types";
+import { now } from "./clock";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 
 interface ConnectHarnessGameClientOptions {
   actor: string;
   gameId: number;
+  /** A private deployment fixture knows its immutable preset from the confirmed creation receipt. */
+  presetId?: number;
   shard: Shard;
-  signIntent: NonNullable<CreateGameClientInput["native"]>["signIntent"];
 }
 
 const GAME_LISTING_TIMEOUT_MS = 120_000;
@@ -28,6 +29,7 @@ const GAME_LISTING_POLL_MS = 2_000;
  */
 export interface HeraldConfirmations {
   confirmedAt(transactionHash: string): Promise<number>;
+  firstObserved(transactionHash: string): Promise<bigint>;
   /** The last block Herald confirmed: the head a bot's facts describe when it plans. */
   confirmedBlock(): number | null;
 }
@@ -39,7 +41,7 @@ export interface HarnessGameClient {
 
 /** Each player reads and acts through its own Herald subscription and native store. */
 export async function connectHarnessGameClient(options: ConnectHarnessGameClientOptions): Promise<HarnessGameClient> {
-  const presetId = await waitForHeraldToListGame(options.shard, options.gameId);
+  const presetId = options.presetId ?? (await waitForHeraldToListGame(options.shard, options.gameId));
   const heraldConfirmations = createHeraldConfirmations();
   const client = await createGameClient({
     actor: options.actor,
@@ -48,12 +50,7 @@ export async function connectHarnessGameClient(options: ConnectHarnessGameClient
     presetId,
     // Harness bots read no Realms profiles, so they name no player.
     playerNames: () => null,
-    native: {
-      bindings: bindings as unknown as NativeWorldBindings,
-      chainId: options.shard.chainId,
-      signIntent: options.signIntent,
-      submitIntent: createNativeTicketSubmission(options.shard.admissionUrl),
-    },
+    bindings: bindings as unknown as NativeWorldBindings,
     scheduler: createMicrotaskGameSyncScheduler(),
     observer: createLoggingObserver(options.gameId, heraldConfirmations),
   });
@@ -62,7 +59,7 @@ export async function connectHarnessGameClient(options: ConnectHarnessGameClient
 }
 
 /** One spelling per account address, so a bot's own client is found whichever form its address arrives in. */
-export const actorKey = (address: string): string => `0x${BigInt(address).toString(16)}`;
+export const actorKey = normalizeStarknetAddress;
 
 /**
  * Every bot's own client, connected a few at a time before the workload: its Herald subscription carries its own
@@ -85,6 +82,8 @@ export async function connectActorClients(
 }
 
 function createHeraldConfirmations() {
+  const firstAt = new Map<string, bigint>();
+  const firstWaiters = new Map<string, Array<(at: bigint) => void>>();
   const confirmedAtMs = new Map<string, number>();
   const waiters = new Map<string, Array<(atMs: number) => void>>();
   const key = (hash: string) => `0x${BigInt(hash).toString(16)}`;
@@ -94,7 +93,23 @@ function createHeraldConfirmations() {
       confirmedBlock = block;
     },
     confirmedBlock: () => confirmedBlock,
+    firstObserved(transactionHash: string): Promise<bigint> {
+      const hash = key(transactionHash);
+      const at = firstAt.get(hash);
+      if (at !== undefined) return Promise.resolve(at);
+      return new Promise((resolve) => firstWaiters.set(hash, [...(firstWaiters.get(hash) ?? []), resolve]));
+    },
     record(transaction: GameSyncTransaction): void {
+      const observedHash = key(transaction.hash);
+      if (
+        !firstAt.has(observedHash) &&
+        ["PRE_CONFIRMED", "ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(transaction.status)
+      ) {
+        const at = now();
+        firstAt.set(observedHash, at);
+        firstWaiters.get(observedHash)?.forEach((resolve) => resolve(at));
+        firstWaiters.delete(observedHash);
+      }
       if (transaction.block === null || !["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(transaction.status)) return;
       const hash = key(transaction.hash);
       if (confirmedAtMs.has(hash)) return;

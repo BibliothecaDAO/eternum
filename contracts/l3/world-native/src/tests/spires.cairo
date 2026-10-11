@@ -30,9 +30,9 @@ fn center(d: Deployment, game_id: u32) -> Coord {
 }
 fn seed_layout(d: Deployment, game_id: u32, config: SpireLayout) {
     let games = IGameDispatcher { contract_address: d.games };
-    let mut preset = super::recorded::fixture_preset(games.rules(game_id));
+    let mut preset = super::play_fixture::fixture_preset(games.rules(game_id));
     preset.settlement.spires = Some(config);
-    super::recorded::seed_game_with_preset(d.games, game_id, games.game(game_id), preset);
+    super::play_fixture::seed_game_with_preset(d.games, game_id, games.game(game_id), preset);
 }
 fn initialize(d: Deployment, game_id: u32) {
     start_cheat_caller_address(d.games, authority());
@@ -64,7 +64,7 @@ fn lattice_retains_center_then_point_side_order_and_hex_geometry() {
 fn production_initialization_places_the_same_spire_identity_on_both_layers_without_rewards() {
     let d = deployment();
     let games = IGameDispatcher { contract_address: d.games };
-    super::recorded::seed_game(
+    super::play_fixture::seed_game(
         d.games, 3, crate::game::GameRegistry { dev_mode_on: false, ..games.game(1) }, games.rules(1),
     );
     seed_layout(d, 3, layout(7));
@@ -76,17 +76,18 @@ fn production_initialization_places_the_same_spire_identity_on_both_layers_witho
         let coord = location(center(d, 3), layout(7), index);
         for alt in array![false, true] {
             let coord = Coord { alt, ..coord };
-            let tile = map(d).tile(tile_key(3, coord)).unwrap();
-            assert_eq!((tile.data / 512) % 0x100000000, (index + 1).into());
-            assert_eq!((tile.data / 2) % 256, 35);
-            assert_eq!(tile.data % 2, 1);
+            let _tile = map(d).tile(tile_key(3, coord)).unwrap();
+            let occupancy = map(d).occupancy(tile_key(3, coord)).unwrap();
+            assert_eq!(occupancy.entity_id, Into::<u32, u64>::into(index + 1));
+            assert_eq!(occupancy.category, 35);
+            assert!(occupancy.is_structure);
             super::state::assert_spatial_indexes(
                 d.games, 3, array![(index + 1).try_into().unwrap()].span(), array![coord].span(),
             );
             for direction in 0_u8..6 {
                 let access = map(d).tile(tile_key(3, spire_neighbor(coord, direction))).unwrap();
                 assert!(access.data / 0x20000000000 % 256 != 0);
-                assert_eq!(access.data % 0x20000000000, 0);
+                assert!(map(d).occupancy(tile_key(3, spire_neighbor(coord, direction))).is_none());
             }
         }
     }
@@ -113,7 +114,7 @@ fn initialization_rejects_invalid_layouts_blitz_and_repeats() {
         SpireLayout { max_layer: 1, ..layout(7) },
     ] {
         let games = IGameDispatcher { contract_address: d.games };
-        let mut preset = super::recorded::fixture_preset(games.rules(1));
+        let mut preset = super::play_fixture::fixture_preset(games.rules(1));
         preset.settlement.spires = Some(invalid);
         assert!(
             crate::registrar::IRegistrarSafeDispatcher { contract_address: d.games }
@@ -124,14 +125,14 @@ fn initialization_rejects_invalid_layouts_blitz_and_repeats() {
         assert!(map(d).tile(tile_key(1, center(d, 1))).is_none());
     }
     let games = IGameDispatcher { contract_address: d.games };
-    super::recorded::seed_game(
+    super::play_fixture::seed_game(
         d.games,
         3,
         games.game(1),
         crate::rules::SliceRules {
-            mode_rules: super::recorded::BLITZ_RULES,
+            mode_rules: super::play_fixture::BLITZ_RULES,
             entry_rule: crate::rules::ENTRY_ROSTER,
-            command_mask: super::recorded::BLITZ_COMMAND_MASK,
+            command_mask: super::play_fixture::BLITZ_COMMAND_MASK,
             ..games.rules(1),
         },
     );
@@ -167,8 +168,8 @@ fn an_occupied_alternate_center_rejects_before_revealing_the_surface() {
     assert!(ISpiresSafeDispatcher { contract_address: d.games }.initialize_spires(1).is_err());
     assert!(map(d).tile(tile_key(1, coord)).is_none());
     assert_eq!(spires(d).spire_layout(1), Some(layout(1)));
-    let occupied = map(d).tile(tile_key(1, Coord { alt: true, ..coord })).unwrap();
-    assert_eq!((occupied.data / 512) % 0x100000000, 99);
+    let occupied = map(d).occupancy(tile_key(1, Coord { alt: true, ..coord })).unwrap();
+    assert_eq!(occupied.entity_id, 99);
 }
 
 #[test]
@@ -188,11 +189,12 @@ fn eternum_preset_spires_follow_the_pinned_east_southwest_ring_order() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn internal_spire_initialization_accepts_a_game_with_a_different_creator() {
+fn internal_spire_initialization_accepts_a_game_with_a_different_launcher() {
     let d = deployment();
     seed_layout(d, 1, layout(1));
     let games = IGameDispatcher { contract_address: d.games };
-    let game = crate::game::GameRegistry { creator: d.actor, ..games.game(1) };
+    let game = games.game(1);
+    super::set_launcher(d, d.actor);
     super::resource_commands::set_fixture(d.games, selector!("games"), selector!("games"), array![1].span(), game);
     assert!(d.actor != authority());
     let safe = ISpiresSafeDispatcher { contract_address: d.games };

@@ -63,12 +63,7 @@ export class GameSubscription {
   public project(body: PublishedBody): PublishedBody[] {
     this.forgetMovedScope(body);
     if (body.type === "overlay_reset") return [body];
-    if (body.type === "tx") {
-      const executions = body.executions?.filter(
-        (outcome) => this.actor !== undefined && BigInt(outcome.actor) === BigInt(this.actor),
-      );
-      return [{ ...body, ...(executions ? { executions } : {}) }];
-    }
+    if (body.type === "tx") return [body];
     const scope = this.scope();
     if (this.publishedScopeKey !== scopeIdentity(scope)) return this.replaceScope(body, scope);
     if (body.type === "head") return [body];

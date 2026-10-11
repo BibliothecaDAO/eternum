@@ -9,7 +9,6 @@ fn season(seed: felt252) -> GameRegistry {
     GameRegistry {
         name: 'frontier',
         preset_id: 5,
-        creator: 1.try_into().unwrap(),
         settled: false,
         ready: true,
         dev_mode_on: false,

@@ -1,3 +1,4 @@
+import { safeInteger } from "./safe-integer";
 import { ID, ResourceArrivalInfo, ResourcesIds, TickIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { configManager } from "../managers/config-manager";
@@ -114,7 +115,7 @@ export const formatArrivals = (arrivals: Iterable<NativeRows["ResourceArrival"]>
   return [...arrivals]
     .filter((arrival) => arrival.resources.length > 0)
     .map((arrival) => ({
-      structureEntityId: arrival.entity_id,
+      structureEntityId: safeInteger(arrival.entity_id),
       resources: arrival.resources.map(({ resource_type, amount }) => ({
         resourceId: resource_type as ResourcesIds,
         amount: Number(amount),

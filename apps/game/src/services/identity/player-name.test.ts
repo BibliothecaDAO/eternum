@@ -9,8 +9,8 @@ describe("player name", () => {
   });
 
   it("derives a stable name from the gameplay address", () => {
-    expect(resolvePlayerName("0x123456789abc")).toBe("Player-789abc");
-    expect(shortString.decodeShortString(resolvePlayerNameFelt("0x123456789abc"))).toBe("Player-789abc");
+    expect(resolvePlayerName("0x123456789abc")).toBe("Lord 9abc");
+    expect(shortString.decodeShortString(resolvePlayerNameFelt("0x123456789abc"))).toBe("Lord 9abc");
   });
 
   it("keeps preferred names within the short-string limit", () => {

@@ -87,7 +87,7 @@ the Madara commit behind the pinned image digest) is **out of this brief** until
 
 - `game_ledger` (`contracts/l2/ledger`, plain Cairo, OZ AccessControl): roles `ADMIN` (cold), `OPERATOR` (opens games,
   cancels unstarted ones), `GUARDIAN` (vault only, below).
-  - `register_preset(preset_id, Preset{entry_fee, protocol_cut_bps, paid_fraction_bps, decay_bps, sword_price, shield_price, mmr: MmrParams{enabled, mean, spread, max_delta, k, regression_bps, min_players}, pm: PmParams{fee_bps, liability_cap, seed}})`
+  - `register_preset(preset_id, Preset{entry_fee, protocol_cut_bps, paid_fraction_bps, decay_bps, sword_price, shield_price, mmr: MmrParams{enabled, mean, spread, max_delta, k, regression_bps}, pm: PmParams{fee_bps, liability_cap, seed}})`
     — admin, write-once. Payouts are parametric so one preset serves any roster size:
     `W = ceil(N × paid_fraction_bps / 10_000)` winners, weight of position `k` is `decay^(k−1)`
     (`decay = decay_bps / 10_000`), normalized over `1..W`. Lab values: `protocol_cut_bps 2000`,

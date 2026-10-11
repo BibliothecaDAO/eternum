@@ -93,7 +93,7 @@
   "season": {
     "startSettlingAfterSeconds": 0,
     "startMainAfterSeconds": 0,
-    "durationSeconds": 6048000,
+    "durationSeconds": 0,
     "endGraceSeconds": 0,
     "bridgeCloseAfterEndSeconds": 604800,
     "startSettlingAt": 0,

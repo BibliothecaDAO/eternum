@@ -41,10 +41,13 @@ it("requires a known base construction price but no realm research", () => {
     .spyOn(configManager, "getBuildingCosts")
     .mockReturnValue([{ resource: ResourcesIds.Labor, amount: 100 }]);
   vi.spyOn(configManager, "getBuildingBaseCostPercentIncrease").mockReturnValue(0);
-  const store = { get: (model: string) => (model === "BoardRules" ? {} : undefined) } as never;
+  const store = { get: (model: string) => (model === "BoardRules" || model === "Structure" ? {} : undefined) } as never;
   expect(resolveBuildingRequirements(9, store, BuildingType.ResourceWheat, true, 0)).toEqual([
     { resource: ResourcesIds.Labor, amount: 100, current: undefined },
   ]);
+  // A realm this client has not synced has no known count to scale the price by.
+  const unsynced = { get: (model: string) => (model === "BoardRules" ? {} : undefined) } as never;
+  expect(resolveBuildingRequirements(9, unsynced, BuildingType.ResourceWheat, true, 0)).toBeUndefined();
   prices.mockReturnValueOnce(undefined);
   expect(resolveBuildingRequirements(9, store, BuildingType.ResourceWheat, true, 0)).toBeUndefined();
 });

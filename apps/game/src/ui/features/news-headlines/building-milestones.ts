@@ -1,6 +1,6 @@
 import { BuildingType } from "@bibliothecadao/types";
 
-type BuildingRow = { structure_id: number; category: number };
+type BuildingRow = { structure_id: bigint; category: number };
 const T3_BUILDINGS = new Map<number, string>([
   [BuildingType.ResourceKnightT3, "Barracks"],
   [BuildingType.ResourceCrossbowmanT3, "Archery Range"],

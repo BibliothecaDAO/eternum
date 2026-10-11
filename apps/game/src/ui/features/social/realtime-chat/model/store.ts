@@ -21,6 +21,7 @@ import type {
   WorldChatOutboundMessage,
   WorldChatZoneState,
 } from "./types";
+import { fetchApi } from "@/runtime/app-api";
 
 const normalizeHttpBaseUrl = (raw: string): string => {
   try {
@@ -233,7 +234,7 @@ const initialState: Omit<RealtimeChatStore, "actions"> = {
 /** The signed-in account's block list, as the server returns it after a read or a change. */
 const requestBlockList = async (baseUrl: string | undefined, method: string, path = "", body?: unknown) => {
   if (!baseUrl) return null;
-  const response = await fetch(new URL(`/api/chat/blocks${path}`, baseUrl), {
+  const response = await fetchApi(new URL(`/api/chat/blocks${path}`, baseUrl), {
     method,
     credentials: "include",
     ...(body === undefined ? {} : { headers: { "content-type": "application/json" }, body: JSON.stringify(body) }),
@@ -957,7 +958,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
           url.searchParams.set("since", sinceValue);
         }
 
-        const response = await fetch(url.toString(), { credentials: "include" });
+        const response = await fetchApi(url.toString(), { credentials: "include" });
 
         if (!response.ok) {
           throw new Error(`Failed to load world chat history (${response.status})`);
@@ -1039,7 +1040,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
           url.searchParams.set("cursor", cursor);
         }
 
-        const response = await fetch(url.toString(), { credentials: "include" });
+        const response = await fetchApi(url.toString(), { credentials: "include" });
 
         if (!response.ok) {
           // Handle 404 gracefully - new threads don't have history yet

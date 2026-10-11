@@ -1,8 +1,7 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { CallData, hash, shortString, type Abi } from "starknet";
+import { CallData, type Abi } from "starknet";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
-import { encodeNativeCommand, frameNativeIntent, type NativeCommand } from "./native-command";
+import { encodeNativeCommand, type NativeCommand } from "./native-command";
 const abi = bindings.commandAbi as Abi;
 const types = new Map(bindings.commandAbi.map((item) => [item.name, item]));
 const command = types.get("world_native::commands::Command")!;
@@ -51,79 +50,4 @@ describe("compiled native commands", () => {
       encodeNativeCommand(abi, { kind: "Explore", value: { explorer_id: 1, direction: 0, extra: 3 } } as NativeCommand),
     ).toThrow("Fields do not match");
   });
-  it("frames the published intent without a second command serializer", () => {
-    const args = encodeNativeCommand(abi, { kind: "Explore", value: { explorer_id: 9, direction: 2 } });
-    expect(args.map(BigInt)).toEqual([1n, 9n, 2n]);
-    const encoded = frameNativeIntent({
-      chain: 1,
-      deployment: 2,
-      gameId: 3,
-      actor: 4,
-      nonce: 5,
-      releaseId: 1,
-      presetCommitment: 6,
-      validFrom: 7,
-      validUntil: 8,
-      lastOrder: 9,
-      arguments: args,
-    });
-    expect(encoded.map(BigInt)).toEqual([
-      BigInt(shortString.encodeShortString("ETERNUM_ACTION")),
-      2n,
-      1n,
-      2n,
-      3n,
-      4n,
-      5n,
-      BigInt(hash.computePoseidonHashOnElements([shortString.encodeShortString("ETERNUM_COMMAND"), 1, 1, 9, 2])),
-      1n,
-      6n,
-      7n,
-      8n,
-      9n,
-      3n,
-      1n,
-      9n,
-      2n,
-    ]);
-  });
-});
-
-it("frames every v6 fixture intent with the shared encoder and matches its action hash", () => {
-  const fields = readFileSync(
-    new URL("../../../contracts/l3/randomness-protocol/tests/fixtures/v6.txt", import.meta.url),
-    "utf8",
-  )
-    .trim()
-    .split(/\s+/);
-  let offset = 1;
-  for (let index = 0; index < Number(BigInt(fields[0]!)); index++) {
-    const length = Number(BigInt(fields[offset++]!));
-    const intent = fields.slice(offset, offset + length);
-    offset += length;
-    const action = fields[offset++]!;
-    const encoded = frameNativeIntent({
-      chain: intent[2]!,
-      deployment: intent[3]!,
-      gameId: intent[4]!,
-      actor: intent[5]!,
-      nonce: intent[6]!,
-      releaseId: intent[8]!,
-      presetCommitment: intent[9]!,
-      validFrom: intent[10]!,
-      validUntil: intent[11]!,
-      lastOrder: intent[12]!,
-      arguments: intent.slice(14),
-    });
-    expect(encoded.map(BigInt)).toEqual(intent.map(BigInt));
-    expect(BigInt(hash.computePoseidonHashOnElements(encoded))).toBe(BigInt(action));
-    const envelopeLength = Number(BigInt(fields[offset++]!));
-    offset += envelopeLength + 1; // Envelope and its binding.
-    for (let array = 0; array < 2; array++) {
-      const length = Number(BigInt(fields[offset++]!));
-      offset += length; // Root bytes, then canonical bytes.
-    }
-    const draws = Number(BigInt(fields[offset++]!));
-    offset += draws * 3;
-  }
 });

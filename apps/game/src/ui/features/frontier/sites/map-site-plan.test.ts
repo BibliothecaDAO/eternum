@@ -5,7 +5,7 @@ const SITE = { col: 40, row: 12, alt: false };
 const BESIDE = { col: 41, row: 12, alt: false };
 const progress = (overrides: Partial<NonNullable<MapSiteUser["progress"]>> = {}) => ({
   game_id: 1,
-  explorer_id: 201,
+  explorer_id: 201n,
   xp: 0,
   battle: 1,
   logistics: 1,

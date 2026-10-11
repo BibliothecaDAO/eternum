@@ -3,6 +3,7 @@ import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import * as timestamp from "./timestamp";
 import {
   dayOf,
+  entityHomeNamespace,
   seasonDay,
   expeditionDayEndsAt,
   expeditionRealmSite,
@@ -19,7 +20,7 @@ import {
 const structure = (overrides: { realm_id?: number; category?: StructureType } = {}) =>
   ({
     game_id: 7,
-    entity_id: 42,
+    entity_id: overrides.realm_id ?? 3,
     base: { category: overrides.category ?? StructureType.Realm },
     metadata: { realm_id: overrides.realm_id ?? 3 },
   }) as never;
@@ -143,9 +144,9 @@ describe("expedition spire", () => {
 
   it("stands on the home ring's tile in direction (day % 6) and turns one step each day", () => {
     // Day 1: the site's neighbour in direction 1 on odd row 45 is (25, 46).
-    expect(expeditionSpireTile(rules, realm(1), dayStart(1) + 10)).toEqual({ col: 25, row: 46 });
+    expect(expeditionSpireTile(rules, realm(3), dayStart(1) + 10)).toEqual({ col: 25, row: 46 });
     // Day 2: site (25, 85), direction 2 on odd row 85 is (24, 86).
-    expect(expeditionSpireTile(rules, realm(1), dayStart(2) + 10)).toEqual({ col: 24, row: 86 });
+    expect(expeditionSpireTile(rules, realm(3), dayStart(2) + 10)).toEqual({ col: 24, row: 86 });
   });
 
   it("takes an army on the spire or beside it, and nowhere else", () => {
@@ -160,9 +161,9 @@ describe("expedition spire", () => {
       ...storeWith(expeditionRules),
       get: (model: string, key: { structure_id: number }) =>
         model === "RealmKnowledge"
-          ? { learned: key.structure_id === 2 ? 1n << 46n : 0n }
+          ? { learned: key.structure_id === 3 ? 1n << 46n : 0n }
           : storeWith(expeditionRules).get(model),
-      inGame: (model: string) => (model === "Structure" ? [realm(0), realm(2)] : [])[Symbol.iterator](),
+      inGame: (model: string) => (model === "Structure" ? [realm(1), realm(3)] : [])[Symbol.iterator](),
     };
     expect(expeditionSpires(store as never, 7, dayStart(1) + 10)).toEqual([{ col: 25, row: 46 }]);
   });
@@ -223,5 +224,19 @@ it("has no season day or map site before the exact start", () => {
   }
   expect(seasonDay(late, late.startMainAt)).toBe(0);
   expect(expeditionRealmSite(late, 1, late.startMainAt)).toEqual({ col: 5, row: 5 });
+  vi.restoreAllMocks();
+});
+
+it("keeps a full-width home namespace distinct from its trait template", () => {
+  const home = 0x0100000000000001n;
+  expect(entityHomeNamespace(home)).toBe(0x01000000);
+  expect(entityHomeNamespace(3)).toBe(3);
+  expect(() => entityHomeNamespace(Number(home))).toThrow("Unsafe");
+  vi.spyOn(timestamp, "getBlockTimestamp").mockReturnValue({ currentBlockTimestamp: dayStart(0) } as never);
+  expect(structureMapPosition(storeWith(expeditionRules), { ...structure(), entity_id: home } as never)).toEqual({
+    x: (0x01000000 - 1) * rules.spacing + rules.spacing / 2,
+    y: rules.spacing / 2,
+    alt: false,
+  });
   vi.restoreAllMocks();
 });

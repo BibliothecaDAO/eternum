@@ -8,7 +8,7 @@ const manifest = (chainId: string) => ({
   chainId,
   releaseSchemas: { "7": schemaHash },
   rpcUrl: "https://rpc.shard.test",
-  admissionUrl: "https://admission.shard.test",
+  l2GasBound: "0x47868c00",
   accountClassHash: "0x2",
   contracts: { games: "0x77", bridge: "0x78" },
   guardianPublicKey: "0x9",
@@ -44,6 +44,16 @@ it("resolves the game's release and leaves the shared shard registry unchanged o
   await expect(refreshShardRelease(opened.url, "7", schemaHash)).resolves.toBeDefined();
   await expect(refreshShardRelease(opened.url, "9", schemaHash)).rejects.toThrow("release 9");
   await expect(refreshShardRelease(opened.url, "10", schemaHash)).rejects.toThrow("release 10");
+});
+
+it("refuses a manifest without the play gas bound every invoke must carry", async () => {
+  const { l2GasBound: _bound, ...unbounded } = manifest("0xd");
+  serve(unbounded);
+  await expect(openShard("https://unbounded.shard.test", schemaHash)).rejects.toThrow("no valid l2GasBound");
+  serve({ ...manifest("0xd"), l2GasBound: "0x0" });
+  await expect(openShard("https://unbounded.shard.test", schemaHash)).rejects.toThrow("no valid l2GasBound");
+  serve(manifest("0xd"));
+  await expect(openShard("https://bounded.shard.test", schemaHash)).resolves.toMatchObject({ l2GasBound: 0x47868c00n });
 });
 
 it("validates shard authority before inserting a manifest into the registry", async () => {

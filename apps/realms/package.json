@@ -10,6 +10,7 @@
   "dependencies": {
     "@block65/webcrypto-web-push": "2.0.0",
     "@realms-world/identity": "workspace:*",
+    "@realms-world/value-ledger": "workspace:*",
     "better-auth": "1.5.3",
     "effect": "4.0.0-rc.108",
     "starknet": "catalog:web",

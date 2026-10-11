@@ -50,15 +50,13 @@ interface TransactionDebugUtils {
   addMockPending: (type?: TransactionType) => string;
   addMockSuccess: (type?: TransactionType) => string;
   addMockReverted: (type?: TransactionType, errorMessage?: string) => string;
-  addMockStuck: (type?: TransactionType) => string;
   completeTransaction: (hash: string) => void;
   revertTransaction: (hash: string, errorMessage?: string) => void;
   clearAll: () => void;
   expand: () => void;
   collapse: () => void;
-  setStuckThreshold: (ms: number) => void;
   listTransactions: () => Transaction[];
-  simulateScenario: (scenario: "happy" | "stuck" | "error" | "mixed") => void;
+  simulateScenario: (scenario: "happy" | "error" | "mixed") => void;
 }
 
 if (typeof window !== "undefined" && import.meta.env.DEV) {
@@ -106,27 +104,6 @@ if (typeof window !== "undefined" && import.meta.env.DEV) {
         return hash;
       },
 
-      addMockStuck: (type?: TransactionType) => {
-        const hash = generateMockHash();
-        const txType = type ?? getRandomTxType();
-        const stuckThreshold = useTransactionStore.getState().stuckThresholdMs;
-        // Create a transaction that appears to have been submitted in the past
-        const store = useTransactionStore.getState();
-        store.addTransaction({
-          hash,
-          type: txType,
-          status: "pending",
-          description: getTxDescription(txType),
-        });
-        // Manually update the submittedAt to make it stuck
-        useTransactionStore.setState((state) => ({
-          transactions: state.transactions.map((t) =>
-            t.hash === hash ? { ...t, submittedAt: Date.now() - stuckThreshold - 5000 } : t,
-          ),
-        }));
-        return hash;
-      },
-
       completeTransaction: (hash: string) => {
         useTransactionStore.getState().updateTransaction(hash, {
           status: "success",
@@ -154,15 +131,11 @@ if (typeof window !== "undefined" && import.meta.env.DEV) {
         useTransactionStore.getState().setMinimized(true);
       },
 
-      setStuckThreshold: (ms: number) => {
-        useTransactionStore.getState().setStuckThreshold(ms);
-      },
-
       listTransactions: () => {
         return useTransactionStore.getState().transactions;
       },
 
-      simulateScenario: (scenario: "happy" | "stuck" | "error" | "mixed") => {
+      simulateScenario: (scenario: "happy" | "error" | "mixed") => {
         debug.clearAll();
         debug.expand();
 
@@ -172,16 +145,11 @@ if (typeof window !== "undefined" && import.meta.env.DEV) {
             debug.addMockSuccess();
             debug.addMockSuccess();
             break;
-          case "stuck":
-            debug.addMockStuck();
-            debug.addMockPending();
-            break;
           case "error":
             debug.addMockReverted(undefined, "Insufficient resources");
             debug.addMockPending();
             break;
           case "mixed":
-            debug.addMockStuck();
             debug.addMockReverted(undefined, "Battle lost");
             debug.addMockPending();
             debug.addMockSuccess();
@@ -201,7 +169,6 @@ if (typeof window !== "undefined" && import.meta.env.DEV) {
     console.log(
       "%cUsage examples:\n" +
         "  __eternumTransactionDebug.addMockPending() - Add a pending transaction\n" +
-        "  __eternumTransactionDebug.addMockStuck() - Add a stuck transaction\n" +
         "  __eternumTransactionDebug.addMockReverted() - Add a failed transaction\n" +
         "  __eternumTransactionDebug.simulateScenario('mixed') - Simulate mixed scenario\n" +
         "  __eternumTransactionDebug.expand() - Expand the panel\n" +

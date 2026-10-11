@@ -6,13 +6,13 @@ pub struct Guild {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct CreateGuild {
-    pub owned_structure_id: u32,
+    pub owned_structure_id: u64,
     pub public: bool,
     pub name: felt252,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct JoinGuild {
-    pub owned_structure_id: u32,
+    pub owned_structure_id: u64,
     pub guild_id: ContractAddress,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -24,7 +24,7 @@ pub struct WhitelistKey {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SetWhitelist {
     pub player: ContractAddress,
-    pub owned_structure_id: u32,
+    pub owned_structure_id: u64,
     pub allowed: bool,
 }
 #[starknet::interface]
@@ -38,30 +38,17 @@ pub trait IGuilds<T> {
         actor: ContractAddress,
         command: CreateGuild,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
     );
     fn join_guild(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: JoinGuild,
-        context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
+        ref self: T, game_id: u32, actor: ContractAddress, command: JoinGuild, context: crate::commands::ActionContext,
     );
-    fn leave_guild(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    );
+    fn leave_guild(ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext);
     fn set_guild_whitelist(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: SetWhitelist,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
     );
     fn remove_guild_member(
         ref self: T,
@@ -69,6 +56,5 @@ pub trait IGuilds<T> {
         actor: ContractAddress,
         member: ContractAddress,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
     );
 }

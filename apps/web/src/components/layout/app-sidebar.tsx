@@ -2,6 +2,7 @@ import * as React from "react";
 import { NavMain } from "@/components/layout/nav-main";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarRail } from "@/components/ui/sidebar";
 import { Banknote, BookOpen, Castle, ClipboardPen, ExternalLink, LayoutDashboard, Vote } from "lucide-react";
+import { appUrl } from "@/site/lib/app-links";
 
 const data = {
   assets: [
@@ -125,7 +126,7 @@ const data = {
         },
         {
           title: "Eternum",
-          url: "https://blitz.realms.world",
+          url: appUrl("/eternum"),
         },
         {
           title: "Developer",

@@ -53,7 +53,7 @@ export const EntityResourceTableOld = React.memo(
 
     const activeRelicEffects = useMemo(() => {
       const structureArmyRelicEffects = [...setup.store.inGame("Guard", configManager.getActiveGameId())]
-        .filter((guard) => guard.structure_id === entityId)
+        .filter((guard) => entityId !== undefined && guard.structure_id === BigInt(entityId))
         .flatMap((guard) => getStructureArmyRelicEffects(guard, currentArmiesTick));
       const structureRelicEffects = productionBoostBonus
         ? getStructureRelicEffects(productionBoostBonus, currentArmiesTick)
@@ -61,7 +61,7 @@ export const EntityResourceTableOld = React.memo(
       return [...structureRelicEffects, ...structureArmyRelicEffects];
     }, [currentArmiesTick, productionBoostBonus, guardRevision, entityId, setup.store]);
 
-    const resourceManager = useResourceManager(entityId ?? 0);
+    const resourceManager = useResourceManager(entityId);
 
     const handleToggleTierVisibility = useCallback((tierKey: string) => {
       setCollapsedTiers((prev) => {
@@ -71,7 +71,7 @@ export const EntityResourceTableOld = React.memo(
       });
     }, []);
 
-    if (!entityId) return <div>No Entity Selected</div>;
+    if (!entityId || !resourceManager) return <div>No Entity Selected</div>;
     if (!productionBoostBonus) return <div>Loading production…</div>;
 
     return (

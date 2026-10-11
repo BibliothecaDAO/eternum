@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Refuses to publish a commit unless a landing validation run of it is green: a push to next, the only run that selects
-# every area. A pull request runs only the areas its diff selects, so its green run proves nothing about the rest, and a
+# every core area plus other jobs whose inputs changed. A pull request selects only changed areas, so its green run
+# proves nothing about the rest, and a
 # commit merged to next is a different commit from the pull request's head. A newer merge to next cancels the
 # run of the commit before it, so only the newest commit of a burst is guaranteed a run; a commit whose run was
 # cancelled is refused with that reason and the run to re-run.

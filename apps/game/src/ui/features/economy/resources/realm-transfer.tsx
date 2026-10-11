@@ -89,7 +89,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     playerStructuresFiltered.forEach((structure) => {
       const from = structureMapPosition(store, structure.structure);
       const to = structureMapPosition(store, selectedStructure);
-      if (from && to) distances[structure.structure.entity_id] = calculateDistance(from, to);
+      if (from && to) distances[structure.entityId] = calculateDistance(from, to);
     });
     return distances;
   }, [playerStructuresFiltered, selectedStructure, store]);
@@ -130,12 +130,12 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
         if (!sortByDistance) {
           return a.name.localeCompare(b.name);
         }
-        const distanceA = structureDistances[a.structure.entity_id] ?? 0;
-        const distanceB = structureDistances[b.structure.entity_id] ?? 0;
+        const distanceA = structureDistances[a.entityId] ?? 0;
+        const distanceB = structureDistances[b.entityId] ?? 0;
         return distanceA - distanceB;
       })
       .filter((structure) => {
-        if (structure.structure.entity_id === selectedStructureEntityId) {
+        if (structure.entityId === selectedStructureEntityId) {
           return false;
         }
 
@@ -156,7 +156,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
         if (type === "send") {
           relevantBalanceValue = balance;
         } else {
-          const otherStructureManager = new ResourceManager(store, structure.structure.entity_id);
+          const otherStructureManager = new ResourceManager(store, structure.entityId);
           relevantBalanceValue = otherStructureManager.balanceWithProduction(tick, resource)?.balance;
         }
 
@@ -411,7 +411,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
               ) : (
                 structuresForTransfer.map((structure) => (
                   <RealmTransferBalance
-                    key={structure.structure.entity_id}
+                    key={structure.entityId}
                     structure={structure}
                     selectedStructureEntityId={selectedStructureEntityId}
                     resource={resource}
@@ -542,9 +542,7 @@ const RealmTransferBalance = memo(
       setup: { store },
     } = useGame();
 
-    const sourceResourceManager = useResourceManager(
-      type === "send" ? selectedStructureEntityId : structure.structure.entity_id,
-    );
+    const sourceResourceManager = useResourceManager(type === "send" ? selectedStructureEntityId : structure.entityId);
 
     const getSourceBalance = useCallback(() => {
       return sourceResourceManager.balanceWithProduction(tick, resource)?.balance;
@@ -597,14 +595,14 @@ const RealmTransferBalance = memo(
 
       setInput(maxAmount);
       add((prev) => {
-        const existingIndex = prev.findIndex((call) => call.structureId === structure.structure.entity_id);
+        const existingIndex = prev.findIndex((call) => call.structureId === structure.entityId);
         if (maxAmount === 0) {
           return prev.filter((_, i) => i !== existingIndex);
         }
         const newCall = {
-          structureId: structure.structure.entity_id,
-          sender_entity_id: type === "send" ? selectedStructureEntityId : structure.structure.entity_id,
-          recipient_entity_id: type === "send" ? structure.structure.entity_id : selectedStructureEntityId,
+          structureId: structure.entityId,
+          sender_entity_id: type === "send" ? selectedStructureEntityId : structure.entityId,
+          recipient_entity_id: type === "send" ? structure.entityId : selectedStructureEntityId,
           resources: [resource, maxAmount],
           realmName: mode.structure.getName(structure.structure).name,
         };
@@ -614,7 +612,7 @@ const RealmTransferBalance = memo(
       });
     };
 
-    if (structure.structure.entity_id === selectedStructureEntityId) {
+    if (structure.entityId === selectedStructureEntityId) {
       return null;
     }
 
@@ -657,16 +655,16 @@ const RealmTransferBalance = memo(
 
                 setInput(clampedValue);
                 add((prev) => {
-                  const existingIndex = prev.findIndex((call) => call.structureId === structure.structure.entity_id);
+                  const existingIndex = prev.findIndex((call) => call.structureId === structure.entityId);
 
                   if (clampedValue === 0 && existingIndex !== -1) {
                     return prev.filter((_, i) => i !== existingIndex);
                   }
                   if (clampedValue > 0) {
                     const newCall = {
-                      structureId: structure.structure.entity_id,
-                      sender_entity_id: type === "send" ? selectedStructureEntityId : structure.structure.entity_id,
-                      recipient_entity_id: type === "send" ? structure.structure.entity_id : selectedStructureEntityId,
+                      structureId: structure.entityId,
+                      sender_entity_id: type === "send" ? selectedStructureEntityId : structure.entityId,
+                      recipient_entity_id: type === "send" ? structure.entityId : selectedStructureEntityId,
                       resources: [resource, clampedValue],
                       realmName: mode.structure.getName(structure.structure).name,
                     };

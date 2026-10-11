@@ -322,7 +322,7 @@ Goal: make app changes observable before production.
 
 Deliverables:
 
-- add a preview deployment workflow beside `deploy-client.yml` (the client ships to Cloudflare Pages)
+- add a preview deployment beside the deployment command (the client ships to Cloudflare Pages)
 - stamp preview builds with commit SHA and release metadata
 - run smoke checks against preview URLs
 - surface preview links directly on PRs

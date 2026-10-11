@@ -13,6 +13,7 @@ import {
   BLITZ_CARD_GOLD_THEME,
   formatBlitzValue as formatValue,
 } from "../lib/blitz-card-shared";
+import { APP_HOST } from "@/config/app-address";
 
 type MetricValue = {
   playerAddress: string;
@@ -1264,7 +1265,7 @@ const BlitzAwardsVariantCard = forwardRef<SVGSVGElement, BlitzAwardsVariantCardP
 
           <div className="cta">
             <div className="cta-title">Play Now</div>
-            <div className="cta-subtitle">blitz.realms.world</div>
+            <div className="cta-subtitle">{APP_HOST}</div>
           </div>
 
           <div className="powered">

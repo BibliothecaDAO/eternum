@@ -52,7 +52,7 @@ const SidebarRealm = ({
 
   const { currentDefaultTick } = getBlockTimestamp();
 
-  const buildingsData = useBuildings(realm.structure.entity_id);
+  const buildingsData = useBuildings(realm.entityId);
   const productionBuildings = useMemo(
     () => buildingsData.filter((building) => building && getProducedResource(building.category)),
     [buildingsData],

@@ -14,6 +14,7 @@ import {
   getBuildingFromResource,
 } from "@bibliothecadao/types";
 import { getPlayerName } from "@/services/identity/player-profiles";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 type Store = SetupResult["store"];
 
@@ -99,7 +100,7 @@ export const createConstructionMenu = ({
 }: CreateConstructionMenuParams): ContextMenuAction => {
   const structureId = BigInt(structure.id);
   const idString = structureId.toString();
-  const structureEntityId = Number(structureId);
+  const structureEntityId = safeInteger(structureId);
   const mode = getGameModeConfig();
   const simpleCostEnabled = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
 

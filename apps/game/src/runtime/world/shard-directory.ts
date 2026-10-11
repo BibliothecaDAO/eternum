@@ -15,7 +15,7 @@ export const shardDirectoryQuery = (chainId: string, player: string | null) =>
     queryFn: async () => fetchHeraldGameDirectory(await requireOpenShard(chainId), player ?? undefined),
   });
 
-export const readShardDirectory = (chainId: string, player: string | null) =>
+const readShardDirectory = (chainId: string, player: string | null) =>
   appQueryClient.fetchQuery(shardDirectoryQuery(chainId, player));
 
 /** A game's row in its shard's directory; a game its shard does not list is an error. */

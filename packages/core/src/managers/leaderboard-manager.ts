@@ -1,3 +1,4 @@
+import { safeInteger } from "../utils/safe-integer";
 import { type ContractAddress, type ID } from "@bibliothecadao/types";
 import { type NativeFactStore } from "../client/native-fact-store";
 import { getBlockTimestamp } from "../utils/timestamp";
@@ -70,7 +71,7 @@ export class LeaderboardManager {
         return {
           playerAddress: share.player,
           basisPoints: BigInt(share.bps),
-          hyperstructureId: row.entity_id,
+          hyperstructureId: safeInteger(row.entity_id),
           elapsed: Number(cutoff - row.start_at),
           rate: Number(hyperstructurePointsPerSecond(rate, row.multiplier) * BigInt(share.bps)) / 10_000 / 1_000_000,
           points: Number(points) / 1_000_000,
@@ -154,7 +155,7 @@ export class LeaderboardManager {
     return new Set(
       [...this.store.inGame("HyperstructureShares", configManager.getActiveGameId())]
         .filter((row) => row.shareholders.some((share) => share.player === player && share.bps > 0))
-        .map((row) => row.entity_id),
+        .map((row) => safeInteger(row.entity_id)),
     );
   }
 

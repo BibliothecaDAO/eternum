@@ -12,6 +12,19 @@ pub mod RegistryLogic {
     impl Registrar = RegistrarState::RegistrarImpl<ContractState>;
     impl RegistrarInternal = RegistrarState::InternalImpl<ContractState>;
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl PresetValidation of crate::presets::IPresetValidation<ContractState> {
+        fn validated_preset_commitment(self: @ContractState, definition: crate::presets::PresetDefinition) -> felt252 {
+            crate::presets::validate(definition);
+            crate::settlement_grid::validate_spacing(definition.settlement.spacing);
+            if crate::rules::rule_enabled(definition.rules, crate::rules::SPIRES) {
+                crate::spires::validate(definition.settlement.spires.expect('missing season spires'));
+            } else {
+                assert!(definition.settlement.spires.is_none(), "spires are disabled");
+            }
+            crate::presets::commitment(definition)
+        }
+    }
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {

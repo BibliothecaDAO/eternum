@@ -7,6 +7,7 @@ edition = "2024_07"
 sierra-replace-ids = true
 
 [dependencies]
+collectibles = { path = "../collectibles" }
 starknet = "2.13.1"
 openzeppelin = { git = "https://github.com/openzeppelin/cairo-contracts", tag = "v0.20.0" }
 cubit = { git = "https://github.com/credence0x/cubit.git", branch = "feat/cairo-2.9.2" }
@@ -17,7 +18,11 @@ snforge_std = "0.51.2"
 [[target.starknet-contract]]
 sierra = true
 casm = true
+build-external-contracts = ["collectibles::contract::RealmsCollectible"]
 
 [tool.fmt]
 sort-module-level-items = true
 max-line-length = 120
+
+[tool.scarb]
+allow-prebuilt-plugins = ["snforge_std"]

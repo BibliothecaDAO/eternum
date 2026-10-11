@@ -14,6 +14,7 @@ import { setEntityNameLocalStorage, configManager } from "@bibliothecadao/eternu
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { type ID } from "@bibliothecadao/types";
 import { memo, useCallback } from "react";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 /**
  * The view surfaces — `leftNavigationView` is their open state; each is one popover panel whose frame (header
@@ -117,7 +118,8 @@ const StructureEditSurface = () => {
       : { game_id: configManager.getActiveGameId(), entity_id: pendingRenameStructureEntityId },
   );
   const pendingRenameMetadata = pendingRenameStructure ? mode.structure.getName(pendingRenameStructure) : null;
-  const editingStructureId = pendingRenameStructureEntityId !== null ? Number(pendingRenameStructureEntityId) : null;
+  const editingStructureId =
+    pendingRenameStructureEntityId !== null ? safeInteger(pendingRenameStructureEntityId) : null;
 
   if (pendingRenameStructureEntityId === null || !pendingRenameMetadata || editingStructureId === null) return null;
 

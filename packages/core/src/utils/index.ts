@@ -7,7 +7,6 @@ export * from "./biome";
 export * from "./buildings";
 export * from "./building-cost-mode";
 export * from "./canonical-realm";
-export * from "./building-ring";
 export * from "./castle-reach";
 export * from "./combat-exchange";
 export * from "./reveal-yield";

@@ -1,9 +1,11 @@
 import { expect, test, vi } from "vitest";
+import { Hono } from "hono";
 import { createCalendarRoutes } from "./calendar-routes";
 
 test.each(["startsAt", "endsAt"])("rejects sub-second %s before persisting the calendar", async (field) => {
   const set = vi.fn();
-  const app = createCalendarRoutes({ list: async () => [], set });
+  const app = new Hono();
+  app.route("/", createCalendarRoutes({ list: async () => [], set }));
   const response = await app.request("/frontier", {
     method: "PUT",
     headers: { "content-type": "application/json" },

@@ -1,0 +1,147 @@
+import dev from "../../../contracts/common/addresses/dev.json";
+import { afterEach, expect, it, vi } from "vitest";
+import { RpcProvider } from "starknet";
+import { identityL2Configuration, identityProvider, verifyIdentityChain, realmOwnerOf, fetchIdentityRpc } from "./l2";
+import { decodeIdentityEnv, socialProvidersOf, vapidKeysOf } from "./env";
+import { verifyWalletOnL2 } from "./wallet-signature";
+
+const env = {
+  ENVIRONMENT: "staging" as const,
+  L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
+};
+afterEach(() => vi.restoreAllMocks());
+it("requires a known environment and only its HTTPS Alchemy endpoint without exposing credentials", () => {
+  expect(() => identityL2Configuration({ ...env, ENVIRONMENT: undefined } as never)).toThrow("ENVIRONMENT");
+  for (const url of [
+    "https://other.test/v2/private",
+    "http://starknet-mainnet.g.alchemy.com/v2/private",
+    "https://starknet-sepolia.g.alchemy.com/v2/private",
+  ])
+    expect(() => identityL2Configuration({ ...env, L2_RPC_URL: url })).toThrow("L2_RPC_URL");
+  expect(identityL2Configuration(env).chainId).toBe("SN_MAIN");
+  expect(
+    identityL2Configuration({
+      ...env,
+      L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_9/test",
+    }).chainId,
+  ).toBe("SN_MAIN");
+});
+it("refuses a provider on another chain before any Realm or wallet read", async () => {
+  vi.spyOn(RpcProvider.prototype, "getChainId").mockResolvedValue("0x534e5f5345504f4c4941");
+  const calls = vi.spyOn(RpcProvider.prototype, "callContract");
+  const deployments = vi.spyOn(RpcProvider.prototype, "getClassHashAt");
+  const { buildSiwsMessage } = await import("@realms-world/identity");
+  const message = buildSiwsMessage({
+    address: "0x123",
+    chainId: "SN_MAIN",
+    domain: "play.test",
+    uri: "https://play.test",
+    nonce: "nonce",
+  });
+  await expect(verifyWalletOnL2(env)(message, ["0x1", "0x2"], "0x123")).rejects.toThrow("identity_l2_chain_mismatch");
+  expect(deployments).not.toHaveBeenCalled();
+  await expect(verifyIdentityChain(identityProvider(env), env)).rejects.toThrow("identity_l2_chain_mismatch");
+  await expect(realmOwnerOf(env, "7")).rejects.toThrow("identity_l2_chain_mismatch");
+  expect(calls).not.toHaveBeenCalled();
+});
+it("reads Realm ownership on the configured chain with full u256 calldata", async () => {
+  vi.spyOn(RpcProvider.prototype, "getChainId").mockResolvedValue("0x534e5f4d41494e");
+  const calls = vi.spyOn(RpcProvider.prototype, "callContract").mockResolvedValue(["0x123"]);
+  expect(await realmOwnerOf(env, String(2n ** 128n + 4n))).toBe("0x123");
+  expect(calls).toHaveBeenCalledWith(
+    { contractAddress: dev.realms, entrypoint: "owner_of", calldata: ["4", "1"] },
+    "latest",
+  );
+});
+it("accepts mainnet SIWS and refuses another proof chain without a signature or deployment read", async () => {
+  vi.spyOn(RpcProvider.prototype, "getChainId").mockResolvedValue("0x534e5f4d41494e");
+  const calls = vi.spyOn(RpcProvider.prototype, "callContract").mockResolvedValue(["0x1"]);
+  const { buildSiwsMessage } = await import("@realms-world/identity");
+  const message = buildSiwsMessage({
+    address: "0x123",
+    chainId: "SN_MAIN",
+    domain: "play.test",
+    uri: "https://play.test",
+    nonce: "nonce",
+  });
+  const verify = verifyWalletOnL2(env);
+  expect(await verify(message, ["0x1", "0x2"], "0x123")).toBe(true);
+  calls.mockClear();
+  await expect(
+    verify({ ...message, domain: { ...message.domain, chainId: "SN_SEPOLIA" } }, ["0x1", "0x2"], "0x123"),
+  ).rejects.toThrow("identity_proof_chain_mismatch");
+  expect(calls).not.toHaveBeenCalled();
+});
+
+it("fails Worker environment decoding before serving any route when its environment is absent", () => {
+  expect(() => decodeIdentityEnv({ L2_RPC_URL: env.L2_RPC_URL })).toThrow("ENVIRONMENT");
+  try {
+    decodeIdentityEnv({ ...env, L2_RPC_URL: "https://other.test/v2/private" });
+    throw new Error("configuration was accepted");
+  } catch (error) {
+    expect(String(error)).toContain("L2_RPC_URL");
+    expect(String(error)).not.toContain("private");
+  }
+});
+
+it("refuses RPC redirects using the real Worker-compatible manual mode", async () => {
+  const transport = vi
+    .spyOn(globalThis, "fetch")
+    .mockResolvedValue(new Response(null, { status: 302, headers: { location: "https://other.test" } }));
+  await expect(fetchIdentityRpc(env.L2_RPC_URL, { method: "POST", body: "{}" })).rejects.toThrow(
+    "identity_l2_redirect_refused",
+  );
+  expect(transport).toHaveBeenCalledOnce();
+  expect(transport).toHaveBeenCalledWith(env.L2_RPC_URL, expect.objectContaining({ redirect: "manual" }));
+});
+
+it("never includes private environment values in decode failures", () => {
+  const raw = {
+    ...env,
+    RATING_HISTORY_URL: "https://history.test/population",
+    BETTER_AUTH_SECRET: "private-marker",
+  };
+  try {
+    decodeIdentityEnv(raw);
+    throw new Error("configuration was accepted");
+  } catch (error) {
+    expect(String(error)).toContain("identity_environment_invalid");
+    expect(String(error)).not.toContain("private-marker");
+    expect(String(error)).not.toContain("/v2/test");
+  }
+});
+
+it.each([
+  {},
+  { DISCORD_CLIENT_ID: "id" },
+  { DISCORD_CLIENT_SECRET: "secret" },
+  { DISCORD_CLIENT_ID: "", DISCORD_CLIENT_SECRET: "secret" },
+])("keeps Discord absent until both credentials exist: %j", (env) => {
+  expect(socialProvidersOf(env)).toEqual({});
+});
+it("offers Discord only with its configured pair", () => {
+  expect(socialProvidersOf({ DISCORD_CLIENT_ID: "id", DISCORD_CLIENT_SECRET: "secret" })).toEqual({
+    discord: { clientId: "id", clientSecret: "secret" },
+  });
+});
+
+it("requires the generated push pair but no Discord or duplicated constants", () => {
+  const settings = {
+    ...env,
+    BASE_URL: "https://play.test",
+    BETTER_AUTH_SECRET: "test-secret",
+    OPERATOR_TOKEN: "test-token",
+    RESEND_API_KEY: "test-email",
+    WEB_PUSH_VAPID_PUBLIC_KEY: "public-test-key",
+    WEB_PUSH_VAPID_PRIVATE_KEY: "private-test-key",
+  };
+  const decoded = decodeIdentityEnv(settings);
+  expect(socialProvidersOf(decoded)).toEqual({});
+  expect(vapidKeysOf(decoded)).toEqual({
+    publicKey: "public-test-key",
+    privateKey: "private-test-key",
+    subject: "mailto:ops@realms.party",
+  });
+  for (const name of ["WEB_PUSH_VAPID_PUBLIC_KEY", "WEB_PUSH_VAPID_PRIVATE_KEY"])
+    expect(() => decodeIdentityEnv({ ...settings, [name]: undefined })).toThrow("identity_environment_invalid");
+});

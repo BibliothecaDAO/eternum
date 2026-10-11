@@ -25,8 +25,18 @@ export const manifest: NativeManifest = {
   },
 };
 export const shardManifest = buildShardManifest(
-  { ...manifest, shard: { chainId: "0x4c4142", accountClassHash: "0x456", contracts: {}, guardianPublicKey: "0xabc" } },
-  { rpcUrl: "https://rpc.shard.test", admissionUrl: "https://admission.shard.test" },
+  {
+    ...manifest,
+    shard: {
+      chainId: "0x4c4142",
+      accountClassHash: "0x456",
+      contracts: {},
+      guardianPublicKey: "0xabc",
+      l2GasBound: "0x47868c00",
+      vrfPublicKey: { x: "0x1", y: "0x2" },
+    },
+  },
+  { rpcUrl: "https://rpc.shard.test" },
 );
 export const receipt = (events: RpcEvent[], transaction_hash = "0x55"): RpcReceipt => ({
   transaction_hash,
@@ -73,7 +83,7 @@ export const structureValue = {
     realm_id: 0,
     order: 0,
     has_wonder: false,
-    village_realm: 0,
+    village_realm: 0n,
     mine_kind: 0,
     deepest_depth: 0,
   },
@@ -157,11 +167,11 @@ export function rulesEvent(gameId = "1", dayUnitSeconds = "0") {
   return rowEvent("SliceRules", [gameId], decoded);
 }
 
-export function battleEvent(attacker = "7", defender = "8", timestamp = "1920", order = "42", index = "0"): RpcEvent {
+export function battleEvent(attacker = "7", defender = "8", timestamp = "1920"): RpcEvent {
   const layout = schema.games.events.find((event) => event.name === "BattleEvent")!;
   return {
     from_address: manifest.world.address,
-    keys: [...layout.prefix, "1", "1", order, index, attacker, defender, "2", "3"],
+    keys: [...layout.prefix, "2", "1", attacker, defender, "2", "3"],
     data: [
       attacker,
       "0",

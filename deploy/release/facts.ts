@@ -36,7 +36,7 @@ function releaseFacts() {
   if (schemaIdentity(schema) !== schema.identity) throw new Error("Native schema identity mismatch");
   const worldClass = (contract: string) => classHash(resolve(WORLD, `target/dev/world_native_${contract}`));
   // A commitment covers the register_preset calldata only, so any Games address encodes it the same way.
-  const registrar = registrarWorldOf({ chainId: "0x0", worldAddress: "0x0" }, schema);
+  const registrar = registrarWorldOf({ chainId: "0x0", worldAddress: "0x0", l2GasBound: 0n }, schema);
   // A preset whose mode has no deployment environment (Duel) cannot be registered by this release.
   const presets = Object.values(nativePresets).flatMap(({ id, gameType }) => {
     const environment = `madara.${gameType}`;
@@ -54,6 +54,7 @@ function releaseFacts() {
         Object.entries(schema.logicClasses).map(([name, contract]) => [name, worldClass(contract)]),
       ),
       account: classHash(ACCOUNT),
+      verifier: classHash(resolve(ROOT, "contracts/l3/vrf-verifier/target/dev/realms_vrf_verifier_Verifier")),
     },
     presets: Object.fromEntries(presets),
   };

@@ -1,7 +1,8 @@
+import { registerEnvironmentPreset } from "../registrar/register-preset";
+import { buildLedgerEconomicPreset, buildRegisterLedgerPresetCalldata } from "../ledger/economics";
 import { blitzRosterOf, findRegistrarGame } from "../registrar/calls";
-import { seasonSeconds } from "@bibliothecadao/eternum";
-import { frontierPreset } from "../../../source/frontier/native";
-import { afterAll, describe, expect, test, mock } from "bun:test";
+import { nativePresets } from "../../../source/native";
+import { afterAll, describe, expect, test, mock, spyOn } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -17,6 +18,8 @@ import { buildNativePreset } from "../config/native-preset";
 import {
   FRONTIER_ACCELERATED_PRESET_ID,
   FRONTIER_PRESET_ID,
+  FRONTIER_SELF_CHECK_PRESET_ID,
+  SELF_CHECK_PRESET_ID,
   nativeGameModeOf,
 } from "../../../source/common/native-preset-modes";
 import {
@@ -51,16 +54,58 @@ function configuration(preset: number) {
 }
 
 describe("native presets", () => {
-  test("Frontier pays ruin chests from its LORDS pool at a day price of at most 50 a share, over a seventy-day season", () => {
+  test("the mainnet deployment plan registers only the selected economic preset", async () => {
+    const log = spyOn(console, "log").mockImplementation(() => {});
+    try {
+      for (const [presetId, environmentId] of [
+        [2, "madara.blitz"],
+        [3, "madara.eternum"],
+        [5, "madara.frontier"],
+      ] as const) {
+        log.mockClear();
+        await registerEnvironmentPreset({ presetId, environmentId, dryRun: true, nativeManifest: manifestPath });
+        const summary = JSON.parse(String(log.mock.calls[0]![0]));
+        expect(summary.ledgerCalldata).toEqual(
+          buildRegisterLedgerPresetCalldata(
+            presetId,
+            buildLedgerEconomicPreset(nativePresets[presetId]!.gameType, { presetId }),
+          ),
+        );
+      }
+    } finally {
+      log.mockRestore();
+    }
+  });
+
+  test("every Frontier preset carries chest rules without a funding amount", () => {
+    for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, FRONTIER_SELF_CHECK_PRESET_ID]) {
+      expect(nativePresets[id]!.chests).not.toHaveProperty("pool");
+      const chests = buildNativePreset(
+        loadNativePresetConfiguration("madara.frontier", id),
+        id,
+      ).economy.chests.unwrap();
+      expect(chests).toEqual({
+        price_ceiling: 50n,
+        shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
+        claim_window_seconds: 604800,
+      });
+    }
+  });
+
+  test("held-Realm labor is fixed per shard calendar day and leaves the account ceiling unruled", () => {
+    for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID]) {
+      const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id);
+      expect(preset.economy.labor.unwrap()).toEqual({ amount: 1000n, account_daily_limit: 0 });
+    }
+    for (const id of [2, 3, 4]) expect(buildNativePreset(configuration(id), id).economy.labor.isNone()).toBe(true);
+  });
+  test("Frontier caps daily chest prices without supplying a season duration", () => {
     const config = loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID);
     const preset = buildNativePreset(config, FRONTIER_PRESET_ID);
     expect(preset.economy.chests.unwrap()).toEqual({
-      pool: 1000000n,
       price_ceiling: 50n,
       shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
-      surge_factor: 3,
-      surge_minimum_shares: 60,
-      estimate_days: 5,
+      claim_window_seconds: 604800,
     });
     expect(preset.settlement.depths.map(({ chest }) => Object.values(chest))).toEqual([
       [5000, 2700, 1400, 600, 300],
@@ -68,7 +113,7 @@ describe("native presets", () => {
       [3000, 3000, 2200, 1200, 600],
       [2000, 3000, 2500, 1600, 900],
     ]);
-    expect(config.season.durationSeconds).toBe(seasonSeconds(frontierPreset.seasonBags, frontierPreset.dayUnitSeconds));
+    expect(config.season.durationSeconds).toBe(0);
   });
 
   test("every preset supplies its cooldown explicitly, independent of the stamina clock", () => {
@@ -405,7 +450,9 @@ describe("native presets", () => {
       "frontier",
     ]);
     expect(() => nativeGameModeOf(9)).toThrow("Unknown native preset 9");
-    expect(() => nativeGameModeOf(103)).toThrow("Unknown native preset 103");
+    expect(nativeGameModeOf(SELF_CHECK_PRESET_ID)).toBe("eternum");
+    expect(nativeGameModeOf(104)).toBe("frontier");
+    expect(() => nativeGameModeOf(105)).toThrow("Unknown native preset 105");
   });
 
   test("native balances and mine ladders come only from the selected sheet", () => {
@@ -474,7 +521,17 @@ describe("native presets", () => {
     const account = {
       getBlockNumber: async () => 10,
       getClassHashAt: async () => "0x456",
-      callContract: async () => [commitment],
+      address: "0x123",
+      signer: { getPubKey: async () => "0x456" },
+      callContract: async ({ entrypoint }: { entrypoint: string }) => [
+        entrypoint === "owner"
+          ? "0x123"
+          : entrypoint === "is_device"
+            ? "0x1"
+            : entrypoint === "l2_gas_bound"
+              ? "9000000"
+              : commitment,
+      ],
       execute: async () => {
         throw new Error("registration submitted");
       },
@@ -543,7 +600,7 @@ describe("fixed Regular Blitz rosters", () => {
     },
   };
   const input = {
-    gameName: "free-slot-1",
+    gameName: "slot-1",
     presetId: 2,
     startMainAt: 2000000000,
     chainTimestamp: 1999999990,
@@ -553,11 +610,10 @@ describe("fixed Regular Blitz rosters", () => {
     twoPlayerMode: false,
     useMapOverride: false,
   };
-  test("creation requires the frozen roster and never enables Duel or dev mode", () => {
+  test("creation requires its frozen roster and never enables a wrong mode", () => {
     const config = configuration(2);
-    const players = [{ owner: "0xabc", account: "0xdef" }];
-    expect(() => buildNativeGameParams(config, input)).toThrow("fixed roster");
-    expect(() => buildNativeGameParams(config, input, Array(25).fill(players[0]))).toThrow("fixed roster");
+    const players = [{ wallet: "0xabc", account: "0xdef" }];
+    expect(() => buildNativeGameParams(config, input)).toThrow("roster at creation");
     expect(() => buildNativeGameParams(config, { ...input, twoPlayerMode: true }, players)).toThrow(
       "Settlement layout",
     );
@@ -565,9 +621,22 @@ describe("fixed Regular Blitz rosters", () => {
     expect(buildNativeGameParams(config, input, players).roster).toEqual(players);
   });
   test("a roster is its players' accounts in registration order, each once", () => {
-    expect(blitzRosterOf(["0x02", "0x1"])).toEqual([{ account: "0x2" }, { account: "0x1" }]);
-    expect(() => blitzRosterOf(["0x01", "0x1"])).toThrow("Duplicate");
-    expect(() => blitzRosterOf(["0x0"])).toThrow("Invalid");
+    expect(
+      blitzRosterOf([
+        { account: "0x02", wallet: "0xa" },
+        { account: "0x1", wallet: "0xb" },
+      ]),
+    ).toEqual([
+      { account: "0x2", wallet: "0xa" },
+      { account: "0x1", wallet: "0xb" },
+    ]);
+    expect(() =>
+      blitzRosterOf([
+        { account: "0x01", wallet: "0xa" },
+        { account: "0x1", wallet: "0xb" },
+      ]),
+    ).toThrow("Duplicate");
+    expect(() => blitzRosterOf([{ account: "0x0", wallet: "0xa" }])).toThrow("Invalid");
     expect(() => blitzRosterOf([])).toThrow("1 to 24");
   });
   test("creation recovery reads the registrar without waiting for Herald", async () => {
@@ -579,24 +648,15 @@ describe("fixed Regular Blitz rosters", () => {
 });
 
 describe("scaled Frontier presets", () => {
-  const launchedSeconds = (presetId: number) =>
-    applyDeploymentConfigOverrides(loadNativePresetConfiguration("madara.frontier", presetId), {
-      startMainAt: 1_800_000_000,
-      factoryAddress: "",
-    }).season.durationSeconds;
-  const dayUnitSeconds = (presetId: number) =>
-    buildNativePreset(loadNativePresetConfiguration("madara.frontier", presetId), presetId).rules.day_unit_seconds;
-
-  test("an accelerated launch lasts 21 bags of its 120 s units: 14 hours", () => {
-    expect(dayUnitSeconds(FRONTIER_ACCELERATED_PRESET_ID)).toBe(120);
-    expect(launchedSeconds(FRONTIER_ACCELERATED_PRESET_ID)).toBe(14 * 3_600);
-    expect(launchedSeconds(FRONTIER_PRESET_ID)).toBe(10 * 7 * 86_400);
-  });
-
-  test("every scaled preset keeps its mode's season length in day units", () => {
-    const units = launchedSeconds(FRONTIER_PRESET_ID) / dayUnitSeconds(FRONTIER_PRESET_ID);
-    expect(launchedSeconds(FRONTIER_ACCELERATED_PRESET_ID) / dayUnitSeconds(FRONTIER_ACCELERATED_PRESET_ID)).toBe(
-      units,
-    );
+  test("all Frontier modes require the operator's duration and retain their own day unit", () => {
+    for (const presetId of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID]) {
+      const config = loadNativePresetConfiguration("madara.frontier", presetId);
+      expect(config.season.durationSeconds).toBe(0);
+      const durationSeconds = 40 * buildNativePreset(config, presetId).rules.day_unit_seconds;
+      expect(
+        applyDeploymentConfigOverrides(config, { startMainAt: 1800000000, factoryAddress: "", durationSeconds }).season
+          .durationSeconds,
+      ).toBe(durationSeconds);
+    }
   });
 });

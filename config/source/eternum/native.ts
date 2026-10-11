@@ -5,14 +5,8 @@ import { commandMask } from "../common/native-commands";
 
 export const eternumPreset: NativePreset = {
   ledger: {
-    entryFee: 0,
     protocolCutBps: 0,
-    swordPrice: 0,
-    shieldPrice: 0,
     mmrEnabled: false,
-    predictionFeeBps: 0,
-    liabilityCap: 0,
-    seed: 0,
   },
   bitcoinEnabled: true,
   startingTroops: startingTroopsByBiome,
@@ -41,9 +35,9 @@ export const eternumPreset: NativePreset = {
   commandMask: commandMask(["EnterDepth", "Research", "InteractSite", "RefillStamina", "WithdrawLords"]),
   spacing: 6,
   dayUnitSeconds: 0,
-  seasonBags: 0,
   progression: null,
   discovery: null,
+  labor: null,
   chests: null,
   board: null,
   research: [],

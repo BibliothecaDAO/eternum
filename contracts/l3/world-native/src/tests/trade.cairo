@@ -12,12 +12,12 @@ use crate::trade::{
     AcceptOrder, CreateOrder, ITradeDispatcher, ITradeDispatcherTrait, ITradeSafeDispatcher, ITradeSafeDispatcherTrait,
     TradeKey, TradeRules,
 };
-use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, grant, setup_with_rules};
+use super::resource_commands::{assert_terminal_rejection, execute, grant, setup_with_rules};
 
 fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
-    let mut rules = super::recorded::rules();
-    rules.mode_rules = super::recorded::ETERNUM_RULES;
-    rules.command_mask = super::recorded::ETERNUM_COMMAND_MASK;
+    let mut rules = super::play_fixture::rules();
+    rules.mode_rules = super::play_fixture::ETERNUM_RULES;
+    rules.command_mask = super::play_fixture::ETERNUM_COMMAND_MASK;
     rules.entry_rule = crate::rules::ENTRY_ENTITLEMENT;
     rules.speed_config.donkey_sec_per_km = 1;
     rules.speed_config.donkey_sec_per_km_troops = 2;
@@ -53,16 +53,19 @@ fn create(deployment: super::Deployment, command: CreateOrder) -> TradeKey {
     create_at(deployment, command, 40)
 }
 fn create_at(deployment: super::Deployment, command: CreateOrder, timestamp: u64) -> TradeKey {
+    let mut spy = snforge_std::spy_events();
     assert!(execute(deployment, Command::CreateTradeOrder(command), timestamp));
-    let view = ITradeDispatcher { contract_address: deployment.games };
-    let mut latest = 0;
-    for trade_id in 1_u32..100 {
-        if view.trade_order(TradeKey { game_id: 3, trade_id }).is_some() {
-            latest = trade_id;
+    for (_, event) in spy.get_events().emitted_by(deployment.games).events.span() {
+        if *event.keys.at(0) == selector!("StoryEvent") {
+            let mut keys = event.keys.span().slice(1, event.keys.len() - 1);
+            let mut data = event.data.span();
+            let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
+            if let crate::ownership::Story::TradeCreated(listing) = story.story {
+                return TradeKey { game_id: 3, trade_id: listing.trade_id };
+            }
         }
     }
-    assert!(latest != 0);
-    TradeKey { game_id: 3, trade_id: latest }
+    panic!("missing trade creation story")
 }
 fn accept(key: TradeKey, taker: ResourceKey, lots: u64) -> Command {
     Command::AcceptTradeOrder(AcceptOrder { trade_id: key.trade_id, taker_id: taker.entity_id, lots })
@@ -108,7 +111,7 @@ fn cancellation_refunds_only_remaining_escrow_and_frees_order_capacity() {
     assert_terminal_rejection(deployment, Command::CancelTradeOrder(second.trade_id), 201);
 }
 #[test]
-fn malformed_offers_reject_atomically_and_consume_only_the_ticket() {
+fn malformed_offers_reject_atomically() {
     let (deployment, maker, _) = setup();
     let valid = offer(maker);
     for invalid in array![
@@ -163,12 +166,12 @@ fn escrow_uses_current_structure_owner_and_private_taker_identity() {
     assert_eq!(arrival(deployment, maker, 50, 20), array![ResourceAmount { resource_type: 3, amount: 20 }].span());
 }
 #[test]
-fn recorded_trade_times_survive_outages_and_cancel_has_only_game_grace() {
+fn trade_uses_block_time_and_cancel_has_only_game_grace() {
     let (deployment, maker, taker) = setup();
     let key = create(deployment, offer(maker));
-    assert!(execute_recorded_at(deployment, accept(key, taker, 1), 50, 1000));
+    assert!(execute(deployment, accept(key, taker, 1), 50));
     assert_eq!(arrival(deployment, taker, 50, 20), array![ResourceAmount { resource_type: 2, amount: 10 }].span());
-    assert!(execute_recorded_at(deployment, Command::CancelTradeOrder(key.trade_id), 210, 1000));
+    assert!(execute(deployment, Command::CancelTradeOrder(key.trade_id), 210));
     assert_eq!(balance(deployment, maker, 2), 990);
     let (late, maker, _) = setup();
     let open = create(late, offer(maker));
@@ -184,12 +187,12 @@ fn trade_rules_are_authorized_immutable_and_game_scoped() {
     start_cheat_block_timestamp_global(40);
     start_cheat_caller_address(economy, deployment.actor);
     let registry = crate::registrar::IRegistrarSafeDispatcher { contract_address: economy };
-    let mut preset = super::recorded::fixture_preset(super::recorded::rules());
+    let mut preset = super::play_fixture::fixture_preset(super::play_fixture::rules());
     preset.economy.trade = TradeRules { max_count: 1 };
     assert!(registry.register_preset(20000, preset).is_err());
     start_cheat_caller_address(economy, super::authority());
     assert!(registry.register_preset(10003, preset).is_err());
-    super::recorded::seed_game_with_preset(
+    super::play_fixture::seed_game_with_preset(
         economy, 4, crate::game::IGameDispatcher { contract_address: economy }.game(3), preset,
     );
     assert_eq!(safe.trade_rules(4).unwrap().max_count, 1);
@@ -235,9 +238,9 @@ fn trade_rejects_blitz_and_either_ethereal_endpoint() {
     );
     let key = create(deployment, offer(maker));
     assert_terminal_rejection(deployment, accept(key, taker, 1), 50);
-    let mut rules = super::recorded::rules();
-    rules.mode_rules = super::recorded::BLITZ_RULES;
-    rules.command_mask = super::recorded::BLITZ_COMMAND_MASK;
+    let mut rules = super::play_fixture::rules();
+    rules.mode_rules = super::play_fixture::BLITZ_RULES;
+    rules.command_mask = super::play_fixture::BLITZ_COMMAND_MASK;
     rules.entry_rule = crate::rules::ENTRY_ROSTER;
     let (blitz, source, _) = setup_with_rules(rules);
     assert_terminal_rejection(blitz, Command::CreateTradeOrder(offer(source)), 40);
@@ -293,20 +296,20 @@ fn village_troop_purchases_use_trade_ownership_and_troop_transport_speed() {
 }
 
 #[test]
-fn trade_creation_and_cancellation_have_distinct_story_ids() {
+fn trade_creation_and_cancellation_emit_their_gameplay_stories() {
     let (d, maker, _) = setup();
     let mut spy = spy_events();
     let key = create(d, offer(maker));
     assert!(execute(d, Command::CancelTradeOrder(key.trade_id), 50));
-    let mut ids = array![];
+    let mut stories = array![];
     for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
         if *event.keys.at(0) == selector!("StoryEvent") {
             let mut keys = event.keys.span().slice(1, event.keys.len() - 1);
             let mut data = event.data.span();
             let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
-            ids.append(crate::ownership::StoryCursor { order: story.order, index: story.index });
+            stories.append(story.story);
         }
     }
-    assert_eq!(ids.len(), 2);
-    assert_ne!(*ids.at(0), *ids.at(1));
+    assert_eq!(stories.len(), 2);
+    assert_ne!(*stories.at(0), *stories.at(1));
 }

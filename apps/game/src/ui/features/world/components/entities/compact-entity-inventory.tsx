@@ -19,6 +19,7 @@ import {
   resources as resourceDefs,
   ResourcesIds,
 } from "@bibliothecadao/types";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 interface CompactEntityInventoryProps {
   resources?: ResourceManager | null;
@@ -238,7 +239,7 @@ export const CompactEntityInventory = memo(
         if (!entityId || entityType === undefined) return;
 
         const holder: RelicHolderPreview = {
-          entityId: Number(entityId),
+          entityId: safeInteger(entityId),
           amount: item.amount,
           recipientType,
           entityType,

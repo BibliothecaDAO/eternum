@@ -17,23 +17,21 @@ export function storyEventScopeKey(scope: StoryEventScope): string {
   return `story:v2:${encodeURIComponent(scope.chainId)}:${world}:${normalizeIdentityFelt(scope.gameId, "game_id")}`;
 }
 
-/** The contract's action order and local story index survive receipt reordering and confirmation. */
-export function storyEventKeys(value: Record<string, unknown>): readonly [string, string, string] {
-  return [
-    normalizeStoryInteger(value.game_id, "game_id", 32),
-    normalizeStoryInteger(value.order, "order", 64),
-    normalizeStoryInteger(value.index, "index", 32),
-  ];
-}
-
-/** Shared by history, streamed stories and notification deduplication. */
+/**
+ * A story, battle or raid is one event of one transaction: its game, its transaction hash and its index in that
+ * receipt (games-interface StoryEvent v2: no order or index keys). Shared by history, streamed stories and
+ * notification deduplication; the block and transaction index are its order, never its identity.
+ */
 export function storyEventIdentity(scope: StoryEventScope, value: Record<string, unknown>): string {
   const scopeKey = storyEventScopeKey(scope);
-  const [gameId, order, index] = storyEventKeys(value);
+  const gameId = normalizeStoryInteger(value.game_id, "game_id", 32);
   if (gameId !== normalizeIdentityFelt(scope.gameId, "game_id")) {
     throw new Error(`StoryEvent game ${gameId} does not match session game ${scope.gameId}`);
   }
-  return `${scopeKey}:${order}:${index}`;
+  const position = value.event_position;
+  if (typeof position !== "object" || position === null) throw new Error("StoryEvent has no event position");
+  const { transaction_hash: transactionHash, event_index: eventIndex } = position as Record<string, unknown>;
+  return `${scopeKey}:${normalizeIdentityFelt(transactionHash, "transaction_hash")}:${normalizeStoryInteger(eventIndex, "event_index", 32)}`;
 }
 
 function normalizeStoryInteger(value: unknown, field: string, bits: number): string {

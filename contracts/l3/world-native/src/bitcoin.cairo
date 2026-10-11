@@ -31,7 +31,7 @@ pub struct Phase {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ContributeLabor {
-    pub structure_id: u32,
+    pub structure_id: u64,
     pub amount: u128,
 }
 
@@ -46,20 +46,20 @@ pub struct MineFunding {
 #[derive(Copy, Drop, Serde, Debug, PartialEq, Default, starknet::Store)]
 pub struct Contribution {
     pub labor: u128,
-    pub structure_id: u32,
+    pub structure_id: u64,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ClaimKey {
     pub game_id: u32,
     pub phase: u64,
-    pub mine_id: u32,
+    pub mine_id: u64,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ClaimPhase {
     pub phase: u64,
-    pub mine_ids: Span<u32>,
+    pub mine_ids: Span<u64>,
 }
 
 #[starknet::interface]
@@ -93,36 +93,20 @@ pub trait IBitcoinViews<T> {
 #[starknet::interface]
 pub trait IBitcoinCommands<T> {
     fn claim_bitcoin_phase(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: ClaimPhase,
-        context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> (u64, crate::ownership::StoryCursor);
+        ref self: T, game_id: u32, actor: ContractAddress, command: ClaimPhase, context: crate::commands::ActionContext,
+    ) -> u64;
     fn contribute_bitcoin_labor(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: ContributeLabor,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
     );
     fn close_bitcoin_phase(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        phase: u64,
-        context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
+        ref self: T, game_id: u32, actor: ContractAddress, phase: u64, context: crate::commands::ActionContext,
     );
     fn bind_bitcoin_phase(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        phase: u64,
-        context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
+        ref self: T, game_id: u32, actor: ContractAddress, phase: u64, context: crate::commands::ActionContext,
     );
 }
 
@@ -134,11 +118,11 @@ pub fn phase_end(phase: u64, interval: u64) -> u64 {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct BitcoinAwardStory {
     pub phase: u64,
-    pub mine_id: u32,
+    pub mine_id: u64,
     pub winner: ContractAddress,
     pub owner: ContractAddress,
-    pub winner_destination: u32,
-    pub owner_destination: u32,
+    pub winner_destination: u64,
+    pub owner_destination: u64,
     pub winner_paid: u128,
     pub owner_paid: u128,
 }

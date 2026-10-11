@@ -1,4 +1,4 @@
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceManager } from "@bibliothecadao/eternum";
 import { useBuildings } from "@/hooks/helpers/use-buildings";
@@ -117,7 +117,7 @@ export const useStructureProductionSummary = (
   resources?: ResourceManager | null,
 ): StructureProductionSummary => {
   const currentDefaultTick = useCurrentDefaultTick();
-  const buildingsData = useBuildings(structure?.entity_id);
+  const buildingsData = useBuildings(structure ? safeInteger(structure.entity_id) : undefined);
 
   return useMemo(() => {
     if (!structure || !resources) return EMPTY_PRODUCTION_SUMMARY;

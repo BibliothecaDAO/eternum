@@ -54,10 +54,9 @@ pub mod ResourcesLogic {
             ref self: ContractState,
             key: ResourceKey,
             explorer: ExplorerKey,
-            home_id: u32,
+            home_id: u64,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
+        ) -> () {
             let context = crate::commands::load_context(key.game_id, context);
             let site = crate::logic::expeditions::clear_site(key);
             let category = crate::logic::structures::structure(key).expect('missing site').base.category;
@@ -98,9 +97,8 @@ pub mod ResourcesLogic {
                     },
                 ),
                 context.timestamp,
-                ref story_cursor,
             );
-            ((), story_cursor)
+            ()
         }
     }
     #[abi(embed_v0)]
@@ -319,16 +317,15 @@ pub mod ResourcesLogic {
             actor: ContractAddress,
             command: crate::resources::ResourceTransfer,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
+        ) -> () {
             let context = crate::commands::load_context(game_id, context);
 
             self.assert_resource_command(game_id, context.timestamp, context);
             crate::resources::assert_unique_resources(command.resources);
             let from = ResourceKey { game_id, entity_id: command.from_entity_id };
             assert!(crate::logic::structures::owner(from) == actor, "actor does not own sender");
-            self.transfer_delayed(game_id, command, context.timestamp, context, ref story_cursor);
-            ((), story_cursor)
+            self.transfer_delayed(game_id, command, context.timestamp, context);
+            ()
         }
         fn transfer_explorer_resources_to_structure(
             ref self: ContractState,
@@ -336,8 +333,7 @@ pub mod ResourcesLogic {
             actor: ContractAddress,
             command: crate::resources::ResourceTransfer,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
+        ) -> () {
             let context = crate::commands::load_context(game_id, context);
 
             self.assert_resource_command(game_id, context.timestamp, context);
@@ -365,8 +361,8 @@ pub mod ResourcesLogic {
                     break;
                 }
             }
-            self.transfer_instant(game_id, command, context.timestamp, context, ref story_cursor);
-            ((), story_cursor)
+            self.transfer_instant(game_id, command, context.timestamp, context);
+            ()
         }
         fn offload_arrival(
             ref self: ContractState,
@@ -374,8 +370,7 @@ pub mod ResourcesLogic {
             actor: ContractAddress,
             command: OffloadArrival,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
+        ) -> () {
             let context = crate::commands::load_context(game_id, context);
 
             self.assert_resource_command(game_id, context.timestamp, context);
@@ -414,10 +409,9 @@ pub mod ResourcesLogic {
                     actor,
                     Story::ResourceReceiveArrivalStory(crate::ownership::ResourceAmountsStory { resources: delivered }),
                     context.timestamp,
-                    ref story_cursor,
                 );
             }
-            ((), story_cursor)
+            ()
         }
         fn burn_structure_resources(
             ref self: ContractState,
@@ -425,8 +419,7 @@ pub mod ResourcesLogic {
             actor: ContractAddress,
             command: crate::resources::ResourceBurn,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
+        ) -> () {
             let context = crate::commands::load_context(game_id, context);
 
             self.assert_resource_command(game_id, context.timestamp, context);
@@ -439,9 +432,8 @@ pub mod ResourcesLogic {
                 actor,
                 Story::ResourceBurnStory(crate::ownership::ResourceAmountsStory { resources: command.resources }),
                 context.timestamp,
-                ref story_cursor,
             );
-            ((), story_cursor)
+            ()
         }
         fn transfer_explorer_resources(
             ref self: ContractState,
@@ -449,8 +441,7 @@ pub mod ResourcesLogic {
             actor: ContractAddress,
             command: crate::resources::ResourceTransfer,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
+        ) -> () {
             let context = crate::commands::load_context(game_id, context);
 
             self.assert_resource_command(game_id, context.timestamp, context);
@@ -463,8 +454,8 @@ pub mod ResourcesLogic {
             );
             assert!(to.owner != 0, "recipient explorer has no owner");
             assert!(crate::geometry::adjacent(from.coord, to.coord), "explorers are not adjacent");
-            self.transfer_instant(game_id, command, context.timestamp, context, ref story_cursor);
-            ((), story_cursor)
+            self.transfer_instant(game_id, command, context.timestamp, context);
+            ()
         }
         fn transfer_structure_resources_to_explorer(
             ref self: ContractState,
@@ -472,8 +463,7 @@ pub mod ResourcesLogic {
             actor: ContractAddress,
             command: crate::resources::ResourceTransfer,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
+        ) -> () {
             let context = crate::commands::load_context(game_id, context);
 
             self.assert_resource_command(game_id, context.timestamp, context);
@@ -492,8 +482,8 @@ pub mod ResourcesLogic {
                     !crate::resources::is_troop_resource(*resource.resource_type), "cannot transfer troop resource",
                 );
             }
-            self.transfer_instant(game_id, command, context.timestamp, context, ref story_cursor);
-            ((), story_cursor)
+            self.transfer_instant(game_id, command, context.timestamp, context);
+            ()
         }
     }
     // A board's buildings produce for ever from nothing, so its troops are paid for when they are raised.
@@ -578,7 +568,6 @@ pub mod ResourcesLogic {
             command: crate::resources::ResourceTransfer,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
-            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             assert!(command.from_entity_id != 0 && command.to_entity_id != 0, "missing transfer structure");
             assert!(command.from_entity_id != command.to_entity_id, "self transfer");
@@ -623,8 +612,8 @@ pub mod ResourcesLogic {
                     travel_time,
                 },
             );
-            crate::logic::stories::emit_entity_story(from, source.owner, story, timestamp, ref story_cursor);
-            crate::logic::stories::emit_entity_story(to, destination.owner, story, timestamp, ref story_cursor);
+            crate::logic::stories::emit_entity_story(from, source.owner, story, timestamp);
+            crate::logic::stories::emit_entity_story(to, destination.owner, story, timestamp);
         }
         fn spend_shipment(
             ref self: ContractState,
@@ -657,7 +646,6 @@ pub mod ResourcesLogic {
             command: crate::resources::ResourceTransfer,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
-            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             crate::resources::assert_unique_resources(command.resources);
             let from = ResourceKey { game_id, entity_id: command.from_entity_id };
@@ -703,7 +691,6 @@ pub mod ResourcesLogic {
                     },
                 ),
                 timestamp,
-                ref story_cursor,
             );
         }
     }

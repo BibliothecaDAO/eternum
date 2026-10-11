@@ -5,7 +5,6 @@ import type { PreparedTerminalReport } from "./terminal-report";
 import { summarizeFrontierDesign, type FrontierEvidence } from "./frontier";
 import { frontierRuleChecks } from "./frontier-rules";
 import type { HarnessRpcRequests } from "./provider";
-import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
 import type { LayerRoundTripEvidence } from "./layer-round-trip";
 import type { SeasonFinalizationEvidence } from "./season-lifecycle";
 import { collectGas, type CollectedTransaction, type GasSummary, type TransactionReceiptReader } from "./gas-collector";
@@ -282,12 +281,6 @@ export function analyzeHarnessResult(input: HarnessReportInput) {
     ...(measuredRun ? { admissionToVisibleMeasured: admissionToVisibleMissing === 0 } : {}),
     setup: setupFailures.length === 0,
     ...(input.workload.frontier && input.functional ? frontierChecks(input.workload.frontier, actions) : {}),
-    playerProgress:
-      input.workload.profile !== "build-order" ||
-      summarizePlayerProgress(
-        input.accounts.map(({ botId }) => botId),
-        actions,
-      ).every((player) => player.progressed),
     layerRoundTrips: input.layerRoundTrips?.every((result) => result.status === "passed") ?? true,
     seasonsClosed: input.seasonFinalizations?.every((result) => result.status === "closed") ?? true,
     zeroBlockingFailures: blockingFailures.length === 0,
@@ -381,7 +374,6 @@ function buildHarnessManifest(
         input.workload.frontier && !input.workload.frontier.rules
           ? summarizeFrontierDesign(input.workload.frontier)
           : undefined,
-      automationIntervalMs: input.workload.profile === "build-order" ? PROCESS_INTERVAL_MS : null,
       perPlayer: summarizePlayerProgress(
         input.accounts.map(({ botId }) => botId),
         analysis.actions,
@@ -401,8 +393,6 @@ function buildHarnessManifest(
       failureClasses: analysis.failureClasses,
       battles: analysis.battles,
       uncaughtFailures: input.workerBoundary?.uncaughtFailures ?? [],
-      invalidFrames: input.workerBoundary?.invalidFrames ?? [],
-      droppedUnsubscribeFrames: input.workerBoundary?.droppedUnsubscribeFrames ?? 0,
       reverts: analysis.reverts.length,
       blockingReverts: analysis.blockingReverts.length,
       revertReasons: analysis.revertReasons,
@@ -587,7 +577,7 @@ function summarizeKinds(actions: readonly Pick<TrackedTransaction, "kind">[]): R
   return counts;
 }
 
-export function summarizePlayerProgress(botIds: number[], actions: readonly TrackedTransaction[]) {
+function summarizePlayerProgress(botIds: number[], actions: readonly TrackedTransaction[]) {
   return botIds.map((botId) => {
     const playerActions = actions.filter((action) => action.botId === botId);
     const completed: Record<string, number> = {};
@@ -599,11 +589,9 @@ export function summarizePlayerProgress(botIds: number[], actions: readonly Trac
         lastCompletedAt = action.acceptedOnL2At;
       }
     }
-    const built = Object.keys(completed).some((kind) => kind.startsWith("build-") || kind === "upgrade");
     return {
       botId,
       completed,
-      progressed: built && (completed.explore ?? 0) > 0 && (completed["automate-production"] ?? 0) > 0,
       failed: playerActions.filter((action) => action.outcome !== "completed").length,
       lastCompletedAt,
     };

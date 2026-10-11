@@ -24,7 +24,7 @@ pub fn resolve(key: ExplorerKey, mut explorer: ExplorerTroops, timestamp: Option
 }
 
 pub fn allocate(
-    key: ExplorerKey, home: u32, epoch: u64, allowance: u8, initial: Stamina, category: crate::troops::TroopType,
+    key: ExplorerKey, home: u64, epoch: u64, allowance: u8, initial: Stamina, category: crate::troops::TroopType,
 ) -> StaminaSource {
     dispatch(key, ArmySlotAction::Allocate(ArmySlotAllocation { home, epoch, allowance, initial, category })).stamina
 }

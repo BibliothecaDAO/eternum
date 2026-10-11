@@ -132,21 +132,23 @@ export interface OpenArmySlot {
  */
 export function openArmySlots(
   store: NativeFactStore,
-  home: { game_id: number; entity_id: number; allowedSlots: number },
+  home: { game_id: number; entity_id: number | bigint; allowedSlots: number },
 ): OpenArmySlot[] | undefined {
   const epoch = slotEpoch(store);
   if (epoch === undefined) return undefined;
+  if (typeof home.entity_id === "number" && !Number.isSafeInteger(home.entity_id))
+    throw new Error("Home id must be a safe integer or bigint");
   const open: OpenArmySlot[] = [];
   for (let slot = 0; slot < home.allowedSlots; slot += 1) {
     const result = store.requireOrAbsent("ArmySlot", {
       game_id: home.game_id,
-      structure_id: home.entity_id,
+      structure_id: BigInt(home.entity_id),
       epoch,
       slot,
     });
     if (result.unknown) return undefined;
     if (!result.known) open.push({ slot, inherited: null });
-    else if (result.known.explorer_id === 0) open.push({ slot, inherited: result.known.stamina });
+    else if (result.known.explorer_id === 0n) open.push({ slot, inherited: result.known.stamina });
   }
   return open;
 }

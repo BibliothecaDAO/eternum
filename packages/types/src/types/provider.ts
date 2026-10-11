@@ -2,21 +2,6 @@ import { Account, AccountInterface, type BigNumberish } from "starknet";
 import { BuildingType } from "../constants/structures";
 import type { Resource } from "./common";
 
-export interface NativeTicketIdentity {
-  gameId: string;
-  actor: string;
-  nonce: string;
-  order: string;
-}
-
-export interface NativeExecutionOutcome extends NativeTicketIdentity {
-  nonceConsumed: boolean;
-  status: "SUCCEEDED" | "REVERTED";
-  statusClass: string;
-  reason: string;
-  batchRemaining?: string;
-}
-
 export interface SystemSigner {
   signer: AccountInterface | Account;
 }

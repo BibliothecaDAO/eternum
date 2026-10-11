@@ -60,13 +60,15 @@ it("leaves API navigation, game assets and data fetches on the network", () => {
   expect(navigate("/api/session")).not.toHaveBeenCalled();
   expect(navigate("/models/army.glb", "cors")).not.toHaveBeenCalled();
   expect(navigate("/g/0xa1/1/map", "cors")).not.toHaveBeenCalled();
+  // The factory page is gone: its old address is no page of the app.
+  expect(navigate("/factory")).not.toHaveBeenCalled();
   expect(network).not.toHaveBeenCalled();
 });
 
 it("preserves authorization failures and missing-page responses", async () => {
   for (const status of [401, 404]) {
     network.mockResolvedValue(new Response("error", { status }));
-    expect((await navigate("/factory").mock.calls[0][0]).status).toBe(status);
+    expect((await navigate("/play").mock.calls[0][0]).status).toBe(status);
   }
   expect(cache.match).not.toHaveBeenCalled();
 });

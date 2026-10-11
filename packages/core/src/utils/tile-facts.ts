@@ -1,4 +1,5 @@
-import type { ID, Tile } from "@bibliothecadao/types";
+import { safeInteger } from "./safe-integer";
+import type { Tile } from "@bibliothecadao/types";
 import { nativeTilePackingConstants, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 const BIOME_SCALE = BigInt(nativeTilePackingConstants.BIOME_SCALE);
@@ -18,7 +19,7 @@ export function tileFactsToTile(
     ...key,
     biome: terrain ? Number((terrain.data / BIOME_SCALE) % BYTE_RANGE) : 0,
     reward_extracted: terrain ? (terrain.data & REWARD_EXTRACTED_FLAG) !== 0n : false,
-    occupier_id: (occupancy?.entity_id ?? 0) as ID,
+    occupier_id: safeInteger(occupancy?.entity_id ?? 0n),
     occupier_type: occupancy?.category ?? 0,
     occupier_is_structure: occupancy?.is_structure ?? false,
   };

@@ -1,18 +1,37 @@
+import * as chain from "@realms-world/chain";
 import { expect, it, vi } from "vitest";
 import { Miniflare } from "miniflare";
-import { monitor } from "./worker";
+import worker, { monitor } from "./worker";
 import { probeServices } from "./probes";
 import { nextMonitorState } from "./state";
 import { onRequestGet } from "../../status/functions/status.json";
 
 const now = 1791456000;
 const world = { url: "https://shard.public.test", chainId: "0xa", status: "active" };
+const valueTargets = {
+  playUrl: "https://play.realms.party",
+  ledgerRpcUrl: "https://ledger-rpc.public.test",
+  ledgerAddress: "0x123",
+};
 const response = (value: unknown) => Response.json(value);
 const network =
   (overrides: Record<string, Response> = {}) =>
   async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input).replace(/\/$/, "");
     if (overrides[url]) return overrides[url]!.clone();
+    if (url === valueTargets.playUrl + "/api/guardian") return response({ publicKey: "0x1", accountClassHash: "0x2" });
+    if (url === valueTargets.playUrl + "/api/value/health")
+      return response({ service: "value-relay", success: true, checked_at: now });
+    if (url === valueTargets.playUrl + "/api/operator/monitor/health")
+      return response({ service: "value-monitor", success: true, checked_at: now });
+    if (url === valueTargets.ledgerRpcUrl) {
+      const rpc = JSON.parse(String(init?.body));
+      return response({
+        jsonrpc: "2.0",
+        id: rpc.id,
+        result: rpc.method === "starknet_call" ? ["0x0"] : { block_number: 10, timestamp: now },
+      });
+    }
     if (url.endsWith("/api/directory")) return response({ shards: [{ ...world, games: [] }] });
     if (url.endsWith("/api/slots")) return response({ slots: [] });
     if (url.endsWith("/api/guardian")) return response({ publicKey: "0x1", accountClassHash: "0x2" });
@@ -21,12 +40,9 @@ const network =
       return response({
         chainId: "0xa",
         rpcUrl: "https://rpc.public.test",
-        admissionUrl: "https://admission.public.test",
       });
     if (url.endsWith("/health"))
       return response({ service: "herald", success: true, confirmed_block: 10, undecodable_events: 0 });
-    if (url === "https://admission.public.test")
-      return response({ jsonrpc: "2.0", id: 1, error: { code: -32601, message: "Method not found" } });
     if (url === "https://rpc.public.test") {
       const rpc = JSON.parse(String(init?.body));
       return response({ jsonrpc: "2.0", id: rpc.id, result: { block_number: 10, timestamp: now } });
@@ -36,19 +52,24 @@ const network =
   };
 
 it("probes every public path and world, not merely a directory200", async () => {
-  const result = await probeServices(network(), now, []);
+  const result = await probeServices(network(), now, [], valueTargets);
   expect(result.probes.map((p) => [p.id, p.status])).toEqual([
     ["play", "up"],
     ["accounts", "up"],
     ["directory", "up"],
     ["blitz", "up"],
     ["chat", "up"],
+    ["guardian", "up"],
+    ["relay", "up"],
+    ["monitor", "up"],
+    ["ledger", "up"],
     ["shard:0xa", "up"],
   ]);
   const failed = await probeServices(
     network({ "https://shard.public.test/health": new Response(null, { status: 503 }) }),
     now,
     [],
+    valueTargets,
   );
   expect(failed.probes.find((p) => p.id === "directory")!.status).toBe("down");
   expect(failed.probes.find((p) => p.id === "shard:0xa")!.latency_ms).toBeNull();
@@ -63,6 +84,7 @@ it("keeps worlds visible when discovery fails and rejects inaccessible or malfor
     }),
     now,
     [world],
+    valueTargets,
   );
   expect(result.probes.find((p) => p.id === "shard:0xa")!.status).toBe("up");
   for (const id of ["directory", "blitz", "chat"]) expect(result.probes.find((p) => p.id === id)!.status).toBe("down");
@@ -84,6 +106,7 @@ it("classifies head age and lag, invalid clocks and malformed module responses",
       }),
       now,
       [],
+      valueTargets,
     );
     expect(result.probes.find((p) => p.id === "shard:0xa")!.status).toBe(status);
   }
@@ -93,6 +116,7 @@ it("classifies head age and lag, invalid clocks and malformed module responses",
     }),
     now,
     [],
+    valueTargets,
   );
   expect(html.probes[0]!.status).toBe("down");
 });
@@ -150,7 +174,7 @@ it("publishes atomically on local R2 and rejects an overlapping late writer", as
   });
   try {
     const bucket = (await mf.getR2Bucket("STATUS_BUCKET")) as unknown as R2Bucket;
-    await monitor(bucket, network(), now);
+    await monitor(bucket, network(), now, valueTargets);
     const original = await bucket.get("state.json");
     expect(original).not.toBeNull();
     let unblock!: () => void;
@@ -168,15 +192,15 @@ it("publishes atomically on local R2 and rejects an overlapping late writer", as
       }
       return network()(input, init);
     };
-    const late = monitor(bucket, slow, now + 60);
+    const late = monitor(bucket, slow, now + 60, valueTargets);
     await entered;
-    await monitor(bucket, network(), now + 120);
+    await monitor(bucket, network(), now + 120, valueTargets);
     unblock();
     await expect(late).rejects.toThrow("superseded");
     const published = await (await bucket.get("state.json"))!.json<{ document: { checked_at: number } }>();
     expect(published.document.checked_at).toBe(now + 120);
     const etag = (await bucket.get("state.json"))!.etag;
-    await monitor(bucket, network(), now + 120);
+    await monitor(bucket, network(), now + 120, valueTargets);
     expect((await bucket.get("state.json"))!.etag).toBe(etag);
   } finally {
     await mf.dispose();
@@ -190,14 +214,16 @@ it("marks a slow successful read degraded and a timed-out read down", async () =
     tick += 1100;
     return tick;
   });
-  const slow = await probeServices(network(), now, []);
+  const slow = await probeServices(network(), now, [], valueTargets);
   expect(slow.probes[0]!.status).toBe("degraded");
   clock.mockRestore();
   const timeout: typeof fetch = async (input, init) => {
     if (String(input).endsWith("/api/chat/health")) throw new Error("timed out");
     return network()(input, init);
   };
-  expect((await probeServices(timeout, now, [])).probes.find((p) => p.id === "chat")!.status).toBe("down");
+  expect((await probeServices(timeout, now, [], valueTargets)).probes.find((p) => p.id === "chat")!.status).toBe(
+    "down",
+  );
 });
 
 it("rejects future clocks and unavailable storage at the static read", async () => {
@@ -220,11 +246,12 @@ it("rejects future clocks and unavailable storage at the static read", async () 
   ).toBe(503);
 });
 
-it("does not mark a world healthy when its admission listener is unreachable", async () => {
+it("does not mark a world healthy when its RPC listener is unreachable", async () => {
   const result = await probeServices(
-    network({ "https://admission.public.test": new Response(null, { status: 503 }) }),
+    network({ "https://rpc.public.test": new Response(null, { status: 503 }) }),
     now,
     [],
+    valueTargets,
   );
   expect(result.probes.find((row) => row.id === "shard:0xa")!.status).toBe("down");
 });
@@ -238,7 +265,109 @@ it("treats directory entry-unavailable facts as an outage even if world heads ar
     }),
     now,
     [],
+    valueTargets,
   );
   expect(result.probes.find((row) => row.id === "directory")!.status).toBe("down");
   expect(result.probes.find((row) => row.id === "shard:0xa")!.status).toBe("up");
+});
+
+it("observes the ledger pause flag independently and exposes unknown instead of a false flag", async () => {
+  const base = network();
+  const paused: typeof fetch = async (input, init) => {
+    if (String(input) === valueTargets.ledgerRpcUrl && JSON.parse(String(init?.body)).method === "starknet_call")
+      return response({ jsonrpc: "2.0", id: 2, result: ["0x1"] });
+    return base(input, init);
+  };
+  const snapshot = await probeServices(paused, now, [], valueTargets);
+  expect(snapshot.probes.find((row) => row.id === "ledger")).toMatchObject({ status: "degraded", paused: true });
+  const unavailable = await probeServices(
+    network({ [valueTargets.ledgerRpcUrl]: new Response(null, { status: 503 }) }),
+    now,
+    [],
+    valueTargets,
+  );
+  expect(unavailable.probes.find((row) => row.id === "ledger")).toMatchObject({ status: "down", paused: null });
+});
+it("does not share the identity route with its direct guardian probe and rejects a stale relay heartbeat", async () => {
+  const snapshot = await probeServices(
+    network({
+      "https://play.realms.party/api/health/accounts": new Response(null, { status: 503 }),
+      [valueTargets.playUrl + "/api/value/health"]: response({
+        service: "value-relay",
+        success: true,
+        checked_at: now - 301,
+      }),
+    }),
+    now,
+    [],
+    valueTargets,
+  );
+  expect(snapshot.probes.find((row) => row.id === "accounts")!.status).toBe("down");
+  expect(snapshot.probes.find((row) => row.id === "guardian")!.status).toBe("up");
+  expect(snapshot.probes.find((row) => row.id === "relay")!.status).toBe("down");
+});
+it("pins the independent ledger flag read to the confirmed header it checked", async () => {
+  const fetch = vi.fn<typeof globalThis.fetch>(network());
+  await probeServices(fetch, now, [], valueTargets);
+  const call = fetch.mock.calls.find(
+    ([url, init]) =>
+      String(url) === valueTargets.ledgerRpcUrl && JSON.parse(String(init?.body)).method === "starknet_call",
+  )!;
+  expect(JSON.parse(String(call[1]!.body)).params).toMatchObject({
+    request: { contract_address: "0x123", calldata: [] },
+    block_id: { block_number: 10 },
+  });
+});
+
+it("probes a single-RPC shard manifest without a removed admission endpoint", async () => {
+  const read = vi.fn(
+    network({ "https://shard.public.test/manifest": response({ chainId: "0xa", rpcUrl: "https://rpc.public.test" }) }),
+  );
+  const result = await probeServices(read, now, [], valueTargets);
+  expect(result.probes.find((p) => p.id === "shard:0xa")!.status).toBe("up");
+  expect(read.mock.calls.some((call) => String(call[0]).includes("admission"))).toBe(false);
+});
+
+it("publishes an undeployed ledger as down and probes the configured play site", async () => {
+  const environment = vi
+    .spyOn(chain, "environmentL2")
+    .mockReturnValue({ network: "mainnet", chain: "SN_MAIN", ledger: null });
+  const put = vi.fn().mockResolvedValue({ etag: "one" });
+  const read = vi.fn(network());
+  vi.stubGlobal("fetch", read);
+  try {
+    await worker.scheduled({} as ScheduledController, {
+      STATUS_BUCKET: { get: async () => null, put } as unknown as R2Bucket,
+      ENVIRONMENT: "staging",
+      BASE_URL: "https://preview.public.test",
+      L2_RPC_URL: valueTargets.ledgerRpcUrl,
+    });
+    const published = JSON.parse(put.mock.calls[0]![1]);
+    expect(published.document.components.find((row: { id: string }) => row.id === "ledger")).toMatchObject({
+      status: "down",
+      paused: null,
+    });
+    expect(read.mock.calls.some(([url]) => String(url) === "https://preview.public.test/api/slots")).toBe(true);
+    expect(read.mock.calls.some(([url]) => String(url).startsWith("https://play.realms.party"))).toBe(false);
+  } finally {
+    vi.unstubAllGlobals();
+    environment.mockRestore();
+  }
+});
+
+it("derives all three health addresses from the play origin", async () => {
+  const read = vi.fn(network());
+  await probeServices(read, now, [], { ...valueTargets, playUrl: "https://play.dev-realms.party" });
+  const urls = read.mock.calls.map(([url]) => String(url));
+  for (const path of ["/api/guardian", "/api/value/health", "/api/operator/monitor/health"])
+    expect(urls).toContain("https://play.dev-realms.party" + path);
+  expect(urls.some((url) => url.startsWith(valueTargets.playUrl))).toBe(false);
+});
+it.each([
+  ["guardian", "/api/guardian", { publicKey: "0x1" }],
+  ["monitor", "/api/operator/monitor/health", { service: "value-monitor", success: true, checked_at: now - 301 }],
+  ["monitor", "/api/operator/monitor/health", { service: "value-relay", success: true, checked_at: now }],
+] as const)("reports malformed or stale %s health as down", async (id, path, body) => {
+  const result = await probeServices(network({ [valueTargets.playUrl + path]: response(body) }), now, [], valueTargets);
+  expect(result.probes.find((probe) => probe.id === id)!.status).toBe("down");
 });

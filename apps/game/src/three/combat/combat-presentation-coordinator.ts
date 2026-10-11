@@ -6,6 +6,7 @@ import type { ProjectileHitQuery } from "../projectiles/projectile-hit-query";
 import type { ProceduralImpactAuthority } from "../characters/collision/procedural-impact";
 import type { ProceduralProjectileReleaseSpec } from "../characters/procedural-unit-runtime";
 import { MeleeImpactSystem } from "./melee-impact-system";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 export interface CombatPresentation {
   attackerId: ID;
@@ -184,12 +185,12 @@ export class CombatPresentationCoordinator {
       count: resolveTierVolleyCount(presentation.tier),
       flightSeconds: 0.56 + origin.distanceTo(target) * 0.035,
       origin,
-      ownerEntityId: Number(presentation.attackerId),
+      ownerEntityId: safeInteger(presentation.attackerId),
       presentationId,
       seed: hashPresentationId(presentationId, presentation.attackerId, presentation.defenderId),
       spreadDegrees: presentation.tier === TroopTier.T3 ? 1.2 : 0.8,
       target,
-      targetEntityId: Number(presentation.defenderId),
+      targetEntityId: safeInteger(presentation.defenderId),
       targetRadius: 0.48,
     });
   }

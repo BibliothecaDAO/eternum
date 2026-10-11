@@ -27,7 +27,7 @@ import {
   formatWinnerName,
   parsePresentationDescription,
 } from "../story-events/story-event-utils";
-import { transferRowLabel } from "./event-feed-rows";
+import { transactionStatusLine, transferRowLabel } from "./event-feed-rows";
 import { formatFeedTime, type ImportantFeedRow } from "./important-feed-rows";
 import { resolveStoryEventPosition } from "./story-feed-row";
 
@@ -117,13 +117,12 @@ function summarizeFeedRow(row: ImportantFeedRow): { icon: ReactNode; text: React
     };
   }
   if (row.kind === "transaction") {
-    const { transaction, isStuck } = row;
-    const failed = transaction.status === "reverted";
-    const status = isStuck ? "Stuck" : failed ? "Failed" : transaction.status === "success" ? "Done" : "Pending";
-    const Icon = isStuck || failed ? TriangleAlert : transaction.status === "success" ? Check : Hourglass;
+    const { transaction } = row;
+    const failed = transaction.status === "reverted" || transaction.status === "not_sent";
+    const Icon = failed ? TriangleAlert : transaction.status === "success" ? Check : Hourglass;
     return {
-      icon: <Icon className={cn("h-4 w-4 shrink-0", (isStuck || failed) && "text-danger")} />,
-      text: `${transferRowLabel(row) ?? transaction.description} · ${status}`,
+      icon: <Icon className={cn("h-4 w-4 shrink-0", failed && "text-danger")} />,
+      text: `${transferRowLabel(row) ?? transaction.description} · ${transactionStatusLine(transaction)}`,
     };
   }
   const Icon =

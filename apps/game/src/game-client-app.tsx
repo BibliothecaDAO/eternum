@@ -34,7 +34,7 @@ export const GameClientApp = () => {
       <Routes>
         <Route index element={<GameEntryRoute />} />
         <Route path=":scene" element={<GameRouteShell backgroundImage={backgroundImage} />} />
-        <Route path="*" element={<Navigate to="/play" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </GameplayAccountSync>
   );
@@ -47,7 +47,7 @@ const GameEntryRoute = () => {
   useBootDocumentState("app-ready");
 
   if (!entryContext) {
-    return <Navigate to="/play" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return (

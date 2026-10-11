@@ -1,34 +1,27 @@
 import { isGameEnvironmentId, type GameEnvironmentId } from "../../../config/shared/game-environments";
-import { Effect, Schema } from "effect";
 import { Hono, type Context } from "hono";
 import { logger } from "hono/logger";
-import { requireIdentity, requireLauncher, type IdentityResolver, type LaunchAccess, type LaunchAppEnv } from "./auth";
+import { requireOperator } from "./auth";
 import { createSlotRoutes } from "./slot-routes";
 import type { CalendarStore } from "./calendar";
 import { createCalendarRoutes } from "./calendar-routes";
 import type { SlotStore } from "./slots";
 import { toFactoryRunRecord, type LaunchRun } from "./model";
-import { CreateGameRequestSchema, type LaunchJobRequest, type LaunchKind } from "./schemas";
+import { type LaunchJobRequest, type LaunchKind } from "./schemas";
+import { launcherOperatorRoutes, type OperatorLauncher } from "./launcher-routes";
 import type { LaunchServiceStore } from "./store";
 
 interface LaunchAppDependencies {
-  config: LaunchAccess;
+  config: { operatorToken: string };
+  operatorLauncher: OperatorLauncher;
   /** What the version and health routes report, so a deploy can tell its own answers from its predecessor's. */
   deployment: { environment: string; version: string };
-  identity: IdentityResolver;
   store: LaunchServiceStore;
   slots: SlotStore;
   calendar: CalendarStore;
   /** The registrar that executes runs: every run queued here arms it for the run's due time. */
   registrar: { armFor(dueAt: number): Promise<void> };
-  /** The gameplay account a Realms account has on the shard slots launch on. */
-  playerAccount: (realmsId: string) => Promise<string>;
 }
-
-const decodeBody = async <A>(context: Context, schema: Schema.ConstraintDecoder<A, never>): Promise<A> => {
-  const payload = await context.req.json();
-  return Effect.runPromise(Schema.decodeUnknownEffect(schema)(payload));
-};
 
 const readEnvironment = (value: string | undefined): GameEnvironmentId => {
   if (!value || !isGameEnvironmentId(value)) throw new Error("Unsupported game environment");
@@ -71,8 +64,12 @@ const continueRun = async (
 
 const deleteRun = async (context: Context, store: LaunchServiceStore, kind: LaunchKind, name: string) => {
   const environment = readEnvironment(context.req.param("environment"));
+  const run = await store.find(kind, environment, name);
+  if (!run) return context.json({ error: "Launch run not found." }, 409);
   const deleted = await store.delete(kind, environment, name);
-  return deleted ? context.json({ deleted: true }) : context.json({ error: "Run is missing or active." }, 409);
+  return deleted
+    ? context.json({ deleted: true })
+    : context.json({ error: "Run is missing, active, or belongs to a paid slot." }, 409);
 };
 
 const failedRunReport = (run: LaunchRun) => ({
@@ -92,19 +89,18 @@ const strandedRunReport = ({ chainId, kind, environment, name, status }: LaunchR
 });
 
 export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
-  const app = new Hono<LaunchAppEnv>();
+  const app = new Hono();
   app.use("*", logger());
-  app.use("/api/*", requireIdentity(dependencies.identity, dependencies.config));
-  app.use("/api/factory/*", requireLauncher(dependencies.config));
+  app.use("/api/*", requireOperator(dependencies.config.operatorToken));
+  app.route("/api/factory/operator/launcher", launcherOperatorRoutes(dependencies.operatorLauncher));
   app.route("/api/factory/calendar", createCalendarRoutes(dependencies.calendar));
-  app.route("/api/slots", createSlotRoutes(dependencies.slots, dependencies.playerAccount, dependencies.config));
+  app.route("/api/slots", createSlotRoutes(dependencies.slots));
 
   // The deploy verifies this route: it names the running code and reads nothing else, so the shard's state, which health
   // reports, cannot fail a deploy.
   app.get("/api/factory/version", (context) => context.json({ service: "launch", ...dependencies.deployment }));
 
-  // A failed launch stays failed until a launcher continues it, a Frontier season included: the schedule creates the
-  // season once and never requeues it. Health names every failed run so that wait is never silent.
+  // The schedule never requeues a failed season; its operator must continue it. Health names every failed run.
   app.get("/api/factory/health", async (context) => {
     try {
       const [failed, stranded] = await Promise.all([
@@ -141,15 +137,6 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
       return context.json({ runs: runs.map(toFactoryRunRecord) });
     } catch (error) {
       return context.json({ error: error instanceof Error ? error.message : String(error) }, 400);
-    }
-  });
-
-  app.post("/api/factory/runs", async (context) => {
-    try {
-      const request = await decodeBody(context, CreateGameRequestSchema);
-      return respondWithRun(context, dependencies, "game", request);
-    } catch (error) {
-      return context.json({ error: String(error) }, 400);
     }
   });
 

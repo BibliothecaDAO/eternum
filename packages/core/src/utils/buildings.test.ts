@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
 // The package index first, so the config singleton the utils read through it is evaluated before any cost is read.
-import { configManager, getBuildingCosts, setBuildingCount } from "..";
+import { configManager, getBalance, getBuildingCosts, setBuildingCount } from "..";
 
 const REALM = 7;
 const INCREASE_BPS = 2_500;
@@ -17,6 +17,7 @@ const chainCost = (base: number, countAfterErecting: number) => {
 const storeWith = (category: BuildingType, standing: number, board: boolean) => {
   const [packed_counts_1, packed_counts_2, packed_counts_3] = setBuildingCount(category, [0n, 0n, 0n], standing);
   const rows: Record<string, unknown> = {
+    Structure: { entity_id: BigInt(REALM) },
     StructureBuildings: { packed_counts_1, packed_counts_2, packed_counts_3 },
     ...(board ? { BoardRules: {}, RealmKnowledge: { learned: 0n } } : {}),
   };
@@ -61,4 +62,36 @@ it("charges a board building only its surcharged base: tiers are bought once for
   expect(getBuildingCosts(REALM, legendaryFarms as never, BuildingType.ResourceWheat, true)).toEqual([
     { resource: ResourcesIds.Labor, amount: chainCost(100, 3) },
   ]);
+});
+
+it("knows no cost without a structure, or before the structure's fact is synchronized: never a synthetic count", () => {
+  vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
+  vi.spyOn(configManager, "getBuildingBaseCostPercentIncrease").mockReturnValue(INCREASE_BPS);
+  vi.spyOn(configManager, "getBuildingCosts").mockReturnValue([{ resource: ResourcesIds.Wood, amount: BASE }]);
+  const synced = storeWith(BuildingType.ResourceWood, 2, false);
+  const unsynced = {
+    get: (model: string) =>
+      model === "Structure" ? undefined : (synced as { get: (m: string) => unknown }).get(model),
+  };
+
+  expect(getBuildingCosts(undefined, synced, BuildingType.ResourceWood, false)).toBeUndefined();
+  expect(getBuildingCosts(REALM, unsynced as never, BuildingType.ResourceWood, false)).toBeUndefined();
+  expect(getBuildingCosts(REALM, synced, BuildingType.ResourceWood, false)).toEqual([
+    { resource: ResourcesIds.Wood, amount: chainCost(BASE, 3) },
+  ]);
+});
+
+it("reads no balance for no entity: unknown, and never a lookup of entity 0", () => {
+  const untouched = new Proxy(
+    {},
+    {
+      get: () => {
+        throw new Error("read the store");
+      },
+    },
+  ) as never;
+  expect(getBalance(undefined, ResourcesIds.Wood, 100, untouched)).toEqual({
+    balance: undefined,
+    resourceId: ResourcesIds.Wood,
+  });
 });

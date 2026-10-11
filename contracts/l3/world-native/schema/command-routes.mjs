@@ -75,7 +75,7 @@ export const commandRoutes = [
   { name: "UpdateFaithfulOwnership", logic: "prizes", entrypoint: "update_faithful_ownership" },
   { name: "ClaimWonderPoints", logic: "prizes", entrypoint: "claim_wonder_points" },
   { name: "ClaimPlayerFaithPoints", logic: "prizes", entrypoint: "claim_player_faith_points" },
-  { name: "RecordBlitzResults", logic: "prizes", entrypoint: "record_blitz_results", items: "players", batch: true },
+  { name: "RecordBlitzResults", logic: "prizes", entrypoint: "record_blitz_results" },
   { name: "CraftRelic", logic: "relics", entrypoint: "craft_relic" },
   { name: "CreateGuild", logic: "structures", entrypoint: "create_guild" },
   { name: "JoinGuild", logic: "structures", entrypoint: "join_guild" },

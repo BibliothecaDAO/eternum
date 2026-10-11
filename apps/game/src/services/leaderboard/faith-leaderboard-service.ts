@@ -1,5 +1,6 @@
 import { getPlayerName } from "@/hooks/use-player-profile";
 import { getRealmNameById } from "@bibliothecadao/eternum";
+import { feltEquals } from "@bibliothecadao/eternum/game-client";
 
 type ReadModelRow = Record<string, unknown>;
 
@@ -90,12 +91,6 @@ const address = (value: unknown): string => {
   return parsed === null ? "0x0" : `0x${parsed.toString(16).padStart(64, "0")}`;
 };
 
-const sameFelt = (left: unknown, right: unknown): boolean => {
-  const leftValue = toBigInt(left);
-  const rightValue = toBigInt(right);
-  return leftValue !== null && rightValue !== null && leftValue === rightValue;
-};
-
 const wonderName = (wonderId: bigint, realmId: number): string => {
   const realmName = realmId > 0 ? getRealmNameById(realmId) : undefined;
   return realmName ? `Wonder - ${realmName}` : `Wonder #${realmId > 0 ? realmId : wonderId.toString()}`;
@@ -117,7 +112,7 @@ const structuresWithWonder = (rows: FaithReadModels): ReadModelRow[] =>
   });
 
 const wonderFaith = (rows: FaithReadModels, wonderId: bigint): ReadModelRow =>
-  rows.wonderFaith.find((row) => sameFelt(row.wonder_id, wonderId)) ?? {};
+  rows.wonderFaith.find((row) => feltEquals(row.wonder_id, wonderId)) ?? {};
 
 const ownerName = (owner: unknown): string | null =>
   typeof owner === "string" || typeof owner === "bigint" ? getPlayerName(owner) : null;
@@ -143,11 +138,11 @@ const followerEntries = (rows: FaithReadModels, wonderId: bigint): WonderFaithFo
       structureId === null ||
       structureId <= 0n ||
       structureId === wonderId ||
-      !sameFelt(faithful.wonder_id, wonderId)
+      !feltEquals(faithful.wonder_id, wonderId)
     ) {
       return [];
     }
-    const structure = rows.structures.find((candidate) => sameFelt(candidate.entity_id, structureId));
+    const structure = rows.structures.find((candidate) => feltEquals(candidate.entity_id, structureId));
     if (!structure) return [];
     const structureType = integer(record(structure.base).category);
     if (![REALM_STRUCTURE_TYPE, VILLAGE_STRUCTURE_TYPE].includes(structureType)) return [];
@@ -210,7 +205,7 @@ export const buildFaithfulStructureStatus = (
   const row =
     structureId === null
       ? undefined
-      : rows.faithfulStructures.find((candidate) => sameFelt(candidate.structure_id, structureId));
+      : rows.faithfulStructures.find((candidate) => feltEquals(candidate.structure_id, structureId));
   const wonderId = toBigInt(row?.wonder_id);
   if (!row || structureId === null || structureId <= 0n || wonderId === null || wonderId <= 0n) return null;
   return {
@@ -229,7 +224,7 @@ export const buildWonderFaithDetail = (
 ): WonderFaithDetail | null => {
   const wonderId = toBigInt(wonderIdInput);
   if (wonderId === null || wonderId <= 0n) return null;
-  const structure = structuresWithWonder(rows).find((candidate) => sameFelt(candidate.entity_id, wonderId));
+  const structure = structuresWithWonder(rows).find((candidate) => feltEquals(candidate.entity_id, wonderId));
   if (!structure) return null;
   const faith = wonderFaith(rows, wonderId);
   const followers = followerEntries(rows, wonderId);

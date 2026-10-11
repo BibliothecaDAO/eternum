@@ -27,13 +27,16 @@ export const getConsumedBy = (resourceProduced: ResourcesIds) =>
  * What the next building of a category costs, as the chain charges it (construction.cairo pay_building_costs): each base
  * cost grows by the increase percent times the square of the buildings of that category already standing. On a
  * realm board the realm's own workshop comes with it, so the chain does not count it among the workshops standing.
+ * Unknown without a structure, or before this client holds its Structure fact: the count it scales by is unknown too.
  */
 export const getBuildingCosts = (
-  realmEntityId: ID,
+  realmEntityId: ID | undefined,
   store: NativeFactStore,
   buildingCategory: BuildingType,
   useSimpleCost: boolean,
 ) => {
+  if (realmEntityId === undefined) return undefined;
+  if (!store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: realmEntityId })) return undefined;
   const costs = configManager.getBuildingCosts(buildingCategory, useSimpleCost);
   if (!costs) return undefined;
 

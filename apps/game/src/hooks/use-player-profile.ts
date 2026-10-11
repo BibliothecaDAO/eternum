@@ -21,7 +21,11 @@ export { getPlayerDisplayName, getPlayerName } from "@/services/identity/player-
 
 /** Changes whenever a player name may: an identity answer, or the signed-in session. Names never come from the chain. */
 export const usePlayerNamesRevision = () => {
-  const profiles = useSyncExternalStore(identityProfiles.subscribe, identityProfiles.getVersion);
+  const profiles = useSyncExternalStore(
+    identityProfiles.subscribe,
+    identityProfiles.getVersion,
+    identityProfiles.getVersion,
+  );
   const user = useIdentitySessionStore((state) => state.session?.user);
   const account = useAccountStore((state) => state.account?.address);
   return [profiles, user, account] as const;

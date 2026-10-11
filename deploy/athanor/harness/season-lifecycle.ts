@@ -51,7 +51,7 @@ export async function closeHarnessSeason(options: {
       stage: "finalization",
       send: () =>
         game.submit(signer, () => {
-          applied = client.setup.systemCalls.end_game({ signer });
+          applied = game.clientFor(signer).setup.systemCalls.end_game({ signer });
           return applied;
         }),
     });

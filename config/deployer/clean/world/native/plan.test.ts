@@ -20,13 +20,18 @@ function serveHerald(local: NativeWorld, releaseSchemas: Record<string, string>)
   }) as typeof fetch;
 }
 
-const authentication = { submitter: "0x99", account_class: "0x77", guardian_public_key: "0x88" };
+const authentication = { account_class: "0x77", guardian_public_key: "0x88" };
 function fixture() {
   const logic = Object.keys(schemaJson.logicClasses).map((name) => ({ name, classHash: "0x123", sierra: { abi: [] } }));
   const local = {
     seed: "native-test",
     authority: "0x99",
     authentication,
+    launcher: "0x99",
+    ledgerOperator: "0x99",
+    vrfPublicKey: { x: "0x1", y: "0x2" },
+    l2GasBound: "0x47868c00",
+    verifier: { name: "verifier", classHash: "0x123", sierra: { abi: [] } },
     schema: schemaJson,
     logic,
     release: {
@@ -37,6 +42,7 @@ function fixture() {
         games: "0x123",
         logic: Object.fromEntries(logic.map(({ name, classHash }) => [name, classHash])),
         account: authentication.account_class,
+        verifier: "0x123",
       },
     },
     games: {
@@ -49,6 +55,10 @@ function fixture() {
   } as unknown as NativeWorld;
   const state = {
     authority: local.authority,
+    launcher: local.launcher,
+    ledger: local.ledgerOperator,
+    key: local.vrfPublicKey,
+    bound: local.l2GasBound,
     releases: new Map([[1, { classes: structuredClone(local.release.classes.logic), migration: "0x0" }]]),
     gamesClassHash: "0x123",
     releaseId: 1,
@@ -73,7 +83,11 @@ function fixture() {
     },
     getClassHashAt: async () => state.gamesClassHash,
     callContract: async ({ entrypoint, calldata = [] }: { entrypoint: string; calldata?: string[] }) => {
-      if (entrypoint === "deployment_configuration") return [state.authority];
+      if (entrypoint === "owner") return [state.authority];
+      if (entrypoint === "launcher") return [state.launcher];
+      if (entrypoint === "ledger_operator") return [state.ledger];
+      if (entrypoint === "vrf_public_key") return [state.key.x, state.key.y];
+      if (entrypoint === "l2_gas_bound") return [state.bound];
       if (entrypoint === "current_release") return [String(state.releaseId)];
       if (entrypoint === "game_release") return [String(state.gamePins.get(Number(calldata[0])))];
       if (entrypoint === "release") {
@@ -83,11 +97,7 @@ function fixture() {
       }
       if (entrypoint === "realm_catalogue") return [String(catalogue.initialized), catalogue.digest];
       if (entrypoint === "authentication")
-        return [
-          state.authentication.submitter,
-          state.authentication.account_class,
-          state.authentication.guardian_public_key,
-        ];
+        return [state.authentication.account_class, state.authentication.guardian_public_key];
       throw new Error(`Unexpected view ${entrypoint}`);
     },
     declare: async ({ classHash }: { classHash: string }) => {
@@ -106,10 +116,10 @@ function fixture() {
           migration: calldata[Object.keys(schemaJson.logicClasses).length + 1],
         });
         state.releaseId = id;
-      } else if (entrypoint === "set_authentication") {
-        if (BigInt(calldata[1]) !== BigInt(state.authentication.account_class))
-          throw new Error("immutable account class");
-        state.authentication.submitter = calldata[0];
+      } else if (entrypoint === "set_launcher") {
+        state.launcher = calldata[0]!;
+      } else if (entrypoint === "set_ledger_operator") {
+        state.ledger = calldata[0]!;
       } else if (entrypoint === "apply_release") {
         const gameId = Number(calldata[0]);
         const releaseId = Number(calldata[1]);
@@ -127,6 +137,8 @@ function fixture() {
     accountClassHash: "0x77",
     contracts: {},
     guardianPublicKey: "0x99",
+    l2GasBound: "0x47868c00",
+    vrfPublicKey: { x: "0x1", y: "0x2" },
   });
   return { local, rpc, state, catalogue };
 }
@@ -140,6 +152,10 @@ describe("native deployment planning", () => {
         seed: "native-new",
         authority: "0x99",
         authentication,
+        launcher: "0x99",
+        ledgerOperator: "0x99",
+        vrfPublicKey: { x: "0x1", y: "0x2" },
+        l2GasBound: "0x47868c00",
         release: fixture().local.release,
         previous: { world: { seed: "old-release" } } as never,
       }),
@@ -154,6 +170,10 @@ describe("native deployment planning", () => {
         seed: "native-other",
         authority: local.authority,
         authentication,
+        launcher: "0x99",
+        ledgerOperator: "0x99",
+        vrfPublicKey: { x: "0x1", y: "0x2" },
+        l2GasBound: "0x47868c00",
         release: local.release,
         previous: local.previous,
       }),
@@ -199,28 +219,50 @@ describe("native deployment planning", () => {
     await expect(deployNativeWorld(local, rpc as unknown as Account, () => {})).rejects.toThrow("mismatch");
   });
 
-  test("a new submitter is rotated by the authority, while the account class and guardian stay fixed", async () => {
+  test("bootstrap initializes only an unset ledger role and preserves the constructor launcher", async () => {
     const { local, rpc, state } = fixture();
-    local.authentication = { ...authentication, submitter: "0x55" };
+    state.ledger = "0x0";
+    local.launcher = "0x55";
     const plan = await inspectNativeWorld(local, rpc as unknown as RpcProvider);
     expect(plan.blockers).toEqual([]);
-    expect(plan.submitterRotation).toEqual({ from: "0x99", to: "0x55" });
-    expect(plan.synced).toBe(false);
-    const transactions: string[] = [];
-    const report = await deployNativeWorld(local, rpc as unknown as Account, ({ action }) => transactions.push(action));
-    expect(transactions).toEqual(["set_authentication"]);
-    expect(BigInt(state.authentication.submitter)).toBe(0x55n);
+    expect(plan.roleChanges).toEqual([{ entrypoint: "set_ledger_operator", address: local.ledgerOperator }]);
+    const actions: string[] = [];
+    const report = await deployNativeWorld(local, rpc as unknown as Account, ({ action }) => actions.push(action));
+    expect(actions).toEqual(["set_ledger_operator"]);
     expect(report.after.synced).toBe(true);
-    expect(report.after.worldAddress).toBe("0x1");
-
+    expect(state.launcher).toBe("0x99");
+    expect(state.ledger).toBe(local.ledgerOperator);
     for (const fixed of [{ account_class: "0x66" }, { guardian_public_key: "0x66" }]) {
-      local.authentication = { ...authentication, submitter: "0x55", ...fixed };
+      local.authentication = { ...authentication, ...fixed };
       await expect(
         deployNativeWorld(local, rpc as unknown as Account, () => {
           throw new Error("unexpected transaction");
         }),
       ).rejects.toThrow("the account class and guardian are fixed");
     }
+    local.authentication = authentication;
+    local.vrfPublicKey = { x: "0x3", y: "0x4" };
+    await expect(deployNativeWorld(local, rpc as unknown as Account, () => {})).rejects.toThrow("VRF key is immutable");
+    local.vrfPublicKey = state.key;
+    local.l2GasBound = "0x1";
+    await expect(deployNativeWorld(local, rpc as unknown as Account, () => {})).rejects.toThrow(
+      "gas bound is immutable",
+    );
+  });
+
+  test("a redeploy without local history never takes service roles back to bootstrap", async () => {
+    const { local, rpc, state } = fixture();
+    delete local.previous;
+    state.launcher = "0x55";
+    state.ledger = "0x66";
+    const report = await deployNativeWorld(local, rpc as unknown as Account, () => {
+      throw new Error("unexpected transaction");
+    });
+    expect(report.before.roleChanges).toEqual([]);
+    expect(report.after.synced).toBe(true);
+    expect(state.launcher).toBe("0x55");
+    expect(state.ledger).toBe("0x66");
+    expect(state.operations).toEqual([]);
   });
 
   test("a different Games class cannot replace the immutable deployment", async () => {
@@ -231,7 +273,14 @@ describe("native deployment planning", () => {
 
   test("a hotfix registers once, preserves the Games address, and only applies to explicitly chosen games", async () => {
     const { local, rpc, state } = fixture();
-    const shard = { chainId: "0x1", accountClassHash: "0x77", contracts: {}, guardianPublicKey: "0x99" };
+    const shard = {
+      chainId: "0x1",
+      accountClassHash: "0x77",
+      contracts: {},
+      guardianPublicKey: "0x99",
+      l2GasBound: "0x47868c00",
+      vrfPublicKey: { x: "0x1", y: "0x2" },
+    };
     local.previous = buildNativeManifest(local, await inspectNativeWorld(local, rpc as unknown as RpcProvider), shard);
     local.release.releaseId = 2;
     local.release.classes.logic.movement = "0x456";
@@ -268,6 +317,10 @@ describe("native deployment planning", () => {
         seed: local.seed,
         authority: local.authority,
         authentication,
+        launcher: "0x99",
+        ledgerOperator: "0x99",
+        vrfPublicKey: { x: "0x1", y: "0x2" },
+        l2GasBound: "0x47868c00",
         release: local.release,
         previous: local.previous,
       }),

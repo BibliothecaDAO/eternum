@@ -1,0 +1,4 @@
+{
+  "compilerOptions": { "strict": true, "target": "ES2022", "lib": ["ES2022"], "module": "ESNext", "moduleResolution": "bundler", "types": ["@cloudflare/workers-types", "node"], "skipLibCheck": true, "noUncheckedIndexedAccess": true, "exactOptionalPropertyTypes": true, "noEmit": true },
+  "include": ["src/**/*.ts"]
+}

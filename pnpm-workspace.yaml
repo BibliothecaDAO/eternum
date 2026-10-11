@@ -30,6 +30,7 @@ catalogs:
     react: ^18
     react-dom: ^18
     starknet: ^8.5.2
+    starknetkit: 3.4.3
     type-fest: ^2.19.0
     viem: ^2.24.3
     vite: ^5.4.21

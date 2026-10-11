@@ -5,6 +5,7 @@ import { ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { ResourceManager, getTotalResourceWeightKg, calculateDonkeysNeeded } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { toast } from "@/ui/features/event-feed/notify";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 const formatResourceSummary = (entry: TransferAutomationEntry): string => {
   if (Array.isArray(entry.resourceConfigs) && entry.resourceConfigs.length > 0) {
     return entry.resourceConfigs
@@ -49,8 +50,8 @@ export const TransferAutomationAdvancedModal = () => {
     async (entry: TransferAutomationEntry) => {
       if (!store) return;
       try {
-        const sourceId = Number(entry.sourceEntityId);
-        const destId = Number(entry.destinationEntityId);
+        const sourceId = safeInteger(entry.sourceEntityId);
+        const destId = safeInteger(entry.destinationEntityId);
         const rm = new ResourceManager(store, sourceId);
 
         const configMap = new Map<number, number>();

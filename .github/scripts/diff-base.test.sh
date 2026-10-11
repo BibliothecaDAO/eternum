@@ -41,3 +41,14 @@ changed_from "$base" | grep -qx contracts/l3/world.cairo || fail "a pull request
 [ -z "$(base_for 0000000000000000000000000000000000000000)" ] ||
   fail "an unresolvable base must print nothing, so the caller runs every area"
 echo "diff-base: a pull request measures from its branch point and keeps every commit it carries"
+
+push_base=$(EVENT=push PUSH_BASE_SHA=$branch_point HEAD_SHA=$head bash "$script")
+[ "$push_base" = "$branch_point" ] || fail "a push must use its before SHA"
+changed_from "$push_base" | grep -qx contracts/l3/world.cairo || fail "a multi-commit push dropped its earlier change"
+changed_from "$push_base" | grep -qx apps/game/main.ts || fail "a multi-commit push dropped its latest change"
+[ -z "$(EVENT=push PUSH_BASE_SHA=0000000000000000000000000000000000000000 HEAD_SHA=$head bash "$script")" ] ||
+  fail "an unknown push base must print nothing so the caller refuses it"
+# A force push compares the actual previous tree, not the merge base.
+[ "$(EVENT=push PUSH_BASE_SHA=$moved_base HEAD_SHA=$head bash "$script")" = "$moved_base" ] ||
+  fail "a push must not replace its before SHA with a merge base"
+echo "diff-base: a push includes every changed commit and preserves the exact before SHA"

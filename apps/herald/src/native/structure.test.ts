@@ -44,7 +44,7 @@ describe("native structure upgrades", () => {
     const decoded = decoder.decode(
       raw({
         from_address: manifest.world.address,
-        keys: [...event.prefix, "1", "1", "7", "0", "0", "0x111", "0", "3", "0x55"],
+        keys: [...event.prefix, "2", "1", "0", "0x111", "0", "3", "0x55"],
         data: ["1", "2", "1860"],
       }),
     );

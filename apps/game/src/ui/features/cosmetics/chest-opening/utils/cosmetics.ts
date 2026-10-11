@@ -259,7 +259,7 @@ const RARITY_VALUE_TO_ASSET_RARITY: Record<string, AssetRarity> = {
 /**
  * Creates a ChestAsset from an attributesRaw hex string
  */
-function getChestAssetFromAttributesRaw(attributesRaw: string): ChestAsset | undefined {
+export function getChestAssetFromAttributesRaw(attributesRaw: string): ChestAsset | undefined {
   const traits = getTraitValuesFromAttributesRaw(attributesRaw);
   const cosmetic = COSMETIC_NAMES.find((c) => c.attributesRaw === attributesRaw);
 

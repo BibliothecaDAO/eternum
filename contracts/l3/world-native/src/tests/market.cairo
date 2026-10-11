@@ -11,11 +11,11 @@ use crate::market::{
 use crate::registrar::IRegistrarSafeDispatcherTrait;
 use crate::resources::{IResourceOperationsDispatcher, ResourceAmount, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
-use crate::tests::state::ResourceObservationTrait;
+use crate::tests::state::{MapObservationTrait, ResourceObservationTrait};
 use crate::troops::Coord;
-use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, grant};
+use super::resource_commands::{assert_terminal_rejection, execute, grant};
 
-const BANK: u32 = 0xfffffffe;
+const BANK: u64 = 0xfffffffe;
 const STOCK: u128 = 100000 * RESOURCE_PRECISION;
 fn banks() -> Span<BankPlacement> {
     let mut banks = array![];
@@ -25,9 +25,9 @@ fn banks() -> Span<BankPlacement> {
     banks.span()
 }
 fn market_preset() -> crate::presets::PresetDefinition {
-    let mut rules = super::recorded::rules();
-    rules.mode_rules = super::recorded::ETERNUM_RULES;
-    rules.command_mask = super::recorded::ETERNUM_COMMAND_MASK;
+    let mut rules = super::play_fixture::rules();
+    rules.mode_rules = super::play_fixture::ETERNUM_RULES;
+    rules.command_mask = super::play_fixture::ETERNUM_COMMAND_MASK;
     rules.entry_rule = crate::rules::ENTRY_ENTITLEMENT;
     rules.speed_config.donkey_sec_per_km = 1;
     rules.speed_config.donkey_sec_per_km_troops = 2;
@@ -65,7 +65,6 @@ fn setup_market(
             super::authority(),
             banks(),
             crate::commands::action_context(ExecutionContext { timestamp: 30, ..super::context(deployment.games, 3) }),
-            crate::tests::story_cursor(),
         );
     stop_cheat_caller_address(deployment.games);
     for key in array![source, other] {
@@ -80,17 +79,17 @@ fn add(source: ResourceKey, lords_amount: u128, resource_amount: u128) -> Comman
         AddLiquidity { bank_id: BANK, structure_id: source.entity_id, resource_type: 2, lords_amount, resource_amount },
     )
 }
-fn remove(destination: u32, shares: u128) -> Command {
+fn remove(destination: u64, shares: u128) -> Command {
     Command::RemoveBankLiquidity(RemoveLiquidity { bank_id: BANK, structure_id: destination, resource_type: 2, shares })
 }
 fn view(deployment: super::Deployment) -> IBankDispatcher {
     IBankDispatcher { contract_address: deployment.games }
 }
-fn balance(deployment: super::Deployment, entity: u32, resource_type: u8) -> u128 {
+fn balance(deployment: super::Deployment, entity: u64, resource_type: u8) -> u128 {
     IResourceOperationsDispatcher { contract_address: deployment.games }
         .resource_balance(ResourceSlot { game_id: 3, entity_id: entity, resource_type })
 }
-fn arrival(deployment: super::Deployment, entity: u32, time: u64, travel: u64) -> Span<ResourceAmount> {
+fn arrival(deployment: super::Deployment, entity: u64, time: u64, travel: u64) -> Span<ResourceAmount> {
     IResourceOperationsDispatcher { contract_address: deployment.games }
         .resource_arrival(crate::arrivals::arrival_key(3, entity, 1, time, travel))
         .resources
@@ -109,7 +108,7 @@ fn regional_banks_have_pinned_ids_guards_names_and_biome_only_surroundings() {
     let guards = crate::guards::IGuardsDispatcher { contract_address: deployment.games };
     let tiles = crate::map::IMapLogicDispatcher { contract_address: deployment.games };
     for index in 0_u32..6 {
-        let id = BANK - index;
+        let id = BANK - Into::<u32, u64>::into(index);
         let key = ResourceKey { game_id: 3, entity_id: id };
         let structure = crate::tests::state::StructureObservationTrait::structure(structures, key).unwrap();
         assert_eq!(structure.owner, super::authority());
@@ -119,9 +118,9 @@ fn regional_banks_have_pinned_ids_guards_names_and_biome_only_surroundings() {
         let coord = crate::tests::state::StructureObservationTrait::position(structures, key).unwrap();
         for direction in 0_u8..6 {
             let neighbor = crate::geometry::neighbor(coord, direction);
-            let tile = crate::tests::state::MapObservationTrait::tile(tiles, crate::geometry::tile_key(3, neighbor))
+            let _tile = crate::tests::state::MapObservationTrait::tile(tiles, crate::geometry::tile_key(3, neighbor))
                 .unwrap();
-            assert_eq!(tile.data % 0x20000000000, 0);
+            assert!(tiles.occupancy(crate::geometry::tile_key(3, neighbor)).is_none());
         }
         for slot in 0_u8..3 {
             let guard = crate::guards::IGuardsDispatcherTrait::guard(
@@ -281,7 +280,7 @@ fn assert_wallet_liquidity_withdrawal(funded: bool) {
         }
     }
     assert!(execute(deployment, add(source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 40));
-    assert!(execute_recorded_at(deployment, remove(0, 1000 * RESOURCE_PRECISION), 50, 1000));
+    assert!(execute(deployment, remove(0, 1000 * RESOURCE_PRECISION), 50));
     assert_eq!(token_balance(resource, deployment.actor), 222500000000000000000);
     assert_eq!(token_balance(lords, deployment.actor), 890000000000000000000);
     assert_eq!(token_balance(resource, 0x777.try_into().unwrap()), 10000000000000000000);
@@ -328,43 +327,19 @@ fn bank_creation_and_configuration_reject_players_repeats_and_partial_batches() 
     let safe = IBankSafeDispatcher { contract_address: deployment.games };
     start_cheat_caller_address(deployment.games, deployment.actor);
     let context = ExecutionContext { timestamp: 30, ..super::context(deployment.games, 3) };
-    assert!(
-        safe
-            .create_banks(
-                3, super::authority(), banks(), crate::commands::action_context(context), crate::tests::story_cursor(),
-            )
-            .is_err(),
-    );
+    assert!(safe.create_banks(3, super::authority(), banks(), crate::commands::action_context(context)).is_err());
     let registrar = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
     let mut preset = market_preset();
     preset.economy.banks = BankRules { lp_fee_num: 0, lp_fee_denom: 1, owner_fee_num: 0, owner_fee_denom: 1 };
     assert!(registrar.register_preset(20000, preset).is_err());
     start_cheat_caller_address(deployment.games, deployment.games);
+    assert!(safe.create_banks(3, deployment.actor, banks(), crate::commands::action_context(context)).is_err());
     assert!(
         safe
-            .create_banks(
-                3, deployment.actor, banks(), crate::commands::action_context(context), crate::tests::story_cursor(),
-            )
+            .create_banks(3, super::authority(), banks().slice(0, 5), crate::commands::action_context(context))
             .is_err(),
     );
-    assert!(
-        safe
-            .create_banks(
-                3,
-                super::authority(),
-                banks().slice(0, 5),
-                crate::commands::action_context(context),
-                crate::tests::story_cursor(),
-            )
-            .is_err(),
-    );
-    assert!(
-        safe
-            .create_banks(
-                3, super::authority(), banks(), crate::commands::action_context(context), crate::tests::story_cursor(),
-            )
-            .is_err(),
-    );
+    assert!(safe.create_banks(3, super::authority(), banks(), crate::commands::action_context(context)).is_err());
     start_cheat_caller_address(deployment.games, super::authority());
     let games = crate::game::IGameDispatcher { contract_address: deployment.games };
     assert!(registrar.register_preset(games.game(3).preset_id, preset).is_err());
@@ -373,7 +348,7 @@ fn bank_creation_and_configuration_reject_players_repeats_and_partial_batches() 
     assert!(registrar.register_preset(20000, invalid).is_err());
     assert!(registrar.register_preset(20000, preset).is_ok());
     stop_cheat_caller_address(deployment.games);
-    super::recorded::seed_game_with_preset(deployment.games, 4, games.game(3), preset);
+    super::play_fixture::seed_game_with_preset(deployment.games, 4, games.game(3), preset);
     assert_eq!(safe.bank_rules(4).unwrap().lp_fee_num, 0);
     assert_eq!(safe.bank_rules(3).unwrap().lp_fee_num, 3);
 }
@@ -453,7 +428,7 @@ fn bank_trade_and_withdrawal_configuration_are_independent_and_immutable() {
     stop_cheat_caller_address(deployment.games);
     assert!(execute(deployment, add(source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 40));
     assert!(
-        execute_recorded_at(
+        execute(
             deployment,
             Command::BuyFromBank(
                 Swap {
@@ -461,7 +436,6 @@ fn bank_trade_and_withdrawal_configuration_are_independent_and_immutable() {
                 },
             ),
             50,
-            1000,
         ),
     );
 }
@@ -486,39 +460,45 @@ fn liquidity_rejects_a_deposit_that_rounds_to_zero_shares() {
 }
 
 #[test]
-fn liquidity_changes_have_distinct_recorded_story_keys() {
+fn liquidity_changes_have_distinct_story_payloads() {
     let (d, source, _) = setup();
     let mut spy = spy_events();
     assert!(execute(d, add(source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 40));
     assert!(execute(d, add(source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 41));
-    let mut ids = array![];
+    let mut timestamps = array![];
     for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
         if *event.keys.at(0) == selector!("StoryEvent") {
             let mut keys = event.keys.span().slice(1, event.keys.len() - 1);
             let mut data = event.data.span();
             let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
             assert_eq!(story.entity_id, Some(source.entity_id));
-            ids.append(crate::ownership::StoryCursor { order: story.order, index: story.index });
+            let crate::ownership::Story::BankLiquidity(_) = story.story else {
+                panic!("unexpected liquidity story")
+            };
+            timestamps.append(story.timestamp);
         }
     }
-    assert_eq!(ids.len(), 2);
-    assert_ne!(*ids.at(0), *ids.at(1));
+    assert_eq!(timestamps.span(), array![40_u64, 41].span());
 }
-
 
 #[test]
 #[feature("safe_dispatcher")]
-fn the_game_creator_owns_bank_choices_and_preplay_liquidity_without_shard_authority() {
+fn the_current_launcher_owns_bank_choices_and_preplay_liquidity() {
     let (d, source, authority_source) = super::resource_commands::setup_with_preset(market_preset());
     let games = crate::game::IGameDispatcher { contract_address: d.games };
     let game = crate::game::IGameDispatcherTrait::game(games, 3);
-    let creator_game = crate::game::GameRegistry { creator: d.actor, start_main_at: 100, ..game };
+    let preplay_game = crate::game::GameRegistry { start_main_at: 100, ..game };
     super::resource_commands::set_fixture(
-        d.games, selector!("games"), selector!("games"), array![3].span(), creator_game,
+        d.games, selector!("games"), selector!("games"), array![3].span(), preplay_game,
     );
     assert!(d.actor != super::authority());
     let authority = super::bind_authority(d);
-    assert!(!execute(authority, Command::CreateBanks(banks()), 40));
+    super::set_launcher(d, d.actor);
+    super::play_fixture::assert_preflight_rejection(
+        d.games,
+        super::play_fixture::TestAction { game_id: 3, actor: authority.actor, command: Command::CreateBanks(banks()) },
+        40,
+    );
     assert!(execute(d, Command::CreateBanks(banks()), 40));
     let structure = crate::tests::state::StructureObservationTrait::structure(
         crate::structures::IStructureOperationsDispatcher { contract_address: d.games },
@@ -538,14 +518,7 @@ fn the_game_creator_owns_bank_choices_and_preplay_liquidity_without_shard_author
     assert!(!execute(authority, add(authority_source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 40));
     assert!(execute(d, add(source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 40));
     assert_eq!(lp(d), 1000 * RESOURCE_PRECISION);
-    // The creator privilege is separate from the normal live-game liquidity permission.
-    super::resource_commands::set_fixture(
-        d.games,
-        selector!("games"),
-        selector!("games"),
-        array![3].span(),
-        crate::game::GameRegistry { creator: super::authority(), ..creator_game },
-    );
+    super::set_launcher(d, super::authority());
     assert!(!execute(d, add(source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 50));
     assert!(execute(d, add(source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 100));
     assert_eq!(lp(d), 2000 * RESOURCE_PRECISION);

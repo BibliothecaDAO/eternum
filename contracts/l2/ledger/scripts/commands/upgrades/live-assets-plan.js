@@ -7,28 +7,6 @@ const ASSETS = [
     packageDirectory: "l2/mmr",
     projectName: "mmr",
     upgradeAuthority: { address: "MMR_UPGRADER_ADDRESS", privateKey: "MMR_UPGRADER_PRIVATE_KEY" },
-    upgradeAuthorityKind: "role",
-    upgradeRoleName: "UPGRADER_ROLE",
-  },
-  {
-    addressKey: "seasonPass",
-    artifactName: "EternumSeasonPass",
-    id: "season-pass",
-    label: "Season Pass",
-    packageDirectory: "l2/season_pass",
-    projectName: "esp",
-    upgradeAuthority: { address: "SEASON_PASS_OWNER_ADDRESS", privateKey: "SEASON_PASS_OWNER_PRIVATE_KEY" },
-    upgradeAuthorityKind: "owner",
-  },
-  {
-    addressKey: "villagePass",
-    artifactName: "EternumVillagePass",
-    id: "village-pass",
-    label: "Village Pass",
-    packageDirectory: "l2/village_pass",
-    projectName: "evp",
-    upgradeAuthority: { address: "VILLAGE_PASS_UPGRADER_ADDRESS", privateKey: "VILLAGE_PASS_UPGRADER_PRIVATE_KEY" },
-    upgradeAuthorityKind: "role",
     upgradeRoleName: "UPGRADER_ROLE",
   },
 ];
@@ -38,11 +16,6 @@ const ROLE_GRANTS = [
     adminAuthority: { address: "MMR_ADMIN_ADDRESS", privateKey: "MMR_ADMIN_PRIVATE_KEY" },
     assetId: "mmr",
     roleName: "UPDATER_ROLE",
-  },
-  {
-    adminAuthority: { address: "VILLAGE_PASS_ADMIN_ADDRESS", privateKey: "VILLAGE_PASS_ADMIN_PRIVATE_KEY" },
-    assetId: "village-pass",
-    roleName: "DISTRIBUTOR_ROLE",
   },
 ];
 
@@ -70,11 +43,6 @@ export function buildLiveAssetPlan(addresses, environment, requirePrivateKeys) {
     ),
     ledgerAddress,
     roleGrants,
-    seasonPassRestorer: {
-      contractAddress: requireAsset(assetById, "season-pass").address,
-      restorer: ledgerAddress,
-      signer: requireAsset(assetById, "season-pass").upgradeSigner,
-    },
   };
 }
 

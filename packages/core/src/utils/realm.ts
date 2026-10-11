@@ -1,3 +1,4 @@
+import { safeInteger } from "./safe-integer";
 import { structureMapPosition } from "./expeditions";
 import { ID, RealmInfo } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
@@ -33,11 +34,11 @@ export function getRealmInfo(
 
     const resources = unpackValue(BigInt(produced_resources));
 
-    const resourceManager = new ResourceManager(store, entity_id);
+    const resourceManager = new ResourceManager(store, safeInteger(entity_id));
 
     return {
       realmId: realm_id,
-      entityId: entity_id,
+      entityId: safeInteger(entity_id),
       category: structure.base.category,
       level,
       resources,

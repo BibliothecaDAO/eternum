@@ -4,18 +4,18 @@ import { ResourceManager } from "../managers";
 
 // for entities that have production like realms
 export const getBalance = (
-  entityId: ID,
+  entityId: ID | undefined,
   resourceId: ResourcesIds,
   currentDefaultTick: number,
   store: NativeFactStore,
-) => {
-  const resourceManager = new ResourceManager(store, entityId);
-  return {
-    // Undefined when this client holds no resource owner for the entity: unknown, never zero.
-    balance: resourceManager.balanceWithProduction(currentDefaultTick, resourceId)?.balance,
-    resourceId,
-  };
-};
+) => ({
+  // Undefined without an entity, or when this client holds no resource owner for it: unknown, never zero.
+  balance:
+    entityId === undefined
+      ? undefined
+      : new ResourceManager(store, entityId).balanceWithProduction(currentDefaultTick, resourceId)?.balance,
+  resourceId,
+});
 
 export const isMilitaryResource = (resourceId: ResourcesIds) => {
   return (

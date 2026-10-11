@@ -13,6 +13,7 @@ import { Position, configManager, structureMapPosition, entityMapPosition } from
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { formatFeedTime } from "./important-feed-rows";
+import { storyPayloadId } from "@/utils/native-id";
 
 export function resolveStoryEventPosition(event: ProcessedStoryEvent, store: NativeFactStore): Position | null {
   const coord = event.storyPayload.end_coord ?? event.storyPayload.coord;
@@ -22,7 +23,7 @@ export function resolveStoryEventPosition(event: ProcessedStoryEvent, store: Nat
   // Battle stories contain participant IDs but no historical hex. Resolve surviving entities from native facts.
   for (const id of [event.storyPayload.defender_id, event.entity_id, event.storyPayload.attacker_id]) {
     if (id == null) continue;
-    const key = { game_id: configManager.getActiveGameId(), entity_id: Number(id) };
+    const key = { game_id: configManager.getActiveGameId(), entity_id: storyPayloadId(id) };
     const structure = store.get("Structure", key);
     const site = structure && structureMapPosition(store, structure);
     if (site) return Position.fromContract(site);

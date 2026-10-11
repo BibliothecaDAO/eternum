@@ -1,57 +1,130 @@
 import type { Probe, Status, Target } from "./model";
 
-const PLAY = "https://play.realms.party";
 const DEADLINE_MS = 5000;
 const SLOW_MS = 1000;
 const HEX = /^0x[0-9a-fA-F]{1,64}$/;
 type Reader = ReturnType<typeof publicReader>;
 
+export interface PublicValueTargets {
+  ledgerRpcUrl: string;
+  ledgerAddress: string | null;
+  playUrl: string;
+}
+const IS_PAUSED = "0x238d7ea31550fece8f0a8a601e3ae1a7c59cb3b6cc976ceb721e31ebd9c36f9";
+
 /** Probe the public paths a browser relies on. Discovery failure retains worlds rather than erasing their rows. */
-export async function probeServices(network: typeof fetch, now: number, known: Target[]) {
+export async function probeServices(network: typeof fetch, now: number, known: Target[], value: PublicValueTargets) {
   let targets = known;
   let directoryReadable = false;
-  const [play, accounts, directory, blitz, chat] = await Promise.all([
-    measure("play", "Play", network, probePlay),
-    measure("accounts", "Sign in and accounts", network, probeAccounts),
+  const [play, accounts, directory, blitz, chat, guardian, relay, monitor, ledger] = await Promise.all([
+    measure("play", "Play", network, (read) => probePlay(read, value.playUrl)),
+    measure("accounts", "Sign in and accounts", network, (read) => probeAccounts(read, value.playUrl)),
     measure("directory", "Games list", network, async (read) => {
-      const listing = await readDirectory(read);
+      const listing = await readDirectory(read, value.playUrl);
       targets = listing.targets;
       directoryReadable = true;
       return listing.available ? "up" : "down";
     }),
-    measure("blitz", "Blitz lobbies", network, probeSlots),
-    measure("chat", "Chat", network, probeChat),
+    measure("blitz", "Blitz lobbies", network, (read) => probeSlots(read, value.playUrl)),
+    measure("chat", "Chat", network, (read) => probeChat(read, value.playUrl)),
+    measure("guardian", "Device guardian", network, (read) => probeGuardian(read, value.playUrl + "/api/guardian")),
+    measure("relay", "Value relay", network, (read) =>
+      probeValueWorker(read, value.playUrl + "/api/value/health", now, "value-relay"),
+    ),
+    measure("monitor", "Value monitor", network, (read) =>
+      probeValueWorker(read, value.playUrl + "/api/operator/monitor/health", now, "value-monitor"),
+    ),
+    probeLedger(network, value, now),
   ]);
   const worlds = await Promise.all(targets.map((target) => probeWorld(target, network, now)));
   if (directoryReadable && worlds.some((world) => world.status === "down")) {
     directory.status = "down";
     directory.latency_ms = null;
   } else if (directoryReadable && worlds.some((world) => world.status === "degraded")) directory.status = "degraded";
-  return { targets, probes: [play, accounts, directory, blitz, chat, ...worlds] };
+  return { targets, probes: [play, accounts, directory, blitz, chat, guardian, relay, monitor, ledger, ...worlds] };
 }
 
-async function probePlay(read: Reader): Promise<Status> {
-  const html = await (await read(PLAY + "/")).text();
+async function probePlay(read: Reader, playUrl: string): Promise<Status> {
+  const html = await (await read(playUrl + "/")).text();
   const script = [...html.matchAll(/<script\b([^>]*)>/gi)].find((tag) => /\btype\s*=\s*(["'])module\1/i.test(tag[1]!));
   const path = script?.[1]?.match(/\bsrc\s*=\s*(["'])(.*?)\1/i)?.[2];
   if (!path) throw new Error("Module missing");
-  const url = publicUrl(new URL(path, PLAY).href);
-  if (url.origin !== PLAY) throw new Error("Module origin mismatch");
+  const url = publicUrl(new URL(path, playUrl).href);
+  if (url.origin !== playUrl) throw new Error("Module origin mismatch");
   const module = await read(url.href);
   if (!/javascript|ecmascript/i.test(module.headers.get("content-type") ?? "")) throw new Error("Invalid module type");
   if (!(await module.text()).trim()) throw new Error("Empty module");
   return "up";
 }
 
-async function probeAccounts(read: Reader): Promise<Status> {
-  requireReady(await body(read, PLAY + "/api/health/accounts"));
-  const guardian = await body(read, PLAY + "/api/guardian");
+async function probeAccounts(read: Reader, playUrl: string): Promise<Status> {
+  requireReady(await body(read, playUrl + "/api/health/accounts"));
+  return "up";
+}
+
+async function probeGuardian(read: Reader, url: string): Promise<Status> {
+  const guardian = await body(read, url);
   if (!felt(guardian.publicKey) || !felt(guardian.accountClassHash)) throw new Error("Guardian unavailable");
   return "up";
 }
 
-async function readDirectory(read: Reader) {
-  const directory = await body(read, PLAY + "/api/directory");
+async function probeValueWorker(read: Reader, url: string, now: number, service: string): Promise<Status> {
+  const relay = await body(read, url);
+  requireReady(relay);
+  if (
+    relay.service !== service ||
+    !height(relay.checked_at) ||
+    relay.checked_at > now + 60 ||
+    now - relay.checked_at > 300
+  )
+    throw new Error("Relay observation stale");
+  return "up";
+}
+
+/** Read the pause flag through raw public JSON-RPC; no watched service's adapter participates. */
+async function probeLedger(network: typeof fetch, targets: PublicValueTargets, now: number): Promise<Probe> {
+  const facts = { paused: null as boolean | null };
+  const result = await measure("ledger", "Starknet ledger", network, async (read) => {
+    if (!felt(targets.ledgerAddress)) throw new Error("Ledger address missing");
+    const header = await nodeHeader(read, targets.ledgerRpcUrl, "latest");
+    const response = await read(targets.ledgerRpcUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 2,
+        method: "starknet_call",
+        params: {
+          request: { contract_address: targets.ledgerAddress, entry_point_selector: IS_PAUSED, calldata: [] },
+          block_id: { block_number: header.block_number },
+        },
+      }),
+    });
+    const payload = (await response.json()) as { id?: unknown; result?: unknown; error?: unknown };
+    if (
+      payload.id !== 2 ||
+      payload.error ||
+      !Array.isArray(payload.result) ||
+      payload.result.length !== 1 ||
+      typeof payload.result[0] !== "string" ||
+      !HEX.test(payload.result[0])
+    )
+      throw new Error("Ledger pause unavailable");
+    const flag = BigInt(payload.result[0]);
+    if (flag !== 0n && flag !== 1n) throw new Error("Invalid pause flag");
+    facts.paused = flag === 1n;
+    if (header.timestamp > now + 30 || now - header.timestamp > 120) return "down";
+    return facts.paused || now - header.timestamp > 30 ? "degraded" : "up";
+  });
+  return {
+    ...result,
+    paused: facts.paused,
+    name: facts.paused === true ? "Starknet ledger payouts paused" : result.name,
+  };
+}
+
+async function readDirectory(read: Reader, playUrl: string) {
+  const directory = await body(read, playUrl + "/api/directory");
   if (!Array.isArray(directory.shards)) throw new Error("Directory missing");
   const targets = directory.shards.map(parseTarget);
   const available = directory.shards.every(
@@ -63,14 +136,14 @@ async function readDirectory(read: Reader) {
   return { targets, available };
 }
 
-async function probeSlots(read: Reader): Promise<Status> {
-  const slots = await body(read, PLAY + "/api/slots");
+async function probeSlots(read: Reader, playUrl: string): Promise<Status> {
+  const slots = await body(read, playUrl + "/api/slots");
   if (!Array.isArray(slots.slots)) throw new Error("Slots missing");
   return "up";
 }
 
-async function probeChat(read: Reader): Promise<Status> {
-  requireReady(await body(read, PLAY + "/api/chat/health"));
+async function probeChat(read: Reader, playUrl: string): Promise<Status> {
+  requireReady(await body(read, playUrl + "/api/chat/health"));
   return "up";
 }
 
@@ -84,7 +157,6 @@ function probeWorld(target: Target, network: typeof fetch, now: number) {
       throw new Error("Chain mismatch");
     requireReady(health);
     if (health.undecodable_events !== 0 || !height(health.confirmed_block)) throw new Error("Herald incomplete");
-    await gatewayListening(read, publicUrl(manifest.admissionUrl).href);
     const rpc = publicUrl(manifest.rpcUrl);
     const latest = await nodeHeader(read, rpc.href, "latest");
     const heraldHeight = health.confirmed_block as number;
@@ -189,15 +261,4 @@ async function nodeHeader(read: Reader, url: string, block: "latest" | { block_n
     throw new Error("Node head unavailable");
   if (block !== "latest" && payload.result.block_number !== block.block_number) throw new Error("Wrong Herald head");
   return { block_number: payload.result.block_number, timestamp: payload.result.timestamp };
-}
-
-async function gatewayListening(read: Reader, url: string) {
-  // An unknown method cannot enqueue an action. This checks the public listener, not successful sequencing.
-  const response = await read(url, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "realms_status_probe", params: [] }),
-  });
-  const payload = (await response.json()) as { id?: unknown; error?: { code?: unknown } };
-  if (payload.id !== 1 || payload.error?.code !== -32601) throw new Error("Admission listener unavailable");
 }

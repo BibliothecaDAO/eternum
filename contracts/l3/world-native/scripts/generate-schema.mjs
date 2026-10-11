@@ -1,11 +1,12 @@
 import { tupleTypes } from "../../../../apps/herald/src/native/serde.ts";
 import { compileCommandRoutes } from "./command-routes.mjs";
+import { readRuleConstants } from "./rule-constants.mjs";
 import { execFileSync } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { eventLayouts, uniqueEventLayouts } from "./event-layouts.mjs";
 import { readCheckedTaxonomy } from "./taxonomy.mjs";
-import { defineFactModels, factWireTypes, syncScopes, executionRecordedVersion } from "../schema/fact-models.mjs";
+import { defineFactModels, factWireTypes, syncScopes } from "../schema/fact-models.mjs";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -149,13 +150,7 @@ for (const model of models) {
   );
 }
 
-const ruleSource = await readFile(new URL("src/rules.cairo", root), "utf8");
-const ruleConstants = Object.fromEntries(
-  [...ruleSource.matchAll(/^pub const ([A-Z][A-Z0-9_]*): u(?:8|32) = ([0-9]+);$/gm)].map(([, name, value]) => [
-    name,
-    Number(value),
-  ]),
-);
+const ruleConstants = await readRuleConstants(root);
 
 // Research rows, tier choices and the building categories that have a row.
 const researchSource = await readFile(new URL("src/research.cairo", root), "utf8");
@@ -167,7 +162,7 @@ const researchConstants = Object.fromEntries(
 );
 
 const taxonomy = await readCheckedTaxonomy(fileURLToPath(new URL("src/", root)));
-// The schema identity hashes these four, and every recorded run pins that identity. They leave the schema at its next
+// The schema identity hashes these four, and every shard release pins that identity. They leave the schema at its next
 // declared shape change; readers take the full taxonomy from the generated enums.
 
 const tileOccupierConstants = Object.fromEntries(
@@ -222,11 +217,11 @@ const schema = {
       ),
     },
     {
-      name: "ExecutionRecorded",
+      name: "GameplayRejected",
       scope: "deployment",
-      version: executionRecordedVersion,
+      version: 1,
       event: productionAbi.find(
-        (item) => item.type === "event" && item.name === "eternum_randomness_protocol::recording::ExecutionRecorded",
+        (item) => item.type === "event" && item.name === "world_native::commands::GameplayRejected",
       ),
     },
     {
@@ -238,19 +233,19 @@ const schema = {
     {
       name: "StoryEvent",
       scope: "game",
-      version: 1,
+      version: 2,
       event: productionAbi.find((item) => item.type === "event" && item.name === "world_native::ownership::StoryEvent"),
     },
     {
       name: "BattleEvent",
       scope: "game",
-      version: 1,
+      version: 2,
       event: productionAbi.find((item) => item.type === "event" && item.name === "world_native::troops::BattleEvent"),
     },
     {
       name: "RaidEvent",
       scope: "game",
-      version: 1,
+      version: 2,
       event: productionAbi.find(
         (item) => item.type === "event" && item.name === "world_native::combat_actions::RaidEvent",
       ),

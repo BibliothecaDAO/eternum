@@ -18,7 +18,7 @@ export async function assertPublicRpcBoundary(
       redirect: "error",
     });
     if (!response.ok) throw new Error(`${url}: HTTP ${response.status}; expected an explicit RPC method rejection`);
-    return response.json() as Promise<{ result?: string; error?: { code: number } }>;
+    return response.json() as Promise<{ result?: string; error?: { code: number; message?: string } }>;
   }
   const call = (method: string) => ({ jsonrpc: "2.0", id: 1, method, params: [] });
   const read = await request(call("starknet_chainId"));
@@ -27,8 +27,10 @@ export async function assertPublicRpcBoundary(
     // Invalid params from the node means the write handler is reachable, not that writes are blocked.
     for (const payload of [call(method), [call("starknet_chainId"), call(method)]]) {
       const result = await request(payload);
-      if (result.error?.code !== -32601)
-        throw new Error(`${url}: ${method} is not blocked before parameter validation`);
+      const blocked = Array.isArray(payload)
+        ? result.error?.code === -32600 && result.error.message === "Mixed read and write batch refused"
+        : result.error?.code === -32601;
+      if (!blocked) throw new Error(`${url}: ${method} is not blocked before parameter validation`);
     }
   }
   const refusedShapes: string[] = [];

@@ -173,6 +173,8 @@ function deriveGameSeed(input: CreateGamePayloadInput): string {
 }
 
 export function buildCreateGameParams(config: Config, input: CreateGamePayloadInput): Record<string, unknown> {
+  if (!Number.isSafeInteger(input.durationSeconds) || input.durationSeconds <= 0)
+    throw new Error("Game duration must be supplied explicitly and be positive");
   const { registrationStartAt, startSettlingAt } = resolveRegistrationSchedule(input.startMainAt, input.chainTimestamp);
   const registrationCountMax = resolveRegistrationCountMax(config, input.presetId, input.twoPlayerMode);
 

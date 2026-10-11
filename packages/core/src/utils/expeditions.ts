@@ -115,6 +115,14 @@ export const liveHomeArmies = (
   );
 };
 
+/** Entity IDs carry the home namespace in their upper32bits; old setup homes use their low ID. */
+export function entityHomeNamespace(entityId: number | bigint | string): number {
+  if (typeof entityId === "number" && !Number.isSafeInteger(entityId)) throw new Error("Unsafe home entity id");
+  const value = BigInt(entityId);
+  if (value <= 0n || value > 0xffffffffffffffffn) throw new Error("Invalid home entity id");
+  return Number(value < 0x100000000n ? value : value >> 32n);
+}
+
 /** A player's expedition home is a realm: its armies muster each day, and other structures are only met on the way. */
 export const isRealmCategory = (category: number): boolean => category === StructureType.Realm;
 
@@ -131,7 +139,11 @@ export const structureMapPosition = (
 ): { x: number; y: number; alt: boolean } | null => {
   const rules = readExpeditionRules(store, structure.game_id);
   if (rules && isRealmCategory(structure.base.category)) {
-    const site = expeditionRealmSite(rules, structure.metadata.realm_id, getBlockTimestamp().currentBlockTimestamp);
+    const site = expeditionRealmSite(
+      rules,
+      entityHomeNamespace(structure.entity_id),
+      getBlockTimestamp().currentBlockTimestamp,
+    );
     return site ? { x: site.col, y: site.row, alt: false } : null;
   }
   return entityMapPosition(store, structure.game_id, structure.entity_id);
@@ -156,17 +168,17 @@ export function structureLocalPosition(
   return entityMapPosition(store, structure.game_id, structure.entity_id);
 }
 
-/** Where a realm stands on today's surface region: the site the contract computes for (realm id, day, depth 0). */
+/** Where a realm stands on today's surface region: the site the contract computes for (home region, day, depth 0). */
 export const expeditionRealmSite = (
   rules: ExpeditionRules,
-  realmId: number,
+  regionId: number,
   nowSeconds: number,
 ): { col: number; row: number } | null => {
   const half = Math.floor(rules.spacing / 2);
   const day = seasonDay(rules, nowSeconds);
   if (day === null) return null;
   return {
-    col: (realmId - 1) * rules.spacing + half,
+    col: (regionId - 1) * rules.spacing + half,
     row: day * 4 * rules.spacing + half,
   };
 };
@@ -180,7 +192,7 @@ export const expeditionSpireTile = (
   structure: NativeRows["Structure"],
   nowSeconds: number,
 ): { col: number; row: number } | null => {
-  const site = expeditionRealmSite(rules, structure.metadata.realm_id, nowSeconds);
+  const site = expeditionRealmSite(rules, entityHomeNamespace(structure.entity_id), nowSeconds);
   const day = seasonDay(rules, nowSeconds);
   if (!site || day === null) return null;
   const direction = day % 6;

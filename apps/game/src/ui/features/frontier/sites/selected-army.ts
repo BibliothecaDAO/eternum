@@ -20,7 +20,7 @@ export const useSelectedOwnArmy = (): {
   useNativeRevision(ARMY_MODELS);
   if (!ordersAllowed || selectedId === null) return null;
   const gameId = configManager.getActiveGameId();
-  const army = setup.store.get("ExplorerTroops", { game_id: gameId, explorer_id: Number(selectedId) });
+  const army = setup.store.get("ExplorerTroops", { game_id: gameId, explorer_id: selectedId });
   if (!army) return null;
   const home = setup.store.get("Structure", { game_id: gameId, entity_id: army.owner });
   if (!home || !isViewerOwner(home.owner, viewer)) return null;

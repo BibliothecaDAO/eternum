@@ -4,7 +4,6 @@ import {
   fetchHeraldGameHistory,
   fetchHeraldLeaderboard,
   fetchHeraldGameReviewSnapshot,
-  fetchHeraldTransactionCount,
   type GameRef,
   type Shard,
 } from "@bibliothecadao/eternum/game-client";
@@ -38,7 +37,6 @@ interface ReviewFinalizationMeta {
 
 export interface GameReviewStats {
   numberOfPlayers: number;
-  totalTransactions: number;
   totalTilesExplored: number;
   totalCampsTaken: number;
   totalEssenceRiftsTaken: number;
@@ -91,7 +89,6 @@ interface ReviewSource {
   gameId: number;
   history: HeraldHistoryEvent[];
   snapshot: HeraldGameSnapshot;
-  transactionCount: number;
   world: Shard;
 }
 
@@ -153,17 +150,16 @@ const fetchCompleteHistory = async (
 
 const loadReviewSource = async ({ chainId, gameId }: GameRef): Promise<ReviewSource> => {
   const world = await requireOpenShard(chainId);
-  const [snapshot, history, transactionCount] = await Promise.all([
+  const [snapshot, history] = await Promise.all([
     fetchHeraldGameReviewSnapshot(world, gameId),
     fetchCompleteHistory(world, gameId),
-    fetchHeraldTransactionCount(world, gameId),
   ]);
   if (history.completeThroughBlock === null || history.completeThroughBlock < snapshot.confirmed_block) {
     throw new Error(
       `Herald history is complete through block ${history.completeThroughBlock ?? "none"}; review snapshot is block ${snapshot.confirmed_block}.`,
     );
   }
-  return { gameId, history: history.events, snapshot, transactionCount: transactionCount.count, world };
+  return { gameId, history: history.events, snapshot, world };
 };
 
 const buildFinalization = (source: ReviewSource): ReviewFinalizationMeta => {
@@ -303,7 +299,6 @@ export const fetchGameReviewData = async (input: {
   const storyStats = buildStoryStats(source.history);
   const stats: GameReviewStats = {
     numberOfPlayers: finalization.registeredPlayers.length,
-    totalTransactions: source.transactionCount,
     totalTilesExplored: sumLeaderboardMetric(leaderboard, "exploredTiles"),
     totalCampsTaken: sumLeaderboardMetric(leaderboard, "campsTaken"),
     totalEssenceRiftsTaken: sumLeaderboardMetric(leaderboard, "riftsTaken"),

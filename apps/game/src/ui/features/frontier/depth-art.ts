@@ -1,15 +1,6 @@
-/** Each Ethereal depth's portal, the one picture every Frontier surface shows of it; the surface (0) has none. */
-export const DEPTH_ART = [
-  "",
-  "/images/frontier/depths/ethereal-1.svg",
-  "/images/frontier/depths/ethereal-2.svg",
-  "/images/frontier/depths/ethereal-3.svg",
-] as const;
+import type { IconCode } from "@/ui/design-system/kit/kit-icon";
 
-/** A depth's portal, null on the surface; a depth the game does not have is loud. */
-export const depthArt = (depth: number): string | null => {
-  if (depth === 0) return null;
-  const art = DEPTH_ART[depth];
-  if (!art) throw new Error(`No depth ${depth}`);
-  return art;
-};
+/** Each Ethereal reach's mark, the one picture every Frontier surface shows of it; the surface (0) has none. */
+const REACH_MARKS: readonly IconCode[] = ["E1", "E2", "E3"];
+
+export const reachMark = (depth: 1 | 2 | 3): IconCode => REACH_MARKS[depth - 1];

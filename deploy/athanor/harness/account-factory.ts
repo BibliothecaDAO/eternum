@@ -1,6 +1,6 @@
 import { stark, type Account, type RpcProvider } from "starknet";
 import { deviceKeyOf, joinBotAccount, type OperatorIdentity, type RealmsAccountShard } from "@bibliothecadao/eternum";
-import { configureGameplayAccountSubmits } from "@bibliothecadao/eternum/game-client";
+import { configureGameplayAccountSubmits, type GameplayShard } from "@bibliothecadao/eternum/game-client";
 
 export interface HarnessAccount {
   account: Account;
@@ -19,7 +19,9 @@ interface CreateHarnessAccountsOptions {
   gameId: number;
   identity: OperatorIdentity;
   provider: RpcProvider;
-  shard: RealmsAccountShard;
+  shard: RealmsAccountShard & GameplayShard;
+  /** The run the bots play for: their sends stop being reconciled when it ends. */
+  stopped?: AbortSignal;
 }
 
 const DEFAULT_DEPLOY_CONCURRENCY = 12;
@@ -32,6 +34,7 @@ export async function createHarnessAccounts({
   identity,
   provider,
   shard,
+  stopped,
 }: CreateHarnessAccountsOptions): Promise<HarnessAccount[]> {
   const botIds = Array.from({ length: count }, (_, botId) => botId);
   return mapWithConcurrency(botIds, concurrency, async (botId) => {
@@ -43,7 +46,8 @@ export async function createHarnessAccounts({
       // Every send a bot makes, raw or through the client's provider, takes the client's nonce and fee path.
       const account = configureGameplayAccountSubmits(
         await joinBotAccount({ provider, shard, label: stark.randomAddress(), device, identity }),
-        shard.chainId,
+        shard,
+        stopped,
       );
 
       return {

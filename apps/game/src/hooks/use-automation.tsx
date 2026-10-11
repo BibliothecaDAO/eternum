@@ -36,6 +36,7 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 import { extractReadableErrorMessage, isInsufficientResourceBalanceRevert } from "@/utils/error-message";
 import { accountAddress } from "@/hooks/store/use-account-store";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 const resolveResourceLabel = (resourceId: number): string => {
   const label = ResourcesIds[resourceId as ResourcesIds];
@@ -284,7 +285,7 @@ export const useAutomation = () => {
 
         let activeRealmConfig = realmConfig;
         let runStatusNote: string | undefined;
-        const realmIdNum = Number(activeRealmConfig.realmId);
+        const realmIdNum = safeInteger(activeRealmConfig.realmId);
         if (
           Number.isFinite(realmIdNum) &&
           realmIdNum > 0 &&

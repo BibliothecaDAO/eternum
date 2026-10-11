@@ -1,11 +1,9 @@
-// @vitest-environment node
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-// Deployment verification runs standalone in deployment CI and inside the client Vitest suite.
-const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
+import { test } from "node:test";
 
 import { verifyClientDeployment } from "./verify-client-deployment.mjs";
 
@@ -24,8 +22,11 @@ test("deployment gate rejects HTML modules, stale bytes and cached shells", asyn
     "/offline.html": ["Offline", "text/html"],
   };
   for (const [path, [body]] of Object.entries(installAssets)) await writeFile(join(dist, path.slice(1)), body);
+  await writeFile(join(dist, "_redirects"), "/season / 200\n/blitz/:id / 200\n/g/:chain/:game/* / 200\n");
   let mode = "healthy";
+  const requested = [];
   const server = createServer((request, response) => {
+    requested.push(request.url);
     response.setHeader("Cache-Control", mode === "cached-shell" ? "public, max-age=300" : "no-cache");
     if (installAssets[request.url]) {
       const [body, type] = installAssets[request.url];
@@ -38,6 +39,9 @@ test("deployment gate rejects HTML modules, stale bytes and cached shells", asyn
     } else if (["/assets/main-abc.js", "/assets/vendor-shared.js"].includes(request.url)) {
       response.setHeader("Content-Type", mode === "html-module" ? "text/html" : "application/javascript");
       response.end(mode === "stale-module" ? 'console.log("old build");' : mode === "html-module" ? html : js);
+    } else if (mode === "route-missing" && request.url === "/season") {
+      response.statusCode = 404;
+      response.end("Not found");
     } else {
       response.setHeader("Content-Type", "text/html");
       response.end(mode === "stale-main-entry" ? html.replace("main-abc.js", "main-old.js") : html);
@@ -47,12 +51,17 @@ test("deployment gate rejects HTML modules, stale bytes and cached shells", asyn
   const origin = `http://127.0.0.1:${server.address().port}`;
   try {
     assert.equal((await verifyClientDeployment(dist, origin)).ok, true);
+    // The pages it asks for are the build's own list (its _redirects, held to the router), never a list of its own.
+    const pages = requested.filter((url) => !url.startsWith("/assets/") && !installAssets[url]);
+    assert.deepEqual(pages.toSorted(), ["/", "/blitz/x", "/g/0x1/1/map?spectate=true", "/g/x/x/x", "/season"]);
+    assert.equal(pages.includes("/play"), false);
     for (mode of [
       "html-module",
       "stale-module",
       "cached-shell",
       "spa-fallback",
       "stale-main-entry",
+      "route-missing",
       "cached-worker",
       "html-worker",
       "stale-worker",

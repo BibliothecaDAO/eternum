@@ -12,6 +12,7 @@ import {
   formatBlitzValue as formatValue,
   formatBlitzRankParts as formatRankParts,
 } from "../lib/blitz-card-shared";
+import { APP_HOST } from "@/config/app-address";
 
 const LEADERBOARD_CARD_STYLES = `
   ${BLITZ_CARD_FONT_IMPORT}
@@ -249,7 +250,7 @@ const BlitzLeaderboardCard = forwardRef<SVGSVGElement, BlitzLeaderboardCardProps
 
           <div className="cta">
             <div className="cta-title">Play Now</div>
-            <div className="cta-subtitle">blitz.realms.world</div>
+            <div className="cta-subtitle">{APP_HOST}</div>
           </div>
 
           <div className="powered">

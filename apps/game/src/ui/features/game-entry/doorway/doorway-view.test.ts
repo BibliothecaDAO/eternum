@@ -40,25 +40,34 @@ describe("the doorway", () => {
     );
   });
 
-  it("holds for a sign-in, or for a calm retry when the world or its scene did not open", () => {
+  it("holds for a sign-in, or for a calm retry worded by the failure owner when the world did not open", () => {
     expect(doorwayView({ source: "entry", phase: "account", audience: "player", signedIn: false }).blocker).toEqual({
-      action: "sign-in",
-      sentence: "Sign in to play.",
+      kind: "sign-in",
     });
     expect(doorwayView({ source: "entry", phase: "account", audience: "player", signedIn: true }).blocker).toBeNull();
-    expect(doorwayView({ source: "boot", phase: "reconnect_required", audience: "player" }).blocker?.action).toBe(
+    expect(doorwayView({ source: "boot", phase: "reconnect_required", audience: "player" }).blocker?.kind).toBe(
       "sign-in",
     );
     const unset = "Your account could not be set up for this game. Try again in a moment.";
     expect(
       doorwayView({ source: "boot", phase: "reconnect_required", audience: "player", accountError: unset }).blocker,
-    ).toEqual({ action: "retry", sentence: unset });
-    // A failed scene or board ends the boot in its error state: the doorway shows Retry, never an endless track.
+    ).toEqual({ kind: "retry", line: unset });
+    // A failed scene or board ends the boot in its error state: the doorway shows Try again, never an endless track.
     const failed = doorwayView({ source: "boot", phase: "error", audience: "player" });
-    expect(failed.blocker).toEqual({ action: "retry", sentence: "The world did not open. Try again." });
-    expect(doorwayView({ source: "entry", phase: "error", audience: "player", signedIn: true }).blocker?.action).toBe(
+    expect(failed.blocker).toEqual({ kind: "retry", line: "The world did not answer." });
+    expect(doorwayView({ source: "entry", phase: "error", audience: "player", signedIn: true }).blocker?.kind).toBe(
       "retry",
     );
+  });
+
+  it("offers Devices as the step when the account has reached its device limit", () => {
+    const view = doorwayView({
+      source: "boot",
+      phase: "reconnect_required",
+      audience: "player",
+      accountError: "Device limit reached.",
+    });
+    expect(view.blocker).toEqual({ kind: "devices" });
   });
 
   it("holds on the realm step with a retry when founding the realm failed", () => {
@@ -70,12 +79,16 @@ describe("the doorway", () => {
       foundingFailed: true,
     });
     expect(track(view)).toBe("account:done realm:running map:waiting play:waiting");
-    expect(view.blocker).toEqual({ action: "retry", sentence: "Your realm was not founded. Try again." });
+    expect(view.blocker).toEqual({ kind: "retry", line: "The world did not answer." });
   });
 
-  it("offers watching when a Blitz has no seat for the player", () => {
+  it("offers Watch when a Blitz has no seat for the player, and its results once it has ended", () => {
+    expect(doorwayView({ source: "entry", phase: "spectate", audience: "player", signedIn: true }).spectating).toBe(
+      "watch",
+    );
     expect(
-      doorwayView({ source: "entry", phase: "spectate", audience: "player", signedIn: true }).spectating?.label,
-    ).toBe("Watch");
+      doorwayView({ source: "entry", phase: "spectate", audience: "player", signedIn: true, blitzEntry: "review" })
+        .spectating,
+    ).toBe("results");
   });
 });

@@ -1,7 +1,7 @@
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct BuildingKey {
     pub game_id: u32,
-    pub structure_id: u32,
+    pub structure_id: u64,
     pub inner_col: u32,
     pub inner_row: u32,
 }
@@ -154,14 +154,14 @@ pub trait IBuildingRules<T> {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct CreateBuilding {
-    pub structure_id: u32,
+    pub structure_id: u64,
     pub directions: Span<u8>,
     pub category: u8,
     pub use_simple: bool,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ChangeBuilding {
-    pub structure_id: u32,
+    pub structure_id: u64,
     pub coord: crate::troops::Coord,
 }
 #[starknet::interface]
@@ -172,32 +172,28 @@ pub trait IBuildingCommands<T> {
         actor: starknet::ContractAddress,
         command: CreateBuilding,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn destroy_building(
         ref self: T,
         game_id: u32,
         actor: starknet::ContractAddress,
         command: ChangeBuilding,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn pause_building_production(
         ref self: T,
         game_id: u32,
         actor: starknet::ContractAddress,
         command: ChangeBuilding,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn resume_building_production(
         ref self: T,
         game_id: u32,
         actor: starknet::ContractAddress,
         command: ChangeBuilding,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }
 
 pub fn produced_resource(category: u8) -> u8 {

@@ -127,7 +127,7 @@ pub mod BitcoinState {
             assert!(index < self.phase(key).contributors, "unknown Bitcoin contributor");
             self.data.bitcoin.contributors.read((key.game_id, key.phase, index))
         }
-        fn contribute(ref self: ComponentState<TContractState>, key: ContributionKey, structure_id: u32, amount: u128) {
+        fn contribute(ref self: ComponentState<TContractState>, key: ContributionKey, structure_id: u64, amount: u128) {
             let phase_key = PhaseKey { game_id: key.game_id, phase: key.phase };
             let mut phase = self.phase(phase_key);
             assert!(phase.state == PhaseStatus::Open, "Bitcoin pool is closed");

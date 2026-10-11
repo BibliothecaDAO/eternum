@@ -1,5 +1,5 @@
 import { StaminaManager } from "@bibliothecadao/eternum";
-import type { ID, Troops } from "@bibliothecadao/types";
+import type { Troops } from "@bibliothecadao/types";
 
 import { selectFreshestArmyStaminaSource } from "./source-resolution";
 import type { ArmyStaminaSourceKind } from "./types";
@@ -27,7 +27,6 @@ const calculateMovementStaminaCost = (actionPath: MovementStaminaPathStep[]): nu
   }, 0);
 
 export const resolveMovementStamina = (input: {
-  entityId: ID;
   actionPath: MovementStaminaPathStep[];
   currentArmiesTick: number;
   liveTroops?: Troops | null;
@@ -46,10 +45,7 @@ export const resolveMovementStamina = (input: {
     };
   }
 
-  const selectedSource = selectFreshestArmyStaminaSource({
-    entityId: input.entityId,
-    liveTroops: input.liveTroops,
-  });
+  const selectedSource = selectFreshestArmyStaminaSource({ liveTroops: input.liveTroops });
 
   if (selectedSource?.troops) {
     const stamina = StaminaManager.getStamina(selectedSource.troops, input.currentArmiesTick);

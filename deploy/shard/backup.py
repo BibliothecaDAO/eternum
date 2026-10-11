@@ -5,13 +5,12 @@
 
 PROJECT is the shard's compose project and DATA_DIR its private data directory (the package's SHARD_DATA). Capture
 writes DEST once: Herald's Postgres hot (a base backup plus a dump), the chain as a cold copy of the node's volume
-taken while the node is stopped, the gateway's epoch secret, the data directory, the images every service runs and
+taken while the node is stopped, the private VRF key, the data directory, the images every service runs and
 checksums of all of it, then `capture.json`. The node is down only while its volume is copied; capture.json records
 how long. Restore-test brings the copy up in scratch containers without a network, compares the restored chain's
 block at the captured head with the running node's, restores both Postgres copies, and writes
 `restore-test/result.json`; it exits non-zero unless everything matches.
 """
-from contextlib import nullcontext
 import hashlib
 import json
 import os
@@ -88,7 +87,6 @@ def capture_chain(project, dest):
 
 
 def capture_files(project, data, dest):
-    archive(volume_path(f"{project}_gateway"), dest / "gateway.tar.zst")
     archive(data, dest / "data.tar.zst")
     return {"data": str(data)}
 
@@ -287,22 +285,16 @@ def utc_now():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
-# Capture stops the node and restore-test starts scratch ones, so on our box both hold the isolated-stack lock like
-# every other command that stops, starts or loads shard services. A community host has no /opt/athanor and no lock.
-def stack_lock(holder):
-    return isolated_stack_lock(holder, LOCK) if LOCK.parent.is_dir() else nullcontext()
-
-
 def main(argv):
     if os.geteuid() != 0:
         raise SystemExit("Run as root: capture reads Docker volumes directly")
     os.umask(0o077)
     if argv[:1] == ["capture"] and len(argv) == 4:
-        with stack_lock(f"backup capture {argv[1]}"):
+        with isolated_stack_lock(f"backup capture {argv[1]}", LOCK):
             record = capture(argv[1], Path(argv[2]).resolve(), Path(argv[3]).resolve())
         print(json.dumps(record, indent=2))
     elif argv[:1] == ["restore-test"] and len(argv) == 3:
-        with stack_lock(f"backup restore-test {argv[1]}"):
+        with isolated_stack_lock(f"backup restore-test {argv[1]}", LOCK):
             result = restore_test(argv[1], Path(argv[2]).resolve())
         print(json.dumps(result, indent=2))
         sys.exit(0 if result["passed"] else 1)

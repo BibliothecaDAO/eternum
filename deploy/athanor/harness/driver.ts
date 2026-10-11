@@ -1,10 +1,9 @@
 import type { FrontierEvidence } from "./frontier";
-import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
-import type { BuildOrderWorkload } from "./build-order";
 import { classifyBattleOutcome, pickBattle, type BattleCandidate, type BattleOutcome } from "./combat";
 import { rejectionOf } from "./rejections";
 import { setTimeout as sleep } from "node:timers/promises";
 import { type Account } from "starknet";
+import { playerRejectionReason } from "./action-receipt";
 import type { HarnessProvider } from "./provider";
 import { type ActionPath, ActionPaths, ActionType, type GameActions } from "@bibliothecadao/eternum";
 import { ContractAddress, TroopTier, type ID, type TroopType } from "@bibliothecadao/types";
@@ -114,7 +113,7 @@ export interface HarnessBot {
 }
 
 export interface WorkloadResult {
-  profile?: "build-order" | "burst" | "cadence" | "frontier";
+  profile?: "burst" | "cadence" | "frontier";
   frontier?: FrontierEvidence;
   actions: TrackedTransaction[];
   endedAt: string;
@@ -153,7 +152,6 @@ interface PrepareHarnessBotsOptions {
 }
 
 interface RunWorkloadOptions {
-  buildOrder?: BuildOrderWorkload;
   /** Every bot submits its whole plan at once, each next action as soon as the previous one lands. */
   burst?: boolean;
   bots: HarnessBot[];
@@ -195,13 +193,8 @@ interface TrackTransactionOptions {
   tick?: number;
 }
 
-export type HarnessGameType = "blitz" | "eternum" | "frontier";
+export type HarnessGameType = "eternum" | "frontier";
 
-const BLITZ_STRUCTURES_PER_BOT = 3;
-const ETERNUM_STRUCTURES_PER_BOT = 1;
-
-const settlementStructureCount = (gameType: HarnessGameType) =>
-  gameType === "blitz" ? BLITZ_STRUCTURES_PER_BOT : ETERNUM_STRUCTURES_PER_BOT;
 const TRANSACTION_TIMEOUT_MS = 30_000;
 const SETUP_TRANSACTION_TIMEOUT_MS = 120_000;
 const MODEL_UPDATE_TIMEOUT_MS = 30_000;
@@ -317,7 +310,7 @@ const STEADY_ACTION_PATTERN: readonly WorkloadActionKind[] = [
 ];
 
 export async function prepareHarnessBots({
-  gameType = "blitz",
+  gameType = "eternum",
   accounts,
   game,
   provider,
@@ -334,7 +327,7 @@ export async function prepareHarnessBots({
   }
 
   const bots = await mapWithConcurrency(accounts, setupConcurrency, async (harnessAccount) => {
-    const structureIds = await waitForSettlement(game, harnessAccount.address, gameType);
+    const structureIds = await waitForSettlement(game, harnessAccount.address);
     const structures = await waitForStructures(game, structureIds);
 
     const unprepared = structures.filter((structure) => game.explorersOf(structure.structureId).length === 0);
@@ -432,7 +425,6 @@ export async function runWorkload({
   onTick,
   onReady,
   provider,
-  buildOrder,
   burst = false,
 }: RunWorkloadOptions): Promise<WorkloadResult> {
   const ticks = resolveWorkloadTicks(minutes, intervalSeconds);
@@ -443,7 +435,6 @@ export async function runWorkload({
   const workloadStartedAtMs = Date.now();
   const actions: TrackedTransaction[] = [];
   const botQueues = new Map(bots.map((bot) => [bot.botId, Promise.resolve()]));
-  const nextAutomation = new Map(bots.map((bot) => [bot.botId, workloadStartedAtMs]));
   const pathReservations = new PathReservations(bots, game);
 
   for (let tick = 0; tick < ticks; tick += 1) {
@@ -455,20 +446,6 @@ export async function runWorkload({
       botQueues.set(
         bot.botId,
         previous.then(async () => {
-          if (buildOrder) {
-            const due = Date.now() >= nextAutomation.get(bot.botId)!;
-            if (due) nextAutomation.set(bot.botId, Date.now() + PROCESS_INTERVAL_MS);
-            const steps = await runBuildOrderTurn({ bot, game, provider, buildOrder, due, scheduledAtMs, tick });
-            actions.push(...steps);
-            for (const structure of bot.structures) {
-              for (const explorerId of buildOrder.explorers(structure.structureId)) {
-                if (!bot.explorers.some((explorer) => explorer.explorerId === explorerId)) {
-                  bot.explorers.push(buildExplorerState(structure, explorerId));
-                }
-              }
-            }
-          }
-          if (buildOrder && resolveActionKind(tick) === "produce") return;
           const rpc = createRpcMetrics();
           const action = await runBotAction({
             actionIndex,
@@ -493,7 +470,7 @@ export async function runWorkload({
   actions.sort((left, right) => left.submitStartedAt.localeCompare(right.submitStartedAt));
 
   return {
-    profile: buildOrder ? "build-order" : burst ? "burst" : "cadence",
+    profile: burst ? "burst" : "cadence",
     actions,
     endedAt: new Date().toISOString(),
     overheadRpc,
@@ -502,63 +479,6 @@ export async function runWorkload({
     startedAt: new Date(workloadStartedAtMs).toISOString(),
     ticks,
   };
-}
-
-async function runBuildOrderTurn({
-  bot,
-  game,
-  provider,
-  buildOrder,
-  due,
-  scheduledAtMs,
-  tick,
-}: {
-  bot: HarnessBot;
-  game: HarnessGame;
-  provider: HarnessProvider;
-  buildOrder: BuildOrderWorkload;
-  due: boolean;
-  scheduledAtMs: number;
-  tick: number;
-}): Promise<TrackedTransaction[]> {
-  const transactions: TrackedTransaction[] = [];
-  for (const structure of bot.structures) {
-    for (const step of (due ? ["automate", "build"] : ["build"]) as Array<"automate" | "build">) {
-      let planned;
-      try {
-        planned = buildOrder[step](bot.account, structure.structureId);
-      } catch (error) {
-        transactions.push(
-          driverFailure({
-            actionIndex: tick,
-            botId: bot.botId,
-            gameId: bot.gameId,
-            kind: "produce",
-            error,
-            rpc: createRpcMetrics(),
-            scheduledAtMs,
-            tick,
-          }),
-        );
-        return transactions;
-      }
-      if (!planned) continue;
-      const transaction = await trackTransaction({
-        botId: bot.botId,
-        gameId: bot.gameId,
-        kind: planned.kind,
-        provider,
-        scheduledAtMs,
-        tick,
-        stage: "workload",
-        send: () => game.submit(bot.account, planned.run),
-      });
-      classifyTransactionFailure(transaction);
-      transactions.push(transaction);
-      if (transaction.outcome !== "completed") return transactions;
-    }
-  }
-  return transactions;
 }
 
 export function resolveActionKind(tick: number): WorkloadActionKind {
@@ -1156,7 +1076,7 @@ async function waitForConfirmation(
       : {
           ...result,
           outcome: isGameplayRejection(failure) ? ("rejected" as const) : ("driver_failed" as const),
-          error: `Herald confirmation failed: ${failure}`,
+          error: isGameplayRejection(failure) ? failure : `Herald confirmation failed: ${failure}`,
         };
   });
   try {
@@ -1200,7 +1120,6 @@ async function waitForReceiptLifecycle(
   }
   return new Promise<Partial<TrackedTransaction>>((resolve) => {
     const finish = (result: Partial<TrackedTransaction>) => {
-      subscription.channel.off("open", catchUp);
       signal.removeEventListener("abort", abort);
       unsubscribe();
       resolve(result);
@@ -1243,34 +1162,17 @@ async function waitForReceiptLifecycle(
         preConfirmedMs: (preConfirmedAtMs ?? observedAtMs) - submittedAtMs,
       });
     };
-    let observedSocket: unknown;
-    const catchUp = () => {
-      if (finished || observedSocket === subscription.channel.websocket) return;
-      observedSocket = subscription.channel.websocket;
-      void measureRpc(rpc, "getTransactionStatus", () => provider.getTransactionStatus(transactionHash))
-        .then((status) => {
-          if (!finished) observe(status);
-        })
-        .catch((error: unknown) => {
-          if (!finished) {
-            finished = true;
-            finish({ outcome: "driver_failed", error: errorMessage(error) });
-          }
-        });
-    };
-    subscription.channel.on("open", catchUp);
     subscription.on(({ status }) => observe(status));
-    catchUp();
   });
 }
 
-async function waitForSettlement(game: HarnessGame, address: string, gameType: HarnessGameType): Promise<ID[]> {
+async function waitForSettlement(game: HarnessGame, address: string): Promise<ID[]> {
   const structureIds = await game.waitFor(
     () => game.settlementStructureIds(address),
     MODEL_UPDATE_TIMEOUT_MS,
     () => `Settlement for ${address} in game ${game.gameId}`,
   );
-  const expected = settlementStructureCount(gameType);
+  const expected = 1;
   if (structureIds.length !== expected) {
     throw new Error(`Expected ${expected} structures for ${address}, found ${structureIds.length}`);
   }
@@ -1402,10 +1304,8 @@ function driverFailure({
  * The season contract's named refusals of a well-formed intent: a game rule said no to the move. INVALID_ACTOR and
  * INVALID_COMMAND are malformed intents, which are the driver's fault, so they stay chain-or-driver failures.
  */
-const GAMEPLAY_REJECTION = /Native action rejected: (?:GAMEPLAY_REJECTED|COMMAND_DISABLED|ROSTER_NOT_READY)\b/;
-
 function isGameplayRejection(error: unknown): boolean {
-  return GAMEPLAY_REJECTION.test(errorMessage(error));
+  return playerRejectionReason(errorMessage(error)) !== undefined;
 }
 
 export function classifyWorkloadFailure(error: unknown): WorkloadFailureClass {
@@ -1440,16 +1340,6 @@ export function createRpcMetrics(): RpcMetrics {
     getBlock: { calls: 0, wallMs: 0 },
     getTransactionStatus: { calls: 0, wallMs: 0 },
   };
-}
-
-async function measureRpc<T>(rpc: RpcMetrics, method: MeasuredRpcMethod, call: () => Promise<T>): Promise<T> {
-  const startedAt = performance.now();
-  rpc[method].calls += 1;
-  try {
-    return await call();
-  } finally {
-    rpc[method].wallMs += performance.now() - startedAt;
-  }
 }
 
 function snapshotRpcMetrics(rpc: RpcMetrics): RpcMetrics {

@@ -23,14 +23,8 @@ const buildingRows = [
 
 export const frontierPreset: NativePreset = {
   ledger: {
-    entryFee: 0,
     protocolCutBps: 0,
-    swordPrice: 0,
-    shieldPrice: 0,
     mmrEnabled: false,
-    predictionFeeBps: 0,
-    liabilityCap: 0,
-    seed: 0,
   },
   bitcoinEnabled: false,
   startingTroops: Array.from({ length: 17 }, () => "Knight" as const),
@@ -68,7 +62,6 @@ export const frontierPreset: NativePreset = {
   spacing: 100,
   // Four-hour units: days of 8 to 24 hours, bags of 80 hours, a season of 21 bags in ten weeks.
   dayUnitSeconds: 14400,
-  seasonBags: 21,
   board: {
     demolitionRefundBps: 5000,
     workshopRate: 0.056,
@@ -107,14 +100,12 @@ export const frontierPreset: NativePreset = {
     emptyRevealLimit: 7,
   },
   progression: { revealXp: 2, fixedXp: 200, uncommonXp: 100, rareXp: 200, epicXp: 400, legendaryXp: 800 },
-  // The ruin's chest: the season pool paid through a day price of at most 50 LORDS a share.
+  labor: { amount: 1000, accountDailyLimit: 0 },
+  // Daily chest prices cannot exceed 50 LORDS per share.
   chests: {
-    pool: 1000000,
     priceCeiling: 50,
     shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
-    surgeFactor: 3,
-    surgeMinimumShares: 60,
-    estimateDays: 5,
+    claimWindowSeconds: 7 * 86400,
   },
   depths: [
     {

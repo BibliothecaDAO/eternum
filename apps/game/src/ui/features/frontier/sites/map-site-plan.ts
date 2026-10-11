@@ -1,8 +1,8 @@
 import { nativeRuleConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { getLayerNeighborHexes, TileOccupier } from "@bibliothecadao/types";
-import { MAP_SITE_ART } from "./site-art";
 
-export type MapSiteKind = keyof typeof MAP_SITE_ART;
+/** The single-use sites a tile can hold. */
+export type MapSiteKind = "Shrine" | "Well";
 
 /** A tile's single-use site, from its occupier category alone: these sites have no Structure. */
 export const mapSiteKind = (occupierType: number | undefined): MapSiteKind | null =>
@@ -17,15 +17,14 @@ export interface MapSiteUser {
 
 interface MapSitePlan {
   kind: MapSiteKind;
-  art: string;
   /** What using it gives: a Shrine its fixed XP, a Well stamina; unknown while the game's XP rules are. */
   gain: number | undefined;
   usable: boolean;
 }
 
 /**
- * A Shrine or Well as its tile card shows it: its art, what one use gives, and whether the selected army can use it
- * now. The contract's own refusals disable it first: a living army on an adjacent tile. Unknown progress keeps a Shrine
+ * A Shrine or Well as its tile card shows it: what one use gives, and whether the selected army can use it now. The
+ * contract's own refusals disable it first: a living army on an adjacent tile. Unknown progress keeps a Shrine
  * disabled, since its XP lands on the army's progress.
  */
 export const readMapSite = (
@@ -35,7 +34,6 @@ export const readMapSite = (
   rules: NativeRows["ArmyProgressionRules"] | undefined,
 ): MapSitePlan => ({
   kind,
-  art: MAP_SITE_ART[kind],
   gain: kind === "Shrine" ? rules?.fixed_xp : nativeRuleConstants.WELL_STAMINA,
   usable: user !== null && canUse(kind, siteTile, user),
 });

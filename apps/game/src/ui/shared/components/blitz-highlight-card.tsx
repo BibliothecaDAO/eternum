@@ -19,6 +19,7 @@ import {
   blitzNumberFormatter,
   formatBlitzRankParts,
 } from "../lib/blitz-card-shared";
+import { APP_HOST } from "@/config/app-address";
 
 type BlitzCardTheme = "gold" | "silver" | "bronze" | "neutral" | "emerald";
 
@@ -311,7 +312,7 @@ const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardProps>(({
 
         <div className="cta">
           <div className="cta-title">Play Now</div>
-          <div className="cta-subtitle">blitz.realms.world</div>
+          <div className="cta-subtitle">{APP_HOST}</div>
         </div>
 
         <div className="player">

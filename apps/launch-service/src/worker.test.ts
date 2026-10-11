@@ -1,10 +1,12 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Miniflare } from "miniflare";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import { unstable_readConfig } from "wrangler";
+import { hash } from "starknet";
+import { gamesAbi, response } from "../../../packages/value-ledger/test-support/abi";
 import schema from "../../../contracts/l3/world-native/schema/schema.json";
 
 /**
@@ -24,9 +26,10 @@ const SHARD_CHAIN = "0x534e5f574f524b4552";
 const SHARD_MANIFEST = {
   version: 1,
   chainId: SHARD_CHAIN,
+  l2GasBound: "0x47868c00",
+  vrfPublicKey: { x: "0x1", y: "0x2" },
   releaseSchemas: { "1": schema.identity },
   rpcUrl: `${SHARD_URL}/rpc`,
-  admissionUrl: `${SHARD_URL}/admission`,
   accountClassHash: "0x2",
   guardianPublicKey: "0x9",
   contracts: { games: "0x77" },
@@ -41,30 +44,85 @@ beforeAll(async () => {
     cwd: new URL("..", import.meta.url).pathname,
     stdio: "ignore",
   });
+  writeFileSync(
+    join(bundle, "fixture.js"),
+    `
+    import {Registrar} from "./worker.js";
+    export {default} from "./worker.js";
+    export * from "./worker.js";
+    export class EnrolledRegistrar extends Registrar {
+      constructor(ctx, env) {
+        super(ctx, env);
+        ctx.blockConcurrencyWhile(() => ctx.storage.put(
+          ${JSON.stringify(`launcher-account:${BigInt(SHARD_CHAIN).toString(16)}`)},
+          {launcherAccount: ${JSON.stringify(LAUNCHER)}}
+        ));
+      }
+    }
+  `,
+  );
   mf = new Miniflare({
-    modulesRoot: bundle,
-    modules: [{ type: "ESModule", path: join(bundle, "worker.js") }],
-    compatibilityDate: "2026-07-30",
-    compatibilityFlags: ["nodejs_compat"],
-    d1Databases: { DB: "launch" },
-    durableObjects: { REGISTRAR: { className: "Registrar", useSQLite: true } },
-    serviceBindings: {
-      IDENTITY: () => Response.json({ session: { id: "s1" }, user: { id: "u1", realmsId: "0x7", address: LAUNCHER } }),
-    },
-    bindings: {
-      ENVIRONMENT: "staging",
-      BASE_URL: ORIGIN,
-      LAUNCHER_ALLOWLIST: LAUNCHER,
-      SHARD_URL,
-      DEPLOYER_ACCOUNT_ADDRESS: "0x456",
-      DEPLOYER_PRIVATE_KEY: "0x1",
-      OPERATOR_TOKEN: "operator-test-token",
-      VERSION: { id: "workerd-test", tag: "", timestamp: "" },
-    },
-    outboundService: (request: Request) =>
-      request.url === `${SHARD_URL}/manifest`
-        ? Response.json(SHARD_MANIFEST)
-        : new Response(`${request.url} unavailable`, { status: 599 }),
+    workers: [
+      {
+        name: "launch",
+        modulesRoot: bundle,
+        modules: [
+          { type: "ESModule", path: join(bundle, "fixture.js") },
+          { type: "ESModule", path: join(bundle, "worker.js") },
+        ],
+        compatibilityDate: "2026-07-30",
+        compatibilityFlags: ["nodejs_compat"],
+        d1Databases: { DB: "launch" },
+        durableObjects: { REGISTRAR: { className: "EnrolledRegistrar", useSQLite: true } },
+        serviceBindings: {
+          IDENTITY: { name: "directory", entrypoint: "ValueIdentity" },
+          VALUE_RELAY: { name: "directory", entrypoint: "ValueRelay" },
+          IDENTITY_HTTP: () =>
+            Response.json({ session: { id: "s1" }, user: { id: "u1", realmsId: "0x7", address: LAUNCHER } }),
+        },
+        bindings: {
+          ENVIRONMENT: "staging",
+          BASE_URL: ORIGIN,
+          LAUNCH_DEPLOYER_PRIVATE_KEY: "0x1",
+          OPERATOR_TOKEN: "operator-test-token",
+          VERSION: { id: "workerd-test", tag: "", timestamp: "" },
+        },
+        outboundService: async (request: Request) => {
+          if (request.url === `${SHARD_URL}/manifest`) return Response.json(SHARD_MANIFEST);
+          if (request.url === `${SHARD_URL}/rpc`) {
+            const { id, method, params } = (await request.json()) as {
+              id: number;
+              method: string;
+              params: { request?: { entry_point_selector?: string } };
+            };
+            const result =
+              method === "starknet_chainId"
+                ? SHARD_CHAIN
+                : method === "starknet_getBlockWithTxHashes"
+                  ? {
+                      status: "ACCEPTED_ON_L2",
+                      block_number: 1,
+                      block_hash: "0x1",
+                      timestamp: Math.floor(Date.now() / 1000),
+                      transactions: [],
+                    }
+                  : method === "starknet_getClassAt"
+                    ? { abi: gamesAbi }
+                    : method === "starknet_call" &&
+                        params.request?.entry_point_selector === hash.getSelectorFromName("launcher")
+                      ? response(gamesAbi, "launcher", LAUNCHER)
+                      : undefined;
+            if (result !== undefined) return Response.json({ jsonrpc: "2.0", id, result });
+          }
+          return new Response(`${request.url} unavailable`, { status: 599 });
+        },
+      },
+      {
+        name: "directory",
+        modules: true,
+        script: `import { WorkerEntrypoint } from "cloudflare:workers"; export class ValueRelay extends WorkerEntrypoint { openSlot(){} slot(){return {exists:false,seasonId:0,presetId:0,close:0,end:0,pool:"0",registeredCount:0,cancelled:false};} registrations(){return {slot:{exists:true,seasonId:1,presetId:1,close:100,end:460,registeredCount:1,cancelled:false},blockNumber:10,blockHash:"0xabc",secondsUntilClose:0,next:null,registrations:[{wallet:"0x1",registeredAt:90}]};} } export class ValueIdentity extends WorkerEntrypoint { accountsAtRegistration(){return ["0x101"];} shards(){return [{chainId:${JSON.stringify(SHARD_CHAIN)},url:${JSON.stringify(SHARD_URL)},status:"active"}];} } export default {fetch(){return new Response(null,{status:404});}};`,
+      },
+    ],
   });
   db = (await mf.getD1Database("DB")) as unknown as D1Database;
   const migrations = new URL("../migrations/", import.meta.url);
@@ -94,7 +152,9 @@ it("opens a Blitz window, ticks the schedule, queues an authorized launch and re
   expect(opened.status).toBe(200);
   await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
   const slots = (await (await mf.dispatchFetch(`${ORIGIN}/api/slots`)).json()) as { slots: { name: string }[] };
-  expect(slots.slots.map(({ name }) => name)).toEqual([expect.stringMatching(/^blitz-\d{8}-(11|20)00$/)]);
+  expect(slots.slots).toHaveLength(1);
+  const waiting = await db.prepare("SELECT name FROM playtest_slots").first<{ name: string }>();
+  expect(waiting?.name).toMatch(/^blitz-\d{8}-(11|20)00$/);
 
   expect(await (await mf.dispatchFetch(`${ORIGIN}/api/factory/health`)).json()).toMatchObject({
     service: "launch",
@@ -107,12 +167,10 @@ it("opens a Blitz window, ticks the schedule, queues an authorized launch and re
     version: "workerd-test",
   });
 
-  const launched = await mf.dispatchFetch(`${ORIGIN}/api/factory/runs`, {
-    method: "POST",
-    headers: { origin: ORIGIN, cookie: "better-auth.session_token=s1", "content-type": "application/json" },
-    body: JSON.stringify({ environment: "madara.blitz", gameName: "bltz-workerd" }),
-  });
-  expect(launched.status).toBe(202);
+  await db
+    .prepare("UPDATE playtest_slots SET closes_at=?")
+    .bind(Date.now() - 1000)
+    .run();
 
   await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
   const deadline = Date.now() + 10_000;
@@ -152,12 +210,13 @@ it("launches a game that is ready now while a result waits an hour for its game'
   await tick(); // a pass finds nothing due and sleeps until the result's hour
   await new Promise((resolve) => setTimeout(resolve, 1_000));
 
-  const launched = await mf.dispatchFetch(`${ORIGIN}/api/factory/runs`, {
-    method: "POST",
-    headers: { origin: ORIGIN, cookie: "better-auth.session_token=s1", "content-type": "application/json" },
-    body: JSON.stringify({ environment: "madara.blitz", gameName: "bltz-ready" }),
-  });
-  expect(launched.status).toBe(202);
+  await db
+    .prepare(
+      `INSERT INTO launch_runs (id,chain_id,kind,environment,name,request,status,available_at,created_at,updated_at)
+    VALUES ('ready-game',?,'game','madara.eternum','bltz-ready',?,'queued',?,?,?)`,
+    )
+    .bind(SHARD_CHAIN, JSON.stringify({ environment: "madara.eternum", gameName: "bltz-ready" }), now, now, now)
+    .run();
   await tick();
 
   const deadline = Date.now() + 10_000;

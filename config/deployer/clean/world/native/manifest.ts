@@ -20,13 +20,13 @@ export function nativeGamesAbi(manifest: RegistrarWorld): Abi {
 
 /** Resolve the Games surface from the shard's verified schema and address. */
 export function registrarWorldOf(
-  shard: { chainId: string; worldAddress: string },
+  shard: { chainId: string; worldAddress: string; l2GasBound: bigint },
   schema: NativeSchema,
 ): RegistrarWorld {
   return {
     native: { activeSchema: schema.identity, schemas: { [schema.identity]: schema } },
     world: { address: shard.worldAddress },
-    shard: { chainId: shard.chainId },
+    shard: { chainId: shard.chainId, l2GasBound: `0x${shard.l2GasBound.toString(16)}` },
   };
 }
 
@@ -65,6 +65,7 @@ export function buildNativeManifest(local: NativeWorld, before: NativePlan, shar
       activeSchema: local.schema.identity,
       schemas: { ...local.previous?.native.schemas, [local.schema.identity]: local.schema },
       gamesClassHash: games.classHash,
+      verifierClassHash: local.verifier.classHash,
       migrationClassHash: local.release.migrationClassHash,
       releaseId: local.release.releaseId,
       releaseSchemas: { ...local.previous?.native.releaseSchemas, [local.release.releaseId]: local.release.schema },

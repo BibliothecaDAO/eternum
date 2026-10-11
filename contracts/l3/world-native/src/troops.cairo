@@ -49,14 +49,14 @@ impl StaminaIntoSource of Into<Stamina, StaminaSource> {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ArmySlotKey {
     pub game_id: u32,
-    pub structure_id: u32,
+    pub structure_id: u64,
     // The season day index (crate::days), under the field's historical name.
     pub epoch: u64,
     pub slot: u8,
 }
 #[derive(Copy, Drop, Serde, Default, Debug, PartialEq, starknet::Store)]
 pub struct ArmySlot {
-    pub explorer_id: u32,
+    pub explorer_id: u64,
     pub stamina: Stamina,
 }
 #[derive(Copy, Drop, Default, starknet::Store)]
@@ -188,18 +188,18 @@ pub impl TroopsPacking of starknet::storage_access::StorePacking<Troops, PackedT
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ExplorerKey {
     pub game_id: u32,
-    pub explorer_id: u32,
+    pub explorer_id: u64,
 }
 #[derive(Copy, Drop, Serde, Default, Debug, PartialEq, starknet::Store)]
 pub struct ExplorerRecord {
-    pub owner: u32,
+    pub owner: u64,
     pub troops: Troops,
 }
 
 // Views join troop facts with the canonical spatial record; coordinates are never stored here.
 #[derive(Copy, Drop, Serde, Default, Debug, PartialEq)]
 pub struct ExplorerTroops {
-    pub owner: u32,
+    pub owner: u64,
     pub troops: Troops,
     pub coord: Coord,
 }
@@ -218,25 +218,20 @@ pub struct BattleEvent {
     #[key]
     pub game_id: u32,
     #[key]
-    pub order: u64,
+    pub attacker_id: u64,
     #[key]
-    pub index: u32,
+    pub defender_id: u64,
     #[key]
-    pub attacker_id: u32,
+    pub attacker_owner: u64,
     #[key]
-    pub defender_id: u32,
-    #[key]
-    pub attacker_owner: u32,
-    #[key]
-    pub defender_owner: u32,
-    pub winner_id: u32,
+    pub defender_owner: u64,
+    pub winner_id: u64,
     pub coord: Coord,
     pub max_reward: Span<crate::resources::ResourceAmount>,
     pub attacker: crate::combat_actions::BattleSide,
     pub defender: crate::combat_actions::BattleSide,
     pub timestamp: u64,
 }
-
 
 pub fn troop_resource(category: TroopType, tier: u8) -> u8 {
     (match category {
@@ -445,7 +440,7 @@ pub trait IBattleResolution<T> {
 
 #[derive(Copy, Drop, Serde)]
 pub struct ArmySlotAllocation {
-    pub home: u32,
+    pub home: u64,
     pub epoch: u64,
     pub allowance: u8,
     pub initial: Stamina,

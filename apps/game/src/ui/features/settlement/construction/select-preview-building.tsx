@@ -1472,7 +1472,7 @@ const ResourceInfo = ({
     entityId === undefined ? undefined : { game_id: configManager.getActiveGameId(), entity_id: entityId },
   );
 
-  const buildingCost = getBuildingCosts(entityId ?? 0, game.setup.store, buildingId, useSimpleCost);
+  const buildingCost = getBuildingCosts(entityId, game.setup.store, buildingId, useSimpleCost);
 
   const buildingPopCapacityConfig = configManager.getBuildingCategoryConfig(buildingId);
   const population = buildingPopCapacityConfig.population_cost;
@@ -1544,7 +1544,7 @@ const ResourceInfo = ({
             <div className="grid grid-cols-2 gap-2">
               {Object.keys(cost).map((resourceId) => {
                 const balance = getBalance(
-                  entityId || 0,
+                  entityId,
                   cost[Number(resourceId)].resource,
                   currentDefaultTick,
                   game.setup.store,
@@ -1574,7 +1574,7 @@ const ResourceInfo = ({
           <div className="grid grid-cols-2 gap-2">
             {Object.keys(buildingCost).map((resourceId, index) => {
               const balance = getBalance(
-                entityId || 0,
+                entityId,
                 buildingCost[Number(resourceId)].resource,
                 currentDefaultTick,
                 game.setup.store,
@@ -1634,7 +1634,7 @@ const BuildingInfo = ({
   const resourceProduced = configManager.getResourceBuildingProduced(buildingId);
   const resourceProducedName = resourceProduced ? findResourceById(resourceProduced)?.trait : undefined;
 
-  const buildingCost = getBuildingCosts(entityId ?? 0, game.setup.store, buildingId, useSimpleCost);
+  const buildingCost = getBuildingCosts(entityId, game.setup.store, buildingId, useSimpleCost);
 
   const buildingPopCapacityConfig = configManager.getBuildingCategoryConfig(buildingId);
   const population = buildingPopCapacityConfig.population_cost;
@@ -1720,7 +1720,7 @@ const BuildingInfo = ({
           <div className="grid grid-cols-2 gap-2">
             {ongoingCost.map((costItem, index) => {
               if (!costItem || costItem.resource === undefined) return null; // Add check for undefined
-              const balance = getBalance(entityId || 0, costItem.resource, currentDefaultTick, game.setup.store);
+              const balance = getBalance(entityId, costItem.resource, currentDefaultTick, game.setup.store);
               return (
                 <ResourceCost
                   key={`ongoing-cost-${index}`}
@@ -1749,7 +1749,7 @@ const BuildingInfo = ({
           <div className="grid grid-cols-2 gap-2">
             {Object.keys(buildingCost).map((resourceId, index) => {
               const balance = getBalance(
-                entityId || 0,
+                entityId,
                 buildingCost[Number(resourceId)].resource,
                 currentDefaultTick,
                 game.setup.store,

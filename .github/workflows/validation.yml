@@ -9,8 +9,8 @@ permissions:
   contents: read
 
 # A pull request scopes from where it branched, so its newest run covers everything and older ones cancel. A run on next
-# checks every area and depends on no earlier run, so a newer merge cancels it too: only the newest commit of a burst
-# of merges is guaranteed a run, and landing-run.sh names a cancelled run when it refuses to publish its commit.
+# checks every core area and scopes other jobs to changed inputs. A newer merge cancels it too: only the newest commit
+# of a burst of merges is guaranteed a run, and landing-run.sh names a cancelled run when it refuses to publish its commit.
 concurrency:
   group: validation-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -22,6 +22,7 @@ jobs:
       client: ${{ steps.paths.outputs.client }}
       herald: ${{ steps.paths.outputs.herald }}
       services: ${{ steps.paths.outputs.services }}
+      portal: ${{ steps.paths.outputs.portal }}
       native: ${{ steps.paths.outputs.native }}
       runtime: ${{ steps.paths.outputs.runtime }}
       terrain: ${{ steps.paths.outputs.terrain }}
@@ -39,23 +40,22 @@ jobs:
         id: paths
         env:
           EVENT: ${{ github.event_name }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
-          # A push to next runs every area: a hand-kept path map can miss an import, and a push measured from its
-          # predecessor would let a red area turn green on a later push that never touched it.
-          # .github/scripts/landing-run.sh lets a publish path trust only these runs.
+          # Core areas always run on next. Other checks follow the push's full changed-path range.
           EVERY_AREA=false
-          if [ "$EVENT" = push ]; then
-            EVERY_AREA=true
-          else
-            BASE_SHA=$(bash .github/scripts/diff-base.sh)
-            if [ -z "$BASE_SHA" ]; then
-              echo "::warning title=Every area selected::no base resolved for $HEAD_SHA, so this run checks every area"
-              EVERY_AREA=true
+          BASE_SHA=$(bash .github/scripts/diff-base.sh)
+          if [ -z "$BASE_SHA" ]; then
+            if [ "$EVENT" = push ]; then
+              echo "::error::Cannot resolve the push base for $HEAD_SHA"
+              exit 1
             fi
-            echo "Measuring $HEAD_SHA from $BASE_SHA"
+            echo "::warning title=Every area selected::no base resolved for $HEAD_SHA, so this run checks every area"
+            EVERY_AREA=true
           fi
+          echo "Measuring $HEAD_SHA from $BASE_SHA"
           export EVERY_AREA BASE_SHA
           python3 - <<'PYTHON'
           import json, os, subprocess, sys
@@ -63,7 +63,7 @@ jobs:
           from validation_areas import selected_areas
           every_area = os.environ["EVERY_AREA"] == "true"
           files = [] if every_area else subprocess.check_output(["git", "diff", "--name-only", "-z", os.environ["BASE_SHA"], os.environ["HEAD_SHA"]]).decode().split("\0")
-          selected = selected_areas(files, every_area)
+          selected = selected_areas(files, every_area, landing=os.environ["EVENT"] == "push")
           with open(os.environ["GITHUB_OUTPUT"], "a") as output:
               for area, enabled in selected.items():
                   print(f"{area}={str(enabled).lower()}", file=output)
@@ -87,6 +87,11 @@ jobs:
     needs: scope
     if: needs.scope.outputs.services == 'true'
     uses: ./.github/workflows/test-services.yml
+
+  portal:
+    needs: scope
+    if: needs.scope.outputs.portal == 'true'
+    uses: ./.github/workflows/test-portal.yml
 
   native:
     needs: scope
@@ -138,6 +143,7 @@ jobs:
         client,
         herald,
         services,
+        portal,
         native,
         runtime,
         terrain,

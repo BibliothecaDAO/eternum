@@ -72,6 +72,11 @@ export interface GameModeConfig {
 }
 
 const BASE_BUILDING_EXCLUSIONS = new Set<string>([
+  // Frontier's training buildings stand only on its realm boards.
+  "WarHall",
+  "SupplyYard",
+  "ScoutsLodge",
+  "Hearth",
   "Resource",
   "Castle",
   "Bank",
@@ -216,7 +221,16 @@ const frontierConfig: GameModeConfig = {
   },
   rules: {
     isBuildingTypeAllowed: (key) =>
-      ["WorkersHut", "Storehouse", "ResourceWheat", "ResourceKnightT1", "ResourceLabor"].includes(key),
+      [
+        "WorkersHut",
+        "ResourceWheat",
+        "ResourceKnightT1",
+        "ResourceLabor",
+        "WarHall",
+        "SupplyYard",
+        "ScoutsLodge",
+        "Hearth",
+      ].includes(key),
     autoAllocateHyperstructureShares: false,
   },
 };

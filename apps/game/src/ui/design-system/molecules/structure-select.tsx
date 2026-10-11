@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 interface StructureSelectProps {
   value: number;
@@ -17,7 +18,7 @@ export const StructureSelect = ({ value, onChange, options }: StructureSelectPro
       <select
         id={id}
         value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
+        onChange={(event) => onChange(safeInteger(event.target.value))}
         className="min-h-11 min-w-0 flex-1 rounded-md border border-gold/30 bg-[#101c23] px-2 text-base text-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
       >
         {!options.some((option) => option.entityId === value) && <option value={value}>Select a structure</option>}

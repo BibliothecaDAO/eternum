@@ -40,11 +40,12 @@ export function presetLaunch(
     map_center_offset: 0,
   };
   return [
-    ...(roster.length ? [rowEvent("BlitzRoster", [game], { players: roster.map((account) => ({ account })) })] : []),
+    ...(roster.length
+      ? [rowEvent("BlitzRoster", [game], { players: roster.map((account) => ({ account, wallet: account })) })]
+      : []),
     rowEvent("GameRegistry", [game], {
       name: "0x706172697479",
       preset_id: preset.presetId,
-      creator: "0x111",
       settled: false,
       ready: true,
       dev_mode_on: false,

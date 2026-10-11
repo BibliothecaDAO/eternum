@@ -1,6 +1,12 @@
 import { Account, hash, num, type ProviderInterface } from "starknet";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { deviceKeyOf, joinRealmsAccount, readAccountDevices, revokeDeviceEverywhere } from "./realms-account";
+import {
+  deviceKeyOf,
+  joinBotAccount,
+  joinRealmsAccount,
+  readAccountDevices,
+  revokeDeviceEverywhere,
+} from "./realms-account";
 
 const shard = { chainId: "0x1", accountClassHash: "0x2", guardianPublicKey: "0x3" };
 const device = deviceKeyOf("0x4");
@@ -22,6 +28,40 @@ const provider = (deployed: boolean) =>
 afterEach(() => vi.restoreAllMocks());
 
 describe("joining a shard", () => {
+  it("refuses insecure bot enrollment before sending the operator credential", async () => {
+    const send = vi.spyOn(globalThis, "fetch");
+    await expect(
+      joinBotAccount({
+        provider: provider(false),
+        shard,
+        label: "0x99",
+        device,
+        identity: { url: "http://identity.test/api", operatorToken: "fixture-token" },
+      }),
+    ).rejects.toThrow("HTTPS");
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("enrolls a bot with redirects disabled on the credential-bearing request", async () => {
+    vi.spyOn(Account.prototype, "deployAccount").mockResolvedValue({
+      contract_address: "0x7",
+      transaction_hash: "0x8",
+    });
+    const send = vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json({ signature: ["0x5", "0x6"] }));
+    await joinBotAccount({
+      provider: provider(false),
+      shard,
+      label: "0x99",
+      device,
+      identity: { url: "https://identity.test/api", operatorToken: "fixture-token" },
+    });
+    expect(send).toHaveBeenCalledWith(
+      "https://identity.test/api/devices/bots",
+      expect.objectContaining({ redirect: "error" }),
+    );
+    expect(new Headers(send.mock.calls[0][1]?.headers).get("authorization")).toBe("Bearer fixture-token");
+  });
+
   it("deploys with no tip, so nothing estimates one from recent blocks", async () => {
     const deployAccount = vi.spyOn(Account.prototype, "deployAccount").mockResolvedValue({
       contract_address: "0x7",
