@@ -7,6 +7,11 @@ export interface Command {
   input?: string | Uint8Array;
   env?: Record<string, string>;
 }
+export class CommandFailure extends Error {
+  constructor(readonly stdout: string) {
+    super("Deployment subprocess failed; no captured output was printed");
+  }
+}
 /** Capture subprocess output: a failing SDK or CLI may echo its input. Only the caller's fixed label escapes. */
 export async function command(spec: Command): Promise<string> {
   const env: Record<string, string> = {
@@ -30,7 +35,7 @@ export async function command(spec: Command): Promise<string> {
     child.on("close", (code) =>
       code === 0
         ? resolve(Buffer.concat(chunks).toString())
-        : reject(new Error("Deployment subprocess failed; no captured output was printed")),
+        : reject(new CommandFailure(Buffer.concat(chunks).toString())),
     );
     child.stdin.on("error", () => {});
     child.stdin.end(spec.input);

@@ -32,17 +32,25 @@ INPUTS = ("package", "shard_name", "chain_id", "public_rpc_url", "public_herald_
           "player_capacity", "presets", "node_memory", "herald_memory", "vrf_workers", "l2_gas_bound")
 
 
-def main(environment, directory):
+def ignore_stage(_stage):
+    pass
+
+
+def main(environment, directory, report_stage=ignore_stage):
+    report_stage("prepare")
     inputs = load_inputs(environment)
     with shard.isolated_stack_lock(f"deploy {environment}"):
         directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+        report_stage("fetch release")
         release = fetch_package(inputs["package"], directory)
+        report_stage("prepare")
         (directory / ".env").write_text(render_environment(inputs, (directory / "images.env").read_text()))
         check_operator_approval()
-        status = start(directory, inputs)
+        status = start(directory, inputs, report_stage)
+        report_stage("self-check")
         differences = release_differences(release, *deployed_facts(directory / "data"), inputs["presets"])
         if not differences and status["status"] == "pending":
-            verify_and_activate(inputs, directory / "data")
+            verify_and_activate(inputs, directory / "data", report_stage)
     if differences:
         print(f"{environment} does not run {inputs['package']}:", *differences, sep="\n  ", file=sys.stderr)
         return 1
@@ -110,16 +118,22 @@ def check_operator_approval():
 
 
 
-def start(directory, config):
+def start(directory, config, report_stage=ignore_stage):
     # Materialize the protected file before Compose creates the RPC container's file bind.
-    subprocess.run([*compose(directory), "run", "--rm", "--no-deps", "prepare"], check=True)
-    subprocess.run([*compose(directory), "up", "-d", "herald", "metrics"], check=True)
+    report_stage("prepare")
+    subprocess.run([*compose(directory), "run", "--rm", "--no-deps", "prepare"], check=True, capture_output=True)
+    report_stage("start Herald")
+    subprocess.run([*compose(directory), "up", "-d", "herald", "metrics"], check=True, capture_output=True)
+    report_stage("wait for Herald identity")
     wait_for_identity(config)
+    report_stage("register pending")
     status = directory_status(config, "pending")
-    subprocess.run([*compose(directory), "up", "-d"], check=True)
-    subprocess.run([*compose(directory), "wait", "init"], check=True, stdout=subprocess.DEVNULL)
+    report_stage("start services")
+    subprocess.run([*compose(directory), "up", "-d"], check=True, capture_output=True)
+    report_stage("initialise")
+    subprocess.run([*compose(directory), "wait", "init"], check=True, capture_output=True)
     code = subprocess.check_output([*compose(directory), "ps", "--all", "--format", "{{.ExitCode}}", "init"],
-                                   text=True).strip()
+                                   text=True, stderr=subprocess.PIPE).strip()
     if code != "0":
         raise RuntimeError(f"initialization exited {code}; read {directory / 'data'}/*.log")
     return status
@@ -134,6 +148,7 @@ def run_self_check(directory):
     # The runner emits public route/status JSON only. Never echo arbitrary setup failures/credentials.
     rows = [line for line in result.stdout.splitlines() if line.startswith("{")]
     if not rows:
+        result.check_returncode()
         raise RuntimeError("self-check failed at load_deployment_fixture")
     check = json.loads(rows[-1])
     if result.returncode != 0:
@@ -141,7 +156,8 @@ def run_self_check(directory):
     return check
 
 
-def verify_and_activate(config, directory):
+def verify_and_activate(config, directory, report_stage=ignore_stage):
+    report_stage("self-check")
     if directory_status(config, "pending")["status"] != "pending":
         print(json.dumps({"event": "shard_self_check_skipped", "reason": "shard_already_listed"}))
         return
@@ -159,6 +175,7 @@ def verify_and_activate(config, directory):
     if not check.get("passed"):
         route = check.get("firstFailedRoute", "unknown_route")
         raise RuntimeError(f"self-check failed at {route}; directory status unchanged")
+    report_stage("activate")
     confirm_worker_ledger_operator(config, directory)
     confirm_worker_launcher(config, directory)
     directory_status(config, "active")
@@ -192,7 +209,7 @@ def service_role_check(directory, action, account=None, role="launcher"):
                              "--entrypoint", "python3", "harness", "/app/deploy/shard/init.py", "service-role-check", *args],
                             capture_output=True, text=True)
     if result.returncode != 0:
-        raise RuntimeError("Confirmed service role check failed; directory remains pending")
+        result.check_returncode()
     if action == "state":
         try:
             rows = [line for line in result.stdout.splitlines() if line.startswith("{")]

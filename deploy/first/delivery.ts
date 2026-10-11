@@ -8,7 +8,7 @@ import { buildFrontierFundingCalls } from "../../contracts/l2/ledger/scripts/com
 import { readFrontierGame } from "../../contracts/l2/ledger/scripts/commands/deployment/fund-frontier";
 import { readFrontierFunding, assertFrontierPreset } from "../../packages/value-ledger/src/frontier-funding";
 import { isContractRevert, send, balance } from "./chain";
-import { nativeDocument, boxRead, remoteCheckout, releaseDirectory } from "./box";
+import { nativeDocument, boxRead, releaseDirectory, deployShard } from "./box";
 import { workersReady, deployWorkers, clientReady, deployClient } from "./publish";
 import { command, shell } from "./process";
 import { seconds, PublicError } from "./dates";
@@ -341,11 +341,7 @@ export function deliverySteps(context: Deployment): Step[] {
       },
       apply: async () => {
         const revision = (await releaseReady(context))!;
-        const checkout = remoteCheckout(context.revision);
-        await boxRead(
-          context.target,
-          `cd ${shell(checkout)}\ngit fetch origin ${revision} >/dev/null 2>&1\ngit checkout --detach ${revision} >/dev/null 2>&1\npython3 deploy/first/box-deploy.py ${shell(context.target.release)} ${shell(releaseDirectory(context.target))} ${revision}`,
-        );
+        await deployShard(context.target, context.revision, revision);
       },
     },
     {

@@ -365,8 +365,8 @@ class LauncherStateTransportTest(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, "Role state read failed"):
                     deploy.roles_handed_off(Path("/unused/data"))
         with patch.object(deploy.subprocess, "run") as run:
-            run.return_value.returncode = 1
-            with self.assertRaisesRegex(RuntimeError, "Confirmed service role check failed"):
+            run.return_value = subprocess.CompletedProcess(["docker", "compose"], 1, stdout="", stderr="refused")
+            with self.assertRaises(subprocess.CalledProcessError):
                 deploy.roles_handed_off(Path("/unused/data"))
 
 

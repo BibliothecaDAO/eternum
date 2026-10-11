@@ -1,8 +1,9 @@
 import { mkdirSync, existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Target } from "./settings";
-import { command, shell } from "./process";
+import { command, shell, CommandFailure } from "./process";
 import type { PrivateStore } from "./private-store";
+import { PublicError } from "./dates";
 
 export const artifactFiles = [
   ["ledger", "game_ledger_TestLords"],
@@ -36,6 +37,27 @@ export async function boxRead(target: Target, script: string) {
     ],
     input: `set -euo pipefail\n${script}\n`,
   });
+}
+export async function deployShard(target: Target, checkoutRevision: string, revision: string) {
+  const checkout = remoteCheckout(checkoutRevision);
+  try {
+    await boxRead(
+      target,
+      `cd ${shell(checkout)}\ngit fetch origin ${revision} >/dev/null 2>&1\ngit checkout --detach ${revision} >/dev/null 2>&1\npython3 deploy/first/box-deploy.py ${shell(target.release)} ${shell(releaseDirectory(target))} ${revision}`,
+    );
+  } catch (error) {
+    if (error instanceof CommandFailure) {
+      let report;
+      try {
+        report = JSON.parse(error.stdout);
+      } catch {
+        /* Unstructured output stays private. */
+      }
+      if (report?.kind === "shard-deployment-refused" && typeof report.message === "string")
+        throw new PublicError(report.message);
+    }
+    throw error;
+  }
 }
 export function artifactsReady(store: PrivateStore, revision: string) {
   return (
