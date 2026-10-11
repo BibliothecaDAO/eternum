@@ -1,5 +1,5 @@
 import { afterEach, expect, mock, spyOn, test } from "bun:test";
-import { mkdtempSync, rmSync, mkdirSync } from "node:fs";
+import { mkdtempSync, rmSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import * as processTools from "./process";
@@ -48,7 +48,7 @@ test.each(["dev", "production"] as const)(
     await deployClient(value, revision);
     const build = calls.find((call) => call.argv.join(" ") === "pnpm --dir apps/game build")!;
     expect(build.env).toEqual(clientEnvironment(value, revision));
-    const publishIndex = calls.findIndex((call) => call.argv.includes("wrangler@3"));
+    const publishIndex = calls.findIndex((call) => call.argv.includes("wrangler"));
     expect(publishIndex).toBeGreaterThan(0);
     const before = calls
       .slice(0, publishIndex)
@@ -58,7 +58,22 @@ test.each(["dev", "production"] as const)(
     expect(before).toContain("src/utils/chunk-load-recovery.test.ts src/pwa");
     expect(before).toContain("verify-pwa-build.mjs");
     expect(before).toContain("ensure-pwa-cache-rule.mjs");
-    expect(calls[publishIndex]!.argv).toContain(value.target.pages);
+    expect(calls[publishIndex]!.argv).toEqual([
+      "pnpm",
+      "--dir",
+      "apps/game",
+      "exec",
+      "wrangler",
+      "pages",
+      "deploy",
+      "dist",
+      "--project-name",
+      value.target.pages,
+      "--branch",
+      "main",
+      "--commit-hash",
+      revision,
+    ]);
     expect(calls[publishIndex]!.env!.CLOUDFLARE_API_TOKEN).toBe(input.cloudflareToken);
     expect(calls.at(-1)!.input).toContain("verifyClientDeployment");
     expect(calls.some((call) => call.argv[0] === "gh")).toBe(false);
@@ -70,7 +85,7 @@ test("client upload is skipped when the published revision already exists, but i
   const calls = commands();
   value.clientRevision = async () => revision;
   await deployClient(value, revision);
-  expect(calls.some((call) => call.argv.includes("wrangler@3"))).toBe(false);
+  expect(calls.some((call) => call.argv.includes("wrangler"))).toBe(false);
   expect(calls.at(-1)!.input).toContain("verifyClientDeployment");
 });
 test("wrong client chain/RPC stops before a build or upload", async () => {
@@ -138,4 +153,13 @@ test("dry publish refuses every write before commands or transports", async () =
   await expect(deployClient(value, revision)).rejects.toThrow("Dry run");
   await expect(deployWorkers(value, revision)).rejects.toThrow("Dry run");
   expect(calls).toEqual([]);
+});
+
+test("deployment executables come from installed dependencies", () => {
+  const manifest = JSON.parse(readFileSync(new URL("../../apps/game/package.json", import.meta.url), "utf8"));
+  expect(manifest.devDependencies.wrangler).toBe("4.136.3");
+  for (const file of readdirSync(import.meta.dir)) {
+    if (!file.endsWith(".ts") || file.endsWith(".test.ts")) continue;
+    expect(readFileSync(join(import.meta.dir, file), "utf8")).not.toMatch(/\b(?:dlx|npx)\b/);
+  }
 });

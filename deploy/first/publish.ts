@@ -115,11 +115,13 @@ for (const file of await readdir('apps/game/dist', {recursive:true}))
     await command({
       argv: [
         "pnpm",
-        "dlx",
-        "wrangler@3",
+        "--dir",
+        "apps/game",
+        "exec",
+        "wrangler",
         "pages",
         "deploy",
-        "apps/game/dist",
+        "dist",
         "--project-name",
         platform.target.pages,
         "--branch",

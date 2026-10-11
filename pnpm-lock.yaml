@@ -584,6 +584,9 @@ importers:
       workbox-window:
         specifier: ^7.3.0
         version: 7.4.0
+      wrangler:
+        specifier: 4.136.3
+        version: 4.136.3(@cloudflare/workers-types@5.20260922.1)(@types/node@22.20.1)(bufferutil@4.1.0)(utf-8-validate@5.0.10)
 
   apps/game-docs:
     dependencies:
