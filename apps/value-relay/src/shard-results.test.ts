@@ -1,0 +1,115 @@
+import { gamesAbi as abi, response, hex } from "../../../packages/value-ledger/test-support/abi";
+import { Effect } from "effect";
+import { beforeEach, expect, it, vi } from "vitest";
+import { blitzCommitment } from "@realms-world/value-ledger/commitment";
+import { decodeBlitzResult, shardResultPort } from "./shard-results";
+import { ShardReader, type ValueRow } from "./shard-rpc";
+import { shardWithdrawalPorts } from "./shard-withdrawals";
+
+const rpc = vi.hoisted(() => ({ chain: vi.fn(), block: vi.fn(), contract: vi.fn(), call: vi.fn() }));
+vi.mock("@realms-world/value-ledger", async (original) => ({
+  ...(await original<typeof import("@realms-world/value-ledger")>()),
+  rpcAt: () => ({ getChainId: rpc.chain, getBlock: rpc.block, getClassAt: rpc.contract, callContract: rpc.call }),
+}));
+const rows = [
+  { wallet: "0x123", rank: 1 },
+  { wallet: "0x456", rank: 1 },
+  { wallet: "0x789", rank: 3 },
+];
+const result = { chainId: "0x1", gameId: 7, rows, commitment: blitzCommitment({ chainId: "0x1", gameId: 7, rows }) };
+const row = (): ValueRow => ({
+  model: "BlitzResult",
+  keys: ["7"],
+  transactionHash: "0xabc",
+  values: response(abi, "blitz_result", { players: rows, complete: true, commitment: result.commitment }).map(hex),
+});
+const reader = () => new ShardReader({ chainId: "0x1", gamesAddress: "0x10", rpcUrl: "https://shard.test/rpc" });
+const ranked = abi.find((entry) => entry.name === "world_native::blitz_results::RankedPlayer")!;
+const record = abi.find((entry) => entry.name === "world_native::blitz_results::BlitzResult")!;
+beforeEach(() => {
+  vi.clearAllMocks();
+  rpc.chain.mockResolvedValue("0x1");
+  rpc.block.mockResolvedValue({
+    block_number: 10,
+    block_hash: "0xa",
+    parent_hash: "0x9",
+    timestamp: 1000,
+    status: "ACCEPTED_ON_L2",
+  });
+  rpc.contract.mockResolvedValue({ abi });
+  rpc.call.mockResolvedValue(row().values);
+});
+it("reads precisely the committed frozen wallets and competition ranks at a confirmed head", async () => {
+  expect(await Effect.runPromise(shardResultPort(reader())("0x1", 7))).toEqual(result);
+  expect(rpc.call).toHaveBeenCalledWith({ contractAddress: "0x10", entrypoint: "blitz_result", calldata: ["7"] }, 10);
+  expect(rpc.contract).toHaveBeenCalledWith("0x10", 10);
+});
+it("ingests only completed records while retaining withdrawals in the same confirmed block", async () => {
+  const source = reader();
+  const partial = { ...row(), values: ["1", "0x123", "1", "0", "0x0"] };
+  vi.spyOn(source, "page").mockResolvedValue({
+    block: {
+      block_number: 10,
+      block_hash: "0xa",
+      parent_hash: "0x9",
+      timestamp: 1000,
+      status: "ACCEPTED_ON_L2",
+      transactions: [],
+    },
+    first: { block_number: 10, block_hash: "0xa", parent_hash: "0x9", timestamp: 1000, status: "ACCEPTED_ON_L2" },
+    anchors: [{ number: 10, hash: "0xa" }],
+    next: null,
+    rows: [
+      { ...partial, confirmedAt: 1000 },
+      { ...row(), confirmedAt: 1000 },
+      {
+        model: "LordsWithdrawal",
+        keys: ["8", "0xdef"],
+        values: ["0x321", "9"],
+        transactionHash: "0xdef",
+        confirmedAt: 1000,
+      },
+    ],
+  });
+  const ports = shardWithdrawalPorts(source, {
+    realmsIdForAccount: async () => "0x2",
+    frontierSeason: () => Effect.succeed(4),
+  });
+  const block = await Effect.runPromise(ports.eventsPage(10, 10, null));
+  expect(block.results).toEqual([{ ...result, blockNumber: 10 }]);
+  expect(block.withdrawals[0]).toMatchObject({ transactionHash: "0xdef", seasonId: 4, amount: "9000000000000000000" });
+});
+it("ignores a genuinely incomplete result but rejects its premature commitment", () => {
+  expect(decodeBlitzResult("0x1", { ...row(), values: ["0", "0", "0x0"] })).toBeNull();
+  expect(() => decodeBlitzResult("0x1", { ...row(), values: ["0", "0", "0x1"] })).toThrow();
+});
+it.each([
+  ["3", "0x123", "1", "0x456", "1", "0x789", "2", "1", result.commitment],
+  ["3", "0x456", "1", "0x123", "1", "0x789", "3", "1", result.commitment],
+  ["3", "0x123", "1", "0x123", "1", "0x789", "3", "1", result.commitment],
+  ["1", "0x0", "1", "1", result.commitment],
+  ["0", "1", "0x0"],
+  ["1", "0x123", "1", "2", result.commitment],
+  ["3", "0x123", "1", "0x456", "1", "0x789", "3", "1", "0xbad"],
+])("refuses malformed ranks, bools, ordering or commitments (%s)", (...values) => {
+  expect(() => decodeBlitzResult("0x1", { ...row(), values })).toThrow();
+});
+it("refuses the previous account/points result ABI even when the raw record is empty", async () => {
+  rpc.contract.mockResolvedValue({
+    abi: [
+      record,
+      {
+        ...ranked,
+        members: [
+          { name: "player", type: "ContractAddress" },
+          { name: "points", type: "u64" },
+          { name: "rank", type: "u16" },
+        ],
+      },
+      abi.find((entry) => entry.name === "blitz_result"),
+    ],
+  });
+  rpc.call.mockResolvedValue(["0", "0", "0x0"]);
+  await expect(Effect.runPromise(shardResultPort(reader())("0x1", 7))).rejects.toThrow();
+  expect(rpc.call).not.toHaveBeenCalled();
+});

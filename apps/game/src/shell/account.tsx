@@ -87,16 +87,38 @@ const SignInMethods = ({ session }: { session: Session }) => {
 const WalletRow = ({ session, refresh }: { session: Session; refresh: () => void }) => {
   const [choosing, setChoosing] = useState(false);
   const [unlinking, setUnlinking] = useState(false);
+  const [code, setCode] = useState("");
+  const [sendingCode, setSendingCode] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const address = session.user.address ?? null;
   // A linked or changed wallet closes the connectors.
-  useEffect(() => setChoosing(false), [address]);
+  useEffect(() => {
+    setChoosing(false);
+    setCode("");
+  }, [address]);
+
+  const sendCode = async () => {
+    setSendingCode(true);
+    setError(null);
+    try {
+      await identityClient.sendSignInCode(session.user.email);
+      setCode("");
+      setCodeSent(true);
+    } catch (cause) {
+      setError(failureSentence("send-code", cause));
+    } finally {
+      setSendingCode(false);
+    }
+  };
 
   const unlink = async () => {
+    if (!/^\d{6}$/.test(code)) return;
     setUnlinking(true);
     setError(null);
     try {
-      await identityClient.unlinkWallet();
+      await identityClient.unlinkWallet(code);
+      setCode("");
       refresh();
     } catch (cause) {
       setError(failureSentence("unlink", cause));
@@ -113,13 +135,33 @@ const WalletRow = ({ session, refresh }: { session: Session; refresh: () => void
           <div className="flex flex-wrap items-center gap-2">
             <b className="font-mono text-[12px]">{shortAddress(address)}</b>
             <GhostButton onClick={() => setChoosing((open) => !open)}>Change wallet</GhostButton>
-            <GhostButton disabled={unlinking} onClick={() => void unlink()}>
+            <GhostButton disabled={unlinking || !/^\d{6}$/.test(code)} onClick={() => void unlink()}>
               {unlinking ? "Unlinking…" : "Unlink"}
             </GhostButton>
           </div>
         ) : (
           <GhostButton onClick={() => setChoosing((open) => !open)}>Link a wallet</GhostButton>
         )}
+      </div>
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-gold/20 bg-black/40 px-3 py-2.5">
+        <GhostButton disabled={sendingCode || unlinking} onClick={() => void sendCode()}>
+          {sendingCode ? "Sending…" : "Send email code"}
+        </GhostButton>
+        <input
+          aria-label="Email code"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          maxLength={6}
+          value={code}
+          onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+          placeholder="6-digit code"
+          className="w-32 rounded border border-gold/30 bg-black/40 px-2 py-2 font-mono text-sm"
+        />
+        <span className="w-full text-xs text-gold/60">
+          {codeSent
+            ? `Code sent to ${session.user.email}.`
+            : "Linking, changing and unlinking a wallet need a code from your email."}
+        </span>
       </div>
       {choosing ? (
         <div className="rounded-lg border border-gold/20 bg-black/40 px-3 py-2.5">
@@ -129,7 +171,7 @@ const WalletRow = ({ session, refresh }: { session: Session; refresh: () => void
               : "A linked wallet claims prizes and shows your cosmetics."}
           </p>
           <Suspense fallback={<Loading />}>
-            <WalletLink />
+            <WalletLink code={code} />
           </Suspense>
         </div>
       ) : null}

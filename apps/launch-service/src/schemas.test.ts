@@ -39,3 +39,9 @@ it("accepts registered Frontier presets and rejects unregistered or cross-mode p
   expect(() => decode({ environment: "madara.blitz", gameName: "wrong-mode", version: "101" })).toThrow();
   expect(decode({ environment: "madara.blitz", gameName: "blitz", version: "2" }).version).toBe("2");
 });
+
+it("rejects reserved names at the durable queue boundary, including slot-derived games", () => {
+  expect(() => applyDurableLaunchDefaults("game", { environment: "madara.blitz", gameName: "check-hidden-1" })).toThrow(
+    "reserved",
+  );
+});

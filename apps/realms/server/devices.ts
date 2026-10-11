@@ -1,3 +1,4 @@
+import { normalizeStarknetAddress as canonicalFelt } from "@realms-world/identity";
 import { Data, Effect, Schema } from "effect";
 import { botRealmsId, realmsAccountAddress, type DeviceChange } from "@realms-world/identity/account";
 import type { Guardian } from "@realms-world/guardian";
@@ -65,7 +66,7 @@ const approveDeviceChange = (request: Request, { auth, db, guardian, accountClas
     if (change.action === "ADD" && (yield* isRevokedDevice(db, realmsId, change.deviceKey))) {
       return yield* new DeviceRequestError({ code: "device_revoked", status: 403 });
     }
-    const signature = yield* Effect.promise(() => guardian.signDeviceChange(change));
+    const signature = yield* signListedDeviceChange(db, guardian, change, "player");
     if (change.action === "ADD") {
       yield* Effect.promise(() => recordApprovedAccount(db, ownAccount, realmsId));
       yield* recordDeviceSession(db, realmsId, change.deviceKey, session.session.id);
@@ -93,7 +94,7 @@ const BotDeviceRequest = Schema.Struct({
  */
 export const handleBotDeviceApproval = (
   request: Request,
-  { guardian, accountClassHash }: Pick<DeviceChangeDependencies, "guardian" | "accountClassHash">,
+  { db, guardian, accountClassHash }: Pick<DeviceChangeDependencies, "db" | "guardian" | "accountClassHash">,
 ): Promise<Response> =>
   Effect.runPromise(
     Effect.gen(function* () {
@@ -113,12 +114,39 @@ export const handleBotDeviceApproval = (
         return yield* new DeviceRequestError({ code: "not_a_bot_account", status: 403 });
       }
       const change: DeviceChange = requested;
-      const signature = yield* Effect.promise(() => guardian.signDeviceChange(change));
+      const signature = yield* signListedDeviceChange(db, guardian, change, "bot_enrolment");
       return json({ ...change, signature: [signature.r, signature.s] });
     }).pipe(
       Effect.catchTag("DeviceRequestError", (error) => Effect.succeed(json({ error: error.code }, error.status))),
     ),
   );
+
+/** Pending admission authorizes the self-check bot only; player devices require a visible current shard. */
+const signListedDeviceChange = (
+  db: D1Database,
+  guardian: Guardian,
+  change: DeviceChange,
+  purpose: "player" | "bot_enrolment",
+) =>
+  Effect.gen(function* () {
+    const { results } = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .prepare(`SELECT "chainId", "status" FROM "shards" WHERE "status" IN ('pending', 'active', 'draining')`)
+          .all<{ chainId: string; status: string }>(),
+      catch: () => new DeviceRequestError({ code: "shard_list_unavailable", status: 503 }),
+    });
+    if (
+      !results.some(
+        (shard) =>
+          BigInt(shard.chainId) === BigInt(change.chainId) &&
+          (shard.status !== "pending" || purpose === "bot_enrolment"),
+      )
+    ) {
+      return yield* new DeviceRequestError({ code: "chain_not_approved", status: 403 });
+    }
+    return yield* Effect.promise(() => guardian.signDeviceChange(change));
+  });
 
 const readDeviceChange = (request: Request) =>
   Effect.tryPromise({ try: () => request.json(), catch: () => undefined }).pipe(
@@ -167,5 +195,3 @@ const removeDevice = (db: D1Database, realmsId: string, deviceKey: string) =>
         .bind(realmsId, canonicalFelt(deviceKey)),
     ]),
   );
-
-const canonicalFelt = (value: string) => `0x${BigInt(value).toString(16)}`;

@@ -36,6 +36,15 @@
         ]
       }
     },
+    "apps/value-relay": {
+      "entry": [
+        "src/worker.ts",
+        "src/monitor-worker.ts"
+      ],
+      "ignoreDependencies": [
+        "cloudflare"
+      ]
+    },
     "apps/launch-service": {
       "entry": [
         "src/worker.ts"
@@ -46,6 +55,9 @@
       "paths": {
         "@bibliothecadao/eternum/shard": [
           "../../packages/core/src/client/shard-reader.ts"
+        ],
+        "@bibliothecadao/eternum/realms-account": [
+          "../../packages/core/src/account/realms-account.ts"
         ]
       }
     },
@@ -194,6 +206,16 @@
         "src/worker.ts",
         "../status/functions/status.json.ts"
       ]
+    },
+    "packages/value-ledger": {
+      "paths": {
+        "@bibliothecadao/provider/batch-progress": [
+          "../provider/src/batch-progress.ts"
+        ],
+        "@bibliothecadao/eternum/device-signer": [
+          "../core/src/account/device-signer.ts"
+        ]
+      }
     }
   },
   "ignoreIssues": {

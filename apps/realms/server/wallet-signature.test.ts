@@ -1,8 +1,8 @@
 import { buildSiwsMessage } from "@realms-world/identity";
 import { RpcError, RpcProvider } from "starknet";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-import { verifyWalletOnMainnet, WalletNotDeployedError } from "./wallet-signature";
+import { verifyWalletOnL2, WalletNotDeployedError } from "./wallet-signature";
 
 const message = buildSiwsMessage({
   address: "0x123",
@@ -11,9 +11,17 @@ const message = buildSiwsMessage({
   nonce: "nonce",
   uri: "https://play.realms.party",
 });
-const verify = () => verifyWalletOnMainnet("https://rpc.realms.test")(message, ["0x1", "0x2"], "0x123");
+const verify = () =>
+  verifyWalletOnL2({ ENVIRONMENT: "production", IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test" })(
+    message,
+    ["0x1", "0x2"],
+    "0x123",
+  );
 const missingWallet = () => new RpcError({ code: 20, message: "Contract not found" }, "starknet_call", []);
 
+beforeEach(() => {
+  vi.spyOn(RpcProvider.prototype, "getChainId").mockResolvedValue("0x534e5f4d41494e");
+});
 afterEach(() => vi.restoreAllMocks());
 
 it("recognizes an undeployed wallet after the SDK wraps the signature call error", async () => {

@@ -1,6 +1,8 @@
+import { DeviceSigner } from "./device-signer";
+export { DeviceSigner } from "./device-signer";
 import { utils as starknetKeyUtils } from "@scure/starknet";
 import { botRealmsId, realmsAccountAddress, type DeviceChange } from "@realms-world/identity/account";
-import { Account, BlockTag, ec, hash, num, Signer, type ProviderInterface } from "starknet";
+import { Account, BlockTag, ec, hash, num, type ProviderInterface } from "starknet";
 import { operatorRequest } from "./operator-request";
 
 /**
@@ -317,25 +319,6 @@ async function forEachShard(
         ]
       : [],
   );
-}
-
-/** A device's signature over a transaction hash, as the account validates it: `[device_key, r, s]`. */
-const deviceSignature = (digest: string, privateKey: string): string[] => {
-  const { r, s } = ec.starkCurve.sign(digest, privateKey);
-  return [ec.starkCurve.getStarkKey(privateKey), `0x${r.toString(16)}`, `0x${s.toString(16)}`];
-};
-
-/** Signs as the account's device; with an approval, the signature also carries the guardian's `[r, s]` to join. */
-export class DeviceSigner extends Signer {
-  constructor(
-    private readonly device: DeviceKey,
-    private readonly approval: string[] = [],
-  ) {
-    super(device.privateKey);
-  }
-  override async signRaw(digest: string): Promise<string[]> {
-    return [...deviceSignature(digest, this.device.privateKey), ...this.approval];
-  }
 }
 
 const realmsAccount = (provider: ProviderInterface, address: string, device: DeviceKey, approval?: string[]) =>

@@ -5,8 +5,8 @@ name: Deploy Workers
 # from most of the workspace and the native schema, and a hand-kept list of those paths missed a schema change.
 # Production deploys only by dispatch, at the cutover. Each environment has its own D1 databases
 # and secrets. The guardian Worker is deployed by the owner alone and is not listed here. The launch Worker targets the
-# shard its environment's LAUNCH_SHARD_URL names (the shard's Herald, whose /manifest says the rest), with
-# LAUNCH_DEPLOYER_ACCOUNT_ADDRESS and LAUNCHER_ALLOWLIST, and signs with its
+# official shards in identity's directory, with
+# enrolled launcher accounts and LAUNCHER_ALLOWLIST, and signs with its
 # LAUNCH_DEPLOYER_PRIVATE_KEY secret. Both Workers accept the environment's one OPERATOR_TOKEN secret from operator
 # automation. Until an environment names its launch variables, its launch job deploys nothing and says which are
 # missing, so identity can reach production before the shard it needs exists. Production is dispatched with
@@ -62,9 +62,10 @@ jobs:
       TARGET: ${{ inputs.environment || 'staging' }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      LAUNCH_SHARD_URL: ${{ vars.LAUNCH_SHARD_URL }}
-      LAUNCH_DEPLOYER_ACCOUNT_ADDRESS: ${{ vars.LAUNCH_DEPLOYER_ACCOUNT_ADDRESS }}
       LAUNCHER_ALLOWLIST: ${{ vars.LAUNCHER_ALLOWLIST }}
+      REALMS_ADDRESS: ${{ vars.REALMS_ADDRESS }}
+      RATING_TOKEN_ADDRESS: ${{ vars.RATING_TOKEN_ADDRESS }}
+      RATING_HISTORY_URL: ${{ vars.RATING_HISTORY_URL }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -91,7 +92,7 @@ jobs:
         run: |
           set -euo pipefail
           missing=()
-          for name in LAUNCH_SHARD_URL LAUNCH_DEPLOYER_ACCOUNT_ADDRESS LAUNCHER_ALLOWLIST; do
+          for name in LAUNCHER_ALLOWLIST; do
             [ -n "${!name}" ] || missing+=("$name")
           done
           if [ ${#missing[@]} -gt 0 ]; then
@@ -99,6 +100,14 @@ jobs:
             echo "The launch Worker was not deployed: the $TARGET environment has no ${missing[*]}." >> "$GITHUB_STEP_SUMMARY"
           fi
           echo "missing=${missing[*]}" >> "$GITHUB_OUTPUT"
+
+      - name: Check identity L2 configuration
+        if: matrix.worker == 'apps/realms'
+        run: |
+          set -euo pipefail
+          for name in REALMS_ADDRESS RATING_TOKEN_ADDRESS RATING_HISTORY_URL; do
+            [ -n "${!name}" ] || { echo "::error::$name is not set for the $TARGET environment"; exit 1; }
+          done
 
       # Migrations run before the code that needs them; the database is created on its environment's first deploy.
       - name: Prepare the database
@@ -153,7 +162,11 @@ jobs:
         working-directory: ${{ matrix.worker }}
         env:
           WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.ndjson
-        run: pnpm exec wrangler deploy --env "$TARGET"
+        run: |
+          pnpm exec wrangler deploy --env "$TARGET" \
+            --var "REALMS_ADDRESS:$REALMS_ADDRESS" \
+            --var "RATING_TOKEN_ADDRESS:$RATING_TOKEN_ADDRESS" \
+            --var "RATING_HISTORY_URL:$RATING_HISTORY_URL"
 
       # The shard a launch writes to is the environment's decision, set beside the shard, not code.
       - name: Deploy the launch Worker at its shard
@@ -163,8 +176,6 @@ jobs:
           WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.ndjson
         run: |
           pnpm exec wrangler deploy --env "$TARGET" \
-            --var "SHARD_URL:$LAUNCH_SHARD_URL" \
-            --var "DEPLOYER_ACCOUNT_ADDRESS:$LAUNCH_DEPLOYER_ACCOUNT_ADDRESS" \
             --var "LAUNCHER_ALLOWLIST:$LAUNCHER_ALLOWLIST"
 
       # The deploy record names the Worker's route pattern and the version it deployed; the route must answer its

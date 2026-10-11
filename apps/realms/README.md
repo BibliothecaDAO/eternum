@@ -1,74 +1,38 @@
-# Rating reads and their operating cost
+# Rating reads
 
-The identity Worker serves one mainnet token rating fact. `RatingReader` shares immutable values and a full ranking by
-block hash across callers and isolates. Its SQLite cache keeps 32 recent snapshots and survives a restart. There is no
-mutable current-rating table. D1 identity/wallet resolution happens outside that cache, so a link change does not freeze
-the reader's identity. An explicit `block_hash` reads a retained snapshot; unknown/evicted hashes return 503 without
-requesting arbitrary historical blocks from the paid RPC.
+Ratings are keyed by the L2 wallet that played. `/api/ratings?players=<wallets>` accepts at most 100 wallets and an
+optional `block_hash`; `/api/ratings/top?player=<wallet>&limit=<count>` returns the ranking and that wallet's position.
+Changing a wallet link cannot retarget a historical game's rating. Account and Realms-id rating queries are refused.
 
-Token reads use Starknet RPC 0.9 read methods over JSON-RPC 2.0, batches of at most 100 and no scalar fallback if the
-provider rejects a batch. The provider must support this read surface and batch size. A persisted limit of 10,000
-upstream RPC methods per UTC minute is shared by all IPs. Cached pinned responses work without that budget. Exhaustion
-returns 429 `ratings_budget_exhausted`; incomplete data is never a partial ranking. The budget counts methods, including
-chain and header reads, rather than treating a 100-method HTTP batch as one billed operation. Provider
-compute-unit/dollar pricing has not been measured.
+Every request reads token values at one verified L2 block. A named hash is read directly from the provider; latest reads
+resolve a confirmed header first. No rating values or rankings are stored in the Worker. Token calls are batched in
+groups of at most 100. A persisted budget of 10,000 upstream RPC methods per UTC minute counts chain, header and token
+methods across callers. Exhaustion returns 429; missing or partial evidence returns an error, never a cached rating or
+an invented initial value. Repeated reads cost fresh RPC calls.
 
-Population comes from the indexer's existing `starknet_mmr_updates` and its atomic `airfoil.checkpoints` watermark. The
-portal already owns that Postgres connection and exposes `/api/ratings/population`: HEAD returns watermark headers; GET
-returns the holder set at that same statement's watermark. The Worker copies no database credential or rating value from
-SQL. Warm top reads use only HEAD and the cached ranking; a new watermark uses GET once and reads values from the token
-at the named hash. Deploy the portal route and corrected existing MMR indexer before enabling the top read. The MMR feed
-advances the watermark on empty confirmed blocks, and its insert-only rollback identity is the transaction hash: every
-inserted event in a reverted transaction is removed together. No new Postgres table/migration.
+The top list enumerates holders from the existing immutable `starknet_mmr_updates` history and its atomic
+`airfoil.checkpoints` watermark through the portal's `/api/ratings/population` GET. It reads every holder's token value
+at that named hash and ranks the complete population, even when only a few leaders are requested. SQL supplies
+population and history, never a second rating value. There is no new history table or credential.
 
-Costs below count upstream mainnet HTTP requests / RPC methods. P is the former event-page count and N is the total
-indexed holder count (top 20 still ranks against everyone). The before counts were measured against the pre-fix reader.
+Displayed owners may have `profile: {realmsId, name, portrait} | null` from their current verified wallet link. Names
+and portraits are presentation metadata; they never select the rating wallet. An unlinked owner remains an address.
 
-| Read          | Before cold or repeated | After cold object/snapshot | After warm same hash     |
-| ------------- | ----------------------- | -------------------------- | ------------------------ |
-| 24-seat lobby | 26 /26                  | 2 /26                      | latest:1 /1; pinned:0 /0 |
-| top 20        | N+P+2 /N+P+2            | 1+ceil(N/100) /N+2         | 0 /0                     |
+## Environment L2
 
-After the object has verified mainnet, another cold snapshot saves that one chain-check method. Top cold adds two portal
-SQL requests (HEAD, GET); warm adds one cheap watermark read (HEAD), with no history scan or paid token call. For
-N=1000, top 20 costs 11 mainnet HTTP requests /1002 methods cold, zero warm. These numbers are pinned by local
-network-count tests; no paid live-provider benchmark was run.
+The environment address book (`contracts/common/addresses/<network>.json`) supplies the L2 chain. Wallet proofs, Realm
+ownership and rating reads use that chain and `IDENTITY_RPC_URL`, which must be its HTTPS Alchemy endpoint; redirects
+are refused. The Worker checks the provider's chain before reading contracts. A missing or invalid setting fails
+environment initialization, and a proof naming another chain is refused before signature verification or nonce
+consumption. Deployed accounts retain contract verification; offchain verification still requires confirmed absence and
+allow-listed deployment data.
 
-## Consumer cadence
+`REALMS_ADDRESS`, `RATING_TOKEN_ADDRESS` and `RATING_HISTORY_URL` name this environment's collections and indexed
+population. No mainnet address or population source is inferred for staging. Labor ownership runs through the private
+`ValueIdentity.realmOwnerOf` service binding; the relay's second Realms RPC is removed. Rating readers are named by the
+configured chain, so staging cannot use the mainnet reader.
 
-The caller landed during review. Read `origin/frontend/redesign`330690bda7f: `src/shell/ratings.ts` has no interval,
-`staleTime: 0` and `retry: 1`; the app query client's focus/reconnect refetch defaults are disabled. This is observed
-code, not a request for the frontend lane to change it.
-
-- Lobby: `RosterGrid` reads one batch when mounted with a nonempty Realms-id roster. A changed roster changes the query
-  key and reads again. There is no periodic rating poll while an unchanged lobby stays mounted.
-- Season: `BlitzPanel` requests six top rows plus self when mounted; identity changes change the query key. The
-  backend's top20 cost example is unchanged by this smaller display limit: both rank against all N holders.
-- Profile: own profile mounts `OwnRatingLine`, one own-rating query. Desktop Results mounts the same component.
-- A stale remount can refetch, failures can retry once and the Season error control calls refetch explicitly. Thus
-  successful steady-state rating traffic is0 requests/minute while mounted without changes; one mount means one request,
-  and a failure may add one retry. No hidden/focus/reconnect interval is invented here.
-- Chat reads its first history page/socket on room entry, then receives socket messages. Further pages are on demand.
-- The existing factory slots query really polls every3s (20 requests/minute per visible factory). This is a separate
-  caller and does not turn ratings into a three-second poll. Population HEAD/GET is backend traffic only.
-
-For24 lobby viewers mounting once during one minute/block:624 mainnet HTTP requests /624 methods before;25 /49 after
-(one cold reader plus23 warm latest readers), or2 /26 with a shared explicit pin. With100 Season mounts per minute,
-N=1000 and P=10:101200 /101200 before;11 /1002 after plus101 portal SQL reads. These are entry/remount workload
-examples, not measured or configured polling frequencies. An unchanged mounted screen generates no subsequent rating
-requests. A different hash incurs cold work, and the fixed method ceiling still bounds aggregate demand.
-
-## Rating identities
-
-Top entries and rated self rows include `profile: {realmsId, name, portrait} | null`, resolved from the identity
-Worker's verified wallet link on every response. The formatter is the same one as `/api/profiles`: an unchosen name is
-null. An owner without a linked Realms identity has `profile: null` and remains an address. Mutable names and links
-never enter the immutable block-hash rating cache. Only displayed owners and the reader are looked up: at most 101
-owners, two D1 statements in one batch, and no additional paid RPC calls.
-
-`/api/ratings?accounts=<gameplay addresses>` lets another player's profile read a rating through the existing
-guardian-approved `realms_accounts` mapping and the user's linked wallet. It is mutually exclusive with `realmsIds` and
-`players`, shares their 100-identifier limit and errors, and returns ratings keyed by the addresses as sent. No approved
-identity returns `unknown_identity`; an approved identity without a wallet returns `unlinked`. An account's self-claimed
-onchain Realms id is never used. This adds one D1 join, no store or polling schedule. Native Blitz automatic rating
-commits and game deltas remain deferred; these endpoints are read-only.
+The client and Workers share the address book through `environmentL2`. The deployment workflow does not override its
+chain or ledger. The existing `CLIENT_IDENTITY_RPC_URL` secret maps to `IDENTITY_RPC_URL`. It checks the public
+contract/history settings before migrations or secret writes. This is repository wiring only; operators configure and
+deploy the environment.

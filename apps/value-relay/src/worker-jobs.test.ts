@@ -1,0 +1,44 @@
+vi.mock("./environment", () => ({ ledgerAddress: () => "0x10" }));
+import { Effect } from "effect";
+import { expect, it, vi } from "vitest";
+import { ValueRelay } from "./worker";
+
+vi.mock("cloudflare:workers", () => ({
+  WorkerEntrypoint: class {},
+  DurableObject: class {
+    constructor(
+      public ctx: unknown,
+      public env: unknown,
+    ) {}
+  },
+}));
+vi.mock("@realms-world/value-ledger", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@realms-world/value-ledger")>()),
+  rpcAt: () => ({ getChainId: async () => "0x1" }),
+}));
+const finish = vi.hoisted(() => vi.fn());
+vi.mock("./chests", () => ({ DurableChestStore: class {}, finishRequestedChests: finish }));
+it("runs ledger-wide chest work independently of any configured shard", async () => {
+  const data = new Map<string, unknown>();
+  const ctx = {
+    blockConcurrencyWhile: async (run: () => Promise<unknown>) => run(),
+    storage: {
+      setAlarm: async () => {},
+      get: async (key: string) => data.get(key),
+      list: async () => new Map(),
+      put: async (key: string, value: unknown) => {
+        data.set(key, value);
+      },
+    },
+  };
+  finish.mockReturnValue(Effect.succeed({ finished: 1, failed: 0, pending: 0 }));
+  const relay = new ValueRelay(
+    ctx as unknown as DurableObjectState,
+    { SHARD_CHAIN_ID: "0x1", IDENTITY: { l2ChainId: async () => "0x1" } } as never,
+  );
+  const observation = await relay.ledgerTick();
+  expect(observation.chests).toEqual({ finished: 1, failed: 0, pending: 0 });
+  expect(finish).toHaveBeenCalledOnce();
+  expect((await relay.ledgerHealth()).success).toBe(false);
+  expect(data.has("lastTick")).toBe(true);
+});

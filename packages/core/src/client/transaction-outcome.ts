@@ -101,7 +101,10 @@ function succeeded(
   receipt: GetTransactionReceiptResponse | undefined,
   games: string,
 ): ActionOutcome {
-  const remaining = receipt && "events" in receipt ? batchRemaining(receipt.events, games, transactionHash) : undefined;
+  const remaining =
+    receipt && "events" in receipt
+      ? batchRemaining(receipt.events, games, transactionHash, { missing: "allow" })
+      : undefined;
   return {
     hash: transactionHash,
     block,

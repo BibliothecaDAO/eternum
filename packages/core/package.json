@@ -46,6 +46,14 @@
       "types": "./dist/automation/index.d.ts",
       "import": "./dist/automation/index.js"
     },
+    "./device-signer": {
+      "types": "./dist/account/device-signer.d.ts",
+      "import": "./dist/account/device-signer.js"
+    },
+    "./realms-account": {
+      "types": "./dist/account/realms-account.d.ts",
+      "import": "./dist/account/realms-account.js"
+    },
     "./shard-fees": {
       "types": "./dist/account/transaction-resource-bounds.d.ts",
       "import": "./dist/account/transaction-resource-bounds.js"

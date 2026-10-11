@@ -1,0 +1,134 @@
+import { DeviceSigner } from "@bibliothecadao/eternum/device-signer";
+export { batchRemaining } from "@bibliothecadao/provider/batch-progress";
+import { Account, CallData, ec, type Abi, type RpcProvider } from "starknet";
+import { encodeNativeCommand, gameplayRejection } from "@bibliothecadao/provider";
+import { resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum/shard-fees";
+import { readConfirmedLedgerHead } from "./codecs";
+import { rpcAt } from "./rpc";
+import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
+
+export interface ShardTarget {
+  rpcUrl: string;
+  chainId: string;
+  gamesAddress: string;
+  accountAddress: string;
+  privateKey: string;
+}
+
+/** Administrative invokes and stamped play use the same approved device and public RPC, with no fee estimation. */
+export class ShardOperator {
+  readonly provider: RpcProvider;
+  private readonly account: Account;
+  constructor(readonly target: ShardTarget) {
+    this.provider = rpcAt(target.rpcUrl);
+    this.account = new Account({
+      provider: this.provider,
+      address: target.accountAddress,
+      signer: new DeviceSigner({
+        privateKey: target.privateKey,
+        publicKey: ec.starkCurve.getStarkKey(target.privateKey),
+      }),
+      cairoVersion: "1",
+    });
+  }
+  async head() {
+    if (BigInt(await this.provider.getChainId()) !== BigInt(this.target.chainId))
+      throw new Error("shard_chain_differs");
+    const block = await readConfirmedLedgerHead(this.provider);
+    return { block_number: block.number, block_hash: block.hash, timestamp: block.time };
+  }
+
+  async view<A>(entrypoint: string, calldata: readonly (string | number | bigint)[], at?: number): Promise<A> {
+    const head = at ?? (await this.head()).block_number;
+    const codec = await this.codec(head);
+    const fields = await this.provider.callContract(
+      { contractAddress: this.target.gamesAddress, entrypoint, calldata: calldata.map(String) },
+      head,
+    );
+    const value = codec.parse(entrypoint, fields);
+    return (
+      value && typeof value === "object" && Object.keys(value).length === 1 && "" in value ? value[""] : value
+    ) as A;
+  }
+  async admin(entrypoint: string, args: Record<string, unknown>, onSubmitted?: (hash: string) => Promise<void>) {
+    const codec = await this.codec((await this.head()).block_number);
+    return this.invoke(entrypoint, codec.compile(entrypoint, args as Parameters<CallData["compile"]>[1]), onSubmitted);
+  }
+  async play(gameId: number, command: readonly string[]) {
+    const game = await this.view<{ preset_id: bigint }>("game", [gameId]);
+    const release = await this.view<bigint>("game_release", [gameId]);
+    const commitment = await this.view<bigint>("preset_commitment", [game.preset_id]);
+    return this.invoke("play", [
+      String(gameId),
+      String(release),
+      String(commitment),
+      String(command.length),
+      ...command,
+    ]);
+  }
+  confirm(transactionHash: string) {
+    return confirmedShardReceipt(this.provider, transactionHash);
+  }
+  private cachedAbi: Promise<Abi> | undefined;
+  async playCommand(gameId: number, name: "SettleBlitzRoster" | "MarkGameSettled" | "RecordBlitzResults") {
+    return this.play(gameId, encodeNativeCommand(bindings.commandAbi, { kind: name, value: undefined }));
+  }
+  private async runtimeAbi(head: number): Promise<Abi> {
+    this.cachedAbi ??= this.provider
+      .getClassAt(this.target.gamesAddress, head)
+      .then((contract) => {
+        const abi = typeof contract.abi === "string" ? JSON.parse(contract.abi) : contract.abi;
+        if (!Array.isArray(abi)) throw new Error("shard_abi_unavailable");
+        return abi as Abi;
+      })
+      .catch((error) => {
+        this.cachedAbi = undefined;
+        throw error;
+      });
+    return this.cachedAbi;
+  }
+  private async codec(head: number) {
+    return new CallData(await this.runtimeAbi(head));
+  }
+  private async invoke(entrypoint: string, calldata: string[], onSubmitted?: (hash: string) => Promise<void>) {
+    const bound = await this.view<bigint>("l2_gas_bound", []);
+    const submitted = await this.account.execute(
+      { contractAddress: this.target.gamesAddress, entrypoint, calldata },
+      {
+        tip: 0,
+        resourceBounds: resolveGameTransactionResourceBounds(bound),
+        paymasterData: [],
+        accountDeploymentData: [],
+        nonceDataAvailabilityMode: "L1",
+        feeDataAvailabilityMode: "L1",
+      },
+    );
+    if (onSubmitted) await onSubmitted(submitted.transaction_hash);
+    const receipt = await this.confirm(submitted.transaction_hash);
+    const refusal = gameplayRejection(receipt.events, this.target.gamesAddress, submitted.transaction_hash);
+    if (refusal) throw new Error(`gameplay_refused:${refusal.reason}`);
+    return { transactionHash: submitted.transaction_hash, events: receipt.events };
+  }
+}
+
+/** The public proxy masks missing receipts; polling transport errors is bounded and never assumes inclusion. */
+const confirmedShardReceipt = async (provider: RpcProvider, transactionHash: string) => {
+  for (let attempt = 0; attempt < 120; attempt++) {
+    let receipt;
+    try {
+      receipt = await provider.getTransactionReceipt(transactionHash);
+    } catch {
+      /* Retry the same hash. */
+    }
+    if (
+      receipt &&
+      "block_number" in receipt &&
+      ["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(receipt.finality_status)
+    ) {
+      if (receipt.isReverted()) throw new Error("shard_invoke_reverted");
+      return receipt;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  throw new Error("shard_receipt_unavailable");
+};

@@ -1,3 +1,5 @@
+import { SlotCancelled } from "./paid-blitz";
+import { RegistrationOpen } from "./blitz-roster";
 import { Effect, Result } from "effect";
 import { describeFailure } from "./errors";
 import { LaunchExecutor } from "./executor";
@@ -13,9 +15,9 @@ export const processNextLaunch = (now: number) =>
     const executor = yield* LaunchExecutor;
     const run = yield* databaseOperation("start launch", () => store.startNext(now));
     if (!run) return false;
-    if (run.attempts > MAX_ATTEMPTS) {
+    if (run.kind === "game" && run.slotId === null && run.attempts > MAX_ATTEMPTS) {
       const message = `Launch interrupted after ${run.attempts - 1} attempts`;
-      yield* databaseOperation("fail interrupted launch", () => store.fail(run.id, message));
+      yield* databaseOperation("fail launch", () => store.fail(run.id, message));
       yield* Effect.logError("launch_failed", { runId: run.id, error: message });
       return true;
     }
@@ -30,16 +32,25 @@ export const processNextLaunch = (now: number) =>
       return true;
     }
 
-    if (result.failure.cause instanceof GameNotEnded) {
-      const delayMs = result.failure.cause.secondsUntilEnd * 1_000;
-      yield* databaseOperation("defer result", () => store.defer(run.id, delayMs));
-      yield* Effect.logInfo("result_deferred", { runId: run.id, name: run.name, delayMs });
+    if (result.failure.cause instanceof GameNotEnded || result.failure.cause instanceof RegistrationOpen) {
+      const cause = result.failure.cause;
+      const delayMs = (cause instanceof GameNotEnded ? cause.secondsUntilEnd : cause.secondsUntilClose) * 1_000;
+      yield* databaseOperation("defer launch", () => store.defer(run.id, delayMs));
+      yield* Effect.logInfo("launch_deferred", { runId: run.id, kind: run.kind, name: run.name, delayMs });
       return true;
     }
 
     const message = describeFailure(result.failure.cause);
-    if (run.attempts < MAX_ATTEMPTS) {
-      yield* databaseOperation("retry launch", () => store.retry(run.id, message, RETRY_DELAY_MS));
+    if (result.failure.cause instanceof SlotCancelled) {
+      yield* databaseOperation("cancel slot launch", () => store.fail(run.id, message));
+      return true;
+    }
+    const paid = run.kind === "game" && run.slotId !== null;
+    if (run.kind === "result" || paid || run.attempts < MAX_ATTEMPTS) {
+      const backoff = Math.min(300000, RETRY_DELAY_MS * 2 ** Math.min(run.attempts - 1, 6));
+      yield* databaseOperation("retry launch", () =>
+        store.retry(run.id, message, run.kind === "result" || paid ? backoff : RETRY_DELAY_MS),
+      );
       yield* Effect.logWarning("launch_retry_queued", { runId: run.id, attempt: run.attempts, error: message });
     } else {
       yield* databaseOperation("fail launch", () => store.fail(run.id, message));

@@ -5,3 +5,4 @@ export * from "./operator";
 export * from "./profiles";
 export * from "./siws";
 export * from "./types";
+export * from "./payout-wallet";

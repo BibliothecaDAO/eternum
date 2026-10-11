@@ -5,21 +5,22 @@ import type { SignInOptions } from "@realms-world/identity";
 import { useConnect, useDisconnect, useProvider } from "@starknet-react/core";
 import type { Connector } from "@starknet-react/core";
 import { useCallback, useRef, useState } from "react";
-import { addAddressPadding, constants, stark } from "starknet";
+import { constants } from "starknet";
 
+import { walletProofForAccount } from "./wallet-proof";
 import { failureSentence, WrongNetworkError } from "./identity-failures";
 
 /**
  * The only surface with wallet connectors, loaded as its own chunk when a signed-in player links a wallet on the
  * account page. Nothing else loads a wallet, so signing in never starts one.
  */
-export const WalletLink = () => (
+export const WalletLink = ({ code }: { code: string }) => (
   <StarknetProvider>
-    <WalletConnectors />
+    <WalletConnectors code={code} />
   </StarknetProvider>
 );
 
-const WalletConnectors = () => {
+const WalletConnectors = ({ code }: { code: string }) => {
   const refresh = useIdentitySessionStore((state) => state.refresh);
   const { connectAsync, connectors, connector: connectedConnector } = useConnect();
   const { disconnectAsync } = useDisconnect();
@@ -36,25 +37,18 @@ const WalletConnectors = () => {
       if ((await connector.chainId()) !== BigInt(constants.StarknetChainId.SN_MAIN)) throw new WrongNetworkError();
       // Use the selected connector immediately; React's account state may still describe the previous wallet.
       const account = await connector.account(provider);
-      return {
-        address: addAddressPadding(account.address),
-        chainId: "SN_MAIN",
-        domain: window.location.host,
-        uri: window.location.origin,
-        signTypedData: async (message) =>
-          stark.formatSignature(await account.signMessage(message as Parameters<typeof account.signMessage>[0])),
-      };
+      return walletProofForAccount(account, provider, connector.id);
     },
     [connectAsync, connectedConnector, disconnectAsync, provider],
   );
 
   const linkWallet = async (connector: Connector) => {
-    if (running.current) return;
+    if (running.current || !/^\d{6}$/.test(code)) return;
     running.current = true;
     setPending(connector.id);
     setError(null);
     try {
-      await identityClient.linkWallet(await walletProof(connector));
+      await identityClient.linkWallet({ ...(await walletProof(connector)), code });
       await refresh();
     } catch (cause) {
       setError(failureSentence("link", cause));
@@ -70,7 +64,7 @@ const WalletConnectors = () => {
         <Button
           key={connector.id}
           className="w-full !whitespace-normal px-4 py-2 leading-tight"
-          disabled={pending !== null}
+          disabled={pending !== null || !/^\d{6}$/.test(code)}
           isLoading={pending === connector.id}
           onClick={() => void linkWallet(connector)}
         >

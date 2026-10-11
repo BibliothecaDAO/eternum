@@ -6,11 +6,19 @@ const SLOW_MS = 1000;
 const HEX = /^0x[0-9a-fA-F]{1,64}$/;
 type Reader = ReturnType<typeof publicReader>;
 
+export interface PublicValueTargets {
+  relayHealthUrl: string;
+  guardianHealthUrl: string;
+  ledgerRpcUrl: string;
+  ledgerAddress: string;
+}
+const IS_PAUSED = "0x238d7ea31550fece8f0a8a601e3ae1a7c59cb3b6cc976ceb721e31ebd9c36f9";
+
 /** Probe the public paths a browser relies on. Discovery failure retains worlds rather than erasing their rows. */
-export async function probeServices(network: typeof fetch, now: number, known: Target[]) {
+export async function probeServices(network: typeof fetch, now: number, known: Target[], value: PublicValueTargets) {
   let targets = known;
   let directoryReadable = false;
-  const [play, accounts, directory, blitz, chat] = await Promise.all([
+  const [play, accounts, directory, blitz, chat, guardian, relay, ledger] = await Promise.all([
     measure("play", "Play", network, probePlay),
     measure("accounts", "Sign in and accounts", network, probeAccounts),
     measure("directory", "Games list", network, async (read) => {
@@ -21,13 +29,16 @@ export async function probeServices(network: typeof fetch, now: number, known: T
     }),
     measure("blitz", "Blitz lobbies", network, probeSlots),
     measure("chat", "Chat", network, probeChat),
+    measure("guardian", "Device guardian", network, (read) => probeGuardian(read, value.guardianHealthUrl)),
+    measure("relay", "Value relay", network, (read) => probeRelay(read, value.relayHealthUrl, now)),
+    probeLedger(network, value, now),
   ]);
   const worlds = await Promise.all(targets.map((target) => probeWorld(target, network, now)));
   if (directoryReadable && worlds.some((world) => world.status === "down")) {
     directory.status = "down";
     directory.latency_ms = null;
   } else if (directoryReadable && worlds.some((world) => world.status === "degraded")) directory.status = "degraded";
-  return { targets, probes: [play, accounts, directory, blitz, chat, ...worlds] };
+  return { targets, probes: [play, accounts, directory, blitz, chat, guardian, relay, ledger, ...worlds] };
 }
 
 async function probePlay(read: Reader): Promise<Status> {
@@ -45,9 +56,69 @@ async function probePlay(read: Reader): Promise<Status> {
 
 async function probeAccounts(read: Reader): Promise<Status> {
   requireReady(await body(read, PLAY + "/api/health/accounts"));
-  const guardian = await body(read, PLAY + "/api/guardian");
-  if (!felt(guardian.publicKey) || !felt(guardian.accountClassHash)) throw new Error("Guardian unavailable");
   return "up";
+}
+
+async function probeGuardian(read: Reader, url: string): Promise<Status> {
+  const guardian = await body(read, url);
+  requireReady(guardian);
+  if (guardian.service !== "realms-guardian" || !felt(guardian.publicKey)) throw new Error("Guardian unavailable");
+  return "up";
+}
+
+async function probeRelay(read: Reader, url: string, now: number): Promise<Status> {
+  const relay = await body(read, url);
+  requireReady(relay);
+  if (
+    relay.service !== "value-relay" ||
+    !height(relay.checked_at) ||
+    relay.checked_at > now + 60 ||
+    now - relay.checked_at > 300
+  )
+    throw new Error("Relay observation stale");
+  return "up";
+}
+
+/** Read the pause flag through raw public JSON-RPC; no watched service's adapter participates. */
+async function probeLedger(network: typeof fetch, targets: PublicValueTargets, now: number): Promise<Probe> {
+  const facts = { paused: null as boolean | null };
+  const result = await measure("ledger", "Starknet ledger", network, async (read) => {
+    if (!felt(targets.ledgerAddress)) throw new Error("Ledger address missing");
+    const header = await nodeHeader(read, targets.ledgerRpcUrl, "latest");
+    const response = await read(targets.ledgerRpcUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 2,
+        method: "starknet_call",
+        params: {
+          request: { contract_address: targets.ledgerAddress, entry_point_selector: IS_PAUSED, calldata: [] },
+          block_id: { block_number: header.block_number },
+        },
+      }),
+    });
+    const payload = (await response.json()) as { id?: unknown; result?: unknown; error?: unknown };
+    if (
+      payload.id !== 2 ||
+      payload.error ||
+      !Array.isArray(payload.result) ||
+      payload.result.length !== 1 ||
+      typeof payload.result[0] !== "string" ||
+      !HEX.test(payload.result[0])
+    )
+      throw new Error("Ledger pause unavailable");
+    const flag = BigInt(payload.result[0]);
+    if (flag !== 0n && flag !== 1n) throw new Error("Invalid pause flag");
+    facts.paused = flag === 1n;
+    if (header.timestamp > now + 30 || now - header.timestamp > 120) return "down";
+    return facts.paused || now - header.timestamp > 30 ? "degraded" : "up";
+  });
+  return {
+    ...result,
+    paused: facts.paused,
+    name: facts.paused === true ? "Starknet ledger payouts paused" : result.name,
+  };
 }
 
 async function readDirectory(read: Reader) {

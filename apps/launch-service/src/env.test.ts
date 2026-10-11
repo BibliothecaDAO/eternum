@@ -5,8 +5,6 @@ const vars = (launchers: string) => ({
   ENVIRONMENT: "staging",
   BASE_URL: "https://play.dev-realms.party",
   LAUNCHER_ALLOWLIST: launchers,
-  SHARD_URL: "https://herald.dev-realms.party",
-  DEPLOYER_ACCOUNT_ADDRESS: "0x1",
   DEPLOYER_PRIVATE_KEY: "0x2",
   OPERATOR_TOKEN: "operator",
 });
@@ -17,4 +15,8 @@ describe("the launch Worker's environment", () => {
     expect(() => decodeLaunchEnv(vars("0xa,*"))).toThrow("LAUNCHER_ALLOWLIST must name launcher addresses, not *");
     expect(() => decodeLaunchEnv(vars(""))).toThrow();
   });
+});
+it("starts with the documented launch settings and no second ledger configuration", () => {
+  const settings = vars("0x1");
+  expect(decodeLaunchEnv(settings).BASE_URL).toBe(settings.BASE_URL);
 });

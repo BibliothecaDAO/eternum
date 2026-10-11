@@ -1,185 +1,173 @@
-import { Effect } from "effect";
-import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { nextBlitzSlot, runLaunchSchedule } from "./schedule";
+import { slotValueFixture, registrationIdentityFixture } from "./test-database";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore } from "./store";
 import { createLaunchTestDatabase, testChain } from "./test-database";
-import { blitzSlotName, day } from "./test-dates";
-
 let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
 beforeEach(async () => {
   database = await createLaunchTestDatabase();
 });
 afterEach(async () => {
+  vi.restoreAllMocks();
   await database.close();
 });
-
-/** A player: a Realms account and a distinct gameplay account for it. */
-const player = (id: number | string) => {
-  const realmsId = `0x${BigInt(id).toString(16)}`;
-  return { realmsId, account: `0x${(BigInt(id) + 0xa000n).toString(16)}` };
-};
-
-const closeSlots = () =>
-  database.db
-    .prepare("UPDATE playtest_slots SET closes_at = ?")
-    .bind(Date.now() - 1_000)
+const slots = (chain = "0x1") =>
+  new D1SlotStore(
+    database.db,
+    new D1LaunchStore(database.db, testChain(chain)),
+    slotValueFixture(),
+    registrationIdentityFixture,
+  );
+const soon = () => new Date(Math.floor(Date.now() / 1000) * 1000 + 60000).toISOString();
+it("keeps metadata per official chain without a local registration table or roster", async () => {
+  const one = slots(),
+    two = slots("0x2");
+  const close = soon();
+  await one.create("friday", close);
+  await two.create("friday", close);
+  expect((await one.get("friday")).slotId).toBeGreaterThan(0);
+  expect((await two.get("friday")).slotId).not.toBe((await one.get("friday")).slotId);
+  expect(await one.get("friday")).not.toHaveProperty("registrations");
+  expect(
+    (await database.db.prepare("SELECT name FROM sqlite_master WHERE name='playtest_registrations'").all()).results,
+  ).toEqual([]);
+  await database.db
+    .prepare("UPDATE playtest_slots SET closes_at=? WHERE chain_id='0x1'")
+    .bind(Date.now() - 1000)
     .run();
-
-test("registration and frozen groups survive concurrency, an interrupted freeze and a restart", async () => {
-  const launches = new D1LaunchStore(database.db, testChain());
-  const slots = new D1SlotStore(database.db, launches);
-  const closesAt = new Date(Date.now() + 60_000).toISOString();
-  await slots.create("friday", closesAt);
-  expect(await slots.create("friday", closesAt)).toMatchObject({ name: "friday", closesAt });
-  await expect(slots.create("friday", new Date(Date.now() + 120_000).toISOString())).rejects.toThrow("immutable");
-  await expect(slots.create("late", new Date(Date.now() - 1_000).toISOString())).rejects.toThrow("deadline");
-  expect((await slots.list()).map((slot) => slot.closesAt)).toEqual([closesAt]);
-  await expect(slots.freeze("friday")).rejects.toThrow("still open");
-  await slots.register(
-    "friday",
-    Array.from({ length: 25 }, (_, index) => player(index + 1)),
-  );
-  await Promise.all(Array.from({ length: 10 }, () => slots.register("friday", [player("0x01")])));
-  const [registered] = await slots.list();
-  expect(registered!.registrations.map(({ realmsId, account }) => ({ realmsId, account }))).toEqual(
-    Array.from({ length: 25 }, (_, index) => player(index + 1)),
-  );
-  expect(registered!.registrations.every(({ gameNumber }) => gameNumber === null)).toBe(true);
-  await closeSlots();
-  await expect(slots.register("friday", [player(26)])).rejects.toThrow("closed");
-
+  await one.freeze("friday");
+  expect((await two.get("friday")).frozenAt).toBeNull();
+  expect((await slots().get("friday")).frozenAt).not.toBeNull();
+});
+it("keeps schedule timing immutable and refuses creation after the D1 deadline", async () => {
+  const store = slots();
+  const close = soon();
+  await store.create("friday", close);
+  await store.create("friday", close);
+  await expect(store.create("friday", new Date(Date.parse(close) + 60000).toISOString())).rejects.toThrow("immutable");
+  await expect(
+    store.create("late", new Date(Math.floor(Date.now() / 1000) * 1000 - 1000).toISOString()),
+  ).rejects.toThrow("deadline");
+  await expect(store.freeze("friday")).rejects.toThrow("still open");
+});
+it("uses D1 time when a worker clock is ahead, and never closes another chain's schedule", async () => {
+  const store = slots();
+  await store.create("open", soon());
+  const clock = vi.spyOn(Date, "now").mockReturnValue(Date.now() + 120000);
+  await store.freezeDueSlots();
+  expect((await store.get("open")).frozenAt).toBeNull();
+  await expect(store.freeze("open")).rejects.toThrow("still open");
+  clock.mockRestore();
+});
+it("preserves a closed schedule through interruption and restart", async () => {
+  const store = slots();
+  await store.create("closed", soon());
+  await database.db
+    .prepare("UPDATE playtest_slots SET closes_at=?")
+    .bind(Date.now() - 1000)
+    .run();
   await database.db
     .prepare(
-      `CREATE TRIGGER interrupt_freeze BEFORE UPDATE OF frozen_at ON playtest_slots
-       BEGIN SELECT RAISE(ABORT, 'freeze interrupted'); END`,
+      "CREATE TRIGGER interrupt_freeze BEFORE UPDATE OF frozen_at ON playtest_slots BEGIN SELECT RAISE(ABORT,'freeze interrupted'); END",
     )
     .run();
-  await expect(slots.freeze("friday")).rejects.toThrow("freeze interrupted");
-  const [interrupted] = await slots.list();
-  expect(interrupted!.frozenAt).toBeNull();
-  expect(interrupted!.registrations.every(({ gameNumber }) => gameNumber === null)).toBe(true);
-  expect(await launches.list("madara.blitz")).toEqual([]);
+  await expect(store.freeze("closed")).rejects.toThrow("freeze interrupted");
+  expect((await store.get("closed")).frozenAt).toBeNull();
   await database.db.prepare("DROP TRIGGER interrupt_freeze").run();
-
-  const [first, second] = await Promise.all([slots.freeze("friday"), slots.freeze("friday")]);
-  expect(first).toEqual(second);
-  expect(first.registrations.map(({ gameNumber }) => gameNumber)).toEqual([...Array(13).fill(1), ...Array(12).fill(2)]);
-  const queued = await launches.list("madara.blitz", "game");
-  expect(queued.map(({ name }) => name).sort()).toEqual(["friday-1", "friday-2"]);
-  for (const run of queued) {
-    expect(run.request).toMatchObject({ version: "2", devModeOn: false, singleRealmMode: false });
-    expect(run.status).toBe("queued");
-    expect("rosterAccounts" in run.request && run.request.rosterAccounts).toEqual(
-      first.registrations.filter(({ gameNumber }) => run.name === `friday-${gameNumber}`).map(({ account }) => account),
-    );
-  }
-
-  const restarted = new D1SlotStore(database.db, launches);
-  expect(await restarted.freeze("friday")).toEqual(first);
-  expect(await restarted.list()).toEqual([first]);
-  expect((await launches.list("madara.blitz", "game")).map(({ id }) => id).sort()).toEqual(
-    queued.map(({ id }) => id).sort(),
-  );
-  await expect(restarted.register("friday", [player(1)])).rejects.toThrow("closed");
+  await store.freezeDueSlots();
+  expect((await slots().get("closed")).frozenAt).not.toBeNull();
 });
-
-test("every tick names the same next slot and a frozen slot is pruned when the next one freezes", async () => {
+it("creates no game before close, balances 25 payers, and closes idempotently without a roster copy", async () => {
   const launches = new D1LaunchStore(database.db, testChain());
-  const slots = new D1SlotStore(database.db, launches);
-  const blitzWindow = {
-    phase: "blitz" as const,
-    startsAt: day(0).toISOString(),
-    endsAt: day(9).toISOString(),
-  };
-  const calendar = { list: async () => [blitzWindow], set: async () => blitzWindow };
-  const tick = (now: Date) => Effect.runPromise(runLaunchSchedule(launches, slots, calendar, now));
-  const evening = { name: blitzSlotName(day(0, 20)), closesAt: day(0, 20).toISOString() };
-  const nextMorning = { name: blitzSlotName(day(1, 11)), closesAt: day(1, 11).toISOString() };
-  const now = day(0, 11, 30);
-  await Promise.all([tick(now), tick(now), tick(now)]);
-  expect((await slots.list()).map(({ name, closesAt }) => ({ name, closesAt }))).toEqual([evening]);
-  expect(nextBlitzSlot(day(0, 20))).toEqual(nextMorning);
-
+  const value = slotValueFixture(25);
+  const store = new D1SlotStore(database.db, launches, value, registrationIdentityFixture);
+  await store.create("balanced", soon());
+  expect(await launches.list("madara.blitz")).toEqual([]);
   await database.db
-    .prepare("UPDATE playtest_slots SET closes_at = ?")
-    .bind(Date.now() + 60_000)
+    .prepare("UPDATE playtest_slots SET closes_at=?")
+    .bind(Date.now() - 1000)
     .run();
-  await slots.register(evening.name, [player(1)]);
-  await closeSlots();
-  await slots.freezeNextDue();
-  await tick(day(0, 20, 0, 1));
-  await closeSlots();
-  await slots.freezeNextDue();
-  expect((await slots.list()).map(({ name, frozenAt }) => ({ name, frozen: frozenAt !== null }))).toEqual([
-    { name: nextMorning.name, frozen: true },
-  ]);
-  expect((await launches.list("madara.blitz", "game")).map(({ name }) => name)).toEqual([`${evening.name}-1`]);
+  await store.freeze("balanced");
+  const first = await launches.list("madara.blitz");
+  expect(first).toHaveLength(2);
+  await store.freeze("balanced");
+  expect(await launches.list("madara.blitz")).toEqual(first);
+  expect(first.every((run) => !JSON.stringify(run.request).includes("wallet") && run.slotId === 1)).toBe(true);
 });
-
-test("the schedule freezes zero and single-player slots without inventing players", async () => {
+it("continues closing later paid slots when an earlier ledger opening is unavailable", async () => {
+  const store = slots();
+  await store.create("first", soon());
+  await store.create("second", soon());
+  await database.db
+    .prepare("UPDATE playtest_slots SET closes_at=?")
+    .bind(Date.now() - 1000)
+    .run();
+  const realFreeze = store.freeze.bind(store);
+  vi.spyOn(store, "freeze").mockImplementation(async (name) => {
+    if (name === "first") throw new Error("ledger slot missing");
+    return realFreeze(name);
+  });
+  const log = vi.spyOn(console, "error").mockImplementation(() => {});
+  await store.freezeDueSlots();
+  expect((await store.get("first")).frozenAt).toBeNull();
+  expect((await store.get("second")).frozenAt).not.toBeNull();
+  expect(log).toHaveBeenCalledWith("slot_close_unavailable", { name: "first" });
+});
+it("marks refunds once at close and never makes a refund decision during an identity outage", async () => {
+  const value = { ...slotValueFixture(26), markRefundable: vi.fn(async () => {}) };
+  const identity = {
+    accountsAtRegistration: vi.fn(async (page: readonly { wallet: string }[]) =>
+      page.map(({ wallet }) => (wallet === "0x1" ? null : wallet)),
+    ),
+  };
   const launches = new D1LaunchStore(database.db, testChain());
-  const slots = new D1SlotStore(database.db, launches);
-  const closesAt = new Date(Date.now() + 60_000).toISOString();
-  await slots.create("empty", closesAt);
-  await slots.create("solo", closesAt);
-  await slots.register("solo", [player("0x123")]);
-  await closeSlots();
-  await slots.freezeNextDue();
-  expect((await slots.list()).map(({ name, frozenAt }) => [name, frozenAt !== null])).toEqual([
-    ["empty", true],
-    ["solo", false],
-  ]);
-  await slots.freezeNextDue();
-  await slots.freezeNextDue();
-  const [solo, ...others] = await slots.list();
-  expect(others).toEqual([]);
-  expect(solo!.frozenAt).not.toBeNull();
-  expect(solo!.registrations).toMatchObject([{ ...player("0x123"), gameNumber: 1 }]);
-  expect((await launches.list("madara.blitz", "game")).map(({ name }) => name)).toEqual(["solo-1"]);
+  const store = new D1SlotStore(database.db, launches, value, identity);
+  await store.create("refunds", soon());
+  await database.db
+    .prepare("UPDATE playtest_slots SET closes_at=?")
+    .bind(Date.now() - 1000)
+    .run();
+  identity.accountsAtRegistration.mockRejectedValueOnce(new Error("identity down"));
+  await expect(store.freeze("refunds")).rejects.toThrow("identity down");
+  expect(value.markRefundable).not.toHaveBeenCalled();
+  expect(await launches.list("madara.blitz")).toEqual([]);
+  await store.freeze("refunds");
+  await store.freeze("refunds");
+  expect(value.markRefundable).toHaveBeenCalledOnce();
+  expect(value.markRefundable).toHaveBeenCalledWith({ chainId: await launches.targetChain(), slotId: 1 }, ["0x1"]);
+  expect(await launches.list("madara.blitz")).toHaveLength(2);
+});
+it("publishes the same stored shard key used to open the ledger slot", async () => {
+  const value = { ...slotValueFixture(), openSlot: vi.fn(async () => {}) };
+  const store = new D1SlotStore(
+    database.db,
+    new D1LaunchStore(database.db, testChain("0xabc")),
+    value,
+    registrationIdentityFixture,
+  );
+  await store.create("keyed", soon());
+  const slot = await store.get("keyed");
+  expect(slot.chainId).toBe("0xabc");
+  expect(await store.list()).toEqual([slot]);
+  expect(value.openSlot).toHaveBeenCalledWith({ chainId: slot.chainId, slotId: slot.slotId }, expect.any(Object));
 });
 
-test("D1 rejects a late registration even when its worker clock is before the deadline", async () => {
-  const launches = new D1LaunchStore(database.db, testChain());
-  const slots = new D1SlotStore(database.db, launches);
-  await slots.create("late-write", new Date(Date.now() + 60_000).toISOString());
-  await slots.register("late-write", [player(1)]);
-  await closeSlots();
-  const realNow = Date.now();
-  const clock = vi.spyOn(Date, "now").mockReturnValue(realNow - 60_000);
-  try {
-    await expect(slots.register("late-write", [player(2)])).rejects.toThrow("closed");
-    await slots.freezeNextDue();
-    expect((await slots.list())[0]?.registrations).toMatchObject([{ ...player(1), gameNumber: 1 }]);
-  } finally {
-    clock.mockRestore();
-  }
-});
-
-test("a worker clock ahead of D1 cannot freeze an open roster", async () => {
-  const slots = new D1SlotStore(database.db, new D1LaunchStore(database.db, testChain()));
-  await slots.create("still-open", new Date(Date.now() + 60_000).toISOString());
-  const clock = vi.spyOn(Date, "now").mockReturnValue(Date.now() + 120_000);
-  try {
-    await slots.freezeNextDue();
-    await expect(slots.freeze("still-open")).rejects.toThrow("still open");
-    expect((await slots.list())[0]?.frozenAt).toBeNull();
-  } finally {
-    clock.mockRestore();
-  }
-});
-
-test("a pruned slot name cannot be reused while its launch runs still exist", async () => {
-  const launches = new D1LaunchStore(database.db, testChain());
-  const slots = new D1SlotStore(database.db, launches);
-  const future = () => new Date(Date.now() + 60_000).toISOString();
-  await slots.create("reused", future());
-  await slots.register("reused", [player(1)]);
-  await closeSlots();
-  await slots.freeze("reused");
-  await slots.create("next", future());
-  await closeSlots();
-  await slots.freeze("next");
-  await expect(slots.create("reused", future())).rejects.toThrow("already used");
-  expect((await slots.list()).map(({ name }) => name)).not.toContain("reused");
+it("removes a new schedule when the ledger open fails, without deleting an existing paid slot on retry", async () => {
+  const value = slotValueFixture();
+  const open = vi.spyOn(value, "openSlot").mockRejectedValueOnce(new Error("ledger unavailable"));
+  const store = new D1SlotStore(
+    database.db,
+    new D1LaunchStore(database.db, testChain()),
+    value,
+    registrationIdentityFixture,
+  );
+  const close = soon();
+  await expect(store.create("failed", close)).rejects.toThrow("ledger unavailable");
+  expect(await store.list()).toEqual([]);
+  await expect(store.get("failed")).rejects.toThrow("Slot not found");
+  await store.create("failed", close);
+  const slot = await store.get("failed");
+  open.mockRejectedValueOnce(new Error("retry unavailable"));
+  await expect(store.create("failed", close)).rejects.toThrow("retry unavailable");
+  expect(await store.get("failed")).toEqual(slot);
 });

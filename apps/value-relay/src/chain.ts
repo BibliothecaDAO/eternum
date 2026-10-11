@@ -1,0 +1,176 @@
+import { RecordedSigner } from "./recorded-signer";
+import type { LedgerPayDecision } from "@realms-world/identity";
+import {
+  rpcAt,
+  readConfirmedLedgerHead,
+  decodeFrontierSeason,
+  decodeWithdrawalPayment,
+} from "@realms-world/value-ledger";
+import { Account } from "starknet";
+import type { RelayPorts, Withdrawal, RelayEffect } from "./ports";
+import { frontierPayment } from "./adapters";
+import { Effect } from "effect";
+import { RelayFailure, relayOperation } from "./ports";
+
+interface LedgerCredentials {
+  rpcUrl: string;
+  contractAddress: string;
+  accountAddress: string;
+  privateKey: string;
+}
+
+export const ledgerPaymentRead =
+  (rpcUrl: string, address: string, head: number | "latest" = "latest"): RelayPorts["ledger"]["payment"] =>
+  (withdrawal) =>
+    relayOperation("read withdrawal report", async () => {
+      const fields = await rpcAt(rpcUrl).callContract(
+        {
+          contractAddress: address,
+          entrypoint: "get_payment",
+          calldata: [withdrawal.chainId, withdrawal.transactionHash],
+        },
+        head,
+      );
+      return decodeWithdrawalPayment(fields);
+    });
+
+/** Closing voids unpaid debt even when identity has no wallet; recover from the confirmed view, not event delivery. */
+export const ledgerWithdrawalVoided =
+  (rpcUrl: string, address: string): RelayPorts["ledger"]["voided"] =>
+  (withdrawal) =>
+    relayOperation("read withdrawal void", async () => {
+      const provider = rpcAt(rpcUrl);
+      const head = await readConfirmedLedgerHead(provider);
+      const payment = await Effect.runPromise(ledgerPaymentRead(rpcUrl, address, head.number)(withdrawal));
+      if (payment?.paid) return false;
+      if (payment && payment.seasonId !== withdrawal.seasonId) throw new Error("ledger_report_mismatch");
+      const fields = await provider.callContract(
+        {
+          contractAddress: address,
+          entrypoint: "get_frontier",
+          calldata: [withdrawal.chainId, String(withdrawal.seasonId)],
+        },
+        head.number,
+      );
+      return decodeFrontierSeason(fields).closed;
+    });
+
+/** Reporting is a separate confirmed transaction; a failed later payment cannot erase the custody guard. */
+export const ledgerReportAdapter =
+  (credentials: LedgerCredentials): ((withdrawal: Withdrawal) => RelayEffect<void>) =>
+  (withdrawal) =>
+    relayOperation("report Frontier withdrawal", async () => {
+      const previous = await Effect.runPromise(
+        ledgerPaymentRead(credentials.rpcUrl, credentials.contractAddress)(withdrawal),
+      );
+      if (previous?.paid) return;
+      if (previous) {
+        if (previous.seasonId !== withdrawal.seasonId || BigInt(previous.amount) !== BigInt(withdrawal.amount))
+          throw new RelayFailure({ operation: "ledger_report_mismatch" });
+        return;
+      }
+      const amount = BigInt(withdrawal.amount);
+      const { provider, account } = ledgerAccountOf(credentials);
+      try {
+        const transaction = await account.execute({
+          contractAddress: credentials.contractAddress,
+          entrypoint: "report_withdrawal",
+          calldata: [
+            withdrawal.chainId,
+            String(withdrawal.seasonId),
+            withdrawal.transactionHash,
+            String(amount & (2n ** 128n - 1n)),
+            String(amount >> 128n),
+          ],
+        });
+        const receipt = await provider.waitForTransaction(transaction.transaction_hash, { errorStates: [] });
+        if (receipt.isReverted()) throw paymentFailure(receipt.revert_reason);
+      } catch (error) {
+        if (error instanceof RelayFailure) throw error;
+        throw paymentFailure(error instanceof Error ? error.message : "");
+      }
+      const reported = await Effect.runPromise(
+        ledgerPaymentRead(credentials.rpcUrl, credentials.contractAddress)(withdrawal),
+      );
+      if (!reported || reported.seasonId !== withdrawal.seasonId || BigInt(reported.amount) !== amount)
+        throw new Error("withdrawal_report_not_recorded");
+    });
+
+/** Identity journals each signed pay decision; eligibility is never reconstructed from an inclusion clock. */
+export const ledgerPaymentAdapter =
+  (
+    credentials: LedgerCredentials,
+    record: (decision: LedgerPayDecision) => Promise<void>,
+  ): ((withdrawal: Withdrawal, wallet: string) => RelayEffect<void>) =>
+  (withdrawal, wallet) =>
+    frontierPayment(async (entrypoint, calldata) => {
+      const provider = rpcAt(credentials.rpcUrl);
+      const signer = new RecordedSigner(credentials.privateKey, (transactionHash) =>
+        record({
+          chainId: withdrawal.chainId,
+          claimId: withdrawal.transactionHash,
+          transactionHash,
+          realmsId: withdrawal.realmsId,
+          wallet,
+          seasonId: withdrawal.seasonId,
+          amount: withdrawal.amount,
+        }),
+      );
+      const account = new Account({ provider, address: credentials.accountAddress, signer });
+      try {
+        const transaction = await account.execute({
+          contractAddress: credentials.contractAddress,
+          entrypoint,
+          calldata: [...calldata],
+        });
+        const receipt = await provider.waitForTransaction(transaction.transaction_hash, { errorStates: [] });
+        if (receipt.isReverted()) throw paymentFailure(receipt.revert_reason);
+      } catch (error) {
+        if (error instanceof RelayFailure) throw error;
+        throw paymentFailure(error instanceof Error ? error.message : "");
+      }
+    })(withdrawal, wallet);
+
+/** Pausing is idempotent at the port, including a retry after the pause transaction landed. */
+export const ledgerPauserAdapter = (credentials: LedgerCredentials): (() => import("./ports").RelayEffect<void>) => {
+  return () =>
+    relayOperation("pause ledger payouts", async () => {
+      const { provider, account } = ledgerAccountOf(credentials);
+      const paused = await provider.callContract(
+        { contractAddress: credentials.contractAddress, entrypoint: "is_paused", calldata: [] },
+        "latest",
+      );
+      if (paused.length !== 1) throw new Error("invalid_pause_state");
+      if (BigInt(paused[0]!) === 1n) return;
+      if (BigInt(paused[0]!) !== 0n) throw new Error("invalid_pause_state");
+      const transaction = await account.execute({
+        contractAddress: credentials.contractAddress,
+        entrypoint: "pause",
+        calldata: [],
+      });
+      const receipt = await provider.waitForTransaction(transaction.transaction_hash);
+      if (receipt.isReverted()) throw new Error("ledger_pause_reverted");
+    });
+};
+
+const ledgerAccountOf = (credentials: LedgerCredentials) => {
+  const provider = rpcAt(credentials.rpcUrl);
+  const account = new Account({ provider, address: credentials.accountAddress, signer: credentials.privateKey });
+  return { provider, account };
+};
+
+/** Only ruled terminal failures leave the retry queue; a day-boundary unlock refusal stays retryable. */
+export const paymentFailure = (reason = "") => {
+  const operation = reason.includes("Ledger: claim window ended")
+    ? "ledger_claim_window_ended"
+    : reason.includes("Ledger: season closed")
+      ? "ledger_season_closed"
+      : reason.includes("Ledger: conflicting withdrawal report")
+        ? "ledger_report_mismatch"
+        : reason.includes("Ledger: invalid withdrawal")
+          ? "ledger_invalid_withdrawal"
+          : reason.includes("Ledger: unlock exceeded")
+            ? "ledger_unlock_exceeded"
+            : "pay Frontier claim";
+  return new RelayFailure({ operation });
+};

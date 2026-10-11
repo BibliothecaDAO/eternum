@@ -34,6 +34,17 @@ class CiFileOwnership(unittest.TestCase):
     def test_a_package_manifest_still_selects_every_area(self):
         self.assertEqual(areas_run_by("pnpm-lock.yaml"), set(selected_areas([], True)))
 
+    def test_committed_contract_schemas_select_all_consuming_areas(self):
+        for path in (
+            "contracts/l2/ledger/schema/abi.json",
+            "contracts/l3/world-native/schema/schema.json",
+            "contracts/l3/world-native/schema/bindings.json",
+            "contracts/l3/world-native/schema/client.gen.ts",
+            "contracts/l3/world-native/schema/fixtures/row-set.json",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(areas_run_by(path), {"client", "herald", "services", "native", "runtime"})
+
     def test_a_ci_file_no_area_owns_is_named(self):
         self.assertEqual(
             unowned_ci_files([".github/workflows/new-check.yml", ".github/workflows/test-client.yml", "README.md"]),

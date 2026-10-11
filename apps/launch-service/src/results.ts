@@ -1,136 +1,65 @@
-import { CallData, RpcProvider, type Abi } from "starknet";
-import { worldView } from "@bibliothecadao/eternum/shard";
-import {
-  completeNativeAdminCommand,
-  executeNativeAdminCommand,
-} from "../../../config/deployer/clean/world/native/command";
-import { nativeGamesAbi, nativeWorldSchema } from "../../../config/deployer/clean/world/native/manifest";
-import type { RegistrarWorld } from "../../../config/deployer/clean/world/native/types";
-import type { NativeCommand } from "../../../packages/provider/src/native-command";
+import { blitzCommitment } from "@realms-world/value-ledger/commitment";
+import { batchRemaining } from "@realms-world/value-ledger/shard";
 import type { FinalizedGameSummary } from "./model";
 import type { FinalizeGameRequest } from "./schemas";
+import type { LaunchShard } from "./shard-client";
 
-type PlayerResult = { player: bigint; points: bigint; rank: number };
-type WalletResult = Extract<NativeCommand, { kind: "RecordBlitzResults" }>["value"]["players"][number];
+interface RankedPlayer {
+  wallet: bigint;
+  rank: number;
+}
 interface ResultProgress {
-  players: readonly { rank: number | bigint }[];
+  players: readonly RankedPlayer[];
   complete: boolean;
   commitment: bigint;
 }
-interface ResultTarget {
-  provider: RpcProvider;
-  manifest: RegistrarWorld;
-  accountAddress: string;
-  privateKey: string;
-  gameId: number;
-}
-
-/** The job ran before the chain reached the game's end; the worker requeues it for that moment. */
 export class GameNotEnded extends Error {
   constructor(readonly secondsUntilEnd: number) {
     super(`Game ends in ${secondsUntilEnd}s of chain time`);
   }
 }
-
 export interface ResultOperations {
   secondsUntilEnd(): Promise<number>;
   settle(): Promise<unknown>;
   progress(): Promise<ResultProgress>;
-  players(): Promise<readonly { player: bigint; points: bigint }[]>;
-  record(start: number, players: readonly PlayerResult[]): Promise<unknown>;
+  record(): Promise<unknown>;
 }
 
-/** Chain progress owns retries, including a crash after a submitted batch landed. */
+/** Final points and the immutable ranked result are both computed by the shard. */
 export async function completeBlitzResults(operations: ResultOperations): Promise<bigint> {
   const secondsUntilEnd = await operations.secondsUntilEnd();
   if (secondsUntilEnd > 0) throw new GameNotEnded(secondsUntilEnd);
   await operations.settle();
-  let progress = await operations.progress();
+  const progress = await operations.progress();
   if (progress.complete) return progress.commitment;
-  const players = rankPlayers(await operations.players());
-  while (!progress.complete) {
-    const start = progress.players.length;
-    if (start >= players.length) throw new Error("Incomplete result has no remaining roster");
-    await operations.record(start, players.slice(start, start + 8));
-    const next = await operations.progress();
-    if (next.players.length <= start) throw new Error("Result batch made no progress");
-    progress = next;
-  }
-  return progress.commitment;
+  await operations.record();
+  const result = await operations.progress();
+  if (!result.complete) throw new Error("result_not_complete");
+  return result.commitment;
 }
 
-function rankPlayers(players: readonly { player: bigint; points: bigint }[]): PlayerResult[] {
-  const ordered = players.toSorted((a, b) =>
-    a.points === b.points ? (a.player < b.player ? -1 : 1) : a.points > b.points ? -1 : 1,
-  );
-  let rank = 0;
-  return ordered.map((entry, index) => {
-    if (index === 0 || ordered[index - 1].points !== entry.points) rank = index + 1;
-    return { ...entry, rank };
+export const finalizeGame = async (request: FinalizeGameRequest, shard: LaunchShard): Promise<FinalizedGameSummary> => {
+  const gameId = request.gameId;
+  const commitment = await completeBlitzResults({
+    secondsUntilEnd: async () => Number((await shard.game(gameId)).end_at) - (await shard.head()).timestamp,
+    settle: async () => {
+      while (!(await shard.game(gameId)).settled) {
+        const result = await shard.playCommand(gameId, "MarkGameSettled");
+        const remaining = batchRemaining(result.events, shard.target.gamesAddress, result.transactionHash, {
+          gameId,
+          missing: "reject",
+        });
+        if (!remaining && !(await shard.game(gameId)).settled) throw new Error("point_settlement_not_complete");
+      }
+    },
+    progress: () => shard.view<ResultProgress>("blitz_result", [gameId]),
+    record: () => shard.playCommand(gameId, "RecordBlitzResults"),
   });
-}
-
-function view<T>(target: ResultTarget, name: string, calldata: (number | string | bigint)[]): Promise<T> {
-  const entrypoint = worldView(nativeWorldSchema(target.manifest), name);
-  const abi: Abi = nativeGamesAbi(target.manifest);
-  return target.provider
-    .callContract(
-      { contractAddress: target.manifest.world.address, entrypoint, calldata: calldata.map(String) },
-      "latest",
-    )
-    .then((response) => new CallData(abi).parse(entrypoint, response) as T);
-}
-
-export async function finalizeGame(
-  request: FinalizeGameRequest,
-  rpc: { url: string },
-  credentials: { manifest: RegistrarWorld; accountAddress: string; privateKey: string },
-): Promise<FinalizedGameSummary> {
-  const target: ResultTarget = {
-    ...credentials,
-    gameId: request.gameId,
-    provider: new RpcProvider({ nodeUrl: rpc.url }),
-  };
-  const commitment = await completeBlitzResults(resultOperations(target));
+  const result = await shard.view<ResultProgress>("blitz_result", [gameId]);
+  if (
+    !result.complete ||
+    BigInt(blitzCommitment({ chainId: shard.target.chainId, gameId, rows: result.players })) !== commitment
+  )
+    throw new Error("shard_result_commitment_differs");
   return { ...request, resultCommitment: `0x${commitment.toString(16)}` };
-}
-
-function resultOperations(target: ResultTarget): ResultOperations {
-  return {
-    secondsUntilEnd: async () => {
-      const game = await view<{ end_at: bigint; end_grace_seconds: bigint }>(target, "game", [target.gameId]);
-      const block = await target.provider.getBlock("latest");
-      return Number(game.end_at + game.end_grace_seconds) - block.timestamp;
-    },
-    settle: () => completeNativeAdminCommand({ ...target, command: { kind: "MarkGameSettled", value: undefined } }),
-    progress: () => view<ResultProgress>(target, "blitz_result", [target.gameId]),
-    players: async () => {
-      const roster = await view<{ account: bigint }[]>(target, "blitz_roster", [target.gameId]);
-      return Promise.all(
-        roster.map(async ({ account }) => ({
-          player: account,
-          points: await view<bigint>(target, "player_points", [target.gameId, account]),
-        })),
-      );
-    },
-    record: async (start, players) => {
-      const roster = await view<{ account: bigint; wallet: bigint }[]>(target, "blitz_roster", [target.gameId]);
-      return executeNativeAdminCommand({
-        ...target,
-        command: { kind: "RecordBlitzResults", value: { start, players: walletResults(players, roster) } },
-      });
-    },
-  };
-}
-
-/** Keep account-based ranking; the frozen roster alone names the wallet encoded by the current result ABI. */
-export function walletResults(
-  players: readonly PlayerResult[],
-  roster: readonly { account: bigint; wallet: bigint }[],
-): WalletResult[] {
-  return players.map(({ player, rank }) => {
-    const seat = roster.find(({ account }) => account === player);
-    if (!seat) throw new Error("Ranked player is missing from the frozen roster");
-    return { wallet: seat.wallet, rank };
-  });
-}
+};

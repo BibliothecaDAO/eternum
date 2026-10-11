@@ -1,5 +1,4 @@
 import { beforeAll, expect, it } from "vitest";
-import { valuePlaneAddress } from "@realms-world/chain";
 import { buildWorkerBundle, migrationStatements, newStorage, ORIGIN, startWorker, vapidKeys } from "./workerd-harness";
 
 let bundle: string;
@@ -7,7 +6,7 @@ beforeAll(() => {
   bundle = buildWorkerBundle();
 }, 180_000);
 
-it("reads linked owners through the deployed Worker's SDK and serves new ledger values without caching", async () => {
+it("reads wallet owners through the deployed Worker's SDK and serves new ledger values without caching", async () => {
   const calls: { method: string; params: unknown }[] = [];
   let points = 1000n;
   let blockNumber = 123;
@@ -33,7 +32,7 @@ it("reads linked owners through the deployed Worker's SDK and serves new ledger 
         calls.push(rpc);
         const result = {
           starknet_specVersion: "0.9.0",
-          starknet_chainId: "0x534e5f4d41494e",
+          starknet_chainId: "0x534e5f5345504f4c4941",
           starknet_getBlockWithTxHashes: { block_number: blockNumber, block_hash: blockHash },
           starknet_call: [`0x${(points * 10n ** 18n).toString(16)}`, "0x0"],
         }[rpc.method];
@@ -47,7 +46,7 @@ it("reads linked owners through the deployed Worker's SDK and serves new ledger 
     await worker.db.batch(migrationStatements().map((statement) => worker.db.prepare(statement)));
     const player = await worker.signInWithEmailCode("ratings@realms.test");
     await worker.db.prepare('UPDATE "user" SET "address" = ? WHERE "realmsId" = ?').bind("0xa", player.realmsId).run();
-    const read = () => worker.mf.dispatchFetch(`${ORIGIN}/api/ratings?realmsIds=${player.realmsId}`);
+    const read = () => worker.mf.dispatchFetch(`${ORIGIN}/api/ratings?players=0xa`);
     const response = await read();
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
@@ -55,18 +54,18 @@ it("reads linked owners through the deployed Worker's SDK and serves new ledger 
       block_number: 123,
       block_hash: "0xabc",
       ratings: {
-        [player.realmsId]: { status: "rated", player: "0xa", rating: "1000" },
+        "0xa": { status: "rated", player: "0xa", rating: "1000" },
       },
     });
     expect(calls.find((call) => call.method === "starknet_call")!.params).toMatchObject({
-      request: { contract_address: valuePlaneAddress("mmrToken"), calldata: ["0xa"] },
+      request: { contract_address: "0x31", calldata: ["0xa"] },
       block_id: { block_hash: "0xabc" },
     });
     points = 1300n;
     blockNumber = 124;
     blockHash = "0xabd";
-    expect(await (await read()).json()).toMatchObject({ ratings: { [player.realmsId]: { rating: "1300" } } });
-    const top = await worker.mf.dispatchFetch(`${ORIGIN}/api/ratings/top?realmsId=${player.realmsId}`);
+    expect(await (await read()).json()).toMatchObject({ ratings: { "0xa": { rating: "1300" } } });
+    const top = await worker.mf.dispatchFetch(`${ORIGIN}/api/ratings/top?player=0xa`);
     expect(top.status).toBe(200);
     expect(await top.json()).toMatchObject({
       block_number: 124,
@@ -88,15 +87,11 @@ it("reads linked owners through the deployed Worker's SDK and serves new ledger 
       entries: [{ profile: { realmsId: player.realmsId, name: "Aster", portrait: "portrait-1" } }],
       self: { profile: { name: "Aster" } },
     });
-    const accountRead = await worker.mf.dispatchFetch(
-      `${ORIGIN}/api/ratings?accounts=0x011,0x12&block_hash=${blockHash}`,
-    );
-    expect(await accountRead.json()).toMatchObject({
-      ratings: {
-        "0x011": { status: "rated", player: "0xa", rating: "1300" },
-        "0x12": { status: "unknown_identity", player: null, rating: null },
-      },
-    });
+    await worker.db.prepare('UPDATE "user" SET "address"=? WHERE "realmsId"=?').bind("0xb", player.realmsId).run();
+    expect(
+      await (await worker.mf.dispatchFetch(`${ORIGIN}/api/ratings?players=0x0a&block_hash=${blockHash}`)).json(),
+    ).toMatchObject({ ratings: { "0x0a": { status: "rated", player: "0xa", rating: "1300" } } });
+    await worker.db.prepare('UPDATE "user" SET "address"=? WHERE "realmsId"=?').bind("0xa", player.realmsId).run();
     const tokenCalls = calls.filter((call) => call.method === "starknet_call").length;
     await worker.db.prepare('UPDATE "user" SET "name" = ? WHERE "realmsId" = ?').bind("Renamed", player.realmsId).run();
     expect(await (await worker.mf.dispatchFetch(`${ORIGIN}/api/ratings/top`)).json()).toMatchObject({
@@ -106,10 +101,8 @@ it("reads linked owners through the deployed Worker's SDK and serves new ledger 
     expect(await (await worker.mf.dispatchFetch(`${ORIGIN}/api/ratings/top`)).json()).toMatchObject({
       entries: [{ profile: null }],
     });
-    expect(await (await worker.mf.dispatchFetch(`${ORIGIN}/api/ratings?accounts=0x11`)).json()).toMatchObject({
-      ratings: { "0x11": { status: "unlinked", player: null, rating: null } },
-    });
-    expect(calls.filter((call) => call.method === "starknet_call").length).toBe(tokenCalls);
+    expect(await (await read()).json()).toMatchObject({ ratings: { "0xa": { player: "0xa", rating: "1300" } } });
+    expect(calls.filter((call) => call.method === "starknet_call").length).toBeGreaterThan(tokenCalls);
     await worker.db.prepare('UPDATE "user" SET "address" = ? WHERE "realmsId" = ?').bind("0xa", player.realmsId).run();
     unavailable = true;
     expect((await read()).status).toBe(503);

@@ -2,8 +2,9 @@
 
 The guardian approves device changes on Realms accounts: it signs
 `poseidon('REALMS_DEVICE_CHANGE', chain_id, account, action, device_key, counter)` for the identity Worker and does
-nothing else. Its private key is its only secret. It has no route and no workers.dev address; the identity Worker
-reaches it through the `GUARDIAN` service binding.
+exposes no public signing operation. Its private key is its only secret. The config ships without routes or a
+workers.dev address; identity signs through the `GUARDIAN` service binding. The owner may attach the readonly health
+hostname described below.
 
 Only the owner deploys it and sets its key. CI never deploys it. Staging and production each have their own key. The key
 is never committed or written to an env file.
@@ -32,8 +33,8 @@ For production, use `--env production` and its own key file.
 
 ## Checks
 
-The Worker answers no public request: its config has no routes, and its workers.dev address is off, so this returns
-Cloudflare's 404 rather than anything from the Worker:
+The committed config has no public routes and keeps workers.dev off, so this address returns Cloudflare's 404 even when
+the owner has attached a separate readonly health hostname:
 
 ```sh
 curl -si https://realms-guardian-staging.<account>.workers.dev/ | head -1
@@ -45,3 +46,7 @@ Every shard's manifest carries the guardian public key and account class that th
 curl -s https://play.dev-realms.party/api/guardian
 curl -s <herald>/manifest | jq '{guardianPublicKey, accountClassHash}'
 ```
+
+GET /health can be served on a public hostname attached by the owner for independent monitoring. It returns public key
+readiness with no-store; every other HTTP path and every POST still answers 404. Device signing and public-key RPC
+methods remain available only through service bindings. No public route or deployment is created by this code.

@@ -8,7 +8,9 @@ export default defineConfig({
   // troop-stamina and expeditions are too: services read a game's own rules without the client's config state.
   entry: [
     "src/index.ts",
+    "src/account/device-signer.ts",
     "src/account/transaction-resource-bounds.ts",
+    "src/account/realms-account.ts",
     "src/automation/index.ts",
     "src/utils/biome/biome.ts",
     "src/managers/game-entity-keys.ts",

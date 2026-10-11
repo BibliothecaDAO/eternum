@@ -8,6 +8,7 @@ import { applyDurableLaunchDefaults, type LaunchJobRequest, type LaunchKind } fr
 
 interface LaunchRunRow {
   id: string;
+  slot_id: number | null;
   chain_id: string;
   kind: LaunchKind;
   environment: GameEnvironmentId;
@@ -29,8 +30,8 @@ export interface LaunchServiceStore extends LaunchRunStore {
   /** Creates a run once; whatever run already has that name is handed back untouched. */
   schedule(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun>;
   list(environment: GameEnvironmentId, kind?: LaunchKind): Promise<LaunchRun[]>;
-  /** Completed game ids registered by this launch service, including draining shards. */
-  playerDirectoryGames(): Promise<{ chainId: string; gameIds: number[] }[]>;
+  /** Declared entry terms for created games, including registration before start and draining shards. */
+  playerDirectoryGames(): Promise<{ chainId: string; games: { gameId: number; slotId: number | null }[] }[]>;
   /** Unfinished work stranded by a change to the configured shard. */
   pendingOtherChains(): Promise<LaunchRun[]>;
   /** Every run that failed and waits for a launcher to continue it, in any environment. */
@@ -54,6 +55,7 @@ const iso = (time: number) => new Date(time).toISOString();
 
 const toRun = (row: LaunchRunRow): LaunchRun => ({
   id: row.id,
+  slotId: row.slot_id,
   chainId: row.chain_id,
   kind: row.kind,
   environment: row.environment,
@@ -74,15 +76,15 @@ const storedSummary = <S extends LaunchSummary>(runId: string, summary: S): S =>
   outputPath: `${launchRunPath(runId)}/summary`,
 });
 
-type CompletedGameRow = Pick<LaunchRunRow, "id" | "chain_id" | "summary">;
+type DeclaredGameRow = Pick<LaunchRunRow, "id" | "chain_id" | "summary" | "slot_id">;
 
-const completedGameId = ({ id, summary }: CompletedGameRow): number | null => {
+const declaredGameId = ({ id, summary }: DeclaredGameRow): number | null => {
   try {
-    if (!summary) throw new Error("A completed game launch has no summary");
+    if (!summary) throw new Error("A declared game launch has no summary");
     const decoded = JSON.parse(summary) as { gameId?: unknown; dryRun?: unknown } | null;
     if (decoded?.dryRun === true) return null;
-    if (!Number.isSafeInteger(decoded?.gameId) || Number(decoded?.gameId) < 0)
-      throw new Error("A completed game launch has an invalid game id");
+    if (!Number.isSafeInteger(decoded?.gameId) || Number(decoded?.gameId) <= 0 || Number(decoded?.gameId) > 0xffffffff)
+      throw new Error("A declared game launch has an invalid game id");
     return Number(decoded?.gameId);
   } catch (error) {
     console.error("launch_directory_invalid_summary", { runId: id, error });
@@ -90,24 +92,23 @@ const completedGameId = ({ id, summary }: CompletedGameRow): number | null => {
   }
 };
 
-const groupCompletedGames = (rows: CompletedGameRow[]) => {
-  const chains = new Map<string, Set<number>>();
+const groupDeclaredGames = (rows: DeclaredGameRow[]) => {
+  const chains = new Map<string, { gameId: number; slotId: number | null }[]>();
   for (const row of rows) {
-    const gameId = completedGameId(row);
+    const gameId = declaredGameId(row);
     if (gameId === null) continue;
-    const games = chains.get(row.chain_id) ?? new Set<number>();
-    games.add(gameId);
+    const games = chains.get(row.chain_id) ?? [];
+    games.push({ gameId, slotId: row.slot_id });
     chains.set(row.chain_id, games);
   }
-  return [...chains].map(([chainId, gameIds]) => ({ chainId, gameIds: [...gameIds].sort((a, b) => a - b) }));
+  return [...chains].map(([chainId, games]) => ({ chainId, games: games.sort((a, b) => a.gameId - b.gameId) }));
 };
 
 const SELECT_RUN = "SELECT * FROM launch_runs WHERE chain_id = ? AND kind = ? AND environment = ? AND name = ?";
 const SCHEDULE_ONCE = "ON CONFLICT (chain_id, kind, environment, name) DO NOTHING";
 
 /**
- * The launch runs of one chain. The chain comes from the shard's /manifest, read once per store, so pointing SHARD_URL
- * at another shard refuses new work until earlier queues drain. Directory reads retain games from every chain.
+ * Launch runs are keyed by the selected directory chain; another shard's queue cannot block or retarget them.
  */
 export class D1LaunchStore implements LaunchServiceStore {
   private chain?: Promise<string>;
@@ -115,6 +116,7 @@ export class D1LaunchStore implements LaunchServiceStore {
   constructor(
     private readonly db: D1Database,
     private readonly chainOf: () => Promise<string>,
+    private readonly officialChains?: () => Promise<readonly string[]>,
   ) {}
 
   // A failed manifest read is not remembered: the next operation reads it again.
@@ -124,6 +126,10 @@ export class D1LaunchStore implements LaunchServiceStore {
       throw error;
     });
     return this.chain;
+  }
+
+  targetChain() {
+    return this.chainId();
   }
 
   async enqueue(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun> {
@@ -157,13 +163,32 @@ export class D1LaunchStore implements LaunchServiceStore {
     return (await statement.all<LaunchRunRow>()).results.map(toRun);
   }
 
-  async playerDirectoryGames(): Promise<{ chainId: string; gameIds: number[] }[]> {
+  async rosterCohorts(): Promise<import("@realms-world/value-ledger").SlotCohort[]> {
     const { results } = await this.db
       .prepare(
-        "SELECT id, chain_id, summary FROM launch_runs WHERE chain_id <> '' AND kind = 'game' AND status = 'complete' ORDER BY chain_id",
+        "SELECT * FROM launch_runs WHERE kind='game' AND slot_id IS NOT NULL ORDER BY chain_id,slot_id,json_extract(request,'$.groupIndex')",
       )
-      .all<CompletedGameRow>();
-    return groupCompletedGames(results);
+      .all<LaunchRunRow>();
+    const cohorts = new Map<string, import("@realms-world/value-ledger").SlotCohort>();
+    for (const row of results) {
+      const key = `${row.chain_id}:${row.slot_id}`;
+      const cohort = cohorts.get(key) ?? { chainId: row.chain_id, slotId: row.slot_id!, complete: true, games: [] };
+      const gameId = row.summary ? declaredGameId(row) : null;
+      const request = JSON.parse(row.request) as { groupIndex: number };
+      if (row.status !== "complete" || gameId === null) cohort.complete = false;
+      if (gameId !== null) cohort.games.push({ gameId, groupIndex: request.groupIndex });
+      cohorts.set(key, cohort);
+    }
+    return [...cohorts.values()];
+  }
+
+  async playerDirectoryGames(): Promise<{ chainId: string; games: { gameId: number; slotId: number | null }[] }[]> {
+    const { results } = await this.db
+      .prepare(
+        "SELECT id, chain_id, summary, slot_id FROM launch_runs WHERE chain_id <> '' AND kind = 'game' AND status = 'complete' ORDER BY chain_id",
+      )
+      .all<DeclaredGameRow>();
+    return groupDeclaredGames(results);
   }
 
   // Migration 0005 archives pre-chain runs under an empty id; those have no shard to drain.
@@ -174,17 +199,8 @@ export class D1LaunchStore implements LaunchServiceStore {
       )
       .bind(await this.chainId())
       .all<LaunchRunRow>();
-    return results.map(toRun);
-  }
-
-  private async requireDrainedPreviousShard(): Promise<void> {
-    const stranded = await this.pendingOtherChains();
-    if (stranded.length) {
-      const chains = [...new Set(stranded.map(({ chainId }) => chainId))].join(", ");
-      throw new Error(
-        `Drain queued or running launches on ${chains} before changing SHARD_URL; restore the previous shard to finish them`,
-      );
-    }
+    const official = await this.officialChains?.();
+    return results.map(toRun).filter((run) => !official?.some((chain) => BigInt(chain) === BigInt(run.chainId)));
   }
 
   async failed(): Promise<LaunchRun[]> {
@@ -204,7 +220,6 @@ export class D1LaunchStore implements LaunchServiceStore {
   }
 
   async startNext(now: number): Promise<LaunchRun | null> {
-    await this.requireDrainedPreviousShard();
     const chain = await this.chainId();
     const interrupted = await this.db
       .prepare(
@@ -308,7 +323,7 @@ export class D1LaunchStore implements LaunchServiceStore {
   async delete(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<boolean> {
     const result = await this.db
       .prepare(
-        "DELETE FROM launch_runs WHERE chain_id = ? AND kind = ? AND environment = ? AND name = ? AND status <> 'running'",
+        "DELETE FROM launch_runs WHERE chain_id = ? AND kind = ? AND environment = ? AND name = ? AND status <> 'running' AND slot_id IS NULL",
       )
       .bind(await this.chainId(), kind, environment, name)
       .run();
@@ -336,12 +351,10 @@ export class D1LaunchStore implements LaunchServiceStore {
    * queues its games with the roster). This store stays the only writer of launch runs.
    */
   async scheduleStatement(kind: LaunchKind, request: LaunchJobRequest): Promise<D1PreparedStatement> {
-    await this.requireDrainedPreviousShard();
     return this.insertStatement(await this.chainId(), kind, applyDurableLaunchDefaults(kind, request), SCHEDULE_ONCE);
   }
 
   private async insertRun(kind: LaunchKind, request: LaunchJobRequest, conflict: string): Promise<LaunchRun> {
-    await this.requireDrainedPreviousShard();
     const durableRequest = applyDurableLaunchDefaults(kind, request);
     const chain = await this.chainId();
     const [, selected] = await this.db.batch<LaunchRunRow>([
@@ -356,8 +369,8 @@ export class D1LaunchStore implements LaunchServiceStore {
     return this.db
       .prepare(
         `INSERT INTO launch_runs
-           (id, chain_id, kind, environment, name, request, status, available_at, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, 'queued', ?, ?, ?) ${conflict}`,
+           (id, chain_id, kind, environment, name, request, status, available_at, created_at, updated_at, slot_id)
+         VALUES (?, ?, ?, ?, ?, ?, 'queued', ?, ?, ?, ?) ${conflict}`,
       )
       .bind(
         crypto.randomUUID(),
@@ -369,6 +382,7 @@ export class D1LaunchStore implements LaunchServiceStore {
         now,
         now,
         now,
+        "slotId" in request ? (request.slotId ?? null) : null,
       );
   }
 }

@@ -1,5 +1,5 @@
-// The guardian Worker: the guardian private key as its only secret, reachable only through the identity Worker's
-// service binding. Only the owner deploys it and sets its key (see README.md); CI never does.
+// The guardian Worker: the guardian private key as its only secret, device signing reachable only through the identity Worker's
+// service binding; the owner may attach a readonly health hostname. Only the owner deploys it and sets its key (see README.md); CI never does.
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "realms-guardian",

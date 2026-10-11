@@ -1,6 +1,6 @@
 // The launch Worker. It serves /api/factory/* and /api/slots/* on the app's origin, beside identity, which owns the
-// session it checks. The shard it launches on (SHARD_URL, its Herald), its registrar account
-// (DEPLOYER_ACCOUNT_ADDRESS) and its launchers (LAUNCHER_ALLOWLIST) are the environment's GitHub variables, and
+// session it checks. Official shards come from the identity directory. Its registrar account
+// is enrolled per shard; its launchers (LAUNCHER_ALLOWLIST) are environment GitHub variables, and
 // DEPLOYER_PRIVATE_KEY and OPERATOR_TOKEN its secrets; the deploy workflow sets them. When Frontier and Blitz run is the
 // season calendar in D1, which launchers edit. Production deploys only at the cutover, when the box's launch service stops: two schedulers
 // would each freeze the same slots.
@@ -22,7 +22,11 @@
       ],
       "vars": { "ENVIRONMENT": "staging", "BASE_URL": "https://play.dev-realms.party" },
       "d1_databases": [{ "binding": "DB", "database_name": "realms-launch-staging", "migrations_dir": "migrations" }],
-      "services": [{ "binding": "IDENTITY", "service": "realms-identity-staging" }],
+      "services": [
+        { "binding": "IDENTITY", "service": "realms-identity-staging" },
+        { "binding": "VALUE_IDENTITY", "service": "realms-identity-staging", "entrypoint": "ValueIdentity" },
+        { "binding": "VALUE_RELAY", "service": "realms-value-relay-staging", "entrypoint": "ValueLaunch" },
+      ],
       "durable_objects": { "bindings": [{ "name": "REGISTRAR", "class_name": "Registrar" }] },
       "triggers": { "crons": ["* * * * *"] },
       "version_metadata": { "binding": "VERSION" },
@@ -38,7 +42,11 @@
       "d1_databases": [
         { "binding": "DB", "database_name": "realms-launch-production", "migrations_dir": "migrations" },
       ],
-      "services": [{ "binding": "IDENTITY", "service": "realms-identity" }],
+      "services": [
+        { "binding": "IDENTITY", "service": "realms-identity" },
+        { "binding": "VALUE_IDENTITY", "service": "realms-identity", "entrypoint": "ValueIdentity" },
+        { "binding": "VALUE_RELAY", "service": "realms-value-relay", "entrypoint": "ValueLaunch" },
+      ],
       "durable_objects": { "bindings": [{ "name": "REGISTRAR", "class_name": "Registrar" }] },
       "triggers": { "crons": ["* * * * *"] },
       "version_metadata": { "binding": "VERSION" },

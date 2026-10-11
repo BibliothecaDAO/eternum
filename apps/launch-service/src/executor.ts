@@ -1,106 +1,84 @@
-import { finalizeGame } from "./results";
 import { Context, Effect, Layer } from "effect";
-import { openShard, type Shard } from "@bibliothecadao/eternum/shard";
-import { launchGame } from "../../../config/deployer/clean/launch/runner";
+import { activeShards, requireActiveChain, readRegisteredShard, type ShardDirectory } from "@realms-world/value-ledger";
 import type { LaunchRunStore } from "../../../config/deployer/clean/launch/run-store";
-import type { LaunchGameRequest } from "../../../config/deployer/clean/types";
-import { registrarWorldOf } from "../../../config/deployer/clean/world/native/manifest";
-import type { RegistrarWorld } from "../../../config/deployer/clean/world/native/types";
-import type { NativeSchema } from "../../../apps/herald/src/native/schema";
-import schema from "../../../contracts/l3/world-native/schema/schema.json";
 import type { LaunchEnv } from "./env";
 import { LaunchExecutionFailure } from "./errors";
 import type { LaunchRun, LaunchSummary } from "./model";
-import type { CreateGameRequest } from "./schemas";
+import { LaunchShard } from "./shard-client";
+import { closedSlotGroups, type BlitzValuePort } from "./paid-blitz";
+import { finalizeGame } from "./results";
 
-/** The shard a launch writes to and the registrar key it writes with. */
 interface LaunchTarget {
-  shardUrl: string;
+  directory: ShardDirectory & import("@realms-world/value-ledger").RegistrationIdentity;
   accountAddress: string;
   privateKey: string;
 }
-
 interface LaunchExecutorService {
   execute(run: LaunchRun, store: LaunchRunStore): Effect.Effect<LaunchSummary, LaunchExecutionFailure>;
 }
-
 export class LaunchExecutor extends Context.Service<LaunchExecutor, LaunchExecutorService>()("launch/LaunchExecutor") {}
-
-export const launchTargetOf = (env: LaunchEnv): LaunchTarget => ({
-  shardUrl: env.SHARD_URL,
-  accountAddress: env.DEPLOYER_ACCOUNT_ADDRESS,
+export const launchTargetOf = (env: LaunchEnv, accountAddress: string): LaunchTarget => ({
+  directory: env.VALUE_IDENTITY,
+  accountAddress,
   privateKey: env.DEPLOYER_PRIVATE_KEY,
 });
 
-const RELEASE_SCHEMA = schema as unknown as NativeSchema;
-
-/**
- * The shard as its Herald's /manifest describes it, read at each use so a redeployed world needs no Worker redeploy.
- * The ABIs are the ones this release was built with; a shard running another release is refused.
- */
-export const readLaunchShard = async (shardUrl: string): Promise<{ shard: Shard; world: RegistrarWorld }> => {
-  const shard = await openShard(shardUrl, RELEASE_SCHEMA.identity);
-  return { shard, world: registrarWorldOf(shard, RELEASE_SCHEMA) };
+/** Directory membership owns selection; runtime ABI owns command encoding. */
+export const readLaunchShard = async (directory: ShardDirectory, chainId: string) => {
+  const shard = await readRegisteredShard(directory, chainId);
+  return { shard, world: { world: { address: shard.contracts.games! } } };
+};
+export const shardChainOf = (env: LaunchEnv, requested?: string | null) => async () => {
+  if (requested) return (await requireActiveChain(env.VALUE_IDENTITY, requested)).chainId;
+  const shards = await activeShards(env.VALUE_IDENTITY);
+  if (shards.length !== 1) throw new Error("select_official_shard_chain");
+  return shards[0]!.chainId;
 };
 
-/** The chain id the shard's /manifest names: the key every launch run is stored under. */
-export const shardChainOf = (env: LaunchEnv) => async (): Promise<string> =>
-  (await readLaunchShard(env.SHARD_URL)).shard.chainId;
-
-const requirePersistedStartTime = (request: CreateGameRequest): string => {
-  if (!request.gameStartTime) throw new Error(`Launch request for ${request.gameName} has no persisted start time`);
-  return request.gameStartTime;
-};
-
-const buildGameRequest = (
-  request: CreateGameRequest,
-  target: LaunchTarget,
-  { shard, world }: Awaited<ReturnType<typeof readLaunchShard>>,
-): LaunchGameRequest => ({
-  manifest: world,
-  heraldUrl: shard.url,
-  rpcUrl: shard.rpcUrl,
-  accountAddress: target.accountAddress,
-  privateKey: target.privateKey,
-  environmentId: request.environment,
-  version: request.version,
-  devModeOn: request.devModeOn,
-  singleRealmMode: request.singleRealmMode,
-  durationSeconds: request.durationSeconds,
-  mapConfigOverrides: request.mapConfigOverrides,
-  biomeClimateOverrides: request.biomeClimateOverrides,
-  blitzRegistrationOverrides: request.blitzRegistrationOverrides,
-  launchKind: "game",
-  gameName: request.gameName,
-  startTime: requirePersistedStartTime(request),
-});
-
-const executeRun = async (run: LaunchRun, store: LaunchRunStore, target: LaunchTarget): Promise<LaunchSummary> => {
-  const launchShard = await readLaunchShard(target.shardUrl);
-  // The shard behind SHARD_URL can change under a queued run; a run only ever executes on the chain it was queued for.
-  if (run.chainId !== launchShard.shard.chainId) {
-    throw new Error(
-      `Launch ${run.id} belongs to chain ${run.chainId}, but the shard is now on ${launchShard.shard.chainId}`,
-    );
-  }
-  if (run.kind === "game" && !("gameId" in run.request)) {
-    return launchGame(buildGameRequest(run.request, target, launchShard), store);
-  }
-  if (run.kind === "result" && "gameId" in run.request) {
-    return finalizeGame(
-      run.request,
-      { url: launchShard.shard.rpcUrl },
-      { manifest: launchShard.world, accountAddress: target.accountAddress, privateKey: target.privateKey },
-    );
-  }
-  throw new Error(`Stored request does not match ${run.kind} launch ${run.id}`);
-};
-
-export const launchExecutorLayer = (target: LaunchTarget) =>
+export const launchExecutorLayer = (target: LaunchTarget, value: BlitzValuePort) =>
   Layer.succeed(LaunchExecutor, {
     execute: (run, store) =>
       Effect.tryPromise({
-        try: () => executeRun(run, store, target),
+        try: () => executeRun(run, store, target, value),
         catch: (cause) => new LaunchExecutionFailure({ runId: run.id, cause }),
       }),
   });
+const executeRun = async (
+  run: LaunchRun,
+  store: LaunchRunStore,
+  target: LaunchTarget,
+  value: BlitzValuePort,
+): Promise<LaunchSummary> => {
+  await requireActiveChain(target.directory, run.chainId);
+  const { shard } = await readLaunchShard(target.directory, run.chainId);
+  if (BigInt(run.chainId) !== BigInt(shard.chainId)) throw new Error("queued_launch_shard_changed");
+  const native = new LaunchShard({
+    rpcUrl: shard.rpcUrl,
+    chainId: shard.chainId,
+    gamesAddress: shard.contracts.games!,
+    accountAddress: target.accountAddress,
+    privateKey: target.privateKey,
+  });
+  if (run.kind === "result" && "gameId" in run.request) return finalizeGame(run.request, native);
+  if (run.kind !== "game" || "gameId" in run.request) throw new Error("stored_launch_kind_differs");
+  const request = run.request;
+  if (request.environment === "madara.blitz") {
+    if (!run.slotId || !Number.isInteger(request.groupIndex)) throw new Error("Blitz games require a closed paid slot");
+    const { groups } = await closedSlotGroups({ chainId: run.chainId, slotId: run.slotId }, value, target.directory);
+    const players = groups[request.groupIndex!];
+    if (!players?.length) throw new Error("closed_slot_group_missing");
+    const created = await native.create(request, Date.parse(run.createdAt), undefined, players);
+    const settlementTransactions = await native.seat(created.gameId!);
+    const game = await native.game(created.gameId!);
+    const startTime = Number(game.start_main_at);
+    return store.saveGame({
+      ...created,
+      startTime,
+      startTimeIso: new Date(startTime * 1000).toISOString(),
+      durationSeconds: Number(game.end_at) - startTime,
+      finalizeAt: Number(game.end_at),
+      settlementTransactions,
+    });
+  }
+  return store.saveGame(await native.create(request, Date.parse(run.createdAt)));
+};
