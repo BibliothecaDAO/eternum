@@ -5,7 +5,7 @@ import { entryCost, entryShares, entryState, type EntryTerms } from "./entry";
 const WEI = 10n ** 18n;
 const terms = (overrides: Partial<EntryTerms> = {}): EntryTerms => ({
   prices: { seat: 500n * WEI, sword: 500n * WEI, shield: 500n * WEI },
-  split: { protocolCutBps: 2000, chestLordsBps: 500 },
+  split: { protocolCutBps: 1000, chestLordsBps: 1000 },
   cancelled: false,
   close: 1_000,
   credits: { swords: 0, shields: 0 },
@@ -31,13 +31,15 @@ it("charges the seat and each flag, a held credit paying for its flag", () => {
   expect(credited).toEqual({ cash: 1_000n * WEI, swordCredit: true, shieldCredit: false });
 });
 
-it("splits what an entry pays as the ledger settles it: the treasury's cut, then the chests' share, the rest to the pool", () => {
-  // 1,000 paid, 20% cut, 5% of the rest to the chests: 200 · 40 · 760.
-  expect(entryShares(1_000n * WEI, { protocolCutBps: 2000, chestLordsBps: 500 })).toEqual({
-    treasury: 200n * WEI,
-    chests: 40n * WEI,
-    pool: 760n * WEI,
+it("splits what an entry pays as the ledger settles it: the treasury's cut and the chests' share of the whole, the rest to the pool", () => {
+  // 100 paid, a tenth to the treasury and a tenth to the chests, both of the whole 100: 10 · 10 · 80.
+  expect(entryShares(100n * WEI, { protocolCutBps: 1000, chestLordsBps: 1000 })).toEqual({
+    treasury: 10n * WEI,
+    chests: 10n * WEI,
+    pool: 80n * WEI,
   });
+  // The chests' share is never taken of what the cut left: 20% and 5% of 1,000 are 200 and 50, not 200 and 40.
+  expect(entryShares(1_000n * WEI, { protocolCutBps: 2000, chestLordsBps: 500 }).chests).toBe(50n * WEI);
 });
 
 it("tells choosing, short of LORDS, registered, refund and refunded apart", () => {

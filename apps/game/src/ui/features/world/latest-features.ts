@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-11",
+    title: "Where a Blitz entry goes",
+    description:
+      "A Blitz game's pot is now split of the whole: the treasury's cut and the chests' share are each taken of everything paid, and the rest goes to the season's prize pool. The bar under an entry's price shows that split.",
+    type: "balance",
+  },
+  {
+    date: "2026-10-11",
     title: "Chest tokens count in entries",
     description:
       "A Blitz chest's token reward is now a multiple of its game's entry: four, two or one entry for the top three rank bands, never less than an entry. A sealed chest shows that multiple, an opened one shows it with the sum sent, and the two lowest bands draw cosmetics and credits only.",

@@ -39,7 +39,7 @@ const SLOT: SlotKey = { shard: "0x52", slotId: 7 };
 const WALLET = "0x4a1";
 const TERMS: EntryTerms = {
   prices: { seat: 500n * WEI, sword: 500n * WEI, shield: 500n * WEI },
-  split: { protocolCutBps: 2000, chestLordsBps: 500 },
+  split: { protocolCutBps: 1000, chestLordsBps: 1000 },
   cancelled: false,
   close: Math.floor(Date.now() / 1000) + 3600,
   credits: { swords: 2, shields: 0 },
@@ -106,9 +106,9 @@ it("pays the seat and the chosen flags from the payout wallet, a credit paying f
   await press(panel, "Sword");
   await press(panel, "Shield");
   expect(panel.textContent).toContain("1,000");
-  // Where the 1,000 goes, as the preset splits it: 760 to the season pool, 40 to its chests, 200 to the treasury.
+  // Where the 1,000 goes, as the preset splits it: 800 to the season pool, 100 to its chests, 100 to the treasury.
   const split = panel.querySelector('[aria-label^="Where this entry goes"]')!.textContent;
-  expect(split).toBe("76040200");
+  expect(split).toBe("800100100");
   await press(panel, "Pay & join");
   await press(panel, "Sign");
   // register names no account: the ledger registers the one it links to the paying wallet.

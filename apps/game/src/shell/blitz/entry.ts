@@ -42,12 +42,12 @@ export interface EntryChoice {
 }
 
 /**
- * Where the LORDS an entry pays go when its game settles (ledger-interface.txt, custody rules): the treasury's cut of
- * the pot, then the chests' share of what is left to the season's chest reserve, the rest to the season pool.
+ * Where the LORDS an entry pays go when its game settles (ledger-interface.txt, custody rules): the treasury's cut and
+ * the chest reserve's share, each taken of the whole pot, the rest to the season pool.
  */
 export const entryShares = (cash: bigint, split: EntrySplit) => {
   const treasury = (cash * BigInt(split.protocolCutBps)) / 10_000n;
-  const chests = ((cash - treasury) * BigInt(split.chestLordsBps)) / 10_000n;
+  const chests = (cash * BigInt(split.chestLordsBps)) / 10_000n;
   return { treasury, chests, pool: cash - treasury - chests };
 };
 
