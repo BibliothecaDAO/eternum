@@ -324,7 +324,7 @@ it("probes a single-RPC shard manifest without a removed admission endpoint", as
   expect(read.mock.calls.some((call) => String(call[0]).includes("admission"))).toBe(false);
 });
 
-it("publishes an undeployed ledger as down and probes the staging play site", async () => {
+it("publishes an undeployed ledger as down and probes the configured play site", async () => {
   const environment = vi
     .spyOn(chain, "environmentL2")
     .mockReturnValue({ network: "sepolia", chain: "SN_SEPOLIA", ledger: null });
@@ -335,6 +335,7 @@ it("publishes an undeployed ledger as down and probes the staging play site", as
     await worker.scheduled({} as ScheduledController, {
       STATUS_BUCKET: { get: async () => null, put } as unknown as R2Bucket,
       ENVIRONMENT: "staging",
+      BASE_URL: "https://preview.public.test",
       RELAY_HEALTH_URL: valueTargets.relayHealthUrl,
       GUARDIAN_HEALTH_URL: valueTargets.guardianHealthUrl,
       LEDGER_RPC_URL: valueTargets.ledgerRpcUrl,
@@ -344,7 +345,7 @@ it("publishes an undeployed ledger as down and probes the staging play site", as
       status: "down",
       paused: null,
     });
-    expect(read.mock.calls.some(([url]) => String(url) === "https://play.dev-realms.party/api/slots")).toBe(true);
+    expect(read.mock.calls.some(([url]) => String(url) === "https://preview.public.test/api/slots")).toBe(true);
     expect(read.mock.calls.some(([url]) => String(url).startsWith("https://play.realms.party"))).toBe(false);
   } finally {
     vi.unstubAllGlobals();

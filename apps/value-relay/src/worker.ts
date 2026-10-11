@@ -86,37 +86,33 @@ export class ValueRelay extends DurableObject<RelayEnv> {
             onIdentityChain(
               relay.env.LEDGER_RPC_URL,
               relay.env.IDENTITY,
-              relayOperation("post season leaderboard", () =>
-                Effect.runPromise(
-                  processSeasonTops(
-                    "post",
-                    {
-                      ...seasonLedgerReads(ledgerCredentialsOf(relay.env)),
-                      challenge: async () => {
-                        throw new Error("relay_cannot_challenge");
-                      },
-                      post: (id, wallets) =>
-                        Effect.runPromise(
-                          relay.ledgerPermit(
-                            relayOperation("post season top", () =>
-                              postSeasonTop(ledgerCredentialsOf(relay.env), id, wallets),
-                            ),
+              relayEffect("post season leaderboard", () =>
+                processSeasonTops(
+                  "post",
+                  {
+                    ...seasonLedgerReads(ledgerCredentialsOf(relay.env)),
+                    challenge: async () => {
+                      throw new Error("relay_cannot_challenge");
+                    },
+                    post: (id, wallets) =>
+                      Effect.runPromise(
+                        relay.ledgerPermit(
+                          relayOperation("post season top", () =>
+                            postSeasonTop(ledgerCredentialsOf(relay.env), id, wallets),
                           ),
                         ),
-                    },
-                    relay.ctx.storage,
-                  ),
+                      ),
+                  },
+                  relay.ctx.storage,
                 ),
               ),
             ),
           );
           const chests = yield* Effect.result(
-            relayOperation("ledger chests unavailable", () =>
-              Effect.runPromise(
-                finishRequestedChests(
-                  chestPortsOf(relay.env, (effect) => relay.ledgerPermit(effect)),
-                  relay.chests,
-                ),
+            relayEffect("ledger chests unavailable", () =>
+              finishRequestedChests(
+                chestPortsOf(relay.env, (effect) => relay.ledgerPermit(effect)),
+                relay.chests,
               ),
             ),
           );
@@ -179,12 +175,10 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   reportMany(rows: readonly import("./ports").Withdrawal[]) {
     return Effect.runPromise(
       this.ledgerPermit(
-        relayOperation("reportMany ledger claims", () =>
-          Effect.runPromise(
-            ledgerBatches(ledgerCredentialsOf(this.env), (decisions) =>
-              this.env.IDENTITY.recordPayDecisions(decisions),
-            ).reportMany(rows),
-          ),
+        relayEffect("reportMany ledger claims", () =>
+          ledgerBatches(ledgerCredentialsOf(this.env), (decisions) =>
+            this.env.IDENTITY.recordPayDecisions(decisions),
+          ).reportMany(rows),
         ),
         rows.map((row) => row.chainId),
       ),
@@ -193,12 +187,10 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   payMany(rows: readonly import("./ports").PayableClaim[]) {
     return Effect.runPromise(
       this.ledgerPermit(
-        relayOperation("payMany ledger claims", () =>
-          Effect.runPromise(
-            ledgerBatches(ledgerCredentialsOf(this.env), (decisions) =>
-              this.env.IDENTITY.recordPayDecisions(decisions),
-            ).payMany(rows),
-          ),
+        relayEffect("payMany ledger claims", () =>
+          ledgerBatches(ledgerCredentialsOf(this.env), (decisions) =>
+            this.env.IDENTITY.recordPayDecisions(decisions),
+          ).payMany(rows),
         ),
         rows.map((row) => row.withdrawal.chainId),
       ),
@@ -290,9 +282,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     if (shard?.status !== "active") throw new Error("new_slot_requires_active_shard");
     return Effect.runPromise(
       this.ledgerPermit(
-        relayOperation("write ledger slot", () =>
-          Effect.runPromise(openSlotOnLedger(ledgerCredentialsOf(this.env), key, window)),
-        ),
+        relayEffect("write ledger slot", () => openSlotOnLedger(ledgerCredentialsOf(this.env), key, window)),
         [key.chainId],
       ),
     );
@@ -325,9 +315,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     await this.requireLaunchSlot(key);
     return Effect.runPromise(
       this.ledgerPermit(
-        relayOperation("write ledger slot", () =>
-          Effect.runPromise(markSlotRefundable(ledgerCredentialsOf(this.env), key, wallets)),
-        ),
+        relayEffect("write ledger slot", () => markSlotRefundable(ledgerCredentialsOf(this.env), key, wallets)),
         [key.chainId],
       ),
     );
@@ -336,9 +324,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     await this.requireLaunchSlot(key);
     return Effect.runPromise(
       this.ledgerPermit(
-        relayOperation("write ledger slot", () =>
-          Effect.runPromise(refundSlotOnLedger(ledgerCredentialsOf(this.env), key)),
-        ),
+        relayEffect("write ledger slot", () => refundSlotOnLedger(ledgerCredentialsOf(this.env), key)),
         [key.chainId],
       ),
     );
@@ -381,12 +367,12 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
     realms: { ownerOf: (realmId) => relayOperation("read Realm owner", () => env.IDENTITY.realmOwnerOf(realmId)) },
     ledger: {
       payment: (row) =>
-        relayOperation("read ledger payment", () =>
-          Effect.runPromise(ledgerPaymentRead(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT))(row)),
+        relayEffect("read ledger payment", () =>
+          ledgerPaymentRead(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT))(row),
         ),
       voided: (row) =>
-        relayOperation("read ledger voided", () =>
-          Effect.runPromise(ledgerWithdrawalVoided(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT))(row)),
+        relayEffect("read ledger voided", () =>
+          ledgerWithdrawalVoided(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT))(row),
         ),
       reportMany: (rows) => relayOperation("report withdrawal page", () => ledgerOf(env).reportMany(rows)),
       payMany: (rows) => relayOperation("pay withdrawal page", () => ledgerOf(env).payMany(rows)),
@@ -560,3 +546,6 @@ export default {
     }
   },
 };
+
+const relayEffect = <A, E>(operation: string, make: () => Effect.Effect<A, E>) =>
+  relayOperation(operation, () => Effect.runPromise(make()));

@@ -6,6 +6,7 @@ import { nextMonitorState } from "./state";
 
 interface Env {
   STATUS_BUCKET: R2Bucket;
+  BASE_URL: string;
   RELAY_HEALTH_URL: string;
   GUARDIAN_HEALTH_URL: string;
   LEDGER_RPC_URL: string;
@@ -51,7 +52,7 @@ export default {
 };
 
 const valueTargetsOf = (env: Env): PublicValueTargets => {
-  const values = [env.RELAY_HEALTH_URL, env.GUARDIAN_HEALTH_URL, env.LEDGER_RPC_URL];
+  const values = [env.BASE_URL, env.RELAY_HEALTH_URL, env.GUARDIAN_HEALTH_URL, env.LEDGER_RPC_URL];
   if (values.some((value) => typeof value !== "string" || !value))
     throw new Error("Status target configuration missing");
   return {
@@ -59,6 +60,6 @@ const valueTargetsOf = (env: Env): PublicValueTargets => {
     guardianHealthUrl: env.GUARDIAN_HEALTH_URL,
     ledgerRpcUrl: env.LEDGER_RPC_URL,
     ledgerAddress: environmentL2(env.ENVIRONMENT).ledger,
-    playUrl: env.ENVIRONMENT === "staging" ? "https://play.dev-realms.party" : "https://play.realms.party",
+    playUrl: env.BASE_URL,
   };
 };
