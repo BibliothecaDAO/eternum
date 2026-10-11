@@ -11,8 +11,8 @@ hashes, parents or regressed heads halt ingestion. One environment-wide durable 
 payments, results, season settlement and chest finishes under the operator key. Another shard's failure does not
 suppress these jobs.
 
-Frontier receipts are reported as debt before wallet lookup. Payments use identity's ready payout wallet at signing time
-and record that decision before broadcast. Linked wallets receive immediately. Missing wallets remain queued; permanent
+Frontier receipts are reported as debt before wallet lookup. Payments use identity's linked wallet at signing time and
+record that decision before broadcast. Linked wallets receive immediately. Missing wallets remain queued; permanent
 refusals are recorded separately. A confirmed closed season with the claim unpaid removes it from retries, including
 accounts without wallets. A claim is keyed by its shard and withdrawal transaction hash.
 
