@@ -6,8 +6,6 @@ const HEX = /^0x[0-9a-fA-F]{1,64}$/;
 type Reader = ReturnType<typeof publicReader>;
 
 export interface PublicValueTargets {
-  relayHealthUrl: string;
-  guardianHealthUrl: string;
   ledgerRpcUrl: string;
   ledgerAddress: string | null;
   playUrl: string;
@@ -18,7 +16,7 @@ const IS_PAUSED = "0x238d7ea31550fece8f0a8a601e3ae1a7c59cb3b6cc976ceb721e31ebd9c
 export async function probeServices(network: typeof fetch, now: number, known: Target[], value: PublicValueTargets) {
   let targets = known;
   let directoryReadable = false;
-  const [play, accounts, directory, blitz, chat, guardian, relay, ledger] = await Promise.all([
+  const [play, accounts, directory, blitz, chat, guardian, relay, monitor, ledger] = await Promise.all([
     measure("play", "Play", network, (read) => probePlay(read, value.playUrl)),
     measure("accounts", "Sign in and accounts", network, (read) => probeAccounts(read, value.playUrl)),
     measure("directory", "Games list", network, async (read) => {
@@ -29,8 +27,13 @@ export async function probeServices(network: typeof fetch, now: number, known: T
     }),
     measure("blitz", "Blitz lobbies", network, (read) => probeSlots(read, value.playUrl)),
     measure("chat", "Chat", network, (read) => probeChat(read, value.playUrl)),
-    measure("guardian", "Device guardian", network, (read) => probeGuardian(read, value.guardianHealthUrl)),
-    measure("relay", "Value relay", network, (read) => probeRelay(read, value.relayHealthUrl, now)),
+    measure("guardian", "Device guardian", network, (read) => probeGuardian(read, value.playUrl + "/api/guardian")),
+    measure("relay", "Value relay", network, (read) =>
+      probeValueWorker(read, value.playUrl + "/api/value/health", now, "value-relay"),
+    ),
+    measure("monitor", "Value monitor", network, (read) =>
+      probeValueWorker(read, value.playUrl + "/api/operator/monitor/health", now, "value-monitor"),
+    ),
     probeLedger(network, value, now),
   ]);
   const worlds = await Promise.all(targets.map((target) => probeWorld(target, network, now)));
@@ -38,7 +41,7 @@ export async function probeServices(network: typeof fetch, now: number, known: T
     directory.status = "down";
     directory.latency_ms = null;
   } else if (directoryReadable && worlds.some((world) => world.status === "degraded")) directory.status = "degraded";
-  return { targets, probes: [play, accounts, directory, blitz, chat, guardian, relay, ledger, ...worlds] };
+  return { targets, probes: [play, accounts, directory, blitz, chat, guardian, relay, monitor, ledger, ...worlds] };
 }
 
 async function probePlay(read: Reader, playUrl: string): Promise<Status> {
@@ -61,16 +64,15 @@ async function probeAccounts(read: Reader, playUrl: string): Promise<Status> {
 
 async function probeGuardian(read: Reader, url: string): Promise<Status> {
   const guardian = await body(read, url);
-  requireReady(guardian);
-  if (guardian.service !== "realms-guardian" || !felt(guardian.publicKey)) throw new Error("Guardian unavailable");
+  if (!felt(guardian.publicKey) || !felt(guardian.accountClassHash)) throw new Error("Guardian unavailable");
   return "up";
 }
 
-async function probeRelay(read: Reader, url: string, now: number): Promise<Status> {
+async function probeValueWorker(read: Reader, url: string, now: number, service: string): Promise<Status> {
   const relay = await body(read, url);
   requireReady(relay);
   if (
-    relay.service !== "value-relay" ||
+    relay.service !== service ||
     !height(relay.checked_at) ||
     relay.checked_at > now + 60 ||
     now - relay.checked_at > 300

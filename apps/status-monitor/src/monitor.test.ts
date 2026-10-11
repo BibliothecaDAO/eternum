@@ -10,8 +10,6 @@ const now = 1791456000;
 const world = { url: "https://shard.public.test", chainId: "0xa", status: "active" };
 const valueTargets = {
   playUrl: "https://play.realms.party",
-  relayHealthUrl: "https://relay.public.test/health",
-  guardianHealthUrl: "https://guardian.public.test/health",
   ledgerRpcUrl: "https://ledger-rpc.public.test",
   ledgerAddress: "0x123",
 };
@@ -21,10 +19,11 @@ const network =
   async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input).replace(/\/$/, "");
     if (overrides[url]) return overrides[url]!.clone();
-    if (url === valueTargets.guardianHealthUrl)
-      return response({ service: "realms-guardian", success: true, publicKey: "0x1" });
-    if (url === valueTargets.relayHealthUrl)
+    if (url === valueTargets.playUrl + "/api/guardian") return response({ publicKey: "0x1", accountClassHash: "0x2" });
+    if (url === valueTargets.playUrl + "/api/value/health")
       return response({ service: "value-relay", success: true, checked_at: now });
+    if (url === valueTargets.playUrl + "/api/operator/monitor/health")
+      return response({ service: "value-monitor", success: true, checked_at: now });
     if (url === valueTargets.ledgerRpcUrl) {
       const rpc = JSON.parse(String(init?.body));
       return response({
@@ -62,6 +61,7 @@ it("probes every public path and world, not merely a directory200", async () => 
     ["chat", "up"],
     ["guardian", "up"],
     ["relay", "up"],
+    ["monitor", "up"],
     ["ledger", "up"],
     ["shard:0xa", "up"],
   ]);
@@ -292,7 +292,11 @@ it("does not share the identity route with its direct guardian probe and rejects
   const snapshot = await probeServices(
     network({
       "https://play.realms.party/api/health/accounts": new Response(null, { status: 503 }),
-      [valueTargets.relayHealthUrl]: response({ service: "value-relay", success: true, checked_at: now - 301 }),
+      [valueTargets.playUrl + "/api/value/health"]: response({
+        service: "value-relay",
+        success: true,
+        checked_at: now - 301,
+      }),
     }),
     now,
     [],
@@ -336,9 +340,7 @@ it("publishes an undeployed ledger as down and probes the configured play site",
       STATUS_BUCKET: { get: async () => null, put } as unknown as R2Bucket,
       ENVIRONMENT: "staging",
       BASE_URL: "https://preview.public.test",
-      RELAY_HEALTH_URL: valueTargets.relayHealthUrl,
-      GUARDIAN_HEALTH_URL: valueTargets.guardianHealthUrl,
-      LEDGER_RPC_URL: valueTargets.ledgerRpcUrl,
+      L2_RPC_URL: valueTargets.ledgerRpcUrl,
     });
     const published = JSON.parse(put.mock.calls[0]![1]);
     expect(published.document.components.find((row: { id: string }) => row.id === "ledger")).toMatchObject({
@@ -351,4 +353,21 @@ it("publishes an undeployed ledger as down and probes the configured play site",
     vi.unstubAllGlobals();
     environment.mockRestore();
   }
+});
+
+it("derives all three health addresses from the play origin", async () => {
+  const read = vi.fn(network());
+  await probeServices(read, now, [], { ...valueTargets, playUrl: "https://play.dev-realms.party" });
+  const urls = read.mock.calls.map(([url]) => String(url));
+  for (const path of ["/api/guardian", "/api/value/health", "/api/operator/monitor/health"])
+    expect(urls).toContain("https://play.dev-realms.party" + path);
+  expect(urls.some((url) => url.startsWith(valueTargets.playUrl))).toBe(false);
+});
+it.each([
+  ["guardian", "/api/guardian", { publicKey: "0x1" }],
+  ["monitor", "/api/operator/monitor/health", { service: "value-monitor", success: true, checked_at: now - 301 }],
+  ["monitor", "/api/operator/monitor/health", { service: "value-relay", success: true, checked_at: now }],
+] as const)("reports malformed or stale %s health as down", async (id, path, body) => {
+  const result = await probeServices(network({ [valueTargets.playUrl + path]: response(body) }), now, [], valueTargets);
+  expect(result.probes.find((probe) => probe.id === id)!.status).toBe("down");
 });
