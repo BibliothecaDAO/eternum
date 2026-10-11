@@ -7,6 +7,7 @@ import {
   decodeBlitzSeason,
   decodeChest,
   decodeFrontierSeason,
+  decodeLedgerPreset,
   decodeSeasonWinner,
   decodeWithdrawalPayment,
 } from "./codecs";
@@ -78,6 +79,36 @@ describe("committed contract readbacks", () => {
       callContract.mockResolvedValue(malformed);
       await expect(readLedgerRegistration(provider, "0x10", { chainId: "0x11", slotId: 7 }, "0x12")).rejects.toThrow();
     }
+  });
+  it("reads the preset calendar immediately after the compiled rating parameters", () => {
+    const fields = response(ledgerAbi, "get_preset", {
+      entry_fee: { low: 11, high: 1 },
+      protocol_cut_bps: 1000,
+      chest_lords_bps: 2000,
+      paid_fraction_bps: 3000,
+      decay_bps: 4000,
+      sword_price: { low: 12, high: 2 },
+      shield_price: { low: 13, high: 3 },
+      mmr: { enabled: true, mean: 1000, spread: 200, max_delta: 45, k: 32, regression_bps: 150 },
+      day_unit_seconds: 60,
+      season_bags: 10,
+      claim_window_seconds: 3600,
+    });
+    expect(decodeLedgerPreset(fields)).toEqual({
+      entryFee: String(11n + (1n << 128n)),
+      protocolCut: 1000,
+      chestLords: 2000,
+      paidFraction: 3000,
+      decay: 4000,
+      swordPrice: String(12n + (2n << 128n)),
+      shieldPrice: String(13n + (3n << 128n)),
+      dayUnit: 60,
+      bags: 10,
+      claimWindow: 3600,
+    });
+    expect(() => decodeLedgerPreset([...fields.slice(0, 16), "6", ...fields.slice(16)])).toThrow(
+      "invalid_ledger_preset",
+    );
   });
   it("decodes economic records serialized by the compiled ledger types", () => {
     expect(
