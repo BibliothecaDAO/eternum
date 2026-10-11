@@ -1,4 +1,3 @@
-import type { IdentityChainId } from "@realms-world/identity";
 import { encodeChainName, environmentL2, valuePlaneAddress } from "@realms-world/chain";
 import { RpcProvider } from "starknet";
 
@@ -16,8 +15,7 @@ export const identityL2Configuration = (env: L2Environment) => {
   } catch {
     throw new Error("IDENTITY_RPC_URL requires the environment's HTTPS Alchemy endpoint");
   }
-  if (!isEnvironmentAlchemy(url, chain))
-    throw new Error("IDENTITY_RPC_URL requires the environment's HTTPS Alchemy endpoint");
+  if (!isMainnetAlchemy(url)) throw new Error("IDENTITY_RPC_URL requires the environment's HTTPS Alchemy endpoint");
   return { chainId: chain, rpcUrl: env.IDENTITY_RPC_URL };
 };
 
@@ -42,7 +40,7 @@ export const realmOwnerOf = async (env: L2Environment, realmId: string) => {
   await verifyIdentityChain(provider, env);
   const owner = await provider.callContract(
     {
-      contractAddress: valuePlaneAddress("realms", environmentL2(env.ENVIRONMENT).network),
+      contractAddress: valuePlaneAddress("realms", env.ENVIRONMENT),
       entrypoint: "owner_of",
       calldata: [String(id & (2n ** 128n - 1n)), String(id >> 128n)],
     },
@@ -53,11 +51,10 @@ export const realmOwnerOf = async (env: L2Environment, realmId: string) => {
   return owner[0]!;
 };
 
-const isEnvironmentAlchemy = (url: URL, chainId: IdentityChainId) => {
-  const network = chainId === "SN_MAIN" ? "mainnet" : "sepolia";
+const isMainnetAlchemy = (url: URL) => {
   return (
     url.protocol === "https:" &&
-    url.hostname === `starknet-${network}.g.alchemy.com` &&
+    url.hostname === "starknet-mainnet.g.alchemy.com" &&
     !url.port &&
     !url.username &&
     !url.password &&

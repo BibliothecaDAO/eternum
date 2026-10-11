@@ -1,4 +1,4 @@
-import sepolia from "../../../contracts/common/addresses/sepolia.json";
+import production from "../../../contracts/common/addresses/mainnet.json";
 import { beforeAll, expect, it } from "vitest";
 import { buildWorkerBundle, migrationStatements, newStorage, ORIGIN, startWorker, vapidKeys } from "./workerd-harness";
 
@@ -15,6 +15,7 @@ it("reads wallet owners through the deployed Worker's SDK and serves new ledger 
   let unavailable = false;
   const worker = await startWorker({
     bundle,
+    environment: "production",
     storage: newStorage(),
     vapid: await vapidKeys(),
     outbound: async (request) => {
@@ -33,7 +34,7 @@ it("reads wallet owners through the deployed Worker's SDK and serves new ledger 
         calls.push(rpc);
         const result = {
           starknet_specVersion: "0.9.0",
-          starknet_chainId: "0x534e5f5345504f4c4941",
+          starknet_chainId: "0x534e5f4d41494e",
           starknet_getBlockWithTxHashes: { block_number: blockNumber, block_hash: blockHash },
           starknet_call: [`0x${(points * 10n ** 18n).toString(16)}`, "0x0"],
         }[rpc.method];
@@ -59,7 +60,7 @@ it("reads wallet owners through the deployed Worker's SDK and serves new ledger 
       },
     });
     expect(calls.find((call) => call.method === "starknet_call")!.params).toMatchObject({
-      request: { contract_address: sepolia.mmrToken, calldata: ["0xa"] },
+      request: { contract_address: production.mmrToken, calldata: ["0xa"] },
       block_id: { block_hash: "0xabc" },
     });
     points = 1300n;

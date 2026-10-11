@@ -1,4 +1,4 @@
-import sepolia from "../../../contracts/common/addresses/sepolia.json";
+import * as chain from "@realms-world/chain";
 import { RpcProvider } from "starknet";
 import { afterEach, beforeEach, expect, it, vi, type MockInstance } from "vitest";
 import type { IdentityAuth } from "./auth";
@@ -159,17 +159,31 @@ it("reads the top list's named hash and rejects a response for another block", a
   expect((await request("players=0xa&block_hash=0x0")).status).toBe(400);
 });
 
-it("uses the Sepolia reader and its configured rating token instead of mainnet addresses", async () => {
+it("uses the dev rating token instead of production on the same chain", async () => {
+  const resolve = vi.spyOn(chain, "valuePlaneAddress").mockReturnValue("0xded");
   cache.close();
   Object.assign(env, { ENVIRONMENT: "staging" });
   cache = testRatingReader({
     ENVIRONMENT: "staging",
-    IDENTITY_RPC_URL: "https://starknet-sepolia.g.alchemy.com/v2/test",
+    IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
   });
   const idFromName = vi.fn(() => "configured-reader");
   env.RATING_READER = { ...cache.binding, idFromName } as unknown as IdentityEnv["RATING_READER"];
-  vi.mocked(RpcProvider.prototype.getChainId).mockResolvedValue("0x534e5f5345504f4c4941");
+  vi.mocked(RpcProvider.prototype.getChainId).mockResolvedValue("0x534e5f4d41494e");
   expect((await request("players=0xa")).status).toBe(200);
-  expect(idFromName).toHaveBeenCalledWith("SN_SEPOLIA");
-  expect(call).toHaveBeenCalledWith(expect.objectContaining({ contractAddress: sepolia.mmrToken }), "0xabc");
+  expect(idFromName).toHaveBeenCalledWith("SN_MAIN");
+  expect(call).toHaveBeenCalledWith(expect.objectContaining({ contractAddress: "0xded" }), "0xabc");
+  expect(resolve).toHaveBeenCalledWith("mmrToken", "staging");
+});
+
+it("does not read production ratings when the dev token has not been deployed", async () => {
+  vi.spyOn(chain, "valuePlaneAddress").mockImplementation(() => {
+    throw new Error("dev token not deployed");
+  });
+  cache.close();
+  Object.assign(env, { ENVIRONMENT: "staging" });
+  cache = testRatingReader({ ENVIRONMENT: "staging" });
+  env.RATING_READER = cache.binding as unknown as IdentityEnv["RATING_READER"];
+  expect((await request("players=0xa")).status).toBe(503);
+  expect(call).not.toHaveBeenCalled();
 });

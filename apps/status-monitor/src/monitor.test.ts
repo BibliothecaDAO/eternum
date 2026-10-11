@@ -327,7 +327,7 @@ it("probes a single-RPC shard manifest without a removed admission endpoint", as
 it("publishes an undeployed ledger as down and probes the configured play site", async () => {
   const environment = vi
     .spyOn(chain, "environmentL2")
-    .mockReturnValue({ network: "sepolia", chain: "SN_SEPOLIA", ledger: null });
+    .mockReturnValue({ network: "mainnet", chain: "SN_MAIN", ledger: null });
   const put = vi.fn().mockResolvedValue({ etag: "one" });
   const read = vi.fn(network());
   vi.stubGlobal("fetch", read);

@@ -1,4 +1,4 @@
-import { environmentL2, valuePlaneAddress } from "@realms-world/chain";
+import { valuePlaneAddress } from "@realms-world/chain";
 import { ledgerU256 } from "@realms-world/value-ledger";
 import { normalizeStarknetAddress as canonicalFelt } from "@realms-world/identity";
 import { verifyIdentityChain } from "./l2";
@@ -34,7 +34,7 @@ export async function openRatingLedger(
   return {
     provider,
     signal,
-    ratingToken: valuePlaneAddress("mmrToken", environmentL2(env.ENVIRONMENT).network),
+    ratingToken: valuePlaneAddress("mmrToken", env.ENVIRONMENT),
     block: number,
     blockHash: canonicalFelt(canonicalHash),
   };

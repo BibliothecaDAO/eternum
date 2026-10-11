@@ -1,21 +1,38 @@
 import { describe, expect, it } from "vitest";
 
-import { environmentL2 } from "./value-plane";
+import dev from "../../../contracts/common/addresses/dev.json";
+import production from "../../../contracts/common/addresses/mainnet.json";
+import { environmentL2, valuePlaneAddress } from "./value-plane";
 
-describe("environmentL2", () => {
-  it("runs dev on Sepolia and production on mainnet, each from its own address book", () => {
-    expect(environmentL2("staging")).toMatchObject({
-      network: "sepolia",
-      chain: "SN_SEPOLIA",
-    });
-    expect(environmentL2("production")).toMatchObject({
-      network: "mainnet",
-      chain: "SN_MAIN",
-    });
+describe("environment address books", () => {
+  it("runs both environments on mainnet with the real Realms collection", () => {
+    for (const environment of ["staging", "production"] as const) {
+      expect(environmentL2(environment)).toMatchObject({
+        network: "mainnet",
+        chain: "SN_MAIN",
+      });
+      expect(valuePlaneAddress("realms", environment)).toBe(production.realms);
+    }
   });
 
-  it("reads a ledger not yet deployed on an environment's network as null, never as address zero", () => {
-    // mainnet.json names the ledger with an empty value until its deploy writes it.
-    expect(environmentL2("production").ledger).toBeNull();
-  });
+  it.each(["ledger", "lords", "mmrToken", "lootChests", "cosmetics"] as const)(
+    "keeps the deployed %s addresses separate without falling back when absent",
+    (contract) => {
+      const books = { staging: dev, production };
+      for (const environment of ["staging", "production"] as const) {
+        const value = books[environment][contract];
+        if (value && BigInt(value) !== BigInt(0)) {
+          expect(valuePlaneAddress(contract, environment)).toBe(value);
+          const other =
+            books[environment === "staging" ? "production" : "staging"][
+              contract
+            ];
+          if (other) expect(BigInt(value)).not.toBe(BigInt(other));
+        } else
+          expect(() => valuePlaneAddress(contract, environment)).toThrow(
+            "not deployed yet",
+          );
+      }
+    },
+  );
 });

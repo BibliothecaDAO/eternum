@@ -2,7 +2,7 @@ import { environmentL2 } from "@realms-world/chain";
 import { readdirSync, readFileSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildSiwsMessage, payoutWalletStatement } from "@realms-world/identity";
+import { buildSiwsMessage, payoutWalletStatement, type IdentityChainId } from "@realms-world/identity";
 import { botRealmsId, deviceChangeHash, realmsAccountAddress } from "@realms-world/identity/account";
 import { createGuardian } from "@realms-world/guardian";
 import { byteArray, CallData, ec, hash, typedData, type TypedData } from "starknet";
@@ -98,7 +98,7 @@ beforeAll(async () => {
     BETTER_AUTH_SECRET: "identity-test-secret-identity-test-secret",
     RATING_READER: {} as IdentityEnv["RATING_READER"],
     RATING_HISTORY_URL: "https://realms.world/api/ratings/population",
-    IDENTITY_RPC_URL: "https://starknet-sepolia.g.alchemy.com/v2/test",
+    IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
     OPERATOR_TOKEN: OPERATOR_TOKEN,
     DISCORD_CLIENT_ID: "discord-client",
     DISCORD_CLIENT_SECRET: "discord-secret",
@@ -190,7 +190,7 @@ const proveWallet = async (
   browser: ReturnType<typeof createBrowser>,
   address: string,
   path: "link",
-  chainId = environmentL2(env.ENVIRONMENT).chain,
+  chainId: IdentityChainId = environmentL2(env.ENVIRONMENT).chain,
 ) => {
   const { nonce, realmsId } = (await (await browser.request("/api/auth/siws/nonce", { body: { address } })).json()) as {
     nonce: string;
@@ -963,17 +963,17 @@ describe("identity Worker", () => {
     expect(after!.count).toBe(before!.count + 1);
   });
 
-  it("accepts the environment proof chain and rejects a mainnet proof before signature verification", async () => {
+  it("accepts the environment proof chain and rejects a different-chain proof before signature verification", async () => {
     const browser = createBrowser();
-    await signInWithCode(browser, "sepolia-proof@realms.test");
+    await signInWithCode(browser, "wrong-chain-proof@realms.test");
     const address = createWallet();
     verifyAsWallet.mockClear();
-    const refused = await proveWallet(browser, address, "link", "SN_MAIN");
+    const refused = await proveWallet(browser, address, "link", "SN_SEPOLIA");
     expect(refused.status).toBe(401);
     expect(verifyAsWallet).not.toHaveBeenCalled();
     expect((await browser.session())!.user.address).toBeNull();
     expect((await proveWallet(browser, address, "link")).status).toBe(200);
-    expect(verifyAsWallet.mock.calls.at(-1)![0].domain.chainId).toBe("SN_SEPOLIA");
+    expect(verifyAsWallet.mock.calls.at(-1)![0].domain.chainId).toBe("SN_MAIN");
   });
 
   it("names an undeployed wallet without linking it or consuming its nonce", async () => {

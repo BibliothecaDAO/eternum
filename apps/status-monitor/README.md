@@ -41,12 +41,12 @@ local R2; they do not probe live hosts.
 
 Required target variables: `BASE_URL`, `RELAY_HEALTH_URL`, `GUARDIAN_HEALTH_URL`, and the secret `LEDGER_RPC_URL`.
 `BASE_URL` selects the play site; `ENVIRONMENT` selects the ledger address from the shared
-`contracts/common/addresses/<network>.json` book. No target may contain credentials, a query key, plain HTTP or a
-private host. The relay row checks its public health and last completed tick; a heartbeat older than five minutes is
-down even if HTTP still answers. The ledger row uses raw JSON-RPC to read the confirmed node head and is_paused at that
-same block, independently of the relay's parser. Its `paused` fact is true, false, or null on failed decoding. A paused
-ledger is degraded; a failed or stale L2 head is down. The existing static page can show the paused state in the row
-label; the JSON also carries `paused`. The monitor imports no guardian, relay or ledger service code and has no
+`contracts/common/addresses/dev.json` or `mainnet.json` book. No target may contain credentials, a query key, plain HTTP
+or a private host. The relay row checks its public health and last completed tick; a heartbeat older than five minutes
+is down even if HTTP still answers. The ledger row uses raw JSON-RPC to read the confirmed node head and is_paused at
+that same block, independently of the relay's parser. Its `paused` fact is true, false, or null on failed decoding. A
+paused ledger is degraded; a failed or stale L2 head is down. The existing static page can show the paused state in the
+row label; the JSON also carries `paused`. The monitor imports no guardian, relay or ledger service code and has no
 watched-service binding, database or key.
 
 Owner hosting still needed: attach readonly public health domains to the guardian and relay Workers, set the target
@@ -58,3 +58,6 @@ status journal, authentication secret, hosting deployment or treasury calculatio
 Use `wrangler deploy --env staging` for dev, with the isolated `realms-status-staging` bucket and dev guardian/relay
 health URLs. Its play probes use `play.dev-realms.party`. An undeployed ledger is published as down with an unknown
 pause flag; it does not suppress the other probes.
+
+Staging selects `contracts/common/addresses/dev.json`; production selects `mainnet.json`. Both run on `SN_MAIN`, with
+separate ledger and value-token addresses. Dev uses the no-value test token, never production LORDS.

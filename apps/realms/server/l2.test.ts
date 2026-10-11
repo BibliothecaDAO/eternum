@@ -1,4 +1,4 @@
-import sepolia from "../../../contracts/common/addresses/sepolia.json";
+import dev from "../../../contracts/common/addresses/dev.json";
 import { afterEach, expect, it, vi } from "vitest";
 import { RpcProvider } from "starknet";
 import { identityL2Configuration, identityProvider, verifyIdentityChain, realmOwnerOf, fetchIdentityRpc } from "./l2";
@@ -7,33 +7,33 @@ import { verifyWalletOnL2 } from "./wallet-signature";
 
 const env = {
   ENVIRONMENT: "staging" as const,
-  IDENTITY_RPC_URL: "https://starknet-sepolia.g.alchemy.com/v2/test",
+  IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
 };
 afterEach(() => vi.restoreAllMocks());
 it("requires a known environment and only its HTTPS Alchemy endpoint without exposing credentials", () => {
   expect(() => identityL2Configuration({ ...env, ENVIRONMENT: undefined } as never)).toThrow("ENVIRONMENT");
   for (const url of [
     "https://other.test/v2/private",
-    "http://starknet-sepolia.g.alchemy.com/v2/private",
-    "https://starknet-mainnet.g.alchemy.com/v2/private",
+    "http://starknet-mainnet.g.alchemy.com/v2/private",
+    "https://starknet-sepolia.g.alchemy.com/v2/private",
   ])
     expect(() => identityL2Configuration({ ...env, IDENTITY_RPC_URL: url })).toThrow("IDENTITY_RPC_URL");
-  expect(identityL2Configuration(env).chainId).toBe("SN_SEPOLIA");
+  expect(identityL2Configuration(env).chainId).toBe("SN_MAIN");
   expect(
     identityL2Configuration({
       ...env,
-      IDENTITY_RPC_URL: "https://starknet-sepolia.g.alchemy.com/starknet/version/rpc/v0_9/test",
+      IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_9/test",
     }).chainId,
-  ).toBe("SN_SEPOLIA");
+  ).toBe("SN_MAIN");
 });
 it("refuses a provider on another chain before any Realm or wallet read", async () => {
-  vi.spyOn(RpcProvider.prototype, "getChainId").mockResolvedValue("0x534e5f4d41494e");
+  vi.spyOn(RpcProvider.prototype, "getChainId").mockResolvedValue("0x534e5f5345504f4c4941");
   const calls = vi.spyOn(RpcProvider.prototype, "callContract");
   const deployments = vi.spyOn(RpcProvider.prototype, "getClassHashAt");
   const { buildSiwsMessage } = await import("@realms-world/identity");
   const message = buildSiwsMessage({
     address: "0x123",
-    chainId: "SN_SEPOLIA",
+    chainId: "SN_MAIN",
     domain: "play.test",
     uri: "https://play.test",
     nonce: "nonce",
@@ -45,21 +45,21 @@ it("refuses a provider on another chain before any Realm or wallet read", async 
   expect(calls).not.toHaveBeenCalled();
 });
 it("reads Realm ownership on the configured chain with full u256 calldata", async () => {
-  vi.spyOn(RpcProvider.prototype, "getChainId").mockResolvedValue("0x534e5f5345504f4c4941");
+  vi.spyOn(RpcProvider.prototype, "getChainId").mockResolvedValue("0x534e5f4d41494e");
   const calls = vi.spyOn(RpcProvider.prototype, "callContract").mockResolvedValue(["0x123"]);
   expect(await realmOwnerOf(env, String(2n ** 128n + 4n))).toBe("0x123");
   expect(calls).toHaveBeenCalledWith(
-    { contractAddress: sepolia.realms, entrypoint: "owner_of", calldata: ["4", "1"] },
+    { contractAddress: dev.realms, entrypoint: "owner_of", calldata: ["4", "1"] },
     "latest",
   );
 });
-it("accepts Sepolia SIWS and refuses another proof chain without a signature or deployment read", async () => {
-  vi.spyOn(RpcProvider.prototype, "getChainId").mockResolvedValue("0x534e5f5345504f4c4941");
+it("accepts mainnet SIWS and refuses another proof chain without a signature or deployment read", async () => {
+  vi.spyOn(RpcProvider.prototype, "getChainId").mockResolvedValue("0x534e5f4d41494e");
   const calls = vi.spyOn(RpcProvider.prototype, "callContract").mockResolvedValue(["0x1"]);
   const { buildSiwsMessage } = await import("@realms-world/identity");
   const message = buildSiwsMessage({
     address: "0x123",
-    chainId: "SN_SEPOLIA",
+    chainId: "SN_MAIN",
     domain: "play.test",
     uri: "https://play.test",
     nonce: "nonce",
@@ -68,7 +68,7 @@ it("accepts Sepolia SIWS and refuses another proof chain without a signature or 
   expect(await verify(message, ["0x1", "0x2"], "0x123")).toBe(true);
   calls.mockClear();
   await expect(
-    verify({ ...message, domain: { ...message.domain, chainId: "SN_MAIN" } }, ["0x1", "0x2"], "0x123"),
+    verify({ ...message, domain: { ...message.domain, chainId: "SN_SEPOLIA" } }, ["0x1", "0x2"], "0x123"),
   ).rejects.toThrow("identity_proof_chain_mismatch");
   expect(calls).not.toHaveBeenCalled();
 });

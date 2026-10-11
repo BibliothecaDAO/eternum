@@ -25,8 +25,8 @@ payment authority, result commitments and shard conservation, and pauses on disa
 verification. Later wallet changes cannot rewrite an earlier payment decision. It never uses the relay's queue as proof
 and never unpauses the ledger.
 
-The ledger address and chain come from `contracts/common/addresses/<network>.json` through the shared environment
-reader. The ledger runtime settings are the secret `LEDGER_RPC_URL`, `LEDGER_OPERATOR_ADDRESS` and the
+The ledger address and chain come from `contracts/common/addresses/dev.json` or `mainnet.json` through the shared
+environment reader. The ledger runtime settings are the secret `LEDGER_RPC_URL`, `LEDGER_OPERATOR_ADDRESS` and the
 `LEDGER_OPERATOR_PRIVATE_KEY` secret. Labor uses the fixed relay bot account enrolled through
 `POST /api/value/operator/shard/enrol` and the `SHARD_LEDGER_OPERATOR_PRIVATE_KEY` secret. The operator route accepts
 only `{chainId,heraldUrl}` for an official shard, returns `{chainId,ledgerOperatorAccount}`, and shares the shard
@@ -56,3 +56,6 @@ the later block is readable and recognizes an already-finished retry.
 
 A Frontier pool is funded with `season_id = shard game id`; the relay verifies that binding against the game start and
 seed.
+
+Staging selects `contracts/common/addresses/dev.json`; production selects `mainnet.json`. Both run on `SN_MAIN`, with
+separate ledger and value-token addresses. Dev uses the no-value test token, never production LORDS.

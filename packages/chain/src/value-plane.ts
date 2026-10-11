@@ -1,12 +1,6 @@
-import mainnetAddresses from "../../../contracts/common/addresses/mainnet.json";
-import sepoliaAddresses from "../../../contracts/common/addresses/sepolia.json";
+import devAddresses from "../../../contracts/common/addresses/dev.json";
+import productionAddresses from "../../../contracts/common/addresses/mainnet.json";
 
-/**
- * The value plane's addresses on each L2 an environment runs on: mainnet for production, Sepolia for dev. They come
- * from contracts/common/addresses/<network>.json, the files the deploy scripts write, which also name their L2 chain; a
- * key not deployed yet on that network (the ledger, the vault) resolves loudly instead of returning a zero an app could
- * silently read.
- */
 export type ValuePlaneContract =
   | "ledger"
   | "vault"
@@ -18,32 +12,28 @@ export type ValuePlaneContract =
   | "lootChests"
   | "cosmetics";
 
-export type ValuePlaneNetwork = "mainnet" | "sepolia";
+export type ValueEnvironment = "staging" | "production";
 
 type AddressBook = Partial<Record<ValuePlaneContract, string>> & {
   l2Chain: string;
 };
 
-const addressBooks: Record<ValuePlaneNetwork, AddressBook> = {
-  mainnet: mainnetAddresses,
-  sepolia: sepoliaAddresses,
+/** Dev and production share mainnet, but never select contracts by network. */
+const addressBooks: Record<
+  ValueEnvironment,
+  { path: string; addresses: AddressBook }
+> = {
+  staging: { path: "dev.json", addresses: devAddresses },
+  production: { path: "mainnet.json", addresses: productionAddresses },
 };
-
-/** The deployed environments and the network each runs on: dev (staging) on Sepolia, production on mainnet. */
-const ENVIRONMENT_NETWORKS = {
-  staging: "sepolia",
-  production: "mainnet",
-} as const;
-
-export type ValueEnvironment = keyof typeof ENVIRONMENT_NETWORKS;
 
 export class ValuePlaneAddressMissingError extends Error {
   constructor(
     public readonly contract: ValuePlaneContract,
-    public readonly network: ValuePlaneNetwork,
+    public readonly environment: ValueEnvironment,
   ) {
     super(
-      `The ${network} address for "${contract}" is not deployed yet (contracts/common/addresses/${network}.json)`,
+      `The ${environment} address for "${contract}" is not deployed yet (contracts/common/addresses/${addressBook(environment).path})`,
     );
     this.name = "ValuePlaneAddressMissingError";
   }
@@ -51,33 +41,38 @@ export class ValuePlaneAddressMissingError extends Error {
 
 export const valuePlaneAddress = (
   contract: ValuePlaneContract,
-  network: ValuePlaneNetwork,
+  environment: ValueEnvironment,
 ): string => {
-  const value = deployedOrNull(contract, network);
+  const value = deployedOrNull(contract, environment);
   if (value === null)
-    throw new ValuePlaneAddressMissingError(contract, network);
+    throw new ValuePlaneAddressMissingError(contract, environment);
   return value;
 };
 
-/**
- * An environment's one L2, from its address book: the chain every client build and Worker of that environment uses,
- * and its GameLedger (null until the ledger is deployed there). The one source of both.
- */
+/** One environment book supplies every build and Worker's L2 and ledger; absence never selects another book. */
 export const environmentL2 = (environment: ValueEnvironment) => {
-  const network = ENVIRONMENT_NETWORKS[environment];
-  if (!network) throw new Error("ENVIRONMENT must be staging or production");
-  const chain = addressBooks[network].l2Chain;
-  if (chain !== "SN_MAIN" && chain !== "SN_SEPOLIA")
+  const { addresses, path } = addressBook(environment);
+  if (addresses.l2Chain !== "SN_MAIN")
     throw new Error(
-      `contracts/common/addresses/${network}.json names no L2 chain (l2Chain)`,
+      `contracts/common/addresses/${path} must name SN_MAIN (l2Chain)`,
     );
-  return { network, chain, ledger: deployedOrNull("ledger", network) } as const;
+  return {
+    network: "mainnet",
+    chain: addresses.l2Chain,
+    ledger: deployedOrNull("ledger", environment),
+  } as const;
+};
+
+const addressBook = (environment: ValueEnvironment) => {
+  if (environment !== "staging" && environment !== "production")
+    throw new Error("ENVIRONMENT must be staging or production");
+  return addressBooks[environment];
 };
 
 const deployedOrNull = (
   contract: ValuePlaneContract,
-  network: ValuePlaneNetwork,
+  environment: ValueEnvironment,
 ): string | null => {
-  const value = addressBooks[network][contract];
-  return value && BigInt(value) !== 0n ? value : null;
+  const value = addressBook(environment).addresses[contract];
+  return value && BigInt(value) !== BigInt(0) ? value : null;
 };

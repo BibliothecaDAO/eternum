@@ -51,7 +51,7 @@ const fixture = () => {
     DB: { prepare },
     LAUNCH: { fetch },
     ENVIRONMENT: "staging",
-    IDENTITY_RPC_URL: "https://starknet-sepolia.g.alchemy.com/v2/test",
+    IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
   } as unknown as IdentityEnv;
   return { env, first, bind, fetch };
 };
@@ -59,7 +59,7 @@ beforeEach(() => {
   rpc.callContract
     .mockReset()
     .mockImplementation(async ({ entrypoint }) => (entrypoint === "get_slot" ? slotState() : registration()));
-  rpc.getChainId.mockReset().mockResolvedValue(encodeChainName("SN_SEPOLIA"));
+  rpc.getChainId.mockReset().mockResolvedValue(encodeChainName("SN_MAIN"));
   addressBook.ledger = "0x123";
 });
 it("admits the current registered wallet with keyed registration and cancellation reads and no roster scan", async () => {
@@ -139,7 +139,7 @@ it("fails loud and closed if identity, ledger, chain verification or deployment 
   await expect(readRoomAccess(env, "0x1", "slot:0xa:noon")).rejects.toMatchObject(unavailable);
   rpc.callContract.mockResolvedValueOnce(["0x1"]);
   await expect(readRoomAccess(env, "0x1", "slot:0xa:noon")).rejects.toMatchObject(unavailable);
-  rpc.getChainId.mockResolvedValueOnce(encodeChainName("SN_MAIN"));
+  rpc.getChainId.mockResolvedValueOnce(encodeChainName("SN_SEPOLIA"));
   await expect(readRoomAccess(env, "0x1", "slot:0xa:noon")).rejects.toMatchObject(unavailable);
   addressBook.ledger = null;
   await expect(readRoomAccess(env, "0x1", "slot:0xa:noon")).rejects.toMatchObject(unavailable);

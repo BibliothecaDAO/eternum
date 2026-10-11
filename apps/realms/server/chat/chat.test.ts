@@ -72,7 +72,7 @@ it("checks current-wallet registration when opening a slot room, never per messa
         };
       };
       if (rpc.method === "starknet_chainId")
-        return Response.json({ jsonrpc: "2.0", id: rpc.id, result: encodeChainName("SN_SEPOLIA") });
+        return Response.json({ jsonrpc: "2.0", id: rpc.id, result: encodeChainName("SN_MAIN") });
       expect(rpc.method).toBe("starknet_call");
       expect(rpc.params.block_id).toBe("latest");
       expect(BigInt(rpc.params.request.contract_address)).toBe(0x123n);
