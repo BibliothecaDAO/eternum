@@ -175,7 +175,7 @@ test("Frontier acceptance reads the same safe entity boundary as a player's clie
   expect(() => settle.verify(store)).toThrow("Native integer cannot be represented as a JavaScript number");
 });
 
-test("the real open-home Frontier check has no payable LORDS pool without changing normal Frontier", () => {
+test("Frontier deployment checks and normal games encode chest rules without a funding pool", () => {
   const check = nativePresetForId(FRONTIER_SELF_CHECK_PRESET_ID);
   const production = nativePresetForId(5);
   expect(check.entryRule).toBe(production.entryRule);
@@ -184,5 +184,9 @@ test("the real open-home Frontier check has no payable LORDS pool without changi
   expect(check.chests).not.toHaveProperty("pool");
   expect(production.chests).not.toHaveProperty("pool");
   const definition = buildNativePreset(loadNativePresetConfiguration("madara.frontier", check.id), check.id);
-  expect(definition.economy.chests.unwrap()).toMatchObject({ pool: 0n, price: 50n });
+  expect(definition.economy.chests.unwrap()).toEqual({
+    price: 50n,
+    shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
+    claim_window_seconds: 604800,
+  });
 });
