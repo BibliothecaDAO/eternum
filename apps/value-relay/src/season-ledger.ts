@@ -110,7 +110,7 @@ const readSeasonEventPage = async (
   postsOnly: boolean,
 ) => {
   const provider = rpcAt(target.rpcUrl);
-  const names = postsOnly ? ["SeasonTopPosted"] : ["SeasonOpened", "ChestMinted", "SeasonMmrCorrected"];
+  const names = postsOnly ? ["SeasonTopPosted"] : ["SeasonOpened", "ChestMinted"];
   if (from > head) return { rows: [], head, next: null };
   const page = await provider.getEvents({
     address: target.contractAddress,
@@ -136,7 +136,7 @@ const readSeasonEventPage = async (
     } else {
       if (!name || event.keys.length !== 2) throw new Error("invalid_season_event");
       rows.push({
-        kind: name === "SeasonTopPosted" ? "posted" : name === "SeasonOpened" ? "opened" : "corrected",
+        kind: name === "SeasonTopPosted" ? "posted" : "opened",
         id: ledgerInteger(event.keys[1]!),
         ...(name !== "SeasonOpened"
           ? {

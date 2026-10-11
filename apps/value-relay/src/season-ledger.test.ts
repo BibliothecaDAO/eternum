@@ -1,3 +1,4 @@
+import { hash } from "starknet";
 import { ledgerCall, ledgerEvent } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { beforeEach, expect, it, vi } from "vitest";
 import { seasonLedgerReads, postSeasonTop, challengeSeason } from "./season-ledger";
@@ -106,8 +107,7 @@ it("uses the per-season challenge entry and never the global pause", async () =>
   await expect(challengeSeason(target, 1, "0x3")).rejects.toThrow("season_challenge_not_recorded");
 });
 
-it("enumerates generated season openings and MMR corrections with their revision bytes", async () => {
-  const corrected = ledgerEvent("SeasonMmrCorrected", { season_id: 1, updates: [{ 0: "0x2", 1: 210 }] });
+it("enumerates only season openings and participants from the committed event layouts", async () => {
   rpc.events.mockResolvedValue({
     events: [
       {
@@ -115,11 +115,10 @@ it("enumerates generated season openings and MMR corrections with their revision
         block_number: 99,
         ...ledgerEvent("SeasonOpened", { season_id: 1, preset_id: 9, start: 10, end: 90 }),
       },
-      { from_address: "0x10", block_number: 100, transaction_hash: "0xaa", ...corrected },
     ],
   });
-  expect((await seasonLedgerReads(target).changes(0, null, 100)).rows).toEqual([
-    { kind: "opened", id: 1 },
-    { kind: "corrected", id: 1, revision: `0xaa:100:${corrected.keys.join(":")}:${corrected.data.join(":")}` },
+  expect((await seasonLedgerReads(target).changes(0, null, 100)).rows).toEqual([{ kind: "opened", id: 1 }]);
+  expect(rpc.events.mock.calls[0]![0].keys).toEqual([
+    [hash.getSelectorFromName("SeasonOpened"), hash.getSelectorFromName("ChestMinted")],
   ]);
 });

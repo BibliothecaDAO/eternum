@@ -18,7 +18,7 @@ interface Season {
   reviewUntil: number;
 }
 type Change =
-  | { kind: "opened" | "posted" | "corrected"; id: number; reviewUntil?: number; revision?: string }
+  | { kind: "opened" | "posted"; id: number; reviewUntil?: number; revision?: string }
   | { kind: "participant"; id: number; wallet: string };
 interface Page {
   rows: readonly Change[];
@@ -69,7 +69,7 @@ async function runSeasonTops(mode: "post" | "audit", ports: SeasonPorts, store: 
     await store.delete(`season:review:${id}`);
     return pendingReview(store);
   }
-  const revision = `${season.reviewUntil}:${(await store.get<string>(`season:proposal:${season.id}`)) ?? ""}:${(await store.get<string>(`season:correction:${season.id}`)) ?? ""}`;
+  const revision = `${season.reviewUntil}:${(await store.get<string>(`season:proposal:${season.id}`)) ?? ""}`;
   const checkedKey = `season:checked:${season.id}`;
   if (mode === "audit" && (await store.get<string>(checkedKey)) === revision) {
     await store.delete(`season:review:${id}`);
@@ -174,12 +174,7 @@ async function ingestSeasonEvents(
     throw new Error("invalid_season_event_page");
   for (const row of page.rows) {
     await store.put(`season:known:${row.id}`, row.id);
-    if (mode === "audit" && (row.kind === "posted" || row.kind === "corrected"))
-      await store.put(`season:review:${row.id}`, row.id);
-    if (row.kind === "corrected") {
-      if (!row.revision) throw new Error("season_correction_revision_missing");
-      await store.put(`season:correction:${row.id}`, row.revision);
-    }
+    if (mode === "audit" && row.kind === "posted") await store.put(`season:review:${row.id}`, row.id);
     if (row.kind === "posted" && row.revision) await store.put(`season:proposal:${row.id}`, row.revision);
     if (row.kind === "participant") {
       const wallet = normalizeStarknetAddress(row.wallet);
