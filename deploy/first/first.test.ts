@@ -12,7 +12,7 @@ import {
   fixedSalt,
   deployAsset,
   setupCalls,
-  setupPresent,
+  setupPresenceReader,
   verifyLedgerAccounts,
   type AssetPlan,
 } from "./ledger";
@@ -312,9 +312,9 @@ test("setup keeps only missing role calls and uses the environment's two preset 
   ).toEqual(["2", "5"]);
   expect(production.some((call) => call.entrypoint === "set_attrs_raw_to_ipfs_cid")).toBe(false);
   const provider = { callContract: async () => ["0x1"] } as unknown as RpcProvider;
-  expect(await setupPresent(provider, dev[0]!, 10)).toBe(true);
+  expect(await setupPresenceReader(provider)(dev[0]!, 10)).toBe(true);
   provider.callContract = async () => ["0x0"];
-  expect(await setupPresent(provider, dev[0]!, 10)).toBe(false);
+  expect(await setupPresenceReader(provider)(dev[0]!, 10)).toBe(false);
 });
 
 test("metadata presence follows all confirmed event pages; differing metadata refuses", async () => {
@@ -337,13 +337,18 @@ test("metadata presence follows all confirmed event pages; differing metadata re
       : { events: [], continuation_token: "second" },
   );
   expect(BigInt(args[0]!)).toBeGreaterThan(9n);
-  expect(await setupPresent({ getEvents } as unknown as RpcProvider, operation, 19)).toBe(true);
+  expect(
+    await setupPresenceReader({ getEvents, getClassHashAt: async () => "0x1" } as unknown as RpcProvider)(
+      operation,
+      19,
+    ),
+  ).toBe(true);
   expect(getEvents).toHaveBeenCalledTimes(2);
   expect((await getEvents({ continuation_token: "second", keys: [[event.keys[0]!], [args[0]!]] })).events).toEqual([]);
   event.keys[2] = "0x2";
-  await expect(setupPresent({ getEvents } as unknown as RpcProvider, operation, 19)).rejects.toThrow(
-    "metadata differs",
-  );
+  await expect(
+    setupPresenceReader({ getEvents, getClassHashAt: async () => "0x1" } as unknown as RpcProvider)(operation, 19),
+  ).rejects.toThrow("metadata differs");
 });
 
 test("every service uses one RPC; deployer and cold admin keys never enter Worker values", () => {
@@ -560,9 +565,9 @@ test("setup refuses a different confirmed Blitz window without replacing it", as
   )!;
   const season = ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "1", "1", "4000", "9000", "0", "0"];
   const provider = { callContract: async () => season } as unknown as RpcProvider;
-  expect(await setupPresent(provider, operation, 5)).toBe(true);
+  expect(await setupPresenceReader(provider)(operation, 5)).toBe(true);
   season[13] = "9001";
-  await expect(setupPresent(provider, operation, 5)).rejects.toThrow("Existing Blitz season differs");
+  await expect(setupPresenceReader(provider)(operation, 5)).rejects.toThrow("Existing Blitz season differs");
 });
 
 test("resuming an existing ledger refuses different saved accounts", async () => {

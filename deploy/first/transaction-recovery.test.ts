@@ -112,6 +112,7 @@ test("changing unsent Blitz dates sends the newly computed setup with the saved 
     ...rpc,
     getBlockWithTxHashes: async () => ({ block_number: 5, timestamp: 1 }),
     getEvents: async () => ({ events: [] }),
+    getClassHashAt: async () => "0x1",
     callContract: async ({ entrypoint }: { entrypoint: string }) => {
       if (entrypoint === "has_role") return ["1"];
       throw {

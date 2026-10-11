@@ -61,9 +61,11 @@ run on the owner's laptop. No mainnet private key or Alchemy URL goes to that ho
    devCosmetics and the fresh rating token; production reuses its LORDS, rating token and collections. The MMR
    contract's fixed token name is shared with production. Publish only public contract addresses to the environment
    book, retaining the Realms collection and unrelated fields.
-6. Read roles, metadata events, presets and season state, and prepare only missing setup calls. Blitz starts at the
-   exact requested time, which must still be in the future when setup lands. Production writes public unsigned calls to
-   `cold-setup.json` and waits for the cold wallet to execute them. Its cold key never enters the command.
+6. Read roles, metadata events, presets and season state, and prepare only missing setup calls. Metadata scans begin at
+   each collection’s deployment block, found from historical class reads once per collection per run. Presence reads run
+   in parallel during both inspection and apply. Blitz starts at the exact requested time, which must still be in the
+   future when setup lands. Production writes public unsigned calls to `cold-setup.json` and waits for the cold wallet
+   to execute them. Its cold key never enters the command.
 7. Adopt the box's protected operator token if present. Generate the other service credentials once. If the guardian
    Worker already holds `GUARDIAN_PRIVATE_KEY`, keep it even if this directory has no copy. Never rotate it.
 8. Create missing D1 databases, the status R2 bucket, Pages project and domain. Refuse conflicting existing DNS.

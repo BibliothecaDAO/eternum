@@ -196,15 +196,48 @@ export function setupCalls(target: Target, assets: Assets, pauser: string, start
     call(assets.ledger, "open_season", [1, target.blitzPreset, start, end]),
   ];
 }
+/** Find the first block containing this contract; only code 20 means it did not exist yet. */
+async function deploymentBlock(provider: RpcProvider, address: string, head: number) {
+  await provider.getClassHashAt(address, head);
+  let low = 0;
+  let high = head;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    try {
+      await provider.getClassHashAt(address, middle);
+      high = middle;
+    } catch (error) {
+      if (!isMissing(error, 20)) throw error;
+      low = middle + 1;
+    }
+  }
+  return low;
+}
+
+/** One run shares the two collection deployment searches, including concurrent metadata reads. */
+export function setupPresenceReader(provider: RpcProvider) {
+  const deployments = new Map<string, Promise<number>>();
+  return (operation: Call, head: number) => {
+    if (operation.entrypoint !== "set_attrs_raw_to_ipfs_cid") return setupPresent(provider, operation, head);
+    const address = num.toHex(operation.contractAddress);
+    let first = deployments.get(address);
+    if (!first) {
+      first = deploymentBlock(provider, address, head);
+      deployments.set(address, first);
+    }
+    return first.then((fromBlock) => metadataPresent(provider, operation, head, fromBlock));
+  };
+}
+
 /** Metadata updates put both the attribute and ByteArray CID in event keys. Check every page at a pinned head. */
-async function metadataPresent(provider: RpcProvider, operation: Call, head: number) {
+async function metadataPresent(provider: RpcProvider, operation: Call, head: number, fromBlock: number) {
   const args = operation.calldata as string[];
   let continuation_token: string | undefined;
   let found = false;
   do {
     const page = await provider.getEvents({
       address: operation.contractAddress,
-      from_block: { block_number: 0 },
+      from_block: { block_number: fromBlock },
       to_block: { block_number: head },
       keys: [[hash.getSelectorFromName("AttrsRawToIPFSCIDUpdated")], [num.toHex(args[0]!)]],
       chunk_size: 100,
@@ -222,9 +255,8 @@ async function metadataPresent(provider: RpcProvider, operation: Call, head: num
   } while (continuation_token);
   return found;
 }
-export async function setupPresent(provider: RpcProvider, operation: Call, head: number) {
+async function setupPresent(provider: RpcProvider, operation: Call, head: number) {
   const args = operation.calldata as string[];
-  if (operation.entrypoint === "set_attrs_raw_to_ipfs_cid") return metadataPresent(provider, operation, head);
   const entrypoint =
     operation.entrypoint === "grant_role"
       ? "has_role"
@@ -292,14 +324,14 @@ export async function configureLedger(
   pauser: string,
   input: Inputs,
   store: PrivateStore,
+  readPresence = setupPresenceReader(account),
 ) {
   const head = await account.getBlockWithTxHashes("latest");
   if (!("block_number" in head)) throw new Error("Confirmed mainnet head required");
   const start = seconds(input.blitzStart);
   const desired = setupCalls(target, assets, pauser, start, seconds(input.blitzEnd));
-  const missing: Call[] = [];
-  for (const operation of desired)
-    if (!(await setupPresent(account, operation, head.block_number!))) missing.push(operation);
+  const present = await Promise.all(desired.map((operation) => readPresence(operation, head.block_number!)));
+  const missing = desired.filter((_, index) => !present[index]);
   if (!missing.length) return true;
   if (missing.some((call) => call.entrypoint === "open_season") && start <= head.timestamp)
     throw new PublicError(

@@ -21,7 +21,7 @@ import {
   loadArtifact,
   publishAssets,
   setupCalls,
-  setupPresent,
+  setupPresenceReader,
   verifyLedgerAccounts,
   type Assets,
 } from "./ledger";
@@ -119,6 +119,7 @@ async function collectInputs(context: Deployment) {
 }
 const waiting = (detail: string) => ({ done: false, waiting: detail, detail });
 export function preparationSteps(context: Deployment): Step[] {
+  let readSetup: ReturnType<typeof setupPresenceReader> | undefined;
   return [
     {
       name: "Owner settings",
@@ -292,9 +293,8 @@ export function preparationSteps(context: Deployment): Step[] {
           seconds(context.inputs.blitzStart),
           seconds(context.inputs.blitzEnd),
         );
-        const present = await Promise.all(
-          calls.map((call) => setupPresent(context.provider!, call, head.block_number!)),
-        );
+        readSetup ??= setupPresenceReader(context.provider);
+        const present = await Promise.all(calls.map((call) => readSetup!(call, head.block_number!)));
         return {
           done: present.every(Boolean),
           detail: `${present.filter(Boolean).length}/${calls.length} setup results present; only missing calls will be prepared; Blitz dates exactly as entered, with its start still in the future`,
@@ -308,6 +308,7 @@ export function preparationSteps(context: Deployment): Step[] {
           accountIdentity(context.keys!.monitor).address,
           context.inputs!,
           context.store,
+          readSetup,
         );
         if (!ready)
           context.output(
