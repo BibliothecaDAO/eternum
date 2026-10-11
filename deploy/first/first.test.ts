@@ -302,11 +302,11 @@ test("fixed salt deploy resumes after a lost acknowledgement without declaring o
 });
 
 test("setup keeps only missing role calls and uses the environment's two preset ids", async () => {
-  const dev = setupCalls(environments.dev, assets, "0x33", 4000, 9000);
+  const dev = setupCalls(environments.dev, assets, "0x33", 4000, 9000, 1);
   expect(
     dev.filter((call) => call.entrypoint === "register_preset").map((call) => (call.calldata as string[])[0]),
   ).toEqual(["1", "2"]);
-  const production = setupCalls(environments.production, assets, "0x33", 4000, 9000);
+  const production = setupCalls(environments.production, assets, "0x33", 4000, 9000, 1);
   expect(
     production.filter((call) => call.entrypoint === "register_preset").map((call) => (call.calldata as string[])[0]),
   ).toEqual(["2", "5"]);
@@ -318,7 +318,7 @@ test("setup keeps only missing role calls and uses the environment's two preset 
 });
 
 test("metadata presence follows all confirmed event pages; differing metadata refuses", async () => {
-  const operation = setupCalls(environments.dev, assets, "0x33", 4000, 9000).find(
+  const operation = setupCalls(environments.dev, assets, "0x33", 4000, 9000, 1).find(
     (call) => call.entrypoint === "set_attrs_raw_to_ipfs_cid",
   )!;
   const args = operation.calldata as string[];
@@ -560,7 +560,7 @@ mock.module(${JSON.stringify(join(root, "deploy/first/process.ts"))}, () => ({sh
 });
 
 test("setup refuses a different confirmed Blitz window without replacing it", async () => {
-  const operation = setupCalls(environments.dev, assets, "0x33", 4000, 9000).find(
+  const operation = setupCalls(environments.dev, assets, "0x33", 4000, 9000, 1).find(
     (call) => call.entrypoint === "open_season",
   )!;
   const season = ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "1", "1", "4000", "9000", "0", "0"];

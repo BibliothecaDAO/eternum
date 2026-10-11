@@ -25,7 +25,7 @@ const input = {
   amount: "1000",
 } as Inputs;
 type Phase = { phase: string; startsAt: string; endsAt: string };
-function setup(phases: Phase[]) {
+function setup(phases: Phase[], windows = [{ startsAt: input.blitzStart, endsAt: input.blitzEnd }]) {
   spyOn(Date, "now").mockReturnValue(now);
   const base = mkdtempSync(join(tmpdir(), "calendar-recovery-"));
   temporary.push(base);
@@ -59,15 +59,20 @@ function setup(phases: Phase[]) {
     assets: { ledger: "0x1", lords: "0x2", mmr: "0x3", chests: "0x4", cosmetics: "0x5" },
     output: () => {},
     provider: {
-      callContract: async () => [
-        ...Array(10).fill("0"),
-        "1",
-        "1",
-        String(Date.parse(input.blitzStart) / 1000),
-        String(Date.parse(input.blitzEnd) / 1000),
-        "0",
-        "0",
-      ],
+      getBlockWithTxHashes: async () => ({ block_number: 100, timestamp: now / 1000 }),
+      callContract: async ({ calldata }: { calldata: string[] }) => {
+        const window = windows[Number(calldata[0]) - 1];
+        if (!window) throw { code: 40, message: "Ledger: unknown Blitz season" };
+        return [
+          ...Array(10).fill("0"),
+          "1",
+          "1",
+          String(Date.parse(window.startsAt) / 1000),
+          String(Date.parse(window.endsAt) / 1000),
+          "0",
+          "0",
+        ];
+      },
     } as unknown as RpcProvider,
   } as Deployment;
   return { writes, step: deliverySteps(context).find((step) => step.name === "Season calendar")! };
@@ -99,4 +104,23 @@ test("a matching future phase is preserved while the ended phase is replaced", a
   await step.apply();
   expect(writes).toHaveLength(1);
   expect(writes[0]!.url).toEndWith("/blitz");
+});
+
+test("calendar accepts season two from the ledger after the first ended", async () => {
+  const { step, writes } = setup(
+    [],
+    [
+      { startsAt: "2026-01-01T00:00:00Z", endsAt: "2027-01-01T00:00:00Z" },
+      { startsAt: input.blitzStart, endsAt: input.blitzEnd },
+    ],
+  );
+  await step.apply();
+  expect(writes).toHaveLength(2);
+  expect((await step.inspect()).done).toBe(true);
+});
+test("a conflicting future ledger season refuses before any calendar write", async () => {
+  const { step, writes } = setup([], [{ startsAt: "2027-02-01T00:00:00Z", endsAt: "2027-04-01T00:00:00Z" }]);
+  await expect(step.inspect()).rejects.toThrow("running or future Blitz season");
+  await expect(step.apply()).rejects.toThrow("running or future Blitz season");
+  expect(writes).toEqual([]);
 });

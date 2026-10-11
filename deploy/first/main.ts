@@ -29,6 +29,7 @@ import { Platform, generateSecrets, workerSecrets, workers, type Secrets } from 
 import { command } from "./process";
 import { runSteps, type Step } from "./run";
 import { deliverySteps } from "./delivery";
+import { resolveBlitzSeason } from "./blitz-season";
 import { seconds, PublicError } from "./dates";
 
 export interface Deployment {
@@ -284,17 +285,22 @@ export function preparationSteps(context: Deployment): Step[] {
       inspect: async () => {
         if (!context.assets || !context.provider || !context.keys || !context.inputs)
           return waiting("Contracts have not been deployed yet");
-        const head = await context.provider.getBlockWithTxHashes("latest");
-        if (!("block_number" in head)) throw new Error("Confirmed block required");
+        const season = await resolveBlitzSeason(
+          context.provider,
+          context.assets.ledger,
+          seconds(context.inputs.blitzStart),
+          seconds(context.inputs.blitzEnd),
+        );
         const calls = setupCalls(
           context.target,
           context.assets,
           accountIdentity(context.keys.monitor).address,
           seconds(context.inputs.blitzStart),
           seconds(context.inputs.blitzEnd),
+          season.id,
         );
         readSetup ??= setupPresenceReader(context.provider);
-        const present = await Promise.all(calls.map((call) => readSetup!(call, head.block_number!)));
+        const present = await Promise.all(calls.map((call) => readSetup!(call, season.head)));
         return {
           done: present.every(Boolean),
           detail: `${present.filter(Boolean).length}/${calls.length} setup results present; only missing calls will be prepared; Blitz dates exactly as entered, with its start still in the future`,

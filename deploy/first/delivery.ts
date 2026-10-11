@@ -1,7 +1,8 @@
+import { resolveBlitzSeason } from "./blitz-season";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { CallData, RpcProvider, uint256 } from "starknet";
-import { decodeBlitzSeason, decodeLedgerPreset } from "../../packages/value-ledger/src/codecs";
+import { decodeLedgerPreset } from "../../packages/value-ledger/src/codecs";
 import { readConfirmedSnapshot, optionalRow } from "../../apps/value-relay/src/shard-snapshot";
 import { buildFrontierFundingCalls } from "../../contracts/l2/ledger/scripts/commands/deployment/frontier.js";
 import { readFrontierGame } from "../../contracts/l2/ledger/scripts/commands/deployment/fund-frontier";
@@ -160,6 +161,15 @@ async function funding(context: Deployment) {
     if (isContractRevert(error, "Ledger: unknown Frontier season")) return { gameId, shard, native, funded: false };
     throw error;
   }
+}
+async function requireBlitzSeason(context: Deployment) {
+  const season = await resolveBlitzSeason(
+    context.provider!,
+    context.assets!.ledger,
+    seconds(context.inputs!.blitzStart),
+    seconds(context.inputs!.blitzEnd),
+  );
+  if (!season.present) throw new PublicError("Blitz ledger season is not open; complete Ledger setup first");
 }
 async function currentCalendar(context: Deployment) {
   const calendar = await service<{ phases: { phase: string; startsAt: string; endsAt: string }[] }>(
@@ -363,6 +373,7 @@ export function deliverySteps(context: Deployment): Step[] {
       inspect: async () => {
         if (!(await releaseReady(context))) return wait("Deployed services needed");
         const phases = await currentCalendar(context);
+        await requireBlitzSeason(context);
         return {
           done: ["frontier", "blitz"].every((name) => phases.some((phase) => phase.phase === name)),
           detail: "set only missing phases; Frontier starts on a tick and ends at the explicit entered date",
@@ -370,14 +381,7 @@ export function deliverySteps(context: Deployment): Step[] {
       },
       apply: async () => {
         const phases = await currentCalendar(context);
-        const season = decodeBlitzSeason(
-          await context.provider!.callContract(
-            { contractAddress: context.assets!.ledger, entrypoint: "get_season", calldata: ["1"] },
-            "latest",
-          ),
-        );
-        if (season.start !== seconds(context.inputs!.blitzStart) || season.end !== seconds(context.inputs!.blitzEnd))
-          throw new Error("Blitz ledger window differs from entered dates");
+        await requireBlitzSeason(context);
         context.output(
           `Setting calendar: Frontier ${context.inputs!.frontierStart} to ${context.inputs!.frontierEnd}, pool ${context.inputs!.amount}; Blitz ${context.inputs!.blitzStart} to ${context.inputs!.blitzEnd}.`,
         );

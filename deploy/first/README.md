@@ -120,9 +120,11 @@ has been pinned. Do not delete private state to retry: that would generate diffe
 process lock prevents two simultaneous runs from sharing an account nonce.
 
 If an unsubmitted season date has passed, edit only the four public date fields in `inputs.json`, review the dry run,
-and rerun. A confirmed ledger window or running/future calendar is not silently replaced; an ended calendar phase is
-treated as absent. If a production collection or rating token needs an upgrade, its cold owner must complete the
-reviewed upgrade first; this command grants no new upgrade power and never obtains the upgrade key.
+and rerun. For future seasons, edit the four dates and the Frontier deposit in `inputs.json`, review the dry run, and
+rerun the same command. After the previous seasons end, the ledger opens the next Blitz season number and the calendar
+replaces its ended phases. Running or future seasons are never replaced. Existing deposits are never changed. If a
+production collection or rating token needs an upgrade, its cold owner must complete the reviewed upgrade first; this
+command grants no new upgrade power and never obtains the upgrade key.
 
 Declarations, contract deployments, transfers, successful setup and funding cannot be undone. Check the public book,
 roles and four displayed dates before applying. A wrong published contract or immutable preset causes a refusal;

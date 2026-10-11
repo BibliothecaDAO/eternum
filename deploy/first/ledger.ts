@@ -6,6 +6,7 @@ import { buildMysteryChestPreset } from "../../contracts/l2/ledger/scripts/chest
 import { addressBook, root, type Environment, type Inputs, type Target } from "./settings";
 import { classAt, isMissing, isContractRevert, confirm, send } from "./chain";
 import { seconds, PublicError } from "./dates";
+import { resolveBlitzSeason } from "./blitz-season";
 import type { PrivateStore } from "./private-store";
 
 export type Assets = { ledger: string; lords: string; mmr: string; chests: string; cosmetics: string };
@@ -154,7 +155,14 @@ const call = (contractAddress: string, entrypoint: string, values: Parameters<ty
   entrypoint,
   calldata: CallData.compile(values),
 });
-export function setupCalls(target: Target, assets: Assets, pauser: string, start: number, end: number) {
+export function setupCalls(
+  target: Target,
+  assets: Assets,
+  pauser: string,
+  start: number,
+  end: number,
+  seasonId: number,
+) {
   const preset = buildMysteryChestPreset();
   return [
     call(assets.mmr, "grant_role", [hash.getSelectorFromName("UPDATER_ROLE"), assets.ledger]),
@@ -193,7 +201,7 @@ export function setupCalls(target: Target, assets: Assets, pauser: string, start
       preset.bands,
       preset.items,
     ]),
-    call(assets.ledger, "open_season", [1, target.blitzPreset, start, end]),
+    call(assets.ledger, "open_season", [seasonId, target.blitzPreset, start, end]),
   ];
 }
 /** Find the first block containing this contract; only code 20 means it did not exist yet. */
@@ -326,14 +334,14 @@ export async function configureLedger(
   store: PrivateStore,
   readPresence = setupPresenceReader(account),
 ) {
-  const head = await account.getBlockWithTxHashes("latest");
-  if (!("block_number" in head)) throw new Error("Confirmed mainnet head required");
   const start = seconds(input.blitzStart);
-  const desired = setupCalls(target, assets, pauser, start, seconds(input.blitzEnd));
-  const present = await Promise.all(desired.map((operation) => readPresence(operation, head.block_number!)));
+  const end = seconds(input.blitzEnd);
+  const season = await resolveBlitzSeason(account, assets.ledger, start, end);
+  const desired = setupCalls(target, assets, pauser, start, end, season.id);
+  const present = await Promise.all(desired.map((operation) => readPresence(operation, season.head)));
   const missing = desired.filter((_, index) => !present[index]);
   if (!missing.length) return true;
-  if (missing.some((call) => call.entrypoint === "open_season") && start <= head.timestamp)
+  if (missing.some((call) => call.entrypoint === "open_season") && start <= season.now)
     throw new PublicError(
       "Blitz start is no longer in the future. Choose new explicit dates in inputs.json before sending setup.",
     );
@@ -341,6 +349,6 @@ export async function configureLedger(
     store.write("cold-setup.json", { account: input.admin, calls: missing });
     return false;
   }
-  await send(account, missing, store, "setup");
+  await send(account, missing, store, season.id === 1 ? "setup" : `setup-${season.id}`);
   return true;
 }

@@ -5,7 +5,7 @@ import { environments, type Inputs } from "./settings";
 import type { PrivateStore } from "./private-store";
 
 const assets = { ledger: "0x10", lords: "0x11", mmr: "0x12", chests: "0x13", cosmetics: "0x14" };
-const calls = setupCalls(environments.dev, assets, "0x33", 4000, 9000);
+const calls = setupCalls(environments.dev, assets, "0x33", 4000, 9000, 1);
 const metadata = calls.filter((call) => call.entrypoint === "set_attrs_raw_to_ipfs_cid");
 const head = 16_200_000;
 
@@ -69,7 +69,12 @@ test("apply starts every presence read together", async () => {
     return true;
   });
   const pending = configureLedger(
-    { getBlockWithTxHashes: async () => ({ block_number: head, timestamp: 1 }) } as unknown as Account,
+    {
+      getBlockWithTxHashes: async () => ({ block_number: head, timestamp: 1 }),
+      callContract: async () => {
+        throw { code: 40, message: "Ledger: unknown Blitz season" };
+      },
+    } as unknown as Account,
     environments.dev,
     assets,
     "0x33",
@@ -77,7 +82,7 @@ test("apply starts every presence read together", async () => {
     {} as PrivateStore,
     read,
   );
-  await Promise.resolve();
+  await Bun.sleep(0);
   try {
     expect(read).toHaveBeenCalledTimes(calls.length);
   } finally {
