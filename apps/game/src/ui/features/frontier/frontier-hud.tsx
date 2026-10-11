@@ -152,7 +152,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
         )}
         {surface === "withdraw" && realm && !visit && <FrontierWithdraw realm={realm} onClose={close} />}
         {surface === "realms" && realm && !visit && (
-          <FrontierRealms realm={realm} labor={realmLabor} onRealm={() => setSurface("production")} onClose={close} />
+          <FrontierRealms labor={realmLabor} onRealm={() => setSurface("production")} onClose={close} />
         )}
         {surface === "army" && realm && !visit && <FrontierArmy realm={realm} onClose={close} />}
         {surface === "production" && realm && <FrontierProduction rules={rules} realm={realm} onClose={close} />}

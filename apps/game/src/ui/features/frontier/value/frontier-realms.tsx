@@ -4,22 +4,20 @@ import { useNavigate } from "react-router-dom";
 import { REALM_NOT_CLAIMED } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { RealmsSheet } from "./realms-sheet";
-import { claimRealmLabor, type useRealmLabor } from "./use-realm-labor";
+import type { useRealmLabor } from "./use-realm-labor";
 
 /**
  * Realms over the game's facts: the known Realms' labor today, one Claim all (every ready Realm in one request to the
- * relay), and Add a Realm, which is that Realm's first claim. Nothing shows before the facts are known.
+ * relay, which grants those still in the wallet and names the others), and Add a Realm, which is that Realm's first
+ * claim. Nothing shows before the facts are known.
  */
 export const FrontierRealms = ({
-  realm,
   labor,
   onRealm,
   onClose,
 }: {
-  realm: NativeRows["Structure"];
   labor: ReturnType<typeof useRealmLabor>;
   /** To the Realm board, where labor is spent. */
   onRealm: () => void;
@@ -33,8 +31,7 @@ export const FrontierRealms = ({
   const claimAll = async () => {
     setSending(true);
     try {
-      const ready = labor.plan.rows.filter((row) => row.state === "ready").map((row) => row.realm.realmId);
-      await claimRealmLabor(ready, realm);
+      await labor.claim(labor.plan.rows.filter((row) => row.state === "ready").map((row) => row.realm.realmId));
     } catch (error) {
       toast.error(extractReadableErrorMessage(error, "The labor could not be claimed."));
     } finally {
@@ -45,7 +42,8 @@ export const FrontierRealms = ({
   const add = async (realmId: number) => {
     setAdding(true);
     try {
-      await claimRealmLabor([realmId], realm);
+      // A Realm added by its number and refused was never the wallet's to add.
+      if ((await labor.claim([realmId])).length > 0) toast.error(REALM_NOT_CLAIMED);
     } catch {
       toast.error(REALM_NOT_CLAIMED);
     } finally {

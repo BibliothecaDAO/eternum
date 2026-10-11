@@ -20,6 +20,7 @@ import {
   LINK_WALLET,
   NO_WALLET,
   REALM,
+  REALM_NOT_IN_WALLET,
   REALM_NUMBER,
   REALMS,
   REALMS_ELSEWHERE,
@@ -34,9 +35,9 @@ const REALM_COUNT = 8000;
 
 /**
  * Realms (value screens, b): the Realms the account has claimed labor with, which gave theirs today and which are
- * ready, one Claim all, and Add a Realm by its number (the relay checks it sits in the linked wallet). A full labor
- * store shows what fits and leads with the Realm board, where labor is spent; once all are claimed the wait runs to the
- * day's end.
+ * ready, one Claim all, and Add a Realm by its number (the relay checks it sits in the linked wallet). A Realm a claim
+ * found no longer in the wallet says so and is left out of the claim. A full labor store shows what fits and leads with
+ * the Realm board, where labor is spent; once all are claimed the wait runs to the day's end.
  */
 export const RealmsSheet = ({
   wallet,
@@ -124,12 +125,12 @@ const ClaimStep = ({
   onRealm: () => void;
 }) => {
   if (plan.total === 0)
-    return (
+    return plan.rows.some((row) => row.state === "claimed") ? (
       <ReasonPlate
         reason={{ kind: "failed", line: CLAIMED_TODAY }}
         step={<Chip icons={["Hg"]} label={CLAIMED_TODAY} value={formatDuration(secondsLeft)} />}
       />
-    );
+    ) : null;
   if (plan.fits < plan.total)
     return (
       <>
@@ -188,6 +189,7 @@ const RealmRow = ({
       {name} <span className="text-[13px] tabular-nums text-kit-muted">#{formatExact(id)}</span>
     </span>
     {state === "claimed" && <KitIcon code="Ok" size={24} />}
+    {state === "absent" && <span className="shrink-0 text-[13px] text-kit-muted">{REALM_NOT_IN_WALLET}</span>}
     {state === "locked" && <KitIcon code="Lk" size={22} />}
     {children}
   </div>

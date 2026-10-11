@@ -153,5 +153,7 @@ export const REALMS_ELSEWHERE = "Only Realms in this Starknet wallet count. Not 
 /** A Realm joins the list by its number, the first time it gives its labor. */
 export const ADD_REALM = "Add a Realm";
 export const REALM_NUMBER = "Realm number";
+/** A Realm the account claimed labor with before, which the linked wallet no longer holds. */
+export const REALM_NOT_IN_WALLET = "Not in this wallet";
 export const REALM_NOT_CLAIMED = "That Realm is not in your wallet, or it gave its labor today.";
 export const realmsADay = (cap: number) => `${cap} a day`;

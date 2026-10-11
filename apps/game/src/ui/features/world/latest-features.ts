@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-11",
+    title: "A sold Realm no longer blocks your labor",
+    description:
+      "Claim all now grants the labor of every Realm still in your wallet even when one you claimed with before has left it. That Realm is marked Not in this wallet and left out of the claim.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-11",
     title: "Blitz entry closes five minutes before the start",
     description:
       "A Blitz slot's entry now closes five minutes before its games start, so every game of the slot is drawn, created and seated before the clock runs. The lobby shows both times.",

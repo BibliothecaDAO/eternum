@@ -196,16 +196,16 @@ const RUIN_CARD: LabSite = {
 const LAB_PRESET = { realmLabor: 1_000, realmsADay: 5 };
 const WALLET_ADDRESS = "0x04a1d2c3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f99f3c";
 const REALMS_HELD: readonly HeldRealm[] = [
-  { realmId: 1_088, name: "Stolsli", order: 9, claimedToday: true },
-  { realmId: 4_512, name: "Uw Rohi", order: 3, claimedToday: false },
-  { realmId: 6_077, name: "Mamaalan", order: 8, claimedToday: false },
+  { realmId: 1_088, name: "Stolsli", order: 9, claimedToday: true, inWallet: true },
+  { realmId: 4_512, name: "Uw Rohi", order: 3, claimedToday: false, inWallet: true },
+  { realmId: 6_077, name: "Mamaalan", order: 8, claimedToday: false, inWallet: true },
 ];
 const SEVEN_REALMS: readonly HeldRealm[] = [
   ...REALMS_HELD,
-  { realmId: 212, name: "Ilbarn", order: 1, claimedToday: false },
-  { realmId: 3_301, name: "Kelvos", order: 5, claimedToday: false },
-  { realmId: 5_990, name: "Orrin", order: 12, claimedToday: false },
-  { realmId: 7_421, name: "Tamsel", order: 14, claimedToday: false },
+  { realmId: 212, name: "Ilbarn", order: 1, claimedToday: false, inWallet: true },
+  { realmId: 3_301, name: "Kelvos", order: 5, claimedToday: false, inWallet: true },
+  { realmId: 5_990, name: "Orrin", order: 12, claimedToday: false, inWallet: true },
+  { realmId: 7_421, name: "Tamsel", order: 14, claimedToday: false, inWallet: true },
 ];
 type LabWithdraw = { held: number; wallet: string | null; refusal?: string; step: WithdrawStep; amount: number };
 type LabRealms = { wallet: string | null; realms: readonly HeldRealm[]; labor: number; limit: number };
@@ -763,6 +763,19 @@ const STATES = {
     armies: ARMIES,
     purse: { lords: 1_240, realms: 4_000 },
     realms: { wallet: WALLET_ADDRESS, realms: SEVEN_REALMS, labor: 9_640, limit: 18_000 },
+  },
+  // The second Realm was refused by a claim: the wallet no longer holds it.
+  "realms-sold": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1_240, realms: 1_000 },
+    realms: {
+      wallet: WALLET_ADDRESS,
+      realms: REALMS_HELD.map((realm) => (realm.realmId === 4_512 ? { ...realm, inWallet: false } : realm)),
+      labor: 9_640,
+      limit: 18_000,
+    },
   },
   "realms-none": {
     clock: CLOCK,

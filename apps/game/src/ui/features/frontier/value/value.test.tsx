@@ -144,6 +144,7 @@ describe("the Realm holder's labor", () => {
     name: `Realm ${realmId}`,
     order: 1,
     claimedToday,
+    inWallet: true,
   });
 
   it("gives each Realm's labor once a day, at most the day's cap of Realms, and pays what fits", () => {
@@ -168,6 +169,28 @@ describe("the Realm holder's labor", () => {
     expect(plan(5, 5).canAdd).toBe(false);
     // No cap: a Realm can always be added.
     expect(plan(9, 0).canAdd).toBe(true);
+  });
+
+  it("leaves a Realm the wallet no longer holds out of the claim, the total and the day's cap", () => {
+    const sold = { ...realm(2), inWallet: false };
+    const plan = planRealmLabor({
+      realms: [realm(1), sold, realm(3), realm(4)],
+      perRealm: 1_000,
+      cap: 2,
+      labor: { held: 0, limit: 18_000 },
+    });
+    // The cap of two goes to the two Realms still held ahead of it; the sold one takes none of it.
+    expect(plan.rows.map((row) => row.state)).toEqual(["ready", "absent", "ready", "locked"]);
+    expect(plan.total).toBe(2_000);
+    // Sold after giving today's labor, it still reads as claimed: the grant was made.
+    expect(
+      planRealmLabor({
+        realms: [{ ...realm(1, true), inWallet: false }],
+        perRealm: 1_000,
+        cap: 2,
+        labor: { held: 0, limit: 18_000 },
+      }).rows[0].state,
+    ).toBe("claimed");
   });
 
   it("adds a Realm by its number, its first claim, and offers nothing to add once the day's cap is spent", () => {
@@ -209,6 +232,11 @@ describe("the Realm holder's labor", () => {
     expect(onAdd).toHaveBeenCalledWith(4_512);
     show([realm(1, true), realm(2, true)], 2);
     expect(host.querySelector('input[aria-label="Realm number"]')).toBeNull();
+    // A lone Realm the wallet no longer holds: said on its row, with nothing claimed today to wait for.
+    show([{ ...realm(1), inWallet: false }], 5);
+    expect(host.textContent).toContain("Not in this wallet");
+    expect(host.textContent).not.toContain("Claimed today");
+    expect(button("Claim all")).toBeUndefined();
   });
 
   it("claims all in one tap, and with labor full leads to the realm and claims only what fits", () => {
