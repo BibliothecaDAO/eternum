@@ -16,6 +16,10 @@ export function isMissing(error: unknown, code: number): boolean {
     ((error as { code?: number }).code === code || isMissing((error as { cause?: unknown }).cause, code))
   );
 }
+const CONTRACT_ERROR = 40;
+export function isContractRevert(error: unknown, reason: string): boolean {
+  return isMissing(error, CONTRACT_ERROR) && JSON.stringify(error).includes(reason);
+}
 export async function classAt(provider: RpcProvider, address: string) {
   try {
     const value = await provider.getClassHashAt(address, "latest");

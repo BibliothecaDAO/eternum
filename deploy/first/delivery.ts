@@ -6,7 +6,7 @@ import { readConfirmedSnapshot, optionalRow } from "../../apps/value-relay/src/s
 import { buildFrontierFundingCalls } from "../../contracts/l2/ledger/scripts/commands/deployment/frontier.js";
 import { readFrontierGame } from "../../contracts/l2/ledger/scripts/commands/deployment/fund-frontier";
 import { readFrontierFunding, assertFrontierPreset } from "../../packages/value-ledger/src/frontier-funding";
-import { isMissing, send, balance } from "./chain";
+import { isContractRevert, send, balance } from "./chain";
 import { nativeDocument, boxRead, remoteCheckout, releaseDirectory } from "./box";
 import { workersReady, deployWorkers, clientReady, deployClient } from "./publish";
 import { command, shell } from "./process";
@@ -157,8 +157,7 @@ async function funding(context: Deployment) {
       throw new Error("Existing Frontier deposit differs; never add a second deposit");
     return { gameId, shard, native, funded: true };
   } catch (error) {
-    if (isMissing(error, 41) && JSON.stringify(error).includes("Ledger: unknown Frontier season"))
-      return { gameId, shard, native, funded: false };
+    if (isContractRevert(error, "Ledger: unknown Frontier season")) return { gameId, shard, native, funded: false };
     throw error;
   }
 }

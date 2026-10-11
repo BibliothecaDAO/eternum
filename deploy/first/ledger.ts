@@ -4,7 +4,7 @@ import { Account, byteArray, CallData, hash, json, type Call, type RpcProvider }
 import { buildLedgerEconomicPreset } from "../../config/deployer/clean/ledger/economics";
 import { buildMysteryChestPreset } from "../../contracts/l2/ledger/scripts/chest-preset.js";
 import { addressBook, root, type Environment, type Inputs, type Target } from "./settings";
-import { classAt, isMissing, confirm, send } from "./chain";
+import { classAt, isMissing, isContractRevert, confirm, send } from "./chain";
 import { seconds, PublicError } from "./dates";
 import type { PrivateStore } from "./private-store";
 
@@ -281,7 +281,7 @@ export async function setupPresent(provider: RpcProvider, operation: Call, head:
     return true;
   } catch (error) {
     const reason = entrypoint === "get_preset" ? "Ledger: unknown preset" : "Ledger: unknown Blitz season";
-    if (isMissing(error, 41) && JSON.stringify(error).includes(reason)) return false;
+    if (isContractRevert(error, reason)) return false;
     throw error;
   }
 }
