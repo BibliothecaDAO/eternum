@@ -16,6 +16,7 @@ it("reads wallet owners through the deployed Worker's SDK and serves new ledger 
   const worker = await startWorker({
     bundle,
     environment: "production",
+    ratingHistoryUrl: "https://realms.world/api/ratings/population",
     storage: newStorage(),
     vapid: await vapidKeys(),
     outbound: async (request) => {

@@ -78,12 +78,6 @@ jobs:
       - name: Build workspace dependencies
         run: pnpm --filter "${{ matrix.package }}^..." run build
 
-      - name: Check identity L2 configuration
-        if: matrix.worker == 'apps/realms'
-        run: |
-          set -euo pipefail
-          [ -n "$RATING_HISTORY_URL" ] || { echo "::error::RATING_HISTORY_URL is not set for the $TARGET environment"; exit 1; }
-
       # Migrations run before the code that needs them; the database is created on its environment's first deploy.
       - name: Prepare the database
         if: matrix.database

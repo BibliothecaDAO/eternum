@@ -28,13 +28,16 @@ nonce consumption. Deployed accounts retain contract verification; offchain veri
 absence and allow-listed deployment data.
 
 The Realms collection and rating token come from `contracts/common/addresses/dev.json` or `mainnet.json`, selected by
-`ENVIRONMENT`, like the ledger. `RATING_HISTORY_URL` names the indexed population. Both environments run on mainnet.
-Staging uses `dev.json`: its own ledger, test token, rating token and collections, and the real Realms collection.
-Production uses `mainnet.json`. No missing dev address falls back to production. Labor ownership runs through the
-private `ValueIdentity.realmOwnerOf` service binding; the relay's second Realms RPC is removed. Rating readers live in
-separate Worker deployments; every token lookup selects the environment book directly.
+`ENVIRONMENT`, like the ledger. Optional `RATING_HISTORY_URL` names the indexed population for that environment's rating
+token. Omit it (or leave it empty) until that token has a history producer: only `/api/ratings/top` returns 503
+`ratings_unavailable`; identity, sign-in and wallet rating reads remain available. The top-list reader requires HTTPS
+when configured. Do not point a dev token at production's population: the history response does not identify its token,
+so it cannot prove that those holders cover dev ratings. Both environments run on mainnet. Staging uses `dev.json`: its
+own ledger, test token, rating token and collections, and the real Realms collection. Production uses `mainnet.json`. No
+missing dev address falls back to production. Labor ownership runs through the private `ValueIdentity.realmOwnerOf`
+service binding; the relay's second Realms RPC is removed. Rating readers live in separate Worker deployments; every
+token lookup selects the environment book directly.
 
 The client and Workers share the address book through `environmentL2`. The deployment workflow does not override its
-chain or ledger. The existing `CLIENT_IDENTITY_RPC_URL` secret maps to `IDENTITY_RPC_URL`. It checks the public
-contract/history settings before migrations or secret writes. This is repository wiring only; operators configure and
-deploy the environment.
+chain or ledger. The existing `CLIENT_IDENTITY_RPC_URL` secret maps to `IDENTITY_RPC_URL`. The history URL is not a
+deployment prerequisite. Operators configure and deploy the environment.

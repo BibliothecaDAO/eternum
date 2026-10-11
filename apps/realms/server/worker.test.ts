@@ -30,3 +30,12 @@ it("routes the directory read through the launch service binding", async () => {
   expect(launchDirectoryMock).toHaveBeenCalledOnce();
   expect(launchDirectoryMock.mock.calls[0]?.[0].url).toBe("https://launch/api/factory/directory-games");
 });
+
+it("serves health and email sign-in without a history source, while the top list is unavailable", async () => {
+  expect((await worker.mf.dispatchFetch(`${ORIGIN}/api/health`)).status).toBe(200);
+  const player = await worker.signInWithEmailCode("no-history@realms.test");
+  expect(player.realmsId).toMatch(/^0x/);
+  const top = await worker.mf.dispatchFetch(`${ORIGIN}/api/ratings/top`);
+  expect(top.status).toBe(503);
+  expect(await top.json()).toEqual({ error: "ratings_unavailable" });
+});

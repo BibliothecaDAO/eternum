@@ -15,7 +15,7 @@ const IdentityVars = Schema.Struct({
   /** The RealmsAccount class every shard deploys player accounts from. */
   ACCOUNT_CLASS_HASH: Schema.NonEmptyString,
   BETTER_AUTH_SECRET: Schema.NonEmptyString,
-  RATING_HISTORY_URL: Schema.NonEmptyString,
+  RATING_HISTORY_URL: Schema.optional(Schema.String),
   /** Only the configured chain's HTTPS Alchemy RPC is accepted. */
   IDENTITY_RPC_URL: Schema.NonEmptyString,
   /** The environment's one operator token for all automation: listing shards and changing their status here. */
@@ -59,7 +59,6 @@ const decodeIdentityVars = Schema.decodeUnknownSync(IdentityVars, { onExcessProp
 export const decodeIdentityEnv = (raw: Record<string, unknown>): IdentityEnv => {
   // Validate private RPC configuration without putting its value in a schema error.
   identityL2Configuration(raw as unknown as IdentityEnv);
-  requireIdentityReadTargets(raw);
   const vars = decodeWithoutValues(raw);
   return {
     ...vars,
@@ -84,16 +83,6 @@ const decodeWithoutValues = (raw: Record<string, unknown>) => {
     throw new Error("identity_environment_invalid");
   }
 };
-const requireIdentityReadTargets = (raw: Record<string, unknown>) => {
-  let url: URL;
-  try {
-    url = new URL(String(raw.RATING_HISTORY_URL));
-  } catch {
-    throw new Error("RATING_HISTORY_URL requires HTTPS");
-  }
-  if (url.protocol !== "https:") throw new Error("RATING_HISTORY_URL requires HTTPS");
-};
-
 export const vapidKeysOf = (env: IdentityEnv) => ({
   publicKey: env.WEB_PUSH_VAPID_PUBLIC_KEY,
   privateKey: env.WEB_PUSH_VAPID_PRIVATE_KEY,

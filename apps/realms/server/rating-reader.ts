@@ -62,7 +62,10 @@ export class RatingReader extends DurableObject<Env> {
     });
   }
   private async history() {
-    const response = await fetch(this.env.RATING_HISTORY_URL, {
+    const source = this.env.RATING_HISTORY_URL;
+    if (!source) throw new Error("Rating history unavailable");
+    if (new URL(source).protocol !== "https:") throw new Error("Rating history requires HTTPS");
+    const response = await fetch(source, {
       signal: AbortSignal.timeout(5000),
       redirect: "manual",
       headers: { "cache-control": "no-cache" },

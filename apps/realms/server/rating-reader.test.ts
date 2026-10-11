@@ -12,7 +12,11 @@ import { RatingReader } from "./rating-reader";
 
 const header = { block_number: 77, block_hash: "0xabc" };
 const history = { ...header, players: Array.from({ length: 24 }, (_, i) => `0x${(i + 1).toString(16)}`) };
-const create = () => {
+const create = (
+  configuration: { RATING_HISTORY_URL?: string } = {
+    RATING_HISTORY_URL: "https://realms.world/api/ratings/population",
+  },
+) => {
   const database = new DatabaseSync(":memory:");
   const values = new Map<string, unknown>();
   const sql = {
@@ -60,7 +64,7 @@ const create = () => {
     ctx as unknown as DurableObjectState,
     {
       ENVIRONMENT: "production",
-      RATING_HISTORY_URL: "https://realms.world/api/ratings/population",
+      ...configuration,
       IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
     } as never,
   );
@@ -109,6 +113,24 @@ it("keeps the paid-method budget across a reader restart with no cached bypass",
     const before = paid.length;
     await expect(restarted.ratings(["0x1"], "0xabc")).rejects.toThrow("budget");
     expect(paid).toHaveLength(before);
+  } finally {
+    vi.unstubAllGlobals();
+    database.close();
+  }
+});
+
+it.each([
+  {},
+  { RATING_HISTORY_URL: "" },
+  { RATING_HISTORY_URL: "http://history.test" },
+  { RATING_HISTORY_URL: "invalid" },
+])("keeps wallet ratings available when top-list history is unconfigured or invalid: %j", async (configuration) => {
+  const { reader, paid, network, database } = create(configuration);
+  try {
+    await expect(reader.top()).rejects.toThrow();
+    expect(network).not.toHaveBeenCalled();
+    expect((await reader.ratings(["0x1"])).values).toEqual([["0x1", "1000000000000000000000"]]);
+    expect(paid.flat().some((call) => call.method === "starknet_call")).toBe(true);
   } finally {
     vi.unstubAllGlobals();
     database.close();
