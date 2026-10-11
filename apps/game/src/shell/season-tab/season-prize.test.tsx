@@ -46,6 +46,11 @@ import { type SeasonPrize, seasonPrizeKey } from "./blitz-season";
 import { SeasonPrizePanel } from "./season-prize";
 
 const WEI = 10n ** 18n;
+/**
+ * The ledger's preset as get_preset answers it, 18 felts: a tenth of the participants paid, each place half the one
+ * above; no price matters here. It carries no season length: a season's end is its own.
+ */
+const PRESET = ["0", "0", "0", "0", "1000", "5000", ...Array.from({ length: 12 }, () => "0")];
 const NOW = Math.floor(Date.now() / 1000);
 const unmounts: (() => Promise<void>)[] = [];
 
@@ -165,7 +170,7 @@ it("shows the newest season with a share still to claim, signed by the seat's wa
       ...["0", "0", "25", "3", seasons[id].posted ? "1" : "0", "0", String(NOW - 60), "0", "0", "0", "1", "4", "0"],
       ...[String(seasons[id].end), String(7_000n * WEI), "0"],
     ],
-    get_preset: () => ["0", "0", "0", "0", "1000", "5000", ...Array.from({ length: 13 }, () => "0")],
+    get_preset: () => PRESET,
     get_season_winner: ([, index]) => (index === "1" ? [W1, String(2_000n * WEI), "0"] : ["0xb0b", "1", "0"]),
     season_claimed: () => ["0"],
     balance_of: () => [String(WEI), "0"],
@@ -193,7 +198,7 @@ it("shows the newest season played once every share is claimed", async () => {
       ...["0", "0", "25", "3", id === "3" ? "1" : "0", "0", String(NOW - 60), "0", "0", "0", "1", "4", "0"],
       ...[String(id === "3" ? NOW - 7200 : NOW + 30 * 86400), String((id === "3" ? 7_000n : 9_000n) * WEI), "0"],
     ],
-    get_preset: () => ["0", "0", "0", "0", "1000", "5000", ...Array.from({ length: 13 }, () => "0")],
+    get_preset: () => PRESET,
     get_season_winner: () => ["0xa11", String(2_000n * WEI), "0"],
     season_claimed: () => ["1"],
   };
@@ -212,7 +217,7 @@ const twoSeasons = (over: Record<string, (calldata: string[]) => string[]> = {})
     ...["0", "0", "25", "3", id === "3" ? "1" : "0", "0", String(NOW - 60), "0", "0", "0", "1", "4", "0"],
     ...[String(id === "3" ? NOW - 7200 : NOW + 30 * 86400), String((id === "3" ? 7_000n : 9_000n) * WEI), "0"],
   ],
-  get_preset: () => ["0", "0", "0", "0", "1000", "5000", ...Array.from({ length: 13 }, () => "0")],
+  get_preset: () => PRESET,
   get_season_winner: ([, index]: string[]) =>
     index === "1" ? ["0xa11", String(2_000n * WEI), "0"] : ["0xb0b", "1", "0"],
   season_claimed: () => ["0"],
