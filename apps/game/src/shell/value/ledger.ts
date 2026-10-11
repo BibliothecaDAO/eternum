@@ -14,7 +14,7 @@ import {
   decodeWithdrawalPayment,
 } from "@realms-world/value-ledger/codecs";
 
-import { L2_LEDGER, l2Provider } from "@/runtime/l2-rpc";
+import { L2_CHAIN, L2_LEDGER, l2Provider } from "@/runtime/l2-rpc";
 
 /**
  * The client's side of GameLedger on Starknet: the reads the value screens show and the calls a player's own wallet
@@ -95,6 +95,22 @@ export const registerCalls = (
   ...(cash > 0n ? [{ contractAddress: lords, entrypoint: "approve", calldata: [ledger, ...u256(cash)] }] : []),
   { contractAddress: ledger, entrypoint: "register", calldata: [...keyCalldata(key), flag(sword), flag(shield)] },
 ];
+
+/**
+ * Whether this build's ledger is paid in test LORDS, which anyone may mint: the Sepolia build's. A mainnet build's
+ * LORDS is the real token and has no such entry.
+ */
+export const isTestLordsBuild = (): boolean => L2_CHAIN.name === "SN_SEPOLIA";
+
+/** What one tap mints on a Sepolia build: enough test LORDS for a ranked entry with its sword and its shield. */
+export const TEST_LORDS_MINT = 1_000n * LORDS_UNIT;
+
+/** mint(recipient, amount) on the test LORDS token the dev ledger names: its own public mint, to the wallet given. */
+export const mintTestLordsCall = (lords: string, recipient: string): Call => ({
+  contractAddress: lords,
+  entrypoint: "mint",
+  calldata: [recipient, ...u256(TEST_LORDS_MINT)],
+});
 
 /** Chest.approve(ledger, token) then open_request(token): the holder's one signature; the chest burns, no way back. */
 export const openChestCalls = (ledger: string, chest: string, tokenId: bigint): Call[] => [

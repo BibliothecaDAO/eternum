@@ -6,10 +6,13 @@ import type { Call } from "starknet";
 import { afterEach, expect, it, vi } from "vitest";
 
 const signed = vi.hoisted(() => ({ calls: [] as Call[][], owners: [] as string[] }));
+/** The build's L2: Sepolia on dev, where LORDS is a test token, or mainnet. */
+const build = vi.hoisted(() => ({ name: "SN_SEPOLIA" }));
 // The ledger answers nothing here: a refetch after a send stays pending, never reaching a network.
 vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/runtime/l2-rpc")>()),
   L2_LEDGER: "0x1ed9e7",
+  L2_CHAIN: build,
   l2Provider: () => ({ callContract: () => new Promise(() => {}) }),
 }));
 vi.mock("@/ui/modules/identity/wallet-actions", () => ({
@@ -97,6 +100,7 @@ afterEach(async () => {
   for (const unmount of unmounts.splice(0)) await unmount();
   signed.calls = [];
   signed.owners = [];
+  build.name = "SN_SEPOLIA";
 });
 
 it("pays the seat and the chosen flags from the payout wallet, a credit paying for the sword", async () => {
@@ -205,4 +209,21 @@ it("reads a slot's entry and refund with the payout wallet that pays, signed by 
   await press(replaced, "Take refund");
   await press(replaced, "Sign");
   expect(signed.owners).toEqual(["0x4a1", "0xb0b"]);
+});
+
+it("mints test LORDS to the paying wallet on a Sepolia build, and offers no such thing on mainnet", async () => {
+  const short = await mount({ ...TERMS, lords: 320n * WEI });
+  expect(short.textContent).toContain("Need 180 more LORDS");
+  await press(short, "Mint 1,000 test LORDS");
+  await press(short, "Sign");
+  // The test token's own public mint, on the token the ledger names, to the wallet that pays: 1,000 LORDS.
+  expect(signed.calls).toEqual([
+    [{ contractAddress: "0x10e5", entrypoint: "mint", calldata: ["0x4a1", String(1_000n * WEI), "0"] }],
+  ]);
+  expect(signed.owners).toEqual(["0x4a1"]);
+
+  build.name = "SN_MAIN";
+  const words = (panel: HTMLElement) => [...panel.querySelectorAll("button")].map((button) => button.textContent);
+  expect(words(await mount({ ...TERMS, lords: 320n * WEI })).join()).not.toContain("Mint");
+  expect(words(await mount(TERMS)).join()).not.toContain("Mint");
 });

@@ -246,6 +246,8 @@ export const ENTRY_WORDS = {
   total: "Total",
   payAndJoin: "Pay & join",
   needMore: (amount: string) => `Need ${amount} more LORDS`,
+  /** On a Sepolia build only: test LORDS for the wallet that pays. */
+  mintTestLords: (amount: string) => `Mint ${amount} test LORDS`,
   paidFromWallet: "Entry is paid from your payout wallet",
   registered: "Registered",
   registeredLine: "Your seat is drawn when entry closes.",

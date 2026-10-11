@@ -11,7 +11,16 @@ import type { DirectoryGame } from "../herald";
 import { Loading } from "../loading";
 import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
-import { type EnvironmentLedger, lordsOf, lordsShortOf, refundCall, type SlotKey } from "../value/ledger";
+import {
+  type EnvironmentLedger,
+  isTestLordsBuild,
+  lordsOf,
+  lordsShortOf,
+  mintTestLordsCall,
+  refundCall,
+  type SlotKey,
+  TEST_LORDS_MINT,
+} from "../value/ledger";
 import { gameRowKey } from "../blitz-rows";
 import { ENTRY_WORDS, WALLET_WORDS } from "../words";
 import {
@@ -176,7 +185,37 @@ const EntryPanel = ({
         ) : (
           <Button role="primary" word={ENTRY_WORDS.payAndJoin} icon="Pl" onClick={() => setSigning(true)} />
         ))}
+      {isTestLordsBuild() && !signing && <MintTestLords token={terms.lordsToken} owner={owner} onMinted={onSent} />}
     </Plate>
+  );
+};
+
+/**
+ * On a Sepolia build only: test LORDS for the wallet that pays, by the test token's own public mint, so an entry can be
+ * tried on dev. One signature of its own; the wallet's balance is read again once it lands.
+ */
+const MintTestLords = ({ token, owner, onMinted }: { token: string; owner: string; onMinted: () => void }) => {
+  const [signing, setSigning] = useState(false);
+  if (!signing)
+    return (
+      <Button
+        role="outline"
+        word={ENTRY_WORDS.mintTestLords(formatExact(lordsOf(TEST_LORDS_MINT)))}
+        icon="Lo"
+        onClick={() => setSigning(true)}
+      />
+    );
+  return (
+    <Suspense fallback={<Loading />}>
+      <WalletSign
+        owner={owner}
+        calls={[mintTestLordsCall(token, owner)]}
+        onLanded={() => {
+          setSigning(false);
+          onMinted();
+        }}
+      />
+    </Suspense>
   );
 };
 
