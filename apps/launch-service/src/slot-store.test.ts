@@ -174,7 +174,8 @@ it.each(["exists", "unavailable"])(
   "keeps the slot key after an ambiguous open when its ledger read is %s",
   async (state) => {
     const value = slotValueFixture();
-    const open = vi.spyOn(value, "openSlot").mockRejectedValueOnce(new Error("receipt unavailable"));
+    const openError = new Error("receipt unavailable");
+    const open = vi.spyOn(value, "openSlot").mockRejectedValueOnce(openError);
     const read = vi.spyOn(value, "slot");
     if (state === "unavailable") read.mockRejectedValueOnce(new Error("read unavailable"));
     const store = new D1SlotStore(
@@ -184,7 +185,7 @@ it.each(["exists", "unavailable"])(
       registrationIdentityFixture,
     );
     const close = soon();
-    await expect(store.create("retry", close)).rejects.toThrow("unavailable");
+    await expect(store.create("retry", close)).rejects.toBe(openError);
     const slot = await store.get("retry");
     const key = { chainId: slot.chainId, slotId: slot.slotId };
     expect(read).toHaveBeenCalledTimes(1);

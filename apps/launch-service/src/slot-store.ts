@@ -56,7 +56,10 @@ export class D1SlotStore implements SlotStore {
       await this.value.openSlot(key, { start: closes / 1000, end: closes / 1000 + duration });
     } catch (error) {
       // A lost receipt or unavailable read must preserve the key for recovery.
-      if (!(await this.value.slot(key)).exists)
+      const recorded = await this.value.slot(key).catch(() => {
+        throw error;
+      });
+      if (!recorded.exists)
         await this.db
           .prepare("DELETE FROM playtest_slots WHERE chain_id=? AND slot_id=?")
           .bind(slot.chainId, slot.slotId)
