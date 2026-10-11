@@ -5,7 +5,7 @@
 
 /** A sign-in code's digits, and how long it signs in after it is sent. */
 export const SIGN_IN_CODE_LENGTH = 8;
-export const SIGN_IN_CODE_SECONDS = 5 * 60;
+export const SIGN_IN_CODE_SECONDS = 10 * 60;
 
 /** The ink portraits a player can wear, by the id their account stores. */
 export const IDENTITY_PORTRAITS = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"] as const;

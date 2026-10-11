@@ -331,8 +331,9 @@ describe("identity Worker", () => {
     expect(await userCount()).toBe(before + 1);
   });
 
-  it("returns the stored code expiry rather than starting another countdown at response time", async () => {
+  it("stores a ten-minute code lifetime and returns its authoritative expiry", async () => {
     const browser = createBrowser();
+    const requestedAt = Date.now();
     const response = await browser.request("/api/auth/email-otp/send-verification-otp", {
       body: { email: "expiry@realms.test", type: "sign-in" },
     });
@@ -340,12 +341,42 @@ describe("identity Worker", () => {
     const context = await auth.$context;
     const code = await context.internalAdapter.findVerificationValue("sign-in-otp-expiry@realms.test");
     expect(code).not.toBeNull();
+    expect(code!.expiresAt.getTime()).toBeGreaterThanOrEqual(requestedAt + 600_000);
+    expect(code!.expiresAt.getTime()).toBeLessThanOrEqual(Date.now() + 600_000);
     expect(await response.json()).toEqual({ success: true, expires_at: code!.expiresAt.getTime() / 1000 });
     const refused = await browser.request("/api/auth/email-otp/send-verification-otp", {
       body: { email: "invalid", type: "sign-in" },
     });
     expect(refused.status).toBe(400);
     expect(await refused.json()).not.toHaveProperty("expires_at");
+  });
+
+  it.each([
+    [9, 200],
+    [11, 400],
+  ])("accepts or expires an emailed code aged %i minutes", async (minutes, status) => {
+    const browser = createBrowser();
+    const email = `aged-${minutes}@realms.test`;
+    expect(
+      (
+        await browser.request("/api/auth/email-otp/send-verification-otp", {
+          body: { email, type: "sign-in" },
+        })
+      ).status,
+    ).toBe(200);
+    const context = await auth.$context;
+    const identifier = `sign-in-otp-${email}`;
+    const code = (await context.internalAdapter.findVerificationValue(identifier))!;
+    await env.DB.prepare("UPDATE verification SET expiresAt = ? WHERE identifier = ?")
+      .bind(new Date(code.expiresAt.getTime() - minutes * 60_000).toISOString(), identifier)
+      .run();
+    expect(
+      (
+        await browser.request("/api/auth/sign-in/email-otp", {
+          body: { email, otp: sentCodes.get(email) },
+        })
+      ).status,
+    ).toBe(status);
   });
 
   it("refuses a wrong code, an expired code and a code after three wrong tries", async () => {
