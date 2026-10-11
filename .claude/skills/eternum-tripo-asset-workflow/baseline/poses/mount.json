@@ -1,0 +1,1827 @@
+{
+ "set": "mount",
+ "applies_to": "horse",
+ "version": 1,
+ "convention": "Targets are angles in degrees relative to the rig's rest pose, which is the square halt (pose stand-square): every value of that pose is zero. Positive means: root.pitch nose up, root.roll left side down, root.yaw turns left, root.lift body raised as a fraction of withers height (0.55 m in game); pelvis.pitch croup tucks under (hindquarters lower), pelvis.roll left hip lower, pelvis.yaw hips to the left; spine.flex back rounds (arches up), spine.side bends left, spine.twist chest turns left; neck_base.pitch neck raised, yaw/roll to the left; poll.pitch nose tucks in (head flexed down), yaw/roll to the left; tail.lift raised, tail.swing to the left; fore shoulder = limb swings forward, elbow/carpus/fetlock = flexion (fetlock + also means the toe drops), abd = limb away from the midline; hind hip = limb swings forward, stifle/hock/fetlock = flexion, abd away from the midline. Sides are the horse's own left and right. Rest absolute flexions for conversion: front fetlock 20, carpus 0, elbow 5; hind fetlock 25, hock 30, stifle 35; neck 40 above horizontal.",
+ "joint_source": "Joint keys are anatomical, not the rig's bone names, because the Paladin horse rig (t1-horse-v1) is only specified (GOAL-PROMPT-LAYERED.md line 100) and not built: a mesh-only horse blend exists. Planned rig layout (upstream horse adapter, eternum-knight-pr-r2 apps/game/src/three/characters/horse/horse-rig-adapter.ts): root, pelvis, spine, chest, withers, neck x2, head, four legs, tail x3, tack bones. Map: root=root, pelvis=pelvis, spine=spine+chest, neck_base=first neck bone, poll=head; front leg shoulder/elbow/carpus/fetlock = frontShoulder/frontUpper/frontLower/(hoof); hind hip/stifle/hock/fetlock = hindShoulder/hindUpper/hindMiddle/hindLower. Where the final rig has fewer bones, fold the pair (elbow into shoulder, fetlock into the lowest bone) at import.",
+ "poses": [
+  {
+   "id": "stand-square",
+   "name": "Square halt (rest pose)",
+   "description": "All four hooves flat, one under each corner; fore cannons vertical, hind hocks slightly bent, neck about 40 above horizontal, face near vertical. Every angle is zero because this is the rig's rest pose.",
+   "support": [
+    "hoof_lf",
+    "hoof_rf",
+    "hoof_lh",
+    "hoof_rh"
+   ],
+   "targets": {
+    "root": {
+     "pitch": 0,
+     "roll": 0,
+     "yaw": 0,
+     "lift": 0
+    },
+    "pelvis": {
+     "pitch": 0,
+     "roll": 0,
+     "yaw": 0
+    },
+    "spine": {
+     "flex": 0,
+     "side": 0,
+     "twist": 0
+    },
+    "neck_base": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "poll": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "tail": {
+     "lift": 0,
+     "swing": 0
+    },
+    "fore_l": {
+     "shoulder": 0,
+     "elbow": 0,
+     "carpus": 0,
+     "fetlock": 0,
+     "abd": 0
+    },
+    "fore_r": {
+     "shoulder": 0,
+     "elbow": 0,
+     "carpus": 0,
+     "fetlock": 0,
+     "abd": 0
+    },
+    "hind_l": {
+     "hip": 0,
+     "stifle": 0,
+     "hock": 0,
+     "fetlock": 0,
+     "abd": 0
+    },
+    "hind_r": {
+     "hip": 0,
+     "stifle": 0,
+     "hock": 0,
+     "fetlock": 0,
+     "abd": 0
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/stand-square-1.jpg",
+    "../../t1-paladin-claude/research/poses/refs/stand-square-2.jpg"
+   ],
+   "ref_notes": "stand-square-1: saddled horse standing; -2: draught horse standing, left side view. Absolute values at rest: front fetlock 20, carpus 0, elbow 5; hind fetlock 25, hock 30, stifle 35 (from horse-gaits.md, by eye +/-15).",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/stand-square-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Cheval_lusitanien.JPG",
+     "credit": "hortense geninet via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    },
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/stand-square-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:GypsyMareLeft.jpg",
+     "credit": "Mary E. Graybeal via Wikimedia Commons",
+     "licence": "Public domain"
+    }
+   ],
+   "gait_phase": "stand"
+  },
+  {
+   "id": "stand-relaxed",
+   "name": "Relaxed stand, right hind resting",
+   "description": "Weight on three legs; the right hind is cocked, toe touching, hip dropped. Head and neck carried a little lower, tail still.",
+   "support": [
+    "hoof_lf",
+    "hoof_rf",
+    "hoof_lh"
+   ],
+   "targets": {
+    "root": {
+     "pitch": 0,
+     "roll": 0,
+     "yaw": 0,
+     "lift": -0.005
+    },
+    "pelvis": {
+     "pitch": 0,
+     "roll": -4,
+     "yaw": 0
+    },
+    "spine": {
+     "flex": 0,
+     "side": 0,
+     "twist": 0
+    },
+    "neck_base": {
+     "pitch": -5,
+     "yaw": 0,
+     "roll": 0
+    },
+    "poll": {
+     "pitch": 5,
+     "yaw": 0,
+     "roll": 0
+    },
+    "tail": {
+     "lift": 0,
+     "swing": 0
+    },
+    "fore_l": {
+     "shoulder": 0,
+     "elbow": 0,
+     "carpus": 0,
+     "fetlock": 0,
+     "abd": 0
+    },
+    "fore_r": {
+     "shoulder": 0,
+     "elbow": 0,
+     "carpus": 0,
+     "fetlock": 0,
+     "abd": 0
+    },
+    "hind_l": {
+     "hip": 0,
+     "stifle": 0,
+     "hock": 0,
+     "fetlock": 0,
+     "abd": 0
+    },
+    "hind_r": {
+     "hip": -4,
+     "stifle": 10,
+     "hock": 12,
+     "fetlock": 25,
+     "abd": 0
+    }
+   },
+   "confidence": "designed",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/stand-square-2.jpg"
+   ],
+   "ref_notes": "No photograph of a resting hind was kept; leg values built from the square stand by flexing hock and stifle and pitching the fetlock.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/stand-square-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:GypsyMareLeft.jpg",
+     "credit": "Mary E. Graybeal via Wikimedia Commons",
+     "licence": "Public domain"
+    }
+   ],
+   "gait_phase": "stand"
+  },
+  {
+   "id": "walk-1",
+   "name": "Walk, phase 1 (LF swinging)",
+   "phase_of": "walk",
+   "description": "Four-beat walk, three hooves down and LF in mid swing. Stance limbs swing from forward to back, the swinging limb folds (carpus about 80, hock about 40), head nods with the stride. Phases 1 to 4 are a quarter cycle apart (beat order LH, LF, RH, RF).",
+   "support": [
+    "hoof_rf",
+    "hoof_lh",
+    "hoof_rh"
+   ],
+   "targets": {
+    "root": {
+     "pitch": 0,
+     "roll": 0,
+     "yaw": 0,
+     "lift": 0
+    },
+    "pelvis": {
+     "pitch": 0,
+     "roll": 2,
+     "yaw": 0
+    },
+    "spine": {
+     "flex": 0,
+     "side": 2,
+     "twist": 0
+    },
+    "neck_base": {
+     "pitch": -4,
+     "yaw": 0,
+     "roll": 0
+    },
+    "poll": {
+     "pitch": 2,
+     "yaw": 0,
+     "roll": 0
+    },
+    "tail": {
+     "lift": 0,
+     "swing": 2
+    },
+    "fore_l": {
+     "shoulder": 0,
+     "elbow": 25,
+     "carpus": 80,
+     "fetlock": 25,
+     "abd": 0
+    },
+    "fore_r": {
+     "shoulder": 0,
+     "elbow": 0,
+     "carpus": 0,
+     "fetlock": 0,
+     "abd": 0
+    },
+    "hind_l": {
+     "hip": 14,
+     "stifle": 0,
+     "hock": 0,
+     "fetlock": 0,
+     "abd": 0
+    },
+    "hind_r": {
+     "hip": -14,
+     "stifle": 0,
+     "hock": 0,
+     "fetlock": 0,
+     "abd": 0
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/walk-mid-stride-1.jpg",
+    "../../t1-paladin-claude/research/poses/refs/walk-mid-stride-3.jpg"
+   ],
+   "ref_notes": "walk-mid-stride-1: Muybridge walk drawing, -3: pony walking. Hoof pattern and fold read from them; joint swing built as a 70 percent stance duty cycle, so the angles are +/-15.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/walk-mid-stride-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Descriptive_Zoopraxography_046.jpg",
+     "credit": "Eadweard Muybridge via Wikimedia Commons",
+     "licence": "Public domain"
+    },
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/walk-mid-stride-3.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:M%C3%A9rens_au_pas,_au_mod%C3%A8le,_d%C3%A9tour%C3%A9.jpg",
+     "credit": "Tylwyth Eldar via Wikimedia Commons",
+     "licence": "CC BY-SA 4.0"
+    }
+   ],
+   "gait_phase": "walk"
+  },
+  {
+   "id": "walk-2",
+   "name": "Walk, phase 2 (RH swinging)",
+   "phase_of": "walk",
+   "description": "Four-beat walk, three hooves down and RH in mid swing. Stance limbs swing from forward to back, the swinging limb folds (carpus about 80, hock about 40), head nods with the stride. Phases 1 to 4 are a quarter cycle apart (beat order LH, LF, RH, RF).",
+   "support": [
+    "hoof_lf",
+    "hoof_rf",
+    "hoof_lh"
+   ],
+   "targets": {
+    "root": {
+     "pitch": 0,
+     "roll": 0,
+     "yaw": 0,
+     "lift": 0
+    },
+    "pelvis": {
+     "pitch": 0,
+     "roll": -2,
+     "yaw": 0
+    },
+    "spine": {
+     "flex": 0,
+     "side": 0,
+     "twist": 0
+    },
+    "neck_base": {
+     "pitch": 3,
+     "yaw": 0,
+     "roll": 0
+    },
+    "poll": {
+     "pitch": -2,
+     "yaw": 0,
+     "roll": 0
+    },
+    "tail": {
+     "lift": 0,
+     "swing": 0
+    },
+    "fore_l": {
+     "shoulder": 13,
+     "elbow": 0,
+     "carpus": 0,
+     "fetlock": 0,
+     "abd": 0
+    },
+    "fore_r": {
+     "shoulder": -13,
+     "elbow": 0,
+     "carpus": 1,
+     "fetlock": 0,
+     "abd": 0
+    },
+    "hind_l": {
+     "hip": 0,
+     "stifle": 0,
+     "hock": 0,
+     "fetlock": 0,
+     "abd": 0
+    },
+    "hind_r": {
+     "hip": 0,
+     "stifle": 15,
+     "hock": 40,
+     "fetlock": 20,
+     "abd": 0
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/walk-mid-stride-1.jpg",
+    "../../t1-paladin-claude/research/poses/refs/walk-mid-stride-3.jpg"
+   ],
+   "ref_notes": "walk-mid-stride-1: Muybridge walk drawing, -3: pony walking. Hoof pattern and fold read from them; joint swing built as a 70 percent stance duty cycle, so the angles are +/-15.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/walk-mid-stride-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Descriptive_Zoopraxography_046.jpg",
+     "credit": "Eadweard Muybridge via Wikimedia Commons",
+     "licence": "Public domain"
+    },
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/walk-mid-stride-3.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:M%C3%A9rens_au_pas,_au_mod%C3%A8le,_d%C3%A9tour%C3%A9.jpg",
+     "credit": "Tylwyth Eldar via Wikimedia Commons",
+     "licence": "CC BY-SA 4.0"
+    }
+   ],
+   "gait_phase": "walk"
+  },
+  {
+   "id": "walk-3",
+   "name": "Walk, phase 3 (RF swinging)",
+   "phase_of": "walk",
+   "description": "Four-beat walk, three hooves down and RF in mid swing. Stance limbs swing from forward to back, the swinging limb folds (carpus about 80, hock about 40), head nods with the stride. Phases 1 to 4 are a quarter cycle apart (beat order LH, LF, RH, RF).",
+   "support": [
+    "hoof_lf",
+    "hoof_lh",
+    "hoof_rh"
+   ],
+   "targets": {
+    "root": {
+     "pitch": 0,
+     "roll": 0,
+     "yaw": 0,
+     "lift": 0
+    },
+    "pelvis": {
+     "pitch": 0,
+     "roll": 2,
+     "yaw": 0
+    },
+    "spine": {
+     "flex": 0,
+     "side": -2,
+     "twist": 0
+    },
+    "neck_base": {
+     "pitch": -4,
+     "yaw": 0,
+     "roll": 0
+    },
+    "poll": {
+     "pitch": 2,
+     "yaw": 0,
+     "roll": 0
+    },
+    "tail": {
+     "lift": 0,
+     "swing": -2
+    },
+    "fore_l": {
+     "shoulder": 0,
+     "elbow": 0,
+     "carpus": 0,
+     "fetlock": 0,
+     "abd": 0
+    },
+    "fore_r": {
+     "shoulder": 0,
+     "elbow": 25,
+     "carpus": 80,
+     "fetlock": 25,
+     "abd": 0
+    },
+    "hind_l": {
+     "hip": -14,
+     "stifle": 0,
+     "hock": 0,
+     "fetlock": 0,
+     "abd": 0
+    },
+    "hind_r": {
+     "hip": 14,
+     "stifle": 0,
+     "hock": 0,
+     "fetlock": 0,
+     "abd": 0
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/walk-mid-stride-1.jpg",
+    "../../t1-paladin-claude/research/poses/refs/walk-mid-stride-3.jpg"
+   ],
+   "ref_notes": "walk-mid-stride-1: Muybridge walk drawing, -3: pony walking. Hoof pattern and fold read from them; joint swing built as a 70 percent stance duty cycle, so the angles are +/-15.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/walk-mid-stride-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Descriptive_Zoopraxography_046.jpg",
+     "credit": "Eadweard Muybridge via Wikimedia Commons",
+     "licence": "Public domain"
+    },
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/walk-mid-stride-3.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:M%C3%A9rens_au_pas,_au_mod%C3%A8le,_d%C3%A9tour%C3%A9.jpg",
+     "credit": "Tylwyth Eldar via Wikimedia Commons",
+     "licence": "CC BY-SA 4.0"
+    }
+   ],
+   "gait_phase": "walk"
+  },
+  {
+   "id": "walk-4",
+   "name": "Walk, phase 4 (LH swinging)",
+   "phase_of": "walk",
+   "description": "Four-beat walk, three hooves down and LH in mid swing. Stance limbs swing from forward to back, the swinging limb folds (carpus about 80, hock about 40), head nods with the stride. Phases 1 to 4 are a quarter cycle apart (beat order LH, LF, RH, RF).",
+   "support": [
+    "hoof_lf",
+    "hoof_rf",
+    "hoof_rh"
+   ],
+   "targets": {
+    "root": {
+     "pitch": 0,
+     "roll": 0,
+     "yaw": 0,
+     "lift": 0
+    },
+    "pelvis": {
+     "pitch": 0,
+     "roll": -2,
+     "yaw": 0
+    },
+    "spine": {
+     "flex": 0,
+     "side": 0,
+     "twist": 0
+    },
+    "neck_base": {
+     "pitch": 3,
+     "yaw": 0,
+     "roll": 0
+    },
+    "poll": {
+     "pitch": -2,
+     "yaw": 0,
+     "roll": 0
+    },
+    "tail": {
+     "lift": 0,
+     "swing": 0
+    },
+    "fore_l": {
+     "shoulder": -13,
+     "elbow": 0,
+     "carpus": 1,
+     "fetlock": 0,
+     "abd": 0
+    },
+    "fore_r": {
+     "shoulder": 13,
+     "elbow": 0,
+     "carpus": 0,
+     "fetlock": 0,
+     "abd": 0
+    },
+    "hind_l": {
+     "hip": 0,
+     "stifle": 15,
+     "hock": 40,
+     "fetlock": 20,
+     "abd": 0
+    },
+    "hind_r": {
+     "hip": 0,
+     "stifle": 0,
+     "hock": 0,
+     "fetlock": 0,
+     "abd": 0
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/walk-mid-stride-1.jpg",
+    "../../t1-paladin-claude/research/poses/refs/walk-mid-stride-3.jpg"
+   ],
+   "ref_notes": "walk-mid-stride-1: Muybridge walk drawing, -3: pony walking. Hoof pattern and fold read from them; joint swing built as a 70 percent stance duty cycle, so the angles are +/-15.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/walk-mid-stride-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Descriptive_Zoopraxography_046.jpg",
+     "credit": "Eadweard Muybridge via Wikimedia Commons",
+     "licence": "Public domain"
+    },
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/walk-mid-stride-3.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:M%C3%A9rens_au_pas,_au_mod%C3%A8le,_d%C3%A9tour%C3%A9.jpg",
+     "credit": "Tylwyth Eldar via Wikimedia Commons",
+     "licence": "CC BY-SA 4.0"
+    }
+   ],
+   "gait_phase": "walk"
+  },
+  {
+   "id": "trot-diag-1",
+   "name": "Trot, diagonal LF + RH down",
+   "phase_of": "trot",
+   "description": "Two-beat trot, left fore and right hind on the ground, the other diagonal mid-swing with folded carpus (70) and hock. Back level, head steady.",
+   "support": [
+    "hoof_lf",
+    "hoof_rh"
+   ],
+   "targets": {
+    "root": {
+     "pitch": 0,
+     "roll": 0,
+     "yaw": 0,
+     "lift": -0.01
+    },
+    "pelvis": {
+     "pitch": 0,
+     "roll": 0,
+     "yaw": 0
+    },
+    "spine": {
+     "flex": 0,
+     "side": 0,
+     "twist": 0
+    },
+    "neck_base": {
+     "pitch": 3,
+     "yaw": 0,
+     "roll": 0
+    },
+    "poll": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "tail": {
+     "lift": 0,
+     "swing": 0
+    },
+    "fore_l": {
+     "shoulder": 6,
+     "elbow": 0,
+     "carpus": 0,
+     "fetlock": 15,
+     "abd": 0
+    },
+    "fore_r": {
+     "shoulder": 20,
+     "elbow": 35,
+     "carpus": 70,
+     "fetlock": 15,
+     "abd": 0
+    },
+    "hind_l": {
+     "hip": 12,
+     "stifle": 25,
+     "hock": 45,
+     "fetlock": 15,
+     "abd": 0
+    },
+    "hind_r": {
+     "hip": 4,
+     "stifle": 10,
+     "hock": 10,
+     "fetlock": 10,
+     "abd": 0
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "refs/mount/trot-dressage-side.jpg",
+    "refs/mount/trot-suspension-basilick.jpg"
+   ],
+   "ref_notes": "trot-dressage-side: horse and rider at a collected trot, diagonal pair down. trot-suspension-basilick: free trot. Fold amounts from horse-gaits.md.",
+   "sources": [
+    {
+     "file": "refs/mount/trot-dressage-side.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Abram_Hall_Dressage_June_2011_(66a).jpg",
+     "credit": "John Harwood via Wikimedia Commons",
+     "licence": "CC BY 2.0"
+    },
+    {
+     "file": "refs/mount/trot-suspension-basilick.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Basilick_tersk.jpg",
+     "credit": "Елена Морева via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    }
+   ],
+   "gait_phase": "trot"
+  },
+  {
+   "id": "trot-diag-2",
+   "name": "Trot, diagonal RF + LH down",
+   "phase_of": "trot",
+   "description": "Mirror of diagonal 1: right fore and left hind on the ground, the other diagonal swinging.",
+   "support": [
+    "hoof_rf",
+    "hoof_lh"
+   ],
+   "targets": {
+    "root": {
+     "pitch": 0,
+     "roll": 0,
+     "yaw": 0,
+     "lift": -0.01
+    },
+    "pelvis": {
+     "pitch": 0,
+     "roll": 0,
+     "yaw": 0
+    },
+    "spine": {
+     "flex": 0,
+     "side": 0,
+     "twist": 0
+    },
+    "neck_base": {
+     "pitch": 3,
+     "yaw": 0,
+     "roll": 0
+    },
+    "poll": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "tail": {
+     "lift": 0,
+     "swing": 0
+    },
+    "fore_l": {
+     "shoulder": 20,
+     "elbow": 35,
+     "carpus": 70,
+     "fetlock": 15,
+     "abd": 0
+    },
+    "fore_r": {
+     "shoulder": 6,
+     "elbow": 0,
+     "carpus": 0,
+     "fetlock": 15,
+     "abd": 0
+    },
+    "hind_l": {
+     "hip": 4,
+     "stifle": 10,
+     "hock": 10,
+     "fetlock": 10,
+     "abd": 0
+    },
+    "hind_r": {
+     "hip": 12,
+     "stifle": 25,
+     "hock": 45,
+     "fetlock": 15,
+     "abd": 0
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "refs/mount/trot-dressage-side.jpg"
+   ],
+   "ref_notes": "Mirror of trot-diag-1.",
+   "sources": [
+    {
+     "file": "refs/mount/trot-dressage-side.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Abram_Hall_Dressage_June_2011_(66a).jpg",
+     "credit": "John Harwood via Wikimedia Commons",
+     "licence": "CC BY 2.0"
+    }
+   ],
+   "gait_phase": "trot"
+  },
+  {
+   "id": "trot-suspension",
+   "name": "Trot, suspension",
+   "phase_of": "trot",
+   "description": "All four hooves off the ground between diagonals: both carpi folded about 70, hocks about 70, elbows about 40, body lifted.",
+   "support": [],
+   "targets": {
+    "root": {
+     "pitch": 0,
+     "roll": 0,
+     "yaw": 0,
+     "lift": 0.04
+    },
+    "pelvis": {
+     "pitch": 0,
+     "roll": 0,
+     "yaw": 0
+    },
+    "spine": {
+     "flex": 0,
+     "side": 0,
+     "twist": 0
+    },
+    "neck_base": {
+     "pitch": 3,
+     "yaw": 0,
+     "roll": 0
+    },
+    "poll": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "tail": {
+     "lift": 0,
+     "swing": 0
+    },
+    "fore_l": {
+     "shoulder": 25,
+     "elbow": 30,
+     "carpus": 60,
+     "fetlock": 10,
+     "abd": 0
+    },
+    "fore_r": {
+     "shoulder": -5,
+     "elbow": 35,
+     "carpus": 70,
+     "fetlock": 5,
+     "abd": 0
+    },
+    "hind_l": {
+     "hip": 15,
+     "stifle": 15,
+     "hock": 40,
+     "fetlock": 0,
+     "abd": 0
+    },
+    "hind_r": {
+     "hip": -10,
+     "stifle": 20,
+     "hock": 40,
+     "fetlock": 5,
+     "abd": 0
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "refs/mount/trot-suspension-basilick.jpg"
+   ],
+   "ref_notes": "trot-suspension-basilick: horse in the airborne phase of a trot, carpi folded.",
+   "sources": [
+    {
+     "file": "refs/mount/trot-suspension-basilick.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Basilick_tersk.jpg",
+     "credit": "Елена Морева via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    }
+   ],
+   "gait_phase": "trot"
+  },
+  {
+   "id": "canter-gathered",
+   "name": "Canter, right lead, gathered",
+   "phase_of": "canter",
+   "description": "Three-beat canter at the point the left fore and right hind are down and the leading right fore is reaching; left hind just lifted. Neck up, head up.",
+   "support": [
+    "hoof_lf",
+    "hoof_rh"
+   ],
+   "targets": {
+    "root": {
+     "pitch": 4,
+     "roll": 0,
+     "yaw": 0,
+     "lift": 0
+    },
+    "pelvis": {
+     "pitch": 4,
+     "roll": 0,
+     "yaw": 0
+    },
+    "spine": {
+     "flex": 3,
+     "side": 0,
+     "twist": 0
+    },
+    "neck_base": {
+     "pitch": 3,
+     "yaw": 0,
+     "roll": 0
+    },
+    "poll": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "tail": {
+     "lift": 8,
+     "swing": 0
+    },
+    "fore_l": {
+     "shoulder": 4,
+     "elbow": 5,
+     "carpus": 0,
+     "fetlock": 20,
+     "abd": 0
+    },
+    "fore_r": {
+     "shoulder": 30,
+     "elbow": 15,
+     "carpus": 20,
+     "fetlock": 5,
+     "abd": 0
+    },
+    "hind_l": {
+     "hip": 5,
+     "stifle": 15,
+     "hock": 25,
+     "fetlock": 10,
+     "abd": 0
+    },
+    "hind_r": {
+     "hip": 6,
+     "stifle": 15,
+     "hock": 20,
+     "fetlock": 15,
+     "abd": 0
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/gallop-gathered-2.jpg"
+   ],
+   "ref_notes": "horse-gaits.md canter phase (by eye, +/-15). gallop-gathered-2 shows a similar bunched phase, used for the leg group only; no cantering still was kept.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/gallop-gathered-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Marbach_Schwarzw%C3%A4lder_Galopp.jpg",
+     "credit": "Xocolatl (talk) 22:02, 2 June 2012 (UTC) via Wikimedia Commons",
+     "licence": "CC0"
+    }
+   ],
+   "gait_phase": "canter"
+  },
+  {
+   "id": "canter-extended",
+   "name": "Canter, right lead, leading fore landing",
+   "phase_of": "canter",
+   "description": "The leading right fore reaches forward and takes the weight alone, left fore swinging folded, both hind legs swinging forward under the body.",
+   "support": [
+    "hoof_rf"
+   ],
+   "targets": {
+    "root": {
+     "pitch": -3,
+     "roll": 0,
+     "yaw": 0,
+     "lift": 0.01
+    },
+    "pelvis": {
+     "pitch": -4,
+     "roll": 0,
+     "yaw": 0
+    },
+    "spine": {
+     "flex": -3,
+     "side": 0,
+     "twist": 0
+    },
+    "neck_base": {
+     "pitch": -3,
+     "yaw": 0,
+     "roll": 0
+    },
+    "poll": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "tail": {
+     "lift": 8,
+     "swing": 0
+    },
+    "fore_l": {
+     "shoulder": 10,
+     "elbow": 20,
+     "carpus": 50,
+     "fetlock": 10,
+     "abd": 0
+    },
+    "fore_r": {
+     "shoulder": 25,
+     "elbow": 0,
+     "carpus": 0,
+     "fetlock": 10,
+     "abd": 0
+    },
+    "hind_l": {
+     "hip": 20,
+     "stifle": 30,
+     "hock": 50,
+     "fetlock": 15,
+     "abd": 0
+    },
+    "hind_r": {
+     "hip": 15,
+     "stifle": 25,
+     "hock": 40,
+     "fetlock": 10,
+     "abd": 0
+    }
+   },
+   "confidence": "designed",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/gallop-extended-3.jpg"
+   ],
+   "ref_notes": "Built from the canter notes; no canter-specific reference.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/gallop-extended-3.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Muybridge_horse_gallop.jpg",
+     "credit": "Eadweard Muybridge via Wikimedia Commons",
+     "licence": "Public domain"
+    }
+   ],
+   "gait_phase": "canter"
+  },
+  {
+   "id": "canter-suspension",
+   "name": "Canter, suspension",
+   "phase_of": "canter",
+   "description": "All four feet off the ground after the leading fore leaves; legs gathered under the body, back arched.",
+   "support": [],
+   "targets": {
+    "root": {
+     "pitch": 2,
+     "roll": 0,
+     "yaw": 0,
+     "lift": 0.05
+    },
+    "pelvis": {
+     "pitch": 4,
+     "roll": 0,
+     "yaw": 0
+    },
+    "spine": {
+     "flex": 6,
+     "side": 0,
+     "twist": 0
+    },
+    "neck_base": {
+     "pitch": -2,
+     "yaw": 0,
+     "roll": 0
+    },
+    "poll": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "tail": {
+     "lift": 10,
+     "swing": 0
+    },
+    "fore_l": {
+     "shoulder": 15,
+     "elbow": 40,
+     "carpus": 85,
+     "fetlock": 35,
+     "abd": 0
+    },
+    "fore_r": {
+     "shoulder": 12,
+     "elbow": 35,
+     "carpus": 70,
+     "fetlock": 30,
+     "abd": 0
+    },
+    "hind_l": {
+     "hip": 30,
+     "stifle": 40,
+     "hock": 55,
+     "fetlock": 30,
+     "abd": 0
+    },
+    "hind_r": {
+     "hip": 25,
+     "stifle": 35,
+     "hock": 50,
+     "fetlock": 25,
+     "abd": 0
+    }
+   },
+   "confidence": "designed",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/gallop-gathered-3.jpg"
+   ],
+   "ref_notes": "Reduced version of the gallop gathered suspension; no canter reference.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/gallop-gathered-3.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Muybridge_horse_gallop.jpg",
+     "credit": "Eadweard Muybridge via Wikimedia Commons",
+     "licence": "Public domain"
+    }
+   ],
+   "gait_phase": "canter"
+  },
+  {
+   "id": "gallop-gathered",
+   "name": "Gallop, gathered suspension",
+   "phase_of": "gallop",
+   "description": "All feet off the ground, legs bunched under the body: carpi about 110 bent, hocks 90, elbows 70, stifles 80, back arched, neck lower than at rest.",
+   "support": [],
+   "targets": {
+    "root": {
+     "pitch": 0,
+     "roll": 0,
+     "yaw": 0,
+     "lift": 0.06
+    },
+    "pelvis": {
+     "pitch": 6,
+     "roll": 0,
+     "yaw": 0
+    },
+    "spine": {
+     "flex": 8,
+     "side": 0,
+     "twist": 0
+    },
+    "neck_base": {
+     "pitch": -20,
+     "yaw": 0,
+     "roll": 0
+    },
+    "poll": {
+     "pitch": -5,
+     "yaw": 0,
+     "roll": 0
+    },
+    "tail": {
+     "lift": 12,
+     "swing": 0
+    },
+    "fore_l": {
+     "shoulder": 15,
+     "elbow": 65,
+     "carpus": 110,
+     "fetlock": 40,
+     "abd": 0
+    },
+    "fore_r": {
+     "shoulder": 20,
+     "elbow": 65,
+     "carpus": 105,
+     "fetlock": 38,
+     "abd": 0
+    },
+    "hind_l": {
+     "hip": 40,
+     "stifle": 45,
+     "hock": 60,
+     "fetlock": 35,
+     "abd": 0
+    },
+    "hind_r": {
+     "hip": 36,
+     "stifle": 45,
+     "hock": 58,
+     "fetlock": 33,
+     "abd": 0
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/gallop-gathered-1.jpg",
+    "../../t1-paladin-claude/research/poses/refs/gallop-gathered-3.jpg"
+   ],
+   "ref_notes": "gallop-gathered-1: Muybridge plate with jockey, legs under the belly. -3: Muybridge strip. Values converted from horse-gaits.md (absolute minus rest).",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/gallop-gathered-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:A_galloping_horse_and_rider._Plate_1_Wellcome_L0038057.jpg",
+     "credit": "Eadweard Muybridge and University of Pennsylvania (Wellcome Library, London) via Wikimedia Commons",
+     "licence": "CC BY 4.0"
+    },
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/gallop-gathered-3.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Muybridge_horse_gallop.jpg",
+     "credit": "Eadweard Muybridge via Wikimedia Commons",
+     "licence": "Public domain"
+    }
+   ],
+   "gait_phase": "gallop"
+  },
+  {
+   "id": "gallop-extended",
+   "name": "Gallop, extended suspension",
+   "phase_of": "gallop",
+   "description": "All feet off the ground, forelegs reaching forward and hind legs stretched back, body long and flat, neck low and nose forward.",
+   "support": [],
+   "targets": {
+    "root": {
+     "pitch": -2,
+     "roll": 0,
+     "yaw": 0,
+     "lift": 0.04
+    },
+    "pelvis": {
+     "pitch": -6,
+     "roll": 0,
+     "yaw": 0
+    },
+    "spine": {
+     "flex": -5,
+     "side": 0,
+     "twist": 0
+    },
+    "neck_base": {
+     "pitch": -30,
+     "yaw": 0,
+     "roll": 0
+    },
+    "poll": {
+     "pitch": -10,
+     "yaw": 0,
+     "roll": 0
+    },
+    "tail": {
+     "lift": 15,
+     "swing": 0
+    },
+    "fore_l": {
+     "shoulder": 35,
+     "elbow": 0,
+     "carpus": 10,
+     "fetlock": -5,
+     "abd": 0
+    },
+    "fore_r": {
+     "shoulder": 30,
+     "elbow": 0,
+     "carpus": 10,
+     "fetlock": -5,
+     "abd": 0
+    },
+    "hind_l": {
+     "hip": -30,
+     "stifle": -10,
+     "hock": -10,
+     "fetlock": -5,
+     "abd": 0
+    },
+    "hind_r": {
+     "hip": -26,
+     "stifle": -10,
+     "hock": -10,
+     "fetlock": -5,
+     "abd": 0
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/gallop-extended-1.jpg",
+    "../../t1-paladin-claude/research/poses/refs/gallop-extended-3.jpg"
+   ],
+   "ref_notes": "gallop-extended-1: Muybridge plate 6, legs spread front and back. -3: Muybridge strip. Converted from horse-gaits.md.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/gallop-extended-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:A_galloping_horse_and_rider._Plate_6_Wellcome_L0038062.jpg",
+     "credit": "Eadweard Muybridge and University of Pennsylvania (Wellcome Library, London) via Wikimedia Commons",
+     "licence": "CC BY 4.0"
+    },
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/gallop-extended-3.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Muybridge_horse_gallop.jpg",
+     "credit": "Eadweard Muybridge via Wikimedia Commons",
+     "licence": "Public domain"
+    }
+   ],
+   "gait_phase": "gallop"
+  },
+  {
+   "id": "rear",
+   "name": "Rear",
+   "description": "Forehand lifted about 45 up, weight on the hind legs: hocks and stifles bent under the body, forelegs folded high (carpus about 100), neck raised and head tucked, tail lifted. Rider balance pose for the Paladin.",
+   "support": [
+    "hoof_lh",
+    "hoof_rh"
+   ],
+   "targets": {
+    "root": {
+     "pitch": 45,
+     "roll": 0,
+     "yaw": 0,
+     "lift": 0.15
+    },
+    "pelvis": {
+     "pitch": 20,
+     "roll": 0,
+     "yaw": 0
+    },
+    "spine": {
+     "flex": 5,
+     "side": 0,
+     "twist": 0
+    },
+    "neck_base": {
+     "pitch": 10,
+     "yaw": 0,
+     "roll": 0
+    },
+    "poll": {
+     "pitch": 15,
+     "yaw": 0,
+     "roll": 0
+    },
+    "tail": {
+     "lift": 25,
+     "swing": 0
+    },
+    "fore_l": {
+     "shoulder": 40,
+     "elbow": 90,
+     "carpus": 100,
+     "fetlock": 30,
+     "abd": 0
+    },
+    "fore_r": {
+     "shoulder": 35,
+     "elbow": 85,
+     "carpus": 95,
+     "fetlock": 28,
+     "abd": 0
+    },
+    "hind_l": {
+     "hip": 25,
+     "stifle": 40,
+     "hock": 45,
+     "fetlock": 25,
+     "abd": 0
+    },
+    "hind_r": {
+     "hip": 25,
+     "stifle": 40,
+     "hock": 45,
+     "fetlock": 25,
+     "abd": 0
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "refs/mount/rear-rider-2009-115.jpg",
+    "refs/mount/rear-agew.jpg",
+    "refs/paladin/rear-balance-by-horse.jpg"
+   ],
+   "ref_notes": "rear-rider-2009-115 and rear-agew: horses at the top of a rear, forelegs folded, hocks under. rear-balance-by-horse: rear seen from the side with a rider. Body pitch 45 read by eye.",
+   "sources": [
+    {
+     "file": "refs/mount/rear-rider-2009-115.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:2009_115.jpg",
+     "credit": "RUET via Wikimedia Commons",
+     "licence": "CC0"
+    },
+    {
+     "file": "refs/mount/rear-agew.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Agew_horse_man.jpg",
+     "credit": "Mesh Shima via Wikimedia Commons",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "refs/paladin/rear-balance-by-horse.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:By_Horse_1.jpg",
+     "credit": "Mona Hassan Abo-Abda via Wikimedia Commons",
+     "licence": "CC BY-SA 4.0"
+    }
+   ],
+   "gait_phase": "rear"
+  },
+  {
+   "id": "sliding-halt",
+   "name": "Sliding halt",
+   "description": "Hind legs reach far forward under the body with hocks and stifles deeply bent (croup low), forelegs braced forward and straight, back slightly rounded, head up.",
+   "support": [
+    "hoof_lf",
+    "hoof_rf",
+    "hoof_lh",
+    "hoof_rh"
+   ],
+   "targets": {
+    "root": {
+     "pitch": 4,
+     "roll": 0,
+     "yaw": 0,
+     "lift": -0.05
+    },
+    "pelvis": {
+     "pitch": 28,
+     "roll": 0,
+     "yaw": 0
+    },
+    "spine": {
+     "flex": 6,
+     "side": 0,
+     "twist": 0
+    },
+    "neck_base": {
+     "pitch": 5,
+     "yaw": 0,
+     "roll": 0
+    },
+    "poll": {
+     "pitch": 10,
+     "yaw": 0,
+     "roll": 0
+    },
+    "tail": {
+     "lift": 10,
+     "swing": 0
+    },
+    "fore_l": {
+     "shoulder": 25,
+     "elbow": 5,
+     "carpus": 0,
+     "fetlock": 5,
+     "abd": 0
+    },
+    "fore_r": {
+     "shoulder": 25,
+     "elbow": 5,
+     "carpus": 0,
+     "fetlock": 5,
+     "abd": 0
+    },
+    "hind_l": {
+     "hip": 45,
+     "stifle": 50,
+     "hock": 45,
+     "fetlock": 15,
+     "abd": 0
+    },
+    "hind_r": {
+     "hip": 45,
+     "stifle": 50,
+     "hock": 45,
+     "fetlock": 15,
+     "abd": 0
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "refs/mount/sliding-stop-reining.jpg"
+   ],
+   "ref_notes": "sliding-stop-reining: reining horse mid slide, hocks under, forelegs braced. Hind reach by eye.",
+   "sources": [
+    {
+     "file": "refs/mount/sliding-stop-reining.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Reining_slidingstop.jpg",
+     "credit": "AllX via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    }
+   ],
+   "gait_phase": "slide"
+  },
+  {
+   "id": "sharp-turn",
+   "name": "Sharp turn to the left",
+   "description": "Body banks 10 into the turn and the spine bends 20 left; neck and head turn left; the right fore crosses in front of the left; hind quarters swing right.",
+   "support": [
+    "hoof_lf",
+    "hoof_lh",
+    "hoof_rh"
+   ],
+   "targets": {
+    "root": {
+     "pitch": 0,
+     "roll": 10,
+     "yaw": 20,
+     "lift": 0
+    },
+    "pelvis": {
+     "pitch": 0,
+     "roll": 4,
+     "yaw": 5
+    },
+    "spine": {
+     "flex": 0,
+     "side": 20,
+     "twist": 5
+    },
+    "neck_base": {
+     "pitch": 0,
+     "yaw": 25,
+     "roll": 0
+    },
+    "poll": {
+     "pitch": 0,
+     "yaw": 10,
+     "roll": 0
+    },
+    "tail": {
+     "lift": 0,
+     "swing": 10
+    },
+    "fore_l": {
+     "shoulder": 5,
+     "elbow": 0,
+     "carpus": 0,
+     "fetlock": 0,
+     "abd": 8
+    },
+    "fore_r": {
+     "shoulder": 20,
+     "elbow": 30,
+     "carpus": 40,
+     "fetlock": 15,
+     "abd": -12
+    },
+    "hind_l": {
+     "hip": 8,
+     "stifle": 10,
+     "hock": 10,
+     "fetlock": 5,
+     "abd": 5
+    },
+    "hind_r": {
+     "hip": -5,
+     "stifle": 5,
+     "hock": 5,
+     "fetlock": 5,
+     "abd": -8
+    }
+   },
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "No reference; built from the spine side-bend and the leg crossing described in the gait note.",
+   "sources": [],
+   "gait_phase": "turn"
+  },
+  {
+   "id": "head-down",
+   "name": "Head down",
+   "description": "Neck lowered about 35 below its rest line and the poll flexed so the nose points to the ground; grazing or sniffing. Weight steady, one fore a little forward.",
+   "support": [
+    "hoof_lf",
+    "hoof_rf",
+    "hoof_lh",
+    "hoof_rh"
+   ],
+   "targets": {
+    "root": {
+     "pitch": -3,
+     "roll": 0,
+     "yaw": 0,
+     "lift": 0
+    },
+    "pelvis": {
+     "pitch": 0,
+     "roll": 0,
+     "yaw": 0
+    },
+    "spine": {
+     "flex": -4,
+     "side": 0,
+     "twist": 0
+    },
+    "neck_base": {
+     "pitch": -35,
+     "yaw": 0,
+     "roll": 0
+    },
+    "poll": {
+     "pitch": 15,
+     "yaw": 0,
+     "roll": 0
+    },
+    "tail": {
+     "lift": 0,
+     "swing": 0
+    },
+    "fore_l": {
+     "shoulder": 6,
+     "elbow": 0,
+     "carpus": 0,
+     "fetlock": 0,
+     "abd": 0
+    },
+    "fore_r": {
+     "shoulder": 0,
+     "elbow": 0,
+     "carpus": 0,
+     "fetlock": 0,
+     "abd": 0
+    },
+    "hind_l": {
+     "hip": 0,
+     "stifle": 0,
+     "hock": 0,
+     "fetlock": 0,
+     "abd": 0
+    },
+    "hind_r": {
+     "hip": 0,
+     "stifle": 0,
+     "hock": 0,
+     "fetlock": 0,
+     "abd": 0
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "refs/mount/head-down-grazing.jpg"
+   ],
+   "ref_notes": "head-down-grazing: horse grazing at a distance, side view; neck drop read by eye.",
+   "sources": [
+    {
+     "file": "refs/mount/head-down-grazing.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Kencot_grazing_horse_West_Oxfordshire_England_01.jpg",
+     "credit": "Acabashi via Wikimedia Commons",
+     "licence": "CC BY-SA 4.0"
+    }
+   ],
+   "gait_phase": "stand"
+  },
+  {
+   "id": "head-up-alert",
+   "name": "Head up, alert",
+   "description": "Neck raised about 18 above rest, head lifted with the nose out, tail lifted slightly, weight back on the haunches, forelegs straight.",
+   "support": [
+    "hoof_lf",
+    "hoof_rf",
+    "hoof_lh",
+    "hoof_rh"
+   ],
+   "targets": {
+    "root": {
+     "pitch": 3,
+     "roll": 0,
+     "yaw": 0,
+     "lift": 0.005
+    },
+    "pelvis": {
+     "pitch": 3,
+     "roll": 0,
+     "yaw": 0
+    },
+    "spine": {
+     "flex": -2,
+     "side": 0,
+     "twist": 0
+    },
+    "neck_base": {
+     "pitch": 18,
+     "yaw": 0,
+     "roll": 0
+    },
+    "poll": {
+     "pitch": -5,
+     "yaw": 0,
+     "roll": 0
+    },
+    "tail": {
+     "lift": 30,
+     "swing": 0
+    },
+    "fore_l": {
+     "shoulder": 4,
+     "elbow": 0,
+     "carpus": 0,
+     "fetlock": 0,
+     "abd": 0
+    },
+    "fore_r": {
+     "shoulder": 0,
+     "elbow": 0,
+     "carpus": 0,
+     "fetlock": 0,
+     "abd": 0
+    },
+    "hind_l": {
+     "hip": 0,
+     "stifle": 3,
+     "hock": 5,
+     "fetlock": 3,
+     "abd": 0
+    },
+    "hind_r": {
+     "hip": 0,
+     "stifle": 3,
+     "hock": 5,
+     "fetlock": 3,
+     "abd": 0
+    }
+   },
+   "confidence": "designed",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/stand-square-1.jpg"
+   ],
+   "ref_notes": "Built from the square stand; no alert-head still kept.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/stand-square-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Cheval_lusitanien.JPG",
+     "credit": "hortense geninet via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    }
+   ],
+   "gait_phase": "stand"
+  },
+  {
+   "id": "stumble",
+   "name": "Hit reaction, stumble",
+   "description": "Left fore buckles (carpus about 95 bent), body pitches nose-down and sinks, right fore reaches to catch it, head thrown up, hind legs push.",
+   "support": [
+    "hoof_rf",
+    "hoof_lh",
+    "hoof_rh"
+   ],
+   "targets": {
+    "root": {
+     "pitch": -14,
+     "roll": 0,
+     "yaw": 0,
+     "lift": -0.09
+    },
+    "pelvis": {
+     "pitch": 6,
+     "roll": 0,
+     "yaw": 0
+    },
+    "spine": {
+     "flex": 10,
+     "side": 0,
+     "twist": 0
+    },
+    "neck_base": {
+     "pitch": 25,
+     "yaw": 0,
+     "roll": 0
+    },
+    "poll": {
+     "pitch": -10,
+     "yaw": 0,
+     "roll": 0
+    },
+    "tail": {
+     "lift": 20,
+     "swing": 0
+    },
+    "fore_l": {
+     "shoulder": 20,
+     "elbow": 20,
+     "carpus": 95,
+     "fetlock": 40,
+     "abd": 0
+    },
+    "fore_r": {
+     "shoulder": 30,
+     "elbow": 5,
+     "carpus": 10,
+     "fetlock": 10,
+     "abd": 0
+    },
+    "hind_l": {
+     "hip": -18,
+     "stifle": 10,
+     "hock": 10,
+     "fetlock": 5,
+     "abd": 0
+    },
+    "hind_r": {
+     "hip": -18,
+     "stifle": 10,
+     "hock": 10,
+     "fetlock": 5,
+     "abd": 0
+    }
+   },
+   "confidence": "designed",
+   "refs": [
+    "refs/mount/kneeling-horse-friese.jpg"
+   ],
+   "ref_notes": "kneeling-horse-friese shows the folded fore legs of a horse dropping to its knees (a trained kneel); used for the buckling carpus only. The rest is built from the limits.",
+   "sources": [
+    {
+     "file": "refs/mount/kneeling-horse-friese.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Bibi_Pferdemarkt_Friese_reiterlos_kniend.jpg",
+     "credit": "Xocolatl (talk) 23:48, 1 September 2013 (UTC) via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    }
+   ],
+   "gait_phase": "stumble"
+  },
+  {
+   "id": "lying",
+   "name": "Collapse, lying (sternal)",
+   "description": "Horse down on its chest and belly: forelegs folded under (carpus about 130), hind legs folded to the side (hock about 120), neck lowered and head low.",
+   "support": [
+    "chest",
+    "belly"
+   ],
+   "targets": {
+    "root": {
+     "pitch": -3,
+     "roll": 0,
+     "yaw": 0,
+     "lift": -0.52
+    },
+    "pelvis": {
+     "pitch": 0,
+     "roll": 0,
+     "yaw": 0
+    },
+    "spine": {
+     "flex": 4,
+     "side": 0,
+     "twist": 0
+    },
+    "neck_base": {
+     "pitch": -20,
+     "yaw": 0,
+     "roll": 0
+    },
+    "poll": {
+     "pitch": 10,
+     "yaw": 0,
+     "roll": 0
+    },
+    "tail": {
+     "lift": -10,
+     "swing": 0
+    },
+    "fore_l": {
+     "shoulder": 15,
+     "elbow": 100,
+     "carpus": 130,
+     "fetlock": 60,
+     "abd": 0
+    },
+    "fore_r": {
+     "shoulder": 15,
+     "elbow": 100,
+     "carpus": 130,
+     "fetlock": 60,
+     "abd": 0
+    },
+    "hind_l": {
+     "hip": 40,
+     "stifle": 90,
+     "hock": 120,
+     "fetlock": 50,
+     "abd": 0
+    },
+    "hind_r": {
+     "hip": 40,
+     "stifle": 90,
+     "hock": 120,
+     "fetlock": 50,
+     "abd": 0
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "refs/mount/kneeling-horse-friese.jpg"
+   ],
+   "ref_notes": "kneeling-horse-friese: horse down on its front knees and chest; hind fold and body drop (about half the withers height) built from the limits.",
+   "sources": [
+    {
+     "file": "refs/mount/kneeling-horse-friese.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Bibi_Pferdemarkt_Friese_reiterlos_kniend.jpg",
+     "credit": "Xocolatl (talk) 23:48, 1 September 2013 (UTC) via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    }
+   ],
+   "gait_phase": "down"
+  }
+ ]
+}

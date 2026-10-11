@@ -9,7 +9,8 @@
     "scripts/codemod-lucide-imports.mjs",
     "config/generated/**",
     "contracts/**",
-    "**/global.d.ts"
+    "**/global.d.ts",
+    ".claude/skills/**"
   ],
   "ignoreFiles": [
     "apps/amm-indexer/apibara.config.ts",

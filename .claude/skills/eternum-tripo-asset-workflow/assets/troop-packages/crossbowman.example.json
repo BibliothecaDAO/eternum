@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "family": "crossbowman",
+  "count": 1,
+  "requestedActions": ["idle", "walk", "run"],
+  "skin": {
+    "id": "synthetic-crossbowman-skin-example",
+    "family": "crossbowman",
+    "rigContract": "synthetic-humanoid-v1",
+    "armorMode": "integrated",
+    "capabilities": ["gripRight", "supportGripLeft", "lowerBackQuiver"]
+  },
+  "controller": {
+    "id": "synthetic-crossbowman-controller-example",
+    "family": "crossbowman",
+    "rigContract": "synthetic-humanoid-v1",
+    "supportedActions": ["idle", "walk", "run"],
+    "supportedMotionClasses": ["ranged", "supply"]
+  },
+  "items": {
+    "primary": {
+      "id": "synthetic-crossbow-example",
+      "family": "crossbowman",
+      "role": "crossbow",
+      "requiredCapabilities": ["gripRight", "supportGripLeft"],
+      "motionClass": "ranged"
+    },
+    "secondary": {
+      "id": "synthetic-bolt-quiver-example",
+      "family": "crossbowman",
+      "role": "quiver",
+      "requiredCapabilities": ["lowerBackQuiver"],
+      "motionClass": "supply"
+    }
+  }
+}

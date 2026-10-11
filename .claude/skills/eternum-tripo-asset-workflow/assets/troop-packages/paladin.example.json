@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "family": "paladin",
+  "count": 1,
+  "requestedActions": ["idle", "walk", "run", "attack"],
+  "skin": {
+    "id": "synthetic-paladin-rider-and-mount-example",
+    "family": "paladin",
+    "rigContract": "synthetic-mounted-v1",
+    "armorMode": "integrated",
+    "capabilities": ["gripRight", "forearmShieldLeft", "seat", "reinGripLeft", "stirrupLeft", "stirrupRight"]
+  },
+  "controller": {
+    "id": "synthetic-paladin-controller-example",
+    "family": "paladin",
+    "rigContract": "synthetic-mounted-v1",
+    "supportedActions": ["idle", "walk", "run", "attack"],
+    "supportedMotionClasses": ["melee", "guard"]
+  },
+  "items": {
+    "primary": {
+      "id": "synthetic-paladin-sword-example",
+      "family": "paladin",
+      "role": "weapon",
+      "requiredCapabilities": ["gripRight"],
+      "motionClass": "melee"
+    },
+    "secondary": {
+      "id": "synthetic-paladin-forearm-shield-example",
+      "family": "paladin",
+      "role": "shield",
+      "requiredCapabilities": ["forearmShieldLeft"],
+      "motionClass": "guard"
+    }
+  }
+}

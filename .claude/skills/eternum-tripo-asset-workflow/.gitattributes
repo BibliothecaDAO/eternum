@@ -1,0 +1,2 @@
+# the root .gitattributes treats every file as text; the template is a binary NumPy archive
+*.npz binary

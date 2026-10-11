@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 2,
+  "assetId": "replace-with-eternum-asset-id",
+  "runId": "YYYY-MM-DD-short-purpose",
+  "provider": "Tripo",
+  "approval": {
+    "providerAuthorized": false,
+    "inputPacketApproved": false,
+    "approvedBy": "replace-with-approver",
+    "approvedAt": "YYYY-MM-DD",
+    "candidateCap": 1,
+    "creditCap": null
+  },
+  "terms": {
+    "url": "https://www.tripo3d.ai/terms",
+    "retrievedAt": "YYYY-MM-DD",
+    "accountClass": "paid",
+    "evaluationOnlyAcknowledged": false
+  },
+  "request": {
+    "model": "tripo-v3.1",
+    "candidates": 1,
+    "seed": 314159,
+    "params": {
+      "texture": true,
+      "pbr": true,
+      "texture_quality": "extreme",
+      "texture_seed": 271828,
+      "auto_size": false,
+      "geometry_quality": "detailed"
+    },
+    "qualityIntent": "detailed-source-master"
+  },
+  "animation": {
+    "required": true,
+    "assetClass": "troop",
+    "rigType": "biped",
+    "canonicalSkeleton": null,
+    "bindPose": "Unobscured A-pose matching the approved component reference",
+    "rootMotion": "procedural",
+    "requiredSockets": [
+      "primary",
+      "secondary"
+    ],
+    "requiredClips": [],
+    "tripoDiagnostic": {
+      "runRigCheck": false,
+      "allowRigTask": false,
+      "allowRetarget": false,
+      "retargetPresets": [],
+      "creditCap": 0
+    },
+    "rigStatus": "pending"
+  },
+  "inputs": [
+    {
+      "role": "front",
+      "path": "generation/input/imagegen/replace-with-packet-id/front.png",
+      "creator": "Codex built-in ImageGen from a project-authored brief",
+      "license": "Project-approved generated source; see the ImageGen manifest",
+      "provenance": {
+        "kind": "openai-imagegen",
+        "manifest": "generation/input/imagegen/replace-with-packet-id/manifest.json"
+      }
+    },
+    {
+      "role": "back",
+      "path": "generation/input/imagegen/replace-with-packet-id/back.png",
+      "creator": "Codex built-in ImageGen from a project-authored brief",
+      "license": "Project-approved generated source; see the ImageGen manifest",
+      "provenance": {
+        "kind": "openai-imagegen",
+        "manifest": "generation/input/imagegen/replace-with-packet-id/manifest.json"
+      }
+    },
+    {
+      "role": "left",
+      "path": "generation/input/imagegen/replace-with-packet-id/left.png",
+      "creator": "Codex built-in ImageGen from a project-authored brief",
+      "license": "Project-approved generated source; see the ImageGen manifest",
+      "provenance": {
+        "kind": "openai-imagegen",
+        "manifest": "generation/input/imagegen/replace-with-packet-id/manifest.json"
+      }
+    }
+  ]
+}
