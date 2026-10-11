@@ -6,11 +6,7 @@ import { CallData, byteArray, hash, shortString } from "starknet";
 import { getContractArtifactPaths, readContractArtifacts } from "../../../../../scripts-runtime/js/artifacts.js";
 import { mergeJsonFile, writeJsonFile } from "../../../../../scripts-runtime/js/files.js";
 import { getAccount } from "../../../../../scripts-runtime/js/starknet.js";
-import {
-  buildLedgerEconomicPreset,
-  buildPlayerGameLedgerPreset,
-} from "../../../../../../config/deployer/clean/ledger/economics.ts";
-import { PLAYER_GAME_LEDGER_PRESET_ID } from "../../../../../../config/source/common/ledger-presets.ts";
+import { buildLedgerEconomicPreset } from "../../../../../../config/deployer/clean/ledger/economics.ts";
 import { buildMysteryChestPreset } from "../../chest-preset.js";
 import { frontierLedgerPresetId } from "./frontier.js";
 
@@ -140,12 +136,6 @@ export function buildSetupCalls(assets, settings) {
     call(assets.ledger, "register_preset", [
       frontierLedgerPresetId("sepolia", 5),
       buildLedgerEconomicPreset("frontier"),
-      chestPreset.bands,
-      chestPreset.items,
-    ]),
-    call(assets.ledger, "register_preset", [
-      PLAYER_GAME_LEDGER_PRESET_ID,
-      buildPlayerGameLedgerPreset("sepolia"),
       chestPreset.bands,
       chestPreset.items,
     ]),

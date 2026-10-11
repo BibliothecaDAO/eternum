@@ -1,8 +1,7 @@
 import {
-  buildPlayerGameLedgerPreset,
+  buildLedgerEconomicPreset,
   buildRegisterLedgerPresetCalldata,
 } from "../../../../../../config/deployer/clean/ledger/economics";
-import { PLAYER_GAME_LEDGER_PRESET_ID } from "../../../../../../config/source/common/ledger-presets";
 import { expect, test } from "bun:test";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -51,16 +50,21 @@ test("deployment settings need no shard or Frontier game inputs", () => {
   }
 });
 
-test("setup registers all presets and Blitz without funding or minting a Frontier pool", () => {
+test("setup registers exactly Blitz and Frontier and opens Blitz without funding a Frontier pool", () => {
   const calls = buildSetupCalls(assets, settings);
   const registrations = calls.filter((call) => call.entrypoint === "register_preset");
-  expect(registrations.map((call) => call.calldata[0])).toEqual(["1", "2", String(PLAYER_GAME_LEDGER_PRESET_ID)]);
-  const player = registrations[2]!;
-  expect(player.contractAddress).toBe(assets.ledger);
-  expect(player.calldata).toEqual(
-    buildRegisterLedgerPresetCalldata(PLAYER_GAME_LEDGER_PRESET_ID, buildPlayerGameLedgerPreset("sepolia")),
-  );
-  expect(player.calldata.slice(1, 3)).toEqual([String(10n ** 18n), "0"]);
+  expect(registrations).toEqual([
+    {
+      contractAddress: assets.ledger,
+      entrypoint: "register_preset",
+      calldata: buildRegisterLedgerPresetCalldata(1, buildLedgerEconomicPreset("blitz")),
+    },
+    {
+      contractAddress: assets.ledger,
+      entrypoint: "register_preset",
+      calldata: buildRegisterLedgerPresetCalldata(2, buildLedgerEconomicPreset("frontier")),
+    },
+  ]);
 
   expect(calls.some((call) => ["fund_frontier", "mint", "approve"].includes(call.entrypoint))).toBe(false);
   expect(calls.find((call) => call.entrypoint === "open_season")?.calldata).toEqual(["1", "1", "100", "200"]);

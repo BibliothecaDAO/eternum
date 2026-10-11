@@ -1,13 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { PLAYER_GAME_LEDGER_PRESET_ID } from "../../../source/common/ledger-presets";
 import { CallData } from "starknet";
 import ledgerAbi from "../../../../contracts/l2/ledger/schema/abi.json";
 import { buildMysteryChestPreset } from "../../../../contracts/l2/ledger/scripts/chest-preset.js";
-import {
-  buildLedgerEconomicPreset,
-  buildPlayerGameLedgerPreset,
-  buildRegisterLedgerPresetCalldata,
-} from "../ledger/economics";
+import { buildLedgerEconomicPreset, buildRegisterLedgerPresetCalldata } from "../ledger/economics";
 
 describe("ledger economics", () => {
   it("reads the same day unit as the shard's exact immutable preset", async () => {
@@ -59,31 +54,6 @@ describe("ledger economics", () => {
         codec.compile("register_preset", { preset_id: presetId, preset, bands: chest.bands, items: chest.items }),
       );
     }
-  });
-
-  it.each([
-    ["mainnet", 50n],
-    ["sepolia", 1n],
-  ] as const)("prices an unrated player seat on %s without paid flags or changes to ranked terms", (network, entry) => {
-    const ranked = buildLedgerEconomicPreset("blitz");
-    const player = buildPlayerGameLedgerPreset(network);
-    expect(player).toEqual({
-      ...ranked,
-      entry_fee: { low: `0x${(entry * 10n ** 18n).toString(16)}`, high: "0x0" },
-      sword_price: { low: "0x0", high: "0x0" },
-      shield_price: { low: "0x0", high: "0x0" },
-      mmr: { ...ranked.mmr, enabled: false },
-    });
-    expect(buildLedgerEconomicPreset("blitz")).toEqual(ranked);
-    const chest = buildMysteryChestPreset();
-    expect(buildRegisterLedgerPresetCalldata(PLAYER_GAME_LEDGER_PRESET_ID, player)).toEqual(
-      new CallData(ledgerAbi).compile("register_preset", {
-        preset_id: PLAYER_GAME_LEDGER_PRESET_ID,
-        preset: player,
-        bands: chest.bands,
-        items: chest.items,
-      }),
-    );
   });
 
   it("disables fees and MMR for Eternum without creating an invalid payout preset", () => {

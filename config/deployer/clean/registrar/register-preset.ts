@@ -1,5 +1,4 @@
 import { writeFileSync } from "node:fs";
-import { PLAYER_GAME_LEDGER_PRESET_ID } from "../../../source/common/ledger-presets";
 import { nativePresetForId } from "../../../source/native";
 import { buildNativePreset } from "../config/native-preset";
 import { RpcProvider } from "starknet";
@@ -9,11 +8,7 @@ import { assertProviderChain } from "@realms-world/chain";
 import { DEPLOYMENT_ENVIRONMENTS } from "../constants";
 import { isDeploymentEnvironmentId } from "../environment";
 import { createLedgerAdminAccount, registerLedgerPreset, type LedgerTarget } from "../ledger/calls";
-import {
-  buildLedgerEconomicPreset,
-  buildPlayerGameLedgerPreset,
-  buildRegisterLedgerPresetCalldata,
-} from "../ledger/economics";
+import { buildLedgerEconomicPreset, buildRegisterLedgerPresetCalldata } from "../ledger/economics";
 import { resolveAccountCredentials } from "../shared/credentials";
 import { requireRpcUrl } from "../shared/rpc";
 import type { DeploymentEnvironmentId } from "../types";
@@ -77,24 +72,15 @@ export async function registerEnvironmentPreset(options: RegisterPresetOptions):
   const config = loadNativePresetConfiguration(options.environmentId, options.presetId);
   const registration = buildRegistration(config, options);
   const { calldata } = registration;
-  const gameType = nativePresetForId(options.presetId).gameType;
-  const ledgerPresets = [
-    {
-      presetId: options.presetId,
-      preset: buildLedgerEconomicPreset(gameType, { presetId: options.presetId }),
-    },
-  ];
-  if (gameType === "blitz")
-    ledgerPresets.push({ presetId: PLAYER_GAME_LEDGER_PRESET_ID, preset: buildPlayerGameLedgerPreset("mainnet") });
+  const ledgerPreset = buildLedgerEconomicPreset(nativePresetForId(options.presetId).gameType, {
+    presetId: options.presetId,
+  });
   const summary = {
     presetId: options.presetId,
     calldataLength: calldata.length,
     ...registration.summary,
     calldata,
-    ledgerPresets: ledgerPresets.map(({ presetId, preset }) => ({
-      presetId,
-      calldata: buildRegisterLedgerPresetCalldata(presetId, preset),
-    })),
+    ledgerCalldata: buildRegisterLedgerPresetCalldata(options.presetId, ledgerPreset),
   };
 
   if (options.dryRun) {
@@ -130,14 +116,12 @@ export async function registerEnvironmentPreset(options: RegisterPresetOptions):
     return;
   }
   const ledgerAccount = createLedgerAdminAccount(ledgerTarget, "mainnet ledger preset registration");
-  for (const { presetId, preset } of ledgerPresets) {
-    const ledgerResult = await registerLedgerPreset(ledgerAccount, ledgerTarget, presetId, preset);
-    console.log(
-      ledgerResult
-        ? `Registered ledger preset ${presetId}: ${ledgerResult.transactionHash}`
-        : `Ledger preset ${presetId} is already registered; skipping.`,
-    );
-  }
+  const ledgerResult = await registerLedgerPreset(ledgerAccount, ledgerTarget, options.presetId, ledgerPreset);
+  console.log(
+    ledgerResult
+      ? `Registered ledger preset ${options.presetId}: ${ledgerResult.transactionHash}`
+      : `Ledger preset ${options.presetId} is already registered; skipping.`,
+  );
 }
 
 /** Record the commitment the chain now holds for the preset, read back rather than assumed. */

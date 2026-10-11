@@ -63,17 +63,6 @@ export function buildLedgerEconomicPreset(
   };
 }
 
-export function buildPlayerGameLedgerPreset(network: "mainnet" | "sepolia"): LedgerEconomicPreset {
-  const preset = buildLedgerEconomicPreset("blitz");
-  return {
-    ...preset,
-    entry_fee: lords(network === "mainnet" ? 50n : 1n),
-    sword_price: lords(0n),
-    shield_price: lords(0n),
-    mmr: { ...preset.mmr, enabled: false },
-  };
-}
-
 export function buildRegisterLedgerPresetCalldata(
   presetId: number,
   preset: LedgerEconomicPreset,

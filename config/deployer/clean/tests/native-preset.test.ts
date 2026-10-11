@@ -1,5 +1,5 @@
 import { registerEnvironmentPreset } from "../registrar/register-preset";
-import { PLAYER_GAME_LEDGER_PRESET_ID } from "../../../source/common/ledger-presets";
+import { buildLedgerEconomicPreset, buildRegisterLedgerPresetCalldata } from "../ledger/economics";
 import { blitzRosterOf, findRegistrarGame } from "../registrar/calls";
 import { seasonSeconds } from "@bibliothecadao/eternum";
 import { frontierPreset } from "../../../source/frontier/native";
@@ -56,7 +56,7 @@ function configuration(preset: number) {
 }
 
 describe("native presets", () => {
-  test("the mainnet deployment plan registers player terms with Blitz only", async () => {
+  test("the mainnet deployment plan registers only the selected economic preset", async () => {
     const log = spyOn(console, "log").mockImplementation(() => {});
     try {
       for (const [presetId, environmentId] of [
@@ -67,16 +67,12 @@ describe("native presets", () => {
         log.mockClear();
         await registerEnvironmentPreset({ presetId, environmentId, dryRun: true, nativeManifest: manifestPath });
         const summary = JSON.parse(String(log.mock.calls[0]![0]));
-        const entries = summary.ledgerPresets as { presetId: number; calldata: string[] }[];
-        expect(entries.map((entry) => entry.presetId)).toEqual(
-          presetId === 2 ? [2, PLAYER_GAME_LEDGER_PRESET_ID] : [presetId],
+        expect(summary.ledgerCalldata).toEqual(
+          buildRegisterLedgerPresetCalldata(
+            presetId,
+            buildLedgerEconomicPreset(nativePresets[presetId]!.gameType, { presetId }),
+          ),
         );
-        if (presetId === 2)
-          expect(entries[1]!.calldata.slice(0, 3)).toEqual([
-            String(PLAYER_GAME_LEDGER_PRESET_ID),
-            String(50n * 10n ** 18n),
-            "0",
-          ]);
       }
     } finally {
       log.mockRestore();
