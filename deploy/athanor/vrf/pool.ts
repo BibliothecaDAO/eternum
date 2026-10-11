@@ -49,6 +49,7 @@ function startLane(keyFile: string, identity: PlayIdentity, finish: () => void, 
       event.preventDefault();
       failed();
     };
+    worker.addEventListener("close", failed);
     worker.onmessage = (event) => {
       const message = event.data;
       if (!lane.ready) {
@@ -111,6 +112,7 @@ export async function startStampPool(
     }
   }
   function workerFailed(wasReady: boolean) {
+    if (closed) return;
     close();
     // The supervisor owns recovery; a live process must never serve a dead pool.
     if (wasReady) process.exit(1);
