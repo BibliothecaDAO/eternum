@@ -109,7 +109,9 @@ jobs:
           for name in $names; do
             [ -n "${!name}" ] || { echo "::error::$name is not set for the $TARGET environment"; exit 1; }
           done
-          names="$names DISCORD_CLIENT_ID DISCORD_CLIENT_SECRET"
+          if [ -n "$DISCORD_CLIENT_ID" ] && [ -n "$DISCORD_CLIENT_SECRET" ]; then
+            names="$names DISCORD_CLIENT_ID DISCORD_CLIENT_SECRET"
+          fi
           jq -n --arg names "$names" 'env as $env | $names | split(" ") | map({(.): $env[.]}) | add' |
             pnpm exec wrangler secret bulk --env "$TARGET"
 
