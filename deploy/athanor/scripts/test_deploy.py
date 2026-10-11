@@ -98,11 +98,14 @@ class InputsTest(unittest.TestCase):
             git("init", "-q")
             environments = root / "deploy/release"
             environments.mkdir(parents=True)
+            table = root / "deploy/first/environments.json"
+            table.parent.mkdir(parents=True)
+            table.write_text(json.dumps({"dev": {"release": "staging", "origin": "https://identity.test"}}))
             inputs = environments / "staging.json"
             with patch.object(deploy.shard, "ROOT", root), patch.object(deploy, "ENVIRONMENTS", environments):
                 with self.assertRaisesRegex(ValueError, "deploy/release/staging.json is not committed"):
                     deploy.load_inputs("staging")
-                inputs.write_text(json.dumps(self.INPUTS))
+                inputs.write_text(json.dumps({key: value for key, value in self.INPUTS.items() if key != "guardian_url"}))
                 with self.assertRaisesRegex(ValueError, "is not committed"):
                     deploy.load_inputs("staging")
                 git("add", "deploy/release/staging.json")

@@ -1,8 +1,6 @@
 import { registerEnvironmentPreset } from "../registrar/register-preset";
 import { buildLedgerEconomicPreset, buildRegisterLedgerPresetCalldata } from "../ledger/economics";
 import { blitzRosterOf, findRegistrarGame } from "../registrar/calls";
-import { seasonSeconds } from "@bibliothecadao/eternum";
-import { frontierPreset } from "../../../source/frontier/native";
 import { nativePresets } from "../../../source/native";
 import { afterAll, describe, expect, test, mock, spyOn } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -101,7 +99,7 @@ describe("native presets", () => {
     }
     for (const id of [2, 3, 4]) expect(buildNativePreset(configuration(id), id).economy.labor.isNone()).toBe(true);
   });
-  test("Frontier caps daily chest prices at 50 per share over a seventy-day season", () => {
+  test("Frontier caps daily chest prices without supplying a season duration", () => {
     const config = loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID);
     const preset = buildNativePreset(config, FRONTIER_PRESET_ID);
     expect(preset.economy.chests.unwrap()).toEqual({
@@ -115,7 +113,7 @@ describe("native presets", () => {
       [3000, 3000, 2200, 1200, 600],
       [2000, 3000, 2500, 1600, 900],
     ]);
-    expect(config.season.durationSeconds).toBe(seasonSeconds(frontierPreset.seasonBags, frontierPreset.dayUnitSeconds));
+    expect(config.season.durationSeconds).toBe(0);
   });
 
   test("every preset supplies its cooldown explicitly, independent of the stamina clock", () => {
@@ -650,24 +648,15 @@ describe("fixed Regular Blitz rosters", () => {
 });
 
 describe("scaled Frontier presets", () => {
-  const launchedSeconds = (presetId: number) =>
-    applyDeploymentConfigOverrides(loadNativePresetConfiguration("madara.frontier", presetId), {
-      startMainAt: 1_800_000_000,
-      factoryAddress: "",
-    }).season.durationSeconds;
-  const dayUnitSeconds = (presetId: number) =>
-    buildNativePreset(loadNativePresetConfiguration("madara.frontier", presetId), presetId).rules.day_unit_seconds;
-
-  test("an accelerated launch lasts 21 bags of its 120 s units: 14 hours", () => {
-    expect(dayUnitSeconds(FRONTIER_ACCELERATED_PRESET_ID)).toBe(120);
-    expect(launchedSeconds(FRONTIER_ACCELERATED_PRESET_ID)).toBe(14 * 3_600);
-    expect(launchedSeconds(FRONTIER_PRESET_ID)).toBe(10 * 7 * 86_400);
-  });
-
-  test("every scaled preset keeps its mode's season length in day units", () => {
-    const units = launchedSeconds(FRONTIER_PRESET_ID) / dayUnitSeconds(FRONTIER_PRESET_ID);
-    expect(launchedSeconds(FRONTIER_ACCELERATED_PRESET_ID) / dayUnitSeconds(FRONTIER_ACCELERATED_PRESET_ID)).toBe(
-      units,
-    );
+  test("all Frontier modes require the operator's duration and retain their own day unit", () => {
+    for (const presetId of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID]) {
+      const config = loadNativePresetConfiguration("madara.frontier", presetId);
+      expect(config.season.durationSeconds).toBe(0);
+      const durationSeconds = 40 * buildNativePreset(config, presetId).rules.day_unit_seconds;
+      expect(
+        applyDeploymentConfigOverrides(config, { startMainAt: 1800000000, factoryAddress: "", durationSeconds }).season
+          .durationSeconds,
+      ).toBe(durationSeconds);
+    }
   });
 });

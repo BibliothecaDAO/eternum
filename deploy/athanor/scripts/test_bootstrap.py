@@ -7,7 +7,7 @@ BOOTSTRAP = Path(__file__).resolve().parents[1] / "host/bootstrap.sh"
 
 
 def run_bootstrap(script, operator=None):
-    environment = {key: value for key, value in os.environ.items() if key != "OPERATOR"}
+    environment = {key: value for key, value in os.environ.items() if key not in ("OPERATOR", "SUDO_USER")}
     if operator:
         environment["OPERATOR"] = operator
     return subprocess.run(["bash", "-c", script, "bootstrap-test", str(BOOTSTRAP)],
@@ -18,7 +18,12 @@ class BootstrapTests(unittest.TestCase):
     def test_bootstrap_refuses_missing_operator_before_any_host_change(self):
         result = run_bootstrap('source "$1"; main')
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("Name the operator account", result.stderr)
+        self.assertIn("Run through sudo", result.stderr)
+
+    def test_bootstrap_defaults_to_the_user_who_invoked_sudo(self):
+        result = run_bootstrap('source "$1"; SUDO_USER=hostowner; id() { echo 1000; }; main')
+        self.assertIn("Run as root", result.stderr)
+        self.assertNotIn("Run through sudo", result.stderr)
 
     def test_bootstrap_refuses_non_root_before_installing(self):
         result = run_bootstrap('source "$1"; id() { echo 1000; }; main', "operator")

@@ -57,6 +57,9 @@ jobs:
           pnpm exec tsc -p deploy/athanor/tsconfig.json
           pnpm exec tsc -p config/tsconfig.json --noEmit
       # The directory form: a bare "config" would match every test path containing the word.
+      - name: Test resumable first deployment without live services
+        run: bun test deploy/first/*.test.ts
+
       - name: Test native deployment, the registrar and the config source
         run: bun test ./config
       - name: Check the public RPC boundary

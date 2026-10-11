@@ -6,10 +6,7 @@ import { duelBalance } from "./balance";
 
 export const duelPreset: NativePreset = {
   ledger: {
-    entryFee: 500,
     protocolCutBps: 2000,
-    swordPrice: 500,
-    shieldPrice: 500,
     mmrEnabled: true,
   },
   bitcoinEnabled: false,
@@ -32,7 +29,6 @@ export const duelPreset: NativePreset = {
   commandMask: arenaCommandMask,
   spacing: 8,
   dayUnitSeconds: 0,
-  seasonBags: 0,
   progression: null,
   discovery: null,
   labor: null,

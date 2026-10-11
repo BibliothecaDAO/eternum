@@ -1,6 +1,5 @@
 #!/usr/bin/env bun
 import { CallData, RpcProvider, type Account, type Abi } from "starknet";
-import { getAccount } from "../../../../../scripts-runtime/js/starknet.js";
 import { environmentL2, valuePlaneAddress } from "../../../../../../packages/chain/src/value-plane";
 import { readShardManifest } from "../../../../../../packages/chain/shard-manifest.js";
 import { assertProviderChain } from "../../../../../../packages/chain/chain-guard.js";
@@ -17,7 +16,12 @@ import { buildFrontierFundingCalls, frontierLedgerPresetId } from "./frontier.js
 import { readConfirmedSnapshot, singleRow } from "../../../../../../apps/value-relay/src/shard-snapshot";
 import type { ShardConnection } from "../../../../../../apps/value-relay/src/shard-rpc";
 
-async function readFrontierGame(provider: RpcProvider, shard: ShardConnection, heraldUrl: string, gameId: number) {
+export async function readFrontierGame(
+  provider: RpcProvider,
+  shard: ShardConnection,
+  heraldUrl: string,
+  gameId: number,
+) {
   if (!Number.isInteger(gameId) || gameId <= 0 || gameId > 0xffffffff) throw new Error("Invalid shard game id");
   await assertProviderChain(provider, { shard: { chainId: shard.chainId } }, "RPC_URL");
   const snapshot = await readConfirmedSnapshot(shard, heraldUrl, gameId, ["GameRegistry", "ChestRules", "SliceRules"]);
@@ -95,6 +99,7 @@ export async function fundFrontier(
       frontierSeasonId: gameId,
       presetId,
       start: native.start,
+      end: native.end,
       seed: native.seed,
       pool,
     }),
@@ -126,6 +131,7 @@ function fundingTarget(environment: "dev" | "production") {
 }
 
 async function main() {
+  const { getAccount } = await import("../../../../../scripts-runtime/js/starknet.js");
   const [environment, gameId, amount] = process.argv.slice(2);
   if ((environment !== "dev" && environment !== "production") || !gameId || !amount || process.argv.length !== 5)
     throw new Error("Usage: fund:frontier <dev|production> <game-id> <whole-lords>");

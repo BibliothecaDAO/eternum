@@ -110,54 +110,15 @@ Clients read `lords()` and `chest_collection()` from the ledger before balance, 
 These public views return the constructor's addresses on every network, including while paused; a mainnet token address
 is not a rehearsal dependency.
 
-## Deploy once, fund each Frontier game separately
+## First deployment
 
-The dev deployment is `scripts/commands/deployment/dev.js`. It requires `ENVIRONMENT=staging` and Starknet mainnet
-(`SN_MAIN`). It deploys the publicly mintable **devLords** (symbol `devLords`, a test token with no value), a fresh test
-rating token, two test collectible collections and a separate dev ledger. It never uses production LORDS or the
-production rating/collection contracts. As soon as all five contracts exist, it writes
-`contracts/l2/ledger/target/dev-deployment.json` and merges `l2Chain`, `ledger`, `lords` (the devLords address),
-`mmrToken`, `lootChests` and `cosmetics` into `contracts/common/addresses/dev.json`. It preserves the real mainnet
-`realms` collection and unrelated keys. Production's `mainnet.json` is untouched.
+Use the single [first deployment command](../../../deploy/first/README.md) for dev or production. It defaults to a
+read-only dry run, creates the owner's three accounts, resumes fixed-address deployments and setup, and continues
+through the shard, Workers, client and funded season. Its README is the deployment procedure. Dev uses test tokens on
+Starknet mainnet; only public addresses enter `contracts/common/addresses/dev.json`.
 
-The chest and cosmetics constructors receive `devChest` and `devCosmetics` as both name and symbol. The fresh rating
-token is the devMMR deployment in the book's `mmrToken` field, but its onchain metadata remains `Blitz MMR` / `MMR`:
-`MMRToken` fixes those getters and takes no constructor name. Production also uses that contract, so its source is
-unchanged. Identify devMMR by its dev-book address, not by its onchain name. The manifest survives a later setup
-failure; inspect the receipt and these existing contracts before any redeployment. There is no automatic resume or
-redeployment on failure.
-
-Setup grants updater/minter/pauser roles, configures metadata, registers Blitz (1) and Frontier (2) presets, and opens
-Blitz season 1. Deployment neither reads nor funds a Frontier game. Its only season window is the separate Blitz
-season's existing start/end inputs; no Frontier clock, seed, pool or shard is a deployment input.
-
-All three value-plane packages (ledger, MMR and collectibles) build with **Scarb 2.13.1** and test with **Starknet
-Foundry 0.51.2**. All three packages and collectible CI use the root `.tool-versions`. Select those versions on `PATH`
-(`scarb --version`, `snforge --version`) before building. The ledger suite declares the production `RealmsCollectible`
-class from its path dependency, including its metadata and minter-role checks. Deployment validation runs
-`snforge test --release` in both the ledger and collectible packages.
-
-Build the three release artifact sets before deployment:
-
-```sh
-(cd contracts/l2/ledger && flock /tmp/eternum-scarb.lock scarb --release build)
-(cd contracts/l2/mmr && flock /tmp/eternum-scarb.lock scarb --release build)
-(cd contracts/l2/collectibles && flock /tmp/eternum-scarb.lock scarb --release build)
-```
-
-For deployment supply `ENVIRONMENT=staging`, `DEV_RPC_URL` (mainnet), `DEV_ACCOUNT_ADDRESS`, `DEV_ACCOUNT_PRIVATE_KEY`,
-`DEV_OPERATOR_ADDRESS`, `DEV_PAUSER_ADDRESS`, `DEV_SEASON_START`, `DEV_SEASON_END` (the **Blitz** window, Unix seconds),
-`DEV_CHEST_BAND_1_CID` through `DEV_CHEST_BAND_5_CID`, and `DEV_COSMETIC_CID`. `DEV_OPERATOR_ADDRESS` is the relay's
-mainnet account; `DEV_PAUSER_ADDRESS` is the monitor's separate mainnet account. Blitz's `open_season` enforces its own
-valid window on chain. Run only with the owner's deployment authorization:
-
-```sh
-ENVIRONMENT=staging pnpm --dir contracts/l2/ledger/scripts deploy:dev
-```
-
-Review and commit the public address-book changes, then rebuild/redeploy services and client. Identity reads this
-`mmrToken` and the existing `realms` address from the same book; its rating-history source must describe that rating
-deployment. The manifest's `seasonId: 1` refers only to Blitz.
+All three value-plane packages use the root Scarb 2.13.1 and Starknet Foundry 0.51.2 pins. The command builds them on
+the box under its shared lock. The ledger tests declare the production collectible implementation.
 
 ### Fund a Frontier season
 
@@ -210,12 +171,12 @@ test chest share and curve numbers are presets for rehearsal, not approved produ
 
 devLords has no value and cannot pay network fees. Fund these accounts with **real mainnet STRK** before use:
 
-| Account/key                                                                                                                                      | What needs STRK                                                                                                                                                                      |
-| ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Dev deployer/admin (`DEV_ACCOUNT_ADDRESS` / `DEV_ACCOUNT_PRIVATE_KEY`; funding uses `STARKNET_ACCOUNT_ADDRESS` / `STARKNET_ACCOUNT_PRIVATE_KEY`) | Declares and deploys five contracts, sets roles/metadata/presets, opens the Blitz season, mints the dev pool and submits approval plus funding.                                      |
-| Relay L2 signer (`LEDGER_OPERATOR_ADDRESS` / `LEDGER_OPERATOR_PRIVATE_KEY`, matching `DEV_OPERATOR_ADDRESS`)                                     | Opens/refunds Blitz slots, reports/pays withdrawals, settles results, posts season tops and finishes chests on mainnet.                                                              |
-| Monitor L2 signer (`PAUSER_ACCOUNT_ADDRESS` / `PAUSER_PRIVATE_KEY`, matching `DEV_PAUSER_ADDRESS`)                                               | Sends a pause for a proven mismatch and challenges an incorrect season top. Reads require RPC access, not transaction gas.                                                           |
-| Launch Worker signer (`LAUNCH_DEPLOYER_PRIVATE_KEY`)                                                                                             | No mainnet STRK for its current work: it creates/settles games on the fee-free Madara shard and asks the relay to write L2 slots. Those L2 fees are paid by the relay account above. |
+| Account/key                                                                    | What needs STRK                                                                                                                                                                      |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Deployer/admin (generated and saved privately by the first deployment command) | Declares and deploys five contracts, sets roles/metadata/presets, opens the Blitz season, mints the dev pool and submits approval plus funding.                                      |
+| Relay L2 signer (`LEDGER_OPERATOR_ADDRESS` / `LEDGER_OPERATOR_PRIVATE_KEY`)    | Opens/refunds Blitz slots, reports/pays withdrawals, settles results, posts season tops and finishes chests on mainnet.                                                              |
+| Monitor L2 signer (`PAUSER_ACCOUNT_ADDRESS` / `PAUSER_PRIVATE_KEY`)            | Sends a pause for a proven mismatch and challenges an incorrect season top. Reads require RPC access, not transaction gas.                                                           |
+| Launch Worker signer (`LAUNCH_DEPLOYER_PRIVATE_KEY`)                           | No mainnet STRK for its current work: it creates/settles games on the fee-free Madara shard and asks the relay to write L2 slots. Those L2 fees are paid by the relay account above. |
 
 The relay's separate `SHARD_LEDGER_OPERATOR_PRIVATE_KEY` likewise signs only on the fee-free shard; it is not its funded
 L2 signer. Players also need real mainnet STRK for test-token minting, approvals, registration, refunds and claims, even
@@ -225,20 +186,9 @@ address books or public deployment manifest.
 
 ## Production prerequisites
 
-No production deployment or live upgrade is performed by this package check. Before production value is enabled, the
-owner must complete the design's contract audit and dev test-token withdrawal/result rehearsal on mainnet, supply
-constructor addresses and deployer credentials, grant the ledger `UPDATER_ROLE` on the existing MMR token, and grant
-collection mint roles. The live MMR implementation remains unchanged. The chest collection needs an authorized,
-storage-compatible upgrade exposing `mint_with_id`, plus metadata for all five new band kinds. Use the unchanged
-production `deploy:mainnet` path only after these gates; its constructor is
+Before enabling production value, complete the dev withdrawal/result rehearsal and the review of the live contracts. The
+existing chest collection needs an authorized, storage-compatible upgrade exposing `mint_with_id`, metadata for all five
+band kinds, and the ledger's minter role. The existing rating token needs the ledger's updater role. The first
+deployment command uses the public production book and the owner's cold-admin address; it produces unsigned setup and
+funding calls for that account. It never receives its key. Production constructor order remains
 `(admin, operator, treasury, lords, mmr_token, loot_chest, cosmetics)`.
-
-After mainnet ledger deployment, register the shard's Blitz preset through the existing admin preset command. Its
-dry-run output includes that preset's ledger calldata. Supply `DEPLOYER_ACCOUNT_ADDRESS`, `DEPLOYER_PRIVATE_KEY`,
-`LEDGER_ADMIN_ADDRESS`, `LEDGER_ADMIN_PRIVATE_KEY`, `LEDGER_ADDRESS`, `LEDGER_RPC_URL`, `RPC_URL` and
-`NATIVE_WORLD_MANIFEST` for the approved deployment; run this only when the owner authorizes registration:
-
-```sh
-bun config/deployer/clean/registrar/register-preset.ts --preset-id 2 --environment madara.blitz --dry-run
-bun config/deployer/clean/registrar/register-preset.ts --preset-id 2 --environment madara.blitz
-```

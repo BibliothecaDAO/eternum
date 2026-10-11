@@ -18,6 +18,7 @@ export function buildFrontierFundingCalls(ledger, lords, settings) {
         settings.frontierSeasonId,
         settings.presetId,
         settings.start,
+        settings.end,
         settings.seed,
         uint256.bnToUint256(settings.pool),
       ]),

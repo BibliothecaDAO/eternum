@@ -17,7 +17,8 @@
     "harness/**/*.ts",
     "scripts/**/*.ts",
     "../release/**/*.ts",
-    "vrf/**/*.ts"
+    "vrf/**/*.ts",
+    "../first/**/*.ts"
   ],
   "exclude": [
     "node_modules"

@@ -6,10 +6,7 @@ import { blitzBalance } from "./balance";
 
 export const blitzPreset: NativePreset = {
   ledger: {
-    entryFee: 500,
-    protocolCutBps: 2000,
-    swordPrice: 500,
-    shieldPrice: 500,
+    protocolCutBps: 1000,
     mmrEnabled: true,
   },
   bitcoinEnabled: false,
@@ -32,7 +29,6 @@ export const blitzPreset: NativePreset = {
   commandMask: arenaCommandMask,
   spacing: 6,
   dayUnitSeconds: 0,
-  seasonBags: 0,
   progression: null,
   discovery: null,
   labor: null,

@@ -23,10 +23,7 @@ const buildingRows = [
 
 export const frontierPreset: NativePreset = {
   ledger: {
-    entryFee: 0,
     protocolCutBps: 0,
-    swordPrice: 0,
-    shieldPrice: 0,
     mmrEnabled: false,
   },
   bitcoinEnabled: false,
@@ -65,7 +62,6 @@ export const frontierPreset: NativePreset = {
   spacing: 100,
   // Four-hour units: days of 8 to 24 hours, bags of 80 hours, a season of 21 bags in ten weeks.
   dayUnitSeconds: 14400,
-  seasonBags: 21,
   board: {
     demolitionRefundBps: 5000,
     workshopRate: 0.056,

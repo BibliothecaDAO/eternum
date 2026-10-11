@@ -81,7 +81,7 @@ install_tunnel() {
 }
 
 main() {
-  OPERATOR=${OPERATOR:?Name the operator account that owns /opt/athanor, e.g. OPERATOR=ubuntu}
+  OPERATOR=${OPERATOR:-${SUDO_USER:?Run through sudo as the operator account}}
   [ "$(id -u)" -eq 0 ] || { echo "Run as root" >&2; return 1; }
   install_packages
   configure_firewall

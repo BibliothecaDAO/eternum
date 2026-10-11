@@ -20,10 +20,7 @@ export interface NativePreset {
   environmentGameType: GameType;
   bitcoinEnabled: boolean;
   ledger: {
-    entryFee: number;
     protocolCutBps: number;
-    swordPrice: number;
-    shieldPrice: number;
     mmrEnabled: boolean;
   };
   startingTroops: readonly ("Knight" | "Paladin" | "Crossbowman")[];
@@ -38,8 +35,6 @@ export interface NativePreset {
   spacing: number;
   /** The unit a season's days are counted in (Frontier rules §9): a day lasts 2 to 6 units; 0 in modes without days. */
   dayUnitSeconds: number;
-  /** A season's length in bags of five days, each bag 20 day units; 0 in modes without days. */
-  seasonBags: number;
   board: null | {
     demolitionRefundBps: number;
     workshopRate: number;

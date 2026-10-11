@@ -1,13 +1,13 @@
 import { buildMysteryChestPreset } from "../../../../contracts/l2/ledger/scripts/chest-preset.js";
 import { nativePresetForId, nativePresetIdFor } from "../../../source/native";
 import { CallData, uint256 } from "starknet";
+import environments from "../../../../deploy/first/environments.json";
 import type { DeploymentGameType } from "../types";
 
 const LORDS = 10n ** 18n;
 
 export interface LedgerEconomicPreset {
   day_unit_seconds: number;
-  season_bags: number;
   claim_window_seconds: number;
   entry_fee: ReturnType<typeof uint256.bnToUint256>;
   protocol_cut_bps: number;
@@ -34,21 +34,22 @@ export function buildLedgerEconomicPreset(
   gameType: DeploymentGameType,
   options: {
     presetId?: number;
-    chestLordsBps?: number;
-    protocolCutBps?: number;
+    environment?: keyof typeof environments;
   } = {},
 ): LedgerEconomicPreset {
   const native = nativePresetForId(options.presetId ?? nativePresetIdFor(gameType));
   if (native.gameType !== gameType) throw new Error("Ledger preset game type differs from shard preset");
   const balance = native.ledger;
+  const price =
+    gameType === "blitz" ? environments[options.environment ?? "production"].blitzPrice : gameType === "duel" ? 500 : 0;
   return {
-    entry_fee: lords(BigInt(balance.entryFee)),
-    protocol_cut_bps: gameType === "frontier" ? 0 : (options.protocolCutBps ?? balance.protocolCutBps),
-    chest_lords_bps: options.chestLordsBps ?? 500,
+    entry_fee: lords(BigInt(price)),
+    protocol_cut_bps: gameType === "frontier" ? 0 : balance.protocolCutBps,
+    chest_lords_bps: 1000,
     paid_fraction_bps: 2_000,
     decay_bps: 9_600,
-    sword_price: lords(BigInt(balance.swordPrice)),
-    shield_price: lords(BigInt(balance.shieldPrice)),
+    sword_price: lords(BigInt(price)),
+    shield_price: lords(BigInt(price)),
     mmr: {
       enabled: balance.mmrEnabled,
       mean: 1_500,
@@ -58,7 +59,6 @@ export function buildLedgerEconomicPreset(
       regression_bps: 150,
     },
     day_unit_seconds: native.dayUnitSeconds,
-    season_bags: native.seasonBags,
     claim_window_seconds: native.chests?.claimWindowSeconds ?? 0,
   };
 }

@@ -1,13 +1,7 @@
 name: Deploy Client
+run-name: Deploy client to ${{ inputs.environment }} at ${{ github.sha }}
 
-# Ships the game client as a Cloudflare Pages project per GitHub environment, by dispatch only: production is the
-# live client, and it moves to the native client only as the cutover's switch step, never on a push to next. Each
-# environment names its Pages project (vars.CLOUDFLARE_PAGES_PROJECT), the origin the client is served from
-# (vars.CLIENT_ORIGIN, whose /api belongs to that environment's identity Worker) and its zone (vars.CLIENT_ZONE), and
-# holds the Alchemy RPC secret for the environment's L2; the custom domain is attached in the Pages dashboard once. The
-# L2 itself and its ledger come from the environment's address book (contracts/common/addresses), which the build reads
-# by VITE_PUBLIC_ENVIRONMENT. The build reads .env.production plus the identity RPC secret and stamps the version from
-# the ref.
+# Publishes the selected environment from a reviewed ref. Public deployment coordinates live in one table.
 on:
   workflow_dispatch:
     inputs:
@@ -44,21 +38,7 @@ jobs:
     environment: ${{ inputs.environment }}
     env:
       VITE_PUBLIC_L2_RPC_URL: ${{ secrets.L2_RPC_URL }}
-      CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN }}
-      CLIENT_ZONE: ${{ vars.CLIENT_ZONE }}
-      PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
     steps:
-      - name: Validate the environment's configuration
-        run: |
-          missing=()
-          for name in VITE_PUBLIC_L2_RPC_URL CLIENT_ORIGIN CLIENT_ZONE PAGES_PROJECT; do
-            [ -n "${!name}" ] || missing+=("$name")
-          done
-          if [ ${#missing[@]} -gt 0 ]; then
-            echo "::error::this environment has no ${missing[*]} (L2_RPC_URL secret; CLIENT_ORIGIN, CLIENT_ZONE, CLOUDFLARE_PAGES_PROJECT vars)"
-            exit 1
-          fi
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -66,6 +46,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+
+      - name: Resolve public deployment coordinates
+        env:
+          TARGET: ${{ inputs.environment }}
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync, appendFileSync } from 'node:fs';
+          const targets = JSON.parse(readFileSync('deploy/first/environments.json', 'utf8'));
+          const target = Object.values(targets).find(value => value.worker === process.env.TARGET);
+          if (!target || !process.env.VITE_PUBLIC_L2_RPC_URL) throw new Error('Environment and L2_RPC_URL are required');
+          for (const [name, value] of Object.entries({CLIENT_ORIGIN: target.origin, CLIENT_ZONE: target.zone, PAGES_PROJECT: target.pages}))
+            appendFileSync(process.env.GITHUB_ENV, `${name}=${value}\n`);
+          JS
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4

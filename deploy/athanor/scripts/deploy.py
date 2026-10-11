@@ -28,7 +28,7 @@ from service_requests import identity_service_base, service_json
 
 RELEASES = "https://github.com/BibliothecaDAO/eternum/releases/download"
 ENVIRONMENTS = shard.ROOT / "deploy/release"
-INPUTS = ("package", "shard_name", "chain_id", "guardian_url", "public_rpc_url", "public_herald_url",
+INPUTS = ("package", "shard_name", "chain_id", "public_rpc_url", "public_herald_url",
           "player_capacity", "presets", "node_memory", "herald_memory", "vrf_workers", "l2_gas_bound")
 
 
@@ -59,6 +59,11 @@ def load_inputs(environment):
     missing = [key for key in INPUTS if key not in inputs]
     if missing:
         raise ValueError(f"{environment}.json lacks {', '.join(missing)}")
+    targets = json.loads((shard.ROOT / "deploy/first/environments.json").read_text())
+    target = next((value for value in targets.values() if value["release"] == environment), None)
+    if target is None:
+        raise ValueError("Unknown deployment environment")
+    inputs["guardian_url"] = target["origin"] + "/api/guardian"
     identity_service_base(inputs["guardian_url"])
     return inputs
 

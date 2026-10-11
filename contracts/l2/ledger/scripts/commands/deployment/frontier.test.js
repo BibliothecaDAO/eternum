@@ -4,16 +4,15 @@ import { test } from "node:test";
 import { CallData, uint256 } from "starknet";
 import { buildFrontierFundingCalls } from "./frontier.js";
 
-const { abi } = JSON.parse(
-  readFileSync(new URL("../../../target/dev/game_ledger_GameLedger.contract_class.json", import.meta.url), "utf8"),
-);
+const abi = JSON.parse(readFileSync(new URL("../../../schema/abi.json", import.meta.url), "utf8"));
 
-test("rehearsal funds the exact six-argument Frontier ABI, including a full u256 amount", () => {
+test("rehearsal funds the exact seven-argument Frontier ABI, including a full u256 amount", () => {
   const settings = {
     presetId: 2,
     shard: 17n,
     frontierSeasonId: 7n,
     start: 100n,
+    end: 2100n,
     seed: 24301n,
     pool: (1n << 128n) + 9n,
   };
@@ -28,9 +27,10 @@ test("rehearsal funds the exact six-argument Frontier ABI, including a full u256
       season_id: settings.frontierSeasonId,
       preset_id: 2,
       start: settings.start,
+      end: settings.end,
       seed: settings.seed,
       amount: uint256.bnToUint256(settings.pool),
     }),
   );
-  assert.deepEqual(call.calldata, ["17", "7", "2", "100", "24301", "9", "1"]);
+  assert.deepEqual(call.calldata, ["17", "7", "2", "100", "2100", "24301", "9", "1"]);
 });

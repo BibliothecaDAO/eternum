@@ -70,7 +70,6 @@
     "mmr:grantupdater:sepolia": "cd ./contracts/l2/mmr/ext/scripts/deployment && pnpm run mmr:grantupdater:sepolia",
     "mmr:grantupdater:mainnet": "cd ./contracts/l2/mmr/ext/scripts/deployment && pnpm run mmr:grantupdater:mainnet",
     "ledger:check-live-assets:mainnet": "pnpm --dir ./contracts/l2/ledger/scripts run check-live-assets:mainnet",
-    "ledger:deploy:mainnet": "pnpm --dir ./contracts/l2/ledger/scripts run deploy:mainnet",
     "ledger:upgrade-live-assets:mainnet": "pnpm --dir ./contracts/l2/ledger/scripts run upgrade-live-assets:mainnet",
     "format": "pnpm prettier --write .",
     "format:check": "pnpm prettier --check .",
@@ -97,7 +96,9 @@
     "images:compress": "node scripts/compress-images-with-sharp.js",
     "images:compress:dry-run": "node scripts/compress-images-with-sharp.js --dry-run",
     "images:compress:webp": "node scripts/compress-images-with-sharp.js --webp",
-    "fixtures:native-lords-budget": "python3 contracts/l3/world-native/scripts/generate-lords-budget-fixtures.py"
+    "fixtures:native-lords-budget": "python3 contracts/l3/world-native/scripts/generate-lords-budget-fixtures.py",
+    "deploy:first": "bun --no-env-file deploy/first/main.ts",
+    "test:deployment": "bun test deploy/first/*.test.ts"
   },
   "dependencies": {
     "@bibliothecadao/provider": "workspace:*",

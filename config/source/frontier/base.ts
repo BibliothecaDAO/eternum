@@ -4,7 +4,6 @@ import { RESOURCE_PRECISION } from "../../../packages/types/src/constants";
 import type { ConfigPatch } from "../common/merge-config";
 import { mergeConfigPatches } from "../common/merge-config";
 import { arenaBaseConfig } from "../common/arena/base";
-import { seasonSeconds } from "../../../packages/core/src/utils/days";
 
 const resourceIds = Array.from({ length: 58 }, (_, index) => index + 1);
 const buildingIds = Array.from({ length: research.HEARTH }, (_, index) => index + 1);
@@ -44,7 +43,8 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
   },
   dev: { mode: { on: false } },
   season: {
-    durationSeconds: seasonSeconds(frontierPreset.seasonBags, frontierPreset.dayUnitSeconds),
+    // Unset until the operator supplies the calendar; the launch boundary refuses zero.
+    durationSeconds: 0,
     endGraceSeconds: 0,
     startSettlingAfterSeconds: 0,
     startMainAfterSeconds: 0,

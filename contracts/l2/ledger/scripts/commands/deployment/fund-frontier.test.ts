@@ -80,7 +80,6 @@ beforeEach(() => {
     shield_price: { low: 0, high: 0 },
     mmr: { enabled: false, mean: 1500, spread: 450, max_delta: 45, k: 50, regression_bps: 150 },
     day_unit_seconds: 10,
-    season_bags: 1,
     claim_window_seconds: 604800,
   });
   season = response(ledgerAbi, "get_frontier", {
@@ -131,6 +130,7 @@ test("funds a confirmed running game, with exactly the requested deposit and com
         season_id: 42,
         preset_id: 2,
         start: 100,
+        end: 300,
         seed: 99,
         amount: { low: 10n ** 24n, high: 0 },
       }),
@@ -142,7 +142,7 @@ test("funds a confirmed running game, with exactly the requested deposit and com
   );
 });
 
-test.each([16, 17, 18])("refuses mismatched ledger day/window terms before signing (%i)", async (index) => {
+test.each([16, 17])("refuses mismatched ledger day/window terms before signing (%i)", async (index) => {
   preset[index] = String(BigInt(preset[index]!) + 1n);
   await expect(run()).rejects.toThrow("frontier_funding_differs_from_game");
   expect(execute).not.toHaveBeenCalled();
