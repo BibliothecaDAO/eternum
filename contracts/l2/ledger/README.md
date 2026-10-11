@@ -112,12 +112,20 @@ is not a rehearsal dependency.
 
 ## Deploy once, fund each Frontier game separately
 
-The owner-run Sepolia deployment is `scripts/commands/deployment/sepolia.js`. It refuses any provider whose chain ID is
-not `SN_SEPOLIA`, deploys a publicly mintable **Test LORDS**, a fresh MMR token, two collectible collections and the
-ledger. As soon as those contracts exist, it writes `contracts/l2/ledger/target/sepolia-deployment.json` and merges
-`ledger` and `mmrToken` into `contracts/common/addresses/sepolia.json`, preserving the Realms address and other entries.
-The manifest survives a later setup failure; inspect the receipt and these existing contracts before any redeployment.
-There is no automatic resume or redeployment on failure.
+The dev deployment is `scripts/commands/deployment/dev.js`. It requires `ENVIRONMENT=staging` and Starknet mainnet
+(`SN_MAIN`). It deploys the publicly mintable **devLords** (symbol `devLords`, a test token with no value), a fresh test
+rating token, two test collectible collections and a separate dev ledger. It never uses production LORDS or the
+production rating/collection contracts. As soon as all five contracts exist, it writes
+`contracts/l2/ledger/target/dev-deployment.json` and merges `l2Chain`, `ledger`, `lords` (the devLords address),
+`mmrToken`, `lootChests` and `cosmetics` into `contracts/common/addresses/dev.json`. It preserves the real mainnet
+`realms` collection and unrelated keys. Production's `mainnet.json` is untouched.
+
+The chest and cosmetics constructors receive `devChest` and `devCosmetics` as both name and symbol. The fresh rating
+token is the devMMR deployment in the book's `mmrToken` field, but its onchain metadata remains `Blitz MMR` / `MMR`:
+`MMRToken` fixes those getters and takes no constructor name. Production also uses that contract, so its source is
+unchanged. Identify devMMR by its dev-book address, not by its onchain name. The manifest survives a later setup
+failure; inspect the receipt and these existing contracts before any redeployment. There is no automatic resume or
+redeployment on failure.
 
 Setup grants updater/minter/pauser roles, configures metadata, registers Blitz (1) and Frontier (2) presets, and opens
 Blitz season 1. Deployment neither reads nor funds a Frontier game. Its only season window is the separate Blitz
@@ -131,13 +139,14 @@ Build release artifacts first, using each package's pinned toolchain:
 (cd contracts/l2/collectibles && flock /tmp/eternum-scarb.lock scarb build --release)
 ```
 
-For deployment supply `SEPOLIA_RPC_URL`, `SEPOLIA_ACCOUNT_ADDRESS`, `SEPOLIA_ACCOUNT_PRIVATE_KEY`,
-`SEPOLIA_OPERATOR_ADDRESS`, `SEPOLIA_PAUSER_ADDRESS`, `SEPOLIA_SEASON_START`, `SEPOLIA_SEASON_END` (the **Blitz**
-window, Unix seconds), `SEPOLIA_CHEST_BAND_1_CID` through `SEPOLIA_CHEST_BAND_5_CID`, and `SEPOLIA_COSMETIC_CID`.
-Blitz's `open_season` enforces its own valid window on chain. Run only with the owner's deployment authorization:
+For deployment supply `ENVIRONMENT=staging`, `DEV_RPC_URL` (mainnet), `DEV_ACCOUNT_ADDRESS`, `DEV_ACCOUNT_PRIVATE_KEY`,
+`DEV_OPERATOR_ADDRESS`, `DEV_PAUSER_ADDRESS`, `DEV_SEASON_START`, `DEV_SEASON_END` (the **Blitz** window, Unix seconds),
+`DEV_CHEST_BAND_1_CID` through `DEV_CHEST_BAND_5_CID`, and `DEV_COSMETIC_CID`. `DEV_OPERATOR_ADDRESS` is the relay's
+mainnet account; `DEV_PAUSER_ADDRESS` is the monitor's separate mainnet account. Blitz's `open_season` enforces its own
+valid window on chain. Run only with the owner's deployment authorization:
 
 ```sh
-pnpm --dir contracts/l2/ledger/scripts deploy:sepolia
+ENVIRONMENT=staging pnpm --dir contracts/l2/ledger/scripts deploy:dev
 ```
 
 Review and commit the public address-book changes, then rebuild/redeploy services and client. Identity reads this
@@ -147,23 +156,26 @@ deployment. The manifest's `seasonId: 1` refers only to Blitz.
 ### Fund a Frontier season
 
 After the shard confirms creation, take the actual game ID from the launch result or Herald directory. The deployment
-check may have consumed earlier IDs. The funding command works on Sepolia or mainnet without redeploying contracts. It
-reads the ledger from that network's address book and LORDS from `ledger.lords()`.
+check may have consumed earlier IDs. The funding command takes `dev` or `production`, never a network name. Both run on
+`SN_MAIN`; `dev` selects `dev.json` through the shared staging reader and `production` selects `mainnet.json`. It reads
+the ledger and token from that environment's book, then verifies `ledger.lords()` matches the token before approving
+anything. An undeployed address fails; it never falls back to the other environment.
 
 Supply the ledger admin's `STARKNET_ACCOUNT_ADDRESS` and `STARKNET_ACCOUNT_PRIVATE_KEY` as secrets, `STARKNET_RPC` for
-the selected L2, `NATIVE_WORLD_MANIFEST` for the shard, `RPC_URL` for that shard's public RPC, and `HERALD_URL` for its
-HTTPS Herald. The admin must hold the game's full pool in the ledger's LORDS token and enough STRK for fees. On Sepolia,
-that token's public `mint(recipient, amount)` supplies test LORDS; mint to the admin before funding. Amounts are wei.
-For example, a confirmed 1,000,000-LORDS chest pool needs exactly 1000000000000000000000000 wei.
+Starknet mainnet, `NATIVE_WORLD_MANIFEST` for the shard, `RPC_URL` for that shard's public RPC, and `HERALD_URL` for its
+HTTPS Herald. The admin must hold the game's full pool in the selected environment's token and enough real mainnet STRK
+for fees. For dev, call devLords's public `mint(recipient, amount)` to mint test tokens to the admin before funding;
+production uses real LORDS. Amounts are wei. A confirmed 1,000,000-token chest pool needs exactly
+1000000000000000000000000 wei.
 
 ```sh
-# Replace 42 with the confirmed Frontier game ID; use mainnet instead of sepolia for mainnet custody.
-pnpm --dir contracts/l2/ledger/scripts fund:frontier sepolia 42
+# Replace 42 with the confirmed Frontier game ID; production selects the production book.
+pnpm --dir contracts/l2/ledger/scripts fund:frontier dev 42
 ```
 
 The command checks the shard chain ID, reads Herald's confirmed GameRegistry, ChestRules and SliceRules, and checks the
 game against the shard RPC at that same block. It compares the day length, derived end and claim window with ledger
-preset (2 on Sepolia; the native preset ID on mainnet), derives the amount from the confirmed chest pool × 10^18, and
+preset (2 for dev; the native preset ID for production), derives the amount from the confirmed chest pool × 10^18, and
 submits approval plus funding in one transaction. It waits for confirmation, rereads `get_frontier` and its preset, and
 refuses a different start, seed, end, pool or day rule. Its public result includes the transaction hash and verified
 funding. A season already running may be funded; a season at or past its end cannot. No caller-entered seed, start, end
@@ -173,22 +185,40 @@ or amount can override the confirmed game.
 calldata, confirmed reads, mismatches and readback without a signer or live deployment.
 
 Use the resulting public manifest to verify the deployment and the checked-in address book to configure service and
-client builds. Match the shard's Frontier season window and pool to the deployed ledger. Mint test LORDS to test
-wallets, approve the ledger, and register on L2; feed that roster into the shard. Play a withdrawal and a Blitz match,
-then relay the actual confirmed withdrawal hash and the actual wallet/rank rows. Verify `get_payment`, wallet balances,
+client builds. Match the shard's Frontier season window and pool to the deployed ledger. Mint devLords to dev wallets,
+approve the ledger, and register on L2; feed that roster into the shard. Play a withdrawal and a Blitz match, then relay
+the actual confirmed withdrawal hash and the actual wallet/rank rows. Verify `get_payment`, wallet balances,
 `get_result_commitment`, minted chest IDs, `get_chest` and the growing season pool. Trade a chest, approve its burn,
 call `open_request`, then call `open_finish` at least eleven blocks later from another wallet. Verify delivery to the
 requester and reserve conservation. Setup registers all five band CIDs and one test cosmetic attribute per rarity. The
 test chest share and curve numbers are presets for rehearsal, not approved production balance values.
 
-## Mainnet prerequisites
+### Mainnet fee balances
 
-No mainnet deployment or live upgrade is performed by this package check. Before value is enabled, the owner must
-complete the design's contract audit and Sepolia withdrawal/result rehearsal, supply constructor addresses and deployer
-credentials, grant the ledger `UPDATER_ROLE` on the existing MMR token, and grant collection mint roles. The live MMR
-implementation remains unchanged. The chest collection needs an authorized, storage-compatible upgrade exposing
-`mint_with_id`, plus metadata for all five new band kinds. Use the existing mainnet deployment path only after these
-gates; its constructor is `(admin, operator, treasury, lords, mmr_token, loot_chest, cosmetics)`.
+devLords has no value and cannot pay network fees. Fund these accounts with **real mainnet STRK** before use:
+
+| Account/key                                                                                                                                      | What needs STRK                                                                                                                                                                      |
+| ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Dev deployer/admin (`DEV_ACCOUNT_ADDRESS` / `DEV_ACCOUNT_PRIVATE_KEY`; funding uses `STARKNET_ACCOUNT_ADDRESS` / `STARKNET_ACCOUNT_PRIVATE_KEY`) | Declares and deploys five contracts, sets roles/metadata/presets, opens the Blitz season, mints the dev pool and submits approval plus funding.                                      |
+| Relay L2 signer (`LEDGER_OPERATOR_ADDRESS` / `LEDGER_OPERATOR_PRIVATE_KEY`, matching `DEV_OPERATOR_ADDRESS`)                                     | Opens/refunds Blitz slots, reports/pays withdrawals, settles results, posts season tops and finishes chests on mainnet.                                                              |
+| Monitor L2 signer (`PAUSER_ACCOUNT_ADDRESS` / `PAUSER_PRIVATE_KEY`, matching `DEV_PAUSER_ADDRESS`)                                               | Sends a pause for a proven mismatch and challenges an incorrect season top. Reads require RPC access, not transaction gas.                                                           |
+| Launch Worker signer (`DEPLOYER_PRIVATE_KEY`)                                                                                                    | No mainnet STRK for its current work: it creates/settles games on the fee-free Madara shard and asks the relay to write L2 slots. Those L2 fees are paid by the relay account above. |
+
+The relay's separate `SHARD_LEDGER_OPERATOR_PRIVATE_KEY` likewise signs only on the fee-free shard; it is not its funded
+L2 signer. Players also need real mainnet STRK for test-token minting, approvals, registration, refunds and claims, even
+though all dev game value is devLords. No fixed STRK amount is promised; fund for the current transaction fee estimates
+and replenish the relay/monitor accounts before their balances are exhausted. Keep signing keys in secrets, never in the
+address books or public deployment manifest.
+
+## Production prerequisites
+
+No production deployment or live upgrade is performed by this package check. Before production value is enabled, the
+owner must complete the design's contract audit and dev test-token withdrawal/result rehearsal on mainnet, supply
+constructor addresses and deployer credentials, grant the ledger `UPDATER_ROLE` on the existing MMR token, and grant
+collection mint roles. The live MMR implementation remains unchanged. The chest collection needs an authorized,
+storage-compatible upgrade exposing `mint_with_id`, plus metadata for all five new band kinds. Use the unchanged
+production `deploy:mainnet` path only after these gates; its constructor is
+`(admin, operator, treasury, lords, mmr_token, loot_chest, cosmetics)`.
 
 After mainnet ledger deployment, register the shard's Blitz preset through the existing admin preset command. Its
 dry-run output includes that preset's ledger calldata. Supply `DEPLOYER_ACCOUNT_ADDRESS`, `DEPLOYER_PRIVATE_KEY`,

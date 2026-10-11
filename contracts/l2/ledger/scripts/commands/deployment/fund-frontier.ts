@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import { CallData, RpcProvider, type Account, type Abi } from "starknet";
 import { getAccount } from "../../../../../scripts-runtime/js/starknet.js";
-import { loadJsonConfigFile, requireAddressConfigValue } from "../../../../../scripts-runtime/js/config.js";
+import { environmentL2, valuePlaneAddress } from "../../../../../../packages/chain/src/value-plane";
 import { readShardManifest } from "../../../../../../packages/chain/shard-manifest.js";
 import { assertProviderChain } from "../../../../../../packages/chain/chain-guard.js";
 import {
@@ -60,14 +60,16 @@ async function readFrontierGame(provider: RpcProvider, shard: ShardConnection, h
 export async function fundFrontier(
   account: Account,
   provider: RpcProvider,
-  ledger: string,
   shard: ShardConnection,
   heraldUrl: string,
   gameId: number,
-  network: "mainnet" | "sepolia",
+  environment: "dev" | "production",
 ) {
+  const target = fundingTarget(environment);
+  await assertProviderChain(account, target.network, "STARKNET_RPC");
+  const { ledger, token } = target;
   const native = await readFrontierGame(provider, shard, heraldUrl, gameId);
-  const presetId = frontierLedgerPresetId(network, native.presetId);
+  const presetId = frontierLedgerPresetId(environment, native.presetId);
   const head = await readConfirmedLedgerHead(account);
   const preset = decodeLedgerPreset(
     await account.callContract(
@@ -85,7 +87,7 @@ export async function fundFrontier(
     { contractAddress: ledger, entrypoint: "lords", calldata: [] },
     head.number,
   );
-  if (!lords || BigInt(lords) === 0n) throw new Error("Ledger LORDS token unavailable");
+  if (!lords || BigInt(lords) !== BigInt(token)) throw new Error("Ledger token differs from environment address book");
   const pool = BigInt(native.pool) * 10n ** 18n;
   const submitted = await account.execute(
     buildFrontierFundingCalls(ledger, lords, {
@@ -104,17 +106,25 @@ export async function fundFrontier(
   return { chainId: shard.chainId, gameId, transactionHash: submitted.transaction_hash, frontier };
 }
 
+function fundingTarget(environment: "dev" | "production") {
+  if (environment !== "dev" && environment !== "production")
+    throw new Error("Funding environment must be dev or production");
+  const valueEnvironment = environment === "dev" ? "staging" : "production";
+  return {
+    ...environmentL2(valueEnvironment),
+    ledger: valuePlaneAddress("ledger", valueEnvironment),
+    token: valuePlaneAddress("lords", valueEnvironment),
+  };
+}
+
 async function main() {
-  const [network, gameId] = process.argv.slice(2);
-  if ((network !== "mainnet" && network !== "sepolia") || !gameId || process.argv.length !== 4)
-    throw new Error("Usage: fund:frontier <mainnet|sepolia> <game-id>");
-  process.env.STARKNET_NETWORK = network;
+  const [environment, gameId] = process.argv.slice(2);
+  if ((environment !== "dev" && environment !== "production") || !gameId || process.argv.length !== 4)
+    throw new Error("Usage: fund:frontier <dev|production> <game-id>");
+  process.env.STARKNET_NETWORK = fundingTarget(environment).network;
   const manifest = readShardManifest<{ shard: { chainId: string }; world: { address: string } }>(
     process.env.NATIVE_WORLD_MANIFEST,
   );
-  const addresses = loadJsonConfigFile(new URL(`../../../../../common/addresses/${network}.json`, import.meta.url));
-  const ledger = requireAddressConfigValue(addresses.ledger, "Address book ledger");
-  if (BigInt(ledger) === 0n) throw new Error("Ledger is not deployed");
   const rpcUrl = process.env.RPC_URL;
   if (!rpcUrl) throw new Error("RPC_URL is required");
   const heraldUrl = process.env.HERALD_URL;
@@ -123,11 +133,10 @@ async function main() {
   const result = await fundFrontier(
     await getAccount(),
     new RpcProvider({ nodeUrl: rpcUrl }),
-    ledger,
     shard,
     heraldUrl,
     Number(gameId),
-    network,
+    environment,
   );
   console.log(JSON.stringify(result));
 }

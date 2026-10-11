@@ -12,7 +12,7 @@ import { frontierLedgerPresetId } from "./frontier.js";
 
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const l2Root = path.dirname(packageRoot);
-const manifestPath = path.join(packageRoot, "target", "sepolia-deployment.json");
+const manifestPath = path.join(packageRoot, "target", "dev-deployment.json");
 
 function required(name) {
   const value = process.env[name]?.trim();
@@ -21,15 +21,17 @@ function required(name) {
 }
 
 export function loadSettings() {
+  if (required("ENVIRONMENT") !== "staging") throw new Error("Dev deployment requires ENVIRONMENT=staging");
   const settings = {
-    address: required("SEPOLIA_ACCOUNT_ADDRESS"),
-    privateKey: required("SEPOLIA_ACCOUNT_PRIVATE_KEY"),
-    operator: required("SEPOLIA_OPERATOR_ADDRESS"),
-    pauser: required("SEPOLIA_PAUSER_ADDRESS"),
-    start: BigInt(required("SEPOLIA_SEASON_START")),
-    end: BigInt(required("SEPOLIA_SEASON_END")),
-    chestCids: [1, 2, 3, 4, 5].map((band) => required(`SEPOLIA_CHEST_BAND_${band}_CID`)),
-    cosmeticCid: required("SEPOLIA_COSMETIC_CID"),
+    environment: "staging",
+    address: required("DEV_ACCOUNT_ADDRESS"),
+    privateKey: required("DEV_ACCOUNT_PRIVATE_KEY"),
+    operator: required("DEV_OPERATOR_ADDRESS"),
+    pauser: required("DEV_PAUSER_ADDRESS"),
+    start: BigInt(required("DEV_SEASON_START")),
+    end: BigInt(required("DEV_SEASON_END")),
+    chestCids: [1, 2, 3, 4, 5].map((band) => required(`DEV_CHEST_BAND_${band}_CID`)),
+    cosmeticCid: required("DEV_COSMETIC_CID"),
   };
   for (const name of ["address", "operator", "pauser"]) {
     if (BigInt(settings[name]) <= 0n) throw new Error(`Invalid ${name}`);
@@ -64,9 +66,9 @@ async function deployAsset(account, packageName, artifactName, constructorCallda
 function collectibleConstructor(name, admin) {
   return CallData.compile([
     byteArray.byteArrayFromString(name),
-    byteArray.byteArrayFromString("TEST"),
+    byteArray.byteArrayFromString(name),
     byteArray.byteArrayFromString(""),
-    byteArray.byteArrayFromString("Sepolia test collection"),
+    byteArray.byteArrayFromString("Dev test collection (no value)"),
     admin,
     admin,
     admin,
@@ -77,22 +79,22 @@ function collectibleConstructor(name, admin) {
   ]);
 }
 
-async function deployAssets(account, settings) {
-  const lords = await deployAsset(account, "ledger", "TestLords", []);
-  const mmr = await deployAsset(account, "mmr", "MMRToken", [settings.address, settings.address]);
-  const chests = await deployAsset(
+export async function deployAssets(account, settings, deploy = deployAsset) {
+  const lords = await deploy(account, "ledger", "TestLords", []);
+  const mmr = await deploy(account, "mmr", "MMRToken", [settings.address, settings.address]);
+  const chests = await deploy(
     account,
     "collectibles",
     "RealmsCollectible",
-    collectibleConstructor("Test Blitz Chests", settings.address),
+    collectibleConstructor("devChest", settings.address),
   );
-  const cosmetics = await deployAsset(
+  const cosmetics = await deploy(
     account,
     "collectibles",
     "RealmsCollectible",
-    collectibleConstructor("Test Cosmetics", settings.address),
+    collectibleConstructor("devCosmetics", settings.address),
   );
-  const ledger = await deployAsset(account, "ledger", "GameLedger", [
+  const ledger = await deploy(account, "ledger", "GameLedger", [
     settings.address,
     settings.operator,
     settings.address,
@@ -134,7 +136,7 @@ export function buildSetupCalls(assets, settings) {
       chestPreset.items,
     ]),
     call(assets.ledger, "register_preset", [
-      frontierLedgerPresetId("sepolia", 5),
+      frontierLedgerPresetId("dev", 5),
       buildLedgerEconomicPreset("frontier"),
       chestPreset.bands,
       chestPreset.items,
@@ -144,18 +146,19 @@ export function buildSetupCalls(assets, settings) {
 }
 
 async function main() {
-  process.env.STARKNET_NETWORK = "sepolia";
-  process.env.STARKNET_RPC = required("SEPOLIA_RPC_URL");
+  process.env.STARKNET_NETWORK = "mainnet";
   const settings = loadSettings();
+  process.env.STARKNET_RPC = required("DEV_RPC_URL");
   const account = await getAccount({ accountAddress: settings.address, privateKey: settings.privateKey });
-  const chainId = await account.getChainId();
-  if (BigInt(chainId) !== BigInt(shortString.encodeShortString("SN_SEPOLIA"))) throw new Error("Sepolia required");
-  const manifest = await deploySepolia(account, settings, path.resolve(packageRoot, "../../.."));
+  const manifest = await deployDev(account, settings, path.resolve(packageRoot, "../../.."));
   console.log(JSON.stringify({ step: "ready", manifest: manifestPath, ...manifest }));
 }
 
-export async function deploySepolia(account, settings, repoRoot, deploy = deployAssets) {
+export async function deployDev(account, settings, repoRoot, deploy = deployAssets) {
+  if (settings.environment !== "staging") throw new Error("Dev deployment requires ENVIRONMENT=staging");
   const chainId = await account.getChainId();
+  if (BigInt(chainId) !== BigInt(shortString.encodeShortString("SN_MAIN")))
+    throw new Error("Starknet mainnet required");
   const assets = await deploy(account, settings);
   const manifest = {
     chainId,
@@ -166,17 +169,21 @@ export async function deploySepolia(account, settings, repoRoot, deploy = deploy
     end: settings.end.toString(),
   };
   // Preserve the deployed addresses even if the later setup transaction fails.
-  await writeSepoliaDeployment(manifest, repoRoot);
+  await writeDevDeployment(manifest, repoRoot);
   const setup = await account.execute(buildSetupCalls(assets, settings));
   await confirm(account, setup.transaction_hash);
   return { ...manifest, setupTransaction: setup.transaction_hash };
 }
 
-export async function writeSepoliaDeployment(manifest, repoRoot) {
-  await writeJsonFile(path.join(repoRoot, "contracts/l2/ledger/target/sepolia-deployment.json"), manifest);
-  await mergeJsonFile(path.join(repoRoot, "contracts/common/addresses/sepolia.json"), {
+export async function writeDevDeployment(manifest, repoRoot) {
+  await writeJsonFile(path.join(repoRoot, "contracts/l2/ledger/target/dev-deployment.json"), manifest);
+  await mergeJsonFile(path.join(repoRoot, "contracts/common/addresses/dev.json"), {
+    l2Chain: "SN_MAIN",
     ledger: manifest.ledger,
+    lords: manifest.lords,
     mmrToken: manifest.mmr,
+    lootChests: manifest.chests,
+    cosmetics: manifest.cosmetics,
   });
 }
 
@@ -184,7 +191,7 @@ if (import.meta.main)
   main().catch(() => {
     // SDK error objects may include signer configuration; only public status is printed.
     console.error(
-      "Sepolia deployment failed; check settings, artifacts, saved deployment manifest and transaction receipts.",
+      "Dev deployment failed; check settings, artifacts, saved deployment manifest and transaction receipts.",
     );
     process.exitCode = 1;
   });

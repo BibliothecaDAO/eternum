@@ -1,7 +1,7 @@
 import { CallData, uint256 } from "starknet";
 
-// Sepolia deployment uses ledger IDs 1/2; mainnet registration preserves the native preset ID.
-export const frontierLedgerPresetId = (network, nativePresetId) => (network === "sepolia" ? 2 : nativePresetId);
+// Dev deployment uses ledger IDs 1/2; production registration preserves the native preset ID.
+export const frontierLedgerPresetId = (environment, nativePresetId) => (environment === "dev" ? 2 : nativePresetId);
 
 export function buildFrontierFundingCalls(ledger, lords, settings) {
   return [

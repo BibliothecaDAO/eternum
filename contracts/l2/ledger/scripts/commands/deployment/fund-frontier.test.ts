@@ -3,8 +3,12 @@ import { type Account, type RpcProvider } from "starknet";
 import { gamesAbi, response } from "../../../../../../packages/value-ledger/test-support/abi";
 import { ledgerAbi, ledgerCall } from "../../../../../../packages/value-ledger/test-support/ledger-abi";
 import { ShardReader } from "../../../../../../apps/value-relay/src/shard-rpc";
+import devBook from "../../../../../common/addresses/dev.json";
+import productionBook from "../../../../../common/addresses/mainnet.json";
 import { fundFrontier } from "./fund-frontier";
 
+const savedDev = { ...devBook };
+const savedProduction = { ...productionBook };
 const shard = { chainId: "0x7", gamesAddress: "0x77", rpcUrl: "https://shard.test" };
 const head = { status: "ACCEPTED_ON_L2", block_number: 10, block_hash: "0xaa", parent_hash: "0x9", timestamp: 150 };
 const game = {
@@ -39,15 +43,18 @@ const provider = {
   callContract: shardCall,
 } as unknown as RpcProvider;
 const account = {
+  getChainId: async () => "0x534e5f4d41494e",
   getBlock: async () => ({ ...head, block_number: 11 }),
   callContract: ledgerRead,
   execute,
   waitForTransaction: receipt,
 } as unknown as Account;
-const run = () => fundFrontier(account, provider, "0x123", shard, "https://herald.test", 42, "sepolia");
+const run = () => fundFrontier(account, provider, shard, "https://herald.test", 42, "dev");
 let header: ReturnType<typeof spyOn>;
 let fetchMock: ReturnType<typeof spyOn>;
 beforeEach(() => {
+  Object.assign(devBook, { ledger: "0x123", lords: "0x111" });
+  Object.assign(productionBook, { ledger: "0x456", lords: "0x222" });
   block = head;
   execute.mockClear();
   receipt.mockClear();
@@ -100,6 +107,8 @@ beforeEach(() => {
   );
 });
 afterEach(() => {
+  Object.assign(devBook, savedDev);
+  Object.assign(productionBook, savedProduction);
   header.mockRestore();
   fetchMock.mockRestore();
 });
@@ -161,7 +170,7 @@ test("refuses a missing game, unconfirmed snapshot or missing chest rules before
   await expect(run()).rejects.toThrow("snapshot_row_missing");
   expect(execute).not.toHaveBeenCalled();
 });
-test("refuses an ended season before approving LORDS", async () => {
+test("refuses an ended season before approving tokens", async () => {
   spyOn(account, "getBlock").mockResolvedValueOnce({ ...head, timestamp: 300 } as never);
   await expect(run()).rejects.toThrow("Frontier season has ended");
   expect(execute).not.toHaveBeenCalled();
@@ -175,23 +184,66 @@ test("refuses a reverted receipt or a different readback", async () => {
 
 test("refuses a wrong shard chain before any ledger approval", async () => {
   const wrong = { ...provider, getChainId: async () => "0x8" } as unknown as RpcProvider;
-  await expect(fundFrontier(account, wrong, "0x123", shard, "https://herald.test", 42, "sepolia")).rejects.toThrow(
-    "manifest shard",
-  );
+  await expect(fundFrontier(account, wrong, shard, "https://herald.test", 42, "dev")).rejects.toThrow("manifest shard");
   expect(execute).not.toHaveBeenCalled();
 });
 test.each([0, -1, 0x100000000, 1.5])("refuses invalid game id %s before reads", async (id) => {
-  await expect(fundFrontier(account, provider, "0x123", shard, "https://herald.test", id, "sepolia")).rejects.toThrow(
+  await expect(fundFrontier(account, provider, shard, "https://herald.test", id, "dev")).rejects.toThrow(
     "Invalid shard game id",
   );
   expect(shardCall).not.toHaveBeenCalled();
   expect(execute).not.toHaveBeenCalled();
 });
 
-test("mainnet funding uses the native preset ID registered by the admin deploy command", async () => {
+test("production funding uses only its own book and the native preset ID", async () => {
+  ledgerRead.mockResolvedValueOnce(preset).mockResolvedValueOnce(["0x222"]);
   season[8] = "5";
-  await fundFrontier(account, provider, "0x123", shard, "https://herald.test", 42, "mainnet");
-  expect(ledgerRead).toHaveBeenCalledWith({ contractAddress: "0x123", entrypoint: "get_preset", calldata: ["5"] }, 11);
+  await fundFrontier(account, provider, shard, "https://herald.test", 42, "production");
+  expect(ledgerRead).toHaveBeenCalledWith({ contractAddress: "0x456", entrypoint: "get_preset", calldata: ["5"] }, 11);
   const calls = execute.mock.calls[0]![0] as { calldata: string[] }[];
   expect(calls[1]!.calldata[2]).toBe("5");
+  expect(execute.mock.calls[0]![0]).toMatchObject([
+    { contractAddress: "0x222", calldata: ["1110", String(10n ** 24n), "0"] },
+    { contractAddress: "0x456" },
+  ]);
+});
+
+test.each(["dev", "production"] as const)(
+  "%s funding refuses a ledger token from the other book",
+  async (environment) => {
+    ledgerRead.mockResolvedValueOnce(preset).mockResolvedValueOnce([environment === "dev" ? "0x222" : "0x111"]);
+    await expect(fundFrontier(account, provider, shard, "https://herald.test", 42, environment)).rejects.toThrow(
+      "Ledger token differs",
+    );
+    expect(execute).not.toHaveBeenCalled();
+  },
+);
+
+test.each([
+  ["dev", "ledger"],
+  ["dev", "lords"],
+  ["production", "ledger"],
+  ["production", "lords"],
+] as const)("%s funding requires its own book address for %s", async (environment, field) => {
+  (environment === "dev" ? devBook : productionBook)[field] = "";
+  await expect(fundFrontier(account, provider, shard, "https://herald.test", 42, environment)).rejects.toThrow(field);
+  expect(execute).not.toHaveBeenCalled();
+  expect(shardCall).not.toHaveBeenCalled();
+});
+
+test.each(["dev", "production"] as const)(
+  "%s funding refuses Sepolia before any shard read or approval",
+  async (environment) => {
+    const wrong = { ...account, getChainId: async () => "0x534e5f5345504f4c4941" } as unknown as Account;
+    await expect(fundFrontier(wrong, provider, shard, "https://herald.test", 42, environment)).rejects.toThrow("chain");
+    expect(execute).not.toHaveBeenCalled();
+    expect(shardCall).not.toHaveBeenCalled();
+  },
+);
+
+test("funding refuses a network name instead of an environment", async () => {
+  await expect(fundFrontier(account, provider, shard, "https://herald.test", 42, "mainnet" as "dev")).rejects.toThrow(
+    "environment",
+  );
+  expect(execute).not.toHaveBeenCalled();
 });

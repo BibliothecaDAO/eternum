@@ -13,6 +13,6 @@
     "test": "node --test ./commands/**/*.test.js && bun test ./commands/deployment/*.test.ts",
     "upgrade-live-assets:mainnet": "node ./commands/upgrades/live-assets.js --execute",
     "fund:frontier": "bun ./commands/deployment/fund-frontier.ts",
-    "deploy:sepolia": "bun ./commands/deployment/sepolia.js"
+    "deploy:dev": "bun ./commands/deployment/dev.js"
   }
 }
