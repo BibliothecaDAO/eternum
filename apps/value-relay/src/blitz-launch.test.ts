@@ -102,21 +102,6 @@ it("cancels before start and automatically waits until the earliest legal abort 
   );
 });
 
-it.each([400, 401, 939, 1000])("refuses a slot ending at %i without ten minutes for settlement", async (end) => {
-  rpc.events.mockResolvedValue({
-    events: [
-      { from_address: "0x10", ...ledgerEvent("SeasonOpened", { season_id: 3, preset_id: 9, start: 60, end: 1000 }) },
-    ],
-  });
-  rpc.call.mockImplementation(async (query) =>
-    query.entrypoint === "get_season"
-      ? ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "1", "9", "60", "1000", "0", "0"]
-      : Array(9).fill("0"),
-  );
-  await expect(Effect.runPromise(openSlotOnLedger(credentials, key, { start: 100, end }))).rejects.toThrow();
-  expect(rpc.execute).not.toHaveBeenCalled();
-});
-
 it("encodes refunds with the committed SlotKey and wallet array", async () => {
   await Effect.runPromise(markSlotRefundable(credentials, key, ["0xa", "0xb"]));
   expect(rpc.execute.mock.calls[0]![0].calldata.map(BigInt)).toEqual(
@@ -126,12 +111,7 @@ it("encodes refunds with the committed SlotKey and wallet array", async () => {
   );
 });
 
-it("allows a slot ending just outside the ten-minute settlement margin", async () => {
-  let opened = false;
-  rpc.execute.mockImplementation(async () => {
-    opened = true;
-    return { transaction_hash: "0xabc" };
-  });
+it("fails when the ledger refuses the window after finding the season by slot start", async () => {
   rpc.events.mockResolvedValue({
     events: [
       { from_address: "0x10", ...ledgerEvent("SeasonOpened", { season_id: 3, preset_id: 9, start: 60, end: 1000 }) },
@@ -140,10 +120,11 @@ it("allows a slot ending just outside the ten-minute settlement margin", async (
   rpc.call.mockImplementation(async ({ entrypoint }) =>
     entrypoint === "get_season"
       ? ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "1", "9", "60", "1000", "0", "0"]
-      : opened
-        ? ["3", "1", "9", "100", "399", "0", "0", "0", "0"]
-        : Array(9).fill("0"),
+      : Array(9).fill("0"),
   );
-  await Effect.runPromise(openSlotOnLedger(credentials, key, { start: 100, end: 399 }));
+  rpc.execute.mockRejectedValueOnce(new Error("Ledger: slot outside season"));
+  await expect(Effect.runPromise(openSlotOnLedger(credentials, key, { start: 100, end: 999 }))).rejects.toMatchObject({
+    operation: "open ledger Blitz registration",
+  });
   expect(rpc.execute).toHaveBeenCalledOnce();
 });
