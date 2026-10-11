@@ -3,7 +3,6 @@ import { decodeLedgerSlot } from "../../../packages/value-ledger/src/codecs";
 import { slotValueFixture, registrationIdentityFixture } from "./test-database";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { D1SlotStore } from "./slot-store";
-import type { BlitzValuePort } from "./paid-blitz";
 import { D1LaunchStore } from "./store";
 import { createLaunchTestDatabase, testChain, TEST_CHAIN } from "./test-database";
 let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
@@ -201,67 +200,6 @@ it.each(["exists", "unavailable"])(
   },
 );
 
-it("discovers bounded paid player slots on two shards without opening them, then keeps official ids low", async () => {
-  const value = slotValueFixture(1);
-  const read = vi
-    .spyOn(value, "slot")
-    .mockImplementation(async (key) =>
-      key!.slotId < 2147483654
-        ? { ...(await slotValueFixture(1).slot()), seasonId: 0 }
-        : decodeLedgerSlot(absentLedgerSlot()),
-    );
-  const open = vi.spyOn(value, "openSlot");
-  const launches = new D1LaunchStore(database.db, testChain("0x1"));
-  const one = new D1SlotStore(database.db, launches, value, registrationIdentityFixture);
-  const two = new D1SlotStore(
-    database.db,
-    new D1LaunchStore(database.db, testChain("0x2")),
-    value,
-    registrationIdentityFixture,
-  );
-  await one.discoverPlayerSlots();
-  expect(read).toHaveBeenCalledTimes(5);
-  expect(await one.list()).toHaveLength(5);
-  await one.discoverPlayerSlots();
-  expect(await one.list()).toHaveLength(6);
-  await two.discoverPlayerSlots();
-  expect((await two.get("game-2147483648")).chainId).toBe("0x2");
-  expect(open).not.toHaveBeenCalled();
-  await one.create("official", soon());
-  expect((await one.get("official")).slotId).toBe(1);
-  await database.db
-    .prepare("UPDATE playtest_slots SET closes_at=? WHERE chain_id='0x1' AND slot_id=2147483648")
-    .bind(Date.now() - 1000)
-    .run();
-  await one.freeze("game-2147483648");
-  expect(await launches.find("game", "madara.blitz", "game-2147483648-1")).toMatchObject({
-    slotId: 2147483648,
-    request: {
-      gameStartTime: new Date(Date.parse((await one.get("game-2147483648")).closesAt) + 300000).toISOString(),
-      durationSeconds: 60,
-    },
-  });
-});
-it("discovery retries a failed ledger read without inserting an unpaid slot or skipping its number", async () => {
-  const value = slotValueFixture();
-  const absent = decodeLedgerSlot(absentLedgerSlot());
-  const read = vi.spyOn(value, "slot").mockRejectedValueOnce(new Error("ledger unavailable")).mockResolvedValue(absent);
-  const store = new D1SlotStore(
-    database.db,
-    new D1LaunchStore(database.db, testChain()),
-    value,
-    registrationIdentityFixture,
-  );
-  await expect(store.discoverPlayerSlots()).rejects.toThrow("ledger unavailable");
-  expect(await store.list()).toEqual([]);
-  await store.discoverPlayerSlots();
-  expect(read.mock.calls.slice(-2)).toEqual([
-    [{ chainId: TEST_CHAIN, slotId: 2147483648 }],
-    [{ chainId: TEST_CHAIN, slotId: 2147483648 }],
-  ]);
-  expect(await store.list()).toEqual([]);
-});
-
 it("opens custody through preparation and starts every frozen group five minutes after close", async () => {
   const value = slotValueFixture(25);
   const open = vi.spyOn(value, "openSlot");
@@ -285,31 +223,18 @@ it("opens custody through preparation and starts every frozen group five minutes
     });
 });
 
-it.each([1, 299, 300])(
-  "refunds every player in a %i-second window without scheduling an impossible game",
-  async (window) => {
-    const value: BlitzValuePort = slotValueFixture(125);
-    const page = await value.registrations({ chainId: TEST_CHAIN, slotId: 2147483648 });
-    vi.spyOn(value, "registrations").mockImplementation(async (query) => ({
-      ...page,
-      slot: { ...page.slot, end: page.slot.close + window },
-      registrations: page.registrations.slice(query?.from ?? 0, (query?.from ?? 0) + 100),
-      next: query?.from ? null : 100,
-    }));
-    const refunds = vi.spyOn(value, "markRefundable");
-    const launches = new D1LaunchStore(database.db, testChain());
-    const store = new D1SlotStore(database.db, launches, value, registrationIdentityFixture);
-    await database.db
-      .prepare("INSERT INTO playtest_slots (chain_id,slot_id,name,closes_at) VALUES (?,?,?,?)")
-      .bind(TEST_CHAIN, 2147483648, "game-2147483648", 100000)
-      .run();
-    await store.freeze("game-2147483648");
-    await store.freeze("game-2147483648");
-    expect((await store.get("game-2147483648")).frozenAt).not.toBeNull();
-    expect(await launches.list("madara.blitz")).toEqual([]);
-    expect(refunds).toHaveBeenCalledTimes(2);
-    expect(refunds.mock.calls.flatMap(([, wallets]) => wallets)).toEqual(
-      page.registrations.map(({ wallet }) => wallet),
-    );
-  },
-);
+it("never reuses an official slot number after a failed open is confirmed absent", async () => {
+  const value = slotValueFixture();
+  const open = vi.spyOn(value, "openSlot").mockRejectedValueOnce(new Error("open refused"));
+  vi.spyOn(value, "slot").mockResolvedValueOnce(decodeLedgerSlot(absentLedgerSlot()));
+  const store = new D1SlotStore(
+    database.db,
+    new D1LaunchStore(database.db, testChain()),
+    value,
+    registrationIdentityFixture,
+  );
+  await expect(store.create("failed", soon())).rejects.toThrow("open refused");
+  await store.create("next", soon());
+  const first = (open.mock.calls as unknown as [{ slotId: number }][])[0]![0].slotId;
+  expect((await store.get("next")).slotId).toBeGreaterThan(first);
+});

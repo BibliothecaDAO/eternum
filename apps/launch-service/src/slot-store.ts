@@ -41,7 +41,7 @@ export class D1SlotStore implements SlotStore {
       throw new SlotConflict("Slot close must be a whole second");
     await this.db
       .prepare(
-        `INSERT INTO playtest_slots (slot_id,name,closes_at,chain_id) SELECT COALESCE(MAX(slot_id),0)+1,?1,?2,?3 FROM playtest_slots WHERE slot_id < 2147483648 HAVING ?2 > ${DATABASE_NOW} AND COALESCE(MAX(slot_id),0)+1 < 2147483648 ON CONFLICT (chain_id,name) DO NOTHING`,
+        `INSERT INTO playtest_slots (name,closes_at,chain_id) SELECT ?1,?2,?3 WHERE ?2 > ${DATABASE_NOW} ON CONFLICT (chain_id,name) DO NOTHING`,
       )
       .bind(name, closes, await this.launches.targetChain())
       .run();
@@ -68,26 +68,6 @@ export class D1SlotStore implements SlotStore {
           .bind(slot.chainId, slot.slotId)
           .run();
       throw error;
-    }
-  }
-
-  /** Ledger-assigned player numbers are contiguous per shard; stored rows are the discovery cursor. */
-  async discoverPlayerSlots(): Promise<void> {
-    const chainId = await this.launches.targetChain();
-    const last = await this.db
-      .prepare("SELECT MAX(slot_id) AS id FROM playtest_slots WHERE chain_id=? AND slot_id>=2147483648")
-      .bind(chainId)
-      .first<{ id: number | null }>();
-    const next = (last?.id ?? 2147483647) + 1;
-    for (let slotId = next; slotId < next + 5 && slotId <= 0xffffffff; slotId++) {
-      const slot = await this.value.slot({ chainId, slotId });
-      if (!slot.exists) break;
-      await this.db
-        .prepare(
-          "INSERT INTO playtest_slots (chain_id,slot_id,name,closes_at) VALUES (?,?,?,?) ON CONFLICT (chain_id,slot_id) DO NOTHING",
-        )
-        .bind(chainId, slotId, `game-${slotId}`, slot.close * 1000)
-        .run();
     }
   }
 

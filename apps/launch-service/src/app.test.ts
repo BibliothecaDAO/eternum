@@ -58,7 +58,7 @@ test("the create-run and launcher-discovery routes are gone even for the operato
 });
 test.each([
   ["POST", "/api/slots"],
-  ["POST", "/api/slots/game-2147483648/refund"],
+  ["POST", "/api/slots/friday/refund"],
   ["PUT", "/api/factory/calendar/frontier"],
   ["POST", "/api/factory/operator/launcher/enrol"],
   ["POST", "/api/factory/runs/madara.frontier/frontier-7/actions/continue"],
@@ -88,7 +88,7 @@ test("operator slots and public discovery preserve the shard key and immutable s
   expect((await app.request("/api/slots/friday")).status).toBe(200);
   expect((await app.request("/api/slots/missing")).status).toBe(404);
 });
-test.each(["check-probe", "game-2147483648", "frontier-123"])("reserves %s before inserting a slot", async (name) => {
+test.each(["check-probe", "frontier-123"])("reserves %s before inserting a slot", async (name) => {
   const { app, slots } = fixture();
   expect(
     (

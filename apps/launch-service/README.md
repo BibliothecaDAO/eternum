@@ -5,11 +5,11 @@ membership. `VALUE_IDENTITY` supplies the directory; `VALUE_RELAY` supplies conf
 economic writes. A request can select `?chainId=<official shard>`; with one live shard the selection is unique. Multiple
 live shards require a chain. No Worker shard URL or separate ledger URL/address is configured.
 
-Every Worker write requires the operator token. Players open and pay for a Blitz slot on the ledger; the existing minute
-tick lists up to five new player slots per shard, named `game-<number>`. That namespace and the schedule's
-`frontier-<start timestamp>` names are reserved. There is no factory create-run route or wallet authority. The timetable
-exposes `slotId`; completed game directory rows carry that same field (null outside Blitz). The environment address book
-supplies the ledger and L2 chain. No directory row carries economic addresses or a free/paid entry payload.
+Every Worker write requires the operator token. The operator opens Blitz slots; players register on the ledger. The
+schedule's `frontier-<start timestamp>` names are reserved. There is no factory create-run route or wallet authority.
+The timetable exposes `slotId`; completed game directory rows carry that same field (null outside Blitz). The
+environment address book supplies the ledger and L2 chain. No directory row carries economic addresses or a free/paid
+entry payload.
 
 Blitz registration belongs to an uncapped ledger slot. It closes five minutes before the common game start; official
 games keep their 11:00 and 20:00 UTC starts. At close, the relay reads confirmed registrations in pages of 100. Identity

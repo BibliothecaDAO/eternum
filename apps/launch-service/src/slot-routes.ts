@@ -9,7 +9,7 @@ const CreateSlotRequest = Schema.Struct({
     Schema.check(Schema.isPattern(BLITZ_SLOT_NAME_PATTERN)),
     Schema.check(
       Schema.makeFilter(
-        (name: string) => isPublicGameName(name) && isPublicGameName(`${name}-1`) && !/^(game|frontier)-/.test(name),
+        (name: string) => isPublicGameName(name) && isPublicGameName(`${name}-1`) && !/^frontier-/.test(name),
       ),
     ),
   ),
