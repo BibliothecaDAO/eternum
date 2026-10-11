@@ -39,7 +39,7 @@ pub mod TestLords {
 
     #[constructor]
     fn constructor(ref self: ContractState) {
-        self.erc20.initializer("Test LORDS", "TLORDS");
+        self.erc20.initializer("Realms Dev Test Token (no value)", "RDEVTEST");
     }
 
     #[abi(embed_v0)]
