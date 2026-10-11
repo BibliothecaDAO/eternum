@@ -49,13 +49,6 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-10-11",
-    title: "Eight-digit email codes",
-    description:
-      "The code emailed to sign in, and to link, replace or unlink your payout wallet, is now eight digits, and its boxes fit a phone on one line.",
-    type: "improvement",
-  },
-  {
-    date: "2026-10-11",
     title: "A linked wallet receives at once",
     description:
       "A newly linked payout wallet no longer waits 24 hours: withdrawals and prizes reach it as soon as it is linked with its signature and the emailed code.",
@@ -189,7 +182,7 @@ const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-09",
     title: "Email codes protect wallet changes",
-    description: "Link, replace or unlink your payout wallet with a code sent to your verified email.",
+    description: "Link, replace or unlink your payout wallet with a six-digit code sent to your verified email.",
     type: "fix",
   },
   {

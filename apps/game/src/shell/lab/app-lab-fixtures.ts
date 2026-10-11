@@ -251,7 +251,7 @@ export const LAB_ENTRY_TERMS: Partial<Record<keyof typeof LAB_SCREENS, EntryTerm
 };
 
 /** The lab's emailed code: this one is right, any other is refused as the identity service refuses it. */
-export const LAB_EMAIL_CODE = "11111111";
+export const LAB_EMAIL_CODE = "111111";
 
 export type LabScreen = keyof typeof LAB_SCREENS;
 

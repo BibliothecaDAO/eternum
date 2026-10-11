@@ -34,7 +34,7 @@ type Step =
   | { kind: "code"; change: Change };
 
 /**
- * The payout wallet (design 3): linking or replacing takes the new wallet's signature and an 8-digit code sent to the
+ * The payout wallet (design 3): linking or replacing takes the new wallet's signature and a 6-digit code sent to the
  * account's email; unlinking takes the code alone, so a player who lost the wallet can still unlink it. A linked wallet
  * receives at once. A player with no wallet is sent to Ready, whose email wallet needs no install. We create no wallet
  * and hold no key.
@@ -202,7 +202,7 @@ const ReadyByEmail = ({ onProof }: { onProof: (proof: SignInOptions) => void }) 
 );
 
 /**
- * The emailed code: sent when the step opens, entered in its boxes, and spent on the change the moment its last digit
+ * The emailed code: sent when the step opens, entered in six boxes, and spent on the change the moment the sixth digit
  * lands. A link then asks the wallet for its signature.
  */
 const CodeStep = ({ change, email, onDone }: { change: Change; email: string; onDone: () => void }) => {

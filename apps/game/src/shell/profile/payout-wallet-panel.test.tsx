@@ -83,16 +83,13 @@ it("unlinks only with the emailed code, and names a wrong code", async () => {
   expect(sent).toHaveBeenCalledWith("you@mail.test");
   expect(panel.textContent).toContain("Code sent to you@mail.test");
 
-  // Eight digits spend the code; the six of an older code spend nothing.
   await typeCode(panel, "482913");
-  expect(unlink).not.toHaveBeenCalled();
-  await typeCode(panel, "48291357");
-  expect(unlink).toHaveBeenLastCalledWith("48291357");
+  expect(unlink).toHaveBeenLastCalledWith("482913");
   expect(panel.textContent).toContain("That code is not right.");
   expect(onChanged).not.toHaveBeenCalled();
 
-  await typeCode(panel, "11111111");
-  expect(unlink).toHaveBeenLastCalledWith("11111111");
+  await typeCode(panel, "111111");
+  expect(unlink).toHaveBeenLastCalledWith("111111");
   expect(onChanged).toHaveBeenCalledOnce();
 });
 
@@ -107,8 +104,8 @@ it("links a wallet with its SIWS proof and the emailed code, through the service
   );
   await act(async () => (await vi.waitFor(() => screenButton(panel, "Pick wallet"))).click());
   expect(panel.textContent).toContain("Code sent to you@mail.test");
-  await typeCode(panel, "12345678");
-  expect(link).toHaveBeenCalledWith({ ...PROOF, code: "12345678" });
+  await typeCode(panel, "123456");
+  expect(link).toHaveBeenCalledWith({ ...PROOF, code: "123456" });
   expect(onChanged).toHaveBeenCalledOnce();
 });
 

@@ -79,11 +79,7 @@ describe("the sign-in flow", () => {
       expect(sendCode).toHaveBeenCalledWith("you@mail.test");
       expect(ui.container.textContent).toContain("you@mail.test");
 
-      // The emailed code is eight digits: the six of an older code sign nobody in.
       await ui.type('input[autocomplete="one-time-code"]', "481927");
-      expect(ui.query('input[autocomplete="nickname"]')).toBeNull();
-      expect(ui.container.querySelectorAll('label span[aria-hidden="true"]').length).toBe(8);
-      await ui.type('input[autocomplete="one-time-code"]', "48192736");
       const name = () => ui.query<HTMLInputElement>('input[autocomplete="nickname"]')!;
       expect(name().value).toBe("Ysolde");
       expect(name().getAttribute("aria-invalid")).toBe("false");
@@ -114,7 +110,7 @@ describe("the sign-in flow", () => {
     try {
       await ui.type('input[type="email"]', "you@mail.test");
       await act(async () => ui.query<HTMLFormElement>("form")!.requestSubmit());
-      await ui.type('input[autocomplete="one-time-code"]', "11111111");
+      await ui.type('input[autocomplete="one-time-code"]', "111111");
       await act(async () => {});
       expect(ui.container.textContent).toContain("That code is not right.");
       expect(ui.query<HTMLInputElement>('input[autocomplete="one-time-code"]')!.value).toBe("");
