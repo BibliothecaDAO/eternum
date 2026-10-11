@@ -87,7 +87,7 @@ describe("native presets", () => {
         id,
       ).economy.chests.unwrap();
       expect(chests).toEqual({
-        price: 50n,
+        price_ceiling: 50n,
         shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
         claim_window_seconds: 604800,
       });
@@ -101,11 +101,11 @@ describe("native presets", () => {
     }
     for (const id of [2, 3, 4]) expect(buildNativePreset(configuration(id), id).economy.labor.isNone()).toBe(true);
   });
-  test("Frontier pays ruin chests from its LORDS pool at a fixed price of 50 a share, over a seventy-day season", () => {
+  test("Frontier caps daily chest prices at 50 per share over a seventy-day season", () => {
     const config = loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID);
     const preset = buildNativePreset(config, FRONTIER_PRESET_ID);
     expect(preset.economy.chests.unwrap()).toEqual({
-      price: 50n,
+      price_ceiling: 50n,
       shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
       claim_window_seconds: 604800,
     });

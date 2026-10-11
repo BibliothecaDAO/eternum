@@ -290,7 +290,7 @@ function buildEconomy(
       chests.shares.legendary,
     ];
     if (
-      ![chests.price, chests.claimWindowSeconds, ...shares].every(
+      ![chests.priceCeiling, chests.claimWindowSeconds, ...shares].every(
         (value) => Number.isSafeInteger(value) && value > 0,
       ) ||
       shares.some((value) => value > 0xffff) ||
@@ -342,7 +342,7 @@ function buildEconomy(
       chests === null
         ? new CairoOption(CairoOptionVariant.None)
         : new CairoOption(CairoOptionVariant.Some, {
-            price: BigInt(chests.price),
+            price_ceiling: BigInt(chests.priceCeiling),
             shares: chests.shares,
             claim_window_seconds: chests.claimWindowSeconds,
           }),
