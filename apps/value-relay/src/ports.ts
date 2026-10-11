@@ -1,5 +1,5 @@
 import { Data, Effect } from "effect";
-import type { LedgerPayDecision, PayoutWallet } from "@realms-world/identity";
+import type { LedgerPayDecision } from "@realms-world/identity";
 
 export class RelayFailure extends Data.TaggedError("RelayFailure")<{ operation: string }> {}
 export type RelayEffect<A> = Effect.Effect<A, RelayFailure>;
@@ -128,7 +128,6 @@ export interface RelayPorts {
     grantLabor(claim: LaborClaim): RelayEffect<LaborGrant>;
   };
   identity: {
-    payoutWallet(realmsId: string): RelayEffect<PayoutWallet>;
     accountForRealmsId(realmsId: string): RelayEffect<string | null>;
     linkedWallet(realmsId: string): RelayEffect<string | null>;
   };

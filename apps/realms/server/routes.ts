@@ -1,5 +1,3 @@
-import { Effect } from "effect";
-import { lookupPayoutWallet } from "./payout-wallet";
 import { presentsOperatorToken } from "@realms-world/identity";
 
 import type { IdentityAuth } from "./auth";
@@ -46,7 +44,7 @@ export const routeIdentityRequest = async (
     if (refusal) return refusal;
     if (sendsCode) return sendCodeWithExpiry(request, auth);
   }
-  if (pathname === "/api/auth/get-session" && request.method === "GET") return accountSession(request, auth, env);
+  if (pathname === "/api/auth/get-session" && request.method === "GET") return accountSession(request, auth);
   if (pathname.startsWith("/api/auth/")) return auth.handler(request);
   if (requiresSameOrigin(request, pathname) && request.headers.get("origin") !== new URL(env.BASE_URL).origin) {
     return json({ error: "invalid_origin" }, 403);
@@ -173,18 +171,10 @@ const sendCodeWithExpiry = async (request: Request, auth: IdentityAuth): Promise
   );
 };
 
-/** The account page and the relay receive the same eligibility decision from the database. */
-const accountSession = async (request: Request, auth: IdentityAuth, env: IdentityEnv): Promise<Response> => {
+/** Sessions always expose the current link, with no cached eligibility state. */
+const accountSession = async (request: Request, auth: IdentityAuth): Promise<Response> => {
   const response = await auth.handler(request);
-  if (!response.ok) return response;
-  const session = (await response.json()) as { user: { realmsId: string } } | null;
-  if (!session) return responseWithSession(response, null);
-  const payoutWallet = await Effect.runPromise(lookupPayoutWallet(env.DB, session.user.realmsId));
-  return responseWithSession(response, { ...session, user: { ...session.user, payoutWallet } });
-};
-const responseWithSession = (response: Response, session: unknown) => {
   const headers = new Headers(response.headers);
-  headers.delete("content-length");
   headers.set("cache-control", "no-store");
-  return Response.json(session, { status: response.status, headers });
+  return new Response(response.body, { status: response.status, headers });
 };

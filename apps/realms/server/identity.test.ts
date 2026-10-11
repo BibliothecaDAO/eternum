@@ -175,7 +175,6 @@ const createBrowser = (parentDomainCookies: string[] = []) => {
   const session = async () =>
     (await (await request("/api/auth/get-session")).json()) as {
       user: {
-        payoutWallet: import("@realms-world/identity").PayoutWallet;
         walletLinkedAt: number | null;
         email: string;
         id: string;
@@ -1077,44 +1076,34 @@ describe("identity Worker", () => {
     expect((await browser.session())!.user.address).toBeNull();
   });
 
-  it("exposes the same 24-hour hold, preserves it on repeat links, and restarts it on replacement", async () => {
+  it("exposes only the current linked wallet immediately after each change", async () => {
     const browser = createBrowser();
-    await signInWithCode(browser, "wallet-hold@realms.test");
-    expect((await browser.session())!.user.payoutWallet).toEqual({ status: "no_wallet" });
+    await signInWithCode(browser, "wallet-link@realms.test");
+    expect((await browser.session())!.user.address).toBeNull();
     const address = createWallet();
     expect((await proveWallet(browser, address, "link")).status).toBe(200);
     const user = (await browser.session())!.user;
-    expect(user.payoutWallet).toEqual({
-      status: "on_hold",
-      address: user.address,
-      until: user.walletLinkedAt! + 86_400_000,
-    });
+    expect(user.address).toBeTruthy();
+    expect(user).not.toHaveProperty("payoutWallet");
     expect((await proveWallet(browser, address, "link")).status).toBe(200);
     expect((await browser.session())!.user.walletLinkedAt).toBe(user.walletLinkedAt);
-    await env.DB.prepare('UPDATE "user" SET "walletLinkedAt" = ? WHERE "id" = ?')
-      .bind(Date.now() - 86_400_001, user.id)
-      .run();
-    expect((await browser.session())!.user.payoutWallet).toEqual({ status: "ready", address: user.address });
     expect((await proveWallet(browser, createWallet(), "link")).status).toBe(200);
-    expect((await browser.session())!.user.payoutWallet.status).toBe("on_hold");
+    expect((await browser.session())!.user.address).not.toBe(user.address);
     expect((await browser.request("/api/auth/siws/unlink", { body: { otp: await walletCode(browser) } })).status).toBe(
       200,
     );
-    expect((await browser.session())!.user.payoutWallet).toEqual({ status: "no_wallet" });
-    expect((await browser.session())!.user.walletLinkedAt).toBeNull();
+    expect((await browser.session())!.user.address).toBeNull();
   });
 
-  it("keeps historical eligibility after replacement and unlink without changing the hold", async () => {
+  it("keeps link history after replacement and unlink", async () => {
     const browser = createBrowser();
     await signInWithCode(browser, "wallet-history@realms.test");
     const first = createWallet();
     await proveWallet(browser, first, "link");
     const user = (await browser.session())!.user;
     // Historical interval fixture: the payment precedes the later wallet change.
-    await env.DB.prepare(
-      "UPDATE wallet_link_history SET linked_at=?,ready_at=? WHERE account=? AND replaced_at IS NULL",
-    )
-      .bind(Date.now() - 172800000, Date.now() - 86400000, user.realmsId)
+    await env.DB.prepare("UPDATE wallet_link_history SET linked_at=? WHERE account=? AND replaced_at IS NULL")
+      .bind(Date.now() - 172800000, user.realmsId)
       .run();
     const second = createWallet();
     await proveWallet(browser, second, "link");
@@ -1143,7 +1132,7 @@ describe("identity Worker", () => {
     ).toBe(2);
   });
 
-  it("cannot bypass the wallet code or hold through the generic account update", async () => {
+  it("cannot bypass the wallet code through the generic account update", async () => {
     const browser = createBrowser();
     await signInWithCode(browser, "wallet-write-path@realms.test");
     const address = createWallet();
@@ -1161,7 +1150,6 @@ describe("identity Worker", () => {
     const after = (await browser.session())!.user;
     expect(after.address).toBe(before.address);
     expect(after.walletLinkedAt).toBe(before.walletLinkedAt);
-    expect(after.payoutWallet).toEqual(before.payoutWallet);
   });
 
   it("suggests a new player's display name from their Discord name or their email", async () => {

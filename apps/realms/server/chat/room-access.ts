@@ -2,7 +2,7 @@ import { BLITZ_SLOT_NAME_PATTERN } from "@realms-world/identity";
 import { environmentL2 } from "@realms-world/chain";
 import { readLedgerRegistration, readLedgerSlot } from "@realms-world/value-ledger";
 import { identityProvider, verifyIdentityChain } from "../l2";
-import { readLinkedWallet } from "../payout-wallet";
+import { readLinkedWallet } from "../linked-wallet";
 import { z } from "zod";
 import type { IdentityEnv } from "../env";
 import { isRoomMember, slotRoomKey, type ChatRoomId } from "./rooms";

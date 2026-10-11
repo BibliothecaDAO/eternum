@@ -18,7 +18,7 @@ beforeAll(async () => {
   mf = new Miniflare({ modules: true, script: "export default {}", d1Databases: ["DB"] });
   db = (await mf.getD1Database("DB")) as unknown as D1Database;
   await db.exec('CREATE TABLE "user" (id TEXT PRIMARY KEY, "realmsId" TEXT, address TEXT, "emailVerified" INTEGER)');
-  for (const file of ["0012_wallet_link_history.sql", "0014_pay_decisions.sql"]) {
+  for (const file of ["0012_wallet_link_history.sql", "0014_pay_decisions.sql", "0018_drop_wallet_readiness.sql"]) {
     let sql = readFileSync(new URL("../migrations/" + file, import.meta.url), "utf8");
     if (file.startsWith("0012")) sql = sql.slice(0, sql.indexOf("INSERT INTO"));
     await db.batch(
@@ -39,11 +39,13 @@ beforeEach(async () => {
   ]);
   await db.prepare("INSERT INTO \"user\" VALUES('u','0x2',?,1)").bind(wallet).run();
   await db
-    .prepare("INSERT INTO wallet_link_history(id,account,wallet,linked_at,ready_at) VALUES(1,'0x2',?,0,0)")
+    .prepare(
+      "INSERT INTO wallet_link_history(id,account,wallet,linked_at) VALUES(1,'0x2',?,CAST(unixepoch('subsec')*1000 AS INTEGER))",
+    )
     .bind(wallet)
     .run();
 });
-it("records ready evidence before broadcast and keeps it valid after unlink and inclusion-time skew", async () => {
+it("authorizes a newly linked wallet immediately before broadcast and keeps it valid after unlink and inclusion-time skew", async () => {
   await recordPayDecision(db, decision);
   await db.prepare('UPDATE "user" SET address=NULL').run();
   await db.prepare("UPDATE wallet_link_history SET replaced_at=1").run();
@@ -57,11 +59,10 @@ it("records ready evidence before broadcast and keeps it valid after unlink and 
   ])
     expect(await matchesPayDecision(db, { ...decision, ...change })).toBe(false);
 });
-it("refuses stale-wallet and held decisions before any transaction is broadcast", async () => {
-  await db.prepare("UPDATE wallet_link_history SET ready_at=?").bind(Number.MAX_SAFE_INTEGER).run();
-  await expect(recordPayDecision(db, decision)).rejects.toThrow();
+it("refuses an unlinked or unverified wallet before any transaction is broadcast", async () => {
+  await db.prepare('UPDATE "user" SET "emailVerified"=0').run();
+  await expect(recordPayDecision(db, decision)).rejects.toThrow("pay_decision_not_authorized");
   expect(await matchesPayDecision(db, decision)).toBe(false);
-  await db.prepare("UPDATE wallet_link_history SET ready_at=0").run();
-  await db.prepare('UPDATE "user" SET address=NULL').run();
-  await expect(recordPayDecision(db, decision)).rejects.toThrow();
+  await db.prepare('UPDATE "user" SET address=NULL,"emailVerified"=1').run();
+  await expect(recordPayDecision(db, decision)).rejects.toThrow("pay_decision_not_authorized");
 });

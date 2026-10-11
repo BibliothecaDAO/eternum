@@ -104,7 +104,6 @@ const fixture = () => {
     },
     identity: {
       matchesPayDecision: (decision) => Effect.succeed(BigInt(decision.wallet) === 0x123n),
-      payoutWallet: () => Effect.succeed({ status: "ready", address: "0x123" }),
       accountForRealmsId: () => Effect.succeed("0x3"),
       linkedWallet: () => Effect.succeed("0x123"),
     },
@@ -155,15 +154,13 @@ describe("confirmed value relay", () => {
     expect(f.single.pay).toHaveBeenCalledWith(withdrawal, "0x123");
     expect(f.ports.ledger.postResult).toHaveBeenCalledTimes(1);
   });
-  it("retains withdrawals until a wallet exists and the hold ends, reading the current link each time", async () => {
+  it("pays as soon as a wallet is linked, reading the current link each time", async () => {
     const f = fixture();
-    f.ports.identity.payoutWallet = () => Effect.succeed({ status: "no_wallet" });
-    await f.run();
-    f.ports.identity.payoutWallet = () => Effect.succeed({ status: "on_hold", address: "0x123", until: 1000 });
+    f.ports.identity.linkedWallet = () => Effect.succeed(null);
     await f.run();
     expect(f.single.pay).not.toHaveBeenCalled();
     expect(await f.store.progress()).toMatchObject({ nextBlock: 1 });
-    f.ports.identity.payoutWallet = () => Effect.succeed({ status: "ready", address: "0x456" });
+    f.ports.identity.linkedWallet = () => Effect.succeed("0x456");
     await f.run();
     expect(f.single.pay).toHaveBeenCalledWith(withdrawal, "0x456");
   });
@@ -186,7 +183,7 @@ describe("confirmed value relay", () => {
   });
   it("halts durably before any further payment when a previously observed hash changes", async () => {
     const f = fixture();
-    f.ports.identity.payoutWallet = () => Effect.succeed({ status: "no_wallet" });
+    f.ports.identity.linkedWallet = () => Effect.succeed(null);
     await f.run();
     f.ports.shard.blockHash = () => Effect.succeed("0xb");
     await expect(f.run()).rejects.toThrow();
@@ -297,7 +294,7 @@ it("detects a parent mismatch before recording or paying the new block", async (
 });
 it("stops on a regressed confirmed head before paying pending withdrawals", async () => {
   const f = fixture();
-  f.ports.identity.payoutWallet = () => Effect.succeed({ status: "no_wallet" });
+  f.ports.identity.linkedWallet = () => Effect.succeed(null);
   await f.run();
   f.ports.shard.confirmedHead = () => Effect.succeed(-1);
   await expect(f.run()).rejects.toThrow();
@@ -356,7 +353,7 @@ it("does not acknowledge a clock-lagged payment and still delivers other result 
 
 it("checks the observed hash without decoding receipts or resolving account/season bindings", async () => {
   const f = fixture();
-  f.ports.identity.payoutWallet = () => Effect.succeed({ status: "no_wallet" });
+  f.ports.identity.linkedWallet = () => Effect.succeed(null);
   await f.run();
   f.ports.shard.eventsPage = vi.fn(() => Effect.fail(new RelayFailure({ operation: "binding_unavailable" })));
   f.ports.shard.blockHash = () => Effect.succeed("0xb");
@@ -393,10 +390,10 @@ it("refuses a labor claim whose recipient account is not derived from its authen
   expect(f.ports.shard.grantLabor).not.toHaveBeenCalled();
 });
 
-it("reports a held wallet's receipt before payout and keeps an unlock refusal in the retry queue", async () => {
+it("reports an unlinked player's receipt before payout and keeps an unlock refusal in the retry queue", async () => {
   const f = fixture();
   const order: string[] = [];
-  f.ports.identity.payoutWallet = () => Effect.succeed({ status: "on_hold", address: "0x123", until: 10000 });
+  f.ports.identity.linkedWallet = () => Effect.succeed(null);
   f.single.report = vi.fn(() => {
     order.push("report");
     return Effect.void;
@@ -404,7 +401,7 @@ it("reports a held wallet's receipt before payout and keeps an unlock refusal in
   await f.run();
   expect(order).toEqual(["report"]);
   expect(f.single.pay).not.toHaveBeenCalled();
-  f.ports.identity.payoutWallet = () => Effect.succeed({ status: "ready", address: "0x123" });
+  f.ports.identity.linkedWallet = () => Effect.succeed("0x123");
   f.single.pay = vi.fn(() => {
     order.push("pay");
     return Effect.fail(new RelayFailure({ operation: "ledger_unlock_exceeded" }));
@@ -414,14 +411,14 @@ it("reports a held wallet's receipt before payout and keeps an unlock refusal in
   expect(await f.store.withdrawals()).toHaveLength(1);
   expect(await f.store.held()).toEqual([]);
 });
-it("reports without a wallet and pays reported debt to the ready wallet at payment time", async () => {
+it("reports without a wallet and pays reported debt to the linked wallet at payment time", async () => {
   const f = fixture();
-  f.ports.identity.payoutWallet = () => Effect.succeed({ status: "no_wallet" });
+  f.ports.identity.linkedWallet = () => Effect.succeed(null);
   await f.run();
   expect(f.single.report).toHaveBeenCalledWith(withdrawal);
   expect(f.single.pay).not.toHaveBeenCalled();
   f.ports.ledger.payment = () => Effect.succeed({ paid: false, seasonId: 4, wallet: "0", amount: "17" });
-  f.ports.identity.payoutWallet = () => Effect.succeed({ status: "ready", address: "0x999" });
+  f.ports.identity.linkedWallet = () => Effect.succeed("0x999");
   await f.run();
   expect(f.single.pay).toHaveBeenCalledWith(withdrawal, "0x999");
   expect(await f.store.held()).toEqual([]);
@@ -439,9 +436,9 @@ it("keeps a pinned event-page cursor through retries and checks its hash before 
   expect(await f.store.progress()).toMatchObject({ nextBlock: 1, lastHash: "0xa" });
 });
 
-it("accepts a historical ready payout even when the player has since changed or unlinked the wallet", async () => {
+it("accepts a historically authorized payout even when the player has since changed or unlinked the wallet", async () => {
   const f = fixture();
-  f.ports.identity.payoutWallet = () => Effect.succeed({ status: "no_wallet" });
+  f.ports.identity.linkedWallet = () => Effect.succeed(null);
   Object.assign(f.ports.identity, { matchesPayDecision: () => Effect.succeed(true) });
   const paid = { ...withdrawal, wallet: "0x123", paymentTransactionHash: "0xdef", paidAt: 1000 };
   f.ports.ledger.paidClaims = () => Effect.succeed({ rows: [paid], head: 1000, next: null });
@@ -489,7 +486,7 @@ it("audits the signed pay decision even when replacement and block clocks disagr
   );
   expect(pause).not.toHaveBeenCalled();
 });
-it("pauses on a payment with no authorized signed decision even when its wallet was once ready", async () => {
+it("pauses on a payment with no authorized signed decision even when its wallet was once linked", async () => {
   const f = fixture();
   Object.assign(f.ports.identity, { matchesPayDecision: () => Effect.succeed(false) });
   const pause = vi.fn(() => Effect.void);
@@ -528,13 +525,13 @@ it("persists a halt when the head falls below an unfinished page's observed anch
 
 it("voids closed unpaid reports even when the account has no payout wallet and never retries them", async () => {
   const f = fixture();
-  f.ports.identity.payoutWallet = vi.fn(() => Effect.succeed({ status: "no_wallet" as const }));
+  f.ports.identity.linkedWallet = vi.fn(() => Effect.succeed(null));
   f.ports.ledger.payment = () => Effect.succeed({ paid: false, seasonId: 4, wallet: "0x0", amount: "17" });
   Object.assign(f.ports.ledger, { voided: () => Effect.succeed(true) });
   await Effect.runPromise(runRelay("0x1", f.ports, f.store));
   expect(await f.store.withdrawals()).toHaveLength(0);
   expect(await f.store.held()).toEqual([expect.objectContaining({ kind: "payment", reason: "ledger_report_voided" })]);
-  expect(f.ports.identity.payoutWallet).not.toHaveBeenCalled();
+  expect(f.ports.identity.linkedWallet).not.toHaveBeenCalled();
   await Effect.runPromise(runRelay("0x1", f.ports, f.store));
   expect(f.single.pay).not.toHaveBeenCalled();
 });

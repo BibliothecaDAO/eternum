@@ -5,12 +5,11 @@ import { createIdentityAuth } from "./auth";
 import { WorkerEntrypoint } from "cloudflare:workers";
 import { normalizeStarknetAddress, type LedgerPayDecision } from "@realms-world/identity";
 import { realmsAccountAddress } from "@realms-world/identity/account";
-import { Effect } from "effect";
 import { decodeIdentityEnv, type IdentityEnv } from "./env";
 import { encodeChainName } from "@realms-world/chain";
 import { identityL2Configuration, realmOwnerOf } from "./l2";
 import { realmsIdsOfAccounts } from "./realms-accounts";
-import { lookupPayoutWallet, readLinkedWallet } from "./payout-wallet";
+import { readLinkedWallet } from "./linked-wallet";
 
 /** Only a service binding exposes these reads; they have no public HTTP route. */
 export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
@@ -25,9 +24,6 @@ export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
   }
   realmOwnerOf(realmId: string) {
     return realmOwnerOf(decodeIdentityEnv(this.env as unknown as Record<string, unknown>), realmId);
-  }
-  payoutWallet(realmsId: string) {
-    return Effect.runPromise(lookupPayoutWallet(this.env.DB, realmsId));
   }
   async recordPayDecisions(decisions: LedgerPayDecision[]) {
     for (const decision of decisions) await recordPayDecision(this.env.DB, decision);

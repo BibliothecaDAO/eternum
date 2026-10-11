@@ -1,7 +1,7 @@
 import { normalizeStarknetAddress } from "@realms-world/identity";
 import type { SlotRegistration } from "@realms-world/value-ledger";
 
-/** Registration spends value; its link need not have passed the receiving hold. */
+/** Resolve each registration through the link that existed when its wallet paid. */
 export async function registrationRealmsIds(
   db: D1Database,
   registrations: readonly SlotRegistration[],

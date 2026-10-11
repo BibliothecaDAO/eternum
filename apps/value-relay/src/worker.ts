@@ -46,7 +46,6 @@ interface RelayEnv {
     l2ChainId(): Promise<string>;
     realmOwnerOf(realmId: string): Promise<string>;
     recordPayDecisions(decisions: import("@realms-world/identity").LedgerPayDecision[]): Promise<void>;
-    payoutWallet(id: string): Promise<import("@realms-world/identity").PayoutWallet>;
     linkedWallet(id: string): Promise<string | null>;
     authenticate(cookie: string): Promise<{ realmsId: string } | null>;
     accountForRealmsId(id: string): Promise<string | null>;

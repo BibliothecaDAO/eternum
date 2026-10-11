@@ -149,10 +149,10 @@ const payWithdrawals = (ports: RelayPorts, store: RelayStore) =>
         yield* setAsideOrDefer(store, withdrawal, "ledger_report_voided", deferred);
         continue;
       }
-      const wallet = yield* Effect.result(ports.identity.payoutWallet(withdrawal.realmsId));
+      const wallet = yield* Effect.result(ports.identity.linkedWallet(withdrawal.realmsId));
       if (Result.isFailure(wallet))
         deferred.push({ key: withdrawal.transactionHash, reason: wallet.failure.operation });
-      else if (wallet.success.status === "ready") ready.push({ withdrawal, wallet: wallet.success.address });
+      else if (wallet.success) ready.push({ withdrawal, wallet: wallet.success });
     }
     if (ready.length) {
       const pay = yield* Effect.result(ports.ledger.payMany(ready));

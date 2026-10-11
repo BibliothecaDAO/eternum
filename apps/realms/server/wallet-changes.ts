@@ -62,8 +62,8 @@ const writeWalletChange = (
       .bind(user.id, id),
     db
       .prepare(
-        `INSERT INTO wallet_link_history(account,wallet,linked_at,ready_at)
-      SELECT "realmsId",address,"walletLinkedAt","walletLinkedAt"+86400000 FROM "user" WHERE id=?1 AND address IS NOT NULL
+        `INSERT INTO wallet_link_history(account,wallet,linked_at)
+      SELECT "realmsId",address,"walletLinkedAt" FROM "user" WHERE id=?1 AND address IS NOT NULL
       AND EXISTS(SELECT 1 FROM wallet_change_notices WHERE id=?2)
       AND NOT EXISTS(SELECT 1 FROM wallet_link_history WHERE account="user"."realmsId" AND replaced_at IS NULL)`,
       )
