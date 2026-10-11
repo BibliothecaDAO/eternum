@@ -375,6 +375,8 @@ const SEASON_ROWS: SeasonListRow[] = SEASON_NAMES.map((name, index) => ({
   lords: SEASON_LORDS[index],
   own: false,
 }));
+/** A million LORDS deposited for a 100-unit season: Day 12 spans five units and releases a twentieth of it. */
+const SEASON_POOL_FIGURES = { lords: 1_000_000, today: 50_000 };
 const OWN_ROW: SeasonListRow = { key: "you", rank: 12, order: 12, name: YOU, sitesCleared: 88, lords: 192, own: true };
 
 /** The guide's lab lines, by the step they show. */
@@ -655,6 +657,7 @@ const STATES = {
   "season-over-closed": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over", seasonLords: "closed" },
   season: { clock: CLOCK, stores: STORES, armies: ARMIES, season: "list" },
   "season-detail": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "detail" },
+  "season-pool-unpublished": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "unpublished" },
   "season-loading": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "loading" },
   "season-failed": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "failed" },
   visiting: { clock: CLOCK, stores: STORES, armies: ARMIES, visiting: true },
@@ -793,7 +796,7 @@ type LabState = {
   results?: "today" | "today-earlier" | "today-failed" | "over" | "over-strong";
   /** The realm's LORDS on the season-over card: still to withdraw, or past the season's close. */
   seasonLords?: "open" | "closed";
-  season?: "list" | "detail" | "loading" | "failed";
+  season?: "list" | "detail" | "unpublished" | "loading" | "failed";
   visiting?: boolean;
   training?: "battle" | "hearth" | "scouts" | "short";
   tree?: "page" | "farm" | "barracks" | "hut" | "shrine";
@@ -874,6 +877,7 @@ export const HudLab = () => {
               <SeasonList
                 rank={12}
                 chest={{ tier: 1, lords: 32 }}
+                pool={lab.season === "unpublished" ? null : SEASON_POOL_FIGURES}
                 rows={SEASON_ROWS}
                 pinned={OWN_ROW}
                 state={lab.season === "loading" || lab.season === "failed" ? lab.season : "ready"}

@@ -7,7 +7,7 @@ import { getActiveGame } from "@/runtime/world";
 import { startRealmVisit } from "@/sync/active-game-client";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
-import { configManager } from "@bibliothecadao/eternum";
+import { configManager, dayOf, type ExpeditionRules } from "@bibliothecadao/eternum";
 import {
   fetchHeraldLeaderboard,
   type NativeRows,
@@ -21,8 +21,9 @@ import { useNavigate } from "react-router-dom";
 
 import { GuideSlot } from "../guide/frontier-guide";
 import { type SeasonDetail, SeasonDetailSheet } from "./season-detail";
-import { SeasonList, type SeasonListRow } from "./season-list";
+import { SeasonList, type SeasonListRow, type SeasonPoolFigures } from "./season-list";
 import { type PodiumPlace, SeasonOverCard, type SeasonTotals } from "./season-over-card";
+import { publishedPoolOf, releasedInDay } from "./season-pool";
 import { findOwnEntry, ownRank, wholeLords, wholeResource } from "./standings";
 
 type Entry = HeraldFrontierLeaderboardEntry;
@@ -58,13 +59,14 @@ export const useSeasonRank = (): string => {
 };
 
 /**
- * Season over the board: a common chest's LORDS, the first fifty realms and the player's own, a row's detail with
- * Visit. Visiting closes the page for the visited realm.
+ * Season over the board: the season's pool and what today releases of it, a common chest's LORDS, the first fifty
+ * realms and the player's own, a row's detail with Visit. Visiting closes the page for the visited realm.
  */
-export const FrontierSeason = ({ onBack }: { onBack: () => void }) => {
+export const FrontierSeason = ({ rules, onBack }: { rules: ExpeditionRules; onBack: () => void }) => {
   const board = useSeasonBoard();
   const viewer = useViewer();
   const chest = useCommonChest();
+  const pool = useSeasonPool(rules);
   const [opened, setOpened] = useState<string | null>(null);
   const entries = board.data ?? [];
   const own = findOwnEntry(entries, viewer);
@@ -79,6 +81,7 @@ export const FrontierSeason = ({ onBack }: { onBack: () => void }) => {
       <SeasonList
         rank={ownRank(board.data, viewer)}
         chest={chest}
+        pool={pool}
         rows={rows}
         pinned={pinned}
         state={board.isError ? "failed" : board.isPending ? "loading" : "ready"}
@@ -115,6 +118,27 @@ export const commonChestOf = (chestRules: Pick<NativeRows["ChestRules"], "shares
 });
 
 const CHEST_MODELS = ["ChestRules"] as const;
+
+/**
+ * The season's pool from the game's own facts: the amount published to its budget row, and what today releases of it
+ * by the season's day schedule. Null while nothing is published; undefined until the game itself is known. No preset
+ * is asked for a pool.
+ */
+const useSeasonPool = (rules: ExpeditionRules): SeasonPoolFigures | null | undefined => {
+  const { setup } = useGame();
+  useNativeRevision(POOL_MODELS);
+  const now = useNowSeconds();
+  const gameId = configManager.getActiveGameId();
+  const game = setup.store.get("GameRegistry", { game_id: gameId });
+  if (!game) return undefined;
+  const pool = publishedPoolOf(setup.store.get("LordsBudget", { game_id: gameId }));
+  if (pool === null) return null;
+  const season = { start: Number(game.start_main_at), end: Number(game.end_at) };
+  const today = now < season.end ? dayOf(rules, now) : null;
+  return { lords: Number(pool), today: today ? Number(releasedInDay(pool, season, today)) : undefined };
+};
+
+const POOL_MODELS = ["GameRegistry", "LordsBudget"] as const;
 
 /**
  * The season's first rows as SeasonRow draws them, the player's own lit in place, or pinned under them when it ranks

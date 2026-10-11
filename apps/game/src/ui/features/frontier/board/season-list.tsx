@@ -1,10 +1,19 @@
-import { formatAmount } from "@/ui/design-system/kit/amount";
+import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
 import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { SeasonRow } from "@/ui/design-system/kit/season-row";
 import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
-import { BACK, LORDS, SEASON, SEASON_ERROR, TRY_AGAIN } from "@/ui/design-system/kit/words";
+import {
+  BACK,
+  LORDS,
+  POOL_NOT_PUBLISHED,
+  SEASON,
+  SEASON_ERROR,
+  SEASON_POOL,
+  TODAY,
+  TRY_AGAIN,
+} from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 /** A realm's row on the list: what SeasonRow draws, keyed to open its detail. */
@@ -23,13 +32,15 @@ const SKELETON_ROWS = 8;
 
 /**
  * Season (wireframe 13), a page from the Menu, so it has Back: the title with a common chest's LORDS and the player's
- * rank, then the realms by sites cleared with LORDS beside, the player's own row lit in place or pinned at the foot when
+ * rank, the season's pool with what today releases of it (or that it is not published yet), then the realms by sites
+ * cleared with LORDS beside, the player's own row lit in place or pinned at the foot when
  * it ranks below the rows shown. A row opens its detail. When the season did not answer, the card says so, with Try
  * again.
  */
 export const SeasonList = ({
   rank,
   chest,
+  pool,
   rows,
   pinned,
   state,
@@ -41,6 +52,8 @@ export const SeasonList = ({
   rank: number | null | undefined;
   /** A common chest: its tier and the LORDS it pays this season; absent until the game's chest rules are read. */
   chest?: { tier: Tier; lords: number };
+  /** The season's pool; null while none is published, absent until the game's facts are known. */
+  pool?: SeasonPoolFigures | null;
   rows: readonly SeasonListRow[];
   pinned: SeasonListRow | undefined;
   state: "ready" | "loading" | "failed";
@@ -68,6 +81,7 @@ export const SeasonList = ({
         rank !== null && <Chip icons={["Tp"]} label={SEASON} value={rankShown(rank)} />
       )}
     </header>
+    {pool !== undefined && <PoolLine pool={pool} />}
     {state === "failed" ? (
       <Failed onRetry={onRetry} />
     ) : (
@@ -84,6 +98,36 @@ export const SeasonList = ({
       </>
     )}
   </section>
+);
+
+/** The season's pool in whole LORDS, and what today releases of it (absent before the season starts and after it ends). */
+export type SeasonPoolFigures = { lords: number; today: number | undefined };
+
+/**
+ * The pool the season pays its chests from: the LORDS deposited for it, and today's share of them. Before the deposit
+ * is published to the game there is no pool, said in the figures' place.
+ */
+const PoolLine = ({ pool }: { pool: SeasonPoolFigures | null }) =>
+  pool === null ? (
+    <p className="flex h-9 shrink-0 items-center gap-2 px-1 text-[14px] text-kit-muted">
+      <KitIcon code="Hg" size={18} />
+      {POOL_NOT_PUBLISHED}
+    </p>
+  ) : (
+    <dl className="flex h-9 shrink-0 items-center gap-x-5 whitespace-nowrap px-1 text-[14px]">
+      <PoolFigure word={SEASON_POOL} value={formatExact(pool.lords)} />
+      {pool.today !== undefined && <PoolFigure word={TODAY} value={`+${formatExact(pool.today)}`} />}
+    </dl>
+  );
+
+const PoolFigure = ({ word, value }: { word: string; value: string }) => (
+  <div className="flex items-center gap-1.5">
+    <dt className="text-kit-muted">{word}</dt>
+    <dd className="flex items-center gap-1 font-bold tabular-nums text-kit-cream">
+      <KitIcon code="Lo" size={16} />
+      {value}
+    </dd>
+  </div>
 );
 
 const ListRow = ({ row, onOpen }: { row: SeasonListRow; onOpen: (key: string) => void }) => (

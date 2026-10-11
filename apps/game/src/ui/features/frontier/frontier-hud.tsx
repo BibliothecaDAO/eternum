@@ -111,7 +111,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
           ) : surface === "research" && realm ? (
             <FrontierResearch rules={rules} realm={realm} />
           ) : surface === "season" ? (
-            <FrontierSeason onBack={close} />
+            <FrontierSeason rules={rules} onBack={close} />
           ) : undefined
         }
         stage={dockRealm && !visit && <LastHour rules={rules} realm={dockRealm} />}
