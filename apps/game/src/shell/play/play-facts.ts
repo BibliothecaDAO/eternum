@@ -20,11 +20,12 @@ export const usePlayFacts = () => {
   const now = useNowSeconds();
   const games = directory.data?.games ?? [];
   const listed = slots.data?.slots ?? [];
-  const blitz = blitzRows(games, listed, useRefundSlots(listed, session ? payoutAddressOf(session.user) : null));
+  const refunds = useRefundSlots(listed, session ? payoutAddressOf(session.user) : null);
+  const blitz = blitzRows(games, listed, refunds);
   const signedIn = status === "signed-in";
   const known = directory.isSuccess && status !== "loading";
   const step = known ? nextStep({ signedIn, games, blitz, seenResults: readSeenResults() }) : undefined;
-  return { directory, slots, now, games, blitz, signedIn, step };
+  return { directory, slots, now, games, blitz, refunds, signedIn, step };
 };
 
 export type PlayFacts = ReturnType<typeof usePlayFacts>;

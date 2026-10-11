@@ -31,12 +31,12 @@ export type BlitzRow = {
 
 /**
  * Live games first, then games about to start, then the slots still filling, each soonest first; last, the closed
- * slots that owe the player a refund (`refunds`, by slot name), kept so the refund stays in reach.
+ * slots that owe the player a refund (`refunds`, by slot name, with the wallet owed), kept so the refund stays in reach.
  */
 export const blitzRows = (
   games: readonly DirectoryGame[],
   slots: readonly PlaytestSlot[],
-  refunds: ReadonlySet<string> = new Set(),
+  refunds: ReadonlyMap<string, string> = new Map(),
 ): BlitzRow[] => {
   const running = games.filter((game) => game.mode === "blitz" && game.status !== "Settled");
   const live = running.filter((game) => game.status === "Live");

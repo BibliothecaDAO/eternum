@@ -1,8 +1,6 @@
 import { lazy, type ReactNode, Suspense, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import type { PayoutWallet } from "@realms-world/identity";
-
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { formatExact } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
@@ -33,23 +31,24 @@ const WalletSign = lazy(() =>
 );
 
 /**
- * The lobby's step for a paid Blitz slot: its entry read from the ledger for the current payout wallet, the one that
- * pays and registers, and read again once the wallet has sent its call. A registration made from a wallet replaced
- * before the slot closes shows on the game's roster once it closes, not here.
+ * The lobby's step for a paid Blitz slot: its entry read from the ledger for `owner`, the wallet that pays and
+ * registers (the payout wallet, or the wallet a closed slot owes a refund), and read again once the wallet has sent its
+ * call. A registration made from a wallet replaced before the slot closes shows on the game's roster once it closes,
+ * not here.
  */
 export const PaidEntry = ({
   ledger,
   slot,
-  wallet,
+  owner,
   game,
 }: {
   ledger: EnvironmentLedger;
   slot: SlotKey;
-  wallet: PayoutWallet;
+  /** Null while the player has linked no payout wallet. */
+  owner: string | null;
   /** The launched game of this slot whose roster seats the wallet, while the directory lists it. */
   game: DirectoryGame | undefined;
 }) => {
-  const owner = wallet.status === "no_wallet" ? null : wallet.address;
   const terms = useEntryTerms(ledger, slot, owner);
   const refundsChanged = useRefundsChanged();
   if (owner === null) return <NoWallet />;
@@ -87,7 +86,7 @@ const EntryPanel = ({
   ledger: string;
   slot: SlotKey;
   terms: EntryTerms | undefined;
-  /** The payout wallet: it pays, registers and takes any refund. */
+  /** The wallet that pays and registers, and takes any refund of what it paid. */
   owner: string;
   game: DirectoryGame | undefined;
   onSent: () => void;
@@ -117,7 +116,11 @@ const EntryPanel = ({
   );
   if (state === "refund")
     return (
-      <Plate icon="Sk" title={terms.cancelled ? ENTRY_WORDS.cancelled : ENTRY_WORDS.notSeated}>
+      <Plate
+        icon="Sk"
+        title={terms.cancelled ? ENTRY_WORDS.cancelled : ENTRY_WORDS.notSeated}
+        right={<WalletChip address={owner} />}
+      >
         <Receipt rows={refundRows(terms)} />
         {sign || <Button role="primary" word={ENTRY_WORDS.takeRefund} icon="Sp" onClick={() => setSigning(true)} />}
       </Plate>

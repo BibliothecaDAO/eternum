@@ -1,9 +1,11 @@
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { feltEquals } from "@bibliothecadao/eternum/game-client";
+import { isSameStarknetAddress } from "@realms-world/identity";
 import type { Credits, Registration } from "@realms-world/value-ledger/codecs";
 
 import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
+import { readBrowserWallets } from "@/ui/modules/identity/browser-wallets";
 
 import { slotKeyOf } from "../blitz-rows";
 import {
@@ -98,28 +100,49 @@ export const refundOwedKey = (key: SlotKey, wallet: string) =>
   [...REFUNDS_OWED, key.shard, key.slotId, wallet] as const;
 
 /**
- * The closed slots that owe the payout wallet a refund, by name: the Blitz list keeps their rows so the refund stays
- * in reach after the close. The reads are bounded by the wallet's own play, never by how many slots the launch service
- * lists: one query for the slots the wallet registered in (its Registered events), then a registration read for each
- * of those that is listed and closed, and the slot's own (for its cancelled flag) only where it was not seated.
+ * The closed slots that owe the player a refund, each by name with the wallet it is owed to: the Blitz list keeps
+ * their rows so the refund stays in reach after the close. The wallet that paid takes the refund, so the payout wallet
+ * is asked first and then the wallets of this browser, where one replaced since may still be owed. The reads are
+ * bounded by a wallet's own play, never by how many slots the launch service lists: one query for the slots the wallet
+ * registered in (its Registered events), then a registration read for each of those that is listed and closed, and the
+ * slot's own (for its cancelled flag) only where it was not seated.
  */
-export const useRefundSlots = (slots: readonly PlaytestSlot[], wallet: string | null): ReadonlySet<string> => {
+export const useRefundSlots = (slots: readonly PlaytestSlot[], payout: string | null): ReadonlyMap<string, string> => {
   const ledger = environmentLedger();
-  const registered = useQuery({
-    queryKey: registeredSlotsKey(wallet ?? ""),
-    queryFn: () => (ledger as EnvironmentLedger).registeredSlots(wallet as string),
-    enabled: ledger !== null && wallet !== null && slots.some((slot) => slot.closed),
-    staleTime: 60_000,
-  }).data;
-  const closed = slots.filter((slot) => slot.closed && registered?.some((key) => isSameSlot(key, slotKeyOf(slot))));
-  const owed = useQueries({
-    queries: closed.map((slot) => ({
-      queryKey: refundOwedKey(slotKeyOf(slot), wallet as string),
-      queryFn: () => readRefundOwed(ledger as EnvironmentLedger, slotKeyOf(slot), wallet as string),
+  const reads = ledger !== null && slots.some((slot) => slot.closed);
+  const wallets = useRefundWallets(payout, reads);
+  const registered = useQueries({
+    queries: wallets.map((wallet) => ({
+      queryKey: registeredSlotsKey(wallet),
+      queryFn: () => (ledger as EnvironmentLedger).registeredSlots(wallet),
+      enabled: reads,
       staleTime: 60_000,
     })),
   });
-  return new Set(closed.filter((_, index) => owed[index]?.data === true).map((slot) => slot.name));
+  const entries = wallets.flatMap((wallet, index) =>
+    slots
+      .filter((slot) => slot.closed && registered[index]?.data?.some((key) => isSameSlot(key, slotKeyOf(slot))))
+      .map((slot) => ({ slot, wallet })),
+  );
+  const owed = useQueries({
+    queries: entries.map(({ slot, wallet }) => ({
+      queryKey: refundOwedKey(slotKeyOf(slot), wallet),
+      queryFn: () => readRefundOwed(ledger as EnvironmentLedger, slotKeyOf(slot), wallet),
+      staleTime: 60_000,
+    })),
+  });
+  const refunds = new Map<string, string>();
+  entries.forEach(({ slot, wallet }, index) => {
+    if (owed[index]?.data === true && !refunds.has(slot.name)) refunds.set(slot.name, wallet);
+  });
+  return refunds;
+};
+
+/** The wallets a refund may be owed to: the payout wallet first, then the accounts this browser's wallets share. */
+const useRefundWallets = (payout: string | null, enabled: boolean): string[] => {
+  const browser = useQuery({ queryKey: ["browser-wallets"], queryFn: readBrowserWallets, enabled, staleTime: 60_000 });
+  const others = (browser.data ?? []).filter((wallet) => payout === null || !isSameStarknetAddress(wallet, payout));
+  return [...(payout === null ? [] : [payout]), ...others];
 };
 
 /** A refund taken, or an entry paid, changes what the list's refund rows read. */

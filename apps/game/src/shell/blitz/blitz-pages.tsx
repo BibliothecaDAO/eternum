@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import type { PayoutWallet } from "@realms-world/identity";
@@ -158,7 +158,7 @@ export const BlitzLobbyPage = () => {
     row.kind === "game" ? (
       <LobbyAction row={row} step={step} desktop={desktop} />
     ) : (
-      <SlotEntry slot={row.slot} wallet={wallet} games={facts.games} />
+      <SlotEntry slot={row.slot} wallet={wallet} owed={facts.refunds.get(row.slot.name)} games={facts.games} />
     );
   return (
     <PageFrame
@@ -293,7 +293,7 @@ const LobbyAction = ({ row, step, desktop }: { row: BlitzRow; step: LobbyStep; d
  */
 const SlotChat = ({ slot, wallet }: { slot: PlaytestSlot; wallet: PayoutWallet | null }) => {
   const ledger = environmentLedger();
-  const address = wallet && wallet.status !== "no_wallet" ? wallet.address : null;
+  const address = linkedAddressOf(wallet);
   if (!ledger || !address) return <LobbyChatPanel slot={slot} membership={chatMembershipOf(address, undefined)} />;
   return <RegistrantChat ledger={ledger} slot={slot} address={address} />;
 };
@@ -312,22 +312,33 @@ const RegistrantChat = ({
 };
 
 /**
- * A slot's paid entry, on the environment's ledger under the slot's own key, from the payout wallet. A ledger not
+ * A slot's paid entry, on the environment's ledger under the slot's own key, from the payout wallet; a closed slot that
+ * owes a refund reads it for the wallet owed (`owed`), which may be one the player has since replaced. A ledger not
  * deployed on this environment shows that the entry cannot be read.
  */
 const SlotEntry = ({
   slot,
   wallet,
+  owed,
   games,
 }: {
   slot: PlaytestSlot;
   wallet: PayoutWallet | null;
+  owed: string | undefined;
   games: readonly DirectoryGame[];
 }) => {
+  // The wallet a refund was found for stays the entry's wallet once the refund is taken, so the panel shows it back.
+  const [refundWallet, setRefundWallet] = useState(owed);
+  if (owed && owed !== refundWallet) setRefundWallet(owed);
   const ledger = environmentLedger();
   if (!ledger) return <FailureLine line={ENTRY_WORDS.unreadable} />;
-  if (!wallet) return <FailureLine line={WALLET_WORDS.unavailableLine} />;
+  if (!wallet && !refundWallet) return <FailureLine line={WALLET_WORDS.unavailableLine} />;
   const key = slotKeyOf(slot);
-  const game = wallet.status === "no_wallet" ? undefined : seatedGameOf(games, key, wallet.address);
-  return <PaidEntry ledger={ledger} slot={key} wallet={wallet} game={game} />;
+  const owner = refundWallet ?? linkedAddressOf(wallet);
+  const game = owner ? seatedGameOf(games, key, owner) : undefined;
+  return <PaidEntry ledger={ledger} slot={key} owner={owner} game={game} />;
 };
+
+/** The payout wallet's address; null without a session or a linked wallet. */
+const linkedAddressOf = (wallet: PayoutWallet | null): string | null =>
+  wallet && wallet.status !== "no_wallet" ? wallet.address : null;

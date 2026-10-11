@@ -27,7 +27,6 @@ vi.mock("@/ui/modules/identity/wallet-actions", () => ({
   ),
 }));
 
-import type { PayoutWallet } from "@realms-world/identity";
 import type { DirectoryGame } from "../herald";
 import { type EnvironmentLedger, environmentLedger, type SlotKey } from "../value/ledger";
 import { type EntryTerms, entryTermsKey } from "./entry";
@@ -37,7 +36,7 @@ const WEI = 10n ** 18n;
 // The environment's ledger over a provider that never answers: what the panel shows is seeded.
 const LEDGER = environmentLedger() as EnvironmentLedger;
 const SLOT: SlotKey = { shard: "0x52", slotId: 7 };
-const WALLET: PayoutWallet = { status: "ready", address: "0x4a1" };
+const WALLET = "0x4a1";
 const TERMS: EntryTerms = {
   prices: { seat: 500n * WEI, sword: 500n * WEI, shield: 500n * WEI },
   split: { protocolCutBps: 2000, chestLordsBps: 500 },
@@ -63,11 +62,11 @@ const unmounts: (() => Promise<void>)[] = [];
 const Where = () => <output data-where>{useLocation().pathname}</output>;
 const whereOf = (container: HTMLElement) => container.querySelector("[data-where]")!.textContent;
 
-/** The ledger's terms for the payout wallet 0x4a1. */
-const mount = async (terms: EntryTerms, wallet: PayoutWallet = WALLET, game?: DirectoryGame) => {
+/** The ledger's terms for the wallet 0x4a1, and the wallet the entry is read for (null: none linked). */
+const mount = async (terms: EntryTerms, owner: string | null = WALLET, game?: DirectoryGame) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } });
-  client.setQueryData(entryTermsKey(SLOT, "0x4a1"), terms);
+  client.setQueryData(entryTermsKey(SLOT, owner ?? WALLET), terms);
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
@@ -75,7 +74,7 @@ const mount = async (terms: EntryTerms, wallet: PayoutWallet = WALLET, game?: Di
     root.render(
       <QueryClientProvider client={client}>
         <MemoryRouter>
-          <PaidEntry ledger={LEDGER} slot={SLOT} wallet={wallet} game={game} />
+          <PaidEntry ledger={LEDGER} slot={SLOT} owner={owner} game={game} />
           <Where />
         </MemoryRouter>
       </QueryClientProvider>,
@@ -149,7 +148,7 @@ it("names what is short, the registration, and the refund", async () => {
   await press(refund, "Sign");
   expect(signed.calls).toEqual([[expect.objectContaining({ entrypoint: "refund", calldata: ["0x52", "7"] })]]);
 
-  expect((await mount(TERMS, { status: "no_wallet" })).textContent).toContain("Entry is paid from your payout wallet");
+  expect((await mount(TERMS, null)).textContent).toContain("Entry is paid from your payout wallet");
 });
 
 it("reads Seated for the whole game, from the roster the shard froze, with the way to that game", async () => {
@@ -196,4 +195,11 @@ it("reads a slot's entry and refund with the payout wallet that pays, signed by 
   await press(refund, "Take refund");
   await press(refund, "Sign");
   expect(signed.owners).toEqual(["0x4a1"]);
+
+  // A refund owed to a wallet the player has since replaced is read for that wallet, named on the plate, signed by it.
+  const replaced = await mount({ ...TERMS, registration: seat, cancelled: true }, "0xb0b");
+  expect(replaced.textContent).toContain("0xb0b");
+  await press(replaced, "Take refund");
+  await press(replaced, "Sign");
+  expect(signed.owners).toEqual(["0x4a1", "0xb0b"]);
 });

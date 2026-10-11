@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-11",
+    title: "Refunds for a replaced wallet",
+    description:
+      "A Blitz refund owed to a wallet you have since replaced now shows in the Blitz list when that wallet is connected in this browser, and is taken with it.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-11",
     title: "Withdraw after the season ends",
     description:
       "When a Frontier season is over, its last card shows the LORDS still in your realm, until when you can withdraw them, and Withdraw. A finished season's Results lead back to it.",
