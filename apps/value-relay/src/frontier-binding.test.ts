@@ -45,9 +45,7 @@ beforeEach(() => {
   rpc.ledgerCall.mockImplementation(async (query) =>
     query.entrypoint === "frontier_claim_deadline"
       ? ["604910"]
-      : query.entrypoint === "get_preset"
-        ? [...Array(17).fill("0"), "1", "5", "604800", "24"]
-        : ["1", "10", "110", "100000000000000000000", "0", "0", "0", "0", "2", "0x99"],
+      : ["1", "10", "110", "100000000000000000000", "0", "0", "0", "0", "2", "0x99"],
   );
 });
 it("reads funding by shard game id without history scans or Herald calendar reads", async () => {
@@ -82,3 +80,17 @@ it("rereads restored game funding instead of reusing a previous match", async ()
   expect(await Effect.runPromise(bind().frontierSeason(7, 50))).toBe(7);
 });
 afterEach(() => vi.unstubAllGlobals());
+
+it.each(["get_frontier", "frontier_claim_deadline"])(
+  "fails when %s refuses unfunded Frontier custody",
+  async (entrypoint) => {
+    const previous = rpc.ledgerCall.getMockImplementation()!;
+    rpc.ledgerCall.mockImplementation(async (query) => {
+      if (query.entrypoint === entrypoint) throw new Error("Ledger: unknown Frontier season");
+      return previous(query);
+    });
+    await expect(Effect.runPromise(bind().frontierSeason(7, 50))).rejects.toMatchObject({
+      operation: "resolve_frontier_funding",
+    });
+  },
+);

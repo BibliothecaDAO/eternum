@@ -33,11 +33,7 @@ export const frontierReceiptBindings = (
           head.number,
         ),
       );
-      if (
-        !season.configured ||
-        BigInt(season.start) !== uint(game[6]!, 64) ||
-        BigInt(season.seed) !== uint(game[9]!, 252)
-      )
+      if (BigInt(season.start) !== uint(game[6]!, 64) || BigInt(season.seed) !== uint(game[9]!, 252))
         throw new Error("frontier_funding_differs_from_game");
       const deadline = await provider.callContract(
         {

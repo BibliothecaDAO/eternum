@@ -146,7 +146,7 @@ const availableBudget = async (context: BatchContext, withdrawal: Withdrawal, bl
     context.provider.callContract({ ...query, entrypoint: "frontier_unlocked" }, block),
   ]);
   const funded = decodeFrontierSeason(season);
-  if (!funded.configured || unlocked.length !== 2) throw new Error("batch_frontier_abi_differs");
+  if (unlocked.length !== 2) throw new Error("batch_frontier_abi_differs");
   if (funded.closed) return null;
   const amount = BigInt(ledgerU256(unlocked[0]!, unlocked[1]!)) - BigInt(funded.paid);
   return amount < 0n ? 0n : amount;

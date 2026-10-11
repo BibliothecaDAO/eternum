@@ -46,7 +46,7 @@ it("reads precisely the committed frozen wallets and competition ranks at a conf
 });
 it("ingests only completed records while retaining withdrawals in the same confirmed block", async () => {
   const source = reader();
-  const partial = { ...row(), values: ["1", "0x123", "1", "0", "0x0"] };
+  const partial = { ...row(), values: response(abi, "blitz_result", { players: [], complete: false, commitment: 0 }) };
   vi.spyOn(source, "page").mockResolvedValue({
     block: {
       block_number: 10,
@@ -82,6 +82,9 @@ it("ingests only completed records while retaining withdrawals in the same confi
 it("ignores a genuinely incomplete result but rejects its premature commitment", () => {
   expect(decodeBlitzResult("0x1", { ...row(), values: ["0", "0", "0x0"] })).toBeNull();
   expect(() => decodeBlitzResult("0x1", { ...row(), values: ["0", "0", "0x1"] })).toThrow();
+  expect(() => decodeBlitzResult("0x1", { ...row(), values: ["1", "0x123", "1", "0", "0x0"] })).toThrow(
+    "invalid_incomplete_result",
+  );
 });
 it.each([
   ["3", "0x123", "1", "0x456", "1", "0x789", "2", "1", result.commitment],
@@ -112,4 +115,11 @@ it("refuses the previous account/points result ABI even when the raw record is e
   rpc.call.mockResolvedValue(["0", "0", "0x0"]);
   await expect(Effect.runPromise(shardResultPort(reader())("0x1", 7))).rejects.toThrow();
   expect(rpc.call).not.toHaveBeenCalled();
+});
+
+it("propagates an absent game's roster refusal instead of calling it an incomplete result", async () => {
+  rpc.call.mockRejectedValue(new Error("game has no Blitz roster"));
+  await expect(Effect.runPromise(shardResultPort(reader())("0x1", 7))).rejects.toMatchObject({
+    operation: "read confirmed Blitz result",
+  });
 });

@@ -214,3 +214,25 @@ it("derives voided debt from an unpaid report and its confirmed closed pool", as
   closed = true;
   expect(await read()).toBe(false);
 });
+
+it("does not treat an unfunded season as open or voided debt", async () => {
+  rpc.call.mockImplementation(async (query) => {
+    if (query.entrypoint === "get_payment") return ["0", "0", "0", "0", "0"];
+    throw new Error("Ledger: unknown Frontier season");
+  });
+  await expect(
+    Effect.runPromise(
+      ledgerWithdrawalVoided(
+        credentials.rpcUrl,
+        credentials.contractAddress,
+      )({
+        chainId: "0x1",
+        seasonId: 7,
+        transactionHash: "0xdef",
+        realmsId: "0x3",
+        amount: "17",
+        confirmedAt: 1000,
+      }),
+    ),
+  ).rejects.toMatchObject({ operation: "read withdrawal void" });
+});

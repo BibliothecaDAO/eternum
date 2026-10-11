@@ -15,7 +15,7 @@ export const decodeBlitzResult = (chainId: string, row: ValueRow): BlitzResult |
   const complete = uint(row.values[1 + 2 * count]!, 1) === 1n;
   const commitment = felt(row.values[2 + 2 * count]!);
   if (!complete) {
-    if (BigInt(commitment) !== 0n) throw new Error("partial_result_commitment");
+    if (count !== 0 || BigInt(commitment) !== 0n) throw new Error("invalid_incomplete_result");
     return null;
   }
   const result = { chainId: felt(chainId), gameId, rows, commitment };

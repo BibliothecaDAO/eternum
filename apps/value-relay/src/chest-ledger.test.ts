@@ -85,3 +85,14 @@ it("decodes both lifecycle events from the durable completed-block boundary", as
     to_block: { block_number: 111 },
   });
 });
+
+it("fails a missing chest read and never submits its finish", async () => {
+  rpc.call.mockRejectedValue(new Error("Ledger: unknown chest"));
+  await expect(Effect.runPromise(chestLedgerReads(connection).chest("999"))).rejects.toMatchObject({
+    operation: "read requested chest",
+  });
+  await expect(Effect.runPromise(finishChestOnLedger(connection, "999"))).rejects.toMatchObject({
+    operation: "finish requested chest",
+  });
+  expect(rpc.execute).not.toHaveBeenCalled();
+});

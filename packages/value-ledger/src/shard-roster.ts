@@ -8,7 +8,7 @@ export async function readBlitzRoster(provider: RpcProvider, gamesAddress: strin
     head,
   );
   const count = ledgerInteger(fields[0]!);
-  if (fields.length !== 1 + count * 2) throw new Error("invalid_frozen_roster");
+  if (count === 0 || fields.length !== 1 + count * 2) throw new Error("invalid_frozen_roster");
   return Array.from({ length: count }, (_, index) => ({
     account: fields[1 + index * 2]!,
     wallet: fields[2 + index * 2]!,

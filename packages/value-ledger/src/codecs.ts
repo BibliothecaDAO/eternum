@@ -226,9 +226,8 @@ export const readConfirmedLedgerHead = async (provider: RpcProvider, number: num
 
 /** Published FrontierSeason backing and clock, shared by discovery and batched payments. */
 export const decodeFrontierSeason = (fields: readonly string[]) => {
-  if (fields.length !== 10) throw new Error("invalid_frontier_season");
+  if (fields.length !== 10 || !ledgerBool(fields[0]!)) throw new Error("invalid_frontier_season");
   return {
-    configured: ledgerBool(fields[0]!),
     start: ledgerInteger(fields[1]!),
     end: ledgerInteger(fields[2]!),
     pool: ledgerU256(fields[3]!, fields[4]!),

@@ -1,4 +1,4 @@
-import { ledgerCall, ledgerEvent } from "../../../packages/value-ledger/test-support/ledger-abi";
+import { absentLedgerSlot, ledgerCall, ledgerEvent } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
 import { openSlotOnLedger, refundSlotOnLedger, markSlotRefundable } from "./blitz-launch";
@@ -58,7 +58,7 @@ it("opens the created shard key under the containing season's economic preset, t
       ? ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "1", "9", "60", "1000", "0", "0"]
       : opened
         ? game()
-        : Array(9).fill("0"),
+        : absentLedgerSlot(),
   );
   const open = () => Effect.runPromise(openSlotOnLedger(credentials, key, { start: 100, end: 160 }));
   await open();
@@ -120,11 +120,28 @@ it("fails when the ledger refuses the window after finding the season by slot st
   rpc.call.mockImplementation(async ({ entrypoint }) =>
     entrypoint === "get_season"
       ? ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "1", "9", "60", "1000", "0", "0"]
-      : Array(9).fill("0"),
+      : absentLedgerSlot(),
   );
   rpc.execute.mockRejectedValueOnce(new Error("Ledger: slot outside season"));
   await expect(Effect.runPromise(openSlotOnLedger(credentials, key, { start: 100, end: 999 }))).rejects.toMatchObject({
     operation: "open ledger Blitz registration",
   });
   expect(rpc.execute).toHaveBeenCalledOnce();
+});
+
+it("does not submit an open or refund when the slot view fails", async () => {
+  rpc.call.mockRejectedValue(new Error("RPC unavailable"));
+  await expect(Effect.runPromise(openSlotOnLedger(credentials, key, { start: 100, end: 160 }))).rejects.toMatchObject({
+    operation: "open ledger Blitz registration",
+  });
+  await expect(Effect.runPromise(refundSlotOnLedger(credentials, key))).rejects.toMatchObject({
+    operation: "unlock failed Blitz refunds",
+  });
+  expect(rpc.execute).not.toHaveBeenCalled();
+});
+
+it("has nothing to refund for an absent slot", async () => {
+  rpc.call.mockResolvedValue(absentLedgerSlot());
+  expect(await Effect.runPromise(refundSlotOnLedger(credentials, key))).toBeNull();
+  expect(rpc.execute).not.toHaveBeenCalled();
 });

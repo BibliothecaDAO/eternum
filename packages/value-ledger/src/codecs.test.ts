@@ -98,7 +98,6 @@ it("reads a result and what an opened chest delivered, in the interface's order"
 it("decodes the Frontier backing and preset calendar once with exact widths and strict bools", () => {
   const funded = ["1", "100", "200", "17", "0", "3", "0", "1", "9", "0xabc"];
   expect(decodeFrontierSeason(funded)).toMatchObject({
-    configured: true,
     start: 100,
     end: 200,
     pool: "17",
@@ -107,6 +106,7 @@ it("decodes the Frontier backing and preset calendar once with exact widths and 
     presetId: 9,
     seed: "0xabc",
   });
+  expect(() => decodeFrontierSeason(Array(10).fill("0"))).toThrow("invalid_frontier_season");
   expect(() => decodeFrontierSeason([...funded.slice(0, 7), "2", ...funded.slice(8)])).toThrow();
   const preset = Array.from({ length: 19 }, () => "0");
   preset[4] = "2000";

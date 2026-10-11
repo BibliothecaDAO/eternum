@@ -127,3 +127,22 @@ it("isolates a permanently refused report while confirming every other debt", as
   expect(result).toContainEqual({ claimId: "0x3", error: null });
   expect(result).toContainEqual({ claimId: "0x2", error: "ledger_invalid_withdrawal" });
 });
+
+it.each(["get_frontier", "frontier_unlocked"])(
+  "refuses a payment page when %s rejects absent custody",
+  async (entrypoint) => {
+    const original = rpc.call.getMockImplementation()!;
+    rpc.call.mockImplementation(async (query) => {
+      if (query.entrypoint === entrypoint) throw new Error("Ledger: unknown Frontier season");
+      return original(query);
+    });
+    await expect(
+      Effect.runPromise(
+        ledgerBatches(credentials, async () => {}).payMany(
+          claims.slice(0, 2).map((withdrawal) => ({ withdrawal, wallet: "0x123" })),
+        ),
+      ),
+    ).rejects.toMatchObject({ operation: "pay Frontier withdrawal page" });
+    expect(rpc.execute).not.toHaveBeenCalled();
+  },
+);

@@ -6,14 +6,66 @@ import { readLedgerSlot, readLedgerRegistration } from "./blitz-slots";
 import {
   decodeBlitzSeason,
   decodeChest,
+  decodeCredits,
   decodeFrontierSeason,
   decodeLedgerPreset,
+  decodePlayerResult,
   decodeSeasonWinner,
   decodeWithdrawalPayment,
 } from "./codecs";
 import { readBlitzRoster } from "./shard-roster";
 
 describe("committed contract readbacks", () => {
+  it("reads absent registrations, payments, credits and results as the stored defaults", async () => {
+    const callContract = vi.fn().mockResolvedValue(
+      response(ledgerAbi, "get_registration", {
+        registered: false,
+        sword: false,
+        shield: false,
+        sword_credit: false,
+        shield_credit: false,
+        paid: { low: 0, high: 0 },
+        refundable: false,
+        game_id: 0,
+      }),
+    );
+    expect(
+      await readLedgerRegistration(
+        { callContract } as unknown as RpcProvider,
+        "0x10",
+        { chainId: "0x11", slotId: 7 },
+        "0x12",
+      ),
+    ).toEqual({
+      registered: false,
+      sword: false,
+      shield: false,
+      swordCredit: false,
+      shieldCredit: false,
+      paid: 0n,
+      refundable: false,
+      gameId: 0,
+    });
+    expect(
+      decodeWithdrawalPayment(
+        response(ledgerAbi, "get_payment", { paid: false, season_id: 0, wallet: 0, amount: { low: 0, high: 0 } }),
+      ),
+    ).toBeNull();
+    expect(decodeCredits(response(ledgerAbi, "get_credits", { swords: 0, shields: 0 }))).toEqual({
+      swords: 0,
+      shields: 0,
+    });
+    expect(
+      decodePlayerResult(
+        response(ledgerAbi, "get_player_result", {
+          rank: 0,
+          chest_id: { low: 0, high: 0 },
+          mmr_before: 0,
+          mmr_after: 0,
+        }),
+      ),
+    ).toEqual({ rank: 0, chestId: 0n, mmrBefore: 0, mmrAfter: 0 });
+  });
   it("reads the complete slot using the compiled field order, including high pool limbs", async () => {
     const fields = response(ledgerAbi, "get_slot", {
       season_id: 3,
@@ -177,7 +229,6 @@ describe("committed contract readbacks", () => {
         }),
       ),
     ).toMatchObject({
-      configured: true,
       start: 60,
       end: 300,
       pool: String(7n + (2n << 128n)),

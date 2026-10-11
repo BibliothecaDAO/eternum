@@ -13,9 +13,10 @@ it("reads account-wallet pairs in contract order at the caller's confirmed head"
     { contractAddress: "0x77", entrypoint: "blitz_roster", calldata: ["7"] },
     100,
   );
-  callContract.mockResolvedValue(["0"]);
-  expect(await readBlitzRoster(provider, "0x77", 7, 100)).toEqual([]);
-  for (const fields of [[], ["2", "0xa", "0x1"], ["1", "0xa", "0x1", "0xb"]]) {
+  const absent = new Error("game has no Blitz roster");
+  callContract.mockRejectedValueOnce(absent);
+  await expect(readBlitzRoster(provider, "0x77", 7, 100)).rejects.toBe(absent);
+  for (const fields of [[], ["0"], ["2", "0xa", "0x1"], ["1", "0xa", "0x1", "0xb"]]) {
     callContract.mockResolvedValue(fields);
     await expect(readBlitzRoster(provider, "0x77", 7, 100)).rejects.toThrow();
   }

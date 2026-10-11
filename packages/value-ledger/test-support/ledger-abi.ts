@@ -1,10 +1,23 @@
 import { CallData, hash, type Abi } from "starknet";
 import ledger from "../../../contracts/l2/ledger/schema/abi.json";
-import { eventFields } from "./abi";
+import { eventFields, response } from "./abi";
 
 export const ledgerAbi: Abi = ledger;
 export const ledgerCall = (entrypoint: string, args: Record<string, unknown>) =>
   new CallData(ledgerAbi).compile(entrypoint, args as never);
+
+/** The stored default returned by get_slot before open_slot, in the committed output layout. */
+export const absentLedgerSlot = () =>
+  response(ledgerAbi, "get_slot", {
+    season_id: 0,
+    exists: false,
+    preset_id: 0,
+    close: 0,
+    end: 0,
+    pool: { low: 0, high: 0 },
+    registered_count: 0,
+    cancelled: false,
+  });
 
 export function ledgerEvent(name: string, values: Record<string, unknown>) {
   const types = ledgerAbi.filter((entry) => entry.type === "event");

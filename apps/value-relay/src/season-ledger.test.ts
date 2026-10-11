@@ -122,3 +122,26 @@ it("enumerates only season openings and participants from the committed event la
     [hash.getSelectorFromName("SeasonOpened"), hash.getSelectorFromName("ChestMinted")],
   ]);
 });
+
+it.each([
+  ["get_season", "Ledger: unknown Blitz season"],
+  ["get_preset", "Ledger: unknown preset"],
+  ["get_season_mmr", "Ledger: not a season participant"],
+  ["get_season_winner", "Ledger: winner index out of bounds"],
+])("propagates absence refused by %s", async (entrypoint, message) => {
+  const previous = rpc.call.getMockImplementation()!;
+  const error = new Error(message);
+  rpc.call.mockImplementation(async (query) => {
+    if (query.entrypoint === entrypoint) throw error;
+    return previous(query);
+  });
+  const read = seasonLedgerReads(target);
+  const result =
+    entrypoint === "get_season_mmr"
+      ? read.mmr(1, "0x2", 100)
+      : entrypoint === "get_season_winner"
+        ? read.winner(1, 0, 100)
+        : read.season(1, 100);
+  await expect(result).rejects.toBe(error);
+  expect(rpc.execute).not.toHaveBeenCalled();
+});

@@ -1,4 +1,4 @@
-import { ledgerAbi, ledgerEvent, ledgerCall } from "../test-support/ledger-abi";
+import { absentLedgerSlot, ledgerAbi, ledgerEvent, ledgerCall } from "../test-support/ledger-abi";
 import { response } from "../test-support/abi";
 import { expect, it, vi } from "vitest";
 import { hash, type RpcProvider } from "starknet";
@@ -61,7 +61,7 @@ it("reads an uncapped slot through bounded wallet pages at the same confirmed he
     ledgerCall("get_registered_player", { key: { shard: 1, slot_id: 7 }, index: 0 }).map(BigInt),
   );
 });
-it("refuses changed heads, missing registration events and absent slots", async () => {
+it("refuses changed heads, missing registration events and malformed slot responses", async () => {
   const f = fixture(1);
   await expect(readRegistrationPage(f.provider, "0x10", { ...key, blockHash: "0xbad" })).rejects.toThrow(
     "head_changed",
@@ -102,7 +102,7 @@ it("rejects a repeated event continuation token instead of looping forever", asy
 
 it("reads absent slots for opening but never serves their registrations", async () => {
   const f = fixture(0);
-  f.call.mockResolvedValue(Array(9).fill("0"));
+  f.call.mockResolvedValue(absentLedgerSlot());
   expect(await readLedgerSlot(f.provider, "0x10", key, 99)).toMatchObject({ exists: false });
   await expect(readRegistrationPage(f.provider, "0x10", key)).rejects.toThrow("invalid_ledger_slot");
 });
@@ -143,4 +143,24 @@ it("serializes every registration event filter key as RPC hex, including double-
     chunk_size: 100,
     keys: [[hash.getSelectorFromName("Registered")], ["0x12"], ["0xc"], ["0x11"]],
   });
+});
+
+it("propagates a refused registration index instead of inventing an empty wallet", async () => {
+  const f = fixture(1);
+  const previous = f.call.getMockImplementation()!;
+  const error = new Error("Ledger: registration index out of bounds");
+  f.call.mockImplementation(async (query, head) => {
+    if (query.entrypoint === "get_registered_player") throw error;
+    return previous(query, head);
+  });
+  await expect(readRegistrationPage(f.provider, "0x10", key)).rejects.toBe(error);
+  expect(f.events).not.toHaveBeenCalled();
+});
+
+it("does not mistake an unavailable slot read for an absent slot", async () => {
+  const f = fixture(0);
+  const error = new Error("RPC unavailable");
+  f.call.mockRejectedValue(error);
+  await expect(readLedgerSlot(f.provider, "0x10", key, 99)).rejects.toBe(error);
+  await expect(readRegistrationPage(f.provider, "0x10", key)).rejects.toBe(error);
 });
