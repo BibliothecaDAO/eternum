@@ -87,6 +87,9 @@ run on the owner's laptop. No mainnet private key or Alchemy URL goes to that ho
     `gh pr merge <number> --merge` command; wait for the owner to merge and rerun.
 12. Observe successful push validation on the merged `next` commit. Print the exact `git tag` and `git push` commands
     for the package tag in the release file. Wait for the owner and the `shard-images.yml` release. Never move a tag.
+    The command deploys the revision of the merged first pull request and its package tag. It cannot deliver a later
+    commit: pulling a fix into the checkout does not update that release. A fix found during deployment needs a new
+    release before it can be deployed.
 13. Build workspace packages, migrate D1 and deploy all six Workers from the released tree. Worker version tags prove
     the source revision. An interrupted deployment resumes with the remaining Workers.
 14. Drain the former shard's directory entry, stop the Compose project occupying its ports, retire that entry and deploy
