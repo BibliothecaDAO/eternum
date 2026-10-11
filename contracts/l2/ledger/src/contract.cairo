@@ -11,6 +11,7 @@ const BPS: u256 = 10_000;
 const PAYOUT_WEIGHT_SCALE: u256 = 1_000_000_000_000_000_000;
 // One settlement tick must fit after the last scheduled game.
 const BLITZ_SETTLEMENT_MARGIN_SECONDS: u64 = 600;
+const PLAYER_SLOT_START: u32 = 0x80000000;
 const SEASON_REVIEW_SECONDS: u64 = 3600;
 const MMR_PRECISION: u256 = 1_000_000_000_000_000_000;
 
@@ -52,6 +53,7 @@ pub trait IGameLedger<TState> {
     fn get_season_winner(self: @TState, season_id: u32, index: u32) -> (ContractAddress, u256);
     fn season_claimed(self: @TState, season_id: u32, owner: ContractAddress) -> bool;
     fn open_slot(ref self: TState, key: SlotKey, season_id: u32, preset_id: u32, close: u64, end: u64);
+    fn open_player_slot(ref self: TState, shard: felt252, preset_id: u32, close: u64, end: u64) -> u32;
     fn register(ref self: TState, key: SlotKey, sword: bool, shield: bool);
     fn cancel_slot(ref self: TState, key: SlotKey);
     fn abort_slot(ref self: TState, key: SlotKey);
@@ -107,7 +109,7 @@ pub mod GameLedger {
     use super::{
         BLITZ_SETTLEMENT_MARGIN_SECONDS, BPS, ICollectibleDispatcher, ICollectibleDispatcherTrait, IGameLedger,
         IMMRTokenDispatcher, IMMRTokenDispatcherTrait, MMR_PRECISION, OPERATOR_ROLE, PAUSER_ROLE, PAYOUT_WEIGHT_SCALE,
-        SEASON_REVIEW_SECONDS, result_commitment,
+        PLAYER_SLOT_START, SEASON_REVIEW_SECONDS, result_commitment,
     };
 
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -147,6 +149,7 @@ pub mod GameLedger {
         presets: Map<u32, Preset>,
         preset_exists: Map<u32, bool>,
         slots: Map<SlotKey, Slot>,
+        next_player_slot: Map<felt252, u32>,
         registrations: Map<(SlotKey, ContractAddress), Registration>,
         registered_owners: Map<(SlotKey, u64), ContractAddress>,
         result_commitments: Map<GameKey, felt252>,
@@ -664,21 +667,27 @@ pub mod GameLedger {
 
         fn open_slot(ref self: ContractState, key: SlotKey, season_id: u32, preset_id: u32, close: u64, end: u64) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
-            assert!(key.shard != 0, "Ledger: zero shard");
-            assert!(!self.slots.entry(key).read().exists, "Ledger: slot already opened");
-            assert!(self.preset_exists.entry(preset_id).read(), "Ledger: unknown preset");
-            assert!(starknet::get_block_timestamp() < close, "Ledger: close must be in the future");
-            assert!(close < end, "Ledger: invalid slot window");
+            assert!(key.slot_id < PLAYER_SLOT_START, "Ledger: player slot range");
+            assert!(self.get_preset(preset_id).mmr.enabled, "Ledger: official slot needs rated preset");
             let season = self.get_season(season_id);
             assert!(preset_id == season.preset_id, "Ledger: slot preset differs from season");
             assert!(
                 close >= season.start && end + BLITZ_SETTLEMENT_MARGIN_SECONDS < season.end,
                 "Ledger: slot outside season",
             );
-            self.slots.entry(key).write(Slot { exists: true, season_id, preset_id, close, end, ..Default::default() });
-            self.emit(SlotOpened { key, season_id, preset_id, close, end });
+            self.write_slot(key, season_id, preset_id, close, end);
         }
 
+        fn open_player_slot(ref self: ContractState, shard: felt252, preset_id: u32, close: u64, end: u64) -> u32 {
+            let preset = self.get_preset(preset_id);
+            assert!(!preset.mmr.enabled && preset.entry_fee > 0, "Ledger: player slot needs priced unrated preset");
+            let slot_id = core::cmp::max(PLAYER_SLOT_START, self.next_player_slot.entry(shard).read());
+            self.next_player_slot.entry(shard).write(slot_id + 1);
+            let key = SlotKey { shard, slot_id };
+            self.write_slot(key, 0, preset_id, close, end);
+            self.register(key, false, false);
+            slot_id
+        }
 
         fn register(ref self: ContractState, key: SlotKey, sword: bool, shield: bool) {
             let owner = starknet::get_caller_address();
@@ -741,9 +750,11 @@ pub mod GameLedger {
             let commitment = result_commitment(game_key, ranked.span());
             self.allocate_game_pool(key, slot, pool, preset);
             self.result_commitments.entry(game_key).write(commitment);
-            self.apply_mmr(key, game_key, ranked.span(), preset);
-            self.record_season_players(slot.season_id, game_key, ranked.span());
-            self.mint_chests(game_key, slot, ranked.span());
+            if preset.mmr.enabled {
+                self.apply_mmr(key, game_key, ranked.span(), preset);
+                self.record_season_players(slot.season_id, game_key, ranked.span());
+                self.mint_chests(game_key, slot, ranked.span());
+            }
             self
                 .emit(
                     ResultsApplied {
@@ -935,6 +946,15 @@ pub mod GameLedger {
 
     #[generate_trait]
     impl RegistrationWriterImpl of RegistrationWriterTrait {
+        fn write_slot(ref self: ContractState, key: SlotKey, season_id: u32, preset_id: u32, close: u64, end: u64) {
+            assert!(key.shard != 0, "Ledger: zero shard");
+            assert!(!self.slots.entry(key).read().exists, "Ledger: slot already opened");
+            assert!(starknet::get_block_timestamp() < close, "Ledger: close must be in the future");
+            assert!(close < end, "Ledger: invalid slot window");
+            self.slots.entry(key).write(Slot { exists: true, season_id, preset_id, close, end, ..Default::default() });
+            self.emit(SlotOpened { key, season_id, preset_id, close, end });
+        }
+
         fn open_refunds(ref self: ContractState, key: SlotKey, mut slot: Slot) {
             slot.cancelled = true;
             self.slots.entry(key).write(slot);
@@ -943,6 +963,7 @@ pub mod GameLedger {
         fn record_paid_registration(
             ref self: ContractState, key: SlotKey, owner: ContractAddress, sword: bool, shield: bool, preset: Preset,
         ) -> u256 {
+            assert!(preset.mmr.enabled || (!sword && !shield), "Ledger: unrated flags");
             let (sword_credit, shield_credit) = self.spend_credits(owner, sword, shield);
             let payment = preset.entry_fee
                 + if sword && !sword_credit {
@@ -982,18 +1003,23 @@ pub mod GameLedger {
     #[generate_trait]
     impl ResultsValidatorImpl of ResultsValidatorTrait {
         fn allocate_game_pool(ref self: ContractState, key: SlotKey, mut slot: Slot, pool: u256, preset: Preset) {
-            let mut season = self.get_season(slot.season_id);
-            assert!(starknet::get_block_timestamp() < season.end, "Ledger: MMR frozen");
-            let treasury_cut = pool * preset.protocol_cut_bps.into() / BPS;
-            let net_pool = pool - treasury_cut;
-            let chest_lords = net_pool * preset.chest_lords_bps.into() / BPS;
-            season.chest_reserve += chest_lords;
-            season.pool += net_pool - chest_lords;
-            assert!(
-                season.pool + season.chest_reserve <= 0xffffffffffffffffffffffffffffffff,
-                "Ledger: season pool exceeds u128",
-            );
-            self.seasons.entry(slot.season_id).write(season);
+            let treasury_cut = if preset.mmr.enabled {
+                let mut season = self.get_season(slot.season_id);
+                assert!(starknet::get_block_timestamp() < season.end, "Ledger: MMR frozen");
+                let treasury_cut = pool * preset.protocol_cut_bps.into() / BPS;
+                let net_pool = pool - treasury_cut;
+                let chest_lords = net_pool * preset.chest_lords_bps.into() / BPS;
+                season.chest_reserve += chest_lords;
+                season.pool += net_pool - chest_lords;
+                assert!(
+                    season.pool + season.chest_reserve <= 0xffffffffffffffffffffffff,
+                    "Ledger: season pool exceeds u128",
+                );
+                self.seasons.entry(slot.season_id).write(season);
+                treasury_cut
+            } else {
+                pool
+            };
             slot.pool -= pool;
             self.slots.entry(key).write(slot);
             self.send_lords(self.treasury.read(), treasury_cut);
@@ -1305,10 +1331,6 @@ pub mod GameLedger {
         fn apply_mmr(
             ref self: ContractState, slot_key: SlotKey, key: GameKey, ranked: Span<RankedPlayer>, preset: Preset,
         ) {
-            if !preset.mmr.enabled {
-                return;
-            }
-
             let mmr_token = IMMRTokenDispatcher { contract_address: self.mmr_token.read() };
             let mut current_mmrs: Array<u128> = array![];
             let mut sorted_mmrs: Felt252Dict<u128> = Default::default();
