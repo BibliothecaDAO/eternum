@@ -23,7 +23,7 @@ export const CodeBoxes = ({
   disabled: boolean;
   onType: (value: string) => void;
 }) => (
-  <label className="relative flex justify-center gap-1.5">
+  <label className="relative flex w-full justify-center gap-1.5">
     <span className="sr-only">{SIGN_IN_WORDS.code}</span>
     <input
       type="text"
