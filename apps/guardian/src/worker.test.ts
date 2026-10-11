@@ -2,11 +2,10 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ec } from "starknet";
 import { Miniflare } from "miniflare";
 import { expect, it } from "vitest";
 
-it("offers direct readonly readiness without exposing signing over HTTP", async () => {
+it("exposes no operation over HTTP, including the former health path", async () => {
   const bundle = join(mkdtempSync(join(tmpdir(), "guardian-health-")), "bundle");
   execFileSync("pnpm", ["exec", "wrangler", "deploy", "--dry-run", "--env", "staging", "--outdir", bundle], {
     stdio: "ignore",
@@ -21,22 +20,13 @@ it("offers direct readonly readiness without exposing signing over HTTP", async 
     });
   let worker = start(privateKey);
   try {
-    const health = await worker.dispatchFetch("https://guardian.public.test/health");
-    expect(health.status).toBe(200);
-    expect(health.headers.get("cache-control")).toBe("no-store");
-    expect(await health.json()).toEqual({
-      service: "realms-guardian",
-      success: true,
-      publicKey: ec.starkCurve.getStarkKey(privateKey),
-    });
-    for (const path of ["/signDeviceChange", "/publicKey", "/"])
+    for (const path of ["/health", "/signDeviceChange", "/publicKey", "/"])
       expect((await worker.dispatchFetch(`https://guardian.public.test${path}`)).status).toBe(404);
     expect((await worker.dispatchFetch("https://guardian.public.test/health", { method: "POST" })).status).toBe(404);
     await worker.dispose();
     worker = start("invalid");
     const failed = await worker.dispatchFetch("https://guardian.public.test/health");
-    expect(failed.status).toBe(503);
-    expect(await failed.json()).toEqual({ service: "realms-guardian", success: false });
+    expect(failed.status).toBe(404);
   } finally {
     await worker.dispose();
   }
