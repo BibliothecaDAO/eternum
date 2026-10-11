@@ -201,6 +201,7 @@ const NOT_REGISTERED = {
   paid: 0n,
   refundable: false,
   gameId: 0,
+  registeredAt: 0,
 };
 const SEATED = {
   registered: true,
@@ -211,6 +212,7 @@ const SEATED = {
   paid: 1_000n * WEI,
   refundable: false,
   gameId: 0,
+  registeredAt: 0,
 };
 const ENTRY: EntryTerms = {
   prices: { seat: 500n * WEI, sword: 500n * WEI, shield: 500n * WEI },
@@ -410,6 +412,7 @@ const SWORD = {
   paid: 0n,
   refundable: false,
   gameId: 7,
+  registeredAt: 0,
 };
 const CHEST = { seasonId: 3, band: 0, requested: false, finished: false, requester: "0x0", requestBlock: 0 };
 const OPENED = { ...CHEST, requested: true, finished: true, requester: LAB_WALLET, requestBlock: 812_300 };

@@ -18,6 +18,7 @@ const terms = (overrides: Partial<EntryTerms> = {}): EntryTerms => ({
     paid: 0n,
     refundable: false,
     gameId: 0,
+    registeredAt: 0,
   },
   lordsToken: "0x10e5",
   lords: 2_140n * WEI,
@@ -52,6 +53,7 @@ it("tells choosing, short of LORDS, registered, refund and refunded apart", () =
     paid: 1_000n * WEI,
     refundable: false,
     gameId: 0,
+    registeredAt: 0,
   };
   expect(entryState(terms({ registration: seated }), both, 900, false)).toBe("registered");
   expect(entryState(terms({ registration: seated, cancelled: true }), both, 900, false)).toBe("refund");
@@ -73,6 +75,7 @@ it("closes the entry once the slot has closed; a registration is seated once a g
     paid: 1n,
     refundable: false,
     gameId: 0,
+    registeredAt: 0,
   };
   // Past the close a registration is still only registered until a game's roster names the wallet.
   expect(entryState(terms({ registration: seated }), both, 2_000, false)).toBe("registered");
@@ -96,6 +99,7 @@ it("refunds a registration the slot's close left unseated, as a cancelled slot's
     paid: 500n * WEI,
     refundable: true,
     gameId: 0,
+    registeredAt: 0,
   };
   expect(entryState(terms({ registration: unseated }), both, 2_000, false)).toBe("refund");
   expect(entryState(terms({ registration: { ...unseated, paid: 0n } }), both, 2_000, false)).toBe("refunded");

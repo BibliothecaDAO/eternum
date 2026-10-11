@@ -6,7 +6,7 @@ import { afterEach, expect, it, vi } from "vitest";
 const WEI = 10n ** 18n;
 /**
  * What the ledger holds for the payout wallet 0x4a1: the slots its Registered events name (served two to a page), each
- * slot's registration as nine felts, and the slots' cancelled flags. `others` holds the same for any other wallet, by
+ * slot's registration as ten felts, and the slots' cancelled flags. `others` holds the same for any other wallet, by
  * its address: the slots it registered in, each left unseated at the close.
  */
 const ledger = vi.hoisted(() => ({
@@ -45,10 +45,10 @@ import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
 
 import { useRefundSlots } from "./entry";
 
-/** A registration the close left unseated, as nine felts: 500 LORDS paid, refundable, no game. */
-const UNSEATED = ["1", "0", "0", "0", "0", String(500n * 10n ** 18n), "0", "1", "0"];
+/** A registration the close left unseated, as ten felts: 500 LORDS paid, refundable, no game, the time it was made. */
+const UNSEATED = ["1", "0", "0", "0", "0", String(500n * 10n ** 18n), "0", "1", "0", "900"];
 
-// Registration: registered, sword, shield, sword credit, shield credit, paid (2), refundable, game id.
+// Registration: registered, sword, shield, sword credit, shield credit, paid (2), refundable, game id, registered at.
 const registration = (over: { registered?: boolean; paid?: bigint; refundable?: boolean; gameId?: number }) => [
   over.registered === false ? "0" : "1",
   "0",
@@ -59,6 +59,7 @@ const registration = (over: { registered?: boolean; paid?: bigint; refundable?: 
   "0",
   over.refundable ? "1" : "0",
   String(over.gameId ?? 0),
+  "900",
 ];
 const slot = (slotId: number, closed = true): PlaytestSlot => ({
   slotId,

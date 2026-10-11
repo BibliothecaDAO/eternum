@@ -51,6 +51,7 @@ const SEALED: Reward = {
     paid: 0n,
     refundable: false,
     gameId: 0,
+    registeredAt: 0,
   },
 };
 const unmounts: (() => Promise<void>)[] = [];

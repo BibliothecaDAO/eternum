@@ -52,6 +52,7 @@ const TERMS: EntryTerms = {
     paid: 0n,
     refundable: false,
     gameId: 0,
+    registeredAt: 0,
   },
   lordsToken: "0x10e5",
   lords: 2_140n * WEI,
@@ -136,6 +137,7 @@ it("names what is short, the registration, and the refund", async () => {
     paid: 500n * WEI,
     refundable: false,
     gameId: 0,
+    registeredAt: 0,
   };
   const registered = (await mount({ ...TERMS, registration: seat })).textContent;
   expect(registered).toContain("Registered");
@@ -190,6 +192,7 @@ it("reads a slot's entry and refund with the payout wallet that pays, signed by 
     paid: 500n * WEI,
     refundable: false,
     gameId: 0,
+    registeredAt: 0,
   };
   const refund = await mount({ ...TERMS, registration: seat, cancelled: true });
   await press(refund, "Take refund");

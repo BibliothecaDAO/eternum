@@ -31,6 +31,7 @@ it("waits for the results, offers a held chest, waits on the draw after the requ
       paid: 0n,
       refundable: false,
       gameId: 0,
+      registeredAt: 0,
     },
     ...overrides,
   });
