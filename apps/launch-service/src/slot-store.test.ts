@@ -2,7 +2,7 @@ import { slotValueFixture, registrationIdentityFixture } from "./test-database";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore } from "./store";
-import { createLaunchTestDatabase, testChain } from "./test-database";
+import { createLaunchTestDatabase, testChain, TEST_CHAIN } from "./test-database";
 let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
 beforeEach(async () => {
   database = await createLaunchTestDatabase();
@@ -152,22 +152,47 @@ it("publishes the same stored shard key used to open the ledger slot", async () 
   expect(value.openSlot).toHaveBeenCalledWith({ chainId: slot.chainId, slotId: slot.slotId }, expect.any(Object));
 });
 
-it("removes a new schedule when the ledger open fails, without deleting an existing paid slot on retry", async () => {
+it("deletes a failed schedule only after the ledger confirms absence", async () => {
   const value = slotValueFixture();
-  const open = vi.spyOn(value, "openSlot").mockRejectedValueOnce(new Error("ledger unavailable"));
+  vi.spyOn(value, "openSlot").mockRejectedValue(new Error("ledger rejected open"));
+  const absent = { ...(await value.slot()), exists: false };
+  vi.spyOn(value, "slot").mockResolvedValue(absent);
   const store = new D1SlotStore(
     database.db,
     new D1LaunchStore(database.db, testChain()),
     value,
     registrationIdentityFixture,
   );
-  const close = soon();
-  await expect(store.create("failed", close)).rejects.toThrow("ledger unavailable");
+  await expect(store.create("failed", soon())).rejects.toThrow("ledger rejected open");
+  expect(value.slot).toHaveBeenCalledTimes(1);
+  expect(value.slot).toHaveBeenCalledWith({ chainId: TEST_CHAIN, slotId: expect.any(Number) });
   expect(await store.list()).toEqual([]);
   await expect(store.get("failed")).rejects.toThrow("Slot not found");
-  await store.create("failed", close);
-  const slot = await store.get("failed");
-  open.mockRejectedValueOnce(new Error("retry unavailable"));
-  await expect(store.create("failed", close)).rejects.toThrow("retry unavailable");
-  expect(await store.get("failed")).toEqual(slot);
 });
+
+it.each(["exists", "unavailable"])(
+  "keeps the slot key after an ambiguous open when its ledger read is %s",
+  async (state) => {
+    const value = slotValueFixture();
+    const open = vi.spyOn(value, "openSlot").mockRejectedValueOnce(new Error("receipt unavailable"));
+    const read = vi.spyOn(value, "slot");
+    if (state === "unavailable") read.mockRejectedValueOnce(new Error("read unavailable"));
+    const store = new D1SlotStore(
+      database.db,
+      new D1LaunchStore(database.db, testChain()),
+      value,
+      registrationIdentityFixture,
+    );
+    const close = soon();
+    await expect(store.create("retry", close)).rejects.toThrow("unavailable");
+    const slot = await store.get("retry");
+    const key = { chainId: slot.chainId, slotId: slot.slotId };
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(read).toHaveBeenCalledWith(key);
+    await store.create("retry", close);
+    expect(await store.get("retry")).toEqual(slot);
+    expect(open).toHaveBeenNthCalledWith(1, key, expect.any(Object));
+    expect(open).toHaveBeenNthCalledWith(2, key, expect.any(Object));
+    expect(read).toHaveBeenCalledTimes(1);
+  },
+);

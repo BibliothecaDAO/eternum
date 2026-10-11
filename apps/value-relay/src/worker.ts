@@ -7,6 +7,7 @@ import {
   type ShardDirectory,
   rpcAt,
   readRegistrationPage,
+  readLedgerSlot,
   type LedgerSlotKey,
   type RegistrationQuery,
 } from "@realms-world/value-ledger";
@@ -278,6 +279,18 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       this.ledgerPermit(openSlotOnLedger(ledgerCredentialsOf(this.env), key, window), [key.chainId]),
     );
   }
+  async slot(key: LedgerSlotKey) {
+    await this.requireLaunchSlot(key);
+    return Effect.runPromise(
+      onIdentityChain(
+        this.env.LEDGER_RPC_URL,
+        this.env.IDENTITY,
+        relayOperation("read ledger slot", () =>
+          readLedgerSlot(rpcAt(this.env.LEDGER_RPC_URL), ledgerAddress(this.env.ENVIRONMENT), key, "latest"),
+        ),
+      ),
+    );
+  }
   async registrations(query: RegistrationQuery) {
     await this.requireLaunchSlot(query);
     return Effect.runPromise(
@@ -408,6 +421,9 @@ export class RelayDiagnostics extends WorkerEntrypoint<RelayEnv> {
 export class ValueLaunch extends WorkerEntrypoint<RelayEnv> {
   override fetch() {
     return new Response(null, { status: 404 });
+  }
+  slot(key: LedgerSlotKey) {
+    return ledgerOf(this.env).slot(key);
   }
   registrations(query: RegistrationQuery) {
     return ledgerOf(this.env).registrations(query);

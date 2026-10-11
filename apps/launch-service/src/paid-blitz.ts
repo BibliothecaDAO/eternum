@@ -1,6 +1,7 @@
 import {
   resolveBlitzRoster,
   type LedgerSlotKey,
+  type LedgerSlot,
   type RegistrationQuery,
   type RegistrationPage,
   type RegistrationIdentity,
@@ -9,6 +10,7 @@ import { RegistrationOpen } from "./blitz-roster";
 import { splitPlaytestRoster } from "./slots";
 
 export interface BlitzValuePort {
+  slot(key: LedgerSlotKey): Promise<LedgerSlot>;
   registrations(query: RegistrationQuery): Promise<RegistrationPage>;
   openSlot(key: LedgerSlotKey, window: { start: number; end: number }): Promise<void>;
   markRefundable(key: LedgerSlotKey, wallets: readonly string[]): Promise<void>;
