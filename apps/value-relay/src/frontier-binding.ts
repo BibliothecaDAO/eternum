@@ -1,5 +1,6 @@
-import { rpcAt, readConfirmedLedgerHead, decodeFrontierSeason } from "@realms-world/value-ledger";
-import { ShardReader, uint } from "./shard-rpc";
+import { rpcAt, readFrontierFunding, ledgerInteger } from "@realms-world/value-ledger";
+import { ShardReader } from "./shard-rpc";
+import { readConfirmedSnapshot, singleRow } from "./shard-snapshot";
 import { relayOperation } from "./ports";
 
 type Ledger = { rpcUrl: string; address: string };
@@ -9,43 +10,34 @@ export const frontierReceiptBindings = (
   reader: ShardReader,
   ledgerOf: () => Ledger,
   identity: { realmsIdForAccount(account: string): Promise<string | null> },
+  heraldUrl: string,
 ) => ({
   realmsIdForAccount: (account: string) => identity.realmsIdForAccount(account),
   frontierSeason: (gameId: number, confirmedAt: number) =>
     relayOperation("resolve_frontier_funding", async () => {
-      const shardHead = await reader.head();
-      const game = await reader
-        .provider()
-        .callContract(
-          { contractAddress: reader.connection.gamesAddress, entrypoint: "game", calldata: [String(gameId)] },
-          shardHead,
-        );
-      if (game.length !== 10) throw new Error("game_registry_abi_differs");
+      const snapshot = await readConfirmedSnapshot(reader.connection, heraldUrl, gameId, [
+        "GameRegistry",
+        "ChestRules",
+        "SliceRules",
+      ]);
+      const game = singleRow(snapshot, "GameRegistry");
+      const chests = singleRow(snapshot, "ChestRules");
+      const rules = singleRow(snapshot, "SliceRules");
       const ledger = ledgerOf();
-      const provider = rpcAt(ledger.rpcUrl);
-      const head = await readConfirmedLedgerHead(provider);
-      const season = decodeFrontierSeason(
-        await provider.callContract(
-          {
-            contractAddress: ledger.address,
-            entrypoint: "get_frontier",
-            calldata: [reader.connection.chainId, String(gameId)],
-          },
-          head.number,
-        ),
-      );
-      if (BigInt(season.start) !== uint(game[6]!, 64) || BigInt(season.seed) !== uint(game[9]!, 252))
-        throw new Error("frontier_funding_differs_from_game");
-      const deadline = await provider.callContract(
+      const funding = await readFrontierFunding(
+        rpcAt(ledger.rpcUrl),
+        ledger.address,
+        { chainId: reader.connection.chainId, gameId },
         {
-          contractAddress: ledger.address,
-          entrypoint: "frontier_claim_deadline",
-          calldata: [reader.connection.chainId, String(gameId)],
+          start: ledgerInteger(String(game.start_main_at)),
+          end: ledgerInteger(String(game.end_at)),
+          seed: String(game.seed),
+          pool: String(chests.pool),
+          dayUnit: ledgerInteger(String(rules.day_unit_seconds)),
+          claimWindow: ledgerInteger(String(chests.claim_window_seconds)),
         },
-        head.number,
       );
-      if (deadline.length !== 1) throw new Error("frontier_claim_deadline_abi_differs");
-      if (!Number.isSafeInteger(confirmedAt) || confirmedAt < 0 || BigInt(confirmedAt) >= uint(deadline[0]!, 64))
+      if (!Number.isSafeInteger(confirmedAt) || confirmedAt < 0 || confirmedAt >= funding.claimDeadline)
         throw new Error("withdrawal_created_outside_claim_window");
       return gameId;
     }),

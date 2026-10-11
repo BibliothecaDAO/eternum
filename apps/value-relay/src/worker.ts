@@ -399,6 +399,7 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
           reader,
           () => ({ rpcUrl: env.LEDGER_RPC_URL, address: ledgerAddress(env.ENVIRONMENT) }),
           env.IDENTITY,
+          shard.url,
         ),
       ),
       grantLabor: (claim) =>

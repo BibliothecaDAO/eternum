@@ -33,16 +33,42 @@ vi.mock("@realms-world/value-ledger", async (original) => ({
 }));
 const reader = new ShardReader({ rpcUrl: "https://shard.test", gamesAddress: "0x77", chainId: "0x1" });
 const bind = () =>
-  frontierReceiptBindings(reader, () => ({ rpcUrl: "https://ledger.test", address: "0x10" }), {
-    realmsIdForAccount: async () => "0x2",
-  });
+  frontierReceiptBindings(
+    reader,
+    () => ({ rpcUrl: "https://ledger.test", address: "0x10" }),
+    {
+      realmsIdForAccount: async () => "0x2",
+    },
+    "https://herald.test",
+  );
 beforeEach(() => {
   vi.clearAllMocks();
   rpc.blockHash = "0xa";
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => {
+      const game = await rpc.shardCall();
+      return Response.json({
+        game_id: "7",
+        confirmed_block: 10,
+        models: [
+          {
+            model: "GameRegistry",
+            rows: [{ key: "7", value: { game_id: 7, start_main_at: game[6], end_at: game[7], seed: game[9] } }],
+          },
+          {
+            model: "ChestRules",
+            rows: [{ key: "7", value: { game_id: 7, pool: "100", claim_window_seconds: 604800 } }],
+          },
+          { model: "SliceRules", rows: [{ key: "7", value: { game_id: 7, day_unit_seconds: 5 } }] },
+        ],
+      });
+    }),
+  );
   rpc.shardCall.mockResolvedValue(["0x5", "5", "0", "1", "0", "0", "10", "110", "0", "0x99"]);
   rpc.ledgerCall.mockImplementation(async (query) =>
-    query.entrypoint === "frontier_claim_deadline"
-      ? ["604910"]
+    query.entrypoint === "get_preset"
+      ? ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "5", "1", "604800"]
       : ["1", "10", "110", "100000000000000000000", "0", "0", "0", "0", "2", "0x99"],
   );
 });
@@ -79,16 +105,39 @@ it("rereads restored game funding instead of reusing a previous match", async ()
 });
 afterEach(() => vi.unstubAllGlobals());
 
-it.each(["get_frontier", "frontier_claim_deadline"])(
-  "fails when %s refuses unfunded Frontier custody",
-  async (entrypoint) => {
-    const previous = rpc.ledgerCall.getMockImplementation()!;
-    rpc.ledgerCall.mockImplementation(async (query) => {
-      if (query.entrypoint === entrypoint) throw new Error("Ledger: unknown Frontier season");
-      return previous(query);
-    });
-    await expect(Effect.runPromise(bind().frontierSeason(7, 50))).rejects.toMatchObject({
-      operation: "resolve_frontier_funding",
-    });
-  },
-);
+it.each(["get_frontier", "get_preset"])("fails when %s refuses unfunded Frontier custody", async (entrypoint) => {
+  const previous = rpc.ledgerCall.getMockImplementation()!;
+  rpc.ledgerCall.mockImplementation(async (query) => {
+    if (query.entrypoint === entrypoint) throw new Error("Ledger: unknown Frontier season");
+    return previous(query);
+  });
+  await expect(Effect.runPromise(bind().frontierSeason(7, 50))).rejects.toMatchObject({
+    operation: "resolve_frontier_funding",
+  });
+});
+
+it("keeps a funding mismatch unavailable when the snapshot pool differs", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () =>
+      Response.json({
+        game_id: "7",
+        confirmed_block: 10,
+        models: [
+          {
+            model: "GameRegistry",
+            rows: [{ key: "7", value: { game_id: 7, start_main_at: 10, end_at: 110, seed: "0x99" } }],
+          },
+          {
+            model: "ChestRules",
+            rows: [{ key: "7", value: { game_id: 7, pool: "101", claim_window_seconds: 604800 } }],
+          },
+          { model: "SliceRules", rows: [{ key: "7", value: { game_id: 7, day_unit_seconds: 5 } }] },
+        ],
+      }),
+    ),
+  );
+  await expect(Effect.runPromise(bind().frontierSeason(7, 50))).rejects.toMatchObject({
+    operation: "resolve_frontier_funding",
+  });
+});

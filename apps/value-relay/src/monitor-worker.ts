@@ -252,6 +252,7 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
                 reader,
                 () => ({ rpcUrl: env.LEDGER_RPC_URL, address: ledgerAddress(env.ENVIRONMENT) }),
                 env.IDENTITY,
+                shard.url,
               ),
             ).withdrawal(chainId, hash),
           );
