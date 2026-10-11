@@ -55,6 +55,7 @@ const SLOT_KEY: SlotKey = SlotKey { shard: 'shard', slot_id: 42 };
 const PRESET_ID: u32 = 3;
 const START: u64 = 100;
 const END: u64 = 200;
+const SEASON_END: u64 = END + 1000;
 
 fn ADMIN() -> ContractAddress {
     'admin'.try_into().unwrap()
@@ -138,7 +139,7 @@ fn deploy_ledger() -> Fixture {
 fn configure_game(fixture: Fixture, preset: Preset) -> Fixture {
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.register_preset(PRESET_ID, preset, test_bands(), test_items());
-    fixture.ledger.open_season(1, PRESET_ID, START, END + 100);
+    fixture.ledger.open_season(1, PRESET_ID, START, SEASON_END);
     stop_cheat_caller_address(fixture.ledger_address);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
     fixture.ledger.open_slot(SLOT_KEY, 1, PRESET_ID, START, END);
@@ -837,7 +838,7 @@ fn payout_pause_still_allows_results_and_mmr() {
 fn season_end_freezes_results() {
     let fixture = deploy_fixture(default_preset());
     register_players(@fixture, 1);
-    apply_results_at(@fixture, END + 100, ranked_players(1));
+    apply_results_at(@fixture, SEASON_END, ranked_players(1));
 }
 
 #[test]
@@ -1026,7 +1027,7 @@ fn deploy_reward_fixture(outcome: u8, reserve_bps: u16, nominal_lords: u256) -> 
     }
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.register_preset(PRESET_ID, preset, bands, test_items());
-    fixture.ledger.open_season(1, PRESET_ID, START, END + 100);
+    fixture.ledger.open_season(1, PRESET_ID, START, SEASON_END);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
     fixture.ledger.open_slot(SLOT_KEY, 1, PRESET_ID, START, END);
     stop_cheat_caller_address(fixture.ledger_address);
@@ -1232,10 +1233,10 @@ fn claim_season_at(fixture: @Fixture, timestamp: u64, owner: ContractAddress) {
 #[test]
 fn season_winners_pull_after_one_hour_using_the_preset_curve() {
     let fixture = completed_season();
-    post_top_at(@fixture, END + 100, array![player(0), player(1)]);
+    post_top_at(@fixture, SEASON_END, array![player(0), player(1)]);
     let season = fixture.ledger.get_season(1);
     assert!(season.participant_count == 6 && season.top_count == 2);
-    assert!(season.review_until == END + 100 + 3600);
+    assert!(season.review_until == SEASON_END + 3600);
     let (first, first_amount) = fixture.ledger.get_season_winner(1, 0);
     let (second, second_amount) = fixture.ledger.get_season_winner(1, 1);
     assert!(first == player(0) && second == player(1));
@@ -1253,14 +1254,14 @@ fn season_winners_pull_after_one_hour_using_the_preset_curve() {
 #[should_panic(expected: "Ledger: season under review")]
 fn season_payout_refuses_one_second_before_the_review_ends() {
     let fixture = completed_season();
-    post_top_at(@fixture, END + 100, array![player(0), player(1)]);
-    claim_season_at(@fixture, END + 100 + 3599, player(0));
+    post_top_at(@fixture, SEASON_END, array![player(0), player(1)]);
+    claim_season_at(@fixture, SEASON_END + 3599, player(0));
 }
 
 #[test]
 fn a_better_omitted_player_challenges_a_wrong_list() {
     let fixture = completed_season();
-    post_top_at(@fixture, END + 100, array![player(1), player(2)]);
+    post_top_at(@fixture, SEASON_END, array![player(1), player(2)]);
     start_cheat_caller_address(fixture.ledger_address, player(5));
     fixture.ledger.challenge_season(1, player(0));
     assert!(fixture.ledger.get_season(1).challenged);
@@ -1269,13 +1270,13 @@ fn a_better_omitted_player_challenges_a_wrong_list() {
 #[test]
 fn a_short_list_can_be_challenged_and_correction_restarts_the_hour() {
     let fixture = completed_season();
-    post_top_at(@fixture, END + 100, array![player(0)]);
+    post_top_at(@fixture, SEASON_END, array![player(0)]);
     fixture.ledger.challenge_season(1, player(1));
     assert!(fixture.ledger.get_season(1).challenged);
-    post_top_at(@fixture, END + 100 + 3599, array![player(0), player(1)]);
+    post_top_at(@fixture, SEASON_END + 3599, array![player(0), player(1)]);
     let corrected = fixture.ledger.get_season(1);
     assert!(!corrected.challenged);
-    assert!(corrected.review_until == END + 100 + 3599 + 3600);
+    assert!(corrected.review_until == SEASON_END + 3599 + 3600);
     claim_season_at(@fixture, corrected.review_until, player(0));
 }
 
@@ -1283,24 +1284,24 @@ fn a_short_list_can_be_challenged_and_correction_restarts_the_hour() {
 #[should_panic(expected: "Ledger: season challenged")]
 fn challenged_list_blocks_payout_even_after_the_hour() {
     let fixture = completed_season();
-    post_top_at(@fixture, END + 100, array![player(1), player(2)]);
+    post_top_at(@fixture, SEASON_END, array![player(1), player(2)]);
     fixture.ledger.challenge_season(1, player(0));
-    claim_season_at(@fixture, END + 100 + 3600, player(1));
+    claim_season_at(@fixture, SEASON_END + 3600, player(1));
 }
 
 #[test]
 #[should_panic(expected: "Ledger: incomplete top list")]
 fn short_list_cannot_pay_even_if_nobody_challenges() {
     let fixture = completed_season();
-    post_top_at(@fixture, END + 100, array![player(0)]);
-    claim_season_at(@fixture, END + 100 + 3600, player(0));
+    post_top_at(@fixture, SEASON_END, array![player(0)]);
+    claim_season_at(@fixture, SEASON_END + 3600, player(0));
 }
 
 #[test]
 #[should_panic(expected: "Ledger: does not beat cutoff")]
 fn worse_omitted_player_cannot_block_a_correct_list() {
     let fixture = completed_season();
-    post_top_at(@fixture, END + 100, array![player(0), player(1)]);
+    post_top_at(@fixture, SEASON_END, array![player(0), player(1)]);
     fixture.ledger.challenge_season(1, player(5));
 }
 
@@ -1308,8 +1309,8 @@ fn worse_omitted_player_cannot_block_a_correct_list() {
 #[should_panic(expected: "Ledger: review closed")]
 fn challenge_refuses_at_the_exact_hour_boundary() {
     let fixture = completed_season();
-    post_top_at(@fixture, END + 100, array![player(1), player(2)]);
-    start_cheat_block_timestamp(fixture.ledger_address, END + 100 + 3600);
+    post_top_at(@fixture, SEASON_END, array![player(1), player(2)]);
+    start_cheat_block_timestamp(fixture.ledger_address, SEASON_END + 3600);
     fixture.ledger.challenge_season(1, player(0));
 }
 
@@ -1317,21 +1318,21 @@ fn challenge_refuses_at_the_exact_hour_boundary() {
 #[should_panic(expected: "Ledger: unordered winners")]
 fn top_list_rejects_duplicate_winners() {
     let fixture = completed_season();
-    post_top_at(@fixture, END + 100, array![player(0), player(0)]);
+    post_top_at(@fixture, SEASON_END, array![player(0), player(0)]);
 }
 
 #[test]
 #[should_panic(expected: "Ledger: unordered winners")]
 fn top_list_rejects_ratings_in_the_wrong_order() {
     let fixture = completed_season();
-    post_top_at(@fixture, END + 100, array![player(1), player(0)]);
+    post_top_at(@fixture, SEASON_END, array![player(1), player(0)]);
 }
 
 #[test]
 #[should_panic(expected: "Ledger: not a season participant")]
 fn outsider_cannot_challenge() {
     let fixture = completed_season();
-    post_top_at(@fixture, END + 100, array![player(0)]);
+    post_top_at(@fixture, SEASON_END, array![player(0)]);
     fixture.ledger.challenge_season(1, player(99));
 }
 
@@ -1339,27 +1340,27 @@ fn outsider_cannot_challenge() {
 #[should_panic(expected: "Ledger: season has not ended")]
 fn operator_cannot_post_top_before_freeze() {
     let fixture = completed_season();
-    post_top_at(@fixture, END + 99, array![player(0), player(1)]);
+    post_top_at(@fixture, SEASON_END - 1, array![player(0), player(1)]);
 }
 
 #[test]
 #[should_panic(expected: "Ledger: top list final")]
 fn operator_cannot_restart_a_finished_review_to_delay_claims() {
     let fixture = completed_season();
-    post_top_at(@fixture, END + 100, array![player(0), player(1)]);
-    post_top_at(@fixture, END + 100 + 3600, array![player(0), player(1)]);
+    post_top_at(@fixture, SEASON_END, array![player(0), player(1)]);
+    post_top_at(@fixture, SEASON_END + 3600, array![player(0), player(1)]);
 }
 
 #[test]
 fn admin_mmr_correction_invalidates_a_posted_list_before_payout() {
     let fixture = completed_season();
-    post_top_at(@fixture, END + 100, array![player(0), player(1)]);
+    post_top_at(@fixture, SEASON_END, array![player(0), player(1)]);
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.correct_season_mmr(1, array![(player(5), 2000)]);
     assert!(fixture.ledger.get_season(1).challenged);
     assert!(fixture.ledger.get_season_mmr(1, player(5)) == 2000);
-    post_top_at(@fixture, END + 100 + 1, array![player(5), player(0)]);
-    claim_season_at(@fixture, END + 100 + 1 + 3600, player(5));
+    post_top_at(@fixture, SEASON_END + 1, array![player(5), player(0)]);
+    claim_season_at(@fixture, SEASON_END + 1 + 3600, player(5));
     assert!(fixture.lords.balance_of(player(5)) > 0);
 }
 
@@ -1367,8 +1368,8 @@ fn admin_mmr_correction_invalidates_a_posted_list_before_payout() {
 #[should_panic(expected: "Ledger: season payout started")]
 fn ratings_cannot_be_rewritten_after_a_winner_has_claimed() {
     let fixture = completed_season();
-    post_top_at(@fixture, END + 100, array![player(0), player(1)]);
-    claim_season_at(@fixture, END + 100 + 3600, player(0));
+    post_top_at(@fixture, SEASON_END, array![player(0), player(1)]);
+    claim_season_at(@fixture, SEASON_END + 3600, player(0));
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.correct_season_mmr(1, array![(player(5), 2000)]);
 }
@@ -1377,10 +1378,10 @@ fn ratings_cannot_be_rewritten_after_a_winner_has_claimed() {
 #[should_panic(expected: 'Pausable: paused')]
 fn monitor_pause_stops_season_payouts() {
     let fixture = completed_season();
-    post_top_at(@fixture, END + 100, array![player(0), player(1)]);
+    post_top_at(@fixture, SEASON_END, array![player(0), player(1)]);
     grant_pauser(@fixture);
     fixture.ledger.pause();
-    claim_season_at(@fixture, END + 100 + 3600, player(0));
+    claim_season_at(@fixture, SEASON_END + 3600, player(0));
 }
 
 #[test]
@@ -1390,7 +1391,7 @@ fn tied_mmr_uses_wallet_order_so_a_cutoff_tie_is_challengeable() {
     let fixture = deploy_fixture(preset);
     register_players(@fixture, 6);
     apply_results(@fixture, ranked_players(6));
-    post_top_at(@fixture, END + 100, array![player(1), player(2)]);
+    post_top_at(@fixture, SEASON_END, array![player(1), player(2)]);
     fixture.ledger.challenge_season(1, player(0));
     assert!(fixture.ledger.get_season(1).challenged);
 }
@@ -1420,7 +1421,7 @@ fn multiple_games_count_a_participant_once_and_accumulate_one_pool() {
 fn a_game_cannot_end_at_the_instant_its_result_ratings_freeze() {
     let fixture = deploy_fixture(default_preset());
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.open_slot(SlotKey { shard: 'shard', slot_id: 99 }, 1, PRESET_ID, START, END + 100);
+    fixture.ledger.open_slot(SlotKey { shard: 'shard', slot_id: 99 }, 1, PRESET_ID, START, SEASON_END);
 }
 
 #[test]
@@ -1446,8 +1447,8 @@ fn frontier_season_chests_and_unfinished_game_custody_are_conserved_together() {
     open_reward(@fixture, player(0), 1);
     assert!(fixture.ledger.get_season(1).pool == 800);
     assert!(fixture.ledger.get_slot(unfinished).pool == 500);
-    post_top_at(@fixture, END + 100, array![player(0)]);
-    claim_season_at(@fixture, END + 100 + 3600, player(0));
+    post_top_at(@fixture, SEASON_END, array![player(0)]);
+    claim_season_at(@fixture, SEASON_END + 3600, player(0));
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
     fixture.ledger.abort_slot(unfinished);
     start_cheat_caller_address(fixture.ledger_address, player(2));
@@ -1568,7 +1569,7 @@ fn posting_the_first_top_list_sweeps_reserve_and_late_chests_still_finish() {
     apply_results(@fixture, ranked_players(2));
     request_reward(@fixture, player(0), 1);
     assert!(fixture.ledger.get_season(1).pool == 800);
-    post_top_at(@fixture, END + 100, array![player(0)]);
+    post_top_at(@fixture, SEASON_END, array![player(0)]);
     assert!(fixture.ledger.get_season(1).pool == 1000);
     assert!(fixture.ledger.get_season(1).chest_reserve == 0);
     let (_, allocation) = fixture.ledger.get_season_winner(1, 0);
@@ -1576,7 +1577,7 @@ fn posting_the_first_top_list_sweeps_reserve_and_late_chests_still_finish() {
     finish_reward(@fixture, 1, 999999);
     assert!(fixture.ledger.get_chest(1).finished);
     assert!(fixture.lords.balance_of(player(0)) == 0);
-    claim_season_at(@fixture, END + 100 + 3600, player(0));
+    claim_season_at(@fixture, SEASON_END + 3600, player(0));
     assert!(fixture.lords.balance_of(player(0)) == 1000);
     // A still-unrequested token remains openable, with zero available LORDS after the sweep.
     open_reward(@fixture, player(1), 2);
@@ -1650,8 +1651,8 @@ fn unfinished_cosmetic_requests_remain_finishable_after_season_settlement() {
     register_players(@fixture, 1);
     apply_results(@fixture, ranked_players(1));
     request_reward(@fixture, player(0), 1);
-    post_top_at(@fixture, END + 100, array![player(0)]);
-    claim_season_at(@fixture, END + 100 + 3600, player(0));
+    post_top_at(@fixture, SEASON_END, array![player(0)]);
+    claim_season_at(@fixture, SEASON_END + 3600, player(0));
     finish_reward(@fixture, 1, 999999);
     assert!(IERC721Dispatcher { contract_address: fixture.cosmetics_address }.owner_of(1) == player(0));
     assert!(fixture.lords.balance_of(player(0)) == 500);
@@ -1668,7 +1669,7 @@ fn a_cosmetic_rarity_selects_from_all_its_items_using_an_independent_hash() {
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.register_preset(PRESET_ID, default_preset(), bands, items);
     assert!(fixture.ledger.get_cosmetic_items(PRESET_ID, 0) == array![1_u128, 2, 3]);
-    fixture.ledger.open_season(1, PRESET_ID, START, END + 100);
+    fixture.ledger.open_season(1, PRESET_ID, START, SEASON_END);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
     fixture.ledger.open_slot(SLOT_KEY, 1, PRESET_ID, START, END);
     stop_cheat_caller_address(fixture.ledger_address);
@@ -1930,8 +1931,8 @@ fn existing_result_rank_rejects_duplicate_wallets() {
 #[feature("safe_dispatcher")]
 fn season_claim_checks_the_named_position_before_paying() {
     let fixture = completed_season();
-    post_top_at(@fixture, END + 100, array![player(0), player(1)]);
-    start_cheat_block_timestamp(fixture.ledger_address, END + 100 + 3600);
+    post_top_at(@fixture, SEASON_END, array![player(0), player(1)]);
+    start_cheat_block_timestamp(fixture.ledger_address, SEASON_END + 3600);
     start_cheat_caller_address(fixture.ledger_address, player(1));
     let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
     assert!(safe.claim_season(1, 0).is_err());
@@ -1975,9 +1976,9 @@ fn season_post_at_two_thousand_participants_allocates_in_one_call() {
     for index in 0_u16..400 {
         winners.append(player(index));
     }
-    post_top_at(@fixture, END + 100, winners);
+    post_top_at(@fixture, SEASON_END, winners);
     let posted = fixture.ledger.get_season(1);
-    assert!(posted.posted && posted.top_count == 400 && posted.review_until == END + 100 + 3600);
+    assert!(posted.posted && posted.top_count == 400 && posted.review_until == SEASON_END + 3600);
     let mut total = 0;
     for index in 0_u32..400 {
         let (owner, amount) = fixture.ledger.get_season_winner(1, index);
@@ -2071,14 +2072,14 @@ fn two_games_cannot_consume_the_same_registration() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn slot_open_reserves_one_settlement_tick_before_season_end() {
+fn slot_open_requires_more_than_ten_minutes_before_season_end() {
     let fixture = deploy_fixture(default_preset());
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
     let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
     let key = SlotKey { shard: 'shard', slot_id: 99 };
-    assert!(safe.open_slot(key, 1, PRESET_ID, START, END + 40).is_err());
-    fixture.ledger.open_slot(key, 1, PRESET_ID, START, END + 39);
-    assert!(fixture.ledger.get_slot(key).end == END + 39);
+    assert!(safe.open_slot(key, 1, PRESET_ID, START, SEASON_END - 600).is_err());
+    fixture.ledger.open_slot(key, 1, PRESET_ID, START, SEASON_END - 601);
+    assert!(fixture.ledger.get_slot(key).end == SEASON_END - 601);
 }
 
 #[test]

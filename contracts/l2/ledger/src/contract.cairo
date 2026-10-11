@@ -10,7 +10,7 @@ pub const OPERATOR_ROLE: felt252 = selector!("OPERATOR_ROLE");
 const BPS: u256 = 10_000;
 const PAYOUT_WEIGHT_SCALE: u256 = 1_000_000_000_000_000_000;
 // One settlement tick must fit after the last scheduled game.
-const BLITZ_SETTLEMENT_MARGIN_SECONDS: u64 = 60;
+const BLITZ_SETTLEMENT_MARGIN_SECONDS: u64 = 600;
 const SEASON_REVIEW_SECONDS: u64 = 3600;
 const MMR_PRECISION: u256 = 1_000_000_000_000_000_000;
 
