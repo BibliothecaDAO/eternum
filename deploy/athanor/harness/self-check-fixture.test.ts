@@ -180,8 +180,9 @@ test("the real open-home Frontier check has no payable LORDS pool without changi
   const production = nativePresetForId(5);
   expect(check.entryRule).toBe(production.entryRule);
   expect(check.commandMask).toBe(production.commandMask);
-  expect(check.chests).toEqual({ ...production.chests!, pool: 0 });
-  expect(production.chests!.pool).toBe(1000000);
+  expect(check.chests).toEqual(production.chests);
+  expect(check.chests).not.toHaveProperty("pool");
+  expect(production.chests).not.toHaveProperty("pool");
   const definition = buildNativePreset(loadNativePresetConfiguration("madara.frontier", check.id), check.id);
   expect(definition.economy.chests.unwrap()).toMatchObject({ pool: 0n, price: 50n });
 });
