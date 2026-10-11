@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-11",
+    title: "Blitz entry closes five minutes before the start",
+    description:
+      "A Blitz slot's entry now closes five minutes before its games start, so every game of the slot is drawn, created and seated before the clock runs. The lobby shows both times.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-11",
     title: "Realm labor in one claim",
     description:
       "Claim all on the Realms sheet now claims every ready Realm's labor in a single request, so several Realms take no longer than one.",

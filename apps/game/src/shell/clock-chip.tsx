@@ -4,7 +4,7 @@ import { LEFT } from "@/ui/design-system/kit/words";
 
 import { CLOCK_WORDS } from "./words";
 
-type ClockPrefix = "starts" | "opens" | "ends" | "expires";
+type ClockPrefix = "starts" | "opens" | "ends" | "expires" | "closes";
 
 const DAY = 86_400;
 const BEGINS: readonly ClockPrefix[] = ["starts", "opens"];

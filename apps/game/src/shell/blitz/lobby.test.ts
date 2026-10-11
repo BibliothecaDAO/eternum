@@ -10,7 +10,8 @@ const slotRow = (): BlitzRow => ({
   kind: "slot",
   key: "slot:blitz-1630",
   slot: { name: "blitz-1630", closesAt: new Date(2_000_000).toISOString() } as PlaytestSlot,
-  startsAt: 2_000,
+  closesAt: 2_000,
+  startsAt: 2_300,
   action: "open",
 });
 

@@ -188,7 +188,7 @@ export const BlitzLobbyPage = () => {
           </section>
           <div className="flex flex-col gap-5">
             <section className="plate flex flex-col gap-4 p-5">
-              {!isClosedSlot(row, facts.now) && <Countdown row={row} now={facts.now} />}
+              {!hasSlotStarted(row, facts.now) && <Countdown row={row} now={facts.now} />}
               {clock}
               {action}
             </section>
@@ -235,9 +235,27 @@ const countdown = (seconds: number) => {
   return `${Math.floor(left / 3600)}:${pad(Math.floor(left / 60) % 60)}:${pad(left % 60)}`;
 };
 
-/** A slot past its close: its lobby is kept for its entry's outcome, with no start left to count down to. */
-const isClosedSlot = (row: BlitzRow, now: number): boolean =>
+/** A slot whose registration has closed: its lobby is kept for its entry's outcome. */
+const isClosedSlot = (row: BlitzRow, now: number): boolean => row.kind === "slot" && now >= row.closesAt;
+
+/** A slot whose games have started: there is no start left to count down to. */
+const hasSlotStarted = (row: BlitzRow, now: number): boolean =>
   row.kind === "slot" && row.startsAt !== null && now >= row.startsAt;
+
+/**
+ * A slot's two times: when its registration closes (closed, once it has) and, until then and through the preparation
+ * window after it, when its games start.
+ */
+const SlotTimes = ({ row, now }: { row: Extract<BlitzRow, { kind: "slot" }>; now: number }) => (
+  <>
+    {isClosedSlot(row, now) ? (
+      <StateChip icon="Lk" text={ENTRY_WORDS.closed} />
+    ) : (
+      <ClockChip prefix="closes" at={row.closesAt} now={now} />
+    )}
+    {!hasSlotStarted(row, now) && <ClockChip prefix="starts" at={row.startsAt ?? undefined} now={now} />}
+  </>
+);
 
 const LobbyClock = ({ row, step, now }: { row: BlitzRow; step: LobbyStep; now: number }) => (
   <div className="flex flex-wrap items-center gap-2">
@@ -246,8 +264,8 @@ const LobbyClock = ({ row, step, now }: { row: BlitzRow; step: LobbyStep; now: n
         <LiveChip />
         {row.kind === "game" && <ClockChip prefix="ends" at={row.game.clock.end_at} now={now} />}
       </>
-    ) : isClosedSlot(row, now) ? (
-      <StateChip icon="Lk" text={ENTRY_WORDS.closed} />
+    ) : row.kind === "slot" ? (
+      <SlotTimes row={row} now={now} />
     ) : (
       <ClockChip prefix="starts" at={row.startsAt} now={now} />
     )}

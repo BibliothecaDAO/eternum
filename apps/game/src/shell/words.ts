@@ -64,6 +64,8 @@ export const CLOCK_WORDS = {
   opens: "Opens",
   ends: "Ends",
   expires: "Expires",
+  /** A slot's registration: "Entry closes 16:25 · 1h 59m left". */
+  closes: "Entry closes",
   /** Before the time left to a beginning: "Starts 16:30 · in 2h 4m". */
   in: "in",
 } as const;

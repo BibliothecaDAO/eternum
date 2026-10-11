@@ -51,9 +51,15 @@ describe("the lobby's Blitz rows", () => {
       ["game:0xa:1", null, "spectate"],
       ["game:0xa:2", null, "enter"],
       ["game:0xa:3", 1_600, "registered"],
-      ["slot:soon", 1_042, "open"],
-      ["slot:late", 5_000, "open"],
+      // A slot's games start five minutes after its registration closes (1,042 and 5,000 here).
+      ["slot:soon", 1_342, "open"],
+      ["slot:late", 5_300, "open"],
     ]);
+  });
+
+  it("keeps a slot's two times: when its registration closes, and when its games start, 300 seconds later", () => {
+    const [row] = blitzRows([], [slot("soon", 1_042)]);
+    expect(row.kind === "slot" && [row.closesAt, row.startsAt]).toEqual([1_042, 1_342]);
   });
 
   it("leads a one-row card with the player's own game to enter, else the next slot", () => {

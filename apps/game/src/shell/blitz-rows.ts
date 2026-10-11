@@ -1,6 +1,7 @@
 import { canEnterGame, isGameOver, isMember, rosterWalletOf } from "@/runtime/world/directory";
 import { feltEquals } from "@bibliothecadao/eternum/game-client";
 import { isSameStarknetAddress } from "@realms-world/identity";
+import { BLITZ_SLOT_PREPARATION_SECONDS } from "@realms-world/value-ledger/blitz-slots";
 
 import { BLITZ_SEATS, type PlaytestSlot } from "./blitz-slot";
 import type { DirectoryGame } from "./herald";
@@ -13,19 +14,27 @@ import type { GameKey, SlotKey } from "./value/ledger";
 export type BlitzAction = "enter" | "spectate" | "registered" | "open" | "refund";
 
 /**
- * One Blitz on the lobby's Blitz card (design o4): live, or the moment it starts or its slot closes, and one action;
+ * One Blitz on the lobby's Blitz card (design o4): live, or the moment it starts, and one action;
  * a game has its roster's seats, a slot only the count the ledger registered (it is uncapped and splits into games at
  * close). A game comes from the directory; a slot still taking players comes from the launch service, and its games
  * join the directory only once the slot closes, so the two never show the same game.
  */
 export type BlitzRow = {
   key: string;
-  /** When it starts (a game) or its slot closes (a slot); null once it is live or over. */
+  /**
+   * When it starts: a game's own start, or for a slot the common start of its games, a preparation window after its
+   * registration closes; null once it is live or over.
+   */
   startsAt: number | null;
   action: BlitzAction | null;
 } & (
   | { kind: "game"; game: DirectoryGame; seats: { filled: number; total: number } }
-  | { kind: "slot"; slot: PlaytestSlot }
+  | {
+      kind: "slot";
+      slot: PlaytestSlot;
+      /** When the slot's registration closes (Unix seconds): its games are then drawn, created and seated. */
+      closesAt: number;
+    }
 );
 
 /**
@@ -109,12 +118,16 @@ const gameAction = (game: DirectoryGame): BlitzAction | null => {
 };
 
 /** A slot is paid: its lobby holds the entry, and only the ledger counts its registrations. */
-export const slotRow = (slot: PlaytestSlot): BlitzRow => ({
-  kind: "slot",
-  key: `slot:${slot.name}`,
-  slot,
-  startsAt: Math.floor(Date.parse(slot.closesAt) / 1000),
-  action: "open",
-});
+export const slotRow = (slot: PlaytestSlot): BlitzRow => {
+  const closesAt = Math.floor(Date.parse(slot.closesAt) / 1000);
+  return {
+    kind: "slot",
+    key: `slot:${slot.name}`,
+    slot,
+    closesAt,
+    startsAt: closesAt + BLITZ_SLOT_PREPARATION_SECONDS,
+    action: "open",
+  };
+};
 
 const isFilling = (slot: PlaytestSlot): boolean => !slot.closed && !slot.frozenAt;
