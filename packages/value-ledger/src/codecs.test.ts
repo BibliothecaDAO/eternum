@@ -15,6 +15,7 @@ import {
   ledgerBool,
   ledgerInteger,
   ledgerU256,
+  readConfirmedLedgerHead,
 } from "./codecs";
 
 const WEI = 10n ** 18n;
@@ -184,4 +185,30 @@ it("decodes one winner and its full allocated share and rejects incomplete or ab
     ["0xabc", "0", String(1n << 128n)],
   ])
     expect(() => decodeSeasonWinner(fields)).toThrow();
+});
+
+it("pins a confirmed header through a read-only provider", async () => {
+  expect(
+    await readConfirmedLedgerHead(
+      {
+        getBlock: async () => ({
+          block_number: 12,
+          block_hash: "0xab",
+          timestamp: 100,
+          status: "ACCEPTED_ON_L2",
+        }),
+      },
+      12,
+    ),
+  ).toEqual({ number: 12, hash: "0xab", time: 100 });
+});
+it.each([
+  null,
+  {},
+  { status: "PRE_CONFIRMED" },
+  { block_number: "12", block_hash: "0xab", timestamp: 100, status: "ACCEPTED_ON_L2" },
+  { block_number: 12, block_hash: "0xab", timestamp: "100", status: "ACCEPTED_ON_L2" },
+  { block_number: 12, block_hash: "0xab", timestamp: 100, status: [] },
+])("refuses a malformed or preconfirmed header %j", async (block) => {
+  await expect(readConfirmedLedgerHead({ getBlock: async () => block })).rejects.toThrow("ledger_head_unconfirmed");
 });

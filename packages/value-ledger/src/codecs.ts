@@ -1,5 +1,3 @@
-import type { RpcProvider } from "starknet";
-
 /**
  * GameLedger's structs as the views return them (infra-pr/ledger-interface.txt): felt arrays in the interface's field
  * order; u256 is low then high, bool is 0 or 1. The one decoder of each struct, for the client and the services.
@@ -207,16 +205,25 @@ export const decodeBlitzSeason = (fields: readonly string[]) => {
   };
 };
 /** One confirmed header format for immutable reads; no pending head can become a cache anchor. */
-export const readConfirmedLedgerHead = async (provider: RpcProvider, number: number | "latest" = "latest") => {
+export const readConfirmedLedgerHead = async (
+  provider: { getBlock(number: number | "latest"): Promise<unknown> },
+  number: number | "latest" = "latest",
+) => {
   const block = await provider.getBlock(number);
   if (
+    !block ||
+    typeof block !== "object" ||
     !("block_number" in block) ||
+    typeof block.block_number !== "number" ||
     !("block_hash" in block) ||
     !("status" in block) ||
+    typeof block.status !== "string" ||
     !["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(block.status ?? "") ||
     !Number.isSafeInteger(block.block_number) ||
     block.block_number < 0 ||
     (number !== "latest" && block.block_number !== number) ||
+    !("timestamp" in block) ||
+    typeof block.timestamp !== "number" ||
     !Number.isSafeInteger(block.timestamp) ||
     block.timestamp < 0 ||
     typeof block.block_hash !== "string" ||

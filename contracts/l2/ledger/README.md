@@ -110,24 +110,21 @@ Clients read `lords()` and `chest_collection()` from the ledger before balance, 
 These public views return the constructor's addresses on every network, including while paused; a mainnet token address
 is not a rehearsal dependency.
 
-## Sepolia rehearsal
+## Deploy once, fund each Frontier game separately
 
-The owner-run path is `scripts/commands/deployment/sepolia.js`. It was written for this change and has not been
-executed. It refuses any provider whose chain ID is not `SN_SEPOLIA`, deploys a publicly mintable **Test LORDS** token,
-a fresh MMR contract and two fresh collectible collections, then deploys the ledger. It grants the ledger the existing
-MMR updater and collection minter roles, configures test metadata, registers Blitz (ID 1), zero-cut Frontier (ID 2) and
-player-game (ID 6) test presets, opens a Blitz season and funds Frontier once using all six ABI arguments. Player seats
-cost 1 LORDS on Sepolia; preset 6 disables rating and prices both sword and shield at zero. The public manifest reads
-all eight `FrontierSeason` fields from the ledger; its derived Frontier end is independent of `SEPOLIA_SEASON_END`,
-which schedules Blitz. It writes public addresses, season data and transaction hashes to
-`contracts/l2/ledger/target/sepolia-deployment.json` and merges the deployed `ledger` into
-`contracts/common/addresses/sepolia.json`, preserving every other address. Review and commit that address-book change
-before deploying the services and client that read it.
+The owner-run Sepolia deployment is `scripts/commands/deployment/sepolia.js`. It refuses any provider whose chain ID is
+not `SN_SEPOLIA`, deploys a publicly mintable **Test LORDS**, a fresh MMR token, two collectible collections and the
+ledger. As soon as those contracts exist, it writes `contracts/l2/ledger/target/sepolia-deployment.json` and merges
+`ledger` and `mmrToken` into `contracts/common/addresses/sepolia.json`, preserving the Realms address and other entries.
+The manifest survives a later setup failure; inspect the receipt and these existing contracts before any redeployment.
+There is no automatic resume or redeployment on failure.
 
-With existing `target/dev` ledger artifacts, `pnpm --dir contracts/l2/ledger/scripts test` checks rehearsal calldata,
-Frontier response parsing, the required game id and address-book publication without loading a signer or deploying.
+Setup grants updater/minter/pauser roles, configures metadata, registers Blitz (1), Frontier (2) and player-game (6)
+presets, and opens Blitz season 1. Player seats cost 1 LORDS on Sepolia; preset 6 disables rating and flag purchases.
+Deployment neither reads nor funds a Frontier game. Its only season window is the separate Blitz season's existing
+start/end inputs; no Frontier clock, seed, pool or shard is a deployment input.
 
-Build release artifacts first, under the same lock. These commands compile each package using its pinned toolchain:
+Build release artifacts first, using each package's pinned toolchain:
 
 ```sh
 (cd contracts/l2/ledger && flock /tmp/eternum-scarb.lock scarb build --release)
@@ -135,21 +132,46 @@ Build release artifacts first, under the same lock. These commands compile each 
 (cd contracts/l2/collectibles && flock /tmp/eternum-scarb.lock scarb build --release)
 ```
 
-The owner supplies `SEPOLIA_RPC_URL`, `SEPOLIA_ACCOUNT_ADDRESS`, `SEPOLIA_ACCOUNT_PRIVATE_KEY`,
-`SEPOLIA_OPERATOR_ADDRESS`, `SEPOLIA_PAUSER_ADDRESS`, `SEPOLIA_SHARD_CHAIN_ID` (a non-zero felt),
-`SEPOLIA_FRONTIER_SEASON_ID` (required, no default: the actual Frontier game id on that shard, a non-zero u32),
-`SEPOLIA_GAME_SEED` (the funded shard game seed), `SEPOLIA_SEASON_START`, `SEPOLIA_SEASON_END` (Unix seconds),
-`SEPOLIA_FRONTIER_POOL_WEI`, `SEPOLIA_CHEST_BAND_1_CID` through `SEPOLIA_CHEST_BAND_5_CID`, `SEPOLIA_COSMETIC_CID`.
-Funding must complete before the Frontier season ends. Read the Frontier game id from its launch result or Herald
-directory; the deployment check may already have consumed earlier ids. Funding and the `get_frontier` verification both
-use this exact id. `seasonId: 1` in the manifest identifies the separate Blitz season; `frontierSeasonId` records the
-funded shard game id.
-
-Run only when the owner authorizes deployment:
+For deployment supply `SEPOLIA_RPC_URL`, `SEPOLIA_ACCOUNT_ADDRESS`, `SEPOLIA_ACCOUNT_PRIVATE_KEY`,
+`SEPOLIA_OPERATOR_ADDRESS`, `SEPOLIA_PAUSER_ADDRESS`, `SEPOLIA_SEASON_START`, `SEPOLIA_SEASON_END` (the **Blitz**
+window, Unix seconds), `SEPOLIA_CHEST_BAND_1_CID` through `SEPOLIA_CHEST_BAND_5_CID`, and `SEPOLIA_COSMETIC_CID`.
+Blitz's `open_season` enforces its own valid window on chain. Run only with the owner's deployment authorization:
 
 ```sh
 pnpm --dir contracts/l2/ledger/scripts deploy:sepolia
 ```
+
+Review and commit the public address-book changes, then rebuild/redeploy services and client. Identity reads this
+`mmrToken` and the existing `realms` address from the same book; its rating-history source must describe that rating
+deployment. The manifest's `seasonId: 1` refers only to Blitz.
+
+### Fund a Frontier season
+
+After the shard confirms creation, take the actual game ID from the launch result or Herald directory. The deployment
+check may have consumed earlier IDs. The funding command works on Sepolia or mainnet without redeploying contracts. It
+reads the ledger from that network's address book and LORDS from `ledger.lords()`.
+
+Supply the ledger admin's `STARKNET_ACCOUNT_ADDRESS` and `STARKNET_ACCOUNT_PRIVATE_KEY` as secrets, `STARKNET_RPC` for
+the selected L2, `NATIVE_WORLD_MANIFEST` for the shard, `RPC_URL` for that shard's public RPC, and `HERALD_URL` for its
+HTTPS Herald. The admin must hold the game's full pool in the ledger's LORDS token and enough STRK for fees. On Sepolia,
+that token's public `mint(recipient, amount)` supplies test LORDS; mint to the admin before funding. Amounts are wei.
+For example, a confirmed 1,000,000-LORDS chest pool needs exactly 1000000000000000000000000 wei.
+
+```sh
+# Replace 42 with the confirmed Frontier game ID; use mainnet instead of sepolia for mainnet custody.
+pnpm --dir contracts/l2/ledger/scripts fund:frontier sepolia 42
+```
+
+The command checks the shard chain ID, reads Herald's confirmed GameRegistry, ChestRules and SliceRules, and checks the
+game against the shard RPC at that same block. It compares the day length, derived end and claim window with ledger
+preset (2 on Sepolia; the native preset ID on mainnet), derives the amount from the confirmed chest pool × 10^18, and
+submits approval plus funding in one transaction. It waits for confirmation, rereads `get_frontier` and its preset, and
+refuses a different start, seed, end, pool or day rule. Its public result includes the transaction hash and verified
+funding. A season already running may be funded; a season at or past its end cannot. No caller-entered seed, start, end
+or amount can override the confirmed game.
+
+`pnpm --dir contracts/l2/ledger/scripts test` checks deployment publication, setup separation, compiled funding
+calldata, confirmed reads, mismatches and readback without a signer or live deployment.
 
 Use the resulting public manifest to verify the deployment and the checked-in address book to configure service and
 client builds. Match the shard's Frontier season window and pool to the deployed ledger. Mint test LORDS to test

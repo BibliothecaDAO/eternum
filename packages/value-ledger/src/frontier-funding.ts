@@ -13,7 +13,7 @@ export interface FrontierFundingTerms {
 
 /** Unfunded views revert; unreadable or different custody cannot bind a receipt. */
 export async function readFrontierFunding(
-  provider: RpcProvider,
+  provider: Pick<RpcProvider, "callContract"> & Parameters<typeof readConfirmedLedgerHead>[0],
   ledgerAddress: string,
   key: { chainId: string; gameId: number },
   native: FrontierFundingTerms,
@@ -23,22 +23,31 @@ export async function readFrontierFunding(
     provider.callContract({ contractAddress: ledgerAddress, entrypoint, calldata }, head.number);
   const season = decodeFrontierSeason(await read("get_frontier", [key.chainId, String(key.gameId)]));
   const preset = decodeLedgerPreset(await read("get_preset", [String(season.presetId)]));
+  assertFrontierPreset(preset, native);
+  if (
+    season.start !== native.start ||
+    season.end !== native.end ||
+    BigInt(season.seed) !== BigInt(native.seed) ||
+    BigInt(season.pool) !== BigInt(native.pool) * 10n ** 18n
+  )
+    throw new Error("frontier_funding_differs_from_game");
+  return { ...season, claimDeadline: season.end + preset.claimWindow, confirmedBlock: head.number };
+}
+
+/** Compare the immutable day rules before funding and when checking an existing pool. */
+export function assertFrontierPreset(preset: ReturnType<typeof decodeLedgerPreset>, native: FrontierFundingTerms) {
   if (
     ![native.start, native.end, native.dayUnit, native.claimWindow].every(Number.isSafeInteger) ||
     native.start < 0 ||
     native.dayUnit <= 0 ||
     native.claimWindow <= 0 ||
     native.end <= native.start ||
-    season.start !== native.start ||
-    season.end !== native.end ||
-    BigInt(season.seed) !== BigInt(native.seed) ||
     BigInt(native.seed) <= 0n ||
     BigInt(native.pool) <= 0n ||
-    BigInt(season.pool) !== BigInt(native.pool) * 10n ** 18n ||
+    BigInt(native.pool) * 10n ** 18n >= 1n << 128n ||
     preset.dayUnit !== native.dayUnit ||
     preset.claimWindow !== native.claimWindow ||
     BigInt(native.end - native.start) !== 20n * BigInt(native.dayUnit) * BigInt(preset.bags)
   )
     throw new Error("frontier_funding_differs_from_game");
-  return { ...season, claimDeadline: season.end + preset.claimWindow, confirmedBlock: head.number };
 }
