@@ -1,5 +1,5 @@
 import { IdentityRequestError } from "@realms-world/identity";
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 
 import {
@@ -51,6 +51,19 @@ export const SignInPage = () => {
 /** Before a session: Discord, or an email and then its code. */
 const AnonymousSignIn = ({ next }: { next: string }) => {
   const { search } = useLocation();
+  const [providers, setProviders] = useState<string[]>([]);
+  useEffect(() => {
+    let active = true;
+    void identityClient
+      .availableSignInProviders()
+      .then((value) => {
+        if (active) setProviders(value);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
   const applySession = useIdentitySessionStore((state) => state.applySession);
   const [sent, setSent] = useState<{ email: string; expiresAt: number | undefined } | null>(null);
   // Discord returns to the flow with an `error` query parameter when its sign-in did not complete.
@@ -73,7 +86,7 @@ const AnonymousSignIn = ({ next }: { next: string }) => {
         <StartStep
           sending={running === "send-code"}
           error={error}
-          onDiscord={continueWithDiscord}
+          onDiscord={providers.includes("discord") ? continueWithDiscord : undefined}
           onEmail={emailCode}
         />
       </SignInFrame>

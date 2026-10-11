@@ -44,8 +44,8 @@ export const l2TransactionUrl = (hash: string): string => `${L2_CHAIN.explorer}/
 export const isL2Chain = (chainId: bigint | string): boolean => BigInt(chainId) === BigInt(L2_CHAIN.id);
 
 /** This build's L2 through our Alchemy RPC, from the build's L2 RPC variable; there is no public fallback. */
-export const L2_RPC_URL = resolveEndpoint(env.VITE_PUBLIC_IDENTITY_RPC_URL, {
-  name: "VITE_PUBLIC_IDENTITY_RPC_URL",
+export const L2_RPC_URL = resolveEndpoint(env.VITE_PUBLIC_L2_RPC_URL, {
+  name: "VITE_PUBLIC_L2_RPC_URL",
   browserFacing: true,
 });
 

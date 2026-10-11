@@ -39,6 +39,8 @@ import { PushSubscriptionStore, type PushSubscriptionRow } from "./push-subscrip
 import { realmsIdsOfAccounts } from "./realms-accounts";
 import { sendPush } from "./web-push";
 
+const POLL_MS = 3_000;
+
 /** The shard this notifier reads, as the directory lists it and as its manifest names its Games contract. */
 interface WatchedShard {
   url: string;
@@ -97,12 +99,12 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
       await runStage(shard, "deliver", () => this.deliverDue(env));
       morePages = (await runStage(shard, "stories", () => this.readStories(env, watched))) ?? false;
     }
-    await this.scheduleNextAlarm(env, morePages, reminderWake);
+    await this.scheduleNextAlarm(morePages, reminderWake);
   }
 
-  private async scheduleNextAlarm(env: IdentityEnv, morePages: boolean, reminderWake: number | null): Promise<void> {
+  private async scheduleNextAlarm(morePages: boolean, reminderWake: number | null): Promise<void> {
     const now = Date.now();
-    let next = now + (morePages ? 0 : env.SHARD_NOTIFIER_POLL_MS);
+    let next = now + (morePages ? 0 : POLL_MS);
     if (reminderWake !== null && reminderWake > now) next = Math.min(next, reminderWake);
     for (const entry of (await this.ctx.storage.list<OutboxEntry>({ prefix: "outbox:" })).values())
       next = Math.min(next, entry.dueAt);
@@ -216,7 +218,7 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
     const { running: due, ended } = await partitionByRunningGame(
       shard.url,
       [...(await this.ctx.storage.list<RestWatch>({ prefix: "rest:" })).values()].filter(
-        (watch) => wakeAt(watch, env.SHARD_NOTIFIER_POLL_MS) <= now,
+        (watch) => wakeAt(watch, POLL_MS) <= now,
       ),
     );
     await this.ctx.storage.transaction(async (txn) => {
@@ -291,7 +293,7 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
     // Claim before network IO: alarm retries and restarts must never resend a day reminder.
     if (reminder && !(await this.ctx.storage.delete(key))) return;
     const next = await deliver(env, entry, Date.now()).catch((error: unknown) => {
-      const retry = reminder ? null : retryLater(entry, Date.now(), env.SHARD_NOTIFIER_POLL_MS);
+      const retry = reminder ? null : retryLater(entry, Date.now(), POLL_MS);
       console.error(
         retry ? "shard_notifier_delivery_retry" : "shard_notifier_delivery_dropped",
         entry.envelope.notification.id,
@@ -377,7 +379,7 @@ const deliver = (env: IdentityEnv, entry: OutboxEntry, now: number) =>
       if (reminder ? !includesDayEndReminder(level) : !wantsGameAlerts(device, now) || level === "off") return null;
       const outcome = yield* Effect.promise(() => sendPush(vapidKeysOf(env), device, entry.envelope));
       if (outcome === "expired") yield* store.expire(entry.owner, entry.subscriptionId);
-      return outcome === "retry" && !reminder ? retryLater(entry, now, env.SHARD_NOTIFIER_POLL_MS) : null;
+      return outcome === "retry" && !reminder ? retryLater(entry, now, POLL_MS) : null;
     }).pipe(
       Effect.provide(NotificationPreferenceStore.layer(env.DB)),
       Effect.provide(PushSubscriptionStore.layer(env.DB)),

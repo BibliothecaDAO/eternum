@@ -2,12 +2,12 @@ import dev from "../../../contracts/common/addresses/dev.json";
 import { afterEach, expect, it, vi } from "vitest";
 import { RpcProvider } from "starknet";
 import { identityL2Configuration, identityProvider, verifyIdentityChain, realmOwnerOf, fetchIdentityRpc } from "./l2";
-import { decodeIdentityEnv } from "./env";
+import { decodeIdentityEnv, socialProvidersOf, vapidKeysOf } from "./env";
 import { verifyWalletOnL2 } from "./wallet-signature";
 
 const env = {
   ENVIRONMENT: "staging" as const,
-  IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
+  L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
 };
 afterEach(() => vi.restoreAllMocks());
 it("requires a known environment and only its HTTPS Alchemy endpoint without exposing credentials", () => {
@@ -17,12 +17,12 @@ it("requires a known environment and only its HTTPS Alchemy endpoint without exp
     "http://starknet-mainnet.g.alchemy.com/v2/private",
     "https://starknet-sepolia.g.alchemy.com/v2/private",
   ])
-    expect(() => identityL2Configuration({ ...env, IDENTITY_RPC_URL: url })).toThrow("IDENTITY_RPC_URL");
+    expect(() => identityL2Configuration({ ...env, L2_RPC_URL: url })).toThrow("L2_RPC_URL");
   expect(identityL2Configuration(env).chainId).toBe("SN_MAIN");
   expect(
     identityL2Configuration({
       ...env,
-      IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_9/test",
+      L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_9/test",
     }).chainId,
   ).toBe("SN_MAIN");
 });
@@ -74,12 +74,12 @@ it("accepts mainnet SIWS and refuses another proof chain without a signature or 
 });
 
 it("fails Worker environment decoding before serving any route when its environment is absent", () => {
-  expect(() => decodeIdentityEnv({ IDENTITY_RPC_URL: env.IDENTITY_RPC_URL })).toThrow("ENVIRONMENT");
+  expect(() => decodeIdentityEnv({ L2_RPC_URL: env.L2_RPC_URL })).toThrow("ENVIRONMENT");
   try {
-    decodeIdentityEnv({ ...env, IDENTITY_RPC_URL: "https://other.test/v2/private" });
+    decodeIdentityEnv({ ...env, L2_RPC_URL: "https://other.test/v2/private" });
     throw new Error("configuration was accepted");
   } catch (error) {
-    expect(String(error)).toContain("IDENTITY_RPC_URL");
+    expect(String(error)).toContain("L2_RPC_URL");
     expect(String(error)).not.toContain("private");
   }
 });
@@ -88,11 +88,11 @@ it("refuses RPC redirects using the real Worker-compatible manual mode", async (
   const transport = vi
     .spyOn(globalThis, "fetch")
     .mockResolvedValue(new Response(null, { status: 302, headers: { location: "https://other.test" } }));
-  await expect(fetchIdentityRpc(env.IDENTITY_RPC_URL, { method: "POST", body: "{}" })).rejects.toThrow(
+  await expect(fetchIdentityRpc(env.L2_RPC_URL, { method: "POST", body: "{}" })).rejects.toThrow(
     "identity_l2_redirect_refused",
   );
   expect(transport).toHaveBeenCalledOnce();
-  expect(transport).toHaveBeenCalledWith(env.IDENTITY_RPC_URL, expect.objectContaining({ redirect: "manual" }));
+  expect(transport).toHaveBeenCalledWith(env.L2_RPC_URL, expect.objectContaining({ redirect: "manual" }));
 });
 
 it("never includes private environment values in decode failures", () => {
@@ -109,4 +109,39 @@ it("never includes private environment values in decode failures", () => {
     expect(String(error)).not.toContain("private-marker");
     expect(String(error)).not.toContain("/v2/test");
   }
+});
+
+it.each([
+  {},
+  { DISCORD_CLIENT_ID: "id" },
+  { DISCORD_CLIENT_SECRET: "secret" },
+  { DISCORD_CLIENT_ID: "", DISCORD_CLIENT_SECRET: "secret" },
+])("keeps Discord absent until both credentials exist: %j", (env) => {
+  expect(socialProvidersOf(env)).toEqual({});
+});
+it("offers Discord only with its configured pair", () => {
+  expect(socialProvidersOf({ DISCORD_CLIENT_ID: "id", DISCORD_CLIENT_SECRET: "secret" })).toEqual({
+    discord: { clientId: "id", clientSecret: "secret" },
+  });
+});
+
+it("requires the generated push pair but no Discord or duplicated constants", () => {
+  const settings = {
+    ...env,
+    BASE_URL: "https://play.test",
+    BETTER_AUTH_SECRET: "test-secret",
+    OPERATOR_TOKEN: "test-token",
+    RESEND_API_KEY: "test-email",
+    WEB_PUSH_VAPID_PUBLIC_KEY: "public-test-key",
+    WEB_PUSH_VAPID_PRIVATE_KEY: "private-test-key",
+  };
+  const decoded = decodeIdentityEnv(settings);
+  expect(socialProvidersOf(decoded)).toEqual({});
+  expect(vapidKeysOf(decoded)).toEqual({
+    publicKey: "public-test-key",
+    privateKey: "private-test-key",
+    subject: "mailto:ops@realms.party",
+  });
+  for (const name of ["WEB_PUSH_VAPID_PUBLIC_KEY", "WEB_PUSH_VAPID_PRIVATE_KEY"])
+    expect(() => decodeIdentityEnv({ ...settings, [name]: undefined })).toThrow("identity_environment_invalid");
 });

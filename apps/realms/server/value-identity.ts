@@ -5,7 +5,7 @@ import { createIdentityAuth } from "./auth";
 import { WorkerEntrypoint } from "cloudflare:workers";
 import { normalizeStarknetAddress, type LedgerPayDecision } from "@realms-world/identity";
 import { realmsAccountAddress } from "@realms-world/identity/account";
-import { decodeIdentityEnv, type IdentityEnv } from "./env";
+import { ACCOUNT_CLASS_HASH, decodeIdentityEnv, type IdentityEnv } from "./env";
 import { encodeChainName } from "@realms-world/chain";
 import { identityL2Configuration, realmOwnerOf } from "./l2";
 import { realmsIdsOfAccounts } from "./realms-accounts";
@@ -36,7 +36,7 @@ export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
     const realmsIds = await registrationRealmsIds(this.env.DB, registrations);
     const guardian = await this.env.GUARDIAN.publicKey();
     return realmsIds.map((realmsId) =>
-      realmsId ? realmsAccountAddress(realmsId, this.env.ACCOUNT_CLASS_HASH, guardian) : null,
+      realmsId ? realmsAccountAddress(realmsId, ACCOUNT_CLASS_HASH, guardian) : null,
     );
   }
   async linkedWallet(realmsId: string) {
@@ -49,9 +49,7 @@ export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
     const user = await this.env.DB.prepare('SELECT "realmsId" FROM "user" WHERE "realmsId" = ? AND "emailVerified" = 1')
       .bind(realmsId)
       .first<{ realmsId: string }>();
-    return user
-      ? realmsAccountAddress(user.realmsId, this.env.ACCOUNT_CLASS_HASH, await this.env.GUARDIAN.publicKey())
-      : null;
+    return user ? realmsAccountAddress(user.realmsId, ACCOUNT_CLASS_HASH, await this.env.GUARDIAN.publicKey()) : null;
   }
   async authenticate(cookie: string): Promise<{ realmsId: string } | null> {
     const session = await createIdentityAuth(this.env).api.getSession({ headers: new Headers({ cookie }) });

@@ -21,11 +21,11 @@ and portraits are presentation metadata; they never select the rating wallet. An
 ## Environment L2
 
 The environment address book (`contracts/common/addresses/dev.json` or `mainnet.json`) supplies the L2 chain. Wallet
-proofs, Realm ownership and rating reads use that chain and `IDENTITY_RPC_URL`, which must be its HTTPS Alchemy
-endpoint; redirects are refused. The Worker checks the provider's chain before reading contracts. A missing or invalid
-setting fails environment initialization, and a proof naming another chain is refused before signature verification or
-nonce consumption. Deployed accounts retain contract verification; offchain verification still requires confirmed
-absence and allow-listed deployment data.
+proofs, Realm ownership and rating reads use that chain and `L2_RPC_URL`, which must be its HTTPS Alchemy endpoint;
+redirects are refused. The Worker checks the provider's chain before reading contracts. A missing or invalid setting
+fails environment initialization, and a proof naming another chain is refused before signature verification or nonce
+consumption. Deployed accounts retain contract verification; offchain verification still requires confirmed absence and
+allow-listed deployment data.
 
 The Realms collection and rating token come from `contracts/common/addresses/dev.json` or `mainnet.json`, selected by
 `ENVIRONMENT`, like the ledger. Optional `RATING_HISTORY_URL` names the indexed population for that environment's rating
@@ -39,5 +39,7 @@ service binding; the relay's second Realms RPC is removed. Rating readers live i
 token lookup selects the environment book directly.
 
 The client and Workers share the address book through `environmentL2`. The deployment workflow does not override its
-chain or ledger. The existing `CLIENT_IDENTITY_RPC_URL` secret maps to `IDENTITY_RPC_URL`. The history URL is not a
-deployment prerequisite. Operators configure and deploy the environment.
+chain or ledger. The single `L2_RPC_URL` secret serves the Worker and the browser build. The history URL is not a
+deployment prerequisite. Discord is offered only when both optional credentials are configured; email code sign-in uses
+the required Resend key. The deployment script supplies the required generated VAPID pair; the push contact, notifier
+interval and account class are code constants. Operators configure and deploy the environment.

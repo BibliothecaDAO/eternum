@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-11",
+    title: "Sign in with email",
+    description: "Sign in with an emailed code, with Discord shown only when it is available.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-11",
     title: "A chest's price follows the day",
     description:
       "A Frontier day now sets what a share of a ruin chest pays from the LORDS it has and the chests the day before rolled, never above the season's ceiling. The Season page shows today's price per share beside the ceiling, and its common chest reads at today's price once the day's first ruin is found.",

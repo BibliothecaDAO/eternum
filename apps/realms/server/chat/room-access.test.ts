@@ -51,7 +51,7 @@ const fixture = () => {
     DB: { prepare },
     LAUNCH: { fetch },
     ENVIRONMENT: "staging",
-    IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
+    L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
   } as unknown as IdentityEnv;
   return { env, first, bind, fetch };
 };

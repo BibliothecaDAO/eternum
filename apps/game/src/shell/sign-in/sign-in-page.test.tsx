@@ -172,3 +172,20 @@ describe("the sign-in flow", () => {
     }
   });
 });
+
+it.each([{ providers: [] }, { providers: ["discord"] }])(
+  "shows only configured social sign-in providers: %j",
+  async ({ providers }) => {
+    useIdentitySessionStore.setState({ status: "anonymous", session: null });
+    vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(providers);
+    const view = await mount("/sign-in");
+    try {
+      expect(
+        [...view.container.querySelectorAll("button")].some((button) => button.textContent?.includes("Discord")),
+      ).toBe(providers.includes("discord"));
+      expect(view.query('input[type="email"]')).not.toBeNull();
+    } finally {
+      await view.unmount();
+    }
+  },
+);

@@ -51,8 +51,6 @@ export const startWorker = async (options: {
   vapid: { publicKey: string; privateKey: string };
   outbound: (request: Request) => Response | Promise<Response>;
   launchDirectory?: (request: Request) => Response | Promise<Response>;
-  /** The shard notifiers' poll interval; tests poll fast so their waits stay short. */
-  notifierPollMs?: number;
 }) => {
   const mf = new Miniflare({
     name: WORKER_NAME,
@@ -78,18 +76,13 @@ export const startWorker = async (options: {
       ENVIRONMENT: options.environment ?? "staging",
       BASE_URL: ORIGIN,
       VERSION: { id: "workerd-test", tag: "", timestamp: "" },
-      ACCOUNT_CLASS_HASH: "0x1",
       BETTER_AUTH_SECRET: "workerd-test-secret-workerd-test-secret",
       ...(options.ratingHistoryUrl ? { RATING_HISTORY_URL: options.ratingHistoryUrl } : {}),
-      IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
+      L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
       OPERATOR_TOKEN: "unused",
-      DISCORD_CLIENT_ID: "unused",
-      DISCORD_CLIENT_SECRET: "unused",
       RESEND_API_KEY: "unused",
       WEB_PUSH_VAPID_PUBLIC_KEY: options.vapid.publicKey,
       WEB_PUSH_VAPID_PRIVATE_KEY: options.vapid.privateKey,
-      WEB_PUSH_VAPID_SUBJECT: "mailto:ops@realms.party",
-      SHARD_NOTIFIER_POLL_MS: String(options.notifierPollMs ?? 3_000),
     },
     serviceBindings: {
       LAUNCH: (request: Request) => options.launchDirectory?.(request) ?? Response.json({ chains: [] }),

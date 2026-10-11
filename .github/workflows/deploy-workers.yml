@@ -96,20 +96,20 @@ jobs:
         working-directory: ${{ matrix.worker }}
         env:
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
-          IDENTITY_RPC_URL: ${{ secrets.CLIENT_IDENTITY_RPC_URL }}
+          L2_RPC_URL: ${{ secrets.L2_RPC_URL }}
           OPERATOR_TOKEN: ${{ secrets.OPERATOR_TOKEN }}
           WEB_PUSH_VAPID_PUBLIC_KEY: ${{ secrets.WEB_PUSH_VAPID_PUBLIC_KEY }}
           WEB_PUSH_VAPID_PRIVATE_KEY: ${{ secrets.WEB_PUSH_VAPID_PRIVATE_KEY }}
-          WEB_PUSH_VAPID_SUBJECT: ${{ secrets.WEB_PUSH_VAPID_SUBJECT }}
           DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
           DISCORD_CLIENT_SECRET: ${{ secrets.DISCORD_CLIENT_SECRET }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
         run: |
           set -euo pipefail
-          names="BETTER_AUTH_SECRET IDENTITY_RPC_URL OPERATOR_TOKEN WEB_PUSH_VAPID_PUBLIC_KEY WEB_PUSH_VAPID_PRIVATE_KEY WEB_PUSH_VAPID_SUBJECT DISCORD_CLIENT_ID DISCORD_CLIENT_SECRET RESEND_API_KEY"
+          names="BETTER_AUTH_SECRET L2_RPC_URL OPERATOR_TOKEN WEB_PUSH_VAPID_PUBLIC_KEY WEB_PUSH_VAPID_PRIVATE_KEY RESEND_API_KEY"
           for name in $names; do
             [ -n "${!name}" ] || { echo "::error::$name is not set for the $TARGET environment"; exit 1; }
           done
+          names="$names DISCORD_CLIENT_ID DISCORD_CLIENT_SECRET"
           jq -n --arg names "$names" 'env as $env | $names | split(" ") | map({(.): $env[.]}) | add' |
             pnpm exec wrangler secret bulk --env "$TARGET"
 

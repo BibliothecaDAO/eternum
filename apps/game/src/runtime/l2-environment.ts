@@ -9,7 +9,7 @@ import { valueEnvironmentOf } from "../shell/frame/environment";
 const NETWORKS = { SN_MAIN: "mainnet" } as const;
 
 /**
- * Why a build's L2 RPC is refused, or null when it is sound: VITE_PUBLIC_IDENTITY_RPC_URL is the team's https Alchemy
+ * Why a build's L2 RPC is refused, or null when it is sound: VITE_PUBLIC_L2_RPC_URL is the team's https Alchemy
  * endpoint for the L2 the build's environment names in its address book (contracts/common/addresses: Starknet mainnet
  * for dev and for production), never a public node or another network's. The identity Worker holds its RPC to the same
  * rule.
@@ -17,10 +17,10 @@ const NETWORKS = { SN_MAIN: "mainnet" } as const;
 export const l2EnvironmentProblem = (environment: string | undefined, rpcUrl: string | undefined): string | null => {
   const { chain } = environmentL2(valueEnvironmentOf(environment));
   if (!rpcUrl?.trim())
-    return `VITE_PUBLIC_IDENTITY_RPC_URL is required: the team's Alchemy URL for ${chain}, from .env.local or the CLIENT_IDENTITY_RPC_URL secret`;
+    return `VITE_PUBLIC_L2_RPC_URL is required: the team's Alchemy URL for ${chain}, from .env.local or the L2_RPC_URL secret`;
   return isAlchemyFor(rpcUrl, NETWORKS[chain])
     ? null
-    : `VITE_PUBLIC_IDENTITY_RPC_URL must be the https Alchemy endpoint for ${chain} (starknet-${NETWORKS[chain]}.g.alchemy.com)`;
+    : `VITE_PUBLIC_L2_RPC_URL must be the https Alchemy endpoint for ${chain} (starknet-${NETWORKS[chain]}.g.alchemy.com)`;
 };
 
 const isAlchemyFor = (rpcUrl: string, network: string): boolean => {

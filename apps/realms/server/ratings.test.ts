@@ -10,7 +10,7 @@ const query = vi.fn();
 const env = {
   ENVIRONMENT: "production",
   RATING_HISTORY_URL: "https://realms.world/api/ratings/population",
-  IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
+  L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
   PUBLIC_RATE_LIMIT: { limit: vi.fn(async () => ({ success: true })) },
   DB: { prepare: () => ({ bind: (...ids: string[]) => ({ all: () => query(ids) }) }) },
 } as unknown as IdentityEnv;
@@ -165,7 +165,7 @@ it("uses the dev rating token instead of production on the same chain", async ()
   Object.assign(env, { ENVIRONMENT: "staging" });
   cache = testRatingReader({
     ENVIRONMENT: "staging",
-    IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
+    L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
   });
   const idFromName = vi.fn(() => "configured-reader");
   env.RATING_READER = { ...cache.binding, idFromName } as unknown as IdentityEnv["RATING_READER"];

@@ -12,7 +12,7 @@ it("takes only an https Alchemy endpoint for Starknet mainnet, the L2 of the dev
 });
 
 it("refuses a missing or public RPC, and an Alchemy endpoint for another network, in a dev build too", () => {
-  expect(l2EnvironmentProblem("staging", undefined)).toMatch(/VITE_PUBLIC_IDENTITY_RPC_URL/);
+  expect(l2EnvironmentProblem("staging", undefined)).toMatch(/VITE_PUBLIC_L2_RPC_URL/);
   expect(l2EnvironmentProblem("staging", "https://api.zan.top/public/starknet-mainnet")).toMatch(/Alchemy/);
   // No build is on Sepolia: its endpoint is refused by the name of the chain the book gives.
   expect(l2EnvironmentProblem("staging", SEPOLIA)).toMatch(/SN_MAIN/);

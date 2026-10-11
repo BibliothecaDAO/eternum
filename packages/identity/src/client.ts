@@ -240,6 +240,8 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     linkWallet,
     unlinkWallet,
     listSignInProviders,
+    availableSignInProviders: async () =>
+      (await readJson<{ providers: string[] }>(await request("/auth/providers", { method: "GET" }))).providers,
     sendSignInCode,
     signInWithCode,
     discordSignInUrl,

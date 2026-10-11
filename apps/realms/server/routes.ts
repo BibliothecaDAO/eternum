@@ -10,7 +10,7 @@ import {
   handleRegisterPendingShard,
   handleShardStatus,
 } from "./directory";
-import type { IdentityEnv } from "./env";
+import { ACCOUNT_CLASS_HASH, socialProvidersOf, type IdentityEnv } from "./env";
 import { json } from "./http";
 import { handleNotificationPreferences } from "./notification-preferences";
 import { handleProfile, handleProfiles } from "./profiles";
@@ -45,6 +45,8 @@ export const routeIdentityRequest = async (
     if (sendsCode) return sendCodeWithExpiry(request, auth);
   }
   if (pathname === "/api/auth/get-session" && request.method === "GET") return accountSession(request, auth);
+  if (pathname === "/api/auth/providers" && request.method === "GET")
+    return json({ providers: Object.keys(socialProvidersOf(env)) });
   if (pathname.startsWith("/api/auth/")) return auth.handler(request);
   if (requiresSameOrigin(request, pathname) && request.headers.get("origin") !== new URL(env.BASE_URL).origin) {
     return json({ error: "invalid_origin" }, 403);
@@ -54,7 +56,7 @@ export const routeIdentityRequest = async (
       auth,
       db: env.DB,
       guardian: env.GUARDIAN,
-      accountClassHash: env.ACCOUNT_CLASS_HASH,
+      accountClassHash: ACCOUNT_CLASS_HASH,
     });
   }
   if (pathname === "/api/devices/bots" && request.method === "POST") {
@@ -62,7 +64,7 @@ export const routeIdentityRequest = async (
     return handleBotDeviceApproval(request, {
       db: env.DB,
       guardian: env.GUARDIAN,
-      accountClassHash: env.ACCOUNT_CLASS_HASH,
+      accountClassHash: ACCOUNT_CLASS_HASH,
     });
   }
   if ((pathname === "/api/ratings" || pathname === "/api/ratings/top") && request.method === "GET") {
@@ -97,14 +99,14 @@ export const routeIdentityRequest = async (
     if (pathname === "/api/directory/shards" || pathname === "/api/directory/shards/pending") {
       const admit = pathname.endsWith("/pending") ? handleRegisterPendingShard : handleAdmitShard;
       return admit(request, env.DB, platform.fetchShard, {
-        accountClassHash: env.ACCOUNT_CLASS_HASH,
+        accountClassHash: ACCOUNT_CLASS_HASH,
         guardianPublicKey: await env.GUARDIAN.publicKey(),
       });
     }
     if (pathname === "/api/directory/shards/status") return handleShardStatus(request, env.DB);
   }
   if (pathname === "/api/guardian" && request.method === "GET") {
-    return json({ publicKey: await env.GUARDIAN.publicKey(), accountClassHash: env.ACCOUNT_CLASS_HASH });
+    return json({ publicKey: await env.GUARDIAN.publicKey(), accountClassHash: ACCOUNT_CLASS_HASH });
   }
   if (pathname === "/api/health" && request.method === "GET") {
     return json({ service: "realms-identity", environment: env.ENVIRONMENT, version: env.VERSION.id });

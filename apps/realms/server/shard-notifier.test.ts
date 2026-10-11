@@ -33,14 +33,14 @@ const NEIGHBOUR_ARMY = 8;
 const PUSH_ENDPOINT = "https://fcm.googleapis.com/fcm/send/player-device";
 const DEVICE_ID = "00000000-0000-4000-8000-000000000001";
 const OWNER = realmsIdOf("player-one");
-/** The notifier polls every 200 ms here (every 3 s deployed); its retries wait 1, 2, 4, then 8 polls. */
-const POLL_MS = 200;
+/** The notifier uses its deployed three-second interval; its retries wait 1, 2, 4, then 8 polls. */
+const POLL_MS = 3_000;
 const polls = (count: number) => count * POLL_MS;
 /**
- * A one-second armies tick (the chain counts whole seconds) with the preset's knights (120) regaining 40 a tick: three
+ * A ten-second armies tick (the chain counts whole seconds) with the preset's knights (120) regaining 40 a tick: three
  * ticks from empty to rested, long enough that the notifier sees an army act again well before its first wake time.
  */
-const ARMIES_TICK_SECONDS = 1;
+const ARMIES_TICK_SECONDS = 10;
 const STAMINA_GAIN_PER_TICK = 40;
 const REST_TICKS = 3;
 const ticks = (count: number) => count * ARMIES_TICK_SECONDS * 1000;
@@ -350,7 +350,7 @@ const armyPosition = (explorerId: number, home: number, army: ArmyState) => ({
 });
 
 /** The Worker in workerd over storage that survives a restart, a fake Herald, and a push service answering `status`. */
-const createHarness = async (level: "off" | "important" | "standard" | "all", pollMs = POLL_MS) => {
+const createHarness = async (level: "off" | "important" | "standard" | "all") => {
   const storage = newStorage();
   const herald = createHerald();
   const push = {
@@ -366,7 +366,6 @@ const createHarness = async (level: "off" | "important" | "standard" | "all", po
       bundle,
       storage,
       vapid,
-      notifierPollMs: pollMs,
       outbound: (request) => {
         const url = new URL(request.url);
         if (url.origin === SHARD) {
@@ -415,115 +414,136 @@ const seed = async (db: D1Database, level: string, device: { p256dh: string; aut
   ]);
 };
 
-it("alerts the player's device once for a battle on a listed shard, and a restart resends nothing", async () => {
-  const { herald, push, start, worker } = await createHarness("important");
-  push.status = 503;
-  await worker.runCron();
-  await pause(polls(5)); // the notifier reaches the shard's head
-  herald.battle();
-  await waitUntil(() => push.received.length >= 1, 15_000);
-  expect(push.received).toEqual([503]);
-  await worker.dispose();
+// These timing cases have separate Workers, storage and network fixtures.
+it.concurrent(
+  "alerts the player's device once for a battle on a listed shard, and a restart resends nothing",
+  async () => {
+    const { herald, push, start, worker } = await createHarness("important");
+    push.status = 503;
+    await worker.runCron();
+    await pause(polls(5)); // the notifier reaches the shard's head
+    herald.battle();
+    await waitUntil(() => push.received.length >= 1, 15_000);
+    expect(push.received).toEqual([503]);
+    await worker.dispose();
 
-  push.status = 201;
-  const restarted = await start();
-  await restarted.runCron();
-  await waitUntil(() => push.received.includes(201), 20_000);
-  await pause(polls(10)); // more polls, and the retry window, pass quietly
-  expect(push.received).toEqual([503, 201]);
-  await restarted.dispose();
-}, 90_000);
+    push.status = 201;
+    const restarted = await start();
+    await restarted.runCron();
+    await waitUntil(() => push.received.includes(201), 20_000);
+    await pause(polls(10)); // more polls, and the retry window, pass quietly
+    expect(push.received).toEqual([503, 201]);
+    await restarted.dispose();
+  },
+  150_000,
+);
 
-it("alerts once when an army is rested, not if it acted again first, nor once it is gone or from an earlier day", async () => {
-  const { herald, push, worker } = await createHarness("standard");
-  await worker.runCron();
-  await pause(polls(5)); // the notifier reaches the shard's head
+it.concurrent(
+  "alerts once when an army is rested, not if it acted again first, nor once it is gone or from an earlier day",
+  async () => {
+    const { herald, push, worker } = await createHarness("standard");
+    await worker.runCron();
+    await pause(polls(5)); // the notifier reaches the shard's head
 
-  herald.act(0);
-  await waitUntil(() => push.received.length >= 1, 30_000);
-  expect(push.received).toEqual([201]);
+    herald.act(0);
+    await waitUntil(() => push.received.length >= 1, 60_000);
+    expect(push.received).toEqual([201]);
 
-  // Acting at the start of a tick puts the first wake exactly REST_TICKS on, and the second a whole tick after it.
-  await waitUntil(() => Date.now() % ticks(1) < polls(1), 5_000);
-  herald.act(0);
-  const firstWake = (armiesTick() + REST_TICKS) * ticks(1);
-  await pause(ticks(1));
-  herald.act(0); // the army spends its stamina again before it was rested
-  await waitUntil(() => Date.now() > firstWake + polls(2), 30_000);
-  expect(push.received).toEqual([201]);
-  await waitUntil(() => push.received.length >= 2, 30_000);
-  expect(push.received).toEqual([201, 201]);
+    // Acting at the start of a tick puts the first wake exactly REST_TICKS on, and the second a whole tick after it.
+    await waitUntil(() => Date.now() % ticks(1) < 200, 15_000);
+    herald.act(0);
+    const firstWake = (armiesTick() + REST_TICKS) * ticks(1);
+    await pause(ticks(1));
+    herald.act(0); // the army spends its stamina again before it was rested
+    await waitUntil(() => Date.now() > firstWake + polls(2), 60_000);
+    expect(push.received).toEqual([201]);
+    await waitUntil(() => push.received.length >= 2, 60_000);
+    expect(push.received).toEqual([201, 201]);
 
-  herald.act(0);
-  await pause(ticks(1));
-  herald.state.army = null; // the army expires at rollover before it is rested
-  await pause(ticks(REST_TICKS + 1) + polls(10));
-  expect(push.received).toEqual([201, 201]);
+    herald.act(0);
+    await pause(ticks(1));
+    herald.state.army = null; // the army expires at rollover before it is rested
+    await pause(ticks(REST_TICKS + 1) + polls(10));
+    expect(push.received).toEqual([201, 201]);
 
-  herald.act(0, TODAY - 1); // an army of yesterday's expedition is still a fact, but no longer an army
-  await pause(ticks(REST_TICKS + 1) + polls(10));
-  expect(push.received).toEqual([201, 201]);
-  await worker.dispose();
-}, 240_000);
+    herald.act(0, TODAY - 1); // an army of yesterday's expedition is still a fact, but no longer an army
+    await pause(ticks(REST_TICKS + 1) + polls(10));
+    expect(push.received).toEqual([201, 201]);
+    await worker.dispose();
+  },
+  300_000,
+);
 
-it("a game that ends while an army rests alerts nothing for it, and every other alert still flows", async () => {
-  const { herald, push, worker } = await createHarness("standard");
-  await worker.runCron();
-  await pause(polls(5)); // the notifier reaches the shard's head
+it.concurrent(
+  "a game that ends while an army rests alerts nothing for it, and every other alert still flows",
+  async () => {
+    const { herald, push, worker } = await createHarness("standard");
+    await worker.runCron();
+    await pause(polls(5)); // the notifier reaches the shard's head
 
-  herald.act(0);
-  await pause(ticks(1));
-  herald.state.status = "Settled"; // the game ends before the army is rested, and Herald drops its armies
-  await pause(ticks(REST_TICKS + 1) + polls(10));
-  expect(push.received).toEqual([]);
+    herald.act(0);
+    await pause(ticks(1));
+    herald.state.status = "Settled"; // the game ends before the army is rested, and Herald drops its armies
+    await pause(ticks(REST_TICKS + 1) + polls(10));
+    expect(push.received).toEqual([]);
 
-  herald.act(0); // an action folded late, in the ended game
-  herald.battle();
-  await waitUntil(() => push.received.length >= 1, 20_000);
-  await pause(polls(10));
-  expect(push.received).toEqual([201]);
-  await worker.dispose();
-}, 90_000);
+    herald.act(0); // an action folded late, in the ended game
+    herald.battle();
+    await waitUntil(() => push.received.length >= 1, 20_000);
+    await pause(polls(10));
+    expect(push.received).toEqual([201]);
+    await worker.dispose();
+  },
+  150_000,
+);
 
-it("a wake that keeps failing is retried, then dropped, and every other alert still flows", async () => {
-  const { herald, push, worker } = await createHarness("standard");
-  await worker.runCron();
-  await pause(polls(5)); // the notifier reaches the shard's head
+it.concurrent(
+  "a wake that keeps failing is retried, then dropped, and every other alert still flows",
+  async () => {
+    const { herald, push, worker } = await createHarness("standard");
+    await worker.runCron();
+    await pause(polls(5)); // the notifier reaches the shard's head
 
-  herald.act(0);
-  await pause(polls(5)); // the action is read and its army watched
-  herald.state.snapshotFails = true;
-  await pause(ticks(REST_TICKS) + polls(15 + 10)); // the wake comes due, fails, and is retried up to its cap
-  herald.battle();
-  await waitUntil(() => push.received.length >= 1, 20_000);
-  expect(push.received).toEqual([201]);
+    herald.act(0);
+    await pause(polls(5)); // the action is read and its army watched
+    herald.state.snapshotFails = true;
+    await pause(ticks(REST_TICKS) + polls(15 + 10)); // the wake comes due, fails, and is retried up to its cap
+    herald.battle();
+    await waitUntil(() => push.received.length >= 1, 20_000);
+    expect(push.received).toEqual([201]);
 
-  const reads = herald.state.snapshotReads;
-  await pause(polls(20));
-  expect(herald.state.snapshotReads).toBe(reads); // the watch was given up, not retried forever
-  await worker.dispose();
-}, 120_000);
+    const reads = herald.state.snapshotReads;
+    await pause(polls(20));
+    expect(herald.state.snapshotReads).toBe(reads); // the watch was given up, not retried forever
+    await worker.dispose();
+  },
+  240_000,
+);
 
-it("reads a new chain at the same URL from its own head, and sends nothing twice", async () => {
-  const { herald, push, worker } = await createHarness("important");
-  await worker.runCron();
-  await pause(polls(5)); // the notifier reaches the shard's head
-  herald.battle();
-  herald.battle();
-  await waitUntil(() => push.received.length >= 2, 20_000);
-  expect(push.received).toEqual([201, 201]);
+it.concurrent(
+  "reads a new chain at the same URL from its own head, and sends nothing twice",
+  async () => {
+    const { herald, push, worker } = await createHarness("important");
+    await worker.runCron();
+    await pause(polls(5)); // the notifier reaches the shard's head
+    herald.battle();
+    herald.battle();
+    await waitUntil(() => push.received.length >= 2, 20_000);
+    expect(push.received).toEqual([201, 201]);
 
-  // The host now serves a fresh chain whose history restarts below the old chain's cursor, and the directory says so.
-  herald.newChain("0xb");
-  await worker.db.prepare('UPDATE "shards" SET "chainId" = ? WHERE "url" = ?').bind("0xb", SHARD).run();
-  await worker.runCron();
-  await pause(polls(5)); // the notifier reaches the new chain's head
-  herald.battle();
-  await waitUntil(() => push.received.length >= 3, 20_000);
-  await pause(polls(10));
-  expect(push.received).toEqual([201, 201, 201]);
-  await worker.dispose();
-}, 60_000);
+    // The host now serves a fresh chain whose history restarts below the old chain's cursor, and the directory says so.
+    herald.newChain("0xb");
+    await worker.db.prepare('UPDATE "shards" SET "chainId" = ? WHERE "url" = ?').bind("0xb", SHARD).run();
+    await worker.runCron();
+    await pause(polls(5)); // the notifier reaches the new chain's head
+    herald.battle();
+    await waitUntil(() => push.received.length >= 3, 20_000);
+    await pause(polls(10));
+    expect(push.received).toEqual([201, 201, 201]);
+    await worker.dispose();
+  },
+  120_000,
+);
 
 /** Put the shared calendar's first reminder a few seconds ahead; no player needs to have acted. */
 const remindSoon = (herald: ReturnType<typeof createHerald>, seconds = 8, dayIndex = 0) => {
@@ -538,7 +558,7 @@ const remindSoon = (herald: ReturnType<typeof createHerald>, seconds = 8, dayInd
 it.each(["important", "all"] as const)(
   "rule 9.6 sends one reminder to an inactive %s player at its seeded instant",
   async (level) => {
-    const { herald, push, worker, start } = await createHarness(level, 1000);
+    const { herald, push, worker, start } = await createHarness(level);
     const dueAt = remindSoon(herald);
     // Being in the game is not a quiet-hours or foreground exception for the reminder.
     await worker.db
@@ -561,7 +581,7 @@ it.each(["important", "all"] as const)(
 );
 
 it("rule 9.6 covers enrollment beyond a story page, including another inactive player", async () => {
-  const { herald, push, worker } = await createHarness("important", 1000);
+  const { herald, push, worker } = await createHarness("important");
   const account = "0xbeef";
   const owner = realmsIdOf("player-two");
   const endpoint = `${PUSH_ENDPOINT}/two`;
@@ -600,7 +620,7 @@ it("rule 9.6 covers enrollment beyond a story page, including another inactive p
 }, 45_000);
 
 it("rule 9.6 drops a missed trigger on a newly started notifier", async () => {
-  const { herald, push, worker } = await createHarness("important", 1000);
+  const { herald, push, worker } = await createHarness("important");
   remindSoon(herald, -2);
   await worker.runCron();
   await pause(2000);
@@ -610,7 +630,7 @@ it("rule 9.6 drops a missed trigger on a newly started notifier", async () => {
 
 it("rule 9.6 rechecks preferences after preparation and cancels a finished game's reminder", async () => {
   for (const cancelledBy of ["off", "settled"] as const) {
-    const { herald, push, worker } = await createHarness("important", 1000);
+    const { herald, push, worker } = await createHarness("important");
     const dueAt = remindSoon(herald);
     await worker.runCron();
     await waitUntil(() => herald.state.snapshotReads > 0, 4000);
@@ -625,13 +645,13 @@ it("rule 9.6 rechecks preferences after preparation and cancels a finished game'
 }, 45_000);
 
 it("rule 9.6 never reminds Off or a device without game-alert consent", async () => {
-  const { herald, push, worker } = await createHarness("off", 1000);
+  const { herald, push, worker } = await createHarness("off");
   const dueAt = remindSoon(herald);
   await worker.runCron();
   await pause(Math.max(0, dueAt + 1500 - Date.now()));
   expect(push.received).toEqual([]);
   await worker.dispose();
-  const other = await createHarness("important", 1000);
+  const other = await createHarness("important");
   const otherDue = remindSoon(other.herald);
   await other.worker.db.prepare('UPDATE "notification_push_subscriptions" SET "gameAlertsEnabledAt" = NULL').run();
   await other.worker.runCron();
@@ -641,7 +661,7 @@ it("rule 9.6 never reminds Off or a device without game-alert consent", async ()
 }, 45_000);
 
 it("rule 9.6 drops a lost delivery rather than retrying after the hour", async () => {
-  const { herald, push, worker, start } = await createHarness("important", 1000);
+  const { herald, push, worker, start } = await createHarness("important");
   const dueAt = remindSoon(herald);
   push.status = 503;
   await worker.runCron();
@@ -702,7 +722,7 @@ const addReminderPlayers = async (worker: Awaited<ReturnType<typeof startWorker>
 };
 
 it("rule 9.6 starts device 101 in its scheduled second while an endpoint in the first hundred stalls", async () => {
-  const { herald, push, worker } = await createHarness("important", 1000);
+  const { herald, push, worker } = await createHarness("important");
   try {
     const players = await addReminderPlayers(worker, 100);
     herald.state.members.push(...players.map((player) => player.account));
@@ -729,7 +749,7 @@ it("rule 9.6 starts device 101 in its scheduled second while an endpoint in the 
 it.each([false, true])(
   "rule 9.6 fixes eligibility at preparation (empty cohort: %s), then includes a late enrolment next day",
   async (initiallyEmpty) => {
-    const { herald, push, worker } = await createHarness("important", 1000);
+    const { herald, push, worker } = await createHarness("important");
     try {
       const [late] = await addReminderPlayers(worker, 1);
       if (initiallyEmpty) herald.state.members = [];

@@ -15,7 +15,7 @@ const SlotKey = z.object({
     .refine((value) => BigInt(value) > 0n),
   slotId: z.number().int().nonnegative().max(0xffffffff),
 });
-type RoomAccessEnv = Pick<IdentityEnv, "DB" | "LAUNCH" | "ENVIRONMENT" | "IDENTITY_RPC_URL">;
+type RoomAccessEnv = Pick<IdentityEnv, "DB" | "LAUNCH" | "ENVIRONMENT" | "L2_RPC_URL">;
 
 export class ChatAccessError extends Error {
   constructor(

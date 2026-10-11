@@ -54,7 +54,7 @@ it("verifies an undeployed allow-listed Ready account's actual SIWS signature at
   vi.spyOn(RpcProvider.prototype, "callContract").mockRejectedValue(missing());
   vi.spyOn(RpcProvider.prototype, "getClassHashAt").mockRejectedValue(missing());
   await expect(
-    verifyWalletOnL2({ ENVIRONMENT: "production", IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test" })(
+    verifyWalletOnL2({ ENVIRONMENT: "production", L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test" })(
       f.message,
       f.signature,
       f.address,
@@ -72,7 +72,7 @@ it("requires the constructor's guardian signature as well as the owner signature
   const f = fixture(READY, true);
   const verify = verifyWalletOnL2({
     ENVIRONMENT: "production",
-    IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
+    L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
   });
   expect(await verify(f.message, f.signature, f.address, f.deployment)).toBe(true);
   expect(await verify(f.message, f.signature.slice(0, 5), f.address, f.deployment)).toBe(false);
@@ -82,7 +82,7 @@ it("accepts the documented Braavos native Stark signature and refuses hardware/p
   const f = fixture(BRAAVOS);
   const verify = verifyWalletOnL2({
     ENVIRONMENT: "production",
-    IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
+    L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
   });
   expect(await verify(f.message, ["1", ...f.signature], f.address, f.deployment)).toBe(true);
   expect(await verify(f.message, ["5", ...f.signature], f.address, f.deployment)).toBe(false);
@@ -92,7 +92,7 @@ it("rejects address, salt, constructor, class and signed-message substitutions",
   const f = fixture();
   const verify = verifyWalletOnL2({
     ENVIRONMENT: "production",
-    IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
+    L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
   });
   for (const deployment of [
     { ...f.deployment, salt: "0x1" },
@@ -118,7 +118,7 @@ it("never overrides a deployed wallet's rejected signature with its original dep
   expect(
     await verifyWalletOnL2({
       ENVIRONMENT: "production",
-      IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
+      L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
     })(f.message, f.signature, f.address, f.deployment),
   ).toBe(false);
   expect(call).toHaveBeenCalled();
@@ -130,7 +130,7 @@ it("does not turn a deployed contract failure or an RPC outage into an offchain 
   const status = vi.spyOn(RpcProvider.prototype, "getClassHashAt").mockResolvedValue(READY);
   const verify = verifyWalletOnL2({
     ENVIRONMENT: "production",
-    IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
+    L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
   });
   await expect(verify(f.message, f.signature, f.address, f.deployment)).rejects.toThrow();
   status.mockRejectedValue(new Error("RPC unavailable"));

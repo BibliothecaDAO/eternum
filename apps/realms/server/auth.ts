@@ -10,7 +10,7 @@ import {
   suggestedNameOf,
 } from "@realms-world/identity";
 
-import type { IdentityEnv } from "./env";
+import { socialProvidersOf, type IdentityEnv } from "./env";
 import { isNameTaken } from "./names";
 import { realmsIdOf } from "./realms-id";
 import { resendSignInCodes, type SendSignInCode } from "./sign-in-codes";
@@ -28,7 +28,7 @@ interface IdentityServices {
 }
 
 const identityServicesOf = (
-  env: Pick<IdentityEnv, "ENVIRONMENT" | "IDENTITY_RPC_URL" | "RESEND_API_KEY">,
+  env: Pick<IdentityEnv, "ENVIRONMENT" | "L2_RPC_URL" | "RESEND_API_KEY">,
 ): IdentityServices => ({
   verifyWalletSignature: verifyWalletOnL2(env),
   sendSignInCode: resendSignInCodes(env.RESEND_API_KEY),
@@ -72,7 +72,7 @@ export const createIdentityAuth = (
     | "BASE_URL"
     | "BETTER_AUTH_SECRET"
     | "ENVIRONMENT"
-    | "IDENTITY_RPC_URL"
+    | "L2_RPC_URL"
     | "DISCORD_CLIENT_ID"
     | "DISCORD_CLIENT_SECRET"
     | "RESEND_API_KEY"
@@ -97,9 +97,7 @@ export const createIdentityAuth = (
     // A month, renewed by a day's use, so a phone stays signed in. Every session read comes from the database: a cached
     // copy of the account went stale for an hour after a wallet link or a name change made on another device.
     session: { expiresIn: 30 * DAY_SECONDS, updateAge: DAY_SECONDS },
-    socialProviders: {
-      discord: { clientId: env.DISCORD_CLIENT_ID, clientSecret: env.DISCORD_CLIENT_SECRET },
-    },
+    socialProviders: socialProvidersOf(env),
     // Other realms.party services set better-auth's default cookie names for the whole domain; a browser sends that
     // older cookie first, and it would hide this service's session. Our cookies carry their own name.
     advanced: { cookiePrefix: "realms-identity" },

@@ -25,7 +25,7 @@ import { COLORS } from "./src/tokens";
 const requireL2Environment = (): PluginOption => ({
   name: "require-l2-environment",
   configResolved(config) {
-    const problem = l2EnvironmentProblem(config.env.VITE_PUBLIC_ENVIRONMENT, config.env.VITE_PUBLIC_IDENTITY_RPC_URL);
+    const problem = l2EnvironmentProblem(config.env.VITE_PUBLIC_ENVIRONMENT, config.env.VITE_PUBLIC_L2_RPC_URL);
     if (problem) throw new Error(problem);
   },
 });

@@ -5,7 +5,7 @@ import { DurableObject } from "cloudflare:workers";
 import { RpcProvider } from "starknet";
 import { openRatingLedger, readLedgerRatings, ratingPoints } from "./rating-ledger";
 
-type Env = Pick<IdentityEnv, "ENVIRONMENT" | "IDENTITY_RPC_URL" | "RATING_HISTORY_URL">;
+type Env = Pick<IdentityEnv, "ENVIRONMENT" | "L2_RPC_URL" | "RATING_HISTORY_URL">;
 const RPC_METHODS_PER_MINUTE = 10000;
 
 /** One RPC budget across callers; every read names a verified chain block and retains no rating state. */
@@ -17,7 +17,7 @@ export class RatingReader extends DurableObject<Env> {
     identityL2Configuration(env);
     ctx.storage.sql.exec("DROP TABLE IF EXISTS snapshots");
     this.provider = new RpcProvider({
-      nodeUrl: env.IDENTITY_RPC_URL,
+      nodeUrl: env.L2_RPC_URL,
       specVersion: "0.9.0",
       batch: 10,
       baseFetch: (input: RequestInfo | URL, init?: RequestInit) => this.paidFetch(input, init),

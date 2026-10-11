@@ -65,7 +65,7 @@ const create = (
     {
       ENVIRONMENT: "production",
       ...configuration,
-      IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
+      L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
     } as never,
   );
   vi.stubGlobal("fetch", network);
@@ -108,7 +108,7 @@ it("keeps the paid-method budget across a reader restart with no cached bypass",
     const restarted = new RatingReader(ctx as unknown as DurableObjectState, {
       ENVIRONMENT: "production",
       RATING_HISTORY_URL: "https://realms.world/api/ratings/population",
-      IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
+      L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
     });
     const before = paid.length;
     await expect(restarted.ratings(["0x1"], "0xabc")).rejects.toThrow("budget");

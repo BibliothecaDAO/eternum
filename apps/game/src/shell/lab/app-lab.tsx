@@ -158,6 +158,7 @@ const answerAppReads = (screen: LabScreen) => {
  */
 const answerIdentity = () => {
   identityClient.listSignInProviders = async () => ["discord"];
+  identityClient.availableSignInProviders = async () => ["discord"];
   identityClient.sendSignInCode = async () => ({ success: true, expires_at: Date.now() + 300_000 });
   const spend = async (code: unknown) => {
     if (code !== LAB_EMAIL_CODE) throw new IdentityRequestError(400, "INVALID_OTP");

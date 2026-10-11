@@ -18,7 +18,7 @@ export const StartStep = ({
 }: {
   sending: boolean;
   error: string | null;
-  onDiscord: () => void;
+  onDiscord?: (() => void) | undefined;
   onEmail: (email: string) => void;
 }) => {
   const [email, setEmail] = useState("");
@@ -28,12 +28,16 @@ export const StartStep = ({
   };
   return (
     <div className="flex flex-col gap-4">
-      <Button role="primary" word={SIGN_IN_WORDS.discord} icon="Dc" onClick={onDiscord} disabled={sending} />
-      <div className="flex items-center gap-3 text-[13px] text-kit-muted">
-        <span className="h-px flex-1 bg-kit-line" />
-        {SIGN_IN_WORDS.or}
-        <span className="h-px flex-1 bg-kit-line" />
-      </div>
+      {onDiscord && (
+        <>
+          <Button role="primary" word={SIGN_IN_WORDS.discord} icon="Dc" onClick={onDiscord} disabled={sending} />
+          <div className="flex items-center gap-3 text-[13px] text-kit-muted">
+            <span className="h-px flex-1 bg-kit-line" />
+            {SIGN_IN_WORDS.or}
+            <span className="h-px flex-1 bg-kit-line" />
+          </div>
+        </>
+      )}
       <form onSubmit={submit} className="flex flex-col gap-3">
         <label className="flex h-14 items-center gap-2 rounded-2xl border-2 border-kit-line bg-kit-plate px-4 focus-within:border-kit-peach">
           <KitIcon code="Em" size={24} />
@@ -50,7 +54,7 @@ export const StartStep = ({
           />
         </label>
         <Button
-          role="secondary"
+          role={onDiscord ? "secondary" : "primary"}
           type="submit"
           word={SIGN_IN_WORDS.sendCode}
           icon="Em"
