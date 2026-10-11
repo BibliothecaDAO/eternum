@@ -19,9 +19,8 @@ async function request<T>(path: string, body?: unknown, method = body === undefi
 export const fetchPlaytestSlots = () => request<{ slots: PlaytestSlot[] }>("/api/slots");
 /** Whether the signed-in caller launches: the factory page shows itself to launchers only. */
 export const fetchLauncherStatus = () => request<{ launcher: boolean }>("/api/factory/launcher");
-/** A launcher's runs: the Eternum games made here and the Frontier season's launch. Blitz runs are the operator's. */
-export const fetchFactoryRuns = (environment: "madara.eternum" | "madara.frontier") =>
-  request<{ runs: FactoryRun[] }>(`/api/factory/runs?environment=${environment}`);
+/** A launcher's runs: the Eternum games made on the factory page. Blitz and Frontier runs are the operator's. */
+export const fetchFactoryRuns = () => request<{ runs: FactoryRun[] }>("/api/factory/runs?environment=madara.eternum");
 export const createEternumGame = (gameName: string, gameStartTime: string) =>
   request<FactoryRun>("/api/factory/runs", {
     environment: "madara.eternum",

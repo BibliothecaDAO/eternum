@@ -25,13 +25,15 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-it("holds a launcher's own runs only: no season calendar, no Blitz slot, and nothing of a Blitz run to continue", async () => {
+it("holds a launcher's own runs only: no season calendar, no Blitz slot, and no Blitz or Frontier run to continue", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const asked: { url: string; method: string }[] = [];
   vi.stubGlobal("fetch", async (url: string, init: { method: string }) => {
     asked.push({ url, method: init.method });
-    const environment = new URL(url, "https://realms.test").searchParams.get("environment");
-    return Response.json({ runs: environment === "madara.eternum" ? [failedRun(environment, "long-game")] : [] });
+    // The schedule's Frontier season fails too; were the page to ask for it, its Retry would stand beside the game's.
+    const environment = new URL(url, "https://realms.test").searchParams.get("environment") as string;
+    const name = environment === "madara.eternum" ? "long-game" : "frontier-1791700000";
+    return Response.json({ runs: [failedRun(environment, name)] });
   });
   const container = document.createElement("div");
   const root = createRoot(container);
@@ -48,11 +50,10 @@ it("holds a launcher's own runs only: no season calendar, no Blitz slot, and not
   const retry = () => [...container.querySelectorAll("button")].find((button) => button.textContent === "Retry");
   for (let tick = 0; tick < 10 && !retry(); tick += 1) await act(async () => {});
 
-  // The page reads its own runs: never the calendar, the slots, or the Blitz runs the operator alone continues.
-  expect(asked.map((ask) => ask.url).toSorted()).toEqual([
-    "/api/factory/runs?environment=madara.eternum",
-    "/api/factory/runs?environment=madara.frontier",
-  ]);
+  // The page reads its own runs: never the calendar, the slots, or the Blitz and Frontier runs the operator alone
+  // continues.
+  expect(asked.map((ask) => ask.url)).toEqual(["/api/factory/runs?environment=madara.eternum"]);
+  expect(container.textContent).not.toContain("frontier-");
   expect([...container.querySelectorAll("h3")].map((heading) => heading.textContent)).toEqual([
     "Needs attention",
     "Progress",

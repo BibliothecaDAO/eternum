@@ -18,7 +18,8 @@ it("sends Eternum requests through the authenticated service", async () => {
 it("continues a failed game run and surfaces service errors", async () => {
   const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ runs: [] }) });
   vi.stubGlobal("fetch", fetch);
-  await fetchFactoryRuns("madara.eternum");
+  await fetchFactoryRuns();
+  expect(fetch.mock.calls[0][0]).toBe("/api/factory/runs?environment=madara.eternum");
   await retryFactoryRun({ kind: "game", environment: "madara.eternum", gameName: "long-game" } as Parameters<
     typeof retryFactoryRun
   >[0]);
