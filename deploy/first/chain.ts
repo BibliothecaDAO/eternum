@@ -43,28 +43,44 @@ export async function confirm(provider: RpcProvider, transactionHash: string) {
   if (!("execution_status" in receipt) || receipt.execution_status !== "SUCCEEDED")
     throw new Error("Transaction did not succeed");
 }
-/** Save the nonce before sending: a lost RPC reply cannot turn a retry into a second transfer. */
-export async function send(account: Account, calls: Call[], store: PrivateStore, name: string) {
-  const intentName = `transaction-${name}.json`;
-  const intent = store.read<{ nonce: string; hash?: string; calls: Call[] }>(intentName) ?? {
-    nonce: String(await account.getNonce()),
-    calls,
-  };
-  if (JSON.stringify(intent.calls) !== JSON.stringify(calls))
-    throw new Error("Pending transaction differs; inspect its receipt before changing inputs");
-  if (intent.hash) {
-    const receipt = await account.getTransactionReceipt(intent.hash);
-    if ("execution_status" in receipt && receipt.execution_status === "REVERTED") {
-      intent.nonce = String(await account.getNonce());
-      delete intent.hash;
+const TRANSACTION_HASH_NOT_FOUND = 29;
+async function savedReceipt(account: Account, transactionHash: string) {
+  try {
+    return await account.waitForTransaction(transactionHash, { retries: 30, retryInterval: 1000 });
+  } catch (error) {
+    const timedOut = error instanceof Error && error.message.startsWith("waitForTransaction timed-out");
+    if (!timedOut && !isMissing(error, TRANSACTION_HASH_NOT_FOUND)) throw error;
+    // After the bounded wait, only an explicit missing receipt permits a same-nonce retry.
+    try {
+      return await account.getTransactionReceipt(transactionHash);
+    } catch (readError) {
+      if (!isMissing(readError, TRANSACTION_HASH_NOT_FOUND)) throw readError;
+      return undefined;
     }
   }
-  store.write(intentName, intent);
-  if (!intent.hash) {
-    const response = await account.execute(calls, { nonce: intent.nonce });
-    intent.hash = response.transaction_hash;
-    store.write(intentName, intent);
+}
+/** Saved state supplies a nonce and receipt identity, never executable calls. */
+export async function send(account: Account, calls: Call[], store: PrivateStore, name: string) {
+  const intentName = `transaction-${name}.json`;
+  const previous = store.read<{ nonce: string; hash?: string }>(intentName);
+  let nonce = previous?.nonce;
+  if (previous?.hash) {
+    const receipt = await savedReceipt(account, previous.hash);
+    if (receipt) {
+      if (!("execution_status" in receipt)) throw new Error("Saved transaction is still pending");
+      if (receipt.execution_status === "SUCCEEDED") return;
+      if (receipt.execution_status !== "REVERTED") throw new Error("Saved transaction is still pending");
+      nonce = String(await account.getNonce());
+    }
   }
+  const intent: { nonce: string; calls: Call[]; hash?: string } = {
+    nonce: nonce ?? String(await account.getNonce()),
+    calls,
+  };
+  store.write(intentName, intent);
+  const response = await account.execute(calls, { nonce: intent.nonce });
+  intent.hash = response.transaction_hash;
+  store.write(intentName, intent);
   await confirm(account, intent.hash);
 }
 export async function prepareAccounts(
@@ -105,9 +121,7 @@ export async function prepareAccounts(
     if (role !== "deployer") {
       const desired = (role === "relay" ? 30n : 1n) * WEI;
       const held = await balance(provider, STRK, account.address);
-      const previous = store.read<{ calls: Call[] }>(`transaction-fund-${role}.json`);
-      if (previous && held < desired) await send(accounts.deployer, previous.calls, store, `fund-${role}`);
-      else if (held < desired)
+      if (held < desired)
         await send(
           accounts.deployer,
           [

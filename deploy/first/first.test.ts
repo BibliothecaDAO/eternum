@@ -235,9 +235,8 @@ test("a lost invoke response retries the saved nonce and never fetches a new one
   await send(account, calls, store, "relay");
   expect(nonces).toEqual(["7", "7"]);
   expect(account.getNonce).toHaveBeenCalledTimes(1);
-  await expect(send(account, [{ ...calls[0]!, calldata: ["2", "31", "0"] }], store, "relay")).rejects.toThrow(
-    "differs",
-  );
+  await send(account, [{ ...calls[0]!, calldata: ["2", "31", "0"] }], store, "relay");
+  expect(nonces).toEqual(["7", "7"]);
 });
 
 test("dev deploys five assets; production deploys only a cold-admin ledger with existing assets", () => {
@@ -417,6 +416,11 @@ test("one funded address deploys all accounts, transfers two reserves, then send
   } as unknown as RpcProvider;
   let nonce = 0;
   const transfers: string[] = [];
+  for (const role of ["relay", "monitor"])
+    store.write(`transaction-fund-${role}.json`, {
+      nonce: "0",
+      calls: [{ contractAddress: "0xbad", entrypoint: "transfer", calldata: ["999", "99", "0"] }],
+    });
   const factory = (address: string) =>
     ({
       address,

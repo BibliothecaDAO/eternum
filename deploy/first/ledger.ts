@@ -309,15 +309,6 @@ export async function configureLedger(
     store.write("cold-setup.json", { account: input.admin, calls: missing });
     return false;
   }
-  // A previous intent keeps its nonce and window until its receipt is known.
-  let pending = store.read<{ calls: Call[]; nonce: string; hash?: string }>("transaction-setup.json");
-  if (pending?.hash) {
-    const receipt = await account.getTransactionReceipt(pending.hash);
-    if ("execution_status" in receipt && receipt.execution_status === "REVERTED") {
-      pending = { nonce: String(await account.getNonce()), calls: missing };
-      store.write("transaction-setup.json", pending);
-    }
-  }
-  await send(account, pending?.calls ?? missing, store, "setup");
+  await send(account, missing, store, "setup");
   return true;
 }

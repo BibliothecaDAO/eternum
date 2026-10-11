@@ -107,9 +107,11 @@ logging goes to `/dev/null`. Public dates, addresses and step names are the only
 
 Rerun the same command and directory after interruption. Chain/Cloudflare/GitHub/box reads are the checkpoints;
 transaction intents keep their nonce across lost RPC responses, and deterministic salts keep deployment addresses fixed.
-A confirmed revert permits a new nonce. A changed artifact or constructor is refused after an address has been pinned.
-Do not delete private state to retry: that would generate different accounts. Restore its backup. The process lock
-prevents two simultaneous runs from sharing an account nonce.
+Calls are always recomputed. A saved hash is awaited before any resend. If its receipt is still explicitly absent after
+30 one-second retries, the command retries with the same nonce; an unrelated read failure stops it. A successful receipt
+is never resent. A confirmed revert permits a new nonce. A changed artifact or constructor is refused after an address
+has been pinned. Do not delete private state to retry: that would generate different accounts. Restore its backup. The
+process lock prevents two simultaneous runs from sharing an account nonce.
 
 If an unsubmitted season date has passed, edit only the four public date fields in `inputs.json`, review the dry run,
 and rerun. A confirmed ledger window or active calendar is not silently replaced. If a production collection or rating
