@@ -68,14 +68,18 @@ export const shardConservationPort =
 
 const balanceOf = (snapshot: ConfirmedSnapshot, gameId: number): ConservationBalance => {
   const rules = singleRow(snapshot, "ChestRules");
-  const budget = singleRow(snapshot, "LordsBudget");
+  const budget = snapshot.models.find((model) => model.model === "LordsBudget")!.rows.length
+    ? singleRow(snapshot, "LordsBudget")
+    : null;
   requireFields(rules, ["game_id", "pool", "price", "shares", "claim_window_seconds"]);
-  requireFields(budget, ["game_id", "pool_left", "open", "day"]);
+  if (budget) requireFields(budget, ["game_id", "pool_left", "open", "day"]);
   const pool = rowUint(rules.pool, 128);
-  const poolLeft = rowUint(budget.pool_left, 128);
+  const poolLeft = budget ? rowUint(budget.pool_left, 128) : pool;
   rowUint(rules.price, 128);
-  rowUint(budget.open, 128);
-  rowUint(budget.day, 64);
+  if (budget) {
+    rowUint(budget.open, 128);
+    rowUint(budget.day, 64);
+  }
   const receipts = snapshot.models.find((model) => model.model === "LordsWithdrawal")!;
   const claims = new Set<string>();
   let withdrawn = 0n;

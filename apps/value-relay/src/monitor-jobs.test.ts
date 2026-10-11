@@ -80,7 +80,6 @@ it("requires an operator token and a recorded reason to clear a monitor halt wit
   const f = fixture();
   const progress = {
     halted: "paid_wallet_mismatch:0xabc",
-    unverifiedTicks: 3,
     fault: {
       row: "paidClaims:0x1:0xabc",
       stream: "paidClaims",
@@ -105,7 +104,6 @@ it("requires an operator token and a recorded reason to clear a monitor halt wit
   expect((await worker.fetch(request("Receipt RPC corrected; replay verified"), env)).status).toBe(200);
   expect(await f.monitor.status()).toMatchObject({
     halted: null,
-    unverifiedTicks: 0,
     cursors: { paidClaims: { fromBlock: 11, page: JSON.stringify({ head: 20, token: "" }), offset: 1 } },
   });
   expect(f.data.get("reset:sequence")).toBe(1);
@@ -117,9 +115,11 @@ it("records the missing ledger after running shard conservation", async () => {
     throw new Error("ledger not deployed");
   });
   const f = fixture();
-  const observation = await f.monitor.tick();
-  expect(observation).toMatchObject({ value: null, value_error: "ledger paid claims unavailable" });
-  expect(f.data.get("progress")).toMatchObject({ unverifiedTicks: 1 });
-  expect(f.data.get("observation")).toEqual(observation);
+  for (let tick = 0; tick < 5; tick++) {
+    const observation = await f.monitor.tick();
+    expect(observation).toMatchObject({ value: null, value_error: "ledger paid claims unavailable" });
+    expect(f.data.get("progress")).toBeUndefined();
+    expect(f.data.get("observation")).toEqual(observation);
+  }
   expect((await f.monitor.health()).success).toBe(false);
 });

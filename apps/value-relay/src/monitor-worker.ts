@@ -194,7 +194,6 @@ const legacyFault = async (
   const result = /^blitz_result_mismatch:(\d+)$/.exec(previous.halted ?? "");
   const stream = paid ? "paidClaims" : result ? "postedResults" : null;
   if (!stream) {
-    if (row === `availability:${previous.halted}` && previous.halted?.startsWith("unverified_value:")) return { row };
     throw new Error("fault_row_unavailable");
   }
   const cursor = previous.cursors?.[stream] ?? { fromBlock: 0, page: null };

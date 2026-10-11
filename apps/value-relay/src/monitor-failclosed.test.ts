@@ -39,23 +39,17 @@ const fixture = () => {
   };
   return { ports, store, receipt, tick: () => Effect.runPromise(runMonitor(ports, store)) };
 };
-it("durably pauses after three consecutive ticks that cannot verify a paid claim", async () => {
+it("never stores a fault or pauses for repeated unavailable reads, and recovers on the next verified tick", async () => {
   const f = fixture();
-  await expect(f.tick()).rejects.toThrow();
-  await expect(f.tick()).rejects.toThrow();
+  for (let tick = 0; tick < 5; tick++) {
+    await expect(f.tick()).rejects.toMatchObject({ operation: "shard_unavailable" });
+    expect(await f.store.load()).toEqual({ halted: null, cursors: { postedResults: { fromBlock: 1001, page: null } } });
+  }
   expect(f.ports.ledger.pause).not.toHaveBeenCalled();
-  await f.tick().catch(() => undefined);
-  expect((await f.store.load()).halted).toContain("unverified_value:3");
-  expect(f.ports.ledger.pause).toHaveBeenCalledOnce();
-});
-it("resets the consecutive failure budget after a complete verified tick", async () => {
-  const f = fixture();
-  await expect(f.tick()).rejects.toThrow();
   f.ports.shard.withdrawal = () => Effect.succeed(f.receipt);
-  await f.tick();
-  f.ports.shard.withdrawal = () => Effect.fail(new RelayFailure({ operation: "shard_unavailable" }));
-  await expect(f.tick()).rejects.toThrow();
-  await expect(f.tick()).rejects.toThrow();
-  expect((await f.store.load()).halted).toBeNull();
+  await expect(f.tick()).resolves.toMatchObject({
+    halted: null,
+    cursors: { paidClaims: { fromBlock: 1001, page: null } },
+  });
   expect(f.ports.ledger.pause).not.toHaveBeenCalled();
 });

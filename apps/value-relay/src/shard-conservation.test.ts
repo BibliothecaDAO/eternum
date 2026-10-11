@@ -289,3 +289,19 @@ it("rereads a final balance when its source block was replaced", async () => {
   ]);
   expect(read.mock.calls.filter(([url]) => String(url).includes("/snapshot"))).toHaveLength(2);
 });
+
+it("a new Frontier game with no budget has issued nothing and does not pause the monitor", async () => {
+  const state = snapshot();
+  state.models[1]!.rows = [];
+  state.models[2]!.rows = [];
+  const f = monitorFixture();
+  f.ports.shard.conservation = shardConservationPort(connection, "https://shard.test", network(state));
+  expect(await Effect.runPromise(f.ports.shard.conservation())).toEqual([
+    { gameId: 7, confirmedBlock: 10, receipts: "0", netIssued: "0" },
+  ]);
+  for (let tick = 0; tick < 5; tick++)
+    expect(await Effect.runPromise(runMonitor(f.ports, f.store))).toMatchObject({ halted: null });
+  expect(f.ports.ledger.pause).not.toHaveBeenCalled();
+  state.models.splice(1, 1);
+  await expect(Effect.runPromise(f.ports.shard.conservation())).rejects.toThrow();
+});
