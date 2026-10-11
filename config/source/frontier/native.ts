@@ -107,7 +107,6 @@ export const frontierPreset: NativePreset = {
   labor: { amount: 1000, accountDailyLimit: 0 },
   // The ruin's chest: the season pool pays a fixed 50 LORDS a share.
   chests: {
-    pool: 1000000,
     price: 50,
     shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
     claimWindowSeconds: 7 * 86400,

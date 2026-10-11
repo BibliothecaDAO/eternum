@@ -155,39 +155,46 @@ deployment. The manifest's `seasonId: 1` refers only to Blitz.
 
 ### Fund a Frontier season
 
-After the shard confirms creation, take the actual game ID from the launch result or Herald directory. The deployment
-check may have consumed earlier IDs. The funding command takes `dev` or `production`, never a network name. Both run on
-`SN_MAIN`; `dev` selects `dev.json` through the shared staging reader and `production` selects `mainnet.json`. It reads
-the ledger and token from that environment's book, then verifies `ledger.lords()` matches the token before approving
-anything. An undeployed address fails; it never falls back to the other environment.
+Set the Frontier calendar first. When the shard confirms creation, take the actual game ID from the launch result or
+Herald directory and fund it at once. The deployment check may have consumed earlier IDs. The funding command takes
+`dev` or `production`, never a network name. Both run on `SN_MAIN`; `dev` selects `dev.json` through the shared staging
+reader and `production` selects `mainnet.json`. It reads the ledger and token from that environment's book, then
+verifies `ledger.lords()` matches the token before approving anything. An undeployed address fails; it never falls back
+to the other environment.
 
 Supply the ledger admin's `STARKNET_ACCOUNT_ADDRESS` and `STARKNET_ACCOUNT_PRIVATE_KEY` as secrets, `STARKNET_RPC` for
 Starknet mainnet, `NATIVE_WORLD_MANIFEST` for the shard, `RPC_URL` for that shard's public RPC, and `HERALD_URL` for its
-HTTPS Herald. The admin must hold the game's full pool in the selected environment's token and enough real mainnet STRK
-for fees. For dev, call devLords's public `mint(recipient, amount)` to mint test tokens to the admin before funding;
-production uses real LORDS. Amounts are wei. A confirmed 1,000,000-token chest pool needs exactly
-1000000000000000000000000 wei.
+HTTPS Herald. Give the command the amount to deposit as a positive whole number of LORDS (devLords for dev). The admin
+must hold that amount in the selected environment's token and enough real mainnet STRK for fees. For dev, call
+devLords's public `mint(recipient, amount)` to mint test tokens to the admin before funding; production uses real LORDS.
+The command converts whole tokens to wei and refuses a deposit that does not fit u128 wei. For example, the argument
+1000000 deposits exactly 1000000000000000000000000 wei.
 
 ```sh
 # Replace 42 with the confirmed Frontier game ID; production selects the production book.
-pnpm --dir contracts/l2/ledger/scripts fund:frontier dev 42
+pnpm --dir contracts/l2/ledger/scripts fund:frontier dev 42 1000000
 ```
 
 The command checks the shard chain ID, reads Herald's confirmed GameRegistry, ChestRules and SliceRules, and checks the
 game against the shard RPC at that same block. It compares the day length, derived end and claim window with ledger
-preset (2 for dev; the native preset ID for production), derives the amount from the confirmed chest pool × 10^18, and
-submits approval plus funding in one transaction. It waits for confirmation, rereads `get_frontier` and its preset, and
-refuses a different start, seed, end, pool or day rule. Its public result includes the transaction hash and verified
-funding. A season already running may be funded; a season at or past its end cannot. No caller-entered seed, start, end
-or amount can override the confirmed game.
+preset (2 for dev; the native preset ID for production), and submits approval plus the requested deposit in one
+transaction. The preset carries no pool. It waits for confirmation, rereads `get_frontier` and its preset, and refuses a
+different start, seed, end, pool or day rule. Its public result includes the transaction hash and verified funding. A
+season already running may be funded; a season at or past its end cannot. No caller-entered seed, start or end can
+override the confirmed game.
+
+The relay reads the confirmed ledger deposit and publishes its pool to the shard once, after checking the game start and
+seed. Before publication the pool is zero and no ruin chest exists. Confirm a positive `LordsBudget.pool` in Herald
+before expecting chest payouts. The release uses that deposited pool and the existing day schedule; publication after
+the start releases elapsed days immediately, and unused daily tokens roll over.
 
 `pnpm --dir contracts/l2/ledger/scripts test` checks deployment publication, setup separation, compiled funding
 calldata, confirmed reads, mismatches and readback without a signer or live deployment.
 
 Use the resulting public manifest to verify the deployment and the checked-in address book to configure service and
-client builds. Match the shard's Frontier season window and pool to the deployed ledger. Mint devLords to dev wallets,
-approve the ledger, and register on L2; feed that roster into the shard. Play a withdrawal and a Blitz match, then relay
-the actual confirmed withdrawal hash and the actual wallet/rank rows. Verify `get_payment`, wallet balances,
+client builds. Match the shard's Frontier season window and published pool to the deployed ledger. Mint devLords to dev
+wallets, approve the ledger, and register on L2; feed that roster into the shard. Play a withdrawal and a Blitz match,
+then relay the actual confirmed withdrawal hash and the actual wallet/rank rows. Verify `get_payment`, wallet balances,
 `get_result_commitment`, minted chest IDs, `get_chest` and the growing season pool. Trade a chest, approve its burn,
 call `open_request`, then call `open_finish` at least eleven blocks later from another wallet. Verify delivery to the
 requester and reserve conservation. Setup registers all five band CIDs and one test cosmetic attribute per rarity. The

@@ -49,7 +49,7 @@ const account = {
   execute,
   waitForTransaction: receipt,
 } as unknown as Account;
-const run = () => fundFrontier(account, provider, shard, "https://herald.test", 42, "dev");
+const run = (amount = "1000000") => fundFrontier(account, provider, shard, "https://herald.test", 42, "dev", amount);
 let header: ReturnType<typeof spyOn>;
 let fetchMock: ReturnType<typeof spyOn>;
 beforeEach(() => {
@@ -66,7 +66,7 @@ beforeEach(() => {
     { model: "GameRegistry", rows: [{ key: "42", value: { game_id: 42, ...game } }] },
     {
       model: "ChestRules",
-      rows: [{ key: "42", value: { game_id: 42, pool: "1000000", claim_window_seconds: 604800 } }],
+      rows: [{ key: "42", value: { game_id: 42, claim_window_seconds: 604800 } }],
     },
     { model: "SliceRules", rows: [{ key: "42", value: { game_id: 42, day_unit_seconds: 10 } }] },
   ];
@@ -113,7 +113,7 @@ afterEach(() => {
   fetchMock.mockRestore();
 });
 
-test("funds a confirmed running game, with exactly its pool and compiled ledger calldata", async () => {
+test("funds a confirmed running game, with exactly the requested deposit and compiled ledger calldata", async () => {
   expect(await run()).toMatchObject({
     gameId: 42,
     transactionHash: "0xabc",
@@ -155,10 +155,33 @@ test.each(["start_main_at", "end_at", "seed", "preset_id"])(
     expect(execute).not.toHaveBeenCalled();
   },
 );
-test.each(["0", "-1", String(1n << 128n)])("refuses invalid pool %s before signing", async (pool) => {
-  models[1]!.rows[0]!.value.pool = pool;
-  await expect(run()).rejects.toThrow("frontier_funding_differs_from_game");
+test.each(["0", "-1", "1.5", "1e6", "0x10", "", " 1", "01"])(
+  "refuses nonpositive or nondecimal whole amount %s before reads",
+  async (amount) => {
+    await expect(run(amount)).rejects.toThrow("Amount must be positive whole LORDS");
+    expect(execute).not.toHaveBeenCalled();
+    expect(shardCall).not.toHaveBeenCalled();
+  },
+);
+test("refuses a whole amount whose wei exceeds u128 before reads", async () => {
+  const tooLarge = ((1n << 128n) - 1n) / 10n ** 18n + 1n;
+  await expect(run(String(tooLarge))).rejects.toThrow("Deposit must fit u128 wei");
   expect(execute).not.toHaveBeenCalled();
+  expect(shardCall).not.toHaveBeenCalled();
+});
+test.each([1n, ((1n << 128n) - 1n) / 10n ** 18n])("funds operator amount %s without a preset pool", async (amount) => {
+  const wei = amount * 10n ** 18n;
+  season[3] = String(wei);
+  const result = await run(String(amount));
+  expect(result.frontier.pool).toBe(String(wei));
+  expect(execute.mock.calls[0]![0]).toMatchObject([
+    { entrypoint: "approve", calldata: ["291", String(wei), "0"] },
+    { entrypoint: "fund_frontier" },
+  ]);
+});
+test("refuses a confirmed readback with a different deposited amount", async () => {
+  season[3] = String(2n * 10n ** 18n);
+  await expect(run("1")).rejects.toThrow("Frontier deposit differs from requested amount");
 });
 test("refuses a missing game, unconfirmed snapshot or missing chest rules before signing", async () => {
   shardCall.mockRejectedValueOnce(new Error("game does not exist"));
@@ -184,11 +207,13 @@ test("refuses a reverted receipt or a different readback", async () => {
 
 test("refuses a wrong shard chain before any ledger approval", async () => {
   const wrong = { ...provider, getChainId: async () => "0x8" } as unknown as RpcProvider;
-  await expect(fundFrontier(account, wrong, shard, "https://herald.test", 42, "dev")).rejects.toThrow("manifest shard");
+  await expect(fundFrontier(account, wrong, shard, "https://herald.test", 42, "dev", "1000000")).rejects.toThrow(
+    "manifest shard",
+  );
   expect(execute).not.toHaveBeenCalled();
 });
 test.each([0, -1, 0x100000000, 1.5])("refuses invalid game id %s before reads", async (id) => {
-  await expect(fundFrontier(account, provider, shard, "https://herald.test", id, "dev")).rejects.toThrow(
+  await expect(fundFrontier(account, provider, shard, "https://herald.test", id, "dev", "1000000")).rejects.toThrow(
     "Invalid shard game id",
   );
   expect(shardCall).not.toHaveBeenCalled();
@@ -198,7 +223,7 @@ test.each([0, -1, 0x100000000, 1.5])("refuses invalid game id %s before reads", 
 test("production funding uses only its own book and the native preset ID", async () => {
   ledgerRead.mockResolvedValueOnce(preset).mockResolvedValueOnce(["0x222"]);
   season[8] = "5";
-  await fundFrontier(account, provider, shard, "https://herald.test", 42, "production");
+  await fundFrontier(account, provider, shard, "https://herald.test", 42, "production", "1000000");
   expect(ledgerRead).toHaveBeenCalledWith({ contractAddress: "0x456", entrypoint: "get_preset", calldata: ["5"] }, 11);
   const calls = execute.mock.calls[0]![0] as { calldata: string[] }[];
   expect(calls[1]!.calldata[2]).toBe("5");
@@ -212,9 +237,9 @@ test.each(["dev", "production"] as const)(
   "%s funding refuses a ledger token from the other book",
   async (environment) => {
     ledgerRead.mockResolvedValueOnce(preset).mockResolvedValueOnce([environment === "dev" ? "0x222" : "0x111"]);
-    await expect(fundFrontier(account, provider, shard, "https://herald.test", 42, environment)).rejects.toThrow(
-      "Ledger token differs",
-    );
+    await expect(
+      fundFrontier(account, provider, shard, "https://herald.test", 42, environment, "1000000"),
+    ).rejects.toThrow("Ledger token differs");
     expect(execute).not.toHaveBeenCalled();
   },
 );
@@ -226,7 +251,9 @@ test.each([
   ["production", "lords"],
 ] as const)("%s funding requires its own book address for %s", async (environment, field) => {
   (environment === "dev" ? devBook : productionBook)[field] = "";
-  await expect(fundFrontier(account, provider, shard, "https://herald.test", 42, environment)).rejects.toThrow(field);
+  await expect(
+    fundFrontier(account, provider, shard, "https://herald.test", 42, environment, "1000000"),
+  ).rejects.toThrow(field);
   expect(execute).not.toHaveBeenCalled();
   expect(shardCall).not.toHaveBeenCalled();
 });
@@ -235,15 +262,17 @@ test.each(["dev", "production"] as const)(
   "%s funding refuses Sepolia before any shard read or approval",
   async (environment) => {
     const wrong = { ...account, getChainId: async () => "0x534e5f5345504f4c4941" } as unknown as Account;
-    await expect(fundFrontier(wrong, provider, shard, "https://herald.test", 42, environment)).rejects.toThrow("chain");
+    await expect(
+      fundFrontier(wrong, provider, shard, "https://herald.test", 42, environment, "1000000"),
+    ).rejects.toThrow("chain");
     expect(execute).not.toHaveBeenCalled();
     expect(shardCall).not.toHaveBeenCalled();
   },
 );
 
 test("funding refuses a network name instead of an environment", async () => {
-  await expect(fundFrontier(account, provider, shard, "https://herald.test", 42, "mainnet" as "dev")).rejects.toThrow(
-    "environment",
-  );
+  await expect(
+    fundFrontier(account, provider, shard, "https://herald.test", 42, "mainnet" as "dev", "1000000"),
+  ).rejects.toThrow("environment");
   expect(execute).not.toHaveBeenCalled();
 });

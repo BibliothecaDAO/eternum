@@ -38,7 +38,6 @@ const selfCheckPreset: NativePreset = {
 const frontierSelfCheckPreset: NativePreset = {
   ...frontierPreset,
   id: FRONTIER_SELF_CHECK_PRESET_ID,
-  chests: { ...frontierPreset.chests!, pool: 0 },
 };
 
 export const nativePresets: Record<number, NativePreset> = Object.fromEntries(

@@ -53,7 +53,12 @@ The shard manifest is served at `/manifest` and the directory at `/games`. Compa
 Herald restart. Incompatible schemas are explicit ingestion faults and require a planned release. Historical replay must
 use the matching codec.
 
-## Season settlement runbook
+## Season opening and settlement runbook
+
+Set the Frontier calendar, wait for the game to be created, then fund it at once with the operator's whole-LORDS amount
+using the [environment's funding command](../../contracts/l2/ledger/README.md#fund-a-frontier-season). The relay checks
+that deposit and publishes the pool to the shard. No ruin chest exists before publication; confirm the positive pool in
+Herald's `LordsBudget` row. The preset carries no pool.
 
 Close a Frontier pool only after `frontier_claim_deadline(shard, season_id)` and with an empty relay queue for that
 pool. Payments can still complete after the claim deadline; `close_frontier` voids all unpaid reports.

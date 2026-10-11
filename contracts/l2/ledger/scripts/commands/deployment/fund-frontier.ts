@@ -51,7 +51,6 @@ async function readFrontierGame(provider: RpcProvider, shard: ShardConnection, h
     start: ledgerInteger(String(game.start_main_at)),
     end: ledgerInteger(String(game.end_at)),
     seed: String(game.seed),
-    pool: String(chests.pool),
     dayUnit: ledgerInteger(String(rules.day_unit_seconds)),
     claimWindow: ledgerInteger(String(chests.claim_window_seconds)),
   };
@@ -64,7 +63,9 @@ export async function fundFrontier(
   heraldUrl: string,
   gameId: number,
   environment: "dev" | "production",
+  amount: string,
 ) {
+  const pool = depositWei(amount);
   const target = fundingTarget(environment);
   await assertProviderChain(account, target.network, "STARKNET_RPC");
   const { ledger, token } = target;
@@ -88,7 +89,6 @@ export async function fundFrontier(
     head.number,
   );
   if (!lords || BigInt(lords) !== BigInt(token)) throw new Error("Ledger token differs from environment address book");
-  const pool = BigInt(native.pool) * 10n ** 18n;
   const submitted = await account.execute(
     buildFrontierFundingCalls(ledger, lords, {
       shard: shard.chainId,
@@ -103,7 +103,15 @@ export async function fundFrontier(
   if (!("execution_status" in receipt) || receipt.execution_status !== "SUCCEEDED" || !("block_number" in receipt))
     throw new Error("Funding not confirmed");
   const frontier = await readFrontierFunding(account, ledger, { chainId: shard.chainId, gameId }, native);
+  if (BigInt(frontier.pool) !== pool) throw new Error("Frontier deposit differs from requested amount");
   return { chainId: shard.chainId, gameId, transactionHash: submitted.transaction_hash, frontier };
+}
+
+function depositWei(amount: string) {
+  if (!/^[1-9][0-9]*$/.test(amount)) throw new Error("Amount must be positive whole LORDS");
+  const wei = BigInt(amount) * 10n ** 18n;
+  if (wei >= 1n << 128n) throw new Error("Deposit must fit u128 wei");
+  return wei;
 }
 
 function fundingTarget(environment: "dev" | "production") {
@@ -118,9 +126,9 @@ function fundingTarget(environment: "dev" | "production") {
 }
 
 async function main() {
-  const [environment, gameId] = process.argv.slice(2);
-  if ((environment !== "dev" && environment !== "production") || !gameId || process.argv.length !== 4)
-    throw new Error("Usage: fund:frontier <dev|production> <game-id>");
+  const [environment, gameId, amount] = process.argv.slice(2);
+  if ((environment !== "dev" && environment !== "production") || !gameId || !amount || process.argv.length !== 5)
+    throw new Error("Usage: fund:frontier <dev|production> <game-id> <whole-lords>");
   process.env.STARKNET_NETWORK = fundingTarget(environment).network;
   const manifest = readShardManifest<{ shard: { chainId: string }; world: { address: string } }>(
     process.env.NATIVE_WORLD_MANIFEST,
@@ -137,6 +145,7 @@ async function main() {
     heraldUrl,
     Number(gameId),
     environment,
+    amount,
   );
   console.log(JSON.stringify(result));
 }

@@ -79,26 +79,18 @@ describe("native presets", () => {
     }
   });
 
-  test("only the Frontier deployment-check preset permits an empty LORDS pool", () => {
-    const check = buildNativePreset(
-      loadNativePresetConfiguration("madara.frontier", FRONTIER_SELF_CHECK_PRESET_ID),
-      FRONTIER_SELF_CHECK_PRESET_ID,
-    );
-    expect(check.economy.chests.unwrap()).toMatchObject({ pool: 0n });
-    for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID]) {
-      const preset = nativePresets[id]!;
-      const before = preset.chests!.pool;
-      try {
-        preset.chests!.pool = 0;
-        expect(() => buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id)).toThrow(
-          "Invalid ruin chest rules",
-        );
-      } finally {
-        preset.chests!.pool = before;
-      }
-      expect(
-        buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id).economy.chests.unwrap(),
-      ).toMatchObject({ pool: BigInt(before) });
+  test("every Frontier preset carries chest rules without a funding amount", () => {
+    for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, FRONTIER_SELF_CHECK_PRESET_ID]) {
+      expect(nativePresets[id]!.chests).not.toHaveProperty("pool");
+      const chests = buildNativePreset(
+        loadNativePresetConfiguration("madara.frontier", id),
+        id,
+      ).economy.chests.unwrap();
+      expect(chests).toEqual({
+        price: 50n,
+        shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
+        claim_window_seconds: 604800,
+      });
     }
   });
 
@@ -113,7 +105,6 @@ describe("native presets", () => {
     const config = loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID);
     const preset = buildNativePreset(config, FRONTIER_PRESET_ID);
     expect(preset.economy.chests.unwrap()).toEqual({
-      pool: 1000000n,
       price: 50n,
       shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
       claim_window_seconds: 604800,
