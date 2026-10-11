@@ -55,9 +55,8 @@ use the matching codec.
 
 ## Season settlement runbook
 
-Close a Frontier pool only after `frontier_claim_deadline(shard, season_id)` plus the 24-hour wallet hold, and only with
-an empty relay queue for that pool. Payments can still complete after the claim deadline; `close_frontier` voids all
-unpaid reports, including withdrawals waiting for a newly linked wallet's hold.
+Close a Frontier pool only after `frontier_claim_deadline(shard, season_id)` and with an empty relay queue for that
+pool. Payments can still complete after the claim deadline; `close_frontier` voids all unpaid reports.
 
 If a short Blitz season top list was not challenged within its one-hour window, only the cold admin can reopen it with
 `correct_season_mmr`. Claims refuse an incomplete list and a direct repost is refused as final. The admin must supply a
