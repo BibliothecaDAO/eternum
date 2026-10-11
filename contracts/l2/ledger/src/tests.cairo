@@ -2107,3 +2107,35 @@ fn only_the_operator_can_mark_individual_refunds() {
     start_cheat_block_timestamp(fixture.ledger_address, START);
     fixture.ledger.mark_refundable(SLOT_KEY, array![player(0)]);
 }
+
+#[test]
+fn an_unknown_slot_reads_as_absent_without_creating_it() {
+    let fixture = deploy_fixture(default_preset());
+    let key = SlotKey { shard: 'shard', slot_id: 99 };
+    let missing = fixture.ledger.get_slot(key);
+    assert!(!missing.exists);
+    let mut values = array![];
+    missing.serialize(ref values);
+    assert!(values.span() == array![0, 0, 0, 0, 0, 0, 0, 0, 0].span());
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.open_slot(key, 1, PRESET_ID, START, END);
+    let opened = fixture.ledger.get_slot(key);
+    assert!(opened.exists && opened.season_id == 1 && opened.preset_id == PRESET_ID);
+    assert!(opened.close == START && opened.end == END && opened.registered_count == 0);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn absent_slot_reads_do_not_allow_mutations_on_unknown_slots() {
+    let fixture = deploy_fixture(default_preset());
+    let key = SlotKey { shard: 'shard', slot_id: 99 };
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
+    assert!(safe.register(key, false, false).is_err());
+    assert!(safe.cancel_slot(key).is_err());
+    assert!(safe.abort_slot(key).is_err());
+    assert!(safe.refund(key).is_err());
+    assert!(safe.apply_results(key, 7, array![]).is_err());
+    assert!(safe.mark_refundable(key, array![]).is_err());
+    assert!(!fixture.ledger.get_slot(key).exists);
+}

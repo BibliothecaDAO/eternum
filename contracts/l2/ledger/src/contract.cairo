@@ -763,6 +763,7 @@ pub mod GameLedger {
         fn mark_refundable(ref self: ContractState, key: SlotKey, wallets: Array<ContractAddress>) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
             let slot = self.get_slot(key);
+            assert!(slot.exists, "Ledger: unknown slot");
             assert!(starknet::get_block_timestamp() >= slot.close, "Ledger: slot still open");
             for owner in wallets {
                 let mut registration = self.registrations.entry((key, owner)).read();
@@ -840,9 +841,7 @@ pub mod GameLedger {
         }
 
         fn get_slot(self: @ContractState, key: SlotKey) -> Slot {
-            let slot = self.slots.entry(key).read();
-            assert!(slot.exists, "Ledger: unknown slot");
-            slot
+            self.slots.entry(key).read()
         }
 
         fn get_registration(self: @ContractState, key: SlotKey, owner: ContractAddress) -> Registration {
