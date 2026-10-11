@@ -87,10 +87,11 @@ run on the owner's laptop. No mainnet private key or Alchemy URL goes to that ho
 15. Build and publish the client locally with wrangler. Check its chain/RPC, recovery tests, source assets, emitted PWA
     assets, cache rules and published modules/routes. Remove public sourcemaps before upload. Origin, zone and Pages
     project come from the table. A matching remote release is checked without uploading it again.
-16. Show both seasons and the deposit, then set missing calendar phases to the exact entered dates. Existing phases are
-    preserved. No automatic date is chosen. Leave the process running: it waits for the launch cron and the confirmed
-    Frontier game, reads the box's **own `data/native-world.json`**, checks its chain against Herald, and verifies the
-    game's start, end, seed and funding terms against the ledger.
+16. Show both seasons and the deposit, then set missing calendar phases to the exact entered dates. Ended phases may be
+    replaced; running or future phases with different dates stop the command. No automatic date is chosen. Leave the
+    process running: it waits for the launch cron and the confirmed Frontier game, reads the box's **own
+    `data/native-world.json`**, checks its chain against Herald, and verifies the game's start, end, seed and funding
+    terms against the ledger.
 17. Mint dev test tokens if needed, approve and fund exactly that game. Production instead writes `cold-funding.json`
     for the cold admin to execute with real LORDS; rerun after its confirmation. An existing deposit is checked and
     never repeated. No chest exists before funding and pool publication.
@@ -114,9 +115,9 @@ has been pinned. Do not delete private state to retry: that would generate diffe
 process lock prevents two simultaneous runs from sharing an account nonce.
 
 If an unsubmitted season date has passed, edit only the four public date fields in `inputs.json`, review the dry run,
-and rerun. A confirmed ledger window or active calendar is not silently replaced. If a production collection or rating
-token needs an upgrade, its cold owner must complete the reviewed upgrade first; this command grants no new upgrade
-power and never obtains the upgrade key.
+and rerun. A confirmed ledger window or running/future calendar is not silently replaced; an ended calendar phase is
+treated as absent. If a production collection or rating token needs an upgrade, its cold owner must complete the
+reviewed upgrade first; this command grants no new upgrade power and never obtains the upgrade key.
 
 Declarations, contract deployments, transfers, successful setup and funding cannot be undone. Check the public book,
 roles and four displayed dates before applying. A wrong published contract or immutable preset causes a refusal;

@@ -161,6 +161,21 @@ async function funding(context: Deployment) {
     throw error;
   }
 }
+async function currentCalendar(context: Deployment) {
+  const calendar = await service<{ phases: { phase: string; startsAt: string; endsAt: string }[] }>(
+    context,
+    "/api/factory/calendar",
+  );
+  const now = Date.now();
+  const phases = calendar.phases.filter((phase) => Date.parse(phase.endsAt) > now);
+  for (const phase of phases) {
+    const start = phase.phase === "frontier" ? context.inputs!.frontierStart : context.inputs!.blitzStart;
+    const end = phase.phase === "frontier" ? context.inputs!.frontierEnd : context.inputs!.blitzEnd;
+    if (Date.parse(phase.startsAt) !== Date.parse(start) || Date.parse(phase.endsAt) !== Date.parse(end))
+      throw new PublicError("Existing calendar dates differ from inputs.json; no phase was changed");
+  }
+  return phases;
+}
 export function deliverySteps(context: Deployment): Step[] {
   const wait = (detail: string) => ({ done: false, waiting: detail, detail });
   return [
@@ -319,26 +334,14 @@ export function deliverySteps(context: Deployment): Step[] {
       cost: "0 STRK",
       inspect: async () => {
         if (!(await releaseReady(context))) return wait("Deployed services needed");
-        const calendar = await service<{ phases: { phase: string; startsAt: string; endsAt: string }[] }>(
-          context,
-          "/api/factory/calendar",
-        );
-        for (const phase of calendar.phases) {
-          const start = phase.phase === "frontier" ? context.inputs!.frontierStart : context.inputs!.blitzStart;
-          const end = phase.phase === "frontier" ? context.inputs!.frontierEnd : context.inputs!.blitzEnd;
-          if (Date.parse(phase.startsAt) !== Date.parse(start) || Date.parse(phase.endsAt) !== Date.parse(end))
-            throw new PublicError("Existing calendar dates differ from inputs.json; no phase was changed");
-        }
+        const phases = await currentCalendar(context);
         return {
-          done: ["frontier", "blitz"].every((name) => calendar.phases.some((phase) => phase.phase === name)),
+          done: ["frontier", "blitz"].every((name) => phases.some((phase) => phase.phase === name)),
           detail: "set only missing phases; Frontier starts on a tick and ends at the explicit entered date",
         };
       },
       apply: async () => {
-        const calendar = await service<{ phases: { phase: string; startsAt: string; endsAt: string }[] }>(
-          context,
-          "/api/factory/calendar",
-        );
+        const phases = await currentCalendar(context);
         const season = decodeBlitzSeason(
           await context.provider!.callContract(
             { contractAddress: context.assets!.ledger, entrypoint: "get_season", calldata: ["1"] },
@@ -351,7 +354,7 @@ export function deliverySteps(context: Deployment): Step[] {
           `Setting calendar: Frontier ${context.inputs!.frontierStart} to ${context.inputs!.frontierEnd}, pool ${context.inputs!.amount}; Blitz ${context.inputs!.blitzStart} to ${context.inputs!.blitzEnd}.`,
         );
         for (const phase of ["frontier", "blitz"]) {
-          if (calendar.phases.some((existing) => existing.phase === phase)) continue;
+          if (phases.some((existing) => existing.phase === phase)) continue;
           const begins = seconds(phase === "frontier" ? context.inputs!.frontierStart : context.inputs!.blitzStart);
           const ends = seconds(phase === "frontier" ? context.inputs!.frontierEnd : context.inputs!.blitzEnd);
           if (begins <= Date.now() / 1000)
