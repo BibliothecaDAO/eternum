@@ -2134,23 +2134,27 @@ pub mod GamesFixture {
             let state = crate::state::read();
             let classes = state.releases.entry(state.current_release.read()).classes;
             crate::entry::ILedgerOperatorDispatcherTrait::ledger_operator(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.settlement.read() },
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.placement.read() },
             )
         }
         fn set_ledger_operator(ref self: TContractState, operator: starknet::ContractAddress) {
             let state = crate::state::read();
             let classes = state.releases.entry(state.current_release.read()).classes;
             crate::entry::ILedgerOperatorDispatcherTrait::set_ledger_operator(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.settlement.read() }, operator,
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.placement.read() }, operator,
             )
         }
         fn grant_labor(
-            ref self: TContractState, realm: crate::entry::LaborRealm, day: u64, account: starknet::ContractAddress,
-        ) -> crate::entry::LaborGrant {
-            let classes = fixture_classes(realm.game_id);
+            ref self: TContractState,
+            realms: Array<crate::entry::LaborRealm>,
+            day: u64,
+            account: starknet::ContractAddress,
+        ) -> Array<crate::entry::LaborGrant> {
+            let state = crate::state::read();
+            let classes = state.releases.entry(state.current_release.read()).classes;
             crate::entry::ILedgerOperatorDispatcherTrait::grant_labor(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.settlement.read() },
-                realm,
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.placement.read() },
+                realms,
                 day,
                 account,
             )
@@ -2160,7 +2164,7 @@ pub mod GamesFixture {
         ) -> Option<crate::entry::LaborGrant> {
             let classes = fixture_classes(realm.game_id);
             crate::entry::ILedgerOperatorDispatcherTrait::labor_grant(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.settlement.read() }, realm, day,
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.placement.read() }, realm, day,
             )
         }
     }

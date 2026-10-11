@@ -4,7 +4,6 @@ pub mod SettlementLogic {
     use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
     use starknet::{ContractAddress, get_caller_address};
     use crate::commands::ExecutionContext as DomainContext;
-    use crate::logic::entry::EntryAdministration;
     use crate::logic::release::ReleaseState;
     use crate::logic::settlement::SettlementState;
     use crate::logic::upgrades::UpgradeState;
@@ -30,9 +29,6 @@ pub mod SettlementLogic {
     impl SettlementInternal = SettlementState::InternalImpl<ContractState>;
     component!(path: VillageState, storage: villages, event: VillageEvent);
     impl VillageInternal = VillageState::InternalImpl<ContractState>;
-    component!(path: EntryAdministration, storage: entry, event: EntryEvent);
-    #[abi(embed_v0)]
-    impl Entry = EntryAdministration::LedgerOperatorImpl<ContractState>;
     component!(path: UpgradeState, storage: upgrades, event: UpgradeEvent);
     impl UpgradeInternal = UpgradeState::InternalImpl<ContractState>;
     #[storage]
@@ -40,8 +36,6 @@ pub mod SettlementLogic {
     struct Storage {
         #[flat]
         pub data: crate::state::Storage,
-        #[substorage(v0)]
-        entry: EntryAdministration::Storage,
         #[substorage(v0)]
         upgrades: UpgradeState::Storage,
         #[substorage(v0)]
@@ -56,7 +50,6 @@ pub mod SettlementLogic {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
-        EntryEvent: EntryAdministration::Event,
         UpgradeEvent: UpgradeState::Event,
         RowSet: crate::events::RowSet,
         ReleaseEvent: ReleaseState::Event,

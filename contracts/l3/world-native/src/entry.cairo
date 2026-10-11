@@ -4,7 +4,7 @@ use starknet::ContractAddress;
 pub trait ILedgerOperator<T> {
     fn ledger_operator(self: @T) -> ContractAddress;
     fn set_ledger_operator(ref self: T, operator: ContractAddress);
-    fn grant_labor(ref self: T, realm: LaborRealm, day: u64, account: ContractAddress) -> LaborGrant;
+    fn grant_labor(ref self: T, realms: Array<LaborRealm>, day: u64, account: ContractAddress) -> Array<LaborGrant>;
     fn labor_grant(self: @T, realm: LaborRealm, day: u64) -> Option<LaborGrant>;
 }
 

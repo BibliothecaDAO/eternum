@@ -83,11 +83,11 @@ pub mod Games {
             );
         }
         fn grant_labor(
-            ref self: ContractState, realm: crate::entry::LaborRealm, day: u64, account: ContractAddress,
-        ) -> crate::entry::LaborGrant {
+            ref self: ContractState, realms: Array<crate::entry::LaborRealm>, day: u64, account: ContractAddress,
+        ) -> Array<crate::entry::LaborGrant> {
             crate::entry::ILedgerOperatorDispatcherTrait::grant_labor(
                 crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().placement },
-                realm,
+                realms,
                 day,
                 account,
             )

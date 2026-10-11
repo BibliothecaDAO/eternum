@@ -48,9 +48,26 @@ pub mod EntryAdministration {
             }
         }
         fn grant_labor(
+            ref self: ComponentState<TContractState>, realms: Array<LaborRealm>, day: u64, account: ContractAddress,
+        ) -> Array<LaborGrant> {
+            super::assert_ledger_operator();
+            let mut grants = array![];
+            for realm in realms {
+                grants.append(self.grant_realm_labor(realm, day, account));
+            }
+            grants
+        }
+    }
+    #[generate_trait]
+    pub impl InternalImpl<
+        TContractState,
+        +HasComponent<TContractState>,
+        impl Life: ReleaseState::HasComponent<TContractState>,
+        +Drop<TContractState>,
+    > of InternalTrait<TContractState> {
+        fn grant_realm_labor(
             ref self: ComponentState<TContractState>, realm: LaborRealm, day: u64, account: ContractAddress,
         ) -> LaborGrant {
-            super::assert_ledger_operator();
             if let Some(previous) = crate::entry::ILedgerOperator::labor_grant(@self, realm, day) {
                 assert!(
                     previous.game_id == realm.game_id && previous.account == account && previous.home == realm.home,
@@ -93,11 +110,6 @@ pub mod EntryAdministration {
             self.record_labor_grant(realm, day, grant, count + 1);
             grant
         }
-    }
-    #[generate_trait]
-    pub impl InternalImpl<
-        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
-    > of InternalTrait<TContractState> {
         fn record_labor_grant(
             ref self: ComponentState<TContractState>, realm: LaborRealm, day: u64, grant: LaborGrant, count: u32,
         ) {

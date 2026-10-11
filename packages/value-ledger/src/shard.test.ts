@@ -170,7 +170,7 @@ it("rejects a successful invoke carrying the generated GameplayRejected event", 
   await expect(operator.playCommand(7, "SettleBlitzRoster")).rejects.toThrow("gameplay_refused:roster not ready");
 });
 
-it("compiles the labor mutation through the real operator and generated Games ABI", async () => {
+it("sends all held Realms in one labor mutation through the generated Games ABI", async () => {
   const operator = new ShardOperator({
     chainId: "0x1",
     rpcUrl: "https://shard.test",
@@ -178,8 +178,13 @@ it("compiles the labor mutation through the real operator and generated Games AB
     accountAddress: "0x20",
     privateKey: "0x1",
   });
-  const args = { realm: { game_id: 7, realm_id: 8, home: 2n ** 55n + 9n }, day: 30, account: "0x123" };
+  const args = {
+    realms: Array.from({ length: 5 }, (_, index) => ({ game_id: 7, realm_id: 8 + index, home: 2n ** 55n + 9n })),
+    day: 30,
+    account: "0x123",
+  };
   await operator.admin("grant_labor", args);
+  expect(rpc.execute).toHaveBeenCalledTimes(1);
   expect(rpc.execute.mock.calls[0]![0]).toEqual({
     contractAddress: "0x10",
     entrypoint: "grant_labor",

@@ -45,7 +45,12 @@ test("Games exposes the published player frame, roles and frozen roster ABI", as
     abi.find(({ name }) => name === "world_native::entry::LaborRealm").members.find(({ name }) => name === "home").type,
     "core::integer::u64",
   );
-  assert.equal(method("grant_labor").inputs.find(({ name }) => name === "day").type, "core::integer::u64");
+  assert.deepEqual(method("grant_labor").inputs, [
+    { name: "realms", type: "core::array::Array::<world_native::entry::LaborRealm>" },
+    { name: "day", type: "core::integer::u64" },
+    { name: "account", type: "core::starknet::contract_address::ContractAddress" },
+  ]);
+  assert.deepEqual(method("grant_labor").outputs, [{ type: "core::array::Array::<world_native::entry::LaborGrant>" }]);
   assert.equal(
     methods.some(({ name }) =>
       /recorded_execution|execution_head|actor_nonce|open_epoch|reveal_epoch/.test(name ?? ""),

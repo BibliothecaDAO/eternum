@@ -929,35 +929,6 @@
       {
         "name": "RowSet",
         "prefix": [
-          "0x3b3d5129d8af6b2490084948d4ef23b7f6b9aff257cdb1445f733cf69878558",
-          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-        ],
-        "members": [
-          {
-            "name": "version",
-            "type": "core::integer::u8",
-            "kind": "key"
-          },
-          {
-            "name": "model",
-            "type": "core::felt252",
-            "kind": "key"
-          },
-          {
-            "name": "keys",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          },
-          {
-            "name": "values",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          }
-        ]
-      },
-      {
-        "name": "RowSet",
-        "prefix": [
           "0x2a67f55ebbc91ddd8772d60674830a4521ec8a56824b1763b19349ccbe4cf93",
           "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
         ],
@@ -1882,8 +1853,8 @@
         "name": "grant_labor",
         "inputs": [
           {
-            "name": "realm",
-            "type": "world_native::entry::LaborRealm"
+            "name": "realms",
+            "type": "core::array::Array::<world_native::entry::LaborRealm>"
           },
           {
             "name": "day",
@@ -1896,7 +1867,7 @@
         ],
         "outputs": [
           {
-            "type": "world_native::entry::LaborGrant"
+            "type": "core::array::Array::<world_native::entry::LaborGrant>"
           }
         ],
         "state_mutability": "external"
@@ -12718,5 +12689,5 @@
       ]
     }
   },
-  "identity": "cb0be6ce8c394452229022c1542ffb63ae4a0bdf8b00a491032b8516048dc06b"
+  "identity": "5250a0a27d1abc21ee5729d2c40bc7f48735877cc4d796c8985adab170e6d045"
 }
