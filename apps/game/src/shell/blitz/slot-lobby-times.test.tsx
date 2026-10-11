@@ -55,7 +55,9 @@ const lobby = async (closesIn: number, closed: boolean) => {
       </MemoryRouter>,
     ),
   );
-  for (let tick = 0; tick < 10 && !container.textContent?.includes("Entry"); tick += 1) await act(async () => {});
+  // The session, the directory and the slot list each answer in their own time: wait for the lobby itself.
+  for (let turn = 0; turn < 100 && !container.textContent?.includes("Entry"); turn += 1)
+    await act(() => new Promise((resolve) => setTimeout(resolve, 5)));
   unmount = () => act(async () => root.unmount());
   return container.textContent ?? "";
 };
