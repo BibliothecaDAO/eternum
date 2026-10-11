@@ -1,4 +1,7 @@
 import { describe, expect, it } from "bun:test";
+import { CallData } from "starknet";
+import ledgerAbi from "../../../../contracts/l2/ledger/schema/abi.json";
+import { buildMysteryChestPreset } from "../../../../contracts/l2/ledger/scripts/chest-preset.js";
 import { buildLedgerEconomicPreset, buildRegisterLedgerPresetCalldata } from "../ledger/economics";
 
 describe("ledger economics", () => {
@@ -8,8 +11,8 @@ describe("ledger economics", () => {
       const preset = buildLedgerEconomicPreset("frontier", { presetId });
       expect(preset.day_unit_seconds).toBe(nativePresetForId(presetId).dayUnitSeconds);
       expect(preset.season_bags).toBe(nativePresetForId(presetId).seasonBags);
-      expect(buildRegisterLedgerPresetCalldata(presetId, preset)[19]).toBe(String(preset.season_bags));
-      expect(buildRegisterLedgerPresetCalldata(presetId, preset)[18]).toBe(String(preset.day_unit_seconds));
+      expect(buildRegisterLedgerPresetCalldata(presetId, preset)[18]).toBe(String(preset.season_bags));
+      expect(buildRegisterLedgerPresetCalldata(presetId, preset)[17]).toBe(String(preset.day_unit_seconds));
     }
     expect(buildLedgerEconomicPreset("blitz").day_unit_seconds).toBe(0);
     expect(() => buildLedgerEconomicPreset("blitz", { presetId: 5 })).toThrow("game type differs");
@@ -19,7 +22,7 @@ describe("ledger economics", () => {
     for (const presetId of [5, 101]) {
       const preset = buildLedgerEconomicPreset("frontier", { presetId });
       expect(preset.claim_window_seconds).toBe(nativePresetForId(presetId).chests!.claimWindowSeconds);
-      expect(buildRegisterLedgerPresetCalldata(presetId, preset)[20]).toBe(String(preset.claim_window_seconds));
+      expect(buildRegisterLedgerPresetCalldata(presetId, preset)[19]).toBe(String(preset.claim_window_seconds));
     }
     expect(buildLedgerEconomicPreset("blitz").claim_window_seconds).toBe(0);
   });
@@ -31,11 +34,26 @@ describe("ledger economics", () => {
       protocol_cut_bps: 2_000,
       paid_fraction_bps: 2_000,
       decay_bps: 9_600,
-      mmr: { enabled: true, mean: 1_500, spread: 450, max_delta: 45, k: 50, regression_bps: 150, min_players: 6 },
     });
+    expect(preset.mmr).toEqual({ enabled: true, mean: 1_500, spread: 450, max_delta: 45, k: 50, regression_bps: 150 });
     expect(BigInt(preset.entry_fee.low)).toBe(500_000_000_000_000_000_000n);
-    expect(buildRegisterLedgerPresetCalldata(1, preset).length).toBe(88);
-    expect(buildRegisterLedgerPresetCalldata(1, preset)[21]).toBe("5");
+    expect(buildRegisterLedgerPresetCalldata(1, preset).length).toBe(87);
+    expect(buildRegisterLedgerPresetCalldata(1, preset)[20]).toBe("5");
+  });
+
+  it("serializes each mode's economic preset exactly as the ledger ABI", () => {
+    const codec = new CallData(ledgerAbi);
+    const chest = buildMysteryChestPreset();
+    for (const [gameType, presetId] of [
+      ["blitz", 2],
+      ["eternum", 3],
+      ["frontier", 5],
+    ] as const) {
+      const preset = buildLedgerEconomicPreset(gameType, { presetId });
+      expect(buildRegisterLedgerPresetCalldata(presetId, preset, chest)).toEqual(
+        codec.compile("register_preset", { preset_id: presetId, preset, bands: chest.bands, items: chest.items }),
+      );
+    }
   });
 
   it("disables fees and MMR for Eternum without creating an invalid payout preset", () => {

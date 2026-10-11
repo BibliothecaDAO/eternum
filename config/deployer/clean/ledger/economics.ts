@@ -23,7 +23,6 @@ export interface LedgerEconomicPreset {
     max_delta: number;
     k: number;
     regression_bps: number;
-    min_players: number;
   };
 }
 
@@ -57,7 +56,6 @@ export function buildLedgerEconomicPreset(
       max_delta: 45,
       k: 50,
       regression_bps: 150,
-      min_players: 6,
     },
     day_unit_seconds: native.dayUnitSeconds,
     season_bags: native.seasonBags,
