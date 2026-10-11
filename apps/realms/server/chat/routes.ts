@@ -34,6 +34,8 @@ const routeAuthenticatedChat = async (request: Request, env: IdentityEnv, auth: 
   const member = await chatMemberFrom(request, auth);
   if (!member) return json({ error: "unauthorized" }, 401);
   const url = new URL(request.url);
+  if (isSocketUpgrade(request) && !(await env.PUBLIC_RATE_LIMIT.limit({ key: `chat-open:${member.realmsId}` })).success)
+    return json({ error: "too_many_requests" }, 429);
 
   if (pathname === "/api/chat/inbox" && isSocketUpgrade(request)) {
     const rooms = [GLOBAL_CHAT_CHANNEL_ID, ...(await gameRoomsOf(env.DB, member.realmsId))];
