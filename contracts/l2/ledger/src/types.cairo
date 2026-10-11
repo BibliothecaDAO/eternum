@@ -47,6 +47,7 @@ pub struct Registration {
     pub paid: u256,
     pub refundable: bool,
     pub game_id: u32,
+    pub registered_at: u64,
 }
 
 

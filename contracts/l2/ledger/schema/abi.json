@@ -472,6 +472,10 @@
       {
         "name": "game_id",
         "type": "core::integer::u32"
+      },
+      {
+        "name": "registered_at",
+        "type": "core::integer::u64"
       }
     ]
   },
@@ -1223,20 +1227,24 @@
       },
       {
         "type": "function",
-        "name": "get_registered_player",
+        "name": "get_registrations",
         "inputs": [
           {
             "name": "key",
             "type": "game_ledger::types::SlotKey"
           },
           {
-            "name": "index",
+            "name": "from",
             "type": "core::integer::u64"
+          },
+          {
+            "name": "limit",
+            "type": "core::integer::u32"
           }
         ],
         "outputs": [
           {
-            "type": "core::starknet::contract_address::ContractAddress"
+            "type": "core::array::Array::<(core::starknet::contract_address::ContractAddress, core::integer::u64)>"
           }
         ],
         "state_mutability": "view"

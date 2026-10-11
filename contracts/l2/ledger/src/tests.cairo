@@ -1758,7 +1758,7 @@ fn frontier_claim_deadline_cannot_overflow() {
 fn roster_read_refuses_an_unseated_index() {
     let fixture = deploy_fixture(default_preset());
     register_players(@fixture, 1);
-    fixture.ledger.get_registered_player(SLOT_KEY, 1);
+    fixture.ledger.get_registrations(SLOT_KEY, 2, 1);
 }
 
 #[test]
@@ -1987,7 +1987,8 @@ fn one_slot_accepts_more_than_one_game_and_preserves_payment_ownership() {
     assert!(fixture.ledger.get_slot(SLOT_KEY).registered_count == 27);
     assert!(fixture.ledger.get_slot(SLOT_KEY).pool == 13500);
     for index in 0_u16..27 {
-        assert!(fixture.ledger.get_registered_player(SLOT_KEY, index.into()) == player(index));
+        let (wallet, _) = *fixture.ledger.get_registrations(SLOT_KEY, index.into(), 1).at(0);
+        assert!(wallet == player(index));
     }
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
     start_cheat_block_timestamp(fixture.ledger_address, START);
@@ -2216,7 +2217,8 @@ fn opening_player_slots_pays_each_seat_and_numbers_each_shard_independently() {
     assert!(slot.close == START && slot.end == END && slot.pool == 50 && slot.registered_count == 1);
     let registration = fixture.ledger.get_registration(key, player(0));
     assert!(registration.registered && registration.paid == 50 && !registration.sword && !registration.shield);
-    assert!(fixture.ledger.get_registered_player(key, 0) == player(0));
+    let (wallet, _) = *fixture.ledger.get_registrations(key, 0, 1).at(0);
+    assert!(wallet == player(0));
     assert!(fixture.ledger.open_player_slot('shard', PLAYER_PRESET_ID, START, END) == id + 1);
     assert!(fixture.ledger.open_player_slot('other', PLAYER_PRESET_ID, START, END) == FIRST_PLAYER_SLOT);
     assert!(fixture.lords.balance_of(player(0)) == 0);
@@ -2350,6 +2352,51 @@ fn only_operator_cancels_player_slots_and_paused_refunds_return_each_payment() {
     assert!(fixture.lords.balance_of(TREASURY()) == 0);
     assert!(fixture.ledger.get_slot(key).pool == 0);
     assert!(safe.refund(key).is_err());
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn registration_pages_keep_block_times_order_and_refunded_wallets() {
+    let fixture = deploy_fixture(default_preset());
+    for index in 0..125_u16 {
+        fund_and_approve_player(@fixture, player(index), 500);
+        start_cheat_caller_address(fixture.ledger_address, player(index));
+        start_cheat_block_timestamp(fixture.ledger_address, (index / 2 + 1).into());
+        fixture.ledger.register(SLOT_KEY, false, false);
+    }
+    let first = fixture.ledger.get_registrations(SLOT_KEY, 0, 100);
+    let last = fixture.ledger.get_registrations(SLOT_KEY, 100, 100);
+    assert!(first.len() == 100 && last.len() == 25);
+    assert!(*first.at(0) == (player(0), 1));
+    assert!(*last.at(0) == (player(100), 51));
+    assert!(*last.at(24) == (player(124), 63));
+    assert!(fixture.ledger.get_registration(SLOT_KEY, player(100)).registered_at == 51);
+    assert!(fixture.ledger.get_registrations(SLOT_KEY, 125, 100).is_empty());
+    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
+    assert!(safe.get_registrations(SLOT_KEY, 126, 100).is_err());
+    assert!(safe.get_registrations(SLOT_KEY, 0, 0).is_err());
+    assert!(safe.get_registrations(SLOT_KEY, 0, 101).is_err());
+    assert!(safe.get_registrations(SlotKey { slot_id: 999, ..SLOT_KEY }, 0, 100).is_err());
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.cancel_slot(SLOT_KEY);
+    start_cheat_caller_address(fixture.ledger_address, player(100));
+    fixture.ledger.refund(SLOT_KEY);
+    assert!(fixture.ledger.get_registration(SLOT_KEY, player(100)).registered_at == 51);
+    assert!(fixture.ledger.get_registrations(SLOT_KEY, 100, 100) == last);
+}
+
+#[test]
+fn player_open_and_settlement_keep_the_registration_timestamp() {
+    let fixture = player_slot_fixture();
+    fund_and_approve_player(@fixture, player(0), 50);
+    start_cheat_block_timestamp(fixture.ledger_address, 77);
+    let id = fixture.ledger.open_player_slot('shard', PLAYER_PRESET_ID, START, END);
+    let key = SlotKey { shard: 'shard', slot_id: id };
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    start_cheat_block_timestamp(fixture.ledger_address, START);
+    fixture.ledger.apply_results(key, GAME_KEY.game_id, array![row(player(0), 1)]);
+    assert!(fixture.ledger.get_registration(key, player(0)).registered_at == 77);
+    assert!(*fixture.ledger.get_registrations(key, 0, 100).at(0) == (player(0), 77));
 }
 
 #[test]

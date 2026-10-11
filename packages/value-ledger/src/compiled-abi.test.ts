@@ -27,6 +27,7 @@ describe("committed contract readbacks", () => {
         paid: { low: 0, high: 0 },
         refundable: false,
         game_id: 0,
+        registered_at: 0,
       }),
     );
     expect(
@@ -45,6 +46,7 @@ describe("committed contract readbacks", () => {
       paid: 0n,
       refundable: false,
       gameId: 0,
+      registeredAt: 0,
     });
     expect(
       decodeWithdrawalPayment(
@@ -104,6 +106,7 @@ describe("committed contract readbacks", () => {
       paid: { low: 7, high: 2 },
       refundable: true,
       game_id: 19,
+      registered_at: 90,
     });
     const callContract = vi.fn().mockResolvedValue(fields);
     const provider = { callContract } as unknown as RpcProvider;
@@ -116,6 +119,7 @@ describe("committed contract readbacks", () => {
       paid: 7n + (2n << 128n),
       refundable: true,
       gameId: 19,
+      registeredAt: 90,
     });
     expect(callContract).toHaveBeenCalledTimes(1);
     expect(callContract.mock.calls[0][1]).toBe("latest");

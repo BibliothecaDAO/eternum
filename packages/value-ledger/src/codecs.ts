@@ -23,6 +23,7 @@ export interface Registration {
   paid: bigint;
   refundable: boolean;
   gameId: number;
+  registeredAt: number;
 }
 
 /** A game's result for one wallet: rank 0 until the results are on the ledger. MMR in whole points. */
@@ -137,11 +138,11 @@ export const ledgerU256 = (low: string, high: string): string => {
   return String(a + (b << 128n));
 };
 /**
- * Registration: registered, sword, shield, sword_credit, shield_credit, paid (2), refundable, game_id. It keeps
+ * Registration: registered, sword, shield, sword_credit, shield_credit, paid (2), refundable, game_id, registered_at. It keeps
  * registered=true after a refund, which clears paid and the spent credits.
  */
 export const decodeRegistration = (fields: readonly string[]): Registration => {
-  if (fields.length !== 9) throw new Error("invalid_ledger_registration");
+  if (fields.length !== 10) throw new Error("invalid_ledger_registration");
   return {
     registered: ledgerBool(fields[0]!),
     sword: ledgerBool(fields[1]!),
@@ -151,6 +152,7 @@ export const decodeRegistration = (fields: readonly string[]): Registration => {
     paid: BigInt(ledgerU256(fields[5]!, fields[6]!)),
     refundable: ledgerBool(fields[7]!),
     gameId: ledgerInteger(fields[8]!),
+    registeredAt: ledgerInteger(fields[9]!),
   };
 };
 

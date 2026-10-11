@@ -70,7 +70,7 @@ pub trait IGameLedger<TState> {
     fn get_preset(self: @TState, preset_id: u32) -> Preset;
     fn get_slot(self: @TState, key: SlotKey) -> Slot;
     fn get_registration(self: @TState, key: SlotKey, owner: ContractAddress) -> Registration;
-    fn get_registered_player(self: @TState, key: SlotKey, index: u64) -> ContractAddress;
+    fn get_registrations(self: @TState, key: SlotKey, from: u64, limit: u32) -> Array<(ContractAddress, u64)>;
     fn get_player_result(self: @TState, key: GameKey, owner: ContractAddress) -> PlayerResult;
 }
 
@@ -859,11 +859,19 @@ pub mod GameLedger {
             self.registrations.entry((key, owner)).read()
         }
 
-        fn get_registered_player(self: @ContractState, key: SlotKey, index: u64) -> ContractAddress {
+        fn get_registrations(
+            self: @ContractState, key: SlotKey, from: u64, limit: u32,
+        ) -> Array<(ContractAddress, u64)> {
             let slot = self.slots.entry(key).read();
-            assert!(slot.exists && index < slot.registered_count, "Ledger: registration index out of bounds");
-            let wallet = self.registered_owners.entry((key, index)).read();
-            wallet
+            assert!(slot.exists && from <= slot.registered_count, "Ledger: registration index out of bounds");
+            assert!(limit > 0 && limit <= 100, "Ledger: invalid registration page size");
+            let end = from + core::cmp::min(limit.into(), slot.registered_count - from);
+            let mut page = array![];
+            for index in from..end {
+                let wallet = self.registered_owners.entry((key, index)).read();
+                page.append((wallet, self.registrations.entry((key, wallet)).read().registered_at));
+            }
+            page
         }
 
         fn get_player_result(self: @ContractState, key: GameKey, owner: ContractAddress) -> PlayerResult {
@@ -977,7 +985,14 @@ pub mod GameLedger {
                     0
                 };
             let registration = Registration {
-                registered: true, sword, shield, sword_credit, shield_credit, paid: payment, ..Default::default(),
+                registered: true,
+                sword,
+                shield,
+                sword_credit,
+                shield_credit,
+                paid: payment,
+                registered_at: starknet::get_block_timestamp(),
+                ..Default::default(),
             };
             self.record_registration(key, owner, registration, payment);
             payment

@@ -33,8 +33,8 @@ it("reads a slot and a registration in the interface's field order", () => {
   });
   expect(decodeLedgerSlot(["0", "0", "0", "0", "0", "0", "0", "0", "0"]).exists).toBe(false);
   expect(() => decodeLedgerSlot(["3", "1", "9"])).toThrow("invalid_ledger_slot");
-  // Registration: registered, sword, shield, sword credit, shield credit, paid (2), refundable, game id.
-  expect(decodeRegistration(["1", "1", "0", "1", "0", String(500n * WEI), "0", "1", "7"])).toEqual({
+  // Registration: registered, sword, shield, sword credit, shield credit, paid (2), refundable, game id, registration time.
+  expect(decodeRegistration(["1", "1", "0", "1", "0", String(500n * WEI), "0", "1", "7", "90"])).toEqual({
     registered: true,
     sword: true,
     shield: false,
@@ -43,6 +43,7 @@ it("reads a slot and a registration in the interface's field order", () => {
     paid: 500n * WEI,
     refundable: true,
     gameId: 7,
+    registeredAt: 90,
   });
   expect(() => decodeRegistration(["1", "1", "0"])).toThrow("invalid_ledger_registration");
   expect(decodeCredits(["2", "0"])).toEqual({ swords: 2, shields: 0 });

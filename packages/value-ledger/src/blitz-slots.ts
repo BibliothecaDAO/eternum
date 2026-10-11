@@ -1,5 +1,11 @@
-import { hash, num, type RpcProvider, type EmittedEvent } from "starknet";
-import { decodeLedgerSlot, decodeRegistration, type LedgerSlot, readConfirmedLedgerHead } from "./codecs";
+import type { RpcProvider } from "starknet";
+import {
+  decodeLedgerSlot,
+  decodeRegistration,
+  ledgerInteger,
+  type LedgerSlot,
+  readConfirmedLedgerHead,
+} from "./codecs";
 
 /** Registration freezes before the common game clock starts, leaving time to create and seat every group. */
 export const BLITZ_SLOT_PREPARATION_SECONDS = 300;
@@ -54,7 +60,7 @@ export async function readLedgerRegistration(
   );
 }
 
-/** One bounded page, ordered by the ledger index, with link cutoffs from confirmed registration blocks. */
+/** One bounded page, ordered by the ledger index, with the stored block timestamp as each wallet's link cutoff. */
 export async function readRegistrationPage(
   provider: RpcProvider,
   address: string,
@@ -76,102 +82,39 @@ export async function readRegistrationPage(
   };
   if (head.time < slot.close || from === slot.registeredCount) return { ...base, registrations: [], next: null };
   const end = Math.min(from + 100, slot.registeredCount);
-  const wallets = await readRegisteredWallets(provider, address, query, head.number, from, end);
-  const registrations = await readRegistrationTimes(provider, address, query, head.number, slot.close, wallets);
+  const registrations = await readStoredRegistrations(provider, address, query, head.number, slot.close, from, end);
   if (BigInt((await readConfirmedLedgerHead(provider, head.number)).hash) !== BigInt(head.hash))
     throw new Error("registration_head_changed");
   return { ...base, registrations, next: end < slot.registeredCount ? end : null };
 }
 
-const readRegisteredWallets = async (
-  provider: RpcProvider,
-  address: string,
-  key: LedgerSlotKey,
-  head: number,
-  from: number,
-  end: number,
-) => {
-  const wallets = await Promise.all(
-    Array.from({ length: end - from }, async (_, offset) => {
-      const fields = await provider.callContract(
-        {
-          contractAddress: address,
-          entrypoint: "get_registered_player",
-          calldata: [key.chainId, String(key.slotId), String(from + offset)],
-        },
-        head,
-      );
-      if (fields.length !== 1 || BigInt(fields[0]!) <= 0n) throw new Error("invalid_registered_wallet");
-      return fields[0]!;
-    }),
-  );
-  if (new Set(wallets.map((wallet) => BigInt(wallet).toString())).size !== wallets.length)
-    throw new Error("duplicate_registered_wallet");
-  return wallets;
-};
-
-const readRegistrationTimes = async (
+const readStoredRegistrations = async (
   provider: RpcProvider,
   address: string,
   key: LedgerSlotKey,
   head: number,
   close: number,
-  wallets: string[],
-) => {
-  const selector = hash.getSelectorFromName("Registered");
-  const timestamps = new Map<string, number>();
-  const blocks = new Map<number, Awaited<ReturnType<typeof readConfirmedLedgerHead>>>();
-  let token: string | undefined;
-  const seen = new Set<string>();
-  do {
-    const page = await provider.getEvents({
-      address,
-      from_block: { block_number: 0 },
-      to_block: { block_number: head },
-      keys: [[selector], [key.chainId], [String(key.slotId)], wallets].map((keys) => keys.map(num.toHex)),
-      chunk_size: 100,
-      ...(token ? { continuation_token: token } : {}),
-    });
-    for (const event of page.events) {
-      if (!matchesRegistration(event, address, key, selector, head)) throw new Error("invalid_registration_event");
-      const wallet = BigInt(event.keys[3]!).toString();
-      if (timestamps.has(wallet)) throw new Error("duplicate_registration_event");
-      let block = blocks.get(event.block_number);
-      if (!block) {
-        block = await readConfirmedLedgerHead(provider, event.block_number);
-        blocks.set(event.block_number, block);
-      }
-      if (BigInt(block.hash) !== BigInt(event.block_hash) || block.time >= close)
-        throw new Error("registration_block_differs");
-      timestamps.set(wallet, block.time);
-    }
-    token = page.continuation_token;
-    if (token && seen.has(token)) throw new Error("registration_page_cycle");
-    if (token) seen.add(token);
-  } while (token);
-  if (timestamps.size !== wallets.length) throw new Error("registration_history_incomplete");
-  return wallets.map((wallet) => {
-    const registeredAt = timestamps.get(BigInt(wallet).toString());
-    if (registeredAt === undefined) throw new Error("registration_history_incomplete");
+  from: number,
+  end: number,
+): Promise<SlotRegistration[]> => {
+  const fields = await provider.callContract(
+    {
+      contractAddress: address,
+      entrypoint: "get_registrations",
+      calldata: [key.chainId, String(key.slotId), String(from), String(end - from)],
+    },
+    head,
+  );
+  const count = ledgerInteger(fields[0]!);
+  if (count !== end - from || fields.length !== 1 + count * 2) throw new Error("invalid_registration_page");
+  const registrations = Array.from({ length: count }, (_, index) => {
+    const wallet = fields[1 + index * 2]!;
+    const registeredAt = ledgerInteger(fields[2 + index * 2]!);
+    if (BigInt(wallet) <= 0n || BigInt(wallet) >= 2n ** 251n || registeredAt >= close)
+      throw new Error("invalid_registration_page");
     return { wallet, registeredAt };
   });
+  if (new Set(registrations.map(({ wallet }) => BigInt(wallet).toString())).size !== count)
+    throw new Error("duplicate_registered_wallet");
+  return registrations;
 };
-const matchesRegistration = (
-  event: EmittedEvent,
-  address: string,
-  key: LedgerSlotKey,
-  selector: string,
-  head: number,
-): event is EmittedEvent & { block_number: number; block_hash: string } =>
-  event.keys.length === 4 &&
-  event.data.length === 0 &&
-  typeof event.block_number === "number" &&
-  Number.isSafeInteger(event.block_number) &&
-  event.block_number >= 0 &&
-  event.block_number <= head &&
-  typeof event.block_hash === "string" &&
-  event.block_hash.length > 0 &&
-  BigInt(event.from_address) === BigInt(address) &&
-  BigInt(event.keys[0]!) === BigInt(selector) &&
-  BigInt(event.keys[1]!) === BigInt(key.chainId) &&
-  BigInt(event.keys[2]!) === BigInt(key.slotId);
