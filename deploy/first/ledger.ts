@@ -76,6 +76,7 @@ export async function deployAsset(
   plan: AssetPlan,
   artifacts: ReturnType<typeof loadArtifact>,
   store: PrivateStore,
+  output: (line: string) => void,
 ) {
   const classHash = hash.computeSierraContractClassHash(artifacts.contract);
   const salt = fixedSalt(environment, account.address, plan.name);
@@ -95,7 +96,7 @@ export async function deployAsset(
   } catch (error) {
     if (!isMissing(error, 28)) throw error;
     const declared = await account.declareIfNot(artifacts);
-    if (declared.transaction_hash) await confirm(account, declared.transaction_hash);
+    if (declared.transaction_hash) await confirm(account, declared.transaction_hash, output);
   }
   const deployed = await account.deployContract({
     classHash,
@@ -103,7 +104,7 @@ export async function deployAsset(
     salt,
     unique: false,
   });
-  await confirm(account, deployed.transaction_hash);
+  await confirm(account, deployed.transaction_hash, output);
   if (BigInt(deployed.address) !== BigInt(address)) throw new Error("Deployment address differs from fixed salt");
   return address;
 }
@@ -332,12 +333,14 @@ export async function configureLedger(
   pauser: string,
   input: Inputs,
   store: PrivateStore,
+  output: (line: string) => void,
   readPresence = setupPresenceReader(account),
 ) {
   const start = seconds(input.blitzStart);
   const end = seconds(input.blitzEnd);
   const season = await resolveBlitzSeason(account, assets.ledger, start, end);
   const desired = setupCalls(target, assets, pauser, start, end, season.id);
+  output("Reading collectible metadata on mainnet.");
   const present = await Promise.all(desired.map((operation) => readPresence(operation, season.head)));
   const missing = desired.filter((_, index) => !present[index]);
   if (!missing.length) return true;
@@ -349,6 +352,6 @@ export async function configureLedger(
     store.write("cold-setup.json", { account: input.admin, calls: missing });
     return false;
   }
-  await send(account, missing, store, season.id === 1 ? "setup" : `setup-${season.id}`);
+  await send(account, missing, store, season.id === 1 ? "setup" : `setup-${season.id}`, output);
   return true;
 }

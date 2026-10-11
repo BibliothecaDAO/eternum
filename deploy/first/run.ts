@@ -13,7 +13,7 @@ export interface Step {
 /** Observations are the checkpoints. A local completion flag never substitutes for a remote result. */
 export async function runSteps(steps: Step[], apply: boolean, output: (line: string) => void) {
   for (const step of steps) {
-    if (apply) output(`Checking ${step.name}.`);
+    output(`Checking ${step.name}.`);
     let before: Observation;
     try {
       before = await step.inspect();

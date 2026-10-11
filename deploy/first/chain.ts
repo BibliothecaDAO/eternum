@@ -38,7 +38,8 @@ export async function balance(provider: RpcProvider, token: string, address: str
   if (row.length !== 2) throw new Error("Invalid token balance");
   return BigInt(row[0]!) + (BigInt(row[1]!) << 128n);
 }
-export async function confirm(provider: RpcProvider, transactionHash: string) {
+export async function confirm(provider: RpcProvider, transactionHash: string, output: (line: string) => void) {
+  output("Waiting for transaction confirmation.");
   const receipt = await provider.waitForTransaction(transactionHash);
   if (!("execution_status" in receipt) || receipt.execution_status !== "SUCCEEDED")
     throw new Error("Transaction did not succeed");
@@ -52,7 +53,10 @@ async function savedReceipt(account: Account, transactionHash: string) {
     if (!timedOut && !isMissing(error, TRANSACTION_HASH_NOT_FOUND)) throw error;
     // After the bounded wait, only an explicit missing receipt permits a same-nonce retry.
     try {
-      return await account.getTransactionReceipt(transactionHash);
+      const receipt = await account.getTransactionReceipt(transactionHash);
+      if (!("finality_status" in receipt) || !["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(receipt.finality_status))
+        throw new Error("Saved transaction is still pending");
+      return receipt;
     } catch (readError) {
       if (!isMissing(readError, TRANSACTION_HASH_NOT_FOUND)) throw readError;
       return undefined;
@@ -60,11 +64,18 @@ async function savedReceipt(account: Account, transactionHash: string) {
   }
 }
 /** Saved state supplies a nonce and receipt identity, never executable calls. */
-export async function send(account: Account, calls: Call[], store: PrivateStore, name: string) {
+export async function send(
+  account: Account,
+  calls: Call[],
+  store: PrivateStore,
+  name: string,
+  output: (line: string) => void,
+) {
   const intentName = `transaction-${name}.json`;
   const previous = store.read<{ nonce: string; hash?: string }>(intentName);
   let nonce = previous?.nonce;
   if (previous?.hash) {
+    output("Waiting for transaction confirmation.");
     const receipt = await savedReceipt(account, previous.hash);
     if (receipt) {
       if (!("execution_status" in receipt)) throw new Error("Saved transaction is still pending");
@@ -81,7 +92,7 @@ export async function send(account: Account, calls: Call[], store: PrivateStore,
   const response = await account.execute(calls, { nonce: intent.nonce });
   intent.hash = response.transaction_hash;
   store.write(intentName, intent);
-  await confirm(account, intent.hash);
+  await confirm(account, intent.hash, output);
 }
 export async function prepareAccounts(
   provider: RpcProvider,
@@ -133,6 +144,7 @@ export async function prepareAccounts(
           ],
           store,
           `fund-${role}`,
+          output,
         );
     }
     const identity = accountIdentity(keys[role]);
@@ -141,7 +153,7 @@ export async function prepareAccounts(
       constructorCalldata: identity.calldata,
       addressSalt: identity.publicKey,
     });
-    await confirm(provider, response.transaction_hash);
+    await confirm(provider, response.transaction_hash, output);
   }
   return accounts;
 }

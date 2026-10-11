@@ -436,6 +436,7 @@ export function deliverySteps(context: Deployment): Step[] {
             ],
             context.store,
             "test-tokens",
+            context.output,
           );
         const calls = buildFrontierFundingCalls(context.assets!.ledger, context.assets!.lords, {
           shard: state.shard.chainId,
@@ -455,7 +456,7 @@ export function deliverySteps(context: Deployment): Step[] {
         }
         if ((await balance(account, context.assets!.lords, account.address)) < pool)
           throw new Error("Deployer token balance is below the deposit");
-        await send(account, calls, context.store, `frontier-${state.gameId}`);
+        await send(account, calls, context.store, `frontier-${state.gameId}`, context.output);
       },
     },
     {

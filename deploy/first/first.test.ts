@@ -124,7 +124,7 @@ test("dry run inspects every step, including unavailable ones, and never calls a
   await runSteps(steps, false, (line) => output.push(line));
   expect(inspect).toHaveBeenCalledTimes(2);
   expect(write).not.toHaveBeenCalled();
-  expect(output).toHaveLength(3);
+  expect(output).toHaveLength(6);
   expect(output.join("\n")).not.toContain("fake-secret");
 });
 
@@ -231,11 +231,11 @@ test("a lost invoke response retries the saved nonce and never fetches a new one
     waitForTransaction: async () => ({ execution_status: "SUCCEEDED" }),
   } as unknown as Account;
   const calls = [{ contractAddress: "0x1", entrypoint: "transfer", calldata: ["2", "30", "0"] }];
-  await expect(send(account, calls, store, "relay")).rejects.toThrow("reply lost");
-  await send(account, calls, store, "relay");
+  await expect(send(account, calls, store, "relay", () => {})).rejects.toThrow("reply lost");
+  await send(account, calls, store, "relay", () => {});
   expect(nonces).toEqual(["7", "7"]);
   expect(account.getNonce).toHaveBeenCalledTimes(1);
-  await send(account, [{ ...calls[0]!, calldata: ["2", "31", "0"] }], store, "relay");
+  await send(account, [{ ...calls[0]!, calldata: ["2", "31", "0"] }], store, "relay", () => {});
   expect(nonces).toEqual(["7", "7"]);
 });
 
@@ -292,11 +292,11 @@ test("fixed salt deploy resumes after a lost acknowledgement without declaring o
     declareIfNot: declare,
     deployContract: deploy,
   } as unknown as Account;
-  await expect(deployAsset(account, "dev", plan, artifact, store)).rejects.toThrow("reply lost");
-  expect(await deployAsset(account, "dev", plan, artifact, store)).toBe(address);
+  await expect(deployAsset(account, "dev", plan, artifact, store, () => {})).rejects.toThrow("reply lost");
+  expect(await deployAsset(account, "dev", plan, artifact, store, () => {})).toBe(address);
   expect(declare).not.toHaveBeenCalled();
   expect(deploy).toHaveBeenCalledTimes(1);
-  await expect(deployAsset(account, "dev", { ...plan, constructor: ["1"] }, artifact, store)).rejects.toThrow(
+  await expect(deployAsset(account, "dev", { ...plan, constructor: ["1"] }, artifact, store, () => {})).rejects.toThrow(
     "differs",
   );
 });

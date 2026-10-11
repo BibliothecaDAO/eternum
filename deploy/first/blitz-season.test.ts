@@ -86,6 +86,7 @@ test("a successful first setup cannot suppress opening season two", async () => 
     "0x33",
     { blitzStart: iso(desired.start), blitzEnd: iso(desired.end) } as Inputs,
     files as unknown as PrivateStore,
+    () => {},
     read,
   );
   expect(rpc.execute).toHaveBeenCalledWith(

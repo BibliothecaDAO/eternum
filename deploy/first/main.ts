@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import { join } from "node:path";
 import { existsSync } from "node:fs";
-import { Account, RpcProvider } from "starknet";
+import { Account, RpcProvider, logger } from "starknet";
 import { PrivateStore } from "./private-store";
 import { environments, root, validateInputs, ACCOUNT_CLASS, type Environment, type Inputs } from "./settings";
 import { accountIdentity, classAt, newKey, prepareAccounts, type Keys } from "./chain";
@@ -258,6 +258,7 @@ export function preparationSteps(context: Deployment): Step[] {
             plan,
             loadArtifact(join(context.store.directory, "artifacts"), plan),
             context.store,
+            context.output,
           );
         }
         const plan = assetPlans(
@@ -273,6 +274,7 @@ export function preparationSteps(context: Deployment): Step[] {
           plan,
           loadArtifact(join(context.store.directory, "artifacts"), plan),
           context.store,
+          context.output,
         );
         publishAssets(context.target, assets as Assets);
         context.assets = assets as Assets;
@@ -299,6 +301,7 @@ export function preparationSteps(context: Deployment): Step[] {
           seconds(context.inputs.blitzEnd),
           season.id,
         );
+        context.output("Reading collectible metadata on mainnet.");
         readSetup ??= setupPresenceReader(context.provider);
         const present = await Promise.all(calls.map((call) => readSetup!(call, season.head)));
         return {
@@ -314,6 +317,7 @@ export function preparationSteps(context: Deployment): Step[] {
           accountIdentity(context.keys!.monitor).address,
           context.inputs!,
           context.store,
+          context.output,
           readSetup,
         );
         if (!ready)
@@ -402,6 +406,7 @@ export function preparationSteps(context: Deployment): Step[] {
   ];
 }
 export async function main(args = process.argv.slice(2)) {
+  logger.setLogLevel("OFF");
   const [environment, directory, flag] = args;
   if (
     (environment !== "dev" && environment !== "production") ||

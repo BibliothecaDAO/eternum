@@ -80,6 +80,7 @@ test("apply starts every presence read together", async () => {
     "0x33",
     { blitzStart: "2027-01-01T00:00:00Z", blitzEnd: "2027-02-01T00:00:00Z" } as Inputs,
     {} as PrivateStore,
+    () => {},
     read,
   );
   await Bun.sleep(0);
