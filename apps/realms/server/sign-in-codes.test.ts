@@ -10,6 +10,6 @@ it("tells the recipient the code's ten-minute lifetime", async () => {
   expect(send).toHaveBeenCalledOnce();
   expect(JSON.parse(send.mock.calls[0]![1]!.body as string)).toMatchObject({
     to: ["player@realms.test"],
-    text: "Your 6-digit Realms sign-in code is 123456. It expires in 10 minutes. If you did not ask for it, you can ignore this email.",
+    text: "Your Realms sign-in code is 123456. It expires in 10 minutes. If you did not ask for it, you can ignore this email.",
   });
 });
