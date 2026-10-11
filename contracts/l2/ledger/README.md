@@ -5,7 +5,8 @@ reserve and season prizes. Slots use `{ shard: felt252, slot_id: u32 }`; results
 use the shard chain ID and confirmed transaction hash. The ledger has no deployed state to migrate. The live MMR token
 remains unchanged.
 
-Frontier is funded once and unlocks through the end of the current seeded game day, from that day's first second.
+Frontier is funded once, before its end, and unlocks through the end of the current seeded game day.
+Funding after the start immediately unlocks elapsed days and the current day; it never unlocks future days.
 `fund_frontier(shard, season_id, preset_id, start, seed, amount)` reads the same native preset's `day_unit_seconds` and
 `season_bags` as the shard. Start and seed come from the funded game's single launch record; there is no independent end
 argument. End derives as `start + season_bags * 20 * day_unit_seconds`. The shared calendar's five-day bags hold each
@@ -138,7 +139,7 @@ The owner supplies `SEPOLIA_RPC_URL`, `SEPOLIA_ACCOUNT_ADDRESS`, `SEPOLIA_ACCOUN
 `SEPOLIA_FRONTIER_SEASON_ID` (required, no default: the actual Frontier game id on that shard, a non-zero u32),
 `SEPOLIA_GAME_SEED` (the funded shard game seed), `SEPOLIA_SEASON_START`, `SEPOLIA_SEASON_END` (Unix seconds),
 `SEPOLIA_FRONTIER_POOL_WEI`, `SEPOLIA_CHEST_BAND_1_CID` through `SEPOLIA_CHEST_BAND_5_CID`, `SEPOLIA_COSMETIC_CID`.
-Choose a start far enough ahead to complete declarations and setup. Read the Frontier game id from its launch result or
+Funding must complete before the Frontier season ends. Read the Frontier game id from its launch result or
 Herald directory; the deployment check may already have consumed earlier ids. Funding and the `get_frontier`
 verification both use this exact id. `seasonId: 1` in the manifest identifies the separate Blitz season;
 `frontierSeasonId` records the funded shard game id.

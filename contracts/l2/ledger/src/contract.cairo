@@ -430,7 +430,7 @@ pub mod GameLedger {
                 Into::<u64, u128>::into(end) + preset.claim_window_seconds.into() <= 0xffffffffffffffff,
                 "Ledger: claim deadline exceeds u64",
             );
-            assert!(starknet::get_block_timestamp() <= start, "Ledger: season already started");
+            assert!(starknet::get_block_timestamp() < end, "Ledger: season ended");
             assert!(amount > 0 && amount <= 0xffffffffffffffffffffffffffffffff, "Ledger: invalid season funding");
             self
                 .frontier_days
