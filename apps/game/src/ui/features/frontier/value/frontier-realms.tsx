@@ -10,8 +10,8 @@ import { RealmsSheet } from "./realms-sheet";
 import { claimRealmLabor, type useRealmLabor } from "./use-realm-labor";
 
 /**
- * Realms over the game's facts: the known Realms' labor today, one Claim all (each ready Realm claimed in turn through
- * the relay), and Add a Realm, which is that Realm's first claim. Nothing shows before the facts are known.
+ * Realms over the game's facts: the known Realms' labor today, one Claim all (every ready Realm in one request to the
+ * relay), and Add a Realm, which is that Realm's first claim. Nothing shows before the facts are known.
  */
 export const FrontierRealms = ({
   realm,
@@ -33,7 +33,8 @@ export const FrontierRealms = ({
   const claimAll = async () => {
     setSending(true);
     try {
-      for (const row of labor.plan.rows) if (row.state === "ready") await claimRealmLabor(row.realm.realmId, realm);
+      const ready = labor.plan.rows.filter((row) => row.state === "ready").map((row) => row.realm.realmId);
+      await claimRealmLabor(ready, realm);
     } catch (error) {
       toast.error(extractReadableErrorMessage(error, "The labor could not be claimed."));
     } finally {
@@ -44,7 +45,7 @@ export const FrontierRealms = ({
   const add = async (realmId: number) => {
     setAdding(true);
     try {
-      await claimRealmLabor(realmId, realm);
+      await claimRealmLabor([realmId], realm);
     } catch {
       toast.error(REALM_NOT_CLAIMED);
     } finally {

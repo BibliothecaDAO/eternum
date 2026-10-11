@@ -84,16 +84,18 @@ const useKnownRealms = (realmIds: readonly number[]) =>
   }).flatMap(({ data }, index) => (data ? [{ realmId: realmIds[index], name: data.name, order: data.order }] : []));
 
 /**
- * POST /api/value/labor for one Realm: the relay checks the Realm sits in the account's wallet and has the shard grant
- * its labor to this realm, which then shows through the game's own facts.
+ * POST /api/value/labor for every Realm named, in one request: the relay checks each sits in the account's wallet and
+ * has the shard grant their labor to this realm in one call, which then shows through the game's own facts. The grant
+ * is whole: a Realm the relay or the shard refuses leaves none of them granted.
  */
-export const claimRealmLabor = async (realmId: number, home: NativeRows["Structure"]): Promise<void> => {
+export const claimRealmLabor = async (realmIds: readonly number[], home: NativeRows["Structure"]): Promise<void> => {
   const game = requireActiveGame();
+  const homeId = String(safeInteger(home.entity_id));
   const response = await fetchApi(`/api/value/labor?chainId=${game.chainId}`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ realm: { gameId: game.gameId, realmId, home: String(safeInteger(home.entity_id)) } }),
+    body: JSON.stringify({ realms: realmIds.map((realmId) => ({ gameId: game.gameId, realmId, home: homeId })) }),
   });
   if (!response.ok) throw new Error(`Labor answered ${response.status}`);
 };

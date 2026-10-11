@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-11",
+    title: "Realm labor in one claim",
+    description:
+      "Claim all on the Realms sheet now claims every ready Realm's labor in a single request, so several Realms take no longer than one.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-11",
     title: "One chest price all season",
     description:
       "A ruin chest pays its tier's shares at one LORDS price set for the season, so the Season page's common chest reads the same every day instead of following a daily price.",
