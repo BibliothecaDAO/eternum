@@ -21,6 +21,7 @@ STATIC = [
 ]
 AREAS = {
     "client": [
+        "contracts/l3/player-account/class-hash.json",
         ".github/workflows/test-client.yml",
         "apps/game/**",
         "apps/herald/src/**",
@@ -54,6 +55,7 @@ AREAS = {
         "contracts/utils/**"
     ],
     "services": [
+        "contracts/l3/player-account/class-hash.json",
         ".github/workflows/test-services.yml",
         "apps/launch-service/**",
         "apps/realms/**",

@@ -1,3 +1,4 @@
+import playerAccount from "../../../../contracts/l3/player-account/class-hash.json";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, useEffect } from "react";
 import { createRoot } from "react-dom/client";
@@ -8,7 +9,7 @@ vi.mock("@/runtime/world/shards", () => ({ requireOpenShard: async () => undefin
 // Staging's guardian and account class, and a Realms id whose account they place at `PLAYER`.
 const GUARDIAN = {
   publicKey: "0x20b94f1f60aabd0d7538bc5d78b95829603d1c969220385992772be5283ca76",
-  accountClassHash: "0x1ffd39db9ba75ad861fbf5bdaaabdf5b2198a20f2f69c901d4c9a75de7eca52",
+  accountClassHash: playerAccount.accountClassHash,
 };
 const REALMS_ID = "0x4dcca33a9dcd23f3d11f33c2082297968809f3600f2ea26493e52000233bac8";
 const PLAYER = "0x7135b0375449f4d4ba792fb0ed683f501002ec64aa8c742dc90071b5f014992";
