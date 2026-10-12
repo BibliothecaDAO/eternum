@@ -1,10 +1,11 @@
+import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { localSelfCheckRoutes } from "./self-check-routes";
 import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
 import { loadNativePresetConfiguration } from "../../../config/deployer/clean/registrar/native-preset";
-import { expect, test } from "bun:test";
+import { afterEach, expect, test } from "bun:test";
 import { shortString, type Account } from "starknet";
 import { encodeNativeCommand } from "@bibliothecadao/provider";
-import { getNeighborHexes, StructureType } from "@bibliothecadao/types";
+import { getNeighborHexes, StructureType, BiomeType, BiomeTypeToId, TroopType } from "@bibliothecadao/types";
 import { nativeTilePackingConstants } from "../../../contracts/l3/world-native/schema/client.gen";
 import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
 import type { NativeCommand } from "../../../contracts/l3/world-native/schema/commands.gen";
@@ -83,32 +84,85 @@ test("rollback evidence detects changes, creates and deletes while preserving fu
   expect(gameFacts(store, 7)).not.toBe(before);
 });
 
-test("exploration accepts a stamped discovery without assuming the army moved, then moves through revealed facts", async () => {
+afterEach(() => setBlockTimestampSource(null));
+
+function movementFixture(amount = 120, biome = BiomeType.DeepOcean, category: TroopType = TroopType.Paladin) {
   const bot = { address: "0x10" } as Account;
   const origin = { alt: false, col: 100, row: 100 };
   const neighbors = getNeighborHexes(origin.col, origin.row);
   const target = { ...neighbors[0]!, alt: false };
   const known = { ...neighbors[1]!, alt: false };
-  const terrain = BigInt(nativeTilePackingConstants.BIOME_SCALE);
+  const terrain = BigInt(nativeTilePackingConstants.BIOME_SCALE) * BigInt(BiomeTypeToId[biome]);
+  let timestamp = 600;
+  setBlockTimestampSource(() => timestamp);
+  const definition = buildNativePreset(
+    loadNativePresetConfiguration("madara.eternum", SELF_CHECK_PRESET_ID),
+    SELF_CHECK_PRESET_ID,
+  );
   const facts: Record<string, unknown[]> = {
     Structure: [{ owner: 16n, entity_id: 111n, base: { category: StructureType.Realm } }],
-    ExplorerTroops: [{ owner: 111n, explorer_id: 9007199254740993n, troops: { count: 10n } }],
+    SliceRules: [definition.rules],
+    ExplorerTroops: [
+      {
+        game_id: 7,
+        owner: 111n,
+        explorer_id: 9007199254740993n,
+        troops: {
+          count: 10n,
+          category,
+          tier: "T1",
+          stamina: { Inline: { amount: BigInt(amount), updated_tick: 10n } },
+          boosts: { incr_stamina_regen_percent_num: 0, incr_stamina_regen_tick_count: 0 },
+        },
+      },
+    ],
     TileOccupancy: [{ ...origin, entity_id: 9007199254740993n }],
     TileOpt: [
       { ...origin, data: terrain },
       { ...known, data: terrain },
     ],
   };
-  const store = { inGame: (model: string) => facts[model] ?? [] } as unknown as RouteCase["client"]["setup"]["store"];
+  const get = (model: string, key: Record<string, unknown>) =>
+    (facts[model] ?? []).find(
+      (row: any) => model !== "TileOpt" || (row.col === key.col && row.row === key.row && row.alt === key.alt),
+    );
+  const store = {
+    inGame: (model: string) => facts[model] ?? [],
+    get,
+    require: get,
+  } as unknown as RouteCase["client"]["setup"]["store"];
   const ownClient = { ...client(bot.address), setup: { store } } as RouteCase["client"];
   const plan = buildRoutePlan(bot, ownClient, { address: "0x20" } as Account, client("0x20"));
   const explore = plan.find((step) => step.route === "Explore")!;
-  expect(await explore.command()).toMatchObject({ kind: "Explore", value: { direction: target.direction } });
+  const move = plan.find((step) => step.route === "Move")!;
+  return {
+    plan,
+    explore,
+    move,
+    facts,
+    store,
+    terrain,
+    origin,
+    target,
+    known,
+    advance: () => {
+      timestamp += 60;
+    },
+    spendExplore: () => {
+      const army = (facts.ExplorerTroops![0] as any).troops;
+      army.stamina.Inline = { amount: 10n, updated_tick: 11n };
+    },
+  };
+}
+
+test("exploration accepts a stamped discovery without assuming the army moved, then moves through revealed facts", async () => {
+  const { explore, move, facts, store, terrain, target, known } = movementFixture();
+  const signal = new AbortController().signal;
+  expect(await explore.command(signal)).toMatchObject({ kind: "Explore", value: { direction: target.direction } });
   facts.TileOpt!.push({ ...target, data: terrain });
   facts.TileOccupancy!.push({ ...target, entity_id: 112n, is_structure: true });
   expect(() => explore.verify(store)).not.toThrow();
-  const move = plan.find((step) => step.route === "Move")!;
-  expect(await move.command()).toMatchObject({
+  expect(await move.command(signal)).toMatchObject({
     kind: "Move",
     value: { explorer_id: 9007199254740993n, directions: [known.direction] },
   });
@@ -189,4 +243,81 @@ test("Frontier deployment checks and normal games encode chest rules without a f
     shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
     claim_window_seconds: 604800,
   });
+});
+
+test("Explore waits at 20 stamina in the creation tick and proceeds when chain time advances", async () => {
+  const fixture = movementFixture(20);
+  const controller = new AbortController();
+  let sent = false;
+  const command = Promise.resolve(fixture.explore.command(controller.signal)).then((value) => {
+    sent = true;
+    return value;
+  });
+  await Bun.sleep(20);
+  expect(sent).toBe(false);
+  fixture.advance();
+  expect(await command).toMatchObject({ kind: "Explore" });
+});
+
+test.each([
+  [BiomeType.Ocean, 10],
+  [BiomeType.Beach, 20],
+  [BiomeType.Scorched, 30],
+  [BiomeType.Grassland, 10],
+  [BiomeType.TropicalRainForest, 30],
+] as const)("Move covers the selected %s cost of %d after Explore", async (biome, cost) => {
+  const fixture = movementFixture(20, biome);
+  const controller = new AbortController();
+  fixture.advance();
+  await fixture.explore.command(controller.signal);
+  fixture.spendExplore();
+  let sent = false;
+  const command = Promise.resolve(fixture.move.command(controller.signal)).then((value) => {
+    sent = true;
+    return value;
+  });
+  await Bun.sleep(20);
+  expect(sent).toBe(cost === 10);
+  if (cost > 10) fixture.advance();
+  expect(await command).toMatchObject({ kind: "Move", value: { directions: [fixture.known.direction] } });
+});
+
+test.each([TroopType.Knight, TroopType.Crossbowman])(
+  "non-Paladin %s pays neutral forest travel cost",
+  async (category) => {
+    const fixture = movementFixture(30, BiomeType.TropicalRainForest, category);
+    await fixture.explore.command(new AbortController().signal);
+    (fixture.facts.ExplorerTroops![0] as any).troops.stamina.Inline.amount = 20n;
+    expect(await fixture.move.command(new AbortController().signal)).toMatchObject({ kind: "Move" });
+  },
+);
+
+test("cancellation stops stamina polling without preparing a command", async () => {
+  const fixture = movementFixture(20);
+  const controller = new AbortController();
+  const command = fixture.explore.command(controller.signal);
+  controller.abort();
+  await expect(command).rejects.toThrow();
+});
+
+test("the route timeout cancels an army that never becomes ready", async () => {
+  const { plan, explore } = movementFixture(20);
+  let stopped: AbortSignal | undefined;
+  const command = explore.command;
+  explore.command = (signal) => {
+    stopped = signal;
+    return command(signal);
+  };
+  const result = await runSelfCheck(
+    {
+      createThrowawayGame: async () => ({
+        gameId: 7,
+        routes: [explore, ...plan.filter((step) => step !== explore)],
+        dispose() {},
+      }),
+    },
+    10,
+  );
+  expect(result).toMatchObject({ passed: false, firstFailedRoute: "Explore", completed: [] });
+  expect(stopped?.aborted).toBe(true);
 });

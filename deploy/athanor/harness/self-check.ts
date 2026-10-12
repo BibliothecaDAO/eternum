@@ -11,7 +11,7 @@ import { verifyRouteReceipt } from "./self-check-action";
 import deploymentFixture from "./self-check-fixture";
 
 export interface RouteCase {
-  command(): Promise<NativeCommand> | NativeCommand;
+  command(stopped: AbortSignal): Promise<NativeCommand> | NativeCommand;
   route: NativeCommand["kind"];
   account: Account;
   client: GameClient;
@@ -90,7 +90,7 @@ export async function runSelfCheck(port: DeploymentCheckPort, timeoutMs = 120_00
 }
 
 async function checkRoute(step: RouteCase, stopped: AbortSignal): Promise<void> {
-  const command = await step.command();
+  const command = await step.command(stopped);
   stopped.throwIfAborted();
   if (command.kind !== step.route) throw new Error("Fixture command differs from route");
   const provider = step.client.setup.network.provider;
