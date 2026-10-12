@@ -1,4 +1,4 @@
-import { enrolShardOperator, shardOperatorAddress, relayEnrolmentErrors } from "./shard-enrolment";
+import { enrolShardOperator, shardOperatorAddress } from "./shard-enrolment";
 import { decodeRelaySettings, ledgerAddress, type RelaySettings } from "./environment";
 import {
   serviceError,
@@ -33,7 +33,7 @@ import { presentsOperatorToken } from "@realms-world/identity";
 import { identityAdapter } from "./adapters";
 import { runRelay, grantDailyLabor } from "./relay";
 import { DurableRelayStore } from "./state";
-import { RelayFailure, relayOperation, type RelayPorts, type LaborClaim } from "./ports";
+import { RelayFailure, relayOperation, relayEnrolmentErrors, type RelayPorts, type LaborClaim } from "./ports";
 
 interface RelayEnv extends RelaySettings {
   IDENTITY_HTTP: Fetcher;

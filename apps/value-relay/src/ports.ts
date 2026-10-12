@@ -1,6 +1,5 @@
 import { Data, Effect } from "effect";
 import { serviceError } from "@realms-world/value-ledger";
-import { relayEnrolmentErrors } from "./shard-enrolment";
 import type { LedgerPayDecision } from "@realms-world/identity";
 
 export class RelayFailure extends Data.TaggedError("RelayFailure")<{ operation: string }> {}
@@ -180,3 +179,18 @@ export const relayOperation = <A>(operation: string, run: () => Promise<A>): Rel
         ? error
         : new RelayFailure({ operation: serviceError(error, relayEnrolmentErrors, operation) }),
   });
+
+export const relayEnrolmentErrors = [
+  "relay_target_differs",
+  "relay_chain_differs",
+  "relay_identity_unavailable",
+  "relay_identity_differs",
+  "relay_device_approval_refused",
+  "relay_account_differs",
+  "unlisted_shard",
+  "directory_shard_manifest_unavailable",
+  "directory_manifest_chain_differs",
+  "invalid_directory_shard_manifest",
+  "invalid_directory_shard_rpc",
+  "invalid_directory_shard_url",
+];
