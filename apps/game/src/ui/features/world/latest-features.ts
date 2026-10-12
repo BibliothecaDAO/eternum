@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-12",
+    title: "Your realm's real surroundings",
+    description:
+      "Fixed the realm view showing one ground everywhere in Frontier. Each side of the realm now shows the land of the tile beside it on the map, and it updates when a neighbouring tile is explored.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-12",
     title: "No stand-in picture for your realm",
     description:
       "Improved the Resume card, the doorway into a game and the day-done card: they no longer show a stock picture of a castle on grass as if it were your realm. The Resume card wears Frontier's painting and names your realm under its Order.",

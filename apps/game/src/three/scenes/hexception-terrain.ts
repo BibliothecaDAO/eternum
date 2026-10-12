@@ -4,11 +4,28 @@ import type { TerrainCellInput, TerrainPageRequest } from "@/three/terrain/terra
 import { resolveSettlementLandCell } from "@/three/terrain/terrain-settlement-ground";
 import { worldOrigin } from "@/three/world-origin";
 
+const axialColumn = (hex: { col: number; row: number }) => hex.col - Math.floor((hex.row + 1) / 2);
+
+/**
+ * The map hex a local-view hex shows: the one standing to the realm's map site as the local hex stands to the view's
+ * centre. A Frontier realm's local centre is a fixed reference off the map while its site moves each day, so a local
+ * hex's own coordinates name no tile; elsewhere the two centres are the same hex and this is the identity.
+ */
+export function resolveLocalHexOnMap(
+  localCenter: { col: number; row: number },
+  localHex: { col: number; row: number },
+  mapSite: { col: number; row: number },
+): { col: number; row: number } {
+  const row = mapSite.row + (localHex.row - localCenter.row);
+  const q = axialColumn(mapSite) + (axialColumn(localHex) - axialColumn(localCenter));
+  return { col: q + Math.floor((row + 1) / 2), row };
+}
+
 /** Tile the local view with the selected world hex and two complete neighboring rings. */
 export function getLocalTerrainRegions(worldCenter: { col: number; row: number }, regionRadius: number) {
-  const originQ = worldCenter.col - Math.floor((worldCenter.row + 1) / 2);
+  const originQ = axialColumn(worldCenter);
   return getLocalHexDisk(worldCenter, LOCAL_VIEW_REACH).map((targetHex) => {
-    const q = targetHex.col - Math.floor((targetHex.row + 1) / 2) - originQ;
+    const q = axialColumn(targetHex) - originQ;
     const r = targetHex.row - worldCenter.row;
     // Axial basis vectors pack radius-N disks without gaps or overlapping cells.
     const localQ = q * (2 * regionRadius + 1) + r * (regionRadius + 1);
