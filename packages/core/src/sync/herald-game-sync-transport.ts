@@ -213,6 +213,13 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     });
   }
 
+  private showsComplete(selection: ScopeSelection): boolean {
+    return (
+      this.completeActor !== undefined &&
+      sameSelection({ actor: this.completeActor, visit: this.completeVisit }, selection)
+    );
+  }
+
   private finishActorSnapshot(selection: ScopeSelection, applied: boolean | Promise<boolean> | undefined): void {
     const { actor, visit } = selection;
     const generation = ++this.actorSnapshotGeneration;
@@ -221,14 +228,11 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
       if (!current()) return;
       if (!sameSelection(selectionOf(this.options.url), selection)) return;
       if (applied !== true) return;
-      const finish = () => {
-        if (!current()) return;
-        this.completeActor = actor;
-        this.completeVisit = visit;
-      };
-      const written = this.publishSnapshotState(actor, visit);
-      if (written) void written.then(finish);
-      else finish();
+      // The scope's rows are in the store, so the selection is complete from here: a head arriving before the gate
+      // write lands must publish it complete, not shut the gate again until the next head.
+      this.completeActor = actor;
+      this.completeVisit = visit;
+      void this.publishSnapshotState();
     };
     if (typeof applied === "boolean" || applied === undefined) complete(applied);
     // A failed application leaves the scope incomplete; the stream's own failure handling reports it.
@@ -360,13 +364,16 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   }
 
   private acceptScope(message: Extract<HeraldMessage, { type: "scope" }>): void {
-    this.completeActor = undefined;
-    this.publishSnapshotState();
+    const selection = { actor: canonicalAddress(message.actor), visit: canonicalAddress(message.visit) };
+    // A new scope for the selection on screen (the player's own, after each move, build or deploy) replaces its rows in
+    // one write: the gate stays open and every fact shown stays known until then. Only another selection's scope
+    // shuts it.
+    if (!this.showsComplete(selection)) {
+      this.completeActor = undefined;
+      this.publishSnapshotState();
+    }
     const applied = this.handlers?.onScope(message.set.map(toFact), message.expedition);
-    this.finishActorSnapshot(
-      { actor: canonicalAddress(message.actor), visit: canonicalAddress(message.visit) },
-      applied,
-    );
+    this.finishActorSnapshot(selection, applied);
     this.epoch = message.epoch;
     this.seq = message.seq;
     this.acceptingSnapshotOverlay = true;

@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "Numbers that stay put",
+    description:
+      "Fixed the top bar and the army cards turning into dashes for a second or two after every move, build or deploy. What you hold stays on screen until the new amounts arrive.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
     title: "A refused build says why",
     description:
       "Fixed the build sheet in Frontier: it shows the realm's free population in its head, a building that cannot rise says what it needs in one line, and the gold button carries the fix, Build Hut or Explore for labor. A Workshop the realm could pay for is no longer refused.",
