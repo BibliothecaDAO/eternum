@@ -6,7 +6,7 @@ import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { type Reason, ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
-import { BUILD, BUILDING, freeOf, POPULATION } from "@/ui/design-system/kit/words";
+import { BUILD, BUILDING, freeOf, POPULATION, PRICE_UP } from "@/ui/design-system/kit/words";
 
 /**
  * One building on the build sheet: its icon and name, then its labor price (ember when short), a tick when the realm
@@ -16,7 +16,17 @@ export type BuildTile = {
   key: string;
   icon: IconCode;
   name: string;
-  foot: { kind: "price"; labor: number; short: boolean } | { kind: "built" } | { kind: "locked"; gate: Tier };
+  /** What the building does, in one line, on the card's tooltip. */
+  tip: string;
+  foot:
+    | {
+        kind: "price";
+        labor: number;
+        short: boolean;
+        /** Why the price is above its base, when it is. */ raised?: string;
+      }
+    | { kind: "built" }
+    | { kind: "locked"; gate: Tier };
 };
 
 /** What the chosen building gives, as chips: what it makes or houses, and the population it takes. */
@@ -30,8 +40,9 @@ export type BuildRefusal = {
 
 /**
  * The build sheet (wireframe 02): the realm's free population in its head, the grid of buildings, the chosen one's
- * gains, and Build carrying its price (the copy surcharge included). When the building cannot rise, one line says what
- * it needs against what there is, and the gold button carries the fix: the Hut that houses it, or the map that pays it.
+ * gains, and Build carrying its price (the copy surcharge included; an arrow marks a price that has risen). When the
+ * building cannot rise, one line says what it needs against what there is, and the gold button carries the fix: the Hut
+ * that houses it, the map that pays it, the Research that opens it.
  */
 export const BuildView = ({
   population,
@@ -77,8 +88,7 @@ export const BuildView = ({
         <Chip key={gain.label} icons={[gain.icon]} label={gain.label} value={gain.value} />
       ))}
     </div>
-    {/* A building already standing or still gated shows why on its tile; there is nothing to build. */}
-    {tiles[chosen]?.foot.kind !== "price" ? null : refusal ? (
+    {refusal ? (
       <>
         <ReasonPlate reason={refusal.reason} />
         {refusal.fix && (
@@ -104,6 +114,7 @@ const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boole
       type="button"
       aria-pressed={chosen}
       aria-label={tile.name}
+      data-tip={tile.tip}
       onClick={onChoose}
       className={cn(
         "frontier-card flex h-[86px] min-w-0 flex-col items-center justify-center gap-[3px] !rounded-xl",
@@ -134,6 +145,11 @@ const Foot = ({ foot }: { foot: BuildTile["foot"] }) => {
       <span className={cn("text-[14px] tabular-nums", foot.short ? "text-light-red" : "text-kit-cream")}>
         {formatExact(foot.labor)}
       </span>
+      {foot.raised && (
+        <span role="img" aria-label={PRICE_UP} data-tip={foot.raised} className="text-[13px] leading-none text-kit-hot">
+          ↑
+        </span>
+      )}
     </span>
   );
 };

@@ -7,11 +7,28 @@ import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getPlayerName } from "@/services/identity/player-profiles";
 import { requireActiveGameClient } from "@/sync/active-game-client";
-import { formatAmount } from "@/ui/design-system/kit/amount";
+import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import type { IconCode } from "@/ui/design-system/kit/kit-icon";
 import { PRICE_FACES, type PriceKind } from "@/ui/design-system/kit/price-chip";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
-import { BUILD, exploreFor, HUT, TIER_WORDS } from "@/ui/design-system/kit/words";
+import {
+  BARRACKS,
+  BUILD,
+  exploreFor,
+  HUT,
+  LABOR,
+  makesAnHour,
+  needsAt,
+  ONE_A_REALM,
+  POPULATION,
+  priceRaised,
+  RESEARCH,
+  startsNewArmies,
+  takesPopulation,
+  TIER_WORDS,
+  TROOPS,
+  WHEAT,
+} from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { knownBalance } from "@/ui/utils/utils";
 import { canIssueOrders } from "@/utils/can-issue-orders";
@@ -20,6 +37,7 @@ import {
   buildableRadius,
   configManager,
   getBalance,
+  getBuildingQuantity,
   getRealmInfo,
   resolveUseSimpleCost,
 } from "@bibliothecadao/eternum";
@@ -77,10 +95,13 @@ export const useOpenPlot = (realm: NativeRows["Structure"] | null): HexPosition 
 export const BuildSheet = ({
   realm,
   plot,
+  onResearch,
   onClose,
 }: {
   realm: NativeRows["Structure"];
   plot: HexPosition;
+  /** Opens Research, where the Barracks' tier that gates the training buildings is raised. */
+  onResearch?: () => void;
   onClose: () => void;
 }) => {
   const { setup } = useGame();
@@ -130,7 +151,15 @@ export const BuildSheet = ({
     return balance === undefined ? undefined : Math.floor(balance);
   };
   const population = realmPopulation(realmInfo);
+  const choose = (category: BuildingType) =>
+    setChosen(options.findIndex((candidate) => candidate.category === category));
+  const priceOf = (category: BuildingType) =>
+    options
+      .find((candidate) => candidate.category === category)!
+      .cost.map(({ resource, amount }) => ({ of: priceKind(resource), amount }));
   const refusal = (): BuildRefusal | undefined => {
+    if (option.standing === "built") return { reason: { kind: "failed", line: ONE_A_REALM } };
+    if (option.standing !== "open") return gateRefusal(option.standing.gate);
     const shortCost = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
     if (shortCost) {
       const have = held(shortCost.resource);
@@ -167,7 +196,6 @@ export const BuildSheet = ({
     if (verdict.canSubmit) return undefined;
     if (verdict.code !== "insufficient_population" && verdict.code !== "insufficient_capacity")
       return { reason: { kind: "failed", line: verdict.reason ?? "" } };
-    const hut = options.findIndex(({ category }) => category === BuildingType.WorkersHut);
     return {
       reason: {
         kind: "short",
@@ -178,10 +206,27 @@ export const BuildSheet = ({
       },
       fix: {
         word: `${BUILD} ${HUT}`,
-        prices: options[hut].cost.map(({ resource, amount }) => ({ of: priceKind(resource), amount })),
-        onFix: () => setChosen(hut),
+        prices: priceOf(BuildingType.WorkersHut),
+        onFix: () => choose(BuildingType.WorkersHut),
       },
     };
+  };
+  /**
+   * A training building waits for the Barracks row's tier (the contract's assert_board_category): Research raises it
+   * once a Barracks stands, and until one does the fix is to build it.
+   */
+  const gateRefusal = (gate: number): BuildRefusal => {
+    const reason = { kind: "failed", line: needsAt(BARRACKS, TIER_WORDS[gate]) } as const;
+    if (getBuildingQuantity(realmId, BuildingType.ResourceKnightT1, setup.store) === 0)
+      return {
+        reason,
+        fix: {
+          word: `${BUILD} ${BARRACKS}`,
+          prices: priceOf(BuildingType.ResourceKnightT1),
+          onFix: () => choose(BuildingType.ResourceKnightT1),
+        },
+      };
+    return { reason, fix: onResearch && { icon: "Rs", word: RESEARCH, onFix: onResearch } };
   };
   return (
     <BuildView
@@ -259,15 +304,68 @@ const buildTile = (option: BuildOption, labor: number | undefined): BuildTile =>
     key: String(option.category),
     icon,
     name: buildingName(option.category),
+    tip: buildingLine(option),
     foot:
       option.standing === "built"
         ? { kind: "built" }
         : option.standing === "open"
-          ? { kind: "price", labor: price, short: labor === undefined || labor < price }
+          ? {
+              kind: "price",
+              labor: price,
+              short: labor === undefined || labor < price,
+              raised: riseLine(option, price),
+            }
           : // The gate is a research tier above common; the kit counts tiers from common.
             { kind: "locked", gate: (option.standing.gate + 1) as Tier },
   };
 };
+
+const RESOURCE_WORDS: Partial<Record<number, string>> = {
+  [ResourcesIds.Knight]: TROOPS,
+  [ResourcesIds.KnightT2]: TROOPS,
+  [ResourcesIds.KnightT3]: TROOPS,
+  [ResourcesIds.Labor]: LABOR,
+  [ResourcesIds.Wheat]: WHEAT,
+};
+
+/** A resource a building makes, by its glossary word; one Frontier does not make is loud. */
+const wordOf = (resource: number): string => {
+  const word = RESOURCE_WORDS[resource];
+  if (!word) throw new Error(`No word for resource ${resource}`);
+  return word;
+};
+
+const times = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+
+/**
+ * What a building does, in one line from its real effect: "Farm: +302 wheat an hour, takes 1 population". A training
+ * building starts every new army at its type's tier in its attribute.
+ */
+const buildingLine = (option: BuildOption): string => {
+  const { effect } = option;
+  const does =
+    effect.kind === "produces"
+      ? makesAnHour(formatAmount(effect.perHour), wordOf(effect.resource))
+      : effect.kind === "trains"
+        ? startsNewArmies(effect.attribute, TIER_WORDS[option.tier - 1])
+        : `+${formatAmount(effect.amount)} ${POPULATION}`;
+  const takes = option.populationCost > 0 ? `, ${takesPopulation(formatAmount(option.populationCost))}` : "";
+  return `${buildingName(option.category)}: ${does}${takes}`;
+};
+
+/**
+ * Why a price is above its base, as the contract charges it: the copies standing multiply it. None when no copy
+ * stands yet.
+ */
+const riseLine = (option: BuildOption, price: number): string | undefined =>
+  option.rise.times > 1
+    ? priceRaised(
+        formatExact(price / option.rise.times),
+        LABOR,
+        times.format(option.rise.times),
+        formatAmount(option.rise.standing),
+      )
+    : undefined;
 
 /**
  * The chosen building's gains: what it makes an hour, the population room it adds or the tier a training building

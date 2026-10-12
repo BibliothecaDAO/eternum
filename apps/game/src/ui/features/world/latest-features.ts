@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "The build menu explains itself",
+    description:
+      "Improved the Frontier build menu: each building says what it does on its tooltip, a locked training building says what opens it with Research on the button, and a price that has risen carries an arrow that gives the rule.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
     title: "Numbers that stay put",
     description:
       "Fixed the top bar and the army cards turning into dashes for a second or two after every move, build or deploy. What you hold stays on screen until the new amounts arrive.",

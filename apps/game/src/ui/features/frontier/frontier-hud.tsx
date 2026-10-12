@@ -153,7 +153,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
         chat={desktop && chatDocked && chatPage}
       >
         <FrontierSurfaces realm={realm} />
-        <FrontierSelectionSheet rules={rules} realm={realm} />
+        <FrontierSelectionSheet rules={rules} realm={realm} onResearch={() => setSurface("research")} />
         {surface === "menu" && (
           <HudMenu realm={realm} laborWaiting={(realmLabor?.plan.total ?? 0) > 0} onOpen={setSurface} onClose={close} />
         )}

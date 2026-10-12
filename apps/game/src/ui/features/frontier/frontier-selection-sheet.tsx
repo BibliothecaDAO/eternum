@@ -18,9 +18,12 @@ import { CastleUpgrade, useKeepSelected } from "./upgrade/castle-upgrade";
 export const FrontierSelectionSheet = ({
   rules,
   realm,
+  onResearch,
 }: {
   rules: ExpeditionRules;
   realm: NativeRows["Structure"] | null;
+  /** Opens Research, for a card whose next step is there. */
+  onResearch: () => void;
 }) => {
   const openPlot = useOpenPlot(realm);
   const site = useSelectedSite();
@@ -34,7 +37,7 @@ export const FrontierSelectionSheet = ({
     setSelectedHex(null);
     setSelectedBuildingHex(null);
   };
-  if (realm && openPlot) return <BuildSheet realm={realm} plot={openPlot} onClose={close} />;
+  if (realm && openPlot) return <BuildSheet realm={realm} plot={openPlot} onResearch={onResearch} onClose={close} />;
   if (site) return <TileCard selected={site} onClose={close} />;
   if (mapSite) return <MapSiteCard selected={mapSite} onClose={close} />;
   if (tileObject?.kind === "spire") return <SpireCard onClose={close} />;

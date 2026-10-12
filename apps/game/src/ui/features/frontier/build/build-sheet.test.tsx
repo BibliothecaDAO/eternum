@@ -88,6 +88,13 @@ describe("the build sheet", () => {
       }),
     ] as never);
 
+  /** The board's packed building counts with `count` of one category standing (eight bits a category). */
+  const countsWith = (category: BuildingType, count: number) => {
+    const packed = BigInt(count) << BigInt((category - 1) * 8);
+    const word = (index: number) => String((packed >> BigInt(128 * index)) & ((1n << 128n) - 1n));
+    return { packed_counts_1: word(0), packed_counts_2: word(1), packed_counts_3: word(2) };
+  };
+
   const open = (store: ReturnType<typeof realmBoard>["store"], realm: ReturnType<typeof realmBoard>["realm"]) => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const host = document.createElement("div");
@@ -153,6 +160,79 @@ describe("the build sheet", () => {
     // A Hut takes no population: it is the fix, and Build stands under it.
     expect(sheet.host.querySelector('[role="status"]')).toBeNull();
     sheet.close();
+  });
+
+  it("says on each card what the building does, and marks a risen price with the rule that raised it", () => {
+    const { store, realm } = realmBoard();
+    const sheet = open(store, realm);
+    const farm = configManager.getBuildingCategoryConfig(BuildingType.ResourceWheat).population_cost;
+    expect(sheet.card("Farm").getAttribute("data-tip")).toMatch(
+      new RegExp(`^Farm: \\+[\\d,.K]+ wheat an hour, takes ${farm} population$`),
+    );
+    expect(sheet.card("Hut").getAttribute("data-tip")).toMatch(/^Hut: \+\d+ population$/);
+    expect(sheet.card("War hall").getAttribute("data-tip")).toMatch(
+      /^War hall: new armies start with Battle at Common(, takes \d+ population)?$/,
+    );
+    // No Farm stands on the board yet (the fixture's wheat comes with the realm): its price is its base.
+    expect(sheet.card("Farm").querySelector('[aria-label="price raised"]')).toBeNull();
+    const base = sheet.card("Farm").textContent!.replace("Farm", "");
+    sheet.close();
+
+    store.applyFacts([
+      fact("0x72", "StructureBuildings", {
+        game_id: 1,
+        entity_id: 7,
+        ...countsWith(BuildingType.ResourceWheat, 2),
+        population: { current: 2, max: 6 },
+      }),
+    ] as never);
+    const risen = open(store, realm);
+    const arrow = risen.card("Farm").querySelector('[aria-label="price raised"]')!;
+    const rise = 1 + 4 * (configManager.getBuildingBaseCostPercentIncrease() / 10_000);
+    expect(arrow.getAttribute("data-tip")).toBe(`Base ${base} labor, ×${rise} with 2 standing`);
+    risen.close();
+  });
+
+  it("says what opens a locked training building, with the way there on the gold button", () => {
+    const { store, realm } = realmBoard();
+    const onResearch = vi.fn();
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    const render = () =>
+      act(() =>
+        root.render(
+          <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
+            <BuildSheet realm={realm} plot={{ col: 11, row: 10 }} onResearch={onResearch} onClose={() => undefined} />
+          </GameProvider>,
+        ),
+      );
+    const card = (name: string) => host.querySelector<HTMLButtonElement>(`[aria-label="${name}"]`)!;
+    const gold = () => [...host.querySelectorAll("button")].at(-1)!;
+    render();
+    act(() => card("War hall").click());
+    // The fixture's board gates training at the Barracks row's third tier, Rare; no Barracks stands yet.
+    expect(host.querySelector('[role="status"]')!.textContent).toBe("Needs Barracks at Rare");
+    expect(gold().textContent).toMatch(/^Build Barracks/);
+    act(() => gold().click());
+    expect(card("Barracks").getAttribute("aria-pressed")).toBe("true");
+
+    store.applyFacts([
+      fact("0x72", "StructureBuildings", {
+        game_id: 1,
+        entity_id: 7,
+        ...countsWith(BuildingType.ResourceKnightT1, 1),
+        population: { current: 3, max: 6 },
+      }),
+    ] as never);
+    render();
+    act(() => card("War hall").click());
+    expect(gold().textContent).toBe("Research");
+    act(() => gold().click());
+    expect(onResearch).toHaveBeenCalledOnce();
+    act(() => root.unmount());
+    host.remove();
   });
 
   it("says how much labor a building needs against what is held, and offers the map only where a reveal pays labor", () => {

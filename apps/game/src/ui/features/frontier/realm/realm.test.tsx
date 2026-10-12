@@ -33,10 +33,16 @@ describe("the build sheet", () => {
         <BuildView
           population={{ free: 2, total: 6 }}
           tiles={[
-            { key: "farm", icon: "Fm", name: "Farm", foot: { kind: "price", labor: 6_800, short: false } },
-            { key: "workshop", icon: "Wk", name: "Workshop", foot: { kind: "price", labor: 10_000, short: true } },
-            { key: "war", icon: "Wa", name: "War hall", foot: { kind: "built" } },
-            { key: "lodge", icon: "Ld", name: "Scouts' lodge", foot: { kind: "locked", gate: 3 } },
+            { key: "farm", icon: "Fm", name: "Farm", tip: "", foot: { kind: "price", labor: 6_800, short: false } },
+            {
+              key: "workshop",
+              icon: "Wk",
+              name: "Workshop",
+              tip: "",
+              foot: { kind: "price", labor: 10_000, short: true },
+            },
+            { key: "war", icon: "Wa", name: "War hall", tip: "", foot: { kind: "built" } },
+            { key: "lodge", icon: "Ld", name: "Scouts' lodge", tip: "", foot: { kind: "locked", gate: 3 } },
           ]}
           chosen={0}
           onChoose={onChoose}
@@ -72,7 +78,9 @@ describe("the build sheet", () => {
       root.render(
         <BuildView
           population={{ free: 2, total: 6 }}
-          tiles={[{ key: "farm", icon: "Fm", name: "Farm", foot: { kind: "price", labor: 15_000, short: true } }]}
+          tiles={[
+            { key: "farm", icon: "Fm", name: "Farm", tip: "", foot: { kind: "price", labor: 15_000, short: true } },
+          ]}
           chosen={0}
           onChoose={() => {}}
           gains={[]}

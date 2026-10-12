@@ -28,7 +28,7 @@ const sheetFor = (occupierType: number | null) => {
   tiles.current = occupierType === null ? [] : [{ occupierType, hexCoords: { col: 4, row: 5, alt: false } }];
   const host = document.createElement("div");
   const root = createRoot(host);
-  act(() => root.render(<FrontierSelectionSheet rules={RULES} realm={null} />));
+  act(() => root.render(<FrontierSelectionSheet rules={RULES} realm={null} onResearch={() => undefined} />));
   const sheet = host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null;
   act(() => root.unmount());
   return sheet;
@@ -113,6 +113,7 @@ it("offers depth entry from Frontier for an own army at the computed spire", asy
         <FrontierSelectionSheet
           rules={readExpeditionRules(store, 1)!}
           realm={store.require("Structure", { game_id: 1, entity_id: 7 })}
+          onResearch={() => undefined}
         />
       </GameProvider>,
     ),

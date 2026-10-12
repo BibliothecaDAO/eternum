@@ -233,24 +233,36 @@ const DAY_DONE = {
 
 /** A city's build sheet: eight buildings, the War hall and Hearth already standing, a fifth farm at 6,800 labor. */
 const BUILD_TILES: Parameters<typeof BuildView>[0]["tiles"] = [
-  { key: "farm", icon: "Fm", name: "Farm", foot: { kind: "price", labor: 6_800, short: false } },
-  { key: "workshop", icon: "Wk", name: "Workshop", foot: { kind: "price", labor: 10_000, short: true } },
-  { key: "barracks", icon: "Bs", name: "Barracks", foot: { kind: "price", labor: 6_800, short: false } },
-  { key: "hut", icon: "Ht", name: "Hut", foot: { kind: "price", labor: 5_100, short: false } },
-  { key: "war", icon: "Wa", name: TRAINING_BUILDINGS[0], foot: { kind: "built" } },
-  { key: "supply", icon: "Sy", name: TRAINING_BUILDINGS[1], foot: { kind: "price", labor: 3_000, short: false } },
-  { key: "lodge", icon: "Ld", name: TRAINING_BUILDINGS[2], foot: { kind: "price", labor: 3_000, short: false } },
-  { key: "hearth", icon: "He", name: TRAINING_BUILDINGS[3], foot: { kind: "built" } },
+  { key: "farm", icon: "Fm", name: "Farm", tip: "", foot: { kind: "price", labor: 6_800, short: false } },
+  { key: "workshop", icon: "Wk", name: "Workshop", tip: "", foot: { kind: "price", labor: 10_000, short: true } },
+  { key: "barracks", icon: "Bs", name: "Barracks", tip: "", foot: { kind: "price", labor: 6_800, short: false } },
+  { key: "hut", icon: "Ht", name: "Hut", tip: "", foot: { kind: "price", labor: 5_100, short: false } },
+  { key: "war", icon: "Wa", name: TRAINING_BUILDINGS[0], tip: "", foot: { kind: "built" } },
+  {
+    key: "supply",
+    icon: "Sy",
+    name: TRAINING_BUILDINGS[1],
+    tip: "",
+    foot: { kind: "price", labor: 3_000, short: false },
+  },
+  {
+    key: "lodge",
+    icon: "Ld",
+    name: TRAINING_BUILDINGS[2],
+    tip: "",
+    foot: { kind: "price", labor: 3_000, short: false },
+  },
+  { key: "hearth", icon: "He", name: TRAINING_BUILDINGS[3], tip: "", foot: { kind: "built" } },
 ];
 const EARLY_TILES: Parameters<typeof BuildView>[0]["tiles"] = [
-  { key: "farm", icon: "Fm", name: "Farm", foot: { kind: "price", labor: 800, short: false } },
-  { key: "workshop", icon: "Wk", name: "Workshop", foot: { kind: "price", labor: 2_000, short: false } },
-  { key: "barracks", icon: "Bs", name: "Barracks", foot: { kind: "price", labor: 800, short: false } },
-  { key: "hut", icon: "Ht", name: "Hut", foot: { kind: "price", labor: 300, short: false } },
-  { key: "war", icon: "Wa", name: TRAINING_BUILDINGS[0], foot: { kind: "locked", gate: 3 } },
-  { key: "supply", icon: "Sy", name: TRAINING_BUILDINGS[1], foot: { kind: "locked", gate: 3 } },
-  { key: "lodge", icon: "Ld", name: TRAINING_BUILDINGS[2], foot: { kind: "locked", gate: 3 } },
-  { key: "hearth", icon: "He", name: TRAINING_BUILDINGS[3], foot: { kind: "locked", gate: 3 } },
+  { key: "farm", icon: "Fm", name: "Farm", tip: "", foot: { kind: "price", labor: 800, short: false } },
+  { key: "workshop", icon: "Wk", name: "Workshop", tip: "", foot: { kind: "price", labor: 2_000, short: false } },
+  { key: "barracks", icon: "Bs", name: "Barracks", tip: "", foot: { kind: "price", labor: 800, short: false } },
+  { key: "hut", icon: "Ht", name: "Hut", tip: "", foot: { kind: "price", labor: 300, short: false } },
+  { key: "war", icon: "Wa", name: TRAINING_BUILDINGS[0], tip: "", foot: { kind: "locked", gate: 3 } },
+  { key: "supply", icon: "Sy", name: TRAINING_BUILDINGS[1], tip: "", foot: { kind: "locked", gate: 3 } },
+  { key: "lodge", icon: "Ld", name: TRAINING_BUILDINGS[2], tip: "", foot: { kind: "locked", gate: 3 } },
+  { key: "hearth", icon: "He", name: TRAINING_BUILDINGS[3], tip: "", foot: { kind: "locked", gate: 3 } },
 ];
 const CASTLE_SIDE = (level: number, limit: number) => ({
   level,

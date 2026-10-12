@@ -41,12 +41,26 @@ export const getBuildingCosts = (
   if (!costs) return undefined;
 
   const increase = configManager.getBuildingBaseCostPercentIncrease() / 10000;
-  const scale = countedBuildingsStanding(realmEntityId, buildingCategory, store);
-  const result = costs.map((cost) => ({
+  const standing = countedBuildingsStanding(realmEntityId, buildingCategory, store);
+  return costs.map((cost) => ({
     resource: cost.resource,
-    amount: cost.amount + scale * scale * cost.amount * increase,
+    amount: cost.amount + standing * standing * cost.amount * increase,
   }));
-  return result;
+};
+
+/**
+ * How a building's price has risen at a realm, as the contract charges it: the copies of its type that already stand
+ * (a board's own labor producer is not a Workshop) and what they multiply the base price by, one plus their square
+ * times the preset's increase.
+ */
+export const buildingCostRise = (
+  realmEntityId: ID,
+  buildingCategory: BuildingType,
+  store: NativeFactStore,
+): { standing: number; times: number } => {
+  const increase = configManager.getBuildingBaseCostPercentIncrease() / 10000;
+  const standing = countedBuildingsStanding(realmEntityId, buildingCategory, store);
+  return { standing, times: 1 + standing * standing * increase };
 };
 
 const countedBuildingsStanding = (realmEntityId: ID, buildingCategory: BuildingType, store: NativeFactStore) => {

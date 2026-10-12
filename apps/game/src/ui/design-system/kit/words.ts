@@ -69,6 +69,19 @@ export const needsFree = (need: string, noun: string, free: string) => `Needs ${
 export const needsOverLimit = (need: string, noun: string, limit: string) =>
   `Needs ${need} ${noun}, the store holds ${limit}`;
 export const inTime = (duration: string) => `in ${duration}`;
+/** A training building waits for the Barracks' tier: "Needs Barracks at Rare". */
+export const needsAt = (building: string, tier: string) => `Needs ${building} at ${tier}`;
+/** A training building already standing: a realm holds one of each. */
+export const ONE_A_REALM = "Built. A realm holds one.";
+/** The arrow beside a price that has risen (a screen reader's words). */
+export const PRICE_UP = "price raised";
+/** Why a price is above its base, on the arrow beside it: "Base 400 labor, ×5 with 2 standing". */
+export const priceRaised = (base: string, noun: string, times: string, standing: string) =>
+  `Base ${base} ${noun}, ×${times} with ${standing} standing`;
+/** What a building does, in one line on its card's tooltip. */
+export const makesAnHour = (amount: string, noun: string) => `+${amount} ${noun} ${AN_HOUR}`;
+export const takesPopulation = (amount: string) => `takes ${amount} ${POPULATION}`;
+export const startsNewArmies = (attribute: string, tier: string) => `new armies start with ${attribute} at ${tier}`;
 /** A store on its tooltip: what is free of it, "Population 2 free of 6". */
 export const freeOf = (noun: string, free: string, total: string) => `${noun} ${free} free of ${total}`;
 /** The fix for a short store that the map can fill: "Explore for labor". */

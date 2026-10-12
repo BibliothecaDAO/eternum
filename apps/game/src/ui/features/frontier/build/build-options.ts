@@ -1,4 +1,5 @@
 import {
+  buildingCostRise,
   getBuildingCosts,
   getBuildingQuantity,
   realmLearned,
@@ -50,6 +51,8 @@ export interface BuildOption {
   /** Its type's tier, 1 (common) to 5 (legendary): tiers apply to every building of the type. */
   tier: 1 | 2 | 3 | 4 | 5;
   cost: { resource: number; amount: number }[];
+  /** How the price has risen: the copies already standing and what they multiply the base price by (1 with none). */
+  rise: { standing: number; times: number };
   effect: BuildEffect;
   populationCost: number;
   /**
@@ -84,6 +87,7 @@ export const readBuildOptions = (
       category,
       tier: (row === undefined ? 1 : researchTier(learned, row) + 1) as BuildOption["tier"],
       cost,
+      rise: buildingCostRise(safeInteger(realm.entity_id), category, store),
       effect,
       populationCost: rule.population_cost,
       standing: !TRAINS[category]
