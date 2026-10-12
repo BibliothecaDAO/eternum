@@ -437,70 +437,109 @@ class WorkerLedgerOperatorTest(unittest.TestCase):
 
 
 class RestartUnfinishedTest(unittest.TestCase):
-    def check_restart(self, status, differences, *, complete=True, data=True):
-        temporary = self.enterContext(tempfile.TemporaryDirectory())
-        root = Path(temporary) / 'run'
-        root.mkdir()
-        if data:
-            (root / 'data').mkdir()
-            (root / 'data/private-marker').write_text('keep-or-delete')
-            (root / 'compose.yml').write_text('old stack')
-        inputs = {'chain_id': 'TEST', 'guardian_url': 'https://identity.test/api/guardian',
-                  'public_herald_url': 'https://herald.test'}
-        chain = '0x' + b'TEST'.hex()
-        rows = [] if status is None else [{'url': inputs['public_herald_url'], 'chainId': chain, 'status': status}]
-        request = self.enterContext(patch.object(deploy, 'service_json', return_value={'shards': rows}))
-        self.enterContext(patch.object(deploy, 'unfinished_differences', return_value=differences))
-        run = self.enterContext(patch.object(deploy.subprocess, 'run'))
-        stages = []
-        if status in ('active', 'draining', 'retired') and differences:
-            with self.assertRaisesRegex(deploy.DeploymentRefused, differences[0]):
-                deploy.restart_unfinished(root, inputs, release(), stages.append)
-            run.assert_not_called()
-            if data:
-                self.assertTrue((root / 'data/private-marker').exists())
-        else:
-            deploy.restart_unfinished(root, inputs, release(), stages.append)
-            if differences and data:
-                self.assertEqual(run.call_args.args[0][-2:], ['down', '--volumes'])
-                self.assertEqual(stages, ['restart pending shard'])
-                self.assertFalse((root / 'data').exists())
-                self.assertTrue(root.is_dir())
-            else:
-                run.assert_not_called()
-        request.assert_called_once_with('https://identity.test/api/directory/shards', authenticated=True)
-
-    def test_pending_class_difference_and_incomplete_initialization_start_over(self):
-        for difference in ('Games class differs', 'initialization is incomplete', 'guardian identity differs'):
-            with self.subTest(difference=difference):
-                self.check_restart('pending', [difference])
-
-    def test_never_registered_partial_stack_starts_over(self):
-        self.check_restart(None, ['initialization is incomplete'])
-
-    def test_active_draining_and_retired_state_is_never_removed(self):
-        for status in ('active', 'draining', 'retired'):
-            for data in (True, False):
-                with self.subTest(status=status, data=data):
-                    self.check_restart(status, ['initialization is incomplete'], data=data)
-
-    def test_matching_active_or_pending_shard_continues(self):
-        for status in ('active', 'pending'):
-            self.check_restart(status, [])
-
-    def test_a_fresh_directory_has_no_stack_to_remove(self):
-        self.check_restart(None, ['initialization is incomplete'], data=False)
-
-    def test_directory_failure_cannot_authorize_deletion(self):
-        with tempfile.TemporaryDirectory() as temporary, \
-                patch.object(deploy, 'service_json', side_effect=OSError('unavailable')), \
-                patch.object(deploy.subprocess, 'run') as run:
+    def probe(self, rows, *, recorded="0x54455354", differences=("initialization is incomplete",),
+              proof=False, empty=False, manifest="valid", error=None, refused=None):
+        with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            (root / 'data').mkdir()
-            with self.assertRaises(OSError):
-                deploy.restart_unfinished(root, {'guardian_url': 'https://identity.test/api/guardian'}, {}, lambda _: None)
-            run.assert_not_called()
-            self.assertTrue((root / 'data').exists())
+            if not empty:
+                data = root / "data"
+                data.mkdir()
+                (data / "marker").write_text("keep")
+                if manifest != "missing":
+                    content = json.dumps({"shard": {"chainId": recorded}}) if manifest == "valid" else "{"
+                    (data / "native-world.json").write_text(content)
+                if proof:
+                    (data / "self-check.json").write_text('{"passed":true}')
+            inputs = {"chain_id": "TEST", "guardian_url": "https://id.test/api/guardian",
+                      "public_herald_url": "https://herald.test"}
+            stages = []
+            with (
+                patch.object(deploy, "service_json", return_value=rows, side_effect=error) as request,
+                patch.object(deploy, "unfinished_differences", return_value=list(differences)),
+                patch.object(deploy.subprocess, "run") as run,
+            ):
+                if refused:
+                    with self.assertRaisesRegex(Exception, refused):
+                        deploy.restart_unfinished(root, inputs, release(), stages.append)
+                else:
+                    deploy.restart_unfinished(root, inputs, release(), stages.append)
+                deleted = stages == ["restart pending shard"]
+                if deleted:
+                    self.assertEqual(run.call_args.args[0][-2:], ["down", "--volumes"])
+                    self.assertFalse((root / "data").exists())
+                else:
+                    run.assert_not_called()
+                    if not empty:
+                        self.assertEqual((root / "data/marker").read_text(), "keep")
+                if request.called:
+                    request.assert_called_once_with("https://id.test/api/directory/shards", authenticated=True)
+                return deleted
+
+    def test_twelve_deletion_probes(self):
+        own = {"chainId": "0x54455354", "url": "https://herald.test", "status": "pending"}
+        cases = [
+            (1, [own], {}, True),
+            (2, [{**own, "status": "active"}], {"refused": "cannot be reinitialized"}, False),
+            (3, [{**own, "status": "retired"}], {"refused": "cannot be reinitialized"}, False),
+            (4, [{**own, "status": "draining"}], {"refused": "cannot be reinitialized"}, False),
+            (5, [], {"refused": "remove the run directory yourself"}, False),
+            (6, [], {"proof": True, "refused": "remove the run directory yourself"}, False),
+            (7, [own], {"recorded": "0x999", "proof": True, "refused": "chain 0x999, configured chain is 0x54455354"}, False),
+            (8, [own, {**own, "chainId": "0x999", "status": "retired"}],
+             {"recorded": "0x999", "proof": True, "refused": "chain 0x999"}, False),
+            (9, [], {"recorded": "0x999", "refused": "chain 0x999"}, False),
+            (10, [{**own, "url": "https://other.test"}], {"refused": "another Herald URL"}, False),
+            (11, [own], {"proof": True, "differences": ["Games class differs"]}, True),
+            (12, [{**own, "chainId": "0x999"}], {"refused": "another chain"}, False),
+        ]
+        for case, rows, options, deleted in cases:
+            with self.subTest(case=case):
+                self.assertEqual(self.probe({"shards": rows}, **options), deleted)
+
+    def test_duplicate_and_malformed_rows_never_delete(self):
+        own = {"chainId": "0x54455354", "url": "https://herald.test", "status": "pending"}
+        for answer, reason in (
+            ({"shards": [own, own]}, "Several directory rows"),
+            ({}, "malformed"), (None, "malformed"), ({"shards": None}, "malformed"),
+            ({"shards": [{}]}, "malformed"), ({"shards": [{**own, "status": "unknown"}]}, "malformed"),
+            ({"shards": [{**own, "chainId": "not-a-chain"}]}, "malformed"),
+            ({"shards": [own, {**own, "url": "", "chainId": "0x999"}]}, "malformed"),
+            ({"shards": [{**own, "url": "https://user:password@herald.test"}]}, "malformed"),
+        ):
+            with self.subTest(answer=answer):
+                self.assertFalse(self.probe(answer, refused=reason))
+
+    def test_missing_unreadable_identity_and_status_failure_never_delete(self):
+        for manifest in ("missing", "invalid"):
+            with self.subTest(manifest=manifest):
+                self.assertFalse(self.probe({"shards": []}, manifest=manifest, refused="no readable chain"))
+        self.assertFalse(self.probe(None, error=OSError("unreachable"), refused="unreachable"))
+
+    def test_compatible_unlisted_or_listed_shard_continues_in_place(self):
+        for status in (None, "pending", "active", "draining", "retired"):
+            rows = [] if status is None else [{"chainId": "0x54455354", "url": "https://herald.test", "status": status}]
+            with self.subTest(status=status):
+                self.assertFalse(self.probe({"shards": rows}, differences=[]))
+
+    def test_fresh_directory_has_nothing_to_delete(self):
+        self.assertFalse(self.probe({"shards": []}, empty=True))
+
+    def test_unreadable_native_manifest_never_reads_status_or_deletes(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "marker").touch()
+            with patch.object(Path, "read_text", side_effect=PermissionError()), patch.object(deploy, "service_json") as request:
+                with self.assertRaisesRegex(deploy.DeploymentRefused, "no readable chain"):
+                    deploy.restart_unfinished(root, {"chain_id": "TEST", "public_herald_url": "https://herald.test"}, {}, lambda _: None)
+            request.assert_not_called()
+            self.assertTrue((root / "marker").exists())
+
+    def test_wrong_directory_refuses_before_inputs_build_or_status_reads(self):
+        with patch.object(deploy, "load_inputs") as inputs, patch.object(deploy.shard, "build_images") as build:
+            with self.assertRaisesRegex(deploy.DeploymentRefused, "Run directory must be"):
+                deploy.main("staging", Path("/wrong"))
+            inputs.assert_not_called()
+            build.assert_not_called()
 
     def test_built_classes_guardian_and_saved_identity_are_compared_before_start(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -526,25 +565,3 @@ class RestartUnfinishedTest(unittest.TestCase):
                 (data / 'host-keys.json').unlink()
                 self.assertEqual(deploy.unfinished_differences(data, inputs, release()), ['initialization is incomplete'])
 
-    def test_fresh_replacement_can_follow_a_different_retired_chain(self):
-        with tempfile.TemporaryDirectory() as temporary, \
-                patch.object(deploy, 'service_json', return_value={'shards': [
-                    {'url': 'https://herald.test', 'chainId': '0x123', 'status': 'retired'}]}), \
-                patch.object(deploy.subprocess, 'run') as run:
-            deploy.restart_unfinished(Path(temporary), {
-                'chain_id': 'NEW', 'guardian_url': 'https://id.test/api/guardian',
-                'public_herald_url': 'https://herald.test'}, {}, lambda _: None)
-            run.assert_not_called()
-
-    def test_absent_directory_row_does_not_erase_a_previous_activation_proof(self):
-        with tempfile.TemporaryDirectory() as temporary, \
-                patch.object(deploy, 'service_json', return_value={'shards': []}), \
-                patch.object(deploy.subprocess, 'run') as run:
-            root = Path(temporary)
-            (root / 'data').mkdir()
-            (root / 'first-deployment-check.json').write_text('{"revision":"old"}')
-            with self.assertRaisesRegex(deploy.DeploymentRefused, 'proven shard'):
-                deploy.restart_unfinished(root, {
-                    'chain_id': 'TEST', 'guardian_url': 'https://id.test/api/guardian',
-                    'public_herald_url': 'https://herald.test'}, {}, lambda _: None)
-            run.assert_not_called()

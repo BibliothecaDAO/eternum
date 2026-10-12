@@ -13,6 +13,7 @@ from pathlib import Path
 import subprocess
 import sys
 import shutil
+from urllib.parse import urlsplit
 
 import shard
 from revision import deployment_revision
@@ -30,9 +31,8 @@ def ignore_stage(_stage):
 
 def main(environment, directory, report_stage=ignore_stage):
     report_stage("prepare")
+    target = deployment_target(environment, directory)
     inputs = load_inputs(environment)
-    targets = json.loads((shard.ROOT / "deploy/first/environments.json").read_text())
-    target = next(value for value in targets.values() if value["release"] == environment)
     deployment_revision(target["environment"])
     with shard.isolated_stack_lock(f"deploy {environment}"):
         directory.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -84,32 +84,88 @@ class DeploymentRefused(RuntimeError):
     pass
 
 
+def deployment_target(environment, directory):
+    targets = json.loads((shard.ROOT / "deploy/first/environments.json").read_text())
+    target = next(value for value in targets.values() if value["release"] == environment)
+    if directory.resolve() != Path(target["runDirectory"]).resolve():
+        raise DeploymentRefused(f"Run directory must be {target['runDirectory']}; data was not overwritten")
+    return target
+
+
+def directory_row_is_valid(row):
+    if not isinstance(row, dict):
+        return False
+    if row.get("status") not in ("pending", "active", "draining", "retired"):
+        return False
+    if not isinstance(row.get("url"), str):
+        return False
+    try:
+        url = urlsplit(row["url"])
+        if url.scheme != "https" or not url.hostname or url.username or url.password:
+            return False
+    except ValueError:
+        return False
+    return isinstance(row.get("chainId"), str) and re.fullmatch(r"0x[0-9a-fA-F]+", row["chainId"])
+
+
+def row_matches_identity(row, chain, url):
+    return same(row["chainId"], chain) or row["url"] == url
+
+
+def is_own_pending_row(row, chain, url):
+    return row["status"] == "pending" and same(row["chainId"], chain) and row["url"] == url
+
+
+def is_listed_row(row):
+    return row is not None and row["status"] != "pending"
+
+
+def recorded_chain(directory):
+    try:
+        manifest = json.loads((directory / "data/native-world.json").read_text())
+        chain = manifest["shard"]["chainId"]
+        if not isinstance(chain, str) or not re.fullmatch(r"0x[0-9a-fA-F]+", chain):
+            raise ValueError()
+        return chain
+    except (OSError, ValueError, KeyError, TypeError):
+        raise DeploymentRefused("Run directory has no readable chain identity; data was not overwritten") from None
+
+
 def restart_unfinished(directory, inputs, release, report_stage):
-    data = directory / "data"
+    chain = "0x" + inputs["chain_id"].encode("ascii").hex()
+    url = inputs["public_herald_url"]
+    has_files = directory.exists() and any(directory.iterdir())
+    if has_files:
+        recorded = recorded_chain(directory)
+        if not same(recorded, chain):
+            raise DeploymentRefused(f"Run directory records chain {recorded}, configured chain is {chain}; data was not overwritten")
     base = identity_service_base(inputs["guardian_url"])
     listing = service_json(base + "/directory/shards", authenticated=True)
-    manifest_path = data / "native-world.json"
-    manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
-    expected_chain = "0x" + inputs["chain_id"].encode("ascii").hex()
-    old_chain = manifest.get("shard", {}).get("chainId", expected_chain)
-    # Check both the recorded chain and this URL, including retired rows hidden from players.
-    rows = [row for row in listing["shards"] if row["url"] == inputs["public_herald_url"]
-            or same(row["chainId"], old_chain) or same(row["chainId"], expected_chain)]
-    if not data.exists() and not (directory / "compose.yml").exists():
-        if any(row["status"] in ("active", "draining") or
-               (row["status"] == "retired" and same(row["chainId"], expected_chain)) for row in rows):
-            raise DeploymentRefused("Existing listed shard cannot be reinitialized: initialization is incomplete")
+    if not isinstance(listing, dict) or not isinstance(listing.get("shards"), list):
+        raise DeploymentRefused("Directory status read is malformed; data was not overwritten")
+    if not all(directory_row_is_valid(row) for row in listing["shards"]):
+        raise DeploymentRefused("Directory status row is malformed; data was not overwritten")
+    rows = [row for row in listing["shards"] if row_matches_identity(row, chain, url)]
+    if len(rows) > 1:
+        raise DeploymentRefused("Several directory rows match this chain or Herald URL; data was not overwritten")
+    row = rows[0] if rows else None
+    if row is not None:
+        if not same(row["chainId"], chain):
+            raise DeploymentRefused(f"Herald URL {url} lists another chain {row['chainId']}; data was not overwritten")
+        if row["url"] != url:
+            raise DeploymentRefused(f"Chain {chain} is listed at another Herald URL {row['url']}; data was not overwritten")
+    if not has_files:
+        if is_listed_row(row):
+            raise DeploymentRefused("Listed shard has no local initialization; data was not overwritten")
         return
-    differences = unfinished_differences(data, inputs, release)
+    differences = unfinished_differences(directory / "data", inputs, release)
     if not differences:
         return
-    proof = data / "self-check.json"
-    checked = (directory / "first-deployment-check.json").exists() or (
-        proof.exists() and json.loads(proof.read_text()).get("passed"))
-    if (checked and not rows) or any(row["status"] != "pending" for row in rows):
-        raise DeploymentRefused("Existing listed or proven shard cannot be reinitialized: " + "; ".join(differences))
-    if rows and any(not same(row["chainId"], expected_chain) for row in rows):
-        raise DeploymentRefused("Pending directory identity differs; choose its original chain before retrying.")
+    if row is None:
+        raise DeploymentRefused("Unlisted shard cannot continue: " + "; ".join(differences) +
+                                "; remove the run directory yourself before retrying")
+    if not is_own_pending_row(row, chain, url):
+        raise DeploymentRefused("Listed shard cannot be reinitialized: " + "; ".join(differences))
     report_stage("restart pending shard")
     subprocess.run([*compose(directory), "down", "--volumes"], check=True, capture_output=True)
     shutil.rmtree(directory)

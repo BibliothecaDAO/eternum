@@ -44,10 +44,12 @@ identity or bound change. There is no VRF key setter: a leaked key retires the s
 
 Preparation records immutable identity before network work. An active, draining or retired shard is never removed or
 reinitialized; a class or identity difference refuses the update by name. The deployer reads recorded status through the
-operator-authenticated directory route before touching state. An unfinished pending shard with different classes or
-identity, or incomplete initialization, has its containers, volumes and data removed and starts fresh automatically. A
-directory read failure refuses cleanup. Matching initialized state continues through the existing self-check and role
-handoff. The initializer runs as HOST_UID, and private credentials remain owner-only with mode `0600`.
+operator-authenticated directory route before touching state. An incompatible unfinished shard is removed only when the
+authenticated directory lists exactly its recorded and configured chain at its configured Herald URL as pending and the
+run directory is the environment's own directory. Unlisted incompatible state refuses and requires manual removal; an
+unreadable local identity or directory read failure refuses cleanup. Matching initialized state continues through the
+existing self-check and role handoff. The initializer runs as HOST_UID, and private credentials remain owner-only with
+mode `0600`.
 
 ## Endpoints and readiness
 

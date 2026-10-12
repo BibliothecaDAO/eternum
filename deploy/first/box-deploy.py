@@ -54,6 +54,7 @@ def retire_previous(inputs, directory):
 
 
 def main(environment, directory, revision, report_stage):
+    deploy.deployment_target(environment, directory)
     report_stage("prepare")
     os.environ.update(operator_environment())
     inputs = deploy.load_inputs(environment)
