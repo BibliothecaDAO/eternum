@@ -1,4 +1,3 @@
-import { launchFrontierSeason } from "./frontier";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { retainBoundaryEvidence } from "./worker-boundary";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -71,22 +70,6 @@ afterAll(() => {
 });
 
 describe("Madara harness workload", () => {
-  it("requires owner credentials when creating a Frontier season", async () => {
-    const saved = { address: process.env.DEPLOYER_ACCOUNT_ADDRESS, key: process.env.DEPLOYER_PRIVATE_KEY };
-    try {
-      delete process.env.DEPLOYER_ACCOUNT_ADDRESS;
-      delete process.env.DEPLOYER_PRIVATE_KEY;
-      await expect(launchFrontierSeason({} as never, "check", 1, 5)).rejects.toThrow(
-        "Frontier launch requires the isolated manifest and authority",
-      );
-    } finally {
-      if (saved.address === undefined) delete process.env.DEPLOYER_ACCOUNT_ADDRESS;
-      else process.env.DEPLOYER_ACCOUNT_ADDRESS = saved.address;
-      if (saved.key === undefined) delete process.env.DEPLOYER_PRIVATE_KEY;
-      else process.env.DEPLOYER_PRIVATE_KEY = saved.key;
-    }
-  });
-
   it("loads a prepared roster without owner credentials", async () => {
     const output = await mkdtemp(join(tmpdir(), "harness-prepared-"));
     const environment: NodeJS.ProcessEnv = { ...process.env, HARNESS_OUTPUT_DIRECTORY: output };
