@@ -16,6 +16,7 @@ import io
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -156,6 +157,23 @@ def run_self_check(directory):
     return check
 
 
+class SelfCheckFailed(RuntimeError):
+    def __init__(self, check):
+        route = check.get("firstFailedRoute", "unknown_route")
+        failure = check.get("failure", {"category": "other"})
+        detail = failure.get("category")
+        if not re.fullmatch(r"[A-Za-z_]{1,64}", route) or detail not in ("timeout", "refused", "verify", "other"):
+            raise ValueError("Invalid self-check failure shape")
+        if detail == "refused":
+            reason, tx = failure.get("reason", ""), failure.get("transactionHash", "")
+            if set(failure) != {"category", "reason", "transactionHash"} or not re.fullmatch(r"[A-Za-z0-9 ,:._()/-]{1,256}", reason) or not re.fullmatch(r"0x[0-9a-fA-F]{1,64}", tx):
+                raise ValueError("Invalid self-check refusal shape")
+            detail += f": {reason} (transaction {tx})"
+        elif set(failure) != {"category"}:
+            raise ValueError("Invalid self-check failure shape")
+        super().__init__(f"self-check failed at {route}: {detail}; directory status unchanged")
+
+
 def verify_and_activate(config, directory, report_stage=ignore_stage):
     report_stage("self-check")
     if directory_status(config, "pending")["status"] != "pending":
@@ -173,8 +191,7 @@ def verify_and_activate(config, directory, report_stage=ignore_stage):
         check["checkedIdentity"] = identity
         shard.write_json(check_path, check)
     if not check.get("passed"):
-        route = check.get("firstFailedRoute", "unknown_route")
-        raise RuntimeError(f"self-check failed at {route}; directory status unchanged")
+        raise SelfCheckFailed(check)
     report_stage("activate")
     confirm_worker_ledger_operator(config, directory)
     confirm_worker_launcher(config, directory)

@@ -76,3 +76,29 @@ class DeploymentRefusalTest(unittest.TestCase):
         with patch.object(box_deploy.deploy.subprocess, "run", side_effect=compose), patch.object(box_deploy.deploy.subprocess, "check_output", return_value="0"), patch.object(box_deploy.deploy, "wait_for_identity", side_effect=lambda _: events.append("identity")), patch.object(box_deploy.deploy, "directory_status", side_effect=lambda *_: events.append("pending") or {"status": "pending"}):
             box_deploy.deploy.start(Path("/unused"), {}, events.append)
         self.assertEqual(events, ["prepare", "prepare", "start Herald", "metrics", "wait for Herald identity", "identity", "register pending", "pending", "start services", "-d", "initialise", "init"])
+
+
+    def test_public_gameplay_refusal_reaches_the_owner_without_caught_text(self):
+        check = {"firstFailedRoute": "Explore", "failure": {
+            "category": "refused", "reason": "insufficient stamina, you need: 30, and have: 20", "transactionHash": "0x123"}}
+        def fail(_environment, _directory, _revision, report_stage):
+            report_stage("self-check")
+            print("private subprocess output")
+            raise box_deploy.deploy.SelfCheckFailed(check)
+        output = io.StringIO()
+        with patch.object(box_deploy, "main", side_effect=fail), redirect_stdout(output):
+            self.assertEqual(box_deploy.run("test", Path("/unused"), "revision"), 1)
+        self.assertEqual(json.loads(output.getvalue())["message"], "Shard deployment stopped at self-check. self-check failed at Explore: refused: insufficient stamina, you need: 30, and have: 20 (transaction 0x123); directory status unchanged")
+
+    def test_self_check_accepts_only_the_fixed_failure_shape(self):
+        for category in ("timeout", "verify", "other"):
+            error = box_deploy.deploy.SelfCheckFailed({"firstFailedRoute": "Explore", "failure": {"category": category}})
+            self.assertIn(f"Explore: {category};", str(error))
+        for failure in (
+            {"category": "private"}, {"category": "other", "reason": "private"},
+            {"category": "refused", "reason": "line\nbreak", "transactionHash": "0x1"},
+            {"category": "refused", "reason": "safe", "transactionHash": "not-a-hash"},
+            {"category": "refused", "reason": "safe", "transactionHash": "0x1", "exception": "private"},
+        ):
+            with self.subTest(failure=failure), self.assertRaises(ValueError):
+                box_deploy.deploy.SelfCheckFailed({"firstFailedRoute": "Explore", "failure": failure})

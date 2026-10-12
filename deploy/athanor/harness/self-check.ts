@@ -7,7 +7,7 @@ import type { NativeCommand } from "../../../contracts/l3/world-native/schema/co
 import type { GameClient } from "@bibliothecadao/eternum";
 import type { Account } from "starknet";
 import { createHarnessGame } from "./harness-game";
-import { verifyRouteReceipt } from "./self-check-action";
+import { verifyRouteReceipt, readRouteReceipt } from "./self-check-action";
 import deploymentFixture from "./self-check-fixture";
 
 export interface RouteCase {
@@ -27,7 +27,10 @@ export interface DeploymentCheckPort {
     stopped: AbortSignal,
   ): Promise<{ gameId: number; supplementalGameIds?: readonly number[]; routes: RouteCase[]; dispose(): void }>;
 }
+const TIMEOUT = Symbol("timeout");
+type Failure = { category: "timeout" | "refused" | "verify" | "other"; reason?: string; transactionHash?: string };
 export interface SelfCheckResult {
+  failure?: Failure;
   passed: boolean;
   gameId?: number;
   firstFailedRoute?: string;
@@ -47,8 +50,9 @@ export async function runSelfCheck(port: DeploymentCheckPort, timeoutMs = 120_00
   let route = "create_throwaway_game";
   let game: Awaited<ReturnType<DeploymentCheckPort["createThrowawayGame"]>> | undefined;
   let passed = false;
+  let failure: Failure = { category: "other" };
   try {
-    game = await bounded(port.createThrowawayGame(controller.signal), timeoutMs, route);
+    game = await bounded(port.createThrowawayGame(controller.signal), timeoutMs);
     if (!Number.isSafeInteger(game.gameId) || game.gameId <= 0) throw new Error("Invalid throwaway game");
     const gameIds = new Set([game.gameId, ...(game.supplementalGameIds ?? [])]);
     if ([...gameIds].some((id) => !Number.isSafeInteger(id) || id <= 0)) throw new Error("Invalid throwaway game");
@@ -61,19 +65,21 @@ export async function runSelfCheck(port: DeploymentCheckPort, timeoutMs = 120_00
       route = step.route;
       if (!expectedRoutes.includes(step.route) || !gameIds.has(step.client.gameId))
         throw new Error("Invalid route scope");
-      await bounded(checkRoute(step, controller.signal), timeoutMs, route);
+      failure = { category: "other" };
+      await bounded(checkRoute(step, controller.signal, failure), timeoutMs);
       completed.push(route);
       (step.expectedRejection === undefined ? applied : refused).push(route);
     }
     passed = true;
-  } catch {
-    // Route identity is public; arbitrary exceptions from account setup may contain credentials.
+  } catch (error) {
+    if (error === TIMEOUT) failure = { category: "timeout" };
   } finally {
     try {
       game?.dispose();
     } catch {
       passed = false;
       route = "dispose_throwaway_game";
+      failure = { category: "other" };
     } finally {
       controller.abort();
     }
@@ -82,6 +88,7 @@ export async function runSelfCheck(port: DeploymentCheckPort, timeoutMs = 120_00
     passed,
     gameId: game?.gameId,
     firstFailedRoute: passed ? undefined : route,
+    failure: passed ? undefined : failure,
     elapsedMs: Math.round(performance.now() - started),
     completed,
     applied,
@@ -89,7 +96,7 @@ export async function runSelfCheck(port: DeploymentCheckPort, timeoutMs = 120_00
   };
 }
 
-async function checkRoute(step: RouteCase, stopped: AbortSignal): Promise<void> {
+async function checkRoute(step: RouteCase, stopped: AbortSignal, failure: Failure): Promise<void> {
   const command = await step.command(stopped);
   stopped.throwIfAborted();
   if (command.kind !== step.route) throw new Error("Fixture command differs from route");
@@ -98,7 +105,13 @@ async function checkRoute(step: RouteCase, stopped: AbortSignal): Promise<void> 
     provider.submitCommand(step.account, command),
   );
   if (!sent.confirmed) throw new Error("Route has no receipt completion barrier");
-  if (step.expectedRejection === undefined) await sent.confirmed;
+  if (step.expectedRejection === undefined)
+    await sent.confirmed.catch(async () => {
+      const receipt = await readRouteReceipt(step, sent.transactionHash, stopped);
+      if (receipt.state === "rejected" && receipt.statusClass === "GAMEPLAY_REJECTED")
+        Object.assign(failure, { category: "refused", reason: receipt.reason, transactionHash: sent.transactionHash });
+      throw new Error("Self-check action failed");
+    });
   else {
     // The normal action helper fails a refused action. The fixture still requires its receipt AND Herald refusal,
     // then asserts rollback; an arbitrary caught exception is never evidence that the route worked.
@@ -106,16 +119,21 @@ async function checkRoute(step: RouteCase, stopped: AbortSignal): Promise<void> 
     await verifyRouteReceipt(step, sent.transactionHash, stopped);
   }
   stopped.throwIfAborted();
-  await step.verify(step.client.setup.store);
+  try {
+    await step.verify(step.client.setup.store);
+  } catch {
+    failure.category = "verify";
+    throw new Error("Self-check action failed");
+  }
 }
 
-async function bounded<T>(work: Promise<T>, timeoutMs: number, route: string): Promise<T> {
+async function bounded<T>(work: Promise<T>, timeoutMs: number): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     return await Promise.race([
       work,
       new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(new Error(`Self-check timed out at ${route}`)), timeoutMs);
+        timer = setTimeout(() => reject(TIMEOUT), timeoutMs);
       }),
     ]);
   } finally {
@@ -140,6 +158,7 @@ if (import.meta.main) {
     result = {
       passed: false,
       firstFailedRoute: "load_deployment_fixture",
+      failure: { category: "other" },
       elapsedMs: Math.round(performance.now() - started),
       completed: [],
     };

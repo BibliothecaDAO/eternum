@@ -9,6 +9,18 @@ export async function verifyRouteReceipt(
   transactionHash: string,
   stopped: AbortSignal,
 ): Promise<void> {
+  const result = await readRouteReceipt(step, transactionHash, stopped);
+  assertDomainRefusal(result, step.expectedRejection!);
+  const transaction = await step.client.runtime.waitForTransaction(transactionHash);
+  if (String(transaction.status) !== "REJECTED" || transaction.revertReason !== step.expectedRejection)
+    throw new Error("Herald did not record the expected domain refusal");
+}
+
+export async function readRouteReceipt(
+  step: RouteCase,
+  transactionHash: string,
+  stopped: AbortSignal,
+): Promise<ActionReceipt> {
   const rpc = new HarnessProvider(step.client.shard.rpcUrl);
   try {
     let result: ActionReceipt = { state: "pending" };
@@ -24,10 +36,8 @@ export async function verifyRouteReceipt(
         });
       if (result.state === "pending") await sleep(250, undefined, { signal: stopped });
     }
-    assertDomainRefusal(result, step.expectedRejection!);
-    const transaction = await step.client.runtime.waitForTransaction(transactionHash);
-    if (String(transaction.status) !== "REJECTED" || transaction.revertReason !== step.expectedRejection)
-      throw new Error("Herald did not record the expected domain refusal");
+    stopped.throwIfAborted();
+    return result;
   } finally {
     rpc.dispose();
   }

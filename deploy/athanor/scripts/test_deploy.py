@@ -143,10 +143,20 @@ class ActivationTest(unittest.TestCase):
                 patch.object(deploy, "run_self_check", return_value={"passed": False, "firstFailedRoute": "Explore"}),
                 patch.object(deploy, "directory_status", return_value={"status": "pending"}) as directory,
             ):
-                with self.assertRaisesRegex(RuntimeError, "Explore; directory status unchanged"):
+                with self.assertRaisesRegex(RuntimeError, "Explore: other; directory status unchanged"):
                     deploy.verify_and_activate({}, data)
                 directory.assert_called_once_with({}, "pending")
             self.assertEqual(json.loads((data / "self-check.json").read_text())["firstFailedRoute"], "Explore")
+
+    def test_receipt_failure_is_saved_before_the_public_refusal_is_raised(self):
+        failure = {"category": "refused", "reason": "insufficient stamina, you need: 30, and have: 20", "transactionHash": "0x123"}
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            with patch.object(deploy, "gameplay_check_identity", return_value="test-identity"), patch.object(deploy, "run_self_check", return_value={"passed": False, "firstFailedRoute": "Explore", "failure": failure}), patch.object(deploy, "directory_status", return_value={"status": "pending"}) as directory:
+                with self.assertRaisesRegex(deploy.SelfCheckFailed, "insufficient stamina, you need: 30, and have: 20"):
+                    deploy.verify_and_activate({}, data)
+                directory.assert_called_once_with({}, "pending")
+            self.assertEqual(json.loads((data / "self-check.json").read_text())["failure"], failure)
 
     def test_real_data_directory_records_success_before_promoting(self):
         with tempfile.TemporaryDirectory() as temporary:
