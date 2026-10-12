@@ -1,7 +1,7 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
@@ -28,7 +28,7 @@ describe("worldmap terrain verification CLI", () => {
       });
       expect(verdict.results[0].reasons.join(" ")).toContain("Browser unavailable in test");
       expect(verdict.results[0].reasons.join(" ")).toContain("screenshot unavailable");
-      expect(verdict.commit).toBe(currentCommit());
+      expect(verdict.commit).toBe(currentCommit(directory));
       expect(verdict.notExercised).toContain("authoritative boundary exploration");
 
       const entry = readJson(join(artifacts, "entry.json"));
@@ -73,7 +73,7 @@ describe("worldmap terrain verification CLI", () => {
       expect(pan).toMatchObject({
         metadata: {
           actualBackend: "webgl2-fallback",
-          commit: currentCommit(),
+          commit: currentCommit(directory),
           fixtureIdentity: "live-authoritative-worldmap-v2",
           game: { gameId: 21, worldAddress: "0x123", worldName: "verification-fixture" },
           requestedCameraTarget: { col: 24, row: 0 },
@@ -94,6 +94,23 @@ describe("worldmap terrain verification CLI", () => {
 });
 
 function runCli(executable, artifacts, options) {
+  const cwd = dirname(executable);
+  execFileSync("git", ["init", "--quiet"], { cwd });
+  execFileSync(
+    "git",
+    [
+      "-c",
+      "user.name=Test",
+      "-c",
+      "user.email=test@example.test",
+      "commit",
+      "--quiet",
+      "--allow-empty",
+      "-m",
+      "Create verification fixture",
+    ],
+    { cwd },
+  );
   return spawnSync(
     process.execPath,
     [
@@ -108,6 +125,7 @@ function runCli(executable, artifacts, options) {
       String(options.timeoutMs),
     ],
     {
+      cwd,
       encoding: "utf8",
       env: {
         ...process.env,
@@ -118,8 +136,8 @@ function runCli(executable, artifacts, options) {
   );
 }
 
-function currentCommit() {
-  return execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+function currentCommit(directory) {
+  return execFileSync("git", ["rev-parse", "HEAD"], { cwd: directory, encoding: "utf8" }).trim();
 }
 
 function readJson(path) {
