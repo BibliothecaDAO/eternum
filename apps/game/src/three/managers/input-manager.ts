@@ -37,6 +37,14 @@ export class InputManager {
   private lastPointerWasTouch = false;
   private readonly capturedTouches = new Set<number>();
   private readonly cancelTouchGesture = () => this.resetTouchTracking();
+  /**
+   * The recognizer owns touch, so the browser's click after a touch must not exist: it lands on whatever now lies
+   * under the finger, and closed the sheet the tap had just opened. Cancelling touchend is the one way every
+   * browser withholds it.
+   */
+  private readonly withholdNativeClick = (event: Event) => {
+    if (event.cancelable) event.preventDefault();
+  };
   private readonly handleVisibilityChange = () => {
     if (document.hidden) this.resetTouchTracking();
   };
@@ -197,6 +205,7 @@ export class InputManager {
     for (const pointerEventType of TOUCH_POINTER_EVENT_TYPES) {
       this.surface.addEventListener(pointerEventType, this.touchPointerHandler, { capture: true, passive: false });
     }
+    this.surface.addEventListener("touchend", this.withholdNativeClick, { passive: false });
   }
 
   pauseListeners(): void {
@@ -214,6 +223,7 @@ export class InputManager {
     for (const pointerEventType of TOUCH_POINTER_EVENT_TYPES) {
       this.surface?.removeEventListener(pointerEventType, this.touchPointerHandler, true);
     }
+    this.surface?.removeEventListener("touchend", this.withholdNativeClick);
   }
 
   private handleTouchPointerEvent(event: PointerEvent): void {

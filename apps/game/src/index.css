@@ -609,6 +609,13 @@ html.frontier-type .frontier-primary > img {
   filter: brightness(0);
   opacity: 0.85;
 }
+html.frontier-type .frontier-primary[data-warns] {
+  background: linear-gradient(180deg, #ff7a66, #e0392d 62%, #a81f17);
+  border-color: #ffb3a6;
+  box-shadow:
+    0 5px 0 #5e100b,
+    0 10px 22px rgba(224, 57, 45, 0.35);
+}
 html.frontier-type .frontier-primary:disabled {
   opacity: 0.45;
   box-shadow: 0 5px 0 #6d4300;

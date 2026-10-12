@@ -134,8 +134,9 @@ export const TileCard = ({ selected, onClose }: { selected: SelectedSite; onClos
 };
 
 /**
- * The card's step: Move toward the site until the army is in reach (its prices, the order's), then Attack, the same
- * tap whatever the forecast, or the stamina it lacks held against the attack's cost.
+ * The card's step: Move toward the site until the army is in reach (its prices, the order's), or Attack held back
+ * when no order leads beside it; then Attack, the same tap whatever the forecast, or held back by the stamina it
+ * lacks.
  */
 const siteVerb = ({
   hasArmy,
@@ -152,7 +153,7 @@ const siteVerb = ({
 }): SiteVerb | null => {
   if (!hasArmy) return null;
   if (!inReach) {
-    if (!approach) return null;
+    if (!approach) return { kind: "far" };
     return {
       kind: "move",
       prices: [

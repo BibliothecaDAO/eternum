@@ -31,6 +31,7 @@ export const Button = ({
   prices = [],
   loading,
   disabled = false,
+  warns = false,
   type = "button",
   className,
   onClick,
@@ -42,6 +43,8 @@ export const Button = ({
   /** The step's word while the action is under way; the button waits until it clears. */
   loading?: string;
   disabled?: boolean;
+  /** The verb still runs, and costs what the line under it says: a primary turns red. */
+  warns?: boolean;
   type?: "button" | "submit";
   /** The host's placement only (width, flex); the look is the role's. */
   className?: string;
@@ -51,6 +54,7 @@ export const Button = ({
     type={type}
     aria-busy={loading !== undefined}
     disabled={disabled || loading !== undefined}
+    data-warns={warns || undefined}
     onClick={onClick}
     className={cn(
       "inline-flex min-w-0 items-center justify-center gap-2 whitespace-nowrap px-4 transition-colors disabled:cursor-not-allowed",

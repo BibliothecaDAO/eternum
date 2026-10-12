@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-12",
+    title: "Attack with the same tap",
+    description:
+      "Fixed attacking in Frontier: with an army selected, a click or tap on a target it can reach opens the attack with its forecast and its Attack button, as a tile opens Explore or Move. Attack turns red when the army would be lost, and a line under it says what is missing when it cannot run. On a phone, a card opened by a tap on the map no longer closes at once.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-12",
     title: "Plots you can see on snow",
     description:
       "Improved the outline of a realm's building plots: a light line in a dark edge, so it reads on snow and sand as well as on dark ground, and no part of it sinks into uneven ground.",

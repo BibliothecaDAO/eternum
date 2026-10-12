@@ -55,7 +55,7 @@ describe("a guarded site's card", () => {
     expect(onAttack).toHaveBeenCalled();
   });
 
-  it("shows a loss in amber with the guard left, dims a ruin's chest, and keeps the same Attack", () => {
+  it("shows a loss in amber with the guard left, dims a ruin's chest, and keeps Attack, in red, saying the army will be lost", () => {
     act(() =>
       root.render(
         <SiteCardView
@@ -77,7 +77,10 @@ describe("a guarded site's card", () => {
     expect(card.textContent).toContain("2,300");
     expect(card.querySelector('[aria-label="128 LORDS"]')).not.toBeNull();
     expect(card.querySelector('[aria-label="Rare"]')).not.toBeNull();
-    expect(buttons().some((button) => button.textContent?.startsWith("Attack"))).toBe(true);
+    const attack = buttons().find((button) => button.textContent?.startsWith("Attack"))!;
+    expect(attack.disabled).toBe(false);
+    expect(attack.dataset.warns).toBe("true");
+    expect(document.querySelector('[role="status"]')?.textContent).toBe("Army will be lost");
   });
 
   it("says what fits when the store would overflow, with Realm to make room; never blocks the attack", () => {
@@ -108,7 +111,7 @@ describe("a guarded site's card", () => {
     expect(buttons().some((button) => button.textContent?.startsWith("Attack"))).toBe(true);
   });
 
-  it("replaces Attack with the stamina held against its cost when the army is short", () => {
+  it("holds Attack back when the army is short, with the stamina it needs, what it has and the wait under it", () => {
     act(() =>
       root.render(
         <SiteCardView
@@ -124,8 +127,57 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
+    expect(buttons().find((button) => button.textContent?.startsWith("Attack"))?.disabled).toBe(true);
+    expect(document.querySelector('[role="status"]')?.textContent).toBe("Needs 30 stamina, has 10 · 40m");
+  });
+});
+
+describe("a guarded site's card for an army out of reach", () => {
+  it("holds Attack back and says the site is too far when no order of the army leads beside it", () => {
+    act(() =>
+      root.render(
+        <SiteCardView
+          site="rift"
+          beast={undefined}
+          army={army}
+          guard={1_100}
+          fight={undefined}
+          pay={{ icon: "Es", amount: 300 }}
+          xp={82}
+          verb={{ kind: "far" }}
+          onClose={() => {}}
+        />,
+      ),
+    );
+    expect(buttons().find((button) => button.textContent?.startsWith("Attack"))?.disabled).toBe(true);
+    expect(document.querySelector('[role="status"]')?.textContent).toBe("Too far from the Rift");
+  });
+
+  it("offers Move toward the site, with the same line, while an order leads beside it", () => {
+    const onMove = vi.fn();
+    act(() =>
+      root.render(
+        <SiteCardView
+          site="rift"
+          beast={undefined}
+          army={army}
+          guard={1_100}
+          fight={undefined}
+          pay={{ icon: "Es", amount: 300 }}
+          xp={82}
+          verb={{ kind: "move", prices: [{ of: "stamina", amount: 20 }], onMove }}
+          onClose={() => {}}
+        />,
+      ),
+    );
     expect(buttons().some((button) => button.textContent?.startsWith("Attack"))).toBe(false);
-    expect(document.querySelector('[role="status"]')?.textContent).toBe("10 / 3040m");
+    act(() =>
+      buttons()
+        .find((button) => button.textContent?.startsWith("Move"))!
+        .click(),
+    );
+    expect(onMove).toHaveBeenCalled();
+    expect(document.querySelector('[role="status"]')?.textContent).toBe("Too far from the Rift");
   });
 });
 

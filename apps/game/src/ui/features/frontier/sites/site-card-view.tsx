@@ -3,20 +3,23 @@ import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import { Button, type Price } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
 import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
-import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { StoreBar } from "@/ui/design-system/kit/store-bar";
 import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
+import { formatDuration } from "@/ui/design-system/kit/time";
 import {
+  ARMY_WILL_BE_LOST,
   ATTACK,
   ATTACKING,
   CAMP,
   LORDS,
   MOVE,
+  needsStamina,
   REALM,
   RIFT,
   RUIN,
   STRAGGLERS,
+  tooFarFrom,
   TROOPS,
   XP,
 } from "@/ui/design-system/kit/words";
@@ -37,12 +40,13 @@ const SITES: Record<GuardedSite, { word: string; icon: IconCode }> = {
   stragglers: { word: STRAGGLERS, icon: "Tr" },
 };
 
-/** The step under the outcome: Attack (the same tap whatever the forecast), Move until the army is in reach, or the
- * stamina held against the attack's cost. */
+/** The step under the outcome: Attack (the same tap whatever the forecast), Move until the army is in reach, or
+ * Attack held back, by the stamina the army lacks or by a site too far for one order. One line under it says why. */
 export type SiteVerb =
   | { kind: "attack"; stamina: number; sending: boolean; onAttack: () => void }
   | { kind: "move"; prices: readonly Price[]; onMove: () => void }
-  | { kind: "short"; stamina: Cost };
+  | { kind: "short"; stamina: Cost }
+  | { kind: "far" };
 
 /** An army that could take the site, offered when none is selected: its forecast marked win or loss. */
 export type SiteChoice = { label: string; art: string; troops: number; wins: boolean | undefined; onPick: () => void };
@@ -114,7 +118,12 @@ export const SiteCardView = ({
         </div>
       </div>
       {guide}
-      <Verb verb={verb} onRealm={pay?.fits !== undefined && pay.fits < pay.amount ? onRealm : undefined} />
+      <Verb
+        verb={verb}
+        site={word}
+        armyLost={lost === true}
+        onRealm={pay?.fits !== undefined && pay.fits < pay.amount ? onRealm : undefined}
+      />
     </Sheet>
   );
 };
@@ -239,28 +248,62 @@ const ChestPay = ({ chest }: { chest: { tier: Tier; lords: number } }) => (
   </>
 );
 
-const Verb = ({ verb, onRealm }: { verb: SiteVerb | null; onRealm: (() => void) | undefined }) => {
+const Verb = ({
+  verb,
+  site,
+  armyLost,
+  onRealm,
+}: {
+  verb: SiteVerb | null;
+  site: string;
+  /** The forecast ends with the army gone: Attack still runs, in red, and says so. */
+  armyLost: boolean;
+  onRealm: (() => void) | undefined;
+}) => {
   if (!verb) return null;
-  if (verb.kind === "short") {
-    const { held, cost, wait } = verb.stamina;
-    return <ReasonPlate reason={{ kind: "short", icon: "St", held, need: cost, wait }} />;
-  }
+  const warns = verb.kind === "attack" && armyLost;
   return (
-    <div className="flex gap-2">
-      {onRealm && <Button role="secondary" icon="Cs" word={REALM} className="w-[120px]" onClick={onRealm} />}
-      {verb.kind === "attack" ? (
-        <Button
-          role="primary"
-          icon="At"
-          word={ATTACK}
-          prices={[{ of: "stamina", amount: verb.stamina }]}
-          loading={verb.sending ? ATTACKING : undefined}
-          onClick={verb.onAttack}
-          className="flex-1"
-        />
-      ) : (
-        <Button role="primary" icon="Bt" word={MOVE} prices={verb.prices} onClick={verb.onMove} className="flex-1" />
-      )}
+    <div className="flex flex-col gap-2">
+      <div className="flex gap-2">
+        {onRealm && <Button role="secondary" icon="Cs" word={REALM} className="w-[120px]" onClick={onRealm} />}
+        {verb.kind === "move" ? (
+          <Button role="primary" icon="Bt" word={MOVE} prices={verb.prices} onClick={verb.onMove} className="flex-1" />
+        ) : (
+          <Button
+            role="primary"
+            icon="At"
+            word={ATTACK}
+            prices={attackPrices(verb)}
+            loading={verb.kind === "attack" && verb.sending ? ATTACKING : undefined}
+            disabled={verb.kind !== "attack"}
+            warns={warns}
+            onClick={verb.kind === "attack" ? verb.onAttack : undefined}
+            className="flex-1"
+          />
+        )}
+      </div>
+      <VerbLine line={warns ? ARMY_WILL_BE_LOST : verbReason(verb, site)} warns={warns} />
     </div>
   );
 };
+
+const attackPrices = (verb: Exclude<SiteVerb, { kind: "move" }>): readonly Price[] => {
+  if (verb.kind === "attack") return [{ of: "stamina", amount: verb.stamina }];
+  return verb.kind === "short" ? [{ of: "stamina", amount: verb.stamina.cost }] : [];
+};
+
+/** Why the step is not Attack, or cannot run: the stamina missing and when it is back, or the site out of reach. */
+const verbReason = (verb: SiteVerb, site: string): string | undefined => {
+  if (verb.kind === "attack") return undefined;
+  if (verb.kind !== "short") return tooFarFrom(site);
+  const { cost, held, wait } = verb.stamina;
+  const line = needsStamina(formatExact(cost), formatExact(held));
+  return wait === undefined ? line : `${line} · ${formatDuration(wait)}`;
+};
+
+const VerbLine = ({ line, warns }: { line: string | undefined; warns: boolean }) =>
+  line === undefined ? null : (
+    <p role="status" className={cn("text-center text-[14px]", warns ? "text-kit-red" : "text-kit-cream")}>
+      {line}
+    </p>
+  );

@@ -72,6 +72,10 @@ export const SHRINE = "Shrine";
 export const WELL = "Well";
 export const ATTACK = "Attack";
 export const ATTACKING = "Attacking…";
+/** Why an attack cannot run, or what it costs, in one line under its button. */
+export const needsStamina = (need: string, held: string) => `Needs ${need} stamina, has ${held}`;
+export const tooFarFrom = (site: string) => `Too far from the ${site}`;
+export const ARMY_WILL_BE_LOST = "Army will be lost";
 export const USE = "Use";
 export const USING = "Using…";
 

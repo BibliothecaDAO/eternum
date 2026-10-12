@@ -249,7 +249,7 @@ import {
 } from "./worldmap-terrain-commit-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
 import { ARMY_SELECT_REQUEST_EVENT, readArmySelectRequest } from "./worldmap-army-select-request";
-import { ORDER_REQUEST_EVENT, pinsOrder, readOrderRequest } from "./worldmap-order-request";
+import { ORDER_REQUEST_EVENT, orderOnTap, readOrderRequest } from "./worldmap-order-request";
 import { onChestOpenRequest } from "./worldmap-chest-open-request";
 import { shouldQueueArmySelectionRecovery } from "./worldmap-army-tab-selection";
 import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
@@ -2584,11 +2584,7 @@ export default class WorldmapScene extends WarpTravel {
       resolveSpawnActionPath(hexCoords, getLiveWorldmapEntityActions().actionPaths)
     )
       return;
-    if (hexCoords && this.pinsOrderTarget(hexCoords)) {
-      // The tile becomes the order's target: its path and costs show, and the HUD's verb runs it.
-      this.state.updateEntityActionHoveredHex(hexCoords);
-      return;
-    }
+    if (hexCoords && this.answerTapWithSelectedArmyOrder(hexCoords)) return;
     const viewer = accountAddress();
     const { army, structure, chest } = hexCoords
       ? this.getHexagonEntity(hexCoords)
@@ -2700,12 +2696,31 @@ export default class WorldmapScene extends WarpTravel {
     this.actAtHex(hexCoords);
   }
 
-  /** Whether a tap on this tile pins an order for the selected army: a tile it can explore or move to. */
-  private pinsOrderTarget(hexCoords: HexPosition): boolean {
+  /**
+   * With an army selected, a tap on a tile answers with that army's order there (orderOnTap), never past a confirm:
+   * the pinned order's verb, the attack preview's, or the site card's own. False leaves the tile its own tap.
+   */
+  private answerTapWithSelectedArmyOrder(hexCoords: HexPosition): boolean {
     if (!canIssueOrders()) return false;
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
     if (selectedEntityId === null || selectedEntityId === undefined) return false;
-    return pinsOrder(actionPaths.get(ActionPaths.posKey(hexCoords, true)));
+    const path = actionPaths.get(ActionPaths.posKey(hexCoords, true));
+    const { structure } = this.getHexagonEntity(hexCoords);
+    const order = orderOnTap({
+      path,
+      armySelected: this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined,
+      standingSite: structure !== undefined && this.isStandingExpeditionSite(structure.id),
+    });
+    if (order === "pin") {
+      // The tile becomes the order's target: its path and costs show, and the HUD's verb runs it.
+      this.state.updateEntityActionHoveredHex(hexCoords);
+    } else if (order === "attack" && path) {
+      this.onArmyAttack(path, selectedEntityId);
+    } else if (order === "site-out-of-reach") {
+      const contractHex = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
+      this.openSiteCardForSelectedArmy({ col: contractHex.x, row: contractHex.y });
+    }
+    return order !== null;
   }
 
   /** Runs the selected army's order at this tile: a right-click, or the HUD's verb for a pinned order. */
@@ -3028,8 +3043,7 @@ export default class WorldmapScene extends WarpTravel {
     if (!target) return;
     // A standing expedition site confirms its attack on its tile card, the HUD's sheet for the selected tile.
     if (this.isStandingExpeditionSite(target.id)) {
-      this.selectContractHexWithoutFeedback(targetHex);
-      this.state.updateEntityActionHoveredHex(null);
+      this.openSiteCardForSelectedArmy(targetHex);
       return;
     }
     const selected = this.getHexagonEntity(sceneHexOf(selectedPath[0]));
@@ -3055,6 +3069,12 @@ export default class WorldmapScene extends WarpTravel {
     // this is the same minimal call onArmyMovement makes, so the army stays
     // selected and the action-path state machine is left intact (unlike
     // clearEntitySelection, which reset it and broke movement/exploration).
+    this.state.updateEntityActionHoveredHex(null);
+  }
+
+  /** The site's tile card with the selected army kept as its actor: the forecast and Attack, or what the army lacks. */
+  private openSiteCardForSelectedArmy(siteHex: HexPosition): void {
+    this.selectContractHexWithoutFeedback(siteHex);
     this.state.updateEntityActionHoveredHex(null);
   }
 
