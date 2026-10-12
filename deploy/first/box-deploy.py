@@ -65,6 +65,9 @@ def main(environment, directory, revision, report_stage):
         retire_previous(inputs, directory)
     if deploy.main(environment, directory, report_stage):
         raise RuntimeError('Shard deployment check failed')
+    built_revision = json.loads((directory / 'release.json').read_text())['commit']
+    if built_revision != revision:
+        raise deploy.DeploymentRefused(f"Box built commit {built_revision}, requested {revision}; deployment proof was not written")
     report_stage("self-check")
     proof = directory / 'data/self-check.json'
     if not proof.exists() or not json.loads(proof.read_text()).get('passed'):

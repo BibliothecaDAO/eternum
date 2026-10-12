@@ -121,11 +121,18 @@ class DeploymentOrderTest(unittest.TestCase):
             deploy.assert_not_called()
 
     def test_images_build_before_retirement_and_deployment(self):
+        self.check_build_revision("revision")
+
+    def test_built_commit_must_match_before_saving_the_deployment_proof(self):
+        self.check_build_revision("another-revision")
+
+    def check_build_revision(self, built_revision):
         events = []
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
             (directory / "data").mkdir()
             (directory / "data/self-check.json").write_text('{"passed":true}')
+            (directory / "release.json").write_text(json.dumps({"commit": built_revision}))
             with (
                 patch.object(box_deploy.deploy, "deployment_target"),
                 patch.object(box_deploy, "operator_environment", return_value={}),
@@ -135,5 +142,11 @@ class DeploymentOrderTest(unittest.TestCase):
                 patch.object(box_deploy, "retire_previous", side_effect=lambda *_: events.append("retire")),
                 patch.object(box_deploy.deploy, "main", side_effect=lambda *_: events.append("deploy")),
             ):
-                box_deploy.main("test", directory, "revision", lambda _: None)
+                if built_revision == "revision":
+                    box_deploy.main("test", directory, "revision", lambda _: None)
+                    self.assertEqual(json.loads((directory / "first-deployment-check.json").read_text()), {"revision": built_revision})
+                else:
+                    with self.assertRaisesRegex(box_deploy.deploy.DeploymentRefused, "Box built commit another-revision, requested revision"):
+                        box_deploy.main("test", directory, "revision", lambda _: None)
+                    self.assertFalse((directory / "first-deployment-check.json").exists())
             self.assertEqual(events, ["build", "retire", "deploy"])
