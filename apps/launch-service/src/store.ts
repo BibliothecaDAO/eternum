@@ -32,9 +32,9 @@ export interface LaunchServiceStore extends LaunchRunStore {
   list(environment: GameEnvironmentId, kind?: LaunchKind): Promise<LaunchRun[]>;
   /** Declared entry terms for created games, including registration before start and draining shards. */
   playerDirectoryGames(): Promise<{ chainId: string; games: { gameId: number; slotId: number | null }[] }[]>;
-  /** Unfinished work stranded by a change to the configured shard. */
-  pendingOtherChains(): Promise<LaunchRun[]>;
-  /** Every failed run awaiting recovery, in any environment. */
+  /** Unfinished work belonging to the shards the registrar still serves. */
+  pending(): Promise<LaunchRun[]>;
+  /** Failed work on the shards the registrar still serves. */
   failed(): Promise<LaunchRun[]>;
   find(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<LaunchRun | null>;
   /** The run to execute now: one interrupted while running, else the oldest due queued run. Either costs an attempt. */
@@ -191,24 +191,20 @@ export class D1LaunchStore implements LaunchServiceStore {
     return groupDeclaredGames(results);
   }
 
-  // Migration 0005 archives pre-chain runs under an empty id; those have no shard to drain.
-  async pendingOtherChains(): Promise<LaunchRun[]> {
-    const { results } = await this.db
-      .prepare(
-        "SELECT * FROM launch_runs WHERE chain_id <> '' AND chain_id <> ? AND status IN ('queued', 'running') ORDER BY chain_id, created_at, id",
-      )
-      .bind(await this.chainId())
-      .all<LaunchRunRow>();
-    const official = await this.officialChains?.();
-    return results.map(toRun).filter((run) => !official?.some((chain) => BigInt(chain) === BigInt(run.chainId)));
+  async pending(): Promise<LaunchRun[]> {
+    return this.currentRuns("status IN ('queued', 'running')");
   }
 
   async failed(): Promise<LaunchRun[]> {
-    const rows = await this.db
-      .prepare("SELECT * FROM launch_runs WHERE chain_id = ? AND status = 'failed' ORDER BY updated_at DESC, id")
-      .bind(await this.chainId())
+    return this.currentRuns("status = 'failed'");
+  }
+
+  private async currentRuns(condition: string): Promise<LaunchRun[]> {
+    const chains = new Set(((await this.officialChains?.()) ?? [await this.chainId()]).map(BigInt));
+    const { results } = await this.db
+      .prepare(`SELECT * FROM launch_runs WHERE chain_id <> '' AND ${condition} ORDER BY chain_id, created_at, id`)
       .all<LaunchRunRow>();
-    return rows.results.map(toRun);
+    return results.filter((row) => chains.has(BigInt(row.chain_id))).map(toRun);
   }
 
   async find(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<LaunchRun | null> {

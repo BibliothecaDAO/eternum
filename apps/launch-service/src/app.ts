@@ -19,7 +19,11 @@ interface LaunchAppDependencies {
   slots: SlotStore;
   calendar: CalendarStore;
   /** The registrar that executes runs: every run queued here arms it for the run's due time. */
-  registrar: { armFor(dueAt: number): Promise<void>; joinFailures(): Promise<JoinFailure[]> };
+  registrar: {
+    armFor(dueAt: number): Promise<void>;
+    joinFailures(): Promise<JoinFailure[]>;
+    wakeAt(): Promise<number | null>;
+  };
 }
 
 const readEnvironment = (value: string | undefined): GameEnvironmentId => {
@@ -101,11 +105,16 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   // The schedule never requeues a failed season; its operator must continue it. Health names every failed run.
   app.get("/api/factory/health", async (context) => {
     try {
-      const [failed, stranded, joins] = await Promise.all([
+      const [failed, pending, joins, wakeAt] = await Promise.all([
         dependencies.store.failed(),
-        dependencies.store.pendingOtherChains(),
+        dependencies.store.pending(),
         dependencies.registrar.joinFailures(),
+        dependencies.registrar.wakeAt(),
       ]);
+      const now = Date.now();
+      const stranded = pending.filter(
+        (run) => (run.status === "running" || Date.parse(run.dueAt) <= now) && (wakeAt === null || wakeAt > now),
+      );
       return context.json(
         {
           service: "launch",
@@ -114,7 +123,7 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
           joinFailures: joins,
           strandedRuns: stranded.map(strandedRunReport),
         },
-        stranded.length || joins.length ? 503 : 200,
+        failed.length || stranded.length || joins.length ? 503 : 200,
       );
     } catch {
       return context.json({ status: "unavailable" }, 503);

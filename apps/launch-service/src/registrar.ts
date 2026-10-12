@@ -33,6 +33,11 @@ const joinErrors = [
  */
 export class Registrar extends DurableObject<Record<string, unknown>> {
   private readonly signing = Semaphore.makeUnsafe(1);
+  private processing = false;
+
+  async wakeAt(): Promise<number | null> {
+    return this.processing ? Date.now() : this.ctx.storage.getAlarm();
+  }
 
   async joinFailures(): Promise<JoinFailure[]> {
     return (await this.ctx.storage.get<JoinFailure[]>("joinFailures")) ?? [];
@@ -49,7 +54,18 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
   }
 
   override alarm(): Promise<void> {
-    return Effect.runPromise(this.signing.withPermit(Effect.promise(() => this.processAlarm())));
+    return Effect.runPromise(
+      this.signing.withPermit(
+        Effect.promise(async () => {
+          this.processing = true;
+          try {
+            await this.processAlarm();
+          } finally {
+            this.processing = false;
+          }
+        }),
+      ),
+    );
   }
   private async processAlarm(): Promise<void> {
     console.log("registrar_alarm", { at: new Date().toISOString() });

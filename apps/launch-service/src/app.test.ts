@@ -28,6 +28,7 @@ const fixture = () => {
   const slots = new D1SlotStore(database.db, store, value, registrationIdentityFixture);
   const calendar = new D1CalendarStore(database.db);
   const armFor = vi.fn();
+  const wakeAt = vi.fn(async (): Promise<number | null> => 0);
   const joinFailures = vi.fn(async (): Promise<import("./registrar").JoinFailure[]> => []);
   const app = createLaunchApp({
     config: { operatorToken: "operator-test-token" },
@@ -35,9 +36,9 @@ const fixture = () => {
     store,
     slots,
     calendar,
-    registrar: { armFor, joinFailures },
+    registrar: { armFor, joinFailures, wakeAt },
   });
-  return { app, store, slots, calendar, value, armFor, joinFailures };
+  return { app, store, slots, calendar, value, armFor, joinFailures, wakeAt };
 };
 const close = () => new Date(Math.floor(Date.now() / 1000) * 1000 + 60000).toISOString();
 test("the create-run and launcher-discovery routes are gone even for the operator", async () => {
@@ -174,4 +175,23 @@ test("public health names a failed join before any run has failed", async () => 
   const response = await app.request("/api/factory/health");
   expect(response.status).toBe(503);
   expect(await response.json()).toMatchObject({ joinFailures: [failure], failedRuns: [] });
+});
+
+test("health forgets retired work but names an unarmed due run on the live chain", async () => {
+  const { app, store, wakeAt } = fixture();
+  const retired = new D1LaunchStore(database.db, testChain("0xdead"));
+  await retired.enqueue("game", { environment: "madara.frontier", gameName: "old" });
+  wakeAt.mockResolvedValue(null);
+  expect((await app.request("/api/factory/health")).status).toBe(200);
+  await store.enqueue("game", { environment: "madara.frontier", gameName: "live" });
+  const stranded = await app.request("/api/factory/health");
+  expect(stranded.status).toBe(503);
+  expect(await stranded.json()).toMatchObject({ strandedRuns: [{ name: "live" }] });
+  wakeAt.mockResolvedValue(0);
+  expect((await app.request("/api/factory/health")).status).toBe(200);
+  const running = (await store.startNext(Date.now()))!;
+  await store.fail(running.id, "game_creation_failed");
+  const failed = await app.request("/api/factory/health");
+  expect(failed.status).toBe(503);
+  expect(await failed.json()).toMatchObject({ failedRuns: [{ name: "live", error: "game_creation_failed" }] });
 });

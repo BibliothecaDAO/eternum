@@ -39,6 +39,7 @@ const setup = () => {
   const context = {
     storage: {
       setAlarm,
+      getAlarm: async () => null,
       get: async (key: string) => values.get(key),
       put: async (key: string, value: unknown) => {
         values.set(key, value);
@@ -74,4 +75,21 @@ it("retries other account failures without consuming due runs", async () => {
   await f.registrar.alarm();
   expect(f.setAlarm).toHaveBeenLastCalledWith(31_000);
   expect(mock.process).not.toHaveBeenCalled();
+});
+
+it("reports an executing alarm as awake even after its stored alarm has fired", async () => {
+  const f = setup();
+  let finish!: (address: string) => void;
+  mock.account.mockImplementation(
+    () =>
+      new Promise<string>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const processing = f.registrar.alarm();
+  await vi.waitFor(() => expect(mock.account).toHaveBeenCalled());
+  expect(await f.registrar.wakeAt()).toBe(1000);
+  finish("0x2");
+  await processing;
+  expect(await f.registrar.wakeAt()).toBeNull();
 });
