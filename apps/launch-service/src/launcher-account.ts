@@ -21,7 +21,7 @@ export async function joinLauncherAccount(
         method: "POST",
         headers: { authorization: `Bearer ${env.OPERATOR_TOKEN}`, "content-type": "application/json" },
         body: JSON.stringify({ label: LAUNCHER_LABEL, ...change }),
-        redirect: "error",
+        redirect: "manual",
       });
       if (!response.ok) throw await serviceResponseFailure("launcher_approval_refused", response);
       return ((await response.json()) as { signature: string[] }).signature;

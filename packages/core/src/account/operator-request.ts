@@ -10,5 +10,5 @@ export function operatorRequest(
     throw new Error("Operator endpoint must use HTTPS without credentials or fragment");
   const headers = new Headers(init.headers);
   headers.set("authorization", `Bearer ${token}`);
-  return send(url, { ...init, headers, redirect: "error" });
+  return send(url, { ...init, headers, redirect: "manual" });
 }

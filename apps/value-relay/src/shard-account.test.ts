@@ -51,7 +51,7 @@ it("enrolls only the relay bot device under the environment guardian, and return
   expect(await approve({ chainId: "0x1", deviceKey: "0x2" })).toEqual(["0x3", "0x4"]);
   expect(env.IDENTITY_HTTP.fetch).toHaveBeenLastCalledWith(
     new URL("https://app.test/api/devices/bots"),
-    expect.objectContaining({ redirect: "error", method: "POST" }),
+    expect.objectContaining({ redirect: "manual", method: "POST" }),
   );
   expect(await joinShardOperator(env, target.chainId)).toEqual(expected);
 });

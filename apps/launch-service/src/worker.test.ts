@@ -40,6 +40,44 @@ const LAUNCHER = launcherAccountAddress(SHARD_MANIFEST);
 let mf: Miniflare;
 let db: D1Database;
 let freshAccount = false;
+let refuseApproval = true;
+let approvalRequests = 0;
+let deployedAccount = false;
+
+function accountJoinResponse(id: number, method: string): Response | undefined {
+  if ((method === "starknet_getClassHashAt" && !deployedAccount) || method === "starknet_getNonce")
+    return Response.json({ jsonrpc: "2.0", id, error: { code: 20, message: "Contract not found" } });
+  const results: Record<string, unknown> = {
+    starknet_estimateFee: [
+      {
+        l1_gas_consumed: "0x0",
+        l1_gas_price: "0x0",
+        l1_data_gas_consumed: "0x0",
+        l1_data_gas_price: "0x0",
+        l2_gas_consumed: "0x64",
+        l2_gas_price: "0x1",
+        overall_fee: "0x64",
+        unit: "FRI",
+      },
+    ],
+    starknet_addDeployAccountTransaction: { transaction_hash: "0x123", contract_address: LAUNCHER },
+    starknet_getTransactionStatus: { finality_status: "ACCEPTED_ON_L2", execution_status: "SUCCEEDED" },
+    starknet_getTransactionReceipt: {
+      transaction_hash: "0x123",
+      type: "DEPLOY_ACCOUNT",
+      finality_status: "ACCEPTED_ON_L2",
+      execution_status: "SUCCEEDED",
+      actual_fee: { amount: "0x0", unit: "FRI" },
+      events: [],
+      messages_sent: [],
+      execution_resources: {},
+      contract_address: LAUNCHER,
+    },
+  };
+  if (method === "starknet_addDeployAccountTransaction") deployedAccount = true;
+  const result = results[method];
+  return result === undefined ? undefined : Response.json({ jsonrpc: "2.0", id, result });
+}
 
 beforeAll(async () => {
   const bundle = join(mkdtempSync(join(tmpdir(), "launch-bundle-")), "bundle");
@@ -60,10 +98,14 @@ beforeAll(async () => {
         serviceBindings: {
           IDENTITY: { name: "directory", entrypoint: "ValueIdentity" },
           VALUE_RELAY: { name: "directory", entrypoint: "ValueRelay" },
-          IDENTITY_HTTP: () =>
-            freshAccount
-              ? Response.json({ error: "unauthorized" }, { status: 401 })
-              : Response.json({ session: { id: "s1" }, user: { id: "u1", realmsId: "0x7", address: LAUNCHER } }),
+          IDENTITY_HTTP: () => {
+            approvalRequests++;
+            return freshAccount
+              ? refuseApproval
+                ? Response.json({ error: "unauthorized" }, { status: 401 })
+                : Response.json({ signature: ["0x3", "0x4"] })
+              : Response.json({ session: { id: "s1" }, user: { id: "u1", realmsId: "0x7", address: LAUNCHER } });
+          },
         },
         bindings: {
           ENVIRONMENT: "staging",
@@ -80,8 +122,10 @@ beforeAll(async () => {
               method: string;
               params: { request?: { entry_point_selector?: string } };
             };
-            if (freshAccount && method === "starknet_getClassHashAt")
-              return Response.json({ jsonrpc: "2.0", id, error: { code: 20, message: "Contract not found" } });
+            if (freshAccount) {
+              const joined = accountJoinResponse(id, method);
+              if (joined) return joined;
+            }
             const result =
               method === "starknet_chainId"
                 ? SHARD_CHAIN
@@ -267,11 +311,31 @@ it("reports a fresh account's approval refusal through real workerd on public he
     const deadline = Date.now() + 10000;
     let health: { joinFailures?: { chainId: string; code: string }[] } = {};
     while (Date.now() < deadline) {
-      health = await (await mf.dispatchFetch(`${ORIGIN}/api/factory/health`)).json();
+      health = (await (await mf.dispatchFetch(`${ORIGIN}/api/factory/health`)).json()) as typeof health;
       if (health.joinFailures?.length) break;
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
-    expect(health.joinFailures).toMatchObject([{ chainId: SHARD_CHAIN, code: "account_join_approval_failed" }]);
+    expect(health.joinFailures).toMatchObject([{ chainId: SHARD_CHAIN, code: "launcher_approval_refused" }]);
+    expect(approvalRequests).toBeGreaterThan(0);
+  } finally {
+    freshAccount = false;
+  }
+}, 60000);
+
+it("joins a fresh account through identity approval and account deployment in workerd", async () => {
+  freshAccount = true;
+  refuseApproval = false;
+  try {
+    await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
+    const deadline = Date.now() + 10000;
+    let health: { joinFailures?: unknown[] } = {};
+    while (Date.now() < deadline) {
+      health = (await (await mf.dispatchFetch(`${ORIGIN}/api/factory/health`)).json()) as typeof health;
+      if (deployedAccount && health.joinFailures?.length === 0) break;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    expect(deployedAccount).toBe(true);
+    expect(health.joinFailures).toEqual([]);
   } finally {
     freshAccount = false;
   }

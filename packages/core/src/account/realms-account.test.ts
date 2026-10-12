@@ -60,7 +60,7 @@ describe("joining a shard", () => {
     });
     expect(send).toHaveBeenCalledWith(
       "https://identity.test/api/devices/bots",
-      expect.objectContaining({ redirect: "error" }),
+      expect.objectContaining({ redirect: "manual" }),
     );
     expect(new Headers(send.mock.calls[0][1]?.headers).get("authorization")).toBe("Bearer fixture-token");
   });

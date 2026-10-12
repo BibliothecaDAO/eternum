@@ -31,7 +31,7 @@ export async function joinShardOperator(env: Environment, chainId: string) {
         method: "POST",
         headers: { authorization: `Bearer ${env.OPERATOR_TOKEN}`, "content-type": "application/json" },
         body: JSON.stringify({ label: RELAY_LABEL, ...change }),
-        redirect: "error",
+        redirect: "manual",
       });
       if (!approval.ok) throw await serviceResponseFailure("relay_device_approval_refused", approval);
       return ((await approval.json()) as { signature: string[] }).signature;
