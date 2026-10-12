@@ -23,7 +23,7 @@ const tampered: Call[] = [{ contractAddress: "0xbad", entrypoint: "transfer", ca
 function account() {
   return {
     address: "0x100",
-    getNonce: mock(async () => "12"),
+    getNonce: mock(async (_block: number) => "12"),
     execute: mock(async (_calls: Call[], _options: { nonce: string }) => ({ transaction_hash: "0xabc" })),
     waitForTransaction: mock(async (_hash: string, _options?: unknown) => ({ execution_status: "SUCCEEDED" })),
     getTransactionReceipt: mock(async (_hash: string) => ({
@@ -39,9 +39,9 @@ test.each(["7", "12"])(
     const rpc = account();
     rpc.getNonce.mockResolvedValue(current);
     files.write(transactionIntentName(rpc, desired, "pay"), { nonce: "7", calls: tampered });
-    await send(rpc as unknown as Account, desired, files, "pay", () => {});
+    await send(rpc as unknown as Account, desired, files, "pay", () => {}, 5);
     expect(rpc.execute).toHaveBeenCalledWith(desired, { nonce: current });
-    expect(rpc.getNonce).toHaveBeenCalledTimes(1);
+    expect(rpc.getNonce.mock.calls).toEqual([[5]]);
     expect(files.read<{ nonce: string; hash: string }>(transactionIntentName(rpc, desired, "pay"))).toEqual({
       nonce: current,
       hash: "0xabc",
@@ -52,7 +52,7 @@ test("a saved hash for the same intent is awaited and a successful receipt is ne
   const files = store();
   const rpc = account();
   files.write(transactionIntentName(rpc, desired, "pay"), { nonce: "7", calls: tampered, hash: "0xold" });
-  await send(rpc as unknown as Account, desired, files, "pay", () => {});
+  await send(rpc as unknown as Account, desired, files, "pay", () => {}, 5);
   expect(rpc.waitForTransaction).toHaveBeenCalledWith("0xold", { retries: 30, retryInterval: 1000 });
   expect(rpc.execute).not.toHaveBeenCalled();
   expect(rpc.getNonce).not.toHaveBeenCalled();
@@ -64,7 +64,7 @@ test("a reverted receipt permits new calls at the current nonce", async () => {
     execution_status: hash === "0xold" ? "REVERTED" : "SUCCEEDED",
   }));
   files.write(transactionIntentName(rpc, desired, "pay"), { nonce: "7", calls: tampered, hash: "0xold" });
-  await send(rpc as unknown as Account, desired, files, "pay", () => {});
+  await send(rpc as unknown as Account, desired, files, "pay", () => {}, 5);
   expect(rpc.execute).toHaveBeenCalledWith(desired, { nonce: "12" });
 });
 test("a dropped hash is awaited, checked again, then retries fresh calls at the saved nonce", async () => {
@@ -85,7 +85,7 @@ test("a dropped hash is awaited, checked again, then retries fresh calls at the 
     return { transaction_hash: "0xabc" };
   });
   files.write(transactionIntentName(rpc, desired, "pay"), { nonce: "7", calls: tampered, hash: "0xold" });
-  await send(rpc as unknown as Account, desired, files, "pay", () => {});
+  await send(rpc as unknown as Account, desired, files, "pay", () => {}, 5);
   expect(events).toEqual(["wait:0xold", "receipt", "send", "wait:0xabc"]);
   expect(rpc.execute).toHaveBeenCalledWith(desired, { nonce: "7" });
   expect(rpc.getNonce).not.toHaveBeenCalled();
@@ -97,7 +97,7 @@ test("a receipt found after the wait is not resent", async () => {
     throw { code: 29 };
   });
   files.write(transactionIntentName(rpc, desired, "pay"), { nonce: "7", calls: tampered, hash: "0xold" });
-  await send(rpc as unknown as Account, desired, files, "pay", () => {});
+  await send(rpc as unknown as Account, desired, files, "pay", () => {}, 5);
   expect(rpc.getTransactionReceipt).toHaveBeenCalledWith("0xold");
   expect(rpc.execute).not.toHaveBeenCalled();
 });
@@ -111,7 +111,7 @@ test.each(["wait", "receipt"])("an unrelated %s failure never authorizes a resen
     throw { code: 429 };
   });
   files.write(transactionIntentName(rpc, desired, "pay"), { nonce: "7", calls: tampered, hash: "0xold" });
-  await expect(send(rpc as unknown as Account, desired, files, "pay", () => {})).rejects.toEqual({ code: 429 });
+  await expect(send(rpc as unknown as Account, desired, files, "pay", () => {}, 5)).rejects.toEqual({ code: 429 });
   expect(rpc.execute).not.toHaveBeenCalled();
 });
 test("changing unsent Blitz dates sends the newly computed setup with the current nonce", async () => {
@@ -137,6 +137,7 @@ test("changing unsent Blitz dates sends the newly computed setup with the curren
   await configureLedger(provider, environments.dev, assets, "0x33", input, files, () => {});
   const [calls, options] = rpc.execute.mock.calls[0]!;
   expect(options).toEqual({ nonce: "12" });
+  expect(rpc.getNonce.mock.calls).toEqual([[5]]);
   expect(calls.find((call) => call.entrypoint === "open_season")!.calldata).toEqual([
     "1",
     "1",
@@ -155,7 +156,7 @@ test("a pre-confirmed receipt recovered after a timed-out wait is still pending 
   rpc.getTransactionReceipt.mockResolvedValue({ execution_status: "SUCCEEDED", finality_status: "PRE_CONFIRMED" });
   files.write(transactionIntentName(rpc, desired, "pay"), { nonce: "7", hash: "0xold" });
   const output = mock(() => {});
-  await expect(send(rpc as unknown as Account, desired, files, "pay", output)).rejects.toThrow("still pending");
+  await expect(send(rpc as unknown as Account, desired, files, "pay", output, 5)).rejects.toThrow("still pending");
   expect(rpc.execute).not.toHaveBeenCalled();
   expect(output).toHaveBeenCalledWith("Waiting for transaction confirmation.");
 });
@@ -166,7 +167,7 @@ test.each([false, true])(
     const files = store();
     const rpc = account();
     files.write(transactionIntentName(rpc, tampered, "pay"), { nonce: "7", ...(sent ? { hash: "0xold" } : {}) });
-    await send(rpc as unknown as Account, desired, files, "pay", () => {});
+    await send(rpc as unknown as Account, desired, files, "pay", () => {}, 5);
     expect(rpc.execute).toHaveBeenCalledWith(desired, { nonce: "12" });
     expect(rpc.waitForTransaction).not.toHaveBeenCalledWith("0xold", expect.anything());
   },
@@ -175,7 +176,7 @@ test("a succeeded intent belongs to its payer even when calls are identical", as
   const files = store();
   const rpc = account();
   files.write(transactionIntentName({ address: "0x200" }, desired, "pay"), { nonce: "7", hash: "0xold" });
-  await send(rpc as unknown as Account, desired, files, "pay", () => {});
+  await send(rpc as unknown as Account, desired, files, "pay", () => {}, 5);
   expect(rpc.execute).toHaveBeenCalledWith(desired, { nonce: "12" });
 });
 
@@ -195,12 +196,23 @@ test.each([false, true])("an unsent intent recovers when the other operation lan
     landed.push(calls[0]!.contractAddress);
     return { transaction_hash: `0x${nonce++}` };
   });
-  const retry = () => send(rpc as unknown as Account, desired, files, "pay", () => {});
-  const other = () => send(rpc as unknown as Account, tampered, files, "other", () => {});
+  const retry = () => send(rpc as unknown as Account, desired, files, "pay", () => {}, 5);
+  const other = () => send(rpc as unknown as Account, tampered, files, "other", () => {}, 5);
   await expect(retry()).rejects.toThrow("before submission");
   if (otherFirst) await other();
   await retry();
   if (!otherFirst) await other();
   await retry();
   expect(landed).toEqual(otherFirst ? ["0xbad", "0x1"] : ["0x1", "0xbad"]);
+});
+
+test("an unpinned effect read cannot authorize nonce recovery", async () => {
+  const files = store();
+  const rpc = account();
+  files.write(transactionIntentName(rpc, desired, "pay"), { nonce: "7" });
+  await expect(send(rpc as unknown as Account, desired, files, "pay", () => {}, undefined as never)).rejects.toThrow(
+    "Confirmed effect-read block required",
+  );
+  expect(rpc.getNonce).not.toHaveBeenCalled();
+  expect(rpc.execute).not.toHaveBeenCalled();
 });

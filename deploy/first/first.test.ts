@@ -233,11 +233,11 @@ test("a lost invoke response retries the same nonce while it remains current", a
     waitForTransaction: async () => ({ execution_status: "SUCCEEDED" }),
   } as unknown as Account;
   const calls = [{ contractAddress: "0x1", entrypoint: "transfer", calldata: ["2", "30", "0"] }];
-  await expect(send(account, calls, store, "relay", () => {})).rejects.toThrow("reply lost");
-  await send(account, calls, store, "relay", () => {});
+  await expect(send(account, calls, store, "relay", () => {}, 5)).rejects.toThrow("reply lost");
+  await send(account, calls, store, "relay", () => {}, 5);
   expect(nonces).toEqual(["7", "7"]);
   expect(account.getNonce).toHaveBeenCalledTimes(2);
-  await send(account, [{ ...calls[0]!, calldata: ["2", "31", "0"] }], store, "relay", () => {});
+  await send(account, [{ ...calls[0]!, calldata: ["2", "31", "0"] }], store, "relay", () => {}, 5);
   expect(nonces).toEqual(["7", "7", "7"]);
 });
 
@@ -410,66 +410,98 @@ test("release artifact list includes Sierra and CASM for each of the four declar
   expect(new Set(artifactFiles.map((file) => file.packageName))).toEqual(new Set(["ledger", "mmr", "collectibles"]));
 });
 
-test("one funded address deploys all accounts, transfers two reserves, then sends nothing on rerun", async () => {
-  const { store } = storage();
-  const deployed = new Set<string>();
-  const holdings = new Map<string, bigint>();
-  const identities = Object.values(keys).map((key) => accountIdentity(key));
-  const byAddress = new Map(identities.map((identity) => [identity.address, identity]));
-  const provider = {
-    getChainId: async () => "0x534e5f4d41494e",
-    getClassByHash: async () => ({}),
-    getClassHashAt: async (address: string) => {
-      if (deployed.has(address)) return ACCOUNT_CLASS;
-      throw { code: 20 };
-    },
-    callContract: async (call: { contractAddress: string; entrypoint: string; calldata: string[] }) =>
-      call.entrypoint === "get_public_key"
-        ? [byAddress.get(call.contractAddress)!.publicKey]
-        : [String(holdings.get(call.calldata[0]!) ?? 0n), "0"],
-    waitForTransaction: async () => ({ execution_status: "SUCCEEDED" }),
-  } as unknown as RpcProvider;
-  let nonce = 0;
-  const transfers: string[] = [];
-  for (const role of ["relay", "monitor"])
-    store.write(`transaction-fund-${role}.json`, {
-      nonce: "0",
-      calls: [{ contractAddress: "0xbad", entrypoint: "transfer", calldata: ["999", "99", "0"] }],
-    });
-  const factory = (address: string) =>
-    ({
-      address,
-      getNonce: async () => String(nonce),
-      execute: async (calls: { calldata: string[] }[]) => {
-        nonce++;
-        for (const call of calls) {
-          const [to, low] = call.calldata;
-          holdings.set(`0x${BigInt(to!).toString(16)}`, BigInt(low!));
-          transfers.push(`0x${BigInt(to!).toString(16)}`);
-        }
-        return { transaction_hash: "0xabc" };
+test.each(["none", "relay", "monitor"])(
+  "reserve funding is not repeated after a lost %s reply and lagging reads",
+  async (lostRole) => {
+    const { store } = storage();
+    const deployed = new Set<string>();
+    const holdings = new Map<string, bigint>();
+    const identities = Object.values(keys).map((key) => accountIdentity(key));
+    const byAddress = new Map(identities.map((identity) => [identity.address, identity]));
+    let nonce = 0;
+    let observedBlock: number | undefined;
+    let interrupted = false;
+    const blocks = new Map<number, Map<string, bigint>>();
+    const remember = () => blocks.set(nonce, new Map(holdings));
+    const provider = {
+      getChainId: async () => "0x534e5f4d41494e",
+      getBlockNumber: async () => observedBlock ?? nonce,
+      getClassByHash: async () => ({}),
+      getClassHashAt: async (address: string) => {
+        if (deployed.has(address)) return ACCOUNT_CLASS;
+        throw { code: 20 };
       },
-      deployAccount: async () => {
-        expect(holdings.get(address)).toBeGreaterThan(0n);
-        deployed.add(address);
-        return { transaction_hash: "0xdef" };
+      callContract: async (
+        call: { contractAddress: string; entrypoint: string; calldata: string[] },
+        block: number | "latest",
+      ) => {
+        remember();
+        if (call.entrypoint === "get_public_key") return [byAddress.get(call.contractAddress)!.publicKey];
+        const balances = typeof block === "number" ? blocks.get(block)! : holdings;
+        return [String(balances.get(call.calldata[0]!) ?? 0n), "0"];
       },
-      waitForTransaction: provider.waitForTransaction,
-    }) as unknown as Account;
-  const output: string[] = [];
-  expect(await prepareAccounts(provider, keys, store, (line) => output.push(line), factory)).toBeUndefined();
-  const deployer = accountIdentity(keys.deployer).address;
-  expect(output).toHaveLength(1);
-  expect(output[0]).toContain(deployer);
-  expect(output[0]).not.toContain(accountIdentity(keys.relay).address);
-  holdings.set(deployer, 250n * WEI);
-  await prepareAccounts(provider, keys, store, (line) => output.push(line), factory);
-  await prepareAccounts(provider, keys, store, (line) => output.push(line), factory);
-  expect(deployed.size).toBe(3);
-  expect(transfers).toEqual([accountIdentity(keys.relay).address, accountIdentity(keys.monitor).address]);
-  expect(holdings.get(accountIdentity(keys.relay).address)).toBe(30n * WEI);
-  expect(holdings.get(accountIdentity(keys.monitor).address)).toBe(WEI);
-});
+      waitForTransaction: async () => ({ execution_status: "SUCCEEDED" }),
+    } as unknown as RpcProvider;
+    const transfers: string[] = [];
+    for (const role of ["relay", "monitor"])
+      store.write(`transaction-fund-${role}.json`, {
+        nonce: "0",
+        calls: [{ contractAddress: "0xbad", entrypoint: "transfer", calldata: ["999", "99", "0"] }],
+      });
+    const factory = (address: string) =>
+      ({
+        address,
+        getNonce: async (block?: number) => String(block ?? nonce),
+        execute: async (calls: { calldata: string[] }[], options: { nonce: string }) => {
+          if (options.nonce !== String(nonce)) throw new Error("stale nonce");
+          remember();
+          nonce++;
+          for (const call of calls) {
+            const [to, low] = call.calldata;
+            const recipient = `0x${BigInt(to!).toString(16)}`;
+            holdings.set(recipient, (holdings.get(recipient) ?? 0n) + BigInt(low!));
+            transfers.push(`0x${BigInt(to!).toString(16)}`);
+          }
+          if (
+            !interrupted &&
+            lostRole !== "none" &&
+            transfers.at(-1) === accountIdentity(keys[lostRole as "relay" | "monitor"]).address
+          ) {
+            interrupted = true;
+            throw new Error("reply lost");
+          }
+          return { transaction_hash: "0xabc" };
+        },
+        deployAccount: async () => {
+          expect(holdings.get(address)).toBeGreaterThan(0n);
+          deployed.add(address);
+          return { transaction_hash: "0xdef" };
+        },
+        waitForTransaction: provider.waitForTransaction,
+      }) as unknown as Account;
+    const output: string[] = [];
+    expect(await prepareAccounts(provider, keys, store, (line) => output.push(line), factory)).toBeUndefined();
+    const deployer = accountIdentity(keys.deployer).address;
+    expect(output).toHaveLength(1);
+    expect(output[0]).toContain(deployer);
+    expect(output[0]).not.toContain(accountIdentity(keys.relay).address);
+    holdings.set(deployer, 250n * WEI);
+    if (lostRole !== "none") {
+      await expect(prepareAccounts(provider, keys, store, () => {}, factory)).rejects.toThrow("reply lost");
+      observedBlock = nonce - 1;
+      const sent = transfers.length;
+      await expect(prepareAccounts(provider, keys, store, () => {}, factory)).rejects.toThrow("stale nonce");
+      expect(transfers).toHaveLength(sent);
+      observedBlock = undefined;
+    }
+    await prepareAccounts(provider, keys, store, (line) => output.push(line), factory);
+    await prepareAccounts(provider, keys, store, (line) => output.push(line), factory);
+    expect(deployed.size).toBe(3);
+    expect(transfers).toEqual([accountIdentity(keys.relay).address, accountIdentity(keys.monitor).address]);
+    expect(holdings.get(accountIdentity(keys.relay).address)).toBe(30n * WEI);
+    expect(holdings.get(accountIdentity(keys.monitor).address)).toBe(WEI);
+  },
+);
 
 test("all four dates are required without defaults and invalid Frontier end gives two exact alternatives", () => {
   expect(() => validateDates(input)).not.toThrow();

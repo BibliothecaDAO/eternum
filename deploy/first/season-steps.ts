@@ -91,6 +91,7 @@ async function funding(context: Season) {
     releaseInputs(context)!.public_herald_url,
     gameId,
   );
+  const block = await context.provider!.getBlockNumber();
   const preset = decodeLedgerPreset(
     await context.provider!.callContract(
       {
@@ -98,13 +99,13 @@ async function funding(context: Season) {
         entrypoint: "get_preset",
         calldata: [String(context.target.frontierPreset)],
       },
-      "latest",
+      block,
     ),
   );
   assertFrontierPreset(preset, native);
   const [token] = await context.provider!.callContract(
     { contractAddress: context.assets!.ledger, entrypoint: "lords", calldata: [] },
-    "latest",
+    block,
   );
   if (!token || BigInt(token) !== BigInt(context.assets!.lords))
     throw new PublicError("Ledger token differs from address book");
@@ -114,13 +115,14 @@ async function funding(context: Season) {
       context.assets!.ledger,
       { chainId: shard.chainId, gameId },
       native,
+      block,
     );
     if (BigInt(pool.pool) !== BigInt(context.inputs!.amount) * WEI)
       throw new PublicError("Existing Frontier deposit differs; never add a second deposit");
-    return { gameId, shard, native, funded: true };
+    return { gameId, shard, native, block, funded: true };
   } catch (error) {
     if (error instanceof Error && error.message === "frontier_funding_missing")
-      return { gameId, shard, native, funded: false };
+      return { gameId, shard, native, block, funded: false };
     throw error;
   }
 }
@@ -202,9 +204,13 @@ export function seasonSteps(context: Season): Step[] {
           () => funding(context),
           "Waiting for the confirmed Frontier game; funding follows immediately.",
         );
+        if (state.funded) return;
         const account = signer(context);
         const pool = BigInt(context.inputs!.amount) * WEI;
-        if (context.target.freshAssets && (await balance(account, context.assets!.lords, account.address)) < pool)
+        if (
+          context.target.freshAssets &&
+          (await balance(account, context.assets!.lords, account.address, state.block)) < pool
+        )
           await send(
             account,
             [
@@ -217,6 +223,7 @@ export function seasonSteps(context: Season): Step[] {
             context.store,
             `test-tokens-${state.shard.chainId}-${state.gameId}`,
             context.output,
+            state.block,
           );
         const calls = buildFrontierFundingCalls(context.assets!.ledger, context.assets!.lords, {
           shard: state.shard.chainId,
@@ -234,9 +241,20 @@ export function seasonSteps(context: Season): Step[] {
           );
           return;
         }
-        if ((await balance(account, context.assets!.lords, account.address)) < pool)
+        const deposit = await funding(context);
+        if (!deposit || deposit.gameId !== state.gameId || deposit.shard.chainId !== state.shard.chainId)
+          throw new PublicError("Frontier game changed before the deposit");
+        if (deposit.funded) return;
+        if ((await balance(account, context.assets!.lords, account.address, deposit.block)) < pool)
           throw new PublicError("Deployer token balance is below the deposit");
-        await send(account, calls, context.store, `frontier-${state.shard.chainId}-${state.gameId}`, context.output);
+        await send(
+          account,
+          calls,
+          context.store,
+          `frontier-${state.shard.chainId}-${state.gameId}`,
+          context.output,
+          deposit.block,
+        );
       },
     },
     {

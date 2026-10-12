@@ -78,3 +78,13 @@ it("refuses partial bags even if the ledger and game agree", async () => {
 it("returns the ledger deposit independently of any preset funding amount", async () => {
   expect((await read()).pool).toBe(String(100n * 10n ** 18n));
 });
+
+it("keeps the caller's effect-read block when the provider head has advanced", async () => {
+  expect(await readFrontierFunding(provider, "0x10", { chainId: "0x1", gameId: 7 }, terms, 11)).toMatchObject({
+    confirmedBlock: 11,
+  });
+  expect(call.mock.calls.map(([query, head]) => [query.entrypoint, head])).toEqual([
+    ["get_frontier", 11],
+    ["get_preset", 11],
+  ]);
+});

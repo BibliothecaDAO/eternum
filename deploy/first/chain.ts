@@ -29,10 +29,15 @@ export async function classAt(provider: RpcProvider, address: string) {
     throw error;
   }
 }
-export async function balance(provider: RpcProvider, token: string, address: string) {
+export async function balance(
+  provider: RpcProvider,
+  token: string,
+  address: string,
+  block: number | "latest" = "latest",
+) {
   const row = await provider.callContract(
     { contractAddress: token, entrypoint: "balance_of", calldata: [address] },
-    "latest",
+    block,
   );
   if (row.length !== 2) throw new PublicError("Invalid token balance");
   return BigInt(row[0]!) + (BigInt(row[1]!) << 128n);
@@ -75,14 +80,16 @@ export function transactionIntentName(account: Pick<Account, "address">, calls: 
   return `transaction-${name}-${createHash("sha256").update(JSON.stringify(identity)).digest("hex")}.json`;
 }
 
-/** Callers inspect the operation's effect first; saved state supplies only its nonce and receipt identity. */
+/** Effect reads and nonce recovery must use the same confirmed block, even if latest advances between them. */
 export async function send(
   account: Account,
   calls: Call[],
   store: PrivateStore,
   name: string,
   output: (line: string) => void,
+  block: number,
 ) {
+  if (!Number.isSafeInteger(block) || block < 0) throw new PublicError("Confirmed effect-read block required");
   const intentName = transactionIntentName(account, calls, name);
   const previous = store.read<{ nonce: string; hash?: string }>(intentName);
   let nonce = previous?.nonce;
@@ -93,11 +100,11 @@ export async function send(
       if (!("execution_status" in receipt)) throw new PublicError("Saved transaction is still pending");
       if (receipt.execution_status === "SUCCEEDED") return;
       if (receipt.execution_status !== "REVERTED") throw new PublicError("Saved transaction is still pending");
-      nonce = String(await account.getNonce());
+      nonce = String(await account.getNonce(block));
     }
   }
   if (!previous?.hash) {
-    const current = String(await account.getNonce());
+    const current = String(await account.getNonce(block));
     if (nonce === undefined || BigInt(nonce) < BigInt(current)) nonce = current;
   }
   const intent: { nonce: string; hash?: string } = { nonce: nonce! };
@@ -146,7 +153,8 @@ export async function prepareAccounts(
     }
     if (role !== "deployer") {
       const desired = (role === "relay" ? 30n : 1n) * WEI;
-      const held = await balance(provider, STRK, account.address);
+      const block = await provider.getBlockNumber();
+      const held = await balance(provider, STRK, account.address, block);
       if (held < desired)
         await send(
           accounts.deployer,
@@ -160,6 +168,7 @@ export async function prepareAccounts(
           store,
           `fund-${role}-${account.address}`,
           output,
+          block,
         );
     }
     const identity = accountIdentity(keys[role]);
