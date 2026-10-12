@@ -39,13 +39,14 @@ export function deriveGameSyncScope(
   if (!expedition) return scope;
   const { spacing } = expedition;
   const today = seasonDay(expedition, timestamp) ?? -1;
-  const actingOwners = resolveOwners(actor, spacing, read);
-  const owners = new Set([...actingOwners, ...resolveOwners(visit, spacing, read)]);
+  // A spectator follows the watched realm's map; a player visiting keeps their own expedition.
+  const viewingOwners = resolveOwners(actor ?? visit, spacing, read);
+  const owners = new Set([...viewingOwners, ...resolveOwners(visit, spacing, read)]);
   const homes = read("Structure", spacing, [...owners].map(scopeLookup.structuresOf)).filter(({ value }) =>
     isRealmCategory(Number((value.base as Record<string, unknown>).category)),
   );
-  const actingHomes = homes.filter(({ value }) => actingOwners.has(syncScalar(value.owner)));
-  const actingRealms = new Set(actingHomes.map(({ value }) => syncScalar(value.entity_id)));
+  const viewingHomes = homes.filter(({ value }) => viewingOwners.has(syncScalar(value.owner)));
+  const viewingRealms = new Set(viewingHomes.map(({ value }) => syncScalar(value.entity_id)));
   const realms = new Set(homes.map(({ value }) => syncScalar(value.entity_id)));
   const realmTraits = new Set(
     homes.map(({ value }) => syncScalar((value.metadata as Record<string, unknown>).realm_id)),
@@ -61,13 +62,13 @@ export function deriveGameSyncScope(
     );
   });
   // With no current army, morning muster starts on the surface, at the site the contract raises the realm on today.
-  const actingArmies = armies.filter(({ value }) => actingRealms.has(syncScalar(value.owner)));
-  if (today >= 0 && actingArmies.length === 0)
-    for (const { value } of actingHomes) {
+  const viewingArmies = armies.filter(({ value }) => viewingRealms.has(syncScalar(value.owner)));
+  if (today >= 0 && viewingArmies.length === 0)
+    for (const { value } of viewingHomes) {
       const site = expeditionRealmSite(expedition, entityHomeNamespace(syncScalar(value.entity_id)), timestamp);
       if (site) regions.add(gameSyncRegion({ alt: false, x: site.col, y: site.row }, spacing)!);
     }
-  for (const { value } of actingArmies) {
+  for (const { value } of viewingArmies) {
     const region = gameSyncRegion(position(value.explorer_id), spacing);
     if (region !== undefined) regions.add(region);
   }

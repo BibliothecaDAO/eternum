@@ -46,7 +46,17 @@ describe("visited realm scope", () => {
     expect(rowInGameSyncScope("RealmKnowledge", { structure_id: "2" }, home)).toBe(false);
     expect(rowInGameSyncScope("RealmKnowledge", { structure_id: "1" }, home)).toBe(true);
     expect(deriveGameSyncScope("0xa", 350, expedition, read, "0xa").expedition).toEqual(home.expedition);
-    expect(deriveGameSyncScope(undefined, 350, expedition, read, "0xbbb").expedition?.regions).toEqual(new Set());
+  });
+
+  it("gives a spectator the watched realm's tiles without its actor-only events", () => {
+    const scope = deriveGameSyncScope(undefined, 350, expedition, read, "0xbbb");
+    expect(scope.actor).toBeUndefined();
+    expect(scope.expedition?.regions).toEqual(new Set(["1:2"]));
+    expect(rowInGameSyncScope("TileOpt", { alt: false, col: 1600, row: 2700 }, scope)).toBe(true);
+    expect(rowInGameSyncScope("TileOpt", { alt: false, col: 512, row: 1600 }, scope)).toBe(false);
+    expect(rowInGameSyncScope("GameplayRejected", { actor: "11" }, scope)).toBe(false);
+    expect(deriveGameSyncScope(undefined, 350, expedition, read).expedition?.regions).toEqual(new Set());
+    expect(deriveGameSyncScope(undefined, 350, expedition, read, "0xa").expedition?.regions).toEqual(new Set(["0:1"]));
   });
 
   it("rejects invalid visit addresses", () => {
