@@ -7,9 +7,21 @@ import { expect, it } from "vitest";
 
 it("exposes no operation over HTTP, including the former health path", async () => {
   const bundle = join(mkdtempSync(join(tmpdir(), "guardian-health-")), "bundle");
-  execFileSync("pnpm", ["exec", "wrangler", "deploy", "--dry-run", "--env", "staging", "--outdir", bundle], {
-    stdio: "ignore",
-  });
+  execFileSync(
+    "bun",
+    [
+      "build",
+      "src/worker.ts",
+      "--target=browser",
+      "--external=cloudflare:*",
+      "--external=node:*",
+      "--outfile",
+      join(bundle, "worker.js"),
+    ],
+    {
+      stdio: "pipe",
+    },
+  );
   const privateKey = `0x${Buffer.from(crypto.getRandomValues(new Uint8Array(31))).toString("hex")}`;
   const start = (key: string) =>
     new Miniflare({
