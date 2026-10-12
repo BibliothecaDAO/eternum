@@ -7,6 +7,7 @@ import * as main from "./main";
 import * as box from "./box";
 import * as native from "../../contracts/l2/ledger/scripts/commands/deployment/fund-frontier";
 import * as funding from "../../packages/value-ledger/src/frontier-funding";
+import { transactionIntentName } from "./chain";
 import { seasonSteps } from "./season-steps";
 import { PrivateStore } from "./private-store";
 import { environments, WEI } from "./settings";
@@ -19,7 +20,7 @@ afterEach(() => {
   for (const path of temporary.splice(0)) rmSync(path, { recursive: true, force: true });
 });
 
-test("a succeeded test-token mint for Frontier game A does not suppress game B's mint", async () => {
+test.each(["game", "chain"])("a succeeded Frontier mint and deposit cannot satisfy another %s", async (changes) => {
   const base = mkdtempSync(join(tmpdir(), "frontier-mint-"));
   temporary.push(base);
   mkdirSync(join(base, "repo"));
@@ -27,6 +28,7 @@ test("a succeeded test-token mint for Frontier game A does not suppress game B's
   const start = "2027-02-01T00:00:00Z";
   const startSeconds = Date.parse(start) / 1000;
   let gameId = 1;
+  let chainId = "0x10";
   let held = 0n;
   const submitted: Call[][] = [];
   const account = {
@@ -41,7 +43,7 @@ test("a succeeded test-token mint for Frontier game A does not suppress game B's
     waitForTransaction: async () => ({ execution_status: "SUCCEEDED", finality_status: "ACCEPTED_ON_L2" }),
   };
   spyOn(main, "signer").mockReturnValue(account as unknown as Account);
-  spyOn(box, "nativeDocument").mockResolvedValue({ shard: { chainId: "0x10" }, world: { address: "0x20" } });
+  spyOn(box, "nativeDocument").mockImplementation(async () => ({ shard: { chainId }, world: { address: "0x20" } }));
   spyOn(native, "readFrontierGame").mockResolvedValue({
     presetId: 2,
     start: startSeconds,
@@ -56,7 +58,7 @@ test("a succeeded test-token mint for Frontier game A does not suppress game B's
     if (path === "/api/factory/calendar") return Response.json({ phases: [{ phase: "frontier", startsAt: start }] });
     if (path === "/games")
       return Response.json({ games: [{ game_id: gameId, mode: "frontier", clock: { start_main_at: startSeconds } }] });
-    if (path === "/manifest") return Response.json({ chainId: "0x10" });
+    if (path === "/manifest") return Response.json({ chainId });
     throw new Error("Unexpected test request");
   }) as typeof fetch;
   const context = {
@@ -76,10 +78,17 @@ test("a succeeded test-token mint for Frontier game A does not suppress game B's
   } as unknown as main.Deployment;
   const step = seasonSteps(context).find((step) => step.name === "Frontier deposit")!;
   await step.apply();
-  gameId = 2;
+  if (changes === "game") gameId = 2;
+  else chainId = "0x11";
   await step.apply();
   expect(submitted.map((calls) => calls[0]!.entrypoint)).toEqual(["mint", "approve", "mint", "approve"]);
-  expect(store.read("transaction-test-tokens-1.json")).toMatchObject({ hash: "0x1" });
-  expect(store.read("transaction-test-tokens-2.json")).toMatchObject({ hash: "0x3" });
-  expect(store.read("transaction-frontier-2.json")).toMatchObject({ hash: "0x4" });
+  expect(store.read(transactionIntentName(account, submitted[0]!, "test-tokens-0x10-1"))).toMatchObject({
+    hash: "0x1",
+  });
+  expect(store.read(transactionIntentName(account, submitted[2]!, `test-tokens-${chainId}-${gameId}`))).toMatchObject({
+    hash: "0x3",
+  });
+  expect(store.read(transactionIntentName(account, submitted[3]!, `frontier-${chainId}-${gameId}`))).toMatchObject({
+    hash: "0x4",
+  });
 });

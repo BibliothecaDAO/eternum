@@ -215,7 +215,7 @@ export function seasonSteps(context: Season): Step[] {
               },
             ],
             context.store,
-            `test-tokens-${state.gameId}`,
+            `test-tokens-${state.shard.chainId}-${state.gameId}`,
             context.output,
           );
         const calls = buildFrontierFundingCalls(context.assets!.ledger, context.assets!.lords, {
@@ -236,13 +236,13 @@ export function seasonSteps(context: Season): Step[] {
         }
         if ((await balance(account, context.assets!.lords, account.address)) < pool)
           throw new PublicError("Deployer token balance is below the deposit");
-        await send(account, calls, context.store, `frontier-${state.gameId}`, context.output);
+        await send(account, calls, context.store, `frontier-${state.shard.chainId}-${state.gameId}`, context.output);
       },
     },
     {
       name: "Published pool and automatic Blitz slot",
       payer: "relay",
-      cost: "relay reserve about 30 STRK for the measured day",
+      cost: "relay mainnet fees use its 30 STRK initial reserve; no daily cap",
       inspect: async () => {
         if (!context.assets) return wait("Released services and funded game needed");
         const state = await funding(context);

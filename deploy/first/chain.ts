@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { PublicError } from "./errors";
 import { Account, CallData, ec, hash, RpcProvider, uint256, type Call } from "starknet";
 import { ACCOUNT_CLASS, STRK, WEI } from "./settings";
@@ -61,6 +62,19 @@ async function savedReceipt(account: Account, transactionHash: string) {
     }
   }
 }
+/** Receipts and unsent nonces belong to one payer and exact call set, not a reusable operation label. */
+export function transactionIntentName(account: Pick<Account, "address">, calls: Call[], name: string) {
+  const identity = [
+    BigInt(account.address).toString(),
+    calls.map((call) => [
+      BigInt(call.contractAddress).toString(),
+      call.entrypoint,
+      CallData.compile(call.calldata ?? []).map((felt) => BigInt(felt).toString()),
+    ]),
+  ];
+  return `transaction-${name}-${createHash("sha256").update(JSON.stringify(identity)).digest("hex")}.json`;
+}
+
 /** Saved state supplies a nonce and receipt identity, never executable calls. */
 export async function send(
   account: Account,
@@ -69,7 +83,7 @@ export async function send(
   name: string,
   output: (line: string) => void,
 ) {
-  const intentName = `transaction-${name}.json`;
+  const intentName = transactionIntentName(account, calls, name);
   const previous = store.read<{ nonce: string; hash?: string }>(intentName);
   let nonce = previous?.nonce;
   if (previous?.hash) {
@@ -82,9 +96,8 @@ export async function send(
       nonce = String(await account.getNonce());
     }
   }
-  const intent: { nonce: string; calls: Call[]; hash?: string } = {
+  const intent: { nonce: string; hash?: string } = {
     nonce: nonce ?? String(await account.getNonce()),
-    calls,
   };
   store.write(intentName, intent);
   const response = await account.execute(calls, { nonce: intent.nonce });
@@ -143,7 +156,7 @@ export async function prepareAccounts(
             },
           ],
           store,
-          `fund-${role}`,
+          `fund-${role}-${account.address}`,
           output,
         );
     }

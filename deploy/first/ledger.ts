@@ -353,6 +353,6 @@ export async function configureLedger(
     store.write("cold-setup.json", { account: input.admin, calls: missing });
     return false;
   }
-  await send(account, missing, store, season.id === 1 ? "setup" : `setup-${season.id}`, output);
+  await send(account, missing, store, `setup-${assets.ledger}-${season.id}`, output);
   return true;
 }

@@ -7,6 +7,7 @@ import type { PrivateStore } from "./private-store";
 import { response } from "../../packages/value-ledger/test-support/abi";
 import { ledgerAbi } from "../../packages/value-ledger/test-support/ledger-abi";
 import { PublicError } from "./errors";
+import { transactionIntentName } from "./chain";
 
 type Window = { start: number; end: number };
 const desired = { start: 200, end: 300 };
@@ -65,6 +66,7 @@ test("a successful first setup cannot suppress opening season two", async () => 
   const windows = [{ start: 10, end: 100 }];
   const rpc = {
     ...provider(windows),
+    address: "0x30",
     getNonce: async () => "17",
     execute: mock(async () => {
       windows.push(desired);
@@ -89,11 +91,9 @@ test("a successful first setup cannot suppress opening season two", async () => 
     () => {},
     read,
   );
-  expect(rpc.execute).toHaveBeenCalledWith(
-    [{ contractAddress: "0x10", entrypoint: "open_season", calldata: ["2", "1", "200", "300"] }],
-    { nonce: "17" },
-  );
+  const calls = [{ contractAddress: "0x10", entrypoint: "open_season", calldata: ["2", "1", "200", "300"] }];
+  expect(rpc.execute).toHaveBeenCalledWith(calls, { nonce: "17" });
   expect(saved.get("transaction-setup.json")).toEqual({ nonce: "1", hash: "0xold" });
-  expect(saved.has("transaction-setup-2.json")).toBe(true);
+  expect(saved.has(transactionIntentName(rpc, calls, "setup-0x10-2"))).toBe(true);
   expect(await resolve(rpc)).toMatchObject({ id: 2, present: true });
 });

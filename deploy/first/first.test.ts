@@ -220,6 +220,7 @@ test("a lost invoke response retries the saved nonce and never fetches a new one
   const nonces: string[] = [];
   let first = true;
   const account = {
+    address: "0x100",
     getNonce: mock(async () => "7"),
     execute: async (_calls: unknown, options: { nonce: string }) => {
       nonces.push(options.nonce);
@@ -237,7 +238,7 @@ test("a lost invoke response retries the saved nonce and never fetches a new one
   expect(nonces).toEqual(["7", "7"]);
   expect(account.getNonce).toHaveBeenCalledTimes(1);
   await send(account, [{ ...calls[0]!, calldata: ["2", "31", "0"] }], store, "relay", () => {});
-  expect(nonces).toEqual(["7", "7"]);
+  expect(nonces).toEqual(["7", "7", "7"]);
 });
 
 test("dev deploys five assets; production deploys only a cold-admin ledger with existing assets", () => {
