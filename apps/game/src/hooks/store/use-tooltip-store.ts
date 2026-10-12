@@ -11,6 +11,8 @@ type TooltipType = {
     x: number;
     y: number;
   };
+  /** Asked for by a press-and-hold: the one tooltip a touch screen shows. */
+  held?: boolean;
 } | null;
 
 let lastResolvedAnchor: HTMLElement | null = null;

@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-10-13",
+    title: "Every icon names itself",
+    description:
+      "Added one tooltip to Frontier: hover any chip or icon on desktop, or press and hold it on a phone, and it says its name. The four stores say what they hold of their limit, their rate an hour and when they are full.",
+    type: "feature",
+  },
+  {
     date: "2026-10-12",
     title: "Attack with the same tap",
     description:

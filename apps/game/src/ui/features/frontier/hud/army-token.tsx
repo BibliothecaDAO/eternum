@@ -1,7 +1,7 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import { Chip, FullIn } from "@/ui/design-system/kit/chip";
-import { RETURNED } from "@/ui/design-system/kit/words";
+import { RETURNED, STAMINA, TROOPS } from "@/ui/design-system/kit/words";
 
 import { CardFanGlyph } from "../glyphs";
 import { guideTarget } from "../guide/guide-thread";
@@ -65,7 +65,13 @@ export const ArmyToken = ({
         )}
       </span>
       <StaminaSegments stamina={stamina} guided={guided} />
-      <span className="text-[14px] leading-none text-kit-cream tabular-nums">{formatAmount(troops)}</span>
+      <span
+        role="img"
+        aria-label={`${TROOPS} ${formatAmount(troops)}`}
+        className="text-[14px] leading-none text-kit-cream tabular-nums"
+      >
+        {formatAmount(troops)}
+      </span>
       {wide && <WideRows {...wide} />}
     </>
   );
@@ -133,6 +139,7 @@ const StaminaSegments = ({
   return (
     <span
       role="meter"
+      aria-label={STAMINA}
       aria-valuenow={stamina?.current}
       aria-valuemax={stamina?.max}
       {...(guided ? guideTarget("army-stamina") : {})}

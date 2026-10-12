@@ -17,6 +17,9 @@ export const REALM_KEPT = "Realm kept";
 export const DAY_OPEN = "is open";
 export const CONTINUE = "Continue";
 export const FULL_IN = "Full in";
+/** A store's line on its tooltip: "Wheat 1,771 of 6,000 · +302 an hour · Full in 14h". */
+export const OF = "of";
+export const AN_HOUR = "an hour";
 
 export const OFFLINE = "Offline";
 export const TRY_AGAIN = "Try again";

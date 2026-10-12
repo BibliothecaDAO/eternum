@@ -16,7 +16,7 @@ import { useHudSurface } from "./frontier-nav";
 import { MenuSheet } from "./menu-sheet";
 import { OrderBar } from "./order-bar";
 import { PlaceNav } from "./place-nav";
-import { StatusStrip, type StoreReading } from "./status-strip";
+import { StatusStrip, type StoreReading, storeLine } from "./status-strip";
 
 const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
 
@@ -62,6 +62,19 @@ describe("the day clock", () => {
 });
 
 describe("the status strip", () => {
+  it("says a store in one line: what it holds of its limit, its rate an hour and when it is full", () => {
+    const wheat: StoreReading = { kind: "wheat", amount: 1_771, limit: 6_000, tone: "calm", flyTarget: "wheat" };
+    expect(storeLine({ ...wheat, perHour: 302, fullIn: 14 * 3_600 })).toBe(
+      "wheat 1,771 of 6,000 · +302 an hour · Full in 14h",
+    );
+    expect(storeLine({ ...wheat, amount: 6_000, perHour: 302, fullIn: 0 })).toBe("wheat 6,000 of 6,000 · Full");
+    // No building makes it: no rate to say, and no moment it fills.
+    expect(storeLine(wheat)).toBe("wheat 1,771 of 6,000");
+    // Essence has no limit.
+    expect(storeLine({ ...wheat, kind: "essence", amount: 18_250, limit: undefined })).toBe("Essence 18,250");
+    expect(storeLine({ ...wheat, amount: undefined })).toBe("wheat — of 6,000");
+  });
+
   const store = (kind: StoreReading["kind"], amount: number | undefined, limit?: number): StoreReading => ({
     kind,
     amount,

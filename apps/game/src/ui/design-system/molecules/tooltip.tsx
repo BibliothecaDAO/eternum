@@ -1,5 +1,6 @@
 import { createPortal } from "react-dom";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
+import { useNamedTips } from "@/ui/design-system/kit/named-tips";
 import { isCoarsePointer } from "@/utils/pointer";
 import clsx from "clsx";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -33,9 +34,16 @@ const getHiddenTransform = (placement: TooltipPlacement) => {
   }
 };
 
-/** The global hover tooltip. Touch devices have no hover, so they render nothing and attach no listeners. */
-export const Tooltip = ({ className }: TooltipProps) =>
-  isCoarsePointer() ? null : <HoverTooltip className={className} />;
+/**
+ * The app's one tooltip, and the kit's names with it (hover, keyboard focus, press-and-hold). A touch device has no
+ * hover (a tap fires mouseenter with no leave, so a hover tooltip would stick): there it draws only a name a hold
+ * asked for.
+ */
+export const Tooltip = ({ className }: TooltipProps) => {
+  useNamedTips();
+  const held = useTooltipStore((state) => state.tooltip?.held === true);
+  return isCoarsePointer() && !held ? null : <HoverTooltip className={className} />;
+};
 
 const HoverTooltip = ({ className }: TooltipProps) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -165,10 +173,12 @@ const HoverTooltip = ({ className }: TooltipProps) => {
         top = Math.min(Math.max(top, VIEWPORT_PADDING), viewportHeight - tooltipHeight - VIEWPORT_PADDING);
         left = Math.min(Math.max(left, VIEWPORT_PADDING), viewportWidth - tooltipWidth - VIEWPORT_PADDING);
 
+        // A tooltip above or below its anchor slides along the edge it would cross; only its own axis can refuse it.
+        const besideAnchor = targetPlacement === "left" || targetPlacement === "right";
         return {
           left,
           top,
-          fits: fitsHorizontally && fitsVertically,
+          fits: besideAnchor ? fitsHorizontally : fitsVertically,
         };
       };
 
@@ -246,7 +256,9 @@ const HoverTooltip = ({ className }: TooltipProps) => {
         transform: isVisible ? "translate3d(0, 0, 0)" : hiddenTransform,
       }}
       className={clsx(
-        "fixed z-[250] pointer-events-none select-none inline-flex border border-gold/30 text-xs px-4 py-2 bg-[#15100a] flex-col justify-start items-center text-gold transition-all duration-150 ease-out",
+        "fixed z-[250] pointer-events-none select-none inline-flex border border-gold/30 text-xs px-4 py-2 bg-[#15100a] flex-col justify-start items-center text-gold",
+        // A held name is there the moment the hold is long enough; a hovered one eases in.
+        !tooltip.held && "transition-all duration-150 ease-out",
         className,
       )}
     >
