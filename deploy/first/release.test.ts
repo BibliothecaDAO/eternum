@@ -27,10 +27,16 @@ function setup() {
   store.write("pull-request.json", { number: 5039 });
   const state = {
     native: "null",
-    proof: "null",
+    built: "null",
     tree: revision,
     dirty: "",
+    healthy: true,
+    rows: [] as { url: string; status: string; chainId: string }[],
   };
+  spyOn(globalThis, "fetch").mockImplementation((async (url: Parameters<typeof fetch>[0]) =>
+    String(url).endsWith("/health")
+      ? Response.json({}, { status: state.healthy ? 200 : 503 })
+      : Response.json({ shards: state.rows })) as typeof fetch);
   const calls: string[][] = [];
   spyOn(processTools, "command").mockImplementation(async ({ argv, input }) => {
     calls.push(argv);
@@ -43,7 +49,7 @@ function setup() {
       if (argv[1] === "status") return state.dirty;
     }
     if (argv[0] === "ssh")
-      return typeof input === "string" && input.includes("native-world.json") ? state.native : state.proof;
+      return typeof input === "string" && input.includes("native-world.json") ? state.native : state.built;
     throw new Error(`Unexpected test command: ${argv.slice(0, 2).join(" ")}`);
   });
   const platform = new Platform(
@@ -66,7 +72,7 @@ function setup() {
   const step = (name: string) => deliverySteps(context).find((step) => step.name === name)!;
   return { state, calls, step, platform };
 }
-test.each(["Workers", "Client", "Shard deployment and self-check"])(
+test.each(["Workers", "Client", "Shard deployment"])(
   "%s cannot count the old release or missing box as done",
   async (name) => {
     const { step } = setup();
@@ -75,11 +81,11 @@ test.each(["Workers", "Client", "Shard deployment and self-check"])(
     expect(observation.waiting).toBeUndefined();
   },
 );
-test("an old shard proof cannot count as the new release", async () => {
+test("an old box build cannot count as the new release", async () => {
   const { state, step } = setup();
   state.native = JSON.stringify({ shard: { chainId: `0x${Buffer.from(release.chain_id).toString("hex")}` } });
-  state.proof = JSON.stringify({ revision: oldRevision });
-  expect((await step("Shard deployment and self-check").inspect()).done).toBe(false);
+  state.built = JSON.stringify({ commit: oldRevision });
+  expect((await step("Shard deployment").inspect()).done).toBe(false);
 });
 test.each(["old tree", "dirty tree"])("%s refuses Worker deployment before any build", async (condition) => {
   const { state, platform, calls } = setup();
@@ -96,4 +102,25 @@ test("an old tree refuses client deployment before any build", async () => {
   const error = await deployClient(platform, revision).catch((error) => error);
   expect(error).toBeInstanceOf(PublicError);
   expect(error.message).toContain(`clean checkout of commit ${revision}`);
+});
+
+test("a shard is done only at the built commit with live health and its exact active directory identity", async () => {
+  const { state, step } = setup();
+  const chainId = `0x${Buffer.from(release.chain_id).toString("hex")}`;
+  state.native = JSON.stringify({ shard: { chainId } });
+  state.built = JSON.stringify({ commit: revision });
+  const row = { url: release.public_herald_url, chainId, status: "active" };
+  state.rows = [row];
+  expect((await step("Shard deployment").inspect()).done).toBe(true);
+  for (const changed of [
+    { ...row, status: "pending" },
+    { ...row, chainId: "0x99" },
+    { ...row, url: "https://other.test" },
+  ]) {
+    state.rows = [changed];
+    expect((await step("Shard deployment").inspect()).done).toBe(false);
+  }
+  state.rows = [row];
+  state.healthy = false;
+  await expect(step("Shard deployment").inspect()).rejects.toThrow("Public deployment read failed");
 });

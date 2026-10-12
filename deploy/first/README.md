@@ -99,8 +99,9 @@ key Docker's Cairo layers; changes to Herald or deployment scripts reuse them.
     Unlisted incompatible state refuses and requires manual removal; active, draining and retired state is never
     deleted. Drain the former shard's directory entry, stop the Compose project occupying its ports, retire that entry
     and deploy the new shard built on the box from this checkout commit. Preserve former active shard data and volumes.
-    The existing deployment check proves gameplay and the on-chain launcher/ledger-operator handoff before activation.
-    An unrelated container or conflicting new-chain data stops the command.
+    Compare initialized facts with the build and confirm the on-chain launcher/ledger-operator handoff before
+    activation. Deployment creates no game; gameplay is verified by the first real game and playtest. An unrelated
+    container or conflicting new-chain data stops the command.
 14. Build and publish the client locally with wrangler. Check its chain/RPC, recovery tests, source assets, emitted PWA
     assets, cache rules and published modules/routes. Remove public sourcemaps before upload. Origin, zone and Pages
     project come from the table. A matching remote release is checked without uploading it again.

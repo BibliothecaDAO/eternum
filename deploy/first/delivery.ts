@@ -198,7 +198,7 @@ export function deliverySteps(context: Deployment): Step[] {
       },
     },
     {
-      name: "Shard deployment and self-check",
+      name: "Shard deployment",
       payer: "shard launcher",
       cost: "0 STRK",
       inspect: async () => {
@@ -209,8 +209,7 @@ export function deliverySteps(context: Deployment): Step[] {
         if (!document)
           return {
             done: false,
-            detail:
-              "drain and stop the old shard, preserve its data, then deploy the reviewed release and run its full self-check",
+            detail: "build the shard, preserve listed state, initialize and hand off service roles before activation",
           };
         const expectedChain = BigInt(`0x${Buffer.from(release.chain_id).toString("hex")}`);
         if (BigInt(document.shard.chainId) !== expectedChain)
@@ -218,17 +217,25 @@ export function deliverySteps(context: Deployment): Step[] {
             done: false,
             detail: "check directory status before refusing or replacing unfinished shard identity",
           };
-        const proof = await boxRead(
+        const built = await boxRead(
           context.target,
-          `if [ -f ${shell(`${releaseDirectory(context.target)}/first-deployment-check.json`)} ]; then cat ${shell(`${releaseDirectory(context.target)}/first-deployment-check.json`)}; else echo null; fi`,
+          `if [ -f ${shell(`${releaseDirectory(context.target)}/release.json`)} ]; then cat ${shell(`${releaseDirectory(context.target)}/release.json`)}; else echo null; fi`,
         );
-        const saved = JSON.parse(proof);
-        if (!saved || saved.revision !== revision)
-          return { done: false, detail: "run the deployment self-check against the current release" };
+        const saved = JSON.parse(built);
+        if (!saved || saved.commit !== revision)
+          return { done: false, detail: "deploy the current commit and confirm its service roles" };
         await jsonGet(`${release.public_herald_url}/health`);
-        const directory = await service<{ shards: { url: string; status: string }[] }>(context, "/api/directory");
+        const directory = await service<{ shards: { url: string; status: string; chainId: string }[] }>(
+          context,
+          "/api/directory",
+        );
         return {
-          done: directory.shards.some((shard) => shard.url === release.public_herald_url && shard.status === "active"),
+          done: directory.shards.some(
+            (shard) =>
+              shard.url === release.public_herald_url &&
+              shard.status === "active" &&
+              BigInt(shard.chainId) === expectedChain,
+          ),
           detail: "native-world identity, live Herald and active directory checked",
         };
       },
