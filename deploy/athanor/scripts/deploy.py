@@ -63,7 +63,7 @@ def main(environment, directory, report_stage=ignore_stage):
 
 def remove_unused_checkouts():
     for checkout in (Path.home() / "cairo-suite").glob("first-release-*"):
-        if (re.fullmatch(r"first-release-[0-9a-f]{40}", checkout.name)
+        if (re.fullmatch(r"first-release-[0-9a-f]{7,40}", checkout.name)
                 and checkout.is_dir() and not checkout.is_symlink() and checkout.resolve() != shard.ROOT.resolve()):
             shutil.rmtree(checkout)
 

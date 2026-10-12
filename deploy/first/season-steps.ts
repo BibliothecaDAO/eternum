@@ -44,13 +44,14 @@ async function service<T>(context: Season, path: string, method = "GET", body?: 
       typeof body?.error === "string" && /^[a-z][a-z0-9_]{0,79}$/.test(body.error)
         ? body.error
         : "invalid_service_error";
-    throw new PublicError(`Service ${path}: HTTP ${response.status}; code ${code}.`);
+    throw new PublicError(`Service ${path}: HTTP ${response.status}; code ${code}.`, response.status, code);
   }
   return response.json() as Promise<T>;
 }
 async function jsonGet<T>(url: string): Promise<T> {
   const response = await fetch(url, { redirect: "error", headers: { "User-Agent": "realms-deployment/1" } });
-  if (!response.ok) throw new PublicError(`Public deployment read: HTTP ${response.status}.`);
+  if (!response.ok)
+    throw new PublicError(`Public deployment read: HTTP ${response.status}.`, response.status, "public_read_refused");
   return response.json() as Promise<T>;
 }
 async function games(context: Season) {

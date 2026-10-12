@@ -78,8 +78,9 @@ lockfiles and compiler versions key Docker's Cairo layers; changes to Herald or 
    in parallel during both inspection and apply. Opening a new Blitz ledger season requires its start to be in the
    future; an existing matching season is preserved after its start. Production writes public unsigned calls to
    `cold-setup.json` and waits for the cold wallet to execute them. Its cold key never enters the command.
-7. Adopt the box's protected operator token if present. Generate the other service credentials once. If the guardian
-   Worker already holds `GUARDIAN_PRIVATE_KEY`, keep it even if this directory has no copy. Never rotate it.
+7. Reuse the saved service credentials, or generate them once for a new environment. An existing box token requires the
+   original private directory; comparison runs on the box and returns only a match result. If the guardian Worker
+   already holds `GUARDIAN_PRIVATE_KEY`, keep it even if this directory has no copy. Never rotate it.
 8. Create missing D1 databases, the status R2 bucket, Pages project and domain. Refuse conflicting existing DNS.
    First-install Worker placeholders have no routes and return 503; their named entrypoints break the binding cycle.
    Existing Workers are preserved until their actual deployment step.
@@ -101,11 +102,13 @@ pnpm run deploy dev
 pnpm run deploy:cloudflare dev "$HOME/.realms-dev"
 ```
 
-The box command needs SSH alone. It builds images on the target box, initializes the shard and registers it. Full
-output, including builds and failures, stays in a mode-0600 `deploy-*.log` in the run directory; the command prints its
-path, failing stage, HTTP status and fixed service error. Deployment holds the box's stack lock. The world names the
-launcher and relay accounts at creation; each Worker joins using its own device from its alarm or cron. Deployment does
-not enrol those devices or transfer their roles. Dev uses `realms-dev` in `/opt/athanor/runs/dev`.
+The box command needs Bun and SSH, with no dependency install or package build. A Git archive carries its source commit
+in `deploy/first/commit.txt`; Cloudflare publication installs locked dependencies in its export before use. It builds
+images on the target box, initializes the shard and registers it. Full output, including builds and failures, stays in a
+mode-0600 `deploy-*.log` in the run directory; the command prints its path, failing stage, HTTP status and fixed service
+error. Deployment holds the box's stack lock. The world names the launcher and relay accounts at creation; each Worker
+joins using its own device from its alarm or cron. Deployment does not enrol those devices or transfer their roles. Dev
+uses `realms-dev` in `/opt/athanor/runs/dev`.
 
 The Cloudflare command belongs to the credential holder. It exports HEAD to a temporary directory, installs locked
 dependencies, builds workspace packages, migrates D1 and publishes Workers, then builds and publishes the client.

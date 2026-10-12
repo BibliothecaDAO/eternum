@@ -35,7 +35,7 @@ interface HarnessCliOptions {
   workload: "burst" | "cadence" | "frontier";
   functional: boolean;
   gameType: HarnessGameType;
-  /** The preset new games are created from; the campaign names one per configuration. */
+  /** The preset to play; Frontier games must already be listed in the directory. */
   presetId: number;
   /** A campaign burst on the Frontier shape instead of its day-long play. */
   frontierBurst?: FrontierBurst;
