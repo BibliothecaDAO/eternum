@@ -6,7 +6,7 @@ import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { type Reason, ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
-import { BUILD, BUILDING, MAP } from "@/ui/design-system/kit/words";
+import { BUILD, BUILDING, freeOf, POPULATION } from "@/ui/design-system/kit/words";
 
 /**
  * One building on the build sheet: its icon and name, then its labor price (ember when short), a tick when the realm
@@ -22,36 +22,51 @@ export type BuildTile = {
 /** What the chosen building gives, as chips: what it makes or houses, and the population it takes. */
 export type BuildGain = { icon: IconCode; value: string; label: string };
 
+/** Why Build cannot run, in one line, and the step that fixes it where there is one: its word, its price, its way. */
+export type BuildRefusal = {
+  reason: Reason;
+  fix?: { word: string; icon?: IconCode; prices?: Price[]; onFix: () => void };
+};
+
 /**
- * The build sheet (wireframe 02): the grid of buildings, the chosen one's gains, and Build carrying its price (the copy
- * surcharge included). When the realm cannot pay, the price held against what it has and the exact wait take Build's
- * place, with Map, where labor comes from.
+ * The build sheet (wireframe 02): the realm's free population in its head, the grid of buildings, the chosen one's
+ * gains, and Build carrying its price (the copy surcharge included). When the building cannot rise, one line says what
+ * it needs against what there is, and the gold button carries the fix: the Hut that houses it, or the map that pays it.
  */
 export const BuildView = ({
+  population,
   tiles,
   chosen,
   onChoose,
   gains,
   prices,
-  short,
+  refusal,
   sending,
   onBuild,
-  onMap,
   onClose,
 }: {
+  /** The realm's population: what is free of all it can hold; unknown is a dash. */
+  population: { free: number | undefined; total: number | undefined };
   tiles: BuildTile[];
   chosen: number;
   onChoose: (index: number) => void;
   gains: BuildGain[];
   prices: Price[];
-  /** Why Build cannot run: a price held against what the realm has. */
-  short: Extract<Reason, { kind: "short" }> | undefined;
+  refusal: BuildRefusal | undefined;
   sending: boolean;
   onBuild: () => void;
-  onMap: () => void;
   onClose: () => void;
 }) => (
   <Sheet label={BUILD} onClose={onClose}>
+    <header className="flex items-center justify-between gap-2">
+      <h2 className="frontier-title !text-[20px]">{BUILD}</h2>
+      <Chip
+        icons={["Pp"]}
+        label={POPULATION}
+        value={`${formatExact(population.free)} / ${formatExact(population.total)}`}
+        tip={freeOf(POPULATION, formatExact(population.free), formatExact(population.total))}
+      />
+    </header>
     <div className="grid grid-cols-3 gap-1.5">
       {tiles.map((tile, index) => (
         <TileButton key={tile.key} tile={tile} chosen={index === chosen} onChoose={() => onChoose(index)} />
@@ -63,11 +78,19 @@ export const BuildView = ({
       ))}
     </div>
     {/* A building already standing or still gated shows why on its tile; there is nothing to build. */}
-    {tiles[chosen]?.foot.kind !== "price" ? null : short ? (
-      <ReasonPlate
-        reason={short}
-        step={<Button role="primary" icon="Mp" word={MAP} className="w-[104px]" onClick={onMap} />}
-      />
+    {tiles[chosen]?.foot.kind !== "price" ? null : refusal ? (
+      <>
+        <ReasonPlate reason={refusal.reason} />
+        {refusal.fix && (
+          <Button
+            role="primary"
+            icon={refusal.fix.icon}
+            word={refusal.fix.word}
+            prices={refusal.fix.prices}
+            onClick={refusal.fix.onFix}
+          />
+        )}
+      </>
     ) : (
       <Button role="primary" word={BUILD} prices={prices} loading={sending ? BUILDING : undefined} onClick={onBuild} />
     )}

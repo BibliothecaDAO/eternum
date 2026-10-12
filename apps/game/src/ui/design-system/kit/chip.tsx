@@ -12,16 +12,20 @@ export const Chip = ({
   label,
   unit,
   ember = false,
+  tip,
 }: {
   icons: IconCode[];
   value: string;
   label: string;
   unit?: string;
   ember?: boolean;
+  /** A fuller line for the tooltip than the chip's name and value, where the facts have one. */
+  tip?: string;
 }) => (
   <span
     role="img"
     aria-label={`${label} ${value}`}
+    data-tip={tip}
     data-tone={ember ? "loss" : undefined}
     className="frontier-chip h-7 shrink-0 !py-0"
   >

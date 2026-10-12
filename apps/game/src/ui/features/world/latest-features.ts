@@ -35,9 +35,17 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "A refused build says why",
+    description:
+      "Fixed the build sheet in Frontier: it shows the realm's free population in its head, a building that cannot rise says what it needs in one line, and the gold button carries the fix, Build Hut or Explore for labor. A Workshop the realm could pay for is no longer refused.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
     title: "No more black buildings",
     description:
       "Fixed realm buildings drawing as solid black shapes on some graphics cards. Every building on your realm shows its own colours again.",
+    type: "fix",
   },
   {
     date: "2026-10-13",

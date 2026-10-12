@@ -10,7 +10,7 @@ import { clockLineText } from "./clock-text";
 import { DayDial } from "./day-dial";
 import { Notice } from "./notice";
 import { PriceChip } from "./price-chip";
-import { ReasonPlate } from "./reason-plate";
+import { ReasonPlate, shortfallLine } from "./reason-plate";
 import { SeasonRow } from "./season-row";
 import { OpenedFromPanel } from "./opened-from-panel";
 import { Sheet } from "./sheet";
@@ -131,16 +131,28 @@ describe("Button", () => {
 });
 
 describe("ReasonPlate", () => {
-  it("holds what the player has against the price, with the exact wait, and the step beside it", () => {
+  it("says a shortfall in one line that names what is counted, with the exact wait, and the step beside it", () => {
     const plate = text(
       renderToStaticMarkup(
         <ReasonPlate
-          reason={{ kind: "short", icon: "La", held: 9_640, need: 15_000, wait: 10 * 3600 + 44 * 60 }}
+          reason={{ kind: "short", of: "labor", held: 9_640, need: 15_000, wait: 10 * 3600 + 44 * 60 }}
           step={<Button role="primary" word="Map" />}
         />,
       ),
     );
-    expect(plate).toBe("9,640 / 15,00010h 44mMap");
+    expect(plate).toBe("Needs 15,000 labor, have 9,640 · in 10h 44mMap");
+  });
+
+  it("counts what is free, or a store's own limit, in the same line", () => {
+    expect(shortfallLine({ kind: "short", of: "population", counted: "free", held: 2, need: 3 })).toBe(
+      "Needs 3 population, 2 free",
+    );
+    expect(shortfallLine({ kind: "short", of: "labor", counted: "limit", held: 18_000, need: 24_000 })).toBe(
+      "Needs 24,000 labor, the store holds 18,000",
+    );
+    expect(shortfallLine({ kind: "short", of: "essence", held: undefined, need: 48_000 })).toBe(
+      "Needs 48,000 Essence, have —",
+    );
   });
 
   it("names what failed in one line", () => {

@@ -91,7 +91,7 @@ export const FrontierResearch = ({ rules, realm }: { rules: ExpeditionRules; rea
               ? {
                   reason: {
                     kind: "short",
-                    icon: "Es",
+                    of: "essence",
                     held: Math.floor(essence),
                     need: chosen.node.essence,
                     wait: secondsUntilHeld(

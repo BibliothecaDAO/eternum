@@ -970,6 +970,7 @@ export const HudLab = () => {
         {lab.production && <ProductionSheet lines={lab.production} onSpend={noop} onBuild={noop} onClose={noop} />}
         {(lab.realmView === "build" || lab.realmView === "build-early") && (
           <BuildView
+            population={lab.realmView === "build" ? { free: 3, total: 12 } : { free: 6, total: 6 }}
             tiles={lab.realmView === "build" ? BUILD_TILES : EARLY_TILES}
             chosen={lab.realmView === "build" ? 0 : 2}
             onChoose={noop}
@@ -985,10 +986,9 @@ export const HudLab = () => {
                   ]
             }
             prices={[{ of: "labor", amount: lab.realmView === "build" ? 6_800 : 800 }]}
-            short={undefined}
+            refusal={undefined}
             sending={false}
             onBuild={noop}
-            onMap={noop}
             onClose={noop}
           />
         )}
@@ -999,7 +999,7 @@ export const HudLab = () => {
             prices={[{ of: "labor", amount: 15_000 }]}
             short={
               lab.realmView === "castle-short"
-                ? { kind: "short", icon: "La", held: 9_640, need: 15_000, wait: 10 * HOUR + 44 * 60 }
+                ? { kind: "short", of: "labor", held: 9_640, need: 15_000, wait: 10 * HOUR + 44 * 60 }
                 : undefined
             }
             sending={false}
@@ -1179,7 +1179,7 @@ const LabTreeSheet = ({ tree }: { tree: "farm" | "barracks" | "hut" | "shrine" }
         farm
           ? undefined
           : {
-              reason: { kind: "short", icon: "Sg", held: 24_000, need: 18_000 },
+              reason: { kind: "short", of: "labor", counted: "limit", held: 18_000, need: 24_000 },
               step: <Button role="primary" icon="Cs" word={CASTLE} className="w-[120px]" onClick={noop} />,
             }
       }
@@ -1225,7 +1225,7 @@ const LabTraining = ({ training }: { training: "battle" | "hearth" | "scouts" | 
       short={
         training === "short"
           ? {
-              reason: { kind: "short", icon: "Es", held: 18_250, need: 48_000 },
+              reason: { kind: "short", of: "essence", held: 18_250, need: 48_000 },
               step: <Button role="primary" icon="Mp" word={MAP} className="w-[104px]" onClick={noop} />,
             }
           : undefined

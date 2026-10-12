@@ -6,7 +6,7 @@ import { ESSENCE, LABOR, LORDS, STAMINA, TROOPS, WHEAT, XP } from "./words";
 /** What a price is paid in: a resource, LORDS, stamina, or XP (drawn as its word, the XP badge being a number alone). */
 export type PriceKind = "essence" | "labor" | "wheat" | "troops" | "lords" | "stamina" | "xp";
 
-const KINDS: Record<PriceKind, { word: string; icon?: IconCode }> = {
+export const PRICE_FACES: Record<PriceKind, { word: string; icon?: IconCode }> = {
   essence: { word: ESSENCE, icon: "Es" },
   labor: { word: LABOR, icon: "La" },
   wheat: { word: WHEAT, icon: "Wh" },
@@ -18,7 +18,7 @@ const KINDS: Record<PriceKind, { word: string; icon?: IconCode }> = {
 
 /** A price: its resource (or XP) and the amount, on the price chip a button carries. Unknown is a dash. */
 export const PriceChip = ({ of, amount }: { of: PriceKind; amount: number | undefined }) => {
-  const { word, icon } = KINDS[of];
+  const { word, icon } = PRICE_FACES[of];
   const shown = formatExact(amount);
   return (
     <span

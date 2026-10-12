@@ -86,7 +86,7 @@ describe("the army", () => {
     expect(host.querySelector('[aria-label="stamina +10"]')).not.toBeNull();
     render("battle");
     expect(upgrade()).toBeUndefined();
-    expect(host.querySelector('[role="status"]')?.textContent).toBe("260 / 400XP");
+    expect(host.querySelector('[role="status"]')?.textContent).toBe("Needs 400 XP, have 260");
   });
 
   it("chooses Scouting's kind with each kind's find rate before and after", () => {

@@ -89,7 +89,7 @@ export const DeployView = ({
       />
       {noTroops ? (
         <ReasonPlate
-          reason={{ kind: "short", icon: "Tr", held: 0, need: 1 }}
+          reason={{ kind: "short", of: "troops", held: 0, need: 1 }}
           step={<Button role="primary" word={BUILD} className="w-[140px]" onClick={onBuild} />}
         />
       ) : (
@@ -121,7 +121,7 @@ export const DeployView = ({
           onClick={onDeploy}
         />
       )}
-      {wheatShort && <ReasonPlate reason={{ kind: "short", icon: "Wh", ...wheatShort }} />}
+      {wheatShort && <ReasonPlate reason={{ kind: "short", of: "wheat", ...wheatShort }} />}
     </Sheet>
   );
 };

@@ -58,6 +58,22 @@ export const EXPLORE = "Explore";
 export const MOVE = "Move";
 export const CANCEL = "Cancel";
 
+/** A realm's room for buildings: every building takes some, a Hut gives some. */
+export const POPULATION = "population";
+/**
+ * Why a verb cannot run yet, in one line that names what is counted: against what the realm holds, against what is
+ * free, or against a store's own limit, which no wait fills. A shortfall that fills by itself says when.
+ */
+export const needsHave = (need: string, noun: string, have: string) => `Needs ${need} ${noun}, have ${have}`;
+export const needsFree = (need: string, noun: string, free: string) => `Needs ${need} ${noun}, ${free} free`;
+export const needsOverLimit = (need: string, noun: string, limit: string) =>
+  `Needs ${need} ${noun}, the store holds ${limit}`;
+export const inTime = (duration: string) => `in ${duration}`;
+/** A store on its tooltip: what is free of it, "Population 2 free of 6". */
+export const freeOf = (noun: string, free: string, total: string) => `${noun} ${free} free of ${total}`;
+/** The fix for a short store that the map can fill: "Explore for labor". */
+export const exploreFor = (noun: string) => `${EXPLORE} for ${noun}`;
+
 /** The four attributes, each wearing its Aspect's mark. */
 export const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Homecoming"] as const;
 /** Scouting's choice at each tier: the kind it lifts (the screen shows icons; these are their names). */

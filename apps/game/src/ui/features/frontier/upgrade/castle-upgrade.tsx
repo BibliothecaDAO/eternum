@@ -63,7 +63,7 @@ export const CastleUpgrade = ({ realm, onClose }: { realm: NativeRows["Structure
       short={
         short && {
           kind: "short",
-          icon: short.resource === ResourcesIds.Essence ? "Es" : "La",
+          of: castlePriceKind(short.resource),
           held: held(short.resource),
           need: short.amount,
           wait: secondsUntilHeld(

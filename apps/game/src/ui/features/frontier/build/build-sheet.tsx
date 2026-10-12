@@ -9,9 +9,9 @@ import { getPlayerName } from "@/services/identity/player-profiles";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import type { IconCode } from "@/ui/design-system/kit/kit-icon";
-import type { PriceKind } from "@/ui/design-system/kit/price-chip";
+import { PRICE_FACES, type PriceKind } from "@/ui/design-system/kit/price-chip";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
-import { TIER_WORDS } from "@/ui/design-system/kit/words";
+import { BUILD, exploreFor, HUT, TIER_WORDS } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { knownBalance } from "@/ui/utils/utils";
 import { canIssueOrders } from "@/utils/can-issue-orders";
@@ -31,7 +31,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useGoToFrontierPlace } from "../frontier-home";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 import { type BuildOption, readBuildOptions } from "./build-options";
-import { type BuildGain, type BuildTile, BuildView } from "./build-view";
+import { type BuildGain, type BuildRefusal, type BuildTile, BuildView } from "./build-view";
 import { buildingIcon, buildingName } from "./building-names";
 
 const BUILD_MODELS = [
@@ -129,54 +129,91 @@ export const BuildSheet = ({
     const balance = knownBalance(getBalance(safeInteger(realm.entity_id), resource, tick, setup.store).balance);
     return balance === undefined ? undefined : Math.floor(balance);
   };
-  const shortCost = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
-  const buildable = resolveConstructionBuildability({
-    entityId: safeInteger(realm.entity_id),
-    buildingType: option.category,
-    useSimpleCost,
-    store: setup.store,
-    realm: realmInfo,
-    mode,
-    targetSpot: plot,
-  }).canSubmit;
-  const freePopulation =
-    realmInfo?.population === undefined || realmInfo.capacity === undefined
-      ? undefined
-      : realmInfo.capacity + configManager.getBasePopulationCapacity() - realmInfo.population;
+  const population = realmPopulation(realmInfo);
+  const refusal = (): BuildRefusal | undefined => {
+    const shortCost = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
+    if (shortCost) {
+      const have = held(shortCost.resource);
+      const perHour = realmPerHour(setup.store, realmId, shortCost.resource, tick);
+      return {
+        reason: {
+          kind: "short",
+          of: priceKind(shortCost.resource),
+          held: have,
+          need: shortCost.amount,
+          wait: secondsUntilHeld(have, shortCost.amount, perHour),
+        },
+        fix: revealsPay(shortCost.resource)
+          ? {
+              icon: "Mp",
+              word: exploreFor(PRICE_FACES[priceKind(shortCost.resource)].word),
+              onFix: () => {
+                onClose();
+                goToPlace(true);
+              },
+            }
+          : undefined,
+      };
+    }
+    const verdict = resolveConstructionBuildability({
+      entityId: realmId,
+      buildingType: option.category,
+      useSimpleCost,
+      store: setup.store,
+      realm: realmInfo,
+      mode,
+      targetSpot: plot,
+    });
+    if (verdict.canSubmit) return undefined;
+    if (verdict.code !== "insufficient_population" && verdict.code !== "insufficient_capacity")
+      return { reason: { kind: "failed", line: verdict.reason ?? "" } };
+    const hut = options.findIndex(({ category }) => category === BuildingType.WorkersHut);
+    return {
+      reason: {
+        kind: "short",
+        of: "population",
+        counted: "free",
+        held: population.free,
+        need: option.populationCost,
+      },
+      fix: {
+        word: `${BUILD} ${HUT}`,
+        prices: options[hut].cost.map(({ resource, amount }) => ({ of: priceKind(resource), amount })),
+        onFix: () => setChosen(hut),
+      },
+    };
+  };
   return (
     <BuildView
+      population={population}
       tiles={options.map((candidate) => buildTile(candidate, held(ResourcesIds.Labor)))}
       chosen={chosen}
       onChoose={setChosen}
       gains={buildGains(option)}
       prices={option.cost.map(({ resource, amount }) => ({ of: priceKind(resource), amount }))}
-      short={
-        shortCost
-          ? {
-              kind: "short",
-              icon: iconOf(shortCost.resource),
-              held: held(shortCost.resource),
-              need: shortCost.amount,
-              wait: secondsUntilHeld(
-                held(shortCost.resource),
-                shortCost.amount,
-                realmPerHour(setup.store, safeInteger(realm.entity_id), shortCost.resource, tick),
-              ),
-            }
-          : buildable
-            ? undefined
-            : { kind: "short", icon: "Pp", held: freePopulation, need: option.populationCost }
-      }
+      refusal={refusal()}
       sending={sending}
       onBuild={() => void build()}
-      onMap={() => {
-        onClose();
-        goToPlace(true);
-      }}
       onClose={onClose}
     />
   );
 };
+
+/**
+ * The realm's population as the contract counts it: what its buildings take against what the castle and the Huts
+ * give, and what is free of it.
+ */
+const realmPopulation = (
+  realm: ReturnType<typeof getRealmInfo>,
+): { free: number | undefined; total: number | undefined } => {
+  if (realm?.population === undefined || realm.capacity === undefined) return { free: undefined, total: undefined };
+  const total = realm.capacity + configManager.getBasePopulationCapacity();
+  return { free: total - realm.population, total };
+};
+
+/** Whether exploring the map can pay a shortfall: in a game whose reveals pay supplies, each pays Essence or labor. */
+const revealsPay = (resource: number) =>
+  configManager.paysRevealSupplies() && (resource === ResourcesIds.Labor || resource === ResourcesIds.Essence);
 
 /** Each attribute's mark, as a training building's gain shows it. */
 const ATTRIBUTE_MARKS: Record<Extract<BuildOption["effect"], { kind: "trains" }>["attribute"], IconCode> = {

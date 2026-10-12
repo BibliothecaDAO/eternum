@@ -247,7 +247,7 @@ const ChosenTier = ({
           onClick={onUpgrade}
         />
       ) : (
-        <ReasonPlate reason={{ kind: "short", icon: "Ey", held: xp, need: price, unit: XP }} />
+        <ReasonPlate reason={{ kind: "short", of: "xp", held: xp, need: price }} />
       )}
     </>
   );

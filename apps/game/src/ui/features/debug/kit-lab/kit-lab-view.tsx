@@ -116,10 +116,10 @@ const ButtonsSection = () => (
 const ReasonsSection = () => (
   <Section title="ReasonPlate">
     <ReasonPlate
-      reason={{ kind: "short", icon: "La", held: 9_640, need: 15_000, wait: 10 * HOUR + 44 * 60 }}
+      reason={{ kind: "short", of: "labor", held: 9_640, need: 15_000, wait: 10 * HOUR + 44 * 60 }}
       step={<Button role="primary" word="Map" className="w-[104px]" />}
     />
-    <ReasonPlate reason={{ kind: "short", icon: "Lo", held: 40, need: 60 }} />
+    <ReasonPlate reason={{ kind: "short", of: "lords", held: 40, need: 60 }} />
     <ReasonPlate
       reason={{ kind: "failed", line: "Season did not answer." }}
       step={<Button role="outline" word={TRY_AGAIN} />}

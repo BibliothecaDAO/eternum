@@ -314,8 +314,14 @@ const validatePopulation = (input: ConstructionBuildabilityInput): ConstructionB
   return pass();
 };
 
-const validateStructureResource = ({ buildingType, realm }: ConstructionBuildabilityInput) => {
+/** A game played on realm boards (Frontier): its board rules are among the game's facts. */
+const hasRealmBoard = (store: NativeFactStore) =>
+  store.get("BoardRules", { game_id: configManager.getActiveGameId() }) !== undefined;
+
+const validateStructureResource = ({ buildingType, realm, store }: ConstructionBuildabilityInput) => {
   if (!RESOURCE_PRODUCER_BUILDINGS_REQUIRING_STRUCTURE_RESOURCE.has(buildingType)) return pass();
+  // A board's Workshop makes labor whatever the realm's own resources are (the contract's assert_structure_produces).
+  if (buildingType === BuildingType.ResourceLabor && hasRealmBoard(store)) return pass();
 
   const producedResource = getProducedResource(buildingType);
   if (producedResource === undefined || producedResource === null) {

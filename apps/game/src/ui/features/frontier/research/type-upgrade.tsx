@@ -149,7 +149,7 @@ export const TypeUpgrade = ({
         short && {
           reason: short,
           step:
-            short.icon === "Sg" ? (
+            short.counted === "limit" ? (
               <Button role="primary" icon="Cs" word={CASTLE} className="w-[120px]" onClick={() => go(false)} />
             ) : (
               <Button role="primary" icon="Mp" word={MAP} className="w-[104px]" onClick={() => go(true)} />
@@ -280,10 +280,10 @@ export const shortfall = (
   waits: { essenceWait: number | undefined; laborWait: number | undefined },
 ): Extract<Reason, { kind: "short" }> | undefined => {
   if (essence === undefined || essence < price.essence)
-    return { kind: "short", icon: "Es", held: essence, need: price.essence, wait: waits.essenceWait };
+    return { kind: "short", of: "essence", held: essence, need: price.essence, wait: waits.essenceWait };
   if (labor?.limit !== undefined && labor.limit < price.labor)
-    return { kind: "short", icon: "Sg", held: labor.limit, need: price.labor };
+    return { kind: "short", of: "labor", counted: "limit", held: labor.limit, need: price.labor };
   if (labor?.amount === undefined || labor.amount < price.labor)
-    return { kind: "short", icon: "La", held: labor?.amount, need: price.labor, wait: waits.laborWait };
+    return { kind: "short", of: "labor", held: labor?.amount, need: price.labor, wait: waits.laborWait };
   return undefined;
 };
