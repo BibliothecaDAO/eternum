@@ -2,7 +2,8 @@ import { type ActionPath, ActionPaths, ActionType } from "@bibliothecadao/eternu
 
 /**
  * The HUD's verb for the order the player has pinned: a tap on a tile the selected army can explore or move to pins
- * it (the path and its costs show), and the verb asks the world map to run that order, as a right-click would.
+ * it (the path and its costs show), and the verb asks the world map to run that order. A right-click runs it only in
+ * a game whose HUD has no verb.
  */
 export const ORDER_REQUEST_EVENT = "orderAtTileRequest";
 
@@ -46,4 +47,21 @@ export const orderOnTap = ({
   if (pinsOrder(path)) return "pin";
   if (path && ActionPaths.getActionType(path) === ActionType.Attack) return "attack";
   return armySelected && standingSite ? "site-out-of-reach" : null;
+};
+
+/**
+ * Escape backs out one step. Where the HUD carries the order's verb, the pinned order goes first and the selection
+ * second. Where it does not, an open navigation view closes before the selection clears.
+ */
+export const stepBackOnEscape = ({
+  hudCarriesOrderVerb,
+  orderPinned,
+  navigationViewOpen,
+}: {
+  hudCarriesOrderVerb: boolean;
+  orderPinned: boolean;
+  navigationViewOpen: boolean;
+}): "cancel-order" | "close-view" | "clear-selection" => {
+  if (hudCarriesOrderVerb) return orderPinned ? "cancel-order" : "clear-selection";
+  return navigationViewOpen ? "close-view" : "clear-selection";
 };

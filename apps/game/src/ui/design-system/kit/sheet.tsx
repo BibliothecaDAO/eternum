@@ -120,13 +120,16 @@ const useLatest = <T,>(value: T) => {
   return ref;
 };
 
+/** Escape closes the sheet and stops there: taken before the map's shortcuts, which leave a key a surface took. */
 const useEscapeCloses = (close: () => void) => {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close();
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      close();
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   }, [close]);
 };
 

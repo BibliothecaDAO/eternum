@@ -27,6 +27,7 @@ import {
 import type { ReactNode } from "react";
 
 import { guideTarget } from "../guide/guide-thread";
+import { useEnterConfirms } from "../hud/enter-confirms";
 import type { Cost } from "../hud/army-order";
 import type { SiteFight } from "./site-card-plan";
 
@@ -260,8 +261,10 @@ const Verb = ({
   armyLost: boolean;
   onRealm: (() => void) | undefined;
 }) => {
+  const warns = verb?.kind === "attack" && armyLost;
+  // Enter confirms the attack the forecast wins or stalls; one that loses the army takes a deliberate tap.
+  useEnterConfirms(verb?.kind === "attack" && !verb.sending && !warns ? verb.onAttack : undefined);
   if (!verb) return null;
-  const warns = verb.kind === "attack" && armyLost;
   return (
     <div className="flex flex-col gap-2">
       <div className="flex gap-2">

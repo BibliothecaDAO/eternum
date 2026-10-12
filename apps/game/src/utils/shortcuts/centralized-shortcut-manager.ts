@@ -42,6 +42,8 @@ export class CentralizedShortcutManager {
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
       return;
     }
+    // A key an open surface already took (a sheet closing on Escape) is one step, not also the map's.
+    if (event.defaultPrevented) return;
 
     const shortcutKey = createShortcutKey(event.key, {
       ctrl: event.ctrlKey,

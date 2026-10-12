@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "One rule for every click",
+    description:
+      "Changed how orders are given in Frontier: a right-click, or a press-and-hold on a phone, now opens the same preview as a click or a tap and never sends an army by itself. The preview stays on the tile you chose while the pointer moves. Esc backs out one step (the preview, then the selection), and Enter confirms the open preview or, with none open, puts the cursor in chat.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
     title: "Closing a card keeps your place",
     description:
       "Fixed closing a card on the map: the camera no longer jumps back to your realm and your selected army stays selected. A card closed the moment it opened can no longer step the browser back off the game.",

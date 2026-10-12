@@ -4,9 +4,10 @@ import { Chip } from "@/ui/design-system/kit/chip";
 import type { IconCode } from "@/ui/design-system/kit/kit-icon";
 import { formatDuration } from "@/ui/design-system/kit/time";
 import { CANCEL, ESSENCE, EXPLORE, LABOR, LEFT, MOVE, STAMINA, WHEAT, XP } from "@/ui/design-system/kit/words";
-import { type ReactNode, useEffect, useLayoutEffect, useRef } from "react";
+import type { ReactNode } from "react";
 
 import { type Cost, isCovered } from "./army-order";
+import { useEnterConfirms } from "./enter-confirms";
 
 const VERBS = { explore: { word: EXPLORE, icon: "Ey" }, move: { word: MOVE, icon: "Bt" } } as const;
 
@@ -110,21 +111,3 @@ const RevealYield = ({ revealYield, laborFits }: { revealYield: number | undefin
       value={revealYield === undefined ? "—" : `+${formatAmount(revealYield)}`}
     />
   );
-
-/** On a keyboard, Enter confirms the order its verb offers; never while the player is typing. */
-const useEnterConfirms = (onGo: (() => void) | undefined) => {
-  const latest = useRef(onGo);
-  useLayoutEffect(() => {
-    latest.current = onGo;
-  });
-  useEffect(() => {
-    const confirm = (event: KeyboardEvent) => {
-      const typing = event.target instanceof HTMLElement && event.target.closest("input, textarea, [contenteditable]");
-      if (event.key !== "Enter" || typing || !latest.current) return;
-      event.preventDefault();
-      latest.current();
-    };
-    window.addEventListener("keydown", confirm);
-    return () => window.removeEventListener("keydown", confirm);
-  }, []);
-};

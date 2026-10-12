@@ -132,6 +132,37 @@ describe("a guarded site's card", () => {
   });
 });
 
+describe("Enter on a guarded site's card", () => {
+  const enter = () => new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+  const card = (fight: "wins" | "loses", onAttack: () => void) => (
+    <SiteCardView
+      site="camp"
+      beast={undefined}
+      army={army}
+      guard={1_100}
+      fight={{ outcome: fight, exchanges: 1, troopsLost: 180, guardLeft: fight === "wins" ? 0 : 900 }}
+      pay={{ icon: "La", amount: 550 }}
+      xp={82}
+      verb={{ kind: "attack", stamina: 30, sending: false, onAttack }}
+      onClose={() => {}}
+    />
+  );
+
+  it("confirms the attack the army wins", () => {
+    const onAttack = vi.fn();
+    act(() => root.render(card("wins", onAttack)));
+    act(() => void document.body.dispatchEvent(enter()));
+    expect(onAttack).toHaveBeenCalledTimes(1);
+  });
+
+  it("never sends the attack that loses the army: that one takes its own tap", () => {
+    const onAttack = vi.fn();
+    act(() => root.render(card("loses", onAttack)));
+    act(() => void document.body.dispatchEvent(enter()));
+    expect(onAttack).not.toHaveBeenCalled();
+  });
+});
+
 describe("a guarded site's card for an army out of reach", () => {
   it("holds Attack back and says the site is too far when no order of the army leads beside it", () => {
     act(() =>

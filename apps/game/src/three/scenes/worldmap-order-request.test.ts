@@ -1,7 +1,7 @@
 import { ActionType } from "@bibliothecadao/eternum";
 import { describe, expect, it } from "vitest";
 
-import { orderOnTap, pinsOrder } from "./worldmap-order-request";
+import { orderOnTap, pinsOrder, stepBackOnEscape } from "./worldmap-order-request";
 
 const step = (actionType: ActionType) => ({ hex: { col: 0, row: 0 }, actionType });
 const tap = (path: ReturnType<typeof step>[] | undefined, standingSite = false) =>
@@ -34,5 +34,20 @@ describe("a tap on a tile with an army selected", () => {
     expect(tap([step(ActionType.Move), step(ActionType.Help)])).toBeNull();
     expect(tap([step(ActionType.Move), step(ActionType.SpireTravel)])).toBeNull();
     expect(tap(undefined)).toBeNull();
+  });
+});
+
+describe("Escape on the world map", () => {
+  const frontier = { hudCarriesOrderVerb: true, navigationViewOpen: true };
+  const shared = { hudCarriesOrderVerb: false, orderPinned: true };
+
+  it("cancels the pinned order first, then clears the selection, where the HUD carries the verb", () => {
+    expect(stepBackOnEscape({ ...frontier, orderPinned: true })).toBe("cancel-order");
+    expect(stepBackOnEscape({ ...frontier, orderPinned: false })).toBe("clear-selection");
+  });
+
+  it("closes an open navigation view before the selection where the HUD shows those views", () => {
+    expect(stepBackOnEscape({ ...shared, navigationViewOpen: true })).toBe("close-view");
+    expect(stepBackOnEscape({ ...shared, navigationViewOpen: false })).toBe("clear-selection");
   });
 });

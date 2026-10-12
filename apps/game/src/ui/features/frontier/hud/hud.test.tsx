@@ -10,6 +10,7 @@ import { dayOf } from "@bibliothecadao/eternum";
 import { canResearchNow } from "../research/research-plan";
 import { secondsUntilHeld } from "./army-order";
 import { ArmyToken, OpenSlot } from "./army-token";
+import { useChatKey } from "./chat-key";
 import { dayClock } from "./day-clock";
 import { HudBands } from "./hud-bands";
 import { useHudSurface } from "./frontier-nav";
@@ -290,6 +291,34 @@ describe("the order bar", () => {
     expect(onGo).toHaveBeenCalled();
   });
 
+  it("confirms on Enter and takes the key, but never while the player types", () => {
+    const onGo = vi.fn();
+    act(() =>
+      root.render(
+        <>
+          <input aria-label="message" />
+          <OrderBar
+            kind="move"
+            tiles={2}
+            stamina={covered}
+            wheat={{ cost: 4, held: 4_410, wait: undefined }}
+            revealYield={null}
+            xp={undefined}
+            onCancel={() => {}}
+            onGo={onGo}
+          />
+        </>,
+      ),
+    );
+    const typed = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+    host.querySelector("input")!.dispatchEvent(typed);
+    expect(onGo).not.toHaveBeenCalled();
+    const enter = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+    document.body.dispatchEvent(enter);
+    expect(onGo).toHaveBeenCalledTimes(1);
+    expect(enter.defaultPrevented).toBe(true);
+  });
+
   it("turns a short cost ember with its exact wait, and takes the verb away", () => {
     act(() =>
       root.render(
@@ -316,6 +345,36 @@ describe("the order bar", () => {
     expect(secondsUntilHeld(100, 100, 900)).toBeUndefined();
     expect(secondsUntilHeld(40, 100, 0)).toBeUndefined();
     expect(secondsUntilHeld(undefined, 100, 900)).toBeUndefined();
+  });
+});
+
+describe("the chat key", () => {
+  const Chat = ({ onOpen }: { onOpen: () => void }) => {
+    const pane = useChatKey(onOpen);
+    return (
+      <section ref={pane}>
+        <input aria-label="message" />
+      </section>
+    );
+  };
+  const enter = () => new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+
+  it("opens chat on Enter and puts the cursor in its field", () => {
+    const onOpen = vi.fn();
+    act(() => root.render(<Chat onOpen={onOpen} />));
+    act(() => void document.body.dispatchEvent(enter()));
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).toBe(host.querySelector("input"));
+  });
+
+  it("leaves an Enter that a preview's verb took, and one typed in a field", () => {
+    const onOpen = vi.fn();
+    act(() => root.render(<Chat onOpen={onOpen} />));
+    const taken = enter();
+    taken.preventDefault();
+    act(() => void document.body.dispatchEvent(taken));
+    act(() => void host.querySelector("input")!.dispatchEvent(enter()));
+    expect(onOpen).not.toHaveBeenCalled();
   });
 });
 

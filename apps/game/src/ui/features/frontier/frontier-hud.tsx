@@ -23,6 +23,7 @@ import { GuideProvider, GuideSlot, useGuideSwitch } from "./guide/frontier-guide
 import { SelectedArmyBar, useArmyRevealYield } from "./hud/action-bar";
 import { type ArmyOrder, useArmyOrder } from "./hud/army-order";
 import { ArmyDock } from "./hud/army-dock";
+import { useChatKey } from "./hud/chat-key";
 import { ChatPage } from "./hud/chat-page";
 import { type DockArmy, useDockArmies } from "./hud/dock-armies";
 import { FrontierNav, type HudSurface, useHudSurface } from "./hud/frontier-nav";
@@ -71,6 +72,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   // Desktop keeps chat docked open beside the map, its Chat slot collapsing it; a phone opens it as a page.
   const [chatDocked, setChatDocked] = useState(true);
   const chat = useGameChat(desktop ? chatDocked : surface === "chat");
+  const chatPane = useChatKey(() => (desktop ? setChatDocked(true) : setSurface("chat")));
   if (showBlankOverlay) return null;
   const close = () => setSurface(null);
   const onSurface = (next: HudSurface | null) =>
@@ -78,7 +80,12 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       ? setChatDocked((docked) => !docked)
       : setSurface(next);
   const chatPage = (
-    <ChatPage gameZoneId={chat.gameZoneId} signedIn={chat.initializer !== null} onSignIn={chat.requestSignIn} />
+    <ChatPage
+      gameZoneId={chat.gameZoneId}
+      signedIn={chat.initializer !== null}
+      onSignIn={chat.requestSignIn}
+      pane={chatPane}
+    />
   );
   const openArmy = (explorerId: number) => {
     useUIStore.getState().updateEntityActionSelectedEntityId(explorerId);

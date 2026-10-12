@@ -249,7 +249,9 @@ import {
 } from "./worldmap-terrain-commit-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
 import { ARMY_SELECT_REQUEST_EVENT, readArmySelectRequest } from "./worldmap-army-select-request";
-import { ORDER_REQUEST_EVENT, orderOnTap, readOrderRequest } from "./worldmap-order-request";
+import { ORDER_REQUEST_EVENT, orderOnTap, readOrderRequest, stepBackOnEscape } from "./worldmap-order-request";
+import { hudFor } from "@/ui/layouts/hud-for";
+import { getGameModeId } from "@/config/game-modes";
 import { onChestOpenRequest } from "./worldmap-chest-open-request";
 import { shouldQueueArmySelectionRecovery } from "./worldmap-army-tab-selection";
 import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
@@ -1903,16 +1905,21 @@ export default class WorldmapScene extends WarpTravel {
     this.shortcutManager.registerShortcut({
       id: "escape-handler",
       key: "Escape",
-      description: "Clear selection or close navigation views",
+      description: "Back out one step: a pending order, an open view, then the selection",
       sceneRestriction: SceneName.WorldMap,
-      action: () => {
-        if (this.isNavigationViewOpen()) {
-          this.closeNavigationViews();
-        } else {
-          this.clearSelection();
-        }
-      },
+      action: () => this.backOutOneStep(),
     });
+  }
+
+  private backOutOneStep(): void {
+    const step = stepBackOnEscape({
+      hudCarriesOrderVerb: this.hudCarriesOrderVerb(),
+      orderPinned: getLiveWorldmapEntityActions().hoveredHex !== null,
+      navigationViewOpen: this.isNavigationViewOpen(),
+    });
+    if (step === "cancel-order") this.state.updateEntityActionHoveredHex(null);
+    else if (step === "close-view") this.closeNavigationViews();
+    else this.clearSelection();
   }
 
   private setupCameraZoomHandler() {
@@ -2360,7 +2367,7 @@ export default class WorldmapScene extends WarpTravel {
         });
       }
       this.previouslyHoveredHex = null;
-      this.state.updateEntityActionHoveredHex(null);
+      this.previewOrderUnderPointer(null);
       this.state.setHoveredHex(null);
       this.interactiveHexManager.applyHoverPalette(hoverPalette);
 
@@ -2393,10 +2400,24 @@ export default class WorldmapScene extends WarpTravel {
     // Entity IDs can be valid falsy values (for example 0), so nullish checks
     // are required to distinguish "no selection" from a real selected entity.
     if (selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0) {
-      this.state.updateEntityActionHoveredHex(hexCoords);
+      this.previewOrderUnderPointer(hexCoords);
     }
 
     this.interactiveHexManager.applyHoverPalette(hoverPalette);
+  }
+
+  /**
+   * Whether this game's HUD carries the order's verb (Frontier's). There a click names the order's tile and the HUD
+   * confirms it, so no click on the map sends an army and the pointer never moves a named order. The other modes'
+   * HUD has no verb: the order under the pointer is the preview, and a right-click (a long-press) confirms it.
+   */
+  private hudCarriesOrderVerb(): boolean {
+    return hudFor(getGameModeId(), true) === "frontier";
+  }
+
+  private previewOrderUnderPointer(hexCoords: HexPosition | null): void {
+    if (this.hudCarriesOrderVerb()) return;
+    this.state.updateEntityActionHoveredHex(hexCoords);
   }
 
   // double-click reserved hyperstructure tiles to materialize them; otherwise enter the real structure
@@ -2693,6 +2714,8 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
+    // Where the HUD confirms orders, a right-click is the same order as a tap: the same preview, never a send.
+    if (this.hudCarriesOrderVerb() && this.answerTapWithSelectedArmyOrder(hexCoords)) return;
     this.actAtHex(hexCoords);
   }
 
@@ -2723,7 +2746,10 @@ export default class WorldmapScene extends WarpTravel {
     return order !== null;
   }
 
-  /** Runs the selected army's order at this tile: a right-click, or the HUD's verb for a pinned order. */
+  /**
+   * Runs the selected army's order at this tile: the HUD's verb for a pinned order, or a right-click where the HUD has
+   * none. Help, spire travel and deploy open their own surface from either.
+   */
   private actAtHex(hexCoords: HexPosition) {
     const account = useAccountStore.getState().account;
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();

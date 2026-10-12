@@ -15,11 +15,8 @@ import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 import { MessageSquare } from "@/ui/design-system/atoms/game-icons";
 import { useEffect, useMemo, useRef } from "react";
 import { getActiveGame } from "@/runtime/world";
+import { isTypingTarget } from "@/utils/shortcuts/typing-target";
 import { CHAT_SHORTCUT } from "./chat-shortcut";
-
-const isTypingTarget = (target: EventTarget | null) =>
-  target instanceof Element &&
-  target.closest('input,textarea,select,button,a,[contenteditable="true"],[role="textbox"],[role="dialog"]') !== null;
 
 /**
  * The game's chat room: joined once the player is signed in, its history loaded on connect, its unread count, and the

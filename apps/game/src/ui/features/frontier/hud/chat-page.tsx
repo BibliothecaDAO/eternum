@@ -2,6 +2,7 @@ import { Button } from "@/ui/design-system/kit/button";
 import { SIGN_IN } from "@/ui/design-system/kit/words";
 import { RealtimeChatShell } from "@/ui/features/social";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
+import type { RefObject } from "react";
 
 /**
  * Chat as a nav page on a phone: the room fills the band between the strip and the nav, which stays. Signed out, the
@@ -11,12 +12,16 @@ export const ChatPage = ({
   gameZoneId,
   signedIn,
   onSignIn,
+  pane,
 }: {
   gameZoneId: string;
   signedIn: boolean;
   onSignIn: () => void;
+  /** The chat key focuses this pane's field. */
+  pane: RefObject<HTMLElement>;
 }) => (
   <section
+    ref={pane}
     aria-label="Chat"
     className="frontier-card pointer-events-auto flex min-h-0 flex-1 flex-col overflow-hidden !rounded-xl"
   >

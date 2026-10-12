@@ -225,6 +225,15 @@ describe("Sheet", () => {
     expect(onClose).toHaveBeenCalledTimes(3);
   });
 
+  it("takes the Escape that closes it, so the same press backs out of nothing else", () => {
+    const onClose = vi.fn();
+    renderSheet(onClose);
+    const escape = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+    act(() => void document.body.dispatchEvent(escape));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(escape.defaultPrevented).toBe(true);
+  });
+
   it("on a desktop closes from its own mark: a cross, or a back arrow when it opened from another panel", () => {
     const onClose = vi.fn();
     renderSheet(onClose);
