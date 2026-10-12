@@ -34,9 +34,9 @@ production chain or reuse the state or chain ID of another shard. Backups stay p
 
 The shard package initializes host signing keys and a separate VRF key, then deploys Games with immutable VRF public
 point and play gas bound. Use the package deployment flow in [deploy/shard](../shard/README.md); it registers the shard
-pending before operator enrollment and runs the deployment self-check before making it visible. There is no sequencing
-account, per-game order, epoch service or second submission endpoint. Private credentials stay in `data/` with mode
-`0600`; the public manifest contains only their public identity.
+pending before operator enrollment, compares initialized facts and confirms service roles before making it visible.
+There is no sequencing account, per-game order, epoch service or second submission endpoint. Private credentials stay in
+`data/` with mode `0600`; the public manifest contains only their public identity.
 
 ## Herald and client
 

@@ -48,8 +48,8 @@ operator-authenticated directory route before touching state. An incompatible un
 authenticated directory lists exactly its recorded and configured chain at its configured Herald URL as pending and the
 run directory is the environment's own directory. Unlisted incompatible state refuses and requires manual removal; an
 unreadable local identity or directory read failure refuses cleanup. Matching initialized state continues through the
-existing self-check and role handoff. The initializer runs as HOST_UID, and private credentials remain owner-only with
-mode `0600`.
+existing initialization and role handoff. The initializer runs as HOST_UID, and private credentials remain owner-only
+with mode `0600`.
 
 ## Endpoints and readiness
 
@@ -74,32 +74,22 @@ enrolling the operator. Pending shards are hidden from players. Init then deploy
 roles and registers the selected presets. This bootstrap assigns all three roles to the enrolled operator; later role
 changes use the contract's existing owner-authorized setters.
 
-Deployment's last step runs `deploy/athanor/harness/self-check.ts` in the harness container against the same public
-stamping RPC. Activation also requires the launch Worker to enroll its own account on this pending shard. The owner
-confirms `Games.set_launcher(worker account)` and reads `Games.launcher()` back. The relay's enrolled account receives
-`ledger_operator` through the same set-and-confirm sequence. Both reads must name the enrolled accounts before the
-directory entry becomes active. Missing Worker routes leave the shard PENDING. A failed gameplay check writes
-`data/self-check.json`, exits nonzero naming the first failed route and leaves directory status unchanged. Re-run
-deployment after correcting the fault; it repeats the check only while PENDING. An ACTIVE or DRAINING rerun creates no
-check games. The runner and fixture are the harness implementation, not a separate deployment test suite.
+After initialization, deployment compares the deployed classes, schema and selected preset commitments with the build's
+facts. It enrols the relay and launcher through their Workers, confirms the distinct on-chain roles, then activates the
+directory entry through Herald's real manifest. A failed enrolment, handoff or active write leaves the shard pending;
+rerunning repeats these idempotent operations. Deployment creates no game and proves no gameplay action end to end; the
+first real game and playtest provide that evidence.
 
 Metrics collect OTLP and sample container CPU from a read-only cgroup mount, without a Docker socket or write access.
 The compose services restart on failure. Initializer logs and `harness.env` are private and must never be published.
 
-| Path                | Registration and visibility                                       | Operator command                                                          |
-| ------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Official deployment | PENDING before enrolment; self-check and Worker check then ACTIVE | `operator-command.py deploy ENVIRONMENT PACKAGE_DIRECTORY`                |
-| Measurement runner  | PENDING before enrolment; retires on stop; never activates        | `operator-command.py runner CONFIGURATION RUNNER_DATA_DIRECTORY --matrix` |
+| Path                | Registration and visibility                                              | Operator command                                                          |
+| ------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| Official deployment | PENDING before enrolment; initialized facts and Worker roles then ACTIVE | `operator-command.py deploy ENVIRONMENT PACKAGE_DIRECTORY`                |
+| Measurement runner  | PENDING before enrolment; retires on stop; never activates               | `operator-command.py runner CONFIGURATION RUNNER_DATA_DIRECTORY --matrix` |
 
 Run each command above as `python3 deploy/athanor/scripts/operator-command.py ...`. The wrapper reads the box's
 protected token file; ops provisions it. Use `stop.py` for a manually started runner so its directory entry is retired.
-
-Official deployment enrols the relay and launcher accounts, confirms `set_ledger_operator` and `set_launcher` on chain,
-and verifies the Worker-signed creation. It binds cached gameplay evidence to `native-world.json` and
-`initialized.json`, the chain identity and initialized contracts the check proves. Packaging changes do not invalidate
-that evidence. Resume reads owner, launcher and ledger operator from Games. Once any role has left the bootstrap
-account, missing or invalid gameplay evidence requires retiring the chain. Missing Worker routes leave the shard
-PENDING.
 
 ## Operations: back up and restore
 
@@ -111,8 +101,8 @@ pass before relying on the backup. Stop the public RPC during a node outage; cal
 observe their original transaction hash before submitting another action.
 
 To restore, use the recorded image digests, chain archive, database backup and private data archive on fresh volumes.
-Start preparation first: it verifies identity and republishes runtime files. Then start the stack and repeat the
-self-check before directory activation. Never initialize fresh host keys over an incomplete or restored data directory.
+Start preparation first: it verifies identity and republishes runtime files. Then start the stack and repeat the role
+handoff before directory activation. Never initialize fresh host keys over an incomplete or restored data directory.
 
 ## Contract releases
 

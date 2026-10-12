@@ -22,22 +22,11 @@ interface ServiceRoleCheck extends ServiceRoleContext {
 }
 
 async function main(): Promise<void> {
-  const [action, directory, role, account, ...extra] = process.argv.slice(2);
-  if (!directory || extra.length || !["state", "handoff"].includes(action!))
+  const [directory, role, account, ...extra] = process.argv.slice(2);
+  if (!directory || extra.length || !account || !["launcher", "ledger_operator"].includes(role!))
     throw new Error("Invalid service role check inputs");
   const context = loadServiceRoleContext(directory);
   await assertProviderChain(context.provider, context.manifest, "service role check RPC");
-  if (action === "state") {
-    const state = await readRoleHandoffState({
-      provider: context.provider,
-      world: context.manifest.world.address,
-      bootstrap: context.bootstrap,
-    });
-    console.log(JSON.stringify({ passed: true, ...state }));
-    return;
-  }
-  if (!account || !["launcher", "ledger_operator"].includes(role!))
-    throw new Error("Invalid service role check inputs");
   const check: ServiceRoleCheck = { ...context, account, role: role as ServiceRoleCheck["role"] };
   await assertWorkerIdentity(check);
   await confirmRole(check);
@@ -78,21 +67,6 @@ async function installedRole(
   if (values.length !== 1 || typeof values[0] !== "string" || !/^0x[0-9a-fA-F]+$/.test(values[0]))
     throw new Error("Invalid installed role");
   return values[0];
-}
-
-export async function readRoleHandoffState({
-  provider,
-  world,
-  bootstrap,
-}: {
-  provider: Pick<RpcProvider, "callContract">;
-  world: string;
-  bootstrap: string;
-}): Promise<{ handedOff: boolean }> {
-  const roles = await Promise.all(
-    ["owner", "launcher", "ledger_operator"].map((role) => installedRole(provider, world, role)),
-  );
-  return { handedOff: roles.some((installed) => BigInt(installed) !== BigInt(bootstrap)) };
 }
 
 export async function confirmRole(check: ServiceRoleCheck): Promise<void> {

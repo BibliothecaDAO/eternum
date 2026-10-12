@@ -79,31 +79,6 @@ class DeploymentRefusalTest(unittest.TestCase):
         self.assertEqual(events, ["prepare", "prepare", "start Herald", "metrics", "wait for Herald identity", "identity", "register pending", "pending", "start services", "-d", "initialise", "init"])
 
 
-    def test_public_gameplay_refusal_reaches_the_owner_without_caught_text(self):
-        check = {"firstFailedRoute": "Explore", "failure": {
-            "category": "refused", "reason": "insufficient stamina, you need: 30, and have: 20", "transactionHash": "0x123"}}
-        def fail(_environment, _directory, _revision, report_stage):
-            report_stage("self-check")
-            print("private subprocess output")
-            raise box_deploy.deploy.SelfCheckFailed(check)
-        output = io.StringIO()
-        with patch.object(box_deploy, "main", side_effect=fail), redirect_stdout(output):
-            self.assertEqual(box_deploy.run("test", Path("/unused"), "revision"), 1)
-        self.assertEqual(json.loads(output.getvalue())["message"], "Shard deployment stopped at self-check. self-check failed at Explore: refused: insufficient stamina, you need: 30, and have: 20 (transaction 0x123); directory status unchanged")
-
-    def test_self_check_accepts_only_the_fixed_failure_shape(self):
-        for category in ("timeout", "verify", "other"):
-            error = box_deploy.deploy.SelfCheckFailed({"firstFailedRoute": "Explore", "failure": {"category": category}})
-            self.assertIn(f"Explore: {category};", str(error))
-        for failure in (
-            {"category": "private"}, {"category": "other", "reason": "private"},
-            {"category": "refused", "reason": "safe", "transactionHash": "not-a-hash"},
-            {"category": "refused", "reason": "safe", "transactionHash": "0x1", "exception": "private"},
-        ):
-            with self.subTest(failure=failure), self.assertRaises(ValueError):
-                box_deploy.deploy.SelfCheckFailed({"firstFailedRoute": "Explore", "failure": failure})
-
-
 class DeploymentOrderTest(unittest.TestCase):
     def test_build_failure_leaves_the_former_shard_running(self):
         with (
@@ -123,7 +98,7 @@ class DeploymentOrderTest(unittest.TestCase):
     def test_images_build_before_retirement_and_deployment(self):
         self.check_build_revision("revision")
 
-    def test_built_commit_must_match_before_saving_the_deployment_proof(self):
+    def test_built_commit_must_match_the_requested_revision(self):
         self.check_build_revision("another-revision")
 
     def check_build_revision(self, built_revision):
@@ -131,7 +106,6 @@ class DeploymentOrderTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
             (directory / "data").mkdir()
-            (directory / "data/self-check.json").write_text('{"passed":true}')
             (directory / "release.json").write_text(json.dumps({"commit": built_revision}))
             with (
                 patch.object(box_deploy.deploy, "deployment_target"),
@@ -144,9 +118,7 @@ class DeploymentOrderTest(unittest.TestCase):
             ):
                 if built_revision == "revision":
                     box_deploy.main("test", directory, "revision", lambda _: None)
-                    self.assertEqual(json.loads((directory / "first-deployment-check.json").read_text()), {"revision": built_revision})
                 else:
                     with self.assertRaisesRegex(box_deploy.deploy.DeploymentRefused, "Box built commit another-revision, requested revision"):
                         box_deploy.main("test", directory, "revision", lambda _: None)
-                    self.assertFalse((directory / "first-deployment-check.json").exists())
             self.assertEqual(events, ["build", "retire", "deploy"])

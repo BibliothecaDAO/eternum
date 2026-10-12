@@ -5,7 +5,6 @@
 
 The committed deploy/release/ENVIRONMENT.json holds the shard identity and sizing. DIRECTORY retains its data.
 """
-import hashlib
 import json
 import os
 import re
@@ -44,10 +43,10 @@ def main(environment, directory, report_stage=ignore_stage):
         (directory / ".env").write_text(render_environment(inputs, (directory / "images.env").read_text()))
         check_operator_approval()
         status = start(directory, inputs, report_stage)
-        report_stage("self-check")
+        report_stage("verify facts")
         differences = release_differences(release, *deployed_facts(directory / "data"), inputs["presets"])
         if not differences and status["status"] == "pending":
-            verify_and_activate(inputs, directory / "data", report_stage)
+            activate(inputs, directory / "data", report_stage)
     if differences:
         print(f"{environment} does not run commit {release['commit']}:", *differences, sep="\n  ", file=sys.stderr)
         return 1
@@ -246,74 +245,12 @@ def start(directory, config, report_stage=ignore_stage):
 
 
 
-def run_self_check(directory):
-    result = subprocess.run(
-        [*compose(directory.parent), "run", "--rm", "--no-deps", "--entrypoint", "python3",
-         "harness", "/app/deploy/shard/init.py", "self-check"], capture_output=True, text=True,
-    )
-    # The runner emits public route/status JSON only. Never echo arbitrary setup failures/credentials.
-    rows = [line for line in result.stdout.splitlines() if line.startswith("{")]
-    if not rows:
-        result.check_returncode()
-        raise RuntimeError("self-check failed at load_deployment_fixture")
-    check = json.loads(rows[-1])
-    if result.returncode != 0:
-        check["passed"] = False
-    return check
-
-
-class SelfCheckFailed(RuntimeError):
-    def __init__(self, check):
-        route = check.get("firstFailedRoute", "unknown_route")
-        failure = check.get("failure", {"category": "other"})
-        detail = failure.get("category")
-        if not re.fullmatch(r"[A-Za-z_]{1,64}", route) or detail not in ("timeout", "refused", "verify", "other"):
-            raise ValueError("Invalid self-check failure shape")
-        if detail == "refused":
-            reason, tx = failure.get("reason", ""), failure.get("transactionHash", "")
-            if set(failure) != {"category", "reason", "transactionHash"}:
-                raise ValueError("Invalid self-check refusal shape")
-            if not re.fullmatch(r"0x[0-9a-fA-F]{1,64}", tx):
-                raise ValueError("Invalid self-check refusal shape")
-            if re.fullmatch(r"[A-Za-z0-9 ,:._()/-]{1,256}", reason):
-                detail += f": {reason} (transaction {tx})"
-            else:
-                detail = "other"
-        elif set(failure) != {"category"}:
-            raise ValueError("Invalid self-check failure shape")
-        super().__init__(f"self-check failed at {route}: {detail}; directory status unchanged")
-
-
-def verify_and_activate(config, directory, report_stage=ignore_stage):
-    report_stage("self-check")
-    if directory_status(config, "pending")["status"] != "pending":
-        print(json.dumps({"event": "shard_self_check_skipped", "reason": "shard_already_listed"}))
-        return
-    identity = gameplay_check_identity(directory)
-    check_path = directory / "self-check.json"
-    saved = json.loads(check_path.read_text()) if check_path.exists() else {}
-    if saved.get("passed") and saved.get("checkedIdentity") == identity:
-        check = saved
-    else:
-        if roles_handed_off(directory):
-            raise RuntimeError("chain facts changed after the role handoff; retire this chain")
-        check = run_self_check(directory)
-        check["checkedIdentity"] = identity
-        shard.write_json(check_path, check)
-    if not check.get("passed"):
-        raise SelfCheckFailed(check)
+def activate(config, directory, report_stage=ignore_stage):
     report_stage("activate")
     confirm_worker_ledger_operator(config, directory)
     confirm_worker_launcher(config, directory)
     directory_status(config, "active")
-    print(json.dumps({"event": "shard_self_check_passed", "routes": len(check.get("completed", [])), "status": "active"}))
-
-
-def gameplay_check_identity(directory):
-    manifest, initialized = deployed_facts(directory)
-    # The check proves chain identity and initialized contracts, independent of their runtime packaging.
-    encoded = json.dumps([manifest, initialized], sort_keys=True, separators=(",", ":")).encode()
-    return hashlib.sha256(encoded).hexdigest()
+    print(json.dumps({"event": "shard_activated", "status": "active"}))
 
 
 def launcher_service(config, suffix, payload):
@@ -324,28 +261,11 @@ def launcher_service(config, suffix, payload):
         raise RuntimeError("Launch Worker enrollment route unavailable; directory remains pending") from None
 
 
-def roles_handed_off(directory):
-    return service_role_check(directory, "state")["handedOff"]
-
-
-def service_role_check(directory, action, account=None, role="launcher"):
-    args = [action, "/data"]
-    if account is not None:
-        args.extend([role, account])
-    result = subprocess.run([*compose(directory.parent), "run", "--rm", "--no-deps", "-T",
-                             "--entrypoint", "python3", "harness", "/app/deploy/shard/init.py", "service-role-check", *args],
-                            capture_output=True, text=True)
-    if result.returncode != 0:
-        result.check_returncode()
-    if action == "state":
-        try:
-            rows = [line for line in result.stdout.splitlines() if line.startswith("{")]
-            state = json.loads(rows[-1])
-        except (ValueError, IndexError, AttributeError):
-            raise RuntimeError("Role state read failed; directory remains pending") from None
-        if not isinstance(state, dict) or state.get("passed") is not True or type(state.get("handedOff")) is not bool:
-            raise RuntimeError("Role state read failed; directory remains pending")
-        return state
+def service_role_check(directory, account, role="launcher"):
+    subprocess.run([*compose(directory.parent), "run", "--rm", "--no-deps", "-T",
+                    "--entrypoint", "python3", "harness", "/app/deploy/shard/init.py",
+                    "service-role-check", "/data", role, account],
+                   check=True, capture_output=True, text=True)
 
 
 def confirm_worker_ledger_operator(config, directory):
@@ -359,7 +279,7 @@ def confirm_worker_ledger_operator(config, directory):
     account = public_felt(enrolled.get("ledgerOperatorAccount"))
     if public_felt(enrolled.get("chainId")) != public_felt(payload["chainId"]):
         raise RuntimeError("Relay enrolled another chain; directory remains pending")
-    service_role_check(directory, "handoff", account, role="ledger_operator")
+    service_role_check(directory, account, role="ledger_operator")
 
 
 def public_felt(value):
@@ -381,7 +301,7 @@ def confirm_worker_launcher(config, directory):
     account = public_felt(enrolled.get("launcherAccount"))
     if public_felt(enrolled.get("chainId")) != public_felt(payload["chainId"]):
         raise RuntimeError("Launch Worker enrolled another chain; directory remains pending")
-    service_role_check(directory, "handoff", account)
+    service_role_check(directory, account)
 
 def deployed_facts(data):
     return json.loads((data / "native-world.json").read_text()), json.loads((data / "initialized.json").read_text())

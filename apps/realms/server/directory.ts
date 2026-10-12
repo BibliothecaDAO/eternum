@@ -223,7 +223,7 @@ interface AccountIdentity {
   guardianPublicKey: string;
 }
 
-/** Register the chain before enrollment; visibility starts only after the deployment's self-check. */
+/** Register the chain before enrollment; visibility starts after initialization and service role handoff. */
 export const handleRegisterPendingShard = (
   request: Request,
   db: D1Database,
@@ -231,7 +231,7 @@ export const handleRegisterPendingShard = (
   identity: AccountIdentity,
 ) => admitValidatedShard(request, db, fetchShard, identity, registerPendingShard);
 
-/** The deployment calls this after its self-check passes; an unregistered chain cannot be activated. */
+/** The deployment calls this after initialized facts and service roles are confirmed; an unregistered chain cannot be activated. */
 export const handleAdmitShard = (
   request: Request,
   db: D1Database,

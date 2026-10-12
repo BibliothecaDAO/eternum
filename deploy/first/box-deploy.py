@@ -67,18 +67,12 @@ def main(environment, directory, revision, report_stage):
         raise RuntimeError('Shard deployment check failed')
     built_revision = json.loads((directory / 'release.json').read_text())['commit']
     if built_revision != revision:
-        raise deploy.DeploymentRefused(f"Box built commit {built_revision}, requested {revision}; deployment proof was not written")
-    report_stage("self-check")
-    proof = directory / 'data/self-check.json'
-    if not proof.exists() or not json.loads(proof.read_text()).get('passed'):
-        raise RuntimeError('Deployment did not produce a passing gameplay proof')
-    # This record is only a local hint: the caller also checks the live identity and directory.
-    (directory / 'first-deployment-check.json').write_text(json.dumps({'revision': revision}))
+        raise deploy.DeploymentRefused(f"Box built commit {built_revision}, requested {revision}; deployment was not confirmed")
 
 
 STAGES = (
     "retire previous shard", "build images", "restart pending shard", "prepare", "start Herald", "wait for Herald identity",
-    "register pending", "start services", "initialise", "self-check", "activate",
+    "register pending", "start services", "initialise", "verify facts", "activate",
 )
 
 
@@ -122,8 +116,6 @@ def run(environment, directory, revision):
             detail = str(error)
         if isinstance(error, HeraldIdentityRefused):
             detail = f"Herald identity read refused: HTTP {error.status}"
-        if isinstance(error, deploy.SelfCheckFailed):
-            detail = str(error)
         message = f"Shard deployment stopped at {stage}."
         if detail:
             message += " " + detail
