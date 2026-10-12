@@ -99,6 +99,12 @@ export const freeOf = (noun: string, free: string, total: string) => `${noun} ${
 /** The fix for a short store that the map can fill: "Explore for labor". */
 export const exploreFor = (noun: string) => `${EXPLORE} for ${noun}`;
 
+/**
+ * An army's XP on its tooltip, against the attribute tier it buys next: "XP 8 of 100 · buys an Uncommon attribute
+ * tier". XP is a balance an army spends on its attributes; it has no level.
+ */
+export const xpToward = (held: string, price: string, tier: string) =>
+  `${XP} ${held} ${OF} ${price} · buys ${/^[AEIOU]/.test(tier) ? "an" : "a"} ${tier} attribute tier`;
 /** The four attributes, each wearing its Aspect's mark. */
 export const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Homecoming"] as const;
 /** Scouting's choice at each tier: the kind it lifts (the screen shows icons; these are their names). */

@@ -7,7 +7,7 @@ vi.mock("@/audio/core/AudioManager", () => ({
 vi.mock("@/ui/motion/motion-layer", () => ({ riseSprite: ({ label }: { label: string }) => rises.push(label) }));
 vi.mock("@/ui/motion/motion-settings", () => ({ playHaptic: () => {} }));
 
-import { affordableUpgrades, attributeGain, nextTierPrice, xpGained } from "./attributes";
+import { affordableUpgrades, attributeGain, nextTierGoal, nextTierPrice, xpGained } from "./attributes";
 import { playArmyProgress } from "./progress-moment";
 
 const RULES = {
@@ -46,6 +46,17 @@ describe("an army's progress", () => {
     expect(
       affordableUpgrades({ ...ARMY, xp: 5000, battle: 5, logistics: 5, scouting: 5, homecoming: 5 }, RULES),
     ).toEqual([]);
+  });
+
+  it("puts its XP toward the cheapest tier left to buy: the next tier of its lowest attribute", () => {
+    expect(nextTierGoal(ARMY, RULES)).toEqual({ price: 100, tier: 2 });
+    // One attribute raised: the other three still cost the uncommon price.
+    expect(nextTierGoal({ ...ARMY, battle: 3 }, RULES)).toEqual({ price: 100, tier: 2 });
+    expect(nextTierGoal({ ...ARMY, battle: 3, logistics: 2, scouting: 2, homecoming: 4 }, RULES)).toEqual({
+      price: 200,
+      tier: 3,
+    });
+    expect(nextTierGoal({ ...ARMY, battle: 5, logistics: 5, scouting: 5, homecoming: 5 }, RULES)).toBeUndefined();
   });
 
   it("earns XP from reveals and clears, and none from an Upgrade that spends it", () => {

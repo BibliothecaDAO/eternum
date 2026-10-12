@@ -1,7 +1,8 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import { Chip, FullIn } from "@/ui/design-system/kit/chip";
-import { RETURNED, STAMINA, TROOPS } from "@/ui/design-system/kit/words";
+import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
+import { ATTRIBUTES, RETURNED, STAMINA, TIER_WORDS, TROOPS, XP, xpToward } from "@/ui/design-system/kit/words";
 
 import { CardFanGlyph } from "../glyphs";
 import { guideTarget } from "../guide/guide-thread";
@@ -12,15 +13,29 @@ const SEGMENTS = 5;
 const TOKEN = "relative flex h-[72px] w-14 shrink-0 flex-col items-center justify-center gap-[3px] rounded-xl";
 const CARD = "relative flex w-full shrink-0 flex-col items-center gap-1 rounded-xl px-2 py-2";
 
+/** What XP buys next: the attribute tier's XP price and the tier it reaches, 2 (uncommon) to 5 (legendary). */
+type XpGoal = { price: number; tier: number };
+
 /**
- * One army on the dock: its portrait with its XP balance as the badge (a number alone; there is no level), a card fan
- * when a tier is affordable now, its stamina in segments, and its troops. Desktop's wide card adds what a phone shows
- * only for the selected army: when the bar is full, and the troops its Homecoming sends home. Read-only on a visit.
+ * An army's XP in words, for its tooltip: what it holds against the attribute tier it buys next. XP is a balance the
+ * army spends; there is no level, so with every attribute at legendary it says the balance alone.
+ */
+export const xpLine = (xp: number | undefined, goal: XpGoal | undefined): string =>
+  goal ? xpToward(formatAmount(xp), formatAmount(goal.price), TIER_WORDS[goal.tier - 1]) : `${XP} ${formatAmount(xp)}`;
+
+/**
+ * One army on the dock: its portrait with its XP balance as the badge, a card fan when a tier is affordable now, its
+ * stamina in segments, and its troops; the badge says what the XP buys next when asked. Desktop's wide card writes
+ * "XP" beside the number over a thin bar toward that tier, marks each attribute tier the army has reached with a pip,
+ * and adds what a phone shows only for the selected army: when the bar is full, and the troops its Homecoming sends
+ * home. Read-only on a visit.
  */
 export const ArmyToken = ({
   label,
   art,
   xp,
+  xpGoal,
+  tiers,
   stamina,
   troops,
   canBuyTier,
@@ -33,6 +48,10 @@ export const ArmyToken = ({
   label: string;
   art: string | undefined;
   xp: number | undefined;
+  /** The attribute tier the XP buys next; none once every attribute is legendary, or while unknown. */
+  xpGoal?: XpGoal;
+  /** The army's four attribute tiers, 1 to 5; unknown is undefined. */
+  tiers?: readonly [number, number, number, number];
   stamina: { current: number; max: number } | undefined;
   troops: number | undefined;
   canBuyTier: boolean;
@@ -52,12 +71,17 @@ export const ArmyToken = ({
         <span className="block size-full overflow-hidden rounded-full border border-kit-line2 bg-kit-ground">
           {art && <img src={art} alt="" className="size-full object-cover" />}
         </span>
-        <span
-          {...(guided ? guideTarget("army-xp") : {})}
-          className="absolute -bottom-1 -right-2.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border border-kit-line2 bg-kit-ink px-1 text-[12px] leading-none text-kit-gold2 tabular-nums"
-        >
-          {formatAmount(xp)}
-        </span>
+        {!wide && (
+          <span
+            role="img"
+            aria-label={`${XP} ${formatAmount(xp)}`}
+            data-tip={xpLine(xp, xpGoal)}
+            {...(guided ? guideTarget("army-xp") : {})}
+            className="absolute -bottom-1 -right-2.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border border-kit-line2 bg-kit-ink px-1 text-[12px] leading-none text-kit-gold2 tabular-nums"
+          >
+            {formatAmount(xp)}
+          </span>
+        )}
         {canBuyTier && (
           <span className="absolute -right-2 -top-1.5 size-[18px]">
             <CardFanGlyph className="size-full" />
@@ -72,6 +96,7 @@ export const ArmyToken = ({
       >
         {formatAmount(troops)}
       </span>
+      {wide && <XpRow xp={xp} goal={xpGoal} tiers={tiers} guided={guided} />}
       {wide && <WideRows {...wide} />}
     </>
   );
@@ -156,6 +181,59 @@ const StaminaSegments = ({
     </span>
   );
 };
+
+const ATTRIBUTE_MARKS: readonly IconCode[] = ["Ba", "Lg", "Sc", "Su"];
+
+/**
+ * The wide card's XP: the balance with its word, a thin bar toward the attribute tier it buys next, and a pip for every
+ * tier above common the army has reached, under its attribute's mark. An army with nothing bought shows no pip.
+ */
+const XpRow = ({
+  xp,
+  goal,
+  tiers,
+  guided,
+}: {
+  xp: number | undefined;
+  goal: XpGoal | undefined;
+  tiers: readonly [number, number, number, number] | undefined;
+  guided: boolean;
+}) => (
+  <span className="flex w-full items-center gap-1.5 px-1.5">
+    <span
+      data-tip={xpLine(xp, goal)}
+      {...(guided ? guideTarget("army-xp") : {})}
+      className="flex min-w-0 flex-1 items-center gap-1.5"
+    >
+      <span className="whitespace-nowrap text-[13px] leading-none tabular-nums text-kit-gold2">
+        {formatAmount(xp)} <span className="text-[11px] font-semibold text-kit-cream">{XP}</span>
+      </span>
+      {goal && (
+        <i aria-hidden className="h-[3px] min-w-0 flex-1 overflow-hidden rounded-sm bg-kit-line">
+          <b
+            className="block h-full bg-kit-gold2"
+            style={{ width: `${Math.min(1, Math.max(0, (xp ?? 0) / goal.price)) * 100}%` }}
+          />
+        </i>
+      )}
+    </span>
+    {tiers?.map((tier, index) =>
+      tier > 1 ? (
+        <span
+          key={ATTRIBUTES[index]}
+          role="img"
+          aria-label={`${ATTRIBUTES[index]} ${TIER_WORDS[tier - 1]}`}
+          className="flex shrink-0 items-center gap-px"
+        >
+          <KitIcon code={ATTRIBUTE_MARKS[index]} size={14} />
+          {Array.from({ length: tier - 1 }, (_, pip) => (
+            <i key={pip} className="size-[5px] rounded-full bg-kit-gold" />
+          ))}
+        </span>
+      ) : null,
+    )}
+  </span>
+);
 
 /** The wide card's rows: when the bar is full, and the troops Homecoming sends home when the day ends. */
 const WideRows = ({

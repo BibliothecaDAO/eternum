@@ -11,7 +11,7 @@ import { useMemo } from "react";
 
 import { ARMY } from "@/ui/design-system/kit/words";
 
-import { affordableUpgrades } from "../attributes/attributes";
+import { affordableUpgrades, attributeTiers, nextTierGoal } from "../attributes/attributes";
 
 const ARMY_MODELS = ["ArmySlot", "ArmyProgress", "ExplorerTroops", "TileOccupancy", "EntityName"] as const;
 
@@ -22,6 +22,10 @@ export type DockArmy = {
   label: string;
   art: string;
   xp: number | undefined;
+  /** The attribute tier its XP buys next: its XP price and the tier it reaches; none at legendary or while unknown. */
+  xpGoal: { price: number; tier: number } | undefined;
+  /** Its four attribute tiers (Battle, Logistics, Scouting, Homecoming), 1 to 5; unknown while its progress is. */
+  tiers: readonly [number, number, number, number] | undefined;
   stamina: { current: number; max: number } | undefined;
   secondsToFull: number | undefined;
   troops: number;
@@ -63,6 +67,8 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
       label: armyName(setup.store, explorerId, index + 1),
       art: armyArt(army.troops),
       xp: progress?.xp,
+      xpGoal: progress && xpRules && nextTierGoal(progress, xpRules),
+      tiers: progress && attributeTiers(progress),
       stamina: stamina ? { current: stamina.committedCurrent, max: stamina.committedMax } : undefined,
       secondsToFull: stamina?.secondsUntilFull,
       troops: Number(army.troops.count / BigInt(RESOURCE_PRECISION)),

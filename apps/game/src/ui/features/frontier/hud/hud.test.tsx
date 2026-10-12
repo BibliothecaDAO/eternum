@@ -9,7 +9,7 @@ import { dayOf } from "@bibliothecadao/eternum";
 
 import { canResearchNow } from "../research/research-plan";
 import { secondsUntilHeld } from "./army-order";
-import { ArmyToken, OpenSlot } from "./army-token";
+import { ArmyToken, OpenSlot, xpLine } from "./army-token";
 import { useChatKey } from "./chat-key";
 import { dayClock } from "./day-clock";
 import { HudBands } from "./hud-bands";
@@ -117,6 +117,52 @@ describe("the army token", () => {
     // 90 of 150 is three segments full.
     expect(markup.match(/width:100%/g)).toHaveLength(3);
     expect(markup).toContain("width:0%");
+  });
+
+  it("says what the XP buys next on its badge's tooltip, and the balance alone once nothing is left to buy", () => {
+    expect(xpLine(8, { price: 100, tier: 2 })).toBe("XP 8 of 100 · buys an Uncommon attribute tier");
+    expect(xpLine(260, { price: 400, tier: 4 })).toBe("XP 260 of 400 · buys an Epic attribute tier");
+    expect(xpLine(2_000, undefined)).toBe("XP 2,000");
+    const markup = renderToStaticMarkup(
+      <ArmyToken
+        label="Army 1"
+        art={undefined}
+        xp={8}
+        xpGoal={{ price: 100, tier: 2 }}
+        stamina={undefined}
+        troops={154}
+        canBuyTier={false}
+        selected={false}
+      />,
+    );
+    expect(markup).toContain('data-tip="XP 8 of 100 · buys an Uncommon attribute tier"');
+  });
+
+  it("writes XP beside the number on the wide card, over a bar toward the next tier, with a pip for each tier reached", () => {
+    act(() =>
+      root.render(
+        <ArmyToken
+          label="Army 1"
+          art={undefined}
+          xp={25}
+          xpGoal={{ price: 100, tier: 2 }}
+          tiers={[2, 1, 3, 1]}
+          stamina={{ current: 90, max: 150 }}
+          troops={984}
+          canBuyTier={false}
+          selected={false}
+          wide={{ secondsToFull: undefined, returnsHome: 0 }}
+        />,
+      ),
+    );
+    const xp = host.querySelector('[data-tip^="XP 25 of 100"]')!;
+    expect(xp.textContent).toBe("25 XP");
+    expect(xp.querySelector<HTMLElement>("b")!.style.width).toBe("25%");
+    // Battle at uncommon is one pip, Scouting at rare two; the attributes still at common show none.
+    expect(host.querySelector('[aria-label="Battle Uncommon"]')!.querySelectorAll("i")).toHaveLength(1);
+    expect(host.querySelector('[aria-label="Scouting Rare"]')!.querySelectorAll("i")).toHaveLength(2);
+    expect(host.querySelector('[aria-label^="Logistics"]')).toBeNull();
+    expect(host.querySelector('[aria-label^="Homecoming"]')).toBeNull();
   });
 
   it("is picked with a tap, and an open slot opens Deploy", () => {

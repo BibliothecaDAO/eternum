@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "XP says what it buys",
+    description:
+      "Improved the army card in Frontier: XP is written beside its number on desktop, over a thin bar toward the next attribute tier it buys, with a pip for each tier the army has reached. Hover the XP, or press and hold it on a phone, to read the goal.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
     title: "One sheet for every attack",
     description:
       "Changed attacking in Frontier: another player's army now opens the same sheet as a camp or a rift, with the same forecast, Attack and result, instead of the older popup. Another player's realm is no longer offered as a target there, since Frontier only allows attacks on what nobody owns. A realm's own guard striking an army beside it, and an attack through a spire, still use the older popup.",

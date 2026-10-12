@@ -17,6 +17,27 @@ const attributeLevel = (progress: ArmyProgressFacts, attribute: Attribute): numb
     Homecoming: progress.homecoming,
   })[attribute];
 
+/** The army's four tiers in the kit's order: Battle, Logistics, Scouting, Homecoming. */
+export const attributeTiers = (progress: ArmyProgressFacts): readonly [number, number, number, number] => [
+  progress.battle,
+  progress.logistics,
+  progress.scouting,
+  progress.homecoming,
+];
+
+/**
+ * What the army's XP goes toward next: the cheapest tier it can still buy, which is the next tier of its lowest
+ * attribute (every attribute shares the contract's one price table). None once all four are legendary.
+ */
+export const nextTierGoal = (
+  progress: ArmyProgressFacts,
+  rules: ProgressionRulesFacts,
+): { price: number; tier: number } | undefined => {
+  const lowest = Math.min(...attributeTiers(progress));
+  const price = nextTierPrice(rules, lowest);
+  return price === null ? undefined : { price, tier: lowest + 1 };
+};
+
 /** What the next tier above `tier` costs in XP, as the contract prices it; null at legendary. */
 export const nextTierPrice = (rules: ProgressionRulesFacts, tier: number): number | null =>
   [rules.uncommon_xp, rules.rare_xp, rules.epic_xp, rules.legendary_xp][tier - 1] ?? null;
