@@ -1,7 +1,17 @@
+import { setTimeout as sleep } from "node:timers/promises";
+import { resolveExplorerTroops, staminaAt } from "@bibliothecadao/eternum/troop-stamina";
 import { Account, shortString } from "starknet";
-import { DeviceSigner, deviceKeyOf } from "@bibliothecadao/eternum";
+import { DeviceSigner, deviceKeyOf, getBlockTimestamp } from "@bibliothecadao/eternum";
 import { configureGameplayAccountSubmits, openShard } from "@bibliothecadao/eternum/game-client";
-import { getNeighborHexes, RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import {
+  getNeighborHexes,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  StructureType,
+  BiomeType,
+  TroopType,
+  BiomeIdToType,
+} from "@bibliothecadao/types";
 import {
   nativeTilePackingConstants,
   type NativeModelName,
@@ -333,7 +343,71 @@ function settlementChecks({ applied, home, rows, own }: CheckScope): RouteCase[]
   ];
 }
 
-function explorerChecks({ applied, home, rows, army, position }: CheckScope): RouteCase[] {
+/** The fixture has several games open: read this army's rules, not the global active game's config. */
+async function waitForMovement(
+  client: RouteCase["client"],
+  explorer_id: bigint,
+  destination: { alt: boolean; col: number; row: number },
+  stopped: AbortSignal,
+): Promise<void> {
+  const { store } = client.setup;
+  const game_id = client.gameId;
+  while (true) {
+    stopped.throwIfAborted();
+    const rules = store.require("SliceRules", { game_id });
+    const army = store.require("ExplorerTroops", { game_id, explorer_id });
+    const troops = resolveExplorerTroops(store, army);
+    assert(troops);
+    const tile = store.get("TileOpt", { game_id, ...destination });
+    const biomeId = tile ? Number((tile.data / BigInt(nativeTilePackingConstants.BIOME_SCALE)) % 256n) : 0;
+    const cost =
+      biomeId === 0
+        ? rules.troop_stamina_config.stamina_explore_stamina_cost
+        : travelStaminaCost(BiomeIdToType[biomeId]!, troops!.category, rules.troop_stamina_config);
+    const tick = Math.floor(
+      getBlockTimestamp().currentBlockTimestamp / Number(rules.tick_config.armies_tick_in_seconds),
+    );
+    if (staminaAt(troops!, tick, rules.troop_stamina_config).amount >= BigInt(cost)) return;
+    await sleep(250, undefined, { signal: stopped });
+  }
+}
+
+function travelStaminaCost(
+  biome: BiomeType,
+  troop: TroopType,
+  rules: NativeRows["SliceRules"]["troop_stamina_config"],
+) {
+  assert(biome !== undefined);
+  let modifier = 0;
+  if ([BiomeType.DeepOcean, BiomeType.Ocean].includes(biome)) modifier = -1;
+  else if (biome === BiomeType.Scorched) modifier = 1;
+  else if (troop === TroopType.Paladin) {
+    if (
+      [
+        BiomeType.Bare,
+        BiomeType.Tundra,
+        BiomeType.TemperateDesert,
+        BiomeType.Shrubland,
+        BiomeType.Grassland,
+        BiomeType.SubtropicalDesert,
+      ].includes(biome)
+    )
+      modifier = -1;
+    else if (
+      [
+        BiomeType.Taiga,
+        BiomeType.TemperateDeciduousForest,
+        BiomeType.TemperateRainForest,
+        BiomeType.TropicalSeasonalForest,
+        BiomeType.TropicalRainForest,
+      ].includes(biome)
+    )
+      modifier = 1;
+  }
+  return rules.stamina_travel_stamina_cost + modifier * rules.stamina_bonus_value;
+}
+
+function explorerChecks({ applied, home, rows, army, position, client }: CheckScope): RouteCase[] {
   let originalPosition: NativeRows["TileOccupancy"] | undefined;
   let expectedPosition: { alt: boolean; col: number; row: number } | undefined;
   let removedArmy: bigint | undefined;
@@ -364,7 +438,7 @@ function explorerChecks({ applied, home, rows, army, position }: CheckScope): Ro
     ),
     applied(
       "Explore",
-      () => {
+      async (stopped) => {
         originalPosition = position();
         const neighbors = getNeighborHexes(originalPosition.col, originalPosition.row)
           .map((tile) => ({ ...tile, alt: originalPosition!.alt }))
@@ -372,6 +446,7 @@ function explorerChecks({ applied, home, rows, army, position }: CheckScope): Ro
         const target = neighbors.find((tile) => !revealed(tile)) ?? neighbors[0];
         assert(target);
         expectedPosition = { ...target!, alt: originalPosition.alt };
+        await waitForMovement(client, army(), expectedPosition, stopped);
         return { kind: "Explore", value: { explorer_id: army(), direction: target!.direction } };
       },
       () => {
@@ -385,7 +460,7 @@ function explorerChecks({ applied, home, rows, army, position }: CheckScope): Ro
     ),
     applied(
       "Move",
-      () => {
+      async (stopped) => {
         const current = position();
         const neighbors = getNeighborHexes(current.col, current.row)
           .map((tile) => ({ ...tile, alt: current.alt }))
@@ -393,6 +468,7 @@ function explorerChecks({ applied, home, rows, army, position }: CheckScope): Ro
         const destination = neighbors.find((tile) => samePosition(tile, originalPosition!)) ?? neighbors[0];
         assert(destination);
         expectedPosition = destination;
+        await waitForMovement(client, army(), destination!, stopped);
         return { kind: "Move", value: { explorer_id: army(), directions: [destination!.direction] } };
       },
       () => {
