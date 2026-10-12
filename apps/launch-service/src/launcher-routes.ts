@@ -1,5 +1,7 @@
 import { Effect, Schema } from "effect";
 import { Hono } from "hono";
+import { serviceError } from "@realms-world/value-ledger";
+import { launcherErrors } from "./launcher-deployment";
 
 const Target = Schema.Struct({
   chainId: Schema.String.check(Schema.isPattern(/^0x[0-9a-f]+$/i)),
@@ -25,8 +27,8 @@ export const launcherOperatorRoutes = (launcher: OperatorLauncher) => {
       }
       try {
         return context.json((await run(input)) as object);
-      } catch {
-        return context.json({ error: "launcher_deployment_unavailable" }, 409);
+      } catch (error) {
+        return context.json({ error: serviceError(error, launcherErrors, "launcher_deployment_unavailable") }, 409);
       }
     };
   app.post(

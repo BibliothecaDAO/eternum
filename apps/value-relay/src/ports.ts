@@ -1,4 +1,6 @@
 import { Data, Effect } from "effect";
+import { serviceError } from "@realms-world/value-ledger";
+import { relayEnrolmentErrors } from "./shard-enrolment";
 import type { LedgerPayDecision } from "@realms-world/identity";
 
 export class RelayFailure extends Data.TaggedError("RelayFailure")<{ operation: string }> {}
@@ -173,5 +175,8 @@ export interface ConservationBalance {
 export const relayOperation = <A>(operation: string, run: () => Promise<A>): RelayEffect<A> =>
   Effect.tryPromise({
     try: run,
-    catch: (error) => (error instanceof RelayFailure ? error : new RelayFailure({ operation })),
+    catch: (error) =>
+      error instanceof RelayFailure
+        ? error
+        : new RelayFailure({ operation: serviceError(error, relayEnrolmentErrors, operation) }),
   });

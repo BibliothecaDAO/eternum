@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { botRealmsId, realmsAccountAddress } from "@realms-world/identity/account";
 import { joinRealmsAccount, deviceKeyOf } from "@bibliothecadao/eternum/realms-account";
-import { rpcAt } from "@realms-world/value-ledger";
+import { rpcAt, serviceError } from "@realms-world/value-ledger";
 import { shortString } from "starknet";
 import { readLaunchShard } from "./executor";
 import { LaunchShard } from "./shard-client";
@@ -118,5 +118,25 @@ export class LauncherDeployment {
   }
 }
 
+export const launcherErrors = [
+  "launcher_role_not_granted",
+  "launcher_target_differs",
+  "launcher_enrolment_differs",
+  "launcher_account_differs",
+  "launcher_chain_differs",
+  "launcher_identity_unavailable",
+  "launcher_identity_differs",
+  "launcher_approval_refused",
+  "unlisted_shard",
+  "directory_shard_manifest_unavailable",
+  "directory_manifest_chain_differs",
+  "invalid_directory_shard_manifest",
+  "invalid_directory_shard_rpc",
+  "invalid_directory_shard_url",
+];
+
 export const deploymentOperation = <A>(run: () => Promise<A>) =>
-  Effect.tryPromise({ try: run, catch: () => new Error("launcher_deployment_failed") });
+  Effect.tryPromise({
+    try: run,
+    catch: (error) => new Error(serviceError(error, launcherErrors, "launcher_deployment_failed")),
+  });

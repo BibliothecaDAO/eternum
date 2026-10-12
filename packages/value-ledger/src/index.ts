@@ -31,3 +31,5 @@ export { computeSeasonTop } from "./season-top";
 export { readBlitzRoster } from "./shard-roster";
 
 export { readFrontierFunding, type FrontierFundingTerms } from "./frontier-funding";
+
+export { serviceError } from "./service-error";

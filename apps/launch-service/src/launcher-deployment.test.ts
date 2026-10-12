@@ -1,7 +1,7 @@
 import { beforeEach, expect, it, vi } from "vitest";
 import { botRealmsId, realmsAccountAddress } from "@realms-world/identity/account";
 import { shortString } from "starknet";
-import { LauncherDeployment } from "./launcher-deployment";
+import { LauncherDeployment, deploymentOperation } from "./launcher-deployment";
 const mock = vi.hoisted(() => ({
   manifest: vi.fn(),
   chain: vi.fn(),
@@ -87,4 +87,15 @@ it("never exposes an enrolled signer to due launches until the shard grants laun
   await expect(deploy().account(chainId)).rejects.toThrow("launcher_role_not_granted");
   mock.launcher.mockResolvedValue(BigInt(own));
   expect(await deploy().account(chainId)).toBe(own);
+});
+
+it("preserves declared deployment failures through the signing boundary", async () => {
+  const { Effect } = await import("effect");
+  const { serviceError } = await import("@realms-world/value-ledger");
+  const error = await Effect.runPromise(
+    deploymentOperation(async () => {
+      throw new Error("launcher_enrolment_differs");
+    }),
+  ).catch((error) => error);
+  expect(serviceError(error, ["launcher_enrolment_differs"], "unavailable")).toBe("launcher_enrolment_differs");
 });

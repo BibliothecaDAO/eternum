@@ -1,6 +1,7 @@
-import { enrolShardOperator, shardOperatorAddress } from "./shard-enrolment";
+import { enrolShardOperator, shardOperatorAddress, relayEnrolmentErrors } from "./shard-enrolment";
 import { decodeRelaySettings, ledgerAddress, type RelaySettings } from "./environment";
 import {
+  serviceError,
   activeShards,
   requireActiveChain,
   readRegisteredShard,
@@ -59,9 +60,9 @@ export class ValueRelay extends DurableObject<RelayEnv> {
 
   enrol(input: { chainId: string; heraldUrl: string }) {
     return Effect.runPromise(
-      this.shardSigning.withPermit(
-        relayOperation("enrol relay shard account", () => enrolShardOperator(this.env, input)),
-      ),
+      this.shardSigning
+        .withPermit(relayOperation("enrol relay shard account", () => enrolShardOperator(this.env, input)))
+        .pipe(Effect.mapError((error) => new Error(error.operation))),
     );
   }
   private ledgerPermit<A, E>(operation: Effect.Effect<A, E>, chains: readonly string[] = []) {
@@ -508,8 +509,11 @@ export default {
         return Response.json(
           await relayOf(env, body.chainId).enrol({ chainId: body.chainId, heraldUrl: body.heraldUrl }),
         );
-      } catch {
-        return Response.json({ error: "relay_enrolment_unavailable" }, { status: 409 });
+      } catch (error) {
+        return Response.json(
+          { error: serviceError(error, relayEnrolmentErrors, "relay_enrolment_unavailable") },
+          { status: 409 },
+        );
       }
     }
     if (new URL(request.url).pathname === "/api/value/operator/reset" && request.method === "POST") {
