@@ -55,8 +55,17 @@ export async function deployShard(target: Target, revision: string, output: (lin
         /* Unstructured output stays private. */
       }
       if (report?.restarted) output("Restarting the unfinished pending shard from fresh state.");
-      if (report?.kind === "shard-deployment-refused" && typeof report.message === "string")
+      if (report?.kind === "shard-deployment-refused" && typeof report.message === "string") {
+        if (
+          report.message.includes("self-check") &&
+          report.message !== "Shard deployment stopped at self-check." &&
+          !/^Shard deployment stopped at self-check\. self-check failed at [A-Za-z_]{1,64}: (?:(?:timeout|verify|other)|refused: [A-Za-z0-9 ,:._()/-]{1,256} \(transaction 0x[0-9a-fA-F]{1,64}\)); directory status unchanged$/.test(
+            report.message,
+          )
+        )
+          throw error;
         throw new PublicError(report.message);
+      }
     }
     throw error;
   }

@@ -116,6 +116,8 @@ def run(environment, directory, revision):
             detail = str(error)
         if isinstance(error, HeraldIdentityRefused):
             detail = f"Herald identity read refused: HTTP {error.status}"
+        if isinstance(error, deploy.SelfCheckFailed):
+            detail = str(error)
         message = f"Shard deployment stopped at {stage}."
         if detail:
             message += " " + detail
