@@ -4,11 +4,13 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Miniflare } from "miniflare";
-import { afterAll, beforeAll, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, expect, it } from "vitest";
 import { unstable_readConfig } from "wrangler";
-import { hash } from "starknet";
+import { encodeNativeCommand } from "@bibliothecadao/provider";
+import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
+import { CallData, hash } from "starknet";
 import { launcherAccountAddress } from "@realms-world/value-ledger";
-import { gamesAbi, response } from "../../../packages/value-ledger/test-support/abi";
+import { gamesAbi, gamesEvent, response } from "../../../packages/value-ledger/test-support/abi";
 import schema from "../../../contracts/l3/world-native/schema/schema.json";
 
 /**
@@ -46,6 +48,115 @@ let approvalStatus = 401;
 let redirectRequests = 0;
 let approvalRequests = 0;
 let deployedAccount = false;
+
+interface FixtureGame {
+  name: bigint;
+  preset_id: bigint;
+  start_settling_at: bigint;
+  start_main_at: bigint;
+  duration_seconds: bigint;
+  end_grace_seconds: bigint;
+  seed: bigint;
+  dev_mode_on: boolean;
+  roster: { account: bigint; wallet: bigint }[];
+  ready: boolean;
+}
+let playBlitzFixture = false;
+let workerNow: number | null = null;
+const createdGames: FixtureGame[] = [];
+const receipts = new Map<string, unknown>();
+const createEntry = gamesAbi.find((entry) => entry.name === "create_game")!;
+const creationCodec = new CallData([
+  ...gamesAbi,
+  {
+    type: "function",
+    name: "creation",
+    inputs: [],
+    outputs: [{ type: createEntry.inputs[0].type }],
+    state_mutability: "view",
+  },
+]);
+
+/** The network fixture accepts actual signed invokes and serializes views/events from the shipped ABI. */
+function blitzRpc(
+  method: string,
+  params: {
+    request?: { entry_point_selector?: string; calldata?: string[] };
+    invoke_transaction?: { calldata: string[] };
+    transaction_hash?: string;
+  },
+) {
+  if (method === "starknet_getNonce") return "0x0";
+  if (method === "starknet_getTransactionReceipt") return receipts.get(params.transaction_hash!);
+  if (method === "starknet_addInvokeTransaction") {
+    const calldata = params.invoke_transaction!.calldata;
+    expect(BigInt(calldata[0]!)).toBe(1n);
+    const selector = BigInt(calldata[2]!);
+    const args = calldata.slice(4);
+    const transaction_hash = `0x${(receipts.size + 1).toString(16)}`;
+    let events: unknown[] = [];
+    if (selector === BigInt(hash.getSelectorFromName("create_game"))) {
+      const game = creationCodec.parse("creation", args) as unknown as FixtureGame;
+      createdGames.push({ ...game, ready: false });
+    } else {
+      expect(selector).toBe(BigInt(hash.getSelectorFromName("play")));
+      expect(args.slice(4).map(BigInt)).toEqual(
+        encodeNativeCommand(bindings.commandAbi, { kind: "SettleBlitzRoster", value: undefined }).map(BigInt),
+      );
+      const gameId = Number(args[0]);
+      createdGames[gameId - 1]!.ready = true;
+      events = [
+        {
+          from_address: "0x77",
+          ...gamesEvent("BatchProgress", {
+            game_id: gameId,
+            actor: LAUNCHER,
+            tx_hash: transaction_hash,
+            remaining: 0,
+          }),
+        },
+      ];
+    }
+    receipts.set(transaction_hash, {
+      transaction_hash,
+      type: "INVOKE",
+      finality_status: "ACCEPTED_ON_L2",
+      execution_status: "SUCCEEDED",
+      block_number: 1,
+      block_hash: "0x1",
+      actual_fee: { amount: "0x0", unit: "FRI" },
+      events,
+      messages_sent: [],
+      execution_resources: {},
+    });
+    return { transaction_hash };
+  }
+  if (method !== "starknet_call") return undefined;
+  const { entry_point_selector: selector, calldata = [] } = params.request!;
+  const entry = gamesAbi.find(
+    (entry) => entry.type === "function" && hash.getSelectorFromName(entry.name) === selector,
+  )?.name;
+  const game = createdGames[Number(calldata[0]) - 1];
+  switch (entry) {
+    case "game_id_by_name":
+      return response(gamesAbi, entry, createdGames.findIndex((game) => game.name === BigInt(calldata[0]!)) + 1);
+    case "game":
+      return response(gamesAbi, entry, {
+        ...game,
+        settled: false,
+        end_at: game!.start_main_at + game!.duration_seconds,
+      });
+    case "blitz_roster":
+      return response(gamesAbi, entry, game!.roster);
+    case "game_release":
+    case "preset_commitment":
+      return response(gamesAbi, entry, 1);
+    case "l2_gas_bound":
+      return response(gamesAbi, entry, SHARD_MANIFEST.l2GasBound);
+    default:
+      return undefined;
+  }
+}
 
 function accountJoinResponse(id: number, method: string): Response | undefined {
   if ((method === "starknet_getClassHashAt" && !deployedAccount) || method === "starknet_getNonce")
@@ -94,7 +205,27 @@ beforeAll(async () => {
       {
         name: "launch",
         modulesRoot: bundle,
-        modules: [{ type: "ESModule", path: join(bundle, "worker.js") }],
+        modules: [
+          {
+            type: "ESModule",
+            path: join(bundle, "clock.js"),
+            contents: `import worker from "./worker.js";
+              export { Registrar, ValueLaunchDirectory } from "./worker.js";
+              const realNow = Date.now;
+              export default {
+                ...worker,
+                async fetch(request, env, ctx) {
+                  if (new URL(request.url).pathname === "/__clock") {
+                    const now = await request.json();
+                    Date.now = now === null ? realNow : () => now;
+                    return new Response(null, {status: 204});
+                  }
+                  return worker.fetch(request, env, ctx);
+                }
+              };`,
+          },
+          { type: "ESModule", path: join(bundle, "worker.js") },
+        ],
         compatibilityDate: "2026-07-30",
         compatibilityFlags: ["nodejs_compat"],
         d1Databases: { DB: "launch" },
@@ -131,12 +262,14 @@ beforeAll(async () => {
             const { id, method, params } = (await request.json()) as {
               id: number;
               method: string;
-              params: { request?: { entry_point_selector?: string } };
+              params: Parameters<typeof blitzRpc>[1];
             };
             if (freshAccount) {
               const joined = accountJoinResponse(id, method);
               if (joined) return joined;
             }
+            const blitz = playBlitzFixture ? blitzRpc(method, params) : undefined;
+            if (blitz !== undefined) return Response.json({ jsonrpc: "2.0", id, result: blitz });
             const result =
               method === "starknet_chainId"
                 ? SHARD_CHAIN
@@ -145,7 +278,7 @@ beforeAll(async () => {
                       status: "ACCEPTED_ON_L2",
                       block_number: 1,
                       block_hash: "0x1",
-                      timestamp: Math.floor(Date.now() / 1000),
+                      timestamp: Math.floor((workerNow ?? Date.now()) / 1000),
                       transactions: [],
                     }
                   : method === "starknet_getClassHashAt"
@@ -167,7 +300,26 @@ beforeAll(async () => {
       {
         name: "directory",
         modules: true,
-        script: `import { WorkerEntrypoint } from "cloudflare:workers"; export class ValueRelay extends WorkerEntrypoint { openSlot(){} slot(){return {exists:false,seasonId:0,presetId:0,close:0,end:0,pool:"0",registeredCount:0,cancelled:false};} registrations(){return {slot:{exists:true,seasonId:1,presetId:1,close:100,end:460,registeredCount:1,cancelled:false},blockNumber:10,blockHash:"0xabc",secondsUntilClose:0,next:null,registrations:[{wallet:"0x1",registeredAt:90}]};} } export class ValueIdentity extends WorkerEntrypoint { accountsAtRegistration(){return ["0x101"];} shards(){return [{chainId:${JSON.stringify(SHARD_CHAIN)},url:${JSON.stringify(SHARD_URL)},status:"active"}];} } export default {fetch(){return new Response(null,{status:404});}};`,
+        script: `import { WorkerEntrypoint } from "cloudflare:workers";
+          const slots = new Map();
+          let count = 25;
+          export class ValueRelay extends WorkerEntrypoint {
+            openSlot(key, window) {
+              slots.set(key.slotId, {exists:true, seasonId:1, presetId:1, close:window.start, end:window.end,
+                pool:String(BigInt(count)*100n*10n**18n), registeredCount:count, cancelled:false});
+            }
+            slot(key) { return slots.get(key.slotId); }
+            registrations(key) {
+              const slot = slots.get(key.slotId);
+              return {slot, blockNumber:10, blockHash:"0xabc", secondsUntilClose:0, next:null,
+                registrations:Array.from({length:count},(_,i)=>({wallet:"0x"+(i+1).toString(16),registeredAt:slot.close-10}))};
+            }
+          }
+          export class ValueIdentity extends WorkerEntrypoint {
+            accountsAtRegistration(rows){return rows.map((_,i)=>"0x"+(i+257).toString(16));}
+            shards(){return [{chainId:${JSON.stringify(SHARD_CHAIN)},url:${JSON.stringify(SHARD_URL)},status:"active"}];}
+          }
+          export default {async fetch(request){count=Number(await request.text()); slots.clear(); return new Response(null,{status:204});}};`,
       },
     ],
   });
@@ -183,6 +335,14 @@ beforeAll(async () => {
   await db.batch(statements.map((statement) => db.prepare(statement)));
 }, 180_000);
 
+afterEach(async () => {
+  playBlitzFixture = false;
+  await db.prepare("DELETE FROM launch_runs").run();
+  await db.prepare("DELETE FROM season_phases").run();
+  await db.prepare("DELETE FROM playtest_slots").run();
+  await setWorkerClock(null);
+});
+
 afterAll(async () => {
   try {
     await disposeWorker(mf);
@@ -191,51 +351,79 @@ afterAll(async () => {
   }
 });
 
-it("opens a Blitz window, ticks the schedule, queues an authorized launch and records the registrar's attempt", async () => {
-  const window = {
-    // The next slot must close after the window opens.
-    startsAt: new Date(Math.ceil(Date.now() / 1_000) * 1_000 + 1_000).toISOString(),
-    endsAt: new Date(Math.ceil(Date.now() / 1_000) * 1_000 + 3 * 86_400_000).toISOString(),
-  };
-  const opened = await mf.dispatchFetch(`${ORIGIN}/api/factory/calendar/blitz`, {
-    method: "PUT",
-    headers: { origin: ORIGIN, authorization: "Bearer operator-test-token", "content-type": "application/json" },
-    body: JSON.stringify(window),
-  });
-  expect(opened.status).toBe(200);
-  await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
-  const slots = (await (await mf.dispatchFetch(`${ORIGIN}/api/slots`)).json()) as { slots: { name: string }[] };
-  expect(slots.slots).toHaveLength(1);
-  const waiting = await db.prepare("SELECT name FROM playtest_slots").first<{ name: string }>();
-  expect(waiting?.name).toMatch(/^blitz-\d{8}-(11|20)00$/);
+const setWorkerClock = (now: string | null) => {
+  workerNow = now === null ? null : Date.parse(now);
+  return mf.dispatchFetch(`${ORIGIN}/__clock`, { method: "POST", body: JSON.stringify(workerNow) });
+};
 
-  expect(await (await mf.dispatchFetch(`${ORIGIN}/api/factory/health`)).json()).toMatchObject({
-    service: "launch",
-    environment: "staging",
-    version: "workerd-test",
-  });
-  expect(await (await mf.dispatchFetch(`${ORIGIN}/api/factory/version`)).json()).toEqual({
-    service: "launch",
-    environment: "staging",
-    version: "workerd-test",
-  });
+it.each([1, 2, 25])(
+  "creates and seats balanced Blitz games for %i paid registrations through workerd",
+  async (count) => {
+    createdGames.length = 0;
+    receipts.clear();
+    await (await mf.getWorker("directory")).fetch("https://fixture/roster", { method: "POST", body: String(count) });
+    const sizes = count <= 24 ? [count] : [13, 12];
+    playBlitzFixture = true;
+    await setWorkerClock("2000-01-01T10:00:00Z");
+    const window = {
+      startsAt: "2000-01-01T07:00:00.000Z",
+      endsAt: "2000-01-02T23:00:00.000Z",
+    };
+    const opened = await mf.dispatchFetch(`${ORIGIN}/api/factory/calendar/blitz`, {
+      method: "PUT",
+      headers: { origin: ORIGIN, authorization: "Bearer operator-test-token", "content-type": "application/json" },
+      body: JSON.stringify(window),
+    });
+    expect(opened.status).toBe(200);
+    await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
+    const slots = (await (await mf.dispatchFetch(`${ORIGIN}/api/slots`)).json()) as { slots: { name: string }[] };
+    expect(slots.slots).toHaveLength(1);
+    const waiting = await db.prepare("SELECT name FROM playtest_slots").first<{ name: string }>();
+    expect(waiting?.name).toBe("blitz-20000101-1100");
+    expect(await db.prepare("SELECT COUNT(*) AS count FROM launch_runs").first("count")).toBe(0);
 
-  await db
-    .prepare("UPDATE playtest_slots SET closes_at=?")
-    .bind(Date.now() - 1000)
-    .run();
+    expect(await (await mf.dispatchFetch(`${ORIGIN}/api/factory/health`)).json()).toMatchObject({
+      service: "launch",
+      environment: "staging",
+      version: "workerd-test",
+    });
+    expect(await (await mf.dispatchFetch(`${ORIGIN}/api/factory/version`)).json()).toEqual({
+      service: "launch",
+      environment: "staging",
+      version: "workerd-test",
+    });
 
-  await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
-  const deadline = Date.now() + 10_000;
-  let run: { chain_id: string; status: string; attempts: number; error_message: string | null } | null = null;
-  while (Date.now() < deadline && !run?.error_message) {
-    run = await db.prepare("SELECT chain_id, status, attempts, error_message FROM launch_runs").first();
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-  // The run is keyed to the chain the manifest names, and the registrar's first attempt records the node's failure.
-  expect(run).toMatchObject({ chain_id: SHARD_CHAIN, status: "queued", attempts: 1 });
-  expect(run?.error_message).toBeTruthy();
-}, 60_000);
+    await setWorkerClock("2000-01-01T10:55:00Z");
+
+    await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
+    const deadline = Date.now() + 10_000;
+    const completed = () =>
+      db.prepare("SELECT COUNT(*) AS count FROM launch_runs WHERE kind='game' AND status='complete'").first("count");
+    while (Date.now() < deadline && (await completed()) !== sizes.length) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    expect(await completed()).toBe(sizes.length);
+    const orderedGames = [...createdGames].sort((a, b) => (a.name < b.name ? -1 : 1));
+    expect(orderedGames.map((game) => game.roster.length)).toEqual(sizes);
+    expect(createdGames.every((game) => game.ready)).toBe(true);
+    expect(orderedGames.flatMap((game) => game.roster.map((player) => player.wallet))).toEqual(
+      Array.from({ length: count }, (_, i) => BigInt(i + 1)),
+    );
+    const jobs = await db
+      .prepare("SELECT request FROM launch_runs WHERE kind='game' ORDER BY name")
+      .all<{ request: string }>();
+    expect(jobs.results.map(({ request }) => JSON.parse(request))).toMatchObject(
+      sizes.map((_, groupIndex) => ({
+        environment: "madara.blitz",
+        gameName: `blitz-20000101-1100-${groupIndex + 1}`,
+        groupIndex,
+        gameStartTime: "2000-01-01T11:00:00.000Z",
+        durationSeconds: 3600,
+      })),
+    );
+  },
+  60_000,
+);
 
 it("launches a game that is ready now while a result waits an hour for its game's end", async () => {
   const tick = async () => (await mf.getWorker()).scheduled({ cron: "* * * * *" });
