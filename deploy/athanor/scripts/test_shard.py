@@ -21,7 +21,7 @@ def operator_fixture(data, testcase):
     path.write_text("test-token")
     path.chmod(0o600)
     testcase.enterContext(patch("operator_token.OPERATOR_TOKEN_FILE", path))
-    return {}
+    return {"PUBLIC_RPC_URL": "https://rpc.test/rpc/v0_10_2", "PUBLIC_HERALD_URL": "https://herald.test"}
 
 
 def configuration():
@@ -219,7 +219,8 @@ class ShardTest(unittest.TestCase):
             started = time.struct_time((2026, 10, 7, 16, 2, 47, 0, 0, 0))
             argv, environment = package.harness_invocation(["--bots", "1"], operator_fixture(data, self), data, started)
             self.assertEqual(argv, ["bun", "deploy/athanor/harness/run.ts", "--bots", "1"])
-            self.assertEqual(environment["RPC_URL"], "http://rpc:8080/rpc/v0_10_2")
+            self.assertEqual(environment["RPC_URL"], "https://rpc.test/rpc/v0_10_2")
+            self.assertEqual(environment["HERALD_URL"], "https://herald.test")
             self.assertEqual(environment["HARNESS_ADMIN_RPC_URL"], "http://madara:9944/rpc/v0_10_2")
             self.assertEqual(environment["DEPLOYER_PRIVATE_KEY"], "0x2")
             self.assertEqual(environment["DEPLOYER_ACCOUNT_ADDRESS"], "0x9")

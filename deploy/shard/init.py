@@ -198,8 +198,8 @@ def harness_invocation(args, environ, data=DATA, started=None):
     operator = json.loads((data / "gameplay-contracts.json").read_text())["operatorAccountAddress"]
     environment["DEPLOYER_ACCOUNT_ADDRESS"] = operator
     environment["HARNESS_ADMIN_RPC_URL"] = shard.PRIVATE_NODE_RPC_URL
-    environment["RPC_URL"] = "http://rpc:8080/rpc/v0_10_2"
-    environment["HERALD_URL"] = "http://herald:3003"
+    environment["RPC_URL"] = environ["PUBLIC_RPC_URL"]
+    environment["HERALD_URL"] = environ["PUBLIC_HERALD_URL"]
     # The host runner may rewrite harness.env with host paths. Inside the image, DATA is the mounted copy.
     for field, filename in (("NATIVE_WORLD_MANIFEST", "native-world.json"),
                             ("GAMEPLAY_CONTRACTS_PATH", "gameplay-contracts.json"),
