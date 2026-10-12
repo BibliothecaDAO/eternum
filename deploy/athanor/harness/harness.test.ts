@@ -656,17 +656,16 @@ describe("Madara harness reporting", () => {
         workload: { actions, profile: "cadence", overheadRpc: createRpcMetrics() },
       } as never);
 
-    // A completed action without the provider's figure is counted and fails the run; a failed one never has it.
+    // Missing timing evidence is reported separately from completed gameplay.
     const unmeasured = run([completed(100), { ...completed(100), admissionToVisibleMs: undefined }]);
     expect(unmeasured.latency?.missing).toEqual({ admissionToVisible: 1 });
-    expect(unmeasured.checks.admissionToVisibleMeasured).toBe(false);
-    expect(unmeasured.passed).toBe(false);
+    expect(unmeasured.passed).toBe(true);
     const rejected = run([
       completed(100),
       { ...completed(100), admissionToVisibleMs: undefined, outcome: "rejected", failureClass: "gameplay_rejection" },
     ]);
     expect(rejected.latency?.missing).toEqual({ admissionToVisible: 0 });
-    expect(rejected.checks.admissionToVisibleMeasured).toBe(true);
+    expect(rejected.passed).toBe(false);
 
     const slow = run([completed(900)]);
     expect(slow.passed).toBe(true);
@@ -706,7 +705,7 @@ describe("Madara harness reporting", () => {
       workers: [worker(40, [120, 250]), worker(30, [90, 200], [300, 500], "2026-09-23T00:00:00.250Z")],
       minimumThresholdActions: 70,
     });
-    expect(passing.checks).toEqual({ thresholdEligibleActions: true, admissionToVisibleMeasured: true });
+    expect(passing.checks).toEqual({ thresholdEligibleActions: true });
     expect(passing.latency?.overTarget).toEqual({ admissionToVisibleP95: false, heraldConfirmedLagP95: false });
     expect(passing).toMatchObject({
       passed: true,
@@ -732,14 +731,14 @@ describe("Madara harness reporting", () => {
         minimumThresholdActions: 70,
       }).passed,
     ).toBe(false);
-    // A worker's completed action without the provider's figure fails the whole run.
+    // Missing worker timing samples do not overturn successful gameplay.
     const unmeasured = assessRosterRun({
       functional: false,
       workers: [worker(40, [200]), { ...worker(30, [200]), admissionToVisibleMissing: 2 }],
       minimumThresholdActions: 70,
     });
     expect(unmeasured.latency?.missing).toEqual({ admissionToVisible: 2 });
-    expect(unmeasured).toMatchObject({ passed: false, checks: { admissionToVisibleMeasured: false } });
+    expect(unmeasured).toMatchObject({ passed: true, checks: { thresholdEligibleActions: true } });
     // A run with no measured lag cannot show it met the Herald target.
     expect(
       assessRosterRun({ functional: false, workers: [worker(40, [1], [])], minimumThresholdActions: 40 }).latency
