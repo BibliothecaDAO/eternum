@@ -48,6 +48,14 @@ class CiFileOwnership(unittest.TestCase):
         self.assertEqual(areas_run_by("apps/game/package.json"), {"client", "native", "runtime"})
         self.assertEqual(areas_run_by("deploy/first/publish.test.ts"), {"native", "runtime"})
 
+    def test_herald_deployment_python_inputs_select_herald(self):
+        for path in (
+            "deploy/athanor/scripts/directory.py",
+            "deploy/athanor/scripts/service_requests.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(areas_run_by(path), {"herald", "native", "runtime"})
+
     def test_release_inputs_select_both_deployment_areas(self):
         self.assertEqual(areas_run_by("deploy/release/staging.json"), {"native", "runtime"})
 

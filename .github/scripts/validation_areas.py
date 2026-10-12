@@ -42,6 +42,9 @@ AREAS = {
     ],
     "herald": [
         ".github/workflows/test-herald.yml",
+        # deployment.bun.test.ts imports these through a spawned Python interpreter.
+        "deploy/athanor/scripts/directory.py",
+        "deploy/athanor/scripts/service_requests.py",
         "apps/herald/**",
         "packages/**",
         "config/**",
