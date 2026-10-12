@@ -95,6 +95,7 @@ export async function artifactsReady(store: PrivateStore, revision: string) {
           "contracts/l2/ledger",
           "contracts/l2/mmr",
           "contracts/l2/collectibles",
+          "contracts/l3/world-native/src/days.cairo",
           "deploy/first/box.ts",
           "deploy/shard/Dockerfile",
         ],

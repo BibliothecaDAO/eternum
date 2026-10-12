@@ -77,6 +77,7 @@ RUN mkdir /tools && curl --fail --location --retry 3 \
     https://github.com/software-mansion/scarb/releases/download/v2.13.1/scarb-v2.13.1-x86_64-unknown-linux-gnu.tar.gz \
     | tar -xz --strip-components=1 -C /tools
 WORKDIR /app
+COPY contracts/l3/world-native/src/days.cairo contracts/l3/world-native/src/days.cairo
 COPY contracts/l2/ledger/ contracts/l2/ledger/
 COPY contracts/l2/mmr/ contracts/l2/mmr/
 COPY contracts/l2/collectibles/ contracts/l2/collectibles/
