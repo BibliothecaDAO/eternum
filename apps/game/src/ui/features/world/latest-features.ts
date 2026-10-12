@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-12",
+    title: "Map draws around Frontier sites",
+    description:
+      "Fixed the map going black on newly explored tiles, or failing to load, once a Rift, a Ruin or Stragglers was in view. Ruins and Stragglers on water now stand on their own island like camps.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-12",
     title: "A home page that says things once",
     description:
       "Improved the home page: the community links, the four ages and the news each stand in one place. The community links live in the footer, an age opens from its card beside the play card, and the Scroll is read in Learn.",

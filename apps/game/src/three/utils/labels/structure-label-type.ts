@@ -1,5 +1,4 @@
 import { getMinePresentation } from "@bibliothecadao/types";
-import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
 import { Position } from "@bibliothecadao/eternum";
 import { BuildingType, ResourcesIds, StructureType } from "@bibliothecadao/types";
@@ -23,7 +22,7 @@ import { attachDirectionIndicators, createLabelBase } from "./label-shared";
 import { applyEntityLabelViewModelMetadata, buildStructureEntityLabelViewModel } from "./entity-label-view-model";
 
 /**
- * Structure icon paths
+ * A structure's label icon: every category has one, and a player's own realm or village-like structure wears its own.
  */
 const STRUCTURE_ICONS = (fragmentMineIcon: string) => ({
   STRUCTURES: {
@@ -34,18 +33,25 @@ const STRUCTURE_ICONS = (fragmentMineIcon: string) => ({
     [StructureType.Bank]: `/images/resources/${ResourcesIds.Lords}.png`,
     [StructureType.Mine]: fragmentMineIcon,
     [StructureType.BitcoinMine]: "/images/labels/fragment_mine.png",
-  } as Record<StructureType, string>,
+    [StructureType.Rift]: "/images/labels/essence_rift.png",
+    [StructureType.Ruin]: "/images/labels/enemy_realm.png",
+    [StructureType.Stragglers]: "/images/labels/enemy_village.png",
+  } satisfies Record<StructureType, string>,
   MY_STRUCTURES: {
     [StructureType.Village]: "/images/labels/village.png",
     [StructureType.Camp]: "/images/labels/village.png",
     [StructureType.Realm]: "/images/labels/realm.png",
-  } as Record<StructureType, string>,
-  ALLY_STRUCTURES: {
-    [StructureType.Village]: "/images/labels/allies_village.png",
-    [StructureType.Camp]: "/images/labels/allies_village.png",
-    [StructureType.Realm]: "/images/labels/allies_realm.png",
-  } as Record<StructureType, string>,
+  } as Partial<Record<StructureType, string>>,
 });
+
+const resolveStructureIconPath = (data: StructureLabelData): string => {
+  const icons = STRUCTURE_ICONS(
+    data.structureType === StructureType.Mine
+      ? getMinePresentation(data.mineKind!).icon
+      : "/images/labels/fragment_mine.png",
+  );
+  return (data.isMine && icons.MY_STRUCTURES[data.structureType]) || icons.STRUCTURES[data.structureType];
+};
 
 interface StructureLabelData extends LabelData {
   structureType: StructureType;
@@ -85,11 +91,6 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
   createElement: (data: StructureLabelData, inputView: CameraView): HTMLElement => {
     const cameraView = resolveCameraView(inputView);
     const labelModel = buildStructureEntityLabelViewModel(data);
-    const structureIcons = STRUCTURE_ICONS(
-      data.structureType === StructureType.Mine
-        ? getMinePresentation(data.mineKind!).icon
-        : "/images/labels/fragment_mine.png",
-    );
 
     // Create base label
     const labelDiv = createLabelBase(data.isMine, cameraView);
@@ -106,17 +107,8 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
     iconContainer.classList.add("w-auto", "h-full", "flex-shrink-0");
     iconContainer.setAttribute("data-component", "structure-icon-container");
 
-    // Select appropriate icon
-    let iconPath = structureIcons.STRUCTURES[data.structureType];
-    if (data.structureType === StructureType.Realm || isVillageLikeStructureCategory(data.structureType)) {
-      iconPath = data.isMine
-        ? structureIcons.MY_STRUCTURES[data.structureType]
-        : structureIcons.STRUCTURES[data.structureType];
-    }
-
-    // Create and set icon image
     const iconImg = document.createElement("img");
-    iconImg.src = iconPath;
+    iconImg.src = resolveStructureIconPath(data);
     iconImg.classList.add("w-10", "h-10", "object-contain");
     iconImg.setAttribute("data-component", "structure-icon");
     iconContainer.appendChild(iconImg);
@@ -261,11 +253,6 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
     const cameraView = resolveCameraView(inputView);
     const labelModel = buildStructureEntityLabelViewModel(data);
     applyEntityLabelViewModelMetadata(element, labelModel);
-    const structureIcons = STRUCTURE_ICONS(
-      data.structureType === StructureType.Mine
-        ? getMinePresentation(data.mineKind!).icon
-        : "/images/labels/fragment_mine.png",
-    );
 
     const hasDirections = data.attackedFromDegrees !== undefined || data.attackedTowardDegrees !== undefined;
     const isExpanded = cameraView !== CameraView.Far;
@@ -295,15 +282,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
 
     // Update structure icon based on ownership
     const structureIcon = element.querySelector('[data-component="structure-icon"]') as HTMLImageElement;
-    if (structureIcon) {
-      let iconPath = structureIcons.STRUCTURES[data.structureType];
-      if (data.structureType === StructureType.Realm || isVillageLikeStructureCategory(data.structureType)) {
-        iconPath = data.isMine
-          ? structureIcons.MY_STRUCTURES[data.structureType]
-          : structureIcons.STRUCTURES[data.structureType];
-      }
-      structureIcon.src = iconPath;
-    }
+    if (structureIcon) structureIcon.src = resolveStructureIconPath(data);
 
     const iconContainer = element.querySelector('[data-component="structure-icon-container"]');
     const contentWrapper = element.querySelector('[data-component="content-container-wrapper"]') as HTMLElement | null;

@@ -18,7 +18,7 @@ import {
   type TerrainGroundWeights,
 } from "./terrain-ground-profile";
 import { TERRAIN_BIOME_DESCRIPTORS, type TerrainBiomeDescriptor } from "./terrain-palette";
-import { resolveTerrainSettlementInfluence } from "./terrain-settlements";
+import { resolvePlaceableTerrainSettlementInfluence } from "./terrain-settlements";
 import {
   findNearestTerrainHex,
   terrainCellKey,
@@ -133,9 +133,11 @@ export class TerrainField {
       resolveSeed(request.climate.moisture_seed),
     );
 
-    this.settlements = request.settlementAnchors.map((anchor) => {
+    this.settlements = request.settlementAnchors.flatMap((anchor) => {
+      const influence = resolvePlaceableTerrainSettlementInfluence(anchor);
+      if (!influence) return [];
       const center = terrainHexToWorld(anchor.col, anchor.row);
-      return { centerX: center.x, centerZ: center.z, ...resolveTerrainSettlementInfluence(anchor) };
+      return [{ centerX: center.x, centerZ: center.z, ...influence }];
     });
 
     if (request.strictBiomeParity && this.getBiomeMismatchCount() > 0) {
