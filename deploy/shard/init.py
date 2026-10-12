@@ -246,9 +246,6 @@ if __name__ == "__main__":
         os.environ.update(operator_environment())
         probe()
         raise SystemExit(0)
-    if action == "service-role-check":
-        _, environment = harness_invocation([], os.environ)
-        os.execvpe("bun", ["bun", "deploy/athanor/scripts/service-role-check.ts", *sys.argv[2:]], environment)
     if action == "harness":
         # The harness runs as the host user, so what it writes is already the user's: it execs before any chown.
         argv, environment = harness_invocation(sys.argv[2:], os.environ)

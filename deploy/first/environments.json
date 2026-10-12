@@ -11,14 +11,13 @@
     "zone": "dev-realms.party",
     "pages": "realms-dev",
     "box": "realms-dev",
-    "release": "staging",
     "frontierPreset": 2,
     "blitzPreset": 1,
     "chestName": "devChest",
     "cosmeticsName": "devCosmetics",
     "picture": "Qmb7Zr5bJaSzrARdXVYzc5PMp3bbnydJu4reKBXGF8Aiz4",
     "blitzPrice": 100,
-    "runDirectory": "/opt/athanor/runs/staging-h",
+    "runDirectory": "/opt/athanor/runs/dev",
     "environment": "dev"
   },
   "production": {
@@ -33,7 +32,6 @@
     "zone": "realms.party",
     "pages": "eternum-game",
     "box": "realms-production",
-    "release": "production",
     "frontierPreset": 5,
     "blitzPreset": 2,
     "chestName": "",

@@ -83,20 +83,20 @@ class InputsTest(unittest.TestCase):
             environments.mkdir(parents=True)
             table = root / "deploy/first/environments.json"
             table.parent.mkdir(parents=True)
-            table.write_text(json.dumps({"dev": {"release": "staging", "origin": "https://identity.test"}}))
-            inputs = environments / "staging.json"
+            table.write_text(json.dumps({"dev": {"environment": "dev", "origin": "https://identity.test"}}))
+            inputs = environments / "dev.json"
             with patch.object(deploy.shard, "ROOT", root), patch.object(deploy, "ENVIRONMENTS", environments):
-                with self.assertRaisesRegex(ValueError, "deploy/release/staging.json is not committed"):
-                    deploy.load_inputs("staging")
+                with self.assertRaisesRegex(ValueError, "deploy/release/dev.json is not committed"):
+                    deploy.load_inputs("dev")
                 inputs.write_text(json.dumps({key: value for key, value in self.INPUTS.items() if key != "guardian_url"}))
                 with self.assertRaisesRegex(ValueError, "is not committed"):
-                    deploy.load_inputs("staging")
-                git("add", "deploy/release/staging.json")
+                    deploy.load_inputs("dev")
+                git("add", "deploy/release/dev.json")
                 git("-c", "user.name=ci", "-c", "user.email=ci@example.test", "commit", "-q", "-m", "staging inputs")
-                self.assertEqual(deploy.load_inputs("staging"), self.INPUTS)
+                self.assertEqual(deploy.load_inputs("dev"), self.INPUTS)
                 inputs.write_text(json.dumps({**self.INPUTS, "presets": [9]}))
                 with self.assertRaisesRegex(ValueError, "is not committed"):
-                    deploy.load_inputs("staging")
+                    deploy.load_inputs("dev")
 
 
 class EnrolmentTest(unittest.TestCase):
@@ -114,36 +114,6 @@ class EnrolmentTest(unittest.TestCase):
 
 
 class ActivationTest(unittest.TestCase):
-    def test_handoff_failures_resume_from_live_roles_without_local_proof(self):
-        for fail_at in ("relay", "launcher", "active"):
-            with self.subTest(fail_at=fail_at), tempfile.TemporaryDirectory() as temporary:
-                data = Path(temporary)
-                (data / "obsolete-result.json").write_text('{"passed":false}')
-                installed = set()
-                events = []
-                failed = False
-
-                def step(name):
-                    nonlocal failed
-                    events.append(name)
-                    if name == fail_at and not failed:
-                        failed = True
-                        raise RuntimeError("interrupted")
-                    installed.add(name)
-
-                with (
-                    patch.object(deploy, "confirm_worker_ledger_operator", side_effect=lambda *_: step("relay")),
-                    patch.object(deploy, "confirm_worker_launcher", side_effect=lambda *_: step("launcher")),
-                    patch.object(deploy, "directory_status", side_effect=lambda _, status: step(status)),
-                ):
-                    with self.assertRaisesRegex(RuntimeError, "interrupted"):
-                        deploy.activate({}, data)
-                    self.assertNotIn("active", installed)
-                    deploy.activate({}, data)
-                self.assertEqual(installed, {"relay", "launcher", "active"})
-                self.assertEqual(events[-3:], ["relay", "launcher", "active"])
-                self.assertEqual((data / "obsolete-result.json").read_text(), '{"passed":false}')
-
     def test_matching_facts_activate_with_extra_historical_presets_and_files(self):
         for mismatch in (False, True):
             with self.subTest(mismatch=mismatch), tempfile.TemporaryDirectory() as temporary:
@@ -197,39 +167,6 @@ class ActivationTest(unittest.TestCase):
         ):
             with self.assertRaisesRegex(RuntimeError, "identity service must carry the pending route before a shard from this code starts"):
                 deploy.directory_status({"guardian_url": "https://identity.test/api/guardian", "public_herald_url": "https://herald.test"}, "pending")
-
-
-    def test_launcher_enrollment_is_confirmed_on_chain_without_creating_a_game(self):
-        events = []
-        manifest = {"shard": {"chainId": "0x123"}}
-        def service(_, action, payload):
-            events.append(action)
-            return {"chainId": "0x123", "launcherAccount": "0x42"}
-        with (
-            patch.object(deploy, "deployed_facts", return_value=(manifest, {})),
-            patch.object(deploy, "launcher_service", side_effect=service),
-            patch.object(deploy, "service_role_check", side_effect=lambda *args: events.append("handoff")),
-            patch.object(deploy.shard, "write_json"),
-        ):
-            deploy.confirm_worker_launcher({"public_herald_url": "https://herald.test", "presets": [5]}, Path("/unused"))
-        self.assertEqual(events, ["enrol", "handoff"])
-
-
-    def test_relay_enrollment_pins_chain_and_uses_the_ledger_role_setter(self):
-        manifest = {"shard": {"chainId": "0x123"}}
-        config = {"guardian_url": "https://id.test/api/guardian", "public_herald_url": "https://herald.test"}
-        for chain, valid in [("0x123", True), ("0x999", False)]:
-            with patch.object(deploy, "deployed_facts", return_value=(manifest, {})), \
-                    patch.object(deploy, "service_json", return_value={"chainId": chain, "ledgerOperatorAccount": "0x42"}) as request, \
-                    patch.object(deploy, "service_role_check") as role:
-                if valid:
-                    deploy.confirm_worker_ledger_operator(config, Path("/unused"))
-                    role.assert_called_once_with(Path("/unused"), "0x42", role="ledger_operator")
-                else:
-                    with self.assertRaisesRegex(RuntimeError, "another chain"):
-                        deploy.confirm_worker_ledger_operator(config, Path("/unused"))
-                    role.assert_not_called()
-                request.assert_called_once_with("https://id.test/api/value/operator/shard/enrol", {"chainId": "0x123", "heraldUrl": "https://herald.test"}, timeout=120)
 
 
 
@@ -334,7 +271,7 @@ class RestartUnfinishedTest(unittest.TestCase):
     def test_wrong_directory_refuses_before_inputs_build_or_status_reads(self):
         with patch.object(deploy, "load_inputs") as inputs, patch.object(deploy.shard, "build_images") as build:
             with self.assertRaisesRegex(deploy.DeploymentRefused, "Run directory must be"):
-                deploy.main("staging", Path("/wrong"))
+                deploy.main("dev", Path("/wrong"))
             inputs.assert_not_called()
             build.assert_not_called()
 

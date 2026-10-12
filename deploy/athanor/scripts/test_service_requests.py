@@ -34,11 +34,10 @@ class ServiceTransportTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "HTTPS"):
             shard.validate_shard_identity(config)
 
-    def test_directory_and_launcher_never_follow_even_same_origin_redirects(self):
+    def test_directory_never_follows_even_same_origin_redirects(self):
         config = {"guardian_url": "https://identity.test/api/guardian", "public_herald_url": "https://herald.test"}
         for target in ("https://identity.test/elsewhere", "https://other.test/steal", "http://other.test/steal"):
-            for operation in (lambda: directory.directory_status(config, "pending"),
-                              lambda: deploy.launcher_service(config, "enrol", {})):
+            for operation in (lambda: directory.directory_status(config, "pending"),):
                 with self.subTest(target=target):
                     requests = []
 

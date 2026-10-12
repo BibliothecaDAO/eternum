@@ -68,9 +68,8 @@ jobs:
         run: bun test deploy/athanor/scripts/native-target.test.ts
       - name: Resume an interrupted first initialization
         run: bun test deploy/athanor/scripts/host-accounts.test.ts
-      - name: Verify current owner and service role handoffs
-        run:
-          bun test deploy/athanor/scripts/service-role-check.test.ts deploy/athanor/scripts/inspect-shard-roles.test.ts
+      - name: Verify owner and service roles at creation
+        run: bun test deploy/athanor/scripts/inspect-shard-roles.test.ts
       - name: Test fail-closed deployment paths
         run: |
           python3 -m unittest discover -s deploy/athanor/scripts -p "test_*.py" -v

@@ -57,7 +57,7 @@ export async function deployShard(target: Target, revision: string, output: (lin
     const result = await boxCommand(
       target,
       revision,
-      `deploy ${shell(target.release)} ${shell(releaseDirectory(target))}`,
+      `deploy ${shell(target.environment)} ${shell(releaseDirectory(target))}`,
     );
     output(`Shard log: ${JSON.parse(result).log}`);
     if (JSON.parse(result).restarted) output("Restarting the unfinished pending shard from fresh state.");

@@ -246,10 +246,9 @@ def deploy_world(config, directory, environment):
     seed = f"athanor-{config['shard']}"
     bun("deploy/athanor/scripts/deploy-gameplay-contracts.ts", name="identity-deploy")
     identity = json.loads((directory / "gameplay-contracts.json").read_text())
-    # Bootstrap's one enrolled operator owns all roles until an explicit service-role transaction changes them.
     command = ["--seed", seed, "--manifest", environment["NATIVE_WORLD_MANIFEST"],
                "--identity", environment["GAMEPLAY_CONTRACTS_PATH"],
-               "--launcher", identity["operatorAccountAddress"], "--ledger-operator", identity["operatorAccountAddress"],
+               "--launcher", identity["launcherAccountAddress"], "--ledger-operator", identity["ledgerOperatorAccountAddress"],
                "--world-address-file", str(directory / "world-address")]
     bun("config/deployer/clean/cli/deploy-world.ts", *command, name="world-deploy")
     bun("config/deployer/clean/cli/deploy-world.ts", *command, "--inspect", name="world-inspect")

@@ -43,13 +43,13 @@ permissions. Refusals name the resource family, HTTP status and numeric Cloudfla
 Resend key needs the environment's verified email sending domain. The one Alchemy URL is also used in the browser build
 and is therefore public to players.
 
-`environments.json` is the one dev/production table for this command. Dev uses the reviewed
-`deploy/release/staging.json`, SSH alias `realms-dev`, and the existing dev tunnel. Production uses the public
-`mainnet.json` asset addresses and requires a reviewed `deploy/release/production.json`, SSH alias `realms-production`
-and its own working tunnel/host before first deployment. The command does not format a disk, invent production host
-credentials or move a live shard onto an unreviewed endpoint. On a fresh host, run the existing
-`deploy/athanor/host/bootstrap.sh` through sudo as its operator after preparing its backup disk and tunnel token;
-`OPERATOR` defaults to that sudo user. This infrastructure prerequisite is separate from the five mainnet/shard keys.
+`environments.json` is the one dev/production table for this command. Dev uses the reviewed `deploy/release/dev.json`,
+SSH alias `realms-dev`, and the existing dev tunnel. Production uses the public `mainnet.json` asset addresses and
+requires a reviewed `deploy/release/production.json`, SSH alias `realms-production` and its own working tunnel/host
+before first deployment. The command does not format a disk, invent production host credentials or move a live shard
+onto an unreviewed endpoint. On a fresh host, run the existing `deploy/athanor/host/bootstrap.sh` through sudo as its
+operator after preparing its backup disk and tunnel token; `OPERATOR` defaults to that sudo user. This infrastructure
+prerequisite is separate from the five mainnet/shard keys.
 
 The box needs git access to this repository, Docker Buildx and Compose. Image builds install their pinned compiler.
 Contract builds run there under `~/cairo-suite/.lock`, cores 8–11. They do not run on the owner's laptop. No mainnet
@@ -103,7 +103,9 @@ pnpm run deploy:cloudflare dev "$HOME/.realms-dev"
 
 The box command needs SSH alone. It builds images on the target box, initializes the shard and registers it. Full
 output, including builds and failures, stays in a mode-0600 `deploy-*.log` in the run directory; the command prints its
-path, failing stage, HTTP status and fixed service error. Deployment holds the box's stack lock.
+path, failing stage, HTTP status and fixed service error. Deployment holds the box's stack lock. The world names the
+launcher and relay accounts at creation; each Worker joins using its own device from its alarm or cron. Deployment does
+not enrol those devices or transfer their roles. Dev uses `realms-dev` in `/opt/athanor/runs/dev`.
 
 The Cloudflare command belongs to the credential holder. It exports HEAD to a temporary directory, installs locked
 dependencies, builds workspace packages, migrates D1 and publishes Workers, then builds and publishes the client.
@@ -132,8 +134,8 @@ This uses the deployed preset and the protected operator credential. It preserve
 mainnet transaction. Run the existing harness after deployment and report its result separately from deployment:
 
 ```sh
-python3 deploy/athanor/scripts/operator-command.py measure /opt/athanor/runs/staging-h check --cpuset 20-23 -- \
-  --game-type frontier --preset 2 --bots 2 --minutes 2 --interval-seconds 15 --setup-concurrency 2
+python3 deploy/athanor/scripts/operator-command.py measure /opt/athanor/runs/dev check --cpuset 20-23 -- \
+  --game-type frontier --bots 2 --minutes 2 --interval-seconds 15 --setup-concurrency 2
 ```
 
 When the launch Worker has created the game, add its `--game-id` to play that game. Funding, paid Blitz registration and

@@ -140,9 +140,9 @@ export function preparationSteps(context: Deployment): Step[] {
       cost: "0 STRK",
       inspect: async () => {
         if (!context.platform) return waiting("Settings are not available yet");
-        if (!existsSync(join(root, "deploy/release", `${context.target.release}.json`)))
+        if (!existsSync(join(root, "deploy/release", `${context.target.environment}.json`)))
           return waiting(
-            `Review and commit deploy/release/${context.target.release}.json and provision ${context.target.box} before funding an account`,
+            `Review and commit deploy/release/${context.target.environment}.json and provision ${context.target.box} before funding an account`,
           );
         await context.platform.checkAccess();
         await command({ argv: ["gh", "api", "repos/{owner}/{repo}"] });

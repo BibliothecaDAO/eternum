@@ -77,7 +77,7 @@ def load_inputs(environment):
     if missing:
         raise ValueError(f"{environment}.json lacks {', '.join(missing)}")
     targets = json.loads((shard.ROOT / "deploy/first/environments.json").read_text())
-    target = next((value for value in targets.values() if value["release"] == environment), None)
+    target = next((value for value in targets.values() if value["environment"] == environment), None)
     if target is None:
         raise ValueError("Unknown deployment environment")
     inputs["guardian_url"] = target["origin"] + "/api/guardian"
@@ -98,7 +98,7 @@ class DeploymentRefused(RuntimeError):
 
 def deployment_target(environment, directory):
     targets = json.loads((shard.ROOT / "deploy/first/environments.json").read_text())
-    target = next(value for value in targets.values() if value["release"] == environment)
+    target = next(value for value in targets.values() if value["environment"] == environment)
     if directory.resolve() != Path(target["runDirectory"]).resolve():
         raise DeploymentRefused(f"Run directory must be {target['runDirectory']}; data was not overwritten")
     return target
@@ -269,55 +269,9 @@ def start(directory, config, report_stage=ignore_stage):
 
 def activate(config, directory, report_stage=ignore_stage):
     report_stage("activate")
-    confirm_worker_ledger_operator(config, directory)
-    confirm_worker_launcher(config, directory)
     directory_status(config, "active")
     print(json.dumps({"event": "shard_activated", "status": "active"}))
 
-
-def launcher_service(config, suffix, payload):
-    base = identity_service_base(config["guardian_url"])
-    return service_json(base + "/factory/operator/launcher/" + suffix, payload, timeout=120)
-
-
-def service_role_check(directory, account, role="launcher"):
-    subprocess.run([*compose(directory.parent), "run", "--rm", "--no-deps", "-T",
-                    "--entrypoint", "python3", "harness", "/app/deploy/shard/init.py",
-                    "service-role-check", "/data", role, account],
-                   check=True, stdout=sys.stdout, stderr=sys.stderr, text=True)
-
-
-def confirm_worker_ledger_operator(config, directory):
-    manifest, _ = deployed_facts(directory)
-    payload = {"chainId": manifest["shard"]["chainId"], "heraldUrl": config["public_herald_url"]}
-    base = identity_service_base(config["guardian_url"])
-    enrolled = service_json(base + "/value/operator/shard/enrol", payload, timeout=120)
-    account = public_felt(enrolled.get("ledgerOperatorAccount"))
-    if public_felt(enrolled.get("chainId")) != public_felt(payload["chainId"]):
-        raise RuntimeError("Relay enrolled another chain; directory remains pending")
-    service_role_check(directory, account, role="ledger_operator")
-
-
-def public_felt(value):
-    if not isinstance(value, str) or not value.startswith("0x"):
-        raise RuntimeError("Worker returned an invalid public identity")
-    try:
-        number = int(value, 16)
-    except ValueError:
-        raise RuntimeError("Worker returned an invalid public identity") from None
-    if not 0 < number < 2**251 + 17 * 2**192 + 1:
-        raise RuntimeError("Worker returned an invalid public identity")
-    return hex(number)
-
-
-def confirm_worker_launcher(config, directory):
-    manifest, _ = deployed_facts(directory)
-    payload = {"chainId": manifest["shard"]["chainId"], "heraldUrl": config["public_herald_url"]}
-    enrolled = launcher_service(config, "enrol", payload)
-    account = public_felt(enrolled.get("launcherAccount"))
-    if public_felt(enrolled.get("chainId")) != public_felt(payload["chainId"]):
-        raise RuntimeError("Launch Worker enrolled another chain; directory remains pending")
-    service_role_check(directory, account)
 
 def deployed_facts(data):
     return json.loads((data / "native-world.json").read_text()), json.loads((data / "initialized.json").read_text())

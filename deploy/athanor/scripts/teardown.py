@@ -18,7 +18,7 @@ def teardown(environment, report_stage):
         raise ValueError("Teardown is available only for dev")
     target = json.loads((shard.ROOT / "deploy/first/environments.json").read_text())[environment]
     directory = Path(target["runDirectory"])
-    config = deploy.load_inputs(target["release"])
+    config = deploy.load_inputs(target["environment"])
     with shard.isolated_stack_lock("teardown dev"):
         report_stage("retire directory row")
         directory_status(config, "retired")

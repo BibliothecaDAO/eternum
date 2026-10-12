@@ -22,7 +22,7 @@ interface ReleaseInputs {
   public_herald_url: string;
 }
 function releaseInputs(context: Season): ReleaseInputs | undefined {
-  const path = join(root, "deploy/release", `${context.target.release}.json`);
+  const path = join(root, "deploy/release", `${context.target.environment}.json`);
   return existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : undefined;
 }
 async function service<T>(context: Season, path: string, method = "GET", body?: unknown): Promise<T> {
