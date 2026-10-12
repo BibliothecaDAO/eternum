@@ -15,29 +15,6 @@ private node, while gameplay goes through the public proxy. `NATIVE_WORLD_MANIFE
 checkout's command bindings rather than another checkout's built packages. Run commands under
 `flock /tmp/eternum-client.lock` on a shared development machine.
 
-## Deployment listing gate
-
-`pnpm lab:self-check` creates a Frontier game and an Eternum route fixture and approves one bot device. The immutable
-route fixture preset 103 copies Eternum's balance and mode rules, exposing all generated commands so each reaches its
-real domain guard. Normal presets are unchanged. Setup uses the deployment's owner/launcher account on
-`HARNESS_ADMIN_RPC_URL`; each play uses that account or the bot's account on the public stamping RPC. It checks the
-constructor's launcher, owner, VRF point and gas bound against the deployment document before sending. The freshly
-generated schema must already be deployed and served by Herald; this command never generates or deploys contracts.
-
-The fixture requires 14 applied routes: settlement, naming, explorer creation/exploration/movement/removal, guild
-creation/whitelist/removal/join/leave, six regional banks, and the two legitimate no-op lifecycle/faith routes. It tests
-the other admitted routes with typed missing-state or mode-specific domain refusals taken from the contract guards.
-Every refusal needs its exact `GAMEPLAY_REJECTED` receipt and matching Herald `REJECTED` reason, followed by unchanged
-serialized game facts. A disabled mask, malformed command, admission revert or internal library failure cannot pass.
-These refusal tests establish route dispatch and rollback; they do not establish successful bridge token transfers,
-Blitz finalisation or every domain's funded happy path.
-
-Missing cases, wrong scope, unexpected outcomes, timeouts, fact failures and teardown failure refuse the listing gate.
-It prints public JSON with `passed`, `firstFailedRoute`, `completed`, `applied`, `refused`, `gameId` and `elapsedMs`;
-exit 0 means this complete route smoke passed. Setup and receipt polling stop when the check ends. A deployment needing
-different domain prerequisites can supply `--fixture <module.ts>` implementing `DeploymentCheckPort`; all routes
-admitted without a frozen roster remain mandatory. Entity identifiers always come from Herald facts.
-
 ## Ops timing commands
 
 `pnpm lab:harness:burst --out <public-result.json> --receipt-checkpoint <checkpoint.json>` releases 2,000 ordinary
