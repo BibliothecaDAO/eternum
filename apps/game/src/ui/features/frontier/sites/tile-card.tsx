@@ -181,7 +181,7 @@ const useSiteAttack = (
   return actor && { ...actor, biome: biomeTypeOf(siteTile.biome), timestamp, armiesTick };
 };
 
-/** With no army selected, each of the realm's armies as a choice, marked with whether it wins from where it stands. */
+/** With no army selected, each of the realm's armies as a choice, with the fight it would have from where it stands. */
 const useSiteChoices = (selected: SelectedSite, wanted: boolean): SiteChoice[] => {
   const { setup } = useGame();
   const realm = useFrontierRealm();
@@ -205,8 +205,8 @@ const useSiteChoices = (selected: SelectedSite, wanted: boolean): SiteChoice[] =
       label: army.label,
       art: army.art,
       troops: army.troops,
-      wins: fight && fight.outcome !== "refused" ? fight.outcome === "wins" : undefined,
-      onPick: () => requestArmySelection(army.explorerId),
+      fight,
+      onPick: () => requestArmySelection(army.explorerId, selected.tile.hexCoords),
     };
   });
 };

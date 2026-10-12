@@ -17,6 +17,7 @@ import {
   REALM,
   tooFarFrom,
   TROOPS,
+  WOULD_BE_LOST,
   XP,
 } from "@/ui/design-system/kit/words";
 
@@ -37,8 +38,17 @@ export type SiteVerb =
   | { kind: "short"; stamina: Cost }
   | { kind: "far" };
 
-/** An army that could take the site, offered when none is selected: its forecast marked win or loss. */
-export type SiteChoice = { label: string; art: string; troops: number; wins: boolean | undefined; onPick: () => void };
+/**
+ * An army that could take the site, offered when none is selected: the fight it would have from where it stands (the
+ * attack preview's own forecast), or none while it is out of reach. Picking it opens the attack with that army.
+ */
+export type SiteChoice = {
+  label: string;
+  art: string;
+  troops: number;
+  fight: SiteFight | undefined;
+  onPick: () => void;
+};
 
 /**
  * A guarded site's card (wireframe 06): the kind, the matchup (the army against the guard, a ruin's beast named on it),
@@ -93,7 +103,7 @@ export const SiteCardView = ({
       </header>
       {picking && choices ? <Choices choices={choices} /> : <Matchup army={army} beast={beast} guard={guard} />}
       <div className="flex gap-2">
-        <FightPlate fight={fight} />
+        {!picking && <FightPlate fight={fight} />}
         <div
           className={cn(
             "frontier-card flex h-[92px] flex-1 flex-col items-center justify-center gap-1 !rounded-xl !border-2 !border-kit-gold",
@@ -141,62 +151,81 @@ const Matchup = ({
   </div>
 );
 
-/** No army selected: the armies are the choices, each marked with its forecast. */
+/** No army selected: each army is a row with the fight it would have, and a tap opens the attack with it. */
 const Choices = ({ choices }: { choices: readonly SiteChoice[] }) => (
-  <div className="flex gap-1.5">
+  <div className="flex flex-col gap-1.5">
     {choices.map((choice) => (
       <button
         key={choice.label}
         type="button"
         aria-label={choice.label}
         onClick={choice.onPick}
-        className="frontier-card flex h-16 min-w-0 flex-1 items-center justify-center gap-1.5 !rounded-xl"
+        className="frontier-card flex h-14 w-full items-center gap-2 !rounded-xl px-2.5"
       >
         <img src={choice.art} alt="" className="size-8 rounded-full object-cover" />
         <span className="text-[15px] tabular-nums text-kit-cream">{formatExact(choice.troops)}</span>
-        {choice.wins !== undefined && <KitIcon code={choice.wins ? "Fl" : "Sk"} size={20} />}
+        <span className="flex flex-1 items-center justify-end gap-3">
+          <Forecast fight={choice.fight} size="row" />
+        </span>
+        <KitIcon code="Cv" size={16} />
       </button>
     ))}
   </div>
 );
 
 /** The fight: attacks to win as pips beside the flag and the troops it costs; or, a loss, in amber, never greyed. */
-const FightPlate = ({ fight }: { fight: SiteFight | undefined }) => {
+const FightPlate = ({ fight }: { fight: SiteFight | undefined }) => (
+  <div
+    {...guideTarget("forecast")}
+    className="frontier-card flex h-[92px] flex-1 flex-col items-center justify-center gap-1.5 !rounded-xl"
+  >
+    <Forecast fight={fight} size="plate" />
+  </div>
+);
+
+/**
+ * One forecast, drawn the same on the attack's plate and on an army's row: a win as its attacks (pips beside the
+ * flag) and the troops it costs; a loss as the troops lost, under a skull that names itself, and the guard left.
+ * Unknown is a dash on the plate and nothing on a row.
+ */
+const Forecast = ({ fight, size }: { fight: SiteFight | undefined; size: "plate" | "row" }) => {
   const known = fight && fight.outcome !== "refused" ? fight : undefined;
-  const loses = known && known.outcome !== "wins";
+  if (!known && size === "row") return null;
+  if (known && known.outcome !== "wins") {
+    return (
+      <>
+        <Line
+          icon="Sk"
+          value={`−${formatExact(known.troopsLost)}`}
+          hot
+          name={known.outcome === "loses" ? WOULD_BE_LOST : undefined}
+        />
+        <Line icon="Tr" value={formatExact(known.guardLeft)} hot />
+      </>
+    );
+  }
   return (
-    <div
-      {...guideTarget("forecast")}
-      className="frontier-card flex h-[92px] flex-1 flex-col items-center justify-center gap-1.5 !rounded-xl"
-    >
-      {loses ? (
-        <>
-          <Line icon="Sk" value={`−${formatExact(known.troopsLost)}`} hot />
-          <Line icon="Tr" value={formatExact(known.guardLeft)} hot />
-        </>
-      ) : (
-        <>
-          <span className="flex items-center gap-1.5" aria-label={known ? `${known.exchanges}` : "—"}>
-            <KitIcon code="Fl" size={22} />
-            {known ? (
-              <span aria-hidden className="flex gap-[3px]">
-                {Array.from({ length: known.exchanges }, (_, index) => (
-                  <i key={index} className="size-[9px] rounded-full border border-kit-gold" />
-                ))}
-              </span>
-            ) : (
-              <span className="text-[18px] tabular-nums text-kit-cream">—</span>
-            )}
+    <>
+      <span className="flex items-center gap-1.5" aria-label={known ? `${known.exchanges}` : "—"}>
+        <KitIcon code="Fl" size={22} />
+        {known ? (
+          <span aria-hidden className="flex gap-[3px]">
+            {Array.from({ length: known.exchanges }, (_, index) => (
+              <i key={index} className="size-[9px] rounded-full border border-kit-gold" />
+            ))}
           </span>
-          <Line icon="Sk" value={known ? `−${formatExact(known.troopsLost)}` : "—"} />
-        </>
-      )}
-    </div>
+        ) : (
+          <span className="text-[18px] tabular-nums text-kit-cream">—</span>
+        )}
+      </span>
+      <Line icon="Sk" value={known ? `−${formatExact(known.troopsLost)}` : "—"} />
+    </>
   );
 };
 
-const Line = ({ icon, value, hot = false }: { icon: IconCode; value: string; hot?: boolean }) => (
-  <span className="flex items-center gap-1.5">
+/** An icon and its figure; a name puts the line on the tooltip (hover, or press-and-hold). */
+const Line = ({ icon, value, hot = false, name }: { icon: IconCode; value: string; hot?: boolean; name?: string }) => (
+  <span className="flex items-center gap-1.5" data-tip={name}>
     <KitIcon code={icon} size={22} />
     <span className={cn("text-[20px] leading-none tabular-nums", hot ? "text-kit-hot" : "text-kit-cream")}>
       {value}

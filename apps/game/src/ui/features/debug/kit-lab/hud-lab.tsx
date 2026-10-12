@@ -524,9 +524,15 @@ const STATES = {
       army: null,
       verb: null,
       choices: [
-        { label: "Army 1", art: ARMY_CHIP.art, troops: 5_000, wins: true, onPick: () => undefined },
-        { label: "Army 2", art: ARMY_CHIP.art, troops: 1, wins: false, onPick: () => undefined },
-        { label: "Army 3", art: ARMY_CHIP.art, troops: 1, wins: false, onPick: () => undefined },
+        { label: "Army 1", art: ARMY_CHIP.art, troops: 5_000, fight: WIN(2, 180), onPick: () => undefined },
+        {
+          label: "Army 2",
+          art: ARMY_CHIP.art,
+          troops: 100,
+          fight: { outcome: "loses", exchanges: 1, troopsLost: 100, guardLeft: 1_034 },
+          onPick: () => undefined,
+        },
+        { label: "Army 3", art: ARMY_CHIP.art, troops: 600, fight: undefined, onPick: () => undefined },
       ],
     },
   },

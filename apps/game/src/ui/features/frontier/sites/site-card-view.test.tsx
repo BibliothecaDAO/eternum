@@ -128,6 +128,54 @@ describe("a guarded site's card", () => {
   });
 });
 
+describe("a guarded site's card with no army chosen", () => {
+  it("gives each army a row with the fight it would have, names the skull, and opens the attack on a tap", () => {
+    const onPick = vi.fn();
+    act(() =>
+      root.render(
+        <SiteCardView
+          site="Rift"
+          beast={undefined}
+          army={null}
+          guard={1_100}
+          fight={undefined}
+          pay={{ icon: "Es", amount: 3_300 }}
+          xp={82}
+          verb={null}
+          choices={[
+            {
+              label: "Army 1",
+              art: army.art,
+              troops: 5_000,
+              fight: { outcome: "wins", exchanges: 2, troopsLost: 180, guardLeft: 0 },
+              onPick,
+            },
+            {
+              label: "Army 2",
+              art: army.art,
+              troops: 154,
+              fight: { outcome: "loses", exchanges: 1, troopsLost: 154, guardLeft: 1_028 },
+              onPick: () => {},
+            },
+            { label: "Army 3", art: army.art, troops: 600, fight: undefined, onPick: () => {} },
+          ]}
+          onClose={() => {}}
+        />,
+      ),
+    );
+    const row = (label: string) => document.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!;
+    expect(row("Army 1").textContent).toBe("5,000−180");
+    expect(row("Army 1").querySelector('[aria-label="2"]')).not.toBeNull();
+    expect(row("Army 2").textContent).toBe("154−1541,028");
+    expect(row("Army 2").querySelector('[data-tip="Would be lost"]')).not.toBeNull();
+    // Out of reach: the army is still a choice, with no forecast to show and no dash in its place.
+    expect(row("Army 3").textContent).toBe("600");
+    expect(document.querySelector("section[aria-label='Rift']")!.textContent).not.toContain("—");
+    act(() => row("Army 1").click());
+    expect(onPick).toHaveBeenCalled();
+  });
+});
+
 describe("Enter on a guarded site's card", () => {
   const enter = () => new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
   const card = (fight: "wins" | "loses", onAttack: () => void) => (

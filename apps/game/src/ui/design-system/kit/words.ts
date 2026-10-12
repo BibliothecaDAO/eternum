@@ -118,6 +118,8 @@ export const ARMY_WILL_BE_LOST = "Army will be lost";
 export const USE = "Use";
 export const USING = "Using…";
 
+/** The skull beside an army on a site's card, on its tooltip. */
+export const WOULD_BE_LOST = "Would be lost";
 /** Making something you own better: the castle a level, a building type a tier, an army an attribute tier. */
 export const UPGRADE = "Upgrade";
 

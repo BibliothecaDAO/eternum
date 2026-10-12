@@ -904,9 +904,8 @@ export default class WorldmapScene extends WarpTravel {
   private stopChestOpenRequests?: () => void;
   private armySelectRequestHandler = (event: Event) => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
-    const entityId = readArmySelectRequest(event);
-    if (entityId === null) return;
-    void this.selectRequestedArmy(entityId);
+    const request = readArmySelectRequest(event);
+    if (request) void this.selectRequestedArmy(request.entityId, request.forSite);
   };
   private orderRequestHandler = (event: Event) => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
@@ -8243,11 +8242,18 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /** The HUD's army dock picked this army: frame it and select it the way the Tab shortcut does. */
-  private async selectRequestedArmy(entityId: number): Promise<void> {
+  /**
+   * Selects the army the HUD asked for. Asked from a site's card, the card stays open on that site with the army as
+   * its actor: the attack's preview, or what the army lacks.
+   */
+  private async selectRequestedArmy(entityId: number, forSite: HexPosition | null): Promise<void> {
     const account = accountAddress();
     const position = this.getArmyDisplayPosition(entityId);
     if (account === null || !position) return;
     await this.runShortcutArmySelection(() => this.focusAndSelectArmy(entityId, position, account));
+    if (forSite && getLiveWorldmapEntityActions().selectedEntityId === entityId) {
+      this.openSiteCardForSelectedArmy(forSite);
+    }
   }
 
   private async focusAndSelectArmy(

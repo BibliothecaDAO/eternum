@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "Odds for each army on a site",
+    description:
+      'Improved a site\'s card in Frontier: with no army chosen, each of your armies is a row showing the fight it would have from where it stands, the same forecast as the attack itself, and the row of dashes is gone. Tap a row to open the attack with that army; the card used to close instead. The skull says "Would be lost" on hover or press-and-hold.',
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
     title: "Every fight ends on a result",
     description:
       "Added a result to every attack in Frontier: Victory, Army lost or Guard holds, with your troops and the guard's before and after, and what a clear paid with its XP. It stays in the attack's own sheet until you tap it away, and a ruin's chest now waits for your tap too. The day log names the site, how the attack ended and the numbers instead of \"Battle resolved\", and a lost army's highlights leave the map at once.",
