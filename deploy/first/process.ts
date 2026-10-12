@@ -1,3 +1,4 @@
+import { PublicError } from "./errors";
 import { spawn } from "node:child_process";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -16,6 +17,7 @@ export class CommandFailure extends Error {
     readonly log?: string,
   ) {
     super("Deployment subprocess failed; no captured output was printed");
+    this.name = "command_failed";
   }
 }
 /** Capture subprocess output: a failing SDK or CLI may echo its input. Only the caller's fixed label escapes. */
@@ -38,7 +40,9 @@ export async function command(spec: Command): Promise<string> {
     const errors: Buffer[] = [];
     child.stdout.on("data", (chunk) => chunks.push(chunk));
     child.stderr.on("data", (chunk) => errors.push(chunk));
-    child.on("error", () => reject(new Error("Deployment subprocess could not start")));
+    child.on("error", () =>
+      reject(new PublicError("Deployment subprocess could not start", null, "command_start_failed")),
+    );
     child.on("close", (code) => {
       const stdout = Buffer.concat(chunks).toString();
       if (code === 0) return resolve(stdout);

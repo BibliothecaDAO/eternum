@@ -103,12 +103,11 @@ pnpm run deploy:cloudflare dev "$HOME/.realms-dev"
 ```
 
 The box command needs Bun and SSH, with no dependency install or package build. A Git archive carries its source commit
-in `deploy/first/commit.txt`; Cloudflare publication installs locked dependencies in its export before use. It builds
-images on the target box, initializes the shard and registers it. Full output, including builds and failures, stays in a
-mode-0600 `deploy-*.log` in the run directory; the command prints its path, failing stage, HTTP status and fixed service
-error. Deployment holds the box's stack lock. The world names the launcher and relay accounts at creation; each Worker
-joins using its own device from its alarm or cron. Deployment does not enrol those devices or transfer their roles. Dev
-uses `realms-dev` in `/opt/athanor/runs/dev`.
+in `deploy/first/commit.txt`. The box command builds images on the target box, initializes the shard and registers it.
+Full output, including builds and failures, stays in a mode-0600 `deploy-*.log` in the run directory; the command prints
+its path, failing stage, HTTP status and fixed service error. Deployment holds the box's stack lock. The world names the
+launcher and relay accounts at creation; each Worker joins using its own device from its alarm or cron. Deployment does
+not enrol those devices or transfer their roles. Dev uses `realms-dev` in `/opt/athanor/runs/dev`.
 
 The Cloudflare command belongs to the credential holder. It exports HEAD to a temporary directory, installs locked
 dependencies, builds workspace packages, migrates D1 and publishes Workers, then builds and publishes the client.
