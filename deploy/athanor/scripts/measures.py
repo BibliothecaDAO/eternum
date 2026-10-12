@@ -201,7 +201,7 @@ def measure_package(directory, name, cpuset, options, docker):
     output = data / "measure" / name
     output.mkdir(parents=True)
     compose = [*docker, "compose", "--project-directory", str(directory)]
-    result = {"name": name, "release": json.loads((directory / "release.json").read_text())["tag"],
+    result = {"name": name, "commit": json.loads((directory / "release.json").read_text())["commit"],
               "driverCpuset": cpuset, "harnessOptions": options, "passed": False}
     with isolated_stack_lock(f"measure {name}"):
         node = subprocess.check_output([*compose, "ps", "-q", "madara"], text=True).strip()
@@ -222,8 +222,9 @@ if __name__ == "__main__":
     parser.add_argument("directory", type=Path)
     parser.add_argument("name")
     parser.add_argument("--cpuset", help="the CPUs the harness driver runs on, apart from the shard's")
-    parser.add_argument("options", nargs=argparse.REMAINDER, help="-- then the harness options")
-    args = parser.parse_args()
-    options = args.options[1:] if args.options[:1] == ["--"] else args.options
+    arguments = sys.argv[1:]
+    separator = arguments.index("--") if "--" in arguments else len(arguments)
+    args = parser.parse_args(arguments[:separator])
+    options = arguments[separator + 1:]
     from shard import DOCKER
     raise SystemExit(measure_package(args.directory.resolve(), args.name, args.cpuset, options, DOCKER))

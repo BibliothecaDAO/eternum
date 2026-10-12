@@ -63,8 +63,6 @@ async function frontierGame(context: Season) {
   const phase = calendar.phases.find((phase) => phase.phase === "frontier");
   if (!phase) return undefined;
   const expected = Date.parse(phase.startsAt) / 1000;
-  if (expected !== seconds(context.inputs!.frontierStart))
-    throw new Error("Frontier calendar start differs from entered dates");
   const candidates = (await games(context)).games.filter(
     (game) => game.mode === "frontier" && game.clock.start_main_at === expected,
   );
@@ -138,12 +136,6 @@ async function currentCalendar(context: Season) {
   );
   const now = Date.now();
   const phases = calendar.phases.filter((phase) => Date.parse(phase.endsAt) > now);
-  for (const phase of phases) {
-    const start = phase.phase === "frontier" ? context.inputs!.frontierStart : context.inputs!.blitzStart;
-    const end = phase.phase === "frontier" ? context.inputs!.frontierEnd : context.inputs!.blitzEnd;
-    if (Date.parse(phase.startsAt) !== Date.parse(start) || Date.parse(phase.endsAt) !== Date.parse(end))
-      throw new PublicError("Existing calendar dates differ from inputs.json; no phase was changed");
-  }
   return phases;
 }
 export function seasonSteps(context: Season): Step[] {
@@ -159,20 +151,22 @@ export function seasonSteps(context: Season): Step[] {
         await requireBlitzSeason(context);
         return {
           done: ["frontier", "blitz"].every((name) => phases.some((phase) => phase.phase === name)),
-          detail: "set only missing phases; Frontier starts on a tick and ends at the explicit entered date",
+          detail: phases.length
+            ? phases.map((phase) => `${phase.phase} ${phase.startsAt} to ${phase.endsAt}`).join("; ")
+            : "set missing phases from saved dates",
         };
       },
       apply: async () => {
         const phases = await currentCalendar(context);
         await requireBlitzSeason(context);
-        context.output(
-          `Setting calendar: Frontier ${context.inputs!.frontierStart} to ${context.inputs!.frontierEnd}, pool ${context.inputs!.amount}; Blitz ${context.inputs!.blitzStart} to ${context.inputs!.blitzEnd}.`,
-        );
         for (const phase of ["frontier", "blitz"]) {
           if (phases.some((existing) => existing.phase === phase)) continue;
           const begins = seconds(phase === "frontier" ? context.inputs!.frontierStart : context.inputs!.blitzStart);
           const ends = seconds(phase === "frontier" ? context.inputs!.frontierEnd : context.inputs!.blitzEnd);
           if (!(ends > Date.now() / 1000)) throw new PublicError(PHASE_END_ERROR);
+          context.output(
+            `Setting ${phase} calendar: ${new Date(begins * 1000).toISOString()} to ${new Date(ends * 1000).toISOString()}.`,
+          );
           await service(context, `/api/factory/calendar/${phase}`, "PUT", {
             startsAt: new Date(begins * 1000).toISOString(),
             endsAt: new Date(ends * 1000).toISOString(),
@@ -195,7 +189,7 @@ export function seasonSteps(context: Season): Step[] {
           };
         return {
           done: state.funded,
-          detail: `fund exactly confirmed game ${state.gameId}; native-world.json comes from the box, not Herald /manifest`,
+          detail: `fund ${context.inputs!.amount} LORDS in confirmed game ${state.gameId}; chain and world read from the box`,
         };
       },
       apply: async () => {

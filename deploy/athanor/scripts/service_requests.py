@@ -28,7 +28,7 @@ def identity_service_base(guardian_url):
     return guardian_url.removesuffix("/guardian")
 
 
-def service_json(url, payload=None, timeout=30, *, authenticated=False):
+def service_json(url, payload=None, timeout=30, *, authenticated=False, method=None):
     require_service_url(url)
     headers = {"Content-Type": "application/json", "User-Agent": "realms-shard-init"}
     if payload is not None or authenticated:
@@ -36,7 +36,7 @@ def service_json(url, payload=None, timeout=30, *, authenticated=False):
         if not token:
             raise ValueError("Protected operator credential required for service request")
         headers["Authorization"] = "Bearer " + token
-    request = Request(url, data=json.dumps(payload).encode() if payload is not None else None, headers=headers)
+    request = Request(url, data=json.dumps(payload).encode() if payload is not None else None, headers=headers, method=method)
     try:
         with build_opener(RefuseRedirects()).open(request, timeout=timeout) as response:
             return json.load(response)

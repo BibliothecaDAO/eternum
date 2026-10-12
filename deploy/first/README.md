@@ -117,9 +117,27 @@ pnpm run season dev "$HOME/.realms-dev"
 ```
 
 This reads the existing private directory without migration: `inputs.json`, `keys.json` and `secrets.json`. It sets the
-calendar from the saved dates, waits for the launch cron's Frontier game, deposits the saved whole-LORDS amount, then
-watches pool publication and the automatic Blitz slot. It uses the public address book written by setup. An existing
-deposit is verified rather than repeated. Mainnet funding remains an owner operation, including dev funding.
+missing calendar phases from the saved dates, preserves and displays existing published phases, waits for the launch
+cron's Frontier game, deposits the saved whole-LORDS amount, then watches pool publication and the automatic Blitz slot.
+It uses the public address book written by setup. An existing deposit is verified rather than repeated. Mainnet funding
+remains an owner operation, including dev funding.
+
+The dev box can open the free Frontier phase at the current armies tick, for one complete bag of days:
+
+```sh
+python3 deploy/athanor/scripts/operator-command.py season dev
+```
+
+This uses the deployed preset and the protected operator credential. It preserves an already running phase and makes no
+mainnet transaction. Run the existing harness after deployment and report its result separately from deployment:
+
+```sh
+python3 deploy/athanor/scripts/operator-command.py measure /opt/athanor/runs/staging-h check --cpuset 20-23 -- \
+  --game-type frontier --preset 2 --bots 2 --minutes 2 --interval-seconds 15 --setup-concurrency 2
+```
+
+When the launch Worker has created the game, add its `--game-id` to play that game. Funding, paid Blitz registration and
+payouts require the owner. The gameplay report never controls shard admission.
 
 ## Teardown
 
