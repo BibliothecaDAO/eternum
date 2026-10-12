@@ -1,21 +1,23 @@
 import type { IconCode } from "@/ui/design-system/kit/kit-icon";
-import { type SiteKind } from "@bibliothecadao/eternum";
 import { create } from "zustand";
+
+import type { AttackTargetKind } from "./site-marks";
 
 /** How one attack ended: the guard is gone, the army is gone, or both still stand and the fight goes on. */
 export type FightVerdict = "victory" | "army-lost" | "guard-holds";
 
 /** The player's own attack as it was sent: who fought, with what, and what the clear would pay. */
 export interface FightSent {
-  siteId: number;
-  site: SiteKind;
+  /** The site attacked, or the other player's army. */
+  targetId: number;
+  site: AttackTargetKind;
   armyId: number;
   armyArt: string;
   /** Whole troops on each side as the attack was sent. */
   army: number;
   guard: number;
-  /** What clearing the site pays: what fits home and the XP, as the preview showed them. */
-  clearPays: { pay: { icon: IconCode; amount: number } | null; xp: number };
+  /** What clearing the site pays: what fits home and the XP, as the preview showed them; nothing for an army. */
+  clearPays: { pay: { icon: IconCode; amount: number } | null; xp: number } | null;
 }
 
 /** Whole troops on each side now; an army that is gone has none. */
@@ -26,7 +28,7 @@ export interface FightSides {
 
 /** What one attack did, for its result: each side before and after, and what a clear paid. */
 export interface FightResult {
-  site: SiteKind;
+  site: AttackTargetKind;
   verdict: FightVerdict;
   armyArt: string;
   army: { before: number; after: number };

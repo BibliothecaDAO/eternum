@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
-import { readSiteCard } from "./site-card-plan";
-import { campBeside, SITE_TILE } from "./site-fixture";
+import { readArmyCard, readSiteCard } from "./site-card-plan";
+import { campBeside, otherArmyAt, SITE_TILE } from "./site-fixture";
 
 afterEach(() => setBlockTimestampSource(null));
 
@@ -72,4 +72,18 @@ it("shows only the camp reward that fits in the home labor store", () => {
   ] as never);
   const plan = readSiteCard(store, site, structure, SITE_TILE, attack({ col: 41, row: 12, alt: false }));
   expect(plan.payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 550, fits: 10 });
+});
+
+it("reads another player's army as a target: its troops, the same exact fight in reach, and nothing it pays", () => {
+  const { store, attack } = campBeside();
+  const other = otherArmyAt(store, 42, 12);
+  const plan = readArmyCard(store, other, { col: 42, row: 12, alt: false }, attack({ col: 41, row: 12, alt: false }));
+  expect(plan.kind).toBe("Army");
+  expect(plan.guard).toEqual({ type: TroopType.Knight, tier: TroopTier.T1, count: 300 });
+  expect(plan.payout).toBeNull();
+  expect(plan.xp).toBeUndefined();
+  expect(plan.fight).toMatchObject({ outcome: "wins", guardLeft: 0 });
+  expect(
+    readArmyCard(store, other, { col: 44, row: 12, alt: false }, attack({ col: 41, row: 12, alt: false })).fight,
+  ).toBeUndefined();
 });

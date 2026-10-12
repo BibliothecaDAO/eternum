@@ -9,7 +9,7 @@ vi.mock("@/hooks/use-world-spatial-tiles", () => ({ useWorldSpatialTiles: () => 
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: true }) }));
 vi.mock("./build/build-sheet", () => ({ BuildSheet: () => null, useOpenPlot: () => null }));
 vi.mock("./sites/map-site-card", () => ({ MapSiteCard: () => null, useSelectedMapSite: () => null }));
-vi.mock("./sites/tile-card", () => ({ TileCard: () => null, useSelectedSite: () => null }));
+vi.mock("./sites/tile-card", () => ({ TileCard: () => null, useSelectedTarget: () => null }));
 vi.mock("./upgrade/castle-upgrade", () => ({ CastleUpgrade: () => null, useKeepSelected: () => null }));
 vi.mock("./research/selected-building", () => ({ useSelectedBuildingRow: () => null }));
 

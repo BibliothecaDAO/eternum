@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "One sheet for every attack",
+    description:
+      "Changed attacking in Frontier: another player's army now opens the same sheet as a camp or a rift, with the same forecast, Attack and result, instead of the older popup. Another player's realm is no longer offered as a target there, since Frontier only allows attacks on what nobody owns. A realm's own guard striking an army beside it, and an attack through a spire, still use the older popup.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
     title: "Panels end in their action",
     description:
       "Improved the Castle, building and Research panels in Frontier: Upgrade and Research always stand at the foot with their price, dimmed while they cannot run, over one line that says why and a button for the fix. A tier with two sides says to choose one, and every Research row says what it gives on its tooltip.",

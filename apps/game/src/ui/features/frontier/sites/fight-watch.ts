@@ -28,15 +28,20 @@ export const useFightWatch = (): void => {
 
 /** Whole troops each side holds now: none for an army that is gone or a site that is cleared; unknown guards wait. */
 const readFightSides = (store: NativeFactStore, sent: FightSent): FightSides | undefined => {
-  const gameId = configManager.getActiveGameId();
-  const army = store.get("ExplorerTroops", { game_id: gameId, explorer_id: sent.armyId });
-  const site = store.get("ExpeditionSite", { game_id: gameId, entity_id: sent.siteId });
-  const structure = store.get("Structure", { game_id: gameId, entity_id: sent.siteId });
-  const standing = site !== undefined && !site.cleared && structure !== undefined;
-  const guards = standing ? getGuardsByStructure(structure, store) : [];
-  if (guards === undefined) return undefined;
-  return {
-    army: army ? Number(army.troops.count / PRECISION) : 0,
-    guard: Number(guards.reduce((sum, guard) => sum + guard.troops.count, 0n) / PRECISION),
-  };
+  const defenders = sent.site === "Army" ? armyTroops(store, sent.targetId) : guardTroops(store, sent.targetId);
+  return defenders === undefined ? undefined : { army: armyTroops(store, sent.armyId), guard: defenders };
+};
+
+const armyTroops = (store: NativeFactStore, explorerId: number): number => {
+  const army = store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: explorerId });
+  return army ? Number(army.troops.count / PRECISION) : 0;
+};
+
+const guardTroops = (store: NativeFactStore, siteId: number): number | undefined => {
+  const key = { game_id: configManager.getActiveGameId(), entity_id: siteId };
+  const site = store.get("ExpeditionSite", key);
+  const structure = store.get("Structure", key);
+  if (site === undefined || site.cleared || structure === undefined) return 0;
+  const guards = getGuardsByStructure(structure, store);
+  return guards && Number(guards.reduce((sum, guard) => sum + guard.troops.count, 0n) / PRECISION);
 };

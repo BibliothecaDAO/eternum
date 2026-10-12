@@ -7,7 +7,7 @@ import { ARMY, ARMY_LOST, GUARD_HOLDS, TROOPS, VICTORY, XP } from "@/ui/design-s
 import type { ReactNode } from "react";
 
 import type { FightResult, FightVerdict } from "./fight-result";
-import { SITE_MARKS } from "./site-marks";
+import { TARGET_MARKS } from "./site-marks";
 
 export const VERDICT_WORDS: Record<FightVerdict, string> = {
   victory: VICTORY,
@@ -26,7 +26,7 @@ const VERDICT_TONES: Record<FightVerdict, string> = {
  * clear what it paid home with its XP. It stays until the player taps it away.
  */
 export const FightResultCard = ({ result, onClose }: { result: FightResult; onClose: () => void }) => {
-  const { word, icon } = SITE_MARKS[result.site];
+  const { word, icon } = TARGET_MARKS[result.site];
   const verdict = VERDICT_WORDS[result.verdict];
   return (
     <button

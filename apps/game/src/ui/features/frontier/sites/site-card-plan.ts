@@ -26,6 +26,8 @@ import {
   type TroopType,
 } from "@bibliothecadao/types";
 
+import type { AttackTargetKind } from "./site-marks";
+
 const PRECISION = BigInt(RESOURCE_PRECISION);
 
 /** An army about to attack a site, and the moment it would: everything the exchange depends on beyond the facts. */
@@ -47,8 +49,9 @@ export interface SiteAttack {
 export interface SiteCardPlan {
   name: string;
   guard: { type: TroopType; tier: TroopTier; count: number } | null | undefined;
-  kind: SiteKind;
-  xp: number;
+  kind: AttackTargetKind;
+  /** The XP a clear pays; another player's army pays none this card can promise. */
+  xp: number | undefined;
   /** A ruin's stored tier and whole LORDS; unknown until its chest fact arrives. */
   chest: { tier: number; amount: number } | null | undefined;
   /**
@@ -87,7 +90,30 @@ export const readSiteCard = (
     chest: chest && { tier: chest.tier, amount: Number(chest.amount) },
     payout: reward && fittingPayout(store, site.game_id, reward, attack),
     attackStamina: activeCombatRules().stamina.stamina_attack_req,
-    fight: guard && attack ? forecastSiteFight(store, guard.troops, siteTile, attack) : undefined,
+    fight: guard && attack ? forecastFightAt(store, guard.troops, siteTile, attack, true) : undefined,
+  };
+};
+
+/**
+ * The same card for another player's army, where the game lets armies fight: its troops stand where a site's guard
+ * does, the forecast is the same exact exchange without a guard's bonus, and it pays nothing the card can promise.
+ */
+export const readArmyCard = (
+  store: NativeFactStore,
+  army: NativeRows["ExplorerTroops"],
+  armyTile: { col: number; row: number; alt: boolean },
+  attack: SiteAttack | null,
+): SiteCardPlan => {
+  const troops = resolveExplorerTroops(store, army);
+  return {
+    name: "Army",
+    guard: troops === undefined ? undefined : troops.count > 0n ? troopsOf(troops) : null,
+    kind: "Army",
+    xp: undefined,
+    chest: null,
+    payout: null,
+    attackStamina: activeCombatRules().stamina.stamina_attack_req,
+    fight: troops && troops.count > 0n && attack ? forecastFightAt(store, troops, armyTile, attack, false) : undefined,
   };
 };
 
@@ -148,11 +174,12 @@ const troopsOf = (troops: Pick<Troops, "category" | "tier" | "count">) => ({
  * The fight as the contract resolves it, attack after attack now, with no dice: Frontier's combat is exact. An army out
  * of its troops' reach has no fight to forecast.
  */
-const forecastSiteFight = (
+const forecastFightAt = (
   store: NativeFactStore,
   guard: Troops,
   siteTile: { col: number; row: number; alt: boolean },
   attack: SiteAttack,
+  defenderIsStructureGuard: boolean,
 ): SiteFight | undefined => {
   if (configManager.rollsCombatDice(siteTile.alt))
     throw new Error("Frontier's site forecast is exact; this game rolls dice");
@@ -170,7 +197,7 @@ const forecastSiteFight = (
       attackerBiome: attack.biome,
       defenderBiome: attack.biome,
       attackerIsStructureGuard: false,
-      defenderIsStructureGuard: true,
+      defenderIsStructureGuard,
       attackerRoll: 0,
       defenderRoll: 0,
     },

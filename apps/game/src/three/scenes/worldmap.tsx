@@ -253,7 +253,7 @@ import { ARMY_SELECT_REQUEST_EVENT, readArmySelectRequest } from "./worldmap-arm
 import { ORDER_REQUEST_EVENT, orderOnTap, readOrderRequest, stepBackOnEscape } from "./worldmap-order-request";
 import { hudFor } from "@/ui/layouts/hud-for";
 import { orderTipLine } from "@/ui/features/frontier/hud/order-tip";
-import { SITE_MARKS } from "@/ui/features/frontier/sites/site-marks";
+import { TARGET_MARKS } from "@/ui/features/frontier/sites/site-marks";
 import { showOrderTip } from "./worldmap-order-tip";
 import { getGameModeId } from "@/config/game-modes";
 import { onChestOpenRequest } from "./worldmap-chest-open-request";
@@ -2446,7 +2446,7 @@ export default class WorldmapScene extends WarpTravel {
       game_id: configManager.getActiveGameId(),
       entity_id: safeInteger(entityId),
     });
-    return SITE_MARKS[siteKindOf(structure.base.category)].word;
+    return TARGET_MARKS[siteKindOf(structure.base.category)].word;
   }
 
   // double-click reserved hyperstructure tiles to materialize them; otherwise enter the real structure
@@ -2770,7 +2770,7 @@ export default class WorldmapScene extends WarpTravel {
       this.onArmyAttack(path, selectedEntityId);
     } else if (order === "site-out-of-reach") {
       const contractHex = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
-      this.openSiteCardForSelectedArmy({ col: contractHex.x, row: contractHex.y });
+      this.openTargetCardForSelectedArmy({ col: contractHex.x, row: contractHex.y });
     }
     // The preview has the tile now; its name on the tooltip would only sit over it.
     if (order !== null) showOrderTip(null);
@@ -3098,12 +3098,11 @@ export default class WorldmapScene extends WarpTravel {
     const targetHex = selectedPath[selectedPath.length - 1];
     const target = actorOnHex(this.getHexagonEntity(sceneHexOf(targetHex)));
     if (!target) return;
-    // A standing expedition site confirms its attack on its tile card, the HUD's sheet for the selected tile.
-    if (this.isStandingExpeditionSite(target.id)) {
-      this.openSiteCardForSelectedArmy(targetHex);
+    const selected = this.getHexagonEntity(sceneHexOf(selectedPath[0]));
+    if (this.confirmsAttackOnTileCard(target, selected.army !== undefined)) {
+      this.openTargetCardForSelectedArmy(targetHex);
       return;
     }
-    const selected = this.getHexagonEntity(sceneHexOf(selectedPath[0]));
 
     const attackerSummary = {
       type: selected.army ? ActorType.Explorer : ActorType.Structure,
@@ -3129,8 +3128,18 @@ export default class WorldmapScene extends WarpTravel {
     this.state.updateEntityActionHoveredHex(null);
   }
 
-  /** The site's tile card with the selected army kept as its actor: the forecast and Attack, or what the army lacks. */
-  private openSiteCardForSelectedArmy(siteHex: HexPosition): void {
+  /**
+   * Whether the attack is confirmed on the target's tile card, the HUD's sheet for the selected tile. A standing
+   * expedition site always is. Where the HUD carries the order's verb (Frontier), so is an army's attack on another
+   * army: one surface for whatever an army attacks. A realm's own guard attacking still opens the older preview.
+   */
+  private confirmsAttackOnTileCard(target: { type: ActorType; id: ID }, attackerIsArmy: boolean): boolean {
+    if (this.isStandingExpeditionSite(target.id)) return true;
+    return this.hudCarriesOrderVerb() && attackerIsArmy && target.type === ActorType.Explorer;
+  }
+
+  /** The target's tile card with the selected army kept as its actor: the forecast and Attack, or what the army lacks. */
+  private openTargetCardForSelectedArmy(siteHex: HexPosition): void {
     this.selectContractHexWithoutFeedback(siteHex);
     this.state.updateEntityActionHoveredHex(null);
   }
@@ -8285,7 +8294,7 @@ export default class WorldmapScene extends WarpTravel {
     if (account === null || !position) return;
     await this.runShortcutArmySelection(() => this.focusAndSelectArmy(entityId, position, account));
     if (forSite && getLiveWorldmapEntityActions().selectedEntityId === entityId) {
-      this.openSiteCardForSelectedArmy(forSite);
+      this.openTargetCardForSelectedArmy(forSite);
     }
   }
 

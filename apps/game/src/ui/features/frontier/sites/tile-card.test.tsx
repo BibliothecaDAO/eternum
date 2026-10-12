@@ -16,7 +16,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ActionPaths, ActionType, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
-import { campBeside, SITE, SITE_TILE } from "./site-fixture";
+import { campBeside, otherArmyAt, SITE, SITE_TILE } from "./site-fixture";
 import { TileCard } from "./tile-card";
 
 afterEach(() => {
@@ -47,7 +47,7 @@ const renderCard = (army: "beside" | "far") => {
         value={{ store, systemCalls: { attack_explorer_vs_guard: attack } } as unknown as GameClientSetup}
         account={{ address: "0x111" } as never}
       >
-        <TileCard selected={{ site, structure, tile }} onClose={() => {}} />
+        <TileCard selected={{ kind: "site", site, structure, tile }} onClose={() => {}} />
       </GameProvider>,
     ),
   );
@@ -102,5 +102,41 @@ describe("the tile card", () => {
     expect(button("Move")).toBeUndefined();
     expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Camp");
     unmount();
+  });
+
+  it("is the same card for another player's army: its troops, the forecast, and Attack sent army against army", async () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const { store } = campBeside();
+    const other = otherArmyAt(store, 42, 12);
+    useAccountStore.setState({ account: { address: "0x111" } as never });
+    const attack = vi.fn(() => Promise.resolve());
+    const tile = {
+      hexCoords: { col: 42, row: 12, alt: false },
+      biome: 11,
+      occupierId: 301,
+    } as unknown as TileSpatialRenderable;
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    act(() =>
+      root.render(
+        <GameProvider
+          value={{ store, systemCalls: { attack_explorer_vs_explorer: attack } } as unknown as GameClientSetup}
+          account={{ address: "0x111" } as never}
+        >
+          <TileCard selected={{ kind: "army", army: other, tile }} onClose={() => {}} />
+        </GameProvider>,
+      ),
+    );
+    act(() => useUIStore.getState().updateEntityActionSelectedEntityId(201));
+    expect(host.querySelector('section[aria-label="Army"]')).not.toBeNull();
+    expect(host.querySelector('[aria-label="troops 300"]')).not.toBeNull();
+    const button = [...host.querySelectorAll("button")].find((candidate) => candidate.textContent?.includes("Attack"))!;
+    await act(async () => button.click());
+    expect(attack).toHaveBeenCalledWith(
+      expect.objectContaining({ aggressor_id: 201, defender_id: 301, steal_resources: [] }),
+    );
+    act(() => root.unmount());
+    host.remove();
   });
 });

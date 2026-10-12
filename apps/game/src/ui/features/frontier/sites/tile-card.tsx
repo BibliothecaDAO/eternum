@@ -3,6 +3,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useCurrentArmiesTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
+import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { requestArmySelection } from "@/three/scenes/worldmap-army-select-request";
@@ -11,8 +12,13 @@ import type { IconCode } from "@/ui/design-system/kit/kit-icon";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
-import { biomeTypeOf, configManager, entityMapPosition } from "@bibliothecadao/eternum";
-import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import { biomeTypeOf, configManager, entityMapPosition, isViewerOwner } from "@bibliothecadao/eternum";
+import {
+  safeInteger,
+  type GameClientSetup,
+  type NativeFactStore,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
@@ -24,7 +30,7 @@ import { armyArt, type DockArmy, useDockArmies } from "../hud/dock-armies";
 import { useApproachTile } from "./approach";
 import { type FightSent, fightIsSent, fightWasNotSent } from "./fight-result";
 import { useSelectedOwnArmy } from "./selected-army";
-import { readSiteCard, type SiteAttack, type SiteCardPlan, type SiteFight } from "./site-card-plan";
+import { readArmyCard, readSiteCard, type SiteAttack, type SiteCardPlan, type SiteFight } from "./site-card-plan";
 import { type SiteChoice, SiteCardView, type SiteVerb } from "./site-card-view";
 
 const SITE_MODELS = [
@@ -44,42 +50,70 @@ const SITE_MODELS = [
 /** The resources a clear pays home, by the icon the card draws them with. */
 const PAY_ICONS: Partial<Record<ResourcesIds, IconCode>> = { [ResourcesIds.Labor]: "La", [ResourcesIds.Essence]: "Es" };
 
-interface SelectedSite {
-  site: NativeRows["ExpeditionSite"];
-  structure: NativeRows["Structure"];
-  tile: TileSpatialRenderable;
-}
+/** What the tile card attacks: a standing site through its guard, or another player's army. */
+type AttackTarget =
+  | {
+      kind: "site";
+      site: NativeRows["ExpeditionSite"];
+      structure: NativeRows["Structure"];
+      tile: TileSpatialRenderable;
+    }
+  | { kind: "army"; army: NativeRows["ExplorerTroops"]; tile: TileSpatialRenderable };
 
-/** The map tile the player tapped, when it holds a standing expedition site: a camp, rift or ruin. */
-export const useSelectedSite = (): SelectedSite | null => {
+/**
+ * The map tile the player tapped, when something an army can attack stands on it: a standing expedition site (a
+ * camp, rift, ruin or stragglers), or an army that is not the player's own.
+ */
+export const useSelectedTarget = (): AttackTarget | null => {
   const { setup } = useGame();
   const { isMapView } = useQuery();
+  const viewer = useAccountAddress();
   const selectedHex = useUIStore((state) => state.selectedHex);
   const hexes = useMemo(() => (selectedHex ? [selectedHex] : []), [selectedHex]);
   const [tile] = useWorldSpatialTiles(hexes);
   useNativeRevision(SITE_MODELS);
-  if (!isMapView || !tile?.occupierIsStructure) return null;
-  const key = { game_id: configManager.getActiveGameId(), entity_id: tile.occupierId };
-  const site = setup.store.get("ExpeditionSite", key);
-  if (!site || site.cleared) return null;
-  return { site, structure: setup.store.require("Structure", key), tile };
+  if (!isMapView || !tile) return null;
+  return tile.occupierIsStructure ? standingSite(setup.store, tile) : otherArmy(setup.store, tile, viewer);
 };
 
+const standingSite = (store: NativeFactStore, tile: TileSpatialRenderable): AttackTarget | null => {
+  const key = { game_id: configManager.getActiveGameId(), entity_id: tile.occupierId };
+  const site = store.get("ExpeditionSite", key);
+  if (!site || site.cleared) return null;
+  return { kind: "site", site, structure: store.require("Structure", key), tile };
+};
+
+/** The army on the tile when it is someone else's; the player's own armies have their dock, not a card. */
+const otherArmy = (store: NativeFactStore, tile: TileSpatialRenderable, viewer: bigint | null): AttackTarget | null => {
+  const gameId = configManager.getActiveGameId();
+  const army = store.get("ExplorerTroops", { game_id: gameId, explorer_id: tile.occupierId });
+  if (!army) return null;
+  const home = store.get("Structure", { game_id: gameId, entity_id: army.owner });
+  return home && isViewerOwner(home.owner, viewer) ? null : { kind: "army", army, tile };
+};
+
+/** The card's reading of its target for an attack: a site's by its guard, an army's by its troops. */
+const readTarget = (store: NativeFactStore, target: AttackTarget, attack: SiteAttack | null): SiteCardPlan =>
+  target.kind === "site"
+    ? readSiteCard(store, target.site, target.structure, target.tile.hexCoords, attack)
+    : readArmyCard(store, target.army, target.tile.hexCoords, attack);
+
+const targetId = (target: AttackTarget): number =>
+  safeInteger(target.kind === "site" ? target.site.entity_id : target.army.explorer_id);
+
 /**
- * A guarded site's card over the game's facts: the selected army's matchup and exact forecast, what the clear pays and
- * its XP, then Attack in reach, Move until the army arrives, or the stamina it lacks. With no army selected, the
- * realm's armies are the choices. The card stays between attacks and closes when the site falls.
+ * A target's card over the game's facts: the selected army's matchup and exact forecast, what a clear pays and its
+ * XP, then Attack in reach, Move until the army arrives, or the stamina it lacks. With no army selected, the realm's
+ * armies are the choices. The card stays between attacks and closes when the target falls. It is the one surface an
+ * army's attack is confirmed on, whatever it attacks.
  */
-export const TileCard = ({ selected, onClose }: { selected: SelectedSite; onClose: () => void }) => {
+export const TileCard = ({ selected, onClose }: { selected: AttackTarget; onClose: () => void }) => {
   const { setup, account } = useGame();
   const actor = useSelectedOwnArmy();
   const attack = useSiteAttack(selected.tile, actor);
   const revision = useNativeRevision(SITE_MODELS);
   const siteTile = selected.tile.hexCoords;
-  const plan = useMemo(
-    () => readSiteCard(setup.store, selected.site, selected.structure, siteTile, attack),
-    [attack, revision, selected, setup.store, siteTile],
-  );
+  const plan = useMemo(() => readTarget(setup.store, selected, attack), [attack, revision, selected, setup.store]);
   const choices = useSiteChoices(selected, actor === null);
   const approach = useOrderAt(useApproachTile(siteTile, actor !== null && plan.fight === undefined));
   const stamina = useArmyStamina(actor ? safeInteger(actor.army.explorer_id) : null, plan.attackStamina);
@@ -94,11 +128,7 @@ export const TileCard = ({ selected, onClose }: { selected: SelectedSite; onClos
     if (sent) fightIsSent(sent);
     try {
       playUnitCommandSound("attack");
-      await setup.systemCalls.attack_explorer_vs_guard({
-        signer: account.account,
-        explorer_id: safeInteger(attack.army.explorer_id),
-        structure_id: safeInteger(selected.structure.entity_id),
-      });
+      await sendAttack(setup.systemCalls, account.account, safeInteger(attack.army.explorer_id), selected);
     } catch (error) {
       fightWasNotSent();
       toast.error(extractReadableErrorMessage(error, "The attack could not be sent."));
@@ -136,6 +166,22 @@ export const TileCard = ({ selected, onClose }: { selected: SelectedSite; onClos
     />
   );
 };
+
+/** The attack the contract takes for the target: on a site's guard, or on another army (taking nothing from it). */
+const sendAttack = (
+  systemCalls: GameClientSetup["systemCalls"],
+  signer: NonNullable<ReturnType<typeof useGame>["account"]["account"]>,
+  explorerId: number,
+  target: AttackTarget,
+) =>
+  target.kind === "site"
+    ? systemCalls.attack_explorer_vs_guard({ signer, explorer_id: explorerId, structure_id: targetId(target) })
+    : systemCalls.attack_explorer_vs_explorer({
+        signer,
+        aggressor_id: explorerId,
+        defender_id: targetId(target),
+        steal_resources: [],
+      });
 
 /**
  * The card's step: Move toward the site until the army is in reach (its prices, the order's), or Attack held back
@@ -182,7 +228,7 @@ const useSiteAttack = (
 };
 
 /** With no army selected, each of the realm's armies as a choice, with the fight it would have from where it stands. */
-const useSiteChoices = (selected: SelectedSite, wanted: boolean): SiteChoice[] => {
+const useSiteChoices = (selected: AttackTarget, wanted: boolean): SiteChoice[] => {
   const { setup } = useGame();
   const realm = useFrontierRealm();
   const armies = useDockArmies(realm);
@@ -194,7 +240,7 @@ const useSiteChoices = (selected: SelectedSite, wanted: boolean): SiteChoice[] =
     const position = entityMapPosition(setup.store, realm.game_id, army.explorerId);
     const fight =
       troops &&
-      readSiteCard(setup.store, selected.site, selected.structure, selected.tile.hexCoords, {
+      readTarget(setup.store, selected, {
         army: troops,
         armyTile: { col: position.x, row: position.y, alt: position.alt },
         biome: biomeTypeOf(selected.tile.biome),
@@ -220,19 +266,19 @@ const sitePay = (plan: SiteCardPlan) => {
 /** The attack as it leaves, for its result: both sides' troops now and what the clear would pay, as the card shows. */
 const fightSentBy = (
   army: NativeRows["ExplorerTroops"],
-  selected: SelectedSite,
+  selected: AttackTarget,
   plan: SiteCardPlan,
 ): FightSent | null => {
   if (!plan.guard) return null;
   const pay = sitePay(plan);
   return {
-    siteId: safeInteger(selected.site.entity_id),
+    targetId: targetId(selected),
     site: plan.kind,
     armyId: safeInteger(army.explorer_id),
     armyArt: armyArt(army.troops),
     army: wholeTroops(army),
     guard: plan.guard.count,
-    clearPays: { pay: pay && { icon: pay.icon, amount: pay.fits }, xp: plan.xp },
+    clearPays: plan.xp === undefined ? null : { pay: pay && { icon: pay.icon, amount: pay.fits }, xp: plan.xp },
   };
 };
 

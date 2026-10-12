@@ -23,7 +23,7 @@ import { RuinChestMoment } from "@/ui/features/frontier/chest/ruin-chest-moment"
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import type { FightResult } from "@/ui/features/frontier/sites/fight-result";
 import { FightResultCard } from "@/ui/features/frontier/sites/fight-result-card";
-import { SITE_MARKS } from "@/ui/features/frontier/sites/site-marks";
+import { TARGET_MARKS } from "@/ui/features/frontier/sites/site-marks";
 import { SiteCardView } from "@/ui/features/frontier/sites/site-card-view";
 import { DayDoneCard } from "@/ui/features/frontier/rollover/day-done-card";
 import { LastHourBubble } from "@/ui/features/frontier/rollover/last-hour";
@@ -1060,7 +1060,7 @@ export const HudLab = () => {
           />
         )}
         {lab.fight && (
-          <Sheet label={SITE_MARKS[lab.fight.site].word} onClose={noop}>
+          <Sheet label={TARGET_MARKS[lab.fight.site].word} onClose={noop}>
             <FightResultCard result={lab.fight} onClose={noop} />
           </Sheet>
         )}

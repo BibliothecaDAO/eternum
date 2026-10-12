@@ -98,3 +98,23 @@ export const campBeside = (kind: SiteKind = "Camp", guardKnown = true) => {
     attack,
   };
 };
+
+/** Another player's 300-knight army (explorer 301) on a tile of the fixture's day. */
+export const otherArmyAt = (store: ReturnType<typeof campBeside>["store"], col: number, row: number) => {
+  const mine = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
+  const wire = (value: unknown) =>
+    JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
+  store.applyFacts([
+    {
+      model: "ExplorerTroops",
+      key: "0x90",
+      value: wire({ ...mine, explorer_id: 301, owner: 9, troops: { ...mine.troops, count: 300n * PRECISION } }),
+    },
+    {
+      model: "TileOccupancy",
+      key: "0x91",
+      value: { game_id: 1, alt: false, col, row, entity_id: 301, category: 15, is_structure: false },
+    },
+  ] as never);
+  return store.require("ExplorerTroops", { game_id: 1, explorer_id: 301 });
+};

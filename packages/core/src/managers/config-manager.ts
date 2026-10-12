@@ -237,6 +237,11 @@ export class ClientConfigManager {
   helpTransfers(withStructure: boolean): HelpTransfer[] {
     return enabledHelpTransfers((command) => this.isCommandEnabled(command), withStructure, this.hasGuardSlots());
   }
+  /** Whether an army may attack only what nobody owns (Frontier): the contract refuses a guarded structure that has
+   *  an owner, so no surface offers it. */
+  attacksOnlyUnownedStructures(): boolean {
+    return isModeRuleEnabled(this.rules(), "UNOWNED_TARGETS");
+  }
   /** Whether a battle rolls a d20 per side: everywhere in a game with combat dice, on the ethereal layer in one with
    *  ethereal dice, and never otherwise. */
   rollsCombatDice(defenderAlt: boolean): boolean {

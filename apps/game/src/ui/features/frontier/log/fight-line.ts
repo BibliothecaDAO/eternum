@@ -6,7 +6,7 @@ import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 
 import { fightVerdict } from "../sites/fight-result";
 import { VERDICT_WORDS } from "../sites/fight-result-card";
-import { SITE_MARKS } from "../sites/site-marks";
+import { TARGET_MARKS } from "../sites/site-marks";
 
 const PRECISION = BigInt(RESOURCE_PRECISION);
 
@@ -44,5 +44,5 @@ const troopsOf = (side: unknown): { before: number; after: number } | null => {
 const siteWord = (store: NativeFactStore, entityId: unknown): string | null => {
   const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: Number(entityId) });
   const kind = structure && StructureType[structure.base.category];
-  return kind && kind in SITE_MARKS ? SITE_MARKS[kind as keyof typeof SITE_MARKS].word : null;
+  return kind && kind in TARGET_MARKS ? TARGET_MARKS[kind as keyof typeof TARGET_MARKS].word : null;
 };

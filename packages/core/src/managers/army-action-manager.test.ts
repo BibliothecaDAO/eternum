@@ -60,6 +60,7 @@ function buildTileOptData(input: {
 
 function createTestSetup(systemCalls: Record<string, unknown> = {}) {
   vi.spyOn(configManager, "getMapCenter").mockReturnValue(TEST_FELT_CENTER);
+  vi.spyOn(configManager, "attacksOnlyUnownedStructures").mockReturnValue(false);
   const oldFeltStart = { col: TEST_FELT_CENTER, row: TEST_FELT_CENTER };
   const exploredHexes = new Map<number, Map<number, BiomeType>>();
 
@@ -310,6 +311,32 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     );
 
     expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(targetHex)) ?? [])).toBe(ActionType.Attack);
+  });
+
+  it("offers no attack on another player's structure where the game allows only unowned targets, and keeps a site", () => {
+    const { manager, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } = createTestSetup();
+    const [owned, site] = getNeighborHexes(oldFeltStart.col, oldFeltStart.row);
+    setNestedMapValue(structureHexes, owned.col - TEST_FELT_CENTER, owned.row - TEST_FELT_CENTER, {
+      owner: 0x999n,
+    } as HexEntityInfo);
+    setNestedMapValue(structureHexes, site.col - TEST_FELT_CENTER, site.row - TEST_FELT_CENTER, {
+      owner: 0n,
+    } as HexEntityInfo);
+    vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({ amount: 150n, updated_tick: 0n } as any);
+    vi.spyOn(configManager, "attacksOnlyUnownedStructures").mockReturnValue(true);
+
+    const actionPaths = manager.findActionPaths(
+      structureHexes,
+      armyHexes,
+      exploredHexes,
+      chestHexes,
+      0,
+      0,
+      0x123n as any,
+    );
+
+    expect(actionPaths.get(ActionPaths.posKey(owned))).toBeUndefined();
+    expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(site))!)).toBe(ActionType.Attack);
   });
 
   it("adds radius-two attack paths for crossbowman armies", () => {

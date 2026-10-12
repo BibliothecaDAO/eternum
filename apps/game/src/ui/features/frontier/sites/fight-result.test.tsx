@@ -15,11 +15,11 @@ import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { closeFightResult, type FightSent, fightIsSent, readFightResult, useFightResult } from "./fight-result";
 import { FightResultCard } from "./fight-result-card";
 import { useFightWatch } from "./fight-watch";
-import { campBeside, SITE } from "./site-fixture";
+import { campBeside, otherArmyAt, SITE } from "./site-fixture";
 
 const PRECISION = 1_000_000_000n;
 const SENT: FightSent = {
-  siteId: SITE,
+  targetId: SITE,
   site: "Camp",
   armyId: 201,
   armyArt: "/images/armies/knightT1.png",
@@ -123,6 +123,33 @@ describe("the player's attack in flight", () => {
       ] as never),
     );
     expect(host.textContent).toBe("guard-holds 1400 600");
+  });
+});
+
+describe("an attack on another player's army", () => {
+  it("ends on its result from both armies' troops, and pays nothing", () => {
+    const { store } = campBeside();
+    otherArmyAt(store, 42, 12);
+    const Watch = () => {
+      useFightWatch();
+      const result = useFightResult();
+      return (
+        <output>
+          {result ? `${result.site} ${result.verdict} ${result.guard.after} ${result.gained}` : "waiting"}
+        </output>
+      );
+    };
+    act(() =>
+      root.render(
+        <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
+          <Watch />
+        </GameProvider>,
+      ),
+    );
+    act(() => fightIsSent({ ...SENT, site: "Army", targetId: 301, guard: 300, clearPays: null }));
+    expect(host.textContent).toBe("waiting");
+    act(() => store.applyFacts([{ model: "ExplorerTroops", key: "0x90", value: null }] as never));
+    expect(host.textContent).toBe("Army victory 0 null");
   });
 });
 

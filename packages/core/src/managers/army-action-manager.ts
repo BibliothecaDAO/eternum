@@ -146,6 +146,16 @@ export class ArmyActionManager {
     return tile !== undefined && isTileOccupierMapSite(tile.occupier_type);
   }
 
+  /**
+   * Another player's structure where the game lets an army attack only what nobody owns: the contract refuses the
+   * attack, so the hex is no target and no order leads onto it.
+   */
+  private isStructureOffLimits(structure: HexEntityInfo | undefined): boolean {
+    return (
+      structure !== undefined && BigInt(structure.owner ?? 0n) !== 0n && configManager.attacksOnlyUnownedStructures()
+    );
+  }
+
   private getAttackStaminaRequirement(): number {
     return configManager.getCombatConfig().stamina_attack_req;
   }
@@ -167,6 +177,7 @@ export class ArmyActionManager {
       const structure = structureHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
       const target = army ?? structure;
       if (!target || isViewerOwner(target.owner, playerAddress)) continue;
+      if (!army && this.isStructureOffLimits(structure)) continue;
 
       const biome = exploredHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
       actionPaths.set(ActionPaths.posKey({ col, row }), [
@@ -257,6 +268,12 @@ export class ArmyActionManager {
       // Skip if hex requires exploration but army can't explore
       if (!isSpire && !isExplored && !canExplore) continue;
       if (this.isMapSiteHex({ col, row })) continue;
+      if (
+        !hasArmy &&
+        !isStructureMine &&
+        this.isStructureOffLimits(structureHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER))
+      )
+        continue;
 
       const isMine = isArmyMine || isStructureMine;
       const canAttack = (hasArmy || hasStructure) && !isMine;
