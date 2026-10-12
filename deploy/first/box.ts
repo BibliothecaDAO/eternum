@@ -38,12 +38,12 @@ export async function boxRead(target: Target, script: string) {
     input: `set -euo pipefail\n${script}\n`,
   });
 }
-export async function deployShard(target: Target, checkoutRevision: string, revision: string) {
-  const checkout = remoteCheckout(checkoutRevision);
+export async function deployShard(target: Target, revision: string) {
+  const checkout = remoteCheckout(revision);
   try {
     await boxRead(
       target,
-      `cd ${shell(checkout)}\ngit fetch origin ${revision} >/dev/null 2>&1\ngit checkout --detach ${revision} >/dev/null 2>&1\npython3 deploy/first/box-deploy.py ${shell(target.release)} ${shell(releaseDirectory(target))} ${revision}`,
+      `if [ ! -d ${shell(checkout)} ]; then git clone --no-checkout https://github.com/BibliothecaDAO/eternum.git ${shell(checkout)} >/dev/null 2>&1; fi\ncd ${shell(checkout)}\ngit fetch origin ${revision} >/dev/null 2>&1\ngit checkout --detach ${revision} >/dev/null 2>&1\npython3 deploy/first/box-deploy.py ${shell(target.release)} ${shell(releaseDirectory(target))} ${revision}`,
     );
   } catch (error) {
     if (error instanceof CommandFailure) {

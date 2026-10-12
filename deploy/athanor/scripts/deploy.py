@@ -14,6 +14,7 @@ import sys
 import shutil
 
 import shard
+from revision import deployment_revision
 from directory import directory_status, wait_for_identity
 from service_requests import identity_service_base, service_json
 
@@ -29,6 +30,9 @@ def ignore_stage(_stage):
 def main(environment, directory, report_stage=ignore_stage):
     report_stage("prepare")
     inputs = load_inputs(environment)
+    targets = json.loads((shard.ROOT / "deploy/first/environments.json").read_text())
+    target = next(value for value in targets.values() if value["release"] == environment)
+    deployment_revision(target["environment"])
     with shard.isolated_stack_lock(f"deploy {environment}"):
         directory.mkdir(mode=0o700, parents=True, exist_ok=True)
         report_stage("build images")

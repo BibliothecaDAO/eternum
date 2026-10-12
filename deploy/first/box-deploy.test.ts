@@ -12,7 +12,7 @@ test("the laptop exposes the box's filtered Docker refusal as a public error", a
   spyOn(processTools, "command").mockRejectedValue(
     new processTools.CommandFailure(JSON.stringify({ kind: "shard-deployment-refused", message })),
   );
-  const error = await deployShard(environments.dev, "a".repeat(40), "b".repeat(40)).catch((error) => error);
+  const error = await deployShard(environments.dev, "a".repeat(40)).catch((error) => error);
   expect(error).toBeInstanceOf(PublicError);
   expect(error.message).toBe(message);
 });
@@ -21,7 +21,7 @@ test.each(["private output", JSON.stringify({ message: "private output" })])(
   "unstructured remote failures stay private",
   async (stdout) => {
     spyOn(processTools, "command").mockRejectedValue(new processTools.CommandFailure(stdout));
-    await expect(deployShard(environments.dev, "a".repeat(40), "b".repeat(40))).rejects.toThrow(
+    await expect(deployShard(environments.dev, "a".repeat(40))).rejects.toThrow(
       "Deployment subprocess failed; no captured output was printed",
     );
   },

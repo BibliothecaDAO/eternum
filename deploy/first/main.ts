@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { deploymentRevision } from "./revision";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
 import { Account, RpcProvider, logger } from "starknet";
@@ -420,7 +421,7 @@ export async function main(args = process.argv.slice(2)) {
   const store = new PrivateStore(directory, root, apply);
   const saved = store.read<{ environment: Environment; revision: string }>("deployment.json");
   if (saved && saved.environment !== environment) throw new Error("Private directory belongs to another environment");
-  const revision = saved?.revision ?? (await command({ argv: ["git", "rev-parse", "HEAD"] })).trim();
+  const revision = await deploymentRevision(environment);
   const context: Deployment = {
     environment,
     target: environments[environment],
@@ -432,7 +433,7 @@ export async function main(args = process.argv.slice(2)) {
   reload(context);
   const unlock = apply ? store.lock() : () => {};
   try {
-    if (apply && !saved) store.write("deployment.json", { environment, revision });
+    if (apply && !saved) store.write("deployment.json", { environment });
     if (context.inputs)
       context.output(
         `Frontier ${context.inputs.frontierStart} to ${context.inputs.frontierEnd}, pool ${context.inputs.amount}; Blitz ${context.inputs.blitzStart} to ${context.inputs.blitzEnd}.`,

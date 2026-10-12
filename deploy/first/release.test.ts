@@ -26,9 +26,7 @@ function setup() {
   const store = new PrivateStore(join(base, "private"), join(base, "repo"), true);
   store.write("pull-request.json", { number: 5039 });
   const state = {
-    tag: revision,
     next: revision,
-    nextPackage: release.package,
     ancestor: revision,
     validation: [{ conclusion: "success", event: "push" }],
     native: "null",
@@ -41,11 +39,9 @@ function setup() {
     calls.push(argv);
     if (argv[0] === "git") {
       if (argv[1] === "fetch") return "";
-      if (argv[1] === "show") return JSON.stringify({ package: state.nextPackage });
-      if (argv[1] === "ls-remote") return state.tag ? `${state.tag}\trefs/tags/${release.package}^{}` : "";
       if (argv[1] === "merge-base") return state.ancestor;
       if (argv[1] === "rev-parse") {
-        if (argv[2] === "HEAD^{tree}") return state.tree;
+        if (argv[2] === "HEAD") return state.tree;
         if (argv[2]!.endsWith("^{tree}")) return revision;
         return state.next;
       }
@@ -69,7 +65,7 @@ function setup() {
     target: environments.dev,
     environment: "dev",
     apply: true,
-    revision: oldRevision,
+    revision,
     store,
     platform,
     output: () => {},
@@ -77,37 +73,6 @@ function setup() {
   const step = (name: string) => deliverySteps(context).find((step) => step.name === name)!;
   return { state, calls, step, platform };
 }
-test("a new release tag ignores the old saved pull request, including when next has advanced", async () => {
-  const { state, step, calls } = setup();
-  state.next = "c".repeat(40);
-  expect((await step("Owner release tag").inspect()).done).toBe(true);
-  expect(calls.some((args) => args[0] === "gh" && args[1] === "pr")).toBe(false);
-  expect(calls.filter((args) => args[1] === "run").every((args) => args.includes(revision))).toBe(true);
-});
-test("an absent tag prints the exact owner commands for origin/next without tagging", async () => {
-  const { state, step, calls } = setup();
-  state.tag = "";
-  expect((await step("Owner release tag").inspect()).waiting).toBe(
-    `Owner commands: git fetch origin next; git tag ${release.package} ${revision}; git push origin refs/tags/${release.package}; then rerun`,
-  );
-  expect(calls.some((args) => ["tag", "push"].includes(args[1]!))).toBe(false);
-});
-test("a tag outside next is refused even if it has green validation", async () => {
-  const { state, step } = setup();
-  state.ancestor = oldRevision;
-  await expect(step("Owner release tag").inspect()).rejects.toThrow("not on origin/next");
-  await expect(step("Workers").inspect()).rejects.toThrow("not on origin/next");
-});
-const validationCases: { validation: { conclusion: string; event: string }[] }[] = [
-  { validation: [] },
-  { validation: [{ conclusion: "success", event: "pull_request" }] },
-];
-test.each(validationCases)("only green push validation authorizes release %j", async ({ validation }) => {
-  const { state, step } = setup();
-  state.validation = validation;
-  expect((await step("Owner release tag").inspect()).waiting).toContain("push run");
-  expect((await step("Workers").inspect()).done).toBe(false);
-});
 test.each(["Workers", "Client", "Shard deployment and self-check"])(
   "%s cannot count the old release or missing box as done",
   async (name) => {
@@ -129,7 +94,7 @@ test.each(["old tree", "dirty tree"])("%s refuses Worker deployment before any b
   else state.dirty = " M deploy/first/delivery.ts";
   const error = await deployWorkers(platform, revision).catch((error) => error);
   expect(error).toBeInstanceOf(PublicError);
-  expect(error.message).toContain(`git checkout --detach ${release.package}`);
+  expect(error.message).toContain(`clean checkout of commit ${revision}`);
   expect(calls.every((args) => args[0] === "git")).toBe(true);
 });
 test("an old tree refuses client deployment before any build", async () => {
@@ -137,19 +102,5 @@ test("an old tree refuses client deployment before any build", async () => {
   state.tree = oldRevision;
   const error = await deployClient(platform, revision).catch((error) => error);
   expect(error).toBeInstanceOf(PublicError);
-  expect(error.message).toContain(`git checkout --detach ${release.package}`);
-});
-
-test("an unmerged release package prints no owner tag command", async () => {
-  const { state, step, calls } = setup();
-  state.tag = "";
-  state.nextPackage = "shard-v0.7.0-rc.1";
-  const error = await step("Owner release tag")
-    .inspect()
-    .catch((error) => error);
-  expect(error).toBeInstanceOf(PublicError);
-  expect(error.message).toBe(`The release file naming ${release.package} is not on next yet; merge it before tagging.`);
-  expect(error.message).not.toContain("git tag");
-  expect(calls).toContainEqual(["git", "show", `${revision}:deploy/release/staging.json`]);
-  expect(calls.some((args) => ["tag", "push"].includes(args[1]!))).toBe(false);
+  expect(error.message).toContain(`clean checkout of commit ${revision}`);
 });

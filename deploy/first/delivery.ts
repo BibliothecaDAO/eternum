@@ -18,7 +18,6 @@ import { signer, type Deployment } from "./main";
 import type { Step } from "./run";
 
 interface ReleaseInputs {
-  package: string;
   chain_id: string;
   public_rpc_url: string;
   public_herald_url: string;
@@ -46,69 +45,6 @@ async function jsonGet<T>(url: string): Promise<T> {
   const response = await fetch(url, { redirect: "error", headers: { "User-Agent": "realms-deployment/1" } });
   if (!response.ok) throw new Error("Public deployment read failed");
   return response.json() as Promise<T>;
-}
-async function nextHead() {
-  await command({ argv: ["git", "fetch", "origin", "next"] });
-  return (await command({ argv: ["git", "rev-parse", "origin/next"] })).trim();
-}
-async function bookMatches(book: string, ref: string) {
-  return !(await command({ argv: ["git", "diff", "--name-only", ref, "--", book] })).trim();
-}
-async function validatedTag(context: Deployment, tag: string) {
-  const revision = await taggedHead(tag);
-  if (!revision) return undefined;
-  await nextHead();
-  await command({ argv: ["git", "fetch", "origin", revision] });
-  const ancestor = (await command({ argv: ["git", "merge-base", revision, "origin/next"] })).trim();
-  if (ancestor !== revision) throw new PublicError("Release tag is not on origin/next; tags are never moved");
-  return (await workflowDone(context, "validation.yml", revision)) ? revision : undefined;
-}
-async function requireReleasePackage(context: Deployment, revision: string, packageName: string) {
-  const message = `The release file naming ${packageName} is not on next yet; merge it before tagging.`;
-  let released;
-  try {
-    released = JSON.parse(
-      await command({ argv: ["git", "show", `${revision}:deploy/release/${context.target.release}.json`] }),
-    ) as ReleaseInputs;
-  } catch {
-    throw new PublicError(message);
-  }
-  if (released.package !== packageName) throw new PublicError(message);
-}
-async function taggedHead(tag: string) {
-  const refs = await command({ argv: ["git", "ls-remote", "origin", `refs/tags/${tag}`, `refs/tags/${tag}^{}`] });
-  const lines = refs.trim().split("\n").filter(Boolean);
-  return (lines.find((line) => line.endsWith("^{}")) ?? lines[0])?.split(/\s/)[0];
-}
-async function releaseReady(context: Deployment) {
-  const release = releaseInputs(context);
-  if (!release) return undefined;
-  const tagged = await validatedTag(context, release.package);
-  if (!tagged) return undefined;
-  const result = JSON.parse(
-    await command({ argv: ["gh", "release", "view", release.package, "--json", "assets"] }),
-  ) as { assets: { name: string }[] };
-  return result.assets.some((asset) => asset.name === "shard.tar.gz") ? tagged : undefined;
-}
-async function workflowDone(context: Deployment, workflow: string, revision: string) {
-  const runs = JSON.parse(
-    await command({
-      argv: [
-        "gh",
-        "run",
-        "list",
-        "--workflow",
-        workflow,
-        "--commit",
-        revision,
-        "--json",
-        "conclusion,status,event,displayTitle",
-        "--limit",
-        "30",
-      ],
-    }),
-  ) as { conclusion: string; status: string; event: string; displayTitle: string }[];
-  return runs.some((run) => run.conclusion === "success" && (workflow !== "validation.yml" || run.event === "push"));
 }
 async function games(context: Deployment) {
   const release = releaseInputs(context)!;
@@ -204,33 +140,6 @@ async function currentCalendar(context: Deployment) {
   }
   return phases;
 }
-async function requireAddressBookHead(context: Deployment, book: string, dirty: boolean) {
-  await command({ argv: ["git", "fetch", "origin", "stack/node-first"] });
-  const [head, remote] = (await command({ argv: ["git", "rev-parse", "HEAD", "origin/stack/node-first"] }))
-    .trim()
-    .split("\n");
-  if (head && head === remote) {
-    context.output("HEAD matches origin/stack/node-first; the public address book can be published.");
-    return;
-  }
-  if (dirty) throw new PublicError("HEAD must equal origin/stack/node-first before committing the address book.");
-  const parents = (await command({ argv: ["git", "rev-list", "--parents", "-n", "1", "HEAD"] })).trim().split(/\s+/);
-  const changed = (await command({ argv: ["git", "diff", "--name-only", "origin/stack/node-first", "HEAD", "--"] }))
-    .trim()
-    .split("\n");
-  if (
-    !remote ||
-    parents.length !== 2 ||
-    parents[0] !== head ||
-    parents[1] !== remote ||
-    changed.length !== 1 ||
-    changed[0] !== book
-  )
-    throw new PublicError(
-      "HEAD is neither origin/stack/node-first nor one address-book-only commit ahead; nothing was pushed.",
-    );
-  context.output("Found one unpushed address-book-only commit above origin/stack/node-first; retrying its push.");
-}
 export function deliverySteps(context: Deployment): Step[] {
   const wait = (detail: string) => ({ done: false, waiting: detail, detail });
   return [
@@ -242,14 +151,8 @@ export function deliverySteps(context: Deployment): Step[] {
         if (!context.assets) return wait("Contracts not yet published");
         const book = `contracts/common/addresses/${context.target.book}`;
         const diff = await command({ argv: ["git", "status", "--porcelain", "--", book] });
-        await nextHead();
-        let published = !diff.trim() && (await bookMatches(book, "origin/next"));
-        if (!diff.trim() && !published) {
-          await command({ argv: ["git", "fetch", "origin", "stack/node-first"] });
-          published = await bookMatches(book, "origin/stack/node-first");
-        }
         return {
-          done: published,
+          done: !diff.trim(),
           detail: "commit and push only the public address book; no private state enters git",
         };
       },
@@ -262,65 +165,35 @@ export function deliverySteps(context: Deployment): Step[] {
         if (staged.some((path) => path !== book))
           throw new Error("Unrelated staged changes must be handled before publishing the address book");
         const dirty = (await command({ argv: ["git", "status", "--porcelain", "--", book] })).trim();
-        await requireAddressBookHead(context, book, !!dirty);
+        const branch = (await command({ argv: ["git", "branch", "--show-current"] })).trim();
+        if (!branch || branch === "next")
+          throw new PublicError("Create a branch for the public address book, push it to origin, then rerun.");
         if (dirty) {
           await command({ argv: ["git", "add", "--", book] });
           await command({
             argv: ["git", "commit", "-m", `Publish ${context.environment} value contract addresses`, "--", book],
           });
         }
-        await command({ argv: ["git", "push", "origin", "HEAD:stack/node-first"] });
+        await command({ argv: ["git", "push", "origin", `HEAD:${branch}`] });
+        throw new PublicError(
+          "Public address book pushed. Rerun from this clean commit; production requires its merge to next and green push validation.",
+        );
       },
-    },
-    {
-      name: "Owner merge",
-      payer: "owner",
-      cost: "0 STRK",
-      inspect: async () => {
-        const next = await nextHead();
-        if (await bookMatches(`contracts/common/addresses/${context.target.book}`, "origin/next"))
-          return { done: true, detail: `public address book is on origin/next at ${next}` };
-        const pr = JSON.parse(await command({ argv: ["gh", "pr", "view", "stack/node-first", "--json", "number"] }));
-        return wait(`Owner command: gh pr merge ${pr.number} --merge; rerun after merge`);
-      },
-      apply: async () => {},
-    },
-    {
-      name: "Owner release tag",
-      payer: "owner",
-      cost: "0 STRK",
-      inspect: async () => {
-        const release = releaseInputs(context);
-        if (!release) return wait("Review and commit the environment's deploy/release JSON before deployment");
-        const tag = await taggedHead(release.package);
-        const revision = tag ?? (await nextHead());
-        if (!tag) await requireReleasePackage(context, revision, release.package);
-        if (!(await workflowDone(context, "validation.yml", revision)))
-          return wait("Wait for successful validation.yml push run on the exact release commit on next");
-        if (!tag)
-          return wait(
-            `Owner commands: git fetch origin next; git tag ${release.package} ${revision}; git push origin refs/tags/${release.package}; then rerun`,
-          );
-        return (await releaseReady(context))
-          ? { done: true, detail: "release package exists for the validated tag revision on next" }
-          : wait("Wait for shard-images.yml to publish shard.tar.gz, then rerun");
-      },
-      apply: async () => {},
     },
     {
       name: "Workers",
       payer: "none",
       cost: "Cloudflare plan charges; shard signing free",
       inspect: async () => {
-        const revision = await releaseReady(context);
-        if (!revision || !context.platform) return wait("Released revision and Cloudflare credentials needed");
+        const revision = context.revision;
+        if (!revision || !context.platform) return wait("Checkout revision and Cloudflare credentials needed");
         return {
           done: await workersReady(context.platform, revision),
           detail: "migrate D1 and deploy all six Workers at the release revision; preserve existing secrets",
         };
       },
       apply: async () => {
-        const revision = (await releaseReady(context))!;
+        const revision = context.revision!;
         await deployWorkers(context.platform!, revision);
       },
     },
@@ -330,8 +203,8 @@ export function deliverySteps(context: Deployment): Step[] {
       cost: "0 STRK",
       inspect: async () => {
         const release = releaseInputs(context);
-        const revision = await releaseReady(context);
-        if (!revision || !release) return wait("Release package needed");
+        const revision = context.revision;
+        if (!revision || !release) return wait("Committed shard configuration needed");
         const document = await nativeDocument(context.target);
         if (!document)
           return {
@@ -357,8 +230,8 @@ export function deliverySteps(context: Deployment): Step[] {
         };
       },
       apply: async () => {
-        const revision = (await releaseReady(context))!;
-        await deployShard(context.target, context.revision, revision);
+        const revision = context.revision!;
+        await deployShard(context.target, revision);
       },
     },
     {
@@ -366,7 +239,7 @@ export function deliverySteps(context: Deployment): Step[] {
       payer: "none",
       cost: "Cloudflare build charges; 0 STRK",
       inspect: async () => {
-        const revision = await releaseReady(context);
+        const revision = context.revision;
         return revision
           ? {
               done: await clientReady(context.platform!, revision),
@@ -376,7 +249,7 @@ export function deliverySteps(context: Deployment): Step[] {
           : wait("Release needed");
       },
       apply: async () => {
-        await deployClient(context.platform!, (await releaseReady(context))!);
+        await deployClient(context.platform!, context.revision!);
       },
     },
     {
@@ -384,7 +257,7 @@ export function deliverySteps(context: Deployment): Step[] {
       payer: "operator token",
       cost: "0 STRK",
       inspect: async () => {
-        if (!(await releaseReady(context))) return wait("Deployed services needed");
+        if (!context.assets) return wait("Deployed services needed");
         const phases = await currentCalendar(context);
         await requireBlitzSeason(context);
         return {
@@ -415,7 +288,7 @@ export function deliverySteps(context: Deployment): Step[] {
       payer: context.target.coldAdmin ? "cold admin" : "deployer",
       cost: "deposit amount plus fee (dev first-deployment reserve includes it)",
       inspect: async () => {
-        if (!context.assets || !(await releaseReady(context))) return wait("Deployed shard and ledger needed");
+        if (!context.assets || !context.revision) return wait("Deployed shard and ledger needed");
         const state = await funding(context);
         if (!state)
           return {
@@ -476,7 +349,7 @@ export function deliverySteps(context: Deployment): Step[] {
       payer: "relay",
       cost: "relay reserve about 30 STRK for the measured day",
       inspect: async () => {
-        if (!context.assets || !(await releaseReady(context))) return wait("Released services and funded game needed");
+        if (!context.assets || !context.revision) return wait("Released services and funded game needed");
         const state = await funding(context);
         if (!state?.funded) return wait("Fund the confirmed game first");
         return {

@@ -7,20 +7,13 @@ import { Platform, workers, type Worker } from "./platform";
 import { root } from "./settings";
 import { PublicError } from "./dates";
 
-async function requireReleaseTree(platform: Platform, revision: string) {
-  await command({ argv: ["git", "fetch", "origin", revision] });
-  const local = (await command({ argv: ["git", "rev-parse", "HEAD^{tree}"] })).trim();
-  const released = (await command({ argv: ["git", "rev-parse", `${revision}^{tree}`] })).trim();
-  const dirty = (await command({ argv: ["git", "status", "--porcelain", "--untracked-files=no"] })).trim();
-  if (dirty || local !== released) {
-    const release = JSON.parse(
-      await command({ argv: ["git", "show", `${revision}:deploy/release/${platform.target.release}.json`] }),
-    ) as { package: string };
-    throw new PublicError(
-      `Check out the clean released source before deploying: git checkout --detach ${release.package}`,
-    );
-  }
+async function requireReleaseTree(revision: string) {
+  const local = (await command({ argv: ["git", "rev-parse", "HEAD"] })).trim();
+  const dirty = (await command({ argv: ["git", "status", "--porcelain"] })).trim();
+  if (dirty || local !== revision)
+    throw new PublicError(`Deploy from the clean checkout of commit ${revision}; rerun after checking it out.`);
 }
+
 async function workerReady(platform: Platform, worker: Worker, revision: string) {
   const version = await platform.deployedVersion(worker);
   if (version?.revision !== revision) return false;
@@ -41,7 +34,7 @@ export async function workersReady(platform: Platform, revision: string) {
 }
 export async function deployWorkers(platform: Platform, revision: string) {
   if (!platform.apply) throw new Error("Dry run cannot deploy Workers");
-  await requireReleaseTree(platform, revision);
+  await requireReleaseTree(revision);
   await command({ argv: ["pnpm", "run", "build:packages"] });
   for (const worker of workers) {
     if ((await platform.deployedRevision(worker)) !== revision) {
@@ -92,7 +85,7 @@ export async function clientReady(platform: Platform, revision: string) {
 export async function deployClient(platform: Platform, revision: string) {
   if (!platform.apply) throw new Error("Dry run cannot deploy the client");
   const env = clientEnvironment(platform, revision);
-  await requireReleaseTree(platform, revision);
+  await requireReleaseTree(revision);
   await command({ argv: ["pnpm", "run", "build:packages"] });
   await command({ argv: ["pnpm", "--dir", "apps/game", "test", "src/utils/chunk-load-recovery.test.ts", "src/pwa"] });
   await command({ argv: ["pnpm", "--dir", "apps/game", "verify:assets"] });
