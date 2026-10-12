@@ -62,11 +62,13 @@ test("the owner sees the public receipt refusal through the same structured depl
   const message =
     "Shard deployment stopped at self-check. self-check failed at Explore: refused: insufficient stamina, you need: 30, and have: 20 (transaction 0x123); directory status unchanged";
   spyOn(processTools, "command").mockRejectedValue(
-    new processTools.CommandFailure(JSON.stringify({ kind: "shard-deployment-refused", message })),
+    new processTools.CommandFailure(JSON.stringify({ kind: "shard-deployment-refused", message, restarted: true })),
   );
-  const error = await deployShard(environments.dev, "a".repeat(40), () => {}).catch((error) => error);
+  const lines: string[] = [];
+  const error = await deployShard(environments.dev, "a".repeat(40), (line) => lines.push(line)).catch((error) => error);
   expect(error).toBeInstanceOf(PublicError);
   expect(error.message).toBe(message);
+  expect(lines).toEqual(["Restarting the unfinished pending shard from fresh state."]);
 });
 
 test.each([

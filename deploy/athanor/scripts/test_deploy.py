@@ -130,6 +130,37 @@ class ActivationTest(unittest.TestCase):
                 directory.assert_called_once_with({}, "pending")
             self.assertEqual(json.loads((data / "self-check.json").read_text())["firstFailedRoute"], "Explore")
 
+    def test_failed_check_is_rerun_after_replacing_the_old_release_images(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            data = root / "data"
+            data.mkdir()
+            for name in ("native-world.json", "initialized.json"):
+                (data / name).write_text("{}")
+            identity = deploy.gameplay_check_identity(data)
+            (data / "self-check.json").write_text(json.dumps({
+                "passed": False, "firstFailedRoute": "Explore", "checkedIdentity": identity,
+                "gameId": 1, "supplementalGameIds": [2],
+            }))
+            (root / "release.json").write_text(json.dumps({
+                "tag": "shard-v0.7.0-rc.2", "images": {"init": "registry/old@sha256:1"},
+            }))
+            built = {**release(), "images": {"init": "sha256:2", "herald": "sha256:3", "metrics": "sha256:4"}}
+            deploy.write_build(root, built)
+            with (
+                patch.object(deploy, "run_self_check", return_value={
+                    "passed": True, "gameId": 3, "supplementalGameIds": [4],
+                }) as check,
+                patch.object(deploy, "confirm_worker_launcher"),
+                patch.object(deploy, "directory_status", return_value={"status": "pending"}) as directory,
+            ):
+                deploy.verify_and_activate({}, data)
+            check.assert_called_once_with(data)
+            self.assertEqual(directory.call_args.args, ({}, "active"))
+            self.assertEqual(json.loads((data / "self-check.json").read_text())["gameId"], 3)
+            self.assertEqual(json.loads((root / "release.json").read_text()), built)
+            self.assertIn("SHARD_INIT_IMAGE=sha256:2", (root / "images.env").read_text())
+
     def test_receipt_failure_is_saved_before_the_public_refusal_is_raised(self):
         failure = {"category": "refused", "reason": "insufficient stamina, you need: 30, and have: 20", "transactionHash": "0x123"}
         with tempfile.TemporaryDirectory() as temporary:
