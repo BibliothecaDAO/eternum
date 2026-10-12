@@ -1029,6 +1029,7 @@ describe("identity Worker", () => {
     expect((await secondDevice.session())?.user.name).toBe("Two Devices");
   });
 
+  // Measured at 2.5–3.2s, this wallet lifecycle exceeds 5s under suite contention.
   it("keeps one wallet per account: unlinking frees it, and a new link replaces the account's wallet", async () => {
     const { wallet: first } = await playerWithWallet("first-holder@realms.test");
     const holder = createBrowser();
@@ -1047,7 +1048,7 @@ describe("identity Worker", () => {
     expect((await proveWallet(other, second, "link")).status).toBe(200);
     expect(BigInt((await other.session())?.user.address ?? 0)).toBe(BigInt(second));
     expect((await proveWallet(holder, first, "link")).status).toBe(200);
-  });
+  }, 10_000);
 
   it("keeps wallet linkage in identity without a ledger readiness state or account-link stores", async () => {
     const player = createBrowser();
