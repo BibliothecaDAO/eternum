@@ -26,9 +26,6 @@ function setup() {
   const store = new PrivateStore(join(base, "private"), join(base, "repo"), true);
   store.write("pull-request.json", { number: 5039 });
   const state = {
-    next: revision,
-    ancestor: revision,
-    validation: [{ conclusion: "success", event: "push" }],
     native: "null",
     proof: "null",
     tree: revision,
@@ -39,15 +36,12 @@ function setup() {
     calls.push(argv);
     if (argv[0] === "git") {
       if (argv[1] === "fetch") return "";
-      if (argv[1] === "merge-base") return state.ancestor;
       if (argv[1] === "rev-parse") {
         if (argv[2] === "HEAD") return state.tree;
-        if (argv[2]!.endsWith("^{tree}")) return revision;
-        return state.next;
+        throw new Error("Unexpected revision read");
       }
       if (argv[1] === "status") return state.dirty;
     }
-    if (argv[0] === "gh" && argv[1] === "run") return JSON.stringify(state.validation);
     if (argv[0] === "ssh")
       return typeof input === "string" && input.includes("native-world.json") ? state.native : state.proof;
     throw new Error(`Unexpected test command: ${argv.slice(0, 2).join(" ")}`);

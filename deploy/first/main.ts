@@ -208,7 +208,7 @@ export function preparationSteps(context: Deployment): Step[] {
       payer: "none",
       cost: "0 STRK; remote build time",
       inspect: async () => ({
-        done: artifactsReady(context.store, context.revision),
+        done: await artifactsReady(context.store, context.revision),
         detail: "ledger, rating token and collectibles; Scarb 2.13.1 on the box under flock, cores 8-11",
       }),
       apply: () => buildArtifacts(context.target, context.store, context.revision),
@@ -419,7 +419,7 @@ export async function main(args = process.argv.slice(2)) {
   process.umask(0o077);
   const apply = flag === "--apply";
   const store = new PrivateStore(directory, root, apply);
-  const saved = store.read<{ environment: Environment; revision: string }>("deployment.json");
+  const saved = store.read<{ environment: Environment }>("deployment.json");
   if (saved && saved.environment !== environment) throw new Error("Private directory belongs to another environment");
   const revision = await deploymentRevision(environment);
   const context: Deployment = {
@@ -431,6 +431,7 @@ export async function main(args = process.argv.slice(2)) {
     output: console.log,
   };
   reload(context);
+  context.output(`Deployment commit ${revision}.`);
   const unlock = apply ? store.lock() : () => {};
   try {
     if (apply && !saved) store.write("deployment.json", { environment });

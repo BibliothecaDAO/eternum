@@ -214,7 +214,10 @@ export function deliverySteps(context: Deployment): Step[] {
           };
         const expectedChain = BigInt(`0x${Buffer.from(release.chain_id).toString("hex")}`);
         if (BigInt(document.shard.chainId) !== expectedChain)
-          throw new Error("New shard directory contains a different chain; data was not overwritten");
+          return {
+            done: false,
+            detail: "check directory status before refusing or replacing unfinished shard identity",
+          };
         const proof = await boxRead(
           context.target,
           `if [ -f ${shell(`${releaseDirectory(context.target)}/first-deployment-check.json`)} ]; then cat ${shell(`${releaseDirectory(context.target)}/first-deployment-check.json`)}; else echo null; fi`,
@@ -231,7 +234,8 @@ export function deliverySteps(context: Deployment): Step[] {
       },
       apply: async () => {
         const revision = context.revision!;
-        await deployShard(context.target, revision);
+        context.output("Building shard images on the box and checking deployment.");
+        await deployShard(context.target, revision, context.output);
       },
     },
     {

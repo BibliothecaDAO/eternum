@@ -94,10 +94,12 @@ key Docker's Cairo layers; changes to Herald or deployment scripts reuse them.
     it to `next` and successful push validation first. Unrelated staged changes stop publication.
 12. Build workspace packages, migrate D1 and deploy all six Workers from the released tree. Worker version tags prove
     the source revision. An interrupted deployment resumes with the remaining Workers.
-13. Drain the former shard's directory entry, stop the Compose project occupying its ports, retire that entry and deploy
-    the new shard built on the box from this checkout commit. Preserve former active shard data and volumes. The
-    existing deployment check proves gameplay and the on-chain launcher/ledger-operator handoff before activation. An
-    unrelated container or conflicting new-chain data stops the command.
+13. Build the shard images on the box. A pending shard whose classes or identity changed, or whose initialization is
+    incomplete, restarts from fresh state. Active, draining and retired state is never deleted; class changes are
+    refused. Drain the former shard's directory entry, stop the Compose project occupying its ports, retire that entry
+    and deploy the new shard built on the box from this checkout commit. Preserve former active shard data and volumes.
+    The existing deployment check proves gameplay and the on-chain launcher/ledger-operator handoff before activation.
+    An unrelated container or conflicting new-chain data stops the command.
 14. Build and publish the client locally with wrangler. Check its chain/RPC, recovery tests, source assets, emitted PWA
     assets, cache rules and published modules/routes. Remove public sourcemaps before upload. Origin, zone and Pages
     project come from the table. A matching remote release is checked without uploading it again.

@@ -38,13 +38,14 @@ export async function boxRead(target: Target, script: string) {
     input: `set -euo pipefail\n${script}\n`,
   });
 }
-export async function deployShard(target: Target, revision: string) {
+export async function deployShard(target: Target, revision: string, output: (line: string) => void) {
   const checkout = remoteCheckout(revision);
   try {
-    await boxRead(
+    const result = await boxRead(
       target,
       `if [ ! -d ${shell(checkout)} ]; then git clone --no-checkout https://github.com/BibliothecaDAO/eternum.git ${shell(checkout)} >/dev/null 2>&1; fi\ncd ${shell(checkout)}\ngit fetch origin ${revision} >/dev/null 2>&1\ngit checkout --detach ${revision} >/dev/null 2>&1\npython3 deploy/first/box-deploy.py ${shell(target.release)} ${shell(releaseDirectory(target))} ${revision}`,
     );
+    if (JSON.parse(result).restarted) output("Restarting the unfinished pending shard from fresh state.");
   } catch (error) {
     if (error instanceof CommandFailure) {
       let report;
@@ -53,17 +54,37 @@ export async function deployShard(target: Target, revision: string) {
       } catch {
         /* Unstructured output stays private. */
       }
+      if (report?.restarted) output("Restarting the unfinished pending shard from fresh state.");
       if (report?.kind === "shard-deployment-refused" && typeof report.message === "string")
         throw new PublicError(report.message);
     }
     throw error;
   }
 }
-export function artifactsReady(store: PrivateStore, revision: string) {
-  return (
-    store.read<{ revision: string }>("build.json")?.revision === revision &&
-    artifactFiles.every(({ file }) => existsSync(join(store.directory, "artifacts", file)))
-  );
+export async function artifactsReady(store: PrivateStore, revision: string) {
+  const built = store.read<{ revision: string }>("build.json");
+  if (!built || !artifactFiles.every(({ file }) => existsSync(join(store.directory, "artifacts", file)))) return false;
+  if (built.revision === revision) return true;
+  try {
+    return !(
+      await command({
+        argv: [
+          "git",
+          "diff",
+          "--name-only",
+          built.revision,
+          revision,
+          "--",
+          "contracts/l2/ledger",
+          "contracts/l2/mmr",
+          "contracts/l2/collectibles",
+          "deploy/first/box.ts",
+        ],
+      })
+    ).trim();
+  } catch {
+    return false;
+  }
 }
 export async function buildArtifacts(target: Target, store: PrivateStore, revision: string) {
   if (!/^[0-9a-f]{40}$/.test(revision)) throw new Error("Invalid release revision");

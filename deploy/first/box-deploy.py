@@ -71,7 +71,7 @@ def main(environment, directory, revision, report_stage):
 
 
 STAGES = (
-    "retire previous shard", "build images", "prepare", "start Herald", "wait for Herald identity",
+    "retire previous shard", "build images", "restart pending shard", "prepare", "start Herald", "wait for Herald identity",
     "register pending", "start services", "initialise", "self-check", "activate",
 )
 
@@ -97,12 +97,14 @@ def docker_error_line(error):
 
 def run(environment, directory, revision):
     stage = "prepare"
+    restarted = False
 
     def report_stage(name):
-        nonlocal stage
+        nonlocal stage, restarted
         if name not in STAGES:
             raise ValueError("Unknown deployment stage")
         stage = name
+        restarted = restarted or name == "restart pending shard"
 
     try:
         # Only the structured outcome crosses SSH; subprocess output is captured at its call site.
@@ -110,13 +112,16 @@ def run(environment, directory, revision):
             main(environment, directory, revision, report_stage)
     except Exception as error:
         detail = docker_error_line(error)
+        if isinstance(error, deploy.DeploymentRefused):
+            detail = str(error)
         if isinstance(error, HeraldIdentityRefused):
             detail = f"Herald identity read refused: HTTP {error.status}"
         message = f"Shard deployment stopped at {stage}."
         if detail:
             message += " " + detail
-        print(json.dumps({"kind": "shard-deployment-refused", "message": message}))
+        print(json.dumps({"kind": "shard-deployment-refused", "message": message, **({"restarted": True} if restarted else {})}))
         return 1
+    print(json.dumps({"kind": "shard-deployment-complete", "restarted": restarted}))
     return 0
 
 

@@ -393,3 +393,117 @@ class WorkerLedgerOperatorTest(unittest.TestCase):
                         deploy.confirm_worker_ledger_operator(config, Path("/unused"))
                     role.assert_not_called()
                 request.assert_called_once_with("https://id.test/api/value/operator/shard/enrol", {"chainId": "0x123", "heraldUrl": "https://herald.test"}, timeout=120)
+
+
+class RestartUnfinishedTest(unittest.TestCase):
+    def check_restart(self, status, differences, *, complete=True, data=True):
+        temporary = self.enterContext(tempfile.TemporaryDirectory())
+        root = Path(temporary) / 'run'
+        root.mkdir()
+        if data:
+            (root / 'data').mkdir()
+            (root / 'data/private-marker').write_text('keep-or-delete')
+            (root / 'compose.yml').write_text('old stack')
+        inputs = {'chain_id': 'TEST', 'guardian_url': 'https://identity.test/api/guardian',
+                  'public_herald_url': 'https://herald.test'}
+        chain = '0x' + b'TEST'.hex()
+        rows = [] if status is None else [{'url': inputs['public_herald_url'], 'chainId': chain, 'status': status}]
+        request = self.enterContext(patch.object(deploy, 'service_json', return_value={'shards': rows}))
+        self.enterContext(patch.object(deploy, 'unfinished_differences', return_value=differences))
+        run = self.enterContext(patch.object(deploy.subprocess, 'run'))
+        stages = []
+        if status in ('active', 'draining', 'retired') and differences:
+            with self.assertRaisesRegex(deploy.DeploymentRefused, differences[0]):
+                deploy.restart_unfinished(root, inputs, release(), stages.append)
+            run.assert_not_called()
+            if data:
+                self.assertTrue((root / 'data/private-marker').exists())
+        else:
+            deploy.restart_unfinished(root, inputs, release(), stages.append)
+            if differences and data:
+                self.assertEqual(run.call_args.args[0][-2:], ['down', '--volumes'])
+                self.assertEqual(stages, ['restart pending shard'])
+                self.assertFalse((root / 'data').exists())
+                self.assertTrue(root.is_dir())
+            else:
+                run.assert_not_called()
+        request.assert_called_once_with('https://identity.test/api/directory/shards', authenticated=True)
+
+    def test_pending_class_difference_and_incomplete_initialization_start_over(self):
+        for difference in ('Games class differs', 'initialization is incomplete', 'guardian identity differs'):
+            with self.subTest(difference=difference):
+                self.check_restart('pending', [difference])
+
+    def test_never_registered_partial_stack_starts_over(self):
+        self.check_restart(None, ['initialization is incomplete'])
+
+    def test_active_draining_and_retired_state_is_never_removed(self):
+        for status in ('active', 'draining', 'retired'):
+            for data in (True, False):
+                with self.subTest(status=status, data=data):
+                    self.check_restart(status, ['initialization is incomplete'], data=data)
+
+    def test_matching_active_or_pending_shard_continues(self):
+        for status in ('active', 'pending'):
+            self.check_restart(status, [])
+
+    def test_a_fresh_directory_has_no_stack_to_remove(self):
+        self.check_restart(None, ['initialization is incomplete'], data=False)
+
+    def test_directory_failure_cannot_authorize_deletion(self):
+        with tempfile.TemporaryDirectory() as temporary, \
+                patch.object(deploy, 'service_json', side_effect=OSError('unavailable')), \
+                patch.object(deploy.subprocess, 'run') as run:
+            root = Path(temporary)
+            (root / 'data').mkdir()
+            with self.assertRaises(OSError):
+                deploy.restart_unfinished(root, {'guardian_url': 'https://identity.test/api/guardian'}, {}, lambda _: None)
+            run.assert_not_called()
+            self.assertTrue((root / 'data').exists())
+
+    def test_built_classes_guardian_and_saved_identity_are_compared_before_start(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            inputs = {'chain_id': 'TEST', 'guardian_url': 'https://identity.test/api/guardian',
+                      'l2_gas_bound': '0x10', 'presets': [2, 5, 101]}
+            manifest, initialized = deployed()
+            manifest['shard'].update(chainId='0x54455354', guardianPublicKey='0x7')
+            for name in ('host-keys.json', 'host-accounts.json', 'vrf-key.json', 'gameplay-contracts.json', 'chain-config.yaml', 'harness.env'):
+                (data / name).write_text('{}')
+            (data / 'native-world.json').write_text(json.dumps(manifest))
+            (data / 'initialized.json').write_text(json.dumps(initialized))
+            (data / 'init-configuration.json').write_text(json.dumps({
+                'shard': 'test', 'chain_id': 'TEST', 'guardian_url': inputs['guardian_url'], 'l2_gas_bound': '0x10'}))
+            with patch.object(deploy.shard, 'read_guardian_identity', return_value={'guardianPublicKey': '0x7'}):
+                self.assertEqual(deploy.unfinished_differences(data, inputs, release()), [])
+                candidate = release()
+                candidate['classes']['games'] = '0x99'
+                self.assertEqual(deploy.unfinished_differences(data, inputs, candidate), ['Games class 0x01, release has 0x99'])
+                manifest['shard']['chainId'] = '0x99'
+                (data / 'native-world.json').write_text(json.dumps(manifest))
+                self.assertIn('chain identity differs', deploy.unfinished_differences(data, inputs, release()))
+                (data / 'host-keys.json').unlink()
+                self.assertEqual(deploy.unfinished_differences(data, inputs, release()), ['initialization is incomplete'])
+
+    def test_fresh_replacement_can_follow_a_different_retired_chain(self):
+        with tempfile.TemporaryDirectory() as temporary, \
+                patch.object(deploy, 'service_json', return_value={'shards': [
+                    {'url': 'https://herald.test', 'chainId': '0x123', 'status': 'retired'}]}), \
+                patch.object(deploy.subprocess, 'run') as run:
+            deploy.restart_unfinished(Path(temporary), {
+                'chain_id': 'NEW', 'guardian_url': 'https://id.test/api/guardian',
+                'public_herald_url': 'https://herald.test'}, {}, lambda _: None)
+            run.assert_not_called()
+
+    def test_absent_directory_row_does_not_erase_a_previous_activation_proof(self):
+        with tempfile.TemporaryDirectory() as temporary, \
+                patch.object(deploy, 'service_json', return_value={'shards': []}), \
+                patch.object(deploy.subprocess, 'run') as run:
+            root = Path(temporary)
+            (root / 'data').mkdir()
+            (root / 'first-deployment-check.json').write_text('{"revision":"old"}')
+            with self.assertRaisesRegex(deploy.DeploymentRefused, 'proven shard'):
+                deploy.restart_unfinished(root, {
+                    'chain_id': 'TEST', 'guardian_url': 'https://id.test/api/guardian',
+                    'public_herald_url': 'https://herald.test'}, {}, lambda _: None)
+            run.assert_not_called()

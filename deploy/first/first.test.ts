@@ -479,7 +479,7 @@ test("all four dates are required without defaults and invalid Frontier end give
 
 test("the actual default command cannot write files, submit RPC or generate keys", async () => {
   const { base, store } = storage();
-  store.write("deployment.json", { environment: "dev", revision: "a".repeat(40) });
+  store.write("deployment.json", { environment: "dev", revision: "b".repeat(40) });
   store.write("inputs.json", input);
   store.write("keys.json", keys);
   store.write("secrets.json", secrets);
@@ -552,6 +552,8 @@ mock.module(${JSON.stringify(join(root, "deploy/first/process.ts"))}, () => ({..
   expect(errors).toBe("");
   expect(await result.exited).toBe(0);
   expect(output).toContain("DRY RUN");
+  expect(output).toContain(`Deployment commit ${"a".repeat(40)}.`);
+  expect(output).not.toContain("b".repeat(40));
   expect(output).toContain("Published pool and automatic Blitz slot");
   expect(output).not.toContain("unavailable; read failed");
   for (const secret of [

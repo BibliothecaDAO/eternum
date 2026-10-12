@@ -37,6 +37,7 @@ def main(environment, directory, report_stage=ignore_stage):
         directory.mkdir(mode=0o700, parents=True, exist_ok=True)
         report_stage("build images")
         release = shard.build_images()
+        restart_unfinished(directory, inputs, release, report_stage)
         write_build(directory, release)
         report_stage("prepare")
         (directory / ".env").write_text(render_environment(inputs, (directory / "images.env").read_text()))
@@ -76,6 +77,63 @@ def committed(path):
     def succeeds(*command):
         return subprocess.run(["git", *command], cwd=shard.ROOT, capture_output=True).returncode == 0
     return succeeds("ls-files", "--error-unmatch", str(path)) and succeeds("diff", "--quiet", "HEAD", "--", str(path))
+
+
+class DeploymentRefused(RuntimeError):
+    pass
+
+
+def restart_unfinished(directory, inputs, release, report_stage):
+    data = directory / "data"
+    base = identity_service_base(inputs["guardian_url"])
+    listing = service_json(base + "/directory/shards", authenticated=True)
+    manifest_path = data / "native-world.json"
+    manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
+    expected_chain = "0x" + inputs["chain_id"].encode("ascii").hex()
+    old_chain = manifest.get("shard", {}).get("chainId", expected_chain)
+    # Check both the recorded chain and this URL, including retired rows hidden from players.
+    rows = [row for row in listing["shards"] if row["url"] == inputs["public_herald_url"]
+            or same(row["chainId"], old_chain) or same(row["chainId"], expected_chain)]
+    if not data.exists() and not (directory / "compose.yml").exists():
+        if any(row["status"] in ("active", "draining") or
+               (row["status"] == "retired" and same(row["chainId"], expected_chain)) for row in rows):
+            raise DeploymentRefused("Existing listed shard cannot be reinitialized: initialization is incomplete")
+        return
+    differences = unfinished_differences(data, inputs, release)
+    if not differences:
+        return
+    proof = data / "self-check.json"
+    checked = (directory / "first-deployment-check.json").exists() or (
+        proof.exists() and json.loads(proof.read_text()).get("passed"))
+    if (checked and not rows) or any(row["status"] != "pending" for row in rows):
+        raise DeploymentRefused("Existing listed or proven shard cannot be reinitialized: " + "; ".join(differences))
+    if rows and any(not same(row["chainId"], expected_chain) for row in rows):
+        raise DeploymentRefused("Pending directory identity differs; choose its original chain before retrying.")
+    report_stage("restart pending shard")
+    subprocess.run([*compose(directory), "down", "--volumes"], check=True, capture_output=True)
+    shutil.rmtree(directory)
+    directory.mkdir(mode=0o700, parents=True)
+
+
+def unfinished_differences(data, inputs, release):
+    required = ("native-world.json", "initialized.json", "init-configuration.json", "host-keys.json",
+                "host-accounts.json", "vrf-key.json", "gameplay-contracts.json", "chain-config.yaml", "harness.env")
+    if not all((data / name).exists() for name in required):
+        return ["initialization is incomplete"]
+    manifest, initialized = deployed_facts(data)
+    if "native" not in manifest:
+        return ["initialization is incomplete"]
+    config = json.loads((data / "init-configuration.json").read_text())
+    expected = {"shard": inputs["chain_id"].lower().replace("_", "-"), "chain_id": inputs["chain_id"],
+                "guardian_url": inputs["guardian_url"], "l2_gas_bound": inputs["l2_gas_bound"]}
+    differences = [] if config == expected else ["shard identity or play bound differs"]
+    if not same(manifest["shard"].get("chainId"), "0x" + inputs["chain_id"].encode("ascii").hex()):
+        differences.append("chain identity differs")
+    guardian = shard.read_guardian_identity(inputs["guardian_url"])
+    if not same(manifest.get("shard", {}).get("guardianPublicKey"), guardian["guardianPublicKey"]):
+        differences.append("guardian identity differs")
+    return differences + release_differences(release, manifest, initialized,
+                                             [preset for preset in inputs["presets"] if str(preset) in initialized.get("presets", {})])
 
 
 def write_build(directory, release):

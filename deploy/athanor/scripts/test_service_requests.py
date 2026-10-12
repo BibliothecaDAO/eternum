@@ -11,6 +11,7 @@ from unittest.mock import patch
 import deploy
 import directory
 import shard
+import service_requests
 from service_requests import service_json
 from test_shard import configuration
 
@@ -59,3 +60,13 @@ class ServiceTransportTest(unittest.TestCase):
                         with self.assertRaises((HTTPError, RuntimeError)):
                             operation()
                     self.assertEqual(len(requests), 1)
+
+class AuthenticatedReadTest(unittest.TestCase):
+    def test_operator_read_has_a_token_without_turning_into_a_post(self):
+        with patch.dict(os.environ, {'OPERATOR_TOKEN': 'throwaway'}), \
+                patch.object(service_requests, 'build_opener') as transport:
+            transport.return_value.open.return_value.__enter__.return_value = io.BytesIO(b'{"shards":[]}')
+            self.assertEqual(service_requests.service_json('https://identity.test/api/directory/shards', authenticated=True), {'shards': []})
+            request = transport.return_value.open.call_args.args[0]
+            self.assertEqual(request.get_method(), 'GET')
+            self.assertEqual(request.get_header('Authorization'), 'Bearer throwaway')

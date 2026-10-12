@@ -557,6 +557,12 @@ describe("identity Worker", () => {
     const visible = async (path: string) => JSON.stringify(await (await operator.request(path)).json());
     expect(await visible("/api/directory")).not.toContain(url);
     expect(await visible("/api/directory/history")).not.toContain(url);
+    expect((await operator.request("/api/directory/shards")).status).toBe(401);
+    const recorded = await operator.request("/api/directory/shards", { token: OPERATOR_TOKEN });
+    expect(recorded.status).toBe(200);
+    expect(((await recorded.json()) as { shards: unknown[] }).shards).toContainEqual(
+      expect.objectContaining({ url, chainId, status: "pending" }),
+    );
     const bot = {
       label: "0xbeef",
       chainId,

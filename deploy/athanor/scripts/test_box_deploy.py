@@ -48,7 +48,7 @@ class DeploymentRefusalTest(unittest.TestCase):
             output = io.StringIO()
             with self.subTest(stage=stage), patch.object(box_deploy, "main", side_effect=fail), redirect_stdout(output):
                 self.assertEqual(box_deploy.run("test", Path("/unused"), "revision"), 1)
-            self.assertEqual(json.loads(output.getvalue()), {"kind": "shard-deployment-refused", "message": f"Shard deployment stopped at {stage}."})
+            self.assertEqual(json.loads(output.getvalue()), {"kind": "shard-deployment-refused", "message": f"Shard deployment stopped at {stage}.", **({"restarted": True} if stage == "restart pending shard" else {})})
 
     def test_compose_failure_reaches_the_structured_output(self):
         def fail(_environment, _directory, _revision, report_stage):
