@@ -40,7 +40,7 @@ test("Eternum setup confirms each entry entitlement before returning players to 
     await launchHarnessGame({
       gameId: 7,
       gameName: "entries",
-      presetId: 103,
+      presetId: 3,
       minutes: 1,
       owners: ["0x10", "0x20"],
     });

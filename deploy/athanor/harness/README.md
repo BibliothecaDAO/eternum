@@ -31,6 +31,3 @@ route.
 checked once, assigned to its own worker group and reads its own Herald store. Duplicate accounts, duplicate bot IDs,
 missing participants and mismatched game assignments fail before workers start. Prepared credential files remain
 private; public result files contain neither device keys nor signed bodies.
-
-The launcher handoff is proven by reading its installed Games role before activation. Deployment creates no Blitz check
-game.
