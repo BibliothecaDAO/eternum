@@ -75,7 +75,8 @@ test.each(["dev", "production"] as const)(
       revision,
     ]);
     expect(calls[publishIndex]!.env!.CLOUDFLARE_API_TOKEN).toBe(input.cloudflareToken);
-    expect(calls.at(-1)!.input).toContain("verifyClientDeployment");
+    expect(calls.at(-1)!.argv).toContain("apps/game/scripts/verify-client-deployment.mjs");
+    expect(calls.at(-1)!.argv.at(-1)).toContain("client-deployment-check.json");
     expect(calls.some((call) => call.argv[0] === "gh")).toBe(false);
     expect(JSON.stringify(calls.map((call) => call.argv))).not.toContain(input.cloudflareToken);
   },
@@ -86,7 +87,8 @@ test("client upload is skipped when the published revision already exists, but i
   value.clientRevision = async () => revision;
   await deployClient(value, revision);
   expect(calls.some((call) => call.argv.includes("wrangler"))).toBe(false);
-  expect(calls.at(-1)!.input).toContain("verifyClientDeployment");
+  expect(calls.at(-1)!.argv).toContain("apps/game/scripts/verify-client-deployment.mjs");
+  expect(calls.at(-1)!.argv.at(-1)).toContain("client-deployment-check.json");
 });
 test("wrong client chain/RPC stops before a build or upload", async () => {
   const value = platform();

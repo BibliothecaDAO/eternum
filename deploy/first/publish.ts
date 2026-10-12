@@ -50,14 +50,15 @@ export function clientEnvironment(platform: Platform, revision: string) {
   };
 }
 async function verifyPublishedClient(platform: Platform) {
-  // The exported verifier only reads. Its CLI additionally writes a report, so do not use that in dry runs.
+  deploymentStage("verify client");
   await command({
-    argv: ["node", "--input-type=module"],
-    input: `
-import { verifyClientDeployment } from './apps/game/scripts/verify-client-deployment.mjs';
-const result = await verifyClientDeployment('apps/game/dist', ${JSON.stringify(platform.target.origin)});
-if (!result.ok) process.exitCode = 1;
-`,
+    argv: [
+      "node",
+      "apps/game/scripts/verify-client-deployment.mjs",
+      "apps/game/dist",
+      platform.target.origin,
+      join(platform.store.directory, "client-deployment-check.json"),
+    ],
   });
 }
 export async function deployClient(platform: Platform, revision: string) {
