@@ -1,3 +1,4 @@
+import { disposeWorker } from "../../../packages/value-ledger/test-support/workerd";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -148,7 +149,7 @@ export default {fetch(){return new Response(null,{status:404})}};`,
       if (status === 200) expect(receipts).toBeGreaterThan(0);
       else expect(health.shards).toMatchObject([{ chainId: chain, value: { reason: "operator_redirect_refused" } }]);
     } finally {
-      await mf.dispose();
+      await disposeWorker(mf);
     }
   },
   60_000,

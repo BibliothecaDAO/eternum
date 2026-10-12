@@ -1,5 +1,6 @@
+import { disposeWorker } from "../../../packages/value-ledger/test-support/workerd";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Miniflare } from "miniflare";
@@ -38,6 +39,7 @@ const SHARD_MANIFEST = {
 const LAUNCHER = launcherAccountAddress(SHARD_MANIFEST);
 
 let mf: Miniflare;
+let bundleRoot: string | undefined;
 let db: D1Database;
 let freshAccount = false;
 let approvalStatus = 401;
@@ -81,7 +83,8 @@ function accountJoinResponse(id: number, method: string): Response | undefined {
 }
 
 beforeAll(async () => {
-  const bundle = join(mkdtempSync(join(tmpdir(), "launch-bundle-")), "bundle");
+  bundleRoot = mkdtempSync(join(tmpdir(), "launch-bundle-"));
+  const bundle = join(bundleRoot, "bundle");
   execFileSync("pnpm", ["exec", "wrangler", "deploy", "--dry-run", "--env", "staging", "--outdir", bundle], {
     cwd: new URL("..", import.meta.url).pathname,
     stdio: "ignore",
@@ -180,7 +183,13 @@ beforeAll(async () => {
   await db.batch(statements.map((statement) => db.prepare(statement)));
 }, 180_000);
 
-afterAll(() => mf?.dispose());
+afterAll(async () => {
+  try {
+    await disposeWorker(mf);
+  } finally {
+    if (bundleRoot) rmSync(bundleRoot, { recursive: true, force: true });
+  }
+});
 
 it("opens a Blitz window, ticks the schedule, queues an authorized launch and records the registrar's attempt", async () => {
   const window = {

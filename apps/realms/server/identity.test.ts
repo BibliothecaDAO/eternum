@@ -70,6 +70,7 @@ const verifyAsWallet = vi.fn<VerifyWalletSignature>(async (message, signature, a
 });
 
 beforeAll(async () => {
+  vi.stubEnv("TMPDIR", storageDirectory);
   const configPath = join(storageDirectory, "wrangler.json");
   writeFileSync(
     configPath,
@@ -122,8 +123,12 @@ beforeAll(async () => {
 }, 60_000);
 
 afterAll(async () => {
-  await proxy?.dispose();
-  rmSync(storageDirectory, { recursive: true, force: true });
+  try {
+    await proxy?.dispose();
+  } finally {
+    vi.unstubAllEnvs();
+    rmSync(storageDirectory, { recursive: true, force: true });
+  }
 });
 
 /** A shard manifest under our guardian and account class, the only kind our directory lists. */

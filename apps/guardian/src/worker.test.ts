@@ -1,12 +1,16 @@
+import { disposeWorker } from "../../../packages/value-ledger/test-support/workerd";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync } from "node:fs";
+import { rmSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Miniflare } from "miniflare";
-import { expect, it } from "vitest";
+import { afterAll, expect, it } from "vitest";
+
+const root = mkdtempSync(join(tmpdir(), "guardian-health-"));
+afterAll(() => rmSync(root, { recursive: true, force: true }));
 
 it("exposes no operation over HTTP, including the former health path", async () => {
-  const bundle = join(mkdtempSync(join(tmpdir(), "guardian-health-")), "bundle");
+  const bundle = join(root, "bundle");
   execFileSync("pnpm", ["exec", "wrangler", "deploy", "--dry-run", "--env", "staging", "--outdir", bundle], {
     stdio: "ignore",
   });
@@ -23,11 +27,11 @@ it("exposes no operation over HTTP, including the former health path", async () 
     for (const path of ["/health", "/signDeviceChange", "/publicKey", "/"])
       expect((await worker.dispatchFetch(`https://guardian.public.test${path}`)).status).toBe(404);
     expect((await worker.dispatchFetch("https://guardian.public.test/health", { method: "POST" })).status).toBe(404);
-    await worker.dispose();
+    await disposeWorker(worker);
     worker = start("invalid");
     const failed = await worker.dispatchFetch("https://guardian.public.test/health");
     expect(failed.status).toBe(404);
   } finally {
-    await worker.dispose();
+    await disposeWorker(worker);
   }
 }, 30000);

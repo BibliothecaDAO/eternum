@@ -1,3 +1,4 @@
+import { disposeWorker } from "../../../packages/value-ledger/test-support/workerd";
 import { expect, it } from "vitest";
 import { Miniflare } from "miniflare";
 import { normalizeStarknetAddress } from "@realms-world/identity";
@@ -40,6 +41,6 @@ it("resolves the link at registration, including relinks and exact replacement b
       "invalid_registration_time",
     );
   } finally {
-    await mf.dispose();
+    await disposeWorker(mf);
   }
 });
