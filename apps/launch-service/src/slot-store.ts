@@ -5,8 +5,7 @@ import { nativePresetIdFor } from "../../../config/source/native";
 import type { D1LaunchStore } from "./store";
 import { SlotConflict, SlotNotFound, type PlaytestSlot, type SlotStore } from "./slots";
 
-const DATABASE_NOW = "CAST(unixepoch('subsec') * 1000 AS INTEGER)";
-const SELECT_SLOTS = `SELECT *, ${DATABASE_NOW} AS observed_at FROM playtest_slots`;
+const SELECT_SLOTS = "SELECT * FROM playtest_slots";
 
 interface SlotRow {
   chain_id: string;
@@ -14,7 +13,6 @@ interface SlotRow {
   name: string;
   closes_at: number;
   frozen_at: number | null;
-  observed_at: number;
 }
 
 /** D1 stores scheduling metadata only; paid player ownership never lives in this database. */
@@ -41,9 +39,9 @@ export class D1SlotStore implements SlotStore {
       throw new SlotConflict("Slot close must be a whole second");
     await this.db
       .prepare(
-        `INSERT INTO playtest_slots (name,closes_at,chain_id) SELECT ?1,?2,?3 WHERE ?2 > ${DATABASE_NOW} ON CONFLICT (chain_id,name) DO NOTHING`,
+        `INSERT INTO playtest_slots (name,closes_at,chain_id) SELECT ?1,?2,?3 WHERE ?2 > ?4 ON CONFLICT (chain_id,name) DO NOTHING`,
       )
-      .bind(name, closes, await this.launches.targetChain())
+      .bind(name, closes, await this.launches.targetChain(), Date.now())
       .run();
     const slot = await this.rawSlot(name).catch((error: unknown) => {
       if (error instanceof SlotNotFound) throw new SlotConflict("Registration deadline has passed");
@@ -77,7 +75,7 @@ export class D1SlotStore implements SlotStore {
       .bind(await this.launches.targetChain(), name)
       .first<SlotRow>();
     if (!row) throw new SlotNotFound("Slot not found");
-    return toSlot(row);
+    return toSlot(row, Date.now());
   }
   async get(name: string): Promise<PlaytestSlot> {
     return this.rawSlot(name);
@@ -93,7 +91,8 @@ export class D1SlotStore implements SlotStore {
       .prepare(`${SELECT_SLOTS} WHERE chain_id=? ORDER BY closes_at,name`)
       .bind(await this.launches.targetChain())
       .all<SlotRow>();
-    return results.map(toSlot);
+    const now = Date.now();
+    return results.map((row) => toSlot(row, now));
   }
   async freeze(name: string): Promise<PlaytestSlot> {
     const slot = await this.rawSlot(name);
@@ -132,9 +131,9 @@ export class D1SlotStore implements SlotStore {
   async freezeDueSlots(): Promise<void> {
     const due = await this.db
       .prepare(
-        `SELECT name FROM playtest_slots WHERE chain_id=? AND frozen_at IS NULL AND closes_at <= ${DATABASE_NOW} ORDER BY closes_at, name`,
+        `SELECT name FROM playtest_slots WHERE chain_id=? AND frozen_at IS NULL AND closes_at <= ? ORDER BY closes_at, name`,
       )
-      .bind(await this.launches.targetChain())
+      .bind(await this.launches.targetChain(), Date.now())
       .all<{ name: string }>();
     for (const slot of due.results) {
       try {
@@ -145,11 +144,11 @@ export class D1SlotStore implements SlotStore {
     }
   }
 }
-const toSlot = (row: SlotRow): PlaytestSlot => ({
+const toSlot = (row: SlotRow, now: number): PlaytestSlot => ({
   chainId: row.chain_id,
   slotId: row.slot_id,
   name: row.name,
   closesAt: new Date(row.closes_at).toISOString(),
   frozenAt: row.frozen_at === null ? null : new Date(row.frozen_at).toISOString(),
-  closed: row.closes_at <= row.observed_at,
+  closed: row.closes_at <= now,
 });

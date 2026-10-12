@@ -8,11 +8,12 @@ import { databaseOperation, type LaunchServiceStore } from "./store";
 /**
  * One cron tick, read from the season calendar: the Frontier season game exists once its season has started, the next
  * Blitz slot exists when its games start inside the Blitz window, and a slot whose registration closed is frozen into queued
- * games. `now` places the tick in the calendar and names the next slot; whether a slot has closed is the store's clock,
- * as registration's is. Every step is idempotent, so overlapping ticks agree.
+ * games. Scheduling and slot metadata share the Worker clock; the ledger independently confirms registration has
+ * closed before a roster can freeze. Every step is idempotent, so overlapping ticks agree.
  */
-export const runLaunchSchedule = (store: LaunchServiceStore, slots: SlotStore, calendar: CalendarStore, now: Date) =>
+export const runLaunchSchedule = (store: LaunchServiceStore, slots: SlotStore, calendar: CalendarStore) =>
   Effect.gen(function* () {
+    const now = new Date(Date.now());
     const calendarResult = yield* Effect.result(databaseOperation("read the season calendar", () => calendar.list()));
     if (Result.isSuccess(calendarResult)) {
       const frontier = calendarResult.success.find(({ phase }) => phase === "frontier");

@@ -41,7 +41,7 @@ it("keeps metadata per official chain without a local registration table or rost
   expect((await two.get("friday")).frozenAt).toBeNull();
   expect((await slots().get("friday")).frozenAt).not.toBeNull();
 });
-it("keeps schedule timing immutable and refuses creation after the D1 deadline", async () => {
+it("keeps schedule timing immutable and refuses creation after the deadline", async () => {
   const store = slots();
   const close = soon();
   await store.create("friday", close);
@@ -52,15 +52,32 @@ it("keeps schedule timing immutable and refuses creation after the D1 deadline",
   ).rejects.toThrow("deadline");
   await expect(store.freeze("friday")).rejects.toThrow("still open");
 });
-it("uses D1 time when a worker clock is ahead, and never closes another chain's schedule", async () => {
-  const store = slots();
-  await store.create("open", soon());
-  const clock = vi.spyOn(Date, "now").mockReturnValue(Date.now() + 120000);
-  await store.freezeDueSlots();
-  expect((await store.get("open")).frozenAt).toBeNull();
-  await expect(store.freeze("open")).rejects.toThrow("still open");
-  clock.mockRestore();
+it("uses one clock for creation, closure and freezing without closing another chain's schedule", async () => {
+  const now = Date.parse("2000-01-01T00:00:00Z");
+  const clock = vi.spyOn(Date, "now").mockReturnValue(now);
+  const value = slotValueFixture();
+  const one = new D1SlotStore(
+    database.db,
+    new D1LaunchStore(database.db, testChain()),
+    value,
+    registrationIdentityFixture,
+  );
+  const two = slots("0x2");
+  const close = new Date(now + 60000).toISOString();
+  await one.create("open", close);
+  await two.create("open", close);
+  expect((await one.get("open")).closed).toBe(false);
+  clock.mockReturnValue(now + 60000);
+  await expect(one.create("late", close)).rejects.toThrow("deadline");
+  expect((await one.list())[0]!.closed).toBe(true);
+  vi.spyOn(value, "registrations").mockResolvedValueOnce({ ...(await value.registrations()), secondsUntilClose: 1 });
+  await expect(one.freeze("open")).rejects.toMatchObject({ _tag: "RegistrationOpen", secondsUntilClose: 1 });
+  expect((await one.get("open")).frozenAt).toBeNull();
+  await one.freezeDueSlots();
+  expect((await one.get("open")).frozenAt).toBe(close);
+  expect((await two.get("open")).frozenAt).toBeNull();
 });
+
 it("preserves a closed schedule through interruption and restart", async () => {
   const store = slots();
   await store.create("closed", soon());

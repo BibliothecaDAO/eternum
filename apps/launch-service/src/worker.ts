@@ -23,7 +23,7 @@ export default {
     try {
       for (const shard of await activeShards(env.IDENTITY)) {
         const { launches, slots, calendar } = launchStoresOf(env, shard.chainId);
-        await Effect.runPromise(runLaunchSchedule(launches, slots, calendar, new Date()));
+        await Effect.runPromise(runLaunchSchedule(launches, slots, calendar));
       }
     } finally {
       await registrarOf(env).armFor(Date.now());
