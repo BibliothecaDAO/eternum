@@ -3,7 +3,7 @@ import { formatAmount } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
 import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
-import { type Reason, ReasonPlate } from "@/ui/design-system/kit/reason-plate";
+import { type Refusal, RefusedVerb } from "@/ui/design-system/kit/refused-verb";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
 import { ESSENCE, LABOR, RESEARCH, RESEARCHING } from "@/ui/design-system/kit/words";
@@ -14,6 +14,8 @@ export type TreeRow = {
   key: string;
   icon: IconCode;
   name: string;
+  /** What the row's next tier gives, in one line, on its tooltip. */
+  tip: string;
   tier: Tier;
   sides: readonly IconCode[];
   /** The next tier's price; undefined at legendary. */
@@ -28,6 +30,8 @@ export type CastleNode = {
   icon: IconCode;
   /** A word (Shrine, Well) or the reach's numeral (I, II, III). */
   label: string;
+  /** What researching it opens, in one line, on its tooltip. */
+  tip: string;
   essence: number;
   state: "learned" | "open" | "locked";
 };
@@ -82,6 +86,7 @@ const Row = ({ row, chosen, onOpen }: { row: TreeRow; chosen: boolean; onOpen: (
     type="button"
     aria-label={row.name}
     aria-pressed={chosen}
+    data-tip={row.tip}
     onClick={onOpen}
     className={cn(
       "frontier-card flex h-[58px] shrink-0 items-center gap-1.5 !rounded-xl px-2 text-left",
@@ -119,6 +124,7 @@ const Node = ({ node, onOpen }: { node: CastleNode; onOpen: () => void }) => (
   <button
     type="button"
     aria-label={node.label}
+    data-tip={node.tip}
     onClick={onOpen}
     className={cn("flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1", node.state === "locked" && "opacity-50")}
   >
@@ -138,19 +144,20 @@ const Node = ({ node, onOpen }: { node: CastleNode; onOpen: () => void }) => (
 
 /**
  * A castle row's sheet: what it unlocks on the map (a shrine's XP, a well's stamina, a reach), and Research with its
- * Essence price; when the realm cannot pay, the Essence held against it and the step take Research's place.
+ * Essence price. While it cannot run, Research stays, dimmed, with its price, over the one line that says why (the
+ * Essence it needs against what is held, or the row that comes first) and the fix where there is one.
  */
 export const CastleNodeSheet = ({
   node,
   gives,
-  short,
+  refusal,
   sending,
   onResearch,
   onClose,
 }: {
   node: CastleNode;
   gives: ReactNode;
-  short?: { reason: Extract<Reason, { kind: "short" }>; step: ReactNode };
+  refusal?: Refusal;
   sending: boolean;
   onResearch: () => void;
   onClose: () => void;
@@ -165,19 +172,17 @@ export const CastleNodeSheet = ({
       <span className="flex justify-center">
         <KitIcon code="Ok" size={26} />
       </span>
-    ) : short ? (
-      <ReasonPlate reason={short.reason} step={short.step} />
+    ) : refusal ? (
+      <RefusedVerb icon="Rs" word={RESEARCH} prices={[{ of: "essence", amount: node.essence }]} refusal={refusal} />
     ) : (
-      node.state === "open" && (
-        <Button
-          role="primary"
-          icon="Rs"
-          word={RESEARCH}
-          prices={[{ of: "essence", amount: node.essence }]}
-          loading={sending ? RESEARCHING : undefined}
-          onClick={onResearch}
-        />
-      )
+      <Button
+        role="primary"
+        icon="Rs"
+        word={RESEARCH}
+        prices={[{ of: "essence", amount: node.essence }]}
+        loading={sending ? RESEARCHING : undefined}
+        onClick={onResearch}
+      />
     )}
   </Sheet>
 );

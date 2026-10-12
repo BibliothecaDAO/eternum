@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "Panels end in their action",
+    description:
+      "Improved the Castle, building and Research panels in Frontier: Upgrade and Research always stand at the foot with their price, dimmed while they cannot run, over one line that says why and a button for the fix. A tier with two sides says to choose one, and every Research row says what it gives on its tooltip.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
     title: "The map names its highlights",
     description:
       "Added a name to every highlighted tile in Frontier: with an army selected, hover a tile and one line says what the army would do there and what it costs, such as Unexplored · Explore · 30 stamina, Move · 10 stamina or Rift · Attack · 30 stamina. On a phone a tap or a press-and-hold on the tile opens its preview, which names the same action.",

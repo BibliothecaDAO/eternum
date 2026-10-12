@@ -124,10 +124,9 @@ describe("the castle", () => {
           now={side(1)}
           next={side(2)}
           prices={[{ of: "labor", amount: 15_000 }]}
-          short={undefined}
+          refusal={undefined}
           sending={false}
           onUpgrade={onUpgrade}
-          onMap={() => {}}
           onClose={() => {}}
         />,
       ),
@@ -144,6 +143,38 @@ describe("the castle", () => {
     expect(onUpgrade).toHaveBeenCalled();
   });
 
+  it("keeps Upgrade, dimmed, with its price when the realm cannot pay, over the line that says why and the fix", () => {
+    const onUpgrade = vi.fn();
+    const onFix = vi.fn();
+    act(() =>
+      root.render(
+        <CastleView
+          now={side(0)}
+          next={side(1)}
+          prices={[{ of: "labor", amount: 4_000 }]}
+          refusal={{
+            reason: { kind: "short", of: "labor", held: 2_011, need: 4_000, wait: 19 * 3_600 + 44 * 60 },
+            fix: { icon: "Mp", word: "Explore for labor", onFix },
+          }}
+          sending={false}
+          onUpgrade={onUpgrade}
+          onClose={() => {}}
+        />,
+      ),
+    );
+    const upgrade = buttons().find((button) => button.textContent === "Upgrade4,000")!;
+    expect(upgrade.disabled).toBe(true);
+    act(() => upgrade.click());
+    expect(onUpgrade).not.toHaveBeenCalled();
+    expect(host.querySelector('[role="status"]')!.textContent).toBe("Needs 4,000 labor, have 2,011 · in 19h 44m");
+    act(() =>
+      buttons()
+        .find((button) => button.textContent === "Explore for labor")!
+        .click(),
+    );
+    expect(onFix).toHaveBeenCalled();
+  });
+
   it("has no next side and no verb at the last level", () => {
     act(() =>
       root.render(
@@ -151,10 +182,9 @@ describe("the castle", () => {
           now={side(3)}
           next={null}
           prices={[]}
-          short={undefined}
+          refusal={undefined}
           sending={false}
           onUpgrade={() => {}}
-          onMap={() => {}}
           onClose={() => {}}
         />,
       ),

@@ -12,6 +12,7 @@ import { BUILDINGS_CENTER, RESOURCE_PRECISION, ResourcesIds, TroopTier } from "@
 import { useState } from "react";
 
 import { useGoToFrontierPlace } from "../frontier-home";
+import { exploreFix } from "../frontier-reveal-yield";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 import { type CastleSide, CastleView } from "./castle-view";
 
@@ -60,25 +61,27 @@ export const CastleUpgrade = ({ realm, onClose }: { realm: NativeRows["Structure
       now={castleSide(setup.store, realm.game_id, upgrade.currentLevel)}
       next={upgrade.nextLevel === null ? null : castleSide(setup.store, realm.game_id, upgrade.nextLevel)}
       prices={upgrade.requirements.map(({ resource, amount }) => ({ of: castlePriceKind(resource), amount }))}
-      short={
+      refusal={
         short && {
-          kind: "short",
-          of: castlePriceKind(short.resource),
-          held: held(short.resource),
-          need: short.amount,
-          wait: secondsUntilHeld(
-            held(short.resource),
-            short.amount,
-            realmPerHour(setup.store, safeInteger(realm.entity_id), short.resource, tick),
-          ),
+          reason: {
+            kind: "short",
+            of: castlePriceKind(short.resource),
+            held: held(short.resource),
+            need: short.amount,
+            wait: secondsUntilHeld(
+              held(short.resource),
+              short.amount,
+              realmPerHour(setup.store, safeInteger(realm.entity_id), short.resource, tick),
+            ),
+          },
+          fix: exploreFix(short.resource, () => {
+            onClose();
+            goToPlace(true);
+          }),
         }
       }
       sending={sending}
       onUpgrade={() => void send()}
-      onMap={() => {
-        onClose();
-        goToPlace(true);
-      }}
       onClose={onClose}
     />
   );

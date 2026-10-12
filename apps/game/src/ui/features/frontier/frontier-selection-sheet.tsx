@@ -55,6 +55,15 @@ export const FrontierSelectionSheet = ({
   if (tileObject?.kind === "spire") return <SpireCard onClose={close} />;
   if (realm && keep) return <CastleUpgrade realm={realm} onClose={close} />;
   if (realm && building)
-    return <TypeUpgrade realm={realm} rules={rules} view={building.view} essence={building.essence} onClose={close} />;
+    return (
+      <TypeUpgrade
+        realm={realm}
+        rules={rules}
+        view={building.view}
+        essence={building.essence}
+        onResearch={onResearch}
+        onClose={close}
+      />
+    );
   return realm ? <FrontierSpireSheet realm={realm} onClose={close} /> : null;
 };

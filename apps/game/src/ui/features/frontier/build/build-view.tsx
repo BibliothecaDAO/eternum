@@ -3,7 +3,8 @@ import { formatExact } from "@/ui/design-system/kit/amount";
 import { Button, type Price } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
 import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
-import { type Reason, ReasonPlate } from "@/ui/design-system/kit/reason-plate";
+import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
+import { FixButton, type Refusal } from "@/ui/design-system/kit/refused-verb";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
 import { BUILD, BUILDING, freeOf, POPULATION, PRICE_UP } from "@/ui/design-system/kit/words";
@@ -32,12 +33,6 @@ export type BuildTile = {
 /** What the chosen building gives, as chips: what it makes or houses, and the population it takes. */
 export type BuildGain = { icon: IconCode; value: string; label: string };
 
-/** Why Build cannot run, in one line, and the step that fixes it where there is one: its word, its price, its way. */
-export type BuildRefusal = {
-  reason: Reason;
-  fix?: { word: string; icon?: IconCode; prices?: Price[]; onFix: () => void };
-};
-
 /**
  * The build sheet (wireframe 02): the realm's free population in its head, the grid of buildings, the chosen one's
  * gains, and Build carrying its price (the copy surcharge included; an arrow marks a price that has risen). When the
@@ -63,7 +58,7 @@ export const BuildView = ({
   onChoose: (index: number) => void;
   gains: BuildGain[];
   prices: Price[];
-  refusal: BuildRefusal | undefined;
+  refusal: Refusal | undefined;
   sending: boolean;
   onBuild: () => void;
   onClose: () => void;
@@ -91,15 +86,7 @@ export const BuildView = ({
     {refusal ? (
       <>
         <ReasonPlate reason={refusal.reason} />
-        {refusal.fix && (
-          <Button
-            role="primary"
-            icon={refusal.fix.icon}
-            word={refusal.fix.word}
-            prices={refusal.fix.prices}
-            onClick={refusal.fix.onFix}
-          />
-        )}
+        {refusal.fix && <FixButton fix={refusal.fix} />}
       </>
     ) : (
       <Button role="primary" word={BUILD} prices={prices} loading={sending ? BUILDING : undefined} onClick={onBuild} />

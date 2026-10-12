@@ -1,12 +1,12 @@
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { formatAmount } from "@/ui/design-system/kit/amount";
-import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
 import type { IconCode } from "@/ui/design-system/kit/kit-icon";
 import type { Reason } from "@/ui/design-system/kit/reason-plate";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
-import { CASTLE, LABOR, MAP, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
+import type { Fix } from "@/ui/design-system/kit/refused-verb";
+import { CASTLE, forNewArmies, LABOR, POPULATION, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import {
@@ -32,6 +32,7 @@ import { ATTRIBUTE_LOOK, type Attribute, nextTierPrice } from "../attributes/att
 import { outputPerHour } from "../build/build-options";
 import { buildingIcon, buildingName } from "../build/building-names";
 import { useGoToFrontierPlace } from "../frontier-home";
+import { exploreFix } from "../frontier-reveal-yield";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 import { armyArt } from "../hud/dock-armies";
 import { useRealmStores } from "../realm-stores";
@@ -78,12 +79,15 @@ export const TypeUpgrade = ({
   rules,
   view,
   essence,
+  onResearch,
   onClose,
 }: {
   realm: NativeRows["Structure"];
   rules: ExpeditionRules;
   view: TypeRowView;
   essence: number | undefined;
+  /** Opens Research, when the sheet opened from a building on the board. */
+  onResearch?: () => void;
   onClose: () => void;
 }) => {
   const { setup, account } = useGame();
@@ -145,19 +149,10 @@ export const TypeUpgrade = ({
             ]
           : []
       }
-      short={
-        short && {
-          reason: short,
-          step:
-            short.counted === "limit" ? (
-              <Button role="primary" icon="Cs" word={CASTLE} className="w-[120px]" onClick={() => go(false)} />
-            ) : (
-              <Button role="primary" icon="Mp" word={MAP} className="w-[104px]" onClick={() => go(true)} />
-            ),
-        }
-      }
+      refusal={short && { reason: short, fix: shortfallFix(short, go) }}
       sending={sending}
       onUpgrade={() => void upgrade()}
+      onResearch={onResearch}
       onClose={onClose}
     />
   );
@@ -216,14 +211,13 @@ const typeGives = (
   if (view.row === research.ROW_HUT) return <HutGives store={store} realm={realm} tier={view.tier} />;
   const training = TRAINING[view.row];
   if (!training) return undefined;
-  const { atTier, unit } = ATTRIBUTE_LOOK[training.attribute];
   const tier = view.tier + 1;
   const xpRules = store.get("ArmyProgressionRules", { game_id: realm.game_id });
   return (
     <TrainingGives
       mark={training.mark}
       attribute={training.attribute}
-      effect={`+${atTier(tier)}${unit} → +${atTier(tier + 1)}${unit}`}
+      effect={attributeStep(training.attribute, tier)}
       xpSaved={xpRules ? (nextTierPrice(xpRules, tier) ?? undefined) : undefined}
       tier={tier as Tier}
       armyArt={armyArt({ category: "Knight", tier: "T1" })}
@@ -236,24 +230,28 @@ const typeGives = (
   );
 };
 
+/** An attribute's effect at a tier and at the next, as the preset's table says it: "+0% → +10%". */
+const attributeStep = (attribute: Attribute, tier: number): string => {
+  const { atTier, unit } = ATTRIBUTE_LOOK[attribute];
+  return `+${atTier(tier)}${unit} → +${atTier(tier + 1)}${unit}`;
+};
+
 /** A hut's population now and at the next tier, as the contract's hut_bonus adds a share of it each tier. */
-const HutGives = ({ store, realm, tier }: { store: NativeFactStore; realm: NativeRows["Structure"]; tier: number }) => {
+const hutPopulationStep = (store: NativeFactStore, realm: NativeRows["Structure"], tier: number): string => {
   const grant = store.require("BuildingRule", {
     game_id: realm.game_id,
     category: BuildingType.WorkersHut,
   }).capacity_grant;
   const step = store.require("BoardRules", { game_id: realm.game_id }).population_step_bps;
   const population = (at: number) => grant + (grant * at * step) / 10_000;
-  return (
-    <span className="flex justify-center">
-      <Chip
-        icons={["Pp"]}
-        label="population"
-        value={`${formatAmount(population(tier))} → ${formatAmount(population(tier + 1))}`}
-      />
-    </span>
-  );
+  return `${formatAmount(population(tier))} → ${formatAmount(population(tier + 1))}`;
 };
+
+const HutGives = ({ store, realm, tier }: { store: NativeFactStore; realm: NativeRows["Structure"]; tier: number }) => (
+  <span className="flex justify-center">
+    <Chip icons={["Pp"]} label={POPULATION} value={hutPopulationStep(store, realm, tier)} />
+  </span>
+);
 
 /** Each kind's find-rate bonus a new army starts with from the lodge, now and with the next tier on that kind. */
 const lodgeRates = (view: TypeRowView): Record<ScoutKey, readonly [string, string]> => {
@@ -267,6 +265,32 @@ const lodgeRates = (view: TypeRowView): Record<ScoutKey, readonly [string, strin
     rift: [rate(bonus.rift), rate(bonus.rift + next)],
     stragglers: [rate(bonus.stragglers), rate(bonus.stragglers + next)],
   };
+};
+
+/**
+ * The step that fixes a shortfall: the castle when the labor price is above the labor store's limit (its next level
+ * raises it), else the map where a reveal pays what is short.
+ */
+const shortfallFix = (short: Extract<Reason, { kind: "short" }>, go: (expedition: boolean) => void): Fix | undefined =>
+  short.counted === "limit"
+    ? { icon: "Cs", word: CASTLE, onFix: () => go(false) }
+    : exploreFix(short.of === "essence" ? ResourcesIds.Essence : ResourcesIds.Labor, () => go(true));
+
+/**
+ * What a type's next tier gives, in one line for its row's tooltip, from the same readings its sheet draws: a choosing
+ * row's two sides, a Hut's population, a training building's attribute for every new army. Nothing past legendary.
+ */
+export const typeRowLine = (store: NativeFactStore, realm: NativeRows["Structure"], view: TypeRowView): string => {
+  const name = buildingName(view.category);
+  if (!view.next) return name;
+  const sides = sideCards(store, realm, view);
+  if (sides)
+    return `${name}: ${sides.map(({ name: side, gain }) => `${side} ${gain.label} ${gain.value}`).join(" · ")}`;
+  if (view.row === research.ROW_HUT) return `${name}: ${POPULATION} ${hutPopulationStep(store, realm, view.tier)}`;
+  const training = TRAINING[view.row];
+  return training
+    ? `${name}: ${forNewArmies(training.attribute, attributeStep(training.attribute, view.tier + 1))}`
+    : name;
 };
 
 /**

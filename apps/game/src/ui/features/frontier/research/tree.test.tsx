@@ -40,12 +40,20 @@ describe("the castle's tree", () => {
               sides: ["Fi"],
               next: { essence: 4_000, labor: 3_000 },
               choice: true,
+              tip: "Farm: Fields wheat 1,500 → 1,800/h · Granary limit 18K → 27K",
             },
-            { key: "hut", icon: "Ht", name: "Hut", tier: 5, sides: [], next: undefined, choice: false },
+            { key: "hut", icon: "Ht", name: "Hut", tier: 5, sides: [], next: undefined, choice: false, tip: "Hut" },
           ]}
           castle={[
-            { key: "shrine", icon: "Sh", label: "Shrine", essence: 2_000, state: "open" },
-            { key: "d2", icon: "Dp", label: "II", essence: 400_000, state: "locked" },
+            {
+              key: "shrine",
+              icon: "Sh",
+              label: "Shrine",
+              tip: "Shrine: your armies find Shrines, +200 XP each",
+              essence: 2_000,
+              state: "open",
+            },
+            { key: "d2", icon: "Dp", label: "II", tip: "", essence: 400_000, state: "locked" },
           ]}
           onRow={onRow}
           onCastle={onCastle}
@@ -54,6 +62,11 @@ describe("the castle's tree", () => {
     );
     const farm = host.querySelector<HTMLButtonElement>('[aria-label="Farm"]')!;
     expect(farm.textContent).toBe("FarmUncommon4,0003,000");
+    // Each row and castle row says what it gives on its tooltip.
+    expect(farm.getAttribute("data-tip")).toBe("Farm: Fields wheat 1,500 → 1,800/h · Granary limit 18K → 27K");
+    expect(host.querySelector('[aria-label="Shrine"]')!.getAttribute("data-tip")).toBe(
+      "Shrine: your armies find Shrines, +200 XP each",
+    );
     expect(host.querySelector('[aria-label="Hut"] img[src="/image-icons/kit/ui-check.png"]')).not.toBeNull();
     expect(host.querySelector<HTMLButtonElement>('[aria-label="II"]')!.className).toContain("opacity-50");
     act(() => farm.click());
@@ -100,12 +113,66 @@ describe("the castle's tree", () => {
     expect(buttons().some((button) => button.textContent?.startsWith("Upgrade"))).toBe(false);
   });
 
+  it("ends a tier still waiting for its side in Upgrade, dimmed with its price, and says to choose one", () => {
+    const onUpgrade = vi.fn();
+    const onResearch = vi.fn();
+    act(() =>
+      root.render(
+        <TypeUpgradeSheet
+          icon="Bs"
+          name="Barracks"
+          tier={1}
+          sides={[
+            { icon: "Dr", name: "Drill", gain: { icon: "Tr", label: "troops", value: "101 → 126/h" } },
+            { icon: "Ra", name: "Rations", gain: { icon: "Wh", label: "wheat", value: "2 → 1.75" } },
+          ]}
+          onLift={() => {}}
+          prices={[
+            { of: "essence", amount: 4_000 },
+            { of: "labor", amount: 3_000 },
+          ]}
+          sending={false}
+          onUpgrade={onUpgrade}
+          onResearch={onResearch}
+          onClose={() => {}}
+        />,
+      ),
+    );
+    const upgrade = buttons().find((button) => button.textContent === "Upgrade4,0003,000")!;
+    expect(upgrade.disabled).toBe(true);
+    expect(host.querySelector('[role="status"]')!.textContent).toBe("Choose Drill or Rations");
+    // Opened from the board, the head leads to Research, where the type's row stands.
+    act(() =>
+      buttons()
+        .find((button) => button.textContent === "Research")!
+        .click(),
+    );
+    expect(onResearch).toHaveBeenCalledOnce();
+  });
+
+  it("says which row a locked castle row waits for, with Research dimmed over it", () => {
+    act(() =>
+      root.render(
+        <CastleNodeSheet
+          node={{ key: "d2", icon: "E2", label: "II", tip: "", essence: 400_000, state: "locked" }}
+          gives={null}
+          refusal={{ reason: { kind: "failed", line: "Needs Ethereal I" } }}
+          sending={false}
+          onResearch={() => {}}
+          onClose={() => {}}
+        />,
+      ),
+    );
+    expect(buttons().find((button) => button.textContent === "Research400,000")!.disabled).toBe(true);
+    expect(host.querySelector('[role="status"]')!.textContent).toBe("Needs Ethereal I");
+  });
+
   it("researches a castle row for its Essence", () => {
     const onResearch = vi.fn();
     act(() =>
       root.render(
         <CastleNodeSheet
-          node={{ key: "well", icon: "Wl", label: "Well", essence: 6_000, state: "open" }}
+          node={{ key: "well", icon: "Wl", label: "Well", tip: "", essence: 6_000, state: "open" }}
           gives={null}
           sending={false}
           onResearch={onResearch}

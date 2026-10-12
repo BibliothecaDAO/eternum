@@ -4,7 +4,6 @@ import {
   CASTLE,
   FARM,
   HUT,
-  MAP,
   OFFLINE,
   PAYOUTS_PAUSED,
   TRAINING_BUILDINGS,
@@ -36,7 +35,6 @@ import { TypeUpgradeSheet } from "@/ui/features/frontier/upgrade/type-upgrade-sh
 import { TrainingGives } from "@/ui/features/frontier/upgrade/training-gives";
 import { KindChoice } from "@/ui/features/frontier/army/army-sheet";
 import { CastleNodeSheet, TreePage, type TreeRow } from "@/ui/features/frontier/research/tree-page";
-import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
 import { type ProductionLine, ProductionSheet } from "@/ui/features/frontier/production/production-sheet";
 import { BuildingType, Direction } from "@bibliothecadao/types";
@@ -311,7 +309,16 @@ const PRODUCTION_LINES: ProductionLine[] = [
 
 /** A city's tree: farm uncommon (Fields), workshop common, barracks rare (Drill twice), hut common, two training buildings. */
 const TREE_ROWS: TreeRow[] = [
-  { key: "farm", icon: "Fm", name: FARM, tier: 2, sides: ["Fi"], next: { essence: 4_000, labor: 3_000 }, choice: true },
+  {
+    key: "farm",
+    icon: "Fm",
+    name: FARM,
+    tier: 2,
+    sides: ["Fi"],
+    next: { essence: 4_000, labor: 3_000 },
+    choice: true,
+    tip: "",
+  },
   {
     key: "workshop",
     icon: "Wk",
@@ -320,6 +327,7 @@ const TREE_ROWS: TreeRow[] = [
     sides: [],
     next: { essence: 2_000, labor: 2_000 },
     choice: true,
+    tip: "",
   },
   {
     key: "barracks",
@@ -329,8 +337,9 @@ const TREE_ROWS: TreeRow[] = [
     sides: ["Dr", "Dr"],
     next: { essence: 48_000, labor: 24_000 },
     choice: true,
+    tip: "",
   },
-  { key: "hut", icon: "Ht", name: HUT, tier: 1, sides: [], next: { essence: 500, labor: 500 }, choice: false },
+  { key: "hut", icon: "Ht", name: HUT, tier: 1, sides: [], next: { essence: 500, labor: 500 }, choice: false, tip: "" },
   {
     key: "war",
     icon: "Wa",
@@ -339,6 +348,7 @@ const TREE_ROWS: TreeRow[] = [
     sides: [],
     next: { essence: 48_000, labor: 9_000 },
     choice: false,
+    tip: "",
   },
   {
     key: "hearth",
@@ -348,14 +358,15 @@ const TREE_ROWS: TreeRow[] = [
     sides: [],
     next: { essence: 48_000, labor: 9_000 },
     choice: false,
+    tip: "",
   },
 ];
 const CASTLE_NODES = [
-  { key: "shrine", icon: "Sh" as const, label: "Shrine", essence: 2_000, state: "open" as const },
-  { key: "well", icon: "Wl" as const, label: "Well", essence: 6_000, state: "open" as const },
-  { key: "d1", icon: "E1" as const, label: "I", essence: 160_000, state: "open" as const },
-  { key: "d2", icon: "E2" as const, label: "II", essence: 400_000, state: "locked" as const },
-  { key: "d3", icon: "E3" as const, label: "III", essence: 900_000, state: "locked" as const },
+  { key: "shrine", icon: "Sh" as const, label: "Shrine", tip: "", essence: 2_000, state: "open" as const },
+  { key: "well", icon: "Wl" as const, label: "Well", tip: "", essence: 6_000, state: "open" as const },
+  { key: "d1", icon: "E1" as const, label: "I", tip: "", essence: 160_000, state: "open" as const },
+  { key: "d2", icon: "E2" as const, label: "II", tip: "", essence: 400_000, state: "locked" as const },
+  { key: "d3", icon: "E3" as const, label: "III", tip: "", essence: 900_000, state: "locked" as const },
 ];
 
 const TODAY_LOG = [
@@ -1027,14 +1038,16 @@ export const HudLab = () => {
             now={CASTLE_SIDE(1, 18_000)}
             next={CASTLE_SIDE(2, 50_000)}
             prices={[{ of: "labor", amount: 15_000 }]}
-            short={
+            refusal={
               lab.realmView === "castle-short"
-                ? { kind: "short", of: "labor", held: 9_640, need: 15_000, wait: 10 * HOUR + 44 * 60 }
+                ? {
+                    reason: { kind: "short", of: "labor", held: 9_640, need: 15_000, wait: 10 * HOUR + 44 * 60 },
+                    fix: { icon: "Mp", word: "Explore for labor", onFix: noop },
+                  }
                 : undefined
             }
             sending={false}
             onUpgrade={noop}
-            onMap={noop}
             onClose={noop}
           />
         )}
@@ -1210,12 +1223,12 @@ const LabTreeSheet = ({ tree }: { tree: "farm" | "barracks" | "hut" | "shrine" }
         { of: "essence", amount: farm ? 4_000 : 48_000 },
         { of: "labor", amount: farm ? 3_000 : 24_000 },
       ]}
-      short={
+      refusal={
         farm
           ? undefined
           : {
               reason: { kind: "short", of: "labor", counted: "limit", held: 18_000, need: 24_000 },
-              step: <Button role="primary" icon="Cs" word={CASTLE} className="w-[120px]" onClick={noop} />,
+              fix: { icon: "Cs", word: CASTLE, onFix: noop },
             }
       }
       sending={false}
@@ -1257,11 +1270,11 @@ const LabTraining = ({ training }: { training: "battle" | "hearth" | "scouts" | 
         { of: "essence", amount: scouts ? 12_000 : 48_000 },
         { of: "labor", amount: scouts ? 3_000 : 9_000 },
       ]}
-      short={
+      refusal={
         training === "short"
           ? {
               reason: { kind: "short", of: "essence", held: 18_250, need: 48_000 },
-              step: <Button role="primary" icon="Mp" word={MAP} className="w-[104px]" onClick={noop} />,
+              fix: { icon: "Mp", word: "Explore for Essence", onFix: noop },
             }
           : undefined
       }

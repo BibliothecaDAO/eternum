@@ -3,9 +3,9 @@ import { formatAmount } from "@/ui/design-system/kit/amount";
 import { Button, type Price } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
 import { KitIcon } from "@/ui/design-system/kit/kit-icon";
-import { type Reason, ReasonPlate } from "@/ui/design-system/kit/reason-plate";
+import { type Refusal, RefusedVerb } from "@/ui/design-system/kit/refused-verb";
 import { Sheet } from "@/ui/design-system/kit/sheet";
-import { CASTLE, MAP, REALM_LEVELS, TROOPS, UPGRADE, UPGRADING } from "@/ui/design-system/kit/words";
+import { CASTLE, REALM_LEVELS, TROOPS, UPGRADE, UPGRADING } from "@/ui/design-system/kit/words";
 
 /** The castle at one level: its art and level, the plots it opens, its army slots, each store's limit, the deploy cap. */
 export type CastleSide = {
@@ -20,26 +20,25 @@ export type CastleSide = {
 
 /**
  * The castle's sheet (wireframe 02): the castle now and at its next level side by side, what the next level brings lit,
- * and Upgrade carrying its labor price; when the realm cannot pay, the price held against what it has and the exact
- * wait, with Map, where labor comes from. At the last level there is no next side and no verb.
+ * and Upgrade carrying its labor price. When the realm cannot pay, Upgrade stays, dimmed, with its price; the line
+ * under it says what it needs against what is held and the exact wait; the map is offered where a reveal pays labor.
+ * At the last level there is no next side and no verb.
  */
 export const CastleView = ({
   now,
   next,
   prices,
-  short,
+  refusal,
   sending,
   onUpgrade,
-  onMap,
   onClose,
 }: {
   now: CastleSide;
   next: CastleSide | null;
   prices: Price[];
-  short: Extract<Reason, { kind: "short" }> | undefined;
+  refusal: Refusal | undefined;
   sending: boolean;
   onUpgrade: () => void;
-  onMap: () => void;
   onClose: () => void;
 }) => (
   <Sheet label={CASTLE} onClose={onClose}>
@@ -59,11 +58,8 @@ export const CastleView = ({
       )}
     </div>
     {next &&
-      (short ? (
-        <ReasonPlate
-          reason={short}
-          step={<Button role="primary" icon="Mp" word={MAP} className="w-[104px]" onClick={onMap} />}
-        />
+      (refusal ? (
+        <RefusedVerb word={UPGRADE} prices={prices} refusal={refusal} />
       ) : (
         <Button
           role="primary"

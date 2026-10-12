@@ -9,12 +9,12 @@ import { getPlayerName } from "@/services/identity/player-profiles";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import type { IconCode } from "@/ui/design-system/kit/kit-icon";
-import { PRICE_FACES, type PriceKind } from "@/ui/design-system/kit/price-chip";
+import type { PriceKind } from "@/ui/design-system/kit/price-chip";
+import type { Refusal } from "@/ui/design-system/kit/refused-verb";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import {
   BARRACKS,
   BUILD,
-  exploreFor,
   HUT,
   LABOR,
   makesAnHour,
@@ -47,9 +47,10 @@ import { BUILDINGS_CENTER, BuildingType, getHexDistance, type HexPosition, Resou
 import { useEffect, useMemo, useState } from "react";
 
 import { useGoToFrontierPlace } from "../frontier-home";
+import { exploreFix } from "../frontier-reveal-yield";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 import { type BuildOption, readBuildOptions } from "./build-options";
-import { type BuildGain, type BuildRefusal, type BuildTile, BuildView } from "./build-view";
+import { type BuildGain, type BuildTile, BuildView } from "./build-view";
 import { buildingIcon, buildingName } from "./building-names";
 
 const BUILD_MODELS = [
@@ -157,7 +158,7 @@ export const BuildSheet = ({
     options
       .find((candidate) => candidate.category === category)!
       .cost.map(({ resource, amount }) => ({ of: priceKind(resource), amount }));
-  const refusal = (): BuildRefusal | undefined => {
+  const refusal = (): Refusal | undefined => {
     if (option.standing === "built") return { reason: { kind: "failed", line: ONE_A_REALM } };
     if (option.standing !== "open") return gateRefusal(option.standing.gate);
     const shortCost = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
@@ -172,16 +173,10 @@ export const BuildSheet = ({
           need: shortCost.amount,
           wait: secondsUntilHeld(have, shortCost.amount, perHour),
         },
-        fix: revealsPay(shortCost.resource)
-          ? {
-              icon: "Mp",
-              word: exploreFor(PRICE_FACES[priceKind(shortCost.resource)].word),
-              onFix: () => {
-                onClose();
-                goToPlace(true);
-              },
-            }
-          : undefined,
+        fix: exploreFix(shortCost.resource, () => {
+          onClose();
+          goToPlace(true);
+        }),
       };
     }
     const verdict = resolveConstructionBuildability({
@@ -215,7 +210,7 @@ export const BuildSheet = ({
    * A training building waits for the Barracks row's tier (the contract's assert_board_category): Research raises it
    * once a Barracks stands, and until one does the fix is to build it.
    */
-  const gateRefusal = (gate: number): BuildRefusal => {
+  const gateRefusal = (gate: number): Refusal => {
     const reason = { kind: "failed", line: needsAt(BARRACKS, TIER_WORDS[gate]) } as const;
     if (getBuildingQuantity(realmId, BuildingType.ResourceKnightT1, setup.store) === 0)
       return {
@@ -255,10 +250,6 @@ const realmPopulation = (
   const total = realm.capacity + configManager.getBasePopulationCapacity();
   return { free: total - realm.population, total };
 };
-
-/** Whether exploring the map can pay a shortfall: in a game whose reveals pay supplies, each pays Essence or labor. */
-const revealsPay = (resource: number) =>
-  configManager.paysRevealSupplies() && (resource === ResourcesIds.Labor || resource === ResourcesIds.Essence);
 
 /** Each attribute's mark, as a training building's gain shows it. */
 const ATTRIBUTE_MARKS: Record<Extract<BuildOption["effect"], { kind: "trains" }>["attribute"], IconCode> = {

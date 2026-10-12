@@ -72,6 +72,15 @@ export const needsFree = (need: string, noun: string, free: string) => `Needs ${
 export const needsOverLimit = (need: string, noun: string, limit: string) =>
   `Needs ${need} ${noun}, the store holds ${limit}`;
 export const inTime = (duration: string) => `in ${duration}`;
+/** A tier that is a choice of two sides waits for one: "Choose Drill or Rations". */
+export const chooseOne = (first: string, second: string) => `Choose ${first} or ${second}`;
+/** A castle row waits for the one before it: "Needs Ethereal I". */
+export const needsFirst = (what: string) => `Needs ${what}`;
+/** What a castle row opens, on its tooltip: "Shrine: your armies find Shrines, +200 XP each". */
+export const armiesFind = (site: string, gain: string) => `${site}: your armies find ${site}s, ${gain} each`;
+export const armiesEnter = (reach: string) => `${reach}: your armies may enter it at the spire`;
+/** A training building's tier on its row's tooltip: "Battle +0% → +10% for every new army". */
+export const forNewArmies = (attribute: string, effect: string) => `${attribute} ${effect} for every new army`;
 /** A training building waits for the Barracks' tier: "Needs Barracks at Rare". */
 export const needsAt = (building: string, tier: string) => `Needs ${building} at ${tier}`;
 /** A training building already standing: a realm holds one of each. */
