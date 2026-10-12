@@ -70,3 +70,15 @@ class AuthenticatedReadTest(unittest.TestCase):
             request = transport.return_value.open.call_args.args[0]
             self.assertEqual(request.get_method(), 'GET')
             self.assertEqual(request.get_header('Authorization'), 'Bearer throwaway')
+
+
+class ServiceFailureTest(unittest.TestCase):
+    def test_status_and_fixed_code_survive_without_printing_the_body(self):
+        failure = HTTPError("https://identity.test/api/value/operator/shard/enrol", 409, "Conflict", {}, io.BytesIO(b'{"error":"relay_target_differs","detail":"private"}'))
+        with patch.dict(os.environ, {"OPERATOR_TOKEN": "throwaway"}), patch.object(service_requests, "build_opener") as transport:
+            transport.return_value.open.side_effect = failure
+            with self.assertRaises(HTTPError) as raised:
+                service_json("https://identity.test/api/value/operator/shard/enrol", {})
+        self.assertEqual(raised.exception.code, 409)
+        self.assertEqual(raised.exception.service_code, "relay_target_differs")
+        self.assertNotIn("private", str(raised.exception))

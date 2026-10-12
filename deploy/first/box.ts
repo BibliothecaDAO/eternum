@@ -45,6 +45,7 @@ export async function deployShard(target: Target, revision: string, output: (lin
       target,
       `if [ ! -d ${shell(checkout)} ]; then git clone --no-checkout https://github.com/BibliothecaDAO/eternum.git ${shell(checkout)} >/dev/null 2>&1; fi\ncd ${shell(checkout)}\ngit fetch origin ${revision} >/dev/null 2>&1\ngit checkout --detach ${revision} >/dev/null 2>&1\npython3 deploy/first/box-deploy.py ${shell(target.release)} ${shell(releaseDirectory(target))} ${revision}`,
     );
+    output(`Shard log: ${JSON.parse(result).log}`);
     if (JSON.parse(result).restarted) output("Restarting the unfinished pending shard from fresh state.");
   } catch (error) {
     if (error instanceof CommandFailure) {
@@ -54,6 +55,7 @@ export async function deployShard(target: Target, revision: string, output: (lin
       } catch {
         /* Unstructured output stays private. */
       }
+      if (typeof report?.log === "string") output(`Shard log: ${report.log}`);
       if (report?.restarted) output("Restarting the unfinished pending shard from fresh state.");
       if (report?.kind === "shard-deployment-refused" && typeof report.message === "string") {
         throw new PublicError(report.message);
@@ -94,6 +96,9 @@ export async function buildArtifacts(target: Target, store: PrivateStore, revisi
     target,
     `
 mkdir -p "$HOME/cairo-suite"
+umask 077
+build_log=${shell(checkout)}-build.log
+echo "Box build log: $build_log"
 exec 9>"$HOME/cairo-suite/.lock"
 flock 9
 if [ ! -d ${shell(checkout)} ]; then git clone --no-checkout https://github.com/BibliothecaDAO/eternum.git ${shell(checkout)} >/dev/null 2>&1; fi
@@ -102,7 +107,7 @@ git fetch origin ${revision} >/dev/null 2>&1
 git checkout --detach ${revision} >/dev/null 2>&1
 export PATH="$HOME/cairo-suite/tool-data/scarb-install/2.13.1/bin:$HOME/.local/bin:$PATH"
 scarb --version | head -1 | grep -q '2.13.1'
-for package in ledger mmr collectibles; do (cd contracts/l2/$package && taskset -c 8-11 scarb --release build >/dev/null 2>&1); done
+for package in ledger mmr collectibles; do (cd contracts/l2/$package && taskset -c 8-11 scarb --release build >>"$build_log" 2>&1); done
 `,
   );
   const directory = join(store.directory, "artifacts");

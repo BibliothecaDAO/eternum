@@ -27,7 +27,7 @@ import {
   type Assets,
 } from "./ledger";
 import { Platform, generateSecrets, workerSecrets, workers, type Secrets } from "./platform";
-import { command } from "./process";
+import { command, CommandFailure } from "./process";
 import { runSteps, type Step } from "./run";
 import { deliverySteps } from "./delivery";
 import { resolveBlitzSeason } from "./blitz-season";
@@ -452,6 +452,8 @@ export async function main(args = process.argv.slice(2)) {
 if (import.meta.main)
   main().catch((error) => {
     if (error instanceof PublicError) console.error(error.message);
+    else if (error instanceof CommandFailure && error.log)
+      console.error(`Deployment subprocess failed; log: ${error.log}`);
     else
       console.error(
         "Deployment stopped. No SDK, subprocess or secret-bearing error was printed. Inspect the last named step; rerun after its prerequisite is ready.",

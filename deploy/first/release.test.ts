@@ -122,5 +122,5 @@ test("a shard is done only at the built commit with live health and its exact ac
   }
   state.rows = [row];
   state.healthy = false;
-  await expect(step("Shard deployment").inspect()).rejects.toThrow("Public deployment read failed");
+  await expect(step("Shard deployment").inspect()).rejects.toThrow("Public deployment read: HTTP 503");
 });

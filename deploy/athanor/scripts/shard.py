@@ -378,7 +378,7 @@ def build_images():
                 subprocess.run([*DOCKER, "buildx", "build", "--load", "--platform", "linux/amd64",
                                 "--file", dockerfile, *target, "--build-arg", f"SHARD_REVISION={revision}",
                                 "--label", f"org.opencontainers.image.revision={revision}",
-                                "--iidfile", str(image_id), "-"], stdin=context, cwd=ROOT, check=True, capture_output=True)
+                                "--iidfile", str(image_id), "-"], stdin=context, cwd=ROOT, check=True, stdout=sys.stdout, stderr=sys.stderr)
             images[name] = image_id.read_text().strip()
         facts = json.loads(subprocess.check_output([
             *DOCKER, "run", "--rm", "--network", "none", "--entrypoint", "cat", images["init"],

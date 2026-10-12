@@ -130,10 +130,14 @@ def recorded_chain(directory):
         raise DeploymentRefused("Run directory has no readable chain identity; data was not overwritten") from None
 
 
+def is_deployment_log(path):
+    return path.name.startswith("deploy-") and path.suffix == ".log"
+
+
 def restart_unfinished(directory, inputs, release, report_stage):
     chain = "0x" + inputs["chain_id"].encode("ascii").hex()
     url = inputs["public_herald_url"]
-    has_files = directory.exists() and any(directory.iterdir())
+    has_files = directory.exists() and any(not is_deployment_log(path) for path in directory.iterdir())
     if has_files:
         recorded = recorded_chain(directory)
         if not same(recorded, chain):
@@ -166,9 +170,14 @@ def restart_unfinished(directory, inputs, release, report_stage):
     if not is_own_pending_row(row, chain, url):
         raise DeploymentRefused("Listed shard cannot be reinitialized: " + "; ".join(differences))
     report_stage("restart pending shard")
-    subprocess.run([*compose(directory), "down", "--volumes"], check=True, capture_output=True)
-    shutil.rmtree(directory)
-    directory.mkdir(mode=0o700, parents=True)
+    subprocess.run([*compose(directory), "down", "--volumes"], check=True, stdout=sys.stdout, stderr=sys.stderr)
+    for path in directory.iterdir():
+        if is_deployment_log(path):
+            continue
+        if path.is_dir():
+            shutil.rmtree(path)
+        else:
+            path.unlink()
 
 
 def unfinished_differences(data, inputs, release):
@@ -226,17 +235,17 @@ def check_operator_approval():
 def start(directory, config, report_stage=ignore_stage):
     # Materialize the protected file before Compose creates the RPC container's file bind.
     report_stage("prepare")
-    subprocess.run([*compose(directory), "run", "--rm", "--no-deps", "prepare"], check=True, capture_output=True)
+    subprocess.run([*compose(directory), "run", "--rm", "--no-deps", "prepare"], check=True, stdout=sys.stdout, stderr=sys.stderr)
     report_stage("start Herald")
-    subprocess.run([*compose(directory), "up", "-d", "herald", "metrics"], check=True, capture_output=True)
+    subprocess.run([*compose(directory), "up", "-d", "herald", "metrics"], check=True, stdout=sys.stdout, stderr=sys.stderr)
     report_stage("wait for Herald identity")
     wait_for_identity(config)
     report_stage("register pending")
     status = directory_status(config, "pending")
     report_stage("start services")
-    subprocess.run([*compose(directory), "up", "-d"], check=True, capture_output=True)
+    subprocess.run([*compose(directory), "up", "-d"], check=True, stdout=sys.stdout, stderr=sys.stderr)
     report_stage("initialise")
-    subprocess.run([*compose(directory), "wait", "init"], check=True, capture_output=True)
+    subprocess.run([*compose(directory), "wait", "init"], check=True, stdout=sys.stdout, stderr=sys.stderr)
     code = subprocess.check_output([*compose(directory), "ps", "--all", "--format", "{{.ExitCode}}", "init"],
                                    text=True, stderr=subprocess.PIPE).strip()
     if code != "0":
@@ -255,27 +264,21 @@ def activate(config, directory, report_stage=ignore_stage):
 
 def launcher_service(config, suffix, payload):
     base = identity_service_base(config["guardian_url"])
-    try:
-        return service_json(base + "/factory/operator/launcher/" + suffix, payload, timeout=120)
-    except (OSError, ValueError):
-        raise RuntimeError("Launch Worker enrollment route unavailable; directory remains pending") from None
+    return service_json(base + "/factory/operator/launcher/" + suffix, payload, timeout=120)
 
 
 def service_role_check(directory, account, role="launcher"):
     subprocess.run([*compose(directory.parent), "run", "--rm", "--no-deps", "-T",
                     "--entrypoint", "python3", "harness", "/app/deploy/shard/init.py",
                     "service-role-check", "/data", role, account],
-                   check=True, capture_output=True, text=True)
+                   check=True, stdout=sys.stdout, stderr=sys.stderr, text=True)
 
 
 def confirm_worker_ledger_operator(config, directory):
     manifest, _ = deployed_facts(directory)
     payload = {"chainId": manifest["shard"]["chainId"], "heraldUrl": config["public_herald_url"]}
     base = identity_service_base(config["guardian_url"])
-    try:
-        enrolled = service_json(base + "/value/operator/shard/enrol", payload, timeout=120)
-    except (OSError, ValueError):
-        raise RuntimeError("Relay enrollment route unavailable; directory remains pending") from None
+    enrolled = service_json(base + "/value/operator/shard/enrol", payload, timeout=120)
     account = public_felt(enrolled.get("ledgerOperatorAccount"))
     if public_felt(enrolled.get("chainId")) != public_felt(payload["chainId"]):
         raise RuntimeError("Relay enrolled another chain; directory remains pending")
@@ -341,4 +344,7 @@ def release_differences(release, manifest, initialized, presets):
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         raise SystemExit(__doc__)
-    raise SystemExit(main(sys.argv[1], Path(sys.argv[2]).resolve()))
+    sys.path.insert(0, str(shard.ROOT / "deploy/first"))
+    from importlib import import_module
+    driver = import_module("box-deploy")
+    raise SystemExit(driver.run(sys.argv[1], Path(sys.argv[2]).resolve(), None))

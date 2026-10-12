@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Replace the old shard without deleting its data; the existing deployer proves and activates the new one."""
 from contextlib import redirect_stdout, redirect_stderr
-import io
+import time
+import traceback
+from urllib.error import HTTPError
 import json
 import os
-import re
 from pathlib import Path
 import subprocess
 import sys
@@ -48,7 +49,7 @@ def retire_previous(inputs, directory):
             service_json(base + '/directory/shards/status', {'url': row['url'], 'status': 'draining'})
     for project in projects:
         # No --volumes: both the former chain's files and Docker volumes remain available.
-        subprocess.run([*shard.DOCKER, 'compose', '--project-directory', project, 'down'], check=True, capture_output=True)
+        subprocess.run([*shard.DOCKER, 'compose', '--project-directory', project, 'down'], check=True, stdout=sys.stdout, stderr=sys.stderr)
     for row in matching:
         service_json(base + '/directory/shards/status', {'url': row['url'], 'status': 'retired'})
 
@@ -66,7 +67,7 @@ def main(environment, directory, revision, report_stage):
     if deploy.main(environment, directory, report_stage):
         raise RuntimeError('Shard deployment check failed')
     built_revision = json.loads((directory / 'release.json').read_text())['commit']
-    if built_revision != revision:
+    if revision is not None and built_revision != revision:
         raise deploy.DeploymentRefused(f"Box built commit {built_revision}, requested {revision}; deployment was not confirmed")
 
 
@@ -76,28 +77,36 @@ STAGES = (
 )
 
 
-def docker_error_line(error):
-    if not isinstance(error, subprocess.CalledProcessError) or not isinstance(error.cmd, (list, tuple)):
-        return None
-    if "docker" not in error.cmd or "compose" not in error.cmd:
-        return None
-    stderr = error.stderr or ""
-    if isinstance(stderr, bytes):
-        stderr = stderr.decode("utf-8", errors="replace")
-    lines = [line for line in stderr.splitlines() if line.strip()]
-    if not lines:
-        return None
-    line = lines[-1]
-    if any(value and value in line for value in os.environ.values()):
-        return None
-    if re.search(r"0x[0-9a-f]{17,}", line, re.IGNORECASE) or not line.isprintable():
-        return None
-    return line.strip()
+def write_failure(error):
+    detail = traceback.format_exc()
+    if isinstance(error, subprocess.CalledProcessError):
+        for output in (error.stdout, error.stderr):
+            if output:
+                detail += output.decode("utf8", errors="replace") if isinstance(output, bytes) else output
+    for key in ("OPERATOR_TOKEN", "DEPLOYER_PRIVATE_KEY"):
+        if os.environ.get(key):
+            detail = detail.replace(os.environ[key], "[redacted]")
+    print(detail, file=sys.stderr)
+
+
+def failure_report(error, stage):
+    detail = str(error) if isinstance(error, deploy.DeploymentRefused) else None
+    status = error.code if isinstance(error, HTTPError) else None
+    if isinstance(error, HeraldIdentityRefused):
+        status = error.status
+    code = getattr(error, "service_code", None) or type(error).__name__
+    message = f"Shard deployment stopped at {stage}; HTTP {status if status is not None else 'n/a'}; code {code}."
+    if detail:
+        message += " " + detail
+    return {"kind": "shard-deployment-refused", "message": message, "status": status, "error": code}
 
 
 def run(environment, directory, revision):
     stage = "prepare"
     restarted = False
+    directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+    log_path = directory / f"deploy-{time.time_ns()}.log"
+    descriptor = os.open(log_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
 
     def report_stage(name):
         nonlocal stage, restarted
@@ -105,24 +114,24 @@ def run(environment, directory, revision):
             raise ValueError("Unknown deployment stage")
         stage = name
         restarted = restarted or name == "restart pending shard"
+        print(json.dumps({"stage": stage}), flush=True)
 
-    try:
-        # Only the structured outcome crosses SSH; subprocess output is captured at its call site.
-        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
-            main(environment, directory, revision, report_stage)
-    except Exception as error:
-        detail = docker_error_line(error)
-        if isinstance(error, deploy.DeploymentRefused):
-            detail = str(error)
-        if isinstance(error, HeraldIdentityRefused):
-            detail = f"Herald identity read refused: HTTP {error.status}"
-        message = f"Shard deployment stopped at {stage}."
-        if detail:
-            message += " " + detail
-        print(json.dumps({"kind": "shard-deployment-refused", "message": message, **({"restarted": True} if restarted else {})}))
-        return 1
-    print(json.dumps({"kind": "shard-deployment-complete", "restarted": restarted}))
-    return 0
+    outcome = {"kind": "shard-deployment-complete", "log": str(log_path)}
+    code = 0
+    with os.fdopen(descriptor, "w", buffering=1) as log, redirect_stdout(log), redirect_stderr(log):
+        try:
+            if revision is None:
+                if deploy.main(environment, directory, report_stage):
+                    raise RuntimeError("Shard deployment check failed")
+            else:
+                main(environment, directory, revision, report_stage)
+        except Exception as error:
+            write_failure(error)
+            outcome.update(failure_report(error, stage))
+            code = 1
+    outcome.update(stage=stage, restarted=restarted)
+    print(json.dumps(outcome))
+    return code
 
 
 if __name__ == '__main__':

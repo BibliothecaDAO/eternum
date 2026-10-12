@@ -100,8 +100,11 @@ async function sendRoleHandoff({ provider, manifest, bootstrap, account, role }:
 }
 
 if (import.meta.main) {
-  main().catch(() => {
-    console.error("Service role check failed; directory remains pending");
+  main().catch((error) => {
+    let detail = error instanceof Error ? (error.stack ?? error.message) : "Unknown service role failure";
+    for (const key of ["DEPLOYER_PRIVATE_KEY", "OPERATOR_TOKEN"])
+      if (process.env[key]) detail = detail.replaceAll(process.env[key]!, "[redacted]");
+    console.error(detail);
     process.exitCode = 1;
   });
 }

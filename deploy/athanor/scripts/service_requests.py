@@ -1,6 +1,9 @@
 """One HTTPS, non-redirecting boundary for the environment's authenticated services."""
+import io
 import json
 import os
+import re
+from urllib.error import HTTPError
 from urllib.parse import urlparse
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
@@ -34,5 +37,20 @@ def service_json(url, payload=None, timeout=30, *, authenticated=False):
             raise ValueError("Protected operator credential required for service request")
         headers["Authorization"] = "Bearer " + token
     request = Request(url, data=json.dumps(payload).encode() if payload is not None else None, headers=headers)
-    with build_opener(RefuseRedirects()).open(request, timeout=timeout) as response:
-        return json.load(response)
+    try:
+        with build_opener(RefuseRedirects()).open(request, timeout=timeout) as response:
+            return json.load(response)
+    except HTTPError as error:
+        body = error.read()
+        try:
+            code = json.loads(body).get("error", "invalid_service_error")
+        except (ValueError, AttributeError):
+            code = "invalid_service_error"
+        if not isinstance(code, str) or not re.fullmatch(r"[a-z][a-z0-9_]{0,79}", code):
+            code = "invalid_service_error"
+        token = os.environ.get("OPERATOR_TOKEN")
+        if token and token in code:
+            code = "invalid_service_error"
+        error.service_code = code
+        error.fp = io.BytesIO(body)
+        raise

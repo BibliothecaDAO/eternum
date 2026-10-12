@@ -1,7 +1,7 @@
 import { afterEach, expect, mock, spyOn, test } from "bun:test";
 import * as processTools from "./process";
 import { deployShard, artifactsReady, artifactFiles } from "./box";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { PrivateStore } from "./private-store";
@@ -56,4 +56,25 @@ test("a service-only revision reuses the existing value artifacts; changed sourc
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
+});
+
+test("failed command logs keep stderr and redact credential input and environment", async () => {
+  const error = await processTools
+    .command({
+      argv: [
+        process.execPath,
+        "-e",
+        'process.stdin.resume(); process.stdin.on("data", data => process.stderr.write(data)); process.stdin.on("end", () => { process.stderr.write(process.env.OPERATOR_TOKEN); process.exit(1); });',
+      ],
+      input: JSON.stringify({ PRIVATE_KEY: "fixture-input-credential" }),
+      env: { OPERATOR_TOKEN: "fixture-environment-credential" },
+    })
+    .catch((error) => error);
+  expect(error).toBeInstanceOf(processTools.CommandFailure);
+  const log = readFileSync(error.log, "utf8");
+  expect(log).not.toContain("fixture-input-credential");
+  expect(log).not.toContain("fixture-environment-credential");
+  expect(log).toContain("[redacted]");
+  expect(statSync(error.log).mode & 0o777).toBe(0o600);
+  rmSync(join(error.log, ".."), { recursive: true });
 });

@@ -38,12 +38,19 @@ async function service<T>(context: Deployment, path: string, method = "GET", bod
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
-  if (!response.ok) throw new Error("Service request failed");
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as { error?: unknown } | null;
+    const code =
+      typeof body?.error === "string" && /^[a-z][a-z0-9_]{0,79}$/.test(body.error)
+        ? body.error
+        : "invalid_service_error";
+    throw new PublicError(`Service ${path}: HTTP ${response.status}; code ${code}.`);
+  }
   return response.json() as Promise<T>;
 }
 async function jsonGet<T>(url: string): Promise<T> {
   const response = await fetch(url, { redirect: "error", headers: { "User-Agent": "realms-deployment/1" } });
-  if (!response.ok) throw new Error("Public deployment read failed");
+  if (!response.ok) throw new PublicError(`Public deployment read: HTTP ${response.status}.`);
   return response.json() as Promise<T>;
 }
 async function games(context: Deployment) {
