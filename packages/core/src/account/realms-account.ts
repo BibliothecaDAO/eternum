@@ -4,6 +4,7 @@ import { utils as starknetKeyUtils } from "@scure/starknet";
 import { botRealmsId, realmsAccountAddress, type DeviceChange } from "@realms-world/identity/account";
 import { Account, BlockTag, ec, hash, num, type ProviderInterface } from "starknet";
 import { operatorRequest } from "./operator-request";
+export { operatorRequest } from "./operator-request";
 
 /**
  * A player's gameplay account on a shard: `RealmsAccount` (contracts/l3/player-account), deployed from no deployer with
@@ -190,6 +191,7 @@ async function joinOnce(
 
 /** Join diagnostics name the failed boundary without exposing an RPC payload or a device key. */
 export const accountJoinErrors = [
+  "operator_redirect_refused",
   "account_join_read_failed",
   "account_join_approval_failed",
   "account_join_deploy_failed",

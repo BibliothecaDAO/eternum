@@ -40,7 +40,8 @@ const LAUNCHER = launcherAccountAddress(SHARD_MANIFEST);
 let mf: Miniflare;
 let db: D1Database;
 let freshAccount = false;
-let refuseApproval = true;
+let approvalStatus = 401;
+let redirectRequests = 0;
 let approvalRequests = 0;
 let deployedAccount = false;
 
@@ -98,13 +99,16 @@ beforeAll(async () => {
         serviceBindings: {
           IDENTITY: { name: "directory", entrypoint: "ValueIdentity" },
           VALUE_RELAY: { name: "directory", entrypoint: "ValueRelay" },
-          IDENTITY_HTTP: () => {
+          IDENTITY_HTTP: (request) => {
+            if (new URL(request.url).pathname !== "/api/devices/bots") redirectRequests++;
             approvalRequests++;
-            return freshAccount
-              ? refuseApproval
-                ? Response.json({ error: "unauthorized" }, { status: 401 })
-                : Response.json({ signature: ["0x3", "0x4"] })
-              : Response.json({ session: { id: "s1" }, user: { id: "u1", realmsId: "0x7", address: LAUNCHER } });
+            if (!freshAccount)
+              return Response.json({ session: { id: "s1" }, user: { id: "u1", realmsId: "0x7", address: LAUNCHER } });
+            if (approvalStatus === 302)
+              return new Response(null, { status: 302, headers: { location: "https://redirect.test/approval" } });
+            return approvalStatus === 200
+              ? Response.json({ signature: ["0x3", "0x4"] })
+              : Response.json({ error: "unauthorized" }, { status: approvalStatus });
           },
         },
         bindings: {
@@ -115,6 +119,10 @@ beforeAll(async () => {
           VERSION: { id: "workerd-test", tag: "", timestamp: "" },
         },
         outboundService: async (request: Request) => {
+          if (new URL(request.url).hostname === "redirect.test") {
+            redirectRequests++;
+            return Response.json({ signature: ["0x3", "0x4"] });
+          }
           if (request.url === `${SHARD_URL}/manifest`) return Response.json(SHARD_MANIFEST);
           if (request.url === `${SHARD_URL}/rpc`) {
             const { id, method, params } = (await request.json()) as {
@@ -304,27 +312,39 @@ it("runs a continued launch at once, even while the registrar sleeps until a res
   expect(run).toMatchObject({ attempts: 1 });
 }, 60_000);
 
-it("reports a fresh account's approval refusal through real workerd on public health", async () => {
-  freshAccount = true;
-  try {
-    await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
-    const deadline = Date.now() + 10000;
-    let health: { joinFailures?: { chainId: string; code: string }[] } = {};
-    while (Date.now() < deadline) {
-      health = (await (await mf.dispatchFetch(`${ORIGIN}/api/factory/health`)).json()) as typeof health;
-      if (health.joinFailures?.length) break;
-      await new Promise((resolve) => setTimeout(resolve, 100));
+it.each([
+  [401, "launcher_approval_refused"],
+  [302, "operator_redirect_refused"],
+] as const)(
+  "reports approval HTTP %s through real workerd without following redirects",
+  async (status, code) => {
+    freshAccount = true;
+    approvalStatus = status;
+    approvalRequests = 0;
+    redirectRequests = 0;
+    try {
+      await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
+      const deadline = Date.now() + 10000;
+      let health: { joinFailures?: { chainId: string; code: string }[] } = {};
+      while (Date.now() < deadline) {
+        health = (await (await mf.dispatchFetch(`${ORIGIN}/api/factory/health`)).json()) as typeof health;
+        if (approvalRequests > 0 && health.joinFailures?.[0]?.code === code) break;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      expect(health.joinFailures).toMatchObject([{ chainId: SHARD_CHAIN, code }]);
+      expect(approvalRequests).toBeGreaterThan(0);
+      expect(redirectRequests).toBe(0);
+      expect(deployedAccount).toBe(false);
+    } finally {
+      freshAccount = false;
     }
-    expect(health.joinFailures).toMatchObject([{ chainId: SHARD_CHAIN, code: "launcher_approval_refused" }]);
-    expect(approvalRequests).toBeGreaterThan(0);
-  } finally {
-    freshAccount = false;
-  }
-}, 60000);
+  },
+  60000,
+);
 
 it("joins a fresh account through identity approval and account deployment in workerd", async () => {
   freshAccount = true;
-  refuseApproval = false;
+  approvalStatus = 200;
   try {
     await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
     const deadline = Date.now() + 10000;

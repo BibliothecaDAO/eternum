@@ -181,7 +181,8 @@ export const relayOperation = <A>(operation: string, run: () => Promise<A>): Rel
         : new RelayFailure({ operation: serviceError(error, relayServiceErrors, operation) }),
   });
 
-const relayServiceErrors = [
+export const relayServiceErrors = [
+  "relay_account_join_failed",
   ...accountJoinErrors,
   "directory_shard_manifest_fetch_failed",
   "relay_shard_inactive",

@@ -23,3 +23,16 @@ it.each(["relay_device_approval_refused: HTTP 401; code unauthorized", "account_
     expect(failure.operation).toBe(message.split(":")[0]);
   },
 );
+
+it("keeps an undeclared join's fixed fallback across both Effect boundaries", async () => {
+  const failure = await Effect.runPromise(
+    relayOperation("advance official shard", () =>
+      Effect.runPromise(
+        relayOperation("relay_account_join_failed", async () => {
+          throw new TypeError("Invalid redirect");
+        }),
+      ),
+    ).pipe(Effect.flip),
+  );
+  expect(failure.operation).toBe("relay_account_join_failed");
+});

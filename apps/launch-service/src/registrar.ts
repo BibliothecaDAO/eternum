@@ -1,5 +1,5 @@
 import { accountJoinErrors } from "@bibliothecadao/eternum/realms-account";
-import { activeShards, serviceError } from "@realms-world/value-ledger";
+import { activeShards, serviceFailure } from "@realms-world/value-ledger";
 import { DurableObject } from "cloudflare:workers";
 import { Effect, Layer, Semaphore } from "effect";
 import { decodeLaunchEnv } from "./env";
@@ -66,14 +66,18 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
       try {
         accountAddress = await joinLauncherAccount(env, shard.chainId);
       } catch (error) {
+        const diagnostic = serviceFailure(error, joinErrors, "launcher_join_failed", [
+          env.OPERATOR_TOKEN,
+          env.LAUNCH_DEPLOYER_PRIVATE_KEY,
+        ]);
         const failure = {
           chainId: shard.chainId,
-          code: serviceError(error, joinErrors, "launcher_join_failed"),
+          code: diagnostic.code,
           checkedAt: Date.now(),
         };
         failures.push(failure);
         await this.ctx.storage.put("joinFailures", failures);
-        console.error("launcher_account_unavailable", failure);
+        console.error("launcher_account_unavailable", { ...failure, ...diagnostic });
         next = Math.min(next ?? Infinity, Date.now() + 30000);
         continue;
       }

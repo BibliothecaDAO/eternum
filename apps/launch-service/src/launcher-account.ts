@@ -1,5 +1,5 @@
 import { botRealmsId } from "@realms-world/identity/account";
-import { joinRealmsAccount, deviceKeyOf } from "@bibliothecadao/eternum/realms-account";
+import { joinRealmsAccount, operatorRequest, deviceKeyOf } from "@bibliothecadao/eternum/realms-account";
 import { LAUNCHER_LABEL, rpcAt, serviceResponseFailure } from "@realms-world/value-ledger";
 import { readLaunchShard } from "./executor";
 import type { LaunchEnv } from "./env";
@@ -17,12 +17,16 @@ export async function joinLauncherAccount(
     realmsId: botRealmsId(LAUNCHER_LABEL),
     device: deviceKeyOf(env.LAUNCH_DEPLOYER_PRIVATE_KEY),
     approve: async (change) => {
-      const response = await env.IDENTITY_HTTP.fetch(new URL("/api/devices/bots", env.BASE_URL), {
-        method: "POST",
-        headers: { authorization: `Bearer ${env.OPERATOR_TOKEN}`, "content-type": "application/json" },
-        body: JSON.stringify({ label: LAUNCHER_LABEL, ...change }),
-        redirect: "manual",
-      });
+      const response = await operatorRequest(
+        new URL("/api/devices/bots", env.BASE_URL).href,
+        env.OPERATOR_TOKEN,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ label: LAUNCHER_LABEL, ...change }),
+        },
+        (url, init) => env.IDENTITY_HTTP.fetch(url, init),
+      );
       if (!response.ok) throw await serviceResponseFailure("launcher_approval_refused", response);
       return ((await response.json()) as { signature: string[] }).signature;
     },

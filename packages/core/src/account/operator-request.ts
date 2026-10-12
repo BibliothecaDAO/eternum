@@ -1,5 +1,5 @@
 /** Operator credentials travel only to HTTPS endpoints and never follow redirects. */
-export function operatorRequest(
+export async function operatorRequest(
   url: string,
   token: string,
   init: RequestInit,
@@ -10,5 +10,7 @@ export function operatorRequest(
     throw new Error("Operator endpoint must use HTTPS without credentials or fragment");
   const headers = new Headers(init.headers);
   headers.set("authorization", `Bearer ${token}`);
-  return send(url, { ...init, headers, redirect: "manual" });
+  const response = await send(url, { ...init, headers, redirect: "manual" });
+  if (response.status >= 300 && response.status < 400) throw new Error("operator_redirect_refused");
+  return response;
 }
