@@ -25,7 +25,7 @@ export function addressBookStep(context: Deployment): Step {
         .split("\n")
         .filter(Boolean);
       if (staged.some((path) => path !== book))
-        throw new Error("Unrelated staged changes must be handled before publishing the address book");
+        throw new PublicError("Unrelated staged changes must be handled before publishing the address book");
       const dirty = (await command({ argv: ["git", "status", "--porcelain", "--", book] })).trim();
       const branch = (await command({ argv: ["git", "branch", "--show-current"] })).trim();
       if (!branch || branch === "next")

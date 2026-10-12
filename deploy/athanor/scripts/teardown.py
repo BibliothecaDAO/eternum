@@ -20,22 +20,22 @@ def teardown(environment, report_stage):
     directory = Path(target["runDirectory"])
     config = deploy.load_inputs(target["environment"])
     with shard.isolated_stack_lock("teardown dev"):
+        if directory.exists():
+            report_stage("stop and remove volumes")
+            if (directory / "compose.yml").exists():
+                subprocess.run([*deploy.compose(directory), "down", "--volumes", "--remove-orphans"], check=True,
+                               stdout=sys.stdout, stderr=sys.stderr)
+            report_stage("keep deployment logs")
+            logs = Path("/opt/athanor/logs")
+            logs.mkdir(mode=0o700, exist_ok=True)
+            for log in directory.glob("deploy-*.log"):
+                shutil.copyfile(log, logs / log.name)
+                (logs / log.name).chmod(0o600)
+            report_stage("remove run directory")
+            shutil.rmtree(directory)
         report_stage("retire directory row")
         directory_status(config, "retired")
-        if not directory.exists():
-            return
-        report_stage("stop and remove volumes")
-        if (directory / "compose.yml").exists():
-            subprocess.run([*deploy.compose(directory), "down", "--volumes", "--remove-orphans"], check=True,
-                           stdout=sys.stdout, stderr=sys.stderr)
-        report_stage("keep deployment logs")
-        logs = Path("/opt/athanor/logs")
-        logs.mkdir(mode=0o700, exist_ok=True)
-        for log in directory.glob("deploy-*.log"):
-            shutil.copyfile(log, logs / log.name)
-            (logs / log.name).chmod(0o600)
-        report_stage("remove run directory")
-        shutil.rmtree(directory)
+
 
 
 def run(environment):
@@ -57,7 +57,7 @@ def run(environment):
             teardown(environment, report_stage)
         except Exception as error:
             deploy.write_failure(error)
-            outcome.update(deploy.failure_report(error, stage))
+            outcome.update(deploy.failure_report(error, stage), stage=stage)
             code = 1
     print(json.dumps(outcome))
     return code

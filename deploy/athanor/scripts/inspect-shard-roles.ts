@@ -97,7 +97,7 @@ export async function inspectGameRoles({ provider, manifest, host, bootstrap, in
     ["Games ledger operator", ledger, relayAccountAddress(manifest.shard)],
   ] as const) {
     if (value.length !== 1) throw new Error("Role view shape differs");
-    if (!initialized) equal(value[0]!, expected, name);
+    equal(value[0]!, expected, name);
     roles.push({ role: name, address: value[0]! });
   }
   if (key.length !== 2 || bound.length !== 1) throw new Error("VRF configuration shape differs");

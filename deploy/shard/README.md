@@ -48,8 +48,8 @@ operator-authenticated directory route before touching state. An incompatible un
 authenticated directory lists exactly its recorded and configured chain at its configured Herald URL as pending and the
 run directory is the environment's own directory. Unlisted incompatible state refuses and requires manual removal; an
 unreadable local identity or directory read failure refuses cleanup. Matching initialized state continues through the
-existing initialization and role handoff. The initializer runs as HOST_UID, and private credentials remain owner-only
-with mode `0600`.
+existing initialization and role verification. The initializer runs as HOST_UID, and private credentials remain
+owner-only with mode `0600`.
 
 ## Endpoints and readiness
 
@@ -71,14 +71,13 @@ on stop; it never activates.
 Herald's existing listener first serves the real prepared identity at `/manifest`, with other routes unavailable.
 Official deployment registers the Herald URL as pending after starting Herald and before starting initialization or
 enrolling the operator. Pending shards are hidden from players. Init then deploys Games, sets owner/launcher/ledger
-roles and registers the selected presets. This bootstrap assigns all three roles to the enrolled operator; later role
-changes use the contract's existing owner-authorized setters.
+roles and registers the selected presets. Games is created with the bootstrap owner and the launcher and relay addresses
+derived from the guardian identity. The two service Workers join those accounts on their own alarm or cron.
 
 After initialization, deployment compares the deployed classes, schema and selected preset commitments with the build's
-facts. It enrols the relay and launcher through their Workers, confirms the distinct on-chain roles, then activates the
-directory entry through Herald's real manifest. A failed enrolment, handoff or active write leaves the shard pending;
-rerunning repeats these idempotent operations. Deployment creates no game and proves no gameplay action end to end; the
-first real game and playtest provide that evidence.
+facts. It confirms the distinct on-chain roles, then activates the directory entry through Herald's real manifest. A
+failed role check or active write leaves the shard pending; rerunning repeats these idempotent operations. Deployment
+creates no game and proves no gameplay action end to end; the first real game and playtest provide that evidence.
 
 Metrics collect OTLP and sample container CPU from a read-only cgroup mount, without a Docker socket or write access.
 The compose services restart on failure. Initializer logs and `harness.env` are private and must never be published.
@@ -101,8 +100,8 @@ pass before relying on the backup. Stop the public RPC during a node outage; cal
 observe their original transaction hash before submitting another action.
 
 To restore, use the recorded image digests, chain archive, database backup and private data archive on fresh volumes.
-Start preparation first: it verifies identity and republishes runtime files. Then start the stack and repeat the role
-handoff before directory activation. Never initialize fresh host keys over an incomplete or restored data directory.
+Start preparation first: it verifies identity and republishes runtime files. Then start the stack and verify the pinned
+roles before directory activation. Never initialize fresh host keys over an incomplete or restored data directory.
 
 ## Contract releases
 

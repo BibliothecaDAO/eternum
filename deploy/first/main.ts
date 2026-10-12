@@ -11,7 +11,7 @@ import {
   artifactsReady,
   boxRead,
   buildArtifacts,
-  installedOperatorToken,
+  operatorTokenMatches,
   operatorTokenPresent,
   installOperatorToken,
 } from "./box";
@@ -28,12 +28,12 @@ import {
   type Assets,
 } from "./ledger";
 import { Platform, generateSecrets, workerSecrets, workers, type Secrets } from "./platform";
-import { command, CommandFailure } from "./process";
+import { command } from "./process";
 import { runSteps, type Step } from "./run";
 import { addressBookStep } from "./address-book";
 import { resolveBlitzSeason } from "./blitz-season";
 import { seconds } from "./dates";
-import { PublicError } from "./errors";
+import { PublicError, reportFailure } from "./errors";
 
 export interface Deployment {
   environment: Environment;
@@ -50,7 +50,7 @@ export interface Deployment {
   output: (line: string) => void;
 }
 export function signer(context: Pick<Deployment, "provider" | "keys">) {
-  if (!context.provider || !context.keys) throw new Error("Account preparation has not completed");
+  if (!context.provider || !context.keys) throw new PublicError("Account preparation has not completed");
   return new Account({
     provider: context.provider,
     address: accountIdentity(context.keys.deployer).address,
@@ -68,7 +68,7 @@ function reload(context: Deployment) {
   }
 }
 async function prompt(label: string) {
-  if (!process.stdin.isTTY) throw new Error("Enter initial settings in the owner's interactive terminal");
+  if (!process.stdin.isTTY) throw new PublicError("Enter initial settings in the owner's interactive terminal");
   process.stdout.write(`${label}: `);
   process.stdin.setRawMode(true);
   process.stdin.resume();
@@ -84,7 +84,7 @@ async function prompt(label: string) {
       for (const char of bytes.toString()) {
         if (char === "\u0003") {
           finish();
-          reject(new Error("Input cancelled"));
+          reject(new PublicError("Input cancelled"));
           return;
         }
         if (char === "\r" || char === "\n") {
@@ -148,10 +148,7 @@ export function preparationSteps(context: Deployment): Step[] {
           );
         await context.platform.checkAccess();
         await command({ argv: ["gh", "api", "repos/{owner}/{repo}"] });
-        await boxRead(
-          context.target,
-          'test -d /opt/athanor; test -x "$HOME/cairo-suite/tool-data/scarb-install/2.13.1/bin/scarb"; docker compose version >/dev/null',
-        );
+        await boxRead(context.target, "test -d /opt/athanor; docker compose version");
         return {
           done: true,
           detail: "Cloudflare resource reads, GitHub access, reviewed release and provisioned box checked",
@@ -166,7 +163,7 @@ export function preparationSteps(context: Deployment): Step[] {
       inspect: async () => {
         if (!context.provider) return waiting("Settings are not available; account class cannot be checked yet");
         if (BigInt(await context.provider.getChainId()) !== 0x534e5f4d41494en)
-          throw new Error("Starknet mainnet required");
+          throw new PublicError("Starknet mainnet required");
         await context.provider.getClassByHash(ACCOUNT_CLASS);
         return {
           done: !!context.keys,
@@ -227,7 +224,8 @@ export function preparationSteps(context: Deployment): Step[] {
             detail: "declare absent classes; deploy missing contracts at fixed salts; publish public addresses",
           };
         for (const address of Object.values(assets))
-          if (!(await classAt(context.provider, address))) throw new Error("Address book names an absent contract");
+          if (!(await classAt(context.provider, address)))
+            throw new PublicError("Address book names an absent contract");
         if (!context.keys || !context.inputs) return waiting("Saved account identities unavailable");
         await verifyLedgerAccounts(
           context.provider,
@@ -247,7 +245,7 @@ export function preparationSteps(context: Deployment): Step[] {
           !context.target.freshAssets &&
           ["lords", "mmr", "chests", "cosmetics"].some((name) => !assets[name as keyof Assets])
         )
-          throw new Error("Production asset addresses must already exist in the public address book");
+          throw new PublicError("Production asset addresses must already exist in the public address book");
         for (const plan of assetPlans(
           context.target,
           admin,
@@ -335,13 +333,14 @@ export function preparationSteps(context: Deployment): Step[] {
       cost: "0 STRK",
       inspect: async () => ({
         done: !!context.secrets,
-        detail: "reuse the box operator token and the existing guardian; generate only absent credentials",
+        detail: "reuse saved credentials and the existing guardian; generate only absent credentials",
       }),
       apply: async () => {
         const guardian = workers.find((worker) => worker.id === "guardian")!;
         const guardianExists = (await context.platform!.secretNames(guardian)).includes("GUARDIAN_PRIVATE_KEY");
-        const operator = (await installedOperatorToken(context.target)).trim();
-        context.store.write("secrets.json", generateSecrets(operator, guardianExists));
+        if (await operatorTokenPresent(context.target))
+          throw new PublicError("Box already has an operator credential; use the original private directory");
+        context.store.write("secrets.json", generateSecrets(guardianExists));
         reload(context);
       },
     },
@@ -399,9 +398,9 @@ export function preparationSteps(context: Deployment): Step[] {
             done: await operatorTokenPresent(context.target),
             detail: "protected box credential presence and mode checked without reading its contents",
           };
-        const existing = (await installedOperatorToken(context.target)).trim();
-        if (existing && context.secrets && existing !== context.secrets.operator)
-          throw new Error("Box operator token differs; restore the original private directory");
+        const existing = await operatorTokenPresent(context.target);
+        if (existing && context.secrets && !(await operatorTokenMatches(context.target, context.secrets.operator)))
+          throw new PublicError("Box operator token differs; restore the original private directory");
         return { done: !!existing, detail: "protected operator file on box; no mainnet key copied to it" };
       },
       apply: async () => installOperatorToken(context.target, context.secrets!.operator),
@@ -417,12 +416,13 @@ export async function main(args = process.argv.slice(2)) {
     args.length > 3 ||
     (flag && flag !== "--apply")
   )
-    throw new Error("Usage: pnpm run setup <dev|production> /absolute/private-directory [--apply]");
+    throw new PublicError("Usage: pnpm run setup <dev|production> /absolute/private-directory [--apply]");
   process.umask(0o077);
   const apply = flag === "--apply";
   const store = new PrivateStore(directory, root, apply);
   const saved = store.read<{ environment: Environment }>("deployment.json");
-  if (saved && saved.environment !== environment) throw new Error("Private directory belongs to another environment");
+  if (saved && saved.environment !== environment)
+    throw new PublicError("Private directory belongs to another environment");
   const revision = await deploymentRevision(environment);
   const context: Deployment = {
     environment,
@@ -451,14 +451,4 @@ export async function main(args = process.argv.slice(2)) {
     unlock();
   }
 }
-if (import.meta.main)
-  main().catch((error) => {
-    if (error instanceof PublicError) console.error(error.message);
-    else if (error instanceof CommandFailure && error.log)
-      console.error(`Deployment subprocess failed; log: ${error.log}`);
-    else
-      console.error(
-        "Deployment stopped. No SDK, subprocess or secret-bearing error was printed. Inspect the last named step; rerun after its prerequisite is ready.",
-      );
-    process.exitCode = 1;
-  });
+if (import.meta.main) main().catch(reportFailure);

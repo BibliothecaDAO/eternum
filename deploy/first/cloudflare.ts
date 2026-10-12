@@ -8,10 +8,11 @@ import { deployWorkers, deployClient } from "./publish";
 import { archivedRevision, deploymentRevision } from "./revision";
 import { environments, root, type Inputs } from "./settings";
 import { deploymentEnvironment, reportFailure } from "./deploy";
-import { PublicError } from "./errors";
+import { PublicError, deploymentStage } from "./errors";
 
 async function publish(environment: string | undefined, directory: string | undefined, revision: string | undefined) {
   const target = deploymentEnvironment(environment);
+  deploymentStage("publish Cloudflare");
   if (!directory || !revision || !/^[0-9a-f]{40}$/.test(revision))
     throw new PublicError("A private directory and commit are required");
   const store = new PrivateStore(directory, root, true);
@@ -33,6 +34,7 @@ async function main() {
   if (extra.length)
     throw new PublicError("Usage: pnpm run deploy:cloudflare <dev|production> /absolute/private-directory");
   const target = deploymentEnvironment(environment);
+  deploymentStage("publish Cloudflare");
   if (!directory)
     throw new PublicError("Usage: pnpm run deploy:cloudflare <dev|production> /absolute/private-directory");
   const commit = await deploymentRevision(target);
@@ -42,12 +44,13 @@ async function main() {
     await command({ argv: ["git", "archive", "--format=tar", "--output", join(exported, "source.tar"), commit] });
     await command({ argv: ["tar", "-xf", "source.tar"], cwd: exported });
     await command({ argv: ["pnpm", "install", "--frozen-lockfile", "--ignore-scripts"], cwd: exported });
-    console.log(
-      await command({
-        argv: ["bun", "--no-env-file", "deploy/first/cloudflare.ts", target, directory],
-        cwd: exported,
-      }),
-    );
+    const child = Bun.spawn(["bun", "--no-env-file", "deploy/first/cloudflare.ts", target, directory], {
+      cwd: exported,
+      stdin: "ignore",
+      stdout: "inherit",
+      stderr: "inherit",
+    });
+    process.exitCode = await child.exited;
   } finally {
     rmSync(exported, { recursive: true, force: true });
   }

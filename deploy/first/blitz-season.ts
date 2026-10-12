@@ -6,7 +6,7 @@ import { PublicError } from "./errors";
 /** The ledger owns season numbering; only an ended window permits another season. */
 export async function resolveBlitzSeason(provider: RpcProvider, ledger: string, start: number, end: number) {
   const head = await provider.getBlockWithTxHashes("latest");
-  if (!("block_number" in head)) throw new Error("Confirmed mainnet head required");
+  if (!("block_number" in head)) throw new PublicError("Confirmed mainnet head required");
   let matching: number | undefined;
   for (let id = 1; ; id++) {
     let fields: string[];

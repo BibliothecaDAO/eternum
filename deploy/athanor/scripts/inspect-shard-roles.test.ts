@@ -48,11 +48,12 @@ test("fresh initialization names the owner and both service accounts before they
   await expect(inspectGameRoles(fixture(false, {}, "0x0").input)).rejects.toThrow();
 });
 
-test("resume reads every handed-off role and does not require the revoked bootstrap device", async () => {
-  const sample = fixture(true, { owner: ["0x77"], launcher: ["0x88"], ledger_operator: ["0x99"] }, "0x0");
-  const roles = await inspectGameRoles(sample.input);
-  expect(roles.slice(1).map(({ address }) => address)).toEqual(["0x77", "0x88", "0x99"]);
+test("resume verifies the pinned roles without requiring the revoked bootstrap device", async () => {
+  const sample = fixture(true, {}, "0x0");
+  expect(await inspectGameRoles(sample.input)).toHaveLength(4);
   expect(sample.calls).not.toContain("is_device");
+  for (const role of ["owner", "launcher", "ledger_operator"])
+    await expect(inspectGameRoles(fixture(true, { [role]: ["0x99"] }).input)).rejects.toThrow("pinned identity");
 });
 
 test("resume retains immutable authentication, VRF and nonzero-role checks", async () => {

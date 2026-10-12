@@ -85,11 +85,11 @@ export async function deployAsset(
   const pin = { classHash, address, constructor: plan.constructor };
   const previous = store.read<typeof pin>(`asset-${plan.name}.json`);
   if (previous && JSON.stringify(previous) !== JSON.stringify(pin))
-    throw new Error("Saved deployment differs from artifacts or constructor; refusing another deployment");
+    throw new PublicError("Saved deployment differs from artifacts or constructor; refusing another deployment");
   store.write(`asset-${plan.name}.json`, pin);
   const existing = await classAt(account, address);
   if (existing) {
-    if (BigInt(existing) !== BigInt(classHash)) throw new Error("Deployed class differs");
+    if (BigInt(existing) !== BigInt(classHash)) throw new PublicError("Deployed class differs");
     return address;
   }
   try {
@@ -106,7 +106,7 @@ export async function deployAsset(
     unique: false,
   });
   await confirm(account, deployed.transaction_hash, output);
-  if (BigInt(deployed.address) !== BigInt(address)) throw new Error("Deployment address differs from fixed salt");
+  if (BigInt(deployed.address) !== BigInt(address)) throw new PublicError("Deployment address differs from fixed salt");
   return address;
 }
 export function existingAssets(target: Target): Partial<Assets> {
@@ -131,7 +131,7 @@ export async function verifyLedgerAccounts(provider: RpcProvider, ledger: string
       "latest",
     );
     if (result.length !== 1 || BigInt(result[0]!) !== 1n)
-      throw new Error("Existing ledger belongs to different accounts; restore its original private directory");
+      throw new PublicError("Existing ledger belongs to different accounts; restore its original private directory");
   }
 }
 export function publishAssets(target: Target, assets: Assets) {
@@ -145,7 +145,7 @@ export function publishAssets(target: Target, assets: Assets) {
     cosmetics: assets.cosmetics,
   })) {
     if (book[key] && BigInt(book[key]!) !== 0n && BigInt(book[key]!) !== BigInt(value))
-      throw new Error("Address book already names another deployment");
+      throw new PublicError("Address book already names another deployment");
     book[key] = value;
   }
   const temporary = `${path}.${process.pid}.tmp`;
@@ -258,7 +258,7 @@ async function metadataPresent(provider: RpcProvider, operation: Call, head: num
         JSON.stringify(event.keys.slice(1).map(BigInt).map(String)) !==
         JSON.stringify(args.slice(0, -1).map(BigInt).map(String))
       )
-        throw new Error("Existing collectible metadata differs");
+        throw new PublicError("Existing collectible metadata differs");
       found = true;
     }
     continuation_token = page.continuation_token;
@@ -283,7 +283,7 @@ async function setupPresent(provider: RpcProvider, operation: Call, head: number
       head,
     );
     if (entrypoint === "has_role") {
-      if (result.length !== 1 || ![0n, 1n].includes(BigInt(result[0]!))) throw new Error("Invalid role read");
+      if (result.length !== 1 || ![0n, 1n].includes(BigInt(result[0]!))) throw new PublicError("Invalid role read");
       return BigInt(result[0]!) === 1n;
     }
     if (entrypoint === "get_preset") {
@@ -292,7 +292,7 @@ async function setupPresent(provider: RpcProvider, operation: Call, head: number
         result.length !== economics.length ||
         result.slice(0, economics.length).some((felt, index) => BigInt(felt) !== BigInt(economics[index]!))
       )
-        throw new Error("Registered preset differs");
+        throw new PublicError("Registered preset differs");
       const chest = buildMysteryChestPreset();
       for (let index = 0; index < 5; index++) {
         for (const [entrypoint, expected] of [
@@ -307,7 +307,7 @@ async function setupPresent(provider: RpcProvider, operation: Call, head: number
             fields.length !== expected.length ||
             fields.some((felt, position) => BigInt(felt) !== BigInt(expected[position]!))
           )
-            throw new Error("Registered chest rewards differ");
+            throw new PublicError("Registered chest rewards differ");
         }
       }
     }
@@ -319,7 +319,7 @@ async function setupPresent(provider: RpcProvider, operation: Call, head: number
         BigInt(result[12]!) !== BigInt(args[2]!) ||
         BigInt(result[13]!) !== BigInt(args[3]!))
     )
-      throw new Error("Existing Blitz season differs");
+      throw new PublicError("Existing Blitz season differs");
     return true;
   } catch (error) {
     const reason = entrypoint === "get_preset" ? "Ledger: unknown preset" : "Ledger: unknown Blitz season";

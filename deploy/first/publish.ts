@@ -1,3 +1,4 @@
+import { PublicError, deploymentStage } from "./errors";
 import { join } from "node:path";
 import { setTimeout } from "node:timers/promises";
 import { l2EnvironmentProblem } from "../../apps/game/src/runtime/l2-environment";
@@ -19,9 +20,11 @@ async function workerReady(platform: Platform, worker: Worker, revision: string)
   return body.environment === platform.target.worker && body.version === version.id;
 }
 export async function deployWorkers(platform: Platform, revision: string) {
-  if (!platform.apply) throw new Error("Dry run cannot deploy Workers");
+  if (!platform.apply) throw new PublicError("Dry run cannot deploy Workers");
+  deploymentStage("build packages");
   await command({ argv: ["pnpm", "run", "build:packages"] });
   for (const worker of workers) {
+    deploymentStage(`publish ${worker.id}`);
     if ((await platform.deployedRevision(worker)) !== revision) {
       if (["identity", "launch"].includes(worker.id))
         await platform.wrangler(worker, ["d1", "migrations", "apply", "DB", "--remote"]);
@@ -33,12 +36,12 @@ export async function deployWorkers(platform: Platform, revision: string) {
       if (ready) break;
       if (attempt < 19) await setTimeout(3000);
     }
-    if (!ready) throw new Error("Worker version did not reach its public route");
+    if (!ready) throw new PublicError("Worker version did not reach its public route");
   }
 }
 export function clientEnvironment(platform: Platform, revision: string) {
   const problem = l2EnvironmentProblem(platform.target.worker, platform.inputs.rpc);
-  if (problem) throw new Error("Client chain and Alchemy RPC environment do not agree");
+  if (problem) throw new PublicError("Client chain and Alchemy RPC environment do not agree");
   return {
     VITE_PUBLIC_L2_RPC_URL: platform.inputs.rpc,
     VITE_PUBLIC_ENVIRONMENT: platform.target.worker,
@@ -58,7 +61,8 @@ if (!result.ok) process.exitCode = 1;
   });
 }
 export async function deployClient(platform: Platform, revision: string) {
-  if (!platform.apply) throw new Error("Dry run cannot deploy the client");
+  if (!platform.apply) throw new PublicError("Dry run cannot deploy the client");
+  deploymentStage("publish client");
   const env = clientEnvironment(platform, revision);
   await command({ argv: ["pnpm", "--dir", "apps/game", "test", "src/utils/chunk-load-recovery.test.ts", "src/pwa"] });
   await command({ argv: ["pnpm", "--dir", "apps/game", "verify:assets"] });

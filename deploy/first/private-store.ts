@@ -1,3 +1,4 @@
+import { PublicError } from "./errors";
 import {
   constants,
   closeSync,
@@ -22,13 +23,13 @@ export class PrivateStore {
     repository: string,
     readonly writable = false,
   ) {
-    if (!isAbsolute(directory)) throw new Error("Use an absolute private directory outside the repository");
+    if (!isAbsolute(directory)) throw new PublicError("Use an absolute private directory outside the repository");
     directory = normalize(directory).replace(/\/$/, "") || "/";
     const parent = realpathSync(dirname(directory));
     this.directory = join(parent, directory.split("/").at(-1)!);
     const inside = relative(realpathSync(repository), this.directory);
     if (!inside || (!inside.startsWith("../") && inside !== ".."))
-      throw new Error("Private directory cannot be in the repository");
+      throw new PublicError("Private directory cannot be in the repository");
     if (!existsSync(this.directory) && writable) mkdirSync(this.directory, { mode: 0o700 });
     if (existsSync(this.directory)) this.check(this.directory, 0o700, true);
   }
@@ -40,10 +41,10 @@ export class PrivateStore {
       (stat.mode & 0o777) !== mode ||
       stat.uid !== process.getuid?.()
     )
-      throw new Error("Private storage must be owner-owned, with directory 0700 and files 0600");
+      throw new PublicError("Private storage must be owner-owned, with directory 0700 and files 0600");
   }
   private path(name: string) {
-    if (!/^[a-zA-Z0-9_.-]+$/.test(name)) throw new Error("Invalid private record name");
+    if (!/^[a-zA-Z0-9_.-]+$/.test(name)) throw new PublicError("Invalid private record name");
     return join(this.directory, name);
   }
   read<T>(name: string): T | undefined {
@@ -58,7 +59,7 @@ export class PrivateStore {
     }
   }
   write(name: string, value: unknown) {
-    if (!this.writable) throw new Error("Dry run cannot write private storage");
+    if (!this.writable) throw new PublicError("Dry run cannot write private storage");
     const path = this.path(name);
     if (existsSync(path)) this.check(path, 0o600);
     const temporary = this.path(`${name}.${process.pid}.tmp`);
@@ -76,13 +77,13 @@ export class PrivateStore {
     renameSync(temporary, path);
   }
   lock(): () => void {
-    if (!this.writable) throw new Error("Dry run cannot lock private storage");
+    if (!this.writable) throw new PublicError("Dry run cannot lock private storage");
     const path = this.path("running.json");
     if (existsSync(path)) {
       const previous = this.read<{ pid: number }>("running.json")!;
       try {
         process.kill(previous.pid, 0);
-        throw new Error("Another deployment command is running");
+        throw new PublicError("Another deployment command is running");
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error;
       }

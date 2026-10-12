@@ -27,7 +27,7 @@ function releaseInputs(context: Season): ReleaseInputs | undefined {
   return existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : undefined;
 }
 async function service<T>(context: Season, path: string, method = "GET", body?: unknown): Promise<T> {
-  if (!context.apply && method !== "GET") throw new Error("Dry run cannot write a service");
+  if (!context.apply && method !== "GET") throw new PublicError("Dry run cannot write a service");
   const response = await fetch(`${context.target.origin}${path}`, {
     method,
     redirect: "error",
@@ -67,16 +67,17 @@ async function frontierGame(context: Season) {
   const candidates = (await games(context)).games.filter(
     (game) => game.mode === "frontier" && game.clock.start_main_at === expected,
   );
-  if (candidates.length > 1) throw new Error("Multiple Frontier games match the calendar");
+  if (candidates.length > 1) throw new PublicError("Multiple Frontier games match the calendar");
   return candidates[0]?.game_id;
 }
 async function shardConnection(context: Season) {
   const release = releaseInputs(context)!;
   const manifest = await nativeDocument(context.target);
-  if (!manifest?.shard?.chainId || !manifest.world?.address) throw new Error("Box native-world.json is unavailable");
+  if (!manifest?.shard?.chainId || !manifest.world?.address)
+    throw new PublicError("Box native-world.json is unavailable");
   const publicManifest = await jsonGet<{ chainId: string }>(`${release.public_herald_url}/manifest`);
   if (BigInt(manifest.shard.chainId) !== BigInt(publicManifest.chainId))
-    throw new Error("Herald and box name different chains");
+    throw new PublicError("Herald and box name different chains");
   return { rpcUrl: release.public_rpc_url, chainId: manifest.shard.chainId, gamesAddress: manifest.world.address };
 }
 async function funding(context: Season) {
@@ -105,7 +106,7 @@ async function funding(context: Season) {
     "latest",
   );
   if (!token || BigInt(token) !== BigInt(context.assets!.lords))
-    throw new Error("Ledger token differs from address book");
+    throw new PublicError("Ledger token differs from address book");
   try {
     const pool = await readFrontierFunding(
       context.provider!,
@@ -114,7 +115,7 @@ async function funding(context: Season) {
       native,
     );
     if (BigInt(pool.pool) !== BigInt(context.inputs!.amount) * WEI)
-      throw new Error("Existing Frontier deposit differs; never add a second deposit");
+      throw new PublicError("Existing Frontier deposit differs; never add a second deposit");
     return { gameId, shard, native, funded: true };
   } catch (error) {
     if (isContractRevert(error, "Ledger: unknown Frontier season")) return { gameId, shard, native, funded: false };
@@ -232,7 +233,7 @@ export function seasonSteps(context: Season): Step[] {
           return;
         }
         if ((await balance(account, context.assets!.lords, account.address)) < pool)
-          throw new Error("Deployer token balance is below the deposit");
+          throw new PublicError("Deployer token balance is below the deposit");
         await send(account, calls, context.store, `frontier-${state.gameId}`, context.output);
       },
     },
@@ -265,7 +266,7 @@ async function poolPublished(context: Season) {
   const budget = optionalRow(snapshot, "LordsBudget");
   if (!budget || BigInt(String(budget.pool)) === 0n) return false;
   if (BigInt(String(budget.pool)) !== BigInt(context.inputs!.amount))
-    throw new Error("Published pool differs from the deposit");
+    throw new PublicError("Published pool differs from the deposit");
   const slots = await service<{ slots: unknown[] }>(context, "/api/slots");
   if (!slots.slots.length) return false;
   await service(context, "/api/value/health");
@@ -273,7 +274,7 @@ async function poolPublished(context: Season) {
   return true;
 }
 async function waitFor<T>(context: Season, read: () => Promise<T | undefined | false>, message: string): Promise<T> {
-  if (!context.apply) throw new Error("Dry run cannot wait for a future write");
+  if (!context.apply) throw new PublicError("Dry run cannot wait for a future write");
   for (;;) {
     const value = await read();
     if (value) return value;

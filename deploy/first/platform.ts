@@ -22,11 +22,11 @@ export interface Secrets {
   vapidPrivate: string;
   guardian?: string;
 }
-export function generateSecrets(operator: string, guardianExists: boolean): Secrets {
+export function generateSecrets(guardianExists: boolean): Secrets {
   const vapid = createECDH("prime256v1");
   vapid.generateKeys();
   return {
-    operator: operator || randomBytes(32).toString("hex"),
+    operator: randomBytes(32).toString("hex"),
     auth: randomBytes(32).toString("hex"),
     vapidPublic: vapid.getPublicKey().toString("base64url"),
     vapidPrivate: vapid.getPrivateKey().toString("base64url"),
@@ -89,6 +89,8 @@ async function cloudflareResult<T>(response: Response, path: string): Promise<T>
       : [];
     throw new PublicError(
       `Cloudflare refused ${cloudflareFamily(path)}: ${response.status}${codes.length ? ` (${codes.join(", ")})` : ""}. Check that the token has this permission and that the product is enabled on the account.`,
+      response.status,
+      codes.join(",") || "cloudflare_refused",
     );
   }
   return body.result as T;
@@ -102,7 +104,7 @@ export class Platform {
   ) {}
   private account?: string;
   async cf<T>(path: string, method = "GET", body?: unknown): Promise<T> {
-    if (!this.apply && method !== "GET") throw new Error("Dry run cannot write Cloudflare");
+    if (!this.apply && method !== "GET") throw new PublicError("Dry run cannot write Cloudflare");
     const response = await fetch(`https://api.cloudflare.com/client/v4${path}`, {
       method,
       redirect: "error",
@@ -114,7 +116,7 @@ export class Platform {
   async accountId() {
     if (this.account) return this.account;
     const accounts = await this.cf<{ id: string }[]>("/accounts");
-    if (accounts.length !== 1) throw new Error("Scope the Cloudflare token to exactly one account");
+    if (accounts.length !== 1) throw new PublicError("Scope the Cloudflare token to exactly one account");
     return (this.account = accounts[0]!.id);
   }
   async deployedVersion(worker: Worker) {
@@ -168,7 +170,7 @@ export class Platform {
     return secrets.map((secret) => secret.name);
   }
   async wrangler(worker: Worker, args: string[], input?: string) {
-    if (!this.apply) throw new Error("Dry run cannot invoke wrangler");
+    if (!this.apply) throw new PublicError("Dry run cannot invoke wrangler");
     return command({
       argv: [
         "pnpm",
@@ -187,7 +189,7 @@ export class Platform {
     });
   }
   async bootstrapWorkers() {
-    if (!this.apply) throw new Error("Dry run cannot create Workers");
+    if (!this.apply) throw new PublicError("Dry run cannot create Workers");
     const existing = new Set((await this.scripts()).map((script) => script.id));
     // Empty entrypoints break the first-install binding cycle. No routes or secrets are attached here.
     const module = `import { WorkerEntrypoint } from 'cloudflare:workers';
@@ -226,7 +228,7 @@ export class RelayDiagnostics extends WorkerEntrypoint {}`;
     );
   }
   async installSecrets(worker: Worker, desired: Record<string, string>) {
-    if (!this.apply) throw new Error("Dry run cannot write Worker secrets");
+    if (!this.apply) throw new PublicError("Dry run cannot write Worker secrets");
     const existing = new Set(await this.secretNames(worker));
     const sent = this.store.read<Record<string, string>>(`uploaded-${worker.id}.json`) ?? {};
     const fingerprints = this.fingerprints(desired);
@@ -269,7 +271,7 @@ export class RelayDiagnostics extends WorkerEntrypoint {}`;
     if (!baseReady) return false;
     const hostname = new URL(this.target.origin).hostname;
     const domains = await this.cf<{ name: string }[]>(`/accounts/${id}/pages/projects/${this.target.pages}/domains`);
-    if (zones.length !== 1) throw new Error("Cloudflare zone unavailable");
+    if (zones.length !== 1) throw new PublicError("Cloudflare zone unavailable");
     const records = await this.cf<{ type: string; content: string }[]>(
       `/zones/${zones[0]!.id}/dns_records?name=${hostname}`,
     );
@@ -279,7 +281,7 @@ export class RelayDiagnostics extends WorkerEntrypoint {}`;
     );
   }
   async prepareResources() {
-    if (!this.apply) throw new Error("Dry run cannot create deployment resources");
+    if (!this.apply) throw new PublicError("Dry run cannot create deployment resources");
     const id = await this.accountId();
     const databases = await this.cf<{ name: string }[]>(`/accounts/${id}/d1/database`);
     for (const name of ["realms-identity", "realms-launch"])
@@ -296,7 +298,7 @@ export class RelayDiagnostics extends WorkerEntrypoint {}`;
     if (!domains.some((domain) => domain.name === hostname))
       await this.cf(`/accounts/${id}/pages/projects/${this.target.pages}/domains`, "POST", { name: hostname });
     const zones = await this.cf<{ id: string }[]>(`/zones?name=${this.target.zone}`);
-    if (zones.length !== 1) throw new Error("Cloudflare zone is not available to this token");
+    if (zones.length !== 1) throw new PublicError("Cloudflare zone is not available to this token");
     const records = await this.cf<{ type: string; content: string }[]>(
       `/zones/${zones[0]!.id}/dns_records?name=${hostname}`,
     );
@@ -308,6 +310,6 @@ export class RelayDiagnostics extends WorkerEntrypoint {}`;
         proxied: true,
       });
     else if (!records.some((record) => record.type === "CNAME" && record.content === `${this.target.pages}.pages.dev`))
-      throw new Error("Existing client DNS differs; it was not overwritten");
+      throw new PublicError("Existing client DNS differs; it was not overwritten");
   }
 }

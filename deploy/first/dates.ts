@@ -38,14 +38,14 @@ export function validateInputs(input: Inputs, target: Target) {
     rpc.password ||
     rpc.hash
   )
-    throw new Error("Use the Alchemy mainnet HTTPS endpoint");
-  if (!input.cloudflareToken || !input.resend) throw new Error("Cloudflare and Resend credentials are required");
+    throw new PublicError("Use the Alchemy mainnet HTTPS endpoint");
+  if (!input.cloudflareToken || !input.resend) throw new PublicError("Cloudflare and Resend credentials are required");
   if (!/^[1-9][0-9]*$/.test(input.amount) || BigInt(input.amount) * WEI >= 1n << 128n)
-    throw new Error("Deposit must be positive whole tokens fitting u128 wei");
+    throw new PublicError("Deposit must be positive whole tokens fitting u128 wei");
   validateDates(input);
   if (
     target.coldAdmin &&
     (!input.admin || !input.treasury || BigInt(input.admin) <= 0n || BigInt(input.treasury) <= 0n)
   )
-    throw new Error("Production needs the public cold admin and treasury addresses, never their keys");
+    throw new PublicError("Production needs the public cold admin and treasury addresses, never their keys");
 }

@@ -52,11 +52,20 @@ def main(environment, directory, report_stage=ignore_stage):
         differences = release_differences(release, *deployed_facts(directory / "data"), inputs["presets"])
         if not differences and status["status"] == "pending":
             activate(inputs, directory / "data", report_stage)
+        if not differences:
+            remove_unused_checkouts()
     if differences:
         print(f"{environment} does not run commit {release['commit']}:", *differences, sep="\n  ", file=sys.stderr)
         return 1
     print(f"{environment} runs commit {release['commit']}")
     return 0
+
+
+def remove_unused_checkouts():
+    for checkout in (Path.home() / "cairo-suite").glob("first-release-*"):
+        if (re.fullmatch(r"first-release-[0-9a-f]{40}", checkout.name)
+                and checkout.is_dir() and not checkout.is_symlink() and checkout.resolve() != shard.ROOT.resolve()):
+            shutil.rmtree(checkout)
 
 
 def chain_identity(directory, environment):

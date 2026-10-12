@@ -1,6 +1,9 @@
 import importlib.util
 from pathlib import Path
 import unittest
+import json
+import tempfile
+from contextlib import nullcontext
 from unittest.mock import patch
 
 import teardown
@@ -21,3 +24,24 @@ class TeardownBoundaryTest(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "only for dev"):
                     teardown.run(environment)
                 mkdir.assert_not_called()
+
+    def test_directory_outage_does_not_keep_local_state(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            run = root / "run"
+            run.mkdir()
+            (run / "state").write_text("disposable")
+            settings = root / "deploy/first"
+            settings.mkdir(parents=True)
+            (settings / "environments.json").write_text(json.dumps({"dev": {"runDirectory": str(run), "environment": "dev"}}))
+            stages = []
+            def unavailable(*args):
+                self.assertFalse(run.exists())
+                raise RuntimeError("identity unavailable")
+            with patch.object(teardown.shard, "ROOT", root), patch.object(teardown.deploy, "load_inputs", return_value={}), \
+                    patch.object(teardown.shard, "isolated_stack_lock", return_value=nullcontext()), \
+                    patch.object(teardown, "directory_status", side_effect=unavailable), \
+                    patch.object(teardown.Path, "mkdir"):
+                with self.assertRaisesRegex(RuntimeError, "identity unavailable"):
+                    teardown.teardown("dev", stages.append)
+            self.assertEqual(stages[-2:], ["remove run directory", "retire directory row"])

@@ -1,3 +1,4 @@
+import { PublicError } from "./errors";
 import { Account, CallData, ec, hash, RpcProvider, uint256, type Call } from "starknet";
 import { ACCOUNT_CLASS, STRK, WEI } from "./settings";
 import type { PrivateStore } from "./private-store";
@@ -23,7 +24,7 @@ export function isContractRevert(error: unknown, reason: string): boolean {
 export async function classAt(provider: RpcProvider, address: string) {
   try {
     const value = await provider.getClassHashAt(address, "latest");
-    if (BigInt(value) <= 0n) throw new Error("Invalid class hash");
+    if (BigInt(value) <= 0n) throw new PublicError("Invalid class hash");
     return value;
   } catch (error) {
     if (isMissing(error, 20)) return undefined;
@@ -35,14 +36,14 @@ export async function balance(provider: RpcProvider, token: string, address: str
     { contractAddress: token, entrypoint: "balance_of", calldata: [address] },
     "latest",
   );
-  if (row.length !== 2) throw new Error("Invalid token balance");
+  if (row.length !== 2) throw new PublicError("Invalid token balance");
   return BigInt(row[0]!) + (BigInt(row[1]!) << 128n);
 }
 export async function confirm(provider: RpcProvider, transactionHash: string, output: (line: string) => void) {
   output("Waiting for transaction confirmation.");
   const receipt = await provider.waitForTransaction(transactionHash);
   if (!("execution_status" in receipt) || receipt.execution_status !== "SUCCEEDED")
-    throw new Error("Transaction did not succeed");
+    throw new PublicError("Transaction did not succeed");
 }
 const TRANSACTION_HASH_NOT_FOUND = 29;
 async function savedReceipt(account: Account, transactionHash: string) {
@@ -55,7 +56,7 @@ async function savedReceipt(account: Account, transactionHash: string) {
     try {
       const receipt = await account.getTransactionReceipt(transactionHash);
       if (!("finality_status" in receipt) || !["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(receipt.finality_status))
-        throw new Error("Saved transaction is still pending");
+        throw new PublicError("Saved transaction is still pending");
       return receipt;
     } catch (readError) {
       if (!isMissing(readError, TRANSACTION_HASH_NOT_FOUND)) throw readError;
@@ -78,9 +79,9 @@ export async function send(
     output("Waiting for transaction confirmation.");
     const receipt = await savedReceipt(account, previous.hash);
     if (receipt) {
-      if (!("execution_status" in receipt)) throw new Error("Saved transaction is still pending");
+      if (!("execution_status" in receipt)) throw new PublicError("Saved transaction is still pending");
       if (receipt.execution_status === "SUCCEEDED") return;
-      if (receipt.execution_status !== "REVERTED") throw new Error("Saved transaction is still pending");
+      if (receipt.execution_status !== "REVERTED") throw new PublicError("Saved transaction is still pending");
       nonce = String(await account.getNonce());
     }
   }
@@ -102,7 +103,7 @@ export async function prepareAccounts(
   createAccount: (address: string, key: string) => Account = (address, signer) =>
     new Account({ provider, address, signer }),
 ) {
-  if (BigInt(await provider.getChainId()) !== 0x534e5f4d41494en) throw new Error("Starknet mainnet required");
+  if (BigInt(await provider.getChainId()) !== 0x534e5f4d41494en) throw new PublicError("Starknet mainnet required");
   await provider.getClassByHash(ACCOUNT_CLASS);
   const accounts = Object.fromEntries(
     (["deployer", "relay", "monitor"] as const).map((role) => {
@@ -121,12 +122,14 @@ export async function prepareAccounts(
     const account = accounts[role];
     const deployed = await classAt(provider, account.address);
     if (deployed) {
-      if (BigInt(deployed) !== BigInt(ACCOUNT_CLASS)) throw new Error("Account class differs from the saved identity");
+      if (BigInt(deployed) !== BigInt(ACCOUNT_CLASS))
+        throw new PublicError("Account class differs from the saved identity");
       const [key] = await provider.callContract(
         { contractAddress: account.address, entrypoint: "get_public_key", calldata: [] },
         "latest",
       );
-      if (!key || BigInt(key) !== BigInt(accountIdentity(keys[role]).publicKey)) throw new Error("Account key differs");
+      if (!key || BigInt(key) !== BigInt(accountIdentity(keys[role]).publicKey))
+        throw new PublicError("Account key differs");
       continue;
     }
     if (role !== "deployer") {
