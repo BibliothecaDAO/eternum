@@ -138,6 +138,20 @@ const openSheets = (): string[] => (window.history.state as SheetHistoryState)?.
 const mounted = new Set<string>();
 
 /**
+ * Sheets whose step back is under way. History moves a moment after it is asked to, so until it has, a second
+ * unmount of the same sheet (React's dev double mount, closed in the tick it opened) would step back again, off the
+ * page.
+ */
+const steppingBack = new Set<string>();
+
+const stepBackOffEntry = (id: string) => {
+  if (mounted.has(id) || steppingBack.has(id) || openSheets().at(-1) !== id) return;
+  steppingBack.add(id);
+  window.addEventListener("popstate", () => steppingBack.delete(id), { once: true });
+  window.history.back();
+};
+
+/**
  * The system back closes the sheet, not the page under it. Opening pushes a history entry naming the sheet (on top of
  * the router's own state, so its index is unchanged); a back that lands on an entry without that name closes it. A sheet
  * closed any other way steps back off its own entry, so the back button never has to be pressed twice.
@@ -158,9 +172,7 @@ const useSystemBackCloses = (close: () => void) => {
     return () => {
       mounted.delete(id);
       window.removeEventListener("popstate", onPop);
-      setTimeout(() => {
-        if (!mounted.has(id) && openSheets().at(-1) === id) window.history.back();
-      });
+      setTimeout(() => stepBackOffEntry(id));
     };
   }, [id, closeRef]);
 };

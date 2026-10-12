@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "Closing a card keeps your place",
+    description:
+      "Fixed closing a card on the map: the camera no longer jumps back to your realm and your selected army stays selected. A card closed the moment it opened can no longer step the browser back off the game.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
     title: "Every icon names itself",
     description:
       "Added one tooltip to Frontier: hover any chip or icon on desktop, or press and hold it on a phone, and it says its name. The four stores say what they hold of their limit, their rate an hour and when they are full.",

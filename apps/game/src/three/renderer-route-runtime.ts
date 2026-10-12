@@ -30,8 +30,16 @@ export function resolveRendererRouteSceneFromHref(input: { href: string }): Scen
 
 class GameRendererRouteRuntime implements RendererRouteRuntime {
   private isListening = false;
+  private syncedHref: string | null = null;
   private readonly handleRouteEvent = () => {
     this.syncFromLocation();
+  };
+  /**
+   * A history step is a route change only when it lands on another address. A step between entries of one address
+   * (a sheet closing steps back off its own entry) leaves the scene, its camera and the selection where they are.
+   */
+  private readonly handleHistoryStep = () => {
+    if (window.location.href !== this.syncedHref) this.syncFromLocation();
   };
 
   constructor(private readonly input: CreateRendererRouteRuntimeInput) {}
@@ -42,11 +50,12 @@ class GameRendererRouteRuntime implements RendererRouteRuntime {
     }
 
     window.addEventListener("urlChanged", this.handleRouteEvent);
-    window.addEventListener("popstate", this.handleRouteEvent);
+    window.addEventListener("popstate", this.handleHistoryStep);
     this.isListening = true;
   }
 
   public syncFromLocation(href: string = window.location.href): void {
+    this.syncedHref = href;
     const targetScene = resolveRendererRouteSceneFromHref({
       href,
     });
@@ -67,7 +76,7 @@ class GameRendererRouteRuntime implements RendererRouteRuntime {
     }
 
     window.removeEventListener("urlChanged", this.handleRouteEvent);
-    window.removeEventListener("popstate", this.handleRouteEvent);
+    window.removeEventListener("popstate", this.handleHistoryStep);
     this.isListening = false;
   }
 

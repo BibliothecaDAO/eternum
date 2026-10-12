@@ -1,4 +1,4 @@
-import { act } from "react";
+import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -254,6 +254,28 @@ describe("Sheet", () => {
       window.dispatchEvent(new PopStateEvent("popstate", { state: null }));
     });
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("a Sheet closed in the tick it opened", () => {
+  it("steps back off its history entry once, even under React's double mount", () => {
+    vi.useFakeTimers();
+    const back = vi.spyOn(window.history, "back").mockImplementation(() => {});
+    act(() =>
+      root.render(
+        <StrictMode>
+          <Sheet label="Deploy" onClose={() => {}}>
+            <p>rows</p>
+          </Sheet>
+        </StrictMode>,
+      ),
+    );
+    act(() => root.render(<StrictMode>{null}</StrictMode>));
+    vi.runAllTimers();
+    expect(back).toHaveBeenCalledTimes(1);
+    back.mockRestore();
+    vi.useRealTimers();
+    window.history.replaceState(null, "");
   });
 });
 

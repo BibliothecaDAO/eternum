@@ -90,4 +90,28 @@ describe("renderer route runtime", () => {
 
     expect(switchScene).toHaveBeenCalledWith(SceneName.Hexception);
   });
+
+  it("leaves the camera alone on a history step between entries of one address, as a sheet's close makes", () => {
+    const moveCameraForScene = vi.fn();
+    const runtime = createRendererRouteRuntime({
+      fadeIn: vi.fn(),
+      getCurrentScene: () => SceneName.WorldMap,
+      markLabelsDirty: vi.fn(),
+      moveCameraForScene,
+      switchScene: vi.fn(),
+    });
+    runtime.start();
+    runtime.syncFromLocation();
+    expect(moveCameraForScene).toHaveBeenCalledTimes(1);
+
+    window.history.pushState({ kitSheets: ["sheet"] }, "");
+    window.history.replaceState({}, "");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    expect(moveCameraForScene).toHaveBeenCalledTimes(1);
+
+    window.history.replaceState({}, "", "/g/0xa1/3/map?col=4&row=5");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    expect(moveCameraForScene).toHaveBeenCalledTimes(2);
+    runtime.dispose();
+  });
 });
