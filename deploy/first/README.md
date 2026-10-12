@@ -1,4 +1,4 @@
-# First deployment
+# Deployment
 
 From the repository root, on the owner's machine:
 
@@ -52,9 +52,8 @@ credentials or move a live shard onto an unreviewed endpoint. On a fresh host, r
 `OPERATOR` defaults to that sudo user. This infrastructure prerequisite is separate from the five mainnet/shard keys.
 
 The box needs the shared compiler at `~/cairo-suite/tool-data/scarb-install/2.13.1/bin/scarb`, git access to this
-repository, GitHub CLI for production validation, Docker Buildx and Compose. Contract builds run there under
-`~/cairo-suite/.lock`, cores 8–11. They do not run on the owner's laptop. No mainnet private key or Alchemy URL goes to
-that host.
+repository, Docker Buildx and Compose. Contract builds run there under `~/cairo-suite/.lock`, cores 8–11. They do not
+run on the owner's laptop. No mainnet private key or Alchemy URL goes to that host.
 
 First deployment and routine updates use this same command from a clean checkout. Its HEAD is the only deployment
 revision: dev requires it pushed to any origin branch; production requires it on `origin/next` with green push

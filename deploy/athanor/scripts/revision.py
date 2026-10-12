@@ -1,9 +1,9 @@
 """One deployment revision: the clean checkout, pushed to origin; production also passed landing validation."""
 import json
-import os
 from pathlib import Path
 import subprocess
 import sys
+from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -29,12 +29,27 @@ def deployment_revision(environment):
     if environment == 'production':
         if 'refs/remotes/origin/next' not in refs.splitlines():
             raise RevisionRefused('Production requires this checkout commit on origin/next.')
-        repository = read('gh', 'repo', 'view', '--json', 'nameWithOwner', '--jq', '.nameWithOwner')
-        gate = subprocess.run(['bash', '.github/scripts/landing-run.sh'], cwd=ROOT,
-                              env={**os.environ, 'SHA': revision, 'REPO': repository}, capture_output=True)
-        if gate.returncode:
-            raise RevisionRefused('Production requires a successful validation push run on next for this exact commit.')
+        require_landing_run(revision)
     return revision
+
+
+def require_landing_run(revision):
+    url = ("https://api.github.com/repos/BibliothecaDAO/eternum/actions/workflows/validation.yml/runs"
+           f"?event=push&branch=next&head_sha={revision}&per_page=100")
+    try:
+        with urlopen(Request(url, headers={"User-Agent": "realms-deployment/1"}), timeout=30) as response:
+            runs = json.load(response)["workflow_runs"]
+    except (OSError, ValueError, KeyError):
+        raise RevisionRefused("Production validation status is unavailable; nothing was deployed.") from None
+    landing = [run for run in runs if run["head_sha"] == revision and run["event"] == "push"
+               and run["head_branch"] == "next"]
+    if any(run["conclusion"] == "success" for run in landing):
+        return
+    cancelled = next((run for run in landing if run["conclusion"] == "cancelled"), None)
+    if cancelled:
+        raise RevisionRefused(f"Production validation was cancelled; rerun gh run rerun {int(cancelled['id'])} "
+                              "after newer merges finish, or deploy the newest green next commit.")
+    raise RevisionRefused("Production requires a successful validation push run on next for this exact commit.")
 
 
 if __name__ == '__main__':
