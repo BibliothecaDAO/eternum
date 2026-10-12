@@ -681,6 +681,21 @@ describe("Madara harness reporting", () => {
     expect(chainFailure.passed).toBe(false);
   });
 
+  it("requires a completed action from every player even when the issued-action threshold is zero", () => {
+    const action = { botId: 1, gameId: 1, kind: "move", outcome: "completed", rpc: createRpcMetrics() };
+    const run = (actions: unknown[]) =>
+      analyzeHarnessResult({
+        accounts: [{ botId: 1 }, { botId: 2 }],
+        gates: { minimumThresholdActions: 0, evidence: {} },
+        setupTransactions: [],
+        workload: { actions, profile: "cadence", overheadRpc: createRpcMetrics() },
+      } as never);
+    expect(run([]).checks.everyPlayerActed).toBe(false);
+    expect(run([action]).passed).toBe(false);
+    expect(run([action, { ...action, botId: 2, outcome: "rejected" }]).checks.everyPlayerActed).toBe(false);
+    expect(run([action, { ...action, botId: 2 }]).passed).toBe(true);
+  });
+
   it("asserts the action threshold over every worker of a roster run and reports latency against its targets", () => {
     const worker = (
       thresholdEligibleActions: number,

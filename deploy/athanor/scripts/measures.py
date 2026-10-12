@@ -67,7 +67,13 @@ def phases(group):
 def admission_split(directory):
     """Completed actions' admission-to-visible latency, overall, in bursts (many submissions around it) and in calm."""
     actions = list(reported_actions(directory))
-    done = [a for a in actions if a.get("outcome") == "completed" and a.get("visibleAt") and a.get("submittedAt")]
+    done = [a for a in actions if a.get("outcome") == "completed"]
+    for action in done:
+        required = ("submitStartedAt", "submittedAt", "visibleAt", "submitMs", "admissionToVisibleMs")
+        missing = [field for field in required if field not in action or action[field] is None]
+        if missing:
+            raise ValueError(f"Completed action bot={action.get('botId')} kind={action.get('kind')} "
+                             f"is missing figures: {', '.join(missing)}")
     starts = [iso_ms(a["submitStartedAt"]) for a in done]
 
     def neighbours(action):

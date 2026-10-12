@@ -277,6 +277,9 @@ export function analyzeHarnessResult(input: HarnessReportInput) {
       : {
           thresholdEligibleActions: thresholdEligibleActions >= input.gates.minimumThresholdActions,
         }),
+    everyPlayerActed:
+      completedActions.length > 0 &&
+      input.accounts.every(({ botId }) => completedActions.some((action) => action.botId === botId)),
     setup: setupFailures.length === 0,
     ...(input.workload.frontier && input.functional ? frontierChecks(input.workload.frontier, actions) : {}),
     layerRoundTrips: input.layerRoundTrips?.every((result) => result.status === "passed") ?? true,

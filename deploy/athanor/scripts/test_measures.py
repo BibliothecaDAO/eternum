@@ -42,6 +42,17 @@ class MeasuresTests(unittest.TestCase):
         self.assertEqual(split["all"]["afterRecordedMs"][95], 250)
         self.assertEqual(split["all"]["admissionToVisibleMs"][95], 350)
 
+    def test_completed_actions_name_every_missing_figure(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            report = Path(temporary) / "report.json"
+            report.write_text(json.dumps({"workload": {"actions": [{
+                "outcome": "completed", "botId": 7, "kind": "Explore",
+                "submitStartedAt": "2026-09-25T10:00:00.000Z", "submitMs": 100,
+            }]}}))
+            with self.assertRaisesRegex(ValueError,
+                    "bot=7 kind=Explore is missing figures: submittedAt, visibleAt, admissionToVisibleMs"):
+                measures.admission_split(temporary)
+
     def test_node_memory_is_read_from_the_containers_own_cgroup(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
