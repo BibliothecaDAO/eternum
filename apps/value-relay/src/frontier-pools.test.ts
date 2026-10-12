@@ -5,7 +5,8 @@ import { ledgerAbi } from "../../../packages/value-ledger/test-support/ledger-ab
 import { publishFrontierPools } from "./frontier-pools";
 
 const rpc = vi.hoisted(() => ({ call: vi.fn(), ledger: vi.fn(), execute: vi.fn(), receipt: vi.fn(), now: 50 }));
-vi.mock("../../../packages/value-ledger/src/rpc", () => ({
+vi.mock("../../../packages/value-ledger/src/rpc", async (original) => ({
+  ...(await original<typeof import("../../../packages/value-ledger/src/rpc")>()),
   rpcAt: (url: string) => ({
     getChainId: async () => "0x1",
     getBlock: async (height: number | string) => ({

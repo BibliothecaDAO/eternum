@@ -4,8 +4,8 @@ import { ShardReader } from "./shard-rpc";
 import { frontierReceiptBindings } from "./frontier-binding";
 
 const rpc = vi.hoisted(() => ({ blockHash: "0xa", shardCall: vi.fn(), events: vi.fn(), ledgerCall: vi.fn() }));
-vi.mock("@realms-world/value-ledger", async (original) => ({
-  ...(await original<typeof import("@realms-world/value-ledger")>()),
+vi.mock("../../../packages/value-ledger/src/rpc", async (original) => ({
+  ...(await original<typeof import("../../../packages/value-ledger/src/rpc")>()),
   rpcAt: (url: string) =>
     url.includes("shard")
       ? {
@@ -112,7 +112,7 @@ it("reads funding by shard game id without history scans or Herald calendar read
 it("refuses different funding and the exclusive receipt deadline", async () => {
   rpc.shardCall.mockResolvedValue(["0x5", "5", "0", "1", "0", "0", "11", "110", "0", "0x99"]);
   await expect(Effect.runPromise(bind().frontierSeason(7, 50))).rejects.toMatchObject({
-    operation: "resolve_frontier_funding",
+    operation: "frontier_funding_differs_from_game",
   });
   rpc.shardCall.mockResolvedValue(["0x5", "5", "0", "1", "0", "0", "10", "110", "0", "0x98"]);
   await expect(Effect.runPromise(bind().frontierSeason(7, 50))).rejects.toThrow();
@@ -196,13 +196,13 @@ it("keeps a funding mismatch unavailable when the snapshot pool differs", async 
     ),
   );
   await expect(Effect.runPromise(bind().frontierSeason(7, 50))).rejects.toMatchObject({
-    operation: "resolve_frontier_funding",
+    operation: "frontier_pool_differs_from_ledger",
   });
 });
 
 it("refuses a different whole-bag end in the shared relay and monitor receipt binding", async () => {
   rpc.shardCall.mockResolvedValue(["0x5", "5", "0", "1", "0", "0", "10", "210", "0", "0x99"]);
   await expect(Effect.runPromise(bind().frontierSeason(7, 50))).rejects.toMatchObject({
-    operation: "resolve_frontier_funding",
+    operation: "frontier_funding_differs_from_game",
   });
 });

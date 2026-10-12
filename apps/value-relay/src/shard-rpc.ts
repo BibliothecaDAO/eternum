@@ -1,7 +1,7 @@
-import { normalizeStarknetAddress, isSameStarknetAddress } from "@realms-world/identity";
-import { RelayFailure } from "./ports";
+import { normalizeStarknetAddress, isSameStarknetAddress } from "../../../packages/identity/src/address";
+import { RelayFailure } from "./failure";
 import { hash, shortString, type RpcProvider } from "starknet";
-import { rpcAt } from "@realms-world/value-ledger";
+import { rpcAt } from "../../../packages/value-ledger/src/rpc";
 
 export interface ShardConnection {
   rpcUrl: string;

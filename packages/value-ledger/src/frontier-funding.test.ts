@@ -57,8 +57,8 @@ it.each([{ start: 11 }, { end: 210 }, { seed: "0x98" }, { dayUnit: 10 }, { claim
   },
 );
 it("refuses an unfunded season and unavailable reads instead of assuming funding", async () => {
-  call.mockRejectedValueOnce(new Error("Ledger: unknown Frontier season"));
-  await expect(read()).rejects.toThrow("unknown Frontier season");
+  call.mockRejectedValueOnce({ code: 40, data: { revert_error: "Ledger: unknown Frontier season" } });
+  await expect(read()).rejects.toThrow("frontier_funding_missing");
   call.mockRejectedValueOnce(new Error("RPC unavailable"));
   await expect(read()).rejects.toThrow("RPC unavailable");
 });

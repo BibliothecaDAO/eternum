@@ -15,8 +15,8 @@ const rpc = vi.hoisted(() => ({
   execute: vi.fn(),
   wait: vi.fn(),
 }));
-vi.mock("@realms-world/value-ledger", async (original) => ({
-  ...(await original<typeof import("@realms-world/value-ledger")>()),
+vi.mock("../../../packages/value-ledger/src/rpc", async (original) => ({
+  ...(await original<typeof import("../../../packages/value-ledger/src/rpc")>()),
   rpcAt: () => ({
     getChainId: rpc.chain,
     getBlock: rpc.block,

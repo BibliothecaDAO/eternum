@@ -50,7 +50,7 @@ test("a succeeded test-token mint for Frontier game A does not suppress game B's
     dayUnit: 86400,
     claimWindow: 86400,
   });
-  spyOn(funding, "readFrontierFunding").mockRejectedValue({ code: 40, message: "Ledger: unknown Frontier season" });
+  spyOn(funding, "readFrontierFunding").mockRejectedValue(new Error("frontier_funding_missing"));
   globalThis.fetch = (async (url, _init) => {
     const path = new URL(String(url)).pathname;
     if (path === "/api/factory/calendar") return Response.json({ phases: [{ phase: "frontier", startsAt: start }] });

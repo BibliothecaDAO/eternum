@@ -1,3 +1,4 @@
+import { FRONTIER_DAY_UNIT_SECONDS } from "./clock";
 import type { NativePreset } from "../common/native-preset";
 import {
   nativeResearchConstants as research,
@@ -61,7 +62,7 @@ export const frontierPreset: NativePreset = {
   ).reduce((mask, command) => mask | BigInt(nativeCommandBits[command]), 0n),
   spacing: 100,
   // Four-hour units: days of 8 to 24 hours, bags of 80 hours, a season of 21 bags in ten weeks.
-  dayUnitSeconds: 14400,
+  dayUnitSeconds: FRONTIER_DAY_UNIT_SECONDS,
   board: {
     demolitionRefundBps: 5000,
     workshopRate: 0.056,

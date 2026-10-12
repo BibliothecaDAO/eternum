@@ -1,9 +1,10 @@
 import { accountJoinErrors } from "@bibliothecadao/eternum/realms-account";
-import { Data, Effect } from "effect";
+import { Effect } from "effect";
+import { RelayFailure } from "./failure";
+export { RelayFailure } from "./failure";
 import { serviceError } from "@realms-world/value-ledger";
 import type { LedgerPayDecision } from "@realms-world/identity";
 
-export class RelayFailure extends Data.TaggedError("RelayFailure")<{ operation: string }> {}
 export type RelayEffect<A> = Effect.Effect<A, RelayFailure>;
 export interface Withdrawal {
   blockNumber?: number;
@@ -182,6 +183,12 @@ export const relayOperation = <A>(operation: string, run: () => Promise<A>): Rel
   });
 
 export const relayServiceErrors = [
+  "frontier_funding_missing",
+  "frontier_funding_differs_from_game",
+  "invalid_frontier_deposit",
+  "frontier_snapshot_behind_directory",
+  "frontier_pool_confirmation_pending",
+  "frontier_pool_differs_from_ledger",
   "relay_account_join_failed",
   ...accountJoinErrors,
   "directory_shard_manifest_fetch_failed",

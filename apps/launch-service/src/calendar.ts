@@ -1,5 +1,4 @@
-import { frontierBaseConfig } from "../../../config/source/frontier/base";
-import { frontierPreset } from "../../../config/source/frontier/native";
+import { FRONTIER_ARMIES_TICK_SECONDS, FRONTIER_DAY_UNIT_SECONDS } from "../../../config/source/frontier/clock";
 import { seasonSeconds } from "../../../packages/core/src/utils/days";
 
 /**
@@ -24,8 +23,8 @@ export class CalendarConflict extends Error {}
 
 export const PHASE_END_ERROR = "A phase must end in the future";
 
-const FRONTIER_BAG_MS = seasonSeconds(1, frontierPreset.dayUnitSeconds) * 1_000;
-const FRONTIER_TICK_MS = (frontierBaseConfig.tick?.armiesTickIntervalInSeconds ?? 0) * 1_000;
+const FRONTIER_BAG_MS = seasonSeconds(1, FRONTIER_DAY_UNIT_SECONDS) * 1_000;
+const FRONTIER_TICK_MS = FRONTIER_ARMIES_TICK_SECONDS * 1_000;
 
 /** A Frontier season starts on an armies tick and contains a positive whole number of bags. */
 export const assertFrontierSeason = (startsAt: number, endsAt: number) => {

@@ -36,3 +36,19 @@ it("keeps an undeclared join's fixed fallback across both Effect boundaries", as
   );
   expect(failure.operation).toBe("relay_account_join_failed");
 });
+
+it.each([
+  "frontier_funding_missing",
+  "frontier_funding_differs_from_game",
+  "invalid_frontier_deposit",
+  "frontier_snapshot_behind_directory",
+  "frontier_pool_confirmation_pending",
+  "frontier_pool_differs_from_ledger",
+])("exposes the fixed pool failure %s in the health observation", async (code) => {
+  const failure = await Effect.runPromise(
+    relayOperation("publish Frontier pools", async () => {
+      throw new Error(code);
+    }).pipe(Effect.flip),
+  );
+  expect(failure.operation).toBe(code);
+});

@@ -151,12 +151,12 @@ test("a conflicting timetable slot cannot stop a due roster from freezing", asyn
 });
 
 const enteredWindow = {
-  startsAt: "2026-10-12T07:00:00.000Z",
-  endsAt: "2026-10-18T23:00:00.000Z",
+  startsAt: day(0, 7).toISOString(),
+  endsAt: frontierSeasonEnd(day(0, 7), 2),
 };
 
 test("opening both phases after their start schedules Frontier and the next Blitz slot on the next tick", async () => {
-  const now = Date.parse("2026-10-12T18:00:00Z");
+  const now = day(0, 18).getTime();
   vi.spyOn(Date, "now").mockReturnValue(now);
   const { calendar, launches, slots, tick } = stores();
   for (const phase of ["frontier", "blitz"] as const) {
@@ -167,7 +167,9 @@ test("opening both phases after their start schedules Frontier and the next Blit
   expect(await launches.list("madara.frontier")).toMatchObject([
     { request: { gameStartTime: enteredWindow.startsAt, durationSeconds: 160 * 3600 } },
   ]);
-  expect(await slots.list()).toMatchObject([{ name: "blitz-20261012-2000", closesAt: "2026-10-12T19:55:00.000Z" }]);
+  expect(await slots.list()).toMatchObject([
+    { name: blitzSlotName(day(0, 20)), closesAt: day(0, 19, 55).toISOString() },
+  ]);
 });
 
 test.each([
@@ -185,10 +187,10 @@ test.each([
 
 test.each(["frontier", "blitz"] as const)("a late-opened %s phase still keeps its running start", async (phase) => {
   const { calendar } = stores();
-  const now = Date.parse("2026-10-12T18:00:00Z");
+  const now = day(0, 18).getTime();
   const entered = { phase, ...enteredWindow };
   await calendar.set(entered, now);
-  await expect(calendar.set({ ...entered, startsAt: "2026-10-12T08:00:00.000Z" }, now)).rejects.toThrow(
+  await expect(calendar.set({ ...entered, startsAt: day(0, 8).toISOString() }, now)).rejects.toThrow(
     "A running phase keeps its start",
   );
   expect(await calendar.list()).toEqual([entered]);
@@ -196,10 +198,10 @@ test.each(["frontier", "blitz"] as const)("a late-opened %s phase still keeps it
 
 test("a late-opened Frontier phase still keeps its running end", async () => {
   const { calendar } = stores();
-  const now = Date.parse("2026-10-12T18:00:00Z");
+  const now = day(0, 18).getTime();
   const entered = { phase: "frontier" as const, ...enteredWindow };
   await calendar.set(entered, now);
-  await expect(calendar.set({ ...entered, endsAt: "2026-10-22T07:00:00.000Z" }, now)).rejects.toThrow(
+  await expect(calendar.set({ ...entered, endsAt: frontierSeasonEnd(day(0, 7), 3) }, now)).rejects.toThrow(
     "A started Frontier season's end is fixed",
   );
   expect(await calendar.list()).toEqual([entered]);
