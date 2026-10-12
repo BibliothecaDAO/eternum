@@ -161,6 +161,23 @@ class ActivationTest(unittest.TestCase):
             self.assertEqual(json.loads((root / "release.json").read_text()), built)
             self.assertIn("SHARD_INIT_IMAGE=sha256:2", (root / "images.env").read_text())
 
+    def test_unprintable_refusal_keeps_its_route_and_full_saved_reason(self):
+        failure = {"category": "refused", "reason": "army must be at its realm's spire", "transactionHash": "0x123"}
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            with (
+                patch.object(deploy, "gameplay_check_identity", return_value="test-identity"),
+                patch.object(deploy, "run_self_check", return_value={
+                    "passed": False, "firstFailedRoute": "Move", "failure": failure,
+                }),
+                patch.object(deploy, "directory_status", return_value={"status": "pending"}) as directory,
+            ):
+                with self.assertRaises(deploy.SelfCheckFailed) as caught:
+                    deploy.verify_and_activate({}, data)
+                self.assertEqual(str(caught.exception), "self-check failed at Move: other; directory status unchanged")
+                directory.assert_called_once_with({}, "pending")
+            self.assertEqual(json.loads((data / "self-check.json").read_text())["failure"], failure)
+
     def test_receipt_failure_is_saved_before_the_public_refusal_is_raised(self):
         failure = {"category": "refused", "reason": "insufficient stamina, you need: 30, and have: 20", "transactionHash": "0x123"}
         with tempfile.TemporaryDirectory() as temporary:
@@ -564,4 +581,3 @@ class RestartUnfinishedTest(unittest.TestCase):
                 self.assertIn('chain identity differs', deploy.unfinished_differences(data, inputs, release()))
                 (data / 'host-keys.json').unlink()
                 self.assertEqual(deploy.unfinished_differences(data, inputs, release()), ['initialization is incomplete'])
-

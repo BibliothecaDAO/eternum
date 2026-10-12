@@ -83,3 +83,14 @@ test.each([
   const error = await deployShard(environments.dev, "a".repeat(40), () => {}).catch((error) => error);
   expect(error).not.toBeInstanceOf(PublicError);
 });
+
+test("a filtered gameplay refusal still names its route and category", async () => {
+  const message =
+    "Shard deployment stopped at self-check. self-check failed at Move: other; directory status unchanged";
+  spyOn(processTools, "command").mockRejectedValue(
+    new processTools.CommandFailure(JSON.stringify({ kind: "shard-deployment-refused", message })),
+  );
+  const error = await deployShard(environments.dev, "a".repeat(40), () => {}).catch((error) => error);
+  expect(error).toBeInstanceOf(PublicError);
+  expect(error.message).toBe(message);
+});

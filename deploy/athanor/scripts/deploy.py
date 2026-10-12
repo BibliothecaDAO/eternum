@@ -271,9 +271,14 @@ class SelfCheckFailed(RuntimeError):
             raise ValueError("Invalid self-check failure shape")
         if detail == "refused":
             reason, tx = failure.get("reason", ""), failure.get("transactionHash", "")
-            if set(failure) != {"category", "reason", "transactionHash"} or not re.fullmatch(r"[A-Za-z0-9 ,:._()/-]{1,256}", reason) or not re.fullmatch(r"0x[0-9a-fA-F]{1,64}", tx):
+            if set(failure) != {"category", "reason", "transactionHash"}:
                 raise ValueError("Invalid self-check refusal shape")
-            detail += f": {reason} (transaction {tx})"
+            if not re.fullmatch(r"0x[0-9a-fA-F]{1,64}", tx):
+                raise ValueError("Invalid self-check refusal shape")
+            if re.fullmatch(r"[A-Za-z0-9 ,:._()/-]{1,256}", reason):
+                detail += f": {reason} (transaction {tx})"
+            else:
+                detail = "other"
         elif set(failure) != {"category"}:
             raise ValueError("Invalid self-check failure shape")
         super().__init__(f"self-check failed at {route}: {detail}; directory status unchanged")

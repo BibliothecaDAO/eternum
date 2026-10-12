@@ -97,7 +97,6 @@ class DeploymentRefusalTest(unittest.TestCase):
             self.assertIn(f"Explore: {category};", str(error))
         for failure in (
             {"category": "private"}, {"category": "other", "reason": "private"},
-            {"category": "refused", "reason": "line\nbreak", "transactionHash": "0x1"},
             {"category": "refused", "reason": "safe", "transactionHash": "not-a-hash"},
             {"category": "refused", "reason": "safe", "transactionHash": "0x1", "exception": "private"},
         ):
