@@ -75,7 +75,7 @@ export function transactionIntentName(account: Pick<Account, "address">, calls: 
   return `transaction-${name}-${createHash("sha256").update(JSON.stringify(identity)).digest("hex")}.json`;
 }
 
-/** Saved state supplies a nonce and receipt identity, never executable calls. */
+/** Callers inspect the operation's effect first; saved state supplies only its nonce and receipt identity. */
 export async function send(
   account: Account,
   calls: Call[],
@@ -96,9 +96,11 @@ export async function send(
       nonce = String(await account.getNonce());
     }
   }
-  const intent: { nonce: string; hash?: string } = {
-    nonce: nonce ?? String(await account.getNonce()),
-  };
+  if (!previous?.hash) {
+    const current = String(await account.getNonce());
+    if (nonce === undefined || BigInt(nonce) < BigInt(current)) nonce = current;
+  }
+  const intent: { nonce: string; hash?: string } = { nonce: nonce! };
   store.write(intentName, intent);
   const response = await account.execute(calls, { nonce: intent.nonce });
   intent.hash = response.transaction_hash;

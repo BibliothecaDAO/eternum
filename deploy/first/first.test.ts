@@ -215,7 +215,7 @@ test("RPC outages are never interpreted as absent contracts", async () => {
   expect(await classAt(provider, "0x1")).toBeUndefined();
 });
 
-test("a lost invoke response retries the saved nonce and never fetches a new one", async () => {
+test("a lost invoke response retries the same nonce while it remains current", async () => {
   const { store } = storage();
   const nonces: string[] = [];
   let first = true;
@@ -236,7 +236,7 @@ test("a lost invoke response retries the saved nonce and never fetches a new one
   await expect(send(account, calls, store, "relay", () => {})).rejects.toThrow("reply lost");
   await send(account, calls, store, "relay", () => {});
   expect(nonces).toEqual(["7", "7"]);
-  expect(account.getNonce).toHaveBeenCalledTimes(1);
+  expect(account.getNonce).toHaveBeenCalledTimes(2);
   await send(account, [{ ...calls[0]!, calldata: ["2", "31", "0"] }], store, "relay", () => {});
   expect(nonces).toEqual(["7", "7", "7"]);
 });

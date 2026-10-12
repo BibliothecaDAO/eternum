@@ -32,18 +32,22 @@ function account() {
     })),
   };
 }
-test("the same unsent intent keeps its nonce but never executes saved calls", async () => {
-  const files = store();
-  const rpc = account();
-  files.write(transactionIntentName(rpc, desired, "pay"), { nonce: "7", calls: tampered });
-  await send(rpc as unknown as Account, desired, files, "pay", () => {});
-  expect(rpc.execute).toHaveBeenCalledWith(desired, { nonce: "7" });
-  expect(rpc.getNonce).not.toHaveBeenCalled();
-  expect(files.read<{ nonce: string; hash: string }>(transactionIntentName(rpc, desired, "pay"))).toEqual({
-    nonce: "7",
-    hash: "0xabc",
-  });
-});
+test.each(["7", "12"])(
+  "an unsent intent uses the unconsumed nonce (current=%s), never saved calls",
+  async (current) => {
+    const files = store();
+    const rpc = account();
+    rpc.getNonce.mockResolvedValue(current);
+    files.write(transactionIntentName(rpc, desired, "pay"), { nonce: "7", calls: tampered });
+    await send(rpc as unknown as Account, desired, files, "pay", () => {});
+    expect(rpc.execute).toHaveBeenCalledWith(desired, { nonce: current });
+    expect(rpc.getNonce).toHaveBeenCalledTimes(1);
+    expect(files.read<{ nonce: string; hash: string }>(transactionIntentName(rpc, desired, "pay"))).toEqual({
+      nonce: current,
+      hash: "0xabc",
+    });
+  },
+);
 test("a saved hash for the same intent is awaited and a successful receipt is never resent", async () => {
   const files = store();
   const rpc = account();
@@ -173,4 +177,30 @@ test("a succeeded intent belongs to its payer even when calls are identical", as
   files.write(transactionIntentName({ address: "0x200" }, desired, "pay"), { nonce: "7", hash: "0xold" });
   await send(rpc as unknown as Account, desired, files, "pay", () => {});
   expect(rpc.execute).toHaveBeenCalledWith(desired, { nonce: "12" });
+});
+
+test.each([false, true])("an unsent intent recovers when the other operation lands first=%s", async (otherFirst) => {
+  const files = store();
+  const rpc = account();
+  let nonce = 7;
+  let failed = false;
+  const landed: string[] = [];
+  rpc.getNonce.mockImplementation(async () => String(nonce));
+  rpc.execute.mockImplementation(async (calls, options) => {
+    expect(options.nonce).toBe(String(nonce));
+    if (calls === desired && !failed) {
+      failed = true;
+      throw new Error("before submission");
+    }
+    landed.push(calls[0]!.contractAddress);
+    return { transaction_hash: `0x${nonce++}` };
+  });
+  const retry = () => send(rpc as unknown as Account, desired, files, "pay", () => {});
+  const other = () => send(rpc as unknown as Account, tampered, files, "other", () => {});
+  await expect(retry()).rejects.toThrow("before submission");
+  if (otherFirst) await other();
+  await retry();
+  if (!otherFirst) await other();
+  await retry();
+  expect(landed).toEqual(otherFirst ? ["0xbad", "0x1"] : ["0x1", "0xbad"]);
 });
