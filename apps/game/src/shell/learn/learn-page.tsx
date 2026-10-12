@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, Navigate, useLocation } from "react-router-dom";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { KitIcon } from "@/ui/design-system/kit/kit-icon";
@@ -19,13 +19,16 @@ import { NewsRows, newsItems } from "./news";
 
 type LearnView = "guides" | "news";
 
-/** The navigation state that opens Learn on News (the Scroll's address on a phone). */
-export const OPEN_ON_NEWS: { learnView: LearnView } = { learnView: "news" };
+/** The navigation state that opens Learn on News. */
+const OPEN_ON_NEWS: { learnView: LearnView } = { learnView: "news" };
+
+/** The Scroll's address (realms.world links it, and a post's Back leads here): Learn, opened on News. */
+export const ScrollPage = () => <Navigate to="/learn" state={OPEN_ON_NEWS} replace />;
 
 /**
  * Learn (spec 13): a guide per mode and the players' guides, and News; a switch above the one list on a phone with
- * Terms · Privacy at the foot (the Scroll's address opens it on News). The desktop sets the guides on their ages'
- * paintings, then the chronicle of the four ages and News, and ends on the footer.
+ * Terms · Privacy at the foot. The desktop sets the guides on their ages' paintings, then the chronicle of the four
+ * ages and News, and ends on the footer. The Scroll's address opens it on News.
  */
 export const LearnPage = () => {
   const layout = useLayout();
@@ -47,7 +50,7 @@ export const LearnPage = () => {
           {view === "guides" ? <Guides /> : <News />}
         </div>
       ) : (
-        <DesktopLearn />
+        <DesktopLearn opensOnNews={opensOn === "news"} />
       )}
     </PageFrame>
   );
@@ -87,8 +90,12 @@ const PlayerGuides = ({ onClose }: { onClose: () => void }) => (
   </Sheet>
 );
 
-const DesktopLearn = () => {
+const DesktopLearn = ({ opensOnNews }: { opensOnNews: boolean }) => {
   const [players, setPlayers] = useState(false);
+  const news = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (opensOnNews) news.current?.scrollIntoView();
+  }, [opensOnNews]);
   return (
     <div className="flex flex-col gap-14">
       <div className="grid h-[210px] grid-cols-4 gap-5 min-[1800px]:h-[260px]">
@@ -115,9 +122,11 @@ const DesktopLearn = () => {
           ))}
         </div>
       </Band>
-      <Band title={LEARN_WORDS.news}>
-        <News />
-      </Band>
+      <div ref={news} className="scroll-mt-6">
+        <Band title={LEARN_WORDS.news}>
+          <News />
+        </Band>
+      </div>
       {players && <PlayerGuides onClose={() => setPlayers(false)} />}
     </div>
   );

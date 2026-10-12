@@ -6,10 +6,10 @@ import { LEARN_WORDS } from "../words";
 /** The Scroll's published posts, newest first. */
 export const publishedPosts: ScrollPost[] = scrollPosts.filter((post) => post.published);
 
-/** The Scroll's address: Play's Scroll band on the desktop, Learn's News on a phone. */
+/** The Scroll's address: Learn, opened on News. */
 export const SCROLL_PATH = "/scroll";
 
-/** A post is read inside Play: the Scroll is folded into it. */
+/** A post's own address, under the Scroll's. */
 export const postHref = (post: Pick<ScrollPost, "slug">) => `${SCROLL_PATH}/${post.slug}`;
 
 /**

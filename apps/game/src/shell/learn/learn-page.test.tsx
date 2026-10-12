@@ -4,8 +4,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { expect, it, vi } from "vitest";
 
 import { setViewportWidth } from "../frame/test-viewport";
-import { ScrollPage } from "../play/play-page";
-import { LearnPage } from "./learn-page";
+import { LearnPage, ScrollPage } from "./learn-page";
 
 it("lists a guide per mode, the players' guides, then News newest first, with the legal pages at the foot", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

@@ -1,11 +1,7 @@
 import { Link } from "react-router-dom";
 
 import { COMMUNITY } from "../community";
-import { DOCS } from "../learn/guides";
-import { SCROLL_PATH } from "../learn/posts";
-import { AGES } from "../play/ages";
-import { FOOTER_WORDS, LEARN_WORDS, LORE_LINE, WORDS } from "../words";
-import { Kbd } from "./kbd";
+import { FOOTER_WORDS } from "../words";
 
 type FooterLink = { word: string; to: string };
 
@@ -14,15 +10,6 @@ const REALMS_WORLD = "https://realms.world";
 const MARKETPLACE = "https://market.realms.world";
 
 const COLUMNS: readonly { title: string; links: readonly FooterLink[] }[] = [
-  { title: WORDS.play, links: AGES.map((age) => ({ word: age.name, to: age.page })) },
-  {
-    title: WORDS.learn,
-    links: [
-      { word: FOOTER_WORDS.guides, to: "/learn" },
-      { word: LEARN_WORDS.scroll, to: SCROLL_PATH },
-      { word: FOOTER_WORDS.gameDocs, to: DOCS },
-    ],
-  },
   { title: FOOTER_WORDS.community, links: COMMUNITY.map((place) => ({ word: place.name, to: place.href })) },
   {
     title: FOOTER_WORDS.realms,
@@ -41,14 +28,13 @@ const COLUMNS: readonly { title: string; links: readonly FooterLink[] }[] = [
   },
 ];
 
-/** The desktop's footer at the end of a page that scrolls: the mark and the lore line, the app's links, the keys. */
+/**
+ * The desktop's footer at the end of a page that scrolls: what the rail does not already hold. The community, Realms'
+ * own sites and the legal pages live here and nowhere else on the page.
+ */
 export const AppFooter = () => (
   <footer data-band="footer" className="mt-16 border-t border-kit-line pt-10">
-    <div className="grid grid-cols-[1.4fr_repeat(5,1fr)] gap-8">
-      <div className="flex flex-col gap-3">
-        <img src="/images/logos/realms-lockup-stacked.svg" alt="Realms" className="w-16" />
-        <p className="text-[14px] text-kit-muted">{LORE_LINE}</p>
-      </div>
+    <div className="grid grid-cols-3 gap-8">
       {COLUMNS.map((column) => (
         <nav key={column.title} aria-label={column.title} className="flex flex-col gap-2">
           <b className="mb-1 font-ui text-[14px] tracking-[.06em] text-kit-gold">{column.title}</b>
@@ -58,12 +44,7 @@ export const AppFooter = () => (
         </nav>
       ))}
     </div>
-    <div className="mt-10 flex items-center gap-3 border-t border-kit-line py-5 text-[13px] text-kit-muted">
-      <span>{FOOTER_WORDS.owner}</span>
-      <span className="ml-auto flex items-center gap-1.5">
-        <Kbd keyName="1" />–<Kbd keyName="4" /> {FOOTER_WORDS.places} · <Kbd keyName="Esc" /> {FOOTER_WORDS.back}
-      </span>
-    </div>
+    <p className="mt-10 border-t border-kit-line py-5 text-[13px] text-kit-muted">{FOOTER_WORDS.owner}</p>
   </footer>
 );
 

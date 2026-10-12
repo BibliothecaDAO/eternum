@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-12",
+    title: "A home page that says things once",
+    description:
+      "Improved the home page: the community links, the four ages and the news each stand in one place. The community links live in the footer, an age opens from its card beside the play card, and the Scroll is read in Learn.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-12",
     title: "Deploy toward a tile",
     description:
       "Fixed a crash in Frontier when right-clicking a tile beside your selected realm. It now opens Deploy aimed at that tile, and the realm's one-entry map menu and its empty guard line are gone.",
