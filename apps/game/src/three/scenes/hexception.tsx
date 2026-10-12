@@ -30,9 +30,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { resolveSettlementRotationY } from "@/three/structures/settlement-orientation";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import { resolvePlayRouteTarget } from "@/play/navigation/play-route-target";
-import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import { awaitLocalScenePresentable } from "./local-scene-presentation";
-import { traceFlightMark } from "../flight-trace";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
 import {
@@ -271,7 +269,6 @@ export default class HexceptionScene extends HexagonScene {
     mouse: Vector2,
     raycaster: Raycaster,
     sceneManager: SceneManager,
-    private readonly compilePipelines: PipelineCompiler = async () => {},
   ) {
     super(SceneName.Hexception, controls, game, mouse, raycaster, sceneManager);
 
@@ -1240,8 +1237,9 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   /**
-   * The first local frame is empty until the grid build presents terrain and buildings, and slow until the
-   * renderer has compiled their pipelines; both happen behind the held world frame.
+   * The first local frame is empty until the grid build presents terrain and buildings, so the world frame is held
+   * until then. Its pipelines compile on that first frame: a scene-wide warm-up compile ahead of it left some
+   * buildings' render objects broken on WebGPU (they drew solid black until rebuilt).
    */
   public override whenPresentable(): Promise<void> {
     return this.localPresentation;
@@ -1257,12 +1255,6 @@ export default class HexceptionScene extends HexagonScene {
     this.localPresentation = awaitLocalScenePresentable({
       gridBuilt: this.localGridBuilt,
       groundTextures: this.groundTexturesReady,
-      compile: async () => {
-        if (!this.ownsRealmGeneration(generation)) return;
-        traceFlightMark("warm-up: compiling local scene pipelines");
-        await this.compilePipelines(this.scene, this.scene);
-        traceFlightMark("warm-up: pipelines compiled");
-      },
     }).finally(() => {
       if (this.ownsRealmGeneration(generation)) this.localPresentationReady = true;
     });

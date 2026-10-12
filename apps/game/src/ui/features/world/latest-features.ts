@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "No more black buildings",
+    description:
+      "Fixed realm buildings drawing as solid black shapes on some graphics cards. Every building on your realm shows its own colours again.",
+  },
+  {
+    date: "2026-10-13",
     title: "One rule for every click",
     description:
       "Changed how orders are given in Frontier: a right-click, or a press-and-hold on a phone, now opens the same preview as a click or a tap and never sends an army by itself. The preview stays on the tile you chose while the pointer moves. Esc backs out one step (the preview, then the selection), and Enter confirms the open preview or, with none open, puts the cursor in chat.",
