@@ -1,9 +1,7 @@
-import io
 import json
 from pathlib import Path
 import subprocess
 import tempfile
-import tarfile
 import unittest
 from unittest.mock import patch
 
@@ -11,7 +9,7 @@ import deploy
 
 
 def release():
-    return {"tag": "shard-v1.0.0", "commit": "abc", "releaseId": 1, "schema": "0xs", "migrationClassHash": "0x0",
+    return {"commit": "abc", "releaseId": 1, "schema": "0xs", "migrationClassHash": "0x0",
             "classes": {"games": "0x1", "logic": {"Season": "0x2", "Map": "0x3"}, "account": "0x4", "verifier": "0x5"},
             "presets": {"2": "0x20", "5": "0x50", "101": "0x65"}}
 
@@ -24,22 +22,6 @@ def deployed():
 
 
 class DeployTest(unittest.TestCase):
-    def test_prerelease_package_tag_survives_the_download_and_release_facts(self):
-        tag = "shard-v0.7.0-rc.1"
-        facts = {**release(), "tag": tag}
-        body = json.dumps(facts).encode()
-        download = io.BytesIO()
-        with tarfile.open(fileobj=download, mode="w:gz") as archive:
-            member = tarfile.TarInfo("shard/release.json")
-            member.size = len(body)
-            archive.addfile(member, io.BytesIO(body))
-        download.seek(0)
-        with tempfile.TemporaryDirectory() as temporary, patch.object(deploy, "urlopen", return_value=download) as fetch:
-            directory = Path(temporary)
-            self.assertEqual(deploy.fetch_package(tag, directory), facts)
-            self.assertEqual(json.loads((directory / "release.json").read_text())["tag"], tag)
-            fetch.assert_called_once_with(f"{deploy.RELEASES}/{tag}/shard.tar.gz", timeout=60)
-
     def test_prepare_materializes_the_key_before_the_rpc_file_bind_is_created(self):
         with (
             patch.object(deploy.subprocess, "run") as run,

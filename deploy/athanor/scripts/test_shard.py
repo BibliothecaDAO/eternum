@@ -512,10 +512,18 @@ class ShardTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary, self.assertRaises(ValueError):
             shard.write_private_environment(Path(temporary) / "private.env", {"KEY": "value\nOTHER=bad"})
 
-    def test_release_image_resolution_has_no_gateway_build(self):
-        package = {"init_image": "sha256:"+"1"*64, "herald_image": "sha256:"+"2"*64, "metrics_image": "sha256:"+"3"*64}
-        with patch.object(shard, "release_images", return_value=package):
-            self.assertEqual(shard.resolve_images({"package": "shard-v1"}), {"package": "shard-v1", **package})
+    def test_explicit_local_digests_skip_the_build(self):
+        images = {f"{name}_image": "sha256:" + "1" * 64 for name in ("init", "herald", "metrics")}
+        with patch.object(shard, "build_images") as build:
+            self.assertEqual(shard.resolve_images(images), images)
+            build.assert_not_called()
+
+    def test_missing_images_are_built_together_from_the_checkout(self):
+        images = {name: "sha256:" + "1" * 64 for name in ("init", "herald", "metrics")}
+        with patch.object(shard, "build_images", return_value={"images": images}) as build:
+            self.assertEqual(shard.resolve_images({"shard": "test"}), {
+                "shard": "test", **{f"{name}_image": digest for name, digest in images.items()}})
+            build.assert_called_once_with()
 
     def test_matrix_runs_in_order_and_stops_only_its_own_projects(self):
         for failure in (None, RuntimeError("workload failed")):

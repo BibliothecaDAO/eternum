@@ -71,7 +71,7 @@ def main(environment, directory, revision, report_stage):
 
 
 STAGES = (
-    "retire previous shard", "fetch release", "prepare", "start Herald", "wait for Herald identity",
+    "retire previous shard", "build images", "prepare", "start Herald", "wait for Herald identity",
     "register pending", "start services", "initialise", "self-check", "activate",
 )
 

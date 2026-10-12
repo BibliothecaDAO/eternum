@@ -3,7 +3,7 @@
 
 import argparse
 import hashlib
-import io
+import fcntl
 import ipaddress
 import json
 import os
@@ -14,7 +14,7 @@ import signal
 import socket
 import subprocess
 import sys
-import tarfile
+import tempfile
 import time
 from urllib.request import Request, urlopen
 from urllib.parse import urlparse
@@ -33,7 +33,6 @@ from service_requests import identity_service_base, service_json
 
 # Only driver placement passes through sudo; containers read the fixed protected file mount.
 DOCKER = ["sudo", "-n", "--preserve-env=HARNESS_CPUSET", "docker"]
-RELEASES = "https://github.com/BibliothecaDAO/eternum/releases/download"
 # Campaign G's target, not yet a measured ceiling: a larger shard waits for a G measurement that supports it.
 MAX_PLAYER_CAPACITY = 2000
 DEFAULT_NODE_MEMORY_MIB = 24576
@@ -359,20 +358,43 @@ def initialize_shard_identity(config, directory, deployer_address):
     )
 
 
-def release_images(tag):
-    """The image digests a shard-v* release pins in its package."""
-    with urlopen(f"{RELEASES}/{tag}/shard.tar.gz", timeout=60) as response:
-        archive = tarfile.open(fileobj=io.BytesIO(response.read()), mode="r:gz")
-    lines = archive.extractfile("shard/images.env").read().decode().splitlines()
-    images = dict(line.split("=", 1) for line in lines if line)
-    return {"init_image": images["SHARD_INIT_IMAGE"], "herald_image": images["SHARD_HERALD_IMAGE"],
-            "metrics_image": images["SHARD_METRICS_IMAGE"]}
+def build_images():
+    """Build only committed files; serialize Cairo with the box's compiler lock. Docker RUNs pin cores 8-11."""
+    revision = read(["git", "rev-parse", "HEAD"])
+    lock = Path.home() / "cairo-suite/.lock"
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    with lock.open("a") as held, tempfile.TemporaryDirectory(prefix="shard-build-") as temporary:
+        fcntl.flock(held, fcntl.LOCK_EX)
+        images = {}
+        for name in ("init", "herald", "metrics"):
+            archive = Path(temporary) / "source.tar"
+            source = "HEAD:deploy/athanor/metrics" if name == "metrics" else "HEAD"
+            with archive.open("wb") as output:
+                subprocess.run(["git", "archive", source], cwd=ROOT, stdout=output, check=True)
+            image_id = Path(temporary) / f"{name}.image"
+            dockerfile = "Dockerfile" if name == "metrics" else "deploy/shard/Dockerfile"
+            target = [] if name == "metrics" else ["--target", name]
+            with archive.open("rb") as context:
+                subprocess.run([*DOCKER, "buildx", "build", "--load", "--platform", "linux/amd64",
+                                "--file", dockerfile, *target, "--build-arg", f"SHARD_REVISION={revision}",
+                                "--label", f"org.opencontainers.image.revision={revision}",
+                                "--iidfile", str(image_id), "-"], stdin=context, cwd=ROOT, check=True, capture_output=True)
+            images[name] = image_id.read_text().strip()
+        facts = json.loads(subprocess.check_output([
+            *DOCKER, "run", "--rm", "--network", "none", "--entrypoint", "cat", images["init"],
+            "/release/release-facts.json",
+        ], text=True))
+    node = next(line.split()[-1] for line in (ROOT / "deploy/shard/compose.yml").read_text().splitlines()
+                if line.startswith("x-madara-image:"))
+    return {**facts, "commit": revision, "images": images, "node": node}
 
 
 def resolve_images(config):
-    """The published package supplies immutable images; explicit image digests may select a reviewed local build."""
-    resolved = {**(release_images(config["package"]) if "package" in config else {}), **config}
-    return resolved
+    """Explicit image digests select an existing local build; otherwise build this checkout."""
+    if all(config.get(f"{name}_image") for name in ("init", "herald", "metrics")):
+        return config
+    release = build_images()
+    return {**config, **{f"{name}_image": digest for name, digest in release["images"].items()}}
 
 
 def start_shard(config, directory):

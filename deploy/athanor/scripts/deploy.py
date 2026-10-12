@@ -1,34 +1,24 @@
 #!/usr/bin/env python3
-"""Deploy one of our shards from its release and prove it runs that release.
+"""Build and deploy this checkout, then prove the shard's classes, schema and presets before activation.
 
     python3 deploy/athanor/scripts/operator-command.py deploy ENVIRONMENT DIRECTORY
 
-ENVIRONMENT names deploy/release/ENVIRONMENT.json, the deployment's inputs: the shard-v* package tag, the shard's
-identity and public endpoints, its size and the presets it registers. That committed file is the environment's only
-preset set; nothing else passes PRESETS, and a file git does not track unchanged is refused. A new shard for an
-environment is a new chain id and package in its file. DIRECTORY holds the package and the shard's data/ across runs.
-The command takes the isolated-stack lock, fetches the tag's shard.tar.gz, renders the package's .env from the inputs,
-checks that initialization will receive an operator approval, starts the package, waits for initialization, then
-compares the deployed shard with the release.json CI published beside it: release id, schema, every class, the migration
-and every preset commitment. Any difference fails the deployment and is named.
+The committed deploy/release/ENVIRONMENT.json holds the shard identity and sizing. DIRECTORY retains its data.
 """
-import io
 import hashlib
 import json
 import os
 from pathlib import Path
 import subprocess
 import sys
-import tarfile
-from urllib.request import urlopen
+import shutil
 
 import shard
 from directory import directory_status, wait_for_identity
 from service_requests import identity_service_base, service_json
 
-RELEASES = "https://github.com/BibliothecaDAO/eternum/releases/download"
 ENVIRONMENTS = shard.ROOT / "deploy/release"
-INPUTS = ("package", "shard_name", "chain_id", "public_rpc_url", "public_herald_url",
+INPUTS = ("shard_name", "chain_id", "public_rpc_url", "public_herald_url",
           "player_capacity", "presets", "node_memory", "herald_memory", "vrf_workers", "l2_gas_bound")
 
 
@@ -41,8 +31,9 @@ def main(environment, directory, report_stage=ignore_stage):
     inputs = load_inputs(environment)
     with shard.isolated_stack_lock(f"deploy {environment}"):
         directory.mkdir(mode=0o700, parents=True, exist_ok=True)
-        report_stage("fetch release")
-        release = fetch_package(inputs["package"], directory)
+        report_stage("build images")
+        release = shard.build_images()
+        write_build(directory, release)
         report_stage("prepare")
         (directory / ".env").write_text(render_environment(inputs, (directory / "images.env").read_text()))
         check_operator_approval()
@@ -52,9 +43,9 @@ def main(environment, directory, report_stage=ignore_stage):
         if not differences and status["status"] == "pending":
             verify_and_activate(inputs, directory / "data", report_stage)
     if differences:
-        print(f"{environment} does not run {inputs['package']}:", *differences, sep="\n  ", file=sys.stderr)
+        print(f"{environment} does not run commit {release['commit']}:", *differences, sep="\n  ", file=sys.stderr)
         return 1
-    print(f"{environment} runs {inputs['package']} (commit {release['commit']})")
+    print(f"{environment} runs commit {release['commit']}")
     return 0
 
 
@@ -83,16 +74,12 @@ def committed(path):
     return succeeds("ls-files", "--error-unmatch", str(path)) and succeeds("diff", "--quiet", "HEAD", "--", str(path))
 
 
-def fetch_package(tag, directory):
-    with urlopen(f"{RELEASES}/{tag}/shard.tar.gz", timeout=60) as response:
-        archive = tarfile.open(fileobj=io.BytesIO(response.read()), mode="r:gz")
-    for member in archive.getmembers():
-        if member.isfile() and member.name.startswith("shard/") and "/" not in member.name[len("shard/"):]:
-            (directory / member.name[len("shard/"):]).write_bytes(archive.extractfile(member).read())
-    release = json.loads((directory / "release.json").read_text())
-    if release["tag"] != tag:
-        raise ValueError(f"release.json describes {release['tag']}, not {tag}")
-    return release
+def write_build(directory, release):
+    for name in ("compose.yml", "backup.py", "stack_lock.py", "operator_token.py"):
+        shutil.copyfile(shard.ROOT / "deploy/shard" / name, directory / name)
+    (directory / "images.env").write_text("".join(
+        f"SHARD_{name.upper()}_IMAGE={digest}\n" for name, digest in release["images"].items()))
+    shard.write_json(directory / "release.json", release)
 
 
 def render_environment(inputs, images):
