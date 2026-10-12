@@ -568,7 +568,13 @@ async function settleFrontierPlayers(options: RunFrontierOptions, accounts: Harn
   let next = 0;
   const settleNext = async (): Promise<void> => {
     for (let index = next++; index < accounts.length; index = next++) {
-      const { transaction, player } = await settleFrontierPlayer(options, accounts[index]!, { stage: "setup" });
+      const identity = accounts[index]!;
+      const realmId = options.game.forActor(identity.address).settlementStructureIds(identity.address)?.[0];
+      if (realmId !== undefined) {
+        players[index] = frontierPlayer(options, identity, realmId);
+        continue;
+      }
+      const { transaction, player } = await settleFrontierPlayer(options, identity, { stage: "setup" });
       options.setupTransactions.push(transaction);
       if (!player) throw new Error(transaction.error ?? "Frontier settlement failed");
       players[index] = player;
@@ -579,13 +585,12 @@ async function settleFrontierPlayers(options: RunFrontierOptions, accounts: Harn
 }
 
 async function settleFrontierPlayer(
-  { game, provider, actorClients }: RunFrontierOptions,
+  options: RunFrontierOptions,
   identity: HarnessAccount,
   timing: { stage: "setup" | "workload"; scheduledAtMs?: number },
 ): Promise<{ transaction: TrackedTransaction; player?: Player }> {
+  const { game, provider } = options;
   const own = game.forActor(identity.address);
-  const client = actorClients.get(actorKey(identity.address))?.client;
-  if (!client) throw new Error(`Bot ${identity.botId} has no client of its own`);
   const transaction = await trackTransaction({
     botId: identity.botId,
     gameId: game.gameId,
@@ -604,22 +609,25 @@ async function settleFrontierPlayer(
     30_000,
     () => `Frontier settlement for bot ${identity.botId} in game ${game.gameId}`,
   );
+  return { transaction, player: frontierPlayer(options, identity, realmId) };
+}
+
+function frontierPlayer({ game, actorClients }: RunFrontierOptions, identity: HarnessAccount, realmId: number): Player {
+  const client = actorClients.get(actorKey(identity.address))?.client;
+  if (!client) throw new Error(`Bot ${identity.botId} has no client of its own`);
   return {
-    transaction,
-    player: {
-      identity,
-      client,
-      game: own,
-      realmId,
-      profile: identity.botId % 2 === 0 ? "check-in" : "daily",
-      settledAt: now(),
-      days: [],
-      rungs: [],
-      rollovers: [],
-      captures: [],
-      siteExchanges: new Map(),
-      nextActionAt: 0,
-    },
+    identity,
+    client,
+    game: game.forActor(identity.address),
+    realmId,
+    profile: identity.botId % 2 === 0 ? "check-in" : "daily",
+    settledAt: now(),
+    days: [],
+    rungs: [],
+    rollovers: [],
+    captures: [],
+    siteExchanges: new Map(),
+    nextActionAt: 0,
   };
 }
 
