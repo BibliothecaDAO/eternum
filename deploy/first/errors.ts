@@ -17,16 +17,23 @@ export class PublicError extends Error {
     super(message);
   }
 }
+/** Diagnostics must not replace the original failure when private storage is unavailable. */
+export function failureLog(detail: string): string | undefined {
+  try {
+    const log = join(mkdtempSync(join(tmpdir(), "realms-deploy-")), "failure.log");
+    writeFileSync(log, detail, { mode: 0o600 });
+    return log;
+  } catch {
+    return undefined;
+  }
+}
 export function reportFailure(error: unknown): void {
   const failure = error instanceof PublicError ? error : undefined;
-  const log =
-    error && typeof error === "object" && "log" in error && typeof error.log === "string"
-      ? error.log
-      : join(mkdtempSync(join(tmpdir(), "realms-deploy-")), "failure.log");
-  const message = failure?.message ?? "Unexpected failure; inspect the command log";
-  const line = `Deployment stopped at ${failure?.stage ?? currentStage}; HTTP ${failure?.status ?? "n/a"}; code ${failure?.code ?? (error instanceof Error ? error.name : "unknown")}: ${message}; log: ${log}`;
-  if (!(error && typeof error === "object" && "log" in error && typeof error.log === "string"))
-    writeFileSync(log, line + "\n", { mode: 0o600 });
-  console.error(line);
+  const message = failure?.message ?? "Subprocess or SDK failure";
+  const line = `Deployment stopped at ${failure?.stage ?? currentStage}; HTTP ${failure?.status ?? "n/a"}; code ${failure?.code ?? (error instanceof Error ? error.name : "unknown")}: ${message}`;
+  const existingLog =
+    error && typeof error === "object" && "log" in error && typeof error.log === "string" ? error.log : undefined;
+  const log = existingLog ?? failureLog(line + "\n");
+  console.error(`${line}; log: ${log ?? "unavailable (private log could not be written)"}`);
   process.exitCode = 1;
 }

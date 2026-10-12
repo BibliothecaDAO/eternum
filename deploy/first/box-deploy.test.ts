@@ -1,4 +1,5 @@
 import { afterEach, expect, mock, spyOn, test } from "bun:test";
+import * as failureTools from "./errors";
 import * as processTools from "./process";
 import { deployShard, artifactsReady, artifactFiles, operatorTokenMatches } from "./box";
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, statSync } from "node:fs";
@@ -88,4 +89,14 @@ test("operator comparison sends the supplied credential only on stdin and return
   expect(spec.argv.join(" ")).toContain("compare_digest");
   execute.mockResolvedValue("different\n");
   expect(await operatorTokenMatches(environments.dev, "fixture-supplied-credential")).toBe(false);
+});
+
+test("a log storage failure cannot escape the subprocess rejection handler", async () => {
+  spyOn(failureTools, "failureLog").mockReturnValue(undefined);
+  const error = await processTools
+    .command({ argv: [process.execPath, "-e", "process.exit(2)"] })
+    .catch((error) => error);
+  expect(error).toBeInstanceOf(processTools.CommandFailure);
+  expect(error.log).toBeUndefined();
+  expect(error.name).toBe("command_failed");
 });

@@ -1,8 +1,5 @@
-import { PublicError } from "./errors";
+import { PublicError, failureLog } from "./errors";
 import { spawn } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { root } from "./settings";
 
 export interface Command {
@@ -46,8 +43,7 @@ export async function command(spec: Command): Promise<string> {
     child.on("close", (code) => {
       const stdout = Buffer.concat(chunks).toString();
       if (code === 0) return resolve(stdout);
-      const log = join(mkdtempSync(join(tmpdir(), "realms-deploy-")), "command.log");
-      writeFileSync(log, privateCommandOutput(spec, stdout + Buffer.concat(errors).toString()), { mode: 0o600 });
+      const log = failureLog(privateCommandOutput(spec, stdout + Buffer.concat(errors).toString()));
       reject(new CommandFailure(stdout, log));
     });
     child.stdin.on("error", () => {});
