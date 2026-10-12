@@ -46,13 +46,21 @@ async function jsonGet<T>(url: string): Promise<T> {
   if (!response.ok) throw new Error("Public deployment read failed");
   return response.json() as Promise<T>;
 }
-async function mergedHead(context: Deployment) {
-  const record = context.store.read<{ number: number }>("pull-request.json");
-  if (!record) return undefined;
-  const result = JSON.parse(
-    await command({ argv: ["gh", "pr", "view", String(record.number), "--json", "state,mergeCommit"] }),
-  ) as { state: string; mergeCommit: { oid: string } | null };
-  return result.state === "MERGED" ? result.mergeCommit?.oid : undefined;
+async function nextHead() {
+  await command({ argv: ["git", "fetch", "origin", "next"] });
+  return (await command({ argv: ["git", "rev-parse", "origin/next"] })).trim();
+}
+async function bookMatches(book: string, ref: string) {
+  return !(await command({ argv: ["git", "diff", "--name-only", ref, "--", book] })).trim();
+}
+async function validatedTag(context: Deployment, tag: string) {
+  const revision = await taggedHead(tag);
+  if (!revision) return undefined;
+  await nextHead();
+  await command({ argv: ["git", "fetch", "origin", revision] });
+  const ancestor = (await command({ argv: ["git", "merge-base", revision, "origin/next"] })).trim();
+  if (ancestor !== revision) throw new PublicError("Release tag is not on origin/next; tags are never moved");
+  return (await workflowDone(context, "validation.yml", revision)) ? revision : undefined;
 }
 async function taggedHead(tag: string) {
   const refs = await command({ argv: ["git", "ls-remote", "origin", `refs/tags/${tag}`, `refs/tags/${tag}^{}`] });
@@ -62,10 +70,7 @@ async function taggedHead(tag: string) {
 async function releaseReady(context: Deployment) {
   const release = releaseInputs(context);
   if (!release) return undefined;
-  const merged = await mergedHead(context);
-  const tagged = await taggedHead(release.package);
-  if (tagged && merged && tagged !== merged)
-    throw new Error("Release tag points to a different commit; tags are never moved");
+  const tagged = await validatedTag(context, release.package);
   if (!tagged) return undefined;
   const result = JSON.parse(
     await command({ argv: ["gh", "release", "view", release.package, "--json", "assets"] }),
@@ -224,8 +229,14 @@ export function deliverySteps(context: Deployment): Step[] {
         if (!context.assets) return wait("Contracts not yet published");
         const book = `contracts/common/addresses/${context.target.book}`;
         const diff = await command({ argv: ["git", "status", "--porcelain", "--", book] });
+        await nextHead();
+        let published = !diff.trim() && (await bookMatches(book, "origin/next"));
+        if (!diff.trim() && !published) {
+          await command({ argv: ["git", "fetch", "origin", "stack/node-first"] });
+          published = await bookMatches(book, "origin/stack/node-first");
+        }
         return {
-          done: !diff.trim() && !!context.store.read("pull-request.json"),
+          done: published,
           detail: "commit and push only the public address book; no private state enters git",
         };
       },
@@ -246,8 +257,6 @@ export function deliverySteps(context: Deployment): Step[] {
           });
         }
         await command({ argv: ["git", "push", "origin", "HEAD:stack/node-first"] });
-        const pr = JSON.parse(await command({ argv: ["gh", "pr", "view", "stack/node-first", "--json", "number"] }));
-        context.store.write("pull-request.json", { number: pr.number });
       },
     },
     {
@@ -255,15 +264,11 @@ export function deliverySteps(context: Deployment): Step[] {
       payer: "owner",
       cost: "0 STRK",
       inspect: async () => {
-        const record = context.store.read<{ number: number }>("pull-request.json");
-        const merged = await mergedHead(context);
-        return merged
-          ? { done: true, detail: `merged at ${merged}` }
-          : wait(
-              record
-                ? `Owner command: gh pr merge ${record.number} --merge; rerun after merge`
-                : "Address book must be pushed before the merge command is known",
-            );
+        const next = await nextHead();
+        if (await bookMatches(`contracts/common/addresses/${context.target.book}`, "origin/next"))
+          return { done: true, detail: `public address book is on origin/next at ${next}` };
+        const pr = JSON.parse(await command({ argv: ["gh", "pr", "view", "stack/node-first", "--json", "number"] }));
+        return wait(`Owner command: gh pr merge ${pr.number} --merge; rerun after merge`);
       },
       apply: async () => {},
     },
@@ -274,18 +279,16 @@ export function deliverySteps(context: Deployment): Step[] {
       inspect: async () => {
         const release = releaseInputs(context);
         if (!release) return wait("Review and commit the environment's deploy/release JSON before deployment");
-        const merged = await mergedHead(context);
-        if (!merged) return wait("Merge not observed yet");
-        if (!(await workflowDone(context, "validation.yml", merged)))
-          return wait("Wait for successful validation.yml push run on the exact merged next commit");
         const tag = await taggedHead(release.package);
-        if (tag && tag !== merged) throw new Error("Existing tag differs; never move it");
+        const revision = tag ?? (await nextHead());
+        if (!(await workflowDone(context, "validation.yml", revision)))
+          return wait("Wait for successful validation.yml push run on the exact release commit on next");
         if (!tag)
           return wait(
-            `Owner commands: git fetch origin next; git tag ${release.package} ${merged}; git push origin refs/tags/${release.package}; then rerun`,
+            `Owner commands: git fetch origin next; git tag ${release.package} ${revision}; git push origin refs/tags/${release.package}; then rerun`,
           );
         return (await releaseReady(context))
-          ? { done: true, detail: "release package exists for the merged revision" }
+          ? { done: true, detail: "release package exists for the validated tag revision on next" }
           : wait("Wait for shard-images.yml to publish shard.tar.gz, then rerun");
       },
       apply: async () => {},

@@ -34,7 +34,9 @@ function setup(phases: Phase[], windows = [{ startsAt: input.blitzStart, endsAt:
   store.write("pull-request.json", { number: 1 });
   const revision = "a".repeat(40);
   spyOn(processTools, "command").mockImplementation(async ({ argv }) => {
-    if (argv[0] === "git") return `${revision}\trefs/tags/release`;
+    if (argv[1] === "ls-remote") return `${revision}\trefs/tags/release`;
+    if (argv[0] === "git") return revision;
+    if (argv[1] === "run") return JSON.stringify([{ conclusion: "success", event: "push" }]);
     if (argv[1] === "pr") return JSON.stringify({ state: "MERGED", mergeCommit: { oid: revision } });
     if (argv[1] === "release") return JSON.stringify({ assets: [{ name: "shard.tar.gz" }] });
     throw new Error("Unexpected command");
