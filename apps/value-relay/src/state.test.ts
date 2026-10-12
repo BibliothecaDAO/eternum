@@ -8,6 +8,7 @@ import { expect, it } from "vitest";
 it("persists confirmed obligations, cursor and halt across actual Worker restarts", async () => {
   const root = mkdtempSync(join(tmpdir(), "value-relay-state-"));
   const entry = join(root, "state-worker.ts");
+  const config = join(root, "wrangler.json");
   const bundle = join(root, "bundle");
   writeFileSync(
     entry,
@@ -32,21 +33,19 @@ it("persists confirmed obligations, cursor and halt across actual Worker restart
     export default { fetch: (request, env) => env.TEST.get(env.TEST.idFromName('chain')).fetch(request) };
   `,
   );
-  execFileSync(
-    "bun",
-    [
-      "build",
-      entry,
-      "--target=browser",
-      "--external=cloudflare:*",
-      "--external=node:*",
-      "--outfile",
-      join(bundle, "state-worker.js"),
-    ],
-    {
-      stdio: "pipe",
-    },
+  writeFileSync(
+    config,
+    JSON.stringify({
+      name: "state-test",
+      main: entry,
+      compatibility_date: "2026-07-30",
+      migrations: [{ tag: "v1", new_sqlite_classes: ["StateTest"] }],
+      durable_objects: { bindings: [{ name: "TEST", class_name: "StateTest" }] },
+    }),
   );
+  execFileSync("pnpm", ["exec", "wrangler", "deploy", "--dry-run", "--config", config, "--outdir", bundle], {
+    stdio: "ignore",
+  });
   const start = () =>
     new Miniflare({
       modulesRoot: bundle,

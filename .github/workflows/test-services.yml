@@ -19,8 +19,6 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Build identity and notification contracts
