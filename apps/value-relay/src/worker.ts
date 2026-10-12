@@ -1,7 +1,7 @@
-import { enrolShardOperator, shardOperatorAddress } from "./shard-enrolment";
+import { joinShardOperator } from "./shard-account";
 import { decodeRelaySettings, ledgerAddress, type RelaySettings } from "./environment";
 import {
-  serviceError,
+  relayAccountAddress,
   activeShards,
   requireActiveChain,
   readRegisteredShard,
@@ -33,7 +33,7 @@ import { presentsOperatorToken } from "@realms-world/identity";
 import { identityAdapter } from "./adapters";
 import { runRelay, grantDailyLabor } from "./relay";
 import { DurableRelayStore } from "./state";
-import { RelayFailure, relayOperation, relayEnrolmentErrors, type RelayPorts, type LaborClaim } from "./ports";
+import { RelayFailure, relayOperation, type RelayPorts, type LaborClaim } from "./ports";
 
 interface RelayEnv extends RelaySettings {
   IDENTITY_HTTP: Fetcher;
@@ -58,13 +58,6 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   private readonly store = new DurableRelayStore(this.ctx.storage);
   private readonly chests = new DurableChestStore(this.ctx.storage);
 
-  enrol(input: { chainId: string; heraldUrl: string }) {
-    return Effect.runPromise(
-      this.shardSigning
-        .withPermit(relayOperation("enrol relay shard account", () => enrolShardOperator(this.env, input)))
-        .pipe(Effect.mapError((error) => new Error(error.operation))),
-    );
-  }
   private ledgerPermit<A, E>(operation: Effect.Effect<A, E>, chains: readonly string[] = []) {
     return this.ledgerSigning.withPermit(
       relayOperation("verify official value chain", async () => {
@@ -132,6 +125,11 @@ export class ValueRelay extends DurableObject<RelayEnv> {
         this.ingesting.withPermit(
           relayOperation("advance official shard", async () => {
             const ports = await relay.portsFor(chain);
+            await Effect.runPromise(
+              relay.shardSigning.withPermit(
+                relayOperation("join relay shard account", () => joinShardOperator(relay.env, chain)),
+              ),
+            );
             const previous = await relay.ctx.storage.get<string>("chain");
             if (previous && BigInt(previous) !== BigInt(chain)) throw new Error("actor_chain_differs");
             await relay.ctx.storage.put("chain", chain);
@@ -179,7 +177,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     return publishFrontierPools(
       {
         ...connectionOf(shard),
-        accountAddress: shardOperatorAddress(shard),
+        accountAddress: relayAccountAddress(shard),
         privateKey: this.env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
       },
       shard.url,
@@ -424,7 +422,7 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
             writeLaborGrants(
               {
                 connection: connectionOf(shard),
-                operatorAddress: shardOperatorAddress(shard),
+                operatorAddress: relayAccountAddress(shard),
                 privateKey: env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
               },
               claim,
@@ -493,29 +491,6 @@ export class ValueLaunch extends WorkerEntrypoint<RelayEnv> {
 export default {
   async fetch(request: Request, raw: RelayEnv): Promise<Response> {
     const env = { ...raw, ...decodeRelaySettings(raw) };
-    if (new URL(request.url).pathname === "/api/value/operator/shard/enrol" && request.method === "POST") {
-      if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN)))
-        return Response.json({ error: "unauthorized" }, { status: 401 });
-      const body = (await request.json().catch(() => null)) as { chainId?: unknown; heraldUrl?: unknown } | null;
-      if (
-        !body ||
-        Object.keys(body).sort().join() !== "chainId,heraldUrl" ||
-        typeof body.chainId !== "string" ||
-        !/^0x[0-9a-f]+$/i.test(body.chainId) ||
-        typeof body.heraldUrl !== "string"
-      )
-        return Response.json({ error: "invalid_enrolment_target" }, { status: 400 });
-      try {
-        return Response.json(
-          await relayOf(env, body.chainId).enrol({ chainId: body.chainId, heraldUrl: body.heraldUrl }),
-        );
-      } catch (error) {
-        return Response.json(
-          { error: serviceError(error, relayEnrolmentErrors, "relay_enrolment_unavailable") },
-          { status: 409 },
-        );
-      }
-    }
     if (new URL(request.url).pathname === "/api/value/operator/reset" && request.method === "POST") {
       if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN)))
         return Response.json({ error: "unauthorized" }, { status: 401 });

@@ -8,12 +8,10 @@ import { createCalendarRoutes } from "./calendar-routes";
 import type { SlotStore } from "./slots";
 import { toFactoryRunRecord, type LaunchRun } from "./model";
 import { type LaunchJobRequest, type LaunchKind } from "./schemas";
-import { launcherOperatorRoutes, type OperatorLauncher } from "./launcher-routes";
 import type { LaunchServiceStore } from "./store";
 
 interface LaunchAppDependencies {
   config: { operatorToken: string };
-  operatorLauncher: OperatorLauncher;
   /** What the version and health routes report, so a deploy can tell its own answers from its predecessor's. */
   deployment: { environment: string; version: string };
   store: LaunchServiceStore;
@@ -92,7 +90,6 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   const app = new Hono();
   app.use("*", logger());
   app.use("/api/*", requireOperator(dependencies.config.operatorToken));
-  app.route("/api/factory/operator/launcher", launcherOperatorRoutes(dependencies.operatorLauncher));
   app.route("/api/factory/calendar", createCalendarRoutes(dependencies.calendar));
   app.route("/api/slots", createSlotRoutes(dependencies.slots));
 

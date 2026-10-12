@@ -22,6 +22,7 @@ vi.mock("@realms-world/value-ledger", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@realms-world/value-ledger")>()),
   rpcAt: () => ({ getChainId: async () => "0x1" }),
   requireActiveChain: async () => {},
+  relayAccountAddress: () => "0x5",
   activeShards: async () => [{ chainId: "0x1" }],
   readRegisteredShard: async () => ({ chainId: "0x1", rpcUrl: "https://shard.test", contracts: { games: "0x2" } }),
 }));
@@ -63,7 +64,7 @@ vi.mock("./shard-rpc", async (original) => ({
   },
 }));
 vi.mock("./shard-labor", () => ({ currentLaborDay: () => Effect.succeed(4), writeLaborGrants: shard.grant }));
-vi.mock("./shard-enrolment", () => ({ enrolShardOperator: vi.fn(), shardOperatorAddress: () => "0x5" }));
+vi.mock("./shard-account", () => ({ joinShardOperator: vi.fn(async () => "0x5") }));
 beforeEach(() => {
   vi.clearAllMocks();
   address.mockReturnValue("0x10");

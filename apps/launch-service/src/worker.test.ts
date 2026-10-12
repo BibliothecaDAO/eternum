@@ -1,25 +1,19 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Miniflare } from "miniflare";
 import { afterAll, beforeAll, expect, it } from "vitest";
-import { unstable_readConfig } from "wrangler";
 import { hash } from "starknet";
+import { launcherAccountAddress } from "@realms-world/value-ledger";
 import { gamesAbi, response } from "../../../packages/value-ledger/test-support/abi";
 import schema from "../../../contracts/l3/world-native/schema/schema.json";
 
 /**
- * The Worker as Cloudflare runs it: the bundle wrangler deploys, its cron tick, its registrar Durable Object and D1 in
+ * The Worker running its cron tick, registrar Durable Object and D1 in
  * workerd. Identity and the shard are faked at the network edge.
  */
-const STAGING_CONFIG = unstable_readConfig({
-  config: new URL("../wrangler.jsonc", import.meta.url).pathname,
-  env: "staging",
-});
-/** The origin the staging Worker serves, read from its wrangler config so the test does not repeat the hostname. */
-const ORIGIN = new URL(String(STAGING_CONFIG.vars.BASE_URL)).origin;
-const LAUNCHER = "0x123";
+const ORIGIN = "https://launch.test";
 const SHARD_URL = "https://shard.test";
 const SHARD_CHAIN = "0x534e5f574f524b4552";
 /** The shard's /manifest names its chain and this Worker's release; every other shard call fails, as a node would. */
@@ -35,45 +29,39 @@ const SHARD_MANIFEST = {
   contracts: { games: "0x77" },
 };
 
+const LAUNCHER = launcherAccountAddress(SHARD_MANIFEST);
+
 let mf: Miniflare;
 let db: D1Database;
 
 beforeAll(async () => {
   const bundle = join(mkdtempSync(join(tmpdir(), "launch-bundle-")), "bundle");
-  execFileSync("pnpm", ["exec", "wrangler", "deploy", "--dry-run", "--env", "staging", "--outdir", bundle], {
-    cwd: new URL("..", import.meta.url).pathname,
-    stdio: "ignore",
-  });
-  writeFileSync(
-    join(bundle, "fixture.js"),
-    `
-    import {Registrar} from "./worker.js";
-    export {default} from "./worker.js";
-    export * from "./worker.js";
-    export class EnrolledRegistrar extends Registrar {
-      constructor(ctx, env) {
-        super(ctx, env);
-        ctx.blockConcurrencyWhile(() => ctx.storage.put(
-          ${JSON.stringify(`launcher-account:${BigInt(SHARD_CHAIN).toString(16)}`)},
-          {launcherAccount: ${JSON.stringify(LAUNCHER)}}
-        ));
-      }
-    }
-  `,
+  execFileSync(
+    "bun",
+    [
+      "build",
+      "src/worker.ts",
+      "--target=browser",
+      "--external=cloudflare:*",
+      "--external=node:*",
+      "--outfile",
+      join(bundle, "worker.js"),
+    ],
+    {
+      cwd: new URL("..", import.meta.url).pathname,
+      stdio: "pipe",
+    },
   );
   mf = new Miniflare({
     workers: [
       {
         name: "launch",
         modulesRoot: bundle,
-        modules: [
-          { type: "ESModule", path: join(bundle, "fixture.js") },
-          { type: "ESModule", path: join(bundle, "worker.js") },
-        ],
+        modules: [{ type: "ESModule", path: join(bundle, "worker.js") }],
         compatibilityDate: "2026-07-30",
         compatibilityFlags: ["nodejs_compat"],
         d1Databases: { DB: "launch" },
-        durableObjects: { REGISTRAR: { className: "EnrolledRegistrar", useSQLite: true } },
+        durableObjects: { REGISTRAR: { className: "Registrar", useSQLite: true } },
         serviceBindings: {
           IDENTITY: { name: "directory", entrypoint: "ValueIdentity" },
           VALUE_RELAY: { name: "directory", entrypoint: "ValueRelay" },
@@ -106,12 +94,17 @@ beforeAll(async () => {
                       timestamp: Math.floor(Date.now() / 1000),
                       transactions: [],
                     }
-                  : method === "starknet_getClassAt"
-                    ? { abi: gamesAbi }
+                  : method === "starknet_getClassHashAt"
+                    ? SHARD_MANIFEST.accountClassHash
                     : method === "starknet_call" &&
-                        params.request?.entry_point_selector === hash.getSelectorFromName("launcher")
-                      ? response(gamesAbi, "launcher", LAUNCHER)
-                      : undefined;
+                        params.request?.entry_point_selector === hash.getSelectorFromName("is_device")
+                      ? ["0x1"]
+                      : method === "starknet_getClassAt"
+                        ? { abi: gamesAbi }
+                        : method === "starknet_call" &&
+                            params.request?.entry_point_selector === hash.getSelectorFromName("launcher")
+                          ? response(gamesAbi, "launcher", LAUNCHER)
+                          : undefined;
             if (result !== undefined) return Response.json({ jsonrpc: "2.0", id, result });
           }
           return new Response(`${request.url} unavailable`, { status: 599 });

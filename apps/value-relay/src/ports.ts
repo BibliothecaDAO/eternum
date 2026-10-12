@@ -177,16 +177,12 @@ export const relayOperation = <A>(operation: string, run: () => Promise<A>): Rel
     catch: (error) =>
       error instanceof RelayFailure
         ? error
-        : new RelayFailure({ operation: serviceError(error, relayEnrolmentErrors, operation) }),
+        : new RelayFailure({ operation: serviceError(error, relayServiceErrors, operation) }),
   });
 
-export const relayEnrolmentErrors = [
-  "relay_target_differs",
-  "relay_chain_differs",
-  "relay_identity_unavailable",
-  "relay_identity_differs",
+const relayServiceErrors = [
+  "relay_shard_inactive",
   "relay_device_approval_refused",
-  "relay_account_differs",
   "unlisted_shard",
   "directory_shard_manifest_unavailable",
   "directory_manifest_chain_differs",

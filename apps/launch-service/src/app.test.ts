@@ -35,7 +35,6 @@ const fixture = () => {
     slots,
     calendar,
     registrar: { armFor },
-    operatorLauncher: { enrol: async () => ({ chainId: "0x1", launcherAccount: "0x123" }) },
   });
   return { app, store, slots, calendar, value, armFor };
 };
@@ -43,6 +42,9 @@ const close = () => new Date(Math.floor(Date.now() / 1000) * 1000 + 60000).toISO
 test("the create-run and launcher-discovery routes are gone even for the operator", async () => {
   const { app, store } = fixture();
   expect((await app.request("/api/factory/launcher")).status).toBe(404);
+  expect((await app.request("/api/factory/operator/launcher/enrol", { method: "POST", headers: token })).status).toBe(
+    404,
+  );
   for (const environment of ["madara.eternum", "madara.frontier", "madara.blitz"]) {
     expect(
       (
@@ -60,7 +62,6 @@ test.each([
   ["POST", "/api/slots"],
   ["POST", "/api/slots/friday/refund"],
   ["PUT", "/api/factory/calendar/frontier"],
-  ["POST", "/api/factory/operator/launcher/enrol"],
   ["POST", "/api/factory/runs/madara.frontier/frontier-7/actions/continue"],
   ["POST", "/api/factory/runs/madara.eternum/old/actions/delete"],
   ["POST", "/api/factory/results/madara.blitz/old/actions/continue"],

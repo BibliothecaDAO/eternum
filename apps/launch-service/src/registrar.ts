@@ -4,8 +4,7 @@ import { Effect, Layer, Semaphore } from "effect";
 import { decodeLaunchEnv } from "./env";
 import { launchExecutorLayer, launchTargetOf } from "./executor";
 import { processNextLaunch } from "./process-launch";
-import { LauncherDeployment, deploymentOperation } from "./launcher-deployment";
-import type { OperatorLauncher } from "./launcher-routes";
+import { joinLauncherAccount } from "./launcher-account";
 import { D1LaunchStore, databaseLayer } from "./store";
 
 /**
@@ -15,12 +14,6 @@ import { D1LaunchStore, databaseLayer } from "./store";
  */
 export class Registrar extends DurableObject<Record<string, unknown>> {
   private readonly signing = Semaphore.makeUnsafe(1);
-  enrol(input: Parameters<OperatorLauncher["enrol"]>[0]) {
-    return Effect.runPromise(this.signing.withPermit(deploymentOperation(() => this.deployment().enrol(input))));
-  }
-  private deployment() {
-    return new LauncherDeployment(decodeLaunchEnv(this.env), this.ctx.storage);
-  }
 
   /**
    * Arms the alarm for a run due at `dueAt`. Every path that queues a run calls this, so the alarm is always the
@@ -47,9 +40,9 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
       );
       let accountAddress: string;
       try {
-        accountAddress = await this.deployment().account(shard.chainId);
+        accountAddress = await joinLauncherAccount(env, shard.chainId);
       } catch (error) {
-        if (!(error instanceof Error) || error.message !== "launcher_role_not_granted") throw error;
+        console.error("launcher_account_unavailable", { chainId: shard.chainId, error: String(error) });
         next = Math.min(next ?? Infinity, Date.now() + 30000);
         continue;
       }

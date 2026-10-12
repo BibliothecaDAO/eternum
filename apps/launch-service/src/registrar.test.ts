@@ -11,12 +11,7 @@ vi.mock("cloudflare:workers", () => ({
   },
 }));
 vi.mock("./env", () => ({ decodeLaunchEnv: (env: unknown) => env }));
-vi.mock("./launcher-deployment", () => ({
-  LauncherDeployment: class {
-    account = mock.account;
-  },
-  deploymentOperation: (operation: () => Promise<unknown>) => Effect.promise(operation),
-}));
+vi.mock("./launcher-account", () => ({ joinLauncherAccount: mock.account }));
 vi.mock("./store", () => ({
   D1LaunchStore: class {
     nextDue = mock.nextDue;
@@ -33,7 +28,7 @@ vi.mock("./process-launch", () => ({ processNextLaunch: mock.process }));
 beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(Date, "now").mockReturnValue(1000);
-  mock.account.mockRejectedValue(new Error("launcher_role_not_granted"));
+  mock.account.mockRejectedValue(new Error("launcher_approval_refused"));
   mock.process.mockReturnValue(Effect.void);
   mock.nextDue.mockResolvedValue(2000);
 });
@@ -47,7 +42,7 @@ const setup = () => {
   });
   return { registrar, setAlarm };
 };
-it("keeps polling an ungranted launcher beyond platform retries without consuming due runs, then resumes", async () => {
+it("retries a failed launcher join beyond platform retries without consuming due runs, then resumes", async () => {
   const f = setup();
   for (let tick = 0; tick < 8; tick++) await f.registrar.alarm();
   expect(f.setAlarm).toHaveBeenCalledTimes(8);
@@ -60,10 +55,10 @@ it("keeps polling an ungranted launcher beyond platform retries without consumin
   expect(mock.target).toHaveBeenCalledWith(expect.anything(), "0x2");
   expect(f.setAlarm).toHaveBeenLastCalledWith(2000);
 });
-it("does not hide unrelated deployment failures", async () => {
+it("retries other account failures without consuming due runs", async () => {
   const f = setup();
   mock.account.mockRejectedValue(new Error("launcher_chain_differs"));
-  await expect(f.registrar.alarm()).rejects.toThrow("launcher_chain_differs");
-  expect(f.setAlarm).not.toHaveBeenCalled();
+  await f.registrar.alarm();
+  expect(f.setAlarm).toHaveBeenLastCalledWith(31_000);
   expect(mock.process).not.toHaveBeenCalled();
 });

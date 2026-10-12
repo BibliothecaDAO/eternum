@@ -1,5 +1,6 @@
 import { beforeEach, expect, it, vi } from "vitest";
-import { enrolShardOperator, shardOperatorAddress } from "./shard-enrolment";
+import { joinShardOperator } from "./shard-account";
+import { relayAccountAddress } from "@realms-world/value-ledger";
 import worker from "./worker";
 
 const calls = vi.hoisted(() => ({ shard: vi.fn(), chain: vi.fn(), join: vi.fn() }));
@@ -17,7 +18,7 @@ const shard = {
   chainId: "0x1",
   url: "https://shard.test",
   rpcUrl: "https://shard.test/rpc",
-  status: "pending",
+  status: "active",
   accountClassHash: "0x2",
   guardianPublicKey: "0x9",
 };
@@ -37,12 +38,12 @@ beforeEach(() => {
   vi.clearAllMocks();
   calls.shard.mockResolvedValue(shard);
   calls.chain.mockResolvedValue("0x1");
-  calls.join.mockResolvedValue({ address: shardOperatorAddress(shard) });
+  calls.join.mockResolvedValue({ address: relayAccountAddress(shard) });
   env.IDENTITY_HTTP.fetch.mockImplementation(async () => Response.json({ accountClassHash: "0x2", publicKey: "0x9" }));
 });
 it("enrolls only the relay bot device under the environment guardian, and returns the same holder on retry", async () => {
-  const expected = { chainId: "0x1", ledgerOperatorAccount: shardOperatorAddress(shard) };
-  expect(await enrolShardOperator(env, target)).toEqual(expected);
+  const expected = relayAccountAddress(shard);
+  expect(await joinShardOperator(env, target.chainId)).toEqual(expected);
   expect(calls.join.mock.calls[0]![0].device).toEqual({ publicKey: "0x2", privateKey: "test-key" });
   const approve = calls.join.mock.calls[0]![0].approve;
   env.IDENTITY_HTTP.fetch.mockResolvedValueOnce(Response.json({ signature: ["0x3", "0x4"] }));
@@ -51,33 +52,25 @@ it("enrolls only the relay bot device under the environment guardian, and return
     new URL("https://app.test/api/devices/bots"),
     expect.objectContaining({ redirect: "error", method: "POST" }),
   );
-  expect(await enrolShardOperator(env, target)).toEqual(expected);
+  expect(await joinShardOperator(env, target.chainId)).toEqual(expected);
 });
-it("refuses an unlisted, retired, retargeted, wrong-chain or wrong-guardian shard before requesting enrollment", async () => {
+it("refuses unlisted or retired shards before joining", async () => {
   calls.shard.mockRejectedValueOnce(new Error("unlisted_shard"));
-  await expect(enrolShardOperator(env, target)).rejects.toThrow("unlisted_shard");
+  await expect(joinShardOperator(env, target.chainId)).rejects.toThrow("unlisted_shard");
   calls.shard.mockResolvedValueOnce({ ...shard, status: "retired" });
-  await expect(enrolShardOperator(env, target)).rejects.toThrow("relay_target_differs");
-  await expect(enrolShardOperator(env, { ...target, heraldUrl: "https://other.test" })).rejects.toThrow(
-    "relay_target_differs",
-  );
-  calls.chain.mockResolvedValueOnce("0x3");
-  await expect(enrolShardOperator(env, target)).rejects.toThrow("relay_chain_differs");
-  env.IDENTITY_HTTP.fetch.mockResolvedValueOnce(Response.json({ accountClassHash: "0x2", publicKey: "0x8" }));
-  await expect(enrolShardOperator(env, target)).rejects.toThrow("relay_identity_differs");
+  await expect(joinShardOperator(env, target.chainId)).rejects.toThrow("relay_shard_inactive");
   expect(calls.join).not.toHaveBeenCalled();
 });
-it("accepts only operator-authenticated target fields and delegates to the chain's signer", async () => {
-  const enrol = vi.fn(async () => ({ ...target, ledgerOperatorAccount: "0x123" }));
-  const bindings = { ...env, RELAY: { idFromName: () => "chain", get: () => ({ enrol }) } } as never;
-  const request = (body: unknown, token = "test-token") =>
-    new Request("https://app.test/api/value/operator/shard/enrol", {
-      method: "POST",
-      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
-  expect((await worker.fetch(request(target, "wrong"), bindings)).status).toBe(401);
-  expect((await worker.fetch(request({ ...target, privateKey: "foreign" }), bindings)).status).toBe(400);
-  expect((await worker.fetch(request(target), bindings)).status).toBe(200);
-  expect(enrol).toHaveBeenCalledExactlyOnceWith(target);
+it("has no deployment enrolment route", async () => {
+  expect(
+    (
+      await worker.fetch(
+        new Request("https://app.test/api/value/operator/shard/enrol", {
+          method: "POST",
+          headers: { authorization: "Bearer test-token" },
+        }),
+        env as never,
+      )
+    ).status,
+  ).toBe(404);
 });
