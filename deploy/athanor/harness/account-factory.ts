@@ -69,18 +69,19 @@ export async function createHarnessAccounts({
   });
 }
 
-/** The public proxy allows 30 account operations per minute; a refused join retries the same account and device. */
+/** The public proxy allows 30 account operations per minute; a refused join retries the same account and device for at most two windows. */
 async function joinRateLimitedBot(
   input: Parameters<typeof joinBotAccount>[0],
   stopped?: AbortSignal,
 ): Promise<Account> {
-  for (;;) {
+  for (let attempt = 0; ; attempt++) {
     try {
       return await joinBotAccount(input);
     } catch (error) {
       let cause = error;
       while (cause instanceof Error && cause.cause) cause = cause.cause;
-      if (!cause || typeof cause !== "object" || !("code" in cause) || cause.code !== -32005) throw error;
+      if (attempt === 2 || !cause || typeof cause !== "object" || !("code" in cause) || cause.code !== -32005)
+        throw error;
       console.log("Bot sign-in reached the public account-operation limit; waiting for its one-minute window.");
       await delay(60_000, undefined, { signal: stopped });
     }

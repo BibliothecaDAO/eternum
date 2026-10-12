@@ -2,7 +2,7 @@ import { afterEach, expect, mock, spyOn, test } from "bun:test";
 import * as failureTools from "./errors";
 import * as processTools from "./process";
 import { deployShard, artifactsReady, artifactFiles, operatorTokenMatches } from "./box";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, statSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, statSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { PrivateStore } from "./private-store";
@@ -39,6 +39,7 @@ test("command captures failed stdout for the structured boundary without adding 
   expect(error).toBeInstanceOf(processTools.CommandFailure);
   expect(error.stdout).toBe("fixture-output");
   expect(error.message).not.toContain("fixture-output");
+  if (error.log) rmSync(join(error.log, ".."), { recursive: true });
 });
 
 test("a service-only revision reuses the existing value artifacts; changed source or missing files rebuild", async () => {
@@ -99,4 +100,27 @@ test("a log storage failure cannot escape the subprocess rejection handler", asy
   expect(error).toBeInstanceOf(processTools.CommandFailure);
   expect(error.log).toBeUndefined();
   expect(error.name).toBe("command_failed");
+});
+
+test("a plain refusal prints its full diagnostic without making a temporary log directory", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "plain-refusal-"));
+  try {
+    const script = `
+      import { reportFailure, PublicError } from ${JSON.stringify(join(import.meta.dir, "errors.ts"))};
+      reportFailure(new PublicError("Run setup before opening a season", null, "precondition_failed", "setup"));
+    `;
+    const child = Bun.spawn([process.execPath, "--no-env-file", "-e", script], {
+      env: { ...process.env, TMPDIR: directory },
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const [code, output] = await Promise.all([child.exited, new Response(child.stderr).text()]);
+    expect(code).toBe(1);
+    expect(output.trim()).toBe(
+      "Deployment stopped at setup; HTTP n/a; code precondition_failed: Run setup before opening a season",
+    );
+    expect(readdirSync(directory)).toEqual([]);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });

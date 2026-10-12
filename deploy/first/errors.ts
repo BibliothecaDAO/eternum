@@ -33,6 +33,11 @@ export function reportFailure(error: unknown): void {
   const line = `Deployment stopped at ${failure?.stage ?? currentStage}; HTTP ${failure?.status ?? "n/a"}; code ${failure?.code ?? (error instanceof Error ? error.name : "unknown")}: ${message}`;
   const existingLog =
     error && typeof error === "object" && "log" in error && typeof error.log === "string" ? error.log : undefined;
+  if (failure && !existingLog) {
+    console.error(line);
+    process.exitCode = 1;
+    return;
+  }
   const log = existingLog ?? failureLog(line + "\n");
   console.error(`${line}; log: ${log ?? "unavailable (private log could not be written)"}`);
   process.exitCode = 1;

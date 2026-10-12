@@ -1,3 +1,4 @@
+import { shardAccountRpc } from "../../../packages/value-ledger/test-support/shard-account-rpc";
 import { disposeWorker } from "../../../packages/value-ledger/test-support/workerd";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
@@ -25,7 +26,7 @@ const STAGING_CONFIG = unstable_readConfig({
 const ORIGIN = new URL(String(STAGING_CONFIG.vars.BASE_URL)).origin;
 const SHARD_URL = "https://shard.test";
 const SHARD_CHAIN = "0x534e5f574f524b4552";
-/** The shard's /manifest names its chain and this Worker's release; every other shard call fails, as a node would. */
+/** The shard identity shared by account-join and game-creation network fixtures. */
 const SHARD_MANIFEST = {
   version: 1,
   chainId: SHARD_CHAIN,
@@ -47,7 +48,11 @@ let freshAccount = false;
 let approvalStatus = 401;
 let redirectRequests = 0;
 let approvalRequests = 0;
-let deployedAccount = false;
+const joinRpc = shardAccountRpc({
+  address: LAUNCHER,
+  classHash: SHARD_MANIFEST.accountClassHash,
+  chainId: SHARD_CHAIN,
+});
 
 interface FixtureGame {
   name: bigint;
@@ -158,41 +163,6 @@ function blitzRpc(
   }
 }
 
-function accountJoinResponse(id: number, method: string): Response | undefined {
-  if ((method === "starknet_getClassHashAt" && !deployedAccount) || method === "starknet_getNonce")
-    return Response.json({ jsonrpc: "2.0", id, error: { code: 20, message: "Contract not found" } });
-  const results: Record<string, unknown> = {
-    starknet_estimateFee: [
-      {
-        l1_gas_consumed: "0x0",
-        l1_gas_price: "0x0",
-        l1_data_gas_consumed: "0x0",
-        l1_data_gas_price: "0x0",
-        l2_gas_consumed: "0x64",
-        l2_gas_price: "0x1",
-        overall_fee: "0x64",
-        unit: "FRI",
-      },
-    ],
-    starknet_addDeployAccountTransaction: { transaction_hash: "0x123", contract_address: LAUNCHER },
-    starknet_getTransactionStatus: { finality_status: "ACCEPTED_ON_L2", execution_status: "SUCCEEDED" },
-    starknet_getTransactionReceipt: {
-      transaction_hash: "0x123",
-      type: "DEPLOY_ACCOUNT",
-      finality_status: "ACCEPTED_ON_L2",
-      execution_status: "SUCCEEDED",
-      actual_fee: { amount: "0x0", unit: "FRI" },
-      events: [],
-      messages_sent: [],
-      execution_resources: {},
-      contract_address: LAUNCHER,
-    },
-  };
-  if (method === "starknet_addDeployAccountTransaction") deployedAccount = true;
-  const result = results[method];
-  return result === undefined ? undefined : Response.json({ jsonrpc: "2.0", id, result });
-}
-
 beforeAll(async () => {
   bundleRoot = mkdtempSync(join(tmpdir(), "launch-bundle-"));
   const bundle = join(bundleRoot, "bundle");
@@ -265,7 +235,7 @@ beforeAll(async () => {
               params: Parameters<typeof blitzRpc>[1];
             };
             if (freshAccount) {
-              const joined = accountJoinResponse(id, method);
+              const joined = joinRpc.respond(id, method);
               if (joined) return joined;
             }
             const blitz = playBlitzFixture ? blitzRpc(method, params) : undefined;
@@ -531,7 +501,7 @@ it.each([
       expect(health.joinFailures).toMatchObject([{ chainId: SHARD_CHAIN, code }]);
       expect(approvalRequests).toBeGreaterThan(0);
       expect(redirectRequests).toBe(0);
-      expect(deployedAccount).toBe(false);
+      expect(joinRpc.deployed).toBe(false);
     } finally {
       freshAccount = false;
     }
@@ -548,10 +518,10 @@ it("joins a fresh account through identity approval and account deployment in wo
     let health: { joinFailures?: unknown[] } = {};
     while (Date.now() < deadline) {
       health = (await (await mf.dispatchFetch(`${ORIGIN}/api/factory/health`)).json()) as typeof health;
-      if (deployedAccount && health.joinFailures?.length === 0) break;
+      if (joinRpc.deployed && health.joinFailures?.length === 0) break;
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
-    expect(deployedAccount).toBe(true);
+    expect(joinRpc.deployed).toBe(true);
     expect(health.joinFailures).toEqual([]);
   } finally {
     freshAccount = false;

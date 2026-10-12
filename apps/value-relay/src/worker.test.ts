@@ -1,3 +1,4 @@
+import { shardAccountRpc } from "../../../packages/value-ledger/test-support/shard-account-rpc";
 import { disposeWorker } from "../../../packages/value-ledger/test-support/workerd";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -20,10 +21,9 @@ it.each([302, 200])(
   "runs the relay join through workerd with approval HTTP %s",
   async (status) => {
     const chain = "0x534e5f574f524b4552";
-    let deployed = false,
-      approvals = 0,
-      redirects = 0,
-      receipts = 0;
+    let approvals = 0,
+      redirects = 0;
+    const joinRpc = shardAccountRpc({ address: "0x456", classHash: "0x2", chainId: chain });
 
     const manifest = {
       version: 1,
@@ -76,49 +76,14 @@ it.each([302, 200])(
             const { id, method } = (await request.json()) as { id: number; method: string };
             if (url.hostname !== "shard.test")
               return Response.json({ id, jsonrpc: "2.0", error: { code: -32601, message: "L2 unavailable" } });
-            if ((method === "starknet_getClassHashAt" && !deployed) || method === "starknet_getNonce")
-              return Response.json({ id, jsonrpc: "2.0", error: { code: 20, message: "Contract not found" } });
-            let result;
-            if (method === "starknet_getClassHashAt") result = "0x2";
-            if (method === "starknet_chainId") result = chain;
-            if (method === "starknet_estimateFee")
-              result = [
-                {
-                  l1_gas_consumed: "0x0",
-                  l1_gas_price: "0x0",
-                  l1_data_gas_consumed: "0x0",
-                  l1_data_gas_price: "0x0",
-                  l2_gas_consumed: "0x64",
-                  l2_gas_price: "0x1",
-                  overall_fee: "0x64",
-                  unit: "FRI",
-                },
-              ];
-            if (method === "starknet_addDeployAccountTransaction") {
-              deployed = true;
-              result = { transaction_hash: "0x123", contract_address: "0x456" };
-            }
-            if (method === "starknet_getTransactionStatus")
-              result = { finality_status: "ACCEPTED_ON_L2", execution_status: "SUCCEEDED" };
-            if (method === "starknet_getTransactionReceipt") {
-              receipts++;
-              result = {
-                transaction_hash: "0x123",
-                type: "DEPLOY_ACCOUNT",
-                finality_status: "ACCEPTED_ON_L2",
-                execution_status: "SUCCEEDED",
-                actual_fee: { amount: "0x0", unit: "FRI" },
-                events: [],
-                messages_sent: [],
-                execution_resources: {},
-                contract_address: "0x456",
-              };
-            }
-            return Response.json({
-              id,
-              jsonrpc: "2.0",
-              ...(result === undefined ? { error: { code: -32601, message: "Unsupported method" } } : { result }),
-            });
+            return (
+              joinRpc.respond(id, method) ??
+              Response.json({
+                id,
+                jsonrpc: "2.0",
+                error: { code: -32601, message: "Unsupported method" },
+              })
+            );
           },
         },
         {
@@ -140,13 +105,14 @@ export default {fetch(){return new Response(null,{status:404})}};`,
         health = (await (
           await mf.dispatchFetch("https://play.dev-realms.party/api/value/health")
         ).json()) as typeof health;
-        if (status === 200 ? receipts > 0 : health.shards?.[0]?.value?.reason === "operator_redirect_refused") break;
+        if (status === 200 ? joinRpc.receipts > 0 : health.shards?.[0]?.value?.reason === "operator_redirect_refused")
+          break;
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
       expect(approvals).toBeGreaterThan(0);
       expect(redirects).toBe(0);
-      expect(deployed).toBe(status === 200);
-      if (status === 200) expect(receipts).toBeGreaterThan(0);
+      expect(joinRpc.deployed).toBe(status === 200);
+      if (status === 200) expect(joinRpc.receipts).toBeGreaterThan(0);
       else expect(health.shards).toMatchObject([{ chainId: chain, value: { reason: "operator_redirect_refused" } }]);
     } finally {
       await disposeWorker(mf);
