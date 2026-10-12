@@ -1,9 +1,11 @@
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentArmiesTick, useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { toast } from "@/ui/features/event-feed/notify";
+import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { ResourceManager, spawnRing, structureMapPosition } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
@@ -29,7 +31,11 @@ const DEPLOY_MODELS = [
   "TileOccupancy",
 ] as const;
 
-/** Deploy over the game's facts: the realm's plan, the count the player drags, the tile, and the Deploy command. */
+/**
+ * Deploy over the game's facts: the realm's plan, the count the player drags, the tile, and the Deploy command. The
+ * tile is the deploy order's (openArmyDeployment): the one beside the realm the player ordered on the map, or the one
+ * picked on the sheet's ring, which orders again.
+ */
 export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]; onClose: () => void }) => {
   const { setup } = useGame();
   const defaultTick = useCurrentDefaultTick();
@@ -47,8 +53,10 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
   const shown = Math.min(count ?? range.max, range.max);
   const preview = plan ? previewDeploy(setup.store, realm.game_id, plan, shown, armiesTick) : null;
   const ring = useDeployRing(realm);
-  const [picked, setPicked] = useState<Direction | null>(null);
-  const direction = deployDirection(ring, picked);
+  const ordered = useUIStore((state) => state.pendingMilitaryAction?.direction ?? null);
+  const direction = deployDirection(ring, ordered);
+  const orderToward = (toward: Direction) =>
+    openArmyDeployment({ structureId: safeInteger(realm.entity_id), isExplorer: true, direction: toward });
   const [sending, setSending] = useState(false);
   const clock = rules ? dayClock(rules, now) : undefined;
   const goToPlace = useGoToFrontierPlace(realm);
@@ -84,7 +92,7 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
       }
       startingStamina={preview?.stamina?.amount}
       clock={clock}
-      ring={plan?.next ? { tiles: ring, chosen: direction, onPick: setPicked } : undefined}
+      ring={plan?.next ? { tiles: ring, chosen: direction, onPick: orderToward } : undefined}
       canDeploy={Boolean(plan?.troops && preview && preview.count > 0 && direction !== null && plan.next)}
       sending={sending}
       onDeploy={() => void deploy()}

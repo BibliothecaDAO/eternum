@@ -13,7 +13,7 @@ import { playSiteClear } from "@/ui/features/frontier/sites/site-clear-moment";
 import { type ArmyProgressFacts, xpGained } from "@/ui/features/frontier/attributes/attributes";
 import { playArmyProgress } from "@/ui/features/frontier/attributes/progress-moment";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import { openArmyDeploymentPicker } from "@/ui/features/military/utils/open-army-deployment-picker";
+import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { resolveSpawnActionPath, showArmyDeploymentTooltip } from "./worldmap-army-deployment";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
@@ -3129,7 +3129,7 @@ export default class WorldmapScene extends WarpTravel {
 
     const normalized = Position.fromContract({ x: targetHex.col, y: targetHex.row }).getNormalized();
     const point = projectHexToScreen({ col: normalized.x, row: normalized.y }, this.camera);
-    openArmyDeploymentPicker(
+    openArmyDeployment(
       { direction, structureId: selectedEntityId, isExplorer: true },
       {
         anchor: { left: point.x, right: point.x, top: point.y, bottom: point.y },

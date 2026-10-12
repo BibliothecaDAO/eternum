@@ -631,7 +631,8 @@ export class StructureManager {
       cosmeticAssetPaths: cosmetic.skin.assetPaths,
       usesFallbackCosmeticSkin: cosmetic.skin.isFallback,
       attachments: cosmetic.attachments,
-      guardArmies: this.resolveGuardArmies(guards),
+      // A game that grants no guard slots has no guards to report, so its labels carry no guard row.
+      guardArmies: configManager.hasGuardSlots() ? this.resolveGuardArmies(guards) : undefined,
       activeProductions: this.resolveActiveProductions(renderable.entityId),
       incomingTroopArrivals: this.incomingTroopArrivalsByStructure.get(renderable.entityId),
       hyperstructureRealmCount: this.store

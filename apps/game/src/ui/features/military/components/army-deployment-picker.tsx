@@ -8,7 +8,7 @@ import { TroopCountSelector } from "./unified-army-creation-modal/troop-count-se
 import { TroopSelectionGrid } from "./unified-army-creation-modal/troop-selection-grid";
 import { useArmyCreation } from "./unified-army-creation-modal/use-army-creation";
 import { DISPLAYED_SLOT_NUMBER_MAP, type GuardSlot } from "@bibliothecadao/types";
-import type { ArmyDeploymentTarget } from "../utils/open-army-deployment-picker";
+import type { ArmyDeploymentTarget } from "../utils/open-army-deployment";
 import { GuardDismissal } from "./guard-dismissal";
 
 export const ArmyDeploymentPicker = (target: ArmyDeploymentTarget) => {

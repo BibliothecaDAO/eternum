@@ -15,6 +15,8 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
 }));
 
 import { GameProvider } from "@/hooks/context/game-context";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-game-client";
 import { type GameClient, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
@@ -23,6 +25,7 @@ import { frontierDay } from "./deploy-fixture";
 import { DeploySheet } from "./deploy-sheet";
 
 afterEach(() => {
+  useUIStore.getState().setPendingMilitaryAction(null);
   ring.explored = true;
   ring.taken = -1;
   disposeGameSyncSession();
@@ -149,6 +152,21 @@ describe("the Deploy sheet", () => {
     draw();
     expect(tiles().every((tile) => tile.disabled)).toBe(true);
     expect(deployButton(host)).toBeUndefined();
+    act(() => root.unmount());
+    host.remove();
+  });
+
+  it("opens aimed at the tile an order on the map names, and takes a new aim while open", () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const { store, row } = frontierDay();
+    const order = (direction: Direction) => openArmyDeployment({ structureId: 7, isExplorer: true, direction });
+    const chosen = (host: HTMLElement) => host.querySelector('[role="radio"][aria-checked="true"]');
+    order(Direction.WEST);
+    const { host, root } = render(store, row);
+    expect(chosen(host)?.getAttribute("aria-label")).toBe("Deploy west");
+
+    act(() => order(Direction.EAST));
+    expect(chosen(host)?.getAttribute("aria-label")).toBe("Deploy east");
     act(() => root.unmount());
     host.remove();
   });

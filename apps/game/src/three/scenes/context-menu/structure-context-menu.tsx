@@ -3,6 +3,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { playResourceSound } from "@/three/sound/utils";
 import { isAddressEqualToAccount } from "@/three/utils";
 import { LeftView } from "@/types";
+import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import { configManager, getIsBlitz, getStructureName, Position } from "@bibliothecadao/eternum";
 import { BuildingType, HexEntityInfo, HexPosition, ResourcesIds } from "@bibliothecadao/types";
@@ -34,13 +35,7 @@ export const openStructureContextMenu = ({ event, structure, hexCoords, store }:
       return;
     }
     uiStore.setStructureEntityId(structure.id);
-    // Prime the merged Military modal instead of the legacy popup so both
-    // entry points (left HUD button + map right-click) land in one shell.
-    uiStore.setPendingMilitaryAction({
-      structureId: structure.id,
-      isExplorer,
-    });
-    uiStore.setLeftNavigationView(LeftView.MilitaryView);
+    openArmyDeployment({ structureId: structure.id, isExplorer });
   };
 
   const selectConstructionBuilding = (building: BuildingType, view: LeftView, resource?: ResourcesIds) => {
@@ -79,6 +74,34 @@ export const openStructureContextMenu = ({ event, structure, hexCoords, store }:
       ]
     : [];
 
+  const actions = [
+    {
+      id: `structure-${idString}-attack`,
+      label: "Create Attack Army",
+      icon: "/image-icons/military.png",
+      onSelect: () => {
+        openArmyCreationModal(true);
+      },
+    },
+    // A defense army needs a guard slot, which only some games grant.
+    ...(configManager.hasGuardSlots()
+      ? [
+          {
+            id: `structure-${idString}-defense`,
+            label: "Create Defense Army",
+            icon: "/image-icons/shield.png",
+            onSelect: () => {
+              openArmyCreationModal(false);
+            },
+          },
+        ]
+      : []),
+    ...constructionActions,
+  ];
+  // A menu offers a choice. A game whose realm has the one order (no guards, no build menus) gives it from its dock
+  // and from the tiles beside the realm, so there the realm opens no menu.
+  if (actions.length < 2) return;
+
   uiStore.openContextMenu({
     id: `structure-${idString}`,
     title: resolveStructureTitle(structure, store),
@@ -90,29 +113,6 @@ export const openStructureContextMenu = ({ event, structure, hexCoords, store }:
       entityType: "structure",
       hex: hexCoords,
     },
-    actions: [
-      {
-        id: `structure-${idString}-attack`,
-        label: "Create Attack Army",
-        icon: "/image-icons/military.png",
-        onSelect: () => {
-          openArmyCreationModal(true);
-        },
-      },
-      // A defense army needs a guard slot, which only some games grant.
-      ...(configManager.hasGuardSlots()
-        ? [
-            {
-              id: `structure-${idString}-defense`,
-              label: "Create Defense Army",
-              icon: "/image-icons/shield.png",
-              onSelect: () => {
-                openArmyCreationModal(false);
-              },
-            },
-          ]
-        : []),
-      ...constructionActions,
-    ],
+    actions,
   });
 };

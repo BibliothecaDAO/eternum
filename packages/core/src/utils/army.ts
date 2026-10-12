@@ -71,42 +71,6 @@ export const getArmy = (
   return explorer ? formatArmies([explorer], playerAddress, store, playerName)[0] : undefined;
 };
 
-export const armyHasTroops = (entityArmies: (ArmyInfo | undefined)[]) => {
-  return entityArmies.some((army) => army && army.troops.count !== 0n);
-};
-
-export const getTroopName = (troopType: TroopType, troopTier: TroopTier): string => {
-  switch (troopTier) {
-    case TroopTier.T1:
-      switch (troopType) {
-        case TroopType.Knight:
-          return "Footman";
-        case TroopType.Crossbowman:
-          return "Archer";
-        case TroopType.Paladin:
-          return "Horseman";
-      }
-    case TroopTier.T2:
-      switch (troopType) {
-        case TroopType.Knight:
-          return "Knight";
-        case TroopType.Crossbowman:
-          return "Crossbowman";
-        case TroopType.Paladin:
-          return "Paladin";
-      }
-    case TroopTier.T3:
-      switch (troopType) {
-        case TroopType.Knight:
-          return "Royal Guardian";
-        case TroopType.Crossbowman:
-          return "Beast Hunter";
-        case TroopType.Paladin:
-          return "Dragon Rider";
-      }
-  }
-};
-
 export const getTroopResourceId = (troopType: TroopType, troopTier: TroopTier): ResourcesIds => {
   switch (troopType) {
     case TroopType.Knight:

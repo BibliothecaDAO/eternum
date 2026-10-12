@@ -6,11 +6,11 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useLayout } from "@/shell/frame/layout";
 import { requestArmySelection } from "@/three/scenes/worldmap-army-select-request";
-import { LeftView } from "@/types";
 import { canIssueOrders } from "@/utils/can-issue-orders";
+import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { Sweep } from "@/ui/motion/sweep";
 import { configManager, entityMapPosition, Position } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { DEPLOY } from "@/ui/design-system/kit/words";
 
 import { attributeBadgeTarget } from "../attributes/attributes";
@@ -41,6 +41,7 @@ export const ArmyDock = ({ realm, armies }: { realm: NativeRows["Structure"]; ar
       {ordersAllowed &&
         Array.from({ length: openCount }, (_, index) => (
           <DeploySlot
+            realm={realm}
             key={openSlots?.[index]?.slot ?? `open-${index}`}
             first={index === 0}
             pulse={index === 0 && armies.length === 0}
@@ -105,8 +106,17 @@ const usePickArmy = (explorerId: number) => {
 };
 
 /** An open slot; the first one takes the guide's sweep when it points at Deploy. */
-const DeploySlot = ({ first, pulse, wide }: { first: boolean; pulse: boolean; wide: boolean }) => {
-  const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
+const DeploySlot = ({
+  realm,
+  first,
+  pulse,
+  wide,
+}: {
+  realm: NativeRows["Structure"];
+  first: boolean;
+  pulse: boolean;
+  wide: boolean;
+}) => {
   const pointed = useDeployPointed();
   return (
     <Sweep play={first ? pointed : 0} className="shrink-0 rounded-xl">
@@ -115,7 +125,7 @@ const DeploySlot = ({ first, pulse, wide }: { first: boolean; pulse: boolean; wi
         pulse={pulse}
         guided={first}
         wide={wide}
-        onDeploy={() => setLeftNavigationView(LeftView.MilitaryView)}
+        onDeploy={() => openArmyDeployment({ structureId: safeInteger(realm.entity_id), isExplorer: true })}
       />
     </Sweep>
   );

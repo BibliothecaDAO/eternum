@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-10-12",
+    title: "Deploy toward a tile",
+    description:
+      "Fixed a crash in Frontier when right-clicking a tile beside your selected realm. It now opens Deploy aimed at that tile, and the realm's one-entry map menu and its empty guard line are gone.",
+    type: "fix",
+  },
+  {
     date: "2026-10-11",
     title: "Where a Blitz entry goes",
     description:
