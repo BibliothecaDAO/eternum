@@ -22,6 +22,7 @@ import { GuideSlot } from "../guide/frontier-guide";
 import { type ArmyOrder, type Cost, isCovered, useArmyStamina, useOrderAt } from "../hud/army-order";
 import { armyArt, type DockArmy, useDockArmies } from "../hud/dock-armies";
 import { useApproachTile } from "./approach";
+import { type FightSent, fightIsSent, fightWasNotSent } from "./fight-result";
 import { useSelectedOwnArmy } from "./selected-army";
 import { readSiteCard, type SiteAttack, type SiteCardPlan, type SiteFight } from "./site-card-plan";
 import { type SiteChoice, SiteCardView, type SiteVerb } from "./site-card-view";
@@ -89,6 +90,8 @@ export const TileCard = ({ selected, onClose }: { selected: SelectedSite; onClos
   const attackSite = async () => {
     if (!attack || !account.account) return;
     setSending(true);
+    const sent = fightSentBy(attack.army, selected, plan);
+    if (sent) fightIsSent(sent);
     try {
       playUnitCommandSound("attack");
       await setup.systemCalls.attack_explorer_vs_guard({
@@ -97,6 +100,7 @@ export const TileCard = ({ selected, onClose }: { selected: SelectedSite; onClos
         structure_id: safeInteger(selected.structure.entity_id),
       });
     } catch (error) {
+      fightWasNotSent();
       toast.error(extractReadableErrorMessage(error, "The attack could not be sent."));
     } finally {
       setSending(false);
@@ -113,7 +117,7 @@ export const TileCard = ({ selected, onClose }: { selected: SelectedSite; onClos
 
   return (
     <SiteCardView
-      site={SITE_OF[plan.kind]}
+      site={plan.kind}
       beast={plan.kind === "Ruin" ? plan.name : undefined}
       army={actor && { art: armyArt(actor.army.troops), troops: wholeTroops(actor.army) }}
       guard={plan.guard === undefined ? undefined : (plan.guard?.count ?? null)}
@@ -207,18 +211,29 @@ const useSiteChoices = (selected: SelectedSite, wanted: boolean): SiteChoice[] =
   });
 };
 
-/** Each kind as the card names it. */
-const SITE_OF: Record<SiteCardPlan["kind"], "camp" | "rift" | "ruin" | "stragglers"> = {
-  Camp: "camp",
-  Rift: "rift",
-  Ruin: "ruin",
-  Stragglers: "stragglers",
-};
-
 /** What a camp or rift pays home and what of it fits; a ruin pays its chest, stragglers only XP. */
 const sitePay = (plan: SiteCardPlan) => {
   const icon = plan.payout && PAY_ICONS[plan.payout.resourceId];
   return plan.payout && icon ? { icon, amount: plan.payout.amount, fits: plan.payout.fits } : null;
+};
+
+/** The attack as it leaves, for its result: both sides' troops now and what the clear would pay, as the card shows. */
+const fightSentBy = (
+  army: NativeRows["ExplorerTroops"],
+  selected: SelectedSite,
+  plan: SiteCardPlan,
+): FightSent | null => {
+  if (!plan.guard) return null;
+  const pay = sitePay(plan);
+  return {
+    siteId: safeInteger(selected.site.entity_id),
+    site: plan.kind,
+    armyId: safeInteger(army.explorer_id),
+    armyArt: armyArt(army.troops),
+    army: wholeTroops(army),
+    guard: plan.guard.count,
+    clearPays: { pay: pay && { icon: pay.icon, amount: pay.fits }, xp: plan.xp },
+  };
 };
 
 /** A forecast the army does not win: it loses, or the fight stalls. */

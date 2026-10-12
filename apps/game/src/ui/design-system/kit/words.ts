@@ -104,6 +104,13 @@ export const SHRINE = "Shrine";
 export const WELL = "Well";
 export const ATTACK = "Attack";
 export const ATTACKING = "Attacking…";
+/** How an attack ended, the one word on its result: the guard gone, the army gone, or both still standing. */
+export const VICTORY = "Victory";
+export const ARMY_LOST = "Army lost";
+export const GUARD_HOLDS = "Guard holds";
+/** The day log's line for a fight: "Rift: Army lost, lost 154, guard 1,100 to 1,028". */
+export const fightLine = (site: string, verdict: string, lost: string, guardBefore: string, guardAfter: string) =>
+  `${site}: ${verdict}, lost ${lost}, guard ${guardBefore} to ${guardAfter}`;
 /** Why an attack cannot run, or what it costs, in one line under its button. */
 export const needsStamina = (need: string, held: string) => `Needs ${need} stamina, has ${held}`;
 export const tooFarFrom = (site: string) => `Too far from the ${site}`;

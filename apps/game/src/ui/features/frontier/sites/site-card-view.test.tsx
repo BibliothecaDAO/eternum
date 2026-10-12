@@ -1,13 +1,9 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RuinChestMoment } from "../chest/ruin-chest-moment";
 import { SiteCardView } from "./site-card-view";
-import { SiteClearCard } from "./site-clear-card";
-
-const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -33,7 +29,7 @@ describe("a guarded site's card", () => {
     act(() =>
       root.render(
         <SiteCardView
-          site="camp"
+          site="Camp"
           beast={undefined}
           army={army}
           guard={1_100}
@@ -59,7 +55,7 @@ describe("a guarded site's card", () => {
     act(() =>
       root.render(
         <SiteCardView
-          site="ruin"
+          site="Ruin"
           beast="Troll"
           army={{ ...army, troops: 1_200 }}
           guard={3_400}
@@ -88,7 +84,7 @@ describe("a guarded site's card", () => {
     act(() =>
       root.render(
         <SiteCardView
-          site="camp"
+          site="Camp"
           beast={undefined}
           army={army}
           guard={1_100}
@@ -115,7 +111,7 @@ describe("a guarded site's card", () => {
     act(() =>
       root.render(
         <SiteCardView
-          site="camp"
+          site="Camp"
           beast={undefined}
           army={army}
           guard={1_100}
@@ -136,7 +132,7 @@ describe("Enter on a guarded site's card", () => {
   const enter = () => new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
   const card = (fight: "wins" | "loses", onAttack: () => void) => (
     <SiteCardView
-      site="camp"
+      site="Camp"
       beast={undefined}
       army={army}
       guard={1_100}
@@ -168,7 +164,7 @@ describe("a guarded site's card for an army out of reach", () => {
     act(() =>
       root.render(
         <SiteCardView
-          site="rift"
+          site="Rift"
           beast={undefined}
           army={army}
           guard={1_100}
@@ -189,7 +185,7 @@ describe("a guarded site's card for an army out of reach", () => {
     act(() =>
       root.render(
         <SiteCardView
-          site="rift"
+          site="Rift"
           beast={undefined}
           army={army}
           guard={1_100}
@@ -212,22 +208,7 @@ describe("a guarded site's card for an army out of reach", () => {
   });
 });
 
-describe("the clear and its chest", () => {
-  it("pays what fitted large, the full amount small beside a full bar, its XP and the troops lost", () => {
-    const card = text(
-      renderToStaticMarkup(
-        <SiteClearCard
-          site="Camp"
-          paid={{ icon: "La", amount: 120, full: 550 }}
-          xp={22}
-          troopsLost={180}
-          onClose={() => {}}
-        />,
-      ),
-    );
-    expect(card).toBe("+120550+22XP−180");
-  });
-
+describe("a cleared ruin's chest", () => {
   it("opens a ruin's chest with its exact LORDS and tier, and goes on with a tap", () => {
     const onClose = vi.fn();
     act(() => root.render(<RuinChestMoment tier={5} lords={640} xp={145} troopsLost={1_250} onClose={onClose} />));

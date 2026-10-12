@@ -41,7 +41,8 @@ import { OrderBar } from "./hud/order-bar";
 import { FrontierToday } from "./log/frontier-today";
 import { FrontierProduction } from "./production/frontier-production";
 import { FrontierResearch } from "./research/frontier-research";
-import { SiteClearCardView } from "./sites/site-clear-card";
+import { ClearedRuinChest } from "./chest/cleared-ruin-chest";
+import { useFightWatch } from "./sites/fight-watch";
 import { useFrontierType } from "./use-frontier-type";
 import { dayClock } from "./hud/day-clock";
 import { DayDone } from "./rollover/day-done";
@@ -58,6 +59,7 @@ type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
  */
 export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   useFrontierType();
+  useFightWatch();
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const realm = useFrontierRealm();
   // On a visit the dock shows the visited realm's armies; no order renders for a realm the player does not own.
@@ -125,7 +127,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
         guide={<GuideSlot host="foot" />}
         notices={
           <>
-            <SiteClearCardView />
+            <ClearedRuinChest />
             <OfflineNotice />
           </>
         }

@@ -21,7 +21,10 @@ import { MenuSheet } from "@/ui/features/frontier/hud/menu-sheet";
 import { OrderBar } from "@/ui/features/frontier/hud/order-bar";
 import { DeployView } from "@/ui/features/frontier/deploy/deploy-view";
 import { RuinChestMoment } from "@/ui/features/frontier/chest/ruin-chest-moment";
-import { SiteClearCard } from "@/ui/features/frontier/sites/site-clear-card";
+import { Sheet } from "@/ui/design-system/kit/sheet";
+import type { FightResult } from "@/ui/features/frontier/sites/fight-result";
+import { FightResultCard } from "@/ui/features/frontier/sites/fight-result-card";
+import { SITE_MARKS } from "@/ui/features/frontier/sites/site-marks";
 import { SiteCardView } from "@/ui/features/frontier/sites/site-card-view";
 import { DayDoneCard } from "@/ui/features/frontier/rollover/day-done-card";
 import { LastHourBubble } from "@/ui/features/frontier/rollover/last-hour";
@@ -155,7 +158,6 @@ type LabDeploy = {
 const DEPLOY: LabDeploy = { count: 5_000, troopsAtHome: 6_200, troopsMax: 6_200, wheat: 14_410, tiles: 44 };
 
 type LabSite = Omit<Parameters<typeof SiteCardView>[0], "onClose" | "onRealm">;
-type LabClear = Parameters<typeof SiteClearCard>[0];
 type LabChest = Parameters<typeof RuinChestMoment>[0];
 
 const ARMY_CHIP = { art: "/images/armies/knightT1.png", troops: 5_000 };
@@ -167,7 +169,7 @@ const WIN = (exchanges: number, troopsLost: number) => ({
   guardLeft: 0,
 });
 const CAMP_CARD: LabSite = {
-  site: "camp",
+  site: "Camp",
   beast: undefined,
   army: ARMY_CHIP,
   guard: 1_100,
@@ -177,7 +179,7 @@ const CAMP_CARD: LabSite = {
   verb: ATTACK_30,
 };
 const RUIN_CARD: LabSite = {
-  site: "ruin",
+  site: "Ruin",
   beast: "Troll",
   army: ARMY_CHIP,
   guard: 3_400,
@@ -484,7 +486,7 @@ const STATES = {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    site: { ...CAMP_CARD, site: "stragglers", guard: 400, fight: WIN(1, 15), pay: null, xp: 50 },
+    site: { ...CAMP_CARD, site: "Stragglers", guard: 400, fight: WIN(1, 15), pay: null, xp: 50 },
   },
   "site-ruin": { clock: CLOCK, stores: STORES, armies: ARMIES, site: RUIN_CARD },
   "site-ruin-lose": {
@@ -534,28 +536,43 @@ const STATES = {
     armies: ARMIES,
     site: { ...CAMP_CARD, verb: { kind: "short", stamina: { cost: 30, held: 10, wait: 40 * 60 } } },
   },
-  "clear-camp": {
+  "fight-won": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    clear: { site: "Camp", paid: { icon: "La", amount: 550 }, xp: 22, troopsLost: 180, onClose: () => undefined },
-  },
-  "clear-cut": {
-    clock: CLOCK,
-    stores: [
-      store("essence", 18_250),
-      store("labor", 18_000, 18_000, "ember"),
-      store("wheat", 4_410, 18_000),
-      store("troops", 1_200, 18_000),
-    ],
-    armies: ARMIES,
-    realmDot: "ember",
-    clear: {
+    fight: {
       site: "Camp",
-      paid: { icon: "La", amount: 120, full: 550 },
-      xp: 22,
-      troopsLost: 180,
-      onClose: () => undefined,
+      verdict: "victory",
+      armyArt: ARMY_CHIP.art,
+      army: { before: 1_498, after: 1_318 },
+      guard: { before: 1_100, after: 0 },
+      gained: { pay: { icon: "La", amount: 550 }, xp: 22 },
+    },
+  },
+  "fight-goes-on": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    fight: {
+      site: "Stragglers",
+      verdict: "guard-holds",
+      armyArt: ARMY_CHIP.art,
+      army: { before: 500, after: 432 },
+      guard: { before: 334, after: 150 },
+      gained: null,
+    },
+  },
+  "fight-army-lost": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    fight: {
+      site: "Rift",
+      verdict: "army-lost",
+      armyArt: ARMY_CHIP.art,
+      army: { before: 154, after: 0 },
+      guard: { before: 1_100, after: 1_028 },
+      gained: null,
     },
   },
   "clear-ruin": {
@@ -822,7 +839,7 @@ type LabState = {
   lastHour?: boolean;
   order?: LabOrder;
   site?: LabSite;
-  clear?: LabClear;
+  fight?: FightResult;
   chest?: LabChest;
   deploy?: LabDeploy;
   clock: DayClock;
@@ -923,12 +940,7 @@ export const HudLab = () => {
         }
         stage={lab.lastHour && <LastHourBubble troopsOut={6_021} returned={470} tiersToBuy={2} />}
         guide={footLine && <LabGuide stepId={footLine} />}
-        notices={
-          <>
-            {lab.offline && <Notice icon="Of" line={OFFLINE} verb={TRY_AGAIN} onVerb={noop} ember />}
-            {lab.clear && <SiteClearCard {...lab.clear} />}
-          </>
-        }
+        notices={lab.offline && <Notice icon="Of" line={OFFLINE} verb={TRY_AGAIN} onVerb={noop} ember />}
         action={
           <>
             {lab.realmView === "full" && (
@@ -1027,6 +1039,11 @@ export const HudLab = () => {
             onRealm={noop}
             onClose={noop}
           />
+        )}
+        {lab.fight && (
+          <Sheet label={SITE_MARKS[lab.fight.site].word} onClose={noop}>
+            <FightResultCard result={lab.fight} onClose={noop} />
+          </Sheet>
         )}
         {lab.chest && <RuinChestMoment {...lab.chest} />}
         {lab.withdraw && <LabWithdrawSheet withdraw={lab.withdraw} />}

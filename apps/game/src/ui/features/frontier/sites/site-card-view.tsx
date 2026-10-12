@@ -11,35 +11,23 @@ import {
   ARMY_WILL_BE_LOST,
   ATTACK,
   ATTACKING,
-  CAMP,
   LORDS,
   MOVE,
   needsStamina,
   REALM,
-  RIFT,
-  RUIN,
-  STRAGGLERS,
   tooFarFrom,
   TROOPS,
   XP,
 } from "@/ui/design-system/kit/words";
 
+import type { SiteKind } from "@bibliothecadao/eternum";
 import type { ReactNode } from "react";
 
 import { guideTarget } from "../guide/guide-thread";
 import { useEnterConfirms } from "../hud/enter-confirms";
 import type { Cost } from "../hud/army-order";
 import type { SiteFight } from "./site-card-plan";
-
-/** The guarded sites; stragglers are drawn now and read once the contracts' taxonomy names them. */
-type GuardedSite = "camp" | "rift" | "ruin" | "stragglers";
-
-const SITES: Record<GuardedSite, { word: string; icon: IconCode }> = {
-  camp: { word: CAMP, icon: "Cp" },
-  rift: { word: RIFT, icon: "Rf" },
-  ruin: { word: RUIN, icon: "Fr" },
-  stragglers: { word: STRAGGLERS, icon: "Tr" },
-};
+import { SITE_MARKS } from "./site-marks";
 
 /** The step under the outcome: Attack (the same tap whatever the forecast), Move until the army is in reach, or
  * Attack held back, by the stamina the army lacks or by a site too far for one order. One line under it says why. */
@@ -72,7 +60,7 @@ export const SiteCardView = ({
   onRealm,
   onClose,
 }: {
-  site: GuardedSite;
+  site: SiteKind;
   beast: string | undefined;
   army: { art: string; troops: number } | null;
   guard: number | null | undefined;
@@ -90,7 +78,7 @@ export const SiteCardView = ({
   onRealm?: () => void;
   onClose: () => void;
 }) => {
-  const { word, icon } = SITES[site];
+  const { word, icon } = SITE_MARKS[site];
   const lost = fight && fight.outcome === "loses";
   // With no army selected the realm's armies are the choices, and the guard moves up beside the kind.
   const picking = choices !== undefined && choices.length > 0;

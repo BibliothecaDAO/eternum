@@ -10,27 +10,24 @@ import { payoutSprites, type SiteClear } from "./site-outcome";
 
 /**
  * Design §3.11 §3, the site cleared, after the exchange (the world's troop-diff numbers already play from the armies'
- * facts): the guard falls with its cue, a haptic and a dust burst of 24 at the site; a compact card slides up with what
- * it cost and paid; and the payout flies home to its banked counter, whose "+N" is the toast. Only with no counter on
- * screen does a toast say it instead. The card waits 800 ms after it lands, or a tap.
+ * facts): the guard falls with its cue, a haptic and a dust burst of 24 at the site, and the payout flies home to its
+ * banked counter, whose "+N" is the toast. Only with no counter on screen does a toast say it instead. What the fight
+ * did reads on its result, which the acting surface shows; a ruin's result is its chest, opened here.
  */
-interface SiteClearCard {
-  clear: SiteClear;
+interface RuinChestOpening {
+  siteId: number;
   /** Whole troops the army lost in the winning exchange. */
   troopsLost: number;
   shownAt: number;
 }
 
-const useSiteClearStore = create<{ card: SiteClearCard | null }>(() => ({ card: null }));
+const useRuinChestStore = create<{ opening: RuinChestOpening | null }>(() => ({ opening: null }));
 
-export const useSiteClearCard = () => useSiteClearStore((state) => state.card);
+export const useRuinChest = () => useRuinChestStore((state) => state.opening);
 
-export const closeSiteClearCard = (): void => useSiteClearStore.setState({ card: null });
+export const closeRuinChest = (): void => useRuinChestStore.setState({ opening: null });
 
 const GUARD_FALLS_MS = 300;
-const CARD_HOLD_MS = 250 + 800;
-
-let closing: ReturnType<typeof setTimeout> | undefined;
 
 export const playSiteClear = ({
   clear,
@@ -48,13 +45,12 @@ export const playSiteClear = ({
   void AudioManager.getInstance().play("combat.victory");
   playHaptic(1);
   burst();
-  // The payout's counter holds from now, as its balance arrives with the story; the icons leave with the card.
+  // The payout's counter holds from now, as its balance arrives with the story.
   if (clear.reward) payHome(clear.reward, at);
   setTimeout(() => {
     void AudioManager.getInstance().play("site.clear");
-    useSiteClearStore.setState({ card: { clear, troopsLost, shownAt: performance.now() } });
-    clearTimeout(closing);
-    closing = setTimeout(closeSiteClearCard, CARD_HOLD_MS);
+    if (clear.kind === "Ruin")
+      useRuinChestStore.setState({ opening: { siteId: clear.siteId, troopsLost, shownAt: performance.now() } });
   }, GUARD_FALLS_MS);
 };
 
