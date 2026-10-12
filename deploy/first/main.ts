@@ -29,7 +29,7 @@ import {
 import { Platform, generateSecrets, workerSecrets, workers, type Secrets } from "./platform";
 import { command, CommandFailure } from "./process";
 import { runSteps, type Step } from "./run";
-import { deliverySteps } from "./delivery";
+import { addressBookStep } from "./address-book";
 import { resolveBlitzSeason } from "./blitz-season";
 import { seconds, PublicError } from "./dates";
 
@@ -47,7 +47,7 @@ export interface Deployment {
   assets?: Assets;
   output: (line: string) => void;
 }
-export function signer(context: Deployment) {
+export function signer(context: Pick<Deployment, "provider" | "keys">) {
   if (!context.provider || !context.keys) throw new Error("Account preparation has not completed");
   return new Account({
     provider: context.provider,
@@ -415,7 +415,7 @@ export async function main(args = process.argv.slice(2)) {
     args.length > 3 ||
     (flag && flag !== "--apply")
   )
-    throw new Error("Usage: pnpm deploy:first <dev|production> /absolute/private-directory [--apply]");
+    throw new Error("Usage: pnpm run setup <dev|production> /absolute/private-directory [--apply]");
   process.umask(0o077);
   const apply = flag === "--apply";
   const store = new PrivateStore(directory, root, apply);
@@ -444,7 +444,7 @@ export async function main(args = process.argv.slice(2)) {
         ? "Applying missing first-deployment steps."
         : "DRY RUN: no keys generated, no writes or transactions. Use --apply to act.",
     );
-    await runSteps([...preparationSteps(context), ...deliverySteps(context)], apply, context.output);
+    await runSteps([...preparationSteps(context), addressBookStep(context)], apply, context.output);
   } finally {
     unlock();
   }

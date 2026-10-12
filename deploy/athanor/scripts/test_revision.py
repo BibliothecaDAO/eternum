@@ -28,10 +28,12 @@ class RevisionTest(unittest.TestCase):
     def test_dev_accepts_a_pushed_branch_without_landing_validation(self):
         self.assertEqual(self.check(), 'a' * 40)
 
-    def test_dirty_and_unpushed_checkouts_are_refused(self):
-        for args, message in (({'dirty': ' M file'}, 'clean checkout'), ({'refs': ''}, 'Push this checkout')):
-            with self.subTest(args=args), self.assertRaisesRegex(revision.RevisionRefused, message):
-                self.check(**args)
+    def test_pushed_commit_is_accepted_despite_uncommitted_workspace_files(self):
+        self.assertEqual(self.check(dirty=" M file"), "a" * 40)
+
+    def test_unpushed_commit_is_refused(self):
+        with self.assertRaisesRegex(revision.RevisionRefused, "Push this checkout"):
+            self.check(refs="")
 
     def test_production_requires_next_and_the_existing_push_gate(self):
         with self.assertRaisesRegex(revision.RevisionRefused, 'on origin/next'):

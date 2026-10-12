@@ -277,7 +277,7 @@ class RestartUnfinishedTest(unittest.TestCase):
         cases = [
             (1, [own], {}, True),
             (2, [{**own, "status": "active"}], {"refused": "cannot be reinitialized"}, False),
-            (3, [{**own, "status": "retired"}], {"refused": "cannot be reinitialized"}, False),
+            (3, [{**own, "status": "retired"}], {"refused": "remove the run directory yourself"}, False),
             (4, [{**own, "status": "draining"}], {"refused": "cannot be reinitialized"}, False),
             (5, [], {"refused": "remove the run directory yourself"}, False),
             (6, [], {"proof": True, "refused": "remove the run directory yourself"}, False),
@@ -361,3 +361,15 @@ class RestartUnfinishedTest(unittest.TestCase):
                 self.assertIn('chain identity differs', deploy.unfinished_differences(data, inputs, release()))
                 (data / 'host-keys.json').unlink()
                 self.assertEqual(deploy.unfinished_differences(data, inputs, release()), ['initialization is incomplete'])
+
+
+class ChainIdentityTest(unittest.TestCase):
+    def test_restarts_keep_identity_and_fresh_chains_get_distinct_felts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first = deploy.chain_identity(root, "dev")
+            second = deploy.chain_identity(root, "dev")
+            self.assertNotEqual(first, second)
+            self.assertLessEqual(len(first.encode("ascii")), 31)
+            (root / ".env").write_text(f"CHAIN_ID={first}\n")
+            self.assertEqual(deploy.chain_identity(root, "dev"), first)

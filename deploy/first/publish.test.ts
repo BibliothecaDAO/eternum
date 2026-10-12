@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, mkdirSync, readFileSync, readdirSync } from "node:
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import * as processTools from "./process";
-import { clientEnvironment, deployClient, deployWorkers, workersReady } from "./publish";
+import { clientEnvironment, deployClient, deployWorkers } from "./publish";
 import { Platform, workers, workerSecrets, type Secrets } from "./platform";
 import { PrivateStore } from "./private-store";
 import { environments, type Inputs } from "./settings";
@@ -119,14 +119,9 @@ test("all six Workers deploy locally, migrations precede code, and public versio
     expect(actions.indexOf(`${name}:d1 migrations apply DB --remote`)).toBeLessThan(
       actions.indexOf(`${name}:deploy --tag ${revision}`),
     );
-  expect(await workersReady(value, revision)).toBe(true);
   const count = actions.length;
   await deployWorkers(value, revision);
   expect(actions).toHaveLength(count);
-  globalThis.fetch = mock(async () =>
-    Response.json({ environment: "production", version: "old" }),
-  ) as unknown as typeof fetch;
-  expect(await workersReady(value, revision)).toBe(false);
   expect(calls.some((call) => call.argv[0] === "gh")).toBe(false);
 });
 test("Worker secrets go only to their own Worker through stdin", async () => {

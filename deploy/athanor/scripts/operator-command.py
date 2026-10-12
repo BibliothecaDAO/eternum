@@ -8,18 +8,20 @@ from operator_token import operator_environment
 
 COMMANDS = {
     "deploy": "deploy.py", "runner": "shard.py",
-    "stop": "stop.py", "measure": "measures.py",
+    "stop": "stop.py", "measure": "measures.py", "teardown": "teardown.py",
 }
 
 
 def run(command, arguments):
     if command not in COMMANDS:
         raise ValueError("Use a listed shard command")
+    if command == "teardown" and arguments != ["dev"]:
+        raise ValueError("Teardown is available only for dev")
     executable = str(Path(__file__).with_name(COMMANDS[command]))
     os.execve(sys.executable, [sys.executable, executable, *arguments], {**os.environ, **operator_environment()})
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        raise SystemExit("Usage: python3 deploy/athanor/scripts/operator-command.py deploy|runner|stop|measure ARGUMENTS")
+        raise SystemExit("Usage: python3 deploy/athanor/scripts/operator-command.py deploy|runner|stop|measure|teardown ARGUMENTS")
     run(sys.argv[1], sys.argv[2:])

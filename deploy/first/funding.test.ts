@@ -7,7 +7,7 @@ import * as main from "./main";
 import * as box from "./box";
 import * as native from "../../contracts/l2/ledger/scripts/commands/deployment/fund-frontier";
 import * as funding from "../../packages/value-ledger/src/frontier-funding";
-import { deliverySteps } from "./delivery";
+import { seasonSteps } from "./season-steps";
 import { PrivateStore } from "./private-store";
 import { environments, WEI } from "./settings";
 
@@ -74,7 +74,7 @@ test("a succeeded test-token mint for Frontier game A does not suppress game B's
       },
     },
   } as unknown as main.Deployment;
-  const step = deliverySteps(context).find((step) => step.name === "Frontier deposit")!;
+  const step = seasonSteps(context).find((step) => step.name === "Frontier deposit")!;
   await step.apply();
   gameId = 2;
   await step.apply();

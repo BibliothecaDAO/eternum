@@ -5,6 +5,10 @@
 
 The committed deploy/release/ENVIRONMENT.json holds the shard identity and sizing. DIRECTORY retains its data.
 """
+from contextlib import redirect_stdout, redirect_stderr
+import time
+import traceback
+from urllib.error import HTTPError
 import json
 import os
 import re
@@ -16,11 +20,11 @@ from urllib.parse import urlsplit
 
 import shard
 from revision import deployment_revision
-from directory import directory_status, wait_for_identity
+from directory import directory_status, wait_for_identity, HeraldIdentityRefused
 from service_requests import identity_service_base, service_json
 
 ENVIRONMENTS = shard.ROOT / "deploy/release"
-INPUTS = ("shard_name", "chain_id", "public_rpc_url", "public_herald_url",
+INPUTS = ("shard_name", "public_rpc_url", "public_herald_url",
           "player_capacity", "presets", "node_memory", "herald_memory", "vrf_workers", "l2_gas_bound")
 
 
@@ -35,6 +39,7 @@ def main(environment, directory, report_stage=ignore_stage):
     deployment_revision(target["environment"])
     with shard.isolated_stack_lock(f"deploy {environment}"):
         directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+        inputs["chain_id"] = chain_identity(directory, target["environment"])
         report_stage("build images")
         release = shard.build_images()
         restart_unfinished(directory, inputs, release, report_stage)
@@ -52,6 +57,14 @@ def main(environment, directory, report_stage=ignore_stage):
         return 1
     print(f"{environment} runs commit {release['commit']}")
     return 0
+
+
+def chain_identity(directory, environment):
+    environment_file = directory / ".env"
+    if environment_file.exists():
+        values = dict(line.split("=", 1) for line in environment_file.read_text().splitlines() if "=" in line)
+        return values["CHAIN_ID"]
+    return f"{environment.upper()}_{time.time_ns():x}"
 
 
 def load_inputs(environment):
@@ -148,7 +161,7 @@ def restart_unfinished(directory, inputs, release, report_stage):
         raise DeploymentRefused("Directory status read is malformed; data was not overwritten")
     if not all(directory_row_is_valid(row) for row in listing["shards"]):
         raise DeploymentRefused("Directory status row is malformed; data was not overwritten")
-    rows = [row for row in listing["shards"] if row_matches_identity(row, chain, url)]
+    rows = [row for row in listing["shards"] if row["status"] != "retired" and row_matches_identity(row, chain, url)]
     if len(rows) > 1:
         raise DeploymentRefused("Several directory rows match this chain or Herald URL; data was not overwritten")
     row = rows[0] if rows else None
@@ -341,10 +354,67 @@ def release_differences(release, manifest, initialized, presets):
     return differences
 
 
+STAGES = (
+    "build images", "restart pending shard", "prepare", "start Herald", "wait for Herald identity",
+    "register pending", "start services", "initialise", "verify facts", "activate",
+)
+
+
+def write_failure(error):
+    detail = traceback.format_exc()
+    if isinstance(error, subprocess.CalledProcessError):
+        for output in (error.stdout, error.stderr):
+            if output:
+                detail += output.decode("utf8", errors="replace") if isinstance(output, bytes) else output
+    for key in ("OPERATOR_TOKEN", "DEPLOYER_PRIVATE_KEY"):
+        if os.environ.get(key):
+            detail = detail.replace(os.environ[key], "[redacted]")
+    print(detail, file=sys.stderr)
+
+
+def failure_report(error, stage):
+    detail = str(error) if isinstance(error, DeploymentRefused) else None
+    status = error.code if isinstance(error, HTTPError) else None
+    if isinstance(error, HeraldIdentityRefused):
+        status = error.status
+    code = getattr(error, "service_code", None) or type(error).__name__
+    message = f"Shard deployment stopped at {stage}; HTTP {status if status is not None else 'n/a'}; code {code}."
+    if detail:
+        message += " " + detail
+    return {"kind": "shard-deployment-refused", "message": message, "status": status, "error": code}
+
+
+def run(environment, directory):
+    stage = "prepare"
+    restarted = False
+    directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+    log_path = directory / f"deploy-{time.time_ns()}.log"
+    descriptor = os.open(log_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+
+    def report_stage(name):
+        nonlocal stage, restarted
+        if name not in STAGES:
+            raise ValueError("Unknown deployment stage")
+        stage = name
+        restarted = restarted or name == "restart pending shard"
+        print(json.dumps({"stage": stage}), flush=True)
+
+    outcome = {"kind": "shard-deployment-complete", "log": str(log_path)}
+    code = 0
+    with os.fdopen(descriptor, "w", buffering=1) as log, redirect_stdout(log), redirect_stderr(log):
+        try:
+            if main(environment, directory, report_stage):
+                raise RuntimeError("Shard deployment check failed")
+        except Exception as error:
+            write_failure(error)
+            outcome.update(failure_report(error, stage))
+            code = 1
+    outcome.update(stage=stage, restarted=restarted)
+    print(json.dumps(outcome))
+    return code
+
+
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         raise SystemExit(__doc__)
-    sys.path.insert(0, str(shard.ROOT / "deploy/first"))
-    from importlib import import_module
-    driver = import_module("box-deploy")
-    raise SystemExit(driver.run(sys.argv[1], Path(sys.argv[2]).resolve(), None))
+    raise SystemExit(run(sys.argv[1], Path(sys.argv[2]).resolve()))

@@ -554,7 +554,8 @@ mock.module(${JSON.stringify(join(root, "deploy/first/process.ts"))}, () => ({..
   expect(output).toContain("DRY RUN");
   expect(output).toContain(`Deployment commit ${"a".repeat(40)}.`);
   expect(output).not.toContain("b".repeat(40));
-  expect(output).toContain("Published pool and automatic Blitz slot");
+  expect(output).not.toContain("Published pool and automatic Blitz slot");
+  expect(output).toContain("Public address book commit");
   expect(output).not.toContain("unavailable; read failed");
   for (const secret of [
     input.cloudflareToken,

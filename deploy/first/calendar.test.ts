@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RpcProvider } from "starknet";
 import * as processTools from "./process";
-import { deliverySteps } from "./delivery";
+import { seasonSteps } from "./season-steps";
 import { PrivateStore } from "./private-store";
 import type { Deployment } from "./main";
 import { environments, type Inputs } from "./settings";
@@ -76,7 +76,7 @@ function setup(phases: Phase[], windows = [{ startsAt: input.blitzStart, endsAt:
       },
     } as unknown as RpcProvider,
   } as Deployment;
-  return { context, output, writes, step: deliverySteps(context).find((step) => step.name === "Season calendar")! };
+  return { context, output, writes, step: seasonSteps(context).find((step) => step.name === "Season calendar")! };
 }
 test("ended phases, including the exact end boundary, are replaced with explicit new dates", async () => {
   const { step, writes } = setup(

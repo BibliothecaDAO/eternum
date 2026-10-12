@@ -9,24 +9,23 @@ import { buildFrontierFundingCalls } from "../../contracts/l2/ledger/scripts/com
 import { readFrontierGame } from "../../contracts/l2/ledger/scripts/commands/deployment/fund-frontier";
 import { readFrontierFunding, assertFrontierPreset } from "../../packages/value-ledger/src/frontier-funding";
 import { isContractRevert, send, balance } from "./chain";
-import { nativeDocument, boxRead, releaseDirectory, deployShard } from "./box";
-import { workersReady, deployWorkers, clientReady, deployClient } from "./publish";
-import { command, shell } from "./process";
+import { nativeDocument } from "./box";
 import { seconds, PublicError } from "./dates";
 import { root, WEI } from "./settings";
 import { signer, type Deployment } from "./main";
 import type { Step } from "./run";
 
+export type Season = Omit<Deployment, "revision">;
+
 interface ReleaseInputs {
-  chain_id: string;
   public_rpc_url: string;
   public_herald_url: string;
 }
-function releaseInputs(context: Deployment): ReleaseInputs | undefined {
+function releaseInputs(context: Season): ReleaseInputs | undefined {
   const path = join(root, "deploy/release", `${context.target.release}.json`);
   return existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : undefined;
 }
-async function service<T>(context: Deployment, path: string, method = "GET", body?: unknown): Promise<T> {
+async function service<T>(context: Season, path: string, method = "GET", body?: unknown): Promise<T> {
   if (!context.apply && method !== "GET") throw new Error("Dry run cannot write a service");
   const response = await fetch(`${context.target.origin}${path}`, {
     method,
@@ -53,13 +52,13 @@ async function jsonGet<T>(url: string): Promise<T> {
   if (!response.ok) throw new PublicError(`Public deployment read: HTTP ${response.status}.`);
   return response.json() as Promise<T>;
 }
-async function games(context: Deployment) {
+async function games(context: Season) {
   const release = releaseInputs(context)!;
   return jsonGet<{ games: { game_id: number; mode: string; clock: { start_main_at: number } }[] }>(
     `${release.public_herald_url}/games`,
   );
 }
-async function frontierGame(context: Deployment) {
+async function frontierGame(context: Season) {
   const calendar = await service<{ phases: { phase: string; startsAt: string }[] }>(context, "/api/factory/calendar");
   const phase = calendar.phases.find((phase) => phase.phase === "frontier");
   if (!phase) return undefined;
@@ -72,7 +71,7 @@ async function frontierGame(context: Deployment) {
   if (candidates.length > 1) throw new Error("Multiple Frontier games match the calendar");
   return candidates[0]?.game_id;
 }
-async function shardConnection(context: Deployment) {
+async function shardConnection(context: Season) {
   const release = releaseInputs(context)!;
   const manifest = await nativeDocument(context.target);
   if (!manifest?.shard?.chainId || !manifest.world?.address) throw new Error("Box native-world.json is unavailable");
@@ -81,7 +80,7 @@ async function shardConnection(context: Deployment) {
     throw new Error("Herald and box name different chains");
   return { rpcUrl: release.public_rpc_url, chainId: manifest.shard.chainId, gamesAddress: manifest.world.address };
 }
-async function funding(context: Deployment) {
+async function funding(context: Season) {
   const gameId = await frontierGame(context);
   if (!gameId) return undefined;
   const shard = await shardConnection(context);
@@ -123,7 +122,7 @@ async function funding(context: Deployment) {
     throw error;
   }
 }
-async function requireBlitzSeason(context: Deployment) {
+async function requireBlitzSeason(context: Season) {
   const season = await resolveBlitzSeason(
     context.provider!,
     context.assets!.ledger,
@@ -132,7 +131,7 @@ async function requireBlitzSeason(context: Deployment) {
   );
   if (!season.present) throw new PublicError("Blitz ledger season is not open; complete Ledger setup first");
 }
-async function currentCalendar(context: Deployment) {
+async function currentCalendar(context: Season) {
   const calendar = await service<{ phases: { phase: string; startsAt: string; endsAt: string }[] }>(
     context,
     "/api/factory/calendar",
@@ -147,129 +146,9 @@ async function currentCalendar(context: Deployment) {
   }
   return phases;
 }
-export function deliverySteps(context: Deployment): Step[] {
+export function seasonSteps(context: Season): Step[] {
   const wait = (detail: string) => ({ done: false, waiting: detail, detail });
   return [
-    {
-      name: "Public address book commit",
-      payer: "none",
-      cost: "0 STRK",
-      inspect: async () => {
-        if (!context.assets) return wait("Contracts not yet published");
-        const book = `contracts/common/addresses/${context.target.book}`;
-        const diff = await command({ argv: ["git", "status", "--porcelain", "--", book] });
-        return {
-          done: !diff.trim(),
-          detail: "commit and push only the public address book; no private state enters git",
-        };
-      },
-      apply: async () => {
-        const book = `contracts/common/addresses/${context.target.book}`;
-        const staged = (await command({ argv: ["git", "diff", "--cached", "--name-only"] }))
-          .trim()
-          .split("\n")
-          .filter(Boolean);
-        if (staged.some((path) => path !== book))
-          throw new Error("Unrelated staged changes must be handled before publishing the address book");
-        const dirty = (await command({ argv: ["git", "status", "--porcelain", "--", book] })).trim();
-        const branch = (await command({ argv: ["git", "branch", "--show-current"] })).trim();
-        if (!branch || branch === "next")
-          throw new PublicError("Create a branch for the public address book, push it to origin, then rerun.");
-        if (dirty) {
-          await command({ argv: ["git", "add", "--", book] });
-          await command({
-            argv: ["git", "commit", "-m", `Publish ${context.environment} value contract addresses`, "--", book],
-          });
-        }
-        await command({ argv: ["git", "push", "origin", `HEAD:${branch}`] });
-        throw new PublicError(
-          "Public address book pushed. Rerun from this clean commit; production requires its merge to next and green push validation.",
-        );
-      },
-    },
-    {
-      name: "Workers",
-      payer: "none",
-      cost: "Cloudflare plan charges; shard signing free",
-      inspect: async () => {
-        const revision = context.revision;
-        if (!revision || !context.platform) return wait("Checkout revision and Cloudflare credentials needed");
-        return {
-          done: await workersReady(context.platform, revision),
-          detail: "migrate D1 and deploy all six Workers at the release revision; preserve existing secrets",
-        };
-      },
-      apply: async () => {
-        const revision = context.revision!;
-        await deployWorkers(context.platform!, revision);
-      },
-    },
-    {
-      name: "Shard deployment",
-      payer: "shard launcher",
-      cost: "0 STRK",
-      inspect: async () => {
-        const release = releaseInputs(context);
-        const revision = context.revision;
-        if (!revision || !release) return wait("Committed shard configuration needed");
-        const document = await nativeDocument(context.target);
-        if (!document)
-          return {
-            done: false,
-            detail: "build the shard, preserve listed state, initialize and hand off service roles before activation",
-          };
-        const expectedChain = BigInt(`0x${Buffer.from(release.chain_id).toString("hex")}`);
-        if (BigInt(document.shard.chainId) !== expectedChain)
-          return {
-            done: false,
-            detail: "check directory status before refusing or replacing unfinished shard identity",
-          };
-        const built = await boxRead(
-          context.target,
-          `if [ -f ${shell(`${releaseDirectory(context.target)}/release.json`)} ]; then cat ${shell(`${releaseDirectory(context.target)}/release.json`)}; else echo null; fi`,
-        );
-        const saved = JSON.parse(built);
-        if (!saved || saved.commit !== revision)
-          return { done: false, detail: "deploy the current commit and confirm its service roles" };
-        await jsonGet(`${release.public_herald_url}/health`);
-        const directory = await service<{ shards: { url: string; status: string; chainId: string }[] }>(
-          context,
-          "/api/directory",
-        );
-        return {
-          done: directory.shards.some(
-            (shard) =>
-              shard.url === release.public_herald_url &&
-              shard.status === "active" &&
-              BigInt(shard.chainId) === expectedChain,
-          ),
-          detail: "native-world identity, live Herald and active directory checked",
-        };
-      },
-      apply: async () => {
-        const revision = context.revision!;
-        context.output("Building shard images on the box and checking deployment.");
-        await deployShard(context.target, revision, context.output);
-      },
-    },
-    {
-      name: "Client",
-      payer: "none",
-      cost: "Cloudflare build charges; 0 STRK",
-      inspect: async () => {
-        const revision = context.revision;
-        return revision
-          ? {
-              done: await clientReady(context.platform!, revision),
-              detail:
-                "build locally, verify chain/RPC and assets, publish Pages with wrangler, then verify live modules/routes",
-            }
-          : wait("Release needed");
-      },
-      apply: async () => {
-        await deployClient(context.platform!, context.revision!);
-      },
-    },
     {
       name: "Season calendar",
       payer: "operator token",
@@ -306,7 +185,7 @@ export function deliverySteps(context: Deployment): Step[] {
       payer: context.target.coldAdmin ? "cold admin" : "deployer",
       cost: "deposit amount plus fee (dev first-deployment reserve includes it)",
       inspect: async () => {
-        if (!context.assets || !context.revision) return wait("Deployed shard and ledger needed");
+        if (!context.assets) return wait("Deployed shard and ledger needed");
         const state = await funding(context);
         if (!state)
           return {
@@ -367,7 +246,7 @@ export function deliverySteps(context: Deployment): Step[] {
       payer: "relay",
       cost: "relay reserve about 30 STRK for the measured day",
       inspect: async () => {
-        if (!context.assets || !context.revision) return wait("Released services and funded game needed");
+        if (!context.assets) return wait("Released services and funded game needed");
         const state = await funding(context);
         if (!state?.funded) return wait("Fund the confirmed game first");
         return {
@@ -382,7 +261,7 @@ export function deliverySteps(context: Deployment): Step[] {
   ];
 }
 
-async function poolPublished(context: Deployment) {
+async function poolPublished(context: Season) {
   const state = await funding(context);
   if (!state?.funded) return false;
   const snapshot = await readConfirmedSnapshot(state.shard, releaseInputs(context)!.public_herald_url, state.gameId, [
@@ -398,11 +277,7 @@ async function poolPublished(context: Deployment) {
   await service(context, "/api/operator/monitor/health");
   return true;
 }
-async function waitFor<T>(
-  context: Deployment,
-  read: () => Promise<T | undefined | false>,
-  message: string,
-): Promise<T> {
+async function waitFor<T>(context: Season, read: () => Promise<T | undefined | false>, message: string): Promise<T> {
   if (!context.apply) throw new Error("Dry run cannot wait for a future write");
   for (;;) {
     const value = await read();

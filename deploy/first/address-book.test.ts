@@ -1,7 +1,7 @@
 import { afterEach, expect, mock, spyOn, test } from "bun:test";
 import { rmSync } from "node:fs";
 import * as processTools from "./process";
-import { deliverySteps } from "./delivery";
+import { addressBookStep } from "./address-book";
 import type { Deployment } from "./main";
 import { environments } from "./settings";
 
@@ -21,7 +21,7 @@ function setup(branch = "first-addresses", dirty = true, staged = "") {
     return "";
   });
   const context = { target: environments.dev, environment: "dev", assets: { ledger: "0x1" } } as Deployment;
-  return { calls, step: deliverySteps(context).find((step) => step.name === "Public address book commit")! };
+  return { calls, step: addressBookStep(context) };
 }
 test.each(["", "next"])("address book never pushes a detached checkout or next (%s)", async (branch) => {
   const { step, calls } = setup(branch);

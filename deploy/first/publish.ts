@@ -1,18 +1,8 @@
-import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { setTimeout } from "node:timers/promises";
 import { l2EnvironmentProblem } from "../../apps/game/src/runtime/l2-environment";
 import { command } from "./process";
 import { Platform, workers, type Worker } from "./platform";
-import { root } from "./settings";
-import { PublicError } from "./dates";
-
-async function requireReleaseTree(revision: string) {
-  const local = (await command({ argv: ["git", "rev-parse", "HEAD"] })).trim();
-  const dirty = (await command({ argv: ["git", "status", "--porcelain"] })).trim();
-  if (dirty || local !== revision)
-    throw new PublicError(`Deploy from the clean checkout of commit ${revision}; rerun after checking it out.`);
-}
 
 async function workerReady(platform: Platform, worker: Worker, revision: string) {
   const version = await platform.deployedVersion(worker);
@@ -28,13 +18,8 @@ async function workerReady(platform: Platform, worker: Worker, revision: string)
   const body = (await response.json()) as { environment: string; version: string };
   return body.environment === platform.target.worker && body.version === version.id;
 }
-export async function workersReady(platform: Platform, revision: string) {
-  for (const worker of workers) if (!(await workerReady(platform, worker, revision))) return false;
-  return true;
-}
 export async function deployWorkers(platform: Platform, revision: string) {
   if (!platform.apply) throw new Error("Dry run cannot deploy Workers");
-  await requireReleaseTree(revision);
   await command({ argv: ["pnpm", "run", "build:packages"] });
   for (const worker of workers) {
     if ((await platform.deployedRevision(worker)) !== revision) {
@@ -72,21 +57,9 @@ if (!result.ok) process.exitCode = 1;
 `,
   });
 }
-export async function clientReady(platform: Platform, revision: string) {
-  if ((await platform.clientRevision()) !== revision) return false;
-  if (
-    platform.store.read<{ revision: string }>("client-build.json")?.revision !== revision ||
-    !existsSync(join(root, "apps/game/dist/sw.js"))
-  )
-    return false;
-  await verifyPublishedClient(platform);
-  return true;
-}
 export async function deployClient(platform: Platform, revision: string) {
   if (!platform.apply) throw new Error("Dry run cannot deploy the client");
   const env = clientEnvironment(platform, revision);
-  await requireReleaseTree(revision);
-  await command({ argv: ["pnpm", "run", "build:packages"] });
   await command({ argv: ["pnpm", "--dir", "apps/game", "test", "src/utils/chunk-load-recovery.test.ts", "src/pwa"] });
   await command({ argv: ["pnpm", "--dir", "apps/game", "verify:assets"] });
   await command({ argv: ["pnpm", "--dir", "apps/game", "build"], env });
@@ -111,7 +84,6 @@ for (const file of await readdir('apps/game/dist', {recursive:true}))
     argv: ["node", "apps/game/scripts/ensure-pwa-cache-rule.mjs", platform.target.origin, platform.target.zone],
     env: cloudflare,
   });
-  platform.store.write("client-build.json", { revision });
   if ((await platform.clientRevision()) !== revision)
     await command({
       argv: [

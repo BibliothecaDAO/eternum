@@ -69,3 +69,16 @@ ARG SHARD_REVISION
 ENV SHARD_REVISION=${SHARD_REVISION}
 # Initialization consumes the compiled artifacts; it never downloads or compiles contracts on the host.
 ENTRYPOINT ["python3", "/app/deploy/shard/init.py"]
+
+# Setup exports value artifacts from this image; no compiler runs on the host.
+FROM node:22-bookworm@sha256:dd5847a04b0deee391fa145f1f4c6d214196668b6bcc7988ebed67249f226844 AS value-contracts
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl git util-linux && rm -rf /var/lib/apt/lists/*
+RUN mkdir /tools && curl --fail --location --retry 3 \
+    https://github.com/software-mansion/scarb/releases/download/v2.13.1/scarb-v2.13.1-x86_64-unknown-linux-gnu.tar.gz \
+    | tar -xz --strip-components=1 -C /tools
+WORKDIR /app
+COPY contracts/l2/ledger/ contracts/l2/ledger/
+COPY contracts/l2/mmr/ contracts/l2/mmr/
+COPY contracts/l2/collectibles/ contracts/l2/collectibles/
+RUN --mount=type=cache,target=/scarb-cache export XDG_CACHE_HOME=/scarb-cache/2.13.1 && \
+    for package in ledger mmr collectibles; do (cd contracts/l2/$package && taskset -c 8-11 /tools/bin/scarb --release build) || exit; done

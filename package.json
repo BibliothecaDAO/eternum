@@ -96,8 +96,12 @@
     "images:compress:dry-run": "node scripts/compress-images-with-sharp.js --dry-run",
     "images:compress:webp": "node scripts/compress-images-with-sharp.js --webp",
     "fixtures:native-lords-budget": "python3 contracts/l3/world-native/scripts/generate-lords-budget-fixtures.py",
-    "deploy:first": "bun --no-env-file deploy/first/main.ts",
-    "test:deployment": "bun test deploy/first/*.test.ts"
+    "test:deployment": "bun test deploy/first/*.test.ts",
+    "setup": "bun --no-env-file deploy/first/main.ts",
+    "deploy": "bun --no-env-file deploy/first/deploy.ts",
+    "deploy:cloudflare": "bun --no-env-file deploy/first/cloudflare.ts",
+    "season": "bun --no-env-file deploy/first/season.ts",
+    "teardown": "bun --no-env-file deploy/first/teardown.ts"
   },
   "dependencies": {
     "@bibliothecadao/provider": "workspace:*",

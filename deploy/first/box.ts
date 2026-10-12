@@ -38,12 +38,26 @@ export async function boxRead(target: Target, script: string) {
     input: `set -euo pipefail\n${script}\n`,
   });
 }
-export async function deployShard(target: Target, revision: string, output: (line: string) => void) {
+export async function boxCommand(target: Target, revision: string, invocation: string) {
+  if (!/^[0-9a-f]{40}$/.test(revision)) throw new Error("Invalid deployment revision");
   const checkout = remoteCheckout(revision);
+  return boxRead(
+    target,
+    `
+if [ ! -d ${shell(checkout)} ]; then git clone --no-checkout https://github.com/BibliothecaDAO/eternum.git ${shell(checkout)} >&2; fi
+cd ${shell(checkout)}
+git fetch origin ${revision} >&2
+git checkout --detach ${revision} >&2
+python3 deploy/athanor/scripts/operator-command.py ${invocation}
+`,
+  );
+}
+export async function deployShard(target: Target, revision: string, output: (line: string) => void) {
   try {
-    const result = await boxRead(
+    const result = await boxCommand(
       target,
-      `if [ ! -d ${shell(checkout)} ]; then git clone --no-checkout https://github.com/BibliothecaDAO/eternum.git ${shell(checkout)} >/dev/null 2>&1; fi\ncd ${shell(checkout)}\ngit fetch origin ${revision} >/dev/null 2>&1\ngit checkout --detach ${revision} >/dev/null 2>&1\npython3 deploy/first/box-deploy.py ${shell(target.release)} ${shell(releaseDirectory(target))} ${revision}`,
+      revision,
+      `deploy ${shell(target.release)} ${shell(releaseDirectory(target))}`,
     );
     output(`Shard log: ${JSON.parse(result).log}`);
     if (JSON.parse(result).restarted) output("Restarting the unfinished pending shard from fresh state.");
@@ -82,6 +96,7 @@ export async function artifactsReady(store: PrivateStore, revision: string) {
           "contracts/l2/mmr",
           "contracts/l2/collectibles",
           "deploy/first/box.ts",
+          "deploy/shard/Dockerfile",
         ],
       })
     ).trim();
@@ -92,30 +107,30 @@ export async function artifactsReady(store: PrivateStore, revision: string) {
 export async function buildArtifacts(target: Target, store: PrivateStore, revision: string) {
   if (!/^[0-9a-f]{40}$/.test(revision)) throw new Error("Invalid release revision");
   const checkout = remoteCheckout(revision);
-  await boxRead(
-    target,
-    `
+  console.log(
+    await boxRead(
+      target,
+      `
 mkdir -p "$HOME/cairo-suite"
 umask 077
 build_log=${shell(checkout)}-build.log
 echo "Box build log: $build_log"
 exec 9>"$HOME/cairo-suite/.lock"
 flock 9
-if [ ! -d ${shell(checkout)} ]; then git clone --no-checkout https://github.com/BibliothecaDAO/eternum.git ${shell(checkout)} >/dev/null 2>&1; fi
+if [ ! -d ${shell(checkout)} ]; then git clone --no-checkout https://github.com/BibliothecaDAO/eternum.git ${shell(checkout)} >>"$build_log" 2>&1; fi
 cd ${shell(checkout)}
-git fetch origin ${revision} >/dev/null 2>&1
-git checkout --detach ${revision} >/dev/null 2>&1
-export PATH="$HOME/cairo-suite/tool-data/scarb-install/2.13.1/bin:$HOME/.local/bin:$PATH"
-scarb --version | head -1 | grep -q '2.13.1'
-for package in ledger mmr collectibles; do (cd contracts/l2/$package && taskset -c 8-11 scarb --release build >>"$build_log" 2>&1); done
+git fetch origin ${revision} >>"$build_log" 2>&1
+git checkout --detach ${revision} >>"$build_log" 2>&1
+git archive ${revision} | sudo -n docker buildx build --load --platform linux/amd64 --target value-contracts -t realms-value:${revision} -f deploy/shard/Dockerfile - >>"$build_log" 2>&1
 `,
+    ),
   );
   const directory = join(store.directory, "artifacts");
   mkdirSync(directory, { mode: 0o700, recursive: true });
   for (const { packageName, file } of artifactFiles) {
     const data = await boxRead(
       target,
-      `cat ${shell(`${checkout}/contracts/l2/${packageName}/target/release/${file}`)}`,
+      `sudo -n docker run --rm --network none --entrypoint cat realms-value:${revision} ${shell(`/app/contracts/l2/${packageName}/target/release/${file}`)}`,
     );
     JSON.parse(data);
     writeFileSync(join(directory, file), data, { mode: 0o600 });

@@ -1,4 +1,4 @@
-"""One deployment revision: the clean checkout, pushed to origin; production also passed landing validation."""
+"""One pushed deployment revision; image builds export only the commit."""
 import json
 from pathlib import Path
 import subprocess
@@ -19,8 +19,6 @@ def read(*args):
 def deployment_revision(environment):
     if environment not in ('dev', 'production'):
         raise RevisionRefused('Unknown deployment environment')
-    if read('git', 'status', '--porcelain'):
-        raise RevisionRefused('Deploy from a clean checkout; commit and push changes first.')
     revision = read('git', 'rev-parse', 'HEAD')
     read('git', 'fetch', '--prune', 'origin', '+refs/heads/*:refs/remotes/origin/*')
     refs = read('git', 'for-each-ref', '--format=%(refname)', '--contains', revision, 'refs/remotes/origin/')
