@@ -5,7 +5,8 @@ import os
 from pathlib import Path
 import subprocess
 import unittest
-from contextlib import redirect_stdout
+import tempfile
+from contextlib import redirect_stdout, nullcontext
 from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location("box_deploy", Path(__file__).resolve().parents[2] / "first/box-deploy.py")
@@ -102,3 +103,38 @@ class DeploymentRefusalTest(unittest.TestCase):
         ):
             with self.subTest(failure=failure), self.assertRaises(ValueError):
                 box_deploy.deploy.SelfCheckFailed({"firstFailedRoute": "Explore", "failure": failure})
+
+
+class DeploymentOrderTest(unittest.TestCase):
+    def test_build_failure_leaves_the_former_shard_running(self):
+        with (
+            patch.object(box_deploy.deploy, "deployment_target"),
+            patch.object(box_deploy, "operator_environment", return_value={}),
+            patch.object(box_deploy.deploy, "load_inputs", return_value={}),
+            patch.object(box_deploy.shard, "isolated_stack_lock", return_value=nullcontext()),
+            patch.object(box_deploy.shard, "build_images", side_effect=RuntimeError("build failed")),
+            patch.object(box_deploy, "retire_previous") as retire,
+            patch.object(box_deploy.deploy, "main") as deploy,
+        ):
+            with self.assertRaisesRegex(RuntimeError, "build failed"):
+                box_deploy.main("test", Path("/unused"), "revision", lambda _: None)
+            retire.assert_not_called()
+            deploy.assert_not_called()
+
+    def test_images_build_before_retirement_and_deployment(self):
+        events = []
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            (directory / "data").mkdir()
+            (directory / "data/self-check.json").write_text('{"passed":true}')
+            with (
+                patch.object(box_deploy.deploy, "deployment_target"),
+                patch.object(box_deploy, "operator_environment", return_value={}),
+                patch.object(box_deploy.deploy, "load_inputs", return_value={}),
+                patch.object(box_deploy.shard, "isolated_stack_lock", return_value=nullcontext()),
+                patch.object(box_deploy.shard, "build_images", side_effect=lambda: events.append("build")),
+                patch.object(box_deploy, "retire_previous", side_effect=lambda *_: events.append("retire")),
+                patch.object(box_deploy.deploy, "main", side_effect=lambda *_: events.append("deploy")),
+            ):
+                box_deploy.main("test", directory, "revision", lambda _: None)
+            self.assertEqual(events, ["build", "retire", "deploy"])

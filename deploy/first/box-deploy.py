@@ -59,6 +59,8 @@ def main(environment, directory, revision, report_stage):
     os.environ.update(operator_environment())
     inputs = deploy.load_inputs(environment)
     with shard.isolated_stack_lock('prepare first deployment'):
+        report_stage("build images")
+        shard.build_images()
         report_stage("retire previous shard")
         retire_previous(inputs, directory)
     if deploy.main(environment, directory, report_stage):
