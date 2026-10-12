@@ -1,4 +1,4 @@
-import { Path, Shape, Vector2 } from "three";
+import { BufferGeometry, Float32BufferAttribute, Shape, Vector2 } from "three";
 
 export const createHexagonShape = (radius: number) => {
   const shape = new Shape();
@@ -18,11 +18,46 @@ export const createHexagonShape = (radius: number) => {
   return shape;
 };
 
-/** A hexagon band: the outer hexagon with the inner one cut out. */
-export const createHexagonRingShape = (outerRadius: number, innerRadius: number) => {
-  const ring = createHexagonShape(outerRadius);
-  ring.holes.push(new Path(createHexagonShape(innerRadius).getPoints().slice().reverse()));
-  return ring;
+const hexagonCorner = (radius: number, corner: number): [number, number] => {
+  const angle = (Math.PI / 3) * corner - Math.PI / 2;
+  return [radius * Math.cos(angle), radius * Math.sin(angle)];
+};
+
+/**
+ * A hexagon line that reads on any ground: a light core between two dark casings, as vertex colours. On pale ground
+ * (snow, sand) the casings carry it; on dark ground the core does. Faces +Z like the shape geometries.
+ */
+export const createCasedHexagonBandGeometry = (
+  outerRadius: number,
+  innerRadius: number,
+  casing: number,
+  colors: { core: readonly [number, number, number]; casing: readonly [number, number, number] },
+): BufferGeometry => {
+  const bands = [
+    { from: innerRadius - casing, to: innerRadius, color: colors.casing },
+    { from: innerRadius, to: outerRadius, color: colors.core },
+    { from: outerRadius, to: outerRadius + casing, color: colors.casing },
+  ];
+  const positions: number[] = [];
+  const vertexColors: number[] = [];
+  for (const { from, to, color } of bands) {
+    for (let corner = 0; corner < 6; corner++) {
+      const [innerA, outerA, innerB, outerB] = [
+        hexagonCorner(from, corner),
+        hexagonCorner(to, corner),
+        hexagonCorner(from, corner + 1),
+        hexagonCorner(to, corner + 1),
+      ];
+      for (const [x, y] of [innerA, outerA, outerB, innerA, outerB, innerB]) {
+        positions.push(x, y, 0);
+        vertexColors.push(...color);
+      }
+    }
+  }
+  const geometry = new BufferGeometry();
+  geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("color", new Float32BufferAttribute(vertexColors, 3));
+  return geometry;
 };
 
 export const createRoundedHexagonShape = (radius: number, cornerRadius: number = radius * 0.15) => {

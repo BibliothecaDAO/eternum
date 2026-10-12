@@ -7,20 +7,24 @@
 
 import { HEX_SIZE } from "@/three/constants";
 import {
-  createHexagonRingShape,
+  createCasedHexagonBandGeometry,
   createHexagonShape,
   createRoundedHexagonShape,
 } from "@/three/geometry/hexagon-geometry";
-import { ShapeGeometry } from "three";
+import { type BufferGeometry, ShapeGeometry } from "three";
 import { registerDebugHook, type DebugHookInstallOptions } from "./debug-hooks";
 
 interface GeometryConfig {
   size: number;
   rounded: boolean;
   cornerRadius?: number;
-  /** A band instead of a fill: the hexagon inside this radius is cut out. */
-  innerRadius?: number;
+  /** A cased line instead of a fill: a light band out from this radius, with a dark casing this wide on both sides. */
+  band?: { innerRadius: number; casing: number };
 }
+
+// The buildable-hex line's two tones: the terrain grid's grey lifted to read on dark ground, and a near-black casing
+// that carries it on snow and sand.
+const BAND_COLORS = { core: [0.93, 0.9, 0.84], casing: [0.07, 0.06, 0.05] } as const;
 
 interface GeometryStats {
   totalGeometries: number;
@@ -33,7 +37,7 @@ export class HexGeometryPool {
   private static instance: HexGeometryPool;
 
   // Cache for shared geometries
-  private geometries: Map<string, ShapeGeometry> = new Map();
+  private geometries: Map<string, BufferGeometry> = new Map();
 
   // Reference counting for safe disposal
   private referenceCount: Map<string, number> = new Map();
@@ -49,11 +53,11 @@ export class HexGeometryPool {
       rounded: true,
       cornerRadius: HEX_SIZE * 0.975 * 0.15,
     },
-    // The buildable-hex outline in the local scene: a thin band just inside the cell.
+    // The buildable-hex outline in the local scene: a thin cased band just inside the cell.
     interactive: {
-      size: HEX_SIZE * 0.97,
+      size: HEX_SIZE * 0.965,
       rounded: false,
-      innerRadius: HEX_SIZE * 0.93,
+      band: { innerRadius: HEX_SIZE * 0.935, casing: HEX_SIZE * 0.018 },
     },
     border: {
       size: HEX_SIZE,
@@ -73,7 +77,7 @@ export class HexGeometryPool {
   /**
    * Get or create a shared hex geometry
    */
-  public getGeometry(type: string): ShapeGeometry {
+  public getGeometry(type: string): BufferGeometry {
     const config = HexGeometryPool.GEOMETRY_CONFIGS[type];
     if (!config) {
       throw new Error(`Unknown hex geometry type: ${type}`);
@@ -116,15 +120,14 @@ export class HexGeometryPool {
   /**
    * Create optimized geometry from config
    */
-  private createGeometry(config: GeometryConfig): ShapeGeometry {
-    const shape =
-      config.innerRadius !== undefined
-        ? createHexagonRingShape(config.size, config.innerRadius)
-        : config.rounded
-          ? createRoundedHexagonShape(config.size, config.cornerRadius)
-          : createHexagonShape(config.size);
-
-    const geometry = new ShapeGeometry(shape);
+  private createGeometry(config: GeometryConfig): BufferGeometry {
+    const geometry = config.band
+      ? createCasedHexagonBandGeometry(config.size, config.band.innerRadius, config.band.casing, BAND_COLORS)
+      : new ShapeGeometry(
+          config.rounded
+            ? createRoundedHexagonShape(config.size, config.cornerRadius)
+            : createHexagonShape(config.size),
+        );
 
     // Optimize geometry for sharing
     geometry.computeBoundingBox();

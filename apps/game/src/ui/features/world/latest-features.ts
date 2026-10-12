@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-12",
+    title: "Plots you can see on snow",
+    description:
+      "Improved the outline of a realm's building plots: a light line in a dark edge, so it reads on snow and sand as well as on dark ground, and no part of it sinks into uneven ground.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-12",
     title: "Your realm's real surroundings",
     description:
       "Fixed the realm view showing one ground everywhere in Frontier. Each side of the realm now shows the land of the tile beside it on the map, and it updates when a neighbouring tile is explored.",

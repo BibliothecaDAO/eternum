@@ -1,4 +1,5 @@
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
+import { HEX_SIZE } from "@/three/constants";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { Aura } from "@/three/managers/aura";
 import { HoverHexManager, type HoverVisualMode } from "@/three/managers/hover-hex-manager";
@@ -15,6 +16,12 @@ import { FLAT_TERRAIN_SURFACE, type TerrainSurface } from "@/three/terrain/terra
 /** The band floats just above the sampled ground so relief cannot swallow it. */
 const INTERACTIVE_HEX_SURFACE_OFFSET = 0.03;
 const INTERACTIVE_PICK_Y = 0;
+// Where the ground is read under a hex's band: its six corners and six edge middles.
+const BAND_EDGE_SAMPLES = Array.from({ length: 12 }, (_, index) => {
+  const angle = (Math.PI / 6) * index;
+  const radius = HEX_SIZE * 0.95 * (index % 2 === 0 ? Math.cos(Math.PI / 6) : 1);
+  return [radius * Math.cos(angle), radius * Math.sin(angle)] as const;
+});
 const RAY_PARALLEL_EPSILON = 1e-6;
 
 type InteractiveHexHoverVisualMode = HoverVisualMode;
@@ -393,7 +400,7 @@ export class InteractiveHexManager {
         const col = this.hexCoordsCache[i * 2];
         const row = this.hexCoordsCache[i * 2 + 1];
         this.space.positionForHexInto(col, row, this.position);
-        this.dummy.position.set(this.position.x, this.surfaceY(this.position.x, this.position.z), this.position.z);
+        this.dummy.position.set(this.position.x, this.bandY(this.position.x, this.position.z), this.position.z);
         this.dummy.rotation.x = -Math.PI / 2;
         this.dummy.updateMatrix();
         mesh.setMatrixAt(i, this.dummy.matrix);
@@ -404,7 +411,7 @@ export class InteractiveHexManager {
       this.allHexes.forEach((hexString) => {
         const [col, row] = hexString.split(",").map(Number);
         const position = this.space.positionForHex({ col, row });
-        this.dummy.position.set(position.x, this.surfaceY(position.x, position.z), position.z);
+        this.dummy.position.set(position.x, this.bandY(position.x, position.z), position.z);
         this.dummy.rotation.x = -Math.PI / 2;
         this.dummy.updateMatrix();
         mesh.setMatrixAt(index, this.dummy.matrix);
@@ -451,7 +458,7 @@ export class InteractiveHexManager {
       const col = this.visibleHexCoordsCache[i * 2];
       const row = this.visibleHexCoordsCache[i * 2 + 1];
       this.space.positionForHexInto(col, row, this.position);
-      this.dummy.position.set(this.position.x, this.surfaceY(this.position.x, this.position.z), this.position.z);
+      this.dummy.position.set(this.position.x, this.bandY(this.position.x, this.position.z), this.position.z);
       this.dummy.rotation.x = -Math.PI / 2;
       this.dummy.updateMatrix();
       mesh.setMatrixAt(i, this.dummy.matrix);
@@ -513,6 +520,19 @@ export class InteractiveHexManager {
 
   private surfaceY(x: number, z: number): number {
     return this.terrain.sampleSurface(x, z).height + INTERACTIVE_HEX_SURFACE_OFFSET;
+  }
+
+  /**
+   * The height a hex's band lies at: clear of the highest ground under its edge, so relief never buries part of the
+   * line. A band that is not drawn (the world map's) only needs its centre.
+   */
+  private bandY(x: number, z: number): number {
+    if (!this.surfaceVisible) return this.surfaceY(x, z);
+    let highest = this.terrain.sampleSurface(x, z).height;
+    for (const [dx, dz] of BAND_EDGE_SAMPLES) {
+      highest = Math.max(highest, this.terrain.sampleSurface(x + dx, z + dz).height);
+    }
+    return highest + INTERACTIVE_HEX_SURFACE_OFFSET;
   }
 
   private resolveHexFromPoint(point: THREE.Vector3) {
