@@ -48,7 +48,6 @@ function setup() {
       if (argv[1] === "status") return state.dirty;
     }
     if (argv[0] === "gh" && argv[1] === "run") return JSON.stringify(state.validation);
-    if (argv[0] === "gh" && argv[1] === "release") return JSON.stringify({ assets: [{ name: "shard.tar.gz" }] });
     if (argv[0] === "ssh")
       return typeof input === "string" && input.includes("native-world.json") ? state.native : state.proof;
     throw new Error(`Unexpected test command: ${argv.slice(0, 2).join(" ")}`);

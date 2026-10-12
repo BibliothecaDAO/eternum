@@ -52,8 +52,17 @@ credentials or move a live shard onto an unreviewed endpoint. On a fresh host, r
 `OPERATOR` defaults to that sudo user. This infrastructure prerequisite is separate from the five mainnet/shard keys.
 
 The box needs the shared compiler at `~/cairo-suite/tool-data/scarb-install/2.13.1/bin/scarb`, git access to this
-repository and Docker Compose. All three release builds run there under `~/cairo-suite/.lock`, cores 8–11. They do not
-run on the owner's laptop. No mainnet private key or Alchemy URL goes to that host.
+repository, GitHub CLI for production validation, Docker Buildx and Compose. Contract builds run there under
+`~/cairo-suite/.lock`, cores 8–11. They do not run on the owner's laptop. No mainnet private key or Alchemy URL goes to
+that host.
+
+First deployment and routine updates use this same command from a clean checkout. Its HEAD is the only deployment
+revision: dev requires it pushed to any origin branch; production requires it on `origin/next` with green push
+validation. Workers, shard images and Pages all use that commit. Push a dev fix and rerun; for production, merge it,
+wait for validation, check out that commit and rerun. No tag, release package or private revision edit is needed. The
+box exports committed files, builds init, Herald and metrics, and records local image digests and contract facts in
+`release.json`. Cairo runs under `~/cairo-suite/.lock` on cores 8–11. Contract source, lockfiles and compiler versions
+key Docker's Cairo layers; changes to Herald or deployment scripts reuse them.
 
 ## What the command does
 
@@ -80,39 +89,27 @@ run on the owner's laptop. No mainnet private key or Alchemy URL goes to that ho
    is the exception: its existing key is always preserved. Nothing is uploaded to GitHub. The deployer and cold keys
    stay on the owner's machine.
 10. Install the operator token on the box if absent. Its protected file is checked against the saved environment token.
-11. If the public environment address book already matches `origin/next`, skip publication and the owner merge.
-    Otherwise commit and push **only** the public environment address book to `stack/node-first`. Unrelated staged
-    changes stop this step. Before committing, fetch and require HEAD to equal origin/stack/node-first; a mismatch stops
-    with one public explanation. If the commit succeeded but its push failed, a rerun accepts exactly one commit above
-    the branch head that changes only this book, reports it and retries the push without another commit. Print the exact
-    `gh pr merge <number> --merge` command; wait for the owner to merge and rerun.
-12. Observe successful push validation on the merged `next` commit. Print the exact `git tag` and `git push` commands
-    for the package tag in the release file. Wait for the owner and the `shard-images.yml` release. Never move a tag.
-    The command deploys the commit targeted by the package tag in the committed release file. That commit must be on
-    `origin/next` and have successful push validation. If the tag is absent, the printed commands name the current
-    `origin/next` commit, and the release file at that commit must name the same package before any tag command is
-    printed. A fix needs a new package tag and release. Check out the clean released source before deploying:
-    `git checkout --detach <package tag>` (for this dev release, `git checkout --detach shard-v0.7.0-rc.2`), then rerun
-    from that checkout even if next has advanced. Old `pull-request.json` files are ignored: no private state edit is
-    needed to select the new release.
-13. Build workspace packages, migrate D1 and deploy all six Workers from the released tree. Worker version tags prove
+11. If the address book changed, commit and push **only** that file on the owner's current branch, then stop. Create a
+    branch first if the checkout is detached or on `next`. Rerun from the new pushed commit; production requires merging
+    it to `next` and successful push validation first. Unrelated staged changes stop publication.
+12. Build workspace packages, migrate D1 and deploy all six Workers from the released tree. Worker version tags prove
     the source revision. An interrupted deployment resumes with the remaining Workers.
-14. Drain the former shard's directory entry, stop the Compose project occupying its ports, retire that entry and deploy
-    the reviewed new shard. Preserve old data and volumes. The existing deployment check proves gameplay and the
-    on-chain launcher/ledger-operator handoff before activation. An unrelated container or conflicting new-chain data
-    stops the command.
-15. Build and publish the client locally with wrangler. Check its chain/RPC, recovery tests, source assets, emitted PWA
+13. Drain the former shard's directory entry, stop the Compose project occupying its ports, retire that entry and deploy
+    the new shard built on the box from this checkout commit. Preserve former active shard data and volumes. The
+    existing deployment check proves gameplay and the on-chain launcher/ledger-operator handoff before activation. An
+    unrelated container or conflicting new-chain data stops the command.
+14. Build and publish the client locally with wrangler. Check its chain/RPC, recovery tests, source assets, emitted PWA
     assets, cache rules and published modules/routes. Remove public sourcemaps before upload. Origin, zone and Pages
     project come from the table. A matching remote release is checked without uploading it again.
-16. Show both seasons and the deposit, then set missing calendar phases to the exact entered dates. A phase's start may
+15. Show both seasons and the deposit, then set missing calendar phases to the exact entered dates. A phase's start may
     have passed, but its end must still be in the future. Ended phases may be replaced; running or future phases with
     different dates stop the command. No automatic date is chosen. Leave the process running: it waits for the launch
     cron and the confirmed Frontier game, reads the box's **own `data/native-world.json`**, checks its chain against
     Herald, and verifies the game's start, end, seed and funding terms against the ledger.
-17. Mint dev test tokens if needed, approve and fund exactly that game. Production instead writes `cold-funding.json`
+16. Mint dev test tokens if needed, approve and fund exactly that game. Production instead writes `cold-funding.json`
     for the cold admin to execute with real LORDS; rerun after its confirmation. An existing deposit is checked and
     never repeated. No chest exists before funding and pool publication.
-18. Wait for the relay to publish the exact deposit in the confirmed `LordsBudget`, then verify relay/monitor health and
+17. Wait for the relay to publish the exact deposit in the confirmed `LordsBudget`, then verify relay/monitor health and
     the automatically opened Blitz slot. The script never calls `open_slot` manually.
 
 ## Private state and recovery
@@ -146,8 +143,8 @@ obtains the upgrade key.
 Declarations, contract deployments, transfers, successful setup and funding cannot be undone. Check the public book,
 roles and four displayed dates before applying. A wrong published contract or immutable preset causes a refusal;
 changing private state does not repair it. If the funding game, token, start, end or pool differs, the command refuses
-rather than sending another deposit. A proven pool mismatch remains an error. D1 migrations, DNS and release tags also
-affect running services: keep the former shard's retained data for recovery and never repoint a published tag.
+rather than sending another deposit. A proven pool mismatch remains an error. D1 migrations and DNS also affect running
+services: keep the former active shard’s retained data for recovery.
 
 Dev chest metadata uses the public test CID already committed in
 `contracts/l2/collectibles/ext/scripts/deployment/data/example.json`. All five chest bands and the test cosmetics use
@@ -166,9 +163,8 @@ python3 -m unittest discover -s deploy/athanor/scripts -p 'test_*.py'
 
 ## Remove unused GitHub secrets
 
-A push to `next` deploys nothing. The Worker and client deploy workflows are deleted. The release image workflow uses
-only the built-in `GITHUB_TOKEN`; the deployment command never reads or writes GitHub secrets or environments. GitHub is
-used only to read validation/release/merge state and to push the public address book through git.
+A push to `next` deploys nothing. No workflow publishes images, Workers or the client. The deployment command never
+reads or writes GitHub secrets or environments. GitHub holds source commits and production validation results only.
 
 The owner can delete these stored deployment secrets from repository and environment settings; none has a workflow
 reader: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `L2_RPC_URL`, `BETTER_AUTH_SECRET`, `OPERATOR_TOKEN`,

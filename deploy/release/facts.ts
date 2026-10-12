@@ -1,7 +1,7 @@
 /**
  * The facts a release deploys, read from this checkout's compiled contracts: the class of every contract a shard's
  * initialization deploys, the release id, the active schema, and the commitment of every preset the release can
- * register. The init image bakes them at build; CI publishes them as release.json beside the shard package; the
+ * register. The init image bakes them at build; the box records them in release.json with its commit and images; the
  * deploy command compares a deployed shard against them.
  *
  *   bun deploy/release/facts.ts > release-facts.json

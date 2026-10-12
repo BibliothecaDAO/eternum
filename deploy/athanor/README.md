@@ -9,16 +9,18 @@ ATHANOR contains the isolated box deployment and gameplay harness. `scripts/shar
 pinned images, an explicit chain identity and the published guardian identity, then starts its compose project. See
 "Runtime and deployment" below for the inputs. Clients are static builds on Cloudflare Pages; identity, the shard
 directory, launches and the other central services are the environment's Workers. The
-[public shard package](../shard/README.md) runs with Docker alone; the runner renders that same Compose file.
+[shard runtime](../shard/README.md) runs with Docker alone; the runner renders that same Compose file.
 
 ## Runtime and deployment
 
 The shard package in [deploy/shard](../shard/README.md) owns Madara, PostgreSQL, Herald, one stamping RPC and metrics.
 The init image carries the compiled contracts and native verifier; the Herald image also carries the stamping bundle,
-worker and native prover. CI publishes only init, Herald and metrics images. There is no gateway image or service.
+worker and native prover. The box builds init, Herald and metrics images from its checkout. There is no gateway image or
+service.
 
-For released packages use `python3 deploy/athanor/scripts/operator-command.py deploy ENVIRONMENT DIRECTORY`.
-`deploy/release/ENVIRONMENT.json` is the reviewed input source. For a fresh local build use the existing
+For first deployment and updates use `python3 deploy/athanor/scripts/operator-command.py deploy ENVIRONMENT DIRECTORY`.
+`deploy/release/ENVIRONMENT.json` is the reviewed input source. The deployer builds its images under the shared Cairo
+lock, with compilation pinned to cores 8–11. For measurements use the existing
 `python3 deploy/athanor/scripts/shard.py CONFIGURATION DIRECTORY` runner with explicit local image digests, unique chain
 identity, official RPC/Herald URLs, guardian, presets, worker count and fixed play bound. The runner writes its resolved
 Compose file and public deployment manifest alongside private initialization logs. Both paths register PENDING before

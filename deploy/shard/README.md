@@ -1,7 +1,8 @@
-# Shard package
+# Shard runtime
 
-A shard hosts games on an unmodified Madara node, Herald and one public stamping RPC. The package contains
-`compose.yml`, `images.env` (init, Herald and metrics digests), `release.json` and these operational scripts.
+A shard hosts games on an unmodified Madara node, Herald and one public stamping RPC. The box builds this checkout and
+writes `compose.yml`, `images.env` (local init, Herald and metrics image IDs) and `release.json` (commit and contract
+facts). There is no downloaded package or release tag. The upstream node remains pinned by digest in Compose.
 
 ## Initialize a fresh shard
 
