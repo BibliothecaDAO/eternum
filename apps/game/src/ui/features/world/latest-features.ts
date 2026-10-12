@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "The map names its highlights",
+    description:
+      "Added a name to every highlighted tile in Frontier: with an army selected, hover a tile and one line says what the army would do there and what it costs, such as Unexplored · Explore · 30 stamina, Move · 10 stamina or Rift · Attack · 30 stamina. On a phone a tap or a press-and-hold on the tile opens its preview, which names the same action.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-13",
     title: "Odds for each army on a site",
     description:
       'Improved a site\'s card in Frontier: with no army chosen, each of your armies is a row showing the fight it would have from where it stands, the same forecast as the attack itself, and the row of dashes is gone. Tap a row to open the attack with that army; the card used to close instead. The skull says "Would be lost" on hover or press-and-hold.',

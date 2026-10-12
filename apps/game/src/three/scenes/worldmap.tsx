@@ -65,6 +65,7 @@ import {
   Position,
   isOpenSpawnHex,
   isViewerOwner,
+  siteKindOf,
 } from "@bibliothecadao/eternum";
 import {
   requireActiveGameSyncRuntime,
@@ -251,6 +252,9 @@ import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-reco
 import { ARMY_SELECT_REQUEST_EVENT, readArmySelectRequest } from "./worldmap-army-select-request";
 import { ORDER_REQUEST_EVENT, orderOnTap, readOrderRequest, stepBackOnEscape } from "./worldmap-order-request";
 import { hudFor } from "@/ui/layouts/hud-for";
+import { orderTipLine } from "@/ui/features/frontier/hud/order-tip";
+import { SITE_MARKS } from "@/ui/features/frontier/sites/site-marks";
+import { showOrderTip } from "./worldmap-order-tip";
 import { getGameModeId } from "@/config/game-modes";
 import { onChestOpenRequest } from "./worldmap-chest-open-request";
 import { shouldQueueArmySelectionRecovery } from "./worldmap-army-tab-selection";
@@ -2366,7 +2370,7 @@ export default class WorldmapScene extends WarpTravel {
         });
       }
       this.previouslyHoveredHex = null;
-      this.previewOrderUnderPointer(null);
+      this.showOrderUnderPointer(null);
       this.state.setHoveredHex(null);
       this.interactiveHexManager.applyHoverPalette(hoverPalette);
 
@@ -2398,9 +2402,8 @@ export default class WorldmapScene extends WarpTravel {
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
     // Entity IDs can be valid falsy values (for example 0), so nullish checks
     // are required to distinguish "no selection" from a real selected entity.
-    if (selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0) {
-      this.previewOrderUnderPointer(hexCoords);
-    }
+    const hasOrders = selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0;
+    if (hasOrders || this.hudCarriesOrderVerb()) this.showOrderUnderPointer(hasOrders ? hexCoords : null);
 
     this.interactiveHexManager.applyHoverPalette(hoverPalette);
   }
@@ -2414,9 +2417,36 @@ export default class WorldmapScene extends WarpTravel {
     return hudFor(getGameModeId(), true) === "frontier";
   }
 
-  private previewOrderUnderPointer(hexCoords: HexPosition | null): void {
-    if (this.hudCarriesOrderVerb()) return;
-    this.state.updateEntityActionHoveredHex(hexCoords);
+  /**
+   * The order under the pointer. Where the HUD has no verb it is the preview itself; where the HUD carries the verb
+   * the pointer only names the tile on the tooltip (the highlight colours' legend) and a click opens the preview.
+   */
+  private showOrderUnderPointer(hexCoords: HexPosition | null): void {
+    if (!this.hudCarriesOrderVerb()) {
+      this.state.updateEntityActionHoveredHex(hexCoords);
+      return;
+    }
+    const line = hexCoords && this.nameOrderAt(hexCoords);
+    showOrderTip(line && hexCoords ? { line, at: projectHexToScreen(hexCoords, this.camera) } : null);
+  }
+
+  private nameOrderAt(hexCoords: HexPosition): string | null {
+    const { structure } = this.getHexagonEntity(hexCoords);
+    return orderTipLine({
+      path: getLiveWorldmapEntityActions().actionPaths.get(ActionPaths.posKey(hexCoords, true)),
+      target: structure ? this.siteWord(structure.id) : null,
+      exploreStamina: configManager.getExploreStaminaCost(),
+    });
+  }
+
+  /** A standing site as its card names it; null for anything else. */
+  private siteWord(entityId: ID): string | null {
+    if (!this.isStandingExpeditionSite(entityId)) return null;
+    const structure = this.game.store.require("Structure", {
+      game_id: configManager.getActiveGameId(),
+      entity_id: safeInteger(entityId),
+    });
+    return SITE_MARKS[siteKindOf(structure.base.category)].word;
   }
 
   // double-click reserved hyperstructure tiles to materialize them; otherwise enter the real structure
@@ -2742,6 +2772,8 @@ export default class WorldmapScene extends WarpTravel {
       const contractHex = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
       this.openSiteCardForSelectedArmy({ col: contractHex.x, row: contractHex.y });
     }
+    // The preview has the tile now; its name on the tooltip would only sit over it.
+    if (order !== null) showOrderTip(null);
     return order !== null;
   }
 
@@ -3830,6 +3862,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private clearEntitySelection() {
     showArmyDeploymentTooltip(null);
+    showOrderTip(null);
     this.highlightHexManager.highlightHexes([]);
     this.updateEntityActionPaths(new Map());
     this.state.updateEntityActionSelectedEntityId(null);
@@ -8387,6 +8420,21 @@ export default class WorldmapScene extends WarpTravel {
     if (this.armyIndex >= armies.length) {
       this.armyIndex = 0;
     }
+    this.letGoOfLostSelection();
+  }
+
+  /**
+   * A selected army that is gone (lost in a fight) lets go of the map at once: its highlights are orders nobody can
+   * give. Read from the facts themselves, since the armies' list is only as fresh as its last change.
+   */
+  private letGoOfLostSelection(): void {
+    const { selectedEntityId } = getLiveWorldmapEntityActions();
+    if (selectedEntityId === null || selectedEntityId === undefined) return;
+    const gameId = configManager.getActiveGameId();
+    const stands =
+      this.game.store.get("ExplorerTroops", { game_id: gameId, explorer_id: selectedEntityId }) !== undefined ||
+      this.game.store.get("Structure", { game_id: gameId, entity_id: selectedEntityId }) !== undefined;
+    if (!stands) this.clearEntitySelection();
   }
 
   private handleEntityActionsStoreUpdate(
@@ -8420,21 +8468,6 @@ export default class WorldmapScene extends WarpTravel {
         nextActionPathCount: nextEntityActions.actionPaths.size,
         ...this.getInteractionDebugSnapshot(),
       });
-    this.letGoOfLostSelection();
-  }
-
-  /**
-   * A selected army that is gone (lost in a fight) lets go of the map at once: its highlights are orders nobody can
-   * give. Read from the facts themselves, since the armies' list is only as fresh as its last change.
-   */
-  private letGoOfLostSelection(): void {
-    const { selectedEntityId } = getLiveWorldmapEntityActions();
-    if (selectedEntityId === null || selectedEntityId === undefined) return;
-    const gameId = configManager.getActiveGameId();
-    const stands =
-      this.game.store.get("ExplorerTroops", { game_id: gameId, explorer_id: selectedEntityId }) !== undefined ||
-      this.game.store.get("Structure", { game_id: gameId, entity_id: selectedEntityId }) !== undefined;
-    if (!stands) this.clearEntitySelection();
       return;
     }
 

@@ -19,7 +19,7 @@ const TOP_EDGE_PX = 96;
 type Named = { anchor: HTMLElement; line: string };
 
 /** A name on the tooltip: one line where it fits, wrapped inside a phone's width where it does not. */
-const TipLine = ({ line }: { line: string }) => (
+export const TipLine = ({ line }: { line: string }) => (
   <span className="block max-w-[min(24rem,calc(100vw-3.5rem))] text-center font-sans text-[13px] font-semibold leading-snug text-kit-cream first-letter:uppercase">
     {line}
   </span>

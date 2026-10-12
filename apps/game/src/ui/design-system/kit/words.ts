@@ -57,6 +57,9 @@ export const SIGN_IN = "Sign in";
 export const EXPLORE = "Explore";
 export const MOVE = "Move";
 export const CANCEL = "Cancel";
+/** A highlighted tile on its tooltip: ground not yet seen, and troops passed to another of the player's armies. */
+export const UNEXPLORED = "Unexplored";
+export const TRANSFER = "Transfer";
 
 /** A realm's room for buildings: every building takes some, a Hut gives some. */
 export const POPULATION = "population";
@@ -115,11 +118,11 @@ export const fightLine = (site: string, verdict: string, lost: string, guardBefo
 export const needsStamina = (need: string, held: string) => `Needs ${need} stamina, has ${held}`;
 export const tooFarFrom = (site: string) => `Too far from the ${site}`;
 export const ARMY_WILL_BE_LOST = "Army will be lost";
+/** The skull beside an army on a site's card, on its tooltip. */
+export const WOULD_BE_LOST = "Would be lost";
 export const USE = "Use";
 export const USING = "Using…";
 
-/** The skull beside an army on a site's card, on its tooltip. */
-export const WOULD_BE_LOST = "Would be lost";
 /** Making something you own better: the castle a level, a building type a tier, an army an attribute tier. */
 export const UPGRADE = "Upgrade";
 
