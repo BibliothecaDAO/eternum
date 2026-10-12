@@ -39,6 +39,7 @@ const LAUNCHER = launcherAccountAddress(SHARD_MANIFEST);
 
 let mf: Miniflare;
 let db: D1Database;
+let freshAccount = false;
 
 beforeAll(async () => {
   const bundle = join(mkdtempSync(join(tmpdir(), "launch-bundle-")), "bundle");
@@ -60,7 +61,9 @@ beforeAll(async () => {
           IDENTITY: { name: "directory", entrypoint: "ValueIdentity" },
           VALUE_RELAY: { name: "directory", entrypoint: "ValueRelay" },
           IDENTITY_HTTP: () =>
-            Response.json({ session: { id: "s1" }, user: { id: "u1", realmsId: "0x7", address: LAUNCHER } }),
+            freshAccount
+              ? Response.json({ error: "unauthorized" }, { status: 401 })
+              : Response.json({ session: { id: "s1" }, user: { id: "u1", realmsId: "0x7", address: LAUNCHER } }),
         },
         bindings: {
           ENVIRONMENT: "staging",
@@ -77,6 +80,8 @@ beforeAll(async () => {
               method: string;
               params: { request?: { entry_point_selector?: string } };
             };
+            if (freshAccount && method === "starknet_getClassHashAt")
+              return Response.json({ jsonrpc: "2.0", id, error: { code: 20, message: "Contract not found" } });
             const result =
               method === "starknet_chainId"
                 ? SHARD_CHAIN
@@ -254,3 +259,20 @@ it("runs a continued launch at once, even while the registrar sleeps until a res
   }
   expect(run).toMatchObject({ attempts: 1 });
 }, 60_000);
+
+it("reports a fresh account's approval refusal through real workerd on public health", async () => {
+  freshAccount = true;
+  try {
+    await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
+    const deadline = Date.now() + 10000;
+    let health: { joinFailures?: { chainId: string; code: string }[] } = {};
+    while (Date.now() < deadline) {
+      health = await (await mf.dispatchFetch(`${ORIGIN}/api/factory/health`)).json();
+      if (health.joinFailures?.length) break;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    expect(health.joinFailures).toMatchObject([{ chainId: SHARD_CHAIN, code: "account_join_approval_failed" }]);
+  } finally {
+    freshAccount = false;
+  }
+}, 60000);

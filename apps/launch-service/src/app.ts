@@ -1,3 +1,4 @@
+import type { JoinFailure } from "./registrar";
 import { isGameEnvironmentId, type GameEnvironmentId } from "../../../config/shared/game-environments";
 import { Hono, type Context } from "hono";
 import { logger } from "hono/logger";
@@ -18,7 +19,7 @@ interface LaunchAppDependencies {
   slots: SlotStore;
   calendar: CalendarStore;
   /** The registrar that executes runs: every run queued here arms it for the run's due time. */
-  registrar: { armFor(dueAt: number): Promise<void> };
+  registrar: { armFor(dueAt: number): Promise<void>; joinFailures(): Promise<JoinFailure[]> };
 }
 
 const readEnvironment = (value: string | undefined): GameEnvironmentId => {
@@ -100,18 +101,20 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   // The schedule never requeues a failed season; its operator must continue it. Health names every failed run.
   app.get("/api/factory/health", async (context) => {
     try {
-      const [failed, stranded] = await Promise.all([
+      const [failed, stranded, joins] = await Promise.all([
         dependencies.store.failed(),
         dependencies.store.pendingOtherChains(),
+        dependencies.registrar.joinFailures(),
       ]);
       return context.json(
         {
           service: "launch",
           ...dependencies.deployment,
           failedRuns: failed.map(failedRunReport),
+          joinFailures: joins,
           strandedRuns: stranded.map(strandedRunReport),
         },
-        stranded.length ? 503 : 200,
+        stranded.length || joins.length ? 503 : 200,
       );
     } catch {
       return context.json({ status: "unavailable" }, 503);

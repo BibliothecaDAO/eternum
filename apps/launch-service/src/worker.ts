@@ -57,7 +57,10 @@ const launchAppOf = (env: LaunchEnv, chainId?: string | null) => {
     store: launches,
     slots,
     calendar,
-    registrar: { armFor: (dueAt) => registrarOf(env).armFor(dueAt) },
+    registrar: {
+      armFor: (dueAt) => registrarOf(env).armFor(dueAt),
+      joinFailures: () => registrarOf(env).joinFailures(),
+    },
   });
 };
 

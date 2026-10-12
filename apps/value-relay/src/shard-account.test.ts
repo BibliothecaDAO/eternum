@@ -10,7 +10,8 @@ vi.mock("@realms-world/value-ledger", async (original) => ({
   readRegisteredShard: calls.shard,
   rpcAt: () => ({ getChainId: calls.chain }),
 }));
-vi.mock("@bibliothecadao/eternum/realms-account", () => ({
+vi.mock("@bibliothecadao/eternum/realms-account", async (original) => ({
+  ...(await original<typeof import("@bibliothecadao/eternum/realms-account")>()),
   joinRealmsAccount: calls.join,
   deviceKeyOf: () => ({ publicKey: "0x2", privateKey: "test-key" }),
 }));

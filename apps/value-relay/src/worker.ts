@@ -127,7 +127,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
             const ports = await relay.portsFor(chain);
             await Effect.runPromise(
               relay.shardSigning.withPermit(
-                relayOperation("join relay shard account", () => joinShardOperator(relay.env, chain)),
+                relayOperation("relay_account_join_failed", () => joinShardOperator(relay.env, chain)),
               ),
             );
             const previous = await relay.ctx.storage.get<string>("chain");

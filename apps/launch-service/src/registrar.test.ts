@@ -35,7 +35,16 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 const setup = () => {
   const setAlarm = vi.fn(async (_at: number) => {});
-  const context = { storage: { setAlarm } };
+  const values = new Map<string, unknown>();
+  const context = {
+    storage: {
+      setAlarm,
+      get: async (key: string) => values.get(key),
+      put: async (key: string, value: unknown) => {
+        values.set(key, value);
+      },
+    },
+  };
   const registrar = new Registrar(context as unknown as DurableObjectState, {
     DB: {},
     IDENTITY: { shards: async () => [{ chainId: "0x1", url: "https://shard.test", status: "active" }] },
@@ -47,10 +56,14 @@ it("retries a failed launcher join beyond platform retries without consuming due
   for (let tick = 0; tick < 8; tick++) await f.registrar.alarm();
   expect(f.setAlarm).toHaveBeenCalledTimes(8);
   expect(f.setAlarm).toHaveBeenLastCalledWith(31_000);
+  expect(await f.registrar.joinFailures()).toEqual([
+    { chainId: "0x1", code: "launcher_approval_refused", checkedAt: 1000 },
+  ]);
   expect(mock.process).not.toHaveBeenCalled();
   expect(mock.nextDue).not.toHaveBeenCalled();
   mock.account.mockResolvedValue("0x2");
   await f.registrar.alarm();
+  expect(await f.registrar.joinFailures()).toEqual([]);
   expect(mock.process).toHaveBeenCalledOnce();
   expect(mock.target).toHaveBeenCalledWith(expect.anything(), "0x2");
   expect(f.setAlarm).toHaveBeenLastCalledWith(2000);

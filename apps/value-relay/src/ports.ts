@@ -1,3 +1,4 @@
+import { accountJoinErrors } from "@bibliothecadao/eternum/realms-account";
 import { Data, Effect } from "effect";
 import { serviceError } from "@realms-world/value-ledger";
 import type { LedgerPayDecision } from "@realms-world/identity";
@@ -181,6 +182,8 @@ export const relayOperation = <A>(operation: string, run: () => Promise<A>): Rel
   });
 
 const relayServiceErrors = [
+  ...accountJoinErrors,
+  "directory_shard_manifest_fetch_failed",
   "relay_shard_inactive",
   "relay_device_approval_refused",
   "unlisted_shard",

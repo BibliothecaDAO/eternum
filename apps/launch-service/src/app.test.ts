@@ -28,15 +28,16 @@ const fixture = () => {
   const slots = new D1SlotStore(database.db, store, value, registrationIdentityFixture);
   const calendar = new D1CalendarStore(database.db);
   const armFor = vi.fn();
+  const joinFailures = vi.fn(async (): Promise<import("./registrar").JoinFailure[]> => []);
   const app = createLaunchApp({
     config: { operatorToken: "operator-test-token" },
     deployment: { environment: "staging", version: "test" },
     store,
     slots,
     calendar,
-    registrar: { armFor },
+    registrar: { armFor, joinFailures },
   });
-  return { app, store, slots, calendar, value, armFor };
+  return { app, store, slots, calendar, value, armFor, joinFailures };
 };
 const close = () => new Date(Math.floor(Date.now() / 1000) * 1000 + 60000).toISOString();
 test("the create-run and launcher-discovery routes are gone even for the operator", async () => {
@@ -164,4 +165,13 @@ test("health and version remain public and identify the deployment", async () =>
       environment: "staging",
       version: "test",
     });
+});
+
+test("public health names a failed join before any run has failed", async () => {
+  const { app, joinFailures } = fixture();
+  const failure = { chainId: TEST_CHAIN, code: "account_join_read_failed", checkedAt: 1000 };
+  joinFailures.mockResolvedValue([failure]);
+  const response = await app.request("/api/factory/health");
+  expect(response.status).toBe(503);
+  expect(await response.json()).toMatchObject({ joinFailures: [failure], failedRuns: [] });
 });

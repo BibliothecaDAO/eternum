@@ -25,7 +25,13 @@ export const readRegisteredShard = async (
   const row = rows[0]!;
   const url = new URL("/manifest", row.url);
   if (url.protocol !== "https:" || url.username || url.password) throw new Error("invalid_directory_shard_url");
-  const response = await network(url, { redirect: "manual", cache: "no-store", signal: AbortSignal.timeout(5000) });
+  const response = await network(url, {
+    redirect: "manual",
+    cache: "no-store",
+    signal: AbortSignal.timeout(5000),
+  }).catch((cause: unknown) => {
+    throw new Error("directory_shard_manifest_fetch_failed", { cause });
+  });
   if (!response.ok) throw new Error("directory_shard_manifest_unavailable");
   const manifest = (await response.json()) as ShardManifest;
   if (

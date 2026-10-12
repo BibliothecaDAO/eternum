@@ -148,29 +148,64 @@ async function joinOnce(
   address: string,
 ): Promise<Account> {
   const approval = (counter: number) =>
-    approve({ chainId: shard.chainId, account: address, action: "ADD", deviceKey: device.publicKey, counter });
-
-  if (!(await isAccountDeployed(provider, address, shard.accountClassHash))) {
-    const deployer = realmsAccount(provider, address, device, await approval(1));
-    const deployed = await deployer.deployAccount(
-      {
-        classHash: shard.accountClassHash,
-        constructorCalldata: [realmsId, shard.guardianPublicKey],
-        addressSalt: realmsId,
-        contractAddress: address,
-      },
-      NO_TIP,
+    joinStep("account_join_approval_failed", () =>
+      approve({ chainId: shard.chainId, account: address, action: "ADD", deviceKey: device.publicKey, counter }),
     );
-    await provider.waitForTransaction(deployed.transaction_hash, { retryInterval: RECEIPT_POLL_MS });
-  } else if (!(await isDevice(provider, address, device.publicKey))) {
+
+  if (
+    !(await joinStep("account_join_read_failed", () => isAccountDeployed(provider, address, shard.accountClassHash)))
+  ) {
+    const deployer = realmsAccount(provider, address, device, await approval(1));
+    const deployed = await joinStep("account_join_deploy_failed", () =>
+      deployer.deployAccount(
+        {
+          classHash: shard.accountClassHash,
+          constructorCalldata: [realmsId, shard.guardianPublicKey],
+          addressSalt: realmsId,
+          contractAddress: address,
+        },
+        NO_TIP,
+      ),
+    );
+    await joinStep("account_join_receipt_failed", () =>
+      provider.waitForTransaction(deployed.transaction_hash, { retryInterval: RECEIPT_POLL_MS }),
+    );
+  } else if (
+    !(await joinStep("account_join_device_read_failed", () => isDevice(provider, address, device.publicKey)))
+  ) {
     // A device the player removed never adds itself back; it returns only as a new device after a fresh sign-in.
-    if (await wasRevoked(provider, address, device.publicKey)) throw new DeviceRemovedError(address);
-    const counter = (await deviceChangeCounter(provider, address)) + 1;
+    if (await joinStep("account_join_events_failed", () => wasRevoked(provider, address, device.publicKey)))
+      throw new DeviceRemovedError(address);
+    const counter = (await joinStep("account_join_counter_failed", () => deviceChangeCounter(provider, address))) + 1;
     const joining = realmsAccount(provider, address, device, await approval(counter));
-    const joined = await joining.execute(isDeviceCall(address, device.publicKey), NO_TIP);
-    await provider.waitForTransaction(joined.transaction_hash, { retryInterval: RECEIPT_POLL_MS });
+    const joined = await joinStep("account_join_device_add_failed", () =>
+      joining.execute(isDeviceCall(address, device.publicKey), NO_TIP),
+    );
+    await joinStep("account_join_receipt_failed", () =>
+      provider.waitForTransaction(joined.transaction_hash, { retryInterval: RECEIPT_POLL_MS }),
+    );
   }
   return realmsAccount(provider, address, device);
+}
+
+/** Join diagnostics name the failed boundary without exposing an RPC payload or a device key. */
+export const accountJoinErrors = [
+  "account_join_read_failed",
+  "account_join_approval_failed",
+  "account_join_deploy_failed",
+  "account_join_receipt_failed",
+  "account_join_device_read_failed",
+  "account_join_events_failed",
+  "account_join_counter_failed",
+  "account_join_device_add_failed",
+] as const;
+
+async function joinStep<T>(code: (typeof accountJoinErrors)[number], run: () => Promise<T>): Promise<T> {
+  try {
+    return await run();
+  } catch (cause) {
+    throw new Error(code, { cause });
+  }
 }
 
 export class DeviceRemovedError extends Error {
