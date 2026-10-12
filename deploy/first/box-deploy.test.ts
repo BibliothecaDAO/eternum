@@ -1,6 +1,6 @@
 import { afterEach, expect, mock, spyOn, test } from "bun:test";
 import * as processTools from "./process";
-import { deployShard, artifactsReady, artifactFiles } from "./box";
+import { deployShard, artifactsReady, artifactFiles, operatorTokenMatches } from "./box";
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -77,4 +77,15 @@ test("failed command logs keep stderr and redact credential input and environmen
   expect(log).toContain("[redacted]");
   expect(statSync(error.log).mode & 0o777).toBe(0o600);
   rmSync(join(error.log, ".."), { recursive: true });
+});
+
+test("operator comparison sends the supplied credential only on stdin and returns no box credential", async () => {
+  const execute = spyOn(processTools, "command").mockResolvedValue("match\n");
+  expect(await operatorTokenMatches(environments.dev, "fixture-supplied-credential")).toBe(true);
+  const spec = execute.mock.calls[0]![0];
+  expect(spec.input).toBe("fixture-supplied-credential");
+  expect(spec.argv.join(" ")).not.toContain("fixture-supplied-credential");
+  expect(spec.argv.join(" ")).toContain("compare_digest");
+  execute.mockResolvedValue("different\n");
+  expect(await operatorTokenMatches(environments.dev, "fixture-supplied-credential")).toBe(false);
 });
