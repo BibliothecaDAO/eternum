@@ -31,7 +31,6 @@ describe("the day's end", () => {
       root.render(
         <DayDoneCard
           endedDay={12}
-          realmArt="/images/realm-card/city.webp"
           clock={{ endsAt: undefined, secondsLeft: 7 * 3_600 + 55 * 60, tomorrowSeconds: 20 * 3_600, tone: "calm" }}
           totals={{ reveals: 31, cleared: 3, chests: 1, essence: 6_400, labor: 1_150, lords: undefined }}
           armies={3}

@@ -18,7 +18,6 @@ import { resultsHref } from "../season-tab/results-link";
 import { ServiceFailure } from "../service-failure";
 import { entryHref } from "../game-links";
 import { type DirectoryGame, useLeaderboard, useRealmsPlayer } from "../herald";
-import { realmStill } from "../mode-art";
 import { directoryDay, seasonRealm } from "../season";
 import { PITCH, WORDS } from "../words";
 import { AgeLabel } from "./age-card";
@@ -31,7 +30,7 @@ import type { PlayFacts } from "./play-facts";
 import { StateCard } from "./state-card";
 import { LiveChip } from "./state-chip";
 
-/** The home card: the step the table chose, with its age, its picture, its figure and clock, and the one verb. */
+/** The home card: the step the table chose, with its age, its painting, its figure and clock, and the one verb. */
 export const NextStepCard = ({ step, facts }: { step: NextStep | undefined; facts: PlayFacts }) => {
   switch (step?.kind) {
     case undefined:
@@ -67,10 +66,8 @@ export const NextStepCard = ({ step, facts }: { step: NextStep | undefined; fact
 
 type StepCardParts = {
   mode: AgeMode;
-  /** A still of the player's own (the realm); null for none; left out, the card wears its painting. */
-  picture?: ReactNode;
-  /** The painting the card wears when it has no still: its age's, unless the step names another. */
-  painting?: Painting;
+  /** The painting the card wears: its age's, unless the step names another; null for a card that stands on one. */
+  painting?: Painting | null;
   figure?: ReactNode;
   line?: ReactNode;
   chips?: ReactNode;
@@ -78,18 +75,17 @@ type StepCardParts = {
 };
 
 /**
- * The card's one layout: its picture, the age and mode with the figure at the right, one line, the chips, and the verb
- * in the card (home is a hub page: each card keeps its action). The desktop draws it wide: a still beside the words,
- * or the painting as the card's ground.
+ * The card's one layout: its painting, the age and mode with the figure at the right, one line, the chips, and the verb
+ * in the card (home is a hub page: each card keeps its action). The desktop draws it wide, the painting as its ground.
  */
 const StepCard = (parts: StepCardParts) =>
   useLayout() === "desktop" ? <DesktopStepCard {...parts} /> : <PhoneStepCard {...parts} />;
 
-const PhoneStepCard = ({ mode, picture, painting, figure, line, chips, verb }: StepCardParts) => {
+const PhoneStepCard = ({ mode, painting, figure, line, chips, verb }: StepCardParts) => {
   const age = ageOf(mode);
   return (
     <section className="flex flex-col gap-3 plate p-3.5 shadow-[inset_0_2px_0_theme(colors.kit.gold2/10%)]">
-      {picture === undefined ? <CardPicture painting={painting ?? age.painting} /> : picture}
+      {painting !== null && <CardPicture painting={painting ?? age.painting} />}
       <header className="flex items-center gap-2">
         <AgeLabel numeral={age.numeral} />
         <h2 className="font-display text-[24px] leading-none text-kit-cream">{age.name}</h2>
@@ -105,7 +101,7 @@ const PhoneStepCard = ({ mode, picture, painting, figure, line, chips, verb }: S
 /** The desktop's card height: the first screen's top row (380 at 1440, 460 from 1800). */
 const DESKTOP_CARD = "h-[380px] min-[1800px]:h-[460px]";
 
-const DesktopStepCard = ({ mode, picture, painting, figure, line, chips, verb }: StepCardParts) => {
+const DesktopStepCard = ({ mode, painting, figure, line, chips, verb }: StepCardParts) => {
   const age = ageOf(mode);
   const face = (
     <div className="flex min-w-0 flex-1 flex-col gap-4 p-6">
@@ -120,14 +116,7 @@ const DesktopStepCard = ({ mode, picture, painting, figure, line, chips, verb }:
       {verb && <StepVerb>{verb}</StepVerb>}
     </div>
   );
-  if (picture)
-    return (
-      <section className={cn("plate flex overflow-hidden", DESKTOP_CARD)}>
-        <div className="relative w-1/2 shrink-0">{picture}</div>
-        {face}
-      </section>
-    );
-  if (picture === null) return <section className="plate flex">{face}</section>;
+  if (painting === null) return <section className="plate flex">{face}</section>;
   return <PaintedCard painting={painting ?? age.painting}>{face}</PaintedCard>;
 };
 
@@ -177,7 +166,7 @@ export const PlayCard = ({ season, firstVisit, now }: { season: DirectoryGame; f
   return (
     <StepCard
       mode="frontier"
-      picture={firstVisit ? null : undefined}
+      painting={firstVisit ? null : undefined}
       figure={<Chip icons={["Pp"]} value={formatAmount(season.player_count)} label="Players" />}
       line={
         firstVisit ? (
@@ -207,26 +196,14 @@ export const PlayCard = ({ season, firstVisit, now }: { season: DirectoryGame; f
   );
 };
 
-/** The player's own season under way: the realm's still, today's dial and clock, the one figure, Resume. */
+/** The player's own season under way: the realm's name under its Order, today's dial and clock, the rank, Resume. */
 export const ResumeCard = ({ season, now }: { season: DirectoryGame; now: number }) => {
   const own = useOwnSeasonEntry(season);
   const realm = seasonRealm(season);
-  const still = realm && realmStill(realm.level);
   const clock = directoryDay(season, now);
   return (
     <StepCard
       mode="frontier"
-      picture={
-        still && (
-          <div className="relative h-40 overflow-hidden rounded-xl lg:h-full lg:rounded-none">
-            <img src={still} alt="" className="size-full object-cover object-[45%_55%]" />
-            <span className="frontier-chip absolute left-2 top-2 h-8 !py-0 !pl-1.5 !pr-3 font-ui text-[15px] font-bold text-kit-cream">
-              {own ? <OrderEmblem order={own.order} size={22} /> : <span />}
-              {realm && getRealmNameById(realm.realm_id)}
-            </span>
-          </div>
-        )
-      }
       figure={<DayDial day={clock.day} shareLeft={clock.shareLeft} tone={clock.tone} />}
       line={
         <ClockLine
@@ -238,6 +215,15 @@ export const ResumeCard = ({ season, now }: { season: DirectoryGame; now: number
       }
       chips={
         <>
+          {realm && (
+            <span className="frontier-chip h-7 shrink-0 !py-0 !pl-2 font-ui text-[15px] font-bold text-kit-cream">
+              {/* `contents` takes the chip token's fixed-size first child, so the emblem keeps its own size. */}
+              <span className="contents">
+                {own && <OrderEmblem order={own.order} size={18} />}
+                {getRealmNameById(realm.realm_id)}
+              </span>
+            </span>
+          )}
           <Chip icons={["Tp"]} value={own ? `#${own.rank}` : "—"} label={WORDS.season} />
           <Chip icons={["Fl"]} value={formatAmount(own?.sites_cleared.total)} label="Sites cleared" />
           <Chip icons={["Lo"]} value={formatAmount(own && wholeLords(own.rewards.lords))} label="LORDS" />

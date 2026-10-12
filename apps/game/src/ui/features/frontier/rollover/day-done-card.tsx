@@ -10,13 +10,12 @@ import type { DayClock } from "../hud/day-clock";
 import { type DayTotals, DayTotalsGrid } from "../log/day-totals";
 
 /**
- * The day-done card (wireframe 11), once, at the first open after the day ends: the day done and the realm kept, the
- * realm as it stands, when the new day ends and how long tomorrow lasts, the ended day's totals, the rank it moved
- * to, and the troops the ended armies took with them against those that came home. Continue goes on.
+ * The day-done card (wireframe 11), once, at the first open after the day ends: the day done and the realm kept, when
+ * the new day ends and how long tomorrow lasts, the ended day's totals, the rank it moved to, and the troops the ended
+ * armies took with them against those that came home. Continue goes on.
  */
 export const DayDoneCard = ({
   endedDay,
-  realmArt,
   clock,
   totals,
   rank,
@@ -26,7 +25,6 @@ export const DayDoneCard = ({
   onContinue,
 }: {
   endedDay: number;
-  realmArt: string;
   /** The new day: when it ends, the time left, and how long the day after lasts. */
   clock: Pick<DayClock, "endsAt" | "secondsLeft" | "tomorrowSeconds" | "tone">;
   totals: DayTotals;
@@ -49,7 +47,6 @@ export const DayDoneCard = ({
     <p className="text-[14px] font-semibold">
       {REALM_KEPT} · {DAY} {endedDay + 1} {DAY_OPEN}
     </p>
-    <img src={realmArt} alt="" className="h-[110px] w-full max-w-[310px] rounded-xl object-cover" />
     <DayEnds endsAt={clock.endsAt} secondsLeft={clock.secondsLeft} tone={clock.tone} />
     <p className="flex items-center justify-center gap-1 text-[13px] font-semibold">
       <KitIcon code="Hg" size={18} />

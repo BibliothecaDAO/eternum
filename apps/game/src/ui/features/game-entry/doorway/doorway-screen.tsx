@@ -18,8 +18,6 @@ import { StepTrack } from "./step-track";
 export interface DoorwayRealm {
   name: string;
   emblem: { art: string; name: string } | null;
-  /** The still for its castle level, once the level is known. */
-  still: string | null;
 }
 
 /**
@@ -67,7 +65,7 @@ export const DoorwayScreen = ({
           </div>
         ) : (
           <div className="mx-auto flex w-full max-w-[640px] flex-col items-center gap-6 py-6">
-            {realm ? <RealmRising realm={realm} /> : <div className="h-48" aria-hidden />}
+            {realm ? <RealmRising realm={realm} /> : <div className="h-24" aria-hidden />}
             <StepTrack steps={view.steps} />
             {hold}
             {children}
@@ -78,19 +76,10 @@ export const DoorwayScreen = ({
   );
 };
 
-/** The realm: its emblem above, its castle on its board, its name. The still fades in as it rises. */
+/** The realm: its Order's emblem above its name. */
 const RealmRising = ({ realm }: { realm: DoorwayRealm }) => (
   <div className="flex flex-col items-center gap-3">
     {realm.emblem && <img src={realm.emblem.art} alt={realm.emblem.name} className="size-12 object-contain" />}
-    {realm.still ? (
-      <img
-        src={realm.still}
-        alt=""
-        className="h-44 w-60 animate-[doorway-rise_900ms_ease-out_both] object-cover [mask-image:radial-gradient(ellipse_at_center,black_45%,transparent_72%)]"
-      />
-    ) : (
-      <div className="h-44" aria-hidden />
-    )}
     <h2 className="text-center font-ui text-[26px] font-extrabold text-kit-cream">{realm.name}</h2>
   </div>
 );

@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-12",
+    title: "No stand-in picture for your realm",
+    description:
+      "Improved the Resume card, the doorway into a game and the day-done card: they no longer show a stock picture of a castle on grass as if it were your realm. The Resume card wears Frontier's painting and names your realm under its Order.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-12",
     title: "Map draws around Frontier sites",
     description:
       "Fixed the map going black on newly explored tiles, or failing to load, once a Rift, a Ruin or Stragglers was in view. Ruins and Stragglers on water now stand on their own island like camps.",

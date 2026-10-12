@@ -222,7 +222,6 @@ const NIGHT: DayClock = {
 const LAST_HOUR: DayClock = { ...CLOCK, secondsLeft: 42 * 60, shareLeft: 42 / 960, tone: "ember" };
 const DAY_DONE = {
   endedDay: 12,
-  realmArt: "/images/realm-card/city.webp",
   clock: { ...NIGHT, secondsLeft: 7 * HOUR + 55 * 60 },
   totals: { reveals: 31, cleared: 3, chests: 1, essence: 6_400, labor: 1_150, lords: 128 },
   rank: { from: 14, to: 12 },

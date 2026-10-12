@@ -17,7 +17,6 @@ import { useClosingRankChange } from "./day-ranks";
 type ExpeditionRules = NonNullable<ReturnType<typeof readExpeditionRules>>;
 
 const ARMY_MODELS = ["ExplorerTroops", "TileOccupancy", "ArmyProgress", "ResourceBalance"] as const;
-const REALM_ART = ["settlement", "city", "kingdom", "empire"] as const;
 
 /**
  * The day-done card over the game's facts, once per ended day on this device, at the first open after it ends: the ended
@@ -44,7 +43,6 @@ export const DayDone = ({ rules, realm }: { rules: ExpeditionRules; realm: Nativ
   return (
     <DayDoneCard
       endedDay={ended.day}
-      realmArt={`/images/realm-card/${REALM_ART[Math.min(realm.base.level, REALM_ART.length - 1)]}.webp`}
       clock={dayClock(rules, now)}
       totals={totals}
       rank={rank}
