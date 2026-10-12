@@ -13,12 +13,11 @@ import { Effect } from "effect";
 import { deliverWalletNotices } from "./wallet-changes";
 import { createIdentityAuth } from "./auth";
 import { WalletNotDeployedError, type VerifyWalletSignature } from "./wallet-signature";
-import type { IdentityEnv } from "./env";
+import { ACCOUNT_CLASS_HASH, type IdentityEnv } from "./env";
 import { realmsIdOf } from "./realms-id";
 import { routeIdentityRequest } from "./routes";
 import { ORIGIN } from "./workerd-harness";
 
-const ACCOUNT_CLASS_HASH = "0x68995feeefffc1647118073e1ff16179f07eb8eed6c8fb03cce73109f5fbacd";
 const GUARDIAN_KEY = "0x2dccce1da22003777062ee0870e9881b460a8b7eca276870f57c601f182136c";
 const CHAIN_ID = "0x5245414c4d535f53484152445f41";
 
@@ -1266,8 +1265,7 @@ describe("bot and player Realms ids", () => {
   });
 });
 
-// Computed by the RealmsAccount crate (snforge: poseidon over the serialized ByteArray, device_change_hash, and
-// deploy_syscall from zero), so a change on either side fails here.
+// Cairo fixes the Realms id and device-change vectors; the SDK derives the account address from the released class.
 describe("the account's own arithmetic", () => {
   it("agrees with Cairo on the Realms id, the guardian message and the account address", () => {
     const realmsId = realmsIdOf("0x5a3c");
@@ -1276,7 +1274,7 @@ describe("the account's own arithmetic", () => {
       deviceChangeHash({ chainId: CHAIN_ID, account: "0x1234", action: "REVOKE", deviceKey: "0xabc", counter: 7 }),
     ).toBe("0x6391ae16e59af5b3e7a103409189beb1ef6ac55e4a9e2c0e02898f6b7cb390a");
     expect(realmsAccountAddress(realmsId, ACCOUNT_CLASS_HASH, ec.starkCurve.getStarkKey(GUARDIAN_KEY))).toBe(
-      "0x3e6f9c39817718ef8deb75b935d22a0b4fb9c5e97899395b5ed07e70df3656",
+      "0x3b5a624d64098f9369e61f21d89fc5a0bf2bd3137e7123f53234db67c8af69",
     );
   });
 });

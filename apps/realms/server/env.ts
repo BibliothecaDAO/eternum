@@ -1,3 +1,4 @@
+import playerAccount from "../../../contracts/l3/player-account/class-hash.json";
 import { Schema } from "effect";
 import { identityL2Configuration } from "./l2";
 import type { Guardian } from "@realms-world/guardian";
@@ -84,7 +85,7 @@ export const vapidKeysOf = (env: IdentityEnv) => ({
   subject: "mailto:ops@realms.party",
 });
 
-export const ACCOUNT_CLASS_HASH = "0x68995feeefffc1647118073e1ff16179f07eb8eed6c8fb03cce73109f5fbacd";
+export const ACCOUNT_CLASS_HASH = playerAccount.accountClassHash;
 
 export const socialProvidersOf = (env: Pick<IdentityEnv, "DISCORD_CLIENT_ID" | "DISCORD_CLIENT_SECRET">) =>
   env.DISCORD_CLIENT_ID && env.DISCORD_CLIENT_SECRET

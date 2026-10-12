@@ -7,9 +7,15 @@ set -euo pipefail
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.."
 world=contracts/l3/world-native
 verifier=contracts/l3/vrf-verifier
+account=contracts/l3/player-account
 
 # Override LEDGER_SCARB / LEDGER_SNFORGE when PATH is pinned to the world toolchain.
 bash contracts/l2/ledger/check.sh
+
+# The account and ledger both pin Scarb 2.13.1; reject a stale service class before the world build or release tag.
+(cd "$account" && "${LEDGER_SCARB:-scarb}" build)
+bun test "$account/check-class-hash.test.ts"
+bun "$account/check-class-hash.ts"
 
 # Pin the owned verification algorithm before compiling the world that dispatches to it.
 (cd "$verifier" && scarb build)

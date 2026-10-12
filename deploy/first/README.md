@@ -67,9 +67,9 @@ run on the owner's laptop. No mainnet private key or Alchemy URL goes to that ho
    book, retaining the Realms collection and unrelated fields.
 6. Read roles, metadata events, presets and season state, and prepare only missing setup calls. Metadata scans begin at
    each collection’s deployment block, found from historical class reads once per collection per run. Presence reads run
-   in parallel during both inspection and apply. Blitz starts at the exact requested time, which must still be in the
-   future when setup lands. Production writes public unsigned calls to `cold-setup.json` and waits for the cold wallet
-   to execute them. Its cold key never enters the command.
+   in parallel during both inspection and apply. Opening a new Blitz ledger season requires its start to be in the
+   future; an existing matching season is preserved after its start. Production writes public unsigned calls to
+   `cold-setup.json` and waits for the cold wallet to execute them. Its cold key never enters the command.
 7. Adopt the box's protected operator token if present. Generate the other service credentials once. If the guardian
    Worker already holds `GUARDIAN_PRIVATE_KEY`, keep it even if this directory has no copy. Never rotate it.
 8. Create missing D1 databases, the status R2 bucket, Pages project and domain. Refuse conflicting existing DNS.
@@ -80,13 +80,21 @@ run on the owner's laptop. No mainnet private key or Alchemy URL goes to that ho
    is the exception: its existing key is always preserved. Nothing is uploaded to GitHub. The deployer and cold keys
    stay on the owner's machine.
 10. Install the operator token on the box if absent. Its protected file is checked against the saved environment token.
-11. Commit and push **only** the public environment address book to `stack/node-first`. Unrelated staged changes stop
-    this step. Before committing, fetch and require HEAD to equal origin/stack/node-first; a mismatch stops with one
-    public explanation. If the commit succeeded but its push failed, a rerun accepts exactly one commit above the branch
-    head that changes only this book, reports it and retries the push without another commit. Print the exact
+11. If the public environment address book already matches `origin/next`, skip publication and the owner merge.
+    Otherwise commit and push **only** the public environment address book to `stack/node-first`. Unrelated staged
+    changes stop this step. Before committing, fetch and require HEAD to equal origin/stack/node-first; a mismatch stops
+    with one public explanation. If the commit succeeded but its push failed, a rerun accepts exactly one commit above
+    the branch head that changes only this book, reports it and retries the push without another commit. Print the exact
     `gh pr merge <number> --merge` command; wait for the owner to merge and rerun.
 12. Observe successful push validation on the merged `next` commit. Print the exact `git tag` and `git push` commands
     for the package tag in the release file. Wait for the owner and the `shard-images.yml` release. Never move a tag.
+    The command deploys the commit targeted by the package tag in the committed release file. That commit must be on
+    `origin/next` and have successful push validation. If the tag is absent, the printed commands name the current
+    `origin/next` commit, and the release file at that commit must name the same package before any tag command is
+    printed. A fix needs a new package tag and release. Check out the clean released source before deploying:
+    `git checkout --detach <package tag>` (for this dev release, `git checkout --detach shard-v0.7.0-rc.2`), then rerun
+    from that checkout even if next has advanced. Old `pull-request.json` files are ignored: no private state edit is
+    needed to select the new release.
 13. Build workspace packages, migrate D1 and deploy all six Workers from the released tree. Worker version tags prove
     the source revision. An interrupted deployment resumes with the remaining Workers.
 14. Drain the former shard's directory entry, stop the Compose project occupying its ports, retire that entry and deploy
@@ -96,11 +104,11 @@ run on the owner's laptop. No mainnet private key or Alchemy URL goes to that ho
 15. Build and publish the client locally with wrangler. Check its chain/RPC, recovery tests, source assets, emitted PWA
     assets, cache rules and published modules/routes. Remove public sourcemaps before upload. Origin, zone and Pages
     project come from the table. A matching remote release is checked without uploading it again.
-16. Show both seasons and the deposit, then set missing calendar phases to the exact entered dates. Ended phases may be
-    replaced; running or future phases with different dates stop the command. No automatic date is chosen. Leave the
-    process running: it waits for the launch cron and the confirmed Frontier game, reads the box's **own
-    `data/native-world.json`**, checks its chain against Herald, and verifies the game's start, end, seed and funding
-    terms against the ledger.
+16. Show both seasons and the deposit, then set missing calendar phases to the exact entered dates. A phase's start may
+    have passed, but its end must still be in the future. Ended phases may be replaced; running or future phases with
+    different dates stop the command. No automatic date is chosen. Leave the process running: it waits for the launch
+    cron and the confirmed Frontier game, reads the box's **own `data/native-world.json`**, checks its chain against
+    Herald, and verifies the game's start, end, seed and funding terms against the ledger.
 17. Mint dev test tokens if needed, approve and fund exactly that game. Production instead writes `cold-funding.json`
     for the cold admin to execute with real LORDS; rerun after its confirmation. An existing deposit is checked and
     never repeated. No chest exists before funding and pool publication.
@@ -127,12 +135,13 @@ nonce. A changed artifact or constructor is refused after an address has been pi
 retry: that would generate different accounts. Restore its backup. The process lock prevents two simultaneous runs from
 sharing an account nonce.
 
-If an unsubmitted season date has passed, edit only the four public date fields in `inputs.json`, review the dry run,
-and rerun. For future seasons, edit the four dates and the Frontier deposit in `inputs.json`, review the dry run, and
-rerun the same command. After the previous seasons end, the ledger opens the next Blitz season number and the calendar
-replaces its ended phases. Running or future seasons are never replaced. Existing deposits are never changed. If a
-production collection or rating token needs an upgrade, its cold owner must complete the reviewed upgrade first; this
-command grants no new upgrade power and never obtains the upgrade key.
+If a calendar phase's start has passed but its end is still in the future, rerun with the same dates. An already-open
+Blitz ledger season keeps its dates; only a new ledger season requires a future start. For future seasons, edit the four
+dates and the Frontier deposit in `inputs.json`, review the dry run, and rerun the same command. After the previous
+seasons end, the ledger opens the next Blitz season number and the calendar replaces its ended phases. Running or future
+seasons are never replaced. Existing deposits are never changed. If a production collection or rating token needs an
+upgrade, its cold owner must complete the reviewed upgrade first; this command grants no new upgrade power and never
+obtains the upgrade key.
 
 Declarations, contract deployments, transfers, successful setup and funding cannot be undone. Check the public book,
 roles and four displayed dates before applying. A wrong published contract or immutable preset causes a refusal;

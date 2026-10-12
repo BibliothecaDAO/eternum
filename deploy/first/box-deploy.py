@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Replace the old shard without deleting its data; the existing deployer proves and activates the new one."""
+from contextlib import redirect_stdout, redirect_stderr
+import io
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -11,17 +14,18 @@ sys.path.insert(0, str(ROOT / 'deploy/athanor/scripts'))
 import shard
 import deploy
 from operator_token import operator_environment
+from directory import HeraldIdentityRefused
 from service_requests import service_json, identity_service_base
 
 
 def occupying_projects(directory):
-    rows = subprocess.check_output([*shard.DOCKER, 'ps', '--format', '{{json .}}'], text=True)
+    rows = subprocess.check_output([*shard.DOCKER, 'ps', '--format', '{{json .}}'], text=True, stderr=subprocess.PIPE)
     containers = [json.loads(row) for row in rows.splitlines() if row]
     projects = set()
     for container in containers:
         if not any(f':{port}->' in container.get('Ports', '') for port in (8080, 8081)):
             continue
-        detail = json.loads(subprocess.check_output([*shard.DOCKER, 'inspect', container['ID']], text=True))[0]
+        detail = json.loads(subprocess.check_output([*shard.DOCKER, 'inspect', container['ID']], text=True, stderr=subprocess.PIPE))[0]
         labels = detail['Config'].get('Labels') or {}
         project = labels.get('com.docker.compose.project.working_dir')
         if not project:
@@ -49,13 +53,16 @@ def retire_previous(inputs, directory):
         service_json(base + '/directory/shards/status', {'url': row['url'], 'status': 'retired'})
 
 
-def main(environment, directory, revision):
+def main(environment, directory, revision, report_stage):
+    report_stage("prepare")
     os.environ.update(operator_environment())
     inputs = deploy.load_inputs(environment)
     with shard.isolated_stack_lock('prepare first deployment'):
+        report_stage("retire previous shard")
         retire_previous(inputs, directory)
-    if deploy.main(environment, directory):
+    if deploy.main(environment, directory, report_stage):
         raise RuntimeError('Shard deployment check failed')
+    report_stage("self-check")
     proof = directory / 'data/self-check.json'
     if not proof.exists() or not json.loads(proof.read_text()).get('passed'):
         raise RuntimeError('Deployment did not produce a passing gameplay proof')
@@ -63,8 +70,55 @@ def main(environment, directory, revision):
     (directory / 'first-deployment-check.json').write_text(json.dumps({'revision': revision}))
 
 
-if __name__ == '__main__':
+STAGES = (
+    "retire previous shard", "fetch release", "prepare", "start Herald", "wait for Herald identity",
+    "register pending", "start services", "initialise", "self-check", "activate",
+)
+
+
+def docker_error_line(error):
+    if not isinstance(error, subprocess.CalledProcessError) or not isinstance(error.cmd, (list, tuple)):
+        return None
+    if "docker" not in error.cmd or "compose" not in error.cmd:
+        return None
+    stderr = error.stderr or ""
+    if isinstance(stderr, bytes):
+        stderr = stderr.decode("utf-8", errors="replace")
+    lines = [line for line in stderr.splitlines() if line.strip()]
+    if not lines:
+        return None
+    line = lines[-1]
+    if any(value and value in line for value in os.environ.values()):
+        return None
+    if re.search(r"0x[0-9a-f]{17,}", line, re.IGNORECASE) or not line.isprintable():
+        return None
+    return line.strip()
+
+
+def run(environment, directory, revision):
+    stage = "prepare"
+
+    def report_stage(name):
+        nonlocal stage
+        if name not in STAGES:
+            raise ValueError("Unknown deployment stage")
+        stage = name
+
     try:
-        main(sys.argv[1], Path(sys.argv[2]), sys.argv[3])
-    except Exception:
-        raise SystemExit('Shard deployment stopped; no subprocess or credential-bearing error was printed') from None
+        # Only the structured outcome crosses SSH; subprocess output is captured at its call site.
+        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+            main(environment, directory, revision, report_stage)
+    except Exception as error:
+        detail = docker_error_line(error)
+        if isinstance(error, HeraldIdentityRefused):
+            detail = f"Herald identity read refused: HTTP {error.status}"
+        message = f"Shard deployment stopped at {stage}."
+        if detail:
+            message += " " + detail
+        print(json.dumps({"kind": "shard-deployment-refused", "message": message}))
+        return 1
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(run(sys.argv[1], Path(sys.argv[2]), sys.argv[3]))

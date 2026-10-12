@@ -514,13 +514,17 @@ globalThis.fetch = async (url, init={}) => {
 };
 const chain = await import(${JSON.stringify(join(root, "deploy/first/chain.ts"))});
 mock.module(${JSON.stringify(join(root, "deploy/first/chain.ts"))}, () => ({...chain, newKey:deny}));
-mock.module(${JSON.stringify(join(root, "deploy/first/process.ts"))}, () => ({shell:value=>value, command:async ({argv,input}) => {
+const processTools = await import(${JSON.stringify(join(root, "deploy/first/process.ts"))});
+mock.module(${JSON.stringify(join(root, "deploy/first/process.ts"))}, () => ({...processTools, shell:value=>value, command:async ({argv,input}) => {
  operations.push(argv.join(' '));
  if (argv[0] === 'ssh') {
   if (String(input).includes('print(f.read') || String(input).includes('git clone')) return deny();
   return String(input).includes("print('present')") ? 'present' : '';
  }
- if (argv[0] === 'git' && argv[1] === 'ls-remote') return '';
+ if (argv[0] === 'git' && ['ls-remote', 'fetch', 'diff'].includes(argv[1])) return '';
+ if (argv[0] === 'git' && argv[1] === 'rev-parse') return 'a'.repeat(40);
+ if (argv[0] === 'git' && argv[1] === 'show') return fs.readFileSync('deploy/release/staging.json','utf8');
+ if (argv[0] === 'gh' && argv[1] === 'run') return '[]';
  if (argv[0] === 'gh' && argv[1] === 'api' && argv[2] === 'repos/{owner}/{repo}') return '{}';
  return deny();
 }}));

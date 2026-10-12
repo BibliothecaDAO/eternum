@@ -22,6 +22,8 @@ export interface CalendarStore {
 
 export class CalendarConflict extends Error {}
 
+export const PHASE_END_ERROR = "A phase must end in the future";
+
 const FRONTIER_BAG_MS = seasonSeconds(1, frontierPreset.dayUnitSeconds) * 1_000;
 const FRONTIER_TICK_MS = (frontierBaseConfig.tick?.armiesTickIntervalInSeconds ?? 0) * 1_000;
 

@@ -21,12 +21,15 @@ function setup(head: string, remote: string, dirty = true) {
   const store = new PrivateStore(join(base, "private"), join(base, "repo"), true);
   const calls: string[][] = [];
   const output: string[] = [];
-  const state = { head, remote, dirty, parents: `${head} ${remote}`, changed: book, failPush: false };
+  const state = { head, remote, dirty, parents: `${head} ${remote}`, changed: book, failPush: false, merged: false };
   spyOn(processTools, "command").mockImplementation(async ({ argv }) => {
     calls.push(argv);
     if (argv[1] === "rev-parse") return `${state.head}\n${state.remote}\n`;
     if (argv[1] === "status") return state.dirty ? ` M ${book}` : "";
     if (argv[1] === "rev-list") return state.parents;
+    if (argv[1] === "diff" && argv.includes("origin/next") && argv.includes("--")) return state.merged ? "" : book;
+    if (argv[1] === "diff" && argv.includes("origin/stack/node-first") && argv.at(-1) === book)
+      return !state.dirty && state.head === state.remote ? "" : book;
     if (argv[1] === "diff" && !argv.includes("--cached")) return state.changed;
     if (argv[1] === "commit") {
       state.head = "book-commit";
@@ -54,6 +57,7 @@ function setup(head: string, remote: string, dirty = true) {
     store,
     state,
     output,
+    merge: deliverySteps(context).find((step) => step.name === "Owner merge")!,
     step: deliverySteps(context).find((step) => step.name === "Public address book commit")!,
   };
 }
@@ -77,9 +81,9 @@ test("an exact remote head commits only the public book after fetching", async (
   expect(calls[add]).toEqual(["git", "add", "--", book]);
   expect(calls.find((args) => args[1] === "commit")!.slice(-2)).toEqual(["--", book]);
   expect(calls.find((args) => args[1] === "push")).toEqual(["git", "push", "origin", "HEAD:stack/node-first"]);
-  expect(store.read<{ number: number }>("pull-request.json")).toEqual({ number: 5039 });
+  expect(store.read("pull-request.json")).toBeUndefined();
 });
-test("a failed push resumes with the existing book commit, then records the pull request", async () => {
+test("a failed push resumes with the existing book commit, then observes the remote book", async () => {
   const { step, calls, state, store, output } = setup("same", "same");
   state.failPush = true;
   await expect(step.apply()).rejects.toThrow("Push failed");
@@ -116,4 +120,19 @@ test.each([
     "HEAD is neither origin/stack/node-first nor one address-book-only commit ahead; nothing was pushed.",
   );
   expect(mutations(calls)).toEqual([]);
+});
+
+test("a book already on next needs no publication or saved pull request", async () => {
+  const { step, merge, state, store, calls } = setup("new-release", "old-stack", false);
+  state.merged = true;
+  store.write("pull-request.json", { number: 5039 });
+  expect((await step.inspect()).done).toBe(true);
+  expect((await merge.inspect()).done).toBe(true);
+  expect(calls.some((args) => args.includes("stack/node-first"))).toBe(false);
+  expect(calls.some((args) => args[0] === "gh")).toBe(false);
+  expect(mutations(calls)).toEqual([]);
+});
+test("a published book not yet on next still asks the owner to merge", async () => {
+  const { merge } = setup("same", "same", false);
+  expect((await merge.inspect()).waiting).toContain("gh pr merge 5039 --merge");
 });
