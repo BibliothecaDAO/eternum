@@ -1,3 +1,4 @@
+import { PHASE_END_ERROR } from "../../apps/launch-service/src/calendar";
 import { resolveBlitzSeason } from "./blitz-season";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -388,8 +389,7 @@ export function deliverySteps(context: Deployment): Step[] {
           if (phases.some((existing) => existing.phase === phase)) continue;
           const begins = seconds(phase === "frontier" ? context.inputs!.frontierStart : context.inputs!.blitzStart);
           const ends = seconds(phase === "frontier" ? context.inputs!.frontierEnd : context.inputs!.blitzEnd);
-          if (begins <= Date.now() / 1000)
-            throw new PublicError("An unset calendar phase must start in the future; choose explicit dates again");
+          if (!(ends > Date.now() / 1000)) throw new PublicError(PHASE_END_ERROR);
           await service(context, `/api/factory/calendar/${phase}`, "PUT", {
             startsAt: new Date(begins * 1000).toISOString(),
             endsAt: new Date(ends * 1000).toISOString(),

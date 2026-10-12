@@ -306,7 +306,7 @@ export function preparationSteps(context: Deployment): Step[] {
         const present = await Promise.all(calls.map((call) => readSetup!(call, season.head)));
         return {
           done: present.every(Boolean),
-          detail: `${present.filter(Boolean).length}/${calls.length} setup results present; only missing calls will be prepared; Blitz dates exactly as entered, with its start still in the future`,
+          detail: `${present.filter(Boolean).length}/${calls.length} setup results present; only missing calls will be prepared; Blitz dates exactly as entered`,
         };
       },
       apply: async () => {

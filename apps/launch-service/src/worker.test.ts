@@ -140,7 +140,7 @@ afterAll(() => mf?.dispose());
 
 it("opens a Blitz window, ticks the schedule, queues an authorized launch and records the registrar's attempt", async () => {
   const window = {
-    // A second ahead: a phase cannot start in the past, and the next slot must close after the window opens.
+    // The next slot must close after the window opens.
     startsAt: new Date(Math.ceil(Date.now() / 1_000) * 1_000 + 1_000).toISOString(),
     endsAt: new Date(Math.ceil(Date.now() / 1_000) * 1_000 + 3 * 86_400_000).toISOString(),
   };

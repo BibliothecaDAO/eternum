@@ -1,6 +1,7 @@
 import {
   assertFrontierSeason,
   CalendarConflict,
+  PHASE_END_ERROR,
   type CalendarStore,
   type SeasonPhase,
   type SeasonPhaseName,
@@ -37,8 +38,7 @@ export class D1CalendarStore implements CalendarStore {
       .first<PhaseRow>();
     rejectChangeToStartedPhase(current, startsAt, endsAt, now);
     if (phase.phase === "frontier") assertFrontierSeason(startsAt, endsAt);
-    if (current?.starts_at !== startsAt && startsAt < now)
-      throw new CalendarConflict("A phase cannot start in the past");
+    if (!(endsAt > now)) throw new CalendarConflict(PHASE_END_ERROR);
     // Written only if the row is still as read, so a concurrent edit cannot slip past the started-phase rule.
     const written = await this.db
       .prepare(
