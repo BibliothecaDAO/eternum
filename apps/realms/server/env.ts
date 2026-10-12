@@ -84,7 +84,7 @@ export const vapidKeysOf = (env: IdentityEnv) => ({
   subject: "mailto:ops@realms.party",
 });
 
-export const ACCOUNT_CLASS_HASH = "0x68995feeefffc1647118073e1ff16179f07eb8eed6c8fb03cce73109f5fbacd";
+export const ACCOUNT_CLASS_HASH = "0x1ffd39db9ba75ad861fbf5bdaaabdf5b2198a20f2f69c901d4c9a75de7eca52";
 
 export const socialProvidersOf = (env: Pick<IdentityEnv, "DISCORD_CLIENT_ID" | "DISCORD_CLIENT_SECRET">) =>
   env.DISCORD_CLIENT_ID && env.DISCORD_CLIENT_SECRET
