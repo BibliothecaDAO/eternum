@@ -90,8 +90,11 @@ run on the owner's laptop. No mainnet private key or Alchemy URL goes to that ho
     for the package tag in the release file. Wait for the owner and the `shard-images.yml` release. Never move a tag.
     The command deploys the commit targeted by the package tag in the committed release file. That commit must be on
     `origin/next` and have successful push validation. If the tag is absent, the printed commands name the current
-    `origin/next` commit. A fix needs a new package tag and release; run from its clean released tree after merging. Old
-    `pull-request.json` files are ignored: no private state edit is needed to select the new release.
+    `origin/next` commit, and the release file at that commit must name the same package before any tag command is
+    printed. A fix needs a new package tag and release. Check out the clean released source before deploying:
+    `git checkout --detach <package tag>` (for this dev release, `git checkout --detach shard-v0.7.0-rc.2`), then rerun
+    from that checkout even if next has advanced. Old `pull-request.json` files are ignored: no private state edit is
+    needed to select the new release.
 13. Build workspace packages, migrate D1 and deploy all six Workers from the released tree. Worker version tags prove
     the source revision. An interrupted deployment resumes with the remaining Workers.
 14. Drain the former shard's directory entry, stop the Compose project occupying its ports, retire that entry and deploy

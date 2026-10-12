@@ -132,6 +132,7 @@ AREAS = {
         "contracts/l2/ledger/scripts/commands/deployment/**",
         "contracts/scripts-runtime/**",
         "apps/value-relay/src/**",
+        "deploy/release/**",
         "deploy/shard/**",
         "packages/**",
         "config/**",

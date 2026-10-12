@@ -63,6 +63,18 @@ async function validatedTag(context: Deployment, tag: string) {
   if (ancestor !== revision) throw new PublicError("Release tag is not on origin/next; tags are never moved");
   return (await workflowDone(context, "validation.yml", revision)) ? revision : undefined;
 }
+async function requireReleasePackage(context: Deployment, revision: string, packageName: string) {
+  const message = `The release file naming ${packageName} is not on next yet; merge it before tagging.`;
+  let released;
+  try {
+    released = JSON.parse(
+      await command({ argv: ["git", "show", `${revision}:deploy/release/${context.target.release}.json`] }),
+    ) as ReleaseInputs;
+  } catch {
+    throw new PublicError(message);
+  }
+  if (released.package !== packageName) throw new PublicError(message);
+}
 async function taggedHead(tag: string) {
   const refs = await command({ argv: ["git", "ls-remote", "origin", `refs/tags/${tag}`, `refs/tags/${tag}^{}`] });
   const lines = refs.trim().split("\n").filter(Boolean);
@@ -282,6 +294,7 @@ export function deliverySteps(context: Deployment): Step[] {
         if (!release) return wait("Review and commit the environment's deploy/release JSON before deployment");
         const tag = await taggedHead(release.package);
         const revision = tag ?? (await nextHead());
+        if (!tag) await requireReleasePackage(context, revision, release.package);
         if (!(await workflowDone(context, "validation.yml", revision)))
           return wait("Wait for successful validation.yml push run on the exact release commit on next");
         if (!tag)
