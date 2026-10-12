@@ -38,10 +38,7 @@ describe("joining a shard", () => {
         device,
         identity: { url: "http://identity.test/api", operatorToken: "fixture-token" },
       }),
-    ).rejects.toMatchObject({
-      message: "account_join_approval_failed",
-      cause: expect.objectContaining({ message: expect.stringContaining("HTTPS") }),
-    });
+    ).rejects.toThrow("HTTPS");
     expect(send).not.toHaveBeenCalled();
   });
 

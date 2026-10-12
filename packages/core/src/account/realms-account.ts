@@ -149,9 +149,7 @@ async function joinOnce(
   address: string,
 ): Promise<Account> {
   const approval = (counter: number) =>
-    joinStep("account_join_approval_failed", () =>
-      approve({ chainId: shard.chainId, account: address, action: "ADD", deviceKey: device.publicKey, counter }),
-    );
+    approve({ chainId: shard.chainId, account: address, action: "ADD", deviceKey: device.publicKey, counter });
 
   if (
     !(await joinStep("account_join_read_failed", () => isAccountDeployed(provider, address, shard.accountClassHash)))
@@ -193,7 +191,6 @@ async function joinOnce(
 export const accountJoinErrors = [
   "operator_redirect_refused",
   "account_join_read_failed",
-  "account_join_approval_failed",
   "account_join_deploy_failed",
   "account_join_receipt_failed",
   "account_join_device_read_failed",

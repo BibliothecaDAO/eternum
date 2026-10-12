@@ -4,26 +4,36 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 
-const { identity, joinRealmsAccount } = vi.hoisted(() => ({
+const { identity, joinRealmsAccount, approveDeviceChange, provider } = vi.hoisted(() => ({
   identity: { session: { user: { realmsId: "0xabc" } } as { user: { realmsId: string } } | null },
-  joinRealmsAccount: vi.fn(async (_input: { shard: { chainId: string }; realmsId: string }) => ({ address: "0xacc" })),
+  joinRealmsAccount: vi.fn(),
+  approveDeviceChange: vi.fn(),
+  provider: {
+    getClassHashAt: vi.fn(async () => "0x3"),
+    callContract: vi.fn(async () => ["0x1"]),
+  },
 }));
-vi.mock("@bibliothecadao/eternum", () => ({
-  DeviceRemovedError: class extends Error {},
-  getOrCreateDeviceKey: () => ({ privateKey: "0x1", publicKey: "0x2" }),
-  joinRealmsAccount,
-}));
+vi.mock("@bibliothecadao/eternum", async () => {
+  const account = await import("../../../../../packages/core/src/account/realms-account");
+  joinRealmsAccount.mockImplementation(account.joinRealmsAccount);
+  return { ...account, getOrCreateDeviceKey: () => ({ privateKey: "0x1", publicKey: "0x2" }), joinRealmsAccount };
+});
 vi.mock("@bibliothecadao/eternum/game-client", () => ({
   configureGameplayAccountSubmits: (account: unknown) => account,
 }));
 vi.mock("@/hooks/context/identity-session", () => ({
-  identityClient: { approveDeviceChange: vi.fn() },
+  identityClient: { approveDeviceChange },
   useIdentitySession: () => identity,
 }));
 vi.mock("@/runtime/world/shards", () => ({
-  requireOpenShard: async (chainId: string) => ({ chainId, rpcUrl: "https://rpc.test", accountClassHash: "0x3" }),
+  requireOpenShard: async (chainId: string) => ({
+    chainId,
+    rpcUrl: "https://rpc.test",
+    accountClassHash: "0x3",
+    guardianPublicKey: "0x9",
+  }),
 }));
-vi.mock("@/utils/cached-rpc-provider", () => ({ getCachedRpcProvider: () => ({}) }));
+vi.mock("@/utils/cached-rpc-provider", () => ({ getCachedRpcProvider: () => provider }));
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
 
@@ -46,6 +56,8 @@ async function openAt(path: string) {
 
 afterEach(() => {
   joinRealmsAccount.mockClear();
+  approveDeviceChange.mockReset();
+  provider.getClassHashAt.mockReset().mockResolvedValue("0x3");
   identity.session = { user: { realmsId: "0xabc" } };
   window.history.pushState({}, "", "/");
 });
@@ -76,7 +88,8 @@ it.each([
   ["not_your_account", "This game account does not belong to your sign-in. Sign in to the account that owns it."],
   ["device_limit", "Device limit reached."],
 ])("shows the recovery for guardian refusal %s", async (code, expected) => {
-  joinRealmsAccount.mockRejectedValueOnce(new IdentityRequestError(403, code));
+  provider.getClassHashAt.mockRejectedValueOnce({ code: 20 });
+  approveDeviceChange.mockRejectedValueOnce(new IdentityRequestError(403, code));
   await openAt("/g/0xa1/1");
   expect(useAccountStore.getState().provisioningError).toBe(expected);
 });
