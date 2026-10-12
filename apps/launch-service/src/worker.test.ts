@@ -4,16 +4,22 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Miniflare } from "miniflare";
 import { afterAll, beforeAll, expect, it } from "vitest";
+import { unstable_readConfig } from "wrangler";
 import { hash } from "starknet";
 import { launcherAccountAddress } from "@realms-world/value-ledger";
 import { gamesAbi, response } from "../../../packages/value-ledger/test-support/abi";
 import schema from "../../../contracts/l3/world-native/schema/schema.json";
 
 /**
- * The Worker running its cron tick, registrar Durable Object and D1 in
+ * The Worker as Cloudflare runs it: the bundle wrangler deploys, its cron tick, its registrar Durable Object and D1 in
  * workerd. Identity and the shard are faked at the network edge.
  */
-const ORIGIN = "https://launch.test";
+const STAGING_CONFIG = unstable_readConfig({
+  config: new URL("../wrangler.jsonc", import.meta.url).pathname,
+  env: "staging",
+});
+/** The origin the staging Worker serves, read from its wrangler config so the test does not repeat the hostname. */
+const ORIGIN = new URL(String(STAGING_CONFIG.vars.BASE_URL)).origin;
 const SHARD_URL = "https://shard.test";
 const SHARD_CHAIN = "0x534e5f574f524b4552";
 /** The shard's /manifest names its chain and this Worker's release; every other shard call fails, as a node would. */
@@ -36,22 +42,10 @@ let db: D1Database;
 
 beforeAll(async () => {
   const bundle = join(mkdtempSync(join(tmpdir(), "launch-bundle-")), "bundle");
-  execFileSync(
-    "bun",
-    [
-      "build",
-      "src/worker.ts",
-      "--target=browser",
-      "--external=cloudflare:*",
-      "--external=node:*",
-      "--outfile",
-      join(bundle, "worker.js"),
-    ],
-    {
-      cwd: new URL("..", import.meta.url).pathname,
-      stdio: "pipe",
-    },
-  );
+  execFileSync("pnpm", ["exec", "wrangler", "deploy", "--dry-run", "--env", "staging", "--outdir", bundle], {
+    cwd: new URL("..", import.meta.url).pathname,
+    stdio: "ignore",
+  });
   mf = new Miniflare({
     workers: [
       {
