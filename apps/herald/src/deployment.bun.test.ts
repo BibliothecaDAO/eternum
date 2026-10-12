@@ -19,38 +19,34 @@ test("deployment consumes Herald's pending and completed public manifests", asyn
     buildShardManifest(document, { rpcUrl: "https://rpc.test" }),
   ];
   for (const reply of replies) {
-    const server = Bun.serve({ port: 0, fetch: () => Response.json(reply) });
-    try {
-      const scripts = fileURLToPath(new URL("../../../deploy/athanor/scripts", import.meta.url));
-      const code = `import json,sys
+    const scripts = fileURLToPath(new URL("../../../deploy/athanor/scripts", import.meta.url));
+    const code = `import io,json,sys
 from unittest.mock import patch
 sys.path.insert(0,sys.argv[1])
 import directory
-with patch('directory.time.monotonic',side_effect=[0,0,121]),patch('directory.time.sleep'):
+with patch('service_requests.build_opener') as transport,patch('directory.time.monotonic',side_effect=[0,0,121]),patch('directory.time.sleep'):
+    transport.return_value.open.return_value = io.BytesIO(sys.argv[3].encode())
     directory.wait_for_identity(json.loads(sys.argv[2]))
+    request = transport.return_value.open.call_args.args[0]
+    assert request.full_url == 'https://herald.test/manifest'
 `;
-      const check = (chain: string) =>
-        Bun.spawn(
-          [
-            "python3",
-            "-c",
-            code,
-            scripts,
-            JSON.stringify({
-              chain_id: chain,
-              public_herald_url: `http://127.0.0.1:${server.port}`,
-            }),
-          ],
-          { stdout: "pipe", stderr: "pipe" },
-        );
-      const same = check("TEST_SHARD");
-      expect(await same.exited).toBe(0);
-      const wrong = check("OTHER_CHAIN");
-      expect(await wrong.exited).not.toBe(0);
-      expect(await new Response(wrong.stderr).text()).toContain("Herald serves a different shard identity");
-    } finally {
-      server.stop(true);
-    }
+    const check = (chain: string) =>
+      Bun.spawn(
+        [
+          "python3",
+          "-c",
+          code,
+          scripts,
+          JSON.stringify({ chain_id: chain, public_herald_url: "https://herald.test" }),
+          JSON.stringify(reply),
+        ],
+        { stdout: "pipe", stderr: "pipe" },
+      );
+    const same = check("TEST_SHARD");
+    expect(await same.exited).toBe(0);
+    const wrong = check("OTHER_CHAIN");
+    expect(await wrong.exited).not.toBe(0);
+    expect(await new Response(wrong.stderr).text()).toContain("Herald serves a different shard identity");
   }
 });
 test("pending manifest serves only the real initialized identity, never a placeholder world", () => {
