@@ -1,14 +1,14 @@
-import { mkdtempSync, existsSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { command } from "./process";
 import { PrivateStore } from "./private-store";
 import { Platform } from "./platform";
 import { deployWorkers, deployClient } from "./publish";
-import { deploymentRevision } from "./revision";
+import { archivedRevision, deploymentRevision } from "./revision";
 import { environments, root, type Inputs } from "./settings";
 import { deploymentEnvironment, reportFailure } from "./deploy";
-import { PublicError } from "./dates";
+import { PublicError } from "./errors";
 
 async function publish(environment: string | undefined, directory: string | undefined, revision: string | undefined) {
   const target = deploymentEnvironment(environment);
@@ -29,14 +29,14 @@ async function publish(environment: string | undefined, directory: string | unde
 }
 
 async function main() {
-  const [environment, directory, revision, ...extra] = process.argv.slice(2);
+  const [environment, directory, ...extra] = process.argv.slice(2);
   if (extra.length)
     throw new PublicError("Usage: pnpm run deploy:cloudflare <dev|production> /absolute/private-directory");
-  if (!existsSync(join(root, ".git"))) return publish(environment, directory, revision);
   const target = deploymentEnvironment(environment);
-  if (!directory || revision)
+  if (!directory)
     throw new PublicError("Usage: pnpm run deploy:cloudflare <dev|production> /absolute/private-directory");
   const commit = await deploymentRevision(target);
+  if (archivedRevision()) return publish(target, directory, commit);
   const exported = mkdtempSync(join(tmpdir(), "realms-deploy-"));
   try {
     await command({ argv: ["git", "archive", "--format=tar", "--output", join(exported, "source.tar"), commit] });
@@ -44,7 +44,7 @@ async function main() {
     await command({ argv: ["pnpm", "install", "--frozen-lockfile", "--ignore-scripts"], cwd: exported });
     console.log(
       await command({
-        argv: ["bun", "--no-env-file", "deploy/first/cloudflare.ts", target, directory, commit],
+        argv: ["bun", "--no-env-file", "deploy/first/cloudflare.ts", target, directory],
         cwd: exported,
       }),
     );

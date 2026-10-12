@@ -1,7 +1,7 @@
 import { deploymentRevision } from "./revision";
 import { deployShard } from "./box";
 import { environments, type Environment } from "./settings";
-import { PublicError } from "./dates";
+import { PublicError } from "./errors";
 import { CommandFailure } from "./process";
 
 export function deploymentEnvironment(value: string | undefined): Environment {

@@ -5,7 +5,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, statSync }
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { PrivateStore } from "./private-store";
-import { PublicError } from "./dates";
+import { PublicError } from "./errors";
 import { environments } from "./settings";
 
 afterEach(() => mock.restore());

@@ -3,7 +3,7 @@ import { join } from "node:path";
 import type { Target } from "./settings";
 import { command, shell, CommandFailure } from "./process";
 import type { PrivateStore } from "./private-store";
-import { PublicError } from "./dates";
+import { PublicError } from "./errors";
 
 export const artifactFiles = [
   ["ledger", "game_ledger_TestLords"],

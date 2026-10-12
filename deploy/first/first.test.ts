@@ -1,3 +1,4 @@
+import { validateInputs } from "./dates";
 import { afterEach, expect, mock, test } from "bun:test";
 import { chmodSync, existsSync, lstatSync, mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -5,7 +6,7 @@ import { join } from "node:path";
 import { Account, hash, num, type RpcProvider } from "starknet";
 import { PrivateStore } from "./private-store";
 import { runSteps, type Step } from "./run";
-import { environments, validateInputs, ACCOUNT_CLASS, WEI, root, type Inputs } from "./settings";
+import { environments, ACCOUNT_CLASS, WEI, root, type Inputs } from "./settings";
 import { accountIdentity, classAt, prepareAccounts, send, type Keys } from "./chain";
 import {
   assetPlans,

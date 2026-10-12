@@ -10,7 +10,8 @@ import { readFrontierGame } from "../../contracts/l2/ledger/scripts/commands/dep
 import { readFrontierFunding, assertFrontierPreset } from "../../packages/value-ledger/src/frontier-funding";
 import { isContractRevert, send, balance } from "./chain";
 import { nativeDocument } from "./box";
-import { seconds, PublicError } from "./dates";
+import { seconds } from "./dates";
+import { PublicError } from "./errors";
 import { root, WEI } from "./settings";
 import { signer, type Deployment } from "./main";
 import type { Step } from "./run";

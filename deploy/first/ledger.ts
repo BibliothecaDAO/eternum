@@ -5,7 +5,8 @@ import { buildLedgerEconomicPreset } from "../../config/deployer/clean/ledger/ec
 import { buildMysteryChestPreset } from "../../contracts/l2/ledger/scripts/chest-preset.js";
 import { addressBook, root, type Environment, type Inputs, type Target } from "./settings";
 import { classAt, isMissing, isContractRevert, confirm, send } from "./chain";
-import { seconds, PublicError } from "./dates";
+import { seconds } from "./dates";
+import { PublicError } from "./errors";
 import { resolveBlitzSeason } from "./blitz-season";
 import type { PrivateStore } from "./private-store";
 

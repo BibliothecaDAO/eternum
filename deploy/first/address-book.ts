@@ -1,5 +1,5 @@
 import { command } from "./process";
-import { PublicError } from "./dates";
+import { PublicError } from "./errors";
 import type { Deployment } from "./main";
 import type { Step } from "./run";
 

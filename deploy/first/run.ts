@@ -1,4 +1,4 @@
-import { PublicError } from "./dates";
+import { PublicError } from "./errors";
 
 export interface Observation {
   done: boolean;

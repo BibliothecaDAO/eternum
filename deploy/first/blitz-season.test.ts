@@ -6,7 +6,7 @@ import { environments, type Inputs } from "./settings";
 import type { PrivateStore } from "./private-store";
 import { response } from "../../packages/value-ledger/test-support/abi";
 import { ledgerAbi } from "../../packages/value-ledger/test-support/ledger-abi";
-import { PublicError } from "./dates";
+import { PublicError } from "./errors";
 
 type Window = { start: number; end: number };
 const desired = { start: 200, end: 300 };

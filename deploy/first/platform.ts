@@ -4,7 +4,7 @@ import { accountIdentity, newKey, type Keys } from "./chain";
 import { root, type Inputs, type Target } from "./settings";
 import type { PrivateStore } from "./private-store";
 import { command } from "./process";
-import { PublicError } from "./dates";
+import { PublicError } from "./errors";
 
 export const workers = [
   { id: "guardian", directory: "apps/guardian", config: "wrangler.jsonc", name: "realms-guardian" },
