@@ -1,8 +1,11 @@
 import { TransactionNotSentError, TransactionType } from "@bibliothecadao/provider";
 import { byteArray, hash, shortString } from "starknet";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { waitForActionOutcome } from "./transaction-outcome";
+
+beforeEach(() => vi.useFakeTimers());
+afterEach(() => vi.useRealTimers());
 
 const GAMES = "0x77";
 const TX = "0xabc";
@@ -98,7 +101,9 @@ describe("an action's outcome", () => {
   it("ends a reverted action with its revert reason, without waiting for Herald", async () => {
     const runtime = runtimeWith(new Promise(() => {}));
     const rpc = rpcAnswering(receipt({ execution_status: "REVERTED", revert_reason: "stale release" }));
-    await expect(waitForActionOutcome(runtime, rpc, GAMES, TX, running)).resolves.toMatchObject({
+    const result = waitForActionOutcome(runtime, rpc, GAMES, TX, running);
+    await vi.advanceTimersByTimeAsync(12_000);
+    await expect(result).resolves.toMatchObject({
       status: "REVERTED",
       revertReason: "stale release",
     });
@@ -112,7 +117,9 @@ describe("an action's outcome", () => {
       data: [shortString.encodeShortString("GAMEPLAY_REJECTED"), ...byteArrayFields("explorer is dead")],
     };
     const rpc = rpcAnswering(receipt({ events: [rejected] }));
-    await expect(waitForActionOutcome(runtime, rpc, GAMES, TX, running)).resolves.toMatchObject({
+    const result = waitForActionOutcome(runtime, rpc, GAMES, TX, running);
+    await vi.advanceTimersByTimeAsync(12_000);
+    await expect(result).resolves.toMatchObject({
       status: "REJECTED",
       revertReason: "explorer is dead",
     });
@@ -125,9 +132,9 @@ describe("an action's outcome", () => {
       keys: [hash.getSelectorFromName("GameplayRejected"), "0x1", "0x7", "0x111", TX],
       data: [shortString.encodeShortString("INVALID_GAMEPLAY_RESULT"), ...byteArrayFields("INVALID_GAMEPLAY_RESULT")],
     };
-    await expect(
-      waitForActionOutcome(runtime, rpcAnswering(receipt({ events: [invalid] })), GAMES, TX, running),
-    ).resolves.toMatchObject({
+    const result = waitForActionOutcome(runtime, rpcAnswering(receipt({ events: [invalid] })), GAMES, TX, running);
+    await vi.advanceTimersByTimeAsync(12_000);
+    await expect(result).resolves.toMatchObject({
       status: "REJECTED",
       revertReason: "INVALID_GAMEPLAY_RESULT",
     });
@@ -177,6 +184,7 @@ describe("an action's outcome", () => {
   it("settles an applied action from a fresh snapshot that covers its receipt's block", async () => {
     const runtime = runtimeWith(new Promise(() => {}));
     const outcome = waitForActionOutcome(runtime, rpcAnswering(receipt({ block_number: 12 })), GAMES, TX, running);
+    await vi.advanceTimersByTimeAsync(12_000);
     await vi.waitFor(() => expect(runtime.subscribeResynced).toHaveBeenCalled());
     runtime.resync(12);
     await expect(outcome).resolves.toMatchObject({ status: "SUCCEEDED" });
@@ -198,7 +206,9 @@ describe("an action's outcome", () => {
       Promise.resolve({ block: 12, hash: TX, status: "REJECTED", revertReason: "explorer is dead" }),
     );
     const rpc = { getTransactionReceipt: vi.fn(() => new Promise<never>(() => {})) };
-    await expect(waitForActionOutcome(runtime, rpc, GAMES, TX, running)).resolves.toEqual({
+    const result = waitForActionOutcome(runtime, rpc, GAMES, TX, running);
+    await vi.advanceTimersByTimeAsync(12_000);
+    await expect(result).resolves.toEqual({
       hash: TX,
       block: 12,
       status: "REJECTED",
@@ -209,6 +219,7 @@ describe("an action's outcome", () => {
   it("falls back to the snapshot watch when the session ends Herald's wait, never failing the action", async () => {
     const runtime = runtimeWith(Promise.reject(new Error("Game sync session was replaced")));
     const outcome = waitForActionOutcome(runtime, rpcAnswering(receipt({ block_number: 12 })), GAMES, TX, running);
+    await vi.advanceTimersByTimeAsync(12_000);
     await vi.waitFor(() => expect(runtime.subscribeResynced).toHaveBeenCalled());
     runtime.resync(12);
     await expect(outcome).resolves.toMatchObject({ status: "SUCCEEDED", block: 12 });
@@ -220,10 +231,11 @@ describe("an action's outcome", () => {
     let settled = false;
     const outcome = waitForActionOutcome(runtime, rpcAnswering(receipt({ block_number: 12 })), GAMES, TX, running);
     void outcome.then(() => (settled = true));
+    await vi.advanceTimersByTimeAsync(12_000);
     await vi.waitFor(() => expect(runtime.subscribeResynced).toHaveBeenCalled());
     // The snapshot describes block 11: the action's facts are not in the store yet.
     runtime.resync(11);
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await vi.advanceTimersByTimeAsync(0);
     expect(settled).toBe(false);
     applied({ block: 12, hash: TX, status: "ACCEPTED_ON_L2" });
     await expect(outcome).resolves.toEqual({ hash: TX, block: 12, status: "SUCCEEDED" });
@@ -236,6 +248,7 @@ describe("an action's outcome", () => {
       getTransactionReceipt: vi.fn(() => new Promise<never>((resolve) => (answerReceipt = resolve as never))),
     };
     const outcome = waitForActionOutcome(runtime, rpc, GAMES, TX, running);
+    await vi.advanceTimersByTimeAsync(12_000);
     await vi.waitFor(() => expect(rpc.getTransactionReceipt).toHaveBeenCalled());
     // The status was missed and the fresh snapshot covering block 12 applied before the receipt came back.
     runtime.resync(12);
@@ -252,6 +265,7 @@ describe("an action's outcome", () => {
         .mockResolvedValue(receipt({ block_number: 12, finality_status: "ACCEPTED_ON_L2" })),
     };
     const outcome = waitForActionOutcome(runtime, rpc, GAMES, TX, running);
+    await vi.advanceTimersByTimeAsync(12_000);
     await vi.waitFor(() => expect(runtime.subscribeResynced).toHaveBeenCalled());
     runtime.resync(12);
     await expect(outcome).resolves.toMatchObject({ status: "SUCCEEDED", block: 12 });
@@ -269,13 +283,32 @@ describe("an action's outcome", () => {
       running,
     );
     void outcome.then(() => (settled = true));
+    await vi.advanceTimersByTimeAsync(12_000);
     await vi.waitFor(() => expect(runtime.subscribeResynced).toHaveBeenCalled());
     runtime.resync(Number.MAX_SAFE_INTEGER);
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await vi.advanceTimersByTimeAsync(0);
     expect(settled).toBe(false);
     applied({ block: null, hash: TX, status: "PRE_CONFIRMED" });
     await expect(outcome).resolves.toMatchObject({ status: "SUCCEEDED" });
   });
+
+  it.each(["receipt never answers", "snapshot never arrives"])(
+    "releases when %s without restarting the send deadline",
+    async (missing) => {
+      const startedAt = Date.now();
+      await vi.advanceTimersByTimeAsync(12_000);
+      const runtime = runtimeWith(new Promise(() => {}));
+      const rpc =
+        missing === "receipt never answers"
+          ? { getTransactionReceipt: vi.fn(() => new Promise<never>(() => {})) }
+          : rpcAnswering(receipt());
+      const outcome = waitForActionOutcome(runtime, rpc, GAMES, TX, running, undefined, undefined, startedAt);
+      const ended = expect(outcome).rejects.toThrow("No answer");
+      await vi.advanceTimersByTimeAsync(2_000);
+      await ended;
+      expect(vi.getTimerCount()).toBe(0);
+    },
+  );
 
   it("stays pending while the receipt is not found, and stops when the client does", async () => {
     vi.useFakeTimers();
@@ -285,7 +318,7 @@ describe("an action's outcome", () => {
     const outcome = waitForActionOutcome(runtime, rpc, GAMES, TX, client.signal);
     const ended = expect(outcome).rejects.toThrow("disposed");
     await vi.advanceTimersByTimeAsync(1_000);
-    expect(rpc.getTransactionReceipt.mock.calls.length).toBeGreaterThan(1);
+    expect(rpc.getTransactionReceipt).not.toHaveBeenCalled();
     client.abort(new Error("Game client disposed"));
     await ended;
     expect(vi.getTimerCount()).toBe(0);

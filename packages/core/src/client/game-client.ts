@@ -193,7 +193,12 @@ const routeActionOutcomes = (
   stopped: AbortSignal,
 ): GameClient["waitForAction"] => {
   const { provider } = setupResult.network;
-  const wait = (transactionHash: string, inBlock?: Promise<void>, transactionType?: TransactionType) =>
+  const wait = (
+    transactionHash: string,
+    inBlock?: Promise<void>,
+    transactionType?: TransactionType,
+    startedAt?: number,
+  ) =>
     waitForActionOutcome(
       runtime,
       provider.provider,
@@ -202,6 +207,7 @@ const routeActionOutcomes = (
       stopped,
       inBlock,
       transactionType,
+      startedAt,
     );
   provider.setTransactionStreamWaiter(wait, (transactionHash) => runtime.recordSubmittedTransaction(transactionHash));
   return wait;

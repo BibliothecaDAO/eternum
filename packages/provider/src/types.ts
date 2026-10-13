@@ -63,6 +63,7 @@ export type TransactionStreamWaiter = (
   transactionHash: string,
   inBlock?: Promise<void>,
   transactionType?: TransactionType,
+  startedAt?: number,
 ) => Promise<TransactionStreamStatus>;
 
 export enum TransactionType {

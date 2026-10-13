@@ -16,6 +16,8 @@ import {
 
 import { TransactionNotSentError } from "@bibliothecadao/provider";
 
+import { pause, transactionAnswer, TransactionNoAnswerError } from "./transaction-answer";
+
 import type { Shard } from "./shard";
 import type { GameSyncTransaction } from "../sync/game-sync-types";
 
@@ -48,7 +50,7 @@ interface ExecuteGameplayAccountTransactionOptions {
 
 /**
  * A sent action: its hash as soon as the send returns, and `inBlock`, which resolves on Herald or node inclusion.
- * It rejects only when its owner stops waiting; a missing hash stays pending.
+ * An unanswered action releases the queue without claiming it was not sent.
  */
 export interface SentGameplayTransaction extends InvokeFunctionResponse {
   inBlock: Promise<void>;
@@ -151,22 +153,36 @@ async function sendAndReconcile(
       return status;
     })
     .catch(() => new Promise<never>(() => {}));
-  const transactionHash = await execute(calls, frame).then(
-    (response) => response.transaction_hash,
-    (error: unknown) => {
-      if (isAdmissionRefused(error) && !heraldReported) {
-        submission.nextNonce = undefined;
-        throw new TransactionNotSentError(expectedHash, { cause: error });
-      }
-      // Anything after forwarding began proves nothing (-32011, a lost reply): reconcile, never resend.
-      return hashOfUnansweredSend(error) ?? expectedHash;
-    },
+  const cancelled = new AbortController();
+  const until = stopped ? AbortSignal.any([stopped, cancelled.signal]) : cancelled.signal;
+  const expected = reconcile(account, BigInt(nonce), expectedHash, until, submission, reported);
+  const transactionHash = await Promise.race([
+    expected.inBlock.then(() => expectedHash),
+    execute(calls, frame).then(
+      (response) => response.transaction_hash,
+      (error: unknown) => {
+        if (isAdmissionRefused(error) && !heraldReported) {
+          throw new TransactionNotSentError(expectedHash, { cause: error });
+        }
+        // Anything after forwarding began proves nothing (-32011, a lost reply): reconcile, never resend.
+        return hashOfUnansweredSend(error) ?? expectedHash;
+      },
+    ),
+  ]).catch((error) => {
+    cancelled.abort(error);
+    submission.nextNonce = undefined;
+    throw error;
+  });
+  if (transactionHash === expectedHash) return expected;
+  cancelled.abort();
+  return reconcile(
+    account,
+    BigInt(nonce),
+    transactionHash,
+    stopped,
+    submission,
+    waitForTransaction?.(transactionHash).catch(() => new Promise<never>(() => {})),
   );
-  const herald =
-    transactionHash === expectedHash
-      ? reported
-      : waitForTransaction?.(transactionHash).catch(() => new Promise<never>(() => {}));
-  return reconcile(account, BigInt(nonce), transactionHash, stopped, submission, herald);
 }
 
 /** Herald and the node can establish inclusion; the first answer stops the fallback and advances the nonce. */
@@ -178,17 +194,20 @@ function reconcile(
   submission: AccountSubmission,
   herald?: Promise<GameSyncTransaction>,
 ): SentGameplayTransaction {
-  const settled = new AbortController();
-  const until = stopped ? AbortSignal.any([stopped, settled.signal]) : settled.signal;
-  const reported = herald?.then(() => settled.abort());
-  const inBlock = Promise.race([
-    reported ?? new Promise<never>(() => {}),
-    // Give a cached Herald answer the first word before starting a node read.
-    Promise.resolve().then(() => untilInBlock(account, transactionHash, until)),
-  ]).then(
+  const inBlock = transactionAnswer(
+    transactionHash,
+    herald?.then(() => undefined),
+    async (until) => {
+      if (!herald) return untilInBlock(account, transactionHash, until);
+      const status = await account.getTransactionStatus(transactionHash).catch(() => undefined);
+      if (!status?.finality_status || !IN_BLOCK.has(status.finality_status)) {
+        throw new TransactionNoAnswerError(transactionHash);
+      }
+    },
+    stopped,
+  ).then(
     () => {
       submission.nextNonce = frameNonce + 1n;
-      settled.abort();
     },
     (error) => {
       submission.nextNonce = undefined;
@@ -285,16 +304,3 @@ async function untilInBlock(
     await pause(STATUS_POLL_MS, stopped);
   }
 }
-
-const pause = (ms: number, stopped: AbortSignal | undefined): Promise<void> =>
-  new Promise((resolve, reject) => {
-    const timer = setTimeout(() => {
-      stopped?.removeEventListener("abort", abort);
-      resolve();
-    }, ms);
-    const abort = () => {
-      clearTimeout(timer);
-      reject(stopped!.reason);
-    };
-    stopped?.addEventListener("abort", abort, { once: true });
-  });

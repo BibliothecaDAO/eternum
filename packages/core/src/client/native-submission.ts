@@ -7,8 +7,7 @@ import { executeGameplayAccountTransaction, type GameplayShard } from "./submit"
 /**
  * A game command as the shard takes it: one Games.play call carrying the game, its current release pins and the command
  * (its discriminant and typed payload) as a span, signed and sent by the player's own account through the gameplay
- * submit: the current nonce, the shard's bounds, one send in flight, and its reconciliation with the node for as long
- * as the client runs.
+ * submit: the current nonce, the shard's bounds, one send in flight, and Herald-first bounded reconciliation.
  */
 export function nativePlay(
   input: {

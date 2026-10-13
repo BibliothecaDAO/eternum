@@ -223,6 +223,7 @@ export class EternumProvider extends EventEmitter {
     signer: AccountInterface,
     command: NativeCommand,
     transactionType?: TransactionType,
+    startedAt?: number,
   ): Promise<GetTransactionReceiptResponse> {
     if (!this.commandAbi) throw new Error("Native command ABI is not configured");
     return this.promiseQueue.enqueue({
@@ -499,11 +500,19 @@ export class EternumProvider extends EventEmitter {
         transaction_hash: tx.transaction_hash,
       } as unknown as GetTransactionReceiptResponse;
     }
-    const streamReceipt = this.waitForTransactionWithCheckInternal(tx.transaction_hash, tx.inBlock, txType);
+    const streamReceipt = this.waitForTransactionWithCheckInternal(
+      tx.transaction_hash,
+      tx.inBlock,
+      txType,
+      submitStartedAt,
+    );
     // The checking timer labels uncertainty only; it cannot establish inclusion or free the next command.
-    const checking = setTimeout(() => {
-      this.emit("transactionChecking", transactionMetaWithHash);
-    }, ACTION_CHECKING_AFTER_MS);
+    const checking = setTimeout(
+      () => {
+        this.emit("transactionChecking", transactionMetaWithHash);
+      },
+      Math.max(0, submitStartedAt + ACTION_CHECKING_AFTER_MS - Date.now()),
+    );
     void streamReceipt.catch(() => undefined).finally(() => clearTimeout(checking));
     // The actor's next command is sent only after Herald applies this one, so its effects are visible first.
     const waitPromise = releaseActorExecutionLock
@@ -565,6 +574,7 @@ export class EternumProvider extends EventEmitter {
     transactionHash: string,
     inBlock?: Promise<void>,
     transactionType?: TransactionType,
+    startedAt?: number,
   ): Promise<GetTransactionReceiptResponse> {
     if (!this.transactionStreamWaiter) {
       return {
@@ -573,9 +583,11 @@ export class EternumProvider extends EventEmitter {
       } as unknown as GetTransactionReceiptResponse;
     }
 
-    const transaction = await this.transactionStreamWaiter(transactionHash, inBlock, transactionType).catch((error) => {
-      throw attachTransactionFailureStage(error, "confirmation");
-    });
+    const transaction = await this.transactionStreamWaiter(transactionHash, inBlock, transactionType, startedAt).catch(
+      (error) => {
+        throw attachTransactionFailureStage(error, "confirmation");
+      },
+    );
 
     // Reverted before the roll (the shard's checks) or refused by the game (rolled back, reason recorded): either way
     // nothing applied, and the player reads the reason.

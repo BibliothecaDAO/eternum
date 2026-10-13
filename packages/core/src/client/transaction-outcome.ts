@@ -1,6 +1,8 @@
 import { batchRemaining, gameplayRejection, TransactionType } from "@bibliothecadao/provider";
 import type { GetTransactionReceiptResponse, RpcProvider } from "starknet";
 
+import { pause, transactionAnswer, TransactionNoAnswerError } from "./transaction-answer";
+
 import type { GameSyncRuntime } from "../sync/game-sync-runtime";
 import type { GameSyncTransaction } from "../sync/game-sync-types";
 
@@ -33,6 +35,7 @@ export async function waitForActionOutcome(
   stopped: AbortSignal,
   inBlock?: Promise<void>,
   transactionType?: TransactionType,
+  startedAt?: number,
 ): Promise<ActionOutcome> {
   const settled = new AbortController();
   const until = AbortSignal.any([stopped, settled.signal]);
@@ -42,23 +45,26 @@ export async function waitForActionOutcome(
     .waitForTransaction(transactionHash)
     .then((status) => (reported = status))
     .catch(silent);
-  const receipt = Promise.resolve()
-    .then(() =>
-      reported && (appliedNothing(reported) || !isBatchCommand(transactionType))
-        ? silent()
-        : receiptOf(rpc, transactionHash, until),
-    )
-    .then((value) => (read = value));
+  const receipt = () => receiptOf(rpc, transactionHash, until).then((value) => (read = value));
   const outcome = herald.then(async (status) => {
     if (!appliedNothing(status) && isBatchCommand(transactionType) && !read) {
-      await Promise.race([receipt.catch(() => undefined), pause(RECEIPT_GRACE_MS, until)]);
+      await Promise.race([receipt().catch(() => undefined), pause(RECEIPT_GRACE_MS, until)]);
     }
     return outcomeFromHerald(status, games, transactionHash, read);
   });
   try {
     return await Promise.race([
-      outcomeFromReceipt(runtime, rpc, games, transactionHash, receipt, until),
-      outcome,
+      transactionAnswer(
+        transactionHash,
+        outcome,
+        async (fallbackUntil) => {
+          const receipt = await rpc.getTransactionReceipt(transactionHash).catch(() => undefined);
+          if (!receipt) throw new TransactionNoAnswerError(transactionHash);
+          return outcomeFromReceipt(runtime, rpc, games, transactionHash, Promise.resolve(receipt), fallbackUntil);
+        },
+        until,
+        startedAt,
+      ),
       inBlock?.then(silent, (error) => {
         // A cached Herald status wins even if both answers were already available when the wait began.
         if (reported) return outcome;
@@ -140,20 +146,6 @@ async function receiptOf(
     await pause(RECEIPT_POLL_MS, until);
   }
 }
-
-/** Resolves after `ms`, or rejects with the signal's reason when it aborts first. */
-const pause = (ms: number, until: AbortSignal): Promise<undefined> =>
-  new Promise((resolve, reject) => {
-    const timer = setTimeout(() => {
-      until.removeEventListener("abort", abort);
-      resolve(undefined);
-    }, ms);
-    const abort = () => {
-      clearTimeout(timer);
-      reject(until.reason);
-    };
-    until.addEventListener("abort", abort, { once: true });
-  });
 
 const blockOf = (receipt: GetTransactionReceiptResponse): number | null =>
   "block_number" in receipt && typeof receipt.block_number === "number" ? receipt.block_number : null;

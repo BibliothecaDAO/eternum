@@ -130,22 +130,19 @@ describe("gameplay account submits", () => {
     expect(shard.sentNonces()).toEqual(["0x7", "0x7"]);
   });
 
-  it.each([false, true])(
-    "a 19 s node visibility gap never proves not sent, even with nonce advanced: %s",
-    async (advanced) => {
-      vi.useFakeTimers();
-      const shard = fakeShard(advanced ? "0x191" : "0x190", (invoke) => ({ transaction_hash: invoke.hash }));
-      const sent = await send(shard);
-      if (advanced) shard.nonce += 1n;
-      const settled = vi.fn();
-      void sent.inBlock.then(settled, settled);
-      await vi.advanceTimersByTimeAsync(19_000);
-      expect(settled).not.toHaveBeenCalled();
-      shard.include(sent.transaction_hash);
-      await vi.advanceTimersByTimeAsync(250);
-      await expect(sent.inBlock).resolves.toBeUndefined();
-    },
-  );
+  it.each([false, true])("a 19 s visibility gap releases as no answer, never not sent: %s", async (advanced) => {
+    vi.useFakeTimers();
+    const shard = fakeShard(advanced ? "0x191" : "0x190", (invoke) => ({ transaction_hash: invoke.hash }));
+    const sent = await send(shard);
+    if (advanced) shard.nonce += 1n;
+    const ended = expect(sent.inBlock).rejects.toThrow("No answer");
+    await vi.advanceTimersByTimeAsync(14_000);
+    await ended;
+    const next = await send(shard);
+    expect(shard.sentNonces()).toEqual(["0x7", advanced ? "0x8" : "0x7"]);
+    void next.inBlock.catch(() => {});
+    await vi.advanceTimersByTimeAsync(14_000);
+  });
 
   it("a refused second send fails immediately and reconciles its next nonce from the node", async () => {
     vi.useFakeTimers();
@@ -242,33 +239,55 @@ describe("gameplay account submits", () => {
     await expect(sent.inBlock).resolves.toBeUndefined();
   });
 
-  it("an unreadable nonce never proves a replacement or a drop: the action stays unknown", async () => {
+  it("an unanswered send ends honestly even when all node reads hang", async () => {
     vi.useFakeTimers();
     const shard = fakeShard("0x1010", () => {
-      shard.nonceReadable = false;
       throw outcomeUnknown();
     });
-
+    shard.account.getTransactionStatus.mockImplementation(() => new Promise(() => {}));
     const sent = await send(shard);
-    const settled = vi.fn();
-    void sent.inBlock.then(settled, settled);
-    await vi.advanceTimersByTimeAsync(10_000 * 3);
-    expect(settled).not.toHaveBeenCalled();
+    const ended = expect(sent.inBlock).rejects.toThrow("No answer");
+    await vi.advanceTimersByTimeAsync(14_000);
+    await ended;
+    expect(vi.getTimerCount()).toBe(0);
   });
 
-  it("slow but included: a hash the node holds is unknown after the window, never not sent, and lands", async () => {
+  it("a send that never answers releases the next command without a reload", async () => {
     vi.useFakeTimers();
-    const shard = fakeShard("0x5105", (invoke) => shard.hold(invoke));
+    const shard = fakeShard("0x5151", (invoke) =>
+      shard.sent.length === 1 ? new Promise(() => {}) : shard.land(invoke),
+    );
+    const submit = () =>
+      executeGameplayAccountTransaction({
+        account: shard.account,
+        calls: CALL,
+        shard: SHARD,
+        waitForTransaction: () => new Promise(() => {}),
+      });
+    const ended = expect(submit()).rejects.toThrow("No answer");
+    await vi.advanceTimersByTimeAsync(12_000);
+    await ended;
+    const next = await submit();
+    expect(shard.account.execute).toHaveBeenCalledTimes(2);
+    expect(shard.sentNonces()).toEqual(["0x7", "0x7"]);
+    await vi.advanceTimersByTimeAsync(12_000);
+    await expect(next.inBlock).resolves.toBeUndefined();
+  });
 
-    const sent = await send(shard);
-    const settled = vi.fn();
-    void sent.inBlock.then(settled, settled);
-    await vi.advanceTimersByTimeAsync(12_000 * 2);
-    expect(settled).not.toHaveBeenCalled();
-
-    shard.include(sent.transaction_hash);
-    await vi.advanceTimersByTimeAsync(250);
-    await expect(sent.inBlock).resolves.toBeUndefined();
+  it("Herald settles a send whose HTTP request never answers", async () => {
+    vi.useFakeTimers();
+    const shard = fakeShard("0x5105", () => new Promise(() => {}));
+    const sent = executeGameplayAccountTransaction({
+      account: shard.account,
+      calls: CALL,
+      shard: SHARD,
+      waitForTransaction: (hash) =>
+        new Promise((resolve) => setTimeout(() => resolve({ hash, block: null, status: "PRE_CONFIRMED" }), 300)),
+    });
+    await vi.advanceTimersByTimeAsync(300);
+    await expect((await sent).inBlock).resolves.toBeUndefined();
+    expect(shard.account.getTransactionStatus).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it("disposed while held: reconciling stops without claiming anything, and the account's queue is free", async () => {
