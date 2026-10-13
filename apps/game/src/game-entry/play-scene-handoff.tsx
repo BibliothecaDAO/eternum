@@ -117,6 +117,26 @@ export const PlaySceneHandoff = () => {
     gameStructures.length,
   ]);
 
+  // In a running game a scene that fails to open leaves the player on the scene they had, and the route goes back to
+  // it; the HUD says what could not be drawn. (During the boot the doorway holds instead.)
+  useEffect(() => {
+    const failure = readiness.sceneFailure;
+    if (snapshot.phase !== "ready" || !failure) return;
+    // The address is read as it stands: the places move it without going through the router.
+    const route = parsePlayRoute(window.location);
+    if (route == null || route.scene !== failure.scene) return;
+    navigate(
+      buildPlayHref({
+        ...route,
+        scene: failure.scene === "map" ? "hex" : "map",
+        bootMode: "direct",
+        resumeScene: null,
+      }),
+      { replace: true },
+    );
+    window.dispatchEvent(new Event("urlChanged"));
+  }, [navigate, readiness.sceneFailure, snapshot.phase]);
+
   useEffect(() => {
     if (snapshot.phase !== "ready" || overlayDismissedRef.current) return;
     overlayDismissedRef.current = true;

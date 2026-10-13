@@ -106,15 +106,25 @@ const Hold = ({
   const navigate = useNavigate();
   const desktop = useLayout() === "desktop";
   // A phone sets the step beside its line; the desktop stacks them, the step full width on Enter.
-  const plate = (line: string, step: ReactNode) =>
+  // A second way on (Try again beside Open realm) stands over the step on desktop and before it on a phone.
+  const plate = (line: string, step: ReactNode, other?: ReactNode) =>
     desktop ? (
       <div className="flex w-full flex-col gap-3">
         <ReasonPlate reason={{ kind: "failed", line }} />
+        {other}
         <StepVerb>{step}</StepVerb>
       </div>
     ) : (
       <div className="w-full">
-        <ReasonPlate reason={{ kind: "failed", line }} step={step} />
+        <ReasonPlate
+          reason={{ kind: "failed", line }}
+          step={
+            <>
+              {other}
+              {step}
+            </>
+          }
+        />
       </div>
     );
   switch (view.blocker?.kind) {
@@ -123,16 +133,16 @@ const Hold = ({
         DOORWAY_WORDS.signInToPlay,
         <Button role="primary" word={WORDS.signIn} icon="Pf" onClick={onSignIn} />,
       );
-    case "retry":
-      return plate(
-        view.blocker.line,
-        <>
-          <Button role="outline" word={TRY_AGAIN} icon="Sp" onClick={onRetry} />
-          {view.blocker.openRealm && onOpenRealm && (
-            <Button role="primary" word={DOORWAY_WORDS.openRealm} icon="Cs" onClick={onOpenRealm} />
-          )}
-        </>,
-      );
+    case "retry": {
+      const retry = <Button role="outline" word={TRY_AGAIN} icon="Sp" onClick={onRetry} />;
+      return view.blocker.openRealm && onOpenRealm
+        ? plate(
+            view.blocker.line,
+            <Button role="primary" word={DOORWAY_WORDS.openRealm} icon="Cs" onClick={onOpenRealm} />,
+            retry,
+          )
+        : plate(view.blocker.line, retry);
+    }
     case "devices":
       return plate(
         DOORWAY_WORDS.deviceLimit,

@@ -53,6 +53,8 @@ export const usePlayRouteReadinessStore = create<PlayRouteReadinessState>((set) 
 
       return {
         worldmapReady: true,
+        // A map that opens after having failed is no longer a map that could not be drawn.
+        sceneFailure: state.sceneFailure?.scene === "map" ? null : state.sceneFailure,
       };
     }),
   markWorldmapConverged: (token) =>

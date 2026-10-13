@@ -37,6 +37,7 @@ import { LordsPurse, PurseRow, RealmsChip } from "./value/lords-purse";
 import { useRealmLabor } from "./value/use-realm-labor";
 import { useRealmLords } from "./value/use-realm-lords";
 import { OfflineNotice } from "./hud/offline-notice";
+import { SceneFailureNotice } from "./hud/scene-failure-notice";
 import { OrderBar } from "./hud/order-bar";
 import { FrontierToday } from "./log/frontier-today";
 import { FrontierProduction } from "./production/frontier-production";
@@ -131,6 +132,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
           <>
             <ClearedRuinChest />
             <OfflineNotice />
+            <SceneFailureNotice />
           </>
         }
         action={

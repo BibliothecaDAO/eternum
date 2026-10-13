@@ -225,6 +225,7 @@ export class SceneManager {
   ) {
     const finalizePlan = this.getTransitionFinalizePlan(transitionToken);
     if (finalizePlan.shouldRunPostSetupEffects && (setupSucceeded || previousSceneName !== undefined)) {
+      if (!setupSucceeded) this.transitionManager.abandonFlight();
       this.moveCameraForScene();
       this.transitionManager.fadeIn(this.scenes.get(this.currentScene!));
     }

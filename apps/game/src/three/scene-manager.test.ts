@@ -22,6 +22,7 @@ function createTransitionHarness(events?: string[]) {
   const fadeOuts: Array<Deferred<boolean>> = [];
   const transitionManager = {
     startSceneFlight: vi.fn(() => null as Promise<boolean> | null),
+    abandonFlight: vi.fn(),
     fadeIn: vi.fn(),
     fadeOut: vi.fn(() => {
       events?.push("fade-out");
@@ -336,6 +337,8 @@ describe("SceneManager transitions", () => {
     expect(hexception.moveCameraToURLLocation).not.toHaveBeenCalled();
     expect(errorSpy).toHaveBeenCalledWith("[SceneManager] Failed to set up scene hex: setup failed");
     // The entry waiting on the realm view learns it did not open, in words a player can read.
+    // The held frame of the flight toward the scene that failed is dropped: it would stay over the map and its HUD.
+    expect(transitionManager.abandonFlight).toHaveBeenCalledOnce();
     const failure = usePlayRouteReadinessStore.getState().sceneFailure;
     expect(failure?.scene).toBe("hex");
     expect(failure?.error.message).toBe("The realm view did not open.");

@@ -65,6 +65,13 @@ describe("a scene the entry waits on that does not set up", () => {
     expect(both).toBe("error");
   });
 
+  it("forgets that the map could not be drawn once the map opens", () => {
+    usePlayRouteReadinessStore.getState().reset(1);
+    usePlayRouteReadinessStore.getState().markSceneFailed(1, "map", new Error("The world map did not open."));
+    usePlayRouteReadinessStore.getState().markWorldmapReady(1);
+    expect(usePlayRouteReadinessStore.getState().sceneFailure).toBeNull();
+  });
+
   it("leaves a game that finished booting as it is, and ignores a failure from an earlier boot", () => {
     const later = phaseAt("hex", (token) => {
       const readiness = usePlayRouteReadinessStore.getState();

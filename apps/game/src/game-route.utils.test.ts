@@ -33,6 +33,10 @@ describe("resolveGameRouteView", () => {
   it("keeps bootstrap failures separate from account recovery", () => {
     expect(resolveGameRouteView({ phase: "error", hasSetupResult: false, hasAccount: false })).toBe("error");
     expect(resolveGameRouteView({ phase: "error", hasSetupResult: true, hasAccount: true })).toBe("error");
+    // A scene that did not set up leaves the loaded game standing behind the doorway; with no game there is none to keep.
+    const sceneFailed = { phase: "error", sceneFailed: true } as const;
+    expect(resolveGameRouteView({ ...sceneFailed, hasSetupResult: true, hasAccount: true })).toBe("ready");
+    expect(resolveGameRouteView({ ...sceneFailed, hasSetupResult: false, hasAccount: false })).toBe("loading");
   });
 
   it("returns loading while bootstrap/account are still converging", () => {
