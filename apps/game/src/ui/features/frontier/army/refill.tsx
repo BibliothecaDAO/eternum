@@ -13,10 +13,13 @@ import { CANCEL, LORDS, REFILL, REFILLING, STAMINA } from "@/ui/design-system/ki
 export const RefillButton = ({
   price,
   held,
+  refilling = false,
   onRefill,
 }: {
   price: number;
   held: number | undefined;
+  /** A refill of this army is in flight: sent, its outcome not known yet. */
+  refilling?: boolean;
   onRefill: () => void;
 }) =>
   held !== undefined && held < price ? (
@@ -34,7 +37,14 @@ export const RefillButton = ({
       </span>
     </span>
   ) : (
-    <Button role="secondary" icon="St" word={REFILL} prices={[{ of: "lords", amount: price }]} onClick={onRefill} />
+    <Button
+      role="secondary"
+      icon="St"
+      word={REFILL}
+      prices={[{ of: "lords", amount: price }]}
+      loading={refilling ? REFILLING : undefined}
+      onClick={onRefill}
+    />
   );
 
 /**

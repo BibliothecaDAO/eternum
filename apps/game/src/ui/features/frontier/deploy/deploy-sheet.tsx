@@ -1,6 +1,7 @@
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentArmiesTick, useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { requireActiveGameClient } from "@/sync/active-game-client";
@@ -58,21 +59,24 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
   const direction = deployDirection(ring, ordered);
   const orderToward = (toward: Direction) =>
     openArmyDeployment({ structureId: safeInteger(realm.entity_id), isExplorer: true, direction: toward });
-  const [sending, setSending] = useState(false);
+  const realmId = safeInteger(realm.entity_id);
+  const deploying = useInFlight("deploy", realmId) !== undefined;
   const clock = rules ? dayClock(rules, now) : undefined;
   const goToPlace = useGoToFrontierPlace(realm);
-  const wheatPerHour = new ResourceManager(setup.store, safeInteger(realm.entity_id)).wheatPerHour(defaultTick);
+  const wheatPerHour = new ResourceManager(setup.store, realmId).wheatPerHour(defaultTick);
 
+  /** The sheet closes as the army leaves; its slot on the dock carries the wait, and a refusal says why there. */
   const deploy = async () => {
-    if (!plan?.troops || direction === null || !preview) return;
-    setSending(true);
+    const troops = plan?.troops;
+    if (!troops || direction === null || !preview) return;
     try {
-      await deployArmy(requireActiveGameClient().actions, realm, plan.troops, preview.count, direction);
-      onClose();
+      await sendOnce("deploy", realmId, true, async () => {
+        const sent = await deployArmy(requireActiveGameClient().actions, realm, troops, preview.count, direction);
+        onClose();
+        return sent;
+      });
     } catch (error) {
       toast.error(extractReadableErrorMessage(error, "The army could not deploy."));
-    } finally {
-      setSending(false);
     }
   };
 
@@ -95,7 +99,7 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
       clock={clock}
       ring={plan?.next ? { tiles: ring, chosen: direction, onPick: orderToward } : undefined}
       canDeploy={Boolean(plan?.troops && preview && preview.count > 0 && direction !== null && plan.next)}
-      sending={sending}
+      sending={deploying}
       onDeploy={() => void deploy()}
       wheatShort={
         plan?.troops && range.max === 0

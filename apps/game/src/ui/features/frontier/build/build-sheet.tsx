@@ -4,6 +4,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
+import { sendOnce, useAllInFlight, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getPlayerName } from "@/services/identity/player-profiles";
 import { requireActiveGameClient } from "@/sync/active-game-client";
@@ -117,7 +118,7 @@ export const BuildSheet = ({
   );
   const [chosen, setChosen] = useState(0);
   const option = options?.[chosen];
-  const [sending, setSending] = useState(false);
+  const sending = useInFlight("plot", plotKey(realmId, plot)) !== undefined;
   const goToPlace = useGoToFrontierPlace(realm);
   const mode = useGameModeConfig();
   const realmInfo = useMemo(
@@ -129,21 +130,23 @@ export const BuildSheet = ({
   // Until the realm's research is known, no building's tier or price is.
   if (!options || !option) return null;
 
+  /** The sheet closes as the building leaves; its ghost stays on the plot until the build's own outcome. */
   const build = async () => {
-    setSending(true);
+    const building = { type: option.category, plot: { col: plot.col, row: plot.row } };
     try {
-      await requireActiveGameClient().actions.placeBuilding({
-        structureId: realmId,
-        buildingType: option.category,
-        hex: plot,
-        useSimpleCost,
+      await sendOnce("plot", plotKey(realmId, plot), building, async () => {
+        const sent = await requireActiveGameClient().actions.placeBuilding({
+          structureId: realmId,
+          buildingType: option.category,
+          hex: plot,
+          useSimpleCost,
+        });
+        AudioManager.getInstance().play("ui.build_place");
+        onClose();
+        return sent;
       });
-      AudioManager.getInstance().play("ui.build_place");
-      onClose();
     } catch (error) {
       toast.error(extractReadableErrorMessage(error, "The building could not be placed."));
-    } finally {
-      setSending(false);
     }
   };
 
@@ -371,6 +374,29 @@ const buildGains = (option: BuildOption): BuildGain[] => {
         ? { icon: ATTRIBUTE_MARKS[effect.attribute], value: TIER_WORDS[option.tier - 1], label: "trains" }
         : { icon: "Pp", value: `+${formatAmount(effect.amount)}`, label: "houses" };
   return [gain, { icon: "Pp", value: formatAmount(option.populationCost), label: "population" }];
+};
+
+/** A realm's plot, as the actions in flight name it. */
+const plotKey = (realmId: number, plot: HexPosition): string => `${realmId}:${plot.col},${plot.row}`;
+
+/**
+ * A building sent and not yet known keeps standing on its plot as the scene's ghost, which is where the player looks
+ * once the sheet has closed. An open build sheet's own choice takes the ghost while it is open.
+ */
+export const BuildingsInFlight = () => {
+  const [building] = [...useAllInFlight("plot").values()];
+  const preview = useUIStore((state) => state.previewBuilding);
+  const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
+  useEffect(() => {
+    if (building && preview === null) setPreviewBuilding(building);
+  }, [building, preview, setPreviewBuilding]);
+  useEffect(() => {
+    if (!building) return;
+    return () => {
+      if (useUIStore.getState().previewBuilding === building) setPreviewBuilding(null);
+    };
+  }, [building, setPreviewBuilding]);
+  return null;
 };
 
 /** The chosen building stands on the plot as the scene's ghost while the sheet is open. */

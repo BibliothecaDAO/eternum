@@ -129,12 +129,15 @@ export const ArmyToken = ({
 export const OpenSlot = ({
   label,
   pulse,
+  filling,
   guided = false,
   wide = false,
   onDeploy,
 }: {
   label: string;
   pulse: boolean;
+  /** An army is on its way into this slot, by the word that says so: the slot cannot be pressed until it is known. */
+  filling?: string;
   guided?: boolean;
   /** Desktop's full card: the plus with Deploy beside it. */
   wide?: boolean;
@@ -142,7 +145,9 @@ export const OpenSlot = ({
 }) => (
   <button
     type="button"
-    aria-label={label}
+    aria-label={filling ?? label}
+    aria-busy={filling !== undefined}
+    disabled={filling !== undefined}
     {...(guided ? guideTarget("open-slot") : {})}
     onClick={onDeploy}
     className={cn(wide ? cn(CARD, "!flex-row justify-center") : TOKEN, "border border-kit-line bg-kit-ground")}
@@ -150,12 +155,12 @@ export const OpenSlot = ({
     <span
       className={cn(
         "flex size-10 items-center justify-center rounded-full border-2 border-dashed border-kit-line2 text-[18px] text-kit-gold",
-        pulse && "animate-pulse border-kit-hot",
+        (pulse || filling !== undefined) && "animate-pulse border-kit-hot",
       )}
     >
-      +
+      {filling === undefined ? "+" : "…"}
     </span>
-    {wide && <span className="text-[14px] font-semibold text-kit-cream">{label}</span>}
+    {wide && <span className="text-[14px] font-semibold text-kit-cream">{filling ?? label}</span>}
   </button>
 );
 

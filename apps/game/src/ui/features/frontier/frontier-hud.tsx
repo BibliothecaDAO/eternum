@@ -44,6 +44,7 @@ import { FrontierResearch } from "./research/frontier-research";
 import { ClearedRuinChest } from "./chest/cleared-ruin-chest";
 import { useFrontierType } from "./use-frontier-type";
 import { dayClock } from "./hud/day-clock";
+import { BuildingsInFlight } from "./build/build-sheet";
 import { DayDone } from "./rollover/day-done";
 import { RealmBuildingsRow } from "./realm/buildings-row";
 import { LastHourBubble } from "./rollover/last-hour";
@@ -177,6 +178,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
           />
         )}
         {realm && !visit && <DayDone rules={rules} realm={realm} />}
+        <BuildingsInFlight />
       </HudBands>
     </GuideProvider>
   );

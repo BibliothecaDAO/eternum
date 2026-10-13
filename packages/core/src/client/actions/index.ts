@@ -10,6 +10,7 @@ import {
   type ArmyPathsInput,
   createExplorerArmy,
   type CreateExplorerArmyInput,
+  type CreateExplorerArmyResult,
   deleteExplorerArmy,
   type DeleteExplorerArmyInput,
   findArmyPaths,
@@ -45,7 +46,7 @@ export interface GameActions {
   /** The support and attack options a structure's guards have over the armies around it. */
   structurePaths(input: StructurePathsInput): ActionPaths;
   moveArmy(input: MoveArmyInput): Promise<MoveArmyResult>;
-  createExplorerArmy(input: CreateExplorerArmyInput): Promise<void>;
+  createExplorerArmy(input: CreateExplorerArmyInput): Promise<CreateExplorerArmyResult>;
   addTroopsToExplorer(input: AddTroopsToExplorerInput): Promise<void>;
   addTroopsToGuard(input: AddTroopsToGuardInput): Promise<void>;
   deleteExplorerArmy(input: DeleteExplorerArmyInput): Promise<void>;

@@ -7,14 +7,16 @@ vi.mock("@/audio/core/AudioManager", () => ({
 }));
 
 import { GameProvider } from "@/hooks/context/game-context";
+import { inFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { toast } from "@/ui/features/event-feed/notify";
 import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-game-client";
 import { configManager, type GameClient, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import { realmBoard } from "./build-fixture";
-import { BuildSheet } from "./build-sheet";
+import { BuildingsInFlight, BuildSheet } from "./build-sheet";
 
 afterEach(() => {
   disposeGameSyncSession();
@@ -27,12 +29,13 @@ describe("the build sheet", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, realm } = realmBoard();
     const plot = { col: 11, row: 10 };
-    const placeBuilding = vi.fn(() => Promise.resolve());
+    const placeBuilding = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
     installActiveGameClient({
       connect() {},
       disconnect() {},
       dispose() {},
       actions: { placeBuilding },
+      waitForAction: () => Promise.resolve({ hash: "0x1", block: 9, status: "SUCCEEDED" }),
     } as unknown as GameClient);
     const onClose = vi.fn();
     const host = document.createElement("div");
@@ -64,6 +67,84 @@ describe("the build sheet", () => {
     act(() => root.unmount());
     expect(useUIStore.getState().previewBuilding).toBeNull();
     host.remove();
+  });
+
+  /** A build sheet whose build is sent and whose outcome the test settles, beside the HUD's ghost of builds in flight. */
+  const buildInFlight = () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const { store, realm } = realmBoard();
+    const plot = { col: 11, row: 10 };
+    let settle: (outcome: unknown) => void = () => {};
+    const placeBuilding = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
+    installActiveGameClient({
+      connect() {},
+      disconnect() {},
+      dispose() {},
+      actions: { placeBuilding },
+      waitForAction: () => new Promise((resolve) => (settle = resolve)),
+    } as unknown as GameClient);
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    const draw = (sheetOpen: boolean) =>
+      act(() =>
+        root.render(
+          <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
+            {sheetOpen && <BuildSheet realm={realm} plot={plot} onClose={() => draw(false)} />}
+            <BuildingsInFlight />
+          </GameProvider>,
+        ),
+      );
+    draw(true);
+    const build = () => [...host.querySelectorAll("button")].find((button) => /^Build/.test(button.textContent ?? ""));
+    const unmount = () => {
+      act(() => root.unmount());
+      host.remove();
+    };
+    return { host, plot, placeBuilding, build, draw, unmount, settle: (o: unknown) => act(async () => settle(o)) };
+  };
+  const ghost = () => useUIStore.getState().previewBuilding;
+
+  it("places one building for two presses, closes as it leaves, and keeps its ghost on the plot until the outcome", async () => {
+    const { host, plot, placeBuilding, build, unmount, settle } = buildInFlight();
+    await act(async () => {
+      build()!.click();
+      build()!.click();
+    });
+    expect(placeBuilding).toHaveBeenCalledTimes(1);
+    // The sheet is gone, as it always was once the building left; the plot still shows what is being built.
+    expect(host.querySelector("section")).toBeNull();
+    expect(ghost()).toEqual({ type: BuildingType.ResourceWheat, plot });
+    expect(inFlight("plot", "7:11,10")).toEqual({ type: BuildingType.ResourceWheat, plot });
+    await settle({ hash: "0x1", block: 9, status: "SUCCEEDED" });
+    expect(ghost()).toBeNull();
+    expect(inFlight("plot", "7:11,10")).toBeUndefined();
+    unmount();
+  });
+
+  it("reads Building… on the plot's own sheet while its build is in flight, and cannot send a second", async () => {
+    const { placeBuilding, build, draw, unmount, settle } = buildInFlight();
+    await act(async () => build()!.click());
+    draw(true);
+    expect(build()?.textContent).toBe("Building…");
+    expect(build()?.disabled).toBe(true);
+    await act(async () => build()!.click());
+    expect(placeBuilding).toHaveBeenCalledTimes(1);
+    await settle({ hash: "0x1", block: 9, status: "SUCCEEDED" });
+    unmount();
+  });
+
+  it("says why a refused build did not happen, takes the ghost away and frees the plot", async () => {
+    const refused = vi.spyOn(toast, "error").mockImplementation(() => "");
+    const { build, draw, unmount, settle } = buildInFlight();
+    await act(async () => build()!.click());
+    await settle({ hash: "0x1", block: 9, status: "REJECTED", revertReason: "Not enough population" });
+    expect(refused).toHaveBeenCalledWith("Not enough population");
+    expect(ghost()).toBeNull();
+    draw(true);
+    expect(build()?.disabled).toBe(false);
+    unmount();
+    refused.mockRestore();
   });
 
   const fact = (key: string, model: string, value: Record<string, unknown>) => ({ model, key, value });

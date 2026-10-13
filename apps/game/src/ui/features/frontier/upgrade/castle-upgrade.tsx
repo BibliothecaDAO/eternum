@@ -4,6 +4,8 @@ import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-struc
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useGame } from "@/hooks/context/game-context";
+import { toast } from "@/ui/features/event-feed/notify";
+import { extractReadableErrorMessage } from "@/utils/error-message";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import type { PriceKind } from "@/ui/design-system/kit/price-chip";
@@ -11,7 +13,6 @@ import { BUILDING_FIGURES, LABOR } from "@/ui/design-system/kit/words";
 import { knownBalance } from "@/ui/utils/utils";
 import { buildablePlotCount, configManager, getBalance, ResourceManager } from "@bibliothecadao/eternum";
 import { BUILDINGS_CENTER, RESOURCE_PRECISION, ResourcesIds, TroopTier } from "@bibliothecadao/types";
-import { useState } from "react";
 
 import { useGoToFrontierPlace } from "../frontier-home";
 import { exploreFix } from "../frontier-reveal-yield";
@@ -44,7 +45,6 @@ export const CastleUpgrade = ({ realm, onClose }: { realm: NativeRows["Structure
   const tick = useCurrentDefaultTick();
   const upgrade = useStructureUpgrade(safeInteger(realm.entity_id));
   const goToPlace = useGoToFrontierPlace(realm);
-  const [sending, setSending] = useState(false);
   if (!upgrade) return null;
   const held = (resource: number) => {
     const balance = knownBalance(getBalance(safeInteger(realm.entity_id), resource, tick, setup.store).balance);
@@ -52,11 +52,10 @@ export const CastleUpgrade = ({ realm, onClose }: { realm: NativeRows["Structure
   };
   const short = upgrade.requirements.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
   const send = async () => {
-    setSending(true);
     try {
       await upgrade.handleUpgrade();
-    } finally {
-      setSending(false);
+    } catch (error) {
+      toast.error(extractReadableErrorMessage(error, "The castle could not be upgraded."));
     }
   };
   return (
@@ -84,7 +83,7 @@ export const CastleUpgrade = ({ realm, onClose }: { realm: NativeRows["Structure
           }),
         }
       }
-      sending={sending}
+      sending={upgrade.isUpgradeLocked}
       onUpgrade={() => void send()}
       onClose={onClose}
     />

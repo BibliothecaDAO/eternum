@@ -1,5 +1,6 @@
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { useAllInFlight } from "@/hooks/store/use-actions-in-flight";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import { Chip } from "@/ui/design-system/kit/chip";
 import type { IconCode } from "@/ui/design-system/kit/kit-icon";
@@ -28,7 +29,6 @@ import {
 } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
-import type { Account } from "starknet";
 
 import { reachMark } from "../depth-art";
 import { useGoToFrontierPlace } from "../frontier-home";
@@ -38,6 +38,7 @@ import { buildingIcon, buildingName } from "../build/building-names";
 import { depthNode, type ResearchNodeView, siteNode, type TypeRowView } from "./research-plan";
 import { useResearchPlan } from "./research-reader";
 import { sidesTaken } from "./sides-taken";
+import { researchKey, sendResearch } from "./send-research";
 import { type CastleNode, CastleNodeSheet, TreePage, type TreeRow } from "./tree-page";
 import { TypeUpgrade, typeRowLine } from "./type-upgrade";
 
@@ -54,27 +55,19 @@ export const FrontierResearch = ({ rules, realm }: { rules: ExpeditionRules; rea
   const [open, setOpen] = useState<string | null>(null);
   const [openRow, setOpenRow] = useState<number | null>(null);
   const typeRow = plan?.types.find(({ row }) => row === openRow);
-  const [sending, setSending] = useState(false);
+  const researching = useAllInFlight("research");
+  const isResearching = (row: number) => researching.has(researchKey(realm, row));
   const shrineXp = setup.store.get("ArmyProgressionRules", { game_id: realm.game_id })?.fixed_xp;
   const castle = plan ? castleNodes(plan, shrineXp) : [];
   const labor = knownBalance(getBalance(safeInteger(realm.entity_id), ResourcesIds.Labor, tick, setup.store).balance);
   const chosen = castle.find((node) => node.node.key === open);
 
   const research = async (node: ResearchNodeView) => {
-    setSending(true);
     try {
-      await setup.systemCalls.research({
-        signer: account.account as unknown as Account,
-        structureId: realm.entity_id,
-        row: node.row,
-        // The sheet offers no choice yet: a tier takes its first side (Fields, Tools, Drill, camps).
-        choice: 0,
-      });
-      setOpen(null);
+      // The sheet offers no choice yet: a tier takes its first side (Fields, Tools, Drill, camps).
+      await sendResearch(setup.systemCalls, account.account, realm, { row: node.row, choice: 0 }, () => setOpen(null));
     } catch (error) {
       toast.error(extractReadableErrorMessage(error, "The research could not be sent."));
-    } finally {
-      setSending(false);
     }
   };
 
@@ -106,9 +99,16 @@ export const FrontierResearch = ({ rules, realm }: { rules: ExpeditionRules; rea
       <TreePage
         essence={essence === undefined ? undefined : Math.floor(essence)}
         labor={labor === undefined ? undefined : Math.floor(labor)}
-        rows={plan ? plan.types.map((view) => treeRow(view, typeRowLine(setup.store, realm, view))) : []}
+        rows={
+          plan
+            ? plan.types.map((view) => ({
+                ...treeRow(view, typeRowLine(setup.store, realm, view)),
+                researching: isResearching(view.row),
+              }))
+            : []
+        }
         chosen={openRow === null ? undefined : String(openRow)}
-        castle={castle.map(({ node }) => node)}
+        castle={castle.map(({ node, view }) => ({ ...node, researching: isResearching(view.row) }))}
         onRow={(key) => setOpenRow(Number(key))}
         onCastle={setOpen}
       />
@@ -120,7 +120,7 @@ export const FrontierResearch = ({ rules, realm }: { rules: ExpeditionRules; rea
           node={chosen.node}
           gives={chosen.gives}
           refusal={nodeRefusal(chosen)}
-          sending={sending}
+          sending={isResearching(chosen.view.row)}
           onResearch={() => void research(chosen.view)}
           onClose={() => setOpen(null)}
         />

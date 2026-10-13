@@ -15,7 +15,9 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
 }));
 
 import { GameProvider } from "@/hooks/context/game-context";
+import { inFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { toast } from "@/ui/features/event-feed/notify";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-game-client";
 import { type GameClient, setBlockTimestampSource } from "@bibliothecadao/eternum";
@@ -64,12 +66,13 @@ describe("the Deploy sheet", () => {
   it("opens at half of what the realm can field, with Minimum and Maximum on its ends, and deploys the dragged count", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
-    const createExplorerArmy = vi.fn(() => Promise.resolve());
+    const createExplorerArmy = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
     installActiveGameClient({
       connect() {},
       disconnect() {},
       dispose() {},
       actions: { createExplorerArmy },
+      waitForAction: () => Promise.resolve({ hash: "0x1", block: 9, status: "SUCCEEDED" }),
     } as unknown as GameClient);
     const onClose = vi.fn();
     const { host, root } = render(store, row, onClose);
@@ -103,6 +106,41 @@ describe("the Deploy sheet", () => {
       }),
     );
     expect(onClose).toHaveBeenCalledOnce();
+    act(() => root.unmount());
+    host.remove();
+  });
+
+  it("deploys once for two presses, closes as the army leaves and holds the deploy in flight until its own outcome", async () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const { store, row } = frontierDay();
+    let settle: (outcome: unknown) => void = () => {};
+    const createExplorerArmy = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
+    installActiveGameClient({
+      connect() {},
+      disconnect() {},
+      dispose() {},
+      actions: { createExplorerArmy },
+      waitForAction: () => new Promise((resolve) => (settle = resolve)),
+    } as unknown as GameClient);
+    const refused = vi.spyOn(toast, "error").mockImplementation(() => "");
+    const onClose = vi.fn();
+    const { host, root } = render(store, row, onClose);
+    await act(async () => {
+      deployButton(host)!.click();
+      deployButton(host)!.click();
+    });
+    expect(createExplorerArmy).toHaveBeenCalledTimes(1);
+    // The sheet closed as the command left; the wait is the dock slot's from here.
+    expect(onClose).toHaveBeenCalledOnce();
+    expect(inFlight("deploy", 7)).toBe(true);
+    // Opened again before the outcome, it cannot send a second army.
+    expect([...host.querySelectorAll("button")].find((button) => button.textContent === "Deploying…")?.disabled).toBe(
+      true,
+    );
+    await act(async () => settle({ hash: "0x1", block: 9, status: "REJECTED", revertReason: "No open army slot" }));
+    expect(refused).toHaveBeenCalledWith("No open army slot");
+    expect(inFlight("deploy", 7)).toBeUndefined();
+    expect(deployButton(host)?.disabled).toBe(false);
     act(() => root.unmount());
     host.remove();
   });

@@ -195,6 +195,19 @@ describe("the army token", () => {
   });
 });
 
+describe("an open slot whose army is being deployed", () => {
+  it("says Deploying…, pulses and cannot be pressed until the deploy's outcome", () => {
+    const onDeploy = vi.fn();
+    act(() => root.render(<OpenSlot label="Deploy" pulse={false} filling="Deploying…" wide onDeploy={onDeploy} />));
+    const slot = host.querySelector("button")!;
+    expect(slot.getAttribute("aria-label")).toBe("Deploying…");
+    expect(slot.getAttribute("aria-busy")).toBe("true");
+    expect(slot.textContent).toBe("…Deploying…");
+    act(() => slot.click());
+    expect(onDeploy).not.toHaveBeenCalled();
+  });
+});
+
 describe("the place bar", () => {
   it("lights where the player is, dots Research when it can be bought, counts unread chat, and goes", () => {
     const onGo = vi.fn();

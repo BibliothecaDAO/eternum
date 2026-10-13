@@ -22,6 +22,40 @@ afterEach(() => {
 
 const buttons = () => [...host.querySelectorAll<HTMLButtonElement>("button")];
 
+describe("a research in flight on the castle's tree", () => {
+  it("shows on its own row, in the price's place, where the player looks once the sheet has closed", () => {
+    const row = { icon: "Fm" as const, tier: 2 as const, sides: [], choice: false, tip: "" };
+    const node = { icon: "Sh" as const, tip: "", essence: 2_000, state: "open" as const };
+    act(() =>
+      root.render(
+        <TreePage
+          essence={18_250}
+          labor={9_640}
+          rows={[
+            { ...row, key: "farm", name: "Farm", next: { essence: 4_000, labor: 3_000 }, researching: true },
+            { ...row, key: "hut", name: "Hut", next: { essence: 500, labor: 300 } },
+          ]}
+          castle={[
+            { ...node, key: "shrine", label: "Shrine", researching: true },
+            { ...node, key: "well", label: "Well" },
+          ]}
+          onRow={() => {}}
+          onCastle={() => {}}
+        />,
+      ),
+    );
+    const named = (name: string) => host.querySelector<HTMLButtonElement>(`[aria-label="${name}"]`)!;
+    expect(named("Farm").getAttribute("aria-busy")).toBe("true");
+    expect(named("Farm").querySelector('[role="status"]')?.textContent).toBe("Upgrading…");
+    expect(named("Farm").textContent).not.toContain("4,000");
+    expect(named("Shrine").querySelector('[role="status"]')?.textContent).toBe("Researching…");
+    // The rows beside them keep their price and stay free.
+    expect(named("Hut").getAttribute("aria-busy")).toBe("false");
+    expect(named("Hut").textContent).toContain("500");
+    expect(named("Well").textContent).toContain("2,000");
+  });
+});
+
 describe("the castle's tree", () => {
   it("rows each standing type with its tier, sides and next price, then the castle rows, and opens either", () => {
     const onRow = vi.fn();

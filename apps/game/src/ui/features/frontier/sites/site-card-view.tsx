@@ -22,7 +22,7 @@ import {
   XP,
 } from "@/ui/design-system/kit/words";
 
-import type { OrderInFlight } from "@/hooks/store/use-army-orders-in-flight";
+import type { OrderInFlight } from "@/hooks/store/use-actions-in-flight";
 import type { ReactNode } from "react";
 
 import { guideTarget } from "../guide/guide-thread";

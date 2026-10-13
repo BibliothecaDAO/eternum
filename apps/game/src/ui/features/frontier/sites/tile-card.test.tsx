@@ -20,7 +20,7 @@ import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { acceptGameSyncStoryEvent, resetGameSyncStoryEvents } from "@/hooks/store/use-story-events-store";
 import { ARMY_SELECT_REQUEST_EVENT, readArmySelectRequest } from "@/three/scenes/worldmap-army-select-request";
-import { armyOrderInFlight, orderArmy } from "@/hooks/store/use-army-orders-in-flight";
+import { inFlight, sendOnce } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ActionPaths, ActionType, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
@@ -242,12 +242,12 @@ describe("an attack in flight on the tile card", () => {
     });
     expect(attack).toHaveBeenCalledTimes(1);
     expect(button("Attacking…")?.disabled).toBe(true);
-    expect(armyOrderInFlight(201)).toBe("attack");
+    expect(inFlight("army", 201)).toBe("attack");
     // The send returned long ago; only the outcome ends the wait.
     await act(async () => {});
     expect(button("Attacking…")?.disabled).toBe(true);
     await settle(APPLIED);
-    expect(armyOrderInFlight(201)).toBeUndefined();
+    expect(inFlight("army", 201)).toBeUndefined();
     expect(button("Attack")?.disabled).toBe(false);
     unmount();
   });
@@ -268,7 +268,7 @@ describe("an attack in flight on the tile card", () => {
     await act(async () => button("Attack")!.click());
     await settle({ hash: "0x1", block: 9, status: "REJECTED", revertReason: "Not enough stamina" });
     expect(host.querySelector('[role="status"]')?.textContent).toBe("Not enough stamina");
-    expect(armyOrderInFlight(201)).toBeUndefined();
+    expect(inFlight("army", 201)).toBeUndefined();
     expect(button("Attack")?.disabled).toBe(false);
     // The next attack takes the line away.
     let apply: (outcome: unknown) => void = () => {};
@@ -293,7 +293,7 @@ describe("an attack in flight on the tile card", () => {
   it("holds Attack back while another order of the same army is still on its way", async () => {
     const { attack, button, settle, unmount } = attackInFlight();
     let moved: Promise<string | null> = Promise.resolve(null);
-    act(() => void (moved = orderArmy(201, "move", () => Promise.resolve({ transaction_hash: "0x2" }))));
+    act(() => void (moved = sendOnce("army", 201, "move", () => Promise.resolve({ transaction_hash: "0x2" }))));
     expect(button("On its way…")?.disabled).toBe(true);
     await act(async () => button("On its way…")!.click());
     expect(attack).not.toHaveBeenCalled();

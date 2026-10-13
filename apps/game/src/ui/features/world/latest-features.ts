@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "Every action waits in its place",
+    description:
+      "Fixed building, deploying, research, the castle's upgrade, an army's refill and its tier upgrade in Frontier: a second press no longer sends a second time, and a refusal is no longer silent. The sheet still closes as the action leaves; the wait then shows where you look next, a ghost on the plot, Deploying… on the dock's open slot, Upgrading… or Researching… on the Research row, and the button itself on the castle and the army. If the game refuses, or no answer comes, one line says so and the control is free again.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
     title: "A victory shows what it paid",
     description:
       "Changed the Victory card in Frontier: the reward is the one the clear itself recorded, where it used to repeat the preview's figure. When the store that took it is at its limit, the figure carries a Full mark, and its tooltip says the rest did not fit.",

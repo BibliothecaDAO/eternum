@@ -116,7 +116,7 @@ import {
   SelectableArmy,
 } from "@bibliothecadao/eternum";
 import { requireActiveGameClient } from "@/sync/active-game-client";
-import { armyOrderInFlight, orderArmy } from "@/hooks/store/use-army-orders-in-flight";
+import { inFlight, sendOnce } from "@/hooks/store/use-actions-in-flight";
 import { type SentCommand, sentTransactionHash } from "@/sync/action-outcome";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import {
@@ -3041,7 +3041,7 @@ export default class WorldmapScene extends WarpTravel {
         this.recordMovementSubmission(sent, { entityId: selectedEntityId, actionType, exploreLatencyActionId });
         return sent;
       };
-      orderArmy(selectedEntityId, actionType === ActionType.Explore ? "explore" : "move", sendMovement).catch(
+      sendOnce("army", selectedEntityId, actionType === ActionType.Explore ? "explore" : "move", sendMovement).catch(
         (error) => {
           if (exploreLatencyActionId) recordClientActionFailed(exploreLatencyActionId, error);
           this.pendingExploreLatencyActions.delete(selectedEntityId);
@@ -3555,7 +3555,7 @@ export default class WorldmapScene extends WarpTravel {
 
   /** No order for an army whose last one has no outcome yet, or whose move is still being played on the map. */
   private isArmyMovementInputLocked(entityId: ID): boolean {
-    return armyOrderInFlight(entityId) !== undefined || this.pendingArmyMovementVisualLifecycleDisposers.has(entityId);
+    return inFlight("army", entityId) !== undefined || this.pendingArmyMovementVisualLifecycleDisposers.has(entityId);
   }
 
   private isArmyMovementActionUnavailable(entityId: ID): boolean {

@@ -40,14 +40,15 @@ export class ArmyManager {
     });
   }
 
+  /** Resolves as soon as the command is sent, with its transaction: the army exists once that action is applied. */
   public async createExplorerArmy(
     signer: Account | AccountInterface,
     troopType: TroopType,
     troopTier: TroopTier,
     troopCount: number,
     spawnDirection: Direction,
-  ): Promise<void> {
-    await this.systemCalls.explorer_create({
+  ) {
+    return this.systemCalls.explorer_create({
       signer,
       for_structure_id: this.realmEntityId,
       category: Object.keys(TroopType).indexOf(troopType),

@@ -1,4 +1,5 @@
 import { useGame } from "@/hooks/context/game-context";
+import { useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import { Chip } from "@/ui/design-system/kit/chip";
@@ -36,7 +37,6 @@ import {
 } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
-import type { Account } from "starknet";
 
 import { KindChoice } from "../army/army-sheet";
 import { ATTRIBUTE_LOOK, type Attribute, nextTierPrice } from "../attributes/attributes";
@@ -50,6 +50,7 @@ import { useRealmStores } from "../realm-stores";
 import { TrainingGives } from "../upgrade/training-gives";
 import { type Figure, TypeUpgradeSheet } from "../upgrade/type-upgrade-sheet";
 import type { TypeRowView } from "./research-plan";
+import { researchKey, sendResearch } from "./send-research";
 
 /** Each choosing row's sides: their marks, names and what each adds to every building of the type. */
 const SIDE_NAMES: Partial<Record<number, readonly [[IconCode, string], [IconCode, string]]>> = {
@@ -108,24 +109,15 @@ export const TypeUpgrade = ({
   const goToPlace = useGoToFrontierPlace(realm);
   const [lifted, setLifted] = useState<0 | 1 | undefined>(undefined);
   const [kind, setKind] = useState<ScoutKey>("camp");
-  const [sending, setSending] = useState(false);
+  const sending = useInFlight("research", researchKey(realm, view.row)) !== undefined;
   const sides = sideCards(setup.store, realm, view);
   const choice = view.row === research.ROW_SCOUTS_LODGE ? SCOUT_KEYS.indexOf(kind) : (lifted ?? 0);
 
   const upgrade = async () => {
-    setSending(true);
     try {
-      await setup.systemCalls.research({
-        signer: account.account as unknown as Account,
-        structureId: realm.entity_id,
-        row: view.row,
-        choice,
-      });
-      onClose();
+      await sendResearch(setup.systemCalls, account.account, realm, { row: view.row, choice }, onClose);
     } catch (error) {
       toast.error(extractReadableErrorMessage(error, "The Upgrade could not be sent."));
-    } finally {
-      setSending(false);
     }
   };
 

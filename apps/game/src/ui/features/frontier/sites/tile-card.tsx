@@ -4,7 +4,7 @@ import { useCurrentArmiesTick, useNowSeconds } from "@/hooks/helpers/use-block-t
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
-import { orderArmy, useArmyOrderInFlight } from "@/hooks/store/use-army-orders-in-flight";
+import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { requestArmySelection } from "@/three/scenes/worldmap-army-select-request";
@@ -138,7 +138,7 @@ export const TileCard = ({ selected, onClose }: { selected: AttackTarget; onClos
   const realm = useFrontierRealm();
   const goToPlace = useGoToFrontierPlace(realm);
   const armyId = actor ? safeInteger(actor.army.explorer_id) : null;
-  const inFlight = useArmyOrderInFlight(armyId);
+  const inFlight = useInFlight("army", armyId);
   const refused = useFightRefusal(armyId, targetId(selected));
 
   const attackSite = async () => {
@@ -146,7 +146,7 @@ export const TileCard = ({ selected, onClose }: { selected: AttackTarget; onClos
     const signer = account.account;
     const sent = fightSentBy(attack.army, selected, plan);
     try {
-      const fought = await orderArmy(armyId, "attack", () => {
+      const fought = await sendOnce("army", armyId, "attack", () => {
         fightIsSent();
         playUnitCommandSound("attack");
         return sendAttack(setup.systemCalls, signer, armyId, selected);

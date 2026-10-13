@@ -2,7 +2,7 @@ import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
-import { orderArmy, useArmyOrderInFlight } from "@/hooks/store/use-army-orders-in-flight";
+import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
@@ -64,13 +64,13 @@ export const MapSiteCard = ({
   const approach = useOrderAt(useApproachTile(siteTile, user !== null && !plan.usable));
   const userId = user ? safeInteger(user.army.explorer_id) : null;
   const stamina = useUserStamina(userId ?? undefined);
-  const inFlight = useArmyOrderInFlight(userId);
+  const inFlight = useInFlight("army", userId);
 
   const use = async () => {
     if (userId === null || !user || !account.account) return;
     const signer = account.account;
     try {
-      await orderArmy(userId, "use", async () => {
+      await sendOnce("army", userId, "use", async () => {
         playUnitCommandSound("move");
         const sent = await setup.systemCalls.interact_site({
           signer,

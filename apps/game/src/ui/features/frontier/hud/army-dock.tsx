@@ -3,6 +3,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useLayout } from "@/shell/frame/layout";
 import { requestArmySelection } from "@/three/scenes/worldmap-army-select-request";
@@ -11,7 +12,7 @@ import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deplo
 import { Sweep } from "@/ui/motion/sweep";
 import { configManager, entityMapPosition, Position } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { DEPLOY } from "@/ui/design-system/kit/words";
+import { DEPLOY, DEPLOYING } from "@/ui/design-system/kit/words";
 
 import { attributeBadgeTarget } from "../attributes/attributes";
 import { useOpenArmySlots } from "../deploy/open-slots";
@@ -121,10 +122,13 @@ const DeploySlot = ({
   wide: boolean;
 }) => {
   const pointed = useDeployPointed();
+  // The army being deployed takes the first open slot: it carries the wait once the Deploy sheet has closed.
+  const deploying = useInFlight("deploy", safeInteger(realm.entity_id)) !== undefined;
   return (
     <Sweep play={first ? pointed : 0} className="shrink-0 rounded-xl">
       <OpenSlot
         label={DEPLOY}
+        filling={first && deploying ? DEPLOYING : undefined}
         pulse={pulse}
         guided={first}
         wide={wide}
