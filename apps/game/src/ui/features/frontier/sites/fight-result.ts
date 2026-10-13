@@ -56,20 +56,33 @@ export const readFightResult = (sent: FightSent, now: FightSides): FightResult |
   };
 };
 
+/** An attack that did not happen: the game refused it or it could not be sent, in the one line the card shows. */
+interface FightRefusal {
+  armyId: number;
+  targetId: number;
+  line: string;
+}
+
 /**
- * The acting surface's own state for its attack: the attack in flight, then its result until the player closes it.
- * It is never a game fact, only what this screen shows of the fight it sent.
+ * The acting surface's own state for its attack: the attack in flight, then its result until the player closes it,
+ * or the reason it never happened until the next attack. It is never a game fact, only what this screen shows of the
+ * fight it sent.
  */
-const useFightStore = create<{ sent: FightSent | null; result: FightResult | null }>(() => ({
-  sent: null,
-  result: null,
-}));
+const useFightStore = create<{ sent: FightSent | null; result: FightResult | null; refusal: FightRefusal | null }>(
+  () => ({ sent: null, result: null, refusal: null }),
+);
 
 export const useFightSent = () => useFightStore((state) => state.sent);
 export const useFightResult = () => useFightStore((state) => state.result);
+/** Why this army's last attack on this target did not happen, until it attacks again. */
+export const useFightRefusal = (armyId: number | null, targetId: number): string | undefined =>
+  useFightStore(({ refusal }) =>
+    refusal && refusal.armyId === armyId && refusal.targetId === targetId ? refusal.line : undefined,
+  );
 
-export const fightIsSent = (sent: FightSent): void => useFightStore.setState({ sent, result: null });
-/** The attack never left (the send failed): there is no fight to report. */
-export const fightWasNotSent = (): void => useFightStore.setState({ sent: null });
+export const fightIsSent = (sent: FightSent | null): void =>
+  useFightStore.setState({ sent, result: null, refusal: null });
+/** The attack did not happen (refused by the game, or never sent): there is no fight to report, only the reason. */
+export const fightWasNotSent = (refusal: FightRefusal): void => useFightStore.setState({ sent: null, refusal });
 export const fightEnded = (result: FightResult | null): void => useFightStore.setState({ sent: null, result });
 export const closeFightResult = (): void => useFightStore.setState({ result: null });

@@ -1,6 +1,7 @@
 import { researchedDepth } from "@bibliothecadao/eternum";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { orderArmy } from "@/hooks/store/use-army-orders-in-flight";
 import { HUD_BODY, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
 import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -55,7 +56,9 @@ export const SpireDepthActions = ({ armyEntityId }: { armyEntityId: ID }) => {
   const enter = async (depth: number) => {
     setPending(depth);
     try {
-      await systemCalls.enter_depth({ signer: account as unknown as Account, explorerId: armyEntityId, depth });
+      await orderArmy(armyEntityId, "move", () =>
+        systemCalls.enter_depth({ signer: account as unknown as Account, explorerId: armyEntityId, depth }),
+      );
     } catch (error) {
       toast.error(extractReadableErrorMessage(error, "The army could not enter the spire."));
     } finally {

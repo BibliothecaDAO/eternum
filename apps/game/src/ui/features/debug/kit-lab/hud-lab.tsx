@@ -158,7 +158,7 @@ type LabSite = Omit<Parameters<typeof SiteCardView>[0], "onClose" | "onRealm">;
 type LabChest = Parameters<typeof RuinChestMoment>[0];
 
 const ARMY_CHIP = { art: "/images/armies/knightT1.png", troops: 5_000 };
-const ATTACK_30 = { kind: "attack" as const, stamina: 30, sending: false, onAttack: () => undefined };
+const ATTACK_30 = { kind: "attack" as const, stamina: 30, onAttack: () => undefined };
 const WIN = (exchanges: number, troopsLost: number) => ({
   outcome: "wins" as const,
   exchanges,

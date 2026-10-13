@@ -36,7 +36,7 @@ describe("a guarded site's card", () => {
           fight={{ outcome: "wins", exchanges: 1, troopsLost: 180, guardLeft: 0 }}
           pay={{ icon: "La", amount: 550 }}
           xp={82}
-          verb={{ kind: "attack", stamina: 30, sending: false, onAttack }}
+          verb={{ kind: "attack", stamina: 30, onAttack }}
           onClose={() => {}}
         />,
       ),
@@ -63,7 +63,7 @@ describe("a guarded site's card", () => {
           pay={null}
           chest={{ tier: 3, lords: 128 }}
           xp={145}
-          verb={{ kind: "attack", stamina: 30, sending: false, onAttack: () => {} }}
+          verb={{ kind: "attack", stamina: 30, onAttack: () => {} }}
           onClose={() => {}}
         />,
       ),
@@ -91,7 +91,7 @@ describe("a guarded site's card", () => {
           fight={{ outcome: "wins", exchanges: 1, troopsLost: 180, guardLeft: 0 }}
           pay={{ icon: "La", amount: 550, fits: 120 }}
           xp={82}
-          verb={{ kind: "attack", stamina: 30, sending: false, onAttack: () => {} }}
+          verb={{ kind: "attack", stamina: 30, onAttack: () => {} }}
           onRealm={onRealm}
           onClose={() => {}}
         />,
@@ -187,7 +187,7 @@ describe("Enter on a guarded site's card", () => {
       fight={{ outcome: fight, exchanges: 1, troopsLost: 180, guardLeft: fight === "wins" ? 0 : 900 }}
       pay={{ icon: "La", amount: 550 }}
       xp={82}
-      verb={{ kind: "attack", stamina: 30, sending: false, onAttack }}
+      verb={{ kind: "attack", stamina: 30, onAttack }}
       onClose={() => {}}
     />
   );

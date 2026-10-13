@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "A sent order stays sent",
+    description:
+      "Fixed orders in Frontier that looked as if they had not left: after you attack, the button reads Attacking… until the fight's own result arrives, where it used to fall back to Attack for several seconds. An army whose order is still on its way takes no second one, on the map or on a card, so a second press never sends a second transaction. If the game refuses an order, or it cannot be sent, one line says why and the army is free again.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
     title: "Sites show their strength",
     description:
       "Changed the plate over a Frontier camp, rift, ruin or band of stragglers: it now reads the site's kind and the strength of its guard, such as Camp 1.2k, instead of a long id, and is always shown. The wide second label with its empty picture frame is gone, and plates sit just over the roof so they no longer cover a unit standing behind.",

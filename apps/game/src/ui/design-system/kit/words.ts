@@ -125,6 +125,8 @@ export const SHRINE = "Shrine";
 export const WELL = "Well";
 export const ATTACK = "Attack";
 export const ATTACKING = "Attacking…";
+/** On an army's step while the order it was given before is still in flight. */
+export const ON_ITS_WAY = "On its way…";
 /** How an attack ended, the one word on its result: the guard gone, the army gone, or both still standing. */
 export const VICTORY = "Victory";
 export const ARMY_LOST = "Army lost";

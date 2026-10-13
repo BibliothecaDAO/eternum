@@ -4,13 +4,13 @@ import { useCurrentArmiesTick, useNowSeconds } from "@/hooks/helpers/use-block-t
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
+import { orderArmy, useArmyOrderInFlight } from "@/hooks/store/use-army-orders-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { requestArmySelection } from "@/three/scenes/worldmap-army-select-request";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import type { IconCode } from "@/ui/design-system/kit/kit-icon";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
-import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { biomeTypeOf, configManager, entityMapPosition, isViewerOwner } from "@bibliothecadao/eternum";
 import {
@@ -21,14 +21,14 @@ import {
 } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { useFrontierRealm, useGoToFrontierPlace } from "../frontier-home";
 import { GuideSlot } from "../guide/frontier-guide";
 import { type ArmyOrder, type Cost, isCovered, useArmyStamina, useOrderAt } from "../hud/army-order";
 import { armyArt, type DockArmy, useDockArmies } from "../hud/dock-armies";
 import { useApproachTile } from "./approach";
-import { type FightSent, fightIsSent, fightWasNotSent } from "./fight-result";
+import { type FightSent, fightIsSent, fightWasNotSent, useFightRefusal } from "./fight-result";
 import { useSelectedOwnArmy } from "./selected-army";
 import { readArmyCard, readSiteCard, type SiteAttack, type SiteCardPlan, type SiteFight } from "./site-card-plan";
 import { type SiteChoice, SiteCardView, type SiteVerb } from "./site-card-view";
@@ -119,21 +119,26 @@ export const TileCard = ({ selected, onClose }: { selected: AttackTarget; onClos
   const stamina = useArmyStamina(actor ? safeInteger(actor.army.explorer_id) : null, plan.attackStamina);
   const realm = useFrontierRealm();
   const goToPlace = useGoToFrontierPlace(realm);
-  const [sending, setSending] = useState(false);
+  const armyId = actor ? safeInteger(actor.army.explorer_id) : null;
+  const inFlight = useArmyOrderInFlight(armyId);
+  const refused = useFightRefusal(armyId, targetId(selected));
 
   const attackSite = async () => {
-    if (!attack || !account.account) return;
-    setSending(true);
+    if (!attack || !account.account || armyId === null) return;
+    const signer = account.account;
     const sent = fightSentBy(attack.army, selected, plan);
-    if (sent) fightIsSent(sent);
     try {
-      playUnitCommandSound("attack");
-      await sendAttack(setup.systemCalls, account.account, safeInteger(attack.army.explorer_id), selected);
+      await orderArmy(armyId, "attack", () => {
+        fightIsSent(sent);
+        playUnitCommandSound("attack");
+        return sendAttack(setup.systemCalls, signer, armyId, selected);
+      });
     } catch (error) {
-      fightWasNotSent();
-      toast.error(extractReadableErrorMessage(error, "The attack could not be sent."));
-    } finally {
-      setSending(false);
+      fightWasNotSent({
+        armyId,
+        targetId: targetId(selected),
+        line: extractReadableErrorMessage(error, "The attack could not be sent."),
+      });
     }
   };
 
@@ -142,7 +147,7 @@ export const TileCard = ({ selected, onClose }: { selected: AttackTarget; onClos
     inReach: plan.fight !== undefined,
     approach,
     stamina,
-    attack: { stamina: plan.attackStamina, sending, onAttack: () => void attackSite() },
+    attack: { stamina: plan.attackStamina, inFlight, refused, onAttack: () => void attackSite() },
   });
 
   return (
@@ -199,7 +204,7 @@ const siteVerb = ({
   inReach: boolean;
   approach: ArmyOrder | null;
   stamina: Cost | undefined;
-  attack: { stamina: number; sending: boolean; onAttack: () => void };
+  attack: Omit<Extract<SiteVerb, { kind: "attack" }>, "kind">;
 }): SiteVerb | null => {
   if (!hasArmy) return null;
   if (!inReach) {

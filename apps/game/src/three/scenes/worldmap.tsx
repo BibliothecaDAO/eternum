@@ -116,6 +116,9 @@ import {
   SelectableArmy,
 } from "@bibliothecadao/eternum";
 import { requireActiveGameClient } from "@/sync/active-game-client";
+import { armyOrderInFlight, orderArmy } from "@/hooks/store/use-army-orders-in-flight";
+import { type SentCommand, sentTransactionHash } from "@/sync/action-outcome";
+import { extractReadableErrorMessage } from "@/utils/error-message";
 import {
   ActorType,
   BiomeType,
@@ -2855,7 +2858,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private onArmyMovement(actionPath: ActionPath[], selectedEntityId: ID) {
     if (actionPath.length > 0 && this.isArmyMovementInputLocked(selectedEntityId)) {
-      toast.info("Army movement is still resolving");
+      toast.info("This army's last order is still on its way");
       this.state.updateEntityActionHoveredHex(null);
       this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
       return;
@@ -3027,63 +3030,24 @@ export default class WorldmapScene extends WarpTravel {
         });
       }
 
-      requireActiveGameClient()
-        .actions.moveArmy({ explorerId: selectedEntityId, path: actionPath, currentArmiesTick })
-        .then((result: any) => {
-          const txHash = result?.transaction_hash;
-          recordArmyMovementLatencyPhase({
-            phase: "tx_response_received",
-            source: "worldmap",
-            entityId: selectedEntityId,
-            txHash,
-          });
-          if (txHash && actionType === ActionType.Explore) {
-            if (exploreLatencyActionId) recordClientActionSubmitted(exploreLatencyActionId, txHash);
-            recordArmyMovementLatencyPhase({
-              phase: "explore_tx_hash_received",
-              source: "worldmap",
-              entityId: selectedEntityId,
-              txHash,
-            });
-          }
-          recordArmyMovementLatencyPhase({
-            phase: "tx_submitted",
-            source: "worldmap",
-            entityId: selectedEntityId,
-            txHash,
-          });
-          if (txHash) {
-            void requireActiveGameSyncRuntime()
-              .waitForTransaction(txHash)
-              .then((transaction) => {
-                if (transaction.status === "PRE_CONFIRMED") recordClientActionPreConfirmed(txHash);
-                recordArmyMovementLatencyPhase({
-                  phase: "tx_confirmed",
-                  source: "worldmap",
-                  entityId: selectedEntityId,
-                  txHash,
-                });
-                if (actionType === ActionType.Explore) {
-                  recordArmyMovementLatencyPhase({
-                    phase: "explore_next_safe_unblocked",
-                    source: "worldmap",
-                    entityId: selectedEntityId,
-                  });
-                }
-              })
-              .catch((error) => {
-                if (exploreLatencyActionId) recordClientActionFailed(exploreLatencyActionId, error);
-                this.pendingExploreLatencyActions.delete(selectedEntityId);
-                this.handlePendingArmyMovementFailure(selectedEntityId, cleanup);
-              });
-          }
-        })
-        .catch((e) => {
-          if (exploreLatencyActionId) recordClientActionFailed(exploreLatencyActionId, e);
+      const sendMovement = () => {
+        const sent = requireActiveGameClient().actions.moveArmy({
+          explorerId: selectedEntityId,
+          path: actionPath,
+          currentArmiesTick,
+        });
+        this.recordMovementSubmission(sent, { entityId: selectedEntityId, actionType, exploreLatencyActionId });
+        return sent;
+      };
+      orderArmy(selectedEntityId, actionType === ActionType.Explore ? "explore" : "move", sendMovement).catch(
+        (error) => {
+          if (exploreLatencyActionId) recordClientActionFailed(exploreLatencyActionId, error);
           this.pendingExploreLatencyActions.delete(selectedEntityId);
           this.handlePendingArmyMovementFailure(selectedEntityId, cleanup);
-          console.error("Army movement failed:", e);
-        });
+          console.error("Army movement failed:", error);
+          toast.error(extractReadableErrorMessage(error, "The order was not sent."));
+        },
+      );
 
       this.state.updateEntityActionHoveredHex(null);
       this.keepMovementDestinationSelected(targetHex);
@@ -3091,6 +3055,39 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     this.clearSelection();
+  }
+
+  /** The latency record of a move's send and of Herald's status for it; the order's outcome is not decided here. */
+  private recordMovementSubmission(
+    sent: Promise<SentCommand>,
+    order: { entityId: ID; actionType: ActionType | undefined; exploreLatencyActionId: string | null },
+  ): void {
+    const { entityId, actionType, exploreLatencyActionId } = order;
+    void sent
+      .then((command) => {
+        const txHash = sentTransactionHash(command);
+        recordArmyMovementLatencyPhase({ phase: "tx_response_received", source: "worldmap", entityId, txHash });
+        if (actionType === ActionType.Explore) {
+          if (exploreLatencyActionId) recordClientActionSubmitted(exploreLatencyActionId, txHash);
+          recordArmyMovementLatencyPhase({ phase: "explore_tx_hash_received", source: "worldmap", entityId, txHash });
+        }
+        recordArmyMovementLatencyPhase({ phase: "tx_submitted", source: "worldmap", entityId, txHash });
+        return requireActiveGameSyncRuntime().waitForTransaction(txHash);
+      })
+      .then((transaction) => {
+        if (transaction.status === "PRE_CONFIRMED") recordClientActionPreConfirmed(transaction.hash);
+        recordArmyMovementLatencyPhase({
+          phase: "tx_confirmed",
+          source: "worldmap",
+          entityId,
+          txHash: transaction.hash,
+        });
+        if (actionType === ActionType.Explore) {
+          recordArmyMovementLatencyPhase({ phase: "explore_next_safe_unblocked", source: "worldmap", entityId });
+        }
+      })
+      // A send that failed or a status wait that ended has nothing to time; untilApplied reports the outcome.
+      .catch(() => {});
   }
 
   private onArmyAttack(actionPath: ActionPath[], selectedEntityId: ID) {
@@ -3554,8 +3551,9 @@ export default class WorldmapScene extends WarpTravel {
     return true;
   }
 
+  /** No order for an army whose last one has no outcome yet, or whose move is still being played on the map. */
   private isArmyMovementInputLocked(entityId: ID): boolean {
-    return this.pendingArmyMovementVisualLifecycleDisposers.has(entityId);
+    return armyOrderInFlight(entityId) !== undefined || this.pendingArmyMovementVisualLifecycleDisposers.has(entityId);
   }
 
   private isArmyMovementActionUnavailable(entityId: ID): boolean {

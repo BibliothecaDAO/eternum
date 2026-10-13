@@ -14,6 +14,7 @@ import {
   LORDS,
   MOVE,
   needsStamina,
+  ON_ITS_WAY,
   REALM,
   tooFarFrom,
   TROOPS,
@@ -21,6 +22,7 @@ import {
   XP,
 } from "@/ui/design-system/kit/words";
 
+import type { OrderInFlight } from "@/hooks/store/use-army-orders-in-flight";
 import type { ReactNode } from "react";
 
 import { guideTarget } from "../guide/guide-thread";
@@ -32,7 +34,15 @@ import { type AttackTargetKind, TARGET_MARKS } from "./site-marks";
 /** The step under the outcome: Attack (the same tap whatever the forecast), Move until the army is in reach, or
  * Attack held back, by the stamina the army lacks or by a site too far for one order. One line under it says why. */
 export type SiteVerb =
-  | { kind: "attack"; stamina: number; sending: boolean; onAttack: () => void }
+  | {
+      kind: "attack";
+      stamina: number;
+      /** The army's order in flight, this attack or another: the step cannot be pressed until its outcome arrives. */
+      inFlight?: OrderInFlight;
+      /** Why the army's last attack here did not happen, in one line. */
+      refused?: string;
+      onAttack: () => void;
+    }
   | { kind: "move"; prices: readonly Price[]; onMove: () => void }
   | { kind: "short"; stamina: Cost }
   | { kind: "far" };
@@ -279,7 +289,7 @@ const Verb = ({
 }) => {
   const warns = verb?.kind === "attack" && armyLost;
   // Enter confirms the attack the forecast wins or stalls; one that loses the army takes a deliberate tap.
-  useEnterConfirms(verb?.kind === "attack" && !verb.sending && !warns ? verb.onAttack : undefined);
+  useEnterConfirms(verb?.kind === "attack" && !verb.inFlight && !warns ? verb.onAttack : undefined);
   if (!verb) return null;
   return (
     <div className="flex flex-col gap-2">
@@ -293,7 +303,7 @@ const Verb = ({
             icon="At"
             word={ATTACK}
             prices={attackPrices(verb)}
-            loading={verb.kind === "attack" && verb.sending ? ATTACKING : undefined}
+            loading={verb.kind === "attack" ? inFlightWord(verb.inFlight, "attack", ATTACKING) : undefined}
             disabled={verb.kind !== "attack"}
             warns={warns}
             onClick={verb.kind === "attack" ? verb.onAttack : undefined}
@@ -301,9 +311,25 @@ const Verb = ({
           />
         )}
       </div>
-      <VerbLine line={warns ? ARMY_WILL_BE_LOST : verbReason(verb, site)} warns={warns} />
+      <VerbLine {...verbLine(verb, site, warns)} />
     </div>
   );
+};
+
+/**
+ * The word on an army's step while an order of that army is in flight: the step's own word for its own order, and
+ * that the army is on its way for another. Undefined once the army is free.
+ */
+export const inFlightWord = (inFlight: OrderInFlight | undefined, own: OrderInFlight, word: string) =>
+  inFlight && (inFlight === own ? word : ON_ITS_WAY);
+
+/**
+ * The one line under the step. An attack that did not happen says why, in red, ahead of the forecast's warning: it
+ * is the news. Otherwise the warning, or why the step is not Attack.
+ */
+const verbLine = (verb: SiteVerb, site: string, warns: boolean): { line: string | undefined; warns: boolean } => {
+  if (verb.kind === "attack" && verb.refused && !verb.inFlight) return { line: verb.refused, warns: true };
+  return { line: warns ? ARMY_WILL_BE_LOST : verbReason(verb, site), warns };
 };
 
 const attackPrices = (verb: Exclude<SiteVerb, { kind: "move" }>): readonly Price[] => {

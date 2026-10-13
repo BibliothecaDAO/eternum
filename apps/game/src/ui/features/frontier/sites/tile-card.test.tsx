@@ -1,6 +1,6 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useNowSeconds: () => 350,
@@ -9,15 +9,29 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useBlockTimestamp: () => ({ currentArmiesTick: 3, armiesTickTimeRemaining: 60 }),
 }));
 vi.mock("@/audio/unit-command-audio", () => ({ playUnitCommandSound: () => {} }));
+/** The outcome of the action the card sent, settled by each test: applied unless it says otherwise. */
+const waitForAction = vi.fn();
+vi.mock("@/sync/active-game-client", async (original) => ({
+  ...(await original<typeof import("@/sync/active-game-client")>()),
+  requireActiveGameClient: () => ({ waitForAction }),
+}));
 
 import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { armyOrderInFlight, orderArmy } from "@/hooks/store/use-army-orders-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ActionPaths, ActionType, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { campBeside, otherArmyAt, SITE, SITE_TILE } from "./site-fixture";
 import { TileCard } from "./tile-card";
+
+const APPLIED = { hash: "0x1", block: 9, status: "SUCCEEDED" };
+
+beforeEach(() => {
+  waitForAction.mockReset();
+  waitForAction.mockResolvedValue(APPLIED);
+});
 
 afterEach(() => {
   setBlockTimestampSource(null);
@@ -36,7 +50,7 @@ const renderCard = (army: "beside" | "far") => {
       { model: "TileOccupancy", key: "0x77", value: standsAt },
     ] as never);
   useAccountStore.setState({ account: { address: "0x111" } as never });
-  const attack = vi.fn(() => Promise.resolve());
+  const attack = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
   const tile = { hexCoords: SITE_TILE, biome: 11, occupierId: SITE } as unknown as TileSpatialRenderable;
   const host = document.createElement("div");
   document.body.append(host);
@@ -109,7 +123,7 @@ describe("the tile card", () => {
     const { store } = campBeside();
     const other = otherArmyAt(store, 42, 12);
     useAccountStore.setState({ account: { address: "0x111" } as never });
-    const attack = vi.fn(() => Promise.resolve());
+    const attack = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
     const tile = {
       hexCoords: { col: 42, row: 12, alt: false },
       biome: 11,
@@ -138,5 +152,86 @@ describe("the tile card", () => {
     );
     act(() => root.unmount());
     host.remove();
+  });
+});
+
+describe("an attack in flight on the tile card", () => {
+  /** An attack whose outcome the test settles when it chooses. */
+  const attackInFlight = () => {
+    let settle: (outcome: unknown) => void = () => {};
+    waitForAction.mockReturnValue(new Promise((resolve) => (settle = resolve)));
+    const card = renderCard("beside");
+    act(() => useUIStore.getState().updateEntityActionSelectedEntityId(201));
+    return { ...card, settle: (outcome: unknown) => act(async () => settle(outcome)) };
+  };
+
+  it("sends one attack for two presses, and reads Attacking… until the action's own outcome arrives", async () => {
+    const { attack, button, settle, unmount } = attackInFlight();
+    await act(async () => {
+      // Both presses land before the card draws again: the second finds the army taken.
+      button("Attack")!.click();
+      button("Attack")!.click();
+    });
+    expect(attack).toHaveBeenCalledTimes(1);
+    expect(button("Attacking…")?.disabled).toBe(true);
+    expect(armyOrderInFlight(201)).toBe("attack");
+    // The send returned long ago; only the outcome ends the wait.
+    await act(async () => {});
+    expect(button("Attacking…")?.disabled).toBe(true);
+    await settle(APPLIED);
+    expect(armyOrderInFlight(201)).toBeUndefined();
+    expect(button("Attack")?.disabled).toBe(false);
+    unmount();
+  });
+
+  it("keeps reading Attacking… when the sheet is closed and opened again before the outcome", async () => {
+    const first = attackInFlight();
+    await act(async () => first.button("Attack")!.click());
+    first.unmount();
+    const again = renderCard("beside");
+    expect(again.button("Attacking…")?.disabled).toBe(true);
+    await first.settle(APPLIED);
+    expect(again.button("Attack")?.disabled).toBe(false);
+    again.unmount();
+  });
+
+  it("says in one line why a refused attack did not happen, and frees the army", async () => {
+    const { host, attack, button, settle, unmount } = attackInFlight();
+    await act(async () => button("Attack")!.click());
+    await settle({ hash: "0x1", block: 9, status: "REJECTED", revertReason: "Not enough stamina" });
+    expect(host.querySelector('[role="status"]')?.textContent).toBe("Not enough stamina");
+    expect(armyOrderInFlight(201)).toBeUndefined();
+    expect(button("Attack")?.disabled).toBe(false);
+    // The next attack takes the line away.
+    let apply: (outcome: unknown) => void = () => {};
+    waitForAction.mockReturnValue(new Promise((resolve) => (apply = resolve)));
+    await act(async () => button("Attack")!.click());
+    expect(attack).toHaveBeenCalledTimes(2);
+    expect(host.querySelector('[role="status"]')).toBeNull();
+    await act(async () => apply(APPLIED));
+    unmount();
+  });
+
+  it("says the same when the attack could not be sent at all", async () => {
+    const { host, attack, button, unmount } = attackInFlight();
+    attack.mockRejectedValueOnce(new Error("The shard refused the request"));
+    await act(async () => button("Attack")!.click());
+    expect(waitForAction).not.toHaveBeenCalled();
+    expect(host.querySelector('[role="status"]')?.textContent).toBe("The shard refused the request");
+    expect(button("Attack")?.disabled).toBe(false);
+    unmount();
+  });
+
+  it("holds Attack back while another order of the same army is still on its way", async () => {
+    const { attack, button, settle, unmount } = attackInFlight();
+    let moved: Promise<boolean> = Promise.resolve(false);
+    act(() => void (moved = orderArmy(201, "move", () => Promise.resolve({ transaction_hash: "0x2" }))));
+    expect(button("On its way…")?.disabled).toBe(true);
+    await act(async () => button("On its way…")!.click());
+    expect(attack).not.toHaveBeenCalled();
+    await settle(APPLIED);
+    expect(await moved).toBe(true);
+    expect(button("Attack")?.disabled).toBe(false);
+    unmount();
   });
 });
