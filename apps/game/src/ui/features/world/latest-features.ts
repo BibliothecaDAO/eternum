@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "The forecast is this attack",
+    description:
+      "Fixed the attack forecast in Frontier disagreeing with the fight's result. When a fight takes several attacks, the forecast used to add up the losses of all of them, while Attack sends one and its result showed that one. The forecast now shows what this attack costs you and the guard it leaves, exactly as the result will read; the pips still count the attacks the whole fight takes.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
     title: "A fight's result is the fight's own",
     description:
       "Fixed the result of an attack in Frontier: it is now read from the battle's own record, so an army lost in a fight reads Army lost with the guard as the battle left it, and can no longer read Victory with a payout when its region left your map with it. An attack the game refused shows no result at all, only why. A black tile now says Unexplored when you hover it.",

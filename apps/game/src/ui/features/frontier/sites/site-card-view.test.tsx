@@ -147,7 +147,7 @@ describe("a guarded site's card with no army chosen", () => {
               label: "Army 1",
               art: army.art,
               troops: 5_000,
-              fight: { outcome: "wins", exchanges: 2, troopsLost: 180, guardLeft: 0 },
+              fight: { outcome: "wins", exchanges: 2, troopsLost: 456, guardLeft: 492 },
               onPick,
             },
             {
@@ -164,7 +164,8 @@ describe("a guarded site's card with no army chosen", () => {
       ),
     );
     const row = (label: string) => document.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!;
-    expect(row("Army 1").textContent).toBe("5,000−180");
+    // Two attacks win it: the figures are the first one's, the troops it costs and the guard it leaves standing.
+    expect(row("Army 1").textContent).toBe("5,000−456492");
     expect(row("Army 1").querySelector('[aria-label="2"]')).not.toBeNull();
     expect(row("Army 2").textContent).toBe("154−1541,028");
     expect(row("Army 2").querySelector('[data-tip="Would be lost"]')).not.toBeNull();

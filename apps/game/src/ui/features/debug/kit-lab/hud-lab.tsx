@@ -159,11 +159,12 @@ type LabChest = Parameters<typeof RuinChestMoment>[0];
 
 const ARMY_CHIP = { art: "/images/armies/knightT1.png", troops: 5_000 };
 const ATTACK_30 = { kind: "attack" as const, stamina: 30, onAttack: () => undefined };
-const WIN = (exchanges: number, troopsLost: number) => ({
+/** A fight the army wins in so many attacks; the losses and the guard left are this attack's, as its result shows. */
+const WIN = (exchanges: number, troopsLost: number, guardLeft = 0) => ({
   outcome: "wins" as const,
   exchanges,
   troopsLost,
-  guardLeft: 0,
+  guardLeft,
 });
 const CAMP_CARD: LabSite = {
   site: "Camp",
@@ -180,7 +181,7 @@ const RUIN_CARD: LabSite = {
   beast: "Troll",
   army: ARMY_CHIP,
   guard: 3_400,
-  fight: WIN(2, 1_250),
+  fight: WIN(2, 1_250, 1_520),
   pay: null,
   chest: { tier: 3, lords: 128 },
   xp: 145,
@@ -546,7 +547,7 @@ const STATES = {
       army: null,
       verb: null,
       choices: [
-        { label: "Army 1", art: ARMY_CHIP.art, troops: 5_000, fight: WIN(2, 180), onPick: () => undefined },
+        { label: "Army 1", art: ARMY_CHIP.art, troops: 5_000, fight: WIN(2, 180, 492), onPick: () => undefined },
         {
           label: "Army 2",
           art: ARMY_CHIP.art,

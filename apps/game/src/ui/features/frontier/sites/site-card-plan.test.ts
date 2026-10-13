@@ -16,11 +16,9 @@ describe("Frontier's tile card", () => {
     expect(plan.payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 550, fits: 550 });
     expect(plan.xp).toBe(82);
     expect(plan.attackStamina).toBe(preset.rules.troop_stamina_config.stamina_attack_req);
-    expect(plan.fight).toMatchObject({ outcome: "wins" });
-    const fight = plan.fight as { exchanges: number; troopsLost: number };
-    expect(fight.exchanges).toBeGreaterThan(0);
-    expect(fight.troopsLost).toBeGreaterThan(0);
-    expect(fight.troopsLost).toBeLessThan(1_498);
+    // The fight takes two attacks. The figures are the one Attack sends now, as its result will show them: this
+    // attack's losses and the guard it leaves standing, never the whole fight's total.
+    expect(plan.fight).toEqual({ outcome: "wins", exchanges: 2, troopsLost: 320, guardLeft: 492 });
   });
 
   it("has no fight for an army out of reach or none selected, and an unknown guard until its slots arrive", () => {

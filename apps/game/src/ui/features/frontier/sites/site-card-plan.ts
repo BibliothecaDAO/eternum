@@ -63,6 +63,11 @@ export interface SiteCardPlan {
   fight: SiteFight | undefined;
 }
 
+/**
+ * The fight ahead, in two scales that never mix. The outcome and its count of attacks speak of the whole fight, attack
+ * after attack. The troops lost and the guard left speak of the one attack the Attack button sends now, so they are
+ * the figures its result will show.
+ */
 export type SiteFight =
   | { outcome: "refused" }
   | { outcome: "wins" | "loses" | "stalls"; exchanges: number; troopsLost: number; guardLeft: number };
@@ -207,7 +212,7 @@ const forecastFightAt = (
   return {
     outcome: forecast.outcome,
     exchanges: forecast.exchanges,
-    troopsLost: Number(forecast.attackerLoss / PRECISION),
-    guardLeft: Number((guard.count - forecast.defenderLoss) / PRECISION),
+    troopsLost: Number(forecast.firstExchange.attackerLoss / PRECISION),
+    guardLeft: Number((guard.count - forecast.firstExchange.defenderLoss) / PRECISION),
   };
 };

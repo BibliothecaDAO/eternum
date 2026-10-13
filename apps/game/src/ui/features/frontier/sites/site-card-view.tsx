@@ -182,7 +182,7 @@ const Choices = ({ choices }: { choices: readonly SiteChoice[] }) => (
   </div>
 );
 
-/** The fight: attacks to win as pips beside the flag and the troops it costs; or, a loss, in amber, never greyed. */
+/** The fight: attacks to win as pips beside the flag and what this attack costs; or, a loss, in amber, never greyed. */
 const FightPlate = ({ fight }: { fight: SiteFight | undefined }) => (
   <div
     {...guideTarget("forecast")}
@@ -193,9 +193,10 @@ const FightPlate = ({ fight }: { fight: SiteFight | undefined }) => (
 );
 
 /**
- * One forecast, drawn the same on the attack's plate and on an army's row: a win as its attacks (pips beside the
- * flag) and the troops it costs; a loss as the troops lost, under a skull that names itself, and the guard left.
- * Unknown is a dash on the plate and nothing on a row.
+ * One forecast, drawn the same on the attack's plate and on an army's row. The pips beside the flag count the attacks
+ * the whole fight takes to win; the figures are the one attack Attack sends now, as its result will show them: the
+ * troops it costs and, while the guard still stands after it, the guard left. A fight the army does not win shows
+ * both in amber, under a skull that names itself. Unknown is a dash on the plate and nothing on a row.
  */
 const Forecast = ({ fight, size }: { fight: SiteFight | undefined; size: "plate" | "row" }) => {
   const known = fight && fight.outcome !== "refused" ? fight : undefined;
@@ -228,6 +229,7 @@ const Forecast = ({ fight, size }: { fight: SiteFight | undefined; size: "plate"
         )}
       </span>
       <Line icon="Sk" value={known ? `−${formatExact(known.troopsLost)}` : "—"} />
+      {known && known.guardLeft > 0 && <Line icon="Tr" value={formatExact(known.guardLeft)} />}
     </>
   );
 };
