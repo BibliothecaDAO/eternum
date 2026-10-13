@@ -55,6 +55,16 @@ const input: Inputs = {
 };
 const assets = { ledger: "0x10", lords: "0x11", mmr: "0x12", chests: "0x13", cosmetics: "0x14" };
 
+test("retired resource settings in saved owner inputs do not require setup again", () => {
+  const { store } = storage();
+  const saved = { ...input, node_memory: "24g", herald_memory: "6g", NODE_MEMORY: "24g" };
+  store.write("inputs.json", saved);
+  const loaded = store.read<Inputs>("inputs.json")!;
+  expect(() => validateInputs(loaded, environments.dev)).not.toThrow();
+  expect(loaded.cloudflareToken && loaded.rpc).toBeTruthy();
+  expect(store.read<typeof saved>("inputs.json")).toEqual(saved);
+});
+
 test("default storage is read-only and creates no directory; explicit writes refuse", () => {
   const { store } = storage(false);
   expect(existsSync(store.directory)).toBe(false);

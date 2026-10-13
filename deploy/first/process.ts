@@ -1,5 +1,7 @@
 import { PublicError, failureLog } from "./errors";
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { root } from "./settings";
 
 export interface Command {
@@ -73,4 +75,10 @@ function privateCommandOutput(spec: Command, output: string): string {
   for (const value of values.filter(Boolean).sort((a, b) => b.length - a.length))
     output = output.replaceAll(value, "[redacted]");
   return output;
+}
+
+/** Check before importing SDKs so a fresh checkout gets an actionable refusal. */
+export function requireInstalledDependencies() {
+  if (!existsSync(join(root, "node_modules/starknet/package.json")))
+    throw new PublicError("Run pnpm install --frozen-lockfile --ignore-scripts first", null, "dependencies_missing");
 }

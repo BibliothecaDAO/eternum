@@ -1,10 +1,8 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { command } from "./process";
+import { command, requireInstalledDependencies } from "./process";
 import { PrivateStore } from "./private-store";
-import { Platform } from "./platform";
-import { deployWorkers, deployClient } from "./publish";
 import { archivedRevision, deploymentRevision } from "./revision";
 import { environments, root, type Inputs } from "./settings";
 import { deploymentEnvironment, reportFailure } from "./deploy";
@@ -18,6 +16,9 @@ async function publish(environment: string | undefined, directory: string | unde
   const store = new PrivateStore(directory, root, true);
   const inputs = store.read<Inputs>("inputs.json");
   if (!inputs?.cloudflareToken || !inputs.rpc) throw new PublicError("Run setup before publishing Cloudflare");
+  requireInstalledDependencies();
+  const { Platform } = await import("./platform");
+  const { deployWorkers, deployClient } = await import("./publish");
   const platform = new Platform(environments[target], inputs, store, true);
   const unlock = store.lock();
   try {

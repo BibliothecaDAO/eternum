@@ -10,7 +10,7 @@ import type { Keys } from "./chain";
 import { existingAssets, type Assets } from "./ledger";
 import type { Secrets } from "./platform";
 
-async function main() {
+export async function main() {
   const [environment, directory, ...extra] = process.argv.slice(2);
   if (!directory || extra.length)
     throw new PublicError("Usage: pnpm run season <dev|production> /absolute/private-directory");
