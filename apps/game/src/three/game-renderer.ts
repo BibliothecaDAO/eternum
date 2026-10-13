@@ -104,6 +104,7 @@ export default class GameRenderer {
       isGraphicsDevEnabled: !!GRAPHICS_DEV_ENABLED,
       isMemoryMonitoringEnabled: MEMORY_MONITORING_ENABLED,
       isMobileDevice: this.isMobileDevice,
+      ownPage: (owns) => this.ownPage(owns),
       rendererOwner: this,
       resolvePixelRatio: (pixelRatio) => this.resolvePixelRatio(pixelRatio),
       resolveRuntimeState: () => this.resolveRuntimeState(),
@@ -453,7 +454,19 @@ export default class GameRenderer {
   private isDestroyed = false;
 
   private shouldStopAnimationLoop(): boolean {
-    return this.isDestroyed || this.isRendererRecoveryPaused;
+    return this.isDestroyed || this.isRendererRecoveryPaused || this.isOffPage;
+  }
+
+  private isOffPage = false;
+
+  /**
+   * The page is the renderer's only inside a match (the route runtime decides). Off it, the canvas leaves the
+   * document's flow, so no app page draws the game under its own content, and the loop stops; back on it, both return.
+   */
+  private ownPage(owns: boolean): void {
+    this.isOffPage = !owns;
+    if (this.renderer) this.renderer.domElement.style.display = owns ? "" : "none";
+    if (owns && !this.isDestroyed) this.animate();
   }
 
   public destroy(): void {

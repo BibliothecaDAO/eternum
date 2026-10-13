@@ -39,6 +39,8 @@ interface CreateGameRendererRuntimeAssemblyInput {
   isGraphicsDevEnabled: boolean;
   isMemoryMonitoringEnabled: boolean;
   isMobileDevice: boolean;
+  /** Puts the renderer on the page (its canvas shown, its loop running) or takes it off. */
+  ownPage: (owns: boolean) => void;
   rendererOwner: object;
   resolvePixelRatio: (pixelRatio: number) => number;
   resolveRuntimeState: () => GameRendererRuntimeState;
@@ -135,6 +137,7 @@ function createGameRendererRouteRuntime(input: CreateGameRendererRuntimeAssembly
     moveCameraForScene: () => {
       input.resolveRuntimeState().sceneManager?.moveCameraForScene();
     },
+    ownPage: input.ownPage,
     switchScene: (sceneName) => {
       input.resolveRuntimeState().sceneManager?.switchScene(sceneName);
     },

@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "The game leaves the page with you",
+    description:
+      "Fixed the game's view staying on the app's pages after you left a match: it showed under the footer of Play and Learn and kept drawing. Outside a match it is off the page and at rest, and it returns when you go back in.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
     title: "The guide says the rules",
     description:
       "Added six first-time lines to the Frontier guide, each with the game's own numbers: when population runs out, when you first select an army (what exploring, moving and attacking cost in stamina), your first XP, a guard beside your army, your first look at Research, and the day's last hour. Menu, Guide now lists every line you have seen, to read again, with a switch to turn the guide off.",
