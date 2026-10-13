@@ -22,8 +22,8 @@ export class TransactionNotSentError extends Error {
 }
 
 /**
- * An action neither settled nor proven not sent by then is checking: five 2 s blocks. Its send and its player's next
- * command stop waiting on it, and it keeps being reconciled.
+ * An action neither settled nor proven not sent by then is labelled checking after five 2 s blocks. Its send and next
+ * command remain pending until inclusion or an explicit refusal.
  */
 export const ACTION_CHECKING_AFTER_MS = 10_000;
 

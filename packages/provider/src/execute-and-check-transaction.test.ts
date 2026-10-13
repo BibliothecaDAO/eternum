@@ -81,7 +81,32 @@ describe("provider submission boundary", () => {
     });
   });
 
-  it("any action unsettled after the checking window says checking and frees the player's next command", async () => {
+  it("Herald at 300 ms frees the player while the node inclusion promise remains silent for 19 s", async () => {
+    vi.useFakeTimers();
+    const provider = makeProvider();
+    let sent = 0;
+    const submit = vi.fn(async () => ({
+      transaction_hash: `0x${++sent}`,
+      inBlock: new Promise<void>((resolve) => setTimeout(resolve, 19_000)),
+    }));
+    provider.setNativeSubmission(submit, bindings.commandAbi as Abi, () => 9);
+    provider.setTransactionStreamWaiter(
+      (hash) =>
+        new Promise((resolve) => setTimeout(() => resolve({ hash, block: null, status: "PRE_CONFIRMED" }), 300)),
+    );
+    const signer = { address: "0x111" } as AccountInterface;
+    const first = provider.claim_wonder_points({ signer, value: 1 });
+    const next = provider.claim_wonder_points({ signer, value: 2 });
+    await vi.advanceTimersByTimeAsync(299);
+    expect(submit).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(submit).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(300);
+    await Promise.all([first, next]);
+    await vi.advanceTimersByTimeAsync(19_000);
+  });
+
+  it("the checking window labels uncertainty without freeing the next command", async () => {
     vi.useFakeTimers();
     const provider = makeProvider();
     let settleFirst!: () => void;
@@ -108,11 +133,11 @@ describe("provider submission boundary", () => {
     expect(submit).toHaveBeenCalledOnce();
     await vi.advanceTimersByTimeAsync(1_000);
     expect(checking).toHaveBeenCalledWith(expect.objectContaining({ transactionHash: "0x7" }));
-    await vi.waitFor(() => expect(submit).toHaveBeenCalledTimes(2));
-    await next;
-
+    expect(submit).toHaveBeenCalledOnce();
     settleFirst();
     await first;
+    await vi.waitFor(() => expect(submit).toHaveBeenCalledTimes(2));
+    await next;
     await vi.waitFor(() => expect(completed).toHaveBeenCalledTimes(2));
     expect(checking).toHaveBeenCalledOnce();
   });

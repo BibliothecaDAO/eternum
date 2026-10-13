@@ -50,6 +50,36 @@ describe("gameplay account submits", () => {
     );
   });
 
+  it("Herald frees the next send at 300 ms using the spent nonce while node hash and nonce lag 19 s", async () => {
+    vi.useFakeTimers();
+    const shard = fakeShard("0x3030", (invoke) => ({ transaction_hash: invoke.hash }));
+    const run = new AbortController();
+    const waitForTransaction = vi.fn(() => new Promise<void>((resolve) => setTimeout(resolve, 300)));
+    const submit = () =>
+      executeGameplayAccountTransaction({
+        account: shard.account,
+        calls: CALL,
+        shard: SHARD,
+        stopped: run.signal,
+        waitForTransaction,
+      });
+    const first = await submit();
+    const next = submit();
+    await vi.advanceTimersByTimeAsync(299);
+    expect(shard.sentNonces()).toEqual(["0x7"]);
+    await vi.advanceTimersByTimeAsync(1);
+    await expect(first.inBlock).resolves.toBeUndefined();
+    const second = await next;
+    expect(shard.sentNonces()).toEqual(["0x7", "0x8"]);
+    expect(shard.nonce).toBe(7n);
+    await vi.advanceTimersByTimeAsync(300);
+    await expect(second.inBlock).resolves.toBeUndefined();
+    const reads = shard.account.getTransactionStatus.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(19_000);
+    expect(shard.account.getTransactionStatus).toHaveBeenCalledTimes(reads);
+    run.abort();
+  });
+
   it("returns the hash as soon as the send does, and reads the next nonce only after the first answer", async () => {
     const shard = fakeShard("0x999", (invoke) => shard.hold(invoke));
 
@@ -163,11 +193,14 @@ describe("gameplay account submits", () => {
     expect(settled).not.toHaveBeenCalled();
 
     shard.readable = true;
-    // The queue is free while the first action is still being checked.
-    expect((await send(shard, OTHER_CALL)).transaction_hash).toBe(shard.hashAt(1));
+    // Elapsed time is not inclusion: the next send waits for an actual answer.
+    const next = send(shard, OTHER_CALL);
+    await vi.advanceTimersByTimeAsync(250);
+    expect(shard.account.execute).toHaveBeenCalledOnce();
     shard.include(sent.transaction_hash);
     await vi.advanceTimersByTimeAsync(250);
     await expect(sent.inBlock).resolves.toBeUndefined();
+    expect((await next).transaction_hash).toBe(shard.hashAt(1));
   });
 
   it("a failed status read after the nonce moved is no proof of replacement: the hash is still reconciled", async () => {

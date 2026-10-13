@@ -500,11 +500,9 @@ export class EternumProvider extends EventEmitter {
       } as unknown as GetTransactionReceiptResponse;
     }
     const streamReceipt = this.waitForTransactionWithCheckInternal(tx.transaction_hash, tx.inBlock, txType);
-    // Any action still unsettled after the checking window is checking: the player's next command may go.
+    // The checking timer labels uncertainty only; it cannot establish inclusion or free the next command.
     const checking = setTimeout(() => {
       this.emit("transactionChecking", transactionMetaWithHash);
-      releaseActorExecutionLock?.();
-      releaseActorExecutionLock = undefined;
     }, ACTION_CHECKING_AFTER_MS);
     void streamReceipt.catch(() => undefined).finally(() => clearTimeout(checking));
     // The actor's next command is sent only after Herald applies this one, so its effects are visible first.

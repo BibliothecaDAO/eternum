@@ -14,7 +14,7 @@ import {
   type InvocationsSignerDetails,
 } from "starknet";
 
-import { ACTION_CHECKING_AFTER_MS, isTransactionHashNotFound, TransactionNotSentError } from "@bibliothecadao/provider";
+import { isTransactionHashNotFound, TransactionNotSentError } from "@bibliothecadao/provider";
 
 import type { Shard } from "./shard";
 
@@ -41,10 +41,9 @@ interface ExecuteGameplayAccountTransactionOptions {
    * run's. Defaults to the signal the account was configured with.
    */
   stopped?: AbortSignal;
+  /** Herald reports only after the transaction facts are written. */
+  waitForTransaction?: (transactionHash: string) => Promise<unknown>;
 }
-
-/** An action's first answer: in a block, or neither in a block nor proven absent within ACTION_CHECKING_AFTER_MS. */
-type GameplayInclusion = "included" | "unknown";
 
 /**
  * A sent action: its hash as soon as the send returns, and `inBlock`, which keeps reconciling with the node until
@@ -58,8 +57,12 @@ export interface SentGameplayTransaction extends InvokeFunctionResponse {
 type HashReading = "in_block" | "held" | "absent" | "unavailable";
 
 const configuredGameplaySubmits = new WeakMap<object, ConfiguredGameplaySubmit>();
-/** Per account, the last send until its first answer (in a block, unknown, or proven not sent): the next waits on it. */
-const sendsInFlight = new Map<string, Promise<void>>();
+/** Own submission bookkeeping, shared by every account object for the same chain and address. */
+interface AccountSubmission {
+  pending: Promise<void>;
+  nextNonce?: bigint;
+}
+const accountSubmissions = new Map<string, AccountSubmission>();
 const STATUS_POLL_MS = 250;
 /**
  * The stamping proxy forwards a request within 7,000 ms of receiving it, or never (its published bound). An unknown
@@ -98,8 +101,7 @@ export function configureGameplayAccountSubmits<TAccount extends AccountInterfac
 }
 
 /**
- * One send in flight per account: the shard takes only the account's current nonce, so each send reads it fresh and
- * the next starts once this one has its first answer. The send resolves with the hash as soon as it returns, and
+ * One send in flight per account: Herald inclusion frees the next send at the nonce after the one just used. The send resolves with the hash as soon as it returns, and
  * rejects only when the shard refused it before forwarding it; any other send error proves nothing, so the send is
  * reconciled. Nothing is ever resent.
  */
@@ -109,6 +111,7 @@ export function executeGameplayAccountTransaction({
   shard,
   details,
   stopped,
+  waitForTransaction,
 }: ExecuteGameplayAccountTransactionOptions): Promise<SentGameplayTransaction> {
   const configured = configuredGameplaySubmits.get(account);
   if (configured) assertConfiguredChain(account.address, configured.shard.chainId, shard.chainId);
@@ -116,19 +119,18 @@ export function executeGameplayAccountTransaction({
   const owner = stopped ?? configured?.stopped;
 
   const key = `${shard.chainId}:${BigInt(account.address)}`;
-  const previous = sendsInFlight.get(key) ?? Promise.resolve();
-  const reconciling = previous.then(() => sendAndReconcile(account, execute, calls, shard, details, owner));
-  const answered = reconciling
-    .then(({ inclusion }) => inclusion)
-    .then(
-      () => undefined,
-      () => undefined,
-    );
-  sendsInFlight.set(key, answered);
-  void answered.then(() => {
-    if (sendsInFlight.get(key) === answered) sendsInFlight.delete(key);
+  let submission = accountSubmissions.get(key);
+  if (!submission) {
+    submission = { pending: Promise.resolve() };
+    accountSubmissions.set(key, submission);
+  }
+  const state = submission;
+  const sending = state.pending.then(() => {
+    owner?.throwIfAborted();
+    return sendAndReconcile(account, execute, calls, shard, details, owner, state, waitForTransaction);
   });
-  return reconciling.then(({ sent }) => sent);
+  state.pending = sending.then(({ inBlock }) => inBlock).catch(() => undefined);
+  return sending;
 }
 
 function assertConfiguredChain(address: string, configuredChain: string, requestedChain: string): void {
@@ -145,43 +147,61 @@ async function sendAndReconcile(
   shard: GameplayShard,
   details: UniversalDetails | undefined,
   stopped: AbortSignal | undefined,
-): Promise<Reconciling> {
-  const nonce = await account.getNonce(BlockTag.PRE_CONFIRMED);
+  submission: AccountSubmission,
+  waitForTransaction?: (transactionHash: string) => Promise<unknown>,
+): Promise<SentGameplayTransaction> {
+  const nonce =
+    submission.nextNonce === undefined
+      ? await account.getNonce(BlockTag.PRE_CONFIRMED)
+      : `0x${submission.nextNonce.toString(16)}`;
   const frame = playFrame(nonce, shard, details);
   const expectedHash = ordinaryHash(account.address, calls, shard, frame);
+  const reported = waitForTransaction?.(expectedHash).catch(() => new Promise<never>(() => {}));
   const transactionHash = await execute(calls, frame).then(
     (response) => response.transaction_hash,
     (error: unknown) => {
-      if (isRefusedBeforeForwarding(error)) throw new TransactionNotSentError(expectedHash, "refused");
+      if (isRefusedBeforeForwarding(error)) {
+        submission.nextNonce = undefined;
+        throw new TransactionNotSentError(expectedHash, "refused");
+      }
       // Anything after forwarding began proves nothing (-32011, a lost reply): reconcile, never resend.
       return hashOfUnansweredSend(error) ?? expectedHash;
     },
   );
-  return reconcile(account, BigInt(nonce), transactionHash, stopped);
+  const herald =
+    transactionHash === expectedHash
+      ? reported
+      : waitForTransaction?.(transactionHash).catch(() => new Promise<never>(() => {}));
+  return reconcile(account, BigInt(nonce), transactionHash, stopped, submission, herald);
 }
 
-/** A sent action and its first answer, which frees the account's next send. */
-interface Reconciling {
-  sent: SentGameplayTransaction;
-  inclusion: Promise<GameplayInclusion>;
-}
-
-/** The sent action's reconciliation, and its first answer: in a block, proven not sent, or unknown at the window. */
+/** Herald and the node can establish inclusion; the first answer stops the fallback and advances the nonce. */
 function reconcile(
   account: GameplaySubmitAccount,
   frameNonce: bigint,
   transactionHash: string,
   stopped: AbortSignal | undefined,
-): Reconciling {
-  const inBlock = untilInBlock(account, frameNonce, transactionHash, stopped);
-  const inclusion = new Promise<GameplayInclusion>((resolve, reject) => {
-    const unknown = setTimeout(() => resolve("unknown"), ACTION_CHECKING_AFTER_MS);
-    inBlock.then(() => resolve("included"), reject).finally(() => clearTimeout(unknown));
-  });
-  // A caller may never read the block; neither rejection is left unhandled.
-  inBlock.catch(() => {});
-  inclusion.catch(() => {});
-  return { sent: { transaction_hash: transactionHash, inBlock }, inclusion };
+  submission: AccountSubmission,
+  herald?: Promise<unknown>,
+): SentGameplayTransaction {
+  const settled = new AbortController();
+  const until = stopped ? AbortSignal.any([stopped, settled.signal]) : settled.signal;
+  const inBlock = Promise.race([
+    herald ?? new Promise<never>(() => {}),
+    untilInBlock(account, frameNonce, transactionHash, until),
+  ]).then(
+    () => {
+      submission.nextNonce = frameNonce + 1n;
+      settled.abort();
+    },
+    (error) => {
+      submission.nextNonce = undefined;
+      throw error;
+    },
+  );
+  // Raw callers may only need the hash.
+  void inBlock.catch(() => {});
+  return { transaction_hash: transactionHash, inBlock };
 }
 
 /** An ordinary v3 invoke at this nonce with the shard's fixed bounds and tip 0. */

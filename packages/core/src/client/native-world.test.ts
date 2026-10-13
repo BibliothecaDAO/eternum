@@ -27,6 +27,10 @@ const storeWithRelease = (releaseId: number) => {
 
 const SHARD = { chainId: "0x1", l2GasBound: 0x47868c00n };
 const running = new AbortController().signal;
+const runtime = {
+  recordSubmittedTransaction: vi.fn(),
+  waitForTransaction: () => new Promise<never>(() => {}),
+};
 const accountSending = (transactionHash: string) =>
   ({
     address: "0x111",
@@ -42,7 +46,7 @@ describe("a game command as the player's own invoke", () => {
     const ready = vi.fn(() => new Promise<void>((resolve) => (openGate = resolve)));
     const account = accountSending("0x99");
     const sent = nativePlay(
-      { bindings, release: { ready }, shard: SHARD, stopped: running },
+      { bindings, release: { ready }, shard: SHARD, stopped: running, runtime },
       store,
       1,
       GAMES,
@@ -64,7 +68,7 @@ describe("a game command as the player's own invoke", () => {
     const { store } = storeWithRelease(1);
     const account = accountSending("0x99");
     const send = nativePlay(
-      { bindings, release: { ready: async () => {} }, shard: SHARD, stopped: running },
+      { bindings, release: { ready: async () => {} }, shard: SHARD, stopped: running, runtime },
       store,
       1,
       GAMES,

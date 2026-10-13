@@ -1,5 +1,6 @@
 import type { NativeWorldBindings } from "@bibliothecadao/types";
 import type { NativeSubmission } from "@bibliothecadao/provider";
+import type { GameSyncRuntime } from "../sync/game-sync-runtime";
 import type { NativeFactStore } from "./native-fact-store";
 import { executeGameplayAccountTransaction, type GameplayShard } from "./submit";
 
@@ -15,6 +16,7 @@ export function nativePlay(
     release: { ready(): Promise<void> };
     shard: GameplayShard;
     stopped: AbortSignal;
+    runtime: Pick<GameSyncRuntime, "recordSubmittedTransaction" | "waitForTransaction">;
   },
   store: NativeFactStore,
   gameId: number,
@@ -39,6 +41,10 @@ export function nativePlay(
       account: actor,
       shard: input.shard,
       stopped: input.stopped,
+      waitForTransaction: (hash) => {
+        input.runtime.recordSubmittedTransaction(hash);
+        return input.runtime.waitForTransaction(hash);
+      },
       calls: {
         contractAddress: games,
         entrypoint: "play",
