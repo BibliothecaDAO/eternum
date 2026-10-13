@@ -1,5 +1,5 @@
 import { structureMapPosition } from "@bibliothecadao/eternum";
-import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { ResourceTransferPopover } from "@/ui/features/economy/resources/resource-transfer-popover";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
@@ -177,6 +177,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
   const mode = useGameModeConfig();
   const goToStructure = useGoToStructure(setup);
   const currentDefaultTick = useCurrentDefaultTick();
+  const now = useNowSeconds();
 
   const selectedStructureId = entityId && entityId !== 0 ? safeInteger(entityId) : null;
 
@@ -252,17 +253,17 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
 
     resourcesByStructure.forEach((resourceValue, structure) => {
       // A structure whose resources this client cannot see adds nothing to the summary.
-      const balances = resourceValue.balances(currentDefaultTick);
+      const balances = resourceValue.balances(now);
       if (!balances) return;
 
       balances.forEach(({ resourceId, amount }) => {
         const productionInfo = resourceValue.current(resourceId);
-        const withProduction = resourceValue.balanceWithProduction(currentDefaultTick, resourceId);
+        const withProduction = resourceValue.balanceWithProduction(now, resourceId);
         if (!productionInfo || !withProduction) return;
         const { hasReachedMaxCapacity, balance } = withProduction;
 
         const { productionPerSecond, isProducing, outputRemaining, timeRemainingSeconds } =
-          ResourceManager.calculateResourceProductionData(resourceId, productionInfo, currentDefaultTick);
+          ResourceManager.calculateResourceProductionData(resourceId, productionInfo, now);
 
         // Only count production rate if actually producing
         const activeProductionRate = isProducing ? productionPerSecond : 0;
@@ -300,7 +301,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     });
 
     return summaries;
-  }, [resourcesByStructure, currentDefaultTick]);
+  }, [resourcesByStructure, now]);
 
   const tiers = useMemo(() => Object.entries(mode.resources.getTiers()), [mode.resources]);
 

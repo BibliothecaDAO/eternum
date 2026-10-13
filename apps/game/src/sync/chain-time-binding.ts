@@ -39,7 +39,7 @@ const bindRowEvidenceSink = () => {
  */
 export const bindChainTime = (): void => {
   setBlockTimestampSource(() => useChainTimeStore.getState().getNowSeconds());
-  // Production is projected at the execution floor: confirmed heads and row evidence, never a pre-confirmed head.
+  // Spend limits use the execution floor: confirmed heads and row evidence, never a pre-confirmed head.
   setChainProvenTimestampSource(() => {
     const floorMs = useChainTimeStore.getState().executionFloorMs;
     return floorMs === null ? null : Math.floor(floorMs / 1000);

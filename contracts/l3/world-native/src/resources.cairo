@@ -59,14 +59,14 @@ pub struct Production {
     pub building_count: u8,
     pub production_rate: u64,
     pub output_amount_left: u128,
-    // The armies tick through which production is paid: it pays in whole ticks, never a fraction of one.
+    // Unix seconds paid through. The legacy wire name stays stable for existing schema consumers.
     pub last_settled_tick: u32,
 }
 
 const PRODUCTION_TIME_SCALE: u128 = 0x10000000000000000;
 const PRODUCTION_COUNT_SCALE: u128 = 0x1000000000000000000000000;
 
-// The cap occupies the low limb; rate, settled tick and building count use 104 high bits.
+// The cap occupies the low limb; rate, settlement timestamp and building count use 104 high bits.
 pub impl ProductionPacking of starknet::storage_access::StorePacking<Production, felt252> {
     fn pack(value: Production) -> felt252 {
         let high = value.production_rate.into()
@@ -123,7 +123,7 @@ pub(crate) fn has_production(resource_type: u8) -> bool {
     resource_type != LORDS && (resource_type < 39 || resource_type > 56)
 }
 
-/// Pays a producer its per-second rate for every whole armies tick that has ended since it last settled.
+/// Pays a producer its rate for every second since it last settled.
 pub fn settle(
     resource_type: u8,
     ref balance: u128,
@@ -131,16 +131,15 @@ pub fn settle(
     ref weight: Weight,
     unit_weight: u128,
     limit: Option<u128>,
-    tick: u32,
-    tick_seconds: u32,
+    now: u32,
 ) {
     let since = production.last_settled_tick;
-    production.last_settled_tick = tick;
+    production.last_settled_tick = now;
     if resource_type == LORDS || production.building_count == 0 {
         return;
     }
-    let ticks: u128 = (tick - since).into();
-    let mut produced = ticks * production.production_rate.into() * tick_seconds.into();
+    let seconds: u128 = (now - since).into();
+    let mut produced = seconds * production.production_rate.into();
     if resource_type != 35 && resource_type != 36 && !is_unlimited(production.output_amount_left) {
         produced = core::cmp::min(produced, production.output_amount_left);
         production.output_amount_left -= produced;

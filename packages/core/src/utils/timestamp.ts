@@ -28,9 +28,10 @@ export const setBlockTimestampSource = (source: TimestampSource | null) => {
 };
 
 /**
- * Production is projected at chain-proven time, never at the estimate. A transaction executes at or after the
- * newest chain-written timestamp, so a balance projected there is a floor on what the chain will hold; the
- * estimate can lead the executing block by seconds and a MAX taken from it reverts.
+ * Spendable production is projected at chain-proven time. Displays may use the running estimate, but actions use
+ * this floor. A transaction executes at or after the newest chain-written timestamp, so a balance projected there
+ * is a floor on what the chain will hold; the estimate can lead the executing block by seconds and a MAX taken
+ * from it reverts.
  */
 export const setChainProvenTimestampSource = (source: (() => number | null) | null) => {
   chainProvenTimestampSource = source;
@@ -39,7 +40,7 @@ export const setChainProvenTimestampSource = (source: (() => number | null) | nu
 // A chain-written timestamp ahead of the local chain-time estimate is proof the
 // chain's clock has reached that moment. Reporting it lets the clock re-anchor
 // instead of silently under-reporting elapsed time (the invariant the display
-// math needs is client-time >= every settled production tick the client holds).
+// math needs is client-time >= every production settlement timestamp the client holds).
 type ChainTimestampEvidenceSink = (timestampSeconds: number) => void;
 let chainTimestampEvidenceSink: ChainTimestampEvidenceSink | null = null;
 

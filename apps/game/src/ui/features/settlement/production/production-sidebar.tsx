@@ -50,7 +50,7 @@ const SidebarRealm = ({
   const currentTime = useNowMs();
   const resourceData = useResourceManager(realm.entityId);
 
-  const { currentDefaultTick } = getBlockTimestamp();
+  const now = Math.floor(currentTime / 1000);
 
   const buildingsData = useBuildings(realm.entityId);
   const productionBuildings = useMemo(
@@ -86,11 +86,7 @@ const SidebarRealm = ({
 
       const productionInfo = resourceData.current(resourceId);
       if (productionInfo) {
-        const productionData = ResourceManager.calculateResourceProductionData(
-          resourceId,
-          productionInfo,
-          currentDefaultTick,
-        );
+        const productionData = ResourceManager.calculateResourceProductionData(resourceId, productionInfo, now);
         isProducing = productionData.isProducing;
         if (isProducing) {
           const buildingCount = productionInfo.production.building_count;
@@ -115,7 +111,7 @@ const SidebarRealm = ({
         calculatedAt,
       };
     });
-  }, [productionBuildings, resourceData, currentDefaultTick]);
+  }, [productionBuildings, resourceData, now]);
 
   const totalProductionBuildings = resourceProductionSummary.reduce(
     (accumulator, summary) => accumulator + summary.totalBuildings,
@@ -135,7 +131,7 @@ const SidebarRealm = ({
   const activeRelics = useMemo(() => {
     if (!productionBoostBonus) return [];
     return getStructureRelicEffects(productionBoostBonus, getBlockTimestamp().currentArmiesTick);
-  }, [productionBoostBonus, currentDefaultTick]);
+  }, [productionBoostBonus, now]);
 
   if (!productionBoostBonus) return <p>Loading production…</p>;
 

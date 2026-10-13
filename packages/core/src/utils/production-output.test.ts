@@ -1,24 +1,32 @@
 import { describe, expect, it } from "vitest";
 import { productionOutput } from "./production-output";
 
-describe("production in whole armies ticks", () => {
-  const farm = { last_settled_tick: 0, production_rate: 100n };
-  it("pays every ended tick in full and nothing of the tick in progress", () => {
-    expect(productionOutput(farm, 119, 120)).toBe(0n);
-    expect(productionOutput(farm, 120, 120)).toBe(12_000n);
-    expect(productionOutput(farm, 359, 120)).toBe(24_000n);
-  });
-  it("totals an hour of a minute tick exactly as the hour's seconds, from any start", () => {
-    const started = { last_settled_tick: Math.floor(40 / 60), production_rate: 7n };
-    expect(productionOutput(started, 40 + 3600, 60)).toBe(3600n * 7n);
-  });
-  it("refuses a missing or zero tick", () => {
-    expect(() => productionOutput(farm, 120, 0)).toThrow("tick");
-  });
-});
+describe("production paid by the second", () => {
+  const farm = { last_settled_tick: 40, production_rate: 7n };
 
-describe("production clocks", () => {
-  it("refuses invalid timestamps", () => {
-    expect(() => productionOutput({ last_settled_tick: 0, production_rate: 100n }, NaN, 120)).toThrow("clock");
+  it("pays one second between consecutive settles and the same total for one long settle", () => {
+    let total = 0n;
+    for (let timestamp = 41; timestamp <= 3640; timestamp++) {
+      const paid = productionOutput({ ...farm, last_settled_tick: timestamp - 1 }, timestamp);
+      expect(paid).toBe(7n);
+      total += paid;
+    }
+    expect(total).toBe(3600n * 7n);
+    expect(productionOutput(farm, 3640)).toBe(total);
+  });
+
+  it("never pays before the exact start or twice for the same second", () => {
+    expect(productionOutput(farm, 39)).toBe(0n);
+    expect(productionOutput(farm, 40)).toBe(0n);
+    expect(productionOutput(farm, 41)).toBe(7n);
+    expect(productionOutput(farm, 59)).toBe(133n);
+    expect(productionOutput(farm, 60)).toBe(140n);
+  });
+
+  it("refuses invalid clocks", () => {
+    for (const timestamp of [NaN, Infinity, 40.5]) {
+      expect(() => productionOutput(farm, timestamp)).toThrow("clock");
+      expect(() => productionOutput({ ...farm, last_settled_tick: timestamp }, 100)).toThrow("clock");
+    }
   });
 });

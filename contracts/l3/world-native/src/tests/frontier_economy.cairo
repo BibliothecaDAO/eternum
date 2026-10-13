@@ -176,9 +176,9 @@ fn a_farm_produces_wheat_from_nothing_and_barracks_take_none_of_it() {
     let (deployment, home) = frontier_realm(frontier_preset());
     assert!(execute(deployment, build(home, FARM, WEST), 40));
     assert!(execute(deployment, build(home, BARRACKS, EAST), 40));
-    // The fixture's armies tick is a minute: by 90 the tick from 0 to 60 has ended, and the farm is paid all of it.
+    // From 40 to 90 the farm is paid for fifty seconds.
     settle(deployment, home, WHEAT, 90);
-    assert_eq!(stored(deployment, home, WHEAT), 60 * rate(deployment, home, WHEAT));
+    assert_eq!(stored(deployment, home, WHEAT), 50 * rate(deployment, home, WHEAT));
     assert_eq!(rate(deployment, home, WHEAT), 2);
 }
 
@@ -189,17 +189,17 @@ fn troops_train_with_no_wheat_and_settle_without_touching_it() {
     assert_eq!(stored(deployment, home, WHEAT), 0);
     let mut spy = snforge_std::spy_events();
     settle(deployment, home, KNIGHT, 90);
-    assert_eq!(stored(deployment, home, KNIGHT), 120);
+    assert_eq!(stored(deployment, home, KNIGHT), 100);
     // One touch writes the troop's balance and its production, and nothing of the family: a board realm has no weight.
     assert_eq!(spy.get_events().emitted_by(deployment.games).events.len(), 2);
 
     assert!(execute(deployment, build(home, FARM, WEST), 100));
     settle(deployment, home, KNIGHT, 150);
-    assert_eq!(stored(deployment, home, KNIGHT), 240);
+    assert_eq!(stored(deployment, home, KNIGHT), 220);
     assert_eq!(stored(deployment, home, WHEAT), 0);
     settle(deployment, home, WHEAT, 150);
-    assert_eq!(stored(deployment, home, WHEAT), 120);
-    assert_eq!(stored(deployment, home, KNIGHT), 240);
+    assert_eq!(stored(deployment, home, WHEAT), 100);
+    assert_eq!(stored(deployment, home, KNIGHT), 220);
 }
 
 #[test]
@@ -212,14 +212,14 @@ fn raising_troops_pays_two_wheat_each_from_settled_wheat_and_fails_when_the_real
     grant(deployment, home, KNIGHT, 20 * RESOURCE_PRECISION);
     assert!(execute(deployment, build(home, FARM, WEST), 40));
 
-    // One minute tick of farming is fifteen wheat: three troops cost six of it.
+    // Forty seconds of farming yields ten wheat: three troops cost six of it.
     assert!(execute(deployment, raise(home, 3, 0), 80));
     assert_eq!(stored(deployment, home, KNIGHT), 17 * RESOURCE_PRECISION);
-    assert_eq!(stored(deployment, home, WHEAT), 9 * RESOURCE_PRECISION);
+    assert_eq!(stored(deployment, home, WHEAT), 4 * RESOURCE_PRECISION);
     let army = *IStructureOperationsDispatcher { contract_address: deployment.games }.home_armies(home).at(0);
     assert!(execute(deployment, reinforce(army, 1), 80));
     assert_eq!(stored(deployment, home, KNIGHT), 16 * RESOURCE_PRECISION);
-    assert_eq!(stored(deployment, home, WHEAT), 7 * RESOURCE_PRECISION);
+    assert_eq!(stored(deployment, home, WHEAT), 2 * RESOURCE_PRECISION);
 
     let before = super::resource_commands::resource_facts(deployment, home);
     let mut rejected = snforge_std::spy_events();
@@ -235,26 +235,26 @@ fn raising_troops_pays_two_wheat_each_from_settled_wheat_and_fails_when_the_real
     assert_eq!(super::resource_commands::resource_facts(deployment, home), before);
     assert_eq!(IStructureOperationsDispatcher { contract_address: deployment.games }.home_armies(home).len(), 1);
 
-    // The next tick's fifteen wheat make up what the realm lacked.
+    // Forty more seconds yield ten wheat, enough for four more troops.
     assert!(execute(deployment, raise(home, 4, 1), 120));
     assert_eq!(stored(deployment, home, KNIGHT), 12 * RESOURCE_PRECISION);
-    assert_eq!(stored(deployment, home, WHEAT), 14 * RESOURCE_PRECISION);
+    assert_eq!(stored(deployment, home, WHEAT), 4 * RESOURCE_PRECISION);
 }
 
 #[test]
-fn stores_step_on_the_armies_tick_and_never_between() {
+fn stores_pay_every_second_independently_of_the_armies_tick() {
     let (deployment, home) = frontier_realm(frontier_preset());
     assert!(execute(deployment, build(home, BARRACKS, EAST), 40));
-    // Production pulses on the stamina clock: the armies tick, counted from absolute time.
+    // Production advances between the unchanged minute-long armies ticks.
     assert_eq!(super::play_fixture::rules().tick_config.armies_tick_in_seconds, 60);
     settle(deployment, home, KNIGHT, 59);
-    assert_eq!(stored(deployment, home, KNIGHT), 0);
+    assert_eq!(stored(deployment, home, KNIGHT), 38);
     settle(deployment, home, KNIGHT, 60);
-    assert_eq!(stored(deployment, home, KNIGHT), 120);
+    assert_eq!(stored(deployment, home, KNIGHT), 40);
     settle(deployment, home, KNIGHT, 119);
-    assert_eq!(stored(deployment, home, KNIGHT), 120);
+    assert_eq!(stored(deployment, home, KNIGHT), 158);
     settle(deployment, home, KNIGHT, 120);
-    assert_eq!(stored(deployment, home, KNIGHT), 240);
+    assert_eq!(stored(deployment, home, KNIGHT), 160);
 }
 
 fn learn_barracks(deployment: super::Deployment, home: ResourceKey, sides: Span<u8>) {
@@ -330,7 +330,7 @@ fn production_past_a_limit_is_gone_and_later_spending_sees_what_was_kept() {
     assert!(execute(deployment, build(home, BARRACKS, EAST), 40));
     let limit = castle_limit(0);
     store_exactly(deployment, home, KNIGHT, limit - 30);
-    // A minute tick trains 120 troops; the store has room for 30 and the rest is gone.
+    // Sixty seconds train 120 troops; the store has room for 30 and the rest is gone.
     settle(deployment, home, KNIGHT, 100);
     assert_eq!(stored(deployment, home, KNIGHT), limit);
 
@@ -346,9 +346,9 @@ fn production_past_a_limit_is_gone_and_later_spending_sees_what_was_kept() {
     stop_cheat_caller_address(deployment.games);
     assert!(refused.is_err());
     spend(deployment, home, KNIGHT, 200, 100);
-    // The next tick's 120 all fit.
+    // The next 25 seconds train 50, which all fit.
     settle(deployment, home, KNIGHT, 125);
-    assert_eq!(stored(deployment, home, KNIGHT), limit - 80);
+    assert_eq!(stored(deployment, home, KNIGHT), limit - 150);
 }
 
 #[test]
@@ -356,13 +356,13 @@ fn a_level_up_settles_production_under_the_old_limits_before_raising_them() {
     let (deployment, home) = frontier_realm(level_up_once(frontier_preset()));
     assert!(execute(deployment, build(home, BARRACKS, EAST), 40));
     store_exactly(deployment, home, KNIGHT, castle_limit(0) - 30);
-    // The ended tick trained 120 troops against room for 30: the castle's rise cannot rescue the other 90.
+    // Sixty seconds trained 120 troops against room for 30: the castle's rise cannot rescue the other 90.
     assert!(execute(deployment, Command::LevelUp(home.entity_id), 100));
     settle(deployment, home, KNIGHT, 100);
     assert_eq!(stored(deployment, home, KNIGHT), castle_limit(0));
     settle(deployment, home, KNIGHT, 130);
-    assert_eq!(stored(deployment, home, KNIGHT), castle_limit(0) + 120);
-    assert!(castle_limit(1) > castle_limit(0) + 120);
+    assert_eq!(stored(deployment, home, KNIGHT), castle_limit(0) + 60);
+    assert!(castle_limit(1) > castle_limit(0) + 60);
 }
 
 #[test]
@@ -373,14 +373,14 @@ fn a_changed_rate_applies_only_after_production_settles_at_the_old_one() {
     assert!(execute(deployment, build(home, BARRACKS, WEST), 100));
     let two = rate(deployment, home, KNIGHT);
     assert!(two > one);
-    // Each ended tick pays the rate standing when it settles.
+    // Each rate change settles all elapsed seconds at the previous rate.
     settle(deployment, home, KNIGHT, 130);
-    assert_eq!(stored(deployment, home, KNIGHT), 60 * one + 60 * two);
+    assert_eq!(stored(deployment, home, KNIGHT), 60 * one + 30 * two);
 
     assert!(execute(deployment, demolish(home, WEST), 150));
     assert_eq!(rate(deployment, home, KNIGHT), one);
     settle(deployment, home, KNIGHT, 190);
-    assert_eq!(stored(deployment, home, KNIGHT), 60 * one + 60 * two + 60 * one);
+    assert_eq!(stored(deployment, home, KNIGHT), 60 * one + 50 * two + 40 * one);
 }
 
 #[test]

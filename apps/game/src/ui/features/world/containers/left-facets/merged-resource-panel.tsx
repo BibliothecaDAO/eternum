@@ -2,7 +2,7 @@ import { Plus } from "@/ui/design-system/atoms/game-icons";
 import { memo, useCallback, useMemo, useRef } from "react";
 
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useCurrentDefaultTick, useNowMs } from "@/hooks/helpers/use-block-timestamp";
+import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ProductionStatusBadge } from "@/ui/shared";
@@ -74,7 +74,6 @@ export const MergedResourcePanel = memo(
     const game = useGame();
     const store = game.setup.store;
     const mode = useGameModeConfig();
-    const currentDefaultTick = useCurrentDefaultTick();
     const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);
     const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
 
@@ -87,6 +86,7 @@ export const MergedResourcePanel = memo(
     // 1s tick so production timers/rings decay live (same pattern as the
     // production panel + build menu).
     const currentTime = useNowMs();
+    const now = Math.floor(currentTime / 1000);
 
     // Production accrues every tick, so the held amount changes every second. One sweep per token per
     // minute, automation's own cadence, is the most a player should see.
@@ -109,11 +109,11 @@ export const MergedResourcePanel = memo(
     const balanceMap = useMemo(() => {
       const map = new Map<number, number>();
       if (!resources) return map;
-      for (const balance of resources.balances(currentDefaultTick) ?? []) {
+      for (const balance of resources.balances(now) ?? []) {
         map.set(Number(balance.resourceId), divideByPrecision(Number(balance.amount)));
       }
       return map;
-    }, [resources, currentDefaultTick]);
+    }, [resources, now]);
 
     const productionMap = useMemo(() => {
       const map = new Map<number, ProductionItem>();

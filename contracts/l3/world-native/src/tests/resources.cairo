@@ -46,8 +46,6 @@ mod ResourceFixture {
             state.games.games.entry(key.game_id).preset_id.write(1);
             state.registrar.presets.write(1, 1);
             state.presets.entry(1).rules.day_unit_seconds.write(0);
-            // One-second ticks: this fixture's clock reads production in seconds.
-            state.presets.entry(1).rules.tick_config.armies_tick_in_seconds.write(1);
             self.resources.initialize(key, capacity);
         }
         fn grant(ref self: ContractState, key: ResourceKey, amount: u128) {
@@ -296,9 +294,33 @@ fn inactive_resources_have_no_clock_and_activation_starts_at_block_time() {
 }
 
 #[test]
-fn whole_ticks_pay_exactly_however_often_production_settles() {
-    // The exact Frontier farm rate pays 10.08 wheat per two-minute tick.
-    let tick_seconds = 120_u32;
+fn consecutive_seconds_pay_one_second_and_match_a_single_settlement() {
+    let initial = Production {
+        building_count: 1, production_rate: 7, output_amount_left: 1000, last_settled_tick: 40,
+    };
+    let mut repeated = initial;
+    let mut once = initial;
+    let mut repeated_balance = 0;
+    let mut once_balance = 0;
+    let mut repeated_weight = Weight { capacity: 1000, weight: 0 };
+    let mut once_weight = repeated_weight;
+    for now in 41_u32..101 {
+        let before = repeated_balance;
+        crate::resources::settle(1, ref repeated_balance, ref repeated, ref repeated_weight, 1, None, now);
+        assert_eq!(repeated_balance - before, 7);
+    }
+    crate::resources::settle(1, ref once_balance, ref once, ref once_weight, 1, None, 100);
+    assert_eq!(once_balance, 420);
+    assert_eq!(repeated_balance, once_balance);
+    assert_eq!(repeated, once);
+    assert_eq!(repeated_weight, once_weight);
+    crate::resources::settle(1, ref repeated_balance, ref repeated, ref repeated_weight, 1, None, 100);
+    assert_eq!(repeated_balance, once_balance);
+}
+
+#[test]
+fn elapsed_seconds_pay_exactly_however_often_production_settles() {
+    // The exact Frontier farm rate pays for every second, including between armies ticks.
     let rate = 84000000_u64;
     let mut production = Production {
         building_count: 1, production_rate: rate, output_amount_left: 0, last_settled_tick: 0,
@@ -310,17 +332,13 @@ fn whole_ticks_pay_exactly_however_often_production_settles() {
     for _ in 0..10000_u32 {
         seed = (seed * 6364136223846793005 + 1442695040888963407) % 0x10000000000000000;
         now += (seed % 300).try_into().unwrap();
-        crate::resources::settle(
-            crate::resources::WHEAT, ref balance, ref production, ref weight, 1, None, now / tick_seconds, tick_seconds,
-        );
-        // Every ended tick is paid in full, and nothing of the tick in progress is paid early.
-        let ended: u128 = (now / tick_seconds).into();
-        assert_eq!(balance, ended * Into::<u64, u128>::into(rate) * Into::<u32, u128>::into(tick_seconds));
+        crate::resources::settle(crate::resources::WHEAT, ref balance, ref production, ref weight, 1, None, now);
+        assert_eq!(balance, Into::<u32, u128>::into(now) * Into::<u64, u128>::into(rate));
     }
 }
 
 #[test]
-fn frontier_rates_pay_exactly_for_ten_thousand_ticks_at_every_output_tier() {
+fn frontier_rates_keep_the_same_total_at_every_output_tier() {
     for (resource, rate, base_cents) in array![
         (crate::resources::WHEAT, 84_000_000_u64, 1008_u128), (crate::resources::LABOR, 56_000_000, 672),
         (26, 28_000_000, 336), (crate::resources::LABOR, 28_000_000, 336),
@@ -335,7 +353,7 @@ fn frontier_rates_pay_exactly_for_ten_thousand_ticks_at_every_output_tier() {
             };
             let mut balance = 0;
             let mut weight = Weight { capacity: core::num::traits::Bounded::MAX, weight: 0 };
-            crate::resources::settle(resource, ref balance, ref production, ref weight, 0, None, 10000, 120);
+            crate::resources::settle(resource, ref balance, ref production, ref weight, 0, None, 10000 * 120);
             let cents = base_cents * (4 + picks) / 4;
             assert_eq!(balance, cents * crate::rules::RESOURCE_PRECISION / 100 * 10000);
         }

@@ -1,3 +1,4 @@
+import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { Factory, FlaskConical, Sparkles } from "@/ui/design-system/atoms/game-icons";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
@@ -41,7 +42,6 @@ export const ResourceChip = ({
   canOpenProduction = false,
   disableButtons = false,
   onManageProduction,
-  currentDefaultTick: currentDefaultTickProp,
   currentArmiesTick: currentArmiesTickProp,
   armiesTickTimeRemaining: armiesTickTimeRemainingProp,
 }: {
@@ -56,7 +56,6 @@ export const ResourceChip = ({
   canOpenProduction?: boolean;
   disableButtons?: boolean;
   onManageProduction?: (resourceId: ResourcesIds) => void;
-  currentDefaultTick?: number;
   currentArmiesTick?: number;
   armiesTickTimeRemaining?: number;
 }) => {
@@ -69,20 +68,18 @@ export const ResourceChip = ({
     entity_id: resourceManager.entityId,
   });
 
-  const storeDefaultTick = useBlockTimestampStore((state) => state.currentDefaultTick);
   const storeArmiesTick = useBlockTimestampStore((state) => state.currentArmiesTick);
   const storeArmiesTickTimeRemaining = useBlockTimestampStore((state) => state.armiesTickTimeRemaining);
 
-  const currentDefaultTick = currentDefaultTickProp ?? storeDefaultTick;
   const currentArmiesTick = currentArmiesTickProp ?? storeArmiesTick;
   const armiesTickTimeRemaining = armiesTickTimeRemainingProp ?? storeArmiesTickTimeRemaining;
-  const currentTick = currentDefaultTick;
+  const now = useNowSeconds();
   const resourceEnumId = resourceId as ResourcesIds;
 
   // Undefined when this client holds no resource owner for the structure: the chip then shows nothing.
   const production = useMemo(
-    () => resourceManager.balanceWithProduction(currentTick, resourceEnumId),
-    [resourceManager, currentTick, resourceEnumId, revision],
+    () => resourceManager.balanceWithProduction(now, resourceEnumId),
+    [resourceManager, now, resourceEnumId, revision],
   );
   const balance = production?.balance;
   const productionInfo = useMemo(
@@ -93,15 +90,15 @@ export const ResourceChip = ({
   const productionData = useMemo(() => {
     if (!productionInfo) return null;
 
-    return ResourceManager.calculateResourceProductionData(resourceEnumId, productionInfo, currentTick);
-  }, [productionInfo, resourceEnumId, currentTick]);
+    return ResourceManager.calculateResourceProductionData(resourceEnumId, productionInfo, now);
+  }, [productionInfo, resourceEnumId, now]);
 
   const productionRate = productionData?.productionPerSecond ?? 0;
   const isProducing = productionData?.isProducing ?? false;
 
   const timeUntilValueReached = useMemo(() => {
-    return resourceManager.timeUntilValueReached(currentTick, resourceId);
-  }, [resourceManager, currentTick]);
+    return resourceManager.timeUntilValueReached(now, resourceId);
+  }, [resourceManager, now]);
 
   const icon = useMemo(() => {
     return <ResourceIcon withTooltip={false} resource={ResourcesIds[resourceId]} size="sm" className="self-center" />;

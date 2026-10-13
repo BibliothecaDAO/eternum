@@ -1,5 +1,5 @@
 import { useGame } from "@/hooks/context/game-context";
-import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
+import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import type { Tone } from "@/ui/design-system/kit/tone";
 import { knownBalance } from "@/ui/utils/utils";
@@ -37,16 +37,16 @@ export const readRealmStore = (
   realm: NativeRows["Structure"],
   rules: ExpeditionRules,
   resourceId: ResourcesIds | "troops",
-  clock: { now: number; tick: number },
+  clock: { now: number },
 ): RealmStore => {
   const stock = resourceId === "troops" ? TROOP_STOCK : resourceId;
   const amount =
     resourceId === "troops"
-      ? troopsAtHome(store, realm, rules, clock.now, clock.tick)
-      : wholeBalance(store, safeInteger(realm.entity_id), resourceId, clock.tick);
+      ? troopsAtHome(store, realm, rules, clock.now, clock.now)
+      : wholeBalance(store, safeInteger(realm.entity_id), resourceId, clock.now);
   const rawLimit = new ResourceManager(store, safeInteger(realm.entity_id), realm.game_id).storeLimit(stock);
   const limit = rawLimit === undefined ? undefined : Number(rawLimit / BigInt(RESOURCE_PRECISION));
-  const perHour = realmPerHour(store, safeInteger(realm.entity_id), stock, clock.tick);
+  const perHour = realmPerHour(store, safeInteger(realm.entity_id), stock, clock.now);
   const fullIn = secondsUntilFull(amount, limit, perHour);
   return { amount, limit, perHour, fullIn, tone: storeTone(fullIn) };
 };
@@ -96,12 +96,10 @@ export const useRealmStores = (
   rules: ExpeditionRules,
 ): Record<"essence" | "labor" | "wheat" | "troops", RealmStore> | null => {
   const { setup } = useGame();
-  const tick = useCurrentDefaultTick();
   const now = useNowSeconds();
   useNativeRevision(STORE_MODELS);
   if (!realm) return null;
-  const read = (resourceId: ResourcesIds | "troops") =>
-    readRealmStore(setup.store, realm, rules, resourceId, { now, tick });
+  const read = (resourceId: ResourcesIds | "troops") => readRealmStore(setup.store, realm, rules, resourceId, { now });
   return {
     essence: read(ResourcesIds.Essence),
     labor: read(ResourcesIds.Labor),

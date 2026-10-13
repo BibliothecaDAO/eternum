@@ -15,7 +15,7 @@ type ProviderHeartbeat = {
 
 interface ChainTimeState {
   lastHeartbeat: ProviderHeartbeat | null;
-  /** The newest time a transaction is certain to execute at or after: production is projected here, never ahead. */
+  /** The newest time a transaction is certain to execute at or after: spend limits project production here. */
   executionFloorMs: number | null;
   anchorTimestampMs: number | null;
   anchorPerfMs: number | null;

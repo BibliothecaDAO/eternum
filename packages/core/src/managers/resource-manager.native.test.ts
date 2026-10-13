@@ -7,8 +7,7 @@ import { ResourceManager } from "./resource-manager";
 import type { GameSyncFact } from "../sync/game-sync-types";
 import { ResourcesIds } from "@bibliothecadao/types";
 
-// One-second armies ticks: these cases read production second by second.
-const rules = { ...preset.rules, tick_config: { ...preset.rules.tick_config, armies_tick_in_seconds: 1 } };
+const rules = preset.rules;
 const upsert = (key: string, models: Record<string, Record<string, unknown>>): GameSyncFact[] =>
   Object.entries(models).map(([model, value]) => ({ model, key, value }));
 const weight = (game = 1) => ({ game_id: game, entity_id: 7, capacity: 1000n, weight: 0n });
@@ -191,7 +190,10 @@ describe("native resource facts", () => {
     const store = new NativeFactStore();
     store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 350 });
     store.applyFacts([
-      ...upsert("0x1", { ResourceWeight: weight(), ResourceProduction: { ...production, last_settled_tick: 100 } }),
+      ...upsert("0x1", {
+        ResourceWeight: { ...weight(), capacity: (1n << 128n) - 1n },
+        ResourceProduction: { ...production, last_settled_tick: 100 },
+      }),
       ...upsert("0x2", {
         SliceRules: { ...rules, game_id: 1, mode_rules: nativeRuleConstants.PRODUCTION_START },
         GameRegistry: game,
@@ -206,6 +208,11 @@ describe("native resource facts", () => {
     expect(changed).toHaveBeenCalledTimes(1);
     expect(manager.current(23)!.production).toMatchObject({ last_settled_tick: 1000, production_rate: 2n });
     expect(manager.getActiveProductions()[0]).toMatchObject({ lastSettledTick: 1000, productionRate: 2n });
+    expect(manager.balanceWithProduction(999, 23)!.balance).toBe(0);
+    expect(manager.balanceWithProduction(1000, 23)!.balance).toBe(0);
+    expect(manager.balanceWithProduction(1001, 23)!.balance).toBe(2);
+    expect(manager.getProductionEndsAt(23)).toBe(1005);
+    expect(manager.timeUntilValueReached(1001, 23)).toBe(4);
   });
   it("settles troops and wheat alone against shared storage, and nothing consumes wheat", () => {
     const store = new NativeFactStore();
@@ -263,7 +270,7 @@ describe("native resource facts", () => {
     expect(manager.balanceWithProduction(110, 35).balance).toBe(4);
   });
 });
-it("pays production in whole armies ticks, so a store steps once a tick and never between", () => {
+it.each([60, 120])("pays every second with an unchanged %s-second armies tick", (armiesTick) => {
   const store = new NativeFactStore();
   store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 0 });
   store.applyFacts([
@@ -272,7 +279,7 @@ it("pays production in whole armies ticks, so a store steps once a tick and neve
         ...preset.rules,
         game_id: 1,
         mode_rules: 0,
-        tick_config: { ...preset.rules.tick_config, armies_tick_in_seconds: 120 },
+        tick_config: { ...preset.rules.tick_config, armies_tick_in_seconds: armiesTick },
       },
     }),
     ...upsert("0x2", { ResourceWeight: { ...weight(), capacity: (1n << 128n) - 1n } }),
@@ -288,11 +295,11 @@ it("pays production in whole armies ticks, so a store steps once a tick and neve
     }),
   ]);
   const manager = new ResourceManager(store, 7, 1);
-  expect(manager.balanceWithProduction(119, 35)!.balance).toBe(0);
+  expect(manager.balanceWithProduction(119, 35)!.balance).toBe(11_900);
   expect(manager.balanceWithProduction(120, 35)!.balance).toBe(12_000);
-  expect(manager.balanceWithProduction(239, 35)!.balance).toBe(12_000);
+  expect(manager.balanceWithProduction(239, 35)!.balance).toBe(23_900);
   expect(manager.balanceWithProduction(240, 35)!.balance).toBe(24_000);
-  // The rate reads per second, as one tick's output spread over the tick.
+  // The hourly figure derives directly from the per-second rate.
   expect(ResourceManager.calculateResourceProductionData(35, manager.current(35)!, 130).productionPerSecond).toBe(
     100 / 1e9,
   );

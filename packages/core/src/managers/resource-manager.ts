@@ -22,8 +22,6 @@ type Production = Pick<
 interface ResourceState {
   balance: bigint;
   production: Production;
-  /** The armies tick production settles on, in seconds. */
-  tickSeconds: number;
 }
 
 export interface ResourceProductionData {
@@ -98,11 +96,7 @@ export class ResourceManager {
     const balance = this.store.requireOrAbsent("ResourceBalance", keys);
     if (!production.known || !balance.known) return undefined;
     const adjusted = this.productionForGameClock(production.known);
-    return { balance: balance.known.balance, production: adjusted, tickSeconds: this.tickSeconds() };
-  }
-
-  private tickSeconds(): number {
-    return Number(this.store.require("SliceRules", { game_id: this.gameId }).tick_config.armies_tick_in_seconds);
+    return { balance: balance.known.balance, production: adjusted };
   }
 
   private productionForGameClock(production: Production): Production {
@@ -112,10 +106,7 @@ export class ResourceManager {
     const game = this.store.require("GameRegistry", { game_id: this.gameId });
     return {
       ...production,
-      last_settled_tick: Math.max(
-        production.last_settled_tick,
-        Math.floor(Number(game.start_main_at) / this.tickSeconds()),
-      ),
+      last_settled_tick: Math.max(production.last_settled_tick, Number(game.start_main_at)),
       production_rate: game.ready ? production.production_rate : 0n,
     };
   }
@@ -255,30 +246,28 @@ export class ResourceManager {
     );
   }
 
-  /** Seconds until a producer with a finite budget runs dry, paid out in whole ticks; 0 when it has nothing left. */
+  /** Seconds until a producer with a finite budget runs dry, paid each second; 0 when it has nothing left. */
   public timeUntilValueReached(timestamp: number, resourceId: ResourcesIds): number {
     const resource = this.current(resourceId);
     if (!resource) return 0;
     const { production } = resource;
     if (production.building_count === 0 || production.production_rate === 0n) return 0;
     if (ResourceManager.neverRunsOut(production, resourceId)) return Number.MAX_SAFE_INTEGER;
-    const produced = productionOutput(production, timestamp, resource.tickSeconds);
+    const produced = productionOutput(production, timestamp);
     const remaining = production.output_amount_left > produced ? production.output_amount_left - produced : 0n;
-    return secondsUntilPaid(remaining, production.production_rate, timestamp, resource.tickSeconds);
+    return secondsUntilPaid(remaining, production.production_rate);
   }
 
-  /** The tick boundary at which a producer with a finite budget pays its last; 0 when it has none. */
+  /** The timestamp at which a producer with a finite budget pays its last; 0 when it has none. */
   public getProductionEndsAt(resourceId: ResourcesIds): number {
     const resource = this.current(resourceId);
     if (!resource) return 0;
-    const { production, tickSeconds } = resource;
+    const { production } = resource;
     if (production.building_count === 0) return 0;
-    const settledAt = production.last_settled_tick * tickSeconds;
+    const settledAt = production.last_settled_tick;
     if (production.production_rate === 0n || production.output_amount_left === 0n) return settledAt;
     if (ResourceManager.neverRunsOut(production, resourceId)) return Number.MAX_SAFE_INTEGER;
-    return (
-      settledAt + secondsUntilPaid(production.output_amount_left, production.production_rate, settledAt, tickSeconds)
-    );
+    return settledAt + secondsUntilPaid(production.output_amount_left, production.production_rate);
   }
 
   /** The store's capacity and use; undefined when this client holds no resource owner for the entity. */
@@ -329,7 +318,7 @@ export class ResourceManager {
   private static _amountProducedStatic(resource: ResourceState, timestamp: number, resourceId: ResourcesIds): bigint {
     const { production } = resource;
     if (production.building_count === 0 || production.production_rate === 0n) return 0n;
-    const produced = productionOutput(production, timestamp, resource.tickSeconds);
+    const produced = productionOutput(production, timestamp);
     if (!ResourceManager.isContinuousProductionResource(resourceId) && produced > production.output_amount_left)
       return production.output_amount_left;
     return produced;
@@ -365,13 +354,9 @@ export class ResourceManager {
     productionInfo: ResourceState,
     timestamp: number,
   ): ResourceProductionData {
-    const { production, tickSeconds } = productionInfo;
-    const produced = productionOutput(production, timestamp, tickSeconds);
-    // One tick's output, as a rate: what the next pulse adds, spread over the tick.
-    const productionPerSecond = divideByPrecision(
-      Number(productionOutput(production, timestamp + tickSeconds, tickSeconds) - produced) / tickSeconds,
-      false,
-    );
+    const { production } = productionInfo;
+    const produced = productionOutput(production, timestamp);
+    const productionPerSecond = divideByPrecision(Number(production.production_rate), false);
 
     const isProducing = production.building_count > 0 && production.production_rate !== 0n;
     // Production that never runs out has no remaining output or time: both are infinite, never the sentinel's value.
@@ -389,18 +374,13 @@ export class ResourceManager {
       productionPerSecond,
       isProducing: isProducing && remainingOutput > 0n,
       outputRemaining: Number(remainingOutput) / RESOURCE_PRECISION,
-      timeRemainingSeconds: secondsUntilPaid(remainingOutput, production.production_rate, timestamp, tickSeconds),
+      timeRemainingSeconds: secondsUntilPaid(remainingOutput, production.production_rate),
     };
   }
 }
 
-/**
- * Seconds from `timestamp` to the tick boundary that pays `remaining` at `ratePerSecond`: production lands in whole
- * ticks, so this is always a boundary, never a moment between two.
- */
-const secondsUntilPaid = (remaining: bigint, ratePerSecond: bigint, timestamp: number, tickSeconds: number): number => {
-  const perTick = ratePerSecond * BigInt(tickSeconds);
-  if (remaining <= 0n || perTick <= 0n) return 0;
-  const ticks = Number((remaining + perTick - 1n) / perTick);
-  return (Math.floor(timestamp / tickSeconds) + ticks) * tickSeconds - timestamp;
+/** The last partial second consumes the rest of a finite output budget. */
+const secondsUntilPaid = (remaining: bigint, ratePerSecond: bigint): number => {
+  if (remaining <= 0n || ratePerSecond <= 0n) return 0;
+  return Number((remaining + ratePerSecond - 1n) / ratePerSecond);
 };

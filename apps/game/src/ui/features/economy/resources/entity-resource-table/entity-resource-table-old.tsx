@@ -1,3 +1,4 @@
+import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceChip } from "@/ui/features/economy/resources";
 import {
@@ -49,7 +50,8 @@ export const EntityResourceTableOld = React.memo(
     const structureBuildings = useNativeRow("StructureBuildings", keys);
     const productionBoostBonus = useNativeRowOrAbsent("ProductionBonus", keys);
     const guardRevision = useNativeRevision(["Guard"]);
-    const { currentDefaultTick, currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
+    const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
+    const now = useNowSeconds();
 
     const activeRelicEffects = useMemo(() => {
       const structureArmyRelicEffects = [...setup.store.inGame("Guard", configManager.getActiveGameId())]
@@ -109,7 +111,7 @@ export const EntityResourceTableOld = React.memo(
           {Object.entries(mode.resources.getTiers()).map(([tier, resourceIds]) => {
             const resourcesForTier = (resourceIds as ResourcesIds[]).filter((resourceId: ResourcesIds) => {
               const alwaysShow = ALWAYS_SHOW_RESOURCES.includes(resourceId);
-              const balance = resourceManager.balanceWithProduction(currentDefaultTick, resourceId)?.balance;
+              const balance = resourceManager.balanceWithProduction(now, resourceId)?.balance;
 
               if (!showAllResources && !alwaysShow && (balance === undefined || balance <= 0)) {
                 return false;
@@ -121,7 +123,7 @@ export const EntityResourceTableOld = React.memo(
                 const { isProducing } = ResourceManager.calculateResourceProductionData(
                   resourceId,
                   productionInfo,
-                  currentDefaultTick,
+                  now,
                 );
 
                 if (!isProducing) {
@@ -180,7 +182,6 @@ export const EntityResourceTableOld = React.memo(
                           activeRelicEffects={activeRelicEffects}
                           canOpenProduction={hasProductionBuilding}
                           disableButtons={disableButtons}
-                          currentDefaultTick={currentDefaultTick}
                           currentArmiesTick={currentArmiesTick}
                           armiesTickTimeRemaining={armiesTickTimeRemaining}
                         />

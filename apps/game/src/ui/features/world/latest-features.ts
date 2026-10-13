@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "Production Every Second",
+    description:
+      "Stores and barracks earn production for every elapsed second in all game modes. Stamina keeps its existing rhythm.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
     title: "Blitz opens for its players",
     description:
       "Fixed the game view failing as a player entered a Blitz game: a realm's stores are read as not known yet for the moment your account's view of the world is being loaded, and the panels fill in as it arrives.",

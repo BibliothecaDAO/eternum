@@ -111,10 +111,13 @@ fn refills_use_block_time_bonus_expiry_without_retroactive_production() {
     let at_end = resources.resource_production(slot);
     assert_eq!(at_end.output_amount_left, 150);
     assert_eq!(at_end.last_settled_tick, 0);
+    // The bonus still uses inclusive armies ticks: second 119 is tick 1, second 120 is tick 2.
+    assert!(execute(deployment, Command::BurnLaborForResourceProduction(refill), 119));
+    assert_eq!(resources.resource_production(slot).output_amount_left, 300);
     assert!(execute(deployment, Command::BurnLaborForResourceProduction(refill), 120));
-    assert_eq!(resources.resource_production(slot).output_amount_left, 250);
+    assert_eq!(resources.resource_production(slot).output_amount_left, 400);
     assert_eq!(resources.resource_balance(slot), 0);
-    assert_eq!(resources.resource_balance(ResourceSlot { resource_type: 2, ..slot }), 80);
+    assert_eq!(resources.resource_balance(ResourceSlot { resource_type: 2, ..slot }), 70);
 }
 
 #[test]
