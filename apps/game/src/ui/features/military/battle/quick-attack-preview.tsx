@@ -3,7 +3,7 @@ import { useStoredBiome } from "@/hooks/helpers/use-tile-at";
 import { type MouseEvent, useEffect, useMemo, useState } from "react";
 
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
-import { useBlockTimestamp, useNowSeconds, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { useNowSeconds, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { Checkbox } from "@/ui/design-system/atoms/checkbox";
@@ -112,7 +112,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const [garrisonEnabled, setGarrisonEnabled] = useState(false);
 
   const currentTime = useNowSeconds();
-  const { currentArmiesTick } = useBlockTimestamp();
   const executionSecond = useCurrentDefaultTick();
 
   const { target: targetData, targetResources, isLoading } = useAttackTargetData(attacker.id, target.hex, target.alt);
@@ -198,7 +197,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     const at = (attackerRoll: number, defenderRoll: number) => {
       const context = {
         timestamp: executionSecond,
-        currentTick: currentArmiesTick,
         attackDistance: targetDistance,
         attackerBiome: biome,
         defenderBiome: biome,
@@ -221,7 +219,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     attackerArmyData,
     targetArmyData,
     executionSecond,
-    currentArmiesTick,
     targetDistance,
     biome,
     attackerType,

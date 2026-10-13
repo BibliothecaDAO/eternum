@@ -157,7 +157,7 @@ pub fn move_fixture(deployment: super::Deployment, key: ResourceKey, coord: Coor
     );
 }
 #[test]
-fn explorer_relics_charge_the_home_with_second_based_stamina_and_tick_based_combat_effects() {
+fn explorer_relics_charge_the_home_with_second_based_effects() {
     let (deployment, home, explorer) = setup(false);
     for id in array![39_u8, 40, 41, 42, 43, 44, 47, 48] {
         let before = balance(deployment, home, 38);
@@ -175,22 +175,22 @@ fn explorer_relics_charge_the_home_with_second_based_stamina_and_tick_based_comb
             41 |
             42 => {
                 assert_eq!(boost.incr_damage_dealt_percent_num, rule.rate_bps);
-                assert_eq!(boost.incr_damage_dealt_end_tick, 7);
+                assert_eq!(boost.incr_damage_dealt_end_tick, 70);
             },
             43 |
             44 => {
                 assert_eq!(boost.decr_damage_gotten_percent_num, rule.rate_bps);
-                assert_eq!(boost.decr_damage_gotten_end_tick, 7);
+                assert_eq!(boost.decr_damage_gotten_end_tick, 70);
             },
             _ => {
                 assert_eq!(boost.incr_explore_reward_percent_num, rule.rate_bps);
-                assert_eq!(boost.incr_explore_reward_end_tick, 7);
+                assert_eq!(boost.incr_explore_reward_end_tick, 70);
             },
         }
     }
 }
 #[test]
-fn production_relics_update_only_their_bonus_and_keep_inclusive_expiry() {
+fn production_relics_update_only_their_bonus_and_expire_at_the_end_second() {
     let (deployment, home, _) = setup(false);
     let view = crate::production::IProductionRulesDispatcher { contract_address: deployment.games };
     for id in 51_u8..57 {
@@ -205,9 +205,9 @@ fn production_relics_update_only_their_bonus_and_keep_inclusive_expiry() {
         };
         let rule = *rules().at((id - 39).into());
         assert_eq!(
-            crate::production::bonus_output(bonus, resource, 10000, 7), 10000 + Into::<u16, u128>::into(rule.rate_bps),
+            crate::production::bonus_output(bonus, resource, 10000, 69), 10000 + Into::<u16, u128>::into(rule.rate_bps),
         );
-        assert_eq!(crate::production::bonus_output(bonus, resource, 10000, 8), 10000);
+        assert_eq!(crate::production::bonus_output(bonus, resource, 10000, 70), 10000);
         assert_eq!(balance(deployment, home, id), 2 * RESOURCE_PRECISION);
     }
 }
@@ -220,13 +220,16 @@ fn guard_relics_apply_to_all_four_slots_and_preserve_destroyed_ticks() {
         deployment.games, selector!("guards"), selector!("guards"), array![3, home.entity_id.into(), 2].span(), guard,
     );
     for id in array![49_u8, 50] {
-        assert!(execute(deployment, apply(home, id, Recipient::StructureGuard), 40));
+        let applied_at = if id == 49 { 47 } else { 52 };
+        assert!(execute(deployment, apply(home, id, Recipient::StructureGuard), applied_at));
         for slot in 0_u8..4 {
             let value = crate::guards::IGuardsDispatcherTrait::guard(
                 crate::guards::IGuardsDispatcher { contract_address: deployment.games },
                 crate::guards::GuardKey { slot, ..key },
             );
-            assert_eq!(value.troops.boosts.decr_damage_gotten_end_tick, 7);
+            assert_eq!(
+                value.troops.boosts.decr_damage_gotten_end_tick, (applied_at + 30).try_into().unwrap(),
+            );
             assert_eq!(value.troops.boosts.decr_damage_gotten_percent_num, if id == 49 {
                 1500
             } else {
@@ -692,4 +695,52 @@ fn opened_contents_with_launch_seed(seed: felt252) -> Array<u128> {
 #[test]
 fn different_launch_seeds_cannot_change_the_same_stamped_chest_draw() {
     assert_eq!(opened_contents_with_launch_seed(1), opened_contents_with_launch_seed(999));
+}
+
+#[test]
+fn timed_relics_start_mid_tick_expire_exclusively_and_replace_on_reapplication() {
+    let rule = RelicRule { duration: 3, rate_bps: 5000, uses: 0, essence_cost: 0, draw_weight: 0 };
+    for id in array![41_u8, 42, 43, 44, 47, 48] {
+        let mut boosts: crate::troops::TroopBoosts = Default::default();
+        crate::relics::boost_explorer(ref boosts, id, rule, 47, 10);
+        let end = if id < 43 {
+            boosts.incr_damage_dealt_end_tick
+        } else if id < 45 {
+            boosts.decr_damage_gotten_end_tick
+        } else {
+            boosts.incr_explore_reward_end_tick
+        };
+        assert_eq!(end, 77);
+        assert!(crate::relics::bonus_active(end, 76));
+        assert!(!crate::relics::bonus_active(end, 77));
+        crate::relics::boost_explorer(ref boosts, id, RelicRule { duration: 1, ..rule }, 52, 10);
+        let end = if id < 43 {
+            boosts.incr_damage_dealt_end_tick
+        } else if id < 45 {
+            boosts.decr_damage_gotten_end_tick
+        } else {
+            boosts.incr_explore_reward_end_tick
+        };
+        assert_eq!(end, 62);
+        if id >= 47 {
+            assert_eq!(crate::exploration_rewards::boosted_amount(100, boosts, 61), 150 * RESOURCE_PRECISION);
+            assert_eq!(crate::exploration_rewards::boosted_amount(100, boosts, 62), 100 * RESOURCE_PRECISION);
+        }
+    }
+    for id in 51_u8..57 {
+        let mut bonus: crate::production::ProductionBonus = Default::default();
+        let resource = if id < 53 {
+            2
+        } else if id < 55 {
+            23
+        } else {
+            26
+        };
+        crate::relics::boost_production(ref bonus, id, rule, 47, 10);
+        assert_eq!(crate::production::bonus_output(bonus, resource, 100, 76), 150);
+        assert_eq!(crate::production::bonus_output(bonus, resource, 100, 77), 100);
+        crate::relics::boost_production(ref bonus, id, RelicRule { duration: 1, ..rule }, 52, 10);
+        assert_eq!(crate::production::bonus_output(bonus, resource, 100, 61), 150);
+        assert_eq!(crate::production::bonus_output(bonus, resource, 100, 62), 100);
+    }
 }

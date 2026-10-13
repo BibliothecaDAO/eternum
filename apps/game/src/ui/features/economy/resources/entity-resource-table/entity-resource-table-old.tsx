@@ -1,5 +1,4 @@
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceChip } from "@/ui/features/economy/resources";
 import {
   configManager,
@@ -50,18 +49,15 @@ export const EntityResourceTableOld = React.memo(
     const structureBuildings = useNativeRow("StructureBuildings", keys);
     const productionBoostBonus = useNativeRowOrAbsent("ProductionBonus", keys);
     const guardRevision = useNativeRevision(["Guard"]);
-    const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
     const now = useCurrentDefaultTick();
 
     const activeRelicEffects = useMemo(() => {
       const structureArmyRelicEffects = [...setup.store.inGame("Guard", configManager.getActiveGameId())]
         .filter((guard) => entityId !== undefined && guard.structure_id === BigInt(entityId))
-        .flatMap((guard) => getStructureArmyRelicEffects(guard, currentArmiesTick));
-      const structureRelicEffects = productionBoostBonus
-        ? getStructureRelicEffects(productionBoostBonus, currentArmiesTick)
-        : [];
+        .flatMap((guard) => getStructureArmyRelicEffects(guard, now));
+      const structureRelicEffects = productionBoostBonus ? getStructureRelicEffects(productionBoostBonus, now) : [];
       return [...structureRelicEffects, ...structureArmyRelicEffects];
-    }, [currentArmiesTick, productionBoostBonus, guardRevision, entityId, setup.store]);
+    }, [now, productionBoostBonus, guardRevision, entityId, setup.store]);
 
     const resourceManager = useResourceManager(entityId);
 
@@ -182,8 +178,6 @@ export const EntityResourceTableOld = React.memo(
                           activeRelicEffects={activeRelicEffects}
                           canOpenProduction={hasProductionBuilding}
                           disableButtons={disableButtons}
-                          currentArmiesTick={currentArmiesTick}
-                          armiesTickTimeRemaining={armiesTickTimeRemaining}
                         />
                       );
                     })}

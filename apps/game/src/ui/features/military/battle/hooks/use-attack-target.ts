@@ -1,7 +1,7 @@
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useTileAt } from "@/hooks/helpers/use-tile-at";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import {
   DEFAULT_COORD_ALT,
   configManager,
@@ -72,7 +72,7 @@ export const useAttackTargetData = (
   const targetTile = useTileAt(targetHex.x, targetHex.y, targetAlt);
   const guardsRevision = useNativeRevision(["ArmySlot", "Guard", "Structure"]);
 
-  const { currentArmiesTick, currentDefaultTick } = useBlockTimestamp();
+  const currentDefaultTick = useCurrentDefaultTick();
   const attackerStructure = useNativeRow(
     "Structure",
     attackerEntityId !== undefined
@@ -113,10 +113,10 @@ export const useAttackTargetData = (
   const attackerRelicEffects = useMemo(() => {
     if (attackerStructure) {
       const structureRelicEffects = attackerProductionBoost
-        ? getStructureRelicEffects(attackerProductionBoost, currentArmiesTick)
+        ? getStructureRelicEffects(attackerProductionBoost, currentDefaultTick)
         : [];
       const structureArmyRelicEffects = (getGuardsByStructure(attackerStructure, store) ?? []).flatMap((guard) =>
-        getStructureArmyRelicEffects(guard, currentArmiesTick),
+        getStructureArmyRelicEffects(guard, currentDefaultTick),
       );
 
       return [...structureRelicEffects, ...structureArmyRelicEffects];
@@ -124,19 +124,11 @@ export const useAttackTargetData = (
 
     if (attackerExplorer) {
       const troops = resolveExplorerTroops(store, attackerExplorer);
-      return troops ? getArmyRelicEffects(troops, currentArmiesTick, currentDefaultTick) : [];
+      return troops ? getArmyRelicEffects(troops, currentDefaultTick) : [];
     }
 
     return [];
-  }, [
-    store,
-    guardsRevision,
-    attackerExplorer,
-    attackerProductionBoost,
-    attackerStructure,
-    currentArmiesTick,
-    currentDefaultTick,
-  ]);
+  }, [store, guardsRevision, attackerExplorer, attackerProductionBoost, attackerStructure, currentDefaultTick]);
 
   const target = useMemo<AttackTarget | null>(() => {
     if (!targetTile || !targetEntityId) return null;
@@ -170,27 +162,26 @@ export const useAttackTargetData = (
       hex: { x: targetTile.col, y: targetTile.row },
       addressOwner: getExplorerOwner(store, targetExplorer),
     };
-  }, [store, guardsRevision, currentArmiesTick, targetEntityId, targetExplorer, targetStructure, targetTile]);
+  }, [store, guardsRevision, targetEntityId, targetExplorer, targetStructure, targetTile]);
 
   const targetRelicEffects = useMemo<RelicEffect[]>(() => {
     if (targetTile?.occupier_is_structure) {
       if (!targetStructure) return [];
       const structureRelicEffects = (getGuardsByStructure(targetStructure, store) ?? []).flatMap((guard) =>
-        getStructureArmyRelicEffects(guard, currentArmiesTick),
+        getStructureArmyRelicEffects(guard, currentDefaultTick),
       );
       if (!targetProductionBoost) {
         return structureRelicEffects;
       }
 
-      return [...structureRelicEffects, ...getStructureRelicEffects(targetProductionBoost, currentArmiesTick)];
+      return [...structureRelicEffects, ...getStructureRelicEffects(targetProductionBoost, currentDefaultTick)];
     }
 
     const troops = targetExplorer ? resolveExplorerTroops(store, targetExplorer) : undefined;
-    return troops ? getArmyRelicEffects(troops, currentArmiesTick, currentDefaultTick) : [];
+    return troops ? getArmyRelicEffects(troops, currentDefaultTick) : [];
   }, [
     store,
     guardsRevision,
-    currentArmiesTick,
     currentDefaultTick,
     targetExplorer,
     targetProductionBoost,

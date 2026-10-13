@@ -10,7 +10,7 @@ use super::resource_commands::{
 };
 
 #[test]
-fn all_production_bonuses_end_after_the_inclusive_end_tick() {
+fn all_production_bonuses_expire_at_the_end_second() {
     let bonus = ProductionBonus {
         incr_resource_rate_percent_num: 2500,
         incr_labor_rate_percent_num: 3000,
@@ -19,17 +19,17 @@ fn all_production_bonuses_end_after_the_inclusive_end_tick() {
         incr_labor_rate_end_tick: 11,
         incr_troop_rate_end_tick: 12,
     };
-    for (resource, end, output) in array![(1_u8, 10_u32, 125_u128), (23, 11, 130), (26, 12, 150), (34, 12, 150)] {
+    for (resource, end, output) in array![(1_u8, 10_u64, 125_u128), (23, 11, 130), (26, 12, 150), (34, 12, 150)] {
         assert_eq!(bonus_output(bonus, resource, 100, end - 1), output);
-        assert_eq!(bonus_output(bonus, resource, 100, end), output);
+        assert_eq!(bonus_output(bonus, resource, 100, end), 100);
         assert_eq!(bonus_output(bonus, resource, 100, end + 1), 100);
     }
-    assert_eq!(bonus_output(bonus, 26, 3, 12), 4);
+    assert_eq!(bonus_output(bonus, 26, 3, 11), 4);
 }
 
 #[test]
 #[fuzzer(runs: 64)]
-fn production_bonus_packing_retains_full_width_percentages_and_ticks(a: u16, b: u16, c: u16, d: u32, e: u32, f: u32) {
+fn production_bonus_packing_retains_full_width_percentages_and_seconds(a: u16, b: u16, c: u16, d: u32, e: u32, f: u32) {
     let bonus = ProductionBonus {
         incr_resource_rate_percent_num: a,
         incr_labor_rate_percent_num: b,
@@ -100,7 +100,7 @@ fn refills_use_block_time_bonus_expiry_without_retroactive_production() {
         selector!("production"),
         selector!("bonuses"),
         array![3, key.entity_id.into()].span(),
-        ProductionBonus { incr_troop_rate_percent_num: 5000, incr_troop_rate_end_tick: 1, ..Default::default() },
+        ProductionBonus { incr_troop_rate_percent_num: 5000, incr_troop_rate_end_tick: 120, ..Default::default() },
     );
     let refill = RefillProduction {
         structure_id: key.entity_id, resource_types: array![26].span(), amounts: array![1].span(),
@@ -111,7 +111,7 @@ fn refills_use_block_time_bonus_expiry_without_retroactive_production() {
     let at_end = resources.resource_production(slot);
     assert_eq!(at_end.output_amount_left, 150);
     assert_eq!(at_end.last_settled_tick, 0);
-    // The bonus still uses inclusive armies ticks: second 119 is tick 1, second 120 is tick 2.
+    // The bonus applies through second 119 and expires at second 120.
     assert!(execute(deployment, Command::BurnLaborForResourceProduction(refill), 119));
     assert_eq!(resources.resource_production(slot).output_amount_left, 300);
     assert!(execute(deployment, Command::BurnLaborForResourceProduction(refill), 120));

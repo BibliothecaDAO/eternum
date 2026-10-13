@@ -116,7 +116,7 @@ export enum EntityType {
   STRUCTURE,
 }
 
-export type RelicEffect = { id: ResourcesIds } & ({ endTick: number } | { endAt: number });
+export type RelicEffect = { id: ResourcesIds; endAt: number };
 
 export type Troops = Omit<NativeRows["ExplorerTroops"]["troops"], "stamina"> & {
   /** updated_tick temporarily packs the settled second (low 32 bits) and remainder (high 32 bits). */

@@ -32,6 +32,7 @@ pub struct ProductionBonus {
     pub incr_resource_rate_percent_num: u16,
     pub incr_labor_rate_percent_num: u16,
     pub incr_troop_rate_percent_num: u16,
+    // Legacy wire names: these three fields hold exclusive end seconds.
     pub incr_resource_rate_end_tick: u32,
     pub incr_labor_rate_end_tick: u32,
     pub incr_troop_rate_end_tick: u32,
@@ -46,27 +47,27 @@ pub impl BonusPacking of starknet::storage_access::StorePacking<ProductionBonus,
         let percentages: u128 = value.incr_resource_rate_percent_num.into()
             + value.incr_labor_rate_percent_num.into() * U16_SCALE
             + value.incr_troop_rate_percent_num.into() * U32_SCALE;
-        let ticks: u128 = value.incr_resource_rate_end_tick.into()
+        let ends: u128 = value.incr_resource_rate_end_tick.into()
             + value.incr_labor_rate_end_tick.into() * U32_SCALE
             + value.incr_troop_rate_end_tick.into() * U32_SCALE * U32_SCALE;
-        percentages.into() + ticks.into() * U48_SCALE.into()
+        percentages.into() + ends.into() * U48_SCALE.into()
     }
     fn unpack(value: felt252) -> ProductionBonus {
         let value: u256 = value.into();
         let percentages = value.low % U48_SCALE;
-        let ticks = value.low / U48_SCALE + value.high * 0x100000000000000000000;
+        let ends = value.low / U48_SCALE + value.high * 0x100000000000000000000;
         ProductionBonus {
             incr_resource_rate_percent_num: (percentages % U16_SCALE).try_into().unwrap(),
             incr_labor_rate_percent_num: (percentages / U16_SCALE % U16_SCALE).try_into().unwrap(),
             incr_troop_rate_percent_num: (percentages / U32_SCALE).try_into().unwrap(),
-            incr_resource_rate_end_tick: (ticks % U32_SCALE).try_into().unwrap(),
-            incr_labor_rate_end_tick: (ticks / U32_SCALE % U32_SCALE).try_into().unwrap(),
-            incr_troop_rate_end_tick: (ticks / U32_SCALE / U32_SCALE).try_into().unwrap(),
+            incr_resource_rate_end_tick: (ends % U32_SCALE).try_into().unwrap(),
+            incr_labor_rate_end_tick: (ends / U32_SCALE % U32_SCALE).try_into().unwrap(),
+            incr_troop_rate_end_tick: (ends / U32_SCALE / U32_SCALE).try_into().unwrap(),
         }
     }
 }
 
-pub fn bonus_output(bonus: ProductionBonus, resource_type: u8, amount: u128, tick: u32) -> u128 {
+pub fn bonus_output(bonus: ProductionBonus, resource_type: u8, amount: u128, timestamp: u64) -> u128 {
     let (percent, end) = if resource_type == 23 {
         (bonus.incr_labor_rate_percent_num, bonus.incr_labor_rate_end_tick)
     } else if crate::resources::is_troop_resource(resource_type) {
@@ -74,8 +75,7 @@ pub fn bonus_output(bonus: ProductionBonus, resource_type: u8, amount: u128, tic
     } else {
         (bonus.incr_resource_rate_percent_num, bonus.incr_resource_rate_end_tick)
     };
-    // The recorded end tick is inclusive for every production bonus.
-    if tick > end {
+    if !crate::relics::bonus_active(end, timestamp) {
         amount
     } else {
         amount + crate::math::PercentageImpl::get(amount, percent.into())

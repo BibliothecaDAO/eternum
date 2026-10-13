@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "Relics last their full duration",
+    description:
+      "Timed relic bonuses now start when you apply them and last their full duration. Their remaining time follows confirmed blocks.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
     title: "Production and stamina follow blocks",
     description:
       "Stores, barracks and armies earn each elapsed second at the same rates. Their figures advance with confirmed blocks, so what you see is available to spend.",

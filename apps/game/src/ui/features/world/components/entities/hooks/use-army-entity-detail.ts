@@ -1,6 +1,6 @@
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
 import {
@@ -50,7 +50,6 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   } = useGame();
   const mode = useGameModeConfig();
 
-  const { currentArmiesTick } = useBlockTimestamp();
   const timestamp = useCurrentDefaultTick();
   const userAddress = useAccountAddress();
   const [isLoadingDelete, setIsLoadingDelete] = useState(false);
@@ -77,8 +76,8 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
 
   const currentTroops = staminaSnapshot?.troops ?? null;
   const relicEffects = useMemo(
-    () => (currentTroops ? getArmyRelicEffects(currentTroops, currentArmiesTick, timestamp) : []),
-    [currentArmiesTick, currentTroops, timestamp],
+    () => (currentTroops ? getArmyRelicEffects(currentTroops, timestamp) : []),
+    [currentTroops, timestamp],
   );
 
   const ownerProfile = usePlayerProfile(owner);

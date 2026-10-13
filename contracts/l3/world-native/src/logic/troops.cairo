@@ -232,12 +232,11 @@ pub mod TroopsLogic {
 
             assert_playing(game_context.game.unbox(), timestamp);
             let rules = game_context.rules.unbox();
-            let tick = timestamp / rules.tick_config.armies_tick_in_seconds;
             match command.recipient {
                 crate::relics::Recipient::Explorer => self
-                    .boost_explorer(game_id, actor, command, rule, rules, tick, timestamp, game_context),
+                    .boost_explorer(game_id, actor, command, rule, rules, timestamp, game_context),
                 crate::relics::Recipient::StructureGuard => self
-                    .boost_guards(game_id, actor, command, rule, rules, tick),
+                    .boost_guards(game_id, actor, command, rule, rules, timestamp),
                 crate::relics::Recipient::StructureProduction => panic!("production relic requires resources domain"),
             }
         }
@@ -963,7 +962,6 @@ pub mod troop_helpers {
             command: crate::relics::ApplyRelic,
             rule: crate::relics::RelicRule,
             rules: SliceRules,
-            tick: u64,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
         ) {
@@ -982,7 +980,7 @@ pub mod troop_helpers {
                     timestamp,
                 );
             crate::relics::boost_explorer(
-                ref explorer.troops.boosts, command.relic_id, rule, tick.try_into().unwrap(),
+                ref explorer.troops.boosts, command.relic_id, rule, timestamp,
                 rules.tick_config.armies_tick_in_seconds,
             );
             if command.relic_id == 45 || command.relic_id == 46 {
@@ -1005,7 +1003,7 @@ pub mod troop_helpers {
             command: crate::relics::ApplyRelic,
             rule: crate::relics::RelicRule,
             rules: SliceRules,
-            tick: u64,
+            timestamp: u64,
         ) {
             crate::logic::troops::owned_structure(game_id, command.entity_id, actor);
             assert!(command.relic_id == 49 || command.relic_id == 50, "invalid guard relic");
@@ -1024,8 +1022,9 @@ pub mod troop_helpers {
                         timestamp,
                     );
                 guard.troops.boosts.decr_damage_gotten_percent_num = rule.rate_bps;
-                guard.troops.boosts.decr_damage_gotten_end_tick = TryInto::<u64, u32>::try_into(tick).unwrap()
-                    + rule.duration;
+                guard.troops.boosts.decr_damage_gotten_end_tick = crate::relics::bonus_end_at(
+                    timestamp, rule.duration, rules.tick_config.armies_tick_in_seconds,
+                );
                 crate::logic::guards::GuardState::save(key, guard);
             }
         }

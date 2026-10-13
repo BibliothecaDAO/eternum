@@ -97,6 +97,7 @@ pub fn validate(preset: PresetDefinition) {
     assert!(
         tick_seconds <= 0x100000000 / crate::math::PercentageValueImpl::_100(), "stamina remainder overflow",
     );
+    // Relic rules are ordered from FIRST_RELIC (39): only indices 0 and 1 (IDs 39/40) regenerate stamina.
     for index in 0..core::cmp::min(preset.economy.relics.len(), 2) {
         let seconds = Into::<u8, u64>::into(*preset.economy.relics.at(index).uses) * tick_seconds;
         assert!(seconds <= 0xffff, "stamina boost duration overflow");

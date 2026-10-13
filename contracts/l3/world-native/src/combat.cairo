@@ -204,7 +204,6 @@ pub impl TroopsImpl of TroopsTrait {
         tick_seconds: u64,
         cooldown_seconds: u32,
     ) -> (u128, u128, u64, u64) {
-        let current_tick = context.timestamp / tick_seconds;
         assert!(self.count.is_non_zero(), "you have no troops");
         assert!(bravo.count.is_non_zero(), "the defender has no troops");
         assert!(context.defender_biome != Biome::None, "biome is not set");
@@ -308,22 +307,22 @@ pub impl TroopsImpl of TroopsTrait {
         /// APPLY BATTLE DAMAGE BOOST/REDUCTION EFFECTS
         //////////////////////////////////////////////////
 
-        // A zero end tick marks a derived attribute bonus with no expiry.
+        // A zero end second marks a derived attribute bonus with no expiry.
         if alpha.boosts.incr_damage_dealt_end_tick != 0
-            && alpha.boosts.incr_damage_dealt_end_tick.into() <= current_tick {
+            && !crate::relics::bonus_active(alpha.boosts.incr_damage_dealt_end_tick, context.timestamp) {
             alpha.boosts.incr_damage_dealt_percent_num = 0;
         }
         if alpha.boosts.decr_damage_gotten_end_tick != 0
-            && alpha.boosts.decr_damage_gotten_end_tick.into() <= current_tick {
+            && !crate::relics::bonus_active(alpha.boosts.decr_damage_gotten_end_tick, context.timestamp) {
             alpha.boosts.decr_damage_gotten_percent_num = 0;
         }
 
         if bravo.boosts.incr_damage_dealt_end_tick != 0
-            && bravo.boosts.incr_damage_dealt_end_tick.into() <= current_tick {
+            && !crate::relics::bonus_active(bravo.boosts.incr_damage_dealt_end_tick, context.timestamp) {
             bravo.boosts.incr_damage_dealt_percent_num = 0;
         }
         if bravo.boosts.decr_damage_gotten_end_tick != 0
-            && bravo.boosts.decr_damage_gotten_end_tick.into() <= current_tick {
+            && !crate::relics::bonus_active(bravo.boosts.decr_damage_gotten_end_tick, context.timestamp) {
             bravo.boosts.decr_damage_gotten_percent_num = 0;
         }
 

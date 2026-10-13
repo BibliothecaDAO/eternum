@@ -142,7 +142,7 @@ fn troops(side: Side, tick: u64, tick_seconds: u64) -> Troops {
         stamina: Stamina { amount: side.stamina, updated_tick: side.updated_tick * tick_seconds }.into(),
         boosts: TroopBoosts {
             incr_damage_dealt_percent_num: side.damage_bonus_percent * 100,
-            incr_damage_dealt_end_tick: (tick + 1).try_into().unwrap(),
+            incr_damage_dealt_end_tick: ((tick + 1) * tick_seconds).try_into().unwrap(),
             decr_damage_gotten_percent_num: 0,
             decr_damage_gotten_end_tick: 0,
             incr_stamina_regen_percent_num: 0,

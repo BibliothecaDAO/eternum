@@ -380,3 +380,26 @@ fn an_exchange_without_a_capture_spends_the_full_attack_stamina() {
         assert_eq!(attacker.stamina.inline().amount, 70);
     }
 }
+
+#[test]
+fn combat_relic_damage_and_defence_expire_at_the_end_second() {
+    for timestamp in array![76_u64, 77] {
+        let mut attacker = test_troops(TroopType::Knight, TroopTier::T2, 1000, 120);
+        let mut defender = test_troops(TroopType::Knight, TroopTier::T2, 1000, 120);
+        attacker.boosts.incr_damage_dealt_percent_num = 5000;
+        attacker.boosts.incr_damage_dealt_end_tick = 77;
+        defender.boosts.decr_damage_gotten_percent_num = 5000;
+        defender.boosts.decr_damage_gotten_end_tick = 77;
+        let _ = attacker.damage_with_context(
+            ref defender, CombatContext { timestamp, ..context(Biome::Underground) },
+            stamina_config(), damage_config(), 60, 60,
+        );
+        let expected = if timestamp < 77 {
+            5000
+        } else {
+            0
+        };
+        assert_eq!(attacker.boosts.incr_damage_dealt_percent_num, expected);
+        assert_eq!(defender.boosts.decr_damage_gotten_percent_num, expected);
+    }
+}

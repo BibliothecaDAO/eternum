@@ -1,4 +1,3 @@
-import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { configManager, getStructureRelicEffects, ResourceManager } from "@bibliothecadao/eternum";
@@ -124,7 +123,7 @@ const SidebarRealm = ({
 
   const activeRelics = useMemo(() => {
     if (!productionBoostBonus) return [];
-    return getStructureRelicEffects(productionBoostBonus, getBlockTimestamp().currentArmiesTick);
+    return getStructureRelicEffects(productionBoostBonus, now);
   }, [productionBoostBonus, now]);
 
   if (!productionBoostBonus) return <p>Loading production…</p>;

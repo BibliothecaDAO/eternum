@@ -80,7 +80,7 @@ const readSide = (next: () => bigint, currentTick: bigint, tickSeconds: number):
     stamina,
     boosts: {
       incr_damage_dealt_percent_num: damageBonusPercent * 100,
-      incr_damage_dealt_end_tick: Number(currentTick) + 1,
+      incr_damage_dealt_end_tick: (Number(currentTick) + 1) * tickSeconds,
       decr_damage_gotten_percent_num: 0,
       decr_damage_gotten_end_tick: 0,
       incr_stamina_regen_percent_num: 0,
@@ -112,7 +112,6 @@ const readCase = (next: () => bigint, tickSeconds: number) => {
   };
   const context = {
     timestamp,
-    currentTick: Number(currentTick),
     attackDistance,
     attackerBiome: biome,
     defenderBiome: biome,
@@ -140,6 +139,37 @@ describe("an exchange resolves as the contract resolves it", () => {
         defenderStamina: result.defender.stamina.amount,
       }).toEqual({ id: recorded.id, ...recorded.expected });
     }
+  });
+
+  it("drops damage and defence relics exactly at their end second", () => {
+    const recorded = cases.find((candidate) => candidate.expected.defenderLoss < candidate.defender.count)!;
+    const { timestamp } = recorded.context;
+    const army = (endAt: number, percent: number): ExchangeTroops => ({
+      ...recorded.attacker,
+      boosts: {
+        ...recorded.attacker.boosts,
+        incr_damage_dealt_percent_num: percent,
+        incr_damage_dealt_end_tick: endAt,
+      },
+    });
+    const guard = (endAt: number, percent: number): ExchangeTroops => ({
+      ...recorded.defender,
+      boosts: {
+        ...recorded.defender.boosts,
+        decr_damage_gotten_percent_num: percent,
+        decr_damage_gotten_end_tick: endAt,
+      },
+    });
+    const resolve = (endAt: number, damage: number, defence: number) => {
+      const result = resolveExchange(army(endAt, damage), guard(endAt, defence), recorded.context, rules);
+      if (!result.ok) throw new Error(result.refusal);
+      return result.defenderLoss;
+    };
+    const plain = resolve(timestamp, 0, 0);
+    expect(resolve(timestamp, 5000, 0)).toBe(plain);
+    expect(resolve(timestamp, 0, 5000)).toBe(plain);
+    expect(resolve(timestamp + 1, 5000, 0)).toBeGreaterThan(plain);
+    expect(resolve(timestamp + 1, 0, 5000)).toBeLessThan(plain);
   });
 
   it("gives the surface and Ethereal twin of each exchange the same result", () => {

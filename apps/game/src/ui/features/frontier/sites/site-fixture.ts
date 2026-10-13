@@ -89,7 +89,6 @@ export const campBeside = (kind: SiteKind = "Camp", guardKnown = true) => {
     armyTile,
     biome: BiomeType.Grassland,
     timestamp: 350,
-    armiesTick: 3,
   });
   return {
     store,

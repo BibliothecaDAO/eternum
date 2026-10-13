@@ -69,6 +69,7 @@ pub struct ArmySlotRecord {
 #[derive(Copy, Drop, Serde, Default, Debug, PartialEq)]
 pub struct TroopBoosts {
     pub incr_damage_dealt_percent_num: u16,
+    // Legacy *_end_tick wire names hold exclusive end seconds, including defence and exploration below.
     pub incr_damage_dealt_end_tick: u32,
     pub decr_damage_gotten_percent_num: u16,
     pub decr_damage_gotten_end_tick: u32,

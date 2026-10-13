@@ -465,7 +465,7 @@ pub mod MapLogic {
                     amount: crate::exploration_rewards::boosted_amount(
                         drawn.amount,
                         explorer.troops.boosts,
-                        context.timestamp / rules.tick_config.armies_tick_in_seconds,
+                        context.timestamp,
                     ),
                 }
             };

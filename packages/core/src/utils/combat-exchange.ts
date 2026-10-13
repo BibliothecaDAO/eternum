@@ -1,3 +1,4 @@
+import { bonusActive } from "./relic";
 import { BiomeType, TickIds, RESOURCE_PRECISION, type Troops } from "@bibliothecadao/types";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { configManager } from "../managers/config-manager";
@@ -49,7 +50,6 @@ export const activeCombatRules = (): CombatRules => {
 
 interface ExchangeContext {
   timestamp: number;
-  currentTick: number;
   attackDistance: number;
   attackerBiome: BiomeType;
   defenderBiome: BiomeType;
@@ -206,8 +206,8 @@ const exchangeDamage = (
   defenderDamage = mul(defenderDamage, incomingMultiplier(attacker, context.attackerIsStructureGuard));
   if (context.attackDistance > 1) defenderDamage = ZERO;
 
-  const attackerBoosts = activeBoosts(attacker, context.currentTick);
-  const defenderBoosts = activeBoosts(defender, context.currentTick);
+  const attackerBoosts = activeBoosts(attacker, context.timestamp);
+  const defenderBoosts = activeBoosts(defender, context.timestamp);
   attackerDamage = add(attackerDamage, div(mul(attackerDamage, unscaled(attackerBoosts.dealt)), BPS_100));
   defenderDamage = add(defenderDamage, div(mul(defenderDamage, unscaled(defenderBoosts.dealt)), BPS_100));
   defenderDamage = sub(defenderDamage, div(mul(defenderDamage, unscaled(attackerBoosts.gotten)), BPS_100));
@@ -285,13 +285,14 @@ const outgoingMultiplier = (attacker: ExchangeTroops, context: ExchangeContext):
 const incomingMultiplier = (troops: ExchangeTroops, isStructureGuard: boolean): Fixed =>
   isStructureGuard && troops.category === "Knight" ? percent(85) : unscaled(1);
 
-const activeBoosts = (troops: ExchangeTroops, currentTick: number) => ({
+const activeBoosts = (troops: ExchangeTroops, timestamp: number) => ({
   dealt:
-    troops.boosts.incr_damage_dealt_end_tick !== 0 && troops.boosts.incr_damage_dealt_end_tick <= currentTick
+    troops.boosts.incr_damage_dealt_end_tick !== 0 && !bonusActive(troops.boosts.incr_damage_dealt_end_tick, timestamp)
       ? 0
       : troops.boosts.incr_damage_dealt_percent_num,
   gotten:
-    troops.boosts.decr_damage_gotten_end_tick !== 0 && troops.boosts.decr_damage_gotten_end_tick <= currentTick
+    troops.boosts.decr_damage_gotten_end_tick !== 0 &&
+    !bonusActive(troops.boosts.decr_damage_gotten_end_tick, timestamp)
       ? 0
       : troops.boosts.decr_damage_gotten_percent_num,
 });
