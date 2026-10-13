@@ -7,11 +7,11 @@ from test_shard import configuration
 
 
 class NodeSettingsTest(unittest.TestCase):
-    def test_the_shipped_block_caps_are_the_measured_leader_without_changing_game_clock(self):
+    def test_supported_block_caps_keep_the_game_clock(self):
         text = (shard.ROOT / "deploy/athanor/chain-config.yaml").read_text()
         self.assertRegex(text, r'(?m)^block_time: "2s"$')
-        self.assertRegex(text, r"(?m)^execution_batch_size: 4$")
-        self.assertRegex(text, r"(?m)^block_production_concurrency:\n  batch_size: 1024$")
+        for key in ("execution_batch_size", "pending_block_update_time", "block_production_concurrency"):
+            self.assertNotIn(key, text)
         expected = {"n_txs": 10000, "state_diff_size": 1000000, "n_events": 1000000,
                     "sierra_gas": 10**13, "proving_gas": 10**13, "receipt_l2_gas": 10**13}
         for field, value in expected.items():
