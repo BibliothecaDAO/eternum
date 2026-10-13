@@ -4,10 +4,10 @@ anonymous memory and kept RocksDB snapshots over time, its closed blocks and gas
 admission-to-visible latency split into submission and the remainder, overall, in bursts and in calm. A runner trial
 and a running package shard are measured the same way.
 
-    python3 deploy/athanor/scripts/measures.py DIRECTORY NAME [--cpuset CPUS] -- HARNESS_OPTIONS
+    python3 deploy/athanor/scripts/measures.py DIRECTORY NAME -- HARNESS_OPTIONS
 
 measures one of our package shards, the directory deploy.py deployed: it takes the isolated-stack lock, runs the
-package's harness service with HARNESS_OPTIONS (on CPUS when given), and writes data/measure/NAME/result.json beside
+package's harness service with HARNESS_OPTIONS, and writes data/measure/NAME/result.json beside
 the harness's reports in data/measure/NAME/workload.
 """
 
@@ -194,26 +194,26 @@ def measure_workload(docker, run_workload, node, metrics, chain_config, workload
     return evidence
 
 
-def run_package_harness(compose, name, cpuset, options):
+def run_package_harness(compose, name, options):
     """The package's harness service, writing into data/measure/NAME/workload; whether its run passed."""
     command = [*compose, "run", "--rm", "-e", f"HARNESS_OUTPUT_DIRECTORY=/data/measure/{name}/workload", "harness",
                *options]
-    return subprocess.run(command, env={**os.environ, "HARNESS_CPUSET": cpuset or ""}).returncode == 0
+    return subprocess.run(command).returncode == 0
 
 
-def measure_package(directory, name, cpuset, options, docker):
+def measure_package(directory, name, options, docker):
     """Measures a workload against a running package shard and writes its one result."""
     data = directory / "data"
     output = data / "measure" / name
     output.mkdir(parents=True)
     compose = [*docker, "compose", "--project-directory", str(directory)]
     result = {"name": name, "commit": json.loads((directory / "release.json").read_text())["commit"],
-              "driverCpuset": cpuset, "harnessOptions": options, "passed": False}
+              "harnessOptions": options, "passed": False}
     with isolated_stack_lock(f"measure {name}"):
         node = subprocess.check_output([*compose, "ps", "-q", "madara"], text=True).strip()
         try:
             result.update(measure_workload(
-                docker, lambda: run_package_harness(compose, name, cpuset, options), node,
+                docker, lambda: run_package_harness(compose, name, options), node,
                 data / "metrics" / "metrics.jsonl", data / "chain-config.yaml", output / "workload"))
             result["passed"] = result["workloadPassed"]
         except Exception as error:
@@ -227,10 +227,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("directory", type=Path)
     parser.add_argument("name")
-    parser.add_argument("--cpuset", help="the CPUs the harness driver runs on, apart from the shard's")
     arguments = sys.argv[1:]
     separator = arguments.index("--") if "--" in arguments else len(arguments)
     args = parser.parse_args(arguments[:separator])
     options = arguments[separator + 1:]
     from shard import DOCKER
-    raise SystemExit(measure_package(args.directory.resolve(), args.name, args.cpuset, options, DOCKER))
+    raise SystemExit(measure_package(args.directory.resolve(), args.name, options, DOCKER))

@@ -31,11 +31,10 @@ from operator_token import read_protected_text
 from service_requests import identity_service_base, service_json
 
 
-# Only driver placement passes through sudo; containers read the fixed protected file mount.
-DOCKER = ["sudo", "-n", "--preserve-env=HARNESS_CPUSET", "docker"]
+# Containers read the fixed protected file mount; no environment crosses sudo.
+DOCKER = ["sudo", "-n", "docker"]
 # Campaign G's target, not yet a measured ceiling: a larger shard waits for a G measurement that supports it.
 MAX_PLAYER_CAPACITY = 2000
-SLICE = Path("/sys/fs/cgroup/athanor.slice")
 # The services that hold memory for the shard's lifetime; prepare and init exit once the shard is deployed.
 PRIVATE_NODE_RPC_URL = "http://madara:9944/rpc/v0_10_2"
 LONG_RUNNING = ("madara", "postgres", "herald", "rpc", "metrics")
@@ -170,30 +169,6 @@ def compose_configuration(config, directory):
     replaced = {flag.split("=", 1)[0] for flag in config["node_flags"]}
     node["command"] = [flag for flag in node["command"] if flag.split("=", 1)[0] not in replaced] + config["node_flags"]
     return compose
-
-
-def memory_bytes(value):
-    units = {"k": 2**10, "m": 2**20, "g": 2**30}
-    text = str(value).lower()
-    return int(text[:-1]) * units[text[-1]] if text[-1] in units else int(text)
-
-
-def check_slice_memory(compose, slice_directory=SLICE):
-    """Refuse a shard whose limits, beside every container already in the slice, exceed the slice's memory.max:
-    otherwise the slice kills processes before any container reaches its own limit."""
-    budget = (slice_directory / "memory.max").read_text().strip()
-    if budget == "max":
-        return
-    held = 0
-    for scope in slice_directory.glob("docker-*.scope"):
-        limit = (scope / "memory.max").read_text().strip()
-        if limit == "max":
-            raise ValueError(f"{scope.name} runs in the native slice without a memory limit")
-        held += int(limit)
-    wanted = sum(memory_bytes(compose["services"][name].get("mem_limit", 0)) for name in LONG_RUNNING if name != "madara")
-    if held + wanted > int(budget):
-        raise ValueError(f"the shard needs {wanted >> 20} MiB beside {held >> 20} MiB already held in the native "
-                         f"slice, over its {int(budget) >> 20} MiB")
 
 
 def ensure_fresh_project(config):
@@ -393,7 +368,6 @@ def start_shard(config, directory):
     directory = directory.resolve()
     directory.mkdir(mode=0o700, parents=True, exist_ok=False)
     compose = compose_configuration(config, directory)
-    check_slice_memory(compose)
     # The run records the node image it ran: the package pin.
     config = {**config, "madara_image": compose["services"]["madara"]["image"]}
     write_json(directory / "configuration.json", config)

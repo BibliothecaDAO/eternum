@@ -91,9 +91,7 @@ sudo docker compose run --rm harness \
 
 The `harness` service runs the init image on the shard's network as the host user, with the shard's `harness.env`: the
 node's internal RPC, Herald, the identity API and the operator's keys. Its reports land in `data/harness/<start time>/`,
-owned by the host user. `HARNESS_CPUSET` pins the driver to CPUs of its own; set it for any large run, so the driver
-does not compete with the shard it drives. `--herald-url https://HERALD_HOST` drives the public Herald instead, as a
-player's client does.
+owned by the host user. `--herald-url https://HERALD_HOST` drives the public Herald instead, as a player's client does.
 
 Bots are Realms accounts under the shard's own guardian, like players. Each bot's device is approved by the
 environment's identity Worker through its operator route (`POST /api/devices/bots`), which approves only a bot account's
@@ -142,12 +140,11 @@ run's close-cost evidence: a window without a closed block fails the run.
 Measure one of our package shards from its deploy directory:
 
 ```bash
-python3 deploy/athanor/scripts/operator-command.py measure /opt/athanor/runs/staging-f soak-1 --cpuset 20-23 -- \
+python3 deploy/athanor/scripts/operator-command.py measure /opt/athanor/runs/staging-f soak-1 -- \
   --game-type frontier --frontier-burst booth --bots 2000 --setup-concurrency 32
 ```
 
-It takes the isolated-stack lock, runs the package's `harness` service with the options after `--` on the CPUs
-`--cpuset` names (recorded as `driverCpuset`; the harness's own report records the CPUs it saw), and writes
+It takes the isolated-stack lock, runs the package's `harness` service with the options after `--` and writes
 `data/measure/NAME/result.json` beside the harness's reports in `data/measure/NAME/workload`. Report latency separately
 from gas and execution resources. Admission-to-visible includes queue wait and the Herald barrier.
 

@@ -110,7 +110,7 @@ class ShardTest(unittest.TestCase):
                 with (
                     patch.object(Path, "read_text", read), patch.object(shard, "ensure_fresh_project"),
                     patch.object(shard, "compose_configuration", return_value={"services": {"madara": {"image": NODE_IMAGE}}}),
-                    patch.object(shard, "check_slice_memory"), patch.object(shard, "start_runner_stack", side_effect=fail_start),
+                    patch.object(shard, "start_runner_stack", side_effect=fail_start),
                     patch.object(shard, "run", side_effect=lambda *_: events.append("stop")),
                     patch.object(shard, "directory_status", side_effect=lambda _, status: events.append(status)),
                 ):
@@ -245,11 +245,11 @@ class ShardTest(unittest.TestCase):
                                     ("SHARD_HOST_ACCOUNTS", "host-accounts.json")]:
                 self.assertEqual(environment[field], str(data / filename))
 
-    def test_the_package_harness_runs_as_the_host_user_on_its_own_cpus(self):
-        with tempfile.TemporaryDirectory() as temporary, patch.dict(shard.os.environ, {"HARNESS_CPUSET": "20-23"}):
+    def test_the_package_harness_runs_as_the_host_user_without_cpu_limits(self):
+        with tempfile.TemporaryDirectory() as temporary:
             harness = shard.compose_configuration(configuration(), Path(temporary))["services"]["harness"]
         self.assertEqual(harness["user"], f"{shard.os.getuid()}:{shard.os.getgid()}")
-        self.assertEqual(harness["cpuset"], "20-23")
+        self.assertNotIn("cpuset", harness)
         self.assertEqual(harness["profiles"], ["harness"])
 
     def test_package_init_derives_the_trusted_proxy_only_behind_loopback_bindings(self):
@@ -299,21 +299,6 @@ class ShardTest(unittest.TestCase):
                         shard.initialize_shard_identity(configuration(), directory, "0x789")
                 self.assertFalse((directory / "native-world.json").exists())
 
-    def test_a_shard_that_does_not_fit_the_slice_beside_running_shards_is_refused(self):
-        compose = {"services": {name: {"mem_limit": "1g"} for name in shard.LONG_RUNNING}}
-        with tempfile.TemporaryDirectory() as directory:
-            slice_directory = Path(directory)
-            (slice_directory / "memory.max").write_text(str(10 * 2**30) + "\n")
-            running = slice_directory / "docker-running.scope"
-            running.mkdir()
-            (running / "memory.max").write_text(str(4 * 2**30) + "\n")
-            shard.check_slice_memory(compose, slice_directory)
-            (running / "memory.max").write_text(str(7 * 2**30) + "\n")
-            with self.assertRaisesRegex(ValueError, "over its 10240 MiB"):
-                shard.check_slice_memory(compose, slice_directory)
-            (running / "memory.max").write_text("max\n")
-            with self.assertRaisesRegex(ValueError, "without a memory limit"):
-                shard.check_slice_memory(compose, slice_directory)
 
     def test_the_rendered_shard_keeps_the_operator_token_out_of_its_files(self):
         rendered = {"name": "athanor-smoke", "services": {
@@ -409,10 +394,10 @@ class ShardTest(unittest.TestCase):
             # The holder text is drafted beside the lock and linked into place; no draft outlives either outcome.
             self.assertEqual(list(Path(temporary).iterdir()), [])
 
-    def test_docker_preserves_only_the_driver_cpus_through_sudo(self):
-        # Containers read their token from the fixed mount; only measured driver placement crosses sudo.
+    def test_docker_does_not_forward_environment_through_sudo(self):
+        # Containers read their token from the fixed mount.
         preserved = [flag for flag in shard.DOCKER if flag.startswith("--preserve-env")]
-        self.assertEqual(preserved, ["--preserve-env=HARNESS_CPUSET"])
+        self.assertEqual(preserved, [])
 
     def test_the_collector_has_no_retired_gateway_scrape(self):
         collector = shard.collector_configuration()
@@ -441,7 +426,7 @@ class ShardTest(unittest.TestCase):
         for changes in ({"vrf_workers": 0}, {"vrf_workers": 65}, {"l2_gas_bound": "0x0"}, {"l2_gas_bound": "0x10000000000000000"}):
             with self.assertRaises(ValueError): shard.validate_configuration({**config, **changes}, set(range(8, 12))|set(range(20, 24)))
 
-    def test_the_package_runs_its_collector_within_its_budget_and_the_node_exports_to_it(self):
+    def test_the_package_runs_its_collector_and_the_node_exports_to_it(self):
         with tempfile.TemporaryDirectory() as temporary:
             compose = shard.compose_configuration(configuration(), Path(temporary))
         node, metrics = compose["services"]["madara"], compose["services"]["metrics"]
@@ -450,8 +435,8 @@ class ShardTest(unittest.TestCase):
         self.assertIn("--otel-export-metrics=true", node["command"])
         # The release's published collector, the same on every shard; the runner builds none of its own.
         self.assertEqual(metrics["image"], configuration()["metrics_image"])
-        self.assertEqual(shard.memory_bytes(metrics["mem_limit"]), 256 * 2**20)
-        self.assertEqual(shard.memory_bytes(metrics["memswap_limit"]), 256 * 2**20)
+        self.assertNotIn("mem_limit", metrics)
+        self.assertNotIn("memswap_limit", metrics)
         self.assertTrue(metrics["read_only"])
         self.assertEqual(metrics["cap_drop"], ["ALL"])
 

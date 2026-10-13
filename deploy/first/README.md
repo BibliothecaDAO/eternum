@@ -136,7 +136,7 @@ This uses the deployed preset and the protected operator credential. It preserve
 mainnet transaction. Run the existing harness after deployment and report its result separately from deployment:
 
 ```sh
-python3 deploy/athanor/scripts/operator-command.py measure /opt/athanor/runs/dev check --cpuset 20-23 -- \
+python3 deploy/athanor/scripts/operator-command.py measure /opt/athanor/runs/dev check -- \
   --game-type frontier --bots 2 --minutes 2 --interval-seconds 15 --setup-concurrency 2
 ```
 

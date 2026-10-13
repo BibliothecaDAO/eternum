@@ -107,9 +107,9 @@ class EnrolmentTest(unittest.TestCase):
         with patch.dict(deploy.os.environ, {"OPERATOR_TOKEN": "test-token"}):
             deploy.check_operator_approval()
 
-    def test_sudo_preserves_only_driver_placement(self):
-        preserved = next(flag for flag in deploy.compose(Path("/srv/shard")) if flag.startswith("--preserve-env="))
-        self.assertEqual(preserved, "--preserve-env=HARNESS_CPUSET")
+    def test_sudo_does_not_forward_environment(self):
+        preserved = [flag for flag in deploy.compose(Path("/srv/shard")) if flag.startswith("--preserve-env=")]
+        self.assertEqual(preserved, [])
 
 
 

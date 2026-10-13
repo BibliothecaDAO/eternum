@@ -112,14 +112,13 @@ class MeasuresTests(unittest.TestCase):
             measures.measure_workload(["docker"], failing, "node", Path("m"), Path("c"), Path("w"))
         self.assertEqual(host.call_count, 2)
 
-    def test_the_package_measurement_drives_the_harness_service_on_its_own_cpus(self):
+    def test_the_package_measurement_drives_the_harness_service_without_cpu_limits(self):
         with patch.object(measures.subprocess, "run") as run:
             run.return_value.returncode = 0
-            self.assertTrue(measures.run_package_harness(["docker", "compose"], "soak", "20-23", ["--bots", "1"]))
-        command, environment = run.call_args.args[0], run.call_args.kwargs["env"]
+            self.assertTrue(measures.run_package_harness(["docker", "compose"], "soak", ["--bots", "1"]))
+        command = run.call_args.args[0]
         self.assertEqual(command, ["docker", "compose", "run", "--rm", "-e",
                                    "HARNESS_OUTPUT_DIRECTORY=/data/measure/soak/workload", "harness", "--bots", "1"])
-        self.assertEqual(environment["HARNESS_CPUSET"], "20-23")
 
 
 if __name__ == "__main__":
