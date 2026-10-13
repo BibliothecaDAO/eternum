@@ -38,6 +38,7 @@ const allLatestFeatures: LatestFeature[] = [
     title: "No answer yet, said plainly",
     description:
       "Changed the event feed's line for an action the game has not answered: it now says No answer yet, that the action may still apply and that you can try another, where it used to stay on Checking and count as still in flight.",
+    type: "improvement",
   },
   {
     date: "2026-10-13",
