@@ -1,6 +1,7 @@
 import { safeInteger } from "../utils/safe-integer";
 import { nativeModelDefinition } from "./native-models";
 import { nativePlay } from "./native-submission";
+import { invalidateGameplayNonce } from "./submit";
 import { EternumProvider, type TransactionType } from "@bibliothecadao/provider";
 import { NativeFactStore } from "./native-fact-store";
 import {
@@ -155,6 +156,12 @@ const startSync = async (
     store: setupResult.store,
     socketFactory: input.socketFactory,
   });
+  session.onTransaction = (transaction) => {
+    // Herald routes transaction statuses only to their actor, including commands sent by another tab.
+    const actor = session.transport.completedActor();
+    if (actor && !runtime.isLocalTransaction(transaction.hash)) invalidateGameplayNonce(input.shard.chainId, actor);
+    input.observer?.onTransaction?.(transaction);
+  };
   // Pending action waits stop with the client, so none outlives it.
   const outcomes = new AbortController();
   session.onDispose = () => {

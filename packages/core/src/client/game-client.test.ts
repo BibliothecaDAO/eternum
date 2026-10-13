@@ -3,7 +3,7 @@
 import type { NativeWorldBindings } from "@bibliothecadao/types";
 import bindings from "../../../../contracts/l3/world-native/schema/bindings.json";
 import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
-import { hash, type AccountInterface } from "starknet";
+import { EDAMode, hash, transaction, type AccountInterface, type InvocationsSignerDetails } from "starknet";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { disposeActiveGameSyncRuntime, installFreshGameSyncRuntime } from "../sync/game-sync-runtime";
@@ -147,6 +147,60 @@ const bootClient = async (harness: ReturnType<typeof createHarness>) => {
 };
 
 describe("createGameClient", () => {
+  it("resynchronizes the account nonce when Herald reports another tab's transaction", async () => {
+    const address = "0x502002";
+    const harness = createHarness({ actor: address });
+    const client = await bootClient(harness);
+    let nonce = 7n;
+    let sequence = 0;
+    const nonces: bigint[] = [];
+    const report = (transactionHash: string) =>
+      harness.sockets[0]!.receive({
+        type: "tx",
+        epoch: "epoch-a",
+        seq: ++sequence,
+        hash: transactionHash,
+        block: null,
+        status: "PRE_CONFIRMED",
+      });
+    const account = {
+      address,
+      getNonce: vi.fn(async () => `0x${nonce.toString(16)}`),
+      getTransactionStatus: vi.fn(() => Promise.reject(new Error("Node read forbidden while Herald answers"))),
+      execute: vi.fn(async (calls, details) => {
+        nonces.push(BigInt(details.nonce));
+        if (BigInt(details.nonce) !== nonce) throw Object.assign(new Error("Invalid nonce"), { code: 52 });
+        nonce++;
+        const transactionHash = hash.calculateInvokeTransactionHash({
+          ...details,
+          senderAddress: address,
+          compiledCalldata: transaction.getExecuteCalldata([calls], "1"),
+          chainId: "0x1" as InvocationsSignerDetails["chainId"],
+          nonceDataAvailabilityMode: EDAMode.L1,
+          feeDataAvailabilityMode: EDAMode.L1,
+        });
+        queueMicrotask(() => report(transactionHash));
+        return { transaction_hash: transactionHash };
+      }),
+    };
+    const send = () =>
+      harness.settle(client.setup.network.provider.submitCommand(account as unknown as AccountInterface, explore));
+    try {
+      await send();
+      // A second tab signs at the chain's next nonce, outside this client's local submission registry.
+      nonce++;
+      report("0xf002");
+      await flushMicrotasks(30);
+      await send();
+      await send();
+      expect(nonces).toEqual([7n, 9n, 10n]);
+      expect(account.getNonce).toHaveBeenCalledTimes(2);
+      expect(account.getTransactionStatus).not.toHaveBeenCalled();
+    } finally {
+      client.dispose();
+    }
+  });
+
   it("keeps every client in one process live: each owns its runtime", async () => {
     const first = createHarness({ actor: "0x111" });
     const second = createHarness({ actor: "0x222" });

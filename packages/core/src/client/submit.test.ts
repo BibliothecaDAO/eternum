@@ -11,7 +11,7 @@ import {
 } from "starknet";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { configureGameplayAccountSubmits, executeGameplayAccountTransaction } from "./submit";
+import { configureGameplayAccountSubmits, executeGameplayAccountTransaction, invalidateGameplayNonce } from "./submit";
 
 const CALL = { contractAddress: "0x1", entrypoint: "play", calldata: [] };
 const OTHER_CALL = { contractAddress: "0x1", entrypoint: "play", calldata: ["0x2"] };
@@ -21,6 +21,35 @@ afterEach(() => {
 });
 
 describe("gameplay account submits", () => {
+  it("another tab invalidates the nonce even when a local inclusion and a queued send are still pending", async () => {
+    const shard = fakeShard("0x502003", (invoke) => shard.land(invoke));
+    let applied!: () => void;
+    const included = new Promise<void>((resolve) => {
+      applied = resolve;
+    });
+    const submit = () =>
+      executeGameplayAccountTransaction({
+        account: shard.account,
+        calls: CALL,
+        shard: SHARD,
+        waitForTransaction: async (hash) => {
+          await included;
+          return { hash, block: null, status: "PRE_CONFIRMED" };
+        },
+      });
+    const first = await submit();
+    const queued = submit();
+    shard.nonce++;
+    invalidateGameplayNonce(SHARD.chainId, shard.account.address);
+    applied();
+    await first.inBlock;
+    await (
+      await queued
+    ).inBlock;
+    expect(shard.sentNonces()).toEqual(["0x7", "0x9"]);
+    expect(shard.account.getNonce).toHaveBeenCalledTimes(2);
+  });
+
   it("sends an ordinary invoke at the current pre-confirmed nonce with the shard's bound and tip 0", async () => {
     const shard = fakeShard("0xabc", (invoke) => shard.land(invoke));
 

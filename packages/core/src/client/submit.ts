@@ -24,7 +24,8 @@ import type { GameSyncTransaction } from "../sync/game-sync-types";
 /** What a gameplay account needs of its shard: the chain it signs for and the one gas bound the shard takes. */
 export type GameplayShard = Pick<Shard, "chainId" | "l2GasBound">;
 
-type GameplaySubmitAccount = Pick<AccountInterface, "address" | "execute" | "getNonce" | "getTransactionStatus">;
+type GameplaySubmitAccount = Pick<AccountInterface, "address" | "execute" | "getNonce" | "getTransactionStatus"> &
+  Partial<Pick<AccountInterface, "getChainId">>;
 type RawExecute = (calls: AllowArray<Call>, details?: UniversalDetails) => Promise<InvokeFunctionResponse>;
 
 interface ConfiguredGameplaySubmit {
@@ -63,6 +64,7 @@ interface AccountSubmission {
   nextNonce?: bigint;
 }
 const accountSubmissions = new Map<string, AccountSubmission>();
+const submissionKey = (chainId: string, address: string) => `${BigInt(chainId)}:${BigInt(address)}`;
 const STATUS_POLL_MS = 250;
 const IN_BLOCK = new Set<string>([
   TransactionFinalityStatus.PRE_CONFIRMED,
@@ -107,8 +109,10 @@ export function executeGameplayAccountTransaction({
   if (configured) assertConfiguredChain(account.address, configured.shard.chainId, shard.chainId);
   const execute = configured?.execute ?? account.execute.bind(account);
   const owner = stopped ?? configured?.stopped;
+  // The manifest already identifies the signing chain; the SDK must not discover it again before an invoke.
+  account.getChainId = async () => shard.chainId as Awaited<ReturnType<AccountInterface["getChainId"]>>;
 
-  const key = `${shard.chainId}:${BigInt(account.address)}`;
+  const key = submissionKey(shard.chainId, account.address);
   let submission = accountSubmissions.get(key);
   if (!submission) {
     submission = { pending: Promise.resolve() };
@@ -121,6 +125,13 @@ export function executeGameplayAccountTransaction({
   });
   state.pending = sending.then(({ inBlock }) => inBlock).catch(() => undefined);
   return sending;
+}
+
+/** A transaction from another tab spent a nonce we did not reserve. Reconcile at the next send. */
+export function invalidateGameplayNonce(chainId: string, address: string): void {
+  const submission = accountSubmissions.get(submissionKey(chainId, address));
+  if (!submission) return;
+  submission.nextNonce = undefined;
 }
 
 function assertConfiguredChain(address: string, configuredChain: string, requestedChain: string): void {
@@ -145,6 +156,7 @@ async function sendAndReconcile(
       ? await account.getNonce(BlockTag.PRE_CONFIRMED)
       : `0x${submission.nextNonce.toString(16)}`;
   const frame = playFrame(nonce, shard, details);
+  submission.nextNonce = BigInt(nonce);
   const expectedHash = ordinaryHash(account.address, calls, shard, frame);
   let heraldReported: GameSyncTransaction | undefined;
   const reported = waitForTransaction?.(expectedHash)
@@ -155,7 +167,7 @@ async function sendAndReconcile(
     .catch(() => new Promise<never>(() => {}));
   const cancelled = new AbortController();
   const until = stopped ? AbortSignal.any([stopped, cancelled.signal]) : cancelled.signal;
-  const expected = reconcile(account, BigInt(nonce), expectedHash, until, submission, reported);
+  const expected = reconcile(account, expectedHash, until, reported);
   const transactionHash = await Promise.race([
     expected.inBlock.then(() => expectedHash),
     execute(calls, frame).then(
@@ -173,25 +185,35 @@ async function sendAndReconcile(
     submission.nextNonce = undefined;
     throw error;
   });
-  if (transactionHash === expectedHash) return expected;
-  cancelled.abort();
-  return reconcile(
-    account,
-    BigInt(nonce),
-    transactionHash,
-    stopped,
-    submission,
-    waitForTransaction?.(transactionHash).catch(() => new Promise<never>(() => {})),
+  let sent = expected;
+  if (BigInt(transactionHash) !== BigInt(expectedHash)) {
+    cancelled.abort();
+    sent = reconcile(
+      account,
+      transactionHash,
+      stopped,
+      waitForTransaction?.(transactionHash).catch(() => new Promise<never>(() => {})),
+    );
+  }
+  const inBlock = sent.inBlock.then(
+    () => {
+      // Another tab's status may have invalidated our reservation while this send was waiting.
+      if (submission.nextNonce === BigInt(nonce)) submission.nextNonce += 1n;
+    },
+    (error) => {
+      submission.nextNonce = undefined;
+      throw error;
+    },
   );
+  void inBlock.catch(() => {});
+  return { ...sent, inBlock };
 }
 
-/** Herald and the node can establish inclusion; the first answer stops the fallback and advances the nonce. */
+/** Herald and the node can establish inclusion; the first answer stops the fallback. */
 function reconcile(
   account: GameplaySubmitAccount,
-  frameNonce: bigint,
   transactionHash: string,
   stopped: AbortSignal | undefined,
-  submission: AccountSubmission,
   herald?: Promise<GameSyncTransaction>,
 ): SentGameplayTransaction {
   const inBlock = transactionAnswer(
@@ -205,14 +227,6 @@ function reconcile(
       }
     },
     stopped,
-  ).then(
-    () => {
-      submission.nextNonce = frameNonce + 1n;
-    },
-    (error) => {
-      submission.nextNonce = undefined;
-      throw error;
-    },
   );
   // Raw callers may only need the hash.
   void inBlock.catch(() => {});
