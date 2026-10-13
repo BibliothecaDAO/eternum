@@ -1,3 +1,4 @@
+import { disposeWorker } from "../../../packages/value-ledger/test-support/workerd";
 import * as chain from "@realms-world/chain";
 import { expect, it, vi } from "vitest";
 import { Miniflare } from "miniflare";
@@ -203,7 +204,7 @@ it("publishes atomically on local R2 and rejects an overlapping late writer", as
     await monitor(bucket, network(), now + 120, valueTargets);
     expect((await bucket.get("state.json"))!.etag).toBe(etag);
   } finally {
-    await mf.dispose();
+    await disposeWorker(mf);
   }
 });
 

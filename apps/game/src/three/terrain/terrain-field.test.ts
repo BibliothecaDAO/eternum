@@ -211,6 +211,25 @@ describe("TerrainField", () => {
     expect(regrowthColor).toEqual(openColor);
   });
 
+  it("draws the ground around a settlement it cannot place, without that settlement's footprint", () => {
+    const report = vi.spyOn(console, "error").mockImplementation(() => {});
+    const cells = Array.from({ length: 5 }, (_, col) => cell(col, 0, BiomeType.TemperateDeciduousForest, col === 0));
+    const placed = createRequest(cells);
+    const unplaceable = {
+      ...placed,
+      settlementAnchors: placed.settlementAnchors.map((anchor) => ({ ...anchor, structureType: 98 as StructureType })),
+    };
+    const open = { ...placed, settlementAnchors: [] };
+    const beside = terrainHexToWorld(1, 0);
+    const sample = (request: TerrainPageRequest) =>
+      new TerrainField(request).samplePropDensityContext(beside.x, beside.z, cells[1]);
+
+    expect(sample(unplaceable).settlementEdgeStrength).toBe(sample(open).settlementEdgeStrength);
+    expect(sample(placed).settlementEdgeStrength).toBeGreaterThan(sample(open).settlementEdgeStrength);
+    expect(report).toHaveBeenCalledOnce();
+    report.mockRestore();
+  });
+
   it("expands the settlement ecology footprint for higher-level Realms", () => {
     const cells = Array.from({ length: 5 }, (_, col) => cell(col, 0, BiomeType.TemperateDeciduousForest, col === 0));
     const settlementRequest = createRequest(cells);

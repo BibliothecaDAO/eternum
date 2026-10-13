@@ -3,7 +3,7 @@ import { BiomeType, StructureType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
 import { terrainHexCorners, terrainHexToWorld } from "./terrain-coordinates";
-import { prepareTerrainPage } from "./terrain-page-builder";
+import { plainTerrainPageRequest, prepareTerrainPage } from "./terrain-page-builder";
 import type { TerrainCellInput, TerrainPageRequest } from "./terrain-types";
 
 import { createAllBiomesTerrainRequest } from "./verification/terrain-verification-fixtures";
@@ -104,6 +104,42 @@ describe("prepareTerrainPage", () => {
     expect(page.diagnostics.frontierEdges).toBe(6);
     expect(new Set(page.buffers.explored)).toEqual(new Set([1]));
     expect(page.waterBuffers).toBeNull();
+  });
+
+  it("builds a page's plain ground: the same land, with no settlement, road or prop laid over it", () => {
+    const cells = [
+      { ...cell(0, 0, BiomeType.TemperateDeciduousForest), occupied: true },
+      cell(1, 0, BiomeType.TemperateDeciduousForest),
+      cell(0, 1, BiomeType.Taiga),
+      unknownCell(2, 0),
+    ];
+    const request: TerrainPageRequest = {
+      ...createRequest(cells),
+      roadSegments: [{ end: [1, 0], routeId: "fixture", start: [0, 0] }],
+    };
+    const full = prepareTerrainPage(request);
+    expect(full.diagnostics.settlementSites).toBe(1);
+    expect(full.diagnostics.roadSegments).toBe(1);
+
+    const plain = prepareTerrainPage(plainTerrainPageRequest(request));
+    expect(plain.diagnostics).toMatchObject({ fogTerrainCells: 1, roadSegments: 0, settlementSites: 0 });
+    expect(plain.propInstances).toEqual([]);
+    // Every explored cell still has its ground.
+    expect(plain.buffers.positions.length).toBeGreaterThan(0);
+    expect(plain.buffers.indices.length).toBe(
+      prepareTerrainPage({ ...request, roadSegments: [], settlementAnchors: [] }).buffers.indices.length,
+    );
+  });
+
+  it("reads a cell whose exploration and biome disagree by its biome, so an explored tile has ground", () => {
+    const disagreeing = [
+      { ...cell(0, 0, BiomeType.Grassland), explored: false },
+      { ...unknownCell(1, 0, BiomeType.None), explored: true },
+    ];
+    expect(() => prepareTerrainPage(createRequest(disagreeing))).toThrow();
+    const plain = prepareTerrainPage(plainTerrainPageRequest(createRequest(disagreeing)));
+    expect(plain.buffers.positions.length).toBeGreaterThan(0);
+    expect(plain.diagnostics.fogTerrainCells).toBe(1);
   });
 
   it("rejects invalid topology instead of silently changing geometry density", () => {

@@ -10,7 +10,6 @@ import { useLayout } from "@/shell/frame/layout";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { RealmVisitFoot, useVisitedRealm } from "./board/realm-visit";
-import { SeasonPeek } from "./board/season-peek";
 import { FrontierSeason, SeasonOver, useSeasonRank } from "./board/season-board";
 import { useSpectatorWatchesTheLeader } from "./board/spectator-watch";
 import { useExpeditionRules, useFrontierRealm } from "./frontier-home";
@@ -19,10 +18,12 @@ import { FrontierArmy } from "./army/frontier-army";
 import { FrontierSelectionSheet } from "./frontier-selection-sheet";
 import { useRealmStores } from "./realm-stores";
 import { FrontierSurfaces } from "./frontier-surfaces";
-import { GuideProvider, GuideSlot, useGuideSwitch } from "./guide/frontier-guide";
+import { GuideProvider, GuideSlot, useGuideLines } from "./guide/frontier-guide";
+import { GuideLinesSheet } from "./guide/guide-lines-sheet";
 import { SelectedArmyBar, useArmyRevealYield } from "./hud/action-bar";
 import { type ArmyOrder, useArmyOrder } from "./hud/army-order";
 import { ArmyDock } from "./hud/army-dock";
+import { useChatKey } from "./hud/chat-key";
 import { ChatPage } from "./hud/chat-page";
 import { type DockArmy, useDockArmies } from "./hud/dock-armies";
 import { FrontierNav, type HudSurface, useHudSurface } from "./hud/frontier-nav";
@@ -36,13 +37,15 @@ import { LordsPurse, PurseRow, RealmsChip } from "./value/lords-purse";
 import { useRealmLabor } from "./value/use-realm-labor";
 import { useRealmLords } from "./value/use-realm-lords";
 import { OfflineNotice } from "./hud/offline-notice";
+import { SceneFailureNotice } from "./hud/scene-failure-notice";
 import { OrderBar } from "./hud/order-bar";
 import { FrontierToday } from "./log/frontier-today";
 import { FrontierProduction } from "./production/frontier-production";
 import { FrontierResearch } from "./research/frontier-research";
-import { SiteClearCardView } from "./sites/site-clear-card";
+import { ClearedRuinChest } from "./chest/cleared-ruin-chest";
 import { useFrontierType } from "./use-frontier-type";
 import { dayClock } from "./hud/day-clock";
+import { BuildingsInFlight } from "./build/build-sheet";
 import { DayDone } from "./rollover/day-done";
 import { RealmBuildingsRow } from "./realm/buildings-row";
 import { LastHourBubble } from "./rollover/last-hour";
@@ -68,17 +71,26 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   const [surface, setSurface] = useHudSurface();
   const realmLabor = useRealmLabor(rules, realm);
   const desktop = useLayout() === "desktop";
-  // Desktop keeps chat docked open beside the map, its Chat slot collapsing it; a phone opens it as a page.
-  const [chatDocked, setChatDocked] = useState(true);
+  // Desktop docks chat beside the map when its Chat slot opens it, and starts with it closed as a phone does, so the
+  // guide and the map's lower left are clear on the first screen; a phone opens it as a page.
+  const [chatDocked, setChatDocked] = useState(false);
   const chat = useGameChat(desktop ? chatDocked : surface === "chat");
+  const chatPane = useChatKey(() => (desktop ? setChatDocked(true) : setSurface("chat")));
   if (showBlankOverlay) return null;
   const close = () => setSurface(null);
+  // A phone's nav page starts right under the strip, where the purse hangs: the purse waits while one is open.
+  const phonePageOpen = !desktop && (surface === "chat" || surface === "research" || surface === "season");
   const onSurface = (next: HudSurface | null) =>
     desktop && (next === "chat" || (next === null && surface === "chat"))
       ? setChatDocked((docked) => !docked)
       : setSurface(next);
   const chatPage = (
-    <ChatPage gameZoneId={chat.gameZoneId} signedIn={chat.initializer !== null} onSignIn={chat.requestSignIn} />
+    <ChatPage
+      gameZoneId={chat.gameZoneId}
+      signedIn={chat.initializer !== null}
+      onSignIn={chat.requestSignIn}
+      pane={chatPane}
+    />
   );
   const openArmy = (explorerId: number) => {
     useUIStore.getState().updateEntityActionSelectedEntityId(explorerId);
@@ -86,7 +98,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   };
 
   return (
-    <GuideProvider rules={rules} realm={visit ? null : realm}>
+    <GuideProvider rules={rules} realm={visit ? null : realm} researchOpen={surface === "research"}>
       <HudBands
         strip={
           <>
@@ -95,7 +107,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
               realm={realm ?? visited}
               onOpenStores={realm && !visit ? () => setSurface("production") : undefined}
             />
-            {realm && !visit && (
+            {realm && !visit && !phonePageOpen && (
               <RealmPurse
                 realm={realm}
                 laborWaiting={realmLabor?.plan.total ?? 0}
@@ -118,8 +130,9 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
         guide={<GuideSlot host="foot" />}
         notices={
           <>
-            <SiteClearCardView />
+            <ClearedRuinChest />
             <OfflineNotice />
+            <SceneFailureNotice />
           </>
         }
         action={
@@ -142,11 +155,10 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
             />
           )
         }
-        peek={<SeasonPeek onOpen={() => setSurface("season")} />}
         chat={desktop && chatDocked && chatPage}
       >
         <FrontierSurfaces realm={realm} />
-        <FrontierSelectionSheet rules={rules} realm={realm} />
+        <FrontierSelectionSheet rules={rules} realm={realm} onResearch={() => setSurface("research")} />
         {surface === "menu" && (
           <HudMenu realm={realm} laborWaiting={(realmLabor?.plan.total ?? 0) > 0} onOpen={setSurface} onClose={close} />
         )}
@@ -161,6 +173,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
             <SettingsPanel />
           </Sheet>
         )}
+        {surface === "guide" && <HudGuide onClose={close} />}
         {surface === "today" && <FrontierToday rules={rules} realm={realm} onOpenArmy={openArmy} onClose={close} />}
         {/* The card covers the HUD: the season's board and Withdraw each open in its place. */}
         {surface !== "season" && surface !== "withdraw" && (
@@ -170,6 +183,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
           />
         )}
         {realm && !visit && <DayDone rules={rules} realm={realm} />}
+        <BuildingsInFlight />
       </HudBands>
     </GuideProvider>
   );
@@ -273,7 +287,7 @@ const HudMenu = ({
   onClose: () => void;
 }) => {
   const navigate = useNavigate();
-  const guide = useGuideSwitch();
+  const guide = useGuideLines();
   const rank = useSeasonRank();
   return (
     <MenuSheet
@@ -282,20 +296,18 @@ const HudMenu = ({
       onProduction={realm ? () => onOpen("production") : null}
       onSeason={() => onOpen("season")}
       realms={realm ? { waiting: laborWaiting, onOpen: () => onOpen("realms") } : undefined}
-      guide={
-        guide && {
-          on: guide.on,
-          onToggle: () => {
-            onClose();
-            guide.toggle();
-          },
-        }
-      }
+      guide={guide && { on: guide.on, onOpen: () => onOpen("guide") }}
       onSettings={() => onOpen("settings")}
       onExit={() => navigate("/")}
       onClose={onClose}
     />
   );
+};
+
+/** The Menu's Guide: every line said so far, and the switch; nothing for a player the guide does not speak to. */
+const HudGuide = ({ onClose }: { onClose: () => void }) => {
+  const guide = useGuideLines();
+  return guide && <GuideLinesSheet on={guide.on} lines={guide.lines} onToggle={guide.toggle} onClose={onClose} />;
 };
 
 /**

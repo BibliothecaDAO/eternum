@@ -11,17 +11,16 @@ import { GoButton } from "./go-button";
 
 type Age = (typeof AGES)[number];
 
-/** A tile beside the home card, a band on the phone's ages, a landscape card on the desktop's row (painted 01, 02). */
-type AgeCardSize = "tile" | "band" | "landscape";
+/** A tile under the phone's home card, a landscape card on the desktop's row (painted 01, 02). */
+type AgeCardSize = "tile" | "landscape";
 
 const HEIGHT: Record<AgeCardSize, string> = {
   tile: "h-[118px]",
-  band: "h-[168px]",
   landscape: "h-[210px] min-[1800px]:h-[250px]",
 };
 
 /** The image widths each size draws at, for the painting's srcset. */
-const SIZES: Record<AgeCardSize, string> = { tile: "130px", band: "100vw", landscape: "33vw" };
+const SIZES: Record<AgeCardSize, string> = { tile: "130px", landscape: "33vw" };
 
 /**
  * One age (spec 04): its lore painting faded into the ground, its numeral and mode, its lore line, its live state and
@@ -47,11 +46,7 @@ export const AgeCard = ({
     />
     <span className="absolute inset-0 -z-10 bg-gradient-to-b from-kit-ground/15 via-kit-ground/55 to-kit-ground/95" />
     <Link to={age.page} aria-label={age.name} className="absolute inset-0" />
-    {size === "band" ? (
-      <BandFace age={age} chip={chip} action={action} />
-    ) : (
-      <StackFace age={age} chip={chip} action={size === "landscape" ? action : null} lore={size === "landscape"} />
-    )}
+    <StackFace age={age} chip={chip} action={size === "landscape" ? action : null} lore={size === "landscape"} />
   </article>
 );
 
@@ -82,21 +77,6 @@ const StackFace = ({
     <div className="pointer-events-auto flex items-center justify-between gap-2 self-stretch">
       {chip}
       {action && <GoButton {...action} className="!h-11 !px-3 !text-[15px]" />}
-    </div>
-  </div>
-);
-
-/** A band: the numeral large at the left, the name, the lore line, the chip and the action at the right. */
-const BandFace = ({ age, chip, action }: { age: Age; chip: ReactNode; action: AgeAction | null }) => (
-  <div className="pointer-events-none absolute inset-0 flex items-end gap-3 p-3">
-    <span className="pb-1 font-ui text-[44px] font-extrabold leading-none text-kit-peach">{age.numeral}</span>
-    <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-      <h3 className="font-display text-[26px] leading-none text-kit-cream">{age.name}</h3>
-      <p className="text-[13px] text-kit-muted">{age.lore}</p>
-      <div className="pointer-events-auto flex items-center justify-between gap-2">
-        {chip}
-        {action && <GoButton {...action} className="!h-12 !px-4" />}
-      </div>
     </div>
   </div>
 );

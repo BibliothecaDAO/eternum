@@ -1,5 +1,7 @@
-import { batchRemaining, gameplayRejection } from "@bibliothecadao/provider";
+import { batchRemaining, gameplayRejection, TransactionType } from "@bibliothecadao/provider";
 import type { GetTransactionReceiptResponse, RpcProvider } from "starknet";
+
+import { pause, transactionAnswer, TransactionNoAnswerError } from "./transaction-answer";
 
 import type { GameSyncRuntime } from "../sync/game-sync-runtime";
 import type { GameSyncTransaction } from "../sync/game-sync-types";
@@ -19,19 +21,12 @@ type Runtime = Pick<GameSyncRuntime, "waitForTransaction" | "subscribeResynced">
 type Rpc = Pick<RpcProvider, "getTransactionReceipt">;
 
 const RECEIPT_POLL_MS = 250;
-/** One block: when Herald reports an action applied first, how long its receipt may take to add the batch remainder. */
+/** Batch progress is absent from Herald's status; retain the existing receipt grace only for batch commands. */
 const RECEIPT_GRACE_MS = 2_000;
 /** A source with nothing to say leaves the race to the others; one per wait, so nothing holds on to it. */
 const silent = (): Promise<never> => new Promise<never>(() => {});
 
-/**
- * An action's outcome. First its reconciliation, when its submission gives one (in a block, or rejected on proof it
- * was never sent). Then two sources race, and the first to know settles it. The receipt says whether the shard
- * reverted the action before the roll or the game refused it (GameplayRejected, effects rolled back), and an applied
- * receipt waits for a snapshot that covers its block. Herald's own status says applied or applied nothing. A Herald
- * wait that its session ends says nothing, and the receipt and snapshot watch decide alone. The wait stops when the
- * client does.
- */
+/** Herald settles after its facts are applied. RPC reconciliation is a fallback while Herald is silent. */
 export async function waitForActionOutcome(
   runtime: Runtime,
   rpc: Rpc,
@@ -39,20 +34,50 @@ export async function waitForActionOutcome(
   transactionHash: string,
   stopped: AbortSignal,
   inBlock?: Promise<void>,
+  transactionType?: TransactionType,
+  startedAt?: number,
 ): Promise<ActionOutcome> {
-  await inBlock;
   const settled = new AbortController();
   const until = AbortSignal.any([stopped, settled.signal]);
-  const receipt = receiptOf(rpc, transactionHash, until);
+  let read: GetTransactionReceiptResponse | undefined;
+  let reported: GameSyncTransaction | undefined;
+  const herald = runtime
+    .waitForTransaction(transactionHash)
+    .then((status) => (reported = status))
+    .catch(silent);
+  const receipt = () => receiptOf(rpc, transactionHash, until).then((value) => (read = value));
+  const outcome = herald.then(async (status) => {
+    if (!appliedNothing(status) && isBatchCommand(transactionType) && !read) {
+      await Promise.race([receipt().catch(() => undefined), pause(RECEIPT_GRACE_MS, until)]);
+    }
+    return outcomeFromHerald(status, games, transactionHash, read);
+  });
   try {
     return await Promise.race([
-      outcomeFromReceipt(runtime, rpc, games, transactionHash, receipt, until),
-      outcomeFromHerald(runtime, games, transactionHash, receipt, until),
+      transactionAnswer(
+        transactionHash,
+        outcome,
+        async (fallbackUntil) => {
+          const receipt = await rpc.getTransactionReceipt(transactionHash).catch(() => undefined);
+          if (!receipt) throw new TransactionNoAnswerError(transactionHash);
+          return outcomeFromReceipt(runtime, rpc, games, transactionHash, Promise.resolve(receipt), fallbackUntil);
+        },
+        until,
+        startedAt,
+      ),
+      inBlock?.then(silent, (error) => {
+        // A cached Herald status wins even if both answers were already available when the wait began.
+        if (reported) return outcome;
+        throw error;
+      }) ?? silent(),
     ]);
   } finally {
     settled.abort();
   }
 }
+
+const isBatchCommand = (type: TransactionType | undefined): boolean =>
+  type === TransactionType.END_GAME || type === TransactionType.BITCOIN_MINE_CLAIM_PHASE_REWARD;
 
 /** The receipt's refusal, or, for an applied receipt, success once an applied snapshot covers its block. */
 async function outcomeFromReceipt(
@@ -70,23 +95,17 @@ async function outcomeFromReceipt(
   return succeeded(transactionHash, block, read, games);
 }
 
-/**
- * Herald's status: applied nothing (reverted or refused, with its reason), or applied. An applied action's batch
- * remainder is on its receipt, taken when the receipt answers within RECEIPT_GRACE_MS.
- */
-async function outcomeFromHerald(
-  runtime: Runtime,
+/** Herald has already written the facts. Include batch progress only if its receipt is already available. */
+function outcomeFromHerald(
+  status: GameSyncTransaction,
   games: string,
   transactionHash: string,
-  receipt: Promise<GetTransactionReceiptResponse>,
-  until: AbortSignal,
-): Promise<ActionOutcome> {
-  const status = await runtime.waitForTransaction(transactionHash).catch(silent);
+  receipt: GetTransactionReceiptResponse | undefined,
+): ActionOutcome {
   if (appliedNothing(status)) {
     return { hash: transactionHash, block: status.block, status: status.status, revertReason: status.revertReason };
   }
-  const read = await Promise.race([receipt.catch(() => undefined), pause(RECEIPT_GRACE_MS, until)]);
-  return succeeded(transactionHash, status.block, read, games);
+  return succeeded(transactionHash, status.block, receipt, games);
 }
 
 /** Reverted before the roll, or refused by the game (rolled back): either way none of it applied. */
@@ -122,24 +141,11 @@ async function receiptOf(
   while (true) {
     until.throwIfAborted();
     const receipt = await rpc.getTransactionReceipt(transactionHash).catch(() => undefined);
+    until.throwIfAborted();
     if (receipt) return receipt;
     await pause(RECEIPT_POLL_MS, until);
   }
 }
-
-/** Resolves after `ms`, or rejects with the signal's reason when it aborts first. */
-const pause = (ms: number, until: AbortSignal): Promise<undefined> =>
-  new Promise((resolve, reject) => {
-    const timer = setTimeout(() => {
-      until.removeEventListener("abort", abort);
-      resolve(undefined);
-    }, ms);
-    const abort = () => {
-      clearTimeout(timer);
-      reject(until.reason);
-    };
-    until.addEventListener("abort", abort, { once: true });
-  });
 
 const blockOf = (receipt: GetTransactionReceiptResponse): number | null =>
   "block_number" in receipt && typeof receipt.block_number === "number" ? receipt.block_number : null;

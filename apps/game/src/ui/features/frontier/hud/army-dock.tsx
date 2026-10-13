@@ -3,15 +3,16 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useLayout } from "@/shell/frame/layout";
 import { requestArmySelection } from "@/three/scenes/worldmap-army-select-request";
-import { LeftView } from "@/types";
 import { canIssueOrders } from "@/utils/can-issue-orders";
+import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { Sweep } from "@/ui/motion/sweep";
 import { configManager, entityMapPosition, Position } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-import { DEPLOY } from "@/ui/design-system/kit/words";
+import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import { DEPLOY, DEPLOYING } from "@/ui/design-system/kit/words";
 
 import { attributeBadgeTarget } from "../attributes/attributes";
 import { useOpenArmySlots } from "../deploy/open-slots";
@@ -41,6 +42,7 @@ export const ArmyDock = ({ realm, armies }: { realm: NativeRows["Structure"]; ar
       {ordersAllowed &&
         Array.from({ length: openCount }, (_, index) => (
           <DeploySlot
+            realm={realm}
             key={openSlots?.[index]?.slot ?? `open-${index}`}
             first={index === 0}
             pulse={index === 0 && armies.length === 0}
@@ -68,8 +70,11 @@ const DockToken = ({
   return (
     <ArmyToken
       label={army.label}
+      number={army.number}
       art={army.art}
       xp={army.xp}
+      xpGoal={army.xpGoal}
+      tiers={army.tiers}
       stamina={stamina}
       troops={army.troops}
       canBuyTier={army.canBuyTier}
@@ -105,17 +110,29 @@ const usePickArmy = (explorerId: number) => {
 };
 
 /** An open slot; the first one takes the guide's sweep when it points at Deploy. */
-const DeploySlot = ({ first, pulse, wide }: { first: boolean; pulse: boolean; wide: boolean }) => {
-  const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
+const DeploySlot = ({
+  realm,
+  first,
+  pulse,
+  wide,
+}: {
+  realm: NativeRows["Structure"];
+  first: boolean;
+  pulse: boolean;
+  wide: boolean;
+}) => {
   const pointed = useDeployPointed();
+  // The army being deployed takes the first open slot: it carries the wait once the Deploy sheet has closed.
+  const deploying = useInFlight("deploy", safeInteger(realm.entity_id)) !== undefined;
   return (
     <Sweep play={first ? pointed : 0} className="shrink-0 rounded-xl">
       <OpenSlot
         label={DEPLOY}
+        filling={first && deploying ? DEPLOYING : undefined}
         pulse={pulse}
         guided={first}
         wide={wide}
-        onDeploy={() => setLeftNavigationView(LeftView.MilitaryView)}
+        onDeploy={() => openArmyDeployment({ structureId: safeInteger(realm.entity_id), isExplorer: true })}
       />
     </Sweep>
   );

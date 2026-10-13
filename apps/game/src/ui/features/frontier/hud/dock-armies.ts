@@ -5,23 +5,29 @@ import { buildStaminaDisplayModel } from "@/lib/army-stamina/presentation";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { configManager, getArmyName, homecomingReturn, liveHomeArmies } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { armyNumber, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 import { ARMY } from "@/ui/design-system/kit/words";
 
-import { affordableUpgrades } from "../attributes/attributes";
+import { affordableUpgrades, attributeTiers, nextTierGoal } from "../attributes/attributes";
 
 const ARMY_MODELS = ["ArmySlot", "ArmyProgress", "ExplorerTroops", "TileOccupancy", "EntityName"] as const;
 
 /** One army as the dock and the action bar read it. Unknown is undefined, never zero. */
 export type DockArmy = {
   explorerId: number;
+  /** Its number among the realm's armies, as its map plate shows it. */
+  number: number;
   troopsFact: NativeRows["ExplorerTroops"]["troops"];
   label: string;
   art: string;
   xp: number | undefined;
+  /** The attribute tier its XP buys next: its XP price and the tier it reaches; none at legendary or while unknown. */
+  xpGoal: { price: number; tier: number } | undefined;
+  /** Its four attribute tiers (Battle, Logistics, Scouting, Homecoming), 1 to 5; unknown while its progress is. */
+  tiers: readonly [number, number, number, number] | undefined;
   stamina: { current: number; max: number } | undefined;
   secondsToFull: number | undefined;
   troops: number;
@@ -57,12 +63,16 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
       : null;
     const progress = setup.store.get("ArmyProgress", { game_id: army.game_id, explorer_id: army.explorer_id });
     const xpRules = setup.store.get("ArmyProgressionRules", { game_id: army.game_id });
+    const number = armyNumber(army) ?? index + 1;
     return {
       explorerId,
+      number,
       troopsFact: army.troops,
-      label: armyName(setup.store, explorerId, index + 1),
+      label: armyName(setup.store, explorerId, number),
       art: armyArt(army.troops),
       xp: progress?.xp,
+      xpGoal: progress && xpRules && nextTierGoal(progress, xpRules),
+      tiers: progress && attributeTiers(progress),
       stamina: stamina ? { current: stamina.committedCurrent, max: stamina.committedMax } : undefined,
       secondsToFull: stamina?.secondsUntilFull,
       troops: Number(army.troops.count / BigInt(RESOURCE_PRECISION)),
@@ -77,8 +87,18 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
 export const armyArt = (troops: { category: string; tier: string }) =>
   `/images/armies/${troops.category.toLowerCase()}${troops.tier}.png`;
 
-/** The army's own name when it has one; otherwise its place in the dock, never its entity id. */
-const armyName = (store: NativeFactStore, explorerId: number, position: number): string => {
+/**
+ * An army as every line outside the dock names it (the day log): by the same name as its card. An army no longer on
+ * the map has no number left to read, and is "Army".
+ */
+export const armyLabel = (store: NativeFactStore, explorerId: number): string => {
+  const army = store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: explorerId });
+  return armyName(store, explorerId, army && armyNumber(army));
+};
+
+/** The army's own name when it has one; otherwise its number, never its entity id. */
+const armyName = (store: NativeFactStore, explorerId: number, number: number | undefined): string => {
   const named = store.get("EntityName", { game_id: configManager.getActiveGameId(), entity_id: explorerId });
-  return named && named.name !== 0n ? getArmyName(explorerId, store) : `${ARMY} ${position}`;
+  if (named && named.name !== 0n) return getArmyName(explorerId, store);
+  return number === undefined ? ARMY : `${ARMY} ${number}`;
 };

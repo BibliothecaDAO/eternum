@@ -24,7 +24,6 @@ class CiFileOwnership(unittest.TestCase):
     def test_static_owned_ci_files_select_no_further_area(self):
         for path in (
             ".github/workflows/validation.yml",
-            ".github/workflows/shard-images.yml",
             ".github/scripts/validation_areas.py",
         ):
             with self.subTest(path=path):
@@ -57,7 +56,7 @@ class CiFileOwnership(unittest.TestCase):
                 self.assertEqual(areas_run_by(path), {"herald", "native", "runtime"})
 
     def test_release_inputs_select_both_deployment_areas(self):
-        self.assertEqual(areas_run_by("deploy/release/staging.json"), {"native", "runtime"})
+        self.assertEqual(areas_run_by("deploy/release/dev.json"), {"native", "runtime"})
 
     def test_landing_with_no_optional_inputs_runs_only_core_areas(self):
         for files in ([], ["README.md"], ["apps/value-relay/src/relay.ts"], ["apps/game/src/shell/blitz.ts"]):

@@ -1,10 +1,11 @@
 import { DeviceSigner } from "@bibliothecadao/eternum/device-signer";
 export { batchRemaining } from "@bibliothecadao/provider/batch-progress";
-import { Account, CallData, ec, type Abi, type RpcProvider } from "starknet";
+import { Account, CallData, ec, type RpcProvider } from "starknet";
 import { encodeNativeCommand, gameplayRejection } from "@bibliothecadao/provider";
 import { resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum/shard-fees";
 import { readConfirmedLedgerHead } from "./codecs";
 import { rpcAt } from "./rpc";
+import { readShardAbi } from "./shard-abi";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 
 export interface ShardTarget {
@@ -69,26 +70,11 @@ export class ShardOperator {
   confirm(transactionHash: string) {
     return confirmedShardReceipt(this.provider, transactionHash);
   }
-  private cachedAbi: Promise<Abi> | undefined;
   async playCommand(gameId: number, name: "SettleBlitzRoster" | "MarkGameSettled" | "RecordBlitzResults") {
     return this.play(gameId, encodeNativeCommand(bindings.commandAbi, { kind: name, value: undefined }));
   }
-  private async runtimeAbi(head: number): Promise<Abi> {
-    this.cachedAbi ??= this.provider
-      .getClassAt(this.target.gamesAddress, head)
-      .then((contract) => {
-        const abi = typeof contract.abi === "string" ? JSON.parse(contract.abi) : contract.abi;
-        if (!Array.isArray(abi)) throw new Error("shard_abi_unavailable");
-        return abi as Abi;
-      })
-      .catch((error) => {
-        this.cachedAbi = undefined;
-        throw error;
-      });
-    return this.cachedAbi;
-  }
   private async codec(head: number) {
-    return new CallData(await this.runtimeAbi(head));
+    return new CallData(await readShardAbi(this.provider, this.target.gamesAddress, head));
   }
   private async invoke(entrypoint: string, calldata: string[], onSubmitted?: (hash: string) => Promise<void>) {
     const bound = await this.view<bigint>("l2_gas_bound", []);

@@ -9,6 +9,15 @@ export interface PlaytestSlot {
   closed: boolean;
 }
 
+export interface SlotFreezeFailure {
+  chainId: string;
+  slotId: number;
+  name: string;
+  code: string;
+  checkedAt: number;
+  secondsUntilClose?: number;
+}
+
 export interface SlotStore {
   /** Creates the slot once; a repeat with the same closing time is the same slot, another closing time a conflict. */
   create(name: string, closesAt: string): Promise<void>;
@@ -17,6 +26,7 @@ export interface SlotStore {
   refund(name: string): Promise<number | null>;
   freeze(name: string): Promise<PlaytestSlot>;
   freezeDueSlots(): Promise<void>;
+  freezeFailures(): Promise<SlotFreezeFailure[]>;
 }
 
 export class SlotConflict extends Error {}

@@ -132,6 +132,19 @@ const frontierWorld = (homeRingView?: HomeRingView, call?: MadaraRpc["call"]) =>
   return { live, native, decoder, fold, confirmed, pending };
 };
 
+it("streams the watched realm's home ring to an unsigned Frontier spectator", async () => {
+  const { live } = frontierWorld(async () => RING);
+  await live.acceptSubscribedHead({ block_number: 10, timestamp: MID_DAY });
+  const messages: HeraldStreamMessage[] = [];
+  const connection = live.attach("1", { send: (text) => messages.push(JSON.parse(text)) }, undefined, "0xa");
+  live.resume(connection, { type: "resume", epoch: "", seq: 0 });
+  await vi.waitFor(() => expect(tilesIn(messages)).toHaveLength(7));
+  expect(tilesIn(messages).map(({ value }) => [Number(value.col), Number(value.row)])).toEqual(
+    RING.map(({ col, row }) => [col, row]),
+  );
+  live.detach(connection);
+});
+
 const connect = (live: LiveWorld, actor: string) => {
   const messages: HeraldStreamMessage[] = [];
   const session = live.attach("1", { send: (text) => messages.push(JSON.parse(text)) }, actor);

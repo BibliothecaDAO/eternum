@@ -2,39 +2,58 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Button, type Price } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
 import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
-import { type Reason, ReasonPlate } from "@/ui/design-system/kit/reason-plate";
+import { type Refusal, RefusedVerb } from "@/ui/design-system/kit/refused-verb";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
-import { UPGRADE, UPGRADING } from "@/ui/design-system/kit/words";
+import { chooseOne, RESEARCH, UPGRADE, UPGRADING } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 /** One side of a tier's choice: its art and name, and what it gives every building of the type, before → after. */
 type Side = { icon: IconCode; name: string; gain: { icon: IconCode; label: string; value: string } };
 
+/** One figure of the building as it stands: its icons, its number, and the name its tooltip says. */
+export type Figure = { icons: IconCode[]; label: string; value: string };
+
+/** What a building is doing now, as chips: icons and numbers on the surface, each named when asked. */
+export const Figures = ({ figures }: { figures: readonly Figure[] }) => (
+  <div className="flex flex-wrap items-center justify-center gap-1.5">
+    {figures.map((figure) => (
+      <Chip key={figure.label} icons={figure.icons} label={figure.label} value={figure.value} />
+    ))}
+  </div>
+);
+
 /**
  * A building type's Upgrade sheet (wireframes 02 and 09): one sheet whichever way the player came, a building on the
- * board or its row in the castle's tree. The type, its tier now and next on their framed chips, then its two sides
+ * board or its row in the castle's tree. What the building does now (what each makes an hour, how many stand, what
+ * its store holds, the population it takes), then the type, its tier now and next on their framed chips, then its two sides
  * (farm, workshop, barracks) with what each gives every building of the type, the first tap lifting one, or what the
  * tier gives where there is no choice; then the seal (the choice is final for the season) and Upgrade carrying its
- * Essence and labor. When the realm cannot pay, the price held against what it has and the step take Upgrade's place.
- * At legendary there is nothing next.
+ * Essence and labor. Upgrade always ends the sheet: while it cannot run it stays, dimmed, with its price, over the one
+ * line that says why (a side still to choose, or what the realm needs against what it holds) and the fix where there is
+ * one. Opened from the board, its head leads to Research, where every type's row stands. At legendary there is nothing
+ * next.
  */
 export const TypeUpgradeSheet = ({
   icon,
   name,
+  now,
   tier,
   sides,
   lifted,
   onLift,
   gives,
   prices,
-  short,
+  refusal,
   sending,
   onUpgrade,
+  onResearch,
   onClose,
 }: {
   icon: IconCode;
   name: string;
+  /** What the building does as it stands. */
+  now?: readonly Figure[];
   tier: Tier;
   sides?: readonly [Side, Side];
   lifted?: 0 | 1;
@@ -42,18 +61,30 @@ export const TypeUpgradeSheet = ({
   /** What the next tier gives where there is no choice (a hut's population; a training building's next army). */
   gives?: ReactNode;
   prices: readonly Price[];
-  short?: { reason: Extract<Reason, { kind: "short" }>; step: ReactNode };
+  /** Why Upgrade cannot run with a side chosen (or with no choice to make): what the realm is short of. */
+  refusal?: Refusal;
   sending: boolean;
   onUpgrade: () => void;
+  /** Opens Research; absent when the sheet opened from there. */
+  onResearch?: () => void;
   onClose: () => void;
 }) => {
   const top = tier === 5;
+  // A tier with two sides waits for one to be lifted: the choice is final for the season.
+  const waits: Refusal | undefined =
+    sides && lifted === undefined
+      ? { reason: { kind: "failed", line: chooseOne(sides[0].name, sides[1].name) } }
+      : refusal;
   return (
     <Sheet label={name} onClose={onClose}>
       <header className="flex items-center gap-2.5">
         <KitIcon code={icon} size={30} />
         <h2 className="frontier-title flex-1 !text-[20px]">{name}</h2>
+        {onResearch && (
+          <Button role="outline" icon="Rs" word={RESEARCH} className="!h-10 !px-3 lg:mr-10" onClick={onResearch} />
+        )}
       </header>
+      {now && now.length > 0 && <Figures figures={now} />}
       <div className="flex items-center justify-center gap-2">
         <TierChip tier={tier} showWord />
         {!top && (
@@ -74,11 +105,9 @@ export const TypeUpgradeSheet = ({
           ))}
         </div>
       )}
-      {/* A tier with two sides waits for one to be lifted: the choice is final for the season. */}
       {!top &&
-        !(sides && lifted === undefined) &&
-        (short ? (
-          <ReasonPlate reason={short.reason} step={short.step} />
+        (waits ? (
+          <RefusedVerb word={UPGRADE} prices={prices} refusal={waits} />
         ) : (
           <div className="flex items-center gap-2">
             {sides && <KitIcon code="Fx" size={26} />}

@@ -42,6 +42,17 @@ class MeasuresTests(unittest.TestCase):
         self.assertEqual(split["all"]["afterRecordedMs"][95], 250)
         self.assertEqual(split["all"]["admissionToVisibleMs"][95], 350)
 
+    def test_completed_actions_name_every_missing_figure(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            report = Path(temporary) / "report.json"
+            report.write_text(json.dumps({"workload": {"actions": [{
+                "outcome": "completed", "botId": 7, "kind": "Explore",
+                "submitStartedAt": "2026-09-25T10:00:00.000Z", "submitMs": 100,
+            }]}}))
+            with self.assertRaisesRegex(ValueError,
+                    "bot=7 kind=Explore is missing figures: submittedAt, visibleAt, admissionToVisibleMs"):
+                measures.admission_split(temporary)
+
     def test_node_memory_is_read_from_the_containers_own_cgroup(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -101,14 +112,13 @@ class MeasuresTests(unittest.TestCase):
             measures.measure_workload(["docker"], failing, "node", Path("m"), Path("c"), Path("w"))
         self.assertEqual(host.call_count, 2)
 
-    def test_the_package_measurement_drives_the_harness_service_on_its_own_cpus(self):
+    def test_the_package_measurement_drives_the_harness_service_without_cpu_limits(self):
         with patch.object(measures.subprocess, "run") as run:
             run.return_value.returncode = 0
-            self.assertTrue(measures.run_package_harness(["docker", "compose"], "soak", "20-23", ["--bots", "1"]))
-        command, environment = run.call_args.args[0], run.call_args.kwargs["env"]
+            self.assertTrue(measures.run_package_harness(["docker", "compose"], "soak", ["--bots", "1"]))
+        command = run.call_args.args[0]
         self.assertEqual(command, ["docker", "compose", "run", "--rm", "-e",
                                    "HARNESS_OUTPUT_DIRECTORY=/data/measure/soak/workload", "harness", "--bots", "1"])
-        self.assertEqual(environment["HARNESS_CPUSET"], "20-23")
 
 
 if __name__ == "__main__":

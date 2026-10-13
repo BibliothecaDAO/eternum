@@ -1,6 +1,11 @@
 import type { ID } from "@bibliothecadao/types";
 import * as THREE from "three";
-import { acquireCompactLabel, releaseCompactLabel, type CompactLabelAtlasRecord } from "./compact-entity-label-atlas";
+import {
+  acquireCompactLabel,
+  compactLabelKey,
+  releaseCompactLabel,
+  type CompactLabelAtlasRecord,
+} from "./compact-entity-label-atlas";
 import type { CompactEntityLabelVariant } from "./compact-entity-label-policy";
 
 interface ActiveCompactLabel {
@@ -9,13 +14,14 @@ interface ActiveCompactLabel {
   hovered: boolean;
   instanceId: number;
   position: THREE.Vector3;
-  size: number;
 }
 
 type CompactEntityLabelKey = ID | string;
 
 /** One batched draw per atlas page: every label on that page is an instance of its text's quad. */
 interface LabelBatch {
+  batchKey: string;
+  front: boolean;
   material: THREE.MeshBasicMaterial;
   mesh: THREE.BatchedMesh;
   geometryIdByKey: Map<string, { geometryId: number; references: number }>;
@@ -28,8 +34,10 @@ export interface CompactEntityLabelInput {
   position: THREE.Vector3;
   text: string;
   variant: CompactEntityLabelVariant;
-  priority?: number;
-  size?: number;
+  /** A bar beside the text, filled from 0 to 1: an army's stamina on its own plate. */
+  meter?: number;
+  /** Drawn over every other plate: the player's own armies are never hidden behind a neighbour's label. */
+  front?: boolean;
 }
 
 export interface CompactEntityLabelScope {
@@ -44,7 +52,13 @@ export interface CompactEntityLabelScope {
 }
 
 const COMPACT_LABEL_RENDER_ORDER = 10_050;
-const DEFAULT_LABEL_SIZE = 0.46;
+/**
+ * A plate's height on screen, in CSS pixels, at every zoom and on every screen: its 16 px atlas text then reads at
+ * about 12 px, the smallest a phone shows legibly, and a plate far away is a pin, never unreadable text.
+ */
+const LABEL_SCREEN_HEIGHT_PX = 26;
+/** The plate's height in the world before the first camera is known. */
+const FALLBACK_WORLD_HEIGHT = 0.46;
 const HOVER_LABEL_SCALE = 1.12;
 /** Labels a single atlas page can show at once; the atlas itself pages, so this only bounds one draw. */
 const BATCH_INSTANCE_CAPACITY = 2_048;
@@ -60,9 +74,13 @@ const OPTIMIZE_AFTER_DELETED_GEOMETRIES = 128;
  */
 export class CompactEntityLabelRenderer {
   private readonly labels = new Map<CompactEntityLabelKey, ActiveCompactLabel>();
-  private readonly batches = new Map<THREE.Material, LabelBatch>();
+  /** One batch per atlas page and layer; the front layer draws after the rest. */
+  private readonly batches = new Map<string, LabelBatch>();
   private readonly group = new THREE.Group();
   private readonly cameraQuaternion = new THREE.Quaternion();
+  private readonly cameraPosition = new THREE.Vector3();
+  /** World units one screen pixel spans at one unit from the camera; zero until a perspective camera is known. */
+  private worldPerPixelAtUnitDistance = 0;
   private readonly scratchMatrix = new THREE.Matrix4();
   private readonly scratchScale = new THREE.Vector3();
   private hasCameraQuaternion = false;
@@ -81,11 +99,10 @@ export class CompactEntityLabelRenderer {
       return;
     }
 
-    const size = input.size ?? DEFAULT_LABEL_SIZE;
-    const key = `${input.variant}:${text}`;
+    const key = compactLabelKey(text, input.variant, input.meter);
+    const front = input.front === true;
     const existingLabel = this.labels.get(input.entityId);
-    if (existingLabel?.atlasRecord.key === key) {
-      existingLabel.size = size;
+    if (existingLabel?.atlasRecord.key === key && existingLabel.batch.front === front) {
       existingLabel.position.copy(input.position);
       this.writeInstance(existingLabel);
       return;
@@ -93,8 +110,8 @@ export class CompactEntityLabelRenderer {
 
     if (existingLabel) this.releaseActiveLabel(input.entityId, existingLabel);
 
-    const atlasRecord = acquireCompactLabel(text, input.variant);
-    const batch = this.resolveBatch(atlasRecord.material);
+    const atlasRecord = acquireCompactLabel(text, input.variant, input.meter);
+    const batch = this.resolveBatch(atlasRecord.material, front);
     const geometryId = this.acquireGeometry(batch, atlasRecord);
     const instanceId = batch.mesh.addInstance(geometryId);
     batch.labelCount += 1;
@@ -104,7 +121,6 @@ export class CompactEntityLabelRenderer {
       hovered: false,
       instanceId,
       position: input.position.clone(),
-      size,
     };
     this.labels.set(input.entityId, label);
     this.writeInstance(label);
@@ -151,10 +167,20 @@ export class CompactEntityLabelRenderer {
     return new NamespacedCompactEntityLabelScope(this, requireLabelNamespace(namespace));
   }
 
-  public updateCamera(camera: THREE.Camera): void {
-    if (this.hasCameraQuaternion && this.cameraQuaternion.equals(camera.quaternion)) return;
+  /** Plates face the camera and keep one size on screen, so they are rewritten when it turns, moves or zooms. */
+  public updateCamera(camera: THREE.Camera, viewportHeightPx: number): void {
+    const worldPerPixel = resolveWorldPerPixelAtUnitDistance(camera, viewportHeightPx);
+    if (
+      this.hasCameraQuaternion &&
+      this.cameraQuaternion.equals(camera.quaternion) &&
+      this.cameraPosition.equals(camera.position) &&
+      this.worldPerPixelAtUnitDistance === worldPerPixel
+    )
+      return;
 
     this.cameraQuaternion.copy(camera.quaternion);
+    this.cameraPosition.copy(camera.position);
+    this.worldPerPixelAtUnitDistance = worldPerPixel;
     this.hasCameraQuaternion = true;
     for (const label of this.labels.values()) this.writeInstance(label);
   }
@@ -176,8 +202,9 @@ export class CompactEntityLabelRenderer {
     this.writeInstance(label);
   }
 
-  private resolveBatch(material: THREE.MeshBasicMaterial): LabelBatch {
-    const existing = this.batches.get(material);
+  private resolveBatch(material: THREE.MeshBasicMaterial, front: boolean): LabelBatch {
+    const batchKey = `${material.uuid}:${front}`;
+    const existing = this.batches.get(batchKey);
     if (existing) return existing;
 
     const mesh = new THREE.BatchedMesh(
@@ -188,11 +215,19 @@ export class CompactEntityLabelRenderer {
     );
     mesh.name = "compact-entity-label-batch";
     mesh.frustumCulled = false;
-    mesh.renderOrder = COMPACT_LABEL_RENDER_ORDER;
+    mesh.renderOrder = COMPACT_LABEL_RENDER_ORDER + (front ? 1 : 0);
     mesh.raycast = () => {};
     this.group.add(mesh);
-    const batch: LabelBatch = { material, mesh, geometryIdByKey: new Map(), labelCount: 0, deletedGeometries: 0 };
-    this.batches.set(material, batch);
+    const batch: LabelBatch = {
+      batchKey,
+      front,
+      material,
+      mesh,
+      geometryIdByKey: new Map(),
+      labelCount: 0,
+      deletedGeometries: 0,
+    };
+    this.batches.set(batchKey, batch);
     return batch;
   }
 
@@ -224,14 +259,19 @@ export class CompactEntityLabelRenderer {
 
   private writeInstance(label: ActiveCompactLabel): void {
     const aspectRatio = label.atlasRecord.width / label.atlasRecord.height;
-    const hoverScale = label.hovered ? HOVER_LABEL_SCALE : 1;
-    this.scratchScale.set(label.size * aspectRatio * hoverScale, label.size * hoverScale, 1);
+    const height = this.worldHeightAt(label.position) * (label.hovered ? HOVER_LABEL_SCALE : 1);
+    this.scratchScale.set(height * aspectRatio, height, 1);
     this.scratchMatrix.compose(
       label.position,
       this.hasCameraQuaternion ? this.cameraQuaternion : IDENTITY_QUATERNION,
       this.scratchScale,
     );
     label.batch.mesh.setMatrixAt(label.instanceId, this.scratchMatrix);
+  }
+
+  private worldHeightAt(position: THREE.Vector3): number {
+    if (this.worldPerPixelAtUnitDistance === 0) return FALLBACK_WORLD_HEIGHT;
+    return LABEL_SCREEN_HEIGHT_PX * this.worldPerPixelAtUnitDistance * this.cameraPosition.distanceTo(position);
   }
 
   private releaseActiveLabel(entityId: CompactEntityLabelKey, label: ActiveCompactLabel): void {
@@ -248,7 +288,7 @@ export class CompactEntityLabelRenderer {
   private disposeBatch(batch: LabelBatch): void {
     this.group.remove(batch.mesh);
     batch.mesh.dispose();
-    this.batches.delete(batch.material);
+    this.batches.delete(batch.batchKey);
   }
 }
 
@@ -311,6 +351,11 @@ class NamespacedCompactEntityLabelScope implements CompactEntityLabelScope {
 }
 
 const IDENTITY_QUATERNION = new THREE.Quaternion();
+
+function resolveWorldPerPixelAtUnitDistance(camera: THREE.Camera, viewportHeightPx: number): number {
+  if (!(camera instanceof THREE.PerspectiveCamera) || viewportHeightPx <= 0) return 0;
+  return (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2)) / viewportHeightPx;
+}
 
 function normalizeLabelText(text: string): string {
   return text.trim().replace(/\s+/g, " ");

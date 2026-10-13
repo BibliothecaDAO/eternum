@@ -276,6 +276,10 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
             lastConnectionError: event instanceof Event ? event.type : String(event),
           });
         },
+        // Told after the drop itself: the status a player reads is that chat is coming back, not that it failed.
+        onReconnecting: () => {
+          if (get().client === client) set({ connectionStatus: "reconnecting" });
+        },
         onMessage: (message) => {
           if (get().client !== client) return;
           const { actions } = get();
@@ -294,7 +298,11 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
               params.joinZones?.forEach((zoneId) => actions.joinZone(zoneId));
               break;
             case "joined:zone":
-              set((state) => ({ joinedZoneIds: [...new Set([...state.joinedZoneIds, message.zoneId as string])] }));
+              set((state) => ({
+                joinedZoneIds: [...new Set([...state.joinedZoneIds, message.zoneId as string])],
+                // A room that dropped and came back ends the reconnecting it started.
+                connectionStatus: state.connectionStatus === "reconnecting" ? "connected" : state.connectionStatus,
+              }));
               break;
             case "left:zone":
               set((state) => ({ joinedZoneIds: state.joinedZoneIds.filter((zoneId) => zoneId !== message.zoneId) }));

@@ -304,6 +304,9 @@ export type FightForecast =
       outcome: "wins" | "loses" | "stalls";
       exchanges: number;
       stoppedBy?: ExchangeRefusal;
+      /** What the first exchange alone costs each side: the one attack a player sends, as its result reads. */
+      firstExchange: { attackerLoss: bigint; defenderLoss: bigint };
+      /** What the whole fight costs each side, over every exchange. */
       attackerLoss: bigint;
       defenderLoss: bigint;
       staminaSpent: bigint;
@@ -346,6 +349,7 @@ export const forecastFight = (
     outcome,
     exchanges,
     stoppedBy,
+    firstExchange: { attackerLoss: first.attackerLoss, defenderLoss: first.defenderLoss },
     attackerLoss,
     defenderLoss,
     staminaSpent: startingStamina - state.attacker.stamina.amount,

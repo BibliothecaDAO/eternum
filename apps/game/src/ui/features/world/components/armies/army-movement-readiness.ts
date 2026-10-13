@@ -144,14 +144,13 @@ const resolveStructureFoodBalance = (
   structureResources: ResourceValue | null | undefined,
   currentDefaultTick: number,
 ): { wheat: number; fish: number } => {
-  if (!structureResources?.hasResources()) {
+  const wheat = structureResources?.balanceWithProduction(currentDefaultTick, ResourcesIds.Wheat);
+  const fish = structureResources?.balanceWithProduction(currentDefaultTick, ResourcesIds.Fish);
+  if (!wheat || !fish) {
     return { wheat: Number.POSITIVE_INFINITY, fish: Number.POSITIVE_INFINITY };
   }
 
-  const { balance: wheat } = structureResources.balanceWithProduction(currentDefaultTick, ResourcesIds.Wheat)!;
-  const { balance: fish } = structureResources.balanceWithProduction(currentDefaultTick, ResourcesIds.Fish)!;
-
-  return { wheat: divideByPrecision(wheat), fish: divideByPrecision(fish) };
+  return { wheat: divideByPrecision(wheat.balance), fish: divideByPrecision(fish.balance) };
 };
 
 // Travel reaches only revealed tiles, so the cheapest step reads the neighbours' stored biomes and skips the rest.

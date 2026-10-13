@@ -121,7 +121,12 @@ const seasonReadsOf = (client: QueryClient, read: EnvironmentLedger): SeasonRead
   seasonOfSlot: (slot) =>
     client.fetchQuery({
       queryKey: ["ledger", "slot-season", slot.shard, slot.slotId],
-      queryFn: async () => (await read.slot(slot)).seasonId,
+      queryFn: async () => {
+        const held = await read.slot(slot);
+        // A played game's slot is on the ledger; one that is not is unreadable, and is asked again next time.
+        if (!held) throw new Error("played_slot_not_on_ledger");
+        return held.seasonId;
+      },
       staleTime: Infinity,
     }),
   placeOf: (seasonId, season, wallet) =>

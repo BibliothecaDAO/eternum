@@ -23,7 +23,7 @@ export default {
     try {
       for (const shard of await activeShards(env.IDENTITY)) {
         const { launches, slots, calendar } = launchStoresOf(env, shard.chainId);
-        await Effect.runPromise(runLaunchSchedule(launches, slots, calendar, new Date()));
+        await Effect.runPromise(runLaunchSchedule(launches, slots, calendar));
       }
     } finally {
       await registrarOf(env).armFor(Date.now());
@@ -57,9 +57,10 @@ const launchAppOf = (env: LaunchEnv, chainId?: string | null) => {
     store: launches,
     slots,
     calendar,
-    registrar: { armFor: (dueAt) => registrarOf(env).armFor(dueAt) },
-    operatorLauncher: {
-      enrol: (input) => registrarOf(env).enrol(input),
+    registrar: {
+      armFor: (dueAt) => registrarOf(env).armFor(dueAt),
+      joinFailures: () => registrarOf(env).joinFailures(),
+      wakeAt: () => registrarOf(env).wakeAt(),
     },
   });
 };

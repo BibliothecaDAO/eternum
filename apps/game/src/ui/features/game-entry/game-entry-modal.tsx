@@ -27,7 +27,6 @@ import { BLITZ_WORDS } from "@/shell/words";
 import { ClockChip } from "@/shell/clock-chip";
 import { getRealmNameById } from "@bibliothecadao/eternum";
 import { seasonRealm } from "@/shell/season";
-import { realmStill } from "@/shell/mode-art";
 import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
 import { type DoorwayRealm, DoorwayScreen } from "./doorway/doorway-screen";
 import { doorwayView } from "./doorway/doorway-view";
@@ -636,5 +635,5 @@ export const GameEntryModal = ({
 /** The player's realm on the entry side, from the game's directory row: its name, before the game's store has it. */
 const entryRealm = (game: HeraldGameDirectoryEntry | null): DoorwayRealm | null => {
   const realm = game ? seasonRealm(game) : undefined;
-  return realm ? { name: getRealmNameById(realm.realm_id), emblem: null, still: realmStill(realm.level) } : null;
+  return realm ? { name: getRealmNameById(realm.realm_id), emblem: null } : null;
 };

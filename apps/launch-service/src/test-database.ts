@@ -1,3 +1,4 @@
+import { disposeWorker } from "../../../packages/value-ledger/test-support/workerd";
 import { readdirSync, readFileSync } from "node:fs";
 import { Miniflare } from "miniflare";
 
@@ -6,7 +7,7 @@ export async function createLaunchTestDatabase() {
   const mf = new Miniflare({ modules: true, script: "export default {}", d1Databases: ["DB"] });
   const db = (await mf.getD1Database("DB")) as unknown as D1Database;
   await db.batch(migrationStatements().map((statement) => db.prepare(statement)));
-  return { db, close: () => mf.dispose() };
+  return { db, close: () => disposeWorker(mf) };
 }
 
 const migrationStatements = (): string[] => {

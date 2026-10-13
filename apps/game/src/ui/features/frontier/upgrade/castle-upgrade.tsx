@@ -4,16 +4,21 @@ import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-struc
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useGame } from "@/hooks/context/game-context";
+import { toast } from "@/ui/features/event-feed/notify";
+import { extractReadableErrorMessage } from "@/utils/error-message";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import type { PriceKind } from "@/ui/design-system/kit/price-chip";
+import { BUILDING_FIGURES, LABOR } from "@/ui/design-system/kit/words";
 import { knownBalance } from "@/ui/utils/utils";
 import { buildablePlotCount, configManager, getBalance, ResourceManager } from "@bibliothecadao/eternum";
 import { BUILDINGS_CENTER, RESOURCE_PRECISION, ResourcesIds, TroopTier } from "@bibliothecadao/types";
-import { useState } from "react";
 
 import { useGoToFrontierPlace } from "../frontier-home";
+import { exploreFix } from "../frontier-reveal-yield";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 import { type CastleSide, CastleView } from "./castle-view";
+import type { Figure } from "./type-upgrade-sheet";
 
 const CASTLE_ART = ["castleZero", "castleOne", "castleTwo", "castleThree"].map(
   (name) => `/images/buildings/construction/${name}.png`,
@@ -40,7 +45,6 @@ export const CastleUpgrade = ({ realm, onClose }: { realm: NativeRows["Structure
   const tick = useCurrentDefaultTick();
   const upgrade = useStructureUpgrade(safeInteger(realm.entity_id));
   const goToPlace = useGoToFrontierPlace(realm);
-  const [sending, setSending] = useState(false);
   if (!upgrade) return null;
   const held = (resource: number) => {
     const balance = knownBalance(getBalance(safeInteger(realm.entity_id), resource, tick, setup.store).balance);
@@ -48,37 +52,39 @@ export const CastleUpgrade = ({ realm, onClose }: { realm: NativeRows["Structure
   };
   const short = upgrade.requirements.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
   const send = async () => {
-    setSending(true);
     try {
       await upgrade.handleUpgrade();
-    } finally {
-      setSending(false);
+    } catch (error) {
+      toast.error(extractReadableErrorMessage(error, "The castle could not be upgraded."));
     }
   };
   return (
     <CastleView
       now={castleSide(setup.store, realm.game_id, upgrade.currentLevel)}
       next={upgrade.nextLevel === null ? null : castleSide(setup.store, realm.game_id, upgrade.nextLevel)}
+      makes={castleFigures(setup.store, realm, held(ResourcesIds.Labor))}
       prices={upgrade.requirements.map(({ resource, amount }) => ({ of: castlePriceKind(resource), amount }))}
-      short={
+      refusal={
         short && {
-          kind: "short",
-          icon: short.resource === ResourcesIds.Essence ? "Es" : "La",
-          held: held(short.resource),
-          need: short.amount,
-          wait: secondsUntilHeld(
-            held(short.resource),
-            short.amount,
-            realmPerHour(setup.store, safeInteger(realm.entity_id), short.resource, tick),
-          ),
+          reason: {
+            kind: "short",
+            of: castlePriceKind(short.resource),
+            held: held(short.resource),
+            need: short.amount,
+            wait: secondsUntilHeld(
+              held(short.resource),
+              short.amount,
+              realmPerHour(setup.store, safeInteger(realm.entity_id), short.resource, tick),
+            ),
+          },
+          fix: exploreFix(short.resource, () => {
+            onClose();
+            goToPlace(true);
+          }),
         }
       }
-      sending={sending}
+      sending={upgrade.isUpgradeLocked}
       onUpgrade={() => void send()}
-      onMap={() => {
-        onClose();
-        goToPlace(true);
-      }}
       onClose={onClose}
     />
   );
@@ -99,6 +105,34 @@ const castleSide = (store: NativeFactStore, gameId: number, level: number): Cast
     limit: wholeOrUnknown(ResourceManager.castleStoreLimit(store, gameId, level)),
     deployCap: configManager.getMaxArmySize(level, TroopTier.T1),
   };
+};
+
+/**
+ * What the castle itself makes and holds: a realm is provisioned with its own labor producer at the labor rule's realm
+ * rate (the contract's provision_realm_economy), apart from any Workshop on the board, and the castle's store holds it.
+ */
+const castleFigures = (
+  store: NativeFactStore,
+  realm: NativeRows["Structure"],
+  laborHeld: number | undefined,
+): Figure[] => {
+  const perSecond = store.require("ResourceRule", {
+    game_id: realm.game_id,
+    resource_type: ResourcesIds.Labor,
+  }).realm_rate;
+  const limit = new ResourceManager(store, safeInteger(realm.entity_id), realm.game_id).storeLimit(ResourcesIds.Labor);
+  return [
+    {
+      icons: ["La"],
+      label: BUILDING_FIGURES.castleMakes(LABOR),
+      value: `+${formatAmount((Number(perSecond) / RESOURCE_PRECISION) * 3_600)}/h`,
+    },
+    {
+      icons: ["La", "Sg"],
+      label: BUILDING_FIGURES.held(LABOR),
+      value: `${formatExact(laborHeld)} / ${formatExact(limit === undefined ? undefined : Number(limit / BigInt(RESOURCE_PRECISION)))}`,
+    },
+  ];
 };
 
 /** The castle is priced in labor (and Essence on presets that ask it); anything else is loud. */

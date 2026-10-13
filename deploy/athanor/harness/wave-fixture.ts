@@ -10,7 +10,7 @@ import { connectActorClients, actorKey } from "./game-client";
 import { connectHarnessGameClient } from "./game-client";
 import { createHarnessGame } from "./harness-game";
 import { createHarnessAdminProvider } from "./game-setup";
-import { launchFrontierSeason } from "./frontier";
+import { listedFrontierGame } from "./directory-game";
 import { readPlayBounds } from "./player-invoke";
 import { HarnessProvider } from "./provider";
 import type { WaveFixturePort, WaveGame, WavePlayer } from "./burst";
@@ -41,7 +41,7 @@ const fixture: WaveFixturePort = {
     };
     try {
       await assertProviderChain(provider, manifest, "public wave RPC");
-      const name = `wave-${Date.now().toString(36)}`;
+      const game = await listedFrontierGame(required("IDENTITY_URL"), shard, required("HERALD_URL"), 5);
       const approved = await createHarnessAccounts({
         count: players,
         concurrency: 6,
@@ -64,7 +64,6 @@ const fixture: WaveFixturePort = {
           run.signal,
         ),
       }));
-      const game = await launchFrontierSeason(privateProvider, name, 10, 5);
       clients = await connectActorClients(
         accounts.map(({ address }) => address),
         6,

@@ -44,8 +44,6 @@ export interface GameModeConfig {
      * Construction entry. Frontier builds only from its build sheet on a tapped plot.
      */
     showBuildMenus: boolean;
-    /** Shown on the army muster when the mode spends committed troops for good. */
-    musterNotice: string | null;
     /** Where a player's session opens once through the doorway: the world map, or their realm's board. */
     entryScene: "map" | "hex";
   };
@@ -138,7 +136,6 @@ const blitzConfig: GameModeConfig = {
     showGuildsTab: false,
     showAutomation: true,
     showBuildMenus: true,
-    musterNotice: null,
     entryScene: "map",
   },
   resources: {
@@ -180,7 +177,6 @@ const eternumConfig: GameModeConfig = {
     showGuildsTab: true,
     showAutomation: true,
     showBuildMenus: true,
-    musterNotice: null,
     entryScene: "map",
   },
   resources: {
@@ -212,7 +208,6 @@ const frontierConfig: GameModeConfig = {
     ...blitzConfig.ui,
     showAutomation: false,
     showBuildMenus: false,
-    musterNotice: "Committed troops do not return. What you send today is spent today, win or lose.",
     // A Frontier session opens on the realm, where the day's first build and deploy happen.
     entryScene: "hex",
   },

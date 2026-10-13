@@ -65,7 +65,7 @@ export async function launchHarnessGame(input: {
 }
 
 /** The pinned metadata encodes geography 1/2/3/2, resources 2/4/7, Order 3 and wonder 1. */
-export async function registerHarnessEntitlement(
+async function registerHarnessEntitlement(
   account: Account,
   games: string,
   gameId: number,

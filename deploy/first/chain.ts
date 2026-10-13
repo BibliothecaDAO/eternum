@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { PublicError } from "./errors";
 import { Account, CallData, ec, hash, RpcProvider, uint256, type Call } from "starknet";
 import { ACCOUNT_CLASS, STRK, WEI } from "./settings";
 import type { PrivateStore } from "./private-store";
@@ -16,33 +18,35 @@ export function isMissing(error: unknown, code: number): boolean {
     ((error as { code?: number }).code === code || isMissing((error as { cause?: unknown }).cause, code))
   );
 }
-const CONTRACT_ERROR = 40;
-export function isContractRevert(error: unknown, reason: string): boolean {
-  return isMissing(error, CONTRACT_ERROR) && JSON.stringify(error).includes(reason);
-}
+export { isContractRevert } from "../../packages/value-ledger/src/rpc";
 export async function classAt(provider: RpcProvider, address: string) {
   try {
     const value = await provider.getClassHashAt(address, "latest");
-    if (BigInt(value) <= 0n) throw new Error("Invalid class hash");
+    if (BigInt(value) <= 0n) throw new PublicError("Invalid class hash");
     return value;
   } catch (error) {
     if (isMissing(error, 20)) return undefined;
     throw error;
   }
 }
-export async function balance(provider: RpcProvider, token: string, address: string) {
+export async function balance(
+  provider: RpcProvider,
+  token: string,
+  address: string,
+  block: number | "latest" = "latest",
+) {
   const row = await provider.callContract(
     { contractAddress: token, entrypoint: "balance_of", calldata: [address] },
-    "latest",
+    block,
   );
-  if (row.length !== 2) throw new Error("Invalid token balance");
+  if (row.length !== 2) throw new PublicError("Invalid token balance");
   return BigInt(row[0]!) + (BigInt(row[1]!) << 128n);
 }
 export async function confirm(provider: RpcProvider, transactionHash: string, output: (line: string) => void) {
   output("Waiting for transaction confirmation.");
   const receipt = await provider.waitForTransaction(transactionHash);
   if (!("execution_status" in receipt) || receipt.execution_status !== "SUCCEEDED")
-    throw new Error("Transaction did not succeed");
+    throw new PublicError("Transaction did not succeed");
 }
 const TRANSACTION_HASH_NOT_FOUND = 29;
 async function savedReceipt(account: Account, transactionHash: string) {
@@ -55,7 +59,7 @@ async function savedReceipt(account: Account, transactionHash: string) {
     try {
       const receipt = await account.getTransactionReceipt(transactionHash);
       if (!("finality_status" in receipt) || !["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(receipt.finality_status))
-        throw new Error("Saved transaction is still pending");
+        throw new PublicError("Saved transaction is still pending");
       return receipt;
     } catch (readError) {
       if (!isMissing(readError, TRANSACTION_HASH_NOT_FOUND)) throw readError;
@@ -63,31 +67,47 @@ async function savedReceipt(account: Account, transactionHash: string) {
     }
   }
 }
-/** Saved state supplies a nonce and receipt identity, never executable calls. */
+/** Receipts and unsent nonces belong to one payer and exact call set, not a reusable operation label. */
+export function transactionIntentName(account: Pick<Account, "address">, calls: Call[], name: string) {
+  const identity = [
+    BigInt(account.address).toString(),
+    calls.map((call) => [
+      BigInt(call.contractAddress).toString(),
+      call.entrypoint,
+      CallData.compile(call.calldata ?? []).map((felt) => BigInt(felt).toString()),
+    ]),
+  ];
+  return `transaction-${name}-${createHash("sha256").update(JSON.stringify(identity)).digest("hex")}.json`;
+}
+
+/** Effect reads and nonce recovery must use the same confirmed block, even if latest advances between them. */
 export async function send(
   account: Account,
   calls: Call[],
   store: PrivateStore,
   name: string,
   output: (line: string) => void,
+  block: number,
 ) {
-  const intentName = `transaction-${name}.json`;
+  if (!Number.isSafeInteger(block) || block < 0) throw new PublicError("Confirmed effect-read block required");
+  const intentName = transactionIntentName(account, calls, name);
   const previous = store.read<{ nonce: string; hash?: string }>(intentName);
   let nonce = previous?.nonce;
   if (previous?.hash) {
     output("Waiting for transaction confirmation.");
     const receipt = await savedReceipt(account, previous.hash);
     if (receipt) {
-      if (!("execution_status" in receipt)) throw new Error("Saved transaction is still pending");
+      if (!("execution_status" in receipt)) throw new PublicError("Saved transaction is still pending");
       if (receipt.execution_status === "SUCCEEDED") return;
-      if (receipt.execution_status !== "REVERTED") throw new Error("Saved transaction is still pending");
-      nonce = String(await account.getNonce());
+      if (receipt.execution_status !== "REVERTED") throw new PublicError("Saved transaction is still pending");
+      nonce = String(await account.getNonce(block));
     }
   }
-  const intent: { nonce: string; calls: Call[]; hash?: string } = {
-    nonce: nonce ?? String(await account.getNonce()),
-    calls,
-  };
+  if (!previous?.hash) {
+    const current = String(await account.getNonce(block));
+    if (nonce === undefined || BigInt(nonce) < BigInt(current)) nonce = current;
+  }
+  const intent: { nonce: string; hash?: string } = { nonce: nonce! };
   store.write(intentName, intent);
   const response = await account.execute(calls, { nonce: intent.nonce });
   intent.hash = response.transaction_hash;
@@ -102,7 +122,7 @@ export async function prepareAccounts(
   createAccount: (address: string, key: string) => Account = (address, signer) =>
     new Account({ provider, address, signer }),
 ) {
-  if (BigInt(await provider.getChainId()) !== 0x534e5f4d41494en) throw new Error("Starknet mainnet required");
+  if (BigInt(await provider.getChainId()) !== 0x534e5f4d41494en) throw new PublicError("Starknet mainnet required");
   await provider.getClassByHash(ACCOUNT_CLASS);
   const accounts = Object.fromEntries(
     (["deployer", "relay", "monitor"] as const).map((role) => {
@@ -121,17 +141,20 @@ export async function prepareAccounts(
     const account = accounts[role];
     const deployed = await classAt(provider, account.address);
     if (deployed) {
-      if (BigInt(deployed) !== BigInt(ACCOUNT_CLASS)) throw new Error("Account class differs from the saved identity");
+      if (BigInt(deployed) !== BigInt(ACCOUNT_CLASS))
+        throw new PublicError("Account class differs from the saved identity");
       const [key] = await provider.callContract(
         { contractAddress: account.address, entrypoint: "get_public_key", calldata: [] },
         "latest",
       );
-      if (!key || BigInt(key) !== BigInt(accountIdentity(keys[role]).publicKey)) throw new Error("Account key differs");
+      if (!key || BigInt(key) !== BigInt(accountIdentity(keys[role]).publicKey))
+        throw new PublicError("Account key differs");
       continue;
     }
     if (role !== "deployer") {
       const desired = (role === "relay" ? 30n : 1n) * WEI;
-      const held = await balance(provider, STRK, account.address);
+      const block = await provider.getBlockNumber();
+      const held = await balance(provider, STRK, account.address, block);
       if (held < desired)
         await send(
           accounts.deployer,
@@ -143,8 +166,9 @@ export async function prepareAccounts(
             },
           ],
           store,
-          `fund-${role}`,
+          `fund-${role}-${account.address}`,
           output,
+          block,
         );
     }
     const identity = accountIdentity(keys[role]);

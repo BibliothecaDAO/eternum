@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
+import { listedFrontierGame } from "./directory-game";
 import { observeHarnessWorker, sendPreparedReport, superviseHarnessProcess } from "./terminal-report";
-import { launchFrontierSeason, runFrontierWorkload, type FrontierBurst } from "./frontier";
+import { runFrontierWorkload, type FrontierBurst } from "./frontier";
 import { FRONTIER_ACCELERATED_PRESET_ID } from "../../../config/source/common/native-preset-modes";
 import { catchUncaughtFailures, recordWorkerFailure } from "./worker-boundary";
 import { runLayerRoundTrip } from "./layer-round-trip";
@@ -14,7 +15,7 @@ import { configureGameplayAccountSubmits, openShard, type Shard } from "@bibliot
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { Account, logger } from "starknet";
 import { assertChainId } from "../../../packages/chain/chain-guard.js";
-import { createHarnessAdminProvider, launchHarnessGame } from "./game-setup";
+import { launchHarnessGame } from "./game-setup";
 import { createHarnessAccounts, type HarnessAccount } from "./account-factory";
 import { connectActorClients, connectHarnessGameClient } from "./game-client";
 import { createHarnessGame } from "./harness-game";
@@ -34,7 +35,7 @@ interface HarnessCliOptions {
   workload: "burst" | "cadence" | "frontier";
   functional: boolean;
   gameType: HarnessGameType;
-  /** The preset new games are created from; the campaign names one per configuration. */
+  /** The preset to play; Frontier games must already be listed in the directory. */
   presetId: number;
   /** A campaign burst on the Frontier shape instead of its day-long play. */
   frontierBurst?: FrontierBurst;
@@ -147,7 +148,7 @@ async function main(run: AbortSignal): Promise<void> {
     ),
   }));
   const connect = (actor: string) => connectHarnessGameClient({ actor, shard, gameId: game.gameId });
-  // The shared client launches and observes the game; every bot acts through its own client, as a player does.
+  // Every bot observes and acts through its own client, as a player does.
   const { client, heraldConfirmations } = await connect(accounts[0].address);
   const actorClients = await connectActorClients(
     accounts.map(({ address }) => address),
@@ -273,29 +274,6 @@ async function main(run: AbortSignal): Promise<void> {
 
 export const createHarnessProvider = (rpcUrl: string): HarnessProvider => new HarnessProvider(rpcUrl);
 
-async function resolveHarnessGame(options: HarnessCliOptions, owners: string[]): Promise<LaunchedGame> {
-  if (options.gameId !== undefined && options.gameType !== "eternum") {
-    return { gameId: options.gameId, gameName: options.gameName!, settlementTransactions: null };
-  }
-
-  const gameName = options.gameName ?? `lab-${Date.now().toString(36)}`;
-  if (options.gameType === "frontier") {
-    const provider = createHarnessAdminProvider();
-    try {
-      return await launchFrontierSeason(provider, gameName, options.minutes, options.presetId);
-    } finally {
-      provider.dispose();
-    }
-  }
-  return launchHarnessGame({
-    gameId: options.gameId,
-    gameName,
-    minutes: options.minutes,
-    presetId: options.presetId,
-    owners,
-  });
-}
-
 /** The campaign's windows: the booth founds every realm within ten minutes, the rollover musters in a day's first two. */
 const FRONTIER_BURST_WINDOW_SECONDS = { booth: 600, rollover: 120 } as const;
 
@@ -387,6 +365,16 @@ async function prepareGames(
   provider: HarnessProvider,
   run: AbortSignal,
 ): Promise<PreparedGame | PreparedGame[]> {
+  const listed =
+    options.gameType === "frontier"
+      ? await listedFrontierGame(
+          requiredEnvironmentValue("IDENTITY_URL", "game discovery"),
+          shard,
+          options.heraldUrl,
+          options.presetId,
+          options.gameId,
+        )
+      : undefined;
   const accounts = await createHarnessAccounts({
     concurrency: options.setupConcurrency,
     count: options.bots,
@@ -399,10 +387,15 @@ async function prepareGames(
     shard,
     stopped: run,
   });
-  const game = await resolveHarnessGame(
-    options,
-    accounts.map(({ address }) => address),
-  );
+  const game =
+    listed ??
+    (await launchHarnessGame({
+      gameId: options.gameId,
+      gameName: options.gameName ?? `lab-${Date.now().toString(36)}`,
+      minutes: options.minutes,
+      presetId: options.presetId,
+      owners: accounts.map(({ address }) => address),
+    }));
   return { game, accounts: accounts.map(({ account: _account, ...entry }) => ({ ...entry, gameId: game.gameId })) };
 }
 
@@ -697,7 +690,7 @@ Usage: bun deploy/athanor/harness/run.ts [options]
   --interval-seconds <seconds>   default: 15
   --setup-concurrency <count>    default: 6
   --workload <burst|cadence|frontier> default: the game type’s workload; burst submits every plan at once
-  --preset <id>                  preset new games are created from; default: the game type’s preset
+  --preset <id>                  preset to play; default: the game type’s preset
   --frontier-burst <booth|rollover>  Frontier campaign burst, measured as the workload: booth founds every bot's
                                  realm inside the window; rollover waits for the next day and has every bot muster
                                  and move inside the window (use the 720 s day of --preset 101 on perf shards)
@@ -706,9 +699,9 @@ Usage: bun deploy/athanor/harness/run.ts [options]
   --functional                  omit request counts and the latency gates; for Frontier, the accelerated design run,
                                  or with --preset 5 the real-speed pass on the preset's own rates and charges
   --prepared-game <path>         resume a prepared roster using its private account file
-  --game-id <id>                 use an existing Eternum game
+  --game-id <id>                 select a listed Frontier game or existing Eternum game
   --game-name <name>             name for a new game or report label for --game-id
-  --rpc-url <url>                required, or RPC_URL; the node's internal URL, never the public RPC
+  --rpc-url <url>                required, or RPC_URL; the published RPC named by the Herald manifest
   --herald-url <url>             required, or HERALD_URL
 
 New bots enrol through the shard's guardian: IDENTITY_URL (the environment's identity API, e.g.

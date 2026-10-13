@@ -266,8 +266,8 @@ async function waitUntilPlaying({ setup: { store }, gameId: game_id }: GameClien
  */
 /**
  * The provider stamps each completed action with its admission-to-visible time. It emits in the same turn as the
- * Herald event that confirms the action, so once the action is confirmed and that turn has run, a figure that has
- * not arrived never will: the action records none. A failed action carries none either.
+ * Herald event that confirms the action. Its receipt read may finish after the separate confirmation wait; only
+ * transactionComplete owns this figure. A failed action carries none.
  */
 const providerAdmissionToVisible = (
   provider: GameClient["setup"]["network"]["provider"],
@@ -285,10 +285,7 @@ const providerAdmissionToVisible = (
         settle(event.admissionToVisibleMs);
     };
     provider.on("transactionComplete", onComplete);
-    confirmed.then(
-      () => setTimeout(() => settle(undefined), 0),
-      () => settle(undefined),
-    );
+    void confirmed.catch(() => settle(undefined));
   });
 
 const captureSubmission = (

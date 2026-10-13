@@ -14,8 +14,6 @@ SHARED = ["package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"]
 STATIC = [
     ".github/workflows/validation.yml",
     ".github/workflows/static.yml",
-    ".github/workflows/landing-validated.yml",
-    ".github/workflows/shard-images.yml",
     ".github/scripts/**",
     ".github/ISSUE_TEMPLATE/**",
 ]

@@ -210,3 +210,6 @@ Procfile          text
 
 # Ignore files (like .npmignore or .gitignore)
 *.*ignore         text
+
+# A source export carries its commit without a Git checkout.
+deploy/first/commit.txt export-subst

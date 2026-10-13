@@ -69,10 +69,8 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
     }).known?.contributed;
     const remaining = contributed === undefined ? undefined : BigInt(amount) * precision - contributed;
     const current = resources?.current(resource);
-    const available =
-      current && resources
-        ? current.balance + resources.balanceWithProduction(tick, resource)!.amountProducedLimited
-        : undefined;
+    const produced = resources?.balanceWithProduction(tick, resource);
+    const available = current && produced ? current.balance + produced.amountProducedLimited : undefined;
     const text = amounts[resource] ?? "";
     const value = parseContribution(text);
     return {

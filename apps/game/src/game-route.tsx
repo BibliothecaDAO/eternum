@@ -4,7 +4,7 @@ import { getGameModeId } from "@/config/game-modes";
  * Game route module - lazy loaded to avoid pulling heavy deps (World, native contracts, Three.js, etc.)
  * into the landing page bundle.
  */
-import { ChunkTransitionIndicator, ErrorBoundary, WorldLoading } from "@/ui/shared";
+import { ErrorBoundary, WorldLoading } from "@/ui/shared";
 import { TransactionAudioCues } from "@/ui/shared/components/transaction-audio-cues";
 import { useEffect } from "react";
 import { PlaySceneHandoff } from "./game-entry/play-scene-handoff";
@@ -12,6 +12,7 @@ import { markGameEntryMilestone } from "./ui/layouts/game-entry-timeline";
 import { Navigate } from "react-router-dom";
 import type { Account, AccountInterface } from "starknet";
 import { usePlayRouteBootController } from "./game-entry/play-route-boot";
+import { usePlayRouteReadinessStore } from "./game-entry/play-route-readiness-store";
 import { GameProvider } from "./hooks/context/game-context";
 import { useTransactionListener } from "./hooks/use-transaction-listener";
 import type { SetupResult } from "./init/bootstrap";
@@ -47,7 +48,6 @@ const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
           <TransactionListenerBridge />
           <TransactionAudioCues />
           <World backgroundImage={backgroundImage} />
-          <ChunkTransitionIndicator />
           <WorldLoading />
         </ErrorBoundary>
       </MusicRouterProvider>
@@ -75,11 +75,13 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   const { phase, setupResult, account, retry, isReconnectRequired, currentTask, tasks, bootToken, reconnectError } =
     state;
   const hasActiveBoot = bootToken > 0;
+  const sceneFailed = usePlayRouteReadinessStore((readiness) => readiness.sceneFailure !== null);
   const routeView = resolveGameRouteView({
     phase,
     hasSetupResult: hasActiveBoot && setupResult !== null,
     hasAccount: account !== null,
     isReconnectRequired,
+    sceneFailed,
   });
   useBootDocumentState(
     phase === "ready" ? "app-ready" : "app-loading",

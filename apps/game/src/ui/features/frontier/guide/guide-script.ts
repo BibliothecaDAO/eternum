@@ -1,3 +1,5 @@
+import { isCoarsePointer } from "@/utils/pointer";
+
 /**
  * The Aspect of Skill's script (frontier-narrative-2026-10/script.html, beat for beat). Each step names the game state
  * it answers; a slot shows the first step for its place not yet seen whose state holds, so a reload lands on the same
@@ -43,6 +45,32 @@ export interface GuideFacts {
   storeFull: string | null;
   /** The season is over. */
   seasonOver: boolean;
+  /** No population is free: the next building that takes any is refused until a Hut stands. */
+  populationFull: boolean;
+  /** One of the player's armies is selected. */
+  armySelected: boolean;
+  /** An army of today stands beside a site whose guard still holds. */
+  guardInReach: boolean;
+  /** An army of today has earned XP. */
+  xpEarned: boolean;
+  /** The Research page is open. */
+  researchOpen: boolean;
+  /** Today is in its last hour with an army still out. */
+  lastHour: boolean;
+  /** The rules a line states in numbers, read from the game's own; null without a realm. */
+  rules: GuideRules | null;
+}
+
+/** The numbers the guide's lines state, each read from the preset the game runs on, never typed into a line. */
+export interface GuideRules {
+  /** The population one Hut adds at its type's tier. */
+  hutAdds: number;
+  /** What an explore, a tile's move at the least and an attack cost in stamina, and what comes back an hour. */
+  stamina: { explore: number; move: number; attack: number; anHour: number };
+  /** The XP a reveal gives and the XP an attribute's first tier costs; unknown until the rules are served. */
+  xp: { reveal: number; firstTier: number } | undefined;
+  /** The share of an army's troops Homecoming sends home when the day ends, in percent, at today's lowest tier. */
+  homecomingPercent: number;
 }
 
 /** Where a line speaks: the HUD's foot, inside the open site card, or on the season-over card. */
@@ -85,6 +113,13 @@ export const GUIDE_STEPS: readonly GuideStep[] = [
     when: (facts) => facts.realm && !facts.barracks,
   },
   {
+    id: "population-full",
+    mark: "warning",
+    line: ({ rules }) => `No population left. Every building takes some. A Hut adds ${rules?.hutAdds ?? "more"}.`,
+    place: "realm",
+    when: (facts) => facts.populationFull,
+  },
+  {
     id: "deploy",
     mark: "speaking",
     line: say("One strong army, two scouts. They stay out until the day ends."),
@@ -93,11 +128,46 @@ export const GUIDE_STEPS: readonly GuideStep[] = [
     when: (facts) => facts.troopsAtHome !== undefined && facts.troopsAtHome >= 1 && facts.armies === 0,
   },
   {
+    id: "first-army-selected",
+    mark: "speaking",
+    line: ({ rules }) =>
+      rules
+        ? `Explore costs ${rules.stamina.explore} stamina, a move from ${rules.stamina.move} a tile, an attack ${rules.stamina.attack}. ${rules.stamina.anHour} come back each hour.`
+        : "Exploring, moving and attacking each cost stamina. It comes back by the hour.",
+    target: "army-stamina",
+    when: (facts) => facts.armySelected && facts.rules !== null,
+  },
+  {
+    id: "fast-order",
+    mark: "speaking",
+    line: () =>
+      isCoarsePointer()
+        ? "Tap a tile to see an order first. Hold the tile to send it at once."
+        : "Click a tile to see an order first. Right-click sends it at once.",
+    when: (facts) => facts.armySelected,
+  },
+  {
     id: "first-reveal",
     mark: "pleased",
     line: say("Each new tile sends Essence or labor home. Bigger armies send more."),
     target: "stores",
     when: (facts) => facts.armyActed,
+  },
+  {
+    id: "first-xp",
+    mark: "speaking",
+    line: ({ rules }) =>
+      rules?.xp
+        ? `Each new tile gives ${rules.xp.reveal} XP. ${rules.xp.firstTier} XP buy an attribute's first tier.`
+        : "Each new tile gives XP. XP buys an army's attribute tiers.",
+    target: "army-xp",
+    when: (facts) => facts.xpEarned && facts.rules?.xp !== undefined,
+  },
+  {
+    id: "first-guard-in-reach",
+    mark: "speaking",
+    line: say("A guard stands beside your army. Tap it to see the fight before you choose."),
+    when: (facts) => facts.guardInReach,
   },
   {
     id: "first-army-tier",
@@ -134,10 +204,28 @@ export const GUIDE_STEPS: readonly GuideStep[] = [
     when: (facts) => facts.castleAffordable && facts.onMap,
   },
   {
+    id: "first-research",
+    mark: "speaking",
+    line: say(
+      "Research spends Essence. A tier lifts every building of its type. A choice of sides holds for the season.",
+    ),
+    when: (facts) => facts.researchOpen,
+  },
+  {
     id: "first-type-tier",
     mark: "speaking",
-    line: (facts) => `Store more, or make more. Each choice holds for every ${facts.typeTierAffordable}.`,
+    line: (facts) =>
+      `Store more, or make more. Each choice holds for every ${facts.typeTierAffordable ?? "building of its type"}.`,
     when: (facts) => typeof facts.typeTierAffordable === "string",
+  },
+  {
+    id: "last-hour",
+    mark: "warning",
+    line: ({ rules }) =>
+      rules
+        ? `The day ends within the hour. Armies still out end with it. Homecoming sends ${rules.homecomingPercent}% of their troops home.`
+        : "The day ends within the hour. Armies still out end with it.",
+    when: (facts) => facts.lastHour && facts.rules !== null,
   },
   {
     id: "rest",
@@ -168,7 +256,10 @@ export const GUIDE_STEPS: readonly GuideStep[] = [
   {
     id: "store-full",
     mark: "warning",
-    line: (facts) => `Your ${facts.storeFull} store is full. What does not fit is gone.`,
+    line: (facts) =>
+      facts.storeFull
+        ? `Your ${facts.storeFull} store is full. What does not fit is gone.`
+        : "A store is full. What does not fit is gone.",
     when: (facts) => typeof facts.storeFull === "string",
   },
   {
@@ -193,9 +284,18 @@ export const GUIDE_STEPS: readonly GuideStep[] = [
 export const canShowPlace = (place: GuidePlace | undefined, facts: GuideFacts): place is GuidePlace =>
   place === "realm" ? facts.onMap : place !== undefined;
 
-/** The line a host shows now: its first step not yet seen whose state holds; none once its script is seen. */
-export const nextGuideStep = (facts: GuideFacts, seen: ReadonlySet<string>, host: GuideHost): GuideStep | null =>
-  GUIDE_STEPS.find((step) => (step.host ?? "foot") === host && !seen.has(step.id) && step.when(facts)) ?? null;
+/** The mark the Menu leaves among the seen lines when the player turns the guide off; no line carries it. */
+export const GUIDE_OFF = "guide-off";
 
-/** The guide is on while any line is still to come; off once every line is seen (or turned off from the Menu). */
-export const isGuideOn = (seen: ReadonlySet<string>): boolean => GUIDE_STEPS.some((step) => !seen.has(step.id));
+/** The guide speaks until the player turns it off from the Menu; on again, it goes on from where it was. */
+export const isGuideOn = (seen: ReadonlySet<string>): boolean => !seen.has(GUIDE_OFF);
+
+/** The line a host shows now: its first step not yet seen whose state holds; none while the guide is off. */
+export const nextGuideStep = (facts: GuideFacts, seen: ReadonlySet<string>, host: GuideHost): GuideStep | null =>
+  isGuideOn(seen)
+    ? (GUIDE_STEPS.find((step) => (step.host ?? "foot") === host && !seen.has(step.id) && step.when(facts)) ?? null)
+    : null;
+
+/** Every line the player has seen so far, in the script's order, as it reads now: the Menu's Guide lists them. */
+export const seenGuideLines = (facts: GuideFacts, seen: ReadonlySet<string>): { id: string; line: string }[] =>
+  GUIDE_STEPS.filter((step) => seen.has(step.id)).map((step) => ({ id: step.id, line: step.line(facts) }));

@@ -10,7 +10,7 @@ permissions:
 
 # A pull request scopes from where it branched, so its newest run covers everything and older ones cancel. A run on next
 # checks every core area and scopes other jobs to changed inputs. A newer merge cancels it too: only the newest commit
-# of a burst of merges is guaranteed a run, and landing-run.sh names a cancelled run when it refuses to publish its commit.
+# of a burst of merges is guaranteed a run, and the deployment revision check names a cancelled run when it refuses to publish its commit.
 concurrency:
   group: validation-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true

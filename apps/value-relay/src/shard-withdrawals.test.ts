@@ -9,6 +9,7 @@ import { RelayFailure } from "./ports";
 import { frontierPayment } from "./adapters";
 
 const rpc = vi.hoisted(() => ({
+  classHash: vi.fn(),
   chain: vi.fn(),
   header: vi.fn(),
   block: vi.fn(),
@@ -17,15 +18,16 @@ const rpc = vi.hoisted(() => ({
   contract: vi.fn(),
   receipt: vi.fn(),
 }));
-vi.mock("@realms-world/value-ledger", async (original) => ({
-  ...(await original<typeof import("@realms-world/value-ledger")>()),
+vi.mock("../../../packages/value-ledger/src/rpc", async (original) => ({
+  ...(await original<typeof import("../../../packages/value-ledger/src/rpc")>()),
   rpcAt: () => ({
     getEvents: rpc.events,
     getChainId: rpc.chain,
     getBlock: rpc.header,
     getBlockWithReceipts: rpc.block,
     getBlockWithTxHashes: rpc.hashes,
-    getClassAt: rpc.contract,
+    getClassHashAt: rpc.classHash,
+    getClassByHash: rpc.contract,
     getTransactionReceipt: rpc.receipt,
   }),
 }));
@@ -49,8 +51,10 @@ const fixture = () => {
   };
   return { reader, bindings, ports: shardWithdrawalPorts(reader, bindings) };
 };
+let classVersion = 0;
 beforeEach(() => {
   vi.clearAllMocks();
+  rpc.classHash.mockResolvedValue(`0x${(++classVersion).toString(16)}`);
   rpc.chain.mockResolvedValue("0x1");
   rpc.header.mockResolvedValue(header);
   rpc.contract.mockResolvedValue({ abi });
@@ -83,7 +87,7 @@ it("reads a confirmed debit receipt and pays exact wei to the resolved account's
       amount: { low: "17000000000000000000", high: 0 },
     }).map(BigInt),
   );
-  expect(rpc.contract).toHaveBeenCalledWith(address, 10);
+  expect(rpc.classHash).toHaveBeenCalledWith(address, 10);
   expect(f.bindings.realmsIdForAccount).toHaveBeenCalledWith("0x123");
 });
 it("does not infer a season when its funding binding is unavailable", async () => {
@@ -234,4 +238,13 @@ it("filters only value models and resumes every deployed RowSet depth without ga
     ]);
   }
   expect(calls.map((query) => query.keys.length)).toEqual([3, 3, 4]);
+});
+
+it("does not fetch the full class again when the next alarm creates another reader", async () => {
+  for (let alarm = 0; alarm < 3; alarm++) await fixture().reader.page(10, 10, null);
+  expect(rpc.classHash).toHaveBeenCalledTimes(3);
+  expect(rpc.contract).toHaveBeenCalledOnce();
+  rpc.classHash.mockResolvedValue("0xfff");
+  await fixture().reader.page(10, 10, null);
+  expect(rpc.contract).toHaveBeenCalledTimes(2);
 });

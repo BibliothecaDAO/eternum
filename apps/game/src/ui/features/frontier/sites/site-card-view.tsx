@@ -3,49 +3,61 @@ import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import { Button, type Price } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
 import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
-import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { StoreBar } from "@/ui/design-system/kit/store-bar";
 import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
+import { formatDuration } from "@/ui/design-system/kit/time";
 import {
+  ARMY_WILL_BE_LOST,
   ATTACK,
   ATTACKING,
-  CAMP,
   LORDS,
   MOVE,
+  needsStamina,
+  ON_ITS_WAY,
   REALM,
-  RIFT,
-  RUIN,
-  STRAGGLERS,
+  tooFarFrom,
   TROOPS,
+  WOULD_BE_LOST,
   XP,
 } from "@/ui/design-system/kit/words";
 
+import type { OrderInFlight } from "@/hooks/store/use-actions-in-flight";
 import type { ReactNode } from "react";
 
 import { guideTarget } from "../guide/guide-thread";
+import { useEnterConfirms } from "../hud/enter-confirms";
 import type { Cost } from "../hud/army-order";
 import type { SiteFight } from "./site-card-plan";
+import { type AttackTargetKind, TARGET_MARKS } from "./site-marks";
 
-/** The guarded sites; stragglers are drawn now and read once the contracts' taxonomy names them. */
-type GuardedSite = "camp" | "rift" | "ruin" | "stragglers";
-
-const SITES: Record<GuardedSite, { word: string; icon: IconCode }> = {
-  camp: { word: CAMP, icon: "Cp" },
-  rift: { word: RIFT, icon: "Rf" },
-  ruin: { word: RUIN, icon: "Fr" },
-  stragglers: { word: STRAGGLERS, icon: "Tr" },
-};
-
-/** The step under the outcome: Attack (the same tap whatever the forecast), Move until the army is in reach, or the
- * stamina held against the attack's cost. */
+/** The step under the outcome: Attack (the same tap whatever the forecast), Move until the army is in reach, or
+ * Attack held back, by the stamina the army lacks or by a site too far for one order. One line under it says why. */
 export type SiteVerb =
-  | { kind: "attack"; stamina: number; sending: boolean; onAttack: () => void }
+  | {
+      kind: "attack";
+      stamina: number;
+      /** The army's order in flight, this attack or another: the step cannot be pressed until its outcome arrives. */
+      inFlight?: OrderInFlight;
+      /** Why the army's last attack here did not happen, in one line. */
+      refused?: string;
+      onAttack: () => void;
+    }
   | { kind: "move"; prices: readonly Price[]; onMove: () => void }
-  | { kind: "short"; stamina: Cost };
+  | { kind: "short"; stamina: Cost }
+  | { kind: "far" };
 
-/** An army that could take the site, offered when none is selected: its forecast marked win or loss. */
-export type SiteChoice = { label: string; art: string; troops: number; wins: boolean | undefined; onPick: () => void };
+/**
+ * An army that could take the site, offered when none is selected: the fight it would have from where it stands (the
+ * attack preview's own forecast), or none while it is out of reach. Picking it opens the attack with that army.
+ */
+export type SiteChoice = {
+  label: string;
+  art: string;
+  troops: number;
+  fight: SiteFight | undefined;
+  onPick: () => void;
+};
 
 /**
  * A guarded site's card (wireframe 06): the kind, the matchup (the army against the guard, a ruin's beast named on it),
@@ -67,7 +79,7 @@ export const SiteCardView = ({
   onRealm,
   onClose,
 }: {
-  site: GuardedSite;
+  site: AttackTargetKind;
   beast: string | undefined;
   army: { art: string; troops: number } | null;
   guard: number | null | undefined;
@@ -85,7 +97,7 @@ export const SiteCardView = ({
   onRealm?: () => void;
   onClose: () => void;
 }) => {
-  const { word, icon } = SITES[site];
+  const { word, icon } = TARGET_MARKS[site];
   const lost = fight && fight.outcome === "loses";
   // With no army selected the realm's armies are the choices, and the guard moves up beside the kind.
   const picking = choices !== undefined && choices.length > 0;
@@ -100,7 +112,7 @@ export const SiteCardView = ({
       </header>
       {picking && choices ? <Choices choices={choices} /> : <Matchup army={army} beast={beast} guard={guard} />}
       <div className="flex gap-2">
-        <FightPlate fight={fight} />
+        {!picking && <FightPlate fight={fight} />}
         <div
           className={cn(
             "frontier-card flex h-[92px] flex-1 flex-col items-center justify-center gap-1 !rounded-xl !border-2 !border-kit-gold",
@@ -114,7 +126,12 @@ export const SiteCardView = ({
         </div>
       </div>
       {guide}
-      <Verb verb={verb} onRealm={pay?.fits !== undefined && pay.fits < pay.amount ? onRealm : undefined} />
+      <Verb
+        verb={verb}
+        site={word}
+        armyLost={lost === true}
+        onRealm={pay?.fits !== undefined && pay.fits < pay.amount ? onRealm : undefined}
+      />
     </Sheet>
   );
 };
@@ -143,62 +160,83 @@ const Matchup = ({
   </div>
 );
 
-/** No army selected: the armies are the choices, each marked with its forecast. */
+/** No army selected: each army is a row with the fight it would have, and a tap opens the attack with it. */
 const Choices = ({ choices }: { choices: readonly SiteChoice[] }) => (
-  <div className="flex gap-1.5">
+  <div className="flex flex-col gap-1.5">
     {choices.map((choice) => (
       <button
         key={choice.label}
         type="button"
         aria-label={choice.label}
         onClick={choice.onPick}
-        className="frontier-card flex h-16 min-w-0 flex-1 items-center justify-center gap-1.5 !rounded-xl"
+        className="frontier-card flex h-14 w-full items-center gap-2 !rounded-xl px-2.5"
       >
         <img src={choice.art} alt="" className="size-8 rounded-full object-cover" />
         <span className="text-[15px] tabular-nums text-kit-cream">{formatExact(choice.troops)}</span>
-        {choice.wins !== undefined && <KitIcon code={choice.wins ? "Fl" : "Sk"} size={20} />}
+        <span className="flex flex-1 items-center justify-end gap-3">
+          <Forecast fight={choice.fight} size="row" />
+        </span>
+        <KitIcon code="Cv" size={16} />
       </button>
     ))}
   </div>
 );
 
-/** The fight: attacks to win as pips beside the flag and the troops it costs; or, a loss, in amber, never greyed. */
-const FightPlate = ({ fight }: { fight: SiteFight | undefined }) => {
+/** The fight: attacks to win as pips beside the flag and what this attack costs; or, a loss, in amber, never greyed. */
+const FightPlate = ({ fight }: { fight: SiteFight | undefined }) => (
+  <div
+    {...guideTarget("forecast")}
+    className="frontier-card flex h-[92px] flex-1 flex-col items-center justify-center gap-1.5 !rounded-xl"
+  >
+    <Forecast fight={fight} size="plate" />
+  </div>
+);
+
+/**
+ * One forecast, drawn the same on the attack's plate and on an army's row. The pips beside the flag count the attacks
+ * the whole fight takes to win; the figures are the one attack Attack sends now, as its result will show them: the
+ * troops it costs and, while the guard still stands after it, the guard left. A fight the army does not win shows
+ * both in amber, under a skull that names itself. Unknown is a dash on the plate and nothing on a row.
+ */
+const Forecast = ({ fight, size }: { fight: SiteFight | undefined; size: "plate" | "row" }) => {
   const known = fight && fight.outcome !== "refused" ? fight : undefined;
-  const loses = known && known.outcome !== "wins";
+  if (!known && size === "row") return null;
+  if (known && known.outcome !== "wins") {
+    return (
+      <>
+        <Line
+          icon="Sk"
+          value={`−${formatExact(known.troopsLost)}`}
+          hot
+          name={known.outcome === "loses" ? WOULD_BE_LOST : undefined}
+        />
+        <Line icon="Tr" value={formatExact(known.guardLeft)} hot />
+      </>
+    );
+  }
   return (
-    <div
-      {...guideTarget("forecast")}
-      className="frontier-card flex h-[92px] flex-1 flex-col items-center justify-center gap-1.5 !rounded-xl"
-    >
-      {loses ? (
-        <>
-          <Line icon="Sk" value={`−${formatExact(known.troopsLost)}`} hot />
-          <Line icon="Tr" value={formatExact(known.guardLeft)} hot />
-        </>
-      ) : (
-        <>
-          <span className="flex items-center gap-1.5" aria-label={known ? `${known.exchanges}` : "—"}>
-            <KitIcon code="Fl" size={22} />
-            {known ? (
-              <span aria-hidden className="flex gap-[3px]">
-                {Array.from({ length: known.exchanges }, (_, index) => (
-                  <i key={index} className="size-[9px] rounded-full border border-kit-gold" />
-                ))}
-              </span>
-            ) : (
-              <span className="text-[18px] tabular-nums text-kit-cream">—</span>
-            )}
+    <>
+      <span className="flex items-center gap-1.5" aria-label={known ? `${known.exchanges}` : "—"}>
+        <KitIcon code="Fl" size={22} />
+        {known ? (
+          <span aria-hidden className="flex gap-[3px]">
+            {Array.from({ length: known.exchanges }, (_, index) => (
+              <i key={index} className="size-[9px] rounded-full border border-kit-gold" />
+            ))}
           </span>
-          <Line icon="Sk" value={known ? `−${formatExact(known.troopsLost)}` : "—"} />
-        </>
-      )}
-    </div>
+        ) : (
+          <span className="text-[18px] tabular-nums text-kit-cream">—</span>
+        )}
+      </span>
+      <Line icon="Sk" value={known ? `−${formatExact(known.troopsLost)}` : "—"} />
+      {known && known.guardLeft > 0 && <Line icon="Tr" value={formatExact(known.guardLeft)} />}
+    </>
   );
 };
 
-const Line = ({ icon, value, hot = false }: { icon: IconCode; value: string; hot?: boolean }) => (
-  <span className="flex items-center gap-1.5">
+/** An icon and its figure; a name puts the line on the tooltip (hover, or press-and-hold). */
+const Line = ({ icon, value, hot = false, name }: { icon: IconCode; value: string; hot?: boolean; name?: string }) => (
+  <span className="flex items-center gap-1.5" data-tip={name}>
     <KitIcon code={icon} size={22} />
     <span className={cn("text-[20px] leading-none tabular-nums", hot ? "text-kit-hot" : "text-kit-cream")}>
       {value}
@@ -239,28 +277,80 @@ const ChestPay = ({ chest }: { chest: { tier: Tier; lords: number } }) => (
   </>
 );
 
-const Verb = ({ verb, onRealm }: { verb: SiteVerb | null; onRealm: (() => void) | undefined }) => {
+const Verb = ({
+  verb,
+  site,
+  armyLost,
+  onRealm,
+}: {
+  verb: SiteVerb | null;
+  site: string;
+  /** The forecast ends with the army gone: Attack still runs, in red, and says so. */
+  armyLost: boolean;
+  onRealm: (() => void) | undefined;
+}) => {
+  const warns = verb?.kind === "attack" && armyLost;
+  // Enter confirms the attack the forecast wins or stalls; one that loses the army takes a deliberate tap.
+  useEnterConfirms(verb?.kind === "attack" && !verb.inFlight && !warns ? verb.onAttack : undefined);
   if (!verb) return null;
-  if (verb.kind === "short") {
-    const { held, cost, wait } = verb.stamina;
-    return <ReasonPlate reason={{ kind: "short", icon: "St", held, need: cost, wait }} />;
-  }
   return (
-    <div className="flex gap-2">
-      {onRealm && <Button role="secondary" icon="Cs" word={REALM} className="w-[120px]" onClick={onRealm} />}
-      {verb.kind === "attack" ? (
-        <Button
-          role="primary"
-          icon="At"
-          word={ATTACK}
-          prices={[{ of: "stamina", amount: verb.stamina }]}
-          loading={verb.sending ? ATTACKING : undefined}
-          onClick={verb.onAttack}
-          className="flex-1"
-        />
-      ) : (
-        <Button role="primary" icon="Bt" word={MOVE} prices={verb.prices} onClick={verb.onMove} className="flex-1" />
-      )}
+    <div className="flex flex-col gap-2">
+      <div className="flex gap-2">
+        {onRealm && <Button role="secondary" icon="Cs" word={REALM} className="w-[120px]" onClick={onRealm} />}
+        {verb.kind === "move" ? (
+          <Button role="primary" icon="Bt" word={MOVE} prices={verb.prices} onClick={verb.onMove} className="flex-1" />
+        ) : (
+          <Button
+            role="primary"
+            icon="At"
+            word={ATTACK}
+            prices={attackPrices(verb)}
+            loading={verb.kind === "attack" ? inFlightWord(verb.inFlight, "attack", ATTACKING) : undefined}
+            disabled={verb.kind !== "attack"}
+            warns={warns}
+            onClick={verb.kind === "attack" ? verb.onAttack : undefined}
+            className="flex-1"
+          />
+        )}
+      </div>
+      <VerbLine {...verbLine(verb, site, warns)} />
     </div>
   );
 };
+
+/**
+ * The word on an army's step while an order of that army is in flight: the step's own word for its own order, and
+ * that the army is on its way for another. Undefined once the army is free.
+ */
+export const inFlightWord = (inFlight: OrderInFlight | undefined, own: OrderInFlight, word: string) =>
+  inFlight && (inFlight === own ? word : ON_ITS_WAY);
+
+/**
+ * The one line under the step. An attack that did not happen says why, in red, ahead of the forecast's warning: it
+ * is the news. Otherwise the warning, or why the step is not Attack.
+ */
+const verbLine = (verb: SiteVerb, site: string, warns: boolean): { line: string | undefined; warns: boolean } => {
+  if (verb.kind === "attack" && verb.refused && !verb.inFlight) return { line: verb.refused, warns: true };
+  return { line: warns ? ARMY_WILL_BE_LOST : verbReason(verb, site), warns };
+};
+
+const attackPrices = (verb: Exclude<SiteVerb, { kind: "move" }>): readonly Price[] => {
+  if (verb.kind === "attack") return [{ of: "stamina", amount: verb.stamina }];
+  return verb.kind === "short" ? [{ of: "stamina", amount: verb.stamina.cost }] : [];
+};
+
+/** Why the step is not Attack, or cannot run: the stamina missing and when it is back, or the site out of reach. */
+const verbReason = (verb: SiteVerb, site: string): string | undefined => {
+  if (verb.kind === "attack") return undefined;
+  if (verb.kind !== "short") return tooFarFrom(site);
+  const { cost, held, wait } = verb.stamina;
+  const line = needsStamina(formatExact(cost), formatExact(held));
+  return wait === undefined ? line : `${line} · ${formatDuration(wait)}`;
+};
+
+const VerbLine = ({ line, warns }: { line: string | undefined; warns: boolean }) =>
+  line === undefined ? null : (
+    <p role="status" className={cn("text-center text-[14px]", warns ? "text-kit-red" : "text-kit-cream")}>
+      {line}
+    </p>
+  );

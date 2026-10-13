@@ -28,7 +28,6 @@ vi.mock("@/runtime/world/herald-pre-session-reader", () => ({
   fetchSettlementSnapshot: async () => null,
 }));
 
-import { realmStill } from "@/shell/mode-art";
 import { GameEntryModal } from "./game-entry-modal";
 
 afterEach(() => vi.restoreAllMocks());
@@ -57,7 +56,6 @@ it("renders spectator entry before any head without reading the chain clock", as
   );
   try {
     expect(container.querySelector("[aria-label='Entering the game']")).not.toBeNull();
-    expect(container.querySelector(`img[src="${realmStill(2)}"]`)).not.toBeNull();
     expect(useChainTimeStore.getState().nowMs).toBeNull();
     expect(() => getBlockTimestamp()).toThrow("Chain time is not known yet");
   } finally {

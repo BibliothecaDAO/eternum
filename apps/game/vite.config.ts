@@ -181,6 +181,8 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
         "/api": {
           target: STAGING_ORIGIN,
           changeOrigin: true,
+          // Chat's room and inbox are sockets under the same /api.
+          ws: true,
           headers: { origin: STAGING_ORIGIN },
           cookieDomainRewrite: "",
         },

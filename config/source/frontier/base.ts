@@ -1,3 +1,4 @@
+import { FRONTIER_ARMIES_TICK_SECONDS } from "./clock";
 import { frontierPreset } from "./native";
 import { nativeResearchConstants as research } from "../../../contracts/l3/world-native/schema/client.gen";
 import { RESOURCE_PRECISION } from "../../../packages/types/src/constants";
@@ -49,7 +50,7 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
     startSettlingAfterSeconds: 0,
     startMainAfterSeconds: 0,
   },
-  tick: { armiesTickIntervalInSeconds: 120 },
+  tick: { armiesTickIntervalInSeconds: FRONTIER_ARMIES_TICK_SECONDS },
   battle: { cooldownSeconds: 0, regularImmunityTicks: 0, villageImmunityTicks: 0, delaySeconds: 0 },
   startingResources: [
     { resource: 26, amount: 1500 },

@@ -53,8 +53,8 @@ jq -n \
   --arg swap_total_kb "$swap_total_kb" --arg swap_free_kb "$swap_free_kb" \
   --arg madara_cpu "${madara_cpu:-}" --arg madara_mem_mib "${madara_mem_mib:-}" \
   --arg image "${image:-}" --arg native "${native:-}" --arg native_classes "${native_classes:-}" \
-  --arg block_time "$(cfg block_time)" --arg pending "$(cfg pending_block_update_time)" \
-  --arg batch "$(cfg execution_batch_size)" --arg n_txs "$(cfg n_txs)" --arg sierra_gas "$(cfg sierra_gas)" \
+  --arg block_time "$(cfg block_time)" \
+  --arg n_txs "$(cfg n_txs)" --arg sierra_gas "$(cfg sierra_gas)" \
   --arg message_segments "$(cfg message_segment_length)" --arg events "$(cfg n_events)" \
   --arg state_diff "$(cfg state_diff_size)" --arg l1_gas "$(cfg l1_gas)" \
   --arg proving_gas "$(cfg proving_gas)" --arg receipt_l2_gas "$(cfg receipt_l2_gas)" \
@@ -77,8 +77,7 @@ jq -n \
       memMib: (if $madara_mem_mib=="" then null else ($madara_mem_mib|tonumber) end)
     },
     chainConfig: {
-      blockTime: $block_time, pendingBlockUpdateTime: $pending,
-      executionBatchSize: (if $batch=="" then null else ($batch|tonumber) end),
+      blockTime: $block_time,
       nTxsPerBlock: (if $n_txs=="" then null else ($n_txs|tonumber) end),
       sierraGasPerBlock: (if $sierra_gas=="" then null else ($sierra_gas|tonumber) end),
       messageSegmentsPerBlock: (if $message_segments=="" then null else ($message_segments|tonumber) end),

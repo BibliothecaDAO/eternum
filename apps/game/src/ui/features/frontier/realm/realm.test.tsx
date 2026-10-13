@@ -31,25 +31,34 @@ describe("the build sheet", () => {
     act(() =>
       root.render(
         <BuildView
+          population={{ free: 2, total: 6 }}
           tiles={[
-            { key: "farm", icon: "Fm", name: "Farm", foot: { kind: "price", labor: 6_800, short: false } },
-            { key: "workshop", icon: "Wk", name: "Workshop", foot: { kind: "price", labor: 10_000, short: true } },
-            { key: "war", icon: "Wa", name: "War hall", foot: { kind: "built" } },
-            { key: "lodge", icon: "Ld", name: "Scouts' lodge", foot: { kind: "locked", gate: 3 } },
+            { key: "farm", icon: "Fm", name: "Farm", tip: "", foot: { kind: "price", labor: 6_800, short: false } },
+            {
+              key: "workshop",
+              icon: "Wk",
+              name: "Workshop",
+              tip: "",
+              foot: { kind: "price", labor: 10_000, short: true },
+            },
+            { key: "war", icon: "Wa", name: "War hall", tip: "", foot: { kind: "built" } },
+            { key: "lodge", icon: "Ld", name: "Scouts' lodge", tip: "", foot: { kind: "locked", gate: 3 } },
           ]}
           chosen={0}
           onChoose={onChoose}
           gains={[{ icon: "Wh", value: "+375/h", label: "produces" }]}
           prices={[{ of: "labor", amount: 6_800 }]}
-          short={undefined}
+          refusal={undefined}
           sending={false}
           onBuild={onBuild}
-          onMap={() => {}}
           onClose={() => {}}
         />,
       ),
     );
     const tile = (name: string) => host.querySelector<HTMLButtonElement>(`[aria-label="${name}"]`)!;
+    // The head holds what is free of the realm's population, and says so in words on its tooltip.
+    const population = host.querySelector('[aria-label="population 2 / 6"]')!;
+    expect(population.getAttribute("data-tip")).toBe("population 2 free of 6");
     expect(tile("Workshop").textContent).toBe("Workshop10,000");
     expect(tile("War hall").className).toContain("opacity-50");
     expect(tile("Scouts' lodge").querySelector('[aria-label="Rare"]')).not.toBeNull();
@@ -63,35 +72,65 @@ describe("the build sheet", () => {
     expect(onBuild).toHaveBeenCalled();
   });
 
-  it("puts the labor held against the price, its wait and Map in Build's place when the realm cannot pay", () => {
-    const onMap = vi.fn();
+  it("says in one line what the building needs against what there is, with the fix on the gold button in Build's place", () => {
+    const onFix = vi.fn();
     act(() =>
       root.render(
         <BuildView
-          tiles={[{ key: "farm", icon: "Fm", name: "Farm", foot: { kind: "price", labor: 15_000, short: true } }]}
+          population={{ free: 2, total: 6 }}
+          tiles={[
+            { key: "farm", icon: "Fm", name: "Farm", tip: "", foot: { kind: "price", labor: 15_000, short: true } },
+          ]}
           chosen={0}
           onChoose={() => {}}
           gains={[]}
           prices={[{ of: "labor", amount: 15_000 }]}
-          short={{ kind: "short", icon: "La", held: 9_640, need: 15_000, wait: 10 * 3_600 + 44 * 60 }}
+          refusal={{
+            reason: { kind: "short", of: "labor", held: 9_640, need: 15_000, wait: 10 * 3_600 + 44 * 60 },
+            fix: { icon: "Mp", word: "Explore for labor", onFix },
+          }}
           sending={false}
           onBuild={() => {}}
-          onMap={onMap}
           onClose={() => {}}
         />,
       ),
     );
+    expect(host.querySelector('[role="status"]')!.textContent).toBe("Needs 15,000 labor, have 9,640 · in 10h 44m");
     expect(buttons().some((button) => button.textContent?.startsWith("Build"))).toBe(false);
     act(() =>
       buttons()
-        .find((button) => button.textContent === "Map")!
+        .find((button) => button.textContent === "Explore for labor")!
         .click(),
     );
-    expect(onMap).toHaveBeenCalled();
+    expect(onFix).toHaveBeenCalled();
   });
 });
 
 describe("the castle", () => {
+  const CASTLE_MAKES = [
+    { icons: ["La" as const], label: "labor the castle makes an hour", value: "+101/h" },
+    { icons: ["La" as const, "Sg" as const], label: "labor held of its store's limit", value: "2,011 / 6,000" },
+  ];
+
+  it("shows what the castle itself makes an hour and what its store holds, each named for the tooltip", () => {
+    act(() =>
+      root.render(
+        <CastleView
+          makes={CASTLE_MAKES}
+          now={side(0)}
+          next={side(1)}
+          prices={[{ of: "labor", amount: 4_000 }]}
+          refusal={undefined}
+          sending={false}
+          onUpgrade={() => {}}
+          onClose={() => {}}
+        />,
+      ),
+    );
+    expect(host.querySelector('[aria-label="labor the castle makes an hour +101/h"]')!.textContent).toBe("+101/h");
+    expect(host.querySelector('[aria-label="labor held of its store\'s limit 2,011 / 6,000"]')).not.toBeNull();
+  });
+
   const side = (level: number) => ({
     level,
     art: "/images/buildings/construction/castleOne.png",
@@ -106,13 +145,13 @@ describe("the castle", () => {
     act(() =>
       root.render(
         <CastleView
+          makes={CASTLE_MAKES}
           now={side(1)}
           next={side(2)}
           prices={[{ of: "labor", amount: 15_000 }]}
-          short={undefined}
+          refusal={undefined}
           sending={false}
           onUpgrade={onUpgrade}
-          onMap={() => {}}
           onClose={() => {}}
         />,
       ),
@@ -129,17 +168,50 @@ describe("the castle", () => {
     expect(onUpgrade).toHaveBeenCalled();
   });
 
+  it("keeps Upgrade, dimmed, with its price when the realm cannot pay, over the line that says why and the fix", () => {
+    const onUpgrade = vi.fn();
+    const onFix = vi.fn();
+    act(() =>
+      root.render(
+        <CastleView
+          makes={CASTLE_MAKES}
+          now={side(0)}
+          next={side(1)}
+          prices={[{ of: "labor", amount: 4_000 }]}
+          refusal={{
+            reason: { kind: "short", of: "labor", held: 2_011, need: 4_000, wait: 19 * 3_600 + 44 * 60 },
+            fix: { icon: "Mp", word: "Explore for labor", onFix },
+          }}
+          sending={false}
+          onUpgrade={onUpgrade}
+          onClose={() => {}}
+        />,
+      ),
+    );
+    const upgrade = buttons().find((button) => button.textContent === "Upgrade4,000")!;
+    expect(upgrade.disabled).toBe(true);
+    act(() => upgrade.click());
+    expect(onUpgrade).not.toHaveBeenCalled();
+    expect(host.querySelector('[role="status"]')!.textContent).toBe("Needs 4,000 labor, have 2,011 · in 19h 44m");
+    act(() =>
+      buttons()
+        .find((button) => button.textContent === "Explore for labor")!
+        .click(),
+    );
+    expect(onFix).toHaveBeenCalled();
+  });
+
   it("has no next side and no verb at the last level", () => {
     act(() =>
       root.render(
         <CastleView
+          makes={CASTLE_MAKES}
           now={side(3)}
           next={null}
           prices={[]}
-          short={undefined}
+          refusal={undefined}
           sending={false}
           onUpgrade={() => {}}
-          onMap={() => {}}
           onClose={() => {}}
         />,
       ),

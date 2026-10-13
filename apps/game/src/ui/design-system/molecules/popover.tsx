@@ -380,14 +380,13 @@ const compactViewportStyle = (): CSSProperties => {
   } as CSSProperties;
 };
 
+// A portrait screen has no side insets, so the sides keep the panel's own padding: set here, zero would replace it.
 const resolveCompactSheetStyle = (): CSSProperties => ({
   left: 0,
   right: 0,
   ...compactViewportStyle(),
   maxWidth: "100vw",
   maxHeight: `min(calc(${COMPACT_SHEET_CONTENT_HEIGHT} + ${COMPACT_SHEET_BOTTOM_INSET} + 2px), var(--surface-viewport-height, 100dvh))`,
-  paddingLeft: "env(safe-area-inset-left)",
-  paddingRight: "env(safe-area-inset-right)",
   paddingBottom: COMPACT_SHEET_BOTTOM_INSET,
 });
 

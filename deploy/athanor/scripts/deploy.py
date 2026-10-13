@@ -1,35 +1,31 @@
 #!/usr/bin/env python3
-"""Deploy one of our shards from its release and prove it runs that release.
+"""Build and deploy this checkout, then prove the shard's classes, schema and presets before activation.
 
     python3 deploy/athanor/scripts/operator-command.py deploy ENVIRONMENT DIRECTORY
 
-ENVIRONMENT names deploy/release/ENVIRONMENT.json, the deployment's inputs: the shard-v* package tag, the shard's
-identity and public endpoints, its size and the presets it registers. That committed file is the environment's only
-preset set; nothing else passes PRESETS, and a file git does not track unchanged is refused. A new shard for an
-environment is a new chain id and package in its file. DIRECTORY holds the package and the shard's data/ across runs.
-The command takes the isolated-stack lock, fetches the tag's shard.tar.gz, renders the package's .env from the inputs,
-checks that initialization will receive an operator approval, starts the package, waits for initialization, then
-compares the deployed shard with the release.json CI published beside it: release id, schema, every class, the migration
-and every preset commitment. Any difference fails the deployment and is named.
+The committed deploy/release/ENVIRONMENT.json holds the shard identity and sizing. DIRECTORY retains its data.
 """
-import io
-import hashlib
+from contextlib import redirect_stdout, redirect_stderr
+import time
+import traceback
+from urllib.error import HTTPError
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
-import tarfile
-from urllib.request import urlopen
+import shutil
+from urllib.parse import urlsplit
 
 import shard
-from directory import directory_status, wait_for_identity
+from revision import deployment_revision
+from directory import directory_status, wait_for_identity, HeraldIdentityRefused
 from service_requests import identity_service_base, service_json
 
-RELEASES = "https://github.com/BibliothecaDAO/eternum/releases/download"
 ENVIRONMENTS = shard.ROOT / "deploy/release"
-INPUTS = ("package", "shard_name", "chain_id", "public_rpc_url", "public_herald_url",
-          "player_capacity", "presets", "node_memory", "herald_memory", "vrf_workers", "l2_gas_bound")
+INPUTS = ("shard_name", "public_rpc_url", "public_herald_url",
+          "player_capacity", "presets", "vrf_workers", "l2_gas_bound")
 
 
 def ignore_stage(_stage):
@@ -38,24 +34,46 @@ def ignore_stage(_stage):
 
 def main(environment, directory, report_stage=ignore_stage):
     report_stage("prepare")
+    target = deployment_target(environment, directory)
     inputs = load_inputs(environment)
+    deployment_revision(target["environment"])
     with shard.isolated_stack_lock(f"deploy {environment}"):
         directory.mkdir(mode=0o700, parents=True, exist_ok=True)
-        report_stage("fetch release")
-        release = fetch_package(inputs["package"], directory)
+        inputs["chain_id"] = chain_identity(directory, target["environment"])
+        report_stage("build images")
+        release = shard.build_images()
+        restart_unfinished(directory, inputs, release, report_stage)
+        write_build(directory, release)
         report_stage("prepare")
         (directory / ".env").write_text(render_environment(inputs, (directory / "images.env").read_text()))
         check_operator_approval()
         status = start(directory, inputs, report_stage)
-        report_stage("self-check")
+        report_stage("verify facts")
         differences = release_differences(release, *deployed_facts(directory / "data"), inputs["presets"])
         if not differences and status["status"] == "pending":
-            verify_and_activate(inputs, directory / "data", report_stage)
+            activate(inputs, directory / "data", report_stage)
+        if not differences:
+            remove_unused_checkouts()
     if differences:
-        print(f"{environment} does not run {inputs['package']}:", *differences, sep="\n  ", file=sys.stderr)
+        print(f"{environment} does not run commit {release['commit']}:", *differences, sep="\n  ", file=sys.stderr)
         return 1
-    print(f"{environment} runs {inputs['package']} (commit {release['commit']})")
+    print(f"{environment} runs commit {release['commit']}")
     return 0
+
+
+def remove_unused_checkouts():
+    for checkout in (Path.home() / "cairo-suite").glob("first-release-*"):
+        if (re.fullmatch(r"first-release-[0-9a-f]{7,40}", checkout.name)
+                and checkout.is_dir() and not checkout.is_symlink() and checkout.resolve() != shard.ROOT.resolve()):
+            shutil.rmtree(checkout)
+
+
+def chain_identity(directory, environment):
+    environment_file = directory / ".env"
+    if environment_file.exists():
+        values = dict(line.split("=", 1) for line in environment_file.read_text().splitlines() if "=" in line)
+        return values["CHAIN_ID"]
+    return f"{environment.upper()}_{time.time_ns():x}"
 
 
 def load_inputs(environment):
@@ -68,7 +86,7 @@ def load_inputs(environment):
     if missing:
         raise ValueError(f"{environment}.json lacks {', '.join(missing)}")
     targets = json.loads((shard.ROOT / "deploy/first/environments.json").read_text())
-    target = next((value for value in targets.values() if value["release"] == environment), None)
+    target = next((value for value in targets.values() if value["environment"] == environment), None)
     if target is None:
         raise ValueError("Unknown deployment environment")
     inputs["guardian_url"] = target["origin"] + "/api/guardian"
@@ -83,16 +101,134 @@ def committed(path):
     return succeeds("ls-files", "--error-unmatch", str(path)) and succeeds("diff", "--quiet", "HEAD", "--", str(path))
 
 
-def fetch_package(tag, directory):
-    with urlopen(f"{RELEASES}/{tag}/shard.tar.gz", timeout=60) as response:
-        archive = tarfile.open(fileobj=io.BytesIO(response.read()), mode="r:gz")
-    for member in archive.getmembers():
-        if member.isfile() and member.name.startswith("shard/") and "/" not in member.name[len("shard/"):]:
-            (directory / member.name[len("shard/"):]).write_bytes(archive.extractfile(member).read())
-    release = json.loads((directory / "release.json").read_text())
-    if release["tag"] != tag:
-        raise ValueError(f"release.json describes {release['tag']}, not {tag}")
-    return release
+class DeploymentRefused(RuntimeError):
+    pass
+
+
+def deployment_target(environment, directory):
+    targets = json.loads((shard.ROOT / "deploy/first/environments.json").read_text())
+    target = next(value for value in targets.values() if value["environment"] == environment)
+    if directory.resolve() != Path(target["runDirectory"]).resolve():
+        raise DeploymentRefused(f"Run directory must be {target['runDirectory']}; data was not overwritten")
+    return target
+
+
+def directory_row_is_valid(row):
+    if not isinstance(row, dict):
+        return False
+    if row.get("status") not in ("pending", "active", "draining", "retired"):
+        return False
+    if not isinstance(row.get("url"), str):
+        return False
+    try:
+        url = urlsplit(row["url"])
+        if url.scheme != "https" or not url.hostname or url.username or url.password:
+            return False
+    except ValueError:
+        return False
+    return isinstance(row.get("chainId"), str) and re.fullmatch(r"0x[0-9a-fA-F]+", row["chainId"])
+
+
+def row_matches_identity(row, chain, url):
+    return same(row["chainId"], chain) or row["url"] == url
+
+
+def is_own_pending_row(row, chain, url):
+    return row["status"] == "pending" and same(row["chainId"], chain) and row["url"] == url
+
+
+def is_listed_row(row):
+    return row is not None and row["status"] != "pending"
+
+
+def recorded_chain(directory):
+    try:
+        manifest = json.loads((directory / "data/native-world.json").read_text())
+        chain = manifest["shard"]["chainId"]
+        if not isinstance(chain, str) or not re.fullmatch(r"0x[0-9a-fA-F]+", chain):
+            raise ValueError()
+        return chain
+    except (OSError, ValueError, KeyError, TypeError):
+        raise DeploymentRefused("Run directory has no readable chain identity; data was not overwritten") from None
+
+
+def is_deployment_log(path):
+    return path.name.startswith("deploy-") and path.suffix == ".log"
+
+
+def restart_unfinished(directory, inputs, release, report_stage):
+    chain = "0x" + inputs["chain_id"].encode("ascii").hex()
+    url = inputs["public_herald_url"]
+    has_files = directory.exists() and any(not is_deployment_log(path) for path in directory.iterdir())
+    if has_files:
+        recorded = recorded_chain(directory)
+        if not same(recorded, chain):
+            raise DeploymentRefused(f"Run directory records chain {recorded}, configured chain is {chain}; data was not overwritten")
+    base = identity_service_base(inputs["guardian_url"])
+    listing = service_json(base + "/directory/shards", authenticated=True)
+    if not isinstance(listing, dict) or not isinstance(listing.get("shards"), list):
+        raise DeploymentRefused("Directory status read is malformed; data was not overwritten")
+    if not all(directory_row_is_valid(row) for row in listing["shards"]):
+        raise DeploymentRefused("Directory status row is malformed; data was not overwritten")
+    rows = [row for row in listing["shards"] if row["status"] != "retired" and row_matches_identity(row, chain, url)]
+    if len(rows) > 1:
+        raise DeploymentRefused("Several directory rows match this chain or Herald URL; data was not overwritten")
+    row = rows[0] if rows else None
+    if row is not None:
+        if not same(row["chainId"], chain):
+            raise DeploymentRefused(f"Herald URL {url} lists another chain {row['chainId']}; data was not overwritten")
+        if row["url"] != url:
+            raise DeploymentRefused(f"Chain {chain} is listed at another Herald URL {row['url']}; data was not overwritten")
+    if not has_files:
+        if is_listed_row(row):
+            raise DeploymentRefused("Listed shard has no local initialization; data was not overwritten")
+        return
+    differences = unfinished_differences(directory / "data", inputs, release)
+    if not differences:
+        return
+    if row is None:
+        raise DeploymentRefused("Unlisted shard cannot continue: " + "; ".join(differences) +
+                                "; remove the run directory yourself before retrying")
+    if not is_own_pending_row(row, chain, url):
+        raise DeploymentRefused("Listed shard cannot be reinitialized: " + "; ".join(differences))
+    report_stage("restart pending shard")
+    subprocess.run([*compose(directory), "down", "--volumes"], check=True, stdout=sys.stdout, stderr=sys.stderr)
+    for path in directory.iterdir():
+        if is_deployment_log(path):
+            continue
+        if path.is_dir():
+            shutil.rmtree(path)
+        else:
+            path.unlink()
+
+
+def unfinished_differences(data, inputs, release):
+    required = ("native-world.json", "initialized.json", "init-configuration.json", "host-keys.json",
+                "host-accounts.json", "vrf-key.json", "gameplay-contracts.json", "chain-config.yaml", "harness.env")
+    if not all((data / name).exists() for name in required):
+        return ["initialization is incomplete"]
+    manifest, initialized = deployed_facts(data)
+    if "native" not in manifest:
+        return ["initialization is incomplete"]
+    config = json.loads((data / "init-configuration.json").read_text())
+    expected = {"shard": inputs["chain_id"].lower().replace("_", "-"), "chain_id": inputs["chain_id"],
+                "guardian_url": inputs["guardian_url"], "l2_gas_bound": inputs["l2_gas_bound"]}
+    differences = [] if config == expected else ["shard identity or play bound differs"]
+    if not same(manifest["shard"].get("chainId"), "0x" + inputs["chain_id"].encode("ascii").hex()):
+        differences.append("chain identity differs")
+    guardian = shard.read_guardian_identity(inputs["guardian_url"])
+    if not same(manifest.get("shard", {}).get("guardianPublicKey"), guardian["guardianPublicKey"]):
+        differences.append("guardian identity differs")
+    return differences + release_differences(release, manifest, initialized,
+                                             [preset for preset in inputs["presets"] if str(preset) in initialized.get("presets", {})])
+
+
+def write_build(directory, release):
+    for name in ("compose.yml", "backup.py", "stack_lock.py", "operator_token.py"):
+        shutil.copyfile(shard.ROOT / "deploy/shard" / name, directory / name)
+    (directory / "images.env").write_text("".join(
+        f"SHARD_{name.upper()}_IMAGE={digest}\n" for name, digest in release["images"].items()))
+    shard.write_json(directory / "release.json", release)
 
 
 def render_environment(inputs, images):
@@ -102,7 +238,6 @@ def render_environment(inputs, images):
         "VRF_WORKERS": inputs["vrf_workers"], "L2_GAS_BOUND": inputs["l2_gas_bound"],
         "PLAYER_CAPACITY": inputs["player_capacity"], "PRESETS": ",".join(str(preset) for preset in inputs["presets"]),
         # Each environment sizes its shard: a small staging playtest, a large perf or production shard.
-        "NODE_MEMORY": inputs["node_memory"], "HERALD_MEMORY": inputs["herald_memory"],
         "HOST_UID": os.getuid(), "HOST_GID": os.getgid(),
     }
     return images.rstrip("\n") + "\n" + "".join(f"{key}={value}\n" for key, value in values.items())
@@ -121,17 +256,17 @@ def check_operator_approval():
 def start(directory, config, report_stage=ignore_stage):
     # Materialize the protected file before Compose creates the RPC container's file bind.
     report_stage("prepare")
-    subprocess.run([*compose(directory), "run", "--rm", "--no-deps", "prepare"], check=True, capture_output=True)
+    subprocess.run([*compose(directory), "run", "--rm", "--no-deps", "prepare"], check=True, stdout=sys.stdout, stderr=sys.stderr)
     report_stage("start Herald")
-    subprocess.run([*compose(directory), "up", "-d", "herald", "metrics"], check=True, capture_output=True)
+    subprocess.run([*compose(directory), "up", "-d", "herald", "metrics"], check=True, stdout=sys.stdout, stderr=sys.stderr)
     report_stage("wait for Herald identity")
     wait_for_identity(config)
     report_stage("register pending")
     status = directory_status(config, "pending")
     report_stage("start services")
-    subprocess.run([*compose(directory), "up", "-d"], check=True, capture_output=True)
+    subprocess.run([*compose(directory), "up", "-d"], check=True, stdout=sys.stdout, stderr=sys.stderr)
     report_stage("initialise")
-    subprocess.run([*compose(directory), "wait", "init"], check=True, capture_output=True)
+    subprocess.run([*compose(directory), "wait", "init"], check=True, stdout=sys.stdout, stderr=sys.stderr)
     code = subprocess.check_output([*compose(directory), "ps", "--all", "--format", "{{.ExitCode}}", "init"],
                                    text=True, stderr=subprocess.PIPE).strip()
     if code != "0":
@@ -140,121 +275,11 @@ def start(directory, config, report_stage=ignore_stage):
 
 
 
-def run_self_check(directory):
-    result = subprocess.run(
-        [*compose(directory.parent), "run", "--rm", "--no-deps", "--entrypoint", "python3",
-         "harness", "/app/deploy/shard/init.py", "self-check"], capture_output=True, text=True,
-    )
-    # The runner emits public route/status JSON only. Never echo arbitrary setup failures/credentials.
-    rows = [line for line in result.stdout.splitlines() if line.startswith("{")]
-    if not rows:
-        result.check_returncode()
-        raise RuntimeError("self-check failed at load_deployment_fixture")
-    check = json.loads(rows[-1])
-    if result.returncode != 0:
-        check["passed"] = False
-    return check
-
-
-def verify_and_activate(config, directory, report_stage=ignore_stage):
-    report_stage("self-check")
-    if directory_status(config, "pending")["status"] != "pending":
-        print(json.dumps({"event": "shard_self_check_skipped", "reason": "shard_already_listed"}))
-        return
-    identity = gameplay_check_identity(directory)
-    check_path = directory / "self-check.json"
-    saved = json.loads(check_path.read_text()) if check_path.exists() else {}
-    if saved.get("passed") and saved.get("checkedIdentity") == identity:
-        check = saved
-    else:
-        if roles_handed_off(directory):
-            raise RuntimeError("chain facts changed after the role handoff; retire this chain")
-        check = run_self_check(directory)
-        check["checkedIdentity"] = identity
-        shard.write_json(check_path, check)
-    if not check.get("passed"):
-        route = check.get("firstFailedRoute", "unknown_route")
-        raise RuntimeError(f"self-check failed at {route}; directory status unchanged")
+def activate(config, directory, report_stage=ignore_stage):
     report_stage("activate")
-    confirm_worker_ledger_operator(config, directory)
-    confirm_worker_launcher(config, directory)
     directory_status(config, "active")
-    print(json.dumps({"event": "shard_self_check_passed", "routes": len(check.get("completed", [])), "status": "active"}))
+    print(json.dumps({"event": "shard_activated", "status": "active"}))
 
-
-def gameplay_check_identity(directory):
-    manifest, initialized = deployed_facts(directory)
-    # The check proves chain identity and initialized contracts, independent of their runtime packaging.
-    encoded = json.dumps([manifest, initialized], sort_keys=True, separators=(",", ":")).encode()
-    return hashlib.sha256(encoded).hexdigest()
-
-
-def launcher_service(config, suffix, payload):
-    base = identity_service_base(config["guardian_url"])
-    try:
-        return service_json(base + "/factory/operator/launcher/" + suffix, payload, timeout=120)
-    except (OSError, ValueError):
-        raise RuntimeError("Launch Worker enrollment route unavailable; directory remains pending") from None
-
-
-def roles_handed_off(directory):
-    return service_role_check(directory, "state")["handedOff"]
-
-
-def service_role_check(directory, action, account=None, role="launcher"):
-    args = [action, "/data"]
-    if account is not None:
-        args.extend([role, account])
-    result = subprocess.run([*compose(directory.parent), "run", "--rm", "--no-deps", "-T",
-                             "--entrypoint", "python3", "harness", "/app/deploy/shard/init.py", "service-role-check", *args],
-                            capture_output=True, text=True)
-    if result.returncode != 0:
-        result.check_returncode()
-    if action == "state":
-        try:
-            rows = [line for line in result.stdout.splitlines() if line.startswith("{")]
-            state = json.loads(rows[-1])
-        except (ValueError, IndexError, AttributeError):
-            raise RuntimeError("Role state read failed; directory remains pending") from None
-        if not isinstance(state, dict) or state.get("passed") is not True or type(state.get("handedOff")) is not bool:
-            raise RuntimeError("Role state read failed; directory remains pending")
-        return state
-
-
-def confirm_worker_ledger_operator(config, directory):
-    manifest, _ = deployed_facts(directory)
-    payload = {"chainId": manifest["shard"]["chainId"], "heraldUrl": config["public_herald_url"]}
-    base = identity_service_base(config["guardian_url"])
-    try:
-        enrolled = service_json(base + "/value/operator/shard/enrol", payload, timeout=120)
-    except (OSError, ValueError):
-        raise RuntimeError("Relay enrollment route unavailable; directory remains pending") from None
-    account = public_felt(enrolled.get("ledgerOperatorAccount"))
-    if public_felt(enrolled.get("chainId")) != public_felt(payload["chainId"]):
-        raise RuntimeError("Relay enrolled another chain; directory remains pending")
-    service_role_check(directory, "handoff", account, role="ledger_operator")
-
-
-def public_felt(value):
-    if not isinstance(value, str) or not value.startswith("0x"):
-        raise RuntimeError("Worker returned an invalid public identity")
-    try:
-        number = int(value, 16)
-    except ValueError:
-        raise RuntimeError("Worker returned an invalid public identity") from None
-    if not 0 < number < 2**251 + 17 * 2**192 + 1:
-        raise RuntimeError("Worker returned an invalid public identity")
-    return hex(number)
-
-
-def confirm_worker_launcher(config, directory):
-    manifest, _ = deployed_facts(directory)
-    payload = {"chainId": manifest["shard"]["chainId"], "heraldUrl": config["public_herald_url"]}
-    enrolled = launcher_service(config, "enrol", payload)
-    account = public_felt(enrolled.get("launcherAccount"))
-    if public_felt(enrolled.get("chainId")) != public_felt(payload["chainId"]):
-        raise RuntimeError("Launch Worker enrolled another chain; directory remains pending")
-    service_role_check(directory, "handoff", account)
 
 def deployed_facts(data):
     return json.loads((data / "native-world.json").read_text()), json.loads((data / "initialized.json").read_text())
@@ -291,7 +316,67 @@ def release_differences(release, manifest, initialized, presets):
     return differences
 
 
+STAGES = (
+    "build images", "restart pending shard", "prepare", "start Herald", "wait for Herald identity",
+    "register pending", "start services", "initialise", "verify facts", "activate",
+)
+
+
+def write_failure(error):
+    detail = traceback.format_exc()
+    if isinstance(error, subprocess.CalledProcessError):
+        for output in (error.stdout, error.stderr):
+            if output:
+                detail += output.decode("utf8", errors="replace") if isinstance(output, bytes) else output
+    for key in ("OPERATOR_TOKEN", "DEPLOYER_PRIVATE_KEY"):
+        if os.environ.get(key):
+            detail = detail.replace(os.environ[key], "[redacted]")
+    print(detail, file=sys.stderr)
+
+
+def failure_report(error, stage):
+    detail = str(error) if isinstance(error, DeploymentRefused) else None
+    status = error.code if isinstance(error, HTTPError) else None
+    if isinstance(error, HeraldIdentityRefused):
+        status = error.status
+    code = getattr(error, "service_code", None) or type(error).__name__
+    message = f"Shard deployment stopped at {stage}; HTTP {status if status is not None else 'n/a'}; code {code}."
+    if detail:
+        message += " " + detail
+    return {"kind": "shard-deployment-refused", "message": message, "status": status, "error": code}
+
+
+def run(environment, directory):
+    stage = "prepare"
+    restarted = False
+    directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+    log_path = directory / f"deploy-{time.time_ns()}.log"
+    descriptor = os.open(log_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+
+    def report_stage(name):
+        nonlocal stage, restarted
+        if name not in STAGES:
+            raise ValueError("Unknown deployment stage")
+        stage = name
+        restarted = restarted or name == "restart pending shard"
+        print(json.dumps({"stage": stage}), flush=True)
+
+    outcome = {"kind": "shard-deployment-complete", "log": str(log_path)}
+    code = 0
+    with os.fdopen(descriptor, "w", buffering=1) as log, redirect_stdout(log), redirect_stderr(log):
+        try:
+            if main(environment, directory, report_stage):
+                raise RuntimeError("Shard deployment check failed")
+        except Exception as error:
+            write_failure(error)
+            outcome.update(failure_report(error, stage))
+            code = 1
+    outcome.update(stage=stage, restarted=restarted)
+    print(json.dumps(outcome))
+    return code
+
+
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         raise SystemExit(__doc__)
-    raise SystemExit(main(sys.argv[1], Path(sys.argv[2]).resolve()))
+    raise SystemExit(run(sys.argv[1], Path(sys.argv[2]).resolve()))

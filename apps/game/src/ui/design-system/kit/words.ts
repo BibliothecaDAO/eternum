@@ -17,6 +17,9 @@ export const REALM_KEPT = "Realm kept";
 export const DAY_OPEN = "is open";
 export const CONTINUE = "Continue";
 export const FULL_IN = "Full in";
+/** A store's line on its tooltip: "Wheat 1,771 of 6,000 · +302 an hour · Full in 14h". */
+export const OF = "of";
+export const AN_HOUR = "an hour";
 
 export const OFFLINE = "Offline";
 export const TRY_AGAIN = "Try again";
@@ -43,7 +46,13 @@ export const TODAY = "Today";
 export const PRODUCTION = "Production";
 /** A store at its limit. */
 export const FULL = "Full";
+export const STORE = "Store";
+/** On a payout's Full mark: the store took what it had room for. */
+export const REST_DID_NOT_FIT = "The store is full: the rest did not fit";
 export const SEASON = "Season";
+/** The season board's two number columns, named on their icons' tooltip. */
+export const SITES_CLEARED = "Sites cleared";
+export const LORDS_EARNED = "LORDS earned";
 export const GUIDE = "Guide";
 export const SETTINGS = "Settings";
 export const EXIT = "Exit";
@@ -54,7 +63,54 @@ export const SIGN_IN = "Sign in";
 export const EXPLORE = "Explore";
 export const MOVE = "Move";
 export const CANCEL = "Cancel";
+/** A highlighted tile on its tooltip: ground not yet seen, and troops passed to another of the player's armies. */
+export const UNEXPLORED = "Unexplored";
+export const TRANSFER = "Transfer";
 
+/** A realm's room for buildings: every building takes some, a Hut gives some. */
+export const POPULATION = "population";
+/**
+ * Why a verb cannot run yet, in one line that names what is counted: against what the realm holds, against what is
+ * free, or against a store's own limit, which no wait fills. A shortfall that fills by itself says when.
+ */
+export const needsHave = (need: string, noun: string, have: string) => `Needs ${need} ${noun}, have ${have}`;
+export const needsFree = (need: string, noun: string, free: string) => `Needs ${need} ${noun}, ${free} free`;
+export const needsOverLimit = (need: string, noun: string, limit: string) =>
+  `Needs ${need} ${noun}, the store holds ${limit}`;
+export const inTime = (duration: string) => `in ${duration}`;
+/** A tier that is a choice of two sides waits for one: "Choose Drill or Rations". */
+export const chooseOne = (first: string, second: string) => `Choose ${first} or ${second}`;
+/** A castle row waits for the one before it: "Needs Ethereal I". */
+export const needsFirst = (what: string) => `Needs ${what}`;
+/** What a castle row opens, on its tooltip: "Shrine: your armies find Shrines, +200 XP each". */
+export const armiesFind = (site: string, gain: string) => `${site}: your armies find ${site}s, ${gain} each`;
+export const armiesEnter = (reach: string) => `${reach}: your armies may enter it at the spire`;
+/** A training building's tier on its row's tooltip: "Battle +0% → +10% for every new army". */
+export const forNewArmies = (attribute: string, effect: string) => `${attribute} ${effect} for every new army`;
+/** A training building waits for the Barracks' tier: "Needs Barracks at Rare". */
+export const needsAt = (building: string, tier: string) => `Needs ${building} at ${tier}`;
+/** A training building already standing: a realm holds one of each. */
+export const ONE_A_REALM = "Built. A realm holds one.";
+/** The arrow beside a price that has risen (a screen reader's words). */
+export const PRICE_UP = "price raised";
+/** Why a price is above its base, on the arrow beside it: "Base 400 labor, ×5 with 2 standing". */
+export const priceRaised = (base: string, noun: string, times: string, standing: string) =>
+  `Base ${base} ${noun}, ×${times} with ${standing} standing`;
+/** What a building does, in one line on its card's tooltip. */
+export const makesAnHour = (amount: string, noun: string) => `+${amount} ${noun} ${AN_HOUR}`;
+export const takesPopulation = (amount: string) => `takes ${amount} ${POPULATION}`;
+export const startsNewArmies = (attribute: string, tier: string) => `new armies start with ${attribute} at ${tier}`;
+/** A store on its tooltip: what is free of it, "Population 2 free of 6". */
+export const freeOf = (noun: string, free: string, total: string) => `${noun} ${free} free of ${total}`;
+/** The fix for a short store that the map can fill: "Explore for labor". */
+export const exploreFor = (noun: string) => `${EXPLORE} for ${noun}`;
+
+/**
+ * An army's XP on its tooltip, against the attribute tier it buys next: "XP 8 of 100 · buys an Uncommon attribute
+ * tier". XP is a balance an army spends on its attributes; it has no level.
+ */
+export const xpToward = (held: string, price: string, tier: string) =>
+  `${XP} ${held} ${OF} ${price} · buys ${/^[AEIOU]/.test(tier) ? "an" : "a"} ${tier} attribute tier`;
 /** The four attributes, each wearing its Aspect's mark. */
 export const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Homecoming"] as const;
 /** Scouting's choice at each tier: the kind it lifts (the screen shows icons; these are their names). */
@@ -72,6 +128,21 @@ export const SHRINE = "Shrine";
 export const WELL = "Well";
 export const ATTACK = "Attack";
 export const ATTACKING = "Attacking…";
+/** On an army's step while the order it was given before is still in flight. */
+export const ON_ITS_WAY = "On its way…";
+/** How an attack ended, the one word on its result: the guard gone, the army gone, or both still standing. */
+export const VICTORY = "Victory";
+export const ARMY_LOST = "Army lost";
+export const GUARD_HOLDS = "Guard holds";
+/** The day log's line for a fight: "Rift: Army lost, lost 154, guard 1,100 to 1,028". */
+export const fightLine = (site: string, verdict: string, lost: string, guardBefore: string, guardAfter: string) =>
+  `${site}: ${verdict}, lost ${lost}, guard ${guardBefore} to ${guardAfter}`;
+/** Why an attack cannot run, or what it costs, in one line under its button. */
+export const needsStamina = (need: string, held: string) => `Needs ${need} stamina, has ${held}`;
+export const tooFarFrom = (site: string) => `Too far from the ${site}`;
+export const ARMY_WILL_BE_LOST = "Army will be lost";
+/** The skull beside an army on a site's card, on its tooltip. */
+export const WOULD_BE_LOST = "Would be lost";
 export const USE = "Use";
 export const USING = "Using…";
 
@@ -94,6 +165,33 @@ export const RESEARCHING = "Researching…";
 export const BUILDING = "Building…";
 export const UPGRADING = "Upgrading…";
 
+/** A standing building's figures on its panel, each named on its tooltip (the screen shows icons and numbers). */
+export const BUILDING_FIGURES = {
+  eachMakes: (noun: string) => `${noun} each makes an hour`,
+  castleMakes: (noun: string) => `${noun} the castle makes an hour`,
+  standing: "standing",
+  held: (noun: string) => `${noun} held of its store's limit`,
+  eachAdds: `${POPULATION} each adds`,
+  eachTakes: `${POPULATION} each takes`,
+  free: `${POPULATION} free of all`,
+  startsAt: (attribute: string) => `${attribute} new armies start at`,
+} as const;
+
+/** A slider's two ends, each a button: the least and the most the player can choose. */
+export const MINIMUM = "Minimum";
+export const MAXIMUM = "Maximum";
+
+/** The Deploy sheet's figures, each named on its tooltip (the screen shows icons and numbers). */
+export const DEPLOY_FIGURES = {
+  slots: "army slots",
+  wheatToDeploy: "wheat to deploy",
+  wheatLeft: "wheat left at home",
+  tilesPaid: "tiles the wheat left pays for",
+  revealSends: "Essence or labor each reveal sends home",
+  scout: "scout: its reveals send nothing home",
+  startingStamina: "stamina it starts with",
+} as const;
+
 /** Raise an army from troops at home. */
 export const DEPLOY = "Deploy";
 export const DEPLOYING = "Deploying…";
@@ -104,6 +202,16 @@ export const RETURNED = "troops returned";
 
 /** Default army names: "Army" and its place. */
 export const ARMY = "Army";
+
+/** The day log's lines for what the player did, in the names the build cards and the dock use. */
+export const revealLine = (amount: string, resource: string) => `+${amount} ${resource}`;
+export const builtLine = (building: string) => `${building} built`;
+export const deployedLine = (army: string) => `${army} deployed`;
+export const disbandedLine = (army: string) => `${army} disbanded`;
+/** A day's count of tiles explored, on its total. */
+export const REVEALS = "Reveals";
+/** How deep a season went, on its total. */
+export const REACH = "Reach";
 
 /** The player on any list. */
 export const YOU = "You";
@@ -131,7 +239,6 @@ export const REFILLING = "Refilling…";
 /** LORDS leaving the game for the wallet linked to the account. */
 export const WITHDRAW = "Withdraw";
 export const SENDING = "Sending…";
-export const ALL = "All";
 export const LINK_WALLET = "Link wallet";
 export const NO_WALLET = "No wallet linked";
 export const TRANSACTION = "Transaction";

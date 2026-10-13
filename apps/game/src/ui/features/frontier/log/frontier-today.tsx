@@ -1,12 +1,14 @@
+import { useGame } from "@/hooks/context/game-context";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { type ProcessedStoryEvent, useStoryEvents } from "@/hooks/store/use-story-events-store";
 import type { readExpeditionRules } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useState } from "react";
 
 import { dayBounds, dayClock } from "../hud/day-clock";
 import { useDockArmies } from "../hud/dock-armies";
+import { dayLogLine } from "./day-line";
 import { ownStoriesOfDay, totalToday } from "./today-totals";
 import { type LogLine, TodaySheet } from "./today-sheet";
 
@@ -31,6 +33,7 @@ export const FrontierToday = ({
   onOpenArmy: (explorerId: number) => void;
   onClose: () => void;
 }) => {
+  const { setup } = useGame();
   const now = useNowSeconds();
   const player = useAccountStore((state) => state.account?.address ?? null);
   const stories = useStoryEvents(OWN_STORIES, undefined, player ?? undefined);
@@ -49,7 +52,7 @@ export const FrontierToday = ({
       day={day}
       today={day === today}
       totals={{ ...unknownTotals, ...totals }}
-      lines={own.map(logLine)}
+      lines={logLines(own, setup.store)}
       armiesToUpgrade={day === today ? buyers.length : undefined}
       onArmies={buyers[0] ? () => onOpenArmy(buyers[0]!.explorerId) : undefined}
       failed={stories.isError}
@@ -70,8 +73,9 @@ const unknownTotals = {
   lords: undefined,
 };
 
-const logLine = (story: ProcessedStoryEvent): LogLine => ({
-  id: story.id,
-  at: Math.floor(story.timestampMs / 1_000),
-  text: story.presentation.title,
-});
+/** The day's stories as its log: each in Frontier's own line, less the ones that only repeat another. */
+const logLines = (stories: readonly ProcessedStoryEvent[], store: NativeFactStore): LogLine[] =>
+  stories.flatMap((story) => {
+    const text = dayLogLine(story, store);
+    return text === null ? [] : [{ id: story.id, at: Math.floor(story.timestampMs / 1_000), text }];
+  });

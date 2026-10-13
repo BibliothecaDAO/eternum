@@ -1,9 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  FrameBudgetWorkQueue,
-  FrameBudgetWorkQueueDisposedError,
-  scheduleFrameBudgetWork,
-} from "./frame-budget-work-queue";
+import { FrameBudgetWorkQueue, scheduleFrameBudgetWork } from "./frame-budget-work-queue";
 import { consumeDominantFrameWorkOwner, runWithFrameWorkOwner } from "./frame-work-owner";
 
 function createHarness(
@@ -174,13 +170,20 @@ describe("FrameBudgetWorkQueue", () => {
     consoleWarn.mockRestore();
   });
 
-  it("rejects queued work when disposed", async () => {
+  it("drops queued work when disposed: it never runs, and no caller is told", async () => {
     const harness = createHarness();
-    const pending = harness.queue.schedule("visible", () => undefined);
+    const ran = vi.fn();
+    const settled = vi.fn();
+    void harness.queue.schedule("visible", ran).then(settled, settled);
 
     harness.queue.dispose();
+    // Work handed to a disposed queue is dropped the same way.
+    void harness.queue.schedule("critical", ran).then(settled, settled);
+    await Promise.resolve();
+    await Promise.resolve();
 
-    await expect(pending).rejects.toBeInstanceOf(FrameBudgetWorkQueueDisposedError);
+    expect(ran).not.toHaveBeenCalled();
+    expect(settled).not.toHaveBeenCalled();
     expect(harness.frameCount()).toBe(0);
   });
 });

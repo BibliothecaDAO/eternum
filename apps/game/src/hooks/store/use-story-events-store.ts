@@ -169,6 +169,12 @@ export const acceptGameSyncStoryEvent = (
 
 export const resetGameSyncStoryEvents = (): void => useStoryEventsStore.getState().reset();
 
+/** The streamed stories of one transaction: an action's own record, read once its outcome is known. */
+export const streamedStoriesOf = (transactionHash: string): StreamStoryEvent[] => {
+  const transaction = BigInt(transactionHash);
+  return useStoryEventsStore.getState().streamed.filter((event) => BigInt(event.tx_hash) === transaction);
+};
+
 /**
  * A story the current enum has no line for, such as a variant retired since an older pinned schema wrote it into
  * history, never renders raw. Outside production it is an error; in production that one row is dropped and reported,

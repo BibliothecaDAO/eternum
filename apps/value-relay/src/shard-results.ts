@@ -1,3 +1,4 @@
+import { readShardAbi } from "../../../packages/value-ledger/src/shard-abi";
 import { relayOperation, type BlitzResult, type MonitorPorts } from "./ports";
 import { ShardReader, felt, sameFelt, uint, type ValueRow } from "./shard-rpc";
 import { blitzCommitment } from "@realms-world/value-ledger/commitment";
@@ -31,8 +32,7 @@ export const shardResultPort =
         throw new Error("result_game_differs");
       const head = await reader.head();
       const provider = reader.provider();
-      const contract = await provider.getClassAt(reader.connection.gamesAddress, head);
-      validateResultAbi(contract.abi);
+      validateResultAbi(await readShardAbi(provider, reader.connection.gamesAddress, head));
       const values = await provider.callContract(
         { contractAddress: reader.connection.gamesAddress, entrypoint: "blitz_result", calldata: [String(gameId)] },
         head,

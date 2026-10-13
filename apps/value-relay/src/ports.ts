@@ -1,7 +1,10 @@
-import { Data, Effect } from "effect";
+import { accountJoinErrors } from "@bibliothecadao/eternum/realms-account";
+import { Effect } from "effect";
+import { RelayFailure } from "./failure";
+export { RelayFailure } from "./failure";
+import { serviceError } from "@realms-world/value-ledger";
 import type { LedgerPayDecision } from "@realms-world/identity";
 
-export class RelayFailure extends Data.TaggedError("RelayFailure")<{ operation: string }> {}
 export type RelayEffect<A> = Effect.Effect<A, RelayFailure>;
 export interface Withdrawal {
   blockNumber?: number;
@@ -173,5 +176,29 @@ export interface ConservationBalance {
 export const relayOperation = <A>(operation: string, run: () => Promise<A>): RelayEffect<A> =>
   Effect.tryPromise({
     try: run,
-    catch: (error) => (error instanceof RelayFailure ? error : new RelayFailure({ operation })),
+    catch: (error) =>
+      error instanceof RelayFailure
+        ? error
+        : new RelayFailure({ operation: serviceError(error, relayServiceErrors, operation) }),
   });
+
+export const relayServiceErrors = [
+  "shard_abi_unavailable",
+  "frontier_funding_missing",
+  "frontier_funding_differs_from_game",
+  "invalid_frontier_deposit",
+  "frontier_snapshot_behind_directory",
+  "frontier_pool_confirmation_pending",
+  "frontier_pool_differs_from_ledger",
+  "relay_account_join_failed",
+  ...accountJoinErrors,
+  "directory_shard_manifest_fetch_failed",
+  "relay_shard_inactive",
+  "relay_device_approval_refused",
+  "unlisted_shard",
+  "directory_shard_manifest_unavailable",
+  "directory_manifest_chain_differs",
+  "invalid_directory_shard_manifest",
+  "invalid_directory_shard_rpc",
+  "invalid_directory_shard_url",
+];

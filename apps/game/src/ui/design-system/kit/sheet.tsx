@@ -120,13 +120,16 @@ const useLatest = <T,>(value: T) => {
   return ref;
 };
 
+/** Escape closes the sheet and stops there: taken before the map's shortcuts, which leave a key a surface took. */
 const useEscapeCloses = (close: () => void) => {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close();
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      close();
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   }, [close]);
 };
 
@@ -136,6 +139,20 @@ const openSheets = (): string[] => (window.history.state as SheetHistoryState)?.
 
 /** Sheets mounted now. An unmount steps back only if its sheet did not mount again at once (React's dev double mount). */
 const mounted = new Set<string>();
+
+/**
+ * Sheets whose step back is under way. History moves a moment after it is asked to, so until it has, a second
+ * unmount of the same sheet (React's dev double mount, closed in the tick it opened) would step back again, off the
+ * page.
+ */
+const steppingBack = new Set<string>();
+
+const stepBackOffEntry = (id: string) => {
+  if (mounted.has(id) || steppingBack.has(id) || openSheets().at(-1) !== id) return;
+  steppingBack.add(id);
+  window.addEventListener("popstate", () => steppingBack.delete(id), { once: true });
+  window.history.back();
+};
 
 /**
  * The system back closes the sheet, not the page under it. Opening pushes a history entry naming the sheet (on top of
@@ -158,9 +175,7 @@ const useSystemBackCloses = (close: () => void) => {
     return () => {
       mounted.delete(id);
       window.removeEventListener("popstate", onPop);
-      setTimeout(() => {
-        if (!mounted.has(id) && openSheets().at(-1) === id) window.history.back();
-      });
+      setTimeout(() => stepBackOffEntry(id));
     };
   }, [id, closeRef]);
 };

@@ -1,5 +1,5 @@
 import { Position } from "@bibliothecadao/eternum";
-import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
+import type { IncomingTroopArrival, SiteKind } from "@bibliothecadao/eternum";
 
 import { BuildingType, ID, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 import type { CosmeticAttachmentTemplate } from "../cosmetics/types";
@@ -29,6 +29,8 @@ export interface StructureInfo {
   structureType: StructureType;
   mineKind?: number;
   hasWonder: boolean;
+  /** A guarded Frontier site's kind (its ExpeditionSite stands): its plate reads kind and strength, never an id. */
+  siteKind?: SiteKind;
   /** A standing fallen realm's beast: the camp draws as its ruin and this beast instead of its village. */
   fallenRealm?: ReturnType<typeof fallenRealmBeast>;
   realmOrder?: number;

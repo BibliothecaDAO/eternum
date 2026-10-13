@@ -5,16 +5,26 @@ import type { TerrainCellInput, TerrainPageRequest } from "./terrain-types";
 import { isTerrainWaterBiome } from "./terrain-water";
 import { isEtherealTerrainCell } from "./terrain-surface-presentation";
 
+// Which structures stand on dry ground. Built settlements do, Frontier's ruin (a fallen realm) and stragglers (a camp)
+// among them; the rest stand on the tile as it is. A new category fails typecheck here until it is placed.
+const RECLAIMS_LAND_FROM_WATER: Record<StructureType, boolean> = {
+  [StructureType.Realm]: true,
+  [StructureType.Village]: true,
+  [StructureType.Camp]: true,
+  [StructureType.Ruin]: true,
+  [StructureType.Stragglers]: true,
+  [StructureType.Hyperstructure]: false,
+  [StructureType.Bank]: false,
+  [StructureType.Mine]: false,
+  [StructureType.BitcoinMine]: false,
+  [StructureType.Rift]: false,
+};
+
 /** Presentation only: settlements reclaim sand from water without changing the game's biome rows. */
 export function applySettlementIslands(request: TerrainPageRequest): TerrainPageRequest {
   const sites = new Set(
     request.settlementAnchors
-      .filter(
-        ({ structureType }) =>
-          structureType === StructureType.Camp ||
-          structureType === StructureType.Village ||
-          structureType === StructureType.Realm,
-      )
+      .filter(({ structureType }) => RECLAIMS_LAND_FROM_WATER[structureType])
       .map(({ col, row }) => hexCellKey(col, row)),
   );
   if (sites.size === 0) return request;

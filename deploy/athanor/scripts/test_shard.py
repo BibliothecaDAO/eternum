@@ -21,12 +21,12 @@ def operator_fixture(data, testcase):
     path.write_text("test-token")
     path.chmod(0o600)
     testcase.enterContext(patch("operator_token.OPERATOR_TOKEN_FILE", path))
-    return {}
+    return {"PUBLIC_RPC_URL": "https://rpc.test/rpc/v0_10_2", "PUBLIC_HERALD_URL": "https://herald.test"}
 
 
 def configuration():
     return {
-        "shard": "smoke", "chain_id": "SHARD_A", "port_base": 28050, "cpuset": "8-11,20-23", "node_memory_mib": 16384,
+        "shard": "smoke", "chain_id": "SHARD_A", "port_base": 28050, "cpuset": "8-11,20-23",
         "player_capacity": 96,
         "herald_image": "sha256:" + "b" * 64,
         "init_image": "sha256:" + "d" * 64,
@@ -110,7 +110,7 @@ class ShardTest(unittest.TestCase):
                 with (
                     patch.object(Path, "read_text", read), patch.object(shard, "ensure_fresh_project"),
                     patch.object(shard, "compose_configuration", return_value={"services": {"madara": {"image": NODE_IMAGE}}}),
-                    patch.object(shard, "check_slice_memory"), patch.object(shard, "start_runner_stack", side_effect=fail_start),
+                    patch.object(shard, "start_runner_stack", side_effect=fail_start),
                     patch.object(shard, "run", side_effect=lambda *_: events.append("stop")),
                     patch.object(shard, "directory_status", side_effect=lambda _, status: events.append(status)),
                 ):
@@ -135,12 +135,9 @@ class ShardTest(unittest.TestCase):
         config = configuration()
         allowed = set(range(8, 12)) | set(range(20, 24))
         shard.validate_configuration(config, allowed)
-        shard.validate_configuration({key: value for key, value in config.items() if key != "node_memory_mib"}, allowed)
-        shard.validate_configuration({**config, "node_flags": [*config["node_flags"], "--db-max-kept-snapshots=0"]},
-                                     allowed)
         for key, value in (
             ("chain_id", ""), ("chain_id", "a" * 32), ("chain_id", "a\nb"),
-            ("port_base", 5050), ("cpuset", "0-23"), ("node_memory_mib", 512), ("player_capacity", 0),
+            ("port_base", 5050), ("cpuset", "0-23"), ("player_capacity", 0),
             ("madara_image", NODE_IMAGE), ("vrf_workers", 0), ("shard", "../live"),
             ("trusted_proxy", "cloudflared"), ("presets", []), ("presets", ["2"]),
             ("guardian_url", "https://identity.test/api"),
@@ -219,7 +216,8 @@ class ShardTest(unittest.TestCase):
             started = time.struct_time((2026, 10, 7, 16, 2, 47, 0, 0, 0))
             argv, environment = package.harness_invocation(["--bots", "1"], operator_fixture(data, self), data, started)
             self.assertEqual(argv, ["bun", "deploy/athanor/harness/run.ts", "--bots", "1"])
-            self.assertEqual(environment["RPC_URL"], "http://rpc:8080/rpc/v0_10_2")
+            self.assertEqual(environment["RPC_URL"], "https://rpc.test/rpc/v0_10_2")
+            self.assertEqual(environment["HERALD_URL"], "https://herald.test")
             self.assertEqual(environment["HARNESS_ADMIN_RPC_URL"], "http://madara:9944/rpc/v0_10_2")
             self.assertEqual(environment["DEPLOYER_PRIVATE_KEY"], "0x2")
             self.assertEqual(environment["DEPLOYER_ACCOUNT_ADDRESS"], "0x9")
@@ -247,11 +245,11 @@ class ShardTest(unittest.TestCase):
                                     ("SHARD_HOST_ACCOUNTS", "host-accounts.json")]:
                 self.assertEqual(environment[field], str(data / filename))
 
-    def test_the_package_harness_runs_as_the_host_user_on_its_own_cpus(self):
-        with tempfile.TemporaryDirectory() as temporary, patch.dict(shard.os.environ, {"HARNESS_CPUSET": "20-23"}):
+    def test_the_package_harness_runs_as_the_host_user_without_cpu_limits(self):
+        with tempfile.TemporaryDirectory() as temporary:
             harness = shard.compose_configuration(configuration(), Path(temporary))["services"]["harness"]
         self.assertEqual(harness["user"], f"{shard.os.getuid()}:{shard.os.getgid()}")
-        self.assertEqual(harness["cpuset"], "20-23")
+        self.assertNotIn("cpuset", harness)
         self.assertEqual(harness["profiles"], ["harness"])
 
     def test_package_init_derives_the_trusted_proxy_only_behind_loopback_bindings(self):
@@ -301,21 +299,6 @@ class ShardTest(unittest.TestCase):
                         shard.initialize_shard_identity(configuration(), directory, "0x789")
                 self.assertFalse((directory / "native-world.json").exists())
 
-    def test_a_shard_that_does_not_fit_the_slice_beside_running_shards_is_refused(self):
-        compose = {"services": {name: {"mem_limit": "1g"} for name in shard.LONG_RUNNING}}
-        with tempfile.TemporaryDirectory() as directory:
-            slice_directory = Path(directory)
-            (slice_directory / "memory.max").write_text(str(10 * 2**30) + "\n")
-            running = slice_directory / "docker-running.scope"
-            running.mkdir()
-            (running / "memory.max").write_text(str(4 * 2**30) + "\n")
-            shard.check_slice_memory(compose, slice_directory)
-            (running / "memory.max").write_text(str(6 * 2**30) + "\n")
-            with self.assertRaisesRegex(ValueError, "over its 10240 MiB"):
-                shard.check_slice_memory(compose, slice_directory)
-            (running / "memory.max").write_text("max\n")
-            with self.assertRaisesRegex(ValueError, "without a memory limit"):
-                shard.check_slice_memory(compose, slice_directory)
 
     def test_the_rendered_shard_keeps_the_operator_token_out_of_its_files(self):
         rendered = {"name": "athanor-smoke", "services": {
@@ -411,10 +394,10 @@ class ShardTest(unittest.TestCase):
             # The holder text is drafted beside the lock and linked into place; no draft outlives either outcome.
             self.assertEqual(list(Path(temporary).iterdir()), [])
 
-    def test_docker_preserves_only_the_driver_cpus_through_sudo(self):
-        # Containers read their token from the fixed mount; only measured driver placement crosses sudo.
+    def test_docker_does_not_forward_environment_through_sudo(self):
+        # Containers read their token from the fixed mount.
         preserved = [flag for flag in shard.DOCKER if flag.startswith("--preserve-env")]
-        self.assertEqual(preserved, ["--preserve-env=HARNESS_CPUSET"])
+        self.assertEqual(preserved, [])
 
     def test_the_collector_has_no_retired_gateway_scrape(self):
         collector = shard.collector_configuration()
@@ -443,7 +426,7 @@ class ShardTest(unittest.TestCase):
         for changes in ({"vrf_workers": 0}, {"vrf_workers": 65}, {"l2_gas_bound": "0x0"}, {"l2_gas_bound": "0x10000000000000000"}):
             with self.assertRaises(ValueError): shard.validate_configuration({**config, **changes}, set(range(8, 12))|set(range(20, 24)))
 
-    def test_the_package_runs_its_collector_within_its_budget_and_the_node_exports_to_it(self):
+    def test_the_package_runs_its_collector_and_the_node_exports_to_it(self):
         with tempfile.TemporaryDirectory() as temporary:
             compose = shard.compose_configuration(configuration(), Path(temporary))
         node, metrics = compose["services"]["madara"], compose["services"]["metrics"]
@@ -452,10 +435,104 @@ class ShardTest(unittest.TestCase):
         self.assertIn("--otel-export-metrics=true", node["command"])
         # The release's published collector, the same on every shard; the runner builds none of its own.
         self.assertEqual(metrics["image"], configuration()["metrics_image"])
-        self.assertEqual(shard.memory_bytes(metrics["mem_limit"]), 256 * 2**20)
-        self.assertEqual(shard.memory_bytes(metrics["memswap_limit"]), 256 * 2**20)
+        self.assertNotIn("mem_limit", metrics)
+        self.assertNotIn("memswap_limit", metrics)
         self.assertTrue(metrics["read_only"])
         self.assertEqual(metrics["cap_drop"], ["ALL"])
+
+    def test_close_alarm_requires_fresh_sustained_slow_exports_and_recovers(self):
+        alarm = load_cpu_sampler().CloseAlarm()
+        self.assertIsNone(alarm.observe(1, .111))  # One periodic flush is not an incident.
+        self.assertIsNone(alarm.observe(2, .001))
+        self.assertIsNone(alarm.observe(3, .030))
+        self.assertIsNone(alarm.observe(3, .030))  # Re-reading a point cannot advance the count.
+        self.assertIsNone(alarm.observe(4, .040))
+        self.assertEqual(alarm.observe(5, .050)['event'], 'node_close_slow')
+        self.assertIsNone(alarm.observe(6, .060))
+        self.assertEqual(alarm.observe(7, .001)['event'], 'node_close_recovered')
+
+    def test_close_alarm_tails_complete_records_across_export_rotation(self):
+        sampler = load_cpu_sampler()
+        alarm = sampler.CloseAlarm()
+        def record(timestamp):
+            return json.dumps({'resourceMetrics': [{'scopeMetrics': [{'metrics': [{
+                'name': 'close_block_total_last_seconds',
+                'gauge': {'dataPoints': [{'timeUnixNano': str(timestamp), 'asDouble': .030}]},
+            }]}]}]}) + '\n'
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'metrics.jsonl'
+            self.assertEqual(alarm.poll(path), [])
+            path.write_text(record(1))
+            self.assertEqual(alarm.poll(path), [])  # Ignore records from before startup.
+            with path.open('a') as stream:
+                stream.write(record(2) + record(3)[:-1])
+            self.assertEqual(alarm.poll(path), [])
+            with path.open('a') as stream:
+                stream.write('\n')
+            self.assertEqual(alarm.poll(path), [])
+            path.rename(path.with_suffix('.old'))
+            path.write_text(record(4))
+            self.assertEqual([row['event'] for row in alarm.poll(path)], ['node_close_slow'])
+            self.assertEqual(alarm.poll(path), [])
+
+    def test_close_alarm_starting_during_a_write_skips_that_record(self):
+        alarm = load_cpu_sampler().CloseAlarm()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'metrics.jsonl'
+            path.write_text('{"resourceMetrics":')
+            self.assertEqual(alarm.poll(path), [])
+            with path.open('a') as stream:
+                stream.write('[]}\n{}\n')
+            self.assertEqual(alarm.poll(path), [])
+            self.assertEqual(alarm.offset, path.stat().st_size)
+
+    def test_close_alarm_reports_missing_and_stale_exports_then_restores(self):
+        sampler = load_cpu_sampler()
+        with tempfile.TemporaryDirectory() as directory, patch.object(sampler.time, 'monotonic', return_value=0) as clock:
+            alarm = sampler.CloseAlarm()
+            path = Path(directory) / 'metrics.jsonl'
+            self.assertEqual(alarm.poll(path), [])
+            clock.return_value = 30
+            self.assertEqual(alarm.poll(path), [{'event': 'node_close_metric_missing'}])
+            path.write_text('{}\n')
+            self.assertEqual(alarm.poll(path), [])
+            point = {'timeUnixNano': '1', 'asInt': '0'}
+            record = json.dumps({'resourceMetrics': [{'scopeMetrics': [{'metrics': [{
+                'name': 'close_block_total_last_seconds', 'gauge': {'dataPoints': [point]},
+            }]}]}]}) + '\n'
+            with path.open('a') as stream:
+                stream.write(record)
+            self.assertEqual(alarm.poll(path), [{'event': 'node_close_metric_restored'}])
+            clock.return_value = 60
+            with path.open('a') as stream:
+                stream.write(record)  # A repeated old point is not restored telemetry.
+            self.assertEqual(alarm.poll(path), [{'event': 'node_close_metric_missing'}])
+            self.assertFalse(alarm.active)
+
+    def test_close_alarm_skips_bad_records_loudly_and_keeps_reading(self):
+        sampler = load_cpu_sampler()
+        alarm = sampler.CloseAlarm()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'metrics.jsonl'
+            path.touch()
+            alarm.poll(path)
+            def record(point):
+                return json.dumps({'resourceMetrics': [{'scopeMetrics': [{'metrics': [{
+                    'name': 'close_block_total_last_seconds', 'gauge': {'dataPoints': [point]},
+                }]}]}]}) + '\n'
+            with path.open('a') as stream:
+                stream.write('not json\n' + record({'timeUnixNano': '1'}))
+                stream.write(record({'timeUnixNano': '2', 'asDouble': 'NaN'}))
+                for timestamp in range(3, 6):
+                    stream.write(record({'timeUnixNano': str(timestamp), 'asDouble': .030}))
+            events = alarm.poll(path)
+            self.assertEqual([row['event'] for row in events],
+                             ['node_metric_record_invalid'] * 3 + ['node_close_slow'])
+            self.assertEqual([row['error'] for row in events[:3]], ['JSONDecodeError', 'KeyError', 'ValueError'])
+            self.assertEqual(alarm.poll(path), [])
+            with path.open('a') as stream:
+                stream.write(record({'timeUnixNano': '6', 'asInt': '0'}))
+            self.assertEqual([row['event'] for row in alarm.poll(path)], ['node_close_recovered'])
 
     def test_cpu_samples_rotate_as_the_collector_export_does(self):
         sampler = load_cpu_sampler()
@@ -512,10 +589,18 @@ class ShardTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary, self.assertRaises(ValueError):
             shard.write_private_environment(Path(temporary) / "private.env", {"KEY": "value\nOTHER=bad"})
 
-    def test_release_image_resolution_has_no_gateway_build(self):
-        package = {"init_image": "sha256:"+"1"*64, "herald_image": "sha256:"+"2"*64, "metrics_image": "sha256:"+"3"*64}
-        with patch.object(shard, "release_images", return_value=package):
-            self.assertEqual(shard.resolve_images({"package": "shard-v1"}), {"package": "shard-v1", **package})
+    def test_explicit_local_digests_skip_the_build(self):
+        images = {f"{name}_image": "sha256:" + "1" * 64 for name in ("init", "herald", "metrics")}
+        with patch.object(shard, "build_images") as build:
+            self.assertEqual(shard.resolve_images(images), images)
+            build.assert_not_called()
+
+    def test_missing_images_are_built_together_from_the_checkout(self):
+        images = {name: "sha256:" + "1" * 64 for name in ("init", "herald", "metrics")}
+        with patch.object(shard, "build_images", return_value={"images": images}) as build:
+            self.assertEqual(shard.resolve_images({"shard": "test"}), {
+                "shard": "test", **{f"{name}_image": digest for name, digest in images.items()}})
+            build.assert_called_once_with()
 
     def test_matrix_runs_in_order_and_stops_only_its_own_projects(self):
         for failure in (None, RuntimeError("workload failed")):

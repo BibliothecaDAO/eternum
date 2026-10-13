@@ -66,7 +66,8 @@ const GameEntryRoute = () => {
 const GameRouteShell = ({ backgroundImage }: { backgroundImage: string }) => {
   const location = useLocation();
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
-  const worldmapReady = usePlayRouteReadinessStore((state) => state.worldmapReady);
+  // A realm opened without the map (the map could not be drawn) is a hand-off too: it is not sent back to the map.
+  const worldmapReady = usePlayRouteReadinessStore((state) => state.worldmapReady || state.mapSkipped);
 
   const normalizedBootHref = showBlankOverlay ? normalizePlayBootLocation(location, { worldmapReady }) : null;
   if (normalizedBootHref) {

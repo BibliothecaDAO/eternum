@@ -5,6 +5,7 @@ describe("registration-order playtest groups", () => {
   test.each([
     [0, []],
     [1, [1]],
+    [2, [2]],
     [24, [24]],
     [25, [13, 12]],
     [50, [17, 17, 16]],

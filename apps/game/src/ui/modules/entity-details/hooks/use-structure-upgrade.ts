@@ -3,9 +3,10 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { configManager, divideByPrecision, getBalance, getRealmInfo, isViewerOwner } from "@bibliothecadao/eternum";
 import { useArrivalsByStructure } from "@/hooks/helpers/use-resource-arrivals";
 import { useGame } from "@/hooks/context/game-context";
+import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { getLevelName } from "@bibliothecadao/types";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { getPlayerName } from "@/services/identity/player-profiles";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
 
@@ -55,7 +56,7 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
   const { setup, account } = useGame();
   const viewer = useAccountAddress();
   const currentDefaultTick = useCurrentDefaultTick();
-  const [isUpgradeLocked, setUpgradeLocked] = useState(false);
+  const isUpgradeLocked = useInFlight("castle", structureEntityId) !== undefined;
   const revision = useNativeRevision([
     "StructureBuildings",
     "ResourceWeight",
@@ -152,20 +153,13 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
     };
   }, [nextLevel, rawCosts, requirements, structureInfo]);
 
+  /** One upgrade of a castle at a time, in flight until its own outcome; rejects with the reason it did not apply. */
   const handleUpgrade = useCallback(async () => {
     if (!structureInfo || !nextLevel || !structureEntityId) return;
-    if (isUpgradeLocked) return;
-
-    setUpgradeLocked(true);
-    try {
-      await setup.systemCalls.upgrade_realm({
-        signer: account.account,
-        realm_entity_id: structureInfo.entityId,
-      });
-    } finally {
-      setUpgradeLocked(false);
-    }
-  }, [account.account, isUpgradeLocked, nextLevel, structureEntityId, setup.systemCalls, structureInfo]);
+    await sendOnce("castle", structureEntityId, true, () =>
+      setup.systemCalls.upgrade_realm({ signer: account.account, realm_entity_id: structureInfo.entityId }),
+    );
+  }, [account.account, nextLevel, structureEntityId, setup.systemCalls, structureInfo]);
 
   if (!structureInfo) return null;
 

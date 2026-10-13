@@ -121,7 +121,7 @@ export const handleBotDeviceApproval = (
     ),
   );
 
-/** Pending admission authorizes the self-check bot only; player devices require a visible current shard. */
+/** Pending admission permits operator and Worker bot enrolment; player devices require a visible current shard. */
 const signListedDeviceChange = (
   db: D1Database,
   guardian: Guardian,

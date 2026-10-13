@@ -21,7 +21,10 @@ const stores = () => {
   const launches = new D1LaunchStore(database.db, testChain());
   const slots = new D1SlotStore(database.db, launches, slotValueFixture(1), registrationIdentityFixture);
   const calendar = new D1CalendarStore(database.db);
-  const tick = (now: Date) => Effect.runPromise(runLaunchSchedule(launches, slots, calendar, now));
+  const tick = (now: Date) => {
+    vi.spyOn(Date, "now").mockReturnValue(now.getTime());
+    return Effect.runPromise(runLaunchSchedule(launches, slots, calendar));
+  };
   return { launches, slots, calendar, tick };
 };
 
@@ -151,12 +154,12 @@ test("a conflicting timetable slot cannot stop a due roster from freezing", asyn
 });
 
 const enteredWindow = {
-  startsAt: "2026-10-12T07:00:00.000Z",
-  endsAt: "2026-10-18T23:00:00.000Z",
+  startsAt: "2000-01-01T07:00:00.000Z",
+  endsAt: frontierSeasonEnd("2000-01-01T07:00:00.000Z", 2),
 };
 
 test("opening both phases after their start schedules Frontier and the next Blitz slot on the next tick", async () => {
-  const now = Date.parse("2026-10-12T18:00:00Z");
+  const now = Date.parse("2000-01-01T18:00:00Z");
   vi.spyOn(Date, "now").mockReturnValue(now);
   const { calendar, launches, slots, tick } = stores();
   for (const phase of ["frontier", "blitz"] as const) {
@@ -167,7 +170,9 @@ test("opening both phases after their start schedules Frontier and the next Blit
   expect(await launches.list("madara.frontier")).toMatchObject([
     { request: { gameStartTime: enteredWindow.startsAt, durationSeconds: 160 * 3600 } },
   ]);
-  expect(await slots.list()).toMatchObject([{ name: "blitz-20261012-2000", closesAt: "2026-10-12T19:55:00.000Z" }]);
+  expect(await slots.list()).toMatchObject([
+    { name: "blitz-20000101-2000", closesAt: "2000-01-01T19:55:00.000Z", closed: false },
+  ]);
 });
 
 test.each([
@@ -185,10 +190,10 @@ test.each([
 
 test.each(["frontier", "blitz"] as const)("a late-opened %s phase still keeps its running start", async (phase) => {
   const { calendar } = stores();
-  const now = Date.parse("2026-10-12T18:00:00Z");
+  const now = Date.parse("2000-01-01T18:00:00Z");
   const entered = { phase, ...enteredWindow };
   await calendar.set(entered, now);
-  await expect(calendar.set({ ...entered, startsAt: "2026-10-12T08:00:00.000Z" }, now)).rejects.toThrow(
+  await expect(calendar.set({ ...entered, startsAt: "2000-01-01T08:00:00.000Z" }, now)).rejects.toThrow(
     "A running phase keeps its start",
   );
   expect(await calendar.list()).toEqual([entered]);
@@ -196,11 +201,25 @@ test.each(["frontier", "blitz"] as const)("a late-opened %s phase still keeps it
 
 test("a late-opened Frontier phase still keeps its running end", async () => {
   const { calendar } = stores();
-  const now = Date.parse("2026-10-12T18:00:00Z");
+  const now = Date.parse("2000-01-01T18:00:00Z");
   const entered = { phase: "frontier" as const, ...enteredWindow };
   await calendar.set(entered, now);
-  await expect(calendar.set({ ...entered, endsAt: "2026-10-22T07:00:00.000Z" }, now)).rejects.toThrow(
+  await expect(calendar.set({ ...entered, endsAt: frontierSeasonEnd(enteredWindow.startsAt, 3) }, now)).rejects.toThrow(
     "A started Frontier season's end is fixed",
   );
   expect(await calendar.list()).toEqual([entered]);
+});
+
+test("schedule failures log the fixed underlying code and still attempt due freezes", async () => {
+  const { slots, calendar, tick } = stores();
+  vi.spyOn(calendar, "list").mockRejectedValue(new Error("ledger_head_unconfirmed: Bearer secret-value"));
+  const freeze = vi.spyOn(slots, "freezeDueSlots");
+  const log = vi.spyOn(console, "error").mockImplementation(() => {});
+  await tick(day(1));
+  expect(freeze).toHaveBeenCalledOnce();
+  expect(log).toHaveBeenCalledWith(
+    "launch_schedule_step_failed",
+    expect.objectContaining({ code: "ledger_head_unconfirmed" }),
+  );
+  expect(JSON.stringify(log.mock.calls)).not.toContain("secret-value");
 });

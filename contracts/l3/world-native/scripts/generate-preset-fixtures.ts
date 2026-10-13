@@ -6,7 +6,7 @@ import { toJsonValue } from "../../../../apps/herald/src/model-registry";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { encodeMembers } from "../../../../apps/herald/src/native/serde";
 import { currentPresetFixture, serializePresetRows } from "../../../../apps/herald/src/native/current-preset-fixture";
-import { FRONTIER_SELF_CHECK_PRESET_ID } from "../../../../config/source/common/native-preset-modes";
+import { FRONTIER_FIXTURE_PRESET_ID } from "../../../../config/source/common/native-preset-modes";
 
 const schema = presetFixtureSchema();
 
@@ -17,7 +17,7 @@ for (const [name, id] of [
   ["blitz", 2],
   ["eternum", 3],
   ["frontier", 5],
-  ["frontier-check", FRONTIER_SELF_CHECK_PRESET_ID],
+  ["frontier-check", FRONTIER_FIXTURE_PRESET_ID],
 ] as const) {
   const fixture = await currentPresetFixture(id, schema);
   write(`${name}-register.txt`, fixture.registration);

@@ -1,12 +1,12 @@
+import { launchFailure } from "./errors";
 import { BLITZ_SLOT_PREPARATION_SECONDS, type RegistrationIdentity } from "@realms-world/value-ledger";
 import { loadNativePresetConfiguration } from "../../../config/deployer/clean/registrar/native-preset";
 import { closedSlotGroups, SlotCancelled, type BlitzValuePort } from "./paid-blitz";
 import { nativePresetIdFor } from "../../../config/source/native";
 import type { D1LaunchStore } from "./store";
-import { SlotConflict, SlotNotFound, type PlaytestSlot, type SlotStore } from "./slots";
+import { SlotConflict, SlotNotFound, type PlaytestSlot, type SlotStore, type SlotFreezeFailure } from "./slots";
 
-const DATABASE_NOW = "CAST(unixepoch('subsec') * 1000 AS INTEGER)";
-const SELECT_SLOTS = `SELECT *, ${DATABASE_NOW} AS observed_at FROM playtest_slots`;
+const SELECT_SLOTS = "SELECT * FROM playtest_slots";
 
 interface SlotRow {
   chain_id: string;
@@ -14,7 +14,6 @@ interface SlotRow {
   name: string;
   closes_at: number;
   frozen_at: number | null;
-  observed_at: number;
 }
 
 /** D1 stores scheduling metadata only; paid player ownership never lives in this database. */
@@ -41,9 +40,9 @@ export class D1SlotStore implements SlotStore {
       throw new SlotConflict("Slot close must be a whole second");
     await this.db
       .prepare(
-        `INSERT INTO playtest_slots (name,closes_at,chain_id) SELECT ?1,?2,?3 WHERE ?2 > ${DATABASE_NOW} ON CONFLICT (chain_id,name) DO NOTHING`,
+        `INSERT INTO playtest_slots (name,closes_at,chain_id) SELECT ?1,?2,?3 WHERE ?2 > ?4 ON CONFLICT (chain_id,name) DO NOTHING`,
       )
-      .bind(name, closes, await this.launches.targetChain())
+      .bind(name, closes, await this.launches.targetChain(), Date.now())
       .run();
     const slot = await this.rawSlot(name).catch((error: unknown) => {
       if (error instanceof SlotNotFound) throw new SlotConflict("Registration deadline has passed");
@@ -77,7 +76,7 @@ export class D1SlotStore implements SlotStore {
       .bind(await this.launches.targetChain(), name)
       .first<SlotRow>();
     if (!row) throw new SlotNotFound("Slot not found");
-    return toSlot(row);
+    return toSlot(row, Date.now());
   }
   async get(name: string): Promise<PlaytestSlot> {
     return this.rawSlot(name);
@@ -93,7 +92,8 @@ export class D1SlotStore implements SlotStore {
       .prepare(`${SELECT_SLOTS} WHERE chain_id=? ORDER BY closes_at,name`)
       .bind(await this.launches.targetChain())
       .all<SlotRow>();
-    return results.map(toSlot);
+    const now = Date.now();
+    return results.map((row) => toSlot(row, now));
   }
   async freeze(name: string): Promise<PlaytestSlot> {
     const slot = await this.rawSlot(name);
@@ -123,33 +123,65 @@ export class D1SlotStore implements SlotStore {
     await this.db.batch([
       ...jobs,
       this.db
-        .prepare("UPDATE playtest_slots SET frozen_at=? WHERE chain_id=? AND slot_id=? AND frozen_at IS NULL")
+        .prepare(
+          "UPDATE playtest_slots SET frozen_at=?, freeze_failure=NULL WHERE chain_id=? AND slot_id=? AND frozen_at IS NULL",
+        )
         .bind(Date.now(), key.chainId, key.slotId),
     ]);
     return this.get(name);
   }
 
-  async freezeDueSlots(): Promise<void> {
-    const due = await this.db
+  async freezeFailures(): Promise<SlotFreezeFailure[]> {
+    const { results } = await this.db
       .prepare(
-        `SELECT name FROM playtest_slots WHERE chain_id=? AND frozen_at IS NULL AND closes_at <= ${DATABASE_NOW} ORDER BY closes_at, name`,
+        "SELECT chain_id,slot_id,name,freeze_failure FROM playtest_slots WHERE chain_id=? AND frozen_at IS NULL AND freeze_failure IS NOT NULL",
       )
       .bind(await this.launches.targetChain())
+      .all<SlotRow & { freeze_failure: string }>();
+    return results.map((row) => ({
+      chainId: row.chain_id,
+      slotId: row.slot_id,
+      name: row.name,
+      ...(JSON.parse(row.freeze_failure) as Pick<SlotFreezeFailure, "code" | "checkedAt" | "secondsUntilClose">),
+    }));
+  }
+
+  private async recordFreezeFailure(chainId: string, name: string, error: unknown): Promise<void> {
+    const diagnostic = launchFailure(error);
+    console.error("slot_close_unavailable", { chainId, name, ...diagnostic });
+    const failure = {
+      code: diagnostic.code,
+      checkedAt: Date.now(),
+      secondsUntilClose: diagnostic.secondsUntilClose,
+    };
+    await this.db
+      .prepare("UPDATE playtest_slots SET freeze_failure=? WHERE chain_id=? AND name=? AND frozen_at IS NULL")
+      .bind(JSON.stringify(failure), chainId, name)
+      .run();
+  }
+
+  async freezeDueSlots(): Promise<void> {
+    const chainId = await this.launches.targetChain();
+    const due = await this.db
+      .prepare(
+        `SELECT name FROM playtest_slots WHERE chain_id=? AND frozen_at IS NULL AND closes_at <= ? ORDER BY closes_at, name`,
+      )
+      .bind(chainId, Date.now())
       .all<{ name: string }>();
     for (const slot of due.results) {
       try {
         await this.freeze(slot.name);
-      } catch {
-        console.error("slot_close_unavailable", { name: slot.name });
+      } catch (error) {
+        await this.recordFreezeFailure(chainId, slot.name, error);
       }
     }
   }
 }
-const toSlot = (row: SlotRow): PlaytestSlot => ({
+const toSlot = (row: SlotRow, now: number): PlaytestSlot => ({
   chainId: row.chain_id,
   slotId: row.slot_id,
   name: row.name,
   closesAt: new Date(row.closes_at).toISOString(),
   frozenAt: row.frozen_at === null ? null : new Date(row.frozen_at).toISOString(),
-  closed: row.closes_at <= row.observed_at,
+  closed: row.closes_at <= now,
 });

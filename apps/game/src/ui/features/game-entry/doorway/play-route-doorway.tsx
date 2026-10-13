@@ -3,6 +3,7 @@ import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { useLocation } from "react-router-dom";
 
 import type { PlayRouteBootPhase } from "@/game-entry/play-route-boot";
+import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGameEntry } from "@/hooks/use-game-entry";
 import { parsePlayRoute } from "@/play/navigation/play-route";
@@ -39,7 +40,15 @@ export const PlayRouteDoorway = ({
   const requestSignIn = useRequestSignIn();
   const entry = useRouteGame(route);
   const realm = useOwnRealm(setup, audience);
-  const view = doorwayView({ source: "boot", phase, audience, accountError });
+  const failedScene = usePlayRouteReadinessStore((state) => state.sceneFailure?.scene ?? null);
+  const view = doorwayView({
+    source: "boot",
+    phase,
+    audience,
+    accountError,
+    failedScene,
+    realmCanOpen: realm !== null,
+  });
   return (
     <DoorwayScreen
       view={view}
@@ -48,12 +57,17 @@ export const PlayRouteDoorway = ({
       painting={entry ? gamePainting(entry) : undefined}
       // The boot retries its own failures; an account that could not be set up retries the whole entry.
       onRetry={phase === "error" ? retry : () => window.location.reload()}
+      onOpenRealm={openRealmWithoutMap}
       onSignIn={() => requestSignIn()}
     >
       {route?.verboseLogs && <BootDebugPanel currentTaskLabel={currentTaskLabel} />}
     </DoorwayScreen>
   );
 };
+
+/** The map could not be drawn: the boot goes on to the realm view alone, and the hand-off takes the player there. */
+const openRealmWithoutMap = () =>
+  usePlayRouteReadinessStore.getState().openRealmWithoutMap(getCurrentPlayRouteBootToken());
 
 /** The route's game as the directory lists it (cached from the entry), for the doorway's title and painting. */
 const useRouteGame = (route: ReturnType<typeof parsePlayRoute>) =>

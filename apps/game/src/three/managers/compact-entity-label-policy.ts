@@ -1,4 +1,5 @@
 import {
+  formatCompactLabelNumber,
   resolveArmyTitle,
   resolveEntityLabelRelation,
   resolveStructureTitle,
@@ -19,10 +20,13 @@ export function resolveArmyCompactEntityLabel(army: Pick<ArmyData, "entityId" | 
   return resolveArmyTitle(army);
 }
 
+/** A structure's plate: its name; for a Frontier site, its kind and the strength of its guard, never its id. */
 export function resolveStructureCompactEntityLabel(
-  structure: Pick<StructureInfo, "entityId" | "structureName" | "structureType">,
+  structure: Pick<StructureInfo, "entityId" | "structureName" | "structureType" | "siteKind" | "guardArmies">,
 ): string {
-  return resolveStructureTitle(structure);
+  if (structure.siteKind === undefined) return resolveStructureTitle(structure);
+  const strength = (structure.guardArmies ?? []).reduce((total, guard) => total + guard.count, 0);
+  return strength > 0 ? `${structure.siteKind} ${formatCompactLabelNumber(strength)}` : structure.siteKind;
 }
 
 export function resolveCompactEntityLabelVariant(input: OwnershipLabelSource): CompactEntityLabelVariant {

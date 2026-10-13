@@ -1,3 +1,4 @@
+import { disposeWorker } from "../../../packages/value-ledger/test-support/workerd";
 import { Miniflare } from "miniflare";
 import { beforeAll, afterAll, beforeEach, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
@@ -30,7 +31,7 @@ beforeAll(async () => {
     );
   }
 });
-afterAll(() => mf?.dispose());
+afterAll(() => disposeWorker(mf));
 beforeEach(async () => {
   await db.batch([
     db.prepare('DELETE FROM "user"'),

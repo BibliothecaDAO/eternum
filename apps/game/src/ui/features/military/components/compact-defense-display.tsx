@@ -1,5 +1,5 @@
 import { ArrowLeft, Plus } from "@/ui/design-system/atoms/game-icons";
-import { ARMY_DEPLOYMENT_SURFACE_ID, openArmyDeploymentPicker } from "../utils/open-army-deployment-picker";
+import { ARMY_DEPLOYMENT_SURFACE_ID, openArmyDeployment } from "../utils/open-army-deployment";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { OVERLAY_SURFACE_ACTIVE } from "@/ui/design-system/atoms/overlay-surface";
@@ -48,12 +48,6 @@ interface CompactDefenseDisplayProps {
   canManageDefense?: boolean;
   variant?: EntityDetailLayoutVariant;
   /**
-   * Embed override — when present, slot clicks call this instead of opening the
-   * legacy popup. Used by the merged MilitaryModal to keep the action surface
-   * inline inside its right pane.
-   */
-  onRequestSlotAction?: (slot: GuardSlot) => void;
-  /**
    * Hide the slots-used / total-troops summary row. The right-panel header
    * already shows the slot count, and summing mixed troop tiers is misleading.
    */
@@ -68,7 +62,6 @@ export const CompactDefenseDisplay = ({
   structureId,
   canManageDefense = false,
   variant = "default",
-  onRequestSlotAction,
   hideSlotSummary = false,
 }: CompactDefenseDisplayProps) => {
   const ordersAllowed = useUIStore(canIssueOrders);
@@ -145,12 +138,8 @@ export const CompactDefenseDisplay = ({
 
   const handleSlotOpen = (slot: GuardSlot, element: Element) => {
     if (!canOpenPicker || !structureId) return;
-    if (onRequestSlotAction) {
-      onRequestSlotAction(slot);
-      return;
-    }
     setPickerSlot(slot);
-    openArmyDeploymentPicker(
+    openArmyDeployment(
       {
         structureId,
         isExplorer: false,

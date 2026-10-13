@@ -70,6 +70,7 @@ const verifyAsWallet = vi.fn<VerifyWalletSignature>(async (message, signature, a
 });
 
 beforeAll(async () => {
+  vi.stubEnv("TMPDIR", storageDirectory);
   const configPath = join(storageDirectory, "wrangler.json");
   writeFileSync(
     configPath,
@@ -122,8 +123,12 @@ beforeAll(async () => {
 }, 60_000);
 
 afterAll(async () => {
-  await proxy?.dispose();
-  rmSync(storageDirectory, { recursive: true, force: true });
+  try {
+    await proxy?.dispose();
+  } finally {
+    vi.unstubAllEnvs();
+    rmSync(storageDirectory, { recursive: true, force: true });
+  }
 });
 
 /** A shard manifest under our guardian and account class, the only kind our directory lists. */
@@ -557,6 +562,12 @@ describe("identity Worker", () => {
     const visible = async (path: string) => JSON.stringify(await (await operator.request(path)).json());
     expect(await visible("/api/directory")).not.toContain(url);
     expect(await visible("/api/directory/history")).not.toContain(url);
+    expect((await operator.request("/api/directory/shards")).status).toBe(401);
+    const recorded = await operator.request("/api/directory/shards", { token: OPERATOR_TOKEN });
+    expect(recorded.status).toBe(200);
+    expect(((await recorded.json()) as { shards: unknown[] }).shards).toContainEqual(
+      expect.objectContaining({ url, chainId, status: "pending" }),
+    );
     const bot = {
       label: "0xbeef",
       chainId,
@@ -1018,6 +1029,7 @@ describe("identity Worker", () => {
     expect((await secondDevice.session())?.user.name).toBe("Two Devices");
   });
 
+  // Measured at 2.5–3.2s, this wallet lifecycle exceeds 5s under suite contention.
   it("keeps one wallet per account: unlinking frees it, and a new link replaces the account's wallet", async () => {
     const { wallet: first } = await playerWithWallet("first-holder@realms.test");
     const holder = createBrowser();
@@ -1036,7 +1048,7 @@ describe("identity Worker", () => {
     expect((await proveWallet(other, second, "link")).status).toBe(200);
     expect(BigInt((await other.session())?.user.address ?? 0)).toBe(BigInt(second));
     expect((await proveWallet(holder, first, "link")).status).toBe(200);
-  });
+  }, 10_000);
 
   it("keeps wallet linkage in identity without a ledger readiness state or account-link stores", async () => {
     const player = createBrowser();

@@ -9,7 +9,7 @@ export interface BatchedTransactionDetail {
 
 export type TransactionFailureStage = "submit" | "confirmation" | "revert" | "background_confirmation";
 
-/** not_sent: the action is proven absent from every block, so nothing of it applied and sending again is safe. */
+/** not_sent: this submission was explicitly refused at admission; an unknown hash never establishes this. */
 export type TransactionSubmitFailureKind = "provider_connection_destroyed" | "submit_failed" | "not_sent";
 
 export type TransactionProviderState = "ready" | "destroyed" | "unavailable" | "unknown";
@@ -57,11 +57,13 @@ interface TransactionStreamStatus {
 
 /**
  * Waits for a transaction's outcome, settled once Herald has applied it; `inBlock`, when the submission reconciles
- * its sends, settles first and rejects only on proof the transaction was never sent.
+ * its sends, is a fallback while Herald is silent. Command identity identifies batch receipt requirements.
  */
 export type TransactionStreamWaiter = (
   transactionHash: string,
   inBlock?: Promise<void>,
+  transactionType?: TransactionType,
+  startedAt?: number,
 ) => Promise<TransactionStreamStatus>;
 
 export enum TransactionType {

@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import { launcherAccountAddress, relayAccountAddress } from "../../../packages/value-ledger/src/shard-accounts";
 import { inspectGameRoles } from "./inspect-shard-roles";
 import type { RpcProvider } from "starknet";
 import type { NativeWorldManifest } from "../../../config/deployer/clean/world/native/types";
@@ -8,8 +9,8 @@ function fixture(initialized: boolean, views: Record<string, string[]> = {}, dev
   const values = {
     authentication: ["0x9", "0x7"],
     owner: ["0x22"],
-    launcher: ["0x22"],
-    ledger_operator: ["0x22"],
+    launcher: [launcherAccountAddress({ accountClassHash: "0x9", guardianPublicKey: "0x7" })],
+    ledger_operator: [relayAccountAddress({ accountClassHash: "0x9", guardianPublicKey: "0x7" })],
     vrf_public_key: ["0xb", "0xc"],
     l2_gas_bound: ["0x47868c00"],
     ...views,
@@ -41,17 +42,18 @@ function fixture(initialized: boolean, views: Record<string, string[]> = {}, dev
   };
 }
 
-test("fresh initialization requires the bootstrap's roles and active device", async () => {
+test("fresh initialization names the owner and both service accounts before they join", async () => {
   await expect(inspectGameRoles(fixture(false).input)).resolves.toHaveLength(4);
   await expect(inspectGameRoles(fixture(false, { owner: ["0x99"] }).input)).rejects.toThrow();
   await expect(inspectGameRoles(fixture(false, {}, "0x0").input)).rejects.toThrow();
 });
 
-test("resume reads every handed-off role and does not require the revoked bootstrap device", async () => {
-  const sample = fixture(true, { owner: ["0x77"], launcher: ["0x88"], ledger_operator: ["0x99"] }, "0x0");
-  const roles = await inspectGameRoles(sample.input);
-  expect(roles.slice(1).map(({ address }) => address)).toEqual(["0x77", "0x88", "0x99"]);
+test("resume verifies the pinned roles without requiring the revoked bootstrap device", async () => {
+  const sample = fixture(true, {}, "0x0");
+  expect(await inspectGameRoles(sample.input)).toHaveLength(4);
   expect(sample.calls).not.toContain("is_device");
+  for (const role of ["owner", "launcher", "ledger_operator"])
+    await expect(inspectGameRoles(fixture(true, { [role]: ["0x99"] }).input)).rejects.toThrow("pinned identity");
 });
 
 test("resume retains immutable authentication, VRF and nonzero-role checks", async () => {

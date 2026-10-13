@@ -12,7 +12,8 @@ import type {
 
 import { RealtimeClient } from "@bibliothecadao/types";
 
-export type RealtimeConnectionStatus = "idle" | "connecting" | "connected" | "error";
+/** "reconnecting": a socket dropped and the client is opening it again by itself. */
+export type RealtimeConnectionStatus = "idle" | "connecting" | "connected" | "reconnecting" | "error";
 
 export interface RealtimePlayerIdentity {
   playerId: string;

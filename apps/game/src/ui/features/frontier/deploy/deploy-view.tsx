@@ -6,7 +6,7 @@ import { Chip } from "@/ui/design-system/kit/chip";
 import { DayEnds } from "@/ui/design-system/kit/clock-line";
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { Sheet } from "@/ui/design-system/kit/sheet";
-import { BUILD, DEPLOY, DEPLOYING, MOVE, STAMINA, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
+import { BUILD, DEPLOY, DEPLOY_FIGURES, DEPLOYING, TROOPS } from "@/ui/design-system/kit/words";
 import type { Direction } from "@bibliothecadao/types";
 
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
@@ -20,7 +20,8 @@ type RingTile = { direction: Direction; open: boolean; explored: boolean };
 /**
  * Deploy (wireframe 04), from its props: how many troops, the wheat they cost, the wheat left and how far it moves the
  * army, what each reveal sends home and the stamina it starts with, when it ends, and one Deploy carrying its wheat
- * price. The slider stops where the wheat runs out; with no troops at home, Build is the step. Unknown is a dash.
+ * price. The slider's ends are Minimum and Maximum; it stops where the wheat runs out. Every figure is an icon and a
+ * number that names itself when asked. With no troops at home, Build is the step. Unknown is a dash.
  */
 export const DeployView = ({
   slots,
@@ -83,13 +84,12 @@ export const DeployView = ({
         value={count ?? 0}
         max={troopsMax}
         stop={wheatStop}
-        end={formatExact(troopsMax)}
         disabled={noTroops}
         onChange={onCount}
       />
       {noTroops ? (
         <ReasonPlate
-          reason={{ kind: "short", icon: "Tr", held: 0, need: 1 }}
+          reason={{ kind: "short", of: "troops", held: 0, need: 1 }}
           step={<Button role="primary" word={BUILD} className="w-[140px]" onClick={onBuild} />}
         />
       ) : (
@@ -97,15 +97,15 @@ export const DeployView = ({
           <Equation equation={equation} rations={rations} />
           <div className="flex items-center justify-center gap-1.5">
             {count === 1 ? (
-              <Chip icons={["Ey"]} label={TROOPS} value="" />
+              <Chip icons={["Ey"]} label={DEPLOY_FIGURES.scout} value="" />
             ) : (
               <Chip
                 icons={["Es", "La"]}
-                label={TROOPS}
+                label={DEPLOY_FIGURES.revealSends}
                 value={revealYield === undefined ? "—" : `+${formatAmount(revealYield)}`}
               />
             )}
-            <Chip icons={["St"]} label={STAMINA} value={formatAmount(startingStamina)} />
+            <Chip icons={["St"]} label={DEPLOY_FIGURES.startingStamina} value={formatAmount(startingStamina)} />
             {startingTiers && <AttributeMarks tiers={startingTiers} />}
           </div>
           <DayEnds endsAt={clock?.endsAt} secondsLeft={clock?.secondsLeft} tone={clock?.tone ?? "calm"} />
@@ -121,7 +121,7 @@ export const DeployView = ({
           onClick={onDeploy}
         />
       )}
-      {wheatShort && <ReasonPlate reason={{ kind: "short", icon: "Wh", ...wheatShort }} />}
+      {wheatShort && <ReasonPlate reason={{ kind: "short", of: "wheat", ...wheatShort }} />}
     </Sheet>
   );
 };
@@ -135,12 +135,26 @@ const Equation = ({
   rations: boolean;
 }) => (
   <div className="flex items-center justify-center gap-1.5">
-    <Chip icons={rations ? ["Wh", "Ra"] : ["Wh"]} label={WHEAT} value={`−${formatExact(equation?.wheatCost)}`} />
+    <Chip
+      icons={rations ? ["Wh", "Ra"] : ["Wh"]}
+      label={DEPLOY_FIGURES.wheatToDeploy}
+      value={`−${formatExact(equation?.wheatCost)}`}
+    />
     <span aria-hidden className="text-[16px] text-kit-muted">
       →
     </span>
-    <Chip icons={["Wh"]} label={WHEAT} value={formatExact(equation?.wheatLeft)} ember={equation?.wheatLeft === 0} />
-    <Chip icons={["Bt"]} label={MOVE} value={formatAmount(equation?.tiles)} ember={equation?.tiles === 0} />
+    <Chip
+      icons={["Wh"]}
+      label={DEPLOY_FIGURES.wheatLeft}
+      value={formatExact(equation?.wheatLeft)}
+      ember={equation?.wheatLeft === 0}
+    />
+    <Chip
+      icons={["Bt"]}
+      label={DEPLOY_FIGURES.tilesPaid}
+      value={formatAmount(equation?.tiles)}
+      ember={equation?.tiles === 0}
+    />
   </div>
 );
 
@@ -150,7 +164,7 @@ const Hero = ({ art, count }: { art: string | undefined; count: number | undefin
     <span className="size-16 overflow-hidden rounded-full border border-kit-line2 bg-kit-ground">
       {art && <img src={art} alt="" className="size-full object-cover" />}
     </span>
-    <span aria-label={TROOPS} className="frontier-hero tabular-nums">
+    <span role="img" aria-label={`${TROOPS} ${formatExact(count)}`} className="frontier-hero tabular-nums">
       {formatExact(count)}
     </span>
   </div>
@@ -158,7 +172,7 @@ const Hero = ({ art, count }: { art: string | undefined; count: number | undefin
 
 /** The day's army slots: one mark each, lit where an army stands. */
 const SlotMarks = ({ used, allowed }: { used: number; allowed: number }) => (
-  <span role="img" aria-label={`${used} / ${allowed}`} className="flex gap-[3px]">
+  <span role="img" aria-label={`${DEPLOY_FIGURES.slots} ${used} / ${allowed}`} className="flex gap-[3px]">
     {Array.from({ length: allowed }, (_, index) => (
       <i
         key={index}

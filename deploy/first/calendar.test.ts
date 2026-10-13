@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RpcProvider } from "starknet";
 import * as processTools from "./process";
-import { deliverySteps } from "./delivery";
+import { seasonSteps } from "./season-steps";
 import { PrivateStore } from "./private-store";
 import type { Deployment } from "./main";
 import { environments, type Inputs } from "./settings";
@@ -34,11 +34,9 @@ function setup(phases: Phase[], windows = [{ startsAt: input.blitzStart, endsAt:
   store.write("pull-request.json", { number: 1 });
   const revision = "a".repeat(40);
   spyOn(processTools, "command").mockImplementation(async ({ argv }) => {
-    if (argv[1] === "ls-remote") return `${revision}\trefs/tags/release`;
     if (argv[0] === "git") return revision;
     if (argv[1] === "run") return JSON.stringify([{ conclusion: "success", event: "push" }]);
     if (argv[1] === "pr") return JSON.stringify({ state: "MERGED", mergeCommit: { oid: revision } });
-    if (argv[1] === "release") return JSON.stringify({ assets: [{ name: "shard.tar.gz" }] });
     throw new Error("Unexpected command");
   });
   const writes: { url: string; body: unknown }[] = [];
@@ -78,7 +76,7 @@ function setup(phases: Phase[], windows = [{ startsAt: input.blitzStart, endsAt:
       },
     } as unknown as RpcProvider,
   } as Deployment;
-  return { context, output, writes, step: deliverySteps(context).find((step) => step.name === "Season calendar")! };
+  return { context, output, writes, step: seasonSteps(context).find((step) => step.name === "Season calendar")! };
 }
 test("ended phases, including the exact end boundary, are replaced with explicit new dates", async () => {
   const { step, writes } = setup(
@@ -90,15 +88,20 @@ test("ended phases, including the exact end boundary, are replaced with explicit
   expect(writes[0]!.body).toEqual({ startsAt: "2027-02-01T00:00:00.000Z", endsAt: "2027-02-21T00:00:00.000Z" });
   expect((await step.inspect()).done).toBe(true);
 });
-test.each(["2026-12-01T00:00:00Z", "2027-01-15T00:00:00Z"])(
-  "a running or future conflicting phase starting %s refuses all writes",
-  async (startsAt) => {
-    const { step, writes } = setup([{ phase: "frontier", startsAt, endsAt: "2027-04-01T00:00:00Z" }]);
-    await expect(step.inspect()).rejects.toThrow("Existing calendar dates differ");
-    await expect(step.apply()).rejects.toThrow("Existing calendar dates differ");
-    expect(writes).toEqual([]);
-  },
-);
+test("published phases remain authoritative when the private directory has earlier dates", async () => {
+  const { step, writes } = setup(
+    ["frontier", "blitz"].map((phase) => ({
+      phase,
+      startsAt: "2026-12-01T00:00:00Z",
+      endsAt: "2027-04-01T00:00:00Z",
+    })),
+  );
+  const observation = await step.inspect();
+  expect(observation.done).toBe(true);
+  expect(observation.detail).toContain("2026-12-01T00:00:00Z");
+  await step.apply();
+  expect(writes).toEqual([]);
+});
 test("a matching future phase is preserved while the ended phase is replaced", async () => {
   const { step, writes } = setup([
     { phase: "frontier", startsAt: input.frontierStart, endsAt: input.frontierEnd },
@@ -136,9 +139,11 @@ test("unset phases accept the unchanged entered dates after their start", async 
   spyOn(Date, "now").mockReturnValue(Date.parse("2026-10-12T18:00:00Z"));
   expect((await step.inspect()).done).toBe(false);
   await step.apply();
-  expect(output).toEqual([
-    `Setting calendar: Frontier ${startsAt} to ${endsAt}, pool 1000; Blitz ${startsAt} to ${endsAt}.`,
-  ]);
+  expect(output).toEqual(
+    ["frontier", "blitz"].map(
+      (phase) => `Setting ${phase} calendar: ${new Date(startsAt).toISOString()} to ${new Date(endsAt).toISOString()}.`,
+    ),
+  );
   expect(writes.map(({ url }) => url.split("/").at(-1))).toEqual(["frontier", "blitz"]);
   expect(writes.map(({ body }) => body)).toEqual(
     Array(2).fill({
@@ -153,21 +158,5 @@ test.each([0, 1000])("an unset phase at or beyond its end refuses before writing
   const { step, writes } = setup([]);
   spyOn(Date, "now").mockReturnValue(Date.parse(input.frontierEnd) + elapsed);
   await expect(step.apply()).rejects.toThrow("A phase must end in the future");
-  expect(writes).toEqual([]);
-});
-
-test.each(["frontier", "blitz"])("a running %s phase cannot change its start through the script", async (phase) => {
-  const { step, writes } = setup([{ phase, startsAt: "2027-01-01T00:00:00Z", endsAt: "2027-03-01T00:00:00Z" }]);
-  spyOn(Date, "now").mockReturnValue(Date.parse("2027-02-02T00:00:00Z"));
-  await expect(step.apply()).rejects.toThrow("Existing calendar dates differ");
-  expect(writes).toEqual([]);
-});
-
-test("a running Frontier phase cannot change its end through the script", async () => {
-  const { step, writes } = setup([
-    { phase: "frontier", startsAt: input.frontierStart, endsAt: "2027-02-11T00:00:00Z" },
-  ]);
-  spyOn(Date, "now").mockReturnValue(Date.parse("2027-02-02T00:00:00Z"));
-  await expect(step.apply()).rejects.toThrow("Existing calendar dates differ");
   expect(writes).toEqual([]);
 });

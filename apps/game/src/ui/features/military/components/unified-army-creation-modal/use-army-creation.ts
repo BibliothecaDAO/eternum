@@ -21,6 +21,7 @@ import {
   structureMapPosition,
   openSpawnDirections,
 } from "@bibliothecadao/eternum";
+import type { GameModeConfig } from "@/config/game-modes";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -76,10 +77,6 @@ interface ArmyCreationOptions {
 
 const TROOP_TYPES: TroopType[] = [TroopType.Crossbowman, TroopType.Knight, TroopType.Paladin];
 const TROOP_TIERS: TroopTier[] = [TroopTier.T1, TroopTier.T2, TroopTier.T3];
-const DEFAULT_TROOP_COMBO: SelectedTroopCombo = {
-  type: TroopType.Crossbowman,
-  tier: TroopTier.T1,
-};
 
 const formatTroopTypeLabel = (type: TroopType) => (type === TroopType.Crossbowman ? "CROSSBOW" : type);
 
@@ -101,16 +98,12 @@ export const useArmyCreation = ({
   const [selectedDirection, setSelectedDirection] = useState<Direction | null>(
     direction !== undefined ? direction : null,
   );
-  const [selectedTroopCombo, setSelectedTroopCombo] = useState<SelectedTroopCombo>(() => ({
-    ...DEFAULT_TROOP_COMBO,
-  }));
   const [troopCount, setTroopCount] = useState(0);
   const [guardSlot, setGuardSlot] = useState(initialGuardSlot ?? 0);
   const [armyType, setArmyType] = useState(isExplorer);
   const currentArmiesTick = useCurrentArmiesTick();
   const currentDefaultTick = useCurrentDefaultTick();
   const currentBlockTimestamp = useCurrentBlockTimestamp();
-  const previousStructureIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (initialGuardSlot !== undefined) {
@@ -161,6 +154,16 @@ export const useArmyCreation = ({
       }),
     }));
   }, [activeStructureId, currentDefaultTick, store, revision]);
+
+  // The form opens on a troop this structure can deploy, and on a new structure's when the structure changes; the
+  // game's own cost and capacity reads never see a troop the game does not raise.
+  const openingTroop = () => resolveOpeningTroop(troopOptions, mode);
+  const [selectedTroopCombo, setSelectedTroopCombo] = useState<SelectedTroopCombo>(openingTroop);
+  const [troopStructureId, setTroopStructureId] = useState(activeStructureId);
+  if (troopStructureId !== activeStructureId) {
+    setTroopStructureId(activeStructureId);
+    setSelectedTroopCombo(openingTroop());
+  }
 
   const structureBase = structureComponent?.base;
   const structureCategory = structureBase?.category as StructureType | undefined;
@@ -330,16 +333,6 @@ export const useArmyCreation = ({
   );
 
   const isDefenseTroopLocked = !armyType && isSelectedSlotOccupied;
-
-  useEffect(() => {
-    if (previousStructureIdRef.current === (activeStructureId ?? null)) return;
-    previousStructureIdRef.current = activeStructureId ?? null;
-    const isTrainable = (troop: SelectedTroopCombo) =>
-      mode.rules.isBuildingTypeAllowed(
-        BuildingType[getBuildingFromResource(getTroopResourceId(troop.type, troop.tier))],
-      );
-    setSelectedTroopCombo(resolveInitialTroop(troopOptions, isTrainable) ?? DEFAULT_TROOP_COMBO);
-  }, [activeStructureId, troopOptions, mode]);
 
   useEffect(() => {
     const next = resolveSpawnDirection(selectedDirection, freeDirections, direction);
@@ -562,6 +555,18 @@ export const useArmyCreation = ({
     raiseCostLine: describeTroopRaiseCost(raiseCost),
   };
 };
+
+/**
+ * The troop the form opens on: one the structure holds, else the first this mode lets a realm train. A mode that
+ * trains no troop at all is a config hole, and loud.
+ */
+function resolveOpeningTroop(options: TroopSelectionOption[], mode: GameModeConfig): SelectedTroopCombo {
+  const troop = resolveInitialTroop(options, ({ type, tier }) =>
+    mode.rules.isBuildingTypeAllowed(BuildingType[getBuildingFromResource(getTroopResourceId(type, tier))]),
+  );
+  if (!troop) throw new Error(`${mode.displayName} trains no troop an army could deploy`);
+  return troop;
+}
 
 /** The selected troop's barracks output now, read the way the resource bar reads production. */
 /** What the structure trains of this troop; with no structure nothing is read and nothing trains. */

@@ -9,14 +9,15 @@ import { dayOf } from "@bibliothecadao/eternum";
 
 import { canResearchNow } from "../research/research-plan";
 import { secondsUntilHeld } from "./army-order";
-import { ArmyToken, OpenSlot } from "./army-token";
+import { ArmyToken, OpenSlot, xpLine } from "./army-token";
+import { useChatKey } from "./chat-key";
 import { dayClock } from "./day-clock";
 import { HudBands } from "./hud-bands";
 import { useHudSurface } from "./frontier-nav";
 import { MenuSheet } from "./menu-sheet";
 import { OrderBar } from "./order-bar";
 import { PlaceNav } from "./place-nav";
-import { StatusStrip, type StoreReading } from "./status-strip";
+import { StatusStrip, type StoreReading, storeLine } from "./status-strip";
 
 const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
 
@@ -62,6 +63,19 @@ describe("the day clock", () => {
 });
 
 describe("the status strip", () => {
+  it("says a store in one line: what it holds of its limit, its rate an hour and when it is full", () => {
+    const wheat: StoreReading = { kind: "wheat", amount: 1_771, limit: 6_000, tone: "calm", flyTarget: "wheat" };
+    expect(storeLine({ ...wheat, perHour: 302, fullIn: 14 * 3_600 })).toBe(
+      "wheat 1,771 of 6,000 · +302 an hour · Full in 14h",
+    );
+    expect(storeLine({ ...wheat, amount: 6_000, perHour: 302, fullIn: 0 })).toBe("wheat 6,000 of 6,000 · Full");
+    // No building makes it: no rate to say, and no moment it fills.
+    expect(storeLine(wheat)).toBe("wheat 1,771 of 6,000");
+    // Essence has no limit.
+    expect(storeLine({ ...wheat, kind: "essence", amount: 18_250, limit: undefined })).toBe("Essence 18,250");
+    expect(storeLine({ ...wheat, amount: undefined })).toBe("wheat — of 6,000");
+  });
+
   const store = (kind: StoreReading["kind"], amount: number | undefined, limit?: number): StoreReading => ({
     kind,
     amount,
@@ -80,6 +94,10 @@ describe("the status strip", () => {
     );
     expect(markup.match(/role="meter"/g)).toHaveLength(2);
     expect(markup).toContain("width:50%");
+    // Each plate is one image named by its line, so the tooltip and a screen reader say the same words.
+    expect(markup).toContain('role="img" aria-label="Essence 18,250"');
+    expect(markup).toContain('role="img" aria-label="labor 9,000 of 18,000"');
+    expect(markup).toContain('role="img" aria-label="wheat — of 18,000"');
     expect(text(markup)).toContain("—");
     expect(text(markup)).toContain("Tomorrow lasts16h");
   });
@@ -103,6 +121,52 @@ describe("the army token", () => {
     // 90 of 150 is three segments full.
     expect(markup.match(/width:100%/g)).toHaveLength(3);
     expect(markup).toContain("width:0%");
+  });
+
+  it("says what the XP buys next on its badge's tooltip, and the balance alone once nothing is left to buy", () => {
+    expect(xpLine(8, { price: 100, tier: 2 })).toBe("XP 8 of 100 · buys an Uncommon attribute tier");
+    expect(xpLine(260, { price: 400, tier: 4 })).toBe("XP 260 of 400 · buys an Epic attribute tier");
+    expect(xpLine(2_000, undefined)).toBe("XP 2,000");
+    const markup = renderToStaticMarkup(
+      <ArmyToken
+        label="Army 1"
+        art={undefined}
+        xp={8}
+        xpGoal={{ price: 100, tier: 2 }}
+        stamina={undefined}
+        troops={154}
+        canBuyTier={false}
+        selected={false}
+      />,
+    );
+    expect(markup).toContain('data-tip="XP 8 of 100 · buys an Uncommon attribute tier"');
+  });
+
+  it("writes XP beside the number on the wide card, over a bar toward the next tier, with a pip for each tier reached", () => {
+    act(() =>
+      root.render(
+        <ArmyToken
+          label="Army 1"
+          art={undefined}
+          xp={25}
+          xpGoal={{ price: 100, tier: 2 }}
+          tiers={[2, 1, 3, 1]}
+          stamina={{ current: 90, max: 150 }}
+          troops={984}
+          canBuyTier={false}
+          selected={false}
+          wide={{ secondsToFull: undefined, returnsHome: 0 }}
+        />,
+      ),
+    );
+    const xp = host.querySelector('[data-tip^="XP 25 of 100"]')!;
+    expect(xp.textContent).toBe("25 XP");
+    expect(xp.querySelector<HTMLElement>("b")!.style.width).toBe("25%");
+    // Battle at uncommon is one pip, Scouting at rare two; the attributes still at common show none.
+    expect(host.querySelector('[aria-label="Battle Uncommon"]')!.querySelectorAll("i")).toHaveLength(1);
+    expect(host.querySelector('[aria-label="Scouting Rare"]')!.querySelectorAll("i")).toHaveLength(2);
+    expect(host.querySelector('[aria-label^="Logistics"]')).toBeNull();
+    expect(host.querySelector('[aria-label^="Homecoming"]')).toBeNull();
   });
 
   it("is picked with a tap, and an open slot opens Deploy", () => {
@@ -132,6 +196,19 @@ describe("the army token", () => {
     act(() => slot.click());
     expect(onPick).toHaveBeenCalled();
     expect(onDeploy).toHaveBeenCalled();
+  });
+});
+
+describe("an open slot whose army is being deployed", () => {
+  it("says Deploying…, pulses and cannot be pressed until the deploy's outcome", () => {
+    const onDeploy = vi.fn();
+    act(() => root.render(<OpenSlot label="Deploy" pulse={false} filling="Deploying…" wide onDeploy={onDeploy} />));
+    const slot = host.querySelector("button")!;
+    expect(slot.getAttribute("aria-label")).toBe("Deploying…");
+    expect(slot.getAttribute("aria-busy")).toBe("true");
+    expect(slot.textContent).toBe("…Deploying…");
+    act(() => slot.click());
+    expect(onDeploy).not.toHaveBeenCalled();
   });
 });
 
@@ -169,7 +246,7 @@ describe("the place bar", () => {
 });
 
 describe("the Menu", () => {
-  it("opens Today, Season with the rank, Production and Settings, switches the guide, and closes on Resume", () => {
+  it("opens Today, Season with the rank, Production, the guide's lines and Settings, and closes on Resume", () => {
     const handlers = {
       onToday: vi.fn(),
       onSeason: vi.fn(),
@@ -180,13 +257,12 @@ describe("the Menu", () => {
       onClose: vi.fn(),
     };
     const { onGuide, ...ways } = handlers;
-    act(() => root.render(<MenuSheet rank="#12" guide={{ on: true, onToggle: onGuide }} {...ways} />));
+    act(() => root.render(<MenuSheet rank="#12" guide={{ on: true, onOpen: onGuide }} {...ways} />));
     const button = (word: string) =>
       [...document.querySelectorAll<HTMLButtonElement>("section[aria-label='Menu'] button")].find((candidate) =>
         candidate.textContent?.startsWith(word),
       )!;
     expect(button("Season").textContent).toBe("Season#12");
-    expect(button("Guide").getAttribute("aria-pressed")).toBe("true");
     for (const [word, handler] of [
       ["Today", handlers.onToday],
       ["Season", handlers.onSeason],
@@ -277,6 +353,34 @@ describe("the order bar", () => {
     expect(onGo).toHaveBeenCalled();
   });
 
+  it("confirms on Enter and takes the key, but never while the player types", () => {
+    const onGo = vi.fn();
+    act(() =>
+      root.render(
+        <>
+          <input aria-label="message" />
+          <OrderBar
+            kind="move"
+            tiles={2}
+            stamina={covered}
+            wheat={{ cost: 4, held: 4_410, wait: undefined }}
+            revealYield={null}
+            xp={undefined}
+            onCancel={() => {}}
+            onGo={onGo}
+          />
+        </>,
+      ),
+    );
+    const typed = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+    host.querySelector("input")!.dispatchEvent(typed);
+    expect(onGo).not.toHaveBeenCalled();
+    const enter = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+    document.body.dispatchEvent(enter);
+    expect(onGo).toHaveBeenCalledTimes(1);
+    expect(enter.defaultPrevented).toBe(true);
+  });
+
   it("turns a short cost ember with its exact wait, and takes the verb away", () => {
     act(() =>
       root.render(
@@ -303,6 +407,36 @@ describe("the order bar", () => {
     expect(secondsUntilHeld(100, 100, 900)).toBeUndefined();
     expect(secondsUntilHeld(40, 100, 0)).toBeUndefined();
     expect(secondsUntilHeld(undefined, 100, 900)).toBeUndefined();
+  });
+});
+
+describe("the chat key", () => {
+  const Chat = ({ onOpen }: { onOpen: () => void }) => {
+    const pane = useChatKey(onOpen);
+    return (
+      <section ref={pane}>
+        <input aria-label="message" />
+      </section>
+    );
+  };
+  const enter = () => new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+
+  it("opens chat on Enter and puts the cursor in its field", () => {
+    const onOpen = vi.fn();
+    act(() => root.render(<Chat onOpen={onOpen} />));
+    act(() => void document.body.dispatchEvent(enter()));
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).toBe(host.querySelector("input"));
+  });
+
+  it("leaves an Enter that a preview's verb took, and one typed in a field", () => {
+    const onOpen = vi.fn();
+    act(() => root.render(<Chat onOpen={onOpen} />));
+    const taken = enter();
+    taken.preventDefault();
+    act(() => void document.body.dispatchEvent(taken));
+    act(() => void host.querySelector("input")!.dispatchEvent(enter()));
+    expect(onOpen).not.toHaveBeenCalled();
   });
 });
 

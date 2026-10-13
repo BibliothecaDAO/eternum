@@ -9,6 +9,7 @@ import { Button } from "@/ui/design-system/kit/button";
 import { forgetDeviceKey } from "@bibliothecadao/eternum";
 
 import { setAppMusic, useAppMusic } from "../app-music";
+import { COMMUNITY } from "../community";
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
 import { useRealmsPlayer } from "../herald";
@@ -16,7 +17,7 @@ import { Loading } from "../loading";
 import { NothingHere } from "../not-found";
 import { paintingSources } from "../paintings";
 import { useRequestSignIn } from "../sign-in/sign-in-route";
-import { LEVEL_WORDS, PROFILE_WORDS, WORDS } from "../words";
+import { FOOTER_WORDS, LEVEL_WORDS, PROFILE_WORDS, WORDS } from "../words";
 import { AccountCard } from "./account-card";
 import { DevicesCard } from "./devices-page";
 import { NotificationsCard, shownLevel } from "./notifications";
@@ -34,12 +35,34 @@ const ROW_PATH: Record<ProfileRow, string> = {
 
 /**
  * Profile (spec 10, the tab): the player's page as others see it, then Account, Notifications and Devices. Signed
- * out, one card with Sign in; a device removed elsewhere, one card with Sign in to add it back.
+ * out, one card with Sign in; a device removed elsewhere, one card with Sign in to add it back. On a phone, which has
+ * no footer, the community's links close the page, signed in or not.
  */
-export const ProfilePage = () => (
-  <PageFrame>
-    <SignedInOnly>{(account) => <OwnProfile account={account} open={null} />}</SignedInOnly>
-  </PageFrame>
+export const ProfilePage = () => {
+  const phone = useLayout() === "phone";
+  return (
+    <PageFrame>
+      <SignedInOnly>{(account) => <OwnProfile account={account} open={null} />}</SignedInOnly>
+      {phone && <CommunityRows />}
+    </PageFrame>
+  );
+};
+
+/** Where the realm talks, as rows: the desktop's footer holds these, and a phone has them here, once. */
+const CommunityRows = () => (
+  <nav aria-label={FOOTER_WORDS.community} className="mt-6 flex flex-col gap-2">
+    <h2 className="px-2 font-ui text-[14px] tracking-[.06em] text-kit-gold">{FOOTER_WORDS.community}</h2>
+    <SettingRows>
+      {COMMUNITY.map((place) => (
+        <SettingRow
+          key={place.name}
+          icon={place.name === "Discord" ? "Dc" : "Xs"}
+          name={place.name}
+          href={place.href}
+        />
+      ))}
+    </SettingRows>
+  </nav>
 );
 
 /** Account, Notifications and Devices: pages from Profile on a phone; on desktop the open row's right panel. */

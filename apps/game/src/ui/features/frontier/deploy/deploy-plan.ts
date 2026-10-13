@@ -215,7 +215,7 @@ export const deployArmy = (
   troops: NonNullable<DeployPlan["troops"]>,
   count: number,
   direction: Direction,
-): Promise<void> =>
+) =>
   actions.createExplorerArmy({
     structureId: safeInteger(realm.entity_id),
     troopType: troops.type,

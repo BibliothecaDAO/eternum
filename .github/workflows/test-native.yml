@@ -42,6 +42,17 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Check season startup before package builds
+        run: |
+          season_private_dir=$(mktemp -d)
+          trap 'rm -rf "$season_private_dir"' EXIT
+          set +e
+          season_output=$(pnpm run season dev "$season_private_dir" 2>&1)
+          season_status=$?
+          set -e
+          printf '%s\n' "$season_output"
+          test "$season_status" -eq 1
+          [[ "$season_output" == *"Run setup before opening a season"* ]]
       - name: Build shared packages
         run: pnpm run build:packages
       - name: Check canonical realm metadata
@@ -68,9 +79,8 @@ jobs:
         run: bun test deploy/athanor/scripts/native-target.test.ts
       - name: Resume an interrupted first initialization
         run: bun test deploy/athanor/scripts/host-accounts.test.ts
-      - name: Verify current owner and service role handoffs
-        run:
-          bun test deploy/athanor/scripts/service-role-check.test.ts deploy/athanor/scripts/inspect-shard-roles.test.ts
+      - name: Verify owner and service roles at creation
+        run: bun test deploy/athanor/scripts/inspect-shard-roles.test.ts
       - name: Test fail-closed deployment paths
         run: |
           python3 -m unittest discover -s deploy/athanor/scripts -p "test_*.py" -v

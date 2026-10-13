@@ -12,6 +12,7 @@ import {
   Tent,
   Users,
 } from "@/ui/design-system/atoms/game-icons";
+import { byStructureCategory } from "@/lib/structure-category-table";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { STRUCTURE_GROUP_CONFIG } from "@/ui/features/world/containers/top-header/structure-groups";
@@ -29,17 +30,23 @@ import { createElement, memo, useCallback } from "react";
 
 // Category → icon, same lookup the picker uses elsewhere. Centralized here so
 // every consumer of StructureStatusRow gets the same iconography.
-const CATEGORY_ICONS: Partial<Record<StructureType, GameIcon>> = {
+// A new category fails typecheck here until it has an icon.
+const CATEGORY_ICONS: Record<StructureType, GameIcon> = {
   [StructureType.Realm]: Crown,
   [StructureType.Village]: Castle,
   [StructureType.Camp]: Tent,
   [StructureType.Mine]: Pickaxe,
   [StructureType.Hyperstructure]: Sparkles,
+  [StructureType.Bank]: Crown,
+  [StructureType.BitcoinMine]: Crown,
+  [StructureType.Rift]: Crown,
+  [StructureType.Ruin]: Crown,
+  [StructureType.Stragglers]: Crown,
 };
 
 const getCategoryIcon = (category: StructureType | number | undefined): GameIcon => {
   if (category === undefined) return Crown;
-  return CATEGORY_ICONS[category as StructureType] ?? Crown;
+  return byStructureCategory(CATEGORY_ICONS, category, "status row icon", Crown);
 };
 
 const CategoryIcon = ({ category, className }: { category: StructureType | number | undefined; className?: string }) =>

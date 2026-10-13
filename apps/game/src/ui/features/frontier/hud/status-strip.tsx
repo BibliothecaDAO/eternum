@@ -1,11 +1,12 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { formatAmount } from "@/ui/design-system/kit/amount";
+import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import { ClockLine } from "@/ui/design-system/kit/clock-line";
 import { DayDial } from "@/ui/design-system/kit/day-dial";
 import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { StoreBar } from "@/ui/design-system/kit/store-bar";
+import { formatDuration } from "@/ui/design-system/kit/time";
 import { TONE_TEXT, type Tone } from "@/ui/design-system/kit/tone";
-import { ESSENCE, LABOR, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
+import { AN_HOUR, ESSENCE, FULL, FULL_IN, LABOR, OF, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
 import { useLandedValue, useLandingDelta } from "@/ui/motion/landing-hold";
 import { EASE } from "@/ui/motion/motion-scale";
 import { useReducedMotion } from "@/ui/motion/motion-settings";
@@ -17,11 +18,16 @@ import type { DayClock } from "./day-clock";
 
 export type StoreKind = "essence" | "labor" | "wheat" | "troops";
 
-/** One store on the strip: what it holds, its limit (Essence has none), its tone, and where payouts land on it. */
+/**
+ * One store on the strip: what it holds, its limit (Essence has none), its rate an hour and when it is full (0 once it
+ * is), its tone, and where payouts land on it.
+ */
 export type StoreReading = {
   kind: StoreKind;
   amount: number | undefined;
   limit: number | undefined;
+  perHour?: number;
+  fullIn?: number;
   tone: Tone;
   flyTarget: string;
 };
@@ -76,23 +82,44 @@ const Stores = ({ stores, onOpen }: { stores: StoreReading[]; onOpen?: () => voi
   );
 };
 
-/** A store's plate: its icon and amount, rolling as it changes, over the bar of its limit. */
+/**
+ * A store in one line, as its plate says it when asked: "Wheat 1,771 of 6,000 · +302 an hour · Full in 14h". Each part
+ * is there only when the game's facts give it; a full store says Full in place of a rate it no longer earns.
+ */
+export const storeLine = ({ kind, amount, limit, perHour, fullIn }: StoreReading): string => {
+  const held = `${STORES[kind].word} ${formatExact(amount)}`;
+  if (limit === undefined) return held;
+  const against = `${held} ${OF} ${formatExact(limit)}`;
+  if (fullIn === 0) return `${against} · ${FULL}`;
+  const rate = perHour !== undefined && perHour > 0 ? ` · +${formatAmount(perHour)} ${AN_HOUR}` : "";
+  return `${against}${rate}${fullIn === undefined ? "" : ` · ${FULL_IN} ${formatDuration(fullIn)}`}`;
+};
+
+/**
+ * A store's plate: its icon and amount, rolling as it changes, over the bar of its limit. Its line is its one name:
+ * what a screen reader says and what the tooltip shows.
+ */
 const StorePlate = ({ store }: { store: StoreReading }) => {
-  const { icon, word } = STORES[store.kind];
+  const { icon } = STORES[store.kind];
   const shown = useLandedValue(store.flyTarget, store.amount);
   return (
-    <span className="relative flex min-w-0 flex-1 flex-col justify-center gap-1 px-0.5">
+    <span className="relative flex min-w-0 flex-1">
       <LandingDelta target={store.flyTarget} />
-      <span className="flex items-center justify-center gap-0.5">
-        <span data-fly-target={store.flyTarget} className="inline-flex">
-          <KitIcon code={icon} size={18} />
+      <span
+        role="img"
+        aria-label={storeLine(store)}
+        className="flex min-w-0 flex-1 flex-col justify-center gap-1 px-0.5"
+      >
+        <span className="flex items-center justify-center gap-0.5">
+          <span data-fly-target={store.flyTarget} className="inline-flex">
+            <KitIcon code={icon} size={18} />
+          </span>
+          <span className={cn("text-[15px] leading-none tabular-nums", TONE_TEXT[store.tone])}>
+            {shown === undefined ? "—" : <TickNumber value={shown} format={formatAmount} />}
+          </span>
         </span>
-        <span className="sr-only">{word}</span>
-        <span className={cn("text-[15px] leading-none tabular-nums", TONE_TEXT[store.tone])}>
-          {shown === undefined ? "—" : <TickNumber value={shown} format={formatAmount} />}
-        </span>
+        <StoreBar amount={store.amount} limit={store.limit} tone={store.tone} />
       </span>
-      <StoreBar amount={store.amount} limit={store.limit} tone={store.tone} />
     </span>
   );
 };

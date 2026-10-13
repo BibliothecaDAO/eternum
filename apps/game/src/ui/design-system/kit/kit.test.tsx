@@ -1,4 +1,4 @@
-import { act } from "react";
+import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -10,7 +10,7 @@ import { clockLineText } from "./clock-text";
 import { DayDial } from "./day-dial";
 import { Notice } from "./notice";
 import { PriceChip } from "./price-chip";
-import { ReasonPlate } from "./reason-plate";
+import { ReasonPlate, shortfallLine } from "./reason-plate";
 import { SeasonRow } from "./season-row";
 import { OpenedFromPanel } from "./opened-from-panel";
 import { Sheet } from "./sheet";
@@ -131,16 +131,28 @@ describe("Button", () => {
 });
 
 describe("ReasonPlate", () => {
-  it("holds what the player has against the price, with the exact wait, and the step beside it", () => {
+  it("says a shortfall in one line that names what is counted, with the exact wait, and the step beside it", () => {
     const plate = text(
       renderToStaticMarkup(
         <ReasonPlate
-          reason={{ kind: "short", icon: "La", held: 9_640, need: 15_000, wait: 10 * 3600 + 44 * 60 }}
+          reason={{ kind: "short", of: "labor", held: 9_640, need: 15_000, wait: 10 * 3600 + 44 * 60 }}
           step={<Button role="primary" word="Map" />}
         />,
       ),
     );
-    expect(plate).toBe("9,640 / 15,00010h 44mMap");
+    expect(plate).toBe("Needs 15,000 labor, have 9,640 · in 10h 44mMap");
+  });
+
+  it("counts what is free, or a store's own limit, in the same line", () => {
+    expect(shortfallLine({ kind: "short", of: "population", counted: "free", held: 2, need: 3 })).toBe(
+      "Needs 3 population, 2 free",
+    );
+    expect(shortfallLine({ kind: "short", of: "labor", counted: "limit", held: 18_000, need: 24_000 })).toBe(
+      "Needs 24,000 labor, the store holds 18,000",
+    );
+    expect(shortfallLine({ kind: "short", of: "essence", held: undefined, need: 48_000 })).toBe(
+      "Needs 48,000 Essence, have —",
+    );
   });
 
   it("names what failed in one line", () => {
@@ -225,6 +237,15 @@ describe("Sheet", () => {
     expect(onClose).toHaveBeenCalledTimes(3);
   });
 
+  it("takes the Escape that closes it, so the same press backs out of nothing else", () => {
+    const onClose = vi.fn();
+    renderSheet(onClose);
+    const escape = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+    act(() => void document.body.dispatchEvent(escape));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(escape.defaultPrevented).toBe(true);
+  });
+
   it("on a desktop closes from its own mark: a cross, or a back arrow when it opened from another panel", () => {
     const onClose = vi.fn();
     renderSheet(onClose);
@@ -254,6 +275,28 @@ describe("Sheet", () => {
       window.dispatchEvent(new PopStateEvent("popstate", { state: null }));
     });
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("a Sheet closed in the tick it opened", () => {
+  it("steps back off its history entry once, even under React's double mount", () => {
+    vi.useFakeTimers();
+    const back = vi.spyOn(window.history, "back").mockImplementation(() => {});
+    act(() =>
+      root.render(
+        <StrictMode>
+          <Sheet label="Deploy" onClose={() => {}}>
+            <p>rows</p>
+          </Sheet>
+        </StrictMode>,
+      ),
+    );
+    act(() => root.render(<StrictMode>{null}</StrictMode>));
+    vi.runAllTimers();
+    expect(back).toHaveBeenCalledTimes(1);
+    back.mockRestore();
+    vi.useRealTimers();
+    window.history.replaceState(null, "");
   });
 });
 

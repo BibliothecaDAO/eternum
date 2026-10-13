@@ -1,4 +1,3 @@
-export * from "./army-capacity";
 export * from "./base-three-tooltip";
 export * from "./circle-button";
 export * from "./headline";
@@ -13,7 +12,6 @@ export * from "./select-resource";
 export * from "./select-tier";
 export * from "./select-troop";
 export * from "./sort-panel";
-export * from "./stamina-resource";
 export * from "./stamina-resource-cost";
 export * from "./tooltip";
 export * from "./twitter-share-button";

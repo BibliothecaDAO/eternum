@@ -20,7 +20,6 @@ it("builds shared display content from the original event clock", () => {
 });
 
 it.each([
-  ["BuildingPlacementStory", { destroyed: true }, {}, "A building has fallen"],
   ["StructureLevelUpStory", { new_level: 4 }, {}, "Your realm grows stronger"],
   ["ResourceReceiveArrivalStory", {}, {}, "The caravan has arrived"],
   ["ProductionStory", {}, {}, "The workshops are humming"],
@@ -57,3 +56,26 @@ it.each([undefined, null, "", "bad", -1, 9007199254740991])(
     expect(() => storyNotificationCreatedAt({ timestamp })).toThrow();
   },
 );
+
+it.each([
+  ["Created", "A new building takes shape"],
+  ["Destroyed", "A building has fallen"],
+  ["Paused", "Construction paused"],
+  ["Resumed", "The hammers ring again"],
+])("describes the native building change %s in live and background alerts", (change, title) => {
+  expect(
+    buildStoryNotification({
+      ...input,
+      value: {
+        timestamp: "0x1",
+        story: { BuildingPlacementStory: { coord: { alt: false, x: "0xb", y: "0xa" }, category: "0x25", change } },
+      },
+    }),
+  ).toMatchObject({ title });
+});
+
+it.each([undefined, null, "", "Unknown"])("refuses a missing or unknown building change %s", (change) => {
+  expect(() => storyNotificationCopy("BuildingPlacementStory", { change }, {})).toThrow(
+    "Incomplete building placement story",
+  );
+});

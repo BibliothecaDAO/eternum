@@ -198,8 +198,8 @@ def harness_invocation(args, environ, data=DATA, started=None):
     operator = json.loads((data / "gameplay-contracts.json").read_text())["operatorAccountAddress"]
     environment["DEPLOYER_ACCOUNT_ADDRESS"] = operator
     environment["HARNESS_ADMIN_RPC_URL"] = shard.PRIVATE_NODE_RPC_URL
-    environment["RPC_URL"] = "http://rpc:8080/rpc/v0_10_2"
-    environment["HERALD_URL"] = "http://herald:3003"
+    environment["RPC_URL"] = environ["PUBLIC_RPC_URL"]
+    environment["HERALD_URL"] = environ["PUBLIC_HERALD_URL"]
     # The host runner may rewrite harness.env with host paths. Inside the image, DATA is the mounted copy.
     for field, filename in (("NATIVE_WORLD_MANIFEST", "native-world.json"),
                             ("GAMEPLAY_CONTRACTS_PATH", "gameplay-contracts.json"),
@@ -246,17 +246,6 @@ if __name__ == "__main__":
         os.environ.update(operator_environment())
         probe()
         raise SystemExit(0)
-    if action == "service-role-check":
-        _, environment = harness_invocation([], os.environ)
-        os.execvpe("bun", ["bun", "deploy/athanor/scripts/service-role-check.ts", *sys.argv[2:]], environment)
-    if action == "self-check":
-        argv, environment = harness_invocation([], os.environ)
-        identity = json.loads((DATA / "gameplay-contracts.json").read_text())
-        environment["DEPLOYER_ACCOUNT_ADDRESS"] = identity["operatorAccountAddress"]
-        environment["RPC_URL"] = "http://rpc:8080/rpc/v0_10_2"
-        environment["HARNESS_ADMIN_RPC_URL"] = shard.PRIVATE_NODE_RPC_URL
-        environment["HERALD_URL"] = "http://herald:3003"
-        os.execvpe("bun", ["bun", "deploy/athanor/harness/self-check.ts"], environment)
     if action == "harness":
         # The harness runs as the host user, so what it writes is already the user's: it execs before any chown.
         argv, environment = harness_invocation(sys.argv[2:], os.environ)

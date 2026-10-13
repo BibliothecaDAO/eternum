@@ -34,23 +34,17 @@ export const FOOTER_WORDS = {
   community: "Community",
   realms: "Realms",
   legal: "Legal",
-  guides: "Guides",
-  gameDocs: "Game docs",
   marketplace: "Marketplace",
   terms: "Terms of Service",
   privacy: "Privacy Policy",
   credits: "Credits and licences",
   owner: "© 2026 BibliothecaDAO",
-  places: "places",
-  back: "back",
 } as const;
 
-/** Play on the desktop: its panels and the bands below its first screen. */
+/** Play on the desktop: its panels. */
 export const PLAY_WORDS = {
   blitzGames: "Blitz games",
   nextBlitz: "Next Blitz",
-  fourAges: "The four ages",
-  joinTheRealm: "Join the realm",
 } as const;
 
 /** The lore's line, on the first visit's painting and on sign-in (approved 25 September). */
@@ -125,6 +119,11 @@ export const DOORWAY_WORDS = {
   ended: "This game has ended.",
   deviceLimit: "Device limit reached.",
   devices: "Devices",
+  /** A scene that could not be set up, named for what the player does not see; the cause is in the console. */
+  mapNotDrawn: "The map could not be drawn.",
+  realmNotDrawn: "The realm could not be drawn.",
+  /** The way on when the map cannot be drawn: the realm view opens without it. */
+  openRealm: "Open realm",
 } as const;
 
 /** The Season tab and a game's Results. */
@@ -223,6 +222,8 @@ export const WALLET_WORDS = {
   noneHere: "No wallet this browser can open. Ready by email needs none.",
   wrongWallet: (owner: string) => `Open ${owner}: only that wallet can sign this.`,
   paymentFailed: "The wallet did not confirm it. Check it, then try again.",
+  tryAgain: "Try again",
+  whichHolds: (owner: string) => `Which wallet holds ${owner}?`,
 } as const;
 
 /** What every value screen shares: a fee the payout wallet cannot pay yet. */
@@ -248,6 +249,8 @@ export const ENTRY_WORDS = {
   needMore: (amount: string) => `Need ${amount} more LORDS`,
   paidFromWallet: "Entry is paid from your payout wallet",
   registered: "Registered",
+  /** The slot is listed and the ledger does not hold it yet: a moment, not a failure. */
+  openingLine: "Entry is opening. It will be ready in a moment.",
   registeredLine: "Your seat is drawn when entry closes.",
   /** Past the close, until a game's roster names the wallet. */
   drawingLine: "Entry has closed. Your seat is being drawn.",
@@ -345,12 +348,11 @@ export const LEARN_WORDS = {
   updated: "Updated",
   /** A post's reading time: "4min". */
   minutes: (count: number) => `${count}min`,
-  /** The Scroll, the posts read inside Play. */
+  /** The Scroll, the posts read inside Learn. */
   scroll: "The Scroll",
   thoughtPiece: "Thought piece",
   update: "Update",
   /** Below the Scroll's newest posts: everything else in News, on Learn. */
-  allNews: "All news",
   /** The four ages as the lore site tells them, on Learn. */
   chronicle: "The chronicle",
   lostAges: "The Lost Ages",

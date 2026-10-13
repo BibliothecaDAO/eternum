@@ -3,7 +3,7 @@
 import type { NativeWorldBindings } from "@bibliothecadao/types";
 import bindings from "../../../../contracts/l3/world-native/schema/bindings.json";
 import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
-import { hash, type AccountInterface } from "starknet";
+import { EDAMode, hash, transaction, type AccountInterface, type InvocationsSignerDetails } from "starknet";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { disposeActiveGameSyncRuntime, installFreshGameSyncRuntime } from "../sync/game-sync-runtime";
@@ -147,6 +147,60 @@ const bootClient = async (harness: ReturnType<typeof createHarness>) => {
 };
 
 describe("createGameClient", () => {
+  it("resynchronizes the account nonce when Herald reports another tab's transaction", async () => {
+    const address = "0x502002";
+    const harness = createHarness({ actor: address });
+    const client = await bootClient(harness);
+    let nonce = 7n;
+    let sequence = 0;
+    const nonces: bigint[] = [];
+    const report = (transactionHash: string) =>
+      harness.sockets[0]!.receive({
+        type: "tx",
+        epoch: "epoch-a",
+        seq: ++sequence,
+        hash: transactionHash,
+        block: null,
+        status: "PRE_CONFIRMED",
+      });
+    const account = {
+      address,
+      getNonce: vi.fn(async () => `0x${nonce.toString(16)}`),
+      getTransactionStatus: vi.fn(() => Promise.reject(new Error("Node read forbidden while Herald answers"))),
+      execute: vi.fn(async (calls, details) => {
+        nonces.push(BigInt(details.nonce));
+        if (BigInt(details.nonce) !== nonce) throw Object.assign(new Error("Invalid nonce"), { code: 52 });
+        nonce++;
+        const transactionHash = hash.calculateInvokeTransactionHash({
+          ...details,
+          senderAddress: address,
+          compiledCalldata: transaction.getExecuteCalldata([calls], "1"),
+          chainId: "0x1" as InvocationsSignerDetails["chainId"],
+          nonceDataAvailabilityMode: EDAMode.L1,
+          feeDataAvailabilityMode: EDAMode.L1,
+        });
+        queueMicrotask(() => report(transactionHash));
+        return { transaction_hash: transactionHash };
+      }),
+    };
+    const send = () =>
+      harness.settle(client.setup.network.provider.submitCommand(account as unknown as AccountInterface, explore));
+    try {
+      await send();
+      // A second tab signs at the chain's next nonce, outside this client's local submission registry.
+      nonce++;
+      report("0xf002");
+      await flushMicrotasks(30);
+      await send();
+      await send();
+      expect(nonces).toEqual([7n, 9n, 10n]);
+      expect(account.getNonce).toHaveBeenCalledTimes(2);
+      expect(account.getTransactionStatus).not.toHaveBeenCalled();
+    } finally {
+      client.dispose();
+    }
+  });
+
   it("keeps every client in one process live: each owns its runtime", async () => {
     const first = createHarness({ actor: "0x111" });
     const second = createHarness({ actor: "0x222" });
@@ -170,6 +224,78 @@ describe("createGameClient", () => {
     expect(execute.mock.calls[0]![0]).toMatchObject({ contractAddress: "0x1", entrypoint: "play" });
     expect(playCalldata(execute).slice(0, 3)).toEqual(["54", "1", String(0x789n)]);
     client.dispose();
+  });
+
+  it("writes Herald facts and sends the next command at 300 ms despite a 19 s node visibility gap", async () => {
+    const harness = createHarness({ actor: "0x303019" });
+    const client = await bootClient(harness);
+    vi.useFakeTimers();
+    const provider = client.setup.network.provider;
+    const notFound = () => Promise.reject(Object.assign(new Error("Transaction hash not found"), { code: 29 }));
+    vi.spyOn(provider.provider, "getTransactionReceipt").mockImplementation(notFound);
+    let sequence = 0;
+    const nonces: string[] = [];
+    const execute = vi.fn(async (_calls, details) => {
+      nonces.push(String(details.nonce));
+      const ordinal = nonces.length;
+      const transactionHash = `0x${ordinal}`;
+      setTimeout(() => {
+        harness.sockets[0]!.receive({
+          type: "diff",
+          epoch: "epoch-a",
+          seq: ++sequence,
+          block: null,
+          preconfirmed: true,
+          transaction_hash: transactionHash,
+          del: [],
+          set: [
+            {
+              model: "EntityName",
+              key: hash.computePoseidonHashOnElements([54, 9]),
+              value: { game_id: 54, entity_id: 9, name: String(ordinal) },
+            },
+          ],
+        });
+        harness.sockets[0]!.receive({
+          type: "tx",
+          epoch: "epoch-a",
+          seq: ++sequence,
+          hash: transactionHash,
+          block: null,
+          status: "PRE_CONFIRMED",
+        });
+      }, 300);
+      return { transaction_hash: transactionHash };
+    });
+    const getNonce = vi.fn(async () => "0x7");
+    const account = {
+      address: "0x303019",
+      execute,
+      getNonce,
+      getTransactionStatus: vi.fn(notFound),
+    } as unknown as AccountInterface;
+    const complete = vi.fn();
+    const failed = vi.fn();
+    provider.on("transactionComplete", complete);
+    provider.on("transactionFailed", failed);
+    try {
+      const first = provider.submitCommand(account, explore);
+      const next = provider.submitCommand(account, explore);
+      await vi.advanceTimersByTimeAsync(299);
+      expect(nonces).toEqual(["0x7"]);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(client.setup.store.require("EntityName", { game_id: 54, entity_id: 9 }).name).toBe(1n);
+      expect(complete).toHaveBeenCalledOnce();
+      expect(nonces).toEqual(["0x7", "0x8"]);
+      await vi.advanceTimersByTimeAsync(300);
+      await Promise.all([first, next]);
+      expect(complete).toHaveBeenCalledTimes(2);
+      expect(getNonce).toHaveBeenCalledOnce();
+      await vi.advanceTimersByTimeAsync(19_000);
+      expect(failed).not.toHaveBeenCalled();
+    } finally {
+      client.dispose();
+    }
   });
 
   it("visits a realm for a spectator or a connected player, and connecting again leaves the visit", async () => {

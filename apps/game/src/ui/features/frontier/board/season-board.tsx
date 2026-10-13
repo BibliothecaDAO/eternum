@@ -120,7 +120,7 @@ const LORDS_MODELS = ["GameRegistry", "LordsBudget", "ChestRules"] as const;
  * The season's first rows as SeasonRow draws them, the player's own lit in place, or pinned under them when it ranks
  * below.
  */
-export const useSeasonListRows = (
+const useSeasonListRows = (
   entries: readonly Entry[] | undefined,
   length: number,
 ): { rows: SeasonListRow[]; pinned: SeasonListRow | undefined } => {

@@ -1,6 +1,6 @@
 name: ${SHARD_NAME:?Choose a unique shard name}
 
-x-madara-image: &madara-image ghcr.io/madara-alliance/madara@sha256:efaa800354602ad89fa2f22492e55188f50b0fc5675f66cba8184f0e261394f5
+x-madara-image: &madara-image ghcr.io/madara-alliance/madara@sha256:ec30298d51ce0780e1ad88cc00e1c17bef31530d0e338fe7fcc1d71d1bad31b2
 
 x-init: &init
   image: ${SHARD_INIT_IMAGE:?Use the published init image digest}
@@ -37,27 +37,21 @@ services:
     entrypoint: ["tini", "--", "/bin/madara"]
     command:
       - --devnet
+      # Host initialization owns accounts; do not seed publicly known development keys.
       - --devnet-contracts=0
       - --base-path=/data
-      - --db-fsync
-      - --db-wal
       - --chain-config-path=/config/chain-config.yaml
       - --rpc-external
       - --rpc-cors=all
       - --rpc-port=9944
-      - --rpc-max-connections=4096
       - --no-charge-fee
       - --l1-sync-disabled
       - --enable-native-execution=true
       - --native-compilation-mode=async
-      - --parallel-merkle-enabled
-      - --db-max-kept-snapshots=0
-      # Upstream 802086d defaults to 15 MiB. Measure the full 2,000-action block before changing it.
+      # Export to the shard's existing local metrics collector.
       - --otel-collector-endpoint=http://metrics:4317
       - --otel-export-metrics=true
     volumes: ["chain:/data", "public-config:/config:ro"]
-    mem_limit: ${NODE_MEMORY:-24g}
-    memswap_limit: ${NODE_MEMORY:-24g}
     restart: on-failure
     stop_grace_period: 60s
     depends_on:
@@ -75,8 +69,6 @@ services:
       POSTGRES_DB: herald
       POSTGRES_PASSWORD_FILE: /config/postgres-password
     volumes: ["postgres:/var/lib/postgresql/data", "postgres-config:/config:ro"]
-    mem_limit: 512m
-    memswap_limit: 512m
     restart: on-failure
     depends_on:
       prepare: { condition: service_completed_successfully }
@@ -90,8 +82,6 @@ services:
     entrypoint: ["/bin/sh", "-ec", "set -a; . /runtime/herald.env; exec bun /app/herald.js"]
     volumes: ["public-config:/config:ro", "herald-config:/runtime:ro"]
     ports: ["${BIND_ADDRESS:-127.0.0.1}:${HERALD_PORT:-8081}:3003"]
-    mem_limit: ${HERALD_MEMORY:-6g}
-    memswap_limit: ${HERALD_MEMORY:-6g}
     restart: on-failure
     depends_on:
       prepare: { condition: service_completed_successfully }
@@ -116,20 +106,17 @@ services:
         read_only: true
         bind: { create_host_path: false }
     ports: ["${BIND_ADDRESS:-127.0.0.1}:${RPC_PORT:-8080}:8080"]
-    mem_limit: 2g
-    memswap_limit: 2g
     restart: on-failure
     depends_on:
       init: { condition: service_completed_successfully, restart: true }
 
   # The gameplay harness against this shard, from its network, as the host user, so its reports in data/ are the
-  # user's: docker compose run --rm harness OPTIONS. HARNESS_CPUSET keeps a large driver off the shard's own CPUs.
+  # user's: docker compose run --rm harness OPTIONS.
   harness:
     <<: *init
     profiles: [harness]
     entrypoint: ["python3", "/app/deploy/shard/init.py", "harness"]
     user: "${HOST_UID:?}:${HOST_GID:?}"
-    cpuset: ${HARNESS_CPUSET:-}
 
   # The shard's own metrics: the node's OTLP export, every container's CPU, as JSON
   # lines under data/metrics. Each file rotates at 100 MB and keeps two older files, 600 MB at most.
@@ -141,8 +128,6 @@ services:
     read_only: true
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
-    mem_limit: 256m
-    memswap_limit: 256m
     restart: on-failure
     depends_on:
       prepare: { condition: service_completed_successfully }

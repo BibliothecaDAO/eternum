@@ -88,6 +88,8 @@ describe("procedural hyperstructures", () => {
       expect(bounds(true).max.y).toBeCloseTo(3, 4);
       expect(bounds().max.y).toBeGreaterThan(3.5);
       expect(bounds().max.y).toBeLessThanOrEqual(HYPERSTRUCTURE_HEIGHT + 0.001);
+      // What is placed over the tower (its plate) clears every completed design, crown included.
+      expect(model.height).toBeGreaterThanOrEqual(bounds().max.y - 0.001);
     }
     model.dispose();
   });

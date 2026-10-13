@@ -49,6 +49,15 @@ export class TransitionManager {
     });
   }
 
+  /**
+   * The scene the flight was heading for did not open. Its held frame fades only on a frame of that scene, so it is
+   * dropped here, or it would stay over the scene the player is left on, and over the HUD.
+   */
+  abandonFlight(): void {
+    this.flight?.destroy();
+    this.flight = null;
+  }
+
   fadeIn(scene?: HexagonScene) {
     endFlightTrace("fadeIn: incoming scene revealed");
     if (scene) this.flight?.reveal(scene);

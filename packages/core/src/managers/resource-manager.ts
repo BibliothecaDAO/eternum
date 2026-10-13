@@ -124,19 +124,22 @@ export class ResourceManager {
     return this.store.get("ResourceWeight", { game_id: this.gameId, entity_id: this.entityId });
   }
 
-  /** Every held resource; undefined when this client holds no resource owner for the entity (unknown, not empty). */
+  /**
+   * Every held resource; undefined when unknown, which is not empty: this client holds no resource owner for the
+   * entity, or one resource's state is not known (while the acting account's scope is being selected, a resource
+   * with no row is unknown, not zero). A resource the store says is absent is simply not held.
+   */
   public balances(currentTick?: number): Resource[] | undefined {
-    if (!this.hasResources()) return undefined;
-    return Array.from({ length: 58 }, (_, index) => {
-      const resourceId = (index + 1) as ResourcesIds;
-      return {
-        resourceId,
-        amount:
-          currentTick === undefined
-            ? Number(this.balance(resourceId)!)
-            : this.balanceWithProduction(currentTick, resourceId)!.balance,
-      };
-    }).filter(({ amount }) => amount > 0);
+    const held: Resource[] = [];
+    for (let resourceId = 1; resourceId <= 58; resourceId++) {
+      const balance =
+        currentTick === undefined
+          ? this.balance(resourceId)
+          : this.balanceWithProduction(currentTick, resourceId)?.balance;
+      if (balance === undefined) return undefined;
+      if (balance > 0) held.push({ resourceId, amount: Number(balance) });
+    }
+    return held;
   }
 
   private static isContinuousProductionResource(resourceId: ResourcesIds): boolean {
@@ -304,10 +307,15 @@ export class ResourceManager {
 
   /**
    * What of `amountProduced` the store keeps, as the contract's settlement adds it: whole units into the room left, the
-   * rest lost. Only reached for an entity whose resource owner is held, so its weight is known.
+   * rest lost. Only reached for an entity whose resource owner is held, so its weight is known. Nothing produced asks
+   * for no weight rule: a game need not rule on a resource it never makes.
    */
   private _limitProductionByStoreCapacity(amountProduced: bigint, resourceId: ResourcesIds): bigint {
-    const { capacity, weight } = this.weight()!;
+    if (amountProduced === 0n) return 0n;
+    const { capacity, weight } = this.store.require("ResourceWeight", {
+      game_id: this.gameId,
+      entity_id: this.entityId,
+    });
     if (capacity === UNLIMITED_U128) return amountProduced;
     const unitWeight = this.store.require("ResourceRule", {
       game_id: this.gameId,

@@ -1,4 +1,5 @@
 import {
+  buildingCostRise,
   getBuildingCosts,
   getBuildingQuantity,
   realmLearned,
@@ -14,6 +15,9 @@ import {
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, getProducedResource, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+
+import type { IconCode } from "@/ui/design-system/kit/kit-icon";
+import { LABOR, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
 
 /**
  * What Frontier's build sheet needs for one plot, read from facts with no UI of its own: each building the realm may
@@ -40,8 +44,24 @@ const TRAINS: Partial<Record<BuildingType, "Battle" | "Logistics" | "Scouting" |
   [BuildingType.Hearth]: "Homecoming",
 };
 
+/** What a Frontier building makes: wheat, labor, or the realm's one troop type. */
+type Product = ResourcesIds.Wheat | ResourcesIds.Labor | ResourcesIds.Knight;
+
+/**
+ * Each product as the sheets show it: its icon, its glossary word and the realm store that holds it. Keyed by the
+ * products themselves, so one without its word or icon does not compile, and no sheet looks one up at its own risk.
+ */
+export const PRODUCTS: Record<Product, { icon: IconCode; word: string; store: "wheat" | "labor" | "troops" }> = {
+  [ResourcesIds.Wheat]: { icon: "Wh", word: WHEAT, store: "wheat" },
+  [ResourcesIds.Labor]: { icon: "La", word: LABOR, store: "labor" },
+  [ResourcesIds.Knight]: { icon: "Tr", word: TROOPS, store: "troops" },
+};
+
+const isProduct = (resource: ResourcesIds | undefined): resource is Product =>
+  resource !== undefined && resource in PRODUCTS;
+
 export type BuildEffect =
-  | { kind: "produces"; resource: ResourcesIds; perHour: number }
+  | { kind: "produces"; resource: Product; perHour: number }
   | { kind: "population"; amount: number }
   | { kind: "trains"; attribute: "Battle" | "Logistics" | "Scouting" | "Homecoming" };
 
@@ -50,6 +70,8 @@ export interface BuildOption {
   /** Its type's tier, 1 (common) to 5 (legendary): tiers apply to every building of the type. */
   tier: 1 | 2 | 3 | 4 | 5;
   cost: { resource: number; amount: number }[];
+  /** How the price has risen: the copies already standing and what they multiply the base price by (1 with none). */
+  rise: { standing: number; times: number };
   effect: BuildEffect;
   populationCost: number;
   /**
@@ -84,6 +106,7 @@ export const readBuildOptions = (
       category,
       tier: (row === undefined ? 1 : researchTier(learned, row) + 1) as BuildOption["tier"],
       cost,
+      rise: buildingCostRise(safeInteger(realm.entity_id), category, store),
       effect,
       populationCost: rule.population_cost,
       standing: !TRAINS[category]
@@ -104,7 +127,7 @@ export const readBuildOptions = (
  * hut_bonus compute it: each Fields, Tools or Drill pick adds a share of the base output, each hut tier a share of a
  * hut's population. The one reading of it, for the build sheet and research's gains.
  */
-const readBuildingEffect = (
+export const readBuildingEffect = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
   category: BuildingType,
@@ -122,7 +145,7 @@ const readBuildingEffect = (
       amount: rule.capacity_grant + (rule.capacity_grant * tier * board.population_step_bps) / 10_000,
     };
   const resource = getProducedResource(category);
-  if (resource === undefined) throw new Error(`Building ${category} produces nothing`);
+  if (!isProduct(resource)) throw new Error(`Building ${category} makes nothing a Frontier realm stores`);
   let makes = 0;
   for (let at = 1; at <= tier; at++) if (researchChoice(learned, row!, at) === 0) makes++;
   return { kind: "produces", resource, perHour: outputPerHour(store, realm, category, makes) };

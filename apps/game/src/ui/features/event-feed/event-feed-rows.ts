@@ -120,7 +120,8 @@ export function transferRowLabel(row: FeedRow): string | null {
 
 /**
  * The one short line an action's row says: sending, checking (the node has not settled it; never "try again"),
- * done, refused with the game's reason, or not sent (only on proof). A send unsettled for long moves to checking.
+ * done, refused with the game's reason, not sent (only on proof), or the client's own words when no answer came. A
+ * send unsettled for long moves to checking.
  */
 export const transactionStatusLine = (transaction: Transaction): string => {
   switch (transaction.status) {
@@ -134,5 +135,7 @@ export const transactionStatusLine = (transaction: Transaction): string => {
       return transaction.errorMessage ? `Refused: ${transaction.errorMessage}` : "Refused";
     case "not_sent":
       return "Not sent";
+    case "no_answer":
+      return transaction.errorMessage ?? "No answer yet";
   }
 };

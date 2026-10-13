@@ -22,6 +22,14 @@ import {
  * wallet, a credit won from a chest paying for a flag. Registration is uncapped; the slot splits into games at close.
  */
 
+/**
+ * How often a slot the ledger does not hold yet is asked for again: it is listed the moment it is launched and recorded
+ * on the ledger a block or two later.
+ */
+const OPENING_RECHECK_MS = 4_000;
+/** How often a slot the ledger holds is read again. */
+const SLOT_RECHECK_MS = 15_000;
+
 /** What the entry panel draws from: the slot's prices and state, and the payer's credits, registration and LORDS. */
 export interface EntryTerms {
   prices: LedgerPrices;
@@ -141,7 +149,9 @@ export const useRefundSlots = (slots: readonly PlaytestSlot[], payout: string | 
 /** The wallets a refund may be owed to: the payout wallet first, then the accounts this browser's wallets share. */
 const useRefundWallets = (payout: string | null, enabled: boolean): string[] => {
   const browser = useQuery({ queryKey: ["browser-wallets"], queryFn: readBrowserWallets, enabled, staleTime: 60_000 });
-  const others = (browser.data ?? []).filter((wallet) => payout === null || !isSameStarknetAddress(wallet, payout));
+  const others = (browser.data ?? [])
+    .map((wallet) => wallet.address)
+    .filter((wallet) => payout === null || !isSameStarknetAddress(wallet, payout));
   return [...(payout === null ? [] : [payout]), ...others];
 };
 
@@ -156,7 +166,7 @@ const isSameSlot = (a: SlotKey, b: SlotKey): boolean => a.slotId === b.slotId &&
 const readRefundOwed = async (ledger: EnvironmentLedger, key: SlotKey, wallet: string): Promise<boolean> => {
   const registration = await ledger.registration(key, wallet);
   if (!refundOwed(registration, true)) return false;
-  return registration.refundable || (await ledger.slot(key)).cancelled;
+  return registration.refundable || ((await ledger.slot(key))?.cancelled ?? false);
 };
 
 /**
@@ -178,17 +188,25 @@ export const chatMembershipOf = (
 
 export const slotRegisteredKey = (key: SlotKey) => ["ledger", "registered", key.shard, key.slotId] as const;
 
-/** A slot's registrations as the ledger counts them (uncapped: no total); undefined until it answers. */
+/**
+ * A slot's registrations as the ledger counts them (uncapped: no total): none while the slot is opening, which is asked
+ * again every few seconds; undefined until the ledger answers.
+ */
 export const useSlotRegistered = (slot: PlaytestSlot): number | undefined => {
   const ledger = environmentLedger();
   const key = slotKeyOf(slot);
-  return useQuery({
+  const registered = useQuery({
     queryKey: slotRegisteredKey(key),
-    queryFn: async () => (await (ledger as EnvironmentLedger).slot(key)).registeredCount,
+    // Null while the ledger does not hold the slot yet.
+    queryFn: async () => (await (ledger as EnvironmentLedger).slot(key))?.registeredCount ?? null,
     enabled: ledger !== null,
-    refetchInterval: 15_000,
+    refetchInterval: (query) => recheckEvery(query.state.data),
   }).data;
+  return registered === null ? 0 : registered;
 };
+
+/** A read that came back null found the slot opening, and is repeated sooner. */
+const recheckEvery = (read: unknown) => (read === null ? OPENING_RECHECK_MS : SLOT_RECHECK_MS);
 
 /** The wallet's calls for the chosen entry: approve what it pays in LORDS, then register in the slot. */
 export const entryCalls = (ledger: string, key: SlotKey, terms: EntryTerms, choice: EntryChoice) =>
@@ -197,17 +215,22 @@ export const entryCalls = (ledger: string, key: SlotKey, terms: EntryTerms, choi
 export const entryTermsKey = (key: SlotKey, wallet: string) =>
   ["ledger", "entry", key.shard, key.slotId, wallet] as const;
 
-/** The entry's terms for the payout wallet, read from the environment's ledger and LORDS at the latest block. */
+/**
+ * The entry's terms for the payout wallet, read from the environment's ledger and LORDS at the latest block. Null while
+ * the slot is opening (listed, and not on the ledger yet), which is asked again every few seconds by itself; a read
+ * that did not answer is the query's error, never this.
+ */
 export const useEntryTerms = (ledger: EnvironmentLedger, key: SlotKey, wallet: string | null) =>
   useQuery({
     queryKey: entryTermsKey(key, wallet ?? ""),
     queryFn: () => readEntryTerms(ledger, key, wallet as string),
     enabled: wallet !== null,
-    refetchInterval: 15_000,
+    refetchInterval: (query) => recheckEvery(query.state.data),
   });
 
-const readEntryTerms = async (read: EnvironmentLedger, key: SlotKey, wallet: string): Promise<EntryTerms> => {
+const readEntryTerms = async (read: EnvironmentLedger, key: SlotKey, wallet: string): Promise<EntryTerms | null> => {
   const [slot, lordsToken] = await Promise.all([read.slot(key), read.lordsToken()]);
+  if (!slot) return null;
   const [preset, credits, registration, lords] = await Promise.all([
     read.preset(slot.presetId),
     read.credits(wallet),

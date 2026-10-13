@@ -1,11 +1,11 @@
-# First deployment
+# Setup, deploy, season and teardown
 
 From the repository root, on the owner's machine:
 
 ```sh
-pnpm deploy:first dev "$HOME/.realms-dev"
+pnpm run setup dev "$HOME/.realms-dev"
 # After reviewing the dry run:
-pnpm deploy:first dev "$HOME/.realms-dev" --apply
+pnpm run setup dev "$HOME/.realms-dev" --apply
 ```
 
 Use `production` and a different private directory for production. **Without `--apply`, the command only reads.** It
@@ -33,27 +33,36 @@ been made for these new accounts or the revised reward contracts.
 
 ## Before running
 
-Install Bun 1.4, Node 22, pnpm 10.25, git, GitHub CLI and SSH. Install the repository's locked dependencies.
-Authenticate `gh` with repository and Actions read permissions (plus permission to push the public address book). The
-Cloudflare token must be scoped to exactly one account. Required permissions: Account — Workers Scripts edit, D1 edit,
-Pages edit, Workers R2 Storage edit; Zone for the environment's zone — Zone read, DNS edit, Workers Routes edit, Cache
-Rules edit (shown as 'Cache Settings' in the token screen). Enable R2 on the account once. Prerequisites read D1, Pages,
-R2, the zone, Workers scripts and the zone’s rulesets list before any STRK is spent; these reads cannot verify write
-permissions. Refusals name the resource family, HTTP status and numeric Cloudflare codes, never the response text. The
-Resend key needs the environment's verified email sending domain. The one Alchemy URL is also used in the browser build
-and is therefore public to players.
+Install Bun 1.4, Node 22, pnpm 10.25, git, GitHub CLI and SSH. Before setup or season, run
+`pnpm install --frozen-lockfile --ignore-scripts`. Deploy and teardown need no local dependencies; Cloudflare deployment
+installs its dependencies in its temporary commit export. Authenticate `gh` with repository and Actions read permissions
+(plus permission to push the public address book). The Cloudflare token must be scoped to exactly one account. Required
+permissions: Account — Workers Scripts edit, D1 edit, Pages edit, Workers R2 Storage edit; Zone for the environment's
+zone — Zone read, DNS edit, Workers Routes edit, Cache Rules edit (shown as 'Cache Settings' in the token screen).
+Enable R2 on the account once. Prerequisites read D1, Pages, R2, the zone, Workers scripts and the zone’s rulesets list
+before any STRK is spent; these reads cannot verify write permissions. Refusals name the resource family, HTTP status
+and numeric Cloudflare codes, never the response text. The Resend key needs the environment's verified email sending
+domain. The one Alchemy URL is also used in the browser build and is therefore public to players.
 
-`environments.json` is the one dev/production table for this command. Dev uses the reviewed
-`deploy/release/staging.json`, SSH alias `realms-dev`, and the existing dev tunnel. Production uses the public
-`mainnet.json` asset addresses and requires a reviewed `deploy/release/production.json`, SSH alias `realms-production`
-and its own working tunnel/host before first deployment. The command does not format a disk, invent production host
-credentials or move a live shard onto an unreviewed endpoint. On a fresh host, run the existing
-`deploy/athanor/host/bootstrap.sh` through sudo as its operator after preparing its backup disk and tunnel token;
-`OPERATOR` defaults to that sudo user. This infrastructure prerequisite is separate from the five mainnet/shard keys.
+`environments.json` is the one dev/production table for this command. Dev uses the reviewed `deploy/release/dev.json`,
+SSH alias `realms-dev`, and the existing dev tunnel. Production uses the public `mainnet.json` asset addresses and
+requires a reviewed `deploy/release/production.json`, SSH alias `realms-production` and its own working tunnel/host
+before first deployment. The command does not format a disk, invent production host credentials or move a live shard
+onto an unreviewed endpoint. On a fresh host, run the existing `deploy/athanor/host/bootstrap.sh` through sudo as its
+operator after preparing its backup disk and tunnel token; `OPERATOR` defaults to that sudo user. This infrastructure
+prerequisite is separate from the five mainnet/shard keys.
 
-The box needs the shared compiler at `~/cairo-suite/tool-data/scarb-install/2.13.1/bin/scarb`, git access to this
-repository and Docker Compose. All three release builds run there under `~/cairo-suite/.lock`, cores 8–11. They do not
-run on the owner's laptop. No mainnet private key or Alchemy URL goes to that host.
+The box needs git access to this repository, Docker Buildx and Compose. Image builds install their pinned compiler.
+Contract builds run there under `~/cairo-suite/.lock`, cores 8–11. They do not run on the owner's laptop. No mainnet
+private key or Alchemy URL goes to that host.
+
+Deployment uses the checked-out commit, exporting committed files so unrelated working-tree edits do not enter a build.
+Its HEAD is the only deployment revision: dev requires it pushed to any origin branch; production requires it on
+`origin/next` with green push validation. Workers, shard images and Pages all use that commit. Push a dev fix and rerun;
+for production, merge it, wait for validation, check out that commit and rerun. No tag, release package or private
+revision edit is needed. The box exports committed files, builds init, Herald and metrics, and records local image
+digests and contract facts in `release.json`. Cairo runs under `~/cairo-suite/.lock` on cores 8–11. Contract source,
+lockfiles and compiler versions key Docker's Cairo layers; changes to Herald or deployment scripts reuse them.
 
 ## What the command does
 
@@ -70,8 +79,9 @@ run on the owner's laptop. No mainnet private key or Alchemy URL goes to that ho
    in parallel during both inspection and apply. Opening a new Blitz ledger season requires its start to be in the
    future; an existing matching season is preserved after its start. Production writes public unsigned calls to
    `cold-setup.json` and waits for the cold wallet to execute them. Its cold key never enters the command.
-7. Adopt the box's protected operator token if present. Generate the other service credentials once. If the guardian
-   Worker already holds `GUARDIAN_PRIVATE_KEY`, keep it even if this directory has no copy. Never rotate it.
+7. Reuse the saved service credentials, or generate them once for a new environment. An existing box token requires the
+   original private directory; comparison runs on the box and returns only a match result. If the guardian Worker
+   already holds `GUARDIAN_PRIVATE_KEY`, keep it even if this directory has no copy. Never rotate it.
 8. Create missing D1 databases, the status R2 bucket, Pages project and domain. Refuse conflicting existing DNS.
    First-install Worker placeholders have no routes and return 503; their named entrypoints break the binding cycle.
    Existing Workers are preserved until their actual deployment step.
@@ -80,50 +90,81 @@ run on the owner's laptop. No mainnet private key or Alchemy URL goes to that ho
    is the exception: its existing key is always preserved. Nothing is uploaded to GitHub. The deployer and cold keys
    stay on the owner's machine.
 10. Install the operator token on the box if absent. Its protected file is checked against the saved environment token.
-11. If the public environment address book already matches `origin/next`, skip publication and the owner merge.
-    Otherwise commit and push **only** the public environment address book to `stack/node-first`. Unrelated staged
-    changes stop this step. Before committing, fetch and require HEAD to equal origin/stack/node-first; a mismatch stops
-    with one public explanation. If the commit succeeded but its push failed, a rerun accepts exactly one commit above
-    the branch head that changes only this book, reports it and retries the push without another commit. Print the exact
-    `gh pr merge <number> --merge` command; wait for the owner to merge and rerun.
-12. Observe successful push validation on the merged `next` commit. Print the exact `git tag` and `git push` commands
-    for the package tag in the release file. Wait for the owner and the `shard-images.yml` release. Never move a tag.
-    The command deploys the commit targeted by the package tag in the committed release file. That commit must be on
-    `origin/next` and have successful push validation. If the tag is absent, the printed commands name the current
-    `origin/next` commit, and the release file at that commit must name the same package before any tag command is
-    printed. A fix needs a new package tag and release. Check out the clean released source before deploying:
-    `git checkout --detach <package tag>` (for this dev release, `git checkout --detach shard-v0.7.0-rc.2`), then rerun
-    from that checkout even if next has advanced. Old `pull-request.json` files are ignored: no private state edit is
-    needed to select the new release.
-13. Build workspace packages, migrate D1 and deploy all six Workers from the released tree. Worker version tags prove
-    the source revision. An interrupted deployment resumes with the remaining Workers.
-14. Drain the former shard's directory entry, stop the Compose project occupying its ports, retire that entry and deploy
-    the reviewed new shard. Preserve old data and volumes. The existing deployment check proves gameplay and the
-    on-chain launcher/ledger-operator handoff before activation. An unrelated container or conflicting new-chain data
-    stops the command.
-15. Build and publish the client locally with wrangler. Check its chain/RPC, recovery tests, source assets, emitted PWA
-    assets, cache rules and published modules/routes. Remove public sourcemaps before upload. Origin, zone and Pages
-    project come from the table. A matching remote release is checked without uploading it again.
-16. Show both seasons and the deposit, then set missing calendar phases to the exact entered dates. A phase's start may
-    have passed, but its end must still be in the future. Ended phases may be replaced; running or future phases with
-    different dates stop the command. No automatic date is chosen. Leave the process running: it waits for the launch
-    cron and the confirmed Frontier game, reads the box's **own `data/native-world.json`**, checks its chain against
-    Herald, and verifies the game's start, end, seed and funding terms against the ledger.
-17. Mint dev test tokens if needed, approve and fund exactly that game. Production instead writes `cold-funding.json`
-    for the cold admin to execute with real LORDS; rerun after its confirmation. An existing deposit is checked and
-    never repeated. No chest exists before funding and pool publication.
-18. Wait for the relay to publish the exact deposit in the confirmed `LordsBudget`, then verify relay/monitor health and
-    the automatically opened Blitz slot. The script never calls `open_slot` manually.
+11. If the address book changed, commit and push **only** that file on the owner's current branch, then stop. Create a
+    branch first if the checkout is detached or on `next`. Rerun from the new pushed commit; production requires merging
+    it to `next` and successful push validation first. Unrelated staged changes stop publication.
+
+## Deploy
+
+After setup, the box and Cloudflare halves can run independently from the same pushed commit:
+
+```sh
+pnpm run deploy dev
+pnpm run deploy:cloudflare dev "$HOME/.realms-dev"
+```
+
+The box command needs Bun and SSH, with no dependency install or package build. A Git archive carries its source commit
+in `deploy/first/commit.txt`. The box command builds images on the target box, initializes the shard and registers it.
+Full output, including builds and failures, stays in a mode-0600 `deploy-*.log` in the run directory; the command prints
+its path, failing stage, HTTP status and fixed service error. Deployment holds the box's stack lock. The world names the
+launcher and relay accounts at creation; each Worker joins using its own device from its alarm or cron. Deployment does
+not enrol those devices or transfer their roles. Dev uses `realms-dev` in `/opt/athanor/runs/dev`.
+
+The Cloudflare command belongs to the credential holder. It exports HEAD to a temporary directory, installs locked
+dependencies, builds workspace packages, migrates D1 and publishes Workers, then builds and publishes the client.
+Neither deploy command has a dry run or performs funding or calendar operations. Production, when commissioned, builds
+its images on its own box from the same source commit.
+
+## Season
+
+```sh
+pnpm run season dev "$HOME/.realms-dev"
+```
+
+This reads the existing private directory without migration: `inputs.json`, `keys.json` and `secrets.json`. It sets the
+missing calendar phases from the saved dates, preserves and displays existing published phases, waits for the launch
+cron's Frontier game, deposits the saved whole-LORDS amount, then watches pool publication and the automatic Blitz slot.
+It uses the public address book written by setup. An existing deposit is verified rather than repeated. Mainnet funding
+remains an owner operation, including dev funding.
+
+The dev box can open the free Frontier phase at the current armies tick, for one complete bag of days:
+
+```sh
+python3 deploy/athanor/scripts/operator-command.py season dev
+```
+
+This uses the deployed preset and the protected operator credential. It preserves an already running phase and makes no
+mainnet transaction. Run the existing harness after deployment and report its result separately from deployment:
+
+```sh
+python3 deploy/athanor/scripts/operator-command.py measure /opt/athanor/runs/dev check -- \
+  --game-type frontier --bots 2 --minutes 2 --interval-seconds 15 --setup-concurrency 2
+```
+
+When the launch Worker has created the game, add its `--game-id` to play that game. Funding, paid Blitz registration and
+payouts require the owner. The gameplay report never controls shard admission.
+
+## Teardown
+
+```sh
+pnpm run teardown dev
+```
+
+Only dev is accepted. The box retires its directory row, stops its Compose project, removes its volumes and run
+directory, and preserves deployment logs in `/opt/athanor/logs`. It leaves Cloudflare and the mainnet ledger alone.
+Teardown output has its own mode-0600 log there. The next deployment creates a fresh shard with a new chain identity so
+service cursors cannot follow the former chain. A restart reads the existing chain identity from the run directory.
 
 ## Private state and recovery
 
 The private directory must be outside the repository, owned by the running user, mode **0700**, with every file mode
 **0600**. Symlinks, repository paths and shared modes are refused. Keep a secure offline backup of this directory. Never
 paste its contents into a terminal command, issue, log or chat. Do not run the command under a shell tracer.
-`--no-env-file` prevents automatic dotenv loading. Subprocess and SDK failures print fixed messages; wrangler file
-logging goes to `/dev/null`, and the Starknet library logger is disabled at startup. Public dates, addresses, step names
-and fixed progress messages are the only deployment output. Each inspection is announced, including dry runs; metadata
-reads and transaction-confirmation waits announce themselves before waiting. No timer or spinner runs.
+`--no-env-file` prevents automatic dotenv loading. Subprocess failures preserve their output in a private log and print
+its path; wrangler file logging goes to `/dev/null`, and the Starknet library logger is disabled at startup. Public
+dates, addresses, step names and fixed progress messages are the only deployment output. Each inspection is announced,
+including dry runs; metadata reads and transaction-confirmation waits announce themselves before waiting. No timer or
+spinner runs.
 
 Rerun the same command and directory after interruption. Chain/Cloudflare/GitHub/box reads are the checkpoints;
 transaction intents keep their nonce across lost RPC responses, and deterministic salts keep deployment addresses fixed.
@@ -137,17 +178,17 @@ sharing an account nonce.
 
 If a calendar phase's start has passed but its end is still in the future, rerun with the same dates. An already-open
 Blitz ledger season keeps its dates; only a new ledger season requires a future start. For future seasons, edit the four
-dates and the Frontier deposit in `inputs.json`, review the dry run, and rerun the same command. After the previous
-seasons end, the ledger opens the next Blitz season number and the calendar replaces its ended phases. Running or future
-seasons are never replaced. Existing deposits are never changed. If a production collection or rating token needs an
-upgrade, its cold owner must complete the reviewed upgrade first; this command grants no new upgrade power and never
-obtains the upgrade key.
+dates and the Frontier deposit in `inputs.json`, run setup to open the next ledger season, then run season. After the
+previous seasons end, the ledger opens the next Blitz season number and the calendar replaces its ended phases. Running
+or future seasons are never replaced. Existing deposits are never changed. If a production collection or rating token
+needs an upgrade, its cold owner must complete the reviewed upgrade first; this command grants no new upgrade power and
+never obtains the upgrade key.
 
 Declarations, contract deployments, transfers, successful setup and funding cannot be undone. Check the public book,
 roles and four displayed dates before applying. A wrong published contract or immutable preset causes a refusal;
 changing private state does not repair it. If the funding game, token, start, end or pool differs, the command refuses
-rather than sending another deposit. A proven pool mismatch remains an error. D1 migrations, DNS and release tags also
-affect running services: keep the former shard's retained data for recovery and never repoint a published tag.
+rather than sending another deposit. A proven pool mismatch remains an error. D1 migrations and DNS also affect running
+services: keep the former active shard’s retained data for recovery.
 
 Dev chest metadata uses the public test CID already committed in
 `contracts/l2/collectibles/ext/scripts/deployment/data/example.json`. All five chest bands and the test cosmetics use
@@ -166,9 +207,8 @@ python3 -m unittest discover -s deploy/athanor/scripts -p 'test_*.py'
 
 ## Remove unused GitHub secrets
 
-A push to `next` deploys nothing. The Worker and client deploy workflows are deleted. The release image workflow uses
-only the built-in `GITHUB_TOKEN`; the deployment command never reads or writes GitHub secrets or environments. GitHub is
-used only to read validation/release/merge state and to push the public address book through git.
+A push to `next` deploys nothing. No workflow publishes images, Workers or the client. The deployment command never
+reads or writes GitHub secrets or environments. GitHub holds source commits and production validation results only.
 
 The owner can delete these stored deployment secrets from repository and environment settings; none has a workflow
 reader: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `L2_RPC_URL`, `BETTER_AUTH_SECRET`, `OPERATOR_TOKEN`,

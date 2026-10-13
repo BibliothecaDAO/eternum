@@ -4,7 +4,7 @@ import type { AgeMode } from "../play/ages";
 import { LEARN_WORDS } from "../words";
 
 /** The docs site, where each mode's rules are written down (apps/game-docs). */
-export const DOCS = "https://docs.realms.world";
+const DOCS = "https://docs.realms.world";
 
 /**
  * One guide per mode, Frontier's first, each under its kit mark (Frontier's the open book: the guide's own mark is the

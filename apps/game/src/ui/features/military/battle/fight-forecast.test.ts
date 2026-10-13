@@ -9,6 +9,7 @@ type FoughtForecast = Exclude<FightForecast, { outcome: "refused" }>;
 const fight = (overrides: Partial<FoughtForecast>): FightForecast => ({
   outcome: "wins",
   exchanges: 2,
+  firstExchange: { attackerLoss: 250n * 1_000_000_000n, defenderLoss: 600n * 1_000_000_000n },
   attackerLoss: 420n * 1_000_000_000n,
   defenderLoss: 1_100n * 1_000_000_000n,
   staminaSpent: 60n,

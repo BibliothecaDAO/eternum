@@ -1,6 +1,6 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
-import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
+import { byStructureCategory } from "@/lib/structure-category-table";
 import {
   Position,
   configManager,
@@ -34,6 +34,36 @@ interface AlignmentBadge {
   label: string;
   className: string;
 }
+
+const CONSTRUCTION = "/images/buildings/construction";
+
+/**
+ * The picture behind a structure's detail, by category: a realm's castle by its level, a picture of its own, or none.
+ * A new category fails typecheck here until it is given one.
+ */
+const DETAIL_PICTURES: Record<StructureType, "realm-castle" | string | null> = {
+  [StructureType.Realm]: "realm-castle",
+  [StructureType.Hyperstructure]: `${CONSTRUCTION}/hyperstructure.png`,
+  [StructureType.Mine]: `${CONSTRUCTION}/essence-rift.png`,
+  [StructureType.Village]: `${CONSTRUCTION}/camp.png`,
+  [StructureType.Camp]: `${CONSTRUCTION}/camp.png`,
+  [StructureType.Bank]: `${CONSTRUCTION}/bank.png`,
+  [StructureType.BitcoinMine]: null,
+  [StructureType.Rift]: null,
+  [StructureType.Ruin]: null,
+  [StructureType.Stragglers]: null,
+};
+
+const REALM_CASTLE_PICTURES = [
+  `${CONSTRUCTION}/castleZero.png`,
+  `${CONSTRUCTION}/castleOne.png`,
+  `${CONSTRUCTION}/castleTwo.png`,
+  `${CONSTRUCTION}/castleThree.png`,
+] as const;
+
+/** A realm's castle is drawn at its level, the tallest from level three up. */
+const realmCastleStage = (level: number | bigint | null | undefined): 0 | 1 | 2 | 3 =>
+  Math.min(3, Math.max(0, Math.floor(Number(level ?? 0)))) as 0 | 1 | 2 | 3;
 
 export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEntityDetailOptions) => {
   const {
@@ -108,34 +138,10 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   const backgroundImage = useMemo(() => {
     if (!structure?.base?.category) return undefined;
 
-    switch (structure.base.category as StructureType) {
-      case StructureType.Realm: {
-        const level = Number(structure.base.level ?? 0);
-        if (level >= 3) {
-          return "/images/buildings/construction/castleThree.png";
-        }
-        if (level >= 2) {
-          return "/images/buildings/construction/castleTwo.png";
-        }
-        if (level >= 1) {
-          return "/images/buildings/construction/castleOne.png";
-        }
-        return "/images/buildings/construction/castleZero.png";
-      }
-      case StructureType.Hyperstructure:
-        return "/images/buildings/construction/hyperstructure.png";
-      case StructureType.Mine:
-        return "/images/buildings/construction/essence-rift.png";
-      case StructureType.Village:
-      case StructureType.Camp:
-        return "/images/buildings/construction/camp.png";
-      case StructureType.Bank:
-        return "/images/buildings/construction/bank.png";
-      default:
-        return isVillageLikeStructureCategory(structure.base.category)
-          ? "/images/buildings/construction/camp.png"
-          : undefined;
-    }
+    const picture = byStructureCategory(DETAIL_PICTURES, structure.base.category, "detail picture", null);
+    return picture === "realm-castle"
+      ? REALM_CASTLE_PICTURES[realmCastleStage(structure.base.level)]
+      : (picture ?? undefined);
   }, [structure?.base?.category, structure?.base?.level]);
 
   const guardSlotsUsed = structure && guards ? guards.filter((guard) => guard.troops.count > 0n).length : undefined;

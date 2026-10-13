@@ -36,6 +36,8 @@ const storeReadings = (stores: ReturnType<typeof useRealmStores>): StoreReading[
       kind,
       amount: store?.amount,
       limit: store?.limit,
+      perHour: store?.perHour,
+      fullIn: store?.fullIn,
       tone: store?.tone ?? "calm",
       flyTarget,
     };

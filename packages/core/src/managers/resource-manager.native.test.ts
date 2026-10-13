@@ -68,6 +68,33 @@ describe("native resource facts", () => {
     expect(changed).toHaveBeenCalledTimes(4);
   });
 
+  it("answers a Blitz realm's balances as unknown, not as a crash, while the acting account is being selected", () => {
+    const store = new NativeFactStore();
+    store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 350 });
+    store.applyFacts([
+      ...upsert("0x100", { SliceRules: { ...rules, game_id: 1 } }),
+      ...upsert("0x101", { GameRegistry: game }),
+      ...upsert("0x1", { ResourceWeight: weight() }),
+      ...upsert("0x2", { ResourceBalance: { ...balance(), balance: 5_000_000_000n } }),
+    ]);
+    const realm = new ResourceManager(store, 7, 1);
+    // A realm holds a row for few of the 58 resources; the store says the rest are absent, so they are not held.
+    const held = [{ resourceId: 23, amount: 5_000_000_000 }];
+    expect(realm.balances(400)).toEqual(held);
+    expect(realm.balances()).toEqual(held);
+
+    // Entering as a player selects the account: the store is incomplete until that scope has applied, and the
+    // realm's weight row is still held. Every resource without a row is unknown for that moment, not zero.
+    store.setSnapshot({ gameId: 1, complete: false, actor: undefined, timestamp: 350 });
+    expect(realm.hasResources()).toBe(true);
+    expect(realm.balanceWithProduction(400, 1)).toBeUndefined();
+    expect(realm.balances(400)).toBeUndefined();
+    expect(realm.balances()).toBeUndefined();
+
+    store.setSnapshot({ gameId: 1, complete: true, actor: "0xaaa", timestamp: 350 });
+    expect(realm.balances(400)).toEqual(held);
+  });
+
   it("resolves a fresh realm's absent Essence only after its scoped snapshot is complete", async () => {
     const store = new NativeFactStore();
     store.setSnapshot({ gameId: 1, complete: false, actor: "0xaaa", timestamp: 350 });

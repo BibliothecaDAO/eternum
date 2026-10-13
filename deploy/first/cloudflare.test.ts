@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test";
-import { PublicError } from "./dates";
+import { PublicError } from "./errors";
 import { preparationSteps, type Deployment } from "./main";
 import { Platform } from "./platform";
 import type { PrivateStore } from "./private-store";

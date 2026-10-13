@@ -1,5 +1,5 @@
 import { MineKinds } from "@bibliothecadao/types";
-import { configManager, getRealmCountPerHyperstructure } from "@bibliothecadao/eternum";
+import { configManager, getRealmCountPerHyperstructure, siteKindOf, type SiteKind } from "@bibliothecadao/eternum";
 import {
   FALLEN_REALM_RUIN_MODEL_INDEX,
   fallenRealmBeastModelIndex,
@@ -107,7 +107,7 @@ import {
 import { cleanupVisibleStructurePass } from "./structure-visible-pass-cleanup";
 import {
   applyVisibleStructurePresentation,
-  COMPACT_LABEL_LIFT,
+  PLATE_CLEARANCE,
   STRUCTURE_SURFACE_LIFT,
 } from "./structure-visible-presentation";
 import {
@@ -128,7 +128,6 @@ import { normalizeStructureEntityId as normalizeEntityId } from "./structure-ent
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 import {
-  isFrameBudgetWorkQueueDisposedError,
   scheduleFrameBudgetWork,
   type FrameBudgetWorkLane,
   type FrameBudgetWorkScheduler,
@@ -631,7 +630,10 @@ export class StructureManager {
       cosmeticAssetPaths: cosmetic.skin.assetPaths,
       usesFallbackCosmeticSkin: cosmetic.skin.isFallback,
       attachments: cosmetic.attachments,
-      guardArmies: this.resolveGuardArmies(guards),
+      siteKind: this.resolveSiteKind(renderable.entityId, renderInfo.type),
+      // A structure without guards in a game that grants no guard slots has none to report: no guard row. A Frontier
+      // site's guard is its strength.
+      guardArmies: guards.length > 0 || configManager.hasGuardSlots() ? this.resolveGuardArmies(guards) : undefined,
       activeProductions: this.resolveActiveProductions(renderable.entityId),
       incomingTroopArrivals: this.incomingTroopArrivalsByStructure.get(renderable.entityId),
       hyperstructureRealmCount: this.store
@@ -642,6 +644,12 @@ export class StructureManager {
       battleCooldownEnd,
       battleTimerLeft: getBattleTimerLeft(battleCooldownEnd),
     };
+  }
+
+  /** The kind of a guarded Frontier site still standing; undefined for every other structure. */
+  private resolveSiteKind(entityId: ID, structureType: StructureType): SiteKind | undefined {
+    const site = this.store?.get("ExpeditionSite", { game_id: configManager.getActiveGameId(), entity_id: entityId });
+    return site ? siteKindOf(structureType) : undefined;
   }
 
   private resolveHyperstructureInitialized(entityId: ID, structureType: StructureType): boolean {
@@ -677,8 +685,9 @@ export class StructureManager {
     const slots = Array.from({ length: structure.base.troop_max_guard_count }, (_, slot) =>
       this.store!.requireOrAbsent("Guard", { game_id: game, structure_id: entityId, slot }),
     );
-    if (slots.some((slot) => !slot.known)) return undefined;
-    return slots.map((slot) => slot.known!).filter((guard) => guard.troops.count !== 0n || guard.destroyed_tick !== 0);
+    const guards = slots.flatMap((slot) => (slot.known ? [slot.known] : []));
+    if (guards.length !== slots.length) return undefined;
+    return guards.filter((guard) => guard.troops.count !== 0n || guard.destroyed_tick !== 0);
   }
 
   private resolveGuardArmies(guards: readonly NativeRows["Guard"][]): GuardArmy[] {
@@ -782,6 +791,9 @@ export class StructureManager {
   }
 
   private shouldShowStructureTextLabel(structure: StructureInfo): boolean {
+    // A standing site wears its plate wherever plates are drawn: its guard's strength is what the player weighs an
+    // army against, and a phone has no hover to ask for it.
+    if (structure.siteKind !== undefined && this.contentLadder.textLabels !== "none") return true;
     return shouldShowTextLabel(
       this.contentLadder.textLabels,
       {
@@ -799,7 +811,7 @@ export class StructureManager {
     const position = this.scratchCompactLabelPosition;
     getWorldPositionForHexCoordsInto(structure.hexCoords.col, structure.hexCoords.row, position);
     placePositionOnTerrain(position, this.resolveTerrainSurface());
-    position.y += STRUCTURE_SURFACE_LIFT + COMPACT_LABEL_LIFT;
+    position.y += STRUCTURE_SURFACE_LIFT + this.resolveStructureModelHeight(structure) + PLATE_CLEARANCE;
     return position;
   }
 
@@ -1255,9 +1267,6 @@ export class StructureManager {
     }
 
     return this.runVisibleStructuresUpdate().catch((error) => {
-      if (isFrameBudgetWorkQueueDisposedError(error)) {
-        return;
-      }
       console.error("Failed to update visible structures", error);
     });
   }
@@ -1325,6 +1334,11 @@ export class StructureManager {
       return false;
     }
     return !structure.usesFallbackCosmeticSkin;
+  }
+
+  /** The height of the model the structure is drawn with; nothing stands over its tile until that model is loaded. */
+  private resolveStructureModelHeight(structure: StructureInfo): number {
+    return this.getModelForStructure(structure)?.height ?? 0;
   }
 
   private getModelForStructure(structure: StructureInfo): StructureModel | undefined {
@@ -1497,6 +1511,7 @@ export class StructureManager {
       },
       getLabel: (entityId) => this.entityIdLabels.get(safeInteger(entityId) as ID),
       updateLabel: (structure, label) => this.updateStructureLabelData(structure, label),
+      resolveModelHeight: (structure) => this.resolveStructureModelHeight(structure),
       syncCompactLabel: (structure, position) => this.updateStructureCompactLabel(structure, position),
       resolveAttachments: (structure) => this.resolveStructureAttachmentsForRender(structure),
       getAttachmentSignature: (templates) => this.getAttachmentSignature(templates),
@@ -2075,7 +2090,9 @@ export class StructureManager {
     }
 
     const structure = this.resolveStructureInfoByEntityId(normalizedEntityId);
-    if (!structure) {
+    // A site has no second label: its plate carries its kind and strength, and its card the rest. The wide label
+    // covered the units beside it.
+    if (!structure || structure.siteKind !== undefined) {
       return { status: "missing" };
     }
 

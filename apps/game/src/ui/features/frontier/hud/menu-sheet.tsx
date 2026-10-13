@@ -6,9 +6,9 @@ import type { ReactNode } from "react";
 
 /**
  * The Menu: the ways that are not places (Today, Season with the player's rank, Production, the guide, Settings), then
- * Exit to the app and Resume, which closes the menu. Guide turns the guide off, or on again from its first line; a
- * player with no realm of their own has no guide and no Production. Realms, with a dot while their labor waits, opens
- * the Realm holder's labor where its facts are served.
+ * Exit to the app and Resume, which closes the menu. Guide opens every line the guide has said so far, with its
+ * switch; a player with no realm of their own has no guide and no Production. Realms, with a dot while their labor
+ * waits, opens the Realm holder's labor where its facts are served.
  */
 export const MenuSheet = ({
   rank,
@@ -26,7 +26,8 @@ export const MenuSheet = ({
   onSeason: () => void;
   onProduction: (() => void) | null;
   realms?: { waiting: boolean; onOpen: () => void };
-  guide: { on: boolean; onToggle: () => void } | null;
+  /** The guide's lines, with a tick while it is on; absent for a player it does not speak to. */
+  guide: { on: boolean; onOpen: () => void } | null;
   onSettings: () => void;
   onExit: () => void;
   onClose: () => void;
@@ -51,13 +52,7 @@ export const MenuSheet = ({
         />
       )}
       {guide && (
-        <MenuRow
-          icon="Gd"
-          word={GUIDE}
-          badge={guide.on && <KitIcon code="Ok" size={20} />}
-          pressed={guide.on}
-          onClick={guide.onToggle}
-        />
+        <MenuRow icon="Gd" word={GUIDE} badge={guide.on && <KitIcon code="Ok" size={20} />} onClick={guide.onOpen} />
       )}
       <MenuRow icon="Mn" word={SETTINGS} onClick={onSettings} />
     </nav>
@@ -72,19 +67,15 @@ const MenuRow = ({
   icon,
   word,
   badge,
-  pressed,
   onClick,
 }: {
   icon: IconCode;
   word: string;
   badge?: ReactNode;
-  /** A row that switches something on and off. */
-  pressed?: boolean;
   onClick: () => void;
 }) => (
   <button
     type="button"
-    aria-pressed={pressed}
     onClick={onClick}
     className="flex h-12 items-center gap-2 border-b border-kit-line px-1 text-left text-[15px] text-kit-cream"
   >

@@ -178,11 +178,13 @@ export const ledgerReader = (provider: ProviderInterface, ledger: string) => {
     lordsToken: async () => (await view("lords", []))[0],
     chestCollection: async () => (await view("chest_collection", []))[0],
     balanceOf,
-    /** A listed slot the ledger does not hold is a broken listing, said as one. */
+    /**
+     * A slot as the ledger holds it, or null while it does not hold it yet: a slot is listed the moment it is launched
+     * and recorded on the ledger a block or two later. A read that did not answer throws, and is never this.
+     */
     slot: async (key: SlotKey) => {
       const slot = decodeLedgerSlot(await view("get_slot", keyCalldata(key)));
-      if (!slot.exists) throw new Error("invalid_ledger_slot");
-      return slot;
+      return slot.exists ? slot : null;
     },
     preset: async (presetId: number) => presetTermsOf(decodeLedgerPreset(await view("get_preset", [String(presetId)]))),
     season: async (seasonId: number) => blitzSeasonOf(decodeBlitzSeason(await view("get_season", [String(seasonId)]))),

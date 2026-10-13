@@ -1,6 +1,7 @@
 import { assertFrontierSeason, CalendarConflict } from "../../apps/launch-service/src/calendar";
 
-export class PublicError extends Error {}
+import { PublicError } from "./errors";
+import { WEI, type Inputs, type Target } from "./settings";
 export interface SeasonDates {
   frontierStart: string;
   frontierEnd: string;
@@ -26,4 +27,25 @@ export function validateDates(dates: SeasonDates) {
     if (error instanceof CalendarConflict) throw new PublicError(error.message);
     throw error;
   }
+}
+
+export function validateInputs(input: Inputs, target: Target) {
+  const rpc = new URL(input.rpc);
+  if (
+    rpc.protocol !== "https:" ||
+    rpc.hostname !== "starknet-mainnet.g.alchemy.com" ||
+    rpc.username ||
+    rpc.password ||
+    rpc.hash
+  )
+    throw new PublicError("Use the Alchemy mainnet HTTPS endpoint");
+  if (!input.cloudflareToken || !input.resend) throw new PublicError("Cloudflare and Resend credentials are required");
+  if (!/^[1-9][0-9]*$/.test(input.amount) || BigInt(input.amount) * WEI >= 1n << 128n)
+    throw new PublicError("Deposit must be positive whole tokens fitting u128 wei");
+  validateDates(input);
+  if (
+    target.coldAdmin &&
+    (!input.admin || !input.treasury || BigInt(input.admin) <= 0n || BigInt(input.treasury) <= 0n)
+  )
+    throw new PublicError("Production needs the public cold admin and treasury addresses, never their keys");
 }

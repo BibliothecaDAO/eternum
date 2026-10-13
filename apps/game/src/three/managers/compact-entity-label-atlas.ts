@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import type { CompactEntityLabelVariant } from "./compact-entity-label-policy";
-import { FONTS } from "@/tokens";
+import { STAMINA_SEGMENTS } from "@/lib/army-stamina/segments";
+import { COLORS, FONTS } from "@/tokens";
 
 export interface CompactLabelAtlasRecord {
   geometry: THREE.PlaneGeometry;
@@ -76,6 +77,18 @@ const LABEL_MAX_WIDTH = 190;
 const LABEL_MIN_WIDTH = 72;
 const CELL_WIDTH = 96;
 const CELL_HEIGHT = 36;
+// A plate with a meter: its text (an army's number) on the left, the segments of the army's stamina bar beside it.
+const METER_PLATE_WIDTH = 92;
+const METER_TEXT_WIDTH = 28;
+const METER_SEGMENT_GAP = 2;
+const METER_SEGMENT_HEIGHT = 8;
+/** The meter's fill is drawn in these many steps, so one bar costs a handful of atlas plates, not one per value. */
+const METER_STEPS = 20;
+const METER_STYLE = { track: COLORS.line, fill: COLORS.sage };
+
+/** A fill from 0 to 1 as the step the atlas draws it at; undefined stays undefined (the plate has no meter). */
+const meterStep = (fill: number | undefined): number | undefined =>
+  fill === undefined ? undefined : Math.round(Math.min(1, Math.max(0, fill)) * METER_STEPS);
 
 class CompactEntityLabelAtlas {
   private readonly pages: AtlasPage[] = [];
@@ -87,18 +100,19 @@ class CompactEntityLabelAtlas {
   private readonly columns = Math.floor(this.logicalPageSize / CELL_WIDTH);
   private readonly rows = Math.floor(this.logicalPageSize / CELL_HEIGHT);
 
-  public acquire(text: string, variant: CompactEntityLabelVariant): CompactLabelAtlasRecord {
-    const key = `${variant}:${text}`;
+  public acquire(text: string, variant: CompactEntityLabelVariant, meter?: number): CompactLabelAtlasRecord {
+    const step = meterStep(meter);
+    const key = compactLabelKey(text, variant, meter);
     const existing = this.records.get(key);
     if (existing) {
       existing.references += 1;
       return existing;
     }
 
-    const width = this.measureLabelWidth(text);
+    const width = step === undefined ? this.measureLabelWidth(text) : METER_PLATE_WIDTH;
     const cellCount = Math.ceil(width / CELL_WIDTH);
     const { page, slot } = this.allocateSlot(cellCount);
-    this.drawLabel(page, slot, text, width, LABEL_STYLES[variant]);
+    this.drawLabel(page, slot, text, width, LABEL_STYLES[variant], step);
     const record: AtlasRecord = {
       geometry: createLabelGeometry(slot, width, LABEL_HEIGHT, this.logicalPageSize),
       height: LABEL_HEIGHT,
@@ -209,9 +223,11 @@ class CompactEntityLabelAtlas {
     text: string,
     width: number,
     style: CompactEntityLabelStyle,
+    meterStep: number | undefined,
   ): void {
     const context = page.context;
     if (!context) return;
+    const textWidth = meterStep === undefined ? width : METER_TEXT_WIDTH;
 
     context.clearRect(slot.x, slot.y, slot.cellCount * CELL_WIDTH, CELL_HEIGHT);
     context.fillStyle = style.background;
@@ -225,10 +241,11 @@ class CompactEntityLabelAtlas {
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillText(
-      truncateLabelText(context, text, width - LABEL_PADDING_X * 2),
-      slot.x + width / 2,
+      meterStep === undefined ? truncateLabelText(context, text, width - LABEL_PADDING_X * 2) : text,
+      slot.x + textWidth / 2 + (meterStep === undefined ? 0 : 4),
       slot.y + LABEL_HEIGHT / 2 + 1,
     );
+    if (meterStep !== undefined) drawMeter(context, slot.x + textWidth + 2, slot.y, width - textWidth - 12, meterStep);
   }
 
   private scheduleUpload(page: AtlasPage): void {
@@ -256,8 +273,18 @@ class CompactEntityLabelAtlas {
 
 const compactEntityLabelAtlas = new CompactEntityLabelAtlas();
 
-export function acquireCompactLabel(text: string, variant: CompactEntityLabelVariant): CompactLabelAtlasRecord {
-  return compactEntityLabelAtlas.acquire(text, variant);
+/** The atlas's name for a plate: two labels with one key share a plate. */
+export function compactLabelKey(text: string, variant: CompactEntityLabelVariant, meter?: number): string {
+  const step = meterStep(meter);
+  return step === undefined ? `${variant}:${text}` : `${variant}:${text}:meter${step}`;
+}
+
+export function acquireCompactLabel(
+  text: string,
+  variant: CompactEntityLabelVariant,
+  meter?: number,
+): CompactLabelAtlasRecord {
+  return compactEntityLabelAtlas.acquire(text, variant, meter);
 }
 
 export function releaseCompactLabel(record: CompactLabelAtlasRecord): void {
@@ -281,6 +308,22 @@ function createLabelGeometry(
   }
   uv.needsUpdate = true;
   return geometry;
+}
+
+/** The stamina bar's segments, filled from the left up to the step. */
+function drawMeter(context: CanvasRenderingContext2D, x: number, y: number, width: number, step: number): void {
+  const segmentWidth = (width - METER_SEGMENT_GAP * (STAMINA_SEGMENTS - 1)) / STAMINA_SEGMENTS;
+  const top = y + (LABEL_HEIGHT - METER_SEGMENT_HEIGHT) / 2;
+  const filled = (step / METER_STEPS) * STAMINA_SEGMENTS;
+  for (let index = 0; index < STAMINA_SEGMENTS; index += 1) {
+    const left = x + index * (segmentWidth + METER_SEGMENT_GAP);
+    context.fillStyle = METER_STYLE.track;
+    context.fillRect(left, top, segmentWidth, METER_SEGMENT_HEIGHT);
+    const part = Math.min(1, Math.max(0, filled - index));
+    if (part <= 0) continue;
+    context.fillStyle = METER_STYLE.fill;
+    context.fillRect(left, top, segmentWidth * part, METER_SEGMENT_HEIGHT);
+  }
 }
 
 function createCanvasContextForMeasurement(): CanvasRenderingContext2D | null {

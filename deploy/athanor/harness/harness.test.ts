@@ -1,4 +1,3 @@
-import { launchFrontierSeason } from "./frontier";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { retainBoundaryEvidence } from "./worker-boundary";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -71,22 +70,6 @@ afterAll(() => {
 });
 
 describe("Madara harness workload", () => {
-  it("requires owner credentials when creating a Frontier season", async () => {
-    const saved = { address: process.env.DEPLOYER_ACCOUNT_ADDRESS, key: process.env.DEPLOYER_PRIVATE_KEY };
-    try {
-      delete process.env.DEPLOYER_ACCOUNT_ADDRESS;
-      delete process.env.DEPLOYER_PRIVATE_KEY;
-      await expect(launchFrontierSeason({} as never, "check", 1, 5)).rejects.toThrow(
-        "Frontier launch requires the isolated manifest and authority",
-      );
-    } finally {
-      if (saved.address === undefined) delete process.env.DEPLOYER_ACCOUNT_ADDRESS;
-      else process.env.DEPLOYER_ACCOUNT_ADDRESS = saved.address;
-      if (saved.key === undefined) delete process.env.DEPLOYER_PRIVATE_KEY;
-      else process.env.DEPLOYER_PRIVATE_KEY = saved.key;
-    }
-  });
-
   it("loads a prepared roster without owner credentials", async () => {
     const output = await mkdtemp(join(tmpdir(), "harness-prepared-"));
     const environment: NodeJS.ProcessEnv = { ...process.env, HARNESS_OUTPUT_DIRECTORY: output };
@@ -203,6 +186,8 @@ describe("Madara harness workload", () => {
     const existing = new Map<number, number[]>(resumed ? [[1, [11, 21]]] : []);
     const create = mock(async ({ structureId }: { structureId: number }) => {
       existing.set(structureId, [structureId + 10]);
+      // The action resolves with its sent command, as the real one does.
+      return { transaction_hash: "0x1" } as Awaited<ReturnType<GameActions["createExplorerArmy"]>>;
     });
     actions.createExplorerArmy = create;
     game.settlementStructureIds = () => [1];
@@ -673,17 +658,16 @@ describe("Madara harness reporting", () => {
         workload: { actions, profile: "cadence", overheadRpc: createRpcMetrics() },
       } as never);
 
-    // A completed action without the provider's figure is counted and fails the run; a failed one never has it.
+    // Missing timing evidence is reported separately from completed gameplay.
     const unmeasured = run([completed(100), { ...completed(100), admissionToVisibleMs: undefined }]);
     expect(unmeasured.latency?.missing).toEqual({ admissionToVisible: 1 });
-    expect(unmeasured.checks.admissionToVisibleMeasured).toBe(false);
-    expect(unmeasured.passed).toBe(false);
+    expect(unmeasured.passed).toBe(true);
     const rejected = run([
       completed(100),
       { ...completed(100), admissionToVisibleMs: undefined, outcome: "rejected", failureClass: "gameplay_rejection" },
     ]);
     expect(rejected.latency?.missing).toEqual({ admissionToVisible: 0 });
-    expect(rejected.checks.admissionToVisibleMeasured).toBe(true);
+    expect(rejected.passed).toBe(false);
 
     const slow = run([completed(900)]);
     expect(slow.passed).toBe(true);
@@ -697,6 +681,21 @@ describe("Madara harness reporting", () => {
     expect(chainFailure.latency?.overTarget).toEqual({ admissionToVisibleP95: false, heraldConfirmedLagP95: false });
     expect(chainFailure.checks.zeroBlockingFailures).toBe(false);
     expect(chainFailure.passed).toBe(false);
+  });
+
+  it("requires a completed action from every player even when the issued-action threshold is zero", () => {
+    const action = { botId: 1, gameId: 1, kind: "move", outcome: "completed", rpc: createRpcMetrics() };
+    const run = (actions: unknown[]) =>
+      analyzeHarnessResult({
+        accounts: [{ botId: 1 }, { botId: 2 }],
+        gates: { minimumThresholdActions: 0, evidence: {} },
+        setupTransactions: [],
+        workload: { actions, profile: "cadence", overheadRpc: createRpcMetrics() },
+      } as never);
+    expect(run([]).checks.everyPlayerActed).toBe(false);
+    expect(run([action]).passed).toBe(false);
+    expect(run([action, { ...action, botId: 2, outcome: "rejected" }]).checks.everyPlayerActed).toBe(false);
+    expect(run([action, { ...action, botId: 2 }]).passed).toBe(true);
   });
 
   it("asserts the action threshold over every worker of a roster run and reports latency against its targets", () => {
@@ -723,7 +722,7 @@ describe("Madara harness reporting", () => {
       workers: [worker(40, [120, 250]), worker(30, [90, 200], [300, 500], "2026-09-23T00:00:00.250Z")],
       minimumThresholdActions: 70,
     });
-    expect(passing.checks).toEqual({ thresholdEligibleActions: true, admissionToVisibleMeasured: true });
+    expect(passing.checks).toEqual({ thresholdEligibleActions: true });
     expect(passing.latency?.overTarget).toEqual({ admissionToVisibleP95: false, heraldConfirmedLagP95: false });
     expect(passing).toMatchObject({
       passed: true,
@@ -749,14 +748,14 @@ describe("Madara harness reporting", () => {
         minimumThresholdActions: 70,
       }).passed,
     ).toBe(false);
-    // A worker's completed action without the provider's figure fails the whole run.
+    // Missing worker timing samples do not overturn successful gameplay.
     const unmeasured = assessRosterRun({
       functional: false,
       workers: [worker(40, [200]), { ...worker(30, [200]), admissionToVisibleMissing: 2 }],
       minimumThresholdActions: 70,
     });
     expect(unmeasured.latency?.missing).toEqual({ admissionToVisible: 2 });
-    expect(unmeasured).toMatchObject({ passed: false, checks: { admissionToVisibleMeasured: false } });
+    expect(unmeasured).toMatchObject({ passed: true, checks: { thresholdEligibleActions: true } });
     // A run with no measured lag cannot show it met the Herald target.
     expect(
       assessRosterRun({ functional: false, workers: [worker(40, [1], [])], minimumThresholdActions: 40 }).latency
@@ -801,6 +800,7 @@ describe("Madara harness reporting", () => {
       transactions: { executed: 4, reverted: 0, rejected: 0 },
       transactionsPerBusyBlock: { p50: 1, max: 3 },
       blockProductionMs: { p50: 10, p95: 30, max: 30 },
+      closeBlockMs: { p50: 11, p95: 31, max: 31 },
       mempool: { samples: 2, maxTransactions: 7, maxReadyTransactions: 5, lastObservedTransactions: 2 },
       sierraGasPerBusyBlock: { p50: 100, p95: 300, max: 300 },
       slowestBlock: {
@@ -866,6 +866,11 @@ describe("Madara harness reporting", () => {
     const { bouncer_sierra_gas: _gas, ...gasless } = blockRow(10, 1, 10);
     const noGas = await runBlockStats([gasless], [metricsRow(1, 0, 0, 1, 1)]);
     expect(noGas.output.missingRequired).toEqual(["bouncer_sierra_gas"]);
+
+    const { close_block_total_ms: _close, ...withoutClose } = blockRow(10, 1, 10);
+    const noClose = await runBlockStats([withoutClose], [metricsRow(1, 0, 0, 1, 1)]);
+    expect(noClose.exitCode).toBe(1);
+    expect(noClose.output.missingRequired).toEqual(["close_block_total_ms"]);
 
     const serial = await runBlockStats([blockRow(10, 1, 10)], [metricsRow(1, 0, 0, 1, 1)], ["--pair", "concurrency"]);
     expect(serial.exitCode).toBe(1);
@@ -1184,7 +1189,7 @@ function blockRow(blockNumber: number, transactions: number, blockProductionMs: 
     bouncer_sierra_gas: transactions * 100,
     batches_executed: 1,
     block_production_ms: blockProductionMs,
-    close_end_to_end_ms: blockProductionMs + 1,
+    close_block_total_ms: blockProductionMs + 1,
     merklization_ms: 2,
     db_write_ms: 1,
   };

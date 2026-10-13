@@ -158,6 +158,10 @@ export class GameSyncRuntime {
     }
   }
 
+  public isLocalTransaction(transactionHash: string): boolean {
+    return this.localTransactions.has(normalizeTransactionHash(transactionHash));
+  }
+
   public async startSession(input: GameSyncSessionStart): Promise<void> {
     this.disposeWorldSpatialProjection();
     this.session = input;
@@ -349,8 +353,7 @@ export class GameSyncRuntime {
         this.recordLiveUpdates("entity", batch.facts.length);
         const { transactionHash } = batch;
         if (transactionHash) session.onTransactionEntitiesReceived?.(transactionHash);
-        const isLocalTransaction =
-          transactionHash !== undefined && this.localTransactions.has(normalizeTransactionHash(transactionHash));
+        const isLocalTransaction = transactionHash !== undefined && this.isLocalTransaction(transactionHash);
         void this.ingestQueue
           ?.enqueueFacts(batch.facts, { immediate: batch.preconfirmed && isLocalTransaction })
           .then(() => {

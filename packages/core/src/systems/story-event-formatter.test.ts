@@ -207,7 +207,7 @@ describe("every story the chain can tell", () => {
     ResourceTransferStory: { from: 5, to: 6, resources: [{ resource_type: 23, amount }], transfer_type: "Instant" },
     ResourceReceiveArrivalStory: { resources: [{ resource_type: 23, amount }] },
     ProductionStory: { resource_type: 35, amount },
-    BuildingPlacementStory: { category: 37, inner_col: 11, inner_row: 10, created: 1 },
+    BuildingPlacementStory: { coord: { alt: false, x: 11, y: 10 }, category: 37, change: "Created" },
     BuildingPaymentStory: { category: 37, cost: [{ resource_type: 23, amount }] },
     BitcoinAwardStory: {
       phase: 1,
@@ -300,6 +300,17 @@ describe("every story the chain can tell", () => {
     const presentation = buildStoryEventPresentation(story(storyType, payload, 7));
     expect(presentation.title).not.toMatch(/ event$/);
     expect(presentation.title.length).toBeGreaterThan(0);
+  });
+
+  it("reads a building's placement from the change the story carries, never as an update", () => {
+    const placed = (change: string) =>
+      buildStoryEventPresentation(story("BuildingPlacementStory", { coord, category: 37, change }, 7)).title;
+    expect(placed("Created")).toMatch(/^Constructed: /);
+    expect(placed("Destroyed")).toMatch(/^Demolished: /);
+    expect(placed("Paused")).toMatch(/ paused$/);
+    expect(() => buildStoryEventPresentation(story("BuildingPlacementStory", { coord, category: 37 }, 7))).toThrow(
+      "Incomplete building placement story",
+    );
   });
 
   it("refuses a story it has no line for, rather than printing its fields", () => {

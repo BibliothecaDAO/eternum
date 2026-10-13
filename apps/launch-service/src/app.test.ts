@@ -28,21 +28,25 @@ const fixture = () => {
   const slots = new D1SlotStore(database.db, store, value, registrationIdentityFixture);
   const calendar = new D1CalendarStore(database.db);
   const armFor = vi.fn();
+  const wakeAt = vi.fn(async (): Promise<number | null> => 0);
+  const joinFailures = vi.fn(async (): Promise<import("./registrar").JoinFailure[]> => []);
   const app = createLaunchApp({
     config: { operatorToken: "operator-test-token" },
     deployment: { environment: "staging", version: "test" },
     store,
     slots,
     calendar,
-    registrar: { armFor },
-    operatorLauncher: { enrol: async () => ({ chainId: "0x1", launcherAccount: "0x123" }) },
+    registrar: { armFor, joinFailures, wakeAt },
   });
-  return { app, store, slots, calendar, value, armFor };
+  return { app, store, slots, calendar, value, armFor, joinFailures, wakeAt };
 };
 const close = () => new Date(Math.floor(Date.now() / 1000) * 1000 + 60000).toISOString();
 test("the create-run and launcher-discovery routes are gone even for the operator", async () => {
   const { app, store } = fixture();
   expect((await app.request("/api/factory/launcher")).status).toBe(404);
+  expect((await app.request("/api/factory/operator/launcher/enrol", { method: "POST", headers: token })).status).toBe(
+    404,
+  );
   for (const environment of ["madara.eternum", "madara.frontier", "madara.blitz"]) {
     expect(
       (
@@ -60,7 +64,6 @@ test.each([
   ["POST", "/api/slots"],
   ["POST", "/api/slots/friday/refund"],
   ["PUT", "/api/factory/calendar/frontier"],
-  ["POST", "/api/factory/operator/launcher/enrol"],
   ["POST", "/api/factory/runs/madara.frontier/frontier-7/actions/continue"],
   ["POST", "/api/factory/runs/madara.eternum/old/actions/delete"],
   ["POST", "/api/factory/results/madara.blitz/old/actions/continue"],
@@ -163,4 +166,83 @@ test("health and version remain public and identify the deployment", async () =>
       environment: "staging",
       version: "test",
     });
+});
+
+test("public health names a failed join before any run has failed", async () => {
+  const { app, joinFailures } = fixture();
+  const failure = { chainId: TEST_CHAIN, code: "account_join_read_failed", checkedAt: 1000 };
+  joinFailures.mockResolvedValue([failure]);
+  const response = await app.request("/api/factory/health");
+  expect(response.status).toBe(503);
+  expect(await response.json()).toMatchObject({ joinFailures: [failure], failedRuns: [] });
+});
+
+test("health forgets retired work but names an unarmed due run on the live chain", async () => {
+  const { app, store, wakeAt } = fixture();
+  const retired = new D1LaunchStore(database.db, testChain("0xdead"));
+  await retired.enqueue("game", { environment: "madara.frontier", gameName: "old" });
+  wakeAt.mockResolvedValue(null);
+  expect((await app.request("/api/factory/health")).status).toBe(200);
+  await store.enqueue("game", { environment: "madara.frontier", gameName: "live" });
+  const stranded = await app.request("/api/factory/health");
+  expect(stranded.status).toBe(503);
+  expect(await stranded.json()).toMatchObject({ strandedRuns: [{ name: "live" }] });
+  wakeAt.mockResolvedValue(0);
+  expect((await app.request("/api/factory/health")).status).toBe(200);
+  const running = (await store.startNext(Date.now()))!;
+  await store.fail(running.id, "game_creation_failed");
+  const failed = await app.request("/api/factory/health");
+  expect(failed.status).toBe(503);
+  expect(await failed.json()).toMatchObject({ failedRuns: [{ name: "live", error: "game_creation_failed" }] });
+});
+
+test("health names a stalled ledger close, preserves the failure through reads, and clears it when the cron retries", async () => {
+  const { app, slots, value, store } = fixture();
+  await slots.create("stalled", close());
+  await database.db
+    .prepare("UPDATE playtest_slots SET closes_at=?")
+    .bind(Date.now() - 60_000)
+    .run();
+  const page = await value.registrations();
+  const registrations = vi.spyOn(value, "registrations").mockResolvedValue({ ...page, secondsUntilClose: 492 });
+  await slots.freezeDueSlots();
+  expect((await slots.get("stalled")).frozenAt).toBeNull();
+  expect(await store.list("madara.blitz")).toEqual([]);
+  const health = await app.request("/api/factory/health");
+  expect(health.status).toBe(503);
+  expect(await health.json()).toMatchObject({
+    freezeFailures: [
+      {
+        chainId: TEST_CHAIN,
+        name: "stalled",
+        code: "registration_open",
+        secondsUntilClose: 492,
+      },
+    ],
+  });
+  expect(await new D1SlotStore(database.db, store, value, registrationIdentityFixture).freezeFailures()).toHaveLength(
+    1,
+  );
+  registrations.mockResolvedValue(page);
+  await slots.freezeDueSlots();
+  expect((await slots.get("stalled")).frozenAt).not.toBeNull();
+  expect(await store.list("madara.blitz")).toHaveLength(1);
+  const recovered = await app.request("/api/factory/health");
+  expect(recovered.status).toBe(200);
+  expect(await recovered.json()).toMatchObject({ freezeFailures: [] });
+});
+
+test("health exposes fixed freeze codes but never private diagnostic text", async () => {
+  const { app, slots, value } = fixture();
+  await slots.create("failed", close());
+  await database.db.prepare("UPDATE playtest_slots SET closes_at=0").run();
+  vi.spyOn(value, "registrations").mockRejectedValue(new Error("registration_history_incomplete: Bearer secret-value"));
+  const log = vi.spyOn(console, "error").mockImplementation(() => {});
+  await slots.freezeDueSlots();
+  const health = await app.request("/api/factory/health");
+  expect(health.status).toBe(503);
+  const body = await health.text();
+  expect(body).toContain('"code":"registration_history_incomplete"');
+  expect(body).not.toContain("secret-value");
+  expect(JSON.stringify(log.mock.calls)).not.toContain("secret-value");
 });

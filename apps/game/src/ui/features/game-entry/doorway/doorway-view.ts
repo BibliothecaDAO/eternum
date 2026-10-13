@@ -1,7 +1,9 @@
 import type { PlayRouteBootPhase } from "@/game-entry/play-route-boot";
+import type { PlayScene } from "@/play/navigation/play-route";
 
 import { DEVICE_LIMIT_REACHED } from "@/hooks/context/gameplay-account-sync";
 import { failureLine } from "@/shell/service-failure";
+import { DOORWAY_WORDS } from "@/shell/words";
 
 import type { BlitzEntry, GameEntryModalPhase } from "../game-entry-phase";
 
@@ -14,9 +16,10 @@ export type DoorwayAudience = "player" | "spectator";
 
 /**
  * What holds the doorway until the player acts: a sign-in, a retry after the failure the owner words, or the device
- * limit with Devices as its step.
+ * limit with Devices as its step. A map that could not be drawn offers the realm beside the retry, since the realm
+ * view opens without it.
  */
-type DoorwayBlocker = { kind: "sign-in" } | { kind: "retry"; line: string } | { kind: "devices" };
+type DoorwayBlocker = { kind: "sign-in" } | { kind: "retry"; line: string; openRealm?: true } | { kind: "devices" };
 
 export interface DoorwayView {
   steps: { step: DoorwayStep; state: StepState }[];
@@ -43,6 +46,10 @@ interface BootSide {
   audience: DoorwayAudience;
   /** Why the gameplay account could not be set up, in words for the player, when it could not. */
   accountError?: string | null;
+  /** The scene that could not be set up, when the boot failed on one; none when a service did not answer. */
+  failedScene?: PlayScene | null;
+  /** The player's own realm is known, so its view can open without the map. */
+  realmCanOpen?: boolean;
 }
 
 const SPECTATOR_STEPS: DoorwayStep[] = ["map", "play"];
@@ -106,7 +113,7 @@ const entryPlace = ({ phase, signedIn, foundingFailed = false, blitzEntry }: Ent
   }
 };
 
-const bootPlace = ({ phase, accountError }: BootSide): Place => {
+const bootPlace = ({ phase, accountError, failedScene, realmCanOpen = false }: BootSide): Place => {
   switch (phase) {
     case "normalize_route":
     case "await_account":
@@ -127,9 +134,18 @@ const bootPlace = ({ phase, accountError }: BootSide): Place => {
     case "ready":
       return place("play", { done: true });
     case "error":
-      return place("map", { blocker: WORLD_DID_NOT_ANSWER });
+      return failedScene === "hex"
+        ? place("play", { blocker: { kind: "retry", line: DOORWAY_WORDS.realmNotDrawn } })
+        : place("map", { blocker: failedScene === "map" ? mapNotDrawn(realmCanOpen) : WORLD_DID_NOT_ANSWER });
   }
 };
+
+/** The map's own failure says so, and offers the realm when there is one to open. */
+const mapNotDrawn = (realmCanOpen: boolean): DoorwayBlocker => ({
+  kind: "retry",
+  line: DOORWAY_WORDS.mapNotDrawn,
+  ...(realmCanOpen ? { openRealm: true as const } : {}),
+});
 
 const accountBlocker = (accountError: string | null | undefined): DoorwayBlocker => {
   if (!accountError) return SIGN_IN;

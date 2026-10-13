@@ -64,7 +64,7 @@ export {
 export type { BatchDelayConfig } from "./batch-config";
 export { classifyTransactionError, extractErrorMessage, formatErrorForConsole } from "./classify-transaction-error";
 export type { ClassifiedTransactionError } from "./classify-transaction-error";
-export { ACTION_CHECKING_AFTER_MS, isTransactionHashNotFound, TransactionNotSentError } from "./transaction-not-sent";
+export { ACTION_CHECKING_AFTER_MS, TransactionNotSentError } from "./transaction-not-sent";
 export { PromiseQueue } from "./promise-queue";
 export type { QueueableTransaction } from "./promise-queue";
 export type { TransactionExecutor, ExecutionOptions } from "./transaction-executor";
@@ -134,7 +134,7 @@ const buildFailureDiagnostics = (
   return {
     error,
     ...(revertReason !== undefined ? { revertReason } : {}),
-    // Proof of absence carries its hash, so the action's row says not sent wherever the proof arrives.
+    // An explicit refusal carries the attempted hash so the pending row can settle immediately.
     ...(error instanceof TransactionNotSentError
       ? { failureKind: "not_sent" as const, transactionHash: error.transactionHash }
       : {}),
@@ -223,6 +223,7 @@ export class EternumProvider extends EventEmitter {
     signer: AccountInterface,
     command: NativeCommand,
     transactionType?: TransactionType,
+    startedAt?: number,
   ): Promise<GetTransactionReceiptResponse> {
     if (!this.commandAbi) throw new Error("Native command ABI is not configured");
     return this.promiseQueue.enqueue({
@@ -499,13 +500,19 @@ export class EternumProvider extends EventEmitter {
         transaction_hash: tx.transaction_hash,
       } as unknown as GetTransactionReceiptResponse;
     }
-    const streamReceipt = this.waitForTransactionWithCheckInternal(tx.transaction_hash, tx.inBlock);
-    // Any action still unsettled after the checking window is checking: the player's next command may go.
-    const checking = setTimeout(() => {
-      this.emit("transactionChecking", transactionMetaWithHash);
-      releaseActorExecutionLock?.();
-      releaseActorExecutionLock = undefined;
-    }, ACTION_CHECKING_AFTER_MS);
+    const streamReceipt = this.waitForTransactionWithCheckInternal(
+      tx.transaction_hash,
+      tx.inBlock,
+      txType,
+      submitStartedAt,
+    );
+    // The checking timer labels uncertainty only; it cannot establish inclusion or free the next command.
+    const checking = setTimeout(
+      () => {
+        this.emit("transactionChecking", transactionMetaWithHash);
+      },
+      Math.max(0, submitStartedAt + ACTION_CHECKING_AFTER_MS - Date.now()),
+    );
     void streamReceipt.catch(() => undefined).finally(() => clearTimeout(checking));
     // The actor's next command is sent only after Herald applies this one, so its effects are visible first.
     const waitPromise = releaseActorExecutionLock
@@ -533,7 +540,6 @@ export class EternumProvider extends EventEmitter {
             stage: resolveTransactionFailureStage(error, "background_confirmation"),
             ...buildFailureDiagnostics(error),
           });
-          this.followLateLanding(error, tx.transaction_hash, transactionMeta, submitStartedAt);
         });
 
       return {
@@ -552,7 +558,6 @@ export class EternumProvider extends EventEmitter {
         stage: resolveTransactionFailureStage(error, "confirmation"),
         ...buildFailureDiagnostics(error),
       });
-      this.followLateLanding(error, tx.transaction_hash, transactionMeta, submitStartedAt);
       throw error;
     }
 
@@ -565,41 +570,11 @@ export class EternumProvider extends EventEmitter {
     return receipt;
   }
 
-  /**
-   * A dropped action is watched until its nonce moves: if it lands after all, it settles as it actually ended
-   * (applied, or refused with its reason) and its row follows.
-   */
-  private followLateLanding(
-    error: unknown,
-    transactionHash: string,
-    transactionMeta: TransactionLifecycleMeta,
-    submitStartedAt: number,
-  ): void {
-    if (!(error instanceof TransactionNotSentError) || !error.landedLate) return;
-    void error.landedLate.then(async (landed) => {
-      if (!landed) return;
-      try {
-        const details = await this.waitForTransactionWithCheckInternal(transactionHash);
-        this.emit("transactionComplete", {
-          details,
-          admissionToVisibleMs: Date.now() - submitStartedAt,
-          ...transactionMeta,
-        });
-      } catch (lateError) {
-        this.emitTransactionFailure({
-          ...transactionMeta,
-          transactionHash,
-          message: extractErrorMessage(lateError),
-          stage: resolveTransactionFailureStage(lateError, "confirmation"),
-          ...buildFailureDiagnostics(lateError),
-        });
-      }
-    });
-  }
-
   private async waitForTransactionWithCheckInternal(
     transactionHash: string,
     inBlock?: Promise<void>,
+    transactionType?: TransactionType,
+    startedAt?: number,
   ): Promise<GetTransactionReceiptResponse> {
     if (!this.transactionStreamWaiter) {
       return {
@@ -608,9 +583,11 @@ export class EternumProvider extends EventEmitter {
       } as unknown as GetTransactionReceiptResponse;
     }
 
-    const transaction = await this.transactionStreamWaiter(transactionHash, inBlock).catch((error) => {
-      throw attachTransactionFailureStage(error, "confirmation");
-    });
+    const transaction = await this.transactionStreamWaiter(transactionHash, inBlock, transactionType, startedAt).catch(
+      (error) => {
+        throw attachTransactionFailureStage(error, "confirmation");
+      },
+    );
 
     // Reverted before the roll (the shard's checks) or refused by the game (rolled back, reason recorded): either way
     // nothing applied, and the player reads the reason.

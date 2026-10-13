@@ -8,6 +8,7 @@ import { grantDailyLabor } from "./relay";
 import type { RelayPorts, LaborClaim } from "./ports";
 
 const rpc = vi.hoisted(() => ({
+  classHash: vi.fn(),
   chain: vi.fn(),
   block: vi.fn(),
   contract: vi.fn(),
@@ -15,12 +16,13 @@ const rpc = vi.hoisted(() => ({
   execute: vi.fn(),
   wait: vi.fn(),
 }));
-vi.mock("@realms-world/value-ledger", async (original) => ({
-  ...(await original<typeof import("@realms-world/value-ledger")>()),
+vi.mock("../../../packages/value-ledger/src/rpc", async (original) => ({
+  ...(await original<typeof import("../../../packages/value-ledger/src/rpc")>()),
   rpcAt: () => ({
     getChainId: rpc.chain,
     getBlock: rpc.block,
-    getClassAt: rpc.contract,
+    getClassHashAt: rpc.classHash,
+    getClassByHash: rpc.contract,
     callContract: rpc.call,
     waitForTransaction: rpc.wait,
   }),
@@ -61,8 +63,10 @@ const claim: LaborClaim = {
 };
 const realmType = gamesAbi.find((entry) => entry.name === "world_native::entry::LaborRealm")!;
 const grantAbi = gamesAbi.find((entry) => entry.name === "grant_labor")!;
+let classVersion = 0;
 beforeEach(() => {
   vi.clearAllMocks();
+  rpc.classHash.mockResolvedValue(`0x${(++classVersion).toString(16)}`);
   rpc.chain.mockResolvedValue("0x1");
   rpc.block.mockResolvedValue({
     status: "ACCEPTED_ON_L2",
@@ -131,10 +135,14 @@ it("fails closed on the retired narrow home ABI or on reverted grants", async ()
   });
   await expect(Effect.runPromise(writeLaborGrants(target, claim))).rejects.toThrow();
   expect(rpc.execute).not.toHaveBeenCalled();
+  rpc.classHash.mockResolvedValue("0xfff");
   rpc.contract.mockResolvedValue({ abi: gamesAbi });
   rpc.call.mockImplementation(async (request) => (request.entrypoint === "ledger_operator" ? ["0x20"] : ["1"]));
   rpc.wait.mockResolvedValue({ isReverted: () => true });
-  await expect(Effect.runPromise(writeLaborGrants(target, claim))).rejects.toThrow();
+  await expect(Effect.runPromise(writeLaborGrants(target, claim))).rejects.toMatchObject({
+    operation: "write Realm labor grant",
+  });
+  expect(rpc.execute).toHaveBeenCalledOnce();
 });
 it("derives one UTC day across all games from confirmed shard time", async () => {
   rpc.block.mockResolvedValue({

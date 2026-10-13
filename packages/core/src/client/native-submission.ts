@@ -1,13 +1,13 @@
 import type { NativeWorldBindings } from "@bibliothecadao/types";
 import type { NativeSubmission } from "@bibliothecadao/provider";
+import type { GameSyncRuntime } from "../sync/game-sync-runtime";
 import type { NativeFactStore } from "./native-fact-store";
 import { executeGameplayAccountTransaction, type GameplayShard } from "./submit";
 
 /**
  * A game command as the shard takes it: one Games.play call carrying the game, its current release pins and the command
  * (its discriminant and typed payload) as a span, signed and sent by the player's own account through the gameplay
- * submit: the current nonce, the shard's bounds, one send in flight, and its reconciliation with the node for as long
- * as the client runs.
+ * submit: the current nonce, the shard's bounds, one send in flight, and Herald-first bounded reconciliation.
  */
 export function nativePlay(
   input: {
@@ -15,6 +15,7 @@ export function nativePlay(
     release: { ready(): Promise<void> };
     shard: GameplayShard;
     stopped: AbortSignal;
+    runtime: Pick<GameSyncRuntime, "recordSubmittedTransaction" | "waitForTransaction">;
   },
   store: NativeFactStore,
   gameId: number,
@@ -39,6 +40,10 @@ export function nativePlay(
       account: actor,
       shard: input.shard,
       stopped: input.stopped,
+      waitForTransaction: (hash) => {
+        input.runtime.recordSubmittedTransaction(hash);
+        return input.runtime.waitForTransaction(hash);
+      },
       calls: {
         contractAddress: games,
         entrypoint: "play",

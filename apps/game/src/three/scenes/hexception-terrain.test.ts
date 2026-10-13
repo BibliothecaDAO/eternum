@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createLocalTerrainLabRequest } from "@/three/debug/local-terrain-lab";
-import { getLocalHexDisk, getLocalTerrainRegions } from "./hexception-terrain";
+import { getLocalHexDisk, getLocalTerrainRegions, resolveLocalHexOnMap } from "./hexception-terrain";
 
 describe("shared local terrain", () => {
   it.each([1, 2, 3, 4, 5])("keeps radius %s buildable cells inside a complete terrain surround", (radius) => {
@@ -33,6 +33,27 @@ describe("local terrain coverage", () => {
     expect(keys.size).toBe(19 * 61);
     for (const { col, row } of getLocalHexDisk({ col: 10, row: 10 }, 16)) {
       expect(keys.has(`${col}:${row}`), `missing local cell ${col}:${row}`).toBe(true);
+    }
+  });
+});
+
+describe("the map hex a local-view hex shows", () => {
+  // A Frontier realm's local centre sits off the map on an odd row; its day's site can stand on either parity.
+  const localCenter = { col: 4294967290, row: 4294967293 };
+
+  it.each([
+    { col: 40, row: 12 },
+    { col: 40, row: 13 },
+    { col: -7, row: -3 },
+  ])("is the site's neighbour in the same direction, for a site at $col,$row", (site) => {
+    const shown = getLocalHexDisk(localCenter, 2).map((hex) => resolveLocalHexOnMap(localCenter, hex, site));
+    expect(shown).toEqual(getLocalHexDisk(site, 2).map(({ col, row }) => ({ col, row })));
+  });
+
+  it("is the local hex itself where the view's centre is the structure's own tile", () => {
+    const center = { col: 7, row: 3 };
+    for (const { col, row } of getLocalHexDisk(center, 2)) {
+      expect(resolveLocalHexOnMap(center, { col, row }, center)).toEqual({ col, row });
     }
   });
 });

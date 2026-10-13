@@ -110,47 +110,34 @@ export class WorldUpdateListener {
   get SitePayouts() {
     return {
       /**
-       * Each cleared site, with the exchange that won it. The contract emits the winning BattleEvent and then the
-       * SitePayout in one transaction (one `order`), so the battle's tile and the attacker's losses travel with the
-       * payout; a payout without its battle is refused.
+       * Each cleared site, with the exchange that won it. The contract pays the site from inside the capture and only
+       * then emits the winning BattleEvent (logic/combat.cairo), so a payout waits for the next battle, which must be
+       * its own: same transaction, same site. Any other battle, or another payout, leaves it without one: refused.
        */
       onSitePayout: (callback: (value: SitePayoutSystemUpdate) => void) => {
-        let lastBattle: { order: string; defenderId: number; coord: Fields; troopsLost: number } | undefined;
+        let waiting: { transaction: string; clear: PaidSite } | undefined;
+        const takeWaiting = () => {
+          const payout = waiting;
+          waiting = undefined;
+          return payout;
+        };
+        const stopPayouts = this.onStory("SitePayout", (payload, event) => {
+          const unanswered = takeWaiting();
+          waiting = { transaction: transactionOf(event), clear: paidSite(payload, event) };
+          if (unanswered) throw new Error(`Site payout ${unanswered.clear.siteId} arrived without its winning battle`);
+        });
         const stopBattles = this.setup.store.subscribeEvents((event) => {
           const battle = event.model === "BattleEvent" ? fields(event.value) : undefined;
           if (!battle || integer(battle.game_id) !== configManager.getActiveGameId()) return;
-          const attacker = fields(battle.attacker);
-          const coord = fields(battle.coord);
-          if (!attacker || !coord) throw new Error("Malformed battle");
-          lastBattle = {
-            order: String(battle.order),
-            defenderId: integer(battle.defender_id),
-            coord,
-            troopsLost: divideByPrecision(Number(BigInt(String(attacker.before)) - BigInt(String(attacker.after)))),
-          };
-        });
-        const stopPayouts = this.onStory("SitePayout", (payload, event) => {
-          const siteId = integer(payload.site_id);
-          const battle = lastBattle;
-          if (battle?.order !== String(event.order) || battle.defenderId !== siteId)
-            throw new Error(`Site payout ${siteId} arrived without its winning battle`);
-          const kind = siteKindOf(integer(payload.category));
-          const reward = siteReward(payload.reward);
-          if ((kind === "Ruin" || kind === "Stragglers") !== (reward === null))
-            throw new Error(`A cleared ${kind} pays ${reward === null ? "nothing" : "a resource"}`);
-          callback({
-            explorerId: integer(payload.explorer_id),
-            siteId,
-            ownerAddress: event.owner === undefined || event.owner === null ? null : BigInt(String(event.owner)),
-            kind,
-            reward,
-            coord: { x: integer(battle.coord.x), y: integer(battle.coord.y) },
-            troopsLost: battle.troopsLost,
-          });
+          const payout = takeWaiting();
+          if (!payout) return;
+          if (payout.transaction !== transactionOf(battle) || payout.clear.siteId !== integer(battle.defender_id))
+            throw new Error(`Site payout ${payout.clear.siteId} arrived without its winning battle`);
+          callback({ ...payout.clear, ...wonExchange(battle) });
         });
         return () => {
-          stopBattles();
           stopPayouts();
+          stopBattles();
         };
       },
     };
@@ -213,6 +200,41 @@ export class WorldUpdateListener {
     };
   }
 }
+
+/** The transaction that emitted an event: what ties a payout to its battle on the wire. */
+const transactionOf = (event: Fields): string => {
+  const hash = fields(event.event_position)?.transaction_hash;
+  if (typeof hash !== "string") throw new Error("Native event without its transaction");
+  return hash;
+};
+
+type PaidSite = Omit<SitePayoutSystemUpdate, "coord" | "troopsLost">;
+
+/** What a SitePayout story says by itself: who cleared which site, and what it paid. */
+const paidSite = (payload: Fields, story: Fields): PaidSite => {
+  const kind = siteKindOf(integer(payload.category));
+  const reward = siteReward(payload.reward);
+  if ((kind === "Ruin" || kind === "Stragglers") !== (reward === null))
+    throw new Error(`A cleared ${kind} pays ${reward === null ? "nothing" : "a resource"}`);
+  return {
+    explorerId: integer(payload.explorer_id),
+    siteId: integer(payload.site_id),
+    ownerAddress: story.owner === undefined || story.owner === null ? null : BigInt(String(story.owner)),
+    kind,
+    reward,
+  };
+};
+
+/** What the winning battle adds: the site's tile and the whole troops the army lost taking it. */
+const wonExchange = (battle: Fields): Pick<SitePayoutSystemUpdate, "coord" | "troopsLost"> => {
+  const attacker = fields(battle.attacker);
+  const coord = fields(battle.coord);
+  if (!attacker || !coord) throw new Error("Malformed battle");
+  return {
+    coord: { x: integer(coord.x), y: integer(coord.y) },
+    troopsLost: divideByPrecision(Number(BigInt(String(attacker.before)) - BigInt(String(attacker.after)))),
+  };
+};
 
 /** A camp or rift pays a resource; stragglers pay none, and a ruin its closed chest. */
 const siteReward = (value: unknown): SitePayoutSystemUpdate["reward"] => {

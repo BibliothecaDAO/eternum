@@ -1,4 +1,5 @@
 import { useGame } from "@/hooks/context/game-context";
+import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
@@ -49,26 +50,26 @@ export const FrontierArmy = ({ realm, onClose }: { realm: NativeRows["Structure"
   const army = useDockArmies(realm).find(({ explorerId }) => explorerId === selectedId);
   const [chosen, setChosen] = useState<AttributeKey | null>(null);
   const [kind, setKind] = useState<ScoutKey>("camp");
-  const [sending, setSending] = useState(false);
+  const sending = useInFlight("tier", selectedId) !== undefined;
   const progress = army && setup.store.get("ArmyProgress", { game_id: realm.game_id, explorer_id: army.explorerId });
   const rules = setup.store.get("ArmyProgressionRules", { game_id: realm.game_id });
   if (!army || !progress || !rules || !army.stamina) return null;
   const shown = chosen ?? firstAffordable(progress, rules);
 
   const upgrade = async () => {
-    if (!account.account) return;
-    setSending(true);
+    const signer = account.account;
+    if (!signer) return;
     try {
-      await setup.systemCalls.buy_tier({
-        signer: account.account,
-        explorerId: army.explorerId,
-        attribute: ATTRIBUTE_OF[shown],
-        scoutingKind: shown === "scouting" ? KIND_OF[kind] : undefined,
-      });
+      await sendOnce("tier", army.explorerId, true, () =>
+        setup.systemCalls.buy_tier({
+          signer,
+          explorerId: army.explorerId,
+          attribute: ATTRIBUTE_OF[shown],
+          scoutingKind: shown === "scouting" ? KIND_OF[kind] : undefined,
+        }),
+      );
     } catch (error) {
       toast.error(extractReadableErrorMessage(error, "The Upgrade could not be sent."));
-    } finally {
-      setSending(false);
     }
   };
 

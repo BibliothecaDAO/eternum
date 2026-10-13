@@ -4,14 +4,30 @@ import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
+import { sendOnce, useAllInFlight, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getPlayerName } from "@/services/identity/player-profiles";
 import { requireActiveGameClient } from "@/sync/active-game-client";
-import { formatAmount } from "@/ui/design-system/kit/amount";
+import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import type { IconCode } from "@/ui/design-system/kit/kit-icon";
 import type { PriceKind } from "@/ui/design-system/kit/price-chip";
+import type { Refusal } from "@/ui/design-system/kit/refused-verb";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
-import { TIER_WORDS } from "@/ui/design-system/kit/words";
+import {
+  BARRACKS,
+  BUILD,
+  HUT,
+  LABOR,
+  makesAnHour,
+  needsAt,
+  ONE_A_REALM,
+  POPULATION,
+  priceRaised,
+  RESEARCH,
+  startsNewArmies,
+  takesPopulation,
+  TIER_WORDS,
+} from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { knownBalance } from "@/ui/utils/utils";
 import { canIssueOrders } from "@/utils/can-issue-orders";
@@ -20,6 +36,7 @@ import {
   buildableRadius,
   configManager,
   getBalance,
+  getBuildingQuantity,
   getRealmInfo,
   resolveUseSimpleCost,
 } from "@bibliothecadao/eternum";
@@ -29,8 +46,9 @@ import { BUILDINGS_CENTER, BuildingType, getHexDistance, type HexPosition, Resou
 import { useEffect, useMemo, useState } from "react";
 
 import { useGoToFrontierPlace } from "../frontier-home";
+import { exploreFix } from "../frontier-reveal-yield";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
-import { type BuildOption, readBuildOptions } from "./build-options";
+import { type BuildOption, PRODUCTS, readBuildOptions } from "./build-options";
 import { type BuildGain, type BuildTile, BuildView } from "./build-view";
 import { buildingIcon, buildingName } from "./building-names";
 
@@ -77,10 +95,13 @@ export const useOpenPlot = (realm: NativeRows["Structure"] | null): HexPosition 
 export const BuildSheet = ({
   realm,
   plot,
+  onResearch,
   onClose,
 }: {
   realm: NativeRows["Structure"];
   plot: HexPosition;
+  /** Opens Research, where the Barracks' tier that gates the training buildings is raised. */
+  onResearch?: () => void;
   onClose: () => void;
 }) => {
   const { setup } = useGame();
@@ -95,7 +116,7 @@ export const BuildSheet = ({
   );
   const [chosen, setChosen] = useState(0);
   const option = options?.[chosen];
-  const [sending, setSending] = useState(false);
+  const sending = useInFlight("plot", plotKey(realmId, plot)) !== undefined;
   const goToPlace = useGoToFrontierPlace(realm);
   const mode = useGameModeConfig();
   const realmInfo = useMemo(
@@ -107,21 +128,23 @@ export const BuildSheet = ({
   // Until the realm's research is known, no building's tier or price is.
   if (!options || !option) return null;
 
+  /** The sheet closes as the building leaves; its ghost stays on the plot until the build's own outcome. */
   const build = async () => {
-    setSending(true);
+    const building = { type: option.category, plot: { col: plot.col, row: plot.row } };
     try {
-      await requireActiveGameClient().actions.placeBuilding({
-        structureId: realmId,
-        buildingType: option.category,
-        hex: plot,
-        useSimpleCost,
+      await sendOnce("plot", plotKey(realmId, plot), building, async () => {
+        const sent = await requireActiveGameClient().actions.placeBuilding({
+          structureId: realmId,
+          buildingType: option.category,
+          hex: plot,
+          useSimpleCost,
+        });
+        AudioManager.getInstance().play("ui.build_place");
+        onClose();
+        return sent;
       });
-      AudioManager.getInstance().play("ui.build_place");
-      onClose();
     } catch (error) {
       toast.error(extractReadableErrorMessage(error, "The building could not be placed."));
-    } finally {
-      setSending(false);
     }
   };
 
@@ -129,53 +152,104 @@ export const BuildSheet = ({
     const balance = knownBalance(getBalance(safeInteger(realm.entity_id), resource, tick, setup.store).balance);
     return balance === undefined ? undefined : Math.floor(balance);
   };
-  const shortCost = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
-  const buildable = resolveConstructionBuildability({
-    entityId: safeInteger(realm.entity_id),
-    buildingType: option.category,
-    useSimpleCost,
-    store: setup.store,
-    realm: realmInfo,
-    mode,
-    targetSpot: plot,
-  }).canSubmit;
-  const freePopulation =
-    realmInfo?.population === undefined || realmInfo.capacity === undefined
-      ? undefined
-      : realmInfo.capacity + configManager.getBasePopulationCapacity() - realmInfo.population;
+  const population = realmPopulation(realmInfo);
+  const choose = (category: BuildingType) =>
+    setChosen(options.findIndex((candidate) => candidate.category === category));
+  const priceOf = (category: BuildingType) =>
+    options
+      .find((candidate) => candidate.category === category)!
+      .cost.map(({ resource, amount }) => ({ of: priceKind(resource), amount }));
+  const refusal = (): Refusal | undefined => {
+    if (option.standing === "built") return { reason: { kind: "failed", line: ONE_A_REALM } };
+    if (option.standing !== "open") return gateRefusal(option.standing.gate);
+    const shortCost = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
+    if (shortCost) {
+      const have = held(shortCost.resource);
+      const perHour = realmPerHour(setup.store, realmId, shortCost.resource, tick);
+      return {
+        reason: {
+          kind: "short",
+          of: priceKind(shortCost.resource),
+          held: have,
+          need: shortCost.amount,
+          wait: secondsUntilHeld(have, shortCost.amount, perHour),
+        },
+        fix: exploreFix(shortCost.resource, () => {
+          onClose();
+          goToPlace(true);
+        }),
+      };
+    }
+    const verdict = resolveConstructionBuildability({
+      entityId: realmId,
+      buildingType: option.category,
+      useSimpleCost,
+      store: setup.store,
+      realm: realmInfo,
+      mode,
+      targetSpot: plot,
+    });
+    if (verdict.canSubmit) return undefined;
+    if (verdict.code !== "insufficient_population" && verdict.code !== "insufficient_capacity")
+      return { reason: { kind: "failed", line: verdict.reason ?? "" } };
+    return {
+      reason: {
+        kind: "short",
+        of: "population",
+        counted: "free",
+        held: population.free,
+        need: option.populationCost,
+      },
+      fix: {
+        word: `${BUILD} ${HUT}`,
+        prices: priceOf(BuildingType.WorkersHut),
+        onFix: () => choose(BuildingType.WorkersHut),
+      },
+    };
+  };
+  /**
+   * A training building waits for the Barracks row's tier (the contract's assert_board_category): Research raises it
+   * once a Barracks stands, and until one does the fix is to build it.
+   */
+  const gateRefusal = (gate: number): Refusal => {
+    const reason = { kind: "failed", line: needsAt(BARRACKS, TIER_WORDS[gate]) } as const;
+    if (getBuildingQuantity(realmId, BuildingType.ResourceKnightT1, setup.store) === 0)
+      return {
+        reason,
+        fix: {
+          word: `${BUILD} ${BARRACKS}`,
+          prices: priceOf(BuildingType.ResourceKnightT1),
+          onFix: () => choose(BuildingType.ResourceKnightT1),
+        },
+      };
+    return { reason, fix: onResearch && { icon: "Rs", word: RESEARCH, onFix: onResearch } };
+  };
   return (
     <BuildView
+      population={population}
       tiles={options.map((candidate) => buildTile(candidate, held(ResourcesIds.Labor)))}
       chosen={chosen}
       onChoose={setChosen}
       gains={buildGains(option)}
       prices={option.cost.map(({ resource, amount }) => ({ of: priceKind(resource), amount }))}
-      short={
-        shortCost
-          ? {
-              kind: "short",
-              icon: iconOf(shortCost.resource),
-              held: held(shortCost.resource),
-              need: shortCost.amount,
-              wait: secondsUntilHeld(
-                held(shortCost.resource),
-                shortCost.amount,
-                realmPerHour(setup.store, safeInteger(realm.entity_id), shortCost.resource, tick),
-              ),
-            }
-          : buildable
-            ? undefined
-            : { kind: "short", icon: "Pp", held: freePopulation, need: option.populationCost }
-      }
+      refusal={refusal()}
       sending={sending}
       onBuild={() => void build()}
-      onMap={() => {
-        onClose();
-        goToPlace(true);
-      }}
       onClose={onClose}
     />
   );
+};
+
+/**
+ * The realm's population as the contract counts it: what its buildings take against what the castle and the Huts
+ * give, and what is free of it.
+ */
+const realmPopulation = (
+  realm: ReturnType<typeof getRealmInfo>,
+): { free: number | undefined; total: number | undefined } => {
+  if (realm?.population === undefined || realm.capacity === undefined) return { free: undefined, total: undefined };
+  const total = realm.capacity + configManager.getBasePopulationCapacity();
+  return { free: total - realm.population, total };
 };
 
 /** Each attribute's mark, as a training building's gain shows it. */
@@ -184,16 +258,6 @@ const ATTRIBUTE_MARKS: Record<Extract<BuildOption["effect"], { kind: "trains" }>
   Logistics: "Lg",
   Scouting: "Sc",
   Homecoming: "Su",
-};
-
-const RESOURCE_ICONS: Partial<Record<number, IconCode>> = {
-  // A barracks trains the troops of its tier: one troop type, drawn as troops.
-  [ResourcesIds.Knight]: "Tr",
-  [ResourcesIds.KnightT2]: "Tr",
-  [ResourcesIds.KnightT3]: "Tr",
-  [ResourcesIds.Labor]: "La",
-  [ResourcesIds.Wheat]: "Wh",
-  [ResourcesIds.Essence]: "Es",
 };
 
 const PRICE_KINDS: Partial<Record<number, PriceKind>> = {
@@ -209,12 +273,6 @@ const priceKind = (resource: number): PriceKind => {
   return kind;
 };
 
-const iconOf = (resource: number): IconCode => {
-  const icon = RESOURCE_ICONS[resource];
-  if (!icon) throw new Error(`No icon for resource ${resource}`);
-  return icon;
-};
-
 const buildTile = (option: BuildOption, labor: number | undefined): BuildTile => {
   const icon = buildingIcon(option.category);
   const price = option.cost.find(({ resource }) => resource === ResourcesIds.Labor)?.amount ?? 0;
@@ -222,15 +280,53 @@ const buildTile = (option: BuildOption, labor: number | undefined): BuildTile =>
     key: String(option.category),
     icon,
     name: buildingName(option.category),
+    tip: buildingLine(option),
     foot:
       option.standing === "built"
         ? { kind: "built" }
         : option.standing === "open"
-          ? { kind: "price", labor: price, short: labor === undefined || labor < price }
+          ? {
+              kind: "price",
+              labor: price,
+              short: labor === undefined || labor < price,
+              raised: riseLine(option, price),
+            }
           : // The gate is a research tier above common; the kit counts tiers from common.
             { kind: "locked", gate: (option.standing.gate + 1) as Tier },
   };
 };
+
+const times = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+
+/**
+ * What a building does, in one line from its real effect: "Farm: +302 wheat an hour, takes 1 population". A training
+ * building starts every new army at its type's tier in its attribute.
+ */
+const buildingLine = (option: BuildOption): string => {
+  const { effect } = option;
+  const does =
+    effect.kind === "produces"
+      ? makesAnHour(formatAmount(effect.perHour), PRODUCTS[effect.resource].word)
+      : effect.kind === "trains"
+        ? startsNewArmies(effect.attribute, TIER_WORDS[option.tier - 1])
+        : `+${formatAmount(effect.amount)} ${POPULATION}`;
+  const takes = option.populationCost > 0 ? `, ${takesPopulation(formatAmount(option.populationCost))}` : "";
+  return `${buildingName(option.category)}: ${does}${takes}`;
+};
+
+/**
+ * Why a price is above its base, as the contract charges it: the copies standing multiply it. None when no copy
+ * stands yet.
+ */
+const riseLine = (option: BuildOption, price: number): string | undefined =>
+  option.rise.times > 1
+    ? priceRaised(
+        formatExact(price / option.rise.times),
+        LABOR,
+        times.format(option.rise.times),
+        formatAmount(option.rise.standing),
+      )
+    : undefined;
 
 /**
  * The chosen building's gains: what it makes an hour, the population room it adds or the tier a training building
@@ -240,11 +336,34 @@ const buildGains = (option: BuildOption): BuildGain[] => {
   const { effect } = option;
   const gain: BuildGain =
     effect.kind === "produces"
-      ? { icon: iconOf(effect.resource), value: `+${formatAmount(effect.perHour)}/h`, label: "produces" }
+      ? { icon: PRODUCTS[effect.resource].icon, value: `+${formatAmount(effect.perHour)}/h`, label: "produces" }
       : effect.kind === "trains"
         ? { icon: ATTRIBUTE_MARKS[effect.attribute], value: TIER_WORDS[option.tier - 1], label: "trains" }
         : { icon: "Pp", value: `+${formatAmount(effect.amount)}`, label: "houses" };
   return [gain, { icon: "Pp", value: formatAmount(option.populationCost), label: "population" }];
+};
+
+/** A realm's plot, as the actions in flight name it. */
+const plotKey = (realmId: number, plot: HexPosition): string => `${realmId}:${plot.col},${plot.row}`;
+
+/**
+ * A building sent and not yet known keeps standing on its plot as the scene's ghost, which is where the player looks
+ * once the sheet has closed. An open build sheet's own choice takes the ghost while it is open.
+ */
+export const BuildingsInFlight = () => {
+  const [building] = [...useAllInFlight("plot").values()];
+  const preview = useUIStore((state) => state.previewBuilding);
+  const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
+  useEffect(() => {
+    if (building && preview === null) setPreviewBuilding(building);
+  }, [building, preview, setPreviewBuilding]);
+  useEffect(() => {
+    if (!building) return;
+    return () => {
+      if (useUIStore.getState().previewBuilding === building) setPreviewBuilding(null);
+    };
+  }, [building, setPreviewBuilding]);
+  return null;
 };
 
 /** The chosen building stands on the plot as the scene's ghost while the sheet is open. */

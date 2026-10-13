@@ -18,8 +18,7 @@ import { buildNativePreset } from "../config/native-preset";
 import {
   FRONTIER_ACCELERATED_PRESET_ID,
   FRONTIER_PRESET_ID,
-  FRONTIER_SELF_CHECK_PRESET_ID,
-  SELF_CHECK_PRESET_ID,
+  FRONTIER_FIXTURE_PRESET_ID,
   nativeGameModeOf,
 } from "../../../source/common/native-preset-modes";
 import {
@@ -78,7 +77,7 @@ describe("native presets", () => {
   });
 
   test("every Frontier preset carries chest rules without a funding amount", () => {
-    for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, FRONTIER_SELF_CHECK_PRESET_ID]) {
+    for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, FRONTIER_FIXTURE_PRESET_ID]) {
       expect(nativePresets[id]!.chests).not.toHaveProperty("pool");
       const chests = buildNativePreset(
         loadNativePresetConfiguration("madara.frontier", id),
@@ -450,7 +449,7 @@ describe("native presets", () => {
       "frontier",
     ]);
     expect(() => nativeGameModeOf(9)).toThrow("Unknown native preset 9");
-    expect(nativeGameModeOf(SELF_CHECK_PRESET_ID)).toBe("eternum");
+    expect(nativeGameModeOf(103)).toBe("eternum");
     expect(nativeGameModeOf(104)).toBe("frontier");
     expect(() => nativeGameModeOf(105)).toThrow("Unknown native preset 105");
   });

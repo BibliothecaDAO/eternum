@@ -57,7 +57,7 @@ describe("joining a shard", () => {
     });
     expect(send).toHaveBeenCalledWith(
       "https://identity.test/api/devices/bots",
-      expect.objectContaining({ redirect: "error" }),
+      expect.objectContaining({ redirect: "manual" }),
     );
     expect(new Headers(send.mock.calls[0][1]?.headers).get("authorization")).toBe("Bearer fixture-token");
   });
@@ -155,11 +155,27 @@ describe("the account's devices across shards", () => {
       approve: guardian,
     });
 
-    expect(failures).toEqual([{ shard: "https://dead.test", error: new Error("node unreachable") }]);
+    expect(failures).toMatchObject([
+      {
+        shard: "https://dead.test",
+        error: { message: "account_join_read_failed", cause: new Error("node unreachable") },
+      },
+    ]);
     const revocations = execute.mock.calls.filter(
       ([call]) => (call as { entrypoint: string }).entrypoint === "revoke_device",
     );
     expect(revocations).toHaveLength(2);
     expect(guardian.mock.calls.map(([change]) => change.action).sort()).toEqual(["ADD", "REVOKE", "REVOKE"]);
   });
+});
+
+it("names the failing join read and keeps the underlying error out of its public message", async () => {
+  const cause = new Error("private RPC request body");
+  const rpc = provider(false);
+  vi.mocked(rpc.getClassHashAt).mockRejectedValue(cause);
+  const error = await joinRealmsAccount({ provider: rpc, shard, realmsId: "0x99", device, approve }).catch(
+    (error) => error,
+  );
+  expect(error.message).toBe("account_join_read_failed");
+  expect(error.cause).toBe(cause);
 });

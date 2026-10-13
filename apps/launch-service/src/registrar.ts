@@ -1,12 +1,30 @@
-import { activeShards } from "@realms-world/value-ledger";
+import { accountJoinErrors } from "@bibliothecadao/eternum/realms-account";
+import { activeShards, serviceFailure } from "@realms-world/value-ledger";
 import { DurableObject } from "cloudflare:workers";
 import { Effect, Layer, Semaphore } from "effect";
 import { decodeLaunchEnv } from "./env";
 import { launchExecutorLayer, launchTargetOf } from "./executor";
 import { processNextLaunch } from "./process-launch";
-import { LauncherDeployment, deploymentOperation } from "./launcher-deployment";
-import type { OperatorLauncher } from "./launcher-routes";
+import { joinLauncherAccount } from "./launcher-account";
 import { D1LaunchStore, databaseLayer } from "./store";
+
+export interface JoinFailure {
+  chainId: string;
+  code: string;
+  checkedAt: number;
+}
+const joinErrors = [
+  "launcher_approval_refused",
+  "launcher_shard_inactive",
+  "unlisted_shard",
+  "directory_shard_manifest_fetch_failed",
+  "directory_shard_manifest_unavailable",
+  "directory_manifest_chain_differs",
+  "invalid_directory_shard_manifest",
+  "invalid_directory_shard_rpc",
+  "invalid_directory_shard_url",
+  ...accountJoinErrors,
+];
 
 /**
  * The registrar: the one object that executes launches, so the deployer account signs one transaction stream at a
@@ -15,11 +33,14 @@ import { D1LaunchStore, databaseLayer } from "./store";
  */
 export class Registrar extends DurableObject<Record<string, unknown>> {
   private readonly signing = Semaphore.makeUnsafe(1);
-  enrol(input: Parameters<OperatorLauncher["enrol"]>[0]) {
-    return Effect.runPromise(this.signing.withPermit(deploymentOperation(() => this.deployment().enrol(input))));
+  private processing = false;
+
+  async wakeAt(): Promise<number | null> {
+    return this.processing ? Date.now() : this.ctx.storage.getAlarm();
   }
-  private deployment() {
-    return new LauncherDeployment(decodeLaunchEnv(this.env), this.ctx.storage);
+
+  async joinFailures(): Promise<JoinFailure[]> {
+    return (await this.ctx.storage.get<JoinFailure[]>("joinFailures")) ?? [];
   }
 
   /**
@@ -33,12 +54,24 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
   }
 
   override alarm(): Promise<void> {
-    return Effect.runPromise(this.signing.withPermit(Effect.promise(() => this.processAlarm())));
+    return Effect.runPromise(
+      this.signing.withPermit(
+        Effect.promise(async () => {
+          this.processing = true;
+          try {
+            await this.processAlarm();
+          } finally {
+            this.processing = false;
+          }
+        }),
+      ),
+    );
   }
   private async processAlarm(): Promise<void> {
     console.log("registrar_alarm", { at: new Date().toISOString() });
     const env = decodeLaunchEnv(this.env);
     let next: number | null = null;
+    const failures: JoinFailure[] = [];
     for (const shard of await activeShards(env.IDENTITY)) {
       const store = new D1LaunchStore(
         env.DB,
@@ -47,9 +80,20 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
       );
       let accountAddress: string;
       try {
-        accountAddress = await this.deployment().account(shard.chainId);
+        accountAddress = await joinLauncherAccount(env, shard.chainId);
       } catch (error) {
-        if (!(error instanceof Error) || error.message !== "launcher_role_not_granted") throw error;
+        const diagnostic = serviceFailure(error, joinErrors, "launcher_join_failed", [
+          env.OPERATOR_TOKEN,
+          env.LAUNCH_DEPLOYER_PRIVATE_KEY,
+        ]);
+        const failure = {
+          chainId: shard.chainId,
+          code: diagnostic.code,
+          checkedAt: Date.now(),
+        };
+        failures.push(failure);
+        await this.ctx.storage.put("joinFailures", failures);
+        console.error("launcher_account_unavailable", { ...failure, ...diagnostic });
         next = Math.min(next ?? Infinity, Date.now() + 30000);
         continue;
       }
@@ -59,6 +103,7 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
       const due = await store.nextDue();
       if (due !== null) next = Math.min(next ?? Infinity, due);
     }
+    await this.ctx.storage.put("joinFailures", failures);
     if (next !== null) await this.ctx.storage.setAlarm(Math.max(next, Date.now()));
   }
 }

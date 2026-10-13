@@ -177,7 +177,6 @@ export function assessRosterRun(input: {
   };
   const checks = {
     thresholdEligibleActions: thresholdEligibleActions >= input.minimumThresholdActions,
-    ...(input.functional ? {} : { admissionToVisibleMeasured: admissionToVisibleMissing === 0 }),
   };
   return {
     checks,
@@ -207,8 +206,8 @@ function releaseSpread(workers: WorkerWorkloadSummary[]): number | null {
 /**
  * Where each latency p95 stands against its target. Over target is flagged for the report, never a failed run; a
  * latency with no samples is flagged too, since a run cannot show it met a target it never measured. `missing`
- * counts completed actions with no admission-to-visible figure: they are outside the p95, so the run's
- * admissionToVisibleMeasured check fails on any.
+ * counts completed actions with no admission-to-visible figure, which are outside the p95. Missing timing
+ * evidence is a diagnostic; gameplay correctness determines the run's verdict.
  */
 export function latencyAgainstTargets(
   admissionToVisibleP95: number | null,
@@ -278,7 +277,9 @@ export function analyzeHarnessResult(input: HarnessReportInput) {
       : {
           thresholdEligibleActions: thresholdEligibleActions >= input.gates.minimumThresholdActions,
         }),
-    ...(measuredRun ? { admissionToVisibleMeasured: admissionToVisibleMissing === 0 } : {}),
+    everyPlayerActed:
+      completedActions.length > 0 &&
+      input.accounts.every(({ botId }) => completedActions.some((action) => action.botId === botId)),
     setup: setupFailures.length === 0,
     ...(input.workload.frontier && input.functional ? frontierChecks(input.workload.frontier, actions) : {}),
     layerRoundTrips: input.layerRoundTrips?.every((result) => result.status === "passed") ?? true,

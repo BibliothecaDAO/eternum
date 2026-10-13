@@ -94,4 +94,19 @@ describe("Frontier season standings", () => {
     delete rows.GameRegistry;
     expect(() => buildFrontierLeaderboard(read, "1", [])).toThrow("GameRegistry");
   });
+
+  it("shares equal standings without using address or snapshot order as a competitive rank", () => {
+    const { read, rows } = facts([0, 0, 0, 0]);
+    const history = [clear("Camp", 0, 10)];
+    const board = buildFrontierLeaderboard(read, "1", history);
+    expect(board.entries.map(({ address, rank }) => ({ address, rank }))).toEqual([
+      { address: "0xa", rank: 1 },
+      { address: "0xb", rank: 2 },
+      { address: "0xc", rank: 2 },
+      { address: "0xd", rank: 2 },
+    ]);
+    rows.Structure.reverse();
+    expect(buildFrontierLeaderboard(read, "1", history)).toEqual(board);
+    expect(buildFrontierLeaderboard(read, "1", []).entries.map(({ rank }) => rank)).toEqual([1, 1, 1, 1]);
+  });
 });

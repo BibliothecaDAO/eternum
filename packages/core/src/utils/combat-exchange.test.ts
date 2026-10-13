@@ -156,7 +156,12 @@ describe("an exchange resolves as the contract resolves it", () => {
     const forecast = forecastFight(recorded.attacker, recorded.defender, recorded.context, rules);
     if (forecast.outcome === "refused") throw new Error("The first exchange was refused");
     expect(forecast.exchanges).toBeGreaterThan(1);
-    expect(forecast.defenderLoss).toBeGreaterThanOrEqual(recorded.expected.defenderLoss);
+    // The first exchange is the one attack a player sends: its toll is the recorded exchange's, not the fight's.
+    expect(forecast.firstExchange).toEqual({
+      attackerLoss: recorded.expected.attackerLoss,
+      defenderLoss: recorded.expected.defenderLoss,
+    });
+    expect(forecast.defenderLoss).toBeGreaterThan(recorded.expected.defenderLoss);
     expect(forecast.staminaSpent).toBe(BigInt(forecast.exchanges * rules.stamina.stamina_attack_req));
   });
 });

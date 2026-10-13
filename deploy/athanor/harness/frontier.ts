@@ -2,8 +2,6 @@ import { safeInteger } from "../../../packages/core/src/utils/safe-integer";
 import { entityHomeNamespace } from "@bibliothecadao/eternum/expeditions";
 import { attachAcceptedBlocks } from "./gas-collector";
 import { setTimeout as sleep } from "node:timers/promises";
-import type { Account } from "starknet";
-import { createOperatorAccount } from "../../../config/deployer/clean/shared/madara-account";
 import { fetchHeraldGameHistory } from "@bibliothecadao/eternum/game-client";
 import {
   ArmyActionManager,
@@ -25,7 +23,6 @@ import {
   readExpeditionRules,
   readTroopRaiseCost,
   ResourceManager,
-  seasonSeconds,
   type GameClient,
   waitForWorldState,
 } from "@bibliothecadao/eternum";
@@ -46,13 +43,7 @@ import {
 import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
 import { nativePresetForId } from "../../../config/source/native";
 import { FRONTIER_ACCELERATED_PRESET_ID } from "../../../config/source/common/native-preset-modes";
-import { createRegistrarGame } from "../../../config/deployer/clean/registrar/calls";
-import {
-  buildNativeGameParams,
-  buildNativePresetRegistration,
-  loadNativePresetConfiguration,
-  registerNativePreset,
-} from "../../../config/deployer/clean/registrar/native-preset";
+import { loadNativePresetConfiguration } from "../../../config/deployer/clean/registrar/native-preset";
 import type { HarnessAccount } from "./account-factory";
 import { actorKey, type HarnessGameClient } from "./game-client";
 import { createRpcMetrics, trackTransaction, type TrackedTransaction, type WorkloadResult } from "./driver";
@@ -78,67 +69,6 @@ const GUARDED_SITES = new Set<number>([
   StructureType.Stragglers,
   StructureType.Ruin,
 ]);
-
-/**
- * Creates a Frontier season from a registered preset. The design run creates from the accelerated fixture preset, which
- * it registers on first use; presets are immutable, so no run ever edits a mode's own preset to change its clocks.
- */
-export async function launchFrontierSeason(
-  provider: HarnessProvider,
-  gameName: string,
-  minutes: number,
-  presetId: number,
-) {
-  const manifest = process.env.NATIVE_WORLD_MANIFEST;
-  const address = process.env.DEPLOYER_ACCOUNT_ADDRESS;
-  const privateKey = process.env.DEPLOYER_PRIVATE_KEY;
-  if (!manifest || !address || !privateKey)
-    throw new Error("Frontier launch requires the isolated manifest and authority");
-  const account = createOperatorAccount(provider, address, privateKey);
-  const config = loadNativePresetConfiguration("madara.frontier", presetId);
-  const preset = buildNativePreset(config, presetId);
-  if (nativePresetForId(presetId).clockScale) await registerFixturePreset(account, presetId, manifest, preset);
-  // The season starts on an armies tick and lasts whole bags of days, covering the run and its longest last day.
-  const tick = Number(preset.rules.tick_config.armies_tick_in_seconds);
-  const startAt = Math.ceil((Math.floor(Date.now() / 1000) + 60) / tick) * tick;
-  const unit = preset.rules.day_unit_seconds;
-  const bags = Math.ceil((Math.ceil(minutes * 60) + 6 * unit) / seasonSeconds(1, unit));
-  const params = buildNativeGameParams(config, {
-    gameName,
-    presetId,
-    startMainAt: startAt,
-    chainTimestamp: startAt - 60,
-    durationSeconds: seasonSeconds(bags, unit),
-    devModeOn: false,
-    singleRealmMode: true,
-    twoPlayerMode: false,
-    useMapOverride: false,
-  });
-  const created = await createRegistrarGame(account, params, "madara.frontier", preset);
-  if (!created.gameId) throw new Error("Frontier registrar did not emit a game id");
-  console.log(
-    JSON.stringify({
-      frontierSeason: created.gameId,
-      presetId,
-      dayUnitSeconds: unit,
-      createTransaction: created.transactionHash,
-    }),
-  );
-  // Open entry: Frontier has no settlement burst at start; players settle themselves during play.
-  return { gameId: created.gameId, gameName, startAt, settlementTransactions: 0 };
-}
-
-/** Registers a fixture preset's definition under its own id; an already registered one is left as it is. */
-async function registerFixturePreset(
-  account: Account,
-  presetId: number,
-  manifest: string,
-  definition: ReturnType<typeof buildNativePreset>,
-): Promise<void> {
-  const registration = buildNativePresetRegistration(definition, presetId, manifest);
-  const transaction = await registerNativePreset(account, presetId, registration);
-  console.log(JSON.stringify({ fixturePreset: presetId, commitment: registration.commitment, transaction }));
-}
 
 /** A design run's day unit: the accelerated fixture preset's, which the season it plays must match. */
 const acceleratedDayUnitSeconds = (): number => {
@@ -568,7 +498,13 @@ async function settleFrontierPlayers(options: RunFrontierOptions, accounts: Harn
   let next = 0;
   const settleNext = async (): Promise<void> => {
     for (let index = next++; index < accounts.length; index = next++) {
-      const { transaction, player } = await settleFrontierPlayer(options, accounts[index]!, { stage: "setup" });
+      const identity = accounts[index]!;
+      const realmId = options.game.forActor(identity.address).settlementStructureIds(identity.address)?.[0];
+      if (realmId !== undefined) {
+        players[index] = frontierPlayer(options, identity, realmId);
+        continue;
+      }
+      const { transaction, player } = await settleFrontierPlayer(options, identity, { stage: "setup" });
       options.setupTransactions.push(transaction);
       if (!player) throw new Error(transaction.error ?? "Frontier settlement failed");
       players[index] = player;
@@ -579,13 +515,12 @@ async function settleFrontierPlayers(options: RunFrontierOptions, accounts: Harn
 }
 
 async function settleFrontierPlayer(
-  { game, provider, actorClients }: RunFrontierOptions,
+  options: RunFrontierOptions,
   identity: HarnessAccount,
   timing: { stage: "setup" | "workload"; scheduledAtMs?: number },
 ): Promise<{ transaction: TrackedTransaction; player?: Player }> {
+  const { game, provider } = options;
   const own = game.forActor(identity.address);
-  const client = actorClients.get(actorKey(identity.address))?.client;
-  if (!client) throw new Error(`Bot ${identity.botId} has no client of its own`);
   const transaction = await trackTransaction({
     botId: identity.botId,
     gameId: game.gameId,
@@ -604,22 +539,25 @@ async function settleFrontierPlayer(
     30_000,
     () => `Frontier settlement for bot ${identity.botId} in game ${game.gameId}`,
   );
+  return { transaction, player: frontierPlayer(options, identity, realmId) };
+}
+
+function frontierPlayer({ game, actorClients }: RunFrontierOptions, identity: HarnessAccount, realmId: number): Player {
+  const client = actorClients.get(actorKey(identity.address))?.client;
+  if (!client) throw new Error(`Bot ${identity.botId} has no client of its own`);
   return {
-    transaction,
-    player: {
-      identity,
-      client,
-      game: own,
-      realmId,
-      profile: identity.botId % 2 === 0 ? "check-in" : "daily",
-      settledAt: now(),
-      days: [],
-      rungs: [],
-      rollovers: [],
-      captures: [],
-      siteExchanges: new Map(),
-      nextActionAt: 0,
-    },
+    identity,
+    client,
+    game: game.forActor(identity.address),
+    realmId,
+    profile: identity.botId % 2 === 0 ? "check-in" : "daily",
+    settledAt: now(),
+    days: [],
+    rungs: [],
+    rollovers: [],
+    captures: [],
+    siteExchanges: new Map(),
+    nextActionAt: 0,
   };
 }
 

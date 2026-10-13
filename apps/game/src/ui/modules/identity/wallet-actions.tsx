@@ -1,17 +1,20 @@
 import { StarknetProvider } from "@/hooks/context/starknet-provider";
 import { shortAddress } from "@/ui/design-system/kit/address";
+import { Button } from "@/ui/design-system/kit/button";
 import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 import type { SignInOptions } from "@realms-world/identity";
 import { useConnect, useDisconnect, useProvider } from "@starknet-react/core";
 import type { Connector } from "@starknet-react/core";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { AccountInterface, Call, ProviderInterface } from "starknet";
 
+import { Loading } from "@/shell/loading";
 import { NoStrkLine } from "@/shell/value/no-strk-line";
 import { VALUE_WORDS, WALLET_WORDS } from "@/shell/words";
 
 import { failureSentence, WrongNetworkError } from "./identity-failures";
 import { assertWalletOnL2 } from "./l2-wallet";
+import { connectorHolding, rememberOpened } from "./wallet-holder";
 import { walletProofForAccount } from "./wallet-proof";
 import { sendFromWallet, type WalletSendOutcome, WrongWalletError } from "./wallet-send";
 
@@ -30,75 +33,104 @@ const WALLET_CHOICES = [
  * The only surface with wallet connectors, loaded as its own chunk when a signed-in player links a wallet or pays from
  * it. Nothing else loads a wallet, so signing in never starts one.
  */
-export const WalletPicker = ({
-  only,
-  onProof,
-}: {
-  only?: readonly WalletId[];
-  onProof: (proof: SignInOptions) => void;
-}) => (
+export const WalletPicker = (props: { only?: readonly WalletId[]; onProof: (proof: SignInOptions) => void }) => (
   <StarknetProvider>
-    <WalletRows
-      only={only}
-      failure="link"
-      onAccount={async (account, connectorId, provider) =>
-        onProof(await walletProofForAccount(account, provider, connectorId))
-      }
-    />
+    <ProofRows {...props} />
   </StarknetProvider>
 );
 
+const ProofRows = ({ only, onProof }: { only?: readonly WalletId[]; onProof: (proof: SignInOptions) => void }) => {
+  const wallet = useWalletAction("link", async (account, connectorId, provider) =>
+    onProof(await walletProofForAccount(account, provider, connectorId)),
+  );
+  return <WalletRows only={only} wallet={wallet} />;
+};
+
 /**
  * Where every send of the value screens passes: `owner` signs the ledger's calls (the payout wallet for a new entry,
- * the wallet that paid for anything it holds), from the same rows; any other wallet is refused, naming `owner`. A
- * wallet with no STRK for the fee is offered the swap instead; a sent call shows Confirming until its receipt lands,
- * then `onLanded` (the panel reads the ledger again), or the ledger's reason when it reverted.
+ * the wallet that paid for anything it holds). The wallet is opened on the call itself, with no picking: the one that
+ * holds `owner` in this browser is prompted at once, and any other account it answers with is refused, naming `owner`.
+ * Only a wallet this browser has never opened is asked for, from the rows, once. A wallet with no STRK for the fee is
+ * offered the swap instead; a sent call shows Confirming until its receipt lands, then `onLanded` (the panel reads the
+ * ledger again), or the ledger's reason when it reverted.
  */
-export const WalletSign = ({ owner, calls, onLanded }: { owner: string; calls: Call[]; onLanded: () => void }) => {
+export const WalletSign = (props: { owner: string; calls: Call[]; onLanded: () => void }) => (
+  <StarknetProvider>
+    <OwnerSend {...props} />
+  </StarknetProvider>
+);
+
+const OwnerSend = ({ owner, calls, onLanded }: { owner: string; calls: Call[]; onLanded: () => void }) => {
+  const { connectors } = useConnect();
   const [outcome, setOutcome] = useState<Exclude<WalletSendOutcome, { kind: "landed" }> | { kind: "confirming" }>();
-  if (outcome?.kind === "confirming")
-    return <span className="font-body text-[15px] text-kit-muted">{VALUE_WORDS.confirming}</span>;
+  /** The connector holding `owner`: undefined while it is looked for, null when this browser has never opened it. */
+  const [holder, setHolder] = useState<Connector | null>();
+  const send: OnAccount = async (account, _connectorId, provider) => {
+    setOutcome(undefined);
+    const sent = await sendFromWallet(account, owner, calls, provider, () => setOutcome({ kind: "confirming" }));
+    if (sent.kind === "landed") onLanded();
+    else setOutcome(sent);
+  };
+  const wallet = useWalletAction("pay", send);
+  const asked = useRef(false);
+  useEffect(() => {
+    // Development replays effects on mount: the wallet is still prompted once.
+    if (asked.current) return;
+    asked.current = true;
+    void connectorHolding(owner, connectors).then((found) => {
+      setHolder(found ?? null);
+      if (found) void wallet.open(found);
+    });
+    // Asked once, for the wallet this send was opened for.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (holder === undefined) return <Loading />;
+  const confirming = outcome?.kind === "confirming";
   return (
-    <StarknetProvider>
-      <div className="flex w-full flex-col gap-2.5">
-        {outcome?.kind === "no-strk" && <NoStrkLine />}
-        {outcome?.kind === "refused" && <span className="font-body text-[14px] text-kit-red">{outcome.reason}</span>}
-        <WalletRows
-          failure="pay"
-          onAccount={async (account, _connectorId, provider) => {
-            const sent = await sendFromWallet(account, owner, calls, provider, () =>
-              setOutcome({ kind: "confirming" }),
-            );
-            if (sent.kind === "landed") onLanded();
-            else setOutcome(sent);
-          }}
-        />
-      </div>
-    </StarknetProvider>
+    <div className="flex w-full flex-col gap-2.5">
+      {outcome?.kind === "no-strk" && <NoStrkLine />}
+      {outcome?.kind === "refused" && <span className="font-body text-[14px] text-kit-red">{outcome.reason}</span>}
+      {holder === null && !confirming ? (
+        <>
+          <span className="font-body text-[14px] text-kit-muted">{WALLET_WORDS.whichHolds(shortAddress(owner))}</span>
+          <WalletRows wallet={wallet} />
+        </>
+      ) : (
+        <>
+          {wallet.error && <span className="font-body text-[14px] text-kit-red">{wallet.error}</span>}
+          <Button
+            role="outline"
+            word={WALLET_WORDS.tryAgain}
+            icon="Sp"
+            loading={
+              confirming ? VALUE_WORDS.confirming : wallet.pending === null ? undefined : WALLET_WORDS.confirmInWallet
+            }
+            onClick={() => holder && void wallet.open(holder)}
+          />
+        </>
+      )}
+    </div>
   );
 };
 
 type WalletId = (typeof WALLET_CHOICES)[number]["id"];
 
-const WalletRows = ({
-  only,
-  failure,
-  onAccount,
-}: {
-  /** The wallets offered; all of them when absent. */
-  only?: readonly WalletId[];
-  failure: "link" | "pay";
-  /** The chosen wallet's account, connected on the build's L2, with its connector's id and the L2 provider. */
-  onAccount: (account: AccountInterface, connectorId: string, provider: ProviderInterface) => Promise<void>;
-}) => {
-  const { connectors } = useConnect();
+/** The opened wallet's account, connected on the build's L2, with its connector's id and the L2 provider. */
+type OnAccount = (account: AccountInterface, connectorId: string, provider: ProviderInterface) => Promise<void>;
+
+/**
+ * One wallet action at a time: `open` connects a connector's wallet and hands its account to `onAccount`, `pending`
+ * names the connector under way and `error` is the one line of why it stopped.
+ */
+const useWalletAction = (failure: "link" | "pay", onAccount: OnAccount) => {
   const { provider } = useProvider();
   const connect = useL2Account();
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const running = useRef(false);
 
-  const choose = async (connector: Connector) => {
+  const open = async (connector: Connector) => {
     if (running.current) return;
     running.current = true;
     setPending(connector.id);
@@ -116,7 +148,18 @@ const WalletRows = ({
       setPending(null);
     }
   };
+  return { open, pending, error };
+};
 
+const WalletRows = ({
+  only,
+  wallet,
+}: {
+  /** The wallets offered; all of them when absent. */
+  only?: readonly WalletId[];
+  wallet: ReturnType<typeof useWalletAction>;
+}) => {
+  const { connectors } = useConnect();
   const rows = WALLET_CHOICES.filter((choice) => !only || only.includes(choice.id)).flatMap((choice) => {
     const connector = connectors.find((candidate) => candidate.id === choice.id);
     return connector?.available() ? [{ choice, connector }] : [];
@@ -127,20 +170,20 @@ const WalletRows = ({
         <button
           key={choice.id}
           type="button"
-          disabled={pending !== null}
-          onClick={() => void choose(connector)}
+          disabled={wallet.pending !== null}
+          onClick={() => void wallet.open(connector)}
           className="flex h-[62px] items-center gap-3 rounded-[14px] border-2 border-kit-line bg-kit-ground/60 px-3.5 text-left disabled:opacity-60"
         >
           <KitIcon code="Wt" size={34} />
           <span className="font-ui text-[21px] text-kit-cream">{choice.name}</span>
           {choice.note && <span className="font-body text-[13px] font-semibold text-kit-muted">{choice.note}</span>}
           <span className="ml-auto font-body text-[13px] text-kit-muted">
-            {pending === choice.id ? WALLET_WORDS.opening : <KitIcon code="Ar" size={22} />}
+            {wallet.pending === choice.id ? WALLET_WORDS.opening : <KitIcon code="Ar" size={22} />}
           </span>
         </button>
       ))}
       {rows.length === 0 && <span className="font-body text-[15px] text-kit-muted">{WALLET_WORDS.noneHere}</span>}
-      {error && <span className="font-body text-[14px] text-kit-red">{error}</span>}
+      {wallet.error && <span className="font-body text-[14px] text-kit-red">{wallet.error}</span>}
     </div>
   );
 };
@@ -162,7 +205,9 @@ const useL2Account = () => {
       await connectAsync({ connector });
       assertWalletOnL2(await connector.chainId());
       // Use the selected connector immediately; React's account state may still describe the previous wallet.
-      return connector.account(provider);
+      const account = await connector.account(provider);
+      rememberOpened(account.address, connector.id);
+      return account;
     },
     [connectAsync, connectedConnector, disconnectAsync, provider],
   );

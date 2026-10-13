@@ -1,3 +1,5 @@
+import { setTimeout as delay } from "node:timers/promises";
+import { serviceFailure } from "../../../packages/value-ledger/src/service-error";
 import { stark, type Account, type RpcProvider } from "starknet";
 import { deviceKeyOf, joinBotAccount, type OperatorIdentity, type RealmsAccountShard } from "@bibliothecadao/eternum";
 import { configureGameplayAccountSubmits, type GameplayShard } from "@bibliothecadao/eternum/game-client";
@@ -45,7 +47,7 @@ export async function createHarnessAccounts({
     try {
       // Every send a bot makes, raw or through the client's provider, takes the client's nonce and fee path.
       const account = configureGameplayAccountSubmits(
-        await joinBotAccount({ provider, shard, label: stark.randomAddress(), device, identity }),
+        await joinRateLimitedBot({ provider, shard, label: stark.randomAddress(), device, identity }, stopped),
         shard,
         stopped,
       );
@@ -61,9 +63,29 @@ export async function createHarnessAccounts({
         publicKey: device.publicKey,
       };
     } catch (error) {
-      throw new Error(`Failed to deploy gameplay account for bot ${botId}`, { cause: error });
+      const failure = serviceFailure(error, [], "bot_account_join_failed", [privateKey, identity.operatorToken]);
+      throw new Error(`Bot ${botId} sign-in failed: ${failure.type}: ${failure.message}`, { cause: error });
     }
   });
+}
+
+/** The public proxy allows 30 account operations per minute; a refused join retries the same account and device for at most two windows. */
+async function joinRateLimitedBot(
+  input: Parameters<typeof joinBotAccount>[0],
+  stopped?: AbortSignal,
+): Promise<Account> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await joinBotAccount(input);
+    } catch (error) {
+      let cause = error;
+      while (cause instanceof Error && cause.cause) cause = cause.cause;
+      if (attempt === 2 || !cause || typeof cause !== "object" || !("code" in cause) || cause.code !== -32005)
+        throw error;
+      console.log("Bot sign-in reached the public account-operation limit; waiting for its one-minute window.");
+      await delay(60_000, undefined, { signal: stopped });
+    }
+  }
 }
 
 export async function mapWithConcurrency<T, R>(

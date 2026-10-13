@@ -34,6 +34,328 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-10-13",
+    title: "Blitz opens for its players",
+    description:
+      "Fixed the game view failing as a player entered a Blitz game: a realm's stores are read as not known yet for the moment your account's view of the world is being loaded, and the panels fill in as it arrives.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
+    title: "Phone sheets keep their margins",
+    description:
+      "Fixed Settings and the account sheet running into the screen's left and right edges on a phone: they keep the same margin as every other panel.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
+    title: "A cleared site pays on screen",
+    description:
+      "Fixed clearing a camp, a rift, stragglers or a ruin passing in silence: the guard now falls with its dust, what the site paid flies home to its counter, and a ruin's chest opens, with the losses of the attack that won it.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
+    title: "Community links on a phone",
+    description:
+      "Added Discord, X, Telegram and GitHub to Profile on a phone, which has no footer to hold them; each opens in a new tab.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
+    title: "Stores read aloud in full",
+    description:
+      "Changed the four stores on Frontier's top bar: each one's full line (Wheat 1,771 of 6,000, its rate an hour and when it is full) is now also what a screen reader says, the same words its tooltip shows.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
+    title: "A Blitz slot that is opening",
+    description:
+      "Fixed a Blitz slot's page saying The ledger did not answer, with Try again and a dash for its registrations, in the minute between a slot being listed and its entry opening: it now says Entry is opening, shows 0 registered, and opens by itself a few seconds later. A read that really failed keeps its line.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
+    title: "A day log in plain names",
+    description:
+      "Changed Frontier's Today: a reveal reads as a whole number (+98 labor), a building is one line by its build card's name (Farm built), an army is Army 1, and each of the six totals names itself on hover or hold. Production writes Wheat, Labor and Troops beside their icons.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
+    title: "Your wallet opens by itself",
+    description:
+      "Changed paying from your linked wallet: Pay & join, a refund, a prize claim, a chest and the dev build's test-token mint now open that wallet's own prompt at once, with no wallet to pick again each time. If the wallet is on another account, one line names the linked one.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
+    title: "Chat comes back by itself",
+    description:
+      "Fixed chat staying on Chat unavailable until a reload after its connection dropped: the room and your inbox now reconnect on their own, and the panel says Reconnecting while they do.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
+    title: "A clearer screen, bigger targets",
+    description:
+      "Changed several things that covered each other in Frontier. On desktop, chat now starts closed and opens from its tab, so it no longer hides the guide. The Updating terrain message is gone. On a phone, the LORDS button steps aside while Chat, Research or the season board is open, every control in chat is tall enough to tap, and the guide's mark sits beside what it points at instead of on top of the figures.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
+    title: "No answer yet, said plainly",
+    description:
+      "Changed the event feed's line for an action the game has not answered: it now says No answer yet, that the action may still apply and that you can try another, where it used to stay on Checking and count as still in flight.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
+    title: "Explored tiles keep their ground",
+    description:
+      "Fixed explored tiles staying black when part of the map's terrain could not be built: that part is now drawn as plain explored ground, without its trees, roads or settlement ground, instead of not at all. A structure of a kind this version does not know also keeps its marker in the far view instead of stopping the others.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
+    title: "A map that cannot be drawn says so",
+    description:
+      "Changed what you see when the map fails to open on the way into a game: the screen now says the map could not be drawn, instead of blaming the world, and offers Open realm beside Try again, so you can still reach your realm, build and research while the map is unavailable.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
+    title: "Every action waits in its place",
+    description:
+      "Fixed building, deploying, research, the castle's upgrade, an army's refill and its tier upgrade in Frontier: a second press no longer sends a second time, and a refusal is no longer silent. The sheet still closes as the action leaves; the wait then shows where you look next, a ghost on the plot, Deploying… on the dock's open slot, Upgrading… or Researching… on the Research row, and the button itself on the castle and the army. If the game refuses, or no answer comes, one line says so and the control is free again.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
+    title: "A victory shows what it paid",
+    description:
+      "Changed the Victory card in Frontier: the reward is the one the clear itself recorded, where it used to repeat the preview's figure. When the store that took it is at its limit, the figure carries a Full mark, and its tooltip says the rest did not fit.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
+    title: "The forecast is this attack",
+    description:
+      "Fixed the attack forecast in Frontier disagreeing with the fight's result. When a fight takes several attacks, the forecast used to add up the losses of all of them, while Attack sends one and its result showed that one. The forecast now shows what this attack costs you and the guard it leaves, exactly as the result will read; the pips still count the attacks the whole fight takes.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
+    title: "A fight's result is the fight's own",
+    description:
+      "Fixed the result of an attack in Frontier: it is now read from the battle's own record, so an army lost in a fight reads Army lost with the guard as the battle left it, and can no longer read Victory with a payout when its region left your map with it. An attack the game refused shows no result at all, only why. A black tile now says Unexplored when you hover it.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
+    title: "A sent order stays sent",
+    description:
+      "Fixed orders in Frontier that looked as if they had not left: after you attack, the button reads Attacking… until the fight's own result arrives, where it used to fall back to Attack for several seconds. An army whose order is still on its way takes no second one, on the map or on a card, so a second press never sends a second transaction. If the game refuses an order, or it cannot be sent, one line says why and the army is free again.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
+    title: "Sites show their strength",
+    description:
+      "Changed the plate over a Frontier camp, rift, ruin or band of stragglers: it now reads the site's kind and the strength of its guard, such as Camp 1.2k, instead of a long id, and is always shown. The wide second label with its empty picture frame is gone, and plates sit just over the roof so they no longer cover a unit standing behind.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
+    title: "The season board opens from Menu",
+    description:
+      "Changed the Frontier season board: it no longer sits over the map on desktop, and opens from Menu, Season on every screen. Its two number columns say what they count when you hover their icon or press and hold it, and a name you have just claimed shows at once.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
+    title: "Armies wear a number",
+    description:
+      "Changed the plate over each of your Frontier armies: it now shows the army's number and its stamina bar, sits on the unit instead of a tile above it, and keeps one readable size at every zoom and on a phone. The army's card carries the same number, and the second label that used to open over your own army is gone.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
+    title: "Buildings show what they make",
+    description:
+      "Added to every building's panel in Frontier what it makes an hour, how many stand, what its store holds and the population it takes. The castle shows the labor it makes by itself and the labor it holds.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-13",
+    title: "The fast order is back",
+    description:
+      "Restored the fast order in Frontier: with an army selected, a right-click on a highlighted tile, or a press-and-hold on a phone, sends the explore or the move at once, with no preview. A click or a tap still opens the preview with its costs and its confirm, and the tile's tooltip says which is which. An attack is never sent unseen: either gesture opens its forecast. The preview still stays on the tile you chose while the pointer moves, Esc backs out one step, and Enter confirms the open preview or puts the cursor in chat.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
+    title: "Numbers stay after an action",
+    description:
+      "Fixed the top bar and the army cards turning into dashes for a second or two after every move, explore, build or deploy: Essence, wheat, troops and each army's stamina now stay on screen while the action lands.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
+    title: "The game leaves the page with you",
+    description:
+      "Fixed the game's view staying on the app's pages after you left a match: it showed under the footer of Play and Learn and kept drawing. Outside a match it is off the page and at rest, and it returns when you go back in.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
+    title: "The guide says the rules",
+    description:
+      "Added six first-time lines to the Frontier guide, each with the game's own numbers: when population runs out, when you first select an army (what exploring, moving and attacking cost in stamina), your first XP, a guard beside your army, your first look at Research, and the day's last hour. Menu, Guide now lists every line you have seen, to read again, with a switch to turn the guide off.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-13",
+    title: "Deploy opens at half",
+    description:
+      "Improved the Deploy sheet in Frontier: the slider opens at half your troops, so there is something left for the day's other armies, with Minimum and Maximum as buttons on its two ends. Every figure on the sheet says what it is when you hover it or press and hold it.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
+    title: "XP says what it buys",
+    description:
+      "Improved the army card in Frontier: XP is written beside its number on desktop, over a thin bar toward the next attribute tier it buys, with a pip for each tier the army has reached. Hover the XP, or press and hold it on a phone, to read the goal.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
+    title: "One sheet for every attack",
+    description:
+      "Changed attacking in Frontier: another player's army now opens the same sheet as a camp or a rift, with the same forecast, Attack and result, instead of the older popup. Another player's realm is no longer offered as a target there, since Frontier only allows attacks on what nobody owns. A realm's own guard striking an army beside it, and an attack through a spire, still use the older popup.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
+    title: "Panels end in their action",
+    description:
+      "Improved the Castle, building and Research panels in Frontier: Upgrade and Research always stand at the foot with their price, dimmed while they cannot run, over one line that says why and a button for the fix. A tier with two sides says to choose one, and every Research row says what it gives on its tooltip.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
+    title: "The map names its highlights",
+    description:
+      "Added a name to every highlighted tile in Frontier: with an army selected, hover a tile and one line says what the army would do there and what it costs, such as Unexplored · Explore · 30 stamina, Move · 10 stamina or Rift · Attack · 30 stamina. On a phone a tap on the tile opens its preview, which names the same action.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-13",
+    title: "Odds for each army on a site",
+    description:
+      'Improved a site\'s card in Frontier: with no army chosen, each of your armies is a row showing the fight it would have from where it stands, the same forecast as the attack itself, and the row of dashes is gone. Tap a row to open the attack with that army; the card used to close instead. The skull says "Would be lost" on hover or press-and-hold.',
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
+    title: "Every fight ends on a result",
+    description:
+      "Added a result to every attack in Frontier: Victory, Army lost or Guard holds, with your troops and the guard's before and after, and what a clear paid with its XP. It stays in the attack's own sheet until you tap it away, and a ruin's chest now waits for your tap too. The day log names the site, how the attack ended and the numbers instead of \"Battle resolved\", and a lost army's highlights leave the map at once.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-13",
+    title: "The build menu explains itself",
+    description:
+      "Improved the Frontier build menu: each building says what it does on its tooltip, a locked training building says what opens it with Research on the button, and a price that has risen carries an arrow that gives the rule.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
+    title: "Numbers that stay put",
+    description:
+      "Fixed the top bar and the army cards turning into dashes for a second or two after every move, build or deploy. What you hold stays on screen until the new amounts arrive.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
+    title: "A refused build says why",
+    description:
+      "Fixed the build sheet in Frontier: it shows the realm's free population in its head, a building that cannot rise says what it needs in one line, and the gold button carries the fix, Build Hut or Explore for labor. A Workshop the realm could pay for is no longer refused.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
+    title: "No more black buildings",
+    description:
+      "Fixed realm buildings drawing as solid black shapes on some graphics cards. Every building on your realm shows its own colours again.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
+    title: "Closing a card keeps your place",
+    description:
+      "Fixed closing a card on the map: the camera no longer jumps back to your realm and your selected army stays selected. A card closed the moment it opened can no longer step the browser back off the game.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
+    title: "Every icon names itself",
+    description:
+      "Added one tooltip to Frontier: hover any chip or icon on desktop, or press and hold it on a phone, and it says its name. The four stores say what they hold of their limit, their rate an hour and when they are full.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-12",
+    title: "Attack with the same tap",
+    description:
+      "Fixed attacking in Frontier: with an army selected, a click or tap on a target it can reach opens the attack with its forecast and its Attack button, as a tile opens Explore or Move. Attack turns red when the army would be lost, and a line under it says what is missing when it cannot run. On a phone, a card opened by a tap on the map no longer closes at once.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-12",
+    title: "Plots you can see on snow",
+    description:
+      "Improved the outline of a realm's building plots: a light line in a dark edge, so it reads on snow and sand as well as on dark ground, and no part of it sinks into uneven ground.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-12",
+    title: "Your realm's real surroundings",
+    description:
+      "Fixed the realm view showing one ground everywhere in Frontier. Each side of the realm now shows the land of the tile beside it on the map, and it updates when a neighbouring tile is explored.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-12",
+    title: "No stand-in picture for your realm",
+    description:
+      "Improved the Resume card, the doorway into a game and the day-done card: they no longer show a stock picture of a castle on grass as if it were your realm. The Resume card wears Frontier's painting and names your realm under its Order.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-12",
+    title: "Map draws around Frontier sites",
+    description:
+      "Fixed the map going black on newly explored tiles, or failing to load, once a Rift, a Ruin or Stragglers was in view. Ruins and Stragglers on water now stand on their own island like camps.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-12",
+    title: "A home page that says things once",
+    description:
+      "Improved the home page: the community links, the four ages and the news each stand in one place. The community links live in the footer, an age opens from its card beside the play card, and the Scroll is read in Learn.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-12",
+    title: "Deploy toward a tile",
+    description:
+      "Fixed a crash in Frontier when right-clicking a tile beside your selected realm. It now opens Deploy aimed at that tile, and the realm's one-entry map menu and its empty guard line are gone.",
+    type: "fix",
+  },
+  {
     date: "2026-10-11",
     title: "Where a Blitz entry goes",
     description:

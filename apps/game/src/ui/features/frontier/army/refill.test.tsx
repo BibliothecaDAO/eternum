@@ -27,6 +27,17 @@ describe("the refill", () => {
     short.unmount();
   });
 
+  it("reads Refilling… and cannot be pressed while the army's refill is in flight", () => {
+    const onRefill = vi.fn();
+    const { host, unmount } = render(<RefillButton price={140} held={1_240} refilling onRefill={onRefill} />);
+    const button = host.querySelector("button")!;
+    expect(button.textContent).toContain("Refilling…");
+    expect(button.disabled).toBe(true);
+    act(() => button.click());
+    expect(onRefill).not.toHaveBeenCalled();
+    unmount();
+  });
+
   it("confirms the bar to full and the LORDS before and after, with Cancel and Refill", () => {
     const onRefill = vi.fn();
     const onCancel = vi.fn();

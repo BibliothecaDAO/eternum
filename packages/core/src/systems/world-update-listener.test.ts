@@ -48,43 +48,47 @@ describe("native scene updates", () => {
     expect(chosen).toHaveBeenCalledTimes(2);
   });
 
-  it("carries a cleared site's payout with the tile and losses of the exchange that won it", () => {
+  it("carries a cleared site's payout with the tile and losses of the battle the contract emits after it", () => {
     const { store, listener } = fixture();
     const payout = vi.fn();
     const stop = listener.SitePayouts.onSitePayout(payout);
     const side = (before: bigint, after: bigint) => ({ before: String(before), after: String(after) });
-    const battle = (order: string, defenderId: number) =>
+    const at = (transaction: string, index: number) => ({
+      event_position: { block_number: 9, transaction_hash: transaction, transaction_index: 0, event_index: index },
+    });
+    const battle = (transaction: string, defenderId: number, lostTroops = 420n) =>
       store.applyEvent({
         model: "BattleEvent",
-        key: `battle-${order}`,
+        key: `battle-${transaction}-${defenderId}-${lostTroops}`,
         value: {
           game_id: 1,
-          order,
-          index: 0,
           defender_id: defenderId,
           coord: { x: 40, y: 12 },
-          attacker: side(1_498_000_000_000n, 1_078_000_000_000n),
+          attacker: side(1_498_000_000_000n, 1_498_000_000_000n - lostTroops * 1_000_000_000n),
           defender: side(1_100_000_000_000n, 0n),
+          ...at(transaction, 5),
         },
       });
-    const story = (order: string, siteId: number, category: number, reward: unknown) =>
+    const story = (transaction: string, siteId: number, category: number, reward: unknown) =>
       store.applyEvent({
         model: "StoryEvent",
-        key: `story-${order}`,
+        key: `story-${transaction}-${siteId}`,
         value: {
           game_id: 1,
-          order,
-          index: 1,
           owner: "0x111",
           timestamp: 100,
           story: { SitePayout: { structure_id: 3, explorer_id: 7, site_id: siteId, category, reward } },
+          ...at(transaction, 4),
         },
       });
 
-    battle("5", 9);
-    story("5", 9, StructureType.Camp, { resource_type: 23, amount: "550000000000" });
-    battle("6", 10);
-    story("6", 10, StructureType.Stragglers, null);
+    // The order on the chain: an earlier exchange that left the camp standing, then the payout, then its battle.
+    battle("0xa", 9, 100n);
+    story("0xb", 9, StructureType.Camp, { resource_type: 23, amount: "550000000000" });
+    expect(payout).not.toHaveBeenCalled();
+    battle("0xb", 9);
+    story("0xc", 10, StructureType.Stragglers, null);
+    battle("0xc", 10);
     expect(payout.mock.calls.map(([update]) => update)).toEqual([
       {
         explorerId: 7,
@@ -97,17 +101,26 @@ describe("native scene updates", () => {
       },
       expect.objectContaining({ siteId: 10, kind: "Stragglers", reward: null }),
     ]);
-    // A payout whose winning battle is not the one just before it is a contract bug, never a guess.
+
+    // A payout the next battle does not answer is a contract bug, never a guess: another site's battle, another
+    // transaction's, or a second payout in its place.
+    story("0xd", 11, StructureType.Rift, { resource_type: 29, amount: "1" });
+    expectReported(() => battle("0xd", 12), "Site payout 11 arrived without its winning battle");
+    story("0xe", 11, StructureType.Rift, { resource_type: 29, amount: "1" });
+    expectReported(() => battle("0xf", 11), "Site payout 11 arrived without its winning battle");
+    story("0x10", 11, StructureType.Rift, { resource_type: 29, amount: "1" });
     expectReported(
-      () => story("7", 11, StructureType.Rift, { resource_type: 29, amount: "1" }),
-      "without its winning battle",
+      () => story("0x11", 13, StructureType.Camp, { resource_type: 23, amount: "1" }),
+      "Site payout 11 arrived without its winning battle",
     );
-    battle("7", 11);
-    expectReported(() => story("7", 11, StructureType.Rift, null), "A cleared Rift pays nothing");
+    battle("0x11", 13);
+    expect(payout).toHaveBeenCalledTimes(3);
+    expectReported(() => story("0x12", 11, StructureType.Rift, null), "A cleared Rift pays nothing");
+
     stop();
-    battle("8", 12);
-    story("8", 12, StructureType.Camp, { resource_type: 23, amount: "1" });
-    expect(payout).toHaveBeenCalledTimes(2);
+    story("0x13", 12, StructureType.Camp, { resource_type: 23, amount: "1" });
+    battle("0x13", 12);
+    expect(payout).toHaveBeenCalledTimes(3);
   });
 
   it("reads building additions and removals from committed facts and unsubscribes", () => {

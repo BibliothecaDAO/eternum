@@ -3,22 +3,34 @@ import { create } from "zustand";
 
 /**
  * One line per state: sending (pending), checking (the node has not settled it yet; it keeps reconciling), done
- * (success), refused by the game with its reason (reverted), or not sent, claimed only on proof (not_sent).
+ * (success), refused by the game with its reason (reverted), not sent, claimed only on proof (not_sent), or no
+ * answer: neither Herald nor the node answered in the client's window, so the client stopped waiting and says so.
  */
-export type TransactionStatus = "pending" | "checking" | "success" | "reverted" | "not_sent";
+export type TransactionStatus = "pending" | "checking" | "success" | "reverted" | "not_sent" | "no_answer";
 
 /**
  * A sent action's row after a failure: refused only when the shard or the game said so (the revert stage carries a
- * REVERTED or REJECTED outcome, Herald's applied-nothing included), not sent only on proof, and checking for anything
- * else: a failure to learn the outcome is not an outcome.
+ * REVERTED or REJECTED outcome, Herald's applied-nothing included), not sent only on proof, no answer when the client
+ * itself gave up waiting for one (its own error says the action may still apply), and checking for anything else: a
+ * failure to learn the outcome is not an outcome.
  */
 export const statusAfterFailure = ({
   stage,
   failureKind,
-}: Pick<TransactionFailedPayload, "stage" | "failureKind">): TransactionStatus =>
-  failureKind === "not_sent" ? "not_sent" : stage === "revert" ? "reverted" : "checking";
+  error,
+}: Pick<TransactionFailedPayload, "stage" | "failureKind" | "error">): TransactionStatus => {
+  if (failureKind === "not_sent") return "not_sent";
+  if (stage === "revert") return "reverted";
+  return isNoAnswer(error) ? "no_answer" : "checking";
+};
 
-/** Still in the air: sending, or checking an outcome the node has not settled. */
+/** The client's own "no answer yet" for an action: it released the action without claiming anything of it. */
+const isNoAnswer = (error: unknown): boolean => error instanceof Error && error.name === "TransactionNoAnswerError";
+
+/**
+ * Still in the air: sending, or checking an outcome the node has not settled. An unanswered action is not: the client
+ * stopped waiting for it, and the player may act again.
+ */
 export const isTransactionInFlight = (transaction: Pick<Transaction, "status">): boolean =>
   transaction.status === "pending" || transaction.status === "checking";
 

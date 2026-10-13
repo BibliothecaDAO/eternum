@@ -42,6 +42,8 @@ export interface TerrainPageRequest {
   halo: readonly TerrainCellInput[];
   mapCenter: number;
   pageKey: string;
+  /** Ground only: the page is built with no props (see plainTerrainPageRequest). */
+  plain?: true;
   propDensityMultiplier?: number;
   roadSegments: readonly TerrainRoadSegment[];
   settlementAnchors: readonly TerrainSettlementAnchor[];

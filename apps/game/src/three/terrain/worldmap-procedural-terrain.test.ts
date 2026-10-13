@@ -278,9 +278,30 @@ describe("WorldmapProceduralTerrain", () => {
     terrain.dispose();
   });
 
-  it("propagates a failed lookahead preparation when the active run reaches it", async () => {
+  it("draws a page whose build throws as plain ground, and says so loudly", async () => {
     const input = distantPagesInput();
     const requests = buildWorldmapTerrainPageRequests(input);
+    const reported = vi.spyOn(console, "error").mockImplementation(() => {});
+    const built: Array<{ pageKey: string; plain: boolean }> = [];
+    vi.spyOn(ProceduralTerrain.prototype, "preparePageAsync").mockImplementation(async (request) => {
+      built.push({ pageKey: request.pageKey, plain: request.plain === true });
+      if (request.pageKey === requests[1].pageKey && !request.plain) throw new Error("Page preparation failed");
+      return prepareTerrainPage(request);
+    });
+    vi.spyOn(ProceduralTerrain.prototype, "prepareFogMaskAsync").mockResolvedValue(null);
+    const terrain = new WorldmapProceduralTerrain();
+    await expect(terrain.presentAsync(input)).resolves.toMatchObject({ pages: 2 });
+    // Both pages are on screen: the one that threw was built again as its ground alone.
+    expect(terrain.getPresentedPageKeys().toSorted()).toEqual(requests.map(({ pageKey }) => pageKey).toSorted());
+    expect(built.filter(({ plain }) => plain)).toEqual([{ pageKey: requests[1].pageKey, plain: true }]);
+    expect(String(reported.mock.calls[0][0])).toContain(requests[1].pageKey);
+    terrain.dispose();
+  });
+
+  it("propagates the failure when even the page's plain ground cannot be built", async () => {
+    const input = distantPagesInput();
+    const requests = buildWorldmapTerrainPageRequests(input);
+    vi.spyOn(console, "error").mockImplementation(() => {});
     vi.spyOn(ProceduralTerrain.prototype, "preparePageAsync").mockImplementation(async (request) => {
       if (request.pageKey === requests[1].pageKey) throw new Error("Page preparation failed");
       return prepareTerrainPage(request);
@@ -289,6 +310,22 @@ describe("WorldmapProceduralTerrain", () => {
     const terrain = new WorldmapProceduralTerrain();
     await expect(terrain.presentAsync(input)).rejects.toThrow("Page preparation failed");
     expect(terrain.getPresentedPageKeys()).toEqual([requests[0].pageKey]);
+    terrain.dispose();
+  });
+
+  it("commits the ground alone when a commit refuses the pages' props", async () => {
+    const reported = vi.spyOn(console, "error").mockImplementation(() => {});
+    stubPageWorker();
+    const commit = vi.spyOn(ProceduralTerrain.prototype, "commitPages").mockImplementationOnce(() => {
+      throw new Error("Terrain prop pool pine holds 16 pages and has no slot left for page 0:0");
+    });
+    const terrain = new WorldmapProceduralTerrain();
+    await expect(terrain.presentAsync(singlePageInput(0))).resolves.toMatchObject({ pages: 1 });
+    expect(commit).toHaveBeenCalledTimes(2);
+    const [committed] = commit.mock.calls[1][0];
+    expect(committed.propInstances).toEqual([]);
+    expect(terrain.getPresentedPageKeys()).toEqual([committed.request.pageKey]);
+    expect(String(reported.mock.calls[0][0])).toContain(committed.request.pageKey);
     terrain.dispose();
   });
 
@@ -627,9 +664,11 @@ describe("WorldmapProceduralTerrain", () => {
     }
   });
 
-  it("propagates a worker rejection and allows the same target to retry", async () => {
+  it("propagates a worker that fails the page and its plain ground, and allows the same target to retry", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     const preparePage = vi
       .spyOn(ProceduralTerrain.prototype, "preparePageAsync")
+      .mockRejectedValueOnce(new Error("injected worker failure"))
       .mockRejectedValueOnce(new Error("injected worker failure"))
       .mockImplementation((request) => Promise.resolve(prepareTerrainPage(request)));
     vi.spyOn(ProceduralTerrain.prototype, "prepareFogMaskAsync").mockResolvedValue(null);
@@ -637,7 +676,7 @@ describe("WorldmapProceduralTerrain", () => {
 
     await expect(terrain.presentAsync(singlePageInput(0))).rejects.toThrow("injected worker failure");
     await expect(terrain.presentAsync(singlePageInput(0))).resolves.toMatchObject({ builtPages: 1, pages: 1 });
-    expect(preparePage).toHaveBeenCalledTimes(2);
+    expect(preparePage).toHaveBeenCalledTimes(3);
     terrain.dispose();
   });
 

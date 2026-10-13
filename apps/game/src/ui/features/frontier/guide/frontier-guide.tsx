@@ -19,6 +19,7 @@ import {
   type GuidePlace,
   isGuideOn,
   nextGuideStep,
+  seenGuideLines,
 } from "./guide-script";
 import { useGuideSeen } from "./guide-seen";
 import { GuideThread } from "./guide-thread";
@@ -31,29 +32,32 @@ type Guide = {
   facts: GuideFacts;
   seen: ReadonlySet<string>;
   markSeen: (ids: readonly string[]) => void;
-  skipAll: () => void;
-  replay: () => void;
+  turnOff: () => void;
+  turnOn: () => void;
 };
 
 const GuideContext = createContext<Guide | null>(null);
 
 /**
  * The guide over the game: the facts its lines answer and the lines this viewer has seen, read once for every slot.
- * It speaks only to a player in their own realm; a visit or a spectator hears nothing.
+ * It speaks only to a player in their own realm; a visit or a spectator hears nothing. The HUD tells it what only the
+ * HUD knows: that Research is open.
  */
 export const GuideProvider = ({
   rules,
   realm,
+  researchOpen,
   children,
 }: {
   rules: ExpeditionRules;
   realm: NativeRows["Structure"] | null;
+  researchOpen: boolean;
   children: ReactNode;
 }) => {
   const player = useAccountStore((state) => state.account?.address ?? null);
-  const facts = useGuideFacts(rules, realm);
-  const { seen, markSeen, skipAll, replay } = useGuideSeen(configManager.getActiveGameId(), player);
-  const guide = player && realm ? { realm, facts, seen, markSeen, skipAll, replay } : null;
+  const facts = { ...useGuideFacts(rules, realm), researchOpen };
+  const { seen, markSeen, turnOff, turnOn } = useGuideSeen(configManager.getActiveGameId(), player);
+  const guide = player && realm ? { realm, facts, seen, markSeen, turnOff, turnOn } : null;
   return <GuideContext.Provider value={guide}>{children}</GuideContext.Provider>;
 };
 
@@ -66,12 +70,15 @@ export const GuideSlot = ({ host, facts }: { host: GuideHost; facts?: Partial<Gu
   return guide ? <GuideSpeaker guide={guide} host={host} facts={{ ...guide.facts, ...facts }} /> : null;
 };
 
-/** The Menu's Guide row: on while any line is still to come; off marks every line seen, on starts it over. */
-export const useGuideSwitch = (): { on: boolean; toggle: () => void } | null => {
+/**
+ * The Menu's Guide: every line the player has seen so far, to re-read, and its switch. Off silences it and keeps the
+ * lines; on again it goes on from the next line not yet seen.
+ */
+export const useGuideLines = (): { on: boolean; toggle: () => void; lines: { id: string; line: string }[] } | null => {
   const guide = useContext(GuideContext);
   if (!guide) return null;
   const on = isGuideOn(guide.seen);
-  return { on, toggle: on ? guide.skipAll : guide.replay };
+  return { on, toggle: on ? guide.turnOff : guide.turnOn, lines: seenGuideLines(guide.facts, guide.seen) };
 };
 
 const GuideSpeaker = ({ guide, host, facts }: { guide: Guide; host: GuideHost; facts: GuideFacts }) => {

@@ -199,7 +199,7 @@ function normalizeCount(value: number): number {
   return Number.isFinite(value) ? value : 0;
 }
 
-function formatCompactLabelNumber(value: number): string {
+export function formatCompactLabelNumber(value: number): string {
   const absValue = Math.abs(value);
 
   if (absValue >= 1_000_000) {

@@ -13,7 +13,7 @@ import { playSiteClear } from "@/ui/features/frontier/sites/site-clear-moment";
 import { type ArmyProgressFacts, xpGained } from "@/ui/features/frontier/attributes/attributes";
 import { playArmyProgress } from "@/ui/features/frontier/attributes/progress-moment";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import { openArmyDeploymentPicker } from "@/ui/features/military/utils/open-army-deployment-picker";
+import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { resolveSpawnActionPath, showArmyDeploymentTooltip } from "./worldmap-army-deployment";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
@@ -30,7 +30,6 @@ import { resolveMovementStamina, type MovementStaminaResolution } from "@/lib/ar
 import { resolveStoredWorldmapCameraDistance, useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
-import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { buildPlayHref, mapRouteHex, parsePlayRoute } from "@/play/navigation/play-route";
 import { resolvePlayRouteWorldPosition } from "@/play/navigation/play-route-target";
 import {
@@ -46,11 +45,7 @@ import { ChestManager } from "@/three/managers/chest-manager";
 import { ReservedHyperstructureManager } from "@/three/managers/reserved-hyperstructure-manager";
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { StructureManager } from "@/three/managers/structure-manager";
-import {
-  FrameBudgetWorkQueue,
-  isFrameBudgetWorkQueueDisposedError,
-  type FrameBudgetWorkLane,
-} from "@/three/frame-budget-work-queue";
+import { FrameBudgetWorkQueue, type FrameBudgetWorkLane } from "@/three/frame-budget-work-queue";
 import { SceneManager } from "@/three/scene-manager";
 import { CameraView } from "@/three/scenes/camera-view";
 import { CAMERA_CONFIG } from "@/three/constants";
@@ -65,6 +60,7 @@ import {
   Position,
   isOpenSpawnHex,
   isViewerOwner,
+  siteKindOf,
 } from "@bibliothecadao/eternum";
 import {
   requireActiveGameSyncRuntime,
@@ -115,6 +111,9 @@ import {
   SelectableArmy,
 } from "@bibliothecadao/eternum";
 import { requireActiveGameClient } from "@/sync/active-game-client";
+import { inFlight, sendOnce } from "@/hooks/store/use-actions-in-flight";
+import { type SentCommand, sentTransactionHash } from "@/sync/action-outcome";
+import { extractReadableErrorMessage } from "@/utils/error-message";
 import {
   ActorType,
   BiomeType,
@@ -135,13 +134,9 @@ import type { TerrainPresentationEvent } from "@/three/terrain/worldmap-procedur
 import { getRendererDiagnosticActiveMode } from "@/three/renderer-diagnostics";
 import { requireBiomeTypeFromId } from "@/three/managers/biome-colors";
 import { CompactEntityLabelRenderer } from "@/three/managers/compact-entity-label-renderer";
-import {
-  StrategicMarkerLayer,
-  type StrategicArmyMarkerTier,
-  type StrategicStructureMarkerKind,
-} from "@/three/managers/strategic-marker-layer";
+import { StrategicMarkerLayer, type StrategicArmyMarkerTier } from "@/three/managers/strategic-marker-layer";
+import { structureMarkerKind } from "./worldmap-structure-marker-kind";
 import { playerColorManager } from "@/three/systems/player-colors";
-import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import {
   normalizeOwnerAddress,
   resolveWorldmapContentLadder,
@@ -250,7 +245,12 @@ import {
 } from "./worldmap-terrain-commit-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
 import { ARMY_SELECT_REQUEST_EVENT, readArmySelectRequest } from "./worldmap-army-select-request";
-import { ORDER_REQUEST_EVENT, pinsOrder, readOrderRequest } from "./worldmap-order-request";
+import { ORDER_REQUEST_EVENT, orderOnTap, readOrderRequest, stepBackOnEscape } from "./worldmap-order-request";
+import { hudFor } from "@/ui/layouts/hud-for";
+import { type OrderTip, orderTip } from "@/ui/features/frontier/hud/order-tip";
+import { TARGET_MARKS } from "@/ui/features/frontier/sites/site-marks";
+import { showOrderTip } from "./worldmap-order-tip";
+import { getGameModeId } from "@/config/game-modes";
 import { onChestOpenRequest } from "./worldmap-chest-open-request";
 import { shouldQueueArmySelectionRecovery } from "./worldmap-army-tab-selection";
 import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
@@ -578,14 +578,6 @@ const WORLDMAP_CHUNK_TRANSITION_HARD_TIMEOUT_MS = Math.max(WORLDMAP_CHUNK_PHASE_
 const WORLDMAP_STREAMING_ROLLOUT = {
   stagedPathEnabled: env.VITE_PUBLIC_WORLDMAP_STREAMING_STAGED !== false,
 };
-function resolveStructureMarkerKind(structureType: StructureType): StrategicStructureMarkerKind {
-  if (structureType === StructureType.Realm) return "realm";
-  if (structureType === StructureType.Hyperstructure) return "hyperstructure";
-  if (structureType === StructureType.Bank) return "bank";
-  if (structureType === StructureType.Mine || structureType === StructureType.BitcoinMine) return "mine";
-  return isVillageLikeStructureCategory(structureType) ? "village" : "realm";
-}
-
 function isSameWorldSpatialHex(hex: WorldSpatialHex | undefined, contract: { x: number; y: number }): boolean {
   return hex !== undefined && hex.col === contract.x && hex.row === contract.y;
 }
@@ -897,9 +889,8 @@ export default class WorldmapScene extends WarpTravel {
   private stopChestOpenRequests?: () => void;
   private armySelectRequestHandler = (event: Event) => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
-    const entityId = readArmySelectRequest(event);
-    if (entityId === null) return;
-    void this.selectRequestedArmy(entityId);
+    const request = readArmySelectRequest(event);
+    if (request) void this.selectRequestedArmy(request.entityId, request.forSite);
   };
   private orderRequestHandler = (event: Event) => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
@@ -1464,7 +1455,7 @@ export default class WorldmapScene extends WarpTravel {
     const color = playerColorManager.getProfileForUnit(facts.isMine, facts.isAlly, facts.ownerAddress).primary;
     this.strategicMarkers.setStructure(
       structure.entityId,
-      resolveStructureMarkerKind(facts.structureType),
+      structureMarkerKind(facts.structureType),
       position.x,
       position.z,
       color,
@@ -1898,16 +1889,21 @@ export default class WorldmapScene extends WarpTravel {
     this.shortcutManager.registerShortcut({
       id: "escape-handler",
       key: "Escape",
-      description: "Clear selection or close navigation views",
+      description: "Back out one step: a pending order, an open view, then the selection",
       sceneRestriction: SceneName.WorldMap,
-      action: () => {
-        if (this.isNavigationViewOpen()) {
-          this.closeNavigationViews();
-        } else {
-          this.clearSelection();
-        }
-      },
+      action: () => this.backOutOneStep(),
     });
+  }
+
+  private backOutOneStep(): void {
+    const step = stepBackOnEscape({
+      hudCarriesOrderVerb: this.hudCarriesOrderVerb(),
+      orderPinned: getLiveWorldmapEntityActions().hoveredHex !== null,
+      navigationViewOpen: this.isNavigationViewOpen(),
+    });
+    if (step === "cancel-order") this.state.updateEntityActionHoveredHex(null);
+    else if (step === "close-view") this.closeNavigationViews();
+    else this.clearSelection();
   }
 
   private setupCameraZoomHandler() {
@@ -2355,7 +2351,7 @@ export default class WorldmapScene extends WarpTravel {
         });
       }
       this.previouslyHoveredHex = null;
-      this.state.updateEntityActionHoveredHex(null);
+      this.showOrderUnderPointer(null);
       this.state.setHoveredHex(null);
       this.interactiveHexManager.applyHoverPalette(hoverPalette);
 
@@ -2387,11 +2383,53 @@ export default class WorldmapScene extends WarpTravel {
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
     // Entity IDs can be valid falsy values (for example 0), so nullish checks
     // are required to distinguish "no selection" from a real selected entity.
-    if (selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0) {
-      this.state.updateEntityActionHoveredHex(hexCoords);
-    }
+    const hasOrders = selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0;
+    if (hasOrders || this.hudCarriesOrderVerb()) this.showOrderUnderPointer(hexCoords);
 
     this.interactiveHexManager.applyHoverPalette(hoverPalette);
+  }
+
+  /**
+   * Whether this game's HUD carries the order's verb (Frontier's). There a click names the order's tile and the HUD
+   * confirms it, and the pointer never moves a named order. The other modes' HUD has no verb: the order under the
+   * pointer is the preview. In every mode a right-click (a long-press) sends the order at once.
+   */
+  private hudCarriesOrderVerb(): boolean {
+    return hudFor(getGameModeId(), true) === "frontier";
+  }
+
+  /**
+   * The order under the pointer. Where the HUD has no verb it is the preview itself; where the HUD carries the verb
+   * the pointer only names the tile on the tooltip (the highlight colours' legend, and "Unexplored" on a tile nobody
+   * has revealed) and a click opens the preview.
+   */
+  private showOrderUnderPointer(hexCoords: HexPosition | null): void {
+    if (!this.hudCarriesOrderVerb()) {
+      this.state.updateEntityActionHoveredHex(hexCoords);
+      return;
+    }
+    const tip = hexCoords && this.nameOrderAt(hexCoords);
+    showOrderTip(tip && hexCoords ? { ...tip, at: projectHexToScreen(hexCoords, this.camera) } : null);
+  }
+
+  private nameOrderAt(hexCoords: HexPosition): OrderTip | null {
+    const { structure } = this.getHexagonEntity(hexCoords);
+    return orderTip({
+      path: getLiveWorldmapEntityActions().actionPaths.get(ActionPaths.posKey(hexCoords, true)),
+      target: structure ? this.siteWord(structure.id) : null,
+      exploreStamina: configManager.getExploreStaminaCost(),
+      explored: this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) === true,
+    });
+  }
+
+  /** A standing site as its card names it; null for anything else. */
+  private siteWord(entityId: ID): string | null {
+    if (!this.isStandingExpeditionSite(entityId)) return null;
+    const structure = this.game.store.require("Structure", {
+      game_id: configManager.getActiveGameId(),
+      entity_id: safeInteger(entityId),
+    });
+    return TARGET_MARKS[siteKindOf(structure.base.category)].word;
   }
 
   // double-click reserved hyperstructure tiles to materialize them; otherwise enter the real structure
@@ -2579,11 +2617,7 @@ export default class WorldmapScene extends WarpTravel {
       resolveSpawnActionPath(hexCoords, getLiveWorldmapEntityActions().actionPaths)
     )
       return;
-    if (hexCoords && this.pinsOrderTarget(hexCoords)) {
-      // The tile becomes the order's target: its path and costs show, and the HUD's verb runs it.
-      this.state.updateEntityActionHoveredHex(hexCoords);
-      return;
-    }
+    if (hexCoords && this.answerTapWithSelectedArmyOrder(hexCoords)) return;
     const viewer = accountAddress();
     const { army, structure, chest } = hexCoords
       ? this.getHexagonEntity(hexCoords)
@@ -2692,18 +2726,45 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
+    // The fast order: an explore or a move leaves at once, and an attack opens its forecast, never sent unseen.
+    showOrderTip(null);
     this.actAtHex(hexCoords);
   }
 
-  /** Whether a tap on this tile pins an order for the selected army: a tile it can explore or move to. */
-  private pinsOrderTarget(hexCoords: HexPosition): boolean {
+  /**
+   * With an army selected, a tap on a tile answers with that army's order there (orderOnTap), never past a confirm:
+   * the pinned order's verb, the attack preview's, or the site card's own. False leaves the tile its own tap. The
+   * order that skips the confirm is the right-click's (actAtHex).
+   */
+  private answerTapWithSelectedArmyOrder(hexCoords: HexPosition): boolean {
     if (!canIssueOrders()) return false;
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
     if (selectedEntityId === null || selectedEntityId === undefined) return false;
-    return pinsOrder(actionPaths.get(ActionPaths.posKey(hexCoords, true)));
+    const path = actionPaths.get(ActionPaths.posKey(hexCoords, true));
+    const { structure } = this.getHexagonEntity(hexCoords);
+    const order = orderOnTap({
+      path,
+      armySelected: this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined,
+      standingSite: structure !== undefined && this.isStandingExpeditionSite(structure.id),
+    });
+    if (order === "pin") {
+      // The tile becomes the order's target: its path and costs show, and the HUD's verb runs it.
+      this.state.updateEntityActionHoveredHex(hexCoords);
+    } else if (order === "attack" && path) {
+      this.onArmyAttack(path, selectedEntityId);
+    } else if (order === "site-out-of-reach") {
+      const contractHex = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
+      this.openTargetCardForSelectedArmy({ col: contractHex.x, row: contractHex.y });
+    }
+    // The preview has the tile now; its name on the tooltip would only sit over it.
+    if (order !== null) showOrderTip(null);
+    return order !== null;
   }
 
-  /** Runs the selected army's order at this tile: a right-click, or the HUD's verb for a pinned order. */
+  /**
+   * Runs the selected army's order at this tile: the HUD's verb for a pinned order, or a right-click (a long-press)
+   * with no preview. An attack, a help, spire travel and deploy open their own surface from either.
+   */
   private actAtHex(hexCoords: HexPosition) {
     const account = useAccountStore.getState().account;
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
@@ -2777,7 +2838,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private onArmyMovement(actionPath: ActionPath[], selectedEntityId: ID) {
     if (actionPath.length > 0 && this.isArmyMovementInputLocked(selectedEntityId)) {
-      toast.info("Army movement is still resolving");
+      toast.info("This army's last order is still on its way");
       this.state.updateEntityActionHoveredHex(null);
       this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
       return;
@@ -2949,63 +3010,24 @@ export default class WorldmapScene extends WarpTravel {
         });
       }
 
-      requireActiveGameClient()
-        .actions.moveArmy({ explorerId: selectedEntityId, path: actionPath, currentArmiesTick })
-        .then((result: any) => {
-          const txHash = result?.transaction_hash;
-          recordArmyMovementLatencyPhase({
-            phase: "tx_response_received",
-            source: "worldmap",
-            entityId: selectedEntityId,
-            txHash,
-          });
-          if (txHash && actionType === ActionType.Explore) {
-            if (exploreLatencyActionId) recordClientActionSubmitted(exploreLatencyActionId, txHash);
-            recordArmyMovementLatencyPhase({
-              phase: "explore_tx_hash_received",
-              source: "worldmap",
-              entityId: selectedEntityId,
-              txHash,
-            });
-          }
-          recordArmyMovementLatencyPhase({
-            phase: "tx_submitted",
-            source: "worldmap",
-            entityId: selectedEntityId,
-            txHash,
-          });
-          if (txHash) {
-            void requireActiveGameSyncRuntime()
-              .waitForTransaction(txHash)
-              .then((transaction) => {
-                if (transaction.status === "PRE_CONFIRMED") recordClientActionPreConfirmed(txHash);
-                recordArmyMovementLatencyPhase({
-                  phase: "tx_confirmed",
-                  source: "worldmap",
-                  entityId: selectedEntityId,
-                  txHash,
-                });
-                if (actionType === ActionType.Explore) {
-                  recordArmyMovementLatencyPhase({
-                    phase: "explore_next_safe_unblocked",
-                    source: "worldmap",
-                    entityId: selectedEntityId,
-                  });
-                }
-              })
-              .catch((error) => {
-                if (exploreLatencyActionId) recordClientActionFailed(exploreLatencyActionId, error);
-                this.pendingExploreLatencyActions.delete(selectedEntityId);
-                this.handlePendingArmyMovementFailure(selectedEntityId, cleanup);
-              });
-          }
-        })
-        .catch((e) => {
-          if (exploreLatencyActionId) recordClientActionFailed(exploreLatencyActionId, e);
+      const sendMovement = () => {
+        const sent = requireActiveGameClient().actions.moveArmy({
+          explorerId: selectedEntityId,
+          path: actionPath,
+          currentArmiesTick,
+        });
+        this.recordMovementSubmission(sent, { entityId: selectedEntityId, actionType, exploreLatencyActionId });
+        return sent;
+      };
+      sendOnce("army", selectedEntityId, actionType === ActionType.Explore ? "explore" : "move", sendMovement).catch(
+        (error) => {
+          if (exploreLatencyActionId) recordClientActionFailed(exploreLatencyActionId, error);
           this.pendingExploreLatencyActions.delete(selectedEntityId);
           this.handlePendingArmyMovementFailure(selectedEntityId, cleanup);
-          console.error("Army movement failed:", e);
-        });
+          console.error("Army movement failed:", error);
+          toast.error(extractReadableErrorMessage(error, "The order was not sent."));
+        },
+      );
 
       this.state.updateEntityActionHoveredHex(null);
       this.keepMovementDestinationSelected(targetHex);
@@ -3015,19 +3037,50 @@ export default class WorldmapScene extends WarpTravel {
     this.clearSelection();
   }
 
+  /** The latency record of a move's send and of Herald's status for it; the order's outcome is not decided here. */
+  private recordMovementSubmission(
+    sent: Promise<SentCommand>,
+    order: { entityId: ID; actionType: ActionType | undefined; exploreLatencyActionId: string | null },
+  ): void {
+    const { entityId, actionType, exploreLatencyActionId } = order;
+    void sent
+      .then((command) => {
+        const txHash = sentTransactionHash(command);
+        recordArmyMovementLatencyPhase({ phase: "tx_response_received", source: "worldmap", entityId, txHash });
+        if (actionType === ActionType.Explore) {
+          if (exploreLatencyActionId) recordClientActionSubmitted(exploreLatencyActionId, txHash);
+          recordArmyMovementLatencyPhase({ phase: "explore_tx_hash_received", source: "worldmap", entityId, txHash });
+        }
+        recordArmyMovementLatencyPhase({ phase: "tx_submitted", source: "worldmap", entityId, txHash });
+        return requireActiveGameSyncRuntime().waitForTransaction(txHash);
+      })
+      .then((transaction) => {
+        if (transaction.status === "PRE_CONFIRMED") recordClientActionPreConfirmed(transaction.hash);
+        recordArmyMovementLatencyPhase({
+          phase: "tx_confirmed",
+          source: "worldmap",
+          entityId,
+          txHash: transaction.hash,
+        });
+        if (actionType === ActionType.Explore) {
+          recordArmyMovementLatencyPhase({ phase: "explore_next_safe_unblocked", source: "worldmap", entityId });
+        }
+      })
+      // A send that failed or a status wait that ended has nothing to time; untilApplied reports the outcome.
+      .catch(() => {});
+  }
+
   private onArmyAttack(actionPath: ActionPath[], selectedEntityId: ID) {
     const selectedPath = actionPath.map((path) => path.hex);
 
     const targetHex = selectedPath[selectedPath.length - 1];
     const target = actorOnHex(this.getHexagonEntity(sceneHexOf(targetHex)));
     if (!target) return;
-    // A standing expedition site confirms its attack on its tile card, the HUD's sheet for the selected tile.
-    if (this.isStandingExpeditionSite(target.id)) {
-      this.selectContractHexWithoutFeedback(targetHex);
-      this.state.updateEntityActionHoveredHex(null);
+    const selected = this.getHexagonEntity(sceneHexOf(selectedPath[0]));
+    if (this.confirmsAttackOnTileCard(target, selected.army !== undefined)) {
+      this.openTargetCardForSelectedArmy(targetHex);
       return;
     }
-    const selected = this.getHexagonEntity(sceneHexOf(selectedPath[0]));
 
     const attackerSummary = {
       type: selected.army ? ActorType.Explorer : ActorType.Structure,
@@ -3050,6 +3103,22 @@ export default class WorldmapScene extends WarpTravel {
     // this is the same minimal call onArmyMovement makes, so the army stays
     // selected and the action-path state machine is left intact (unlike
     // clearEntitySelection, which reset it and broke movement/exploration).
+    this.state.updateEntityActionHoveredHex(null);
+  }
+
+  /**
+   * Whether the attack is confirmed on the target's tile card, the HUD's sheet for the selected tile. A standing
+   * expedition site always is. Where the HUD carries the order's verb (Frontier), so is an army's attack on another
+   * army: one surface for whatever an army attacks. A realm's own guard attacking still opens the older preview.
+   */
+  private confirmsAttackOnTileCard(target: { type: ActorType; id: ID }, attackerIsArmy: boolean): boolean {
+    if (this.isStandingExpeditionSite(target.id)) return true;
+    return this.hudCarriesOrderVerb() && attackerIsArmy && target.type === ActorType.Explorer;
+  }
+
+  /** The target's tile card with the selected army kept as its actor: the forecast and Attack, or what the army lacks. */
+  private openTargetCardForSelectedArmy(siteHex: HexPosition): void {
+    this.selectContractHexWithoutFeedback(siteHex);
     this.state.updateEntityActionHoveredHex(null);
   }
 
@@ -3129,7 +3198,7 @@ export default class WorldmapScene extends WarpTravel {
 
     const normalized = Position.fromContract({ x: targetHex.col, y: targetHex.row }).getNormalized();
     const point = projectHexToScreen({ col: normalized.x, row: normalized.y }, this.camera);
-    openArmyDeploymentPicker(
+    openArmyDeployment(
       { direction, structureId: selectedEntityId, isExplorer: true },
       {
         anchor: { left: point.x, right: point.x, top: point.y, bottom: point.y },
@@ -3462,8 +3531,9 @@ export default class WorldmapScene extends WarpTravel {
     return true;
   }
 
+  /** No order for an army whose last one has no outcome yet, or whose move is still being played on the map. */
   private isArmyMovementInputLocked(entityId: ID): boolean {
-    return this.pendingArmyMovementVisualLifecycleDisposers.has(entityId);
+    return inFlight("army", entityId) !== undefined || this.pendingArmyMovementVisualLifecycleDisposers.has(entityId);
   }
 
   private isArmyMovementActionUnavailable(entityId: ID): boolean {
@@ -3780,6 +3850,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private clearEntitySelection() {
     showArmyDeploymentTooltip(null);
+    showOrderTip(null);
     this.highlightHexManager.highlightHexes([]);
     this.updateEntityActionPaths(new Map());
     this.state.updateEntityActionSelectedEntityId(null);
@@ -4159,9 +4230,6 @@ export default class WorldmapScene extends WarpTravel {
       clearTimeout(this.chunkRecoveryTimeout);
       this.chunkRecoveryTimeout = null;
     }
-    // Clear transition state so the chunk overlay doesn't persist when
-    // switching away mid-transition.
-    this.state.setLoading(LoadingStateKey.ChunkTransition, false);
   }
 
   private resetWorldmapInteractionForSwitchOff(nextSceneName?: SceneName): void {
@@ -4678,9 +4746,7 @@ export default class WorldmapScene extends WarpTravel {
     let rebuild: Promise<void>;
     rebuild = this.rebuildInvalidatedVisualTerrainPage(pageKey)
       .catch((error) => {
-        if (!isFrameBudgetWorkQueueDisposedError(error)) {
-          console.error(`[WorldMap] Live tile page ${pageKey} failed`, error);
-        }
+        console.error(`[WorldMap] Live tile page ${pageKey} failed`, error);
       })
       .finally(() => {
         if (this.liveTilePageRebuilds.get(pageKey) === rebuild) {
@@ -4847,9 +4913,6 @@ export default class WorldmapScene extends WarpTravel {
       incrementWorldmapRenderCounter("visualPageQueued");
       void this.buildAndApplyVisualTerrainPage(request)
         .catch((error) => {
-          if (isFrameBudgetWorkQueueDisposedError(error)) {
-            return;
-          }
           console.error(`[WorldMap] Visual terrain page ${pageKey} failed`, error);
         })
         .finally(() => {
@@ -5129,9 +5192,6 @@ export default class WorldmapScene extends WarpTravel {
     try {
       await this.prepareAndApplyChunkSwitchTerrainShell(input);
     } catch (error) {
-      if (isFrameBudgetWorkQueueDisposedError(error)) {
-        return;
-      }
       console.warn("[WorldMap] Failed to build chunk switch terrain shell:", error);
     }
   }
@@ -5736,10 +5796,6 @@ export default class WorldmapScene extends WarpTravel {
     }
     const commit = this.chunkWorkQueue
       .schedule("critical", () => this.commitVisualTerrainComposite(), "terrain:composite")
-      .catch((error: unknown) => {
-        if (isFrameBudgetWorkQueueDisposedError(error)) return null;
-        throw error;
-      })
       .finally(() => {
         if (this.pendingVisualTerrainCompositeCommit === commit) this.pendingVisualTerrainCompositeCommit = null;
       });
@@ -5758,15 +5814,11 @@ export default class WorldmapScene extends WarpTravel {
       targetChunkKey: this.currentChunk,
     });
     // Composing and presenting are separate budgeted tasks so neither alone exceeds the frame budget.
-    void this.chunkWorkQueue
-      .schedule(
-        "critical",
-        () => this.applyTerrainPresentationComposite(composite, transitionToken),
-        "terrain:composite:present",
-      )
-      .catch((error: unknown) => {
-        if (!isFrameBudgetWorkQueueDisposedError(error)) throw error;
-      });
+    void this.chunkWorkQueue.schedule(
+      "critical",
+      () => this.applyTerrainPresentationComposite(composite, transitionToken),
+      "terrain:composite:present",
+    );
     return composite;
   }
 
@@ -6256,7 +6308,6 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const areaKey = this.clearStalledChunkAreaState(this.currentChunk);
-    this.state.setLoading(LoadingStateKey.ChunkTransition, false);
     this.traceChunk("connection_failure_recovery", {
       areaKey,
       chunkKey: this.currentChunk,
@@ -7004,11 +7055,9 @@ export default class WorldmapScene extends WarpTravel {
         const transitionToken = this.claimNextChunkTransitionToken();
         const switchStartedAt = performance.now();
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_started");
-        this.state.setLoading(LoadingStateKey.ChunkTransition, true);
         return runWorldmapChunkTransition({
           hardTimeoutMs: WORLDMAP_CHUNK_TRANSITION_HARD_TIMEOUT_MS,
           onFinally: () => {
-            this.state.setLoading(LoadingStateKey.ChunkTransition, false);
             recordChunkDiagnosticsEvent(this.chunkDiagnostics, "switch_duration_recorded", {
               durationMs: performance.now() - switchStartedAt,
             });
@@ -7050,12 +7099,8 @@ export default class WorldmapScene extends WarpTravel {
           nextTransitionToken: transitionToken,
           previousTransitionToken: this.actionPathsTransitionToken,
         });
-        this.state.setLoading(LoadingStateKey.ChunkTransition, true);
         return runWorldmapChunkTransition({
           hardTimeoutMs: WORLDMAP_CHUNK_TRANSITION_HARD_TIMEOUT_MS,
-          onFinally: () => {
-            this.state.setLoading(LoadingStateKey.ChunkTransition, false);
-          },
           onHardTimeout: (info) => {
             this.handleChunkTransitionHardTimeout("refresh_current_chunk", chunkKey, info, transitionToken);
             return false;
@@ -7698,7 +7743,7 @@ export default class WorldmapScene extends WarpTravel {
     const animationContext = this.getAnimationVisibilityContext();
     this.syncWorldmapZoomSnapshot(deltaTime);
     super.update(deltaTime);
-    this.compactEntityLabelRenderer.updateCamera(this.camera);
+    this.compactEntityLabelRenderer.updateCamera(this.camera, window.innerHeight);
     runWithFrameWorkOwner("armies:update", () =>
       this.armyManager.update(deltaTime, animationContext, this.animationsPaused),
     );
@@ -8192,11 +8237,18 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /** The HUD's army dock picked this army: frame it and select it the way the Tab shortcut does. */
-  private async selectRequestedArmy(entityId: number): Promise<void> {
+  /**
+   * Selects the army the HUD asked for. Asked from a site's card, the card stays open on that site with the army as
+   * its actor: the attack's preview, or what the army lacks.
+   */
+  private async selectRequestedArmy(entityId: number, forSite: HexPosition | null): Promise<void> {
     const account = accountAddress();
     const position = this.getArmyDisplayPosition(entityId);
     if (account === null || !position) return;
     await this.runShortcutArmySelection(() => this.focusAndSelectArmy(entityId, position, account));
+    if (forSite && getLiveWorldmapEntityActions().selectedEntityId === entityId) {
+      this.openTargetCardForSelectedArmy(forSite);
+    }
   }
 
   private async focusAndSelectArmy(
@@ -8330,6 +8382,21 @@ export default class WorldmapScene extends WarpTravel {
     if (this.armyIndex >= armies.length) {
       this.armyIndex = 0;
     }
+    this.letGoOfLostSelection();
+  }
+
+  /**
+   * A selected army that is gone (lost in a fight) lets go of the map at once: its highlights are orders nobody can
+   * give. Read from the facts themselves, since the armies' list is only as fresh as its last change.
+   */
+  private letGoOfLostSelection(): void {
+    const { selectedEntityId } = getLiveWorldmapEntityActions();
+    if (selectedEntityId === null || selectedEntityId === undefined) return;
+    const gameId = configManager.getActiveGameId();
+    const stands =
+      this.game.store.get("ExplorerTroops", { game_id: gameId, explorer_id: selectedEntityId }) !== undefined ||
+      this.game.store.get("Structure", { game_id: gameId, entity_id: selectedEntityId }) !== undefined;
+    if (!stands) this.clearEntitySelection();
   }
 
   private handleEntityActionsStoreUpdate(
@@ -8411,7 +8478,6 @@ export default class WorldmapScene extends WarpTravel {
     this.hoverLabelManager.onHexLeave();
     this.clearTileEntityCache();
     this.interactiveHexWindowKey = null;
-    this.state.setLoading(LoadingStateKey.ChunkTransition, false);
     if (!this.isSwitchedOff) {
       void Promise.all([
         this.refreshVisualTerrainWindowFromCamera(),

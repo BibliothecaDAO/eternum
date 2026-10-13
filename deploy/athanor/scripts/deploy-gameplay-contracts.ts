@@ -4,6 +4,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type Account, addAddressPadding, RpcProvider } from "starknet";
 import { deviceKeyOf, joinBotAccount, type RealmsAccountShard } from "@bibliothecadao/eternum";
+import { launcherAccountAddress, relayAccountAddress } from "../../../packages/value-ledger/src/shard-accounts";
 import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
 import type { ShardRecord } from "../../../apps/herald/src/shard-manifest";
@@ -33,6 +34,8 @@ const PLAYER_ACCOUNT_ARTIFACT = "realms_player_account_RealmsAccount.contract_cl
 interface GameplayDeploymentResult {
   operatorAccountAddress: string;
   playerAccountClassHash: string;
+  launcherAccountAddress: string;
+  ledgerOperatorAccountAddress: string;
   rpcUrl: string;
 }
 
@@ -76,6 +79,8 @@ async function deployGameplayContracts(): Promise<GameplayDeploymentResult> {
   const result = {
     operatorAccountAddress: addAddressPadding(operatorAddress),
     playerAccountClassHash,
+    launcherAccountAddress: launcherAccountAddress(manifest.shard),
+    ledgerOperatorAccountAddress: relayAccountAddress(manifest.shard),
     rpcUrl: RPC_URL,
   } satisfies GameplayDeploymentResult;
   writeDeploymentResult(result);

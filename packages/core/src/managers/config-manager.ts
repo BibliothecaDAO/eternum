@@ -237,6 +237,11 @@ export class ClientConfigManager {
   helpTransfers(withStructure: boolean): HelpTransfer[] {
     return enabledHelpTransfers((command) => this.isCommandEnabled(command), withStructure, this.hasGuardSlots());
   }
+  /** Whether an army may attack only what nobody owns (Frontier): the contract refuses a guarded structure that has
+   *  an owner, so no surface offers it. */
+  attacksOnlyUnownedStructures(): boolean {
+    return isModeRuleEnabled(this.rules(), "UNOWNED_TARGETS");
+  }
   /** Whether a battle rolls a d20 per side: everywhere in a game with combat dice, on the ethereal layer in one with
    *  ethereal dice, and never otherwise. */
   rollsCombatDice(defenderAlt: boolean): boolean {
@@ -421,6 +426,10 @@ export class ClientConfigManager {
       [StructureType.Bank]: 4,
       [StructureType.Camp]: 1,
       [StructureType.BitcoinMine]: 4,
+      // A Frontier site stands behind the one guard it was found with.
+      [StructureType.Rift]: 1,
+      [StructureType.Ruin]: 1,
+      [StructureType.Stragglers]: 1,
     };
   }
   getResourceBridgeFeeSplitConfig() {

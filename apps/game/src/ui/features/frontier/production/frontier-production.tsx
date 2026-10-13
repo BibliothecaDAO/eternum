@@ -1,6 +1,5 @@
 import { useGame } from "@/hooks/context/game-context";
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { LeftView } from "@/types";
+import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { type ExpeditionRules, realmLearned, ResourceManager } from "@bibliothecadao/eternum";
 import { safeInteger, nativeResearchConstants as research, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds } from "@bibliothecadao/types";
@@ -40,7 +39,6 @@ export const FrontierProduction = ({
   const { setup } = useGame();
   const stores = useRealmStores(realm, rules);
   const goToPlace = useGoToFrontierPlace(realm);
-  const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
   const manager = new ResourceManager(setup.store, safeInteger(realm.entity_id));
   const learned = realmLearned(setup.store, realm.game_id, realm.entity_id);
   const lines = STORES.map(({ icon, store, resource, row, spentAt }): ProductionLine => {
@@ -63,7 +61,7 @@ export const FrontierProduction = ({
       onSpend={(at) => {
         onClose();
         if (at === "realm") goToPlace(false);
-        else setLeftNavigationView(LeftView.MilitaryView);
+        else openArmyDeployment({ structureId: safeInteger(realm.entity_id), isExplorer: true });
       }}
       onBuild={() => {
         onClose();

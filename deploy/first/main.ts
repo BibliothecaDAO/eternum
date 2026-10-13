@@ -1,15 +1,17 @@
 #!/usr/bin/env bun
+import { validateInputs } from "./dates";
+import { deploymentRevision } from "./revision";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
 import { Account, RpcProvider, logger } from "starknet";
 import { PrivateStore } from "./private-store";
-import { environments, root, validateInputs, ACCOUNT_CLASS, type Environment, type Inputs } from "./settings";
+import { environments, root, ACCOUNT_CLASS, type Environment, type Inputs } from "./settings";
 import { accountIdentity, classAt, newKey, prepareAccounts, type Keys } from "./chain";
 import {
   artifactsReady,
   boxRead,
   buildArtifacts,
-  installedOperatorToken,
+  operatorTokenMatches,
   operatorTokenPresent,
   installOperatorToken,
 } from "./box";
@@ -28,9 +30,10 @@ import {
 import { Platform, generateSecrets, workerSecrets, workers, type Secrets } from "./platform";
 import { command } from "./process";
 import { runSteps, type Step } from "./run";
-import { deliverySteps } from "./delivery";
+import { addressBookStep } from "./address-book";
 import { resolveBlitzSeason } from "./blitz-season";
-import { seconds, PublicError } from "./dates";
+import { seconds } from "./dates";
+import { PublicError, reportFailure } from "./errors";
 
 export interface Deployment {
   environment: Environment;
@@ -46,8 +49,8 @@ export interface Deployment {
   assets?: Assets;
   output: (line: string) => void;
 }
-export function signer(context: Deployment) {
-  if (!context.provider || !context.keys) throw new Error("Account preparation has not completed");
+export function signer(context: Pick<Deployment, "provider" | "keys">) {
+  if (!context.provider || !context.keys) throw new PublicError("Account preparation has not completed");
   return new Account({
     provider: context.provider,
     address: accountIdentity(context.keys.deployer).address,
@@ -65,7 +68,7 @@ function reload(context: Deployment) {
   }
 }
 async function prompt(label: string) {
-  if (!process.stdin.isTTY) throw new Error("Enter initial settings in the owner's interactive terminal");
+  if (!process.stdin.isTTY) throw new PublicError("Enter initial settings in the owner's interactive terminal");
   process.stdout.write(`${label}: `);
   process.stdin.setRawMode(true);
   process.stdin.resume();
@@ -81,7 +84,7 @@ async function prompt(label: string) {
       for (const char of bytes.toString()) {
         if (char === "\u0003") {
           finish();
-          reject(new Error("Input cancelled"));
+          reject(new PublicError("Input cancelled"));
           return;
         }
         if (char === "\r" || char === "\n") {
@@ -139,16 +142,13 @@ export function preparationSteps(context: Deployment): Step[] {
       cost: "0 STRK",
       inspect: async () => {
         if (!context.platform) return waiting("Settings are not available yet");
-        if (!existsSync(join(root, "deploy/release", `${context.target.release}.json`)))
+        if (!existsSync(join(root, "deploy/release", `${context.target.environment}.json`)))
           return waiting(
-            `Review and commit deploy/release/${context.target.release}.json and provision ${context.target.box} before funding an account`,
+            `Review and commit deploy/release/${context.target.environment}.json and provision ${context.target.box} before funding an account`,
           );
         await context.platform.checkAccess();
         await command({ argv: ["gh", "api", "repos/{owner}/{repo}"] });
-        await boxRead(
-          context.target,
-          'test -d /opt/athanor; test -x "$HOME/cairo-suite/tool-data/scarb-install/2.13.1/bin/scarb"; docker compose version >/dev/null',
-        );
+        await boxRead(context.target, "test -d /opt/athanor; docker compose version");
         return {
           done: true,
           detail: "Cloudflare resource reads, GitHub access, reviewed release and provisioned box checked",
@@ -163,7 +163,7 @@ export function preparationSteps(context: Deployment): Step[] {
       inspect: async () => {
         if (!context.provider) return waiting("Settings are not available; account class cannot be checked yet");
         if (BigInt(await context.provider.getChainId()) !== 0x534e5f4d41494en)
-          throw new Error("Starknet mainnet required");
+          throw new PublicError("Starknet mainnet required");
         await context.provider.getClassByHash(ACCOUNT_CLASS);
         return {
           done: !!context.keys,
@@ -207,7 +207,7 @@ export function preparationSteps(context: Deployment): Step[] {
       payer: "none",
       cost: "0 STRK; remote build time",
       inspect: async () => ({
-        done: artifactsReady(context.store, context.revision),
+        done: await artifactsReady(context.store, context.revision),
         detail: "ledger, rating token and collectibles; Scarb 2.13.1 on the box under flock, cores 8-11",
       }),
       apply: () => buildArtifacts(context.target, context.store, context.revision),
@@ -224,7 +224,8 @@ export function preparationSteps(context: Deployment): Step[] {
             detail: "declare absent classes; deploy missing contracts at fixed salts; publish public addresses",
           };
         for (const address of Object.values(assets))
-          if (!(await classAt(context.provider, address))) throw new Error("Address book names an absent contract");
+          if (!(await classAt(context.provider, address)))
+            throw new PublicError("Address book names an absent contract");
         if (!context.keys || !context.inputs) return waiting("Saved account identities unavailable");
         await verifyLedgerAccounts(
           context.provider,
@@ -244,7 +245,7 @@ export function preparationSteps(context: Deployment): Step[] {
           !context.target.freshAssets &&
           ["lords", "mmr", "chests", "cosmetics"].some((name) => !assets[name as keyof Assets])
         )
-          throw new Error("Production asset addresses must already exist in the public address book");
+          throw new PublicError("Production asset addresses must already exist in the public address book");
         for (const plan of assetPlans(
           context.target,
           admin,
@@ -332,13 +333,14 @@ export function preparationSteps(context: Deployment): Step[] {
       cost: "0 STRK",
       inspect: async () => ({
         done: !!context.secrets,
-        detail: "reuse the box operator token and the existing guardian; generate only absent credentials",
+        detail: "reuse saved credentials and the existing guardian; generate only absent credentials",
       }),
       apply: async () => {
         const guardian = workers.find((worker) => worker.id === "guardian")!;
         const guardianExists = (await context.platform!.secretNames(guardian)).includes("GUARDIAN_PRIVATE_KEY");
-        const operator = (await installedOperatorToken(context.target)).trim();
-        context.store.write("secrets.json", generateSecrets(operator, guardianExists));
+        if (await operatorTokenPresent(context.target))
+          throw new PublicError("Box already has an operator credential; use the original private directory");
+        context.store.write("secrets.json", generateSecrets(guardianExists));
         reload(context);
       },
     },
@@ -396,9 +398,9 @@ export function preparationSteps(context: Deployment): Step[] {
             done: await operatorTokenPresent(context.target),
             detail: "protected box credential presence and mode checked without reading its contents",
           };
-        const existing = (await installedOperatorToken(context.target)).trim();
-        if (existing && context.secrets && existing !== context.secrets.operator)
-          throw new Error("Box operator token differs; restore the original private directory");
+        const existing = await operatorTokenPresent(context.target);
+        if (existing && context.secrets && !(await operatorTokenMatches(context.target, context.secrets.operator)))
+          throw new PublicError("Box operator token differs; restore the original private directory");
         return { done: !!existing, detail: "protected operator file on box; no mainnet key copied to it" };
       },
       apply: async () => installOperatorToken(context.target, context.secrets!.operator),
@@ -414,13 +416,14 @@ export async function main(args = process.argv.slice(2)) {
     args.length > 3 ||
     (flag && flag !== "--apply")
   )
-    throw new Error("Usage: pnpm deploy:first <dev|production> /absolute/private-directory [--apply]");
+    throw new PublicError("Usage: pnpm run setup <dev|production> /absolute/private-directory [--apply]");
   process.umask(0o077);
   const apply = flag === "--apply";
   const store = new PrivateStore(directory, root, apply);
-  const saved = store.read<{ environment: Environment; revision: string }>("deployment.json");
-  if (saved && saved.environment !== environment) throw new Error("Private directory belongs to another environment");
-  const revision = saved?.revision ?? (await command({ argv: ["git", "rev-parse", "HEAD"] })).trim();
+  const saved = store.read<{ environment: Environment }>("deployment.json");
+  if (saved && saved.environment !== environment)
+    throw new PublicError("Private directory belongs to another environment");
+  const revision = await deploymentRevision(environment);
   const context: Deployment = {
     environment,
     target: environments[environment],
@@ -430,9 +433,10 @@ export async function main(args = process.argv.slice(2)) {
     output: console.log,
   };
   reload(context);
+  context.output(`Deployment commit ${revision}.`);
   const unlock = apply ? store.lock() : () => {};
   try {
-    if (apply && !saved) store.write("deployment.json", { environment, revision });
+    if (apply && !saved) store.write("deployment.json", { environment });
     if (context.inputs)
       context.output(
         `Frontier ${context.inputs.frontierStart} to ${context.inputs.frontierEnd}, pool ${context.inputs.amount}; Blitz ${context.inputs.blitzStart} to ${context.inputs.blitzEnd}.`,
@@ -442,17 +446,9 @@ export async function main(args = process.argv.slice(2)) {
         ? "Applying missing first-deployment steps."
         : "DRY RUN: no keys generated, no writes or transactions. Use --apply to act.",
     );
-    await runSteps([...preparationSteps(context), ...deliverySteps(context)], apply, context.output);
+    await runSteps([...preparationSteps(context), addressBookStep(context)], apply, context.output);
   } finally {
     unlock();
   }
 }
-if (import.meta.main)
-  main().catch((error) => {
-    if (error instanceof PublicError) console.error(error.message);
-    else
-      console.error(
-        "Deployment stopped. No SDK, subprocess or secret-bearing error was printed. Inspect the last named step; rerun after its prerequisite is ready.",
-      );
-    process.exitCode = 1;
-  });
+if (import.meta.main) main().catch(reportFailure);

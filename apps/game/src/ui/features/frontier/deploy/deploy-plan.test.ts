@@ -150,7 +150,7 @@ describe("Frontier's deploy", () => {
   it("sends Deploy with the count and the direction", async () => {
     const { store, row } = frontierDay();
     const troops = planOf(store, row)!.troops!;
-    const createExplorerArmy = vi.fn(() => Promise.resolve());
+    const createExplorerArmy = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" } as never));
     await deployArmy({ createExplorerArmy }, row, troops, 120, 2);
     expect(createExplorerArmy).toHaveBeenCalledWith({
       structureId: 7,

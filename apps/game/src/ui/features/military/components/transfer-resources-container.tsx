@@ -83,20 +83,16 @@ export const TransferResourcesContainer = ({
   const availableResources = useMemo(() => {
     if (!selectedResourceState.hasResources()) return [];
     const allowedRelicIds = actorTypes.target === ActorType.Structure ? STRUCTURE_RELIC_IDS : ALL_RELIC_IDS;
-    return (
-      resources
-        .filter(({ id }) => allowedRelicIds.has(id))
-        .map(({ id }) => ({
-          resourceId: id,
-          amount: selectedResourceState.balanceWithProduction(currentDefaultTick, id)!.balance,
-          weightKg: configManager.getResourceWeightKg(id),
-        }))
-        // A held resource whose weight rule is unknown cannot be checked against capacity, so it is not offered.
-        .filter(
-          (resource): resource is typeof resource & { weightKg: number } =>
-            resource.amount > 0 && resource.weightKg !== undefined,
-        )
-    );
+    // A relic is offered when it is held and can be checked against capacity: its state and its weight rule known.
+    return resources
+      .filter(({ id }) => allowedRelicIds.has(id))
+      .flatMap(({ id }) => {
+        const held = selectedResourceState.balanceWithProduction(currentDefaultTick, id);
+        const weightKg = configManager.getResourceWeightKg(id);
+        return held && held.balance > 0 && weightKg !== undefined
+          ? [{ resourceId: id, amount: held.balance, weightKg }]
+          : [];
+      });
   }, [actorTypes.target, currentDefaultTick, selectedResourceState]);
   // A selection no longer available takes no capacity: it is dropped when the transfer is submitted.
   const weightOf = (resourceId: number) =>

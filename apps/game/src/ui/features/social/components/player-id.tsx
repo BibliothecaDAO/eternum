@@ -8,7 +8,7 @@ import { gameStructuresView } from "@/sync/fact-views";
 
 import { Button } from "@/ui/design-system/atoms";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules";
-import { NavigateToPositionIcon } from "@/ui/features/military/components/army-chip";
+import { NavigateToPositionIcon } from "@/ui/design-system/molecules/navigate-to-position-icon";
 import { configManager, getRealmNameById, LeaderboardManager, toHexString } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";

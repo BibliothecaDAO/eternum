@@ -66,3 +66,24 @@ it("ignores delayed connection events from a replaced client", () => {
   expect(useRealtimeChatStore.getState().joinedZoneIds).toEqual(["game:28"]);
   expect(useRealtimeChatStore.getState().identity?.playerId).toBe("0xb");
 });
+
+it("reads as reconnecting while a dropped socket is coming back, and as connected once its room rejoins", () => {
+  const actions = useRealtimeChatStore.getState().actions;
+  actions.initializeClient({ baseUrl: "https://chat.test" });
+  mock.options!.onMessage!({ type: "connected", playerId: "0xa", channels: ["world:global"] }, {} as MessageEvent);
+
+  // The room drops: the client reports it left, then that it is opening it again.
+  mock.options!.onMessage!({ type: "left:zone", zoneId: "world:global" }, {} as MessageEvent);
+  mock.options!.onReconnecting!();
+  expect(useRealtimeChatStore.getState().connectionStatus).toBe("reconnecting");
+  expect(useRealtimeChatStore.getState().joinedZoneIds).toEqual([]);
+
+  mock.options!.onMessage!({ type: "joined:zone", zoneId: "world:global" }, {} as MessageEvent);
+  expect(useRealtimeChatStore.getState().connectionStatus).toBe("connected");
+  expect(useRealtimeChatStore.getState().joinedZoneIds).toEqual(["world:global"]);
+
+  // The inbox drops: its close is told first, then the reconnecting, which is what the player reads.
+  mock.options!.onClose!({ wasClean: false } as CloseEvent);
+  mock.options!.onReconnecting!();
+  expect(useRealtimeChatStore.getState().connectionStatus).toBe("reconnecting");
+});

@@ -1,3 +1,4 @@
+import { byStructureCategory } from "@/lib/structure-category-table";
 import { SettlementAnimation } from "../structures/settlement-animation";
 import { HyperstructureModel } from "../structures/hyperstructure-model";
 import { readHyperstructureConstruction } from "../structures/hyperstructure-state";
@@ -11,7 +12,12 @@ import { isAddressEqualToAccount } from "../utils/utils";
 import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
 import { buildingTierModelPath } from "../structures/building-tiers";
 import { PlotConstructionPicker } from "@/ui/features/settlement/construction/plot-construction-picker";
-import { createHexceptionTerrainRequest, getLocalHexDisk, getLocalTerrainRegions } from "./hexception-terrain";
+import {
+  createHexceptionTerrainRequest,
+  getLocalHexDisk,
+  getLocalTerrainRegions,
+  resolveLocalHexOnMap,
+} from "./hexception-terrain";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
@@ -25,9 +31,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { resolveSettlementRotationY } from "@/three/structures/settlement-orientation";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import { resolvePlayRouteTarget } from "@/play/navigation/play-route-target";
-import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import { awaitLocalScenePresentable } from "./local-scene-presentation";
-import { traceFlightMark } from "../flight-trace";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
 import {
@@ -92,7 +96,12 @@ import { ProductionModal } from "@/ui/features/settlement";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { playerStructuresView, readFactView, watchFactView } from "@/sync/fact-views";
-import { safeInteger, type GameClientSetup as SetupResult, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  safeInteger,
+  type GameClientSetup as SetupResult,
+  type NativeFactChange,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 import {
   ActionType,
   type BuildingTiles,
@@ -175,6 +184,23 @@ const generateHexPositions = (center: HexPosition, radius: number) =>
     color: new Color("gray"),
   }));
 
+/**
+ * What the keep on a structure's board is called, by the structure's category: the realm's castle by its level, the
+ * game mode's word for a village, or a name of its own. A new category fails typecheck here until it has one.
+ */
+const KEEP_NAMES: Record<StructureType, "realm-castle" | "village" | string> = {
+  [StructureType.Realm]: "realm-castle",
+  [StructureType.Village]: "village",
+  [StructureType.Camp]: "village",
+  [StructureType.Bank]: "Bank",
+  [StructureType.Hyperstructure]: "Hyperstructure",
+  [StructureType.Mine]: "Mine",
+  [StructureType.BitcoinMine]: "Mine",
+  [StructureType.Rift]: "Rift",
+  [StructureType.Ruin]: "Ruin",
+  [StructureType.Stragglers]: "Stragglers",
+};
+
 export default class HexceptionScene extends HexagonScene {
   /** A realm's buildings sit on their own local lattice, never moved by the world map's floating origin. */
   protected override get hexSpace(): HexSpace {
@@ -242,6 +268,9 @@ export default class HexceptionScene extends HexagonScene {
   // True from setup until switch-off. Store subscriptions fire in every scene, so a grid rebuild (and the
   // hex-ready mark it ends with) only counts while this scene is the one being entered or shown.
   private isEntered = false;
+  // The map hexes the local view's ground shows, and whether one of their tiles changed since the ground was drawn.
+  private shownMapHexes = new Set<string>();
+  private groundIsStale = false;
   private readonly localZoomPersistDebounceMs = 500;
   private localZoomPersistTimeout: ReturnType<typeof setTimeout> | null = null;
   private readonly handleLocalZoomControlsChange = () => {
@@ -258,7 +287,6 @@ export default class HexceptionScene extends HexagonScene {
     mouse: Vector2,
     raycaster: Raycaster,
     sceneManager: SceneManager,
-    private readonly compilePipelines: PipelineCompiler = async () => {},
   ) {
     super(SceneName.Hexception, controls, game, mouse, raycaster, sceneManager);
 
@@ -281,6 +309,7 @@ export default class HexceptionScene extends HexagonScene {
           )
         )
           this.syncHyperstructureConstruction();
+        if (changes.some((change) => this.changesShownGround(change))) this.redrawStaleGround();
       }),
     );
 
@@ -697,6 +726,8 @@ export default class HexceptionScene extends HexagonScene {
 
       this.removeCastleFromScene();
       this.updateHexceptionGrid(this.hexceptionRadius);
+    } else if (this.groundIsStale) {
+      this.updateHexceptionGrid(this.hexceptionRadius);
     }
 
     const settlementCenter = LOCAL_HEX_SPACE.positionForHex({ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] });
@@ -1048,22 +1079,11 @@ export default class HexceptionScene extends HexagonScene {
     }
 
     if (buildingType === BuildingType.ResourceLabor) {
-      switch (building.structureType) {
-        case StructureType.Realm: {
-          const stage = this.structureStage as RealmLevels;
-          const castleName = castleLevelToRealmCastle[stage];
-          return castleName ?? "Castle";
-        }
-        case StructureType.Bank:
-          return "Bank";
-        case StructureType.Hyperstructure:
-          return "Hyperstructure";
-        case StructureType.Village:
-        case StructureType.Camp:
-          return this.mode.labels.village;
-        default:
-          return "Castle";
-      }
+      // The board of a structure whose category is not known yet shows a plain keep.
+      if (building.structureType === undefined) return "Castle";
+      const keep = byStructureCategory(KEEP_NAMES, building.structureType, "keep name", "Castle");
+      if (keep === "realm-castle") return castleLevelToRealmCastle[this.structureStage as RealmLevels] ?? "Castle";
+      return keep === "village" ? this.mode.labels.village : keep;
     }
 
     const baseName = BuildingTypeToString[buildingType];
@@ -1224,8 +1244,9 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   /**
-   * The first local frame is empty until the grid build presents terrain and buildings, and slow until the
-   * renderer has compiled their pipelines; both happen behind the held world frame.
+   * The first local frame is empty until the grid build presents terrain and buildings, so the world frame is held
+   * until then. Its pipelines compile on that first frame: a scene-wide warm-up compile ahead of it left some
+   * buildings' render objects broken on WebGPU (they drew solid black until rebuilt).
    */
   public override whenPresentable(): Promise<void> {
     return this.localPresentation;
@@ -1241,12 +1262,6 @@ export default class HexceptionScene extends HexagonScene {
     this.localPresentation = awaitLocalScenePresentable({
       gridBuilt: this.localGridBuilt,
       groundTextures: this.groundTexturesReady,
-      compile: async () => {
-        if (!this.ownsRealmGeneration(generation)) return;
-        traceFlightMark("warm-up: compiling local scene pipelines");
-        await this.compilePipelines(this.scene, this.scene);
-        traceFlightMark("warm-up: pipelines compiled");
-      },
     }).finally(() => {
       if (this.ownsRealmGeneration(generation)) this.localPresentationReady = true;
     });
@@ -1352,6 +1367,8 @@ export default class HexceptionScene extends HexagonScene {
         runWithFrameWorkOwner("scene:hexception:grid", () => {
           const regions = getLocalTerrainRegions(this.tileManager.getHexCoords(), radius);
           this.highlights = [];
+          this.shownMapHexes.clear();
+          this.groundIsStale = false;
           // The buildable set belongs to this realm and its level; a previous realm's must not linger.
           this.interactiveHexManager.clearHexes();
 
@@ -1780,7 +1797,12 @@ export default class HexceptionScene extends HexagonScene {
     existingBuildings: any[],
     terrainMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>,
   ) => {
-    const biome = this.localBiome(targetHex.col, targetHex.row);
+    const mapHex = resolveLocalHexOnMap(this.tileManager.getHexCoords(), targetHex, {
+      col: this.centerColRow[0],
+      row: this.centerColRow[1],
+    });
+    this.shownMapHexes.add(`${mapHex.col},${mapHex.row}`);
+    const biome = this.localBiome(mapHex.col, mapHex.row);
     const biomeVariant = biome;
     const buildableAreaBiome = "Empty";
     const isFlat = biome === "Ocean" || biome === "DeepOcean" || isMainHex;
@@ -1883,12 +1905,31 @@ export default class HexceptionScene extends HexagonScene {
   };
 
   /**
-   * A local-view hex's ground: its tile's stored biome, or the realm's own where a neighbour is not revealed yet. A view
-   * opened before the realm's tile row arrives shows grassland until it is rebuilt.
+   * The ground of the local-view hex that shows this map hex: the tile's stored biome, or the realm's own where a
+   * neighbour is not revealed yet. A view opened before the realm's tile row arrives shows grassland until it is rebuilt.
    */
   private localBiome(col: number, row: number): BiomeType {
     const stored = (hexCol: number, hexRow: number) => storedBiomeAt(this.game.store, false, hexCol, hexRow);
     return stored(col, row) ?? stored(this.centerColRow[0], this.centerColRow[1]) ?? BiomeType.Grassland;
+  }
+
+  /** A tile under the local view was revealed or rewritten: its neighbour explored, or its row arriving after the view. */
+  private changesShownGround(change: NativeFactChange): boolean {
+    if (change.model !== "TileOpt") return false;
+    const tile = change.current ?? change.previous;
+    return (
+      tile !== undefined &&
+      !tile.alt &&
+      tile.game_id === configManager.getActiveGameId() &&
+      change.current?.data !== change.previous?.data &&
+      this.shownMapHexes.has(`${tile.col},${tile.row}`)
+    );
+  }
+
+  /** The ground redraws now while the view is open, and on the next entry otherwise. */
+  private redrawStaleGround(): void {
+    this.groundIsStale = true;
+    this.updateHexceptionGrid(this.hexceptionRadius);
   }
 
   computeNeighborHexMatrices = (

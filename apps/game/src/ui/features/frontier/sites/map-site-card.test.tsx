@@ -3,6 +3,12 @@ import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/audio/unit-command-audio", () => ({ playUnitCommandSound: () => {} }));
+vi.mock("@/sync/active-game-client", async (original) => ({
+  ...(await original<typeof import("@/sync/active-game-client")>()),
+  requireActiveGameClient: () => ({
+    waitForAction: () => Promise.resolve({ hash: "0x1", block: 9, status: "SUCCEEDED" }),
+  }),
+}));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useCurrentDefaultTick: () => 3,
   useBlockTimestamp: () => ({ currentArmiesTick: 3, armiesTickTimeRemaining: 60 }),
@@ -30,7 +36,7 @@ describe("a Well's tile card", () => {
       },
     ] as never);
     useAccountStore.setState({ account: { address: "0x111" } as never });
-    const interact = vi.fn(() => Promise.resolve());
+    const interact = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
     const tile = { hexCoords: SITE_TILE, occupierType: 41 } as unknown as TileSpatialRenderable;
     const host = document.createElement("div");
     const root = createRoot(host);

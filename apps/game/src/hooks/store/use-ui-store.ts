@@ -17,9 +17,9 @@ export type LeftListFilter = StructureType | "all";
 export type LeftListSort = "favorites" | "level" | "population" | "name";
 
 /**
- * Right-click "Create Defense/Attack Army" no longer opens the legacy popup —
- * it primes the merged Military modal with the target realm + intent. The
- * modal consumes and clears this on mount.
+ * The deployment a player asked for (openArmyDeployment), for the HUD's deploy surface under the Military view: the
+ * shared Military workspace consumes and clears it on mount; Frontier's Deploy sheet aims at its direction, and writes
+ * the tile its own ring picks back here.
  */
 type PendingMilitaryAction = {
   structureId: number;

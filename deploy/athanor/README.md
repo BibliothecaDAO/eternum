@@ -9,16 +9,18 @@ ATHANOR contains the isolated box deployment and gameplay harness. `scripts/shar
 pinned images, an explicit chain identity and the published guardian identity, then starts its compose project. See
 "Runtime and deployment" below for the inputs. Clients are static builds on Cloudflare Pages; identity, the shard
 directory, launches and the other central services are the environment's Workers. The
-[public shard package](../shard/README.md) runs with Docker alone; the runner renders that same Compose file.
+[shard runtime](../shard/README.md) runs with Docker alone; the runner renders that same Compose file.
 
 ## Runtime and deployment
 
 The shard package in [deploy/shard](../shard/README.md) owns Madara, PostgreSQL, Herald, one stamping RPC and metrics.
 The init image carries the compiled contracts and native verifier; the Herald image also carries the stamping bundle,
-worker and native prover. CI publishes only init, Herald and metrics images. There is no gateway image or service.
+worker and native prover. The box builds init, Herald and metrics images from its checkout. There is no gateway image or
+service.
 
-For released packages use `python3 deploy/athanor/scripts/operator-command.py deploy ENVIRONMENT DIRECTORY`.
-`deploy/release/ENVIRONMENT.json` is the reviewed input source. For a fresh local build use the existing
+For first deployment and updates use `python3 deploy/athanor/scripts/operator-command.py deploy ENVIRONMENT DIRECTORY`.
+`deploy/release/ENVIRONMENT.json` is the reviewed input source. The deployer builds its images under the shared Cairo
+lock, with compilation pinned to cores 8–11. For measurements use the existing
 `python3 deploy/athanor/scripts/shard.py CONFIGURATION DIRECTORY` runner with explicit local image digests, unique chain
 identity, official RPC/Herald URLs, guardian, presets, worker count and fixed play bound. The runner writes its resolved
 Compose file and public deployment manifest alongside private initialization logs. Both paths register PENDING before
@@ -32,9 +34,9 @@ production chain or reuse the state or chain ID of another shard. Backups stay p
 
 The shard package initializes host signing keys and a separate VRF key, then deploys Games with immutable VRF public
 point and play gas bound. Use the package deployment flow in [deploy/shard](../shard/README.md); it registers the shard
-pending before operator enrollment and runs the deployment self-check before making it visible. There is no sequencing
-account, per-game order, epoch service or second submission endpoint. Private credentials stay in `data/` with mode
-`0600`; the public manifest contains only their public identity.
+pending before operator enrollment, compares initialized facts and confirms service roles before making it visible.
+There is no sequencing account, per-game order, epoch service or second submission endpoint. Private credentials stay in
+`data/` with mode `0600`; the public manifest contains only their public identity.
 
 ## Herald and client
 
@@ -63,6 +65,20 @@ Herald's `LordsBudget` row. The preset carries no pool.
 Close a Frontier pool only after `frontier_claim_deadline(shard, season_id)` and with an empty relay queue for that
 pool. Payments can still complete after the claim deadline; `close_frontier` voids all unpaid reports.
 
+## Uptime qualification
+
+Every load qualification includes an idle leg after gameplay: observe the same chain for at least nine hours, long
+enough to cover the measured tombstone accumulation cycle. Record total block-close p95 every thirty minutes and repeat
+a modest gameplay check at the end. Require idle block-close p95 below 20 ms and no close stall longer than the
+configured block time. A short burst cannot establish long-running node health.
+
+The existing metrics collector observes total block close, not a separate commit stage. It emits `node_close_slow` after
+three fresh OTLP exports above 20 ms and `node_close_recovered` on recovery. Thirty seconds without a fresh block-close
+metric emits `node_close_metric_missing`; fresh data emits `node_close_metric_restored`. Malformed records emit
+`node_metric_record_invalid` and are skipped. Read these events in the metrics container log. This is a local alarm, not
+a notification delivery service; it uses `close_block_total_last_seconds` from the pinned node. One outlier does not
+trigger it. The collector follows the rotating export and never counts the same sample twice.
+
 ## Gameplay validation
 
 The harness uses the shared client, native fact store, direct signed invokes and public receipt polling. On one of our
@@ -75,9 +91,7 @@ sudo docker compose run --rm harness \
 
 The `harness` service runs the init image on the shard's network as the host user, with the shard's `harness.env`: the
 node's internal RPC, Herald, the identity API and the operator's keys. Its reports land in `data/harness/<start time>/`,
-owned by the host user. `HARNESS_CPUSET` pins the driver to CPUs of its own; set it for any large run, so the driver
-does not compete with the shard it drives. `--herald-url https://HERALD_HOST` drives the public Herald instead, as a
-player's client does.
+owned by the host user. `--herald-url https://HERALD_HOST` drives the public Herald instead, as a player's client does.
 
 Bots are Realms accounts under the shard's own guardian, like players. Each bot's device is approved by the
 environment's identity Worker through its operator route (`POST /api/devices/bots`), which approves only a bot account's
@@ -126,12 +140,11 @@ run's close-cost evidence: a window without a closed block fails the run.
 Measure one of our package shards from its deploy directory:
 
 ```bash
-python3 deploy/athanor/scripts/operator-command.py measure /opt/athanor/runs/staging-f soak-1 --cpuset 20-23 -- \
+python3 deploy/athanor/scripts/operator-command.py measure /opt/athanor/runs/staging-f soak-1 -- \
   --game-type frontier --frontier-burst booth --bots 2000 --setup-concurrency 32
 ```
 
-It takes the isolated-stack lock, runs the package's `harness` service with the options after `--` on the CPUs
-`--cpuset` names (recorded as `driverCpuset`; the harness's own report records the CPUs it saw), and writes
+It takes the isolated-stack lock, runs the package's `harness` service with the options after `--` and writes
 `data/measure/NAME/result.json` beside the harness's reports in `data/measure/NAME/workload`. Report latency separately
 from gas and execution resources. Admission-to-visible includes queue wait and the Herald barrier.
 

@@ -17,11 +17,11 @@ it.each(["exception", "rejection", "exit", "exit-hook", "exit-code-hook", "workl
       import { catchUncaughtFailures } from ${JSON.stringify(join(import.meta.dir, "worker-boundary.ts"))};
       catchUncaughtFailures();
       await sendPreparedReport(await prepareHarnessReport({
-        functional: true, accounts: [], botCount: 0, chainId: "0x1",
-        games: [{ gameId: 1, gameName: "completed", botCount: 0, settlementTransactions: 0 }],
-        intervalSeconds: 1, gates: ${kind === "workload" ? '{ minimumThresholdActions: 1, evidence: { gitDirty: false, gitRevision: "test" } }' : "null"},
+        functional: true, accounts: [{ botId: 1 }], botCount: 1, chainId: "0x1",
+        games: [{ gameId: 1, gameName: "completed", botCount: 1, settlementTransactions: 0 }],
+        intervalSeconds: 1, gates: ${kind === "workload" ? '{ minimumThresholdActions: 2, evidence: { gitDirty: false, gitRevision: "test" } }' : "null"},
         minutes: 1, receipts: {}, rpcUrl: "http://node.test", setupTransactions: [], heraldUrl: "http://herald.test", driver: {},
-        workload: { profile: "cadence", actions: [], overheadRpc: createRpcMetrics(), plannedActions: 0,
+        workload: { profile: "cadence", actions: [{ botId: 1, gameId: 1, kind: "move", outcome: "completed", rpc: createRpcMetrics() }], overheadRpc: createRpcMetrics(), plannedActions: 0,
           ticks: 0, readinessWaitMs: 0, startedAt: "2026-10-07T00:00:00Z", endedAt: "2026-10-07T00:01:00Z" },
       }));
       console.log(JSON.stringify({ prematureReports: readdirSync(process.env.HARNESS_OUTPUT_DIRECTORY).filter(file => file.endsWith(".json")).length }));

@@ -9,6 +9,7 @@ import {
   handleDirectoryHistory,
   handleRegisterPendingShard,
   handleShardStatus,
+  registeredShards,
 } from "./directory";
 import { ACCOUNT_CLASS_HASH, socialProvidersOf, type IdentityEnv } from "./env";
 import { json } from "./http";
@@ -93,6 +94,10 @@ export const routeIdentityRequest = async (
   if (pathname === "/api/directory/history" && request.method === "GET") {
     if (!(await withinPublicBudget(env, "directory", request))) return json({ error: "too_many_requests" }, 429);
     return handleDirectoryHistory(request, { db: env.DB, ...platform });
+  }
+  if (pathname === "/api/directory/shards" && request.method === "GET") {
+    if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
+    return json({ shards: await registeredShards(env.DB) });
   }
   if (pathname.startsWith("/api/directory/shards") && request.method === "POST") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);

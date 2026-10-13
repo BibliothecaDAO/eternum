@@ -104,3 +104,20 @@ test("a prepared Frontier player reaches confirmed play with no owner credential
     else process.env.DEPLOYER_PRIVATE_KEY = saved.key;
   }
 });
+
+test("keeps listening for provider timing after the separate confirmation resolves", async () => {
+  const provider = new EventEmitter();
+  const game = createHarnessGame({
+    gameId: 1,
+    waitForAction: async () => ({ status: "SUCCEEDED" }),
+    setup: { store: {}, systemCalls: {}, network: { provider } },
+  } as unknown as GameClient);
+  const submission = await game.submit({ address: "0x1" } as Account, async () => {
+    provider.emit("transactionSubmitted", { signerAddress: "0x1", transactionHash: "0x123" });
+  });
+  await submission.confirmed;
+  await Bun.sleep(10);
+  provider.emit("transactionComplete", { details: { transaction_hash: "0x123" }, admissionToVisibleMs: 480 });
+  expect(await submission.admissionToVisibleMs).toBe(480);
+  expect(provider.listenerCount("transactionComplete")).toBe(0);
+});

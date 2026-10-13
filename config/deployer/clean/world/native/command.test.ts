@@ -1,15 +1,20 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { byteArray, CallData, hash, RpcProvider, shortString } from "starknet";
+import { byteArray, CallData, hash, RpcProvider, shortString, type InvocationsSignerDetails } from "starknet";
 import schema from "../../../../../contracts/l3/world-native/schema/schema.json";
 import { completeNativeAdminCommand, executeNativeAdminCommand } from "./command";
 import type { NativeWorldManifest } from "./types";
 
+type RpcBounds = { max_amount: string; max_price_per_unit: string };
 type Invoke = {
-  version: string;
+  sender_address: string;
+  version: "0x3";
   nonce: string;
   signature: string[];
   calldata: string[];
-  resource_bounds: { l2_gas: { max_amount: string } };
+  account_deployment_data: string[];
+  paymaster_data: string[];
+  tip: string;
+  resource_bounds: { l1_gas: RpcBounds; l2_gas: RpcBounds; l1_data_gas: RpcBounds };
 };
 type Event = { from_address: string; keys: string[]; data: string[] };
 type RpcRequest = {
@@ -20,11 +25,14 @@ type RpcRequest = {
   };
 };
 const servers: Array<ReturnType<typeof Bun.serve>> = [];
+let chainSequence = 0;
 afterEach(() => {
   for (const server of servers.splice(0)) server.stop(true);
 });
 function setup() {
+  const chainId = `0x${(++chainSequence).toString(16)}`;
   const invokes: Invoke[] = [];
+  const transactionHashes: string[] = [];
   let remaining = [0n];
   let events: (hash: string) => Event[] = (transactionHash) => [
     {
@@ -45,7 +53,7 @@ function setup() {
           result = "0.9.0";
           break;
         case "starknet_chainId":
-          result = "0x1";
+          result = chainId;
           break;
         case "starknet_getNonce":
           result = `0x${invokes.length.toString(16)}`;
@@ -63,9 +71,16 @@ function setup() {
         }
         case "starknet_addInvokeTransaction":
           invokes.push((rpc.params.invoke_transaction ?? rpc.params[0]) as Invoke);
-          result = { transaction_hash: `0x${(0x54 + invokes.length).toString(16)}` };
+          transactionHashes.push(invokeHash(invokes.at(-1)!, chainId));
+          result = { transaction_hash: transactionHashes.at(-1) };
           break;
         case "starknet_getTransactionStatus":
+          if (!transactionHashes.includes((rpc.params.transaction_hash ?? rpc.params[0]) as string))
+            return Response.json({
+              jsonrpc: "2.0",
+              id: rpc.id,
+              error: { code: 29, message: "Transaction hash not found" },
+            });
           result = { finality_status: "ACCEPTED_ON_L2", execution_status: "SUCCEEDED" };
           break;
         case "starknet_getTransactionReceipt": {
@@ -93,7 +108,7 @@ function setup() {
   servers.push(server);
   const manifest = {
     world: { address: "0x77" },
-    shard: { chainId: "0x1", l2GasBound: "0x1234" },
+    shard: { chainId, l2GasBound: "0x1234" },
     native: { activeSchema: schema.identity, schemas: { [schema.identity]: schema } },
   } as unknown as NativeWorldManifest;
   const input = {
@@ -107,6 +122,7 @@ function setup() {
   return {
     input,
     invokes,
+    transactionHashes,
     calls,
     progress: (values: bigint[]) => {
       remaining = values;
@@ -119,8 +135,9 @@ function setup() {
 
 describe("player-signed administrative gameplay", () => {
   it("sends one v3 play at current nonce and pinned bounds, and reads progress by transaction hash", async () => {
-    const { input, invokes } = setup();
-    expect(await executeNativeAdminCommand(input)).toEqual({ transactionHash: "0x55", remaining: "0" });
+    const { input, invokes, transactionHashes } = setup();
+    const result = await executeNativeAdminCommand(input);
+    expect(result).toEqual({ transactionHash: transactionHashes[0], remaining: "0" });
     expect(invokes).toHaveLength(1);
     const invoke = invokes[0];
     expect(invoke.version).toBe("0x3");
@@ -140,10 +157,11 @@ describe("player-signed administrative gameplay", () => {
     ]);
   });
   it("continues a batch with a new nonce and stops at zero", async () => {
-    const { input, invokes, progress } = setup();
+    const { input, invokes, transactionHashes, progress } = setup();
     progress([2n, 0n]);
-    expect(await completeNativeAdminCommand(input)).toEqual({
-      transactionHash: "0x56",
+    const result = await completeNativeAdminCommand(input);
+    expect(result).toEqual({
+      transactionHash: transactionHashes[1],
       remaining: "0",
       transactions: 2,
     });
@@ -189,10 +207,36 @@ describe("player-signed administrative gameplay", () => {
 });
 
 it("records shard-derived results once without requiring a caller batch or progress event", async () => {
-  const { input, invokes, events } = setup();
+  const { input, invokes, transactionHashes, events } = setup();
   events(() => []);
   const command = { kind: "RecordBlitzResults", value: undefined } as const;
-  expect(await completeNativeAdminCommand({ ...input, command })).toEqual({ transactionHash: "0x55", transactions: 1 });
+  const result = await completeNativeAdminCommand({ ...input, command });
+  expect(result).toEqual({ transactionHash: transactionHashes[0], transactions: 1 });
   expect(invokes).toHaveLength(1);
   expect(invokes[0].calldata.slice(-2).map(BigInt)).toEqual([1n, 51n]);
 });
+
+/** Return the submitted frame's hash so status polling cannot confirm a different transaction. */
+function invokeHash(invoke: Invoke, chainId: string): string {
+  return hash.calculateInvokeTransactionHash({
+    senderAddress: invoke.sender_address,
+    version: invoke.version,
+    compiledCalldata: invoke.calldata,
+    chainId: chainId as InvocationsSignerDetails["chainId"],
+    nonce: invoke.nonce,
+    accountDeploymentData: invoke.account_deployment_data,
+    nonceDataAvailabilityMode: 0,
+    feeDataAvailabilityMode: 0,
+    tip: invoke.tip,
+    paymasterData: invoke.paymaster_data,
+    resourceBounds: {
+      l1_gas: bounds(invoke.resource_bounds.l1_gas),
+      l2_gas: bounds(invoke.resource_bounds.l2_gas),
+      l1_data_gas: bounds(invoke.resource_bounds.l1_data_gas),
+    },
+  });
+}
+
+function bounds(value: RpcBounds) {
+  return { max_amount: BigInt(value.max_amount), max_price_per_unit: BigInt(value.max_price_per_unit) };
+}

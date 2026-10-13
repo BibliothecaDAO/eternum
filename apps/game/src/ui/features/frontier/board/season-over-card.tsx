@@ -2,7 +2,20 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
 import { KitIcon } from "@/ui/design-system/kit/kit-icon";
-import { EXIT, REACH_NUMERALS, SEASON, SEASON_ENDINGS, SEASON_OVER, YOU_PLACED } from "@/ui/design-system/kit/words";
+import {
+  CHESTS,
+  ESSENCE,
+  EXIT,
+  LABOR,
+  LORDS,
+  REACH,
+  REACH_NUMERALS,
+  SEASON,
+  SEASON_ENDINGS,
+  SEASON_OVER,
+  SITES_CLEARED,
+  YOU_PLACED,
+} from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 import { TotalsGrid } from "../log/day-totals";
@@ -70,12 +83,12 @@ export const SeasonOverCard = ({
       <div className="w-full max-w-[360px]">
         <TotalsGrid
           cells={[
-            { icon: "Fl", value: formatAmount(totals.sitesCleared) },
-            { icon: "Ch", value: formatAmount(totals.chests) },
-            { icon: "Lo", value: formatAmount(totals.lords) },
-            { icon: "Dp", value: REACH_NUMERALS[totals.reach - 1] ?? "—" },
-            { icon: "Es", value: formatAmount(totals.essence) },
-            { icon: "La", value: formatAmount(totals.labor) },
+            { icon: "Fl", name: SITES_CLEARED, value: formatAmount(totals.sitesCleared) },
+            { icon: "Ch", name: CHESTS, value: formatAmount(totals.chests) },
+            { icon: "Lo", name: LORDS, value: formatAmount(totals.lords) },
+            { icon: "Dp", name: REACH, value: REACH_NUMERALS[totals.reach - 1] ?? "—" },
+            { icon: "Es", name: ESSENCE, value: formatAmount(totals.essence) },
+            { icon: "La", name: LABOR, value: formatAmount(totals.labor) },
           ]}
         />
       </div>

@@ -14,7 +14,7 @@ import { LEARN_WORDS } from "../words";
 import { postHref, postKind, postPainting, publishedPosts, SCROLL_PATH } from "./posts";
 
 /**
- * A post (spec 13), read inside Play: Back to the Scroll, its title, date and reading time, the body in a 68-character
+ * A post (spec 13), read inside Learn: Back to the Scroll, its title, date and reading time, the body in a 68-character
  * reading column, and Newer and Older as one stepper at the foot. The desktop heads it with its cover and keeps the
  * Scroll's other posts beside it.
  */

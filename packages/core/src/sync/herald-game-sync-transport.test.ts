@@ -148,6 +148,8 @@ afterEach(() => {
 describe("HeraldGameSyncTransport", () => {
   it("uses streamed head time for absence scope and forgets it on disposal", async () => {
     const harness = streamHarness();
+    const gates: GameSyncSnapshotState[] = [];
+    harness.handlers.onSnapshotState = (state) => void gates.push(state);
     const { socket, writer } = await attached(harness);
     socket.receive({ epoch: "epoch-a", seq: 0, type: "snapshot_end" });
     expect(harness.transport.completedTimestamp()).toBeUndefined();
@@ -155,8 +157,12 @@ describe("HeraldGameSyncTransport", () => {
     expect(harness.transport.completedTimestamp()).toBe(350);
     socket.receive({ type: "head", epoch: "epoch-a", seq: 2, block: 12, preconfirmed: false, timestamp: 340 });
     expect(harness.transport.completedTimestamp()).toBe(350);
+    // A diff leaves the store's gate as it is: a player's own action never turns every absent row unknown.
+    const gatesBeforeDiff = gates.length;
     socket.receive(diff("epoch-a", 3, "0x1", 2, true));
-    expect(harness.transport.completedTimestamp()).toBeUndefined();
+    expect(gates).toHaveLength(gatesBeforeDiff);
+    expect(gates.at(-1)).toMatchObject({ complete: true, timestamp: 350 });
+    expect(harness.transport.completedTimestamp()).toBe(350);
     socket.receive({ type: "head", epoch: "epoch-a", seq: 4, block: 12, preconfirmed: false, timestamp: 340 });
     expect(harness.transport.completedTimestamp()).toBe(350);
     snapshot("epoch-b", 0, "0x1", 2).forEach((message) => socket.receive(message));
@@ -266,6 +272,47 @@ describe("HeraldGameSyncTransport", () => {
     await Promise.resolve();
     expect(gates.at(-1)).toMatchObject({ complete: true, actor: "0x111" });
     expect(gates.at(-1)).not.toHaveProperty("visit");
+    writer.cancel();
+  });
+
+  it("keeps the gate open while the selection on screen is re-scoped, as after each move, build or deploy", async () => {
+    const harness = streamHarness();
+    const gates: GameSyncSnapshotState[] = [];
+    harness.handlers.onSnapshotState = (state) => void gates.push(state);
+    // The store applies a scope a moment after it arrives, as its ingest queue does.
+    let landScope!: (applied: boolean) => void;
+    harness.handlers.onScope = () => new Promise<boolean>((resolve) => (landScope = resolve));
+    const { socket, writer } = await attached(harness);
+    snapshot("epoch-a", 0, "0x1", 1).forEach((message) => socket.receive(message));
+    harness.transport.selectActor("0x111");
+    socket.receive({ type: "scope", epoch: "epoch-a:1", seq: 1, actor: "0x111", expedition: true, set: [] });
+    landScope(true);
+    await Promise.resolve();
+    expect(gates.at(-1)).toMatchObject({ complete: true, actor: "0x111" });
+
+    const shownBefore = gates.length;
+    socket.receive({ type: "scope", epoch: "epoch-a:2", seq: 1, actor: "0x111", expedition: true, set: [] });
+    // A head lands between the new scope's arrival and its rows reaching the store.
+    socket.receive({ type: "head", epoch: "epoch-a:2", seq: 2, block: 14, timestamp: 1_700 });
+    landScope(true);
+    await Promise.resolve();
+    socket.receive({ type: "head", epoch: "epoch-a:2", seq: 3, block: 15, timestamp: 1_702 });
+    expect(gates.slice(shownBefore).every((gate) => gate.complete && gate.actor === "0x111")).toBe(true);
+    expect(gates.at(-1)).toMatchObject({ complete: true, timestamp: 1_702 });
+    writer.cancel();
+  });
+
+  it("opens the gate with the scope's rows, so a head right behind them cannot shut it again", async () => {
+    const harness = streamHarness();
+    const gates: GameSyncSnapshotState[] = [];
+    // The gate write itself is still queued when the head arrives.
+    harness.handlers.onSnapshotState = (state) => new Promise<void>((resolve) => (gates.push(state), resolve()));
+    const { socket, writer } = await attached(harness);
+    snapshot("epoch-a", 0, "0x1", 1).forEach((message) => socket.receive(message));
+    harness.transport.selectActor("0x111");
+    socket.receive({ type: "scope", epoch: "epoch-a:1", seq: 1, actor: "0x111", expedition: true, set: [] });
+    socket.receive({ type: "head", epoch: "epoch-a:1", seq: 2, block: 14, timestamp: 1_700 });
+    expect(gates.at(-1)).toMatchObject({ complete: true, actor: "0x111", timestamp: 1_700 });
     writer.cancel();
   });
 

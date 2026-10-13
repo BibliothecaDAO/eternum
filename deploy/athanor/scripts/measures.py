@@ -4,10 +4,10 @@ anonymous memory and kept RocksDB snapshots over time, its closed blocks and gas
 admission-to-visible latency split into submission and the remainder, overall, in bursts and in calm. A runner trial
 and a running package shard are measured the same way.
 
-    python3 deploy/athanor/scripts/measures.py DIRECTORY NAME [--cpuset CPUS] -- HARNESS_OPTIONS
+    python3 deploy/athanor/scripts/measures.py DIRECTORY NAME -- HARNESS_OPTIONS
 
 measures one of our package shards, the directory deploy.py deployed: it takes the isolated-stack lock, runs the
-package's harness service with HARNESS_OPTIONS (on CPUS when given), and writes data/measure/NAME/result.json beside
+package's harness service with HARNESS_OPTIONS, and writes data/measure/NAME/result.json beside
 the harness's reports in data/measure/NAME/workload.
 """
 
@@ -67,7 +67,13 @@ def phases(group):
 def admission_split(directory):
     """Completed actions' admission-to-visible latency, overall, in bursts (many submissions around it) and in calm."""
     actions = list(reported_actions(directory))
-    done = [a for a in actions if a.get("outcome") == "completed" and a.get("visibleAt") and a.get("submittedAt")]
+    done = [a for a in actions if a.get("outcome") == "completed"]
+    for action in done:
+        required = ("submitStartedAt", "submittedAt", "visibleAt", "submitMs", "admissionToVisibleMs")
+        missing = [field for field in required if field not in action or action[field] is None]
+        if missing:
+            raise ValueError(f"Completed action bot={action.get('botId')} kind={action.get('kind')} "
+                             f"is missing figures: {', '.join(missing)}")
     starts = [iso_ms(a["submitStartedAt"]) for a in done]
 
     def neighbours(action):
@@ -188,26 +194,26 @@ def measure_workload(docker, run_workload, node, metrics, chain_config, workload
     return evidence
 
 
-def run_package_harness(compose, name, cpuset, options):
+def run_package_harness(compose, name, options):
     """The package's harness service, writing into data/measure/NAME/workload; whether its run passed."""
     command = [*compose, "run", "--rm", "-e", f"HARNESS_OUTPUT_DIRECTORY=/data/measure/{name}/workload", "harness",
                *options]
-    return subprocess.run(command, env={**os.environ, "HARNESS_CPUSET": cpuset or ""}).returncode == 0
+    return subprocess.run(command).returncode == 0
 
 
-def measure_package(directory, name, cpuset, options, docker):
+def measure_package(directory, name, options, docker):
     """Measures a workload against a running package shard and writes its one result."""
     data = directory / "data"
     output = data / "measure" / name
     output.mkdir(parents=True)
     compose = [*docker, "compose", "--project-directory", str(directory)]
-    result = {"name": name, "release": json.loads((directory / "release.json").read_text())["tag"],
-              "driverCpuset": cpuset, "harnessOptions": options, "passed": False}
+    result = {"name": name, "commit": json.loads((directory / "release.json").read_text())["commit"],
+              "harnessOptions": options, "passed": False}
     with isolated_stack_lock(f"measure {name}"):
         node = subprocess.check_output([*compose, "ps", "-q", "madara"], text=True).strip()
         try:
             result.update(measure_workload(
-                docker, lambda: run_package_harness(compose, name, cpuset, options), node,
+                docker, lambda: run_package_harness(compose, name, options), node,
                 data / "metrics" / "metrics.jsonl", data / "chain-config.yaml", output / "workload"))
             result["passed"] = result["workloadPassed"]
         except Exception as error:
@@ -221,9 +227,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("directory", type=Path)
     parser.add_argument("name")
-    parser.add_argument("--cpuset", help="the CPUs the harness driver runs on, apart from the shard's")
-    parser.add_argument("options", nargs=argparse.REMAINDER, help="-- then the harness options")
-    args = parser.parse_args()
-    options = args.options[1:] if args.options[:1] == ["--"] else args.options
+    arguments = sys.argv[1:]
+    separator = arguments.index("--") if "--" in arguments else len(arguments)
+    args = parser.parse_args(arguments[:separator])
+    options = arguments[separator + 1:]
     from shard import DOCKER
-    raise SystemExit(measure_package(args.directory.resolve(), args.name, args.cpuset, options, DOCKER))
+    raise SystemExit(measure_package(args.directory.resolve(), args.name, options, DOCKER))

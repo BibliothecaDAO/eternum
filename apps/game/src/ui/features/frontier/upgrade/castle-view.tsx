@@ -3,9 +3,11 @@ import { formatAmount } from "@/ui/design-system/kit/amount";
 import { Button, type Price } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
 import { KitIcon } from "@/ui/design-system/kit/kit-icon";
-import { type Reason, ReasonPlate } from "@/ui/design-system/kit/reason-plate";
+import { type Refusal, RefusedVerb } from "@/ui/design-system/kit/refused-verb";
 import { Sheet } from "@/ui/design-system/kit/sheet";
-import { CASTLE, MAP, REALM_LEVELS, TROOPS, UPGRADE, UPGRADING } from "@/ui/design-system/kit/words";
+import { CASTLE, REALM_LEVELS, TROOPS, UPGRADE, UPGRADING } from "@/ui/design-system/kit/words";
+
+import { type Figure, Figures } from "./type-upgrade-sheet";
 
 /** The castle at one level: its art and level, the plots it opens, its army slots, each store's limit, the deploy cap. */
 export type CastleSide = {
@@ -19,27 +21,29 @@ export type CastleSide = {
 };
 
 /**
- * The castle's sheet (wireframe 02): the castle now and at its next level side by side, what the next level brings lit,
- * and Upgrade carrying its labor price; when the realm cannot pay, the price held against what it has and the exact
- * wait, with Map, where labor comes from. At the last level there is no next side and no verb.
+ * The castle's sheet (wireframe 02): what the castle makes and holds now, the castle now and at its next level side by side, what the next level brings lit,
+ * and Upgrade carrying its labor price. When the realm cannot pay, Upgrade stays, dimmed, with its price; the line
+ * under it says what it needs against what is held and the exact wait; the map is offered where a reveal pays labor.
+ * At the last level there is no next side and no verb.
  */
 export const CastleView = ({
   now,
   next,
+  makes,
   prices,
-  short,
+  refusal,
   sending,
   onUpgrade,
-  onMap,
   onClose,
 }: {
   now: CastleSide;
   next: CastleSide | null;
+  /** What the castle itself makes and holds now: its own labor an hour, and the labor in its store. */
+  makes: readonly Figure[];
   prices: Price[];
-  short: Extract<Reason, { kind: "short" }> | undefined;
+  refusal: Refusal | undefined;
   sending: boolean;
   onUpgrade: () => void;
-  onMap: () => void;
   onClose: () => void;
 }) => (
   <Sheet label={CASTLE} onClose={onClose}>
@@ -47,6 +51,7 @@ export const CastleView = ({
       <KitIcon code="Cs" size={30} />
       <h2 className="frontier-title flex-1 !text-[20px]">{CASTLE}</h2>
     </header>
+    {makes.length > 0 && <Figures figures={makes} />}
     <div className="flex items-center gap-2">
       <Side side={now} />
       {next && (
@@ -59,11 +64,8 @@ export const CastleView = ({
       )}
     </div>
     {next &&
-      (short ? (
-        <ReasonPlate
-          reason={short}
-          step={<Button role="primary" icon="Mp" word={MAP} className="w-[104px]" onClick={onMap} />}
-        />
+      (refusal ? (
+        <RefusedVerb word={UPGRADE} prices={prices} refusal={refusal} />
       ) : (
         <Button
           role="primary"

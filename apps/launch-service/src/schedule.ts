@@ -1,3 +1,4 @@
+import { launchFailure } from "./errors";
 import { BLITZ_SLOT_PREPARATION_SECONDS } from "@realms-world/value-ledger";
 import { Effect, Result } from "effect";
 import { isRunning, type CalendarStore, type SeasonPhase } from "./calendar";
@@ -8,11 +9,12 @@ import { databaseOperation, type LaunchServiceStore } from "./store";
 /**
  * One cron tick, read from the season calendar: the Frontier season game exists once its season has started, the next
  * Blitz slot exists when its games start inside the Blitz window, and a slot whose registration closed is frozen into queued
- * games. `now` places the tick in the calendar and names the next slot; whether a slot has closed is the store's clock,
- * as registration's is. Every step is idempotent, so overlapping ticks agree.
+ * games. Scheduling and slot metadata share the Worker clock; the ledger independently confirms registration has
+ * closed before a roster can freeze. Every step is idempotent, so overlapping ticks agree.
  */
-export const runLaunchSchedule = (store: LaunchServiceStore, slots: SlotStore, calendar: CalendarStore, now: Date) =>
+export const runLaunchSchedule = (store: LaunchServiceStore, slots: SlotStore, calendar: CalendarStore) =>
   Effect.gen(function* () {
+    const now = new Date(Date.now());
     const calendarResult = yield* Effect.result(databaseOperation("read the season calendar", () => calendar.list()));
     if (Result.isSuccess(calendarResult)) {
       const frontier = calendarResult.success.find(({ phase }) => phase === "frontier");
@@ -23,7 +25,10 @@ export const runLaunchSchedule = (store: LaunchServiceStore, slots: SlotStore, c
       if (blitz && startsInside(blitz, slot.closesAt))
         yield* runScheduleStep("schedule blitz slot", () => slots.create(slot.name, slot.closesAt));
     } else {
-      yield* Effect.logError("launch_schedule_step_failed", calendarResult.failure);
+      console.error("launch_schedule_step_failed", {
+        operation: "read the season calendar",
+        ...launchFailure(calendarResult.failure),
+      });
     }
     yield* runScheduleStep("freeze playtest roster", () => slots.freezeDueSlots());
   });
@@ -31,7 +36,8 @@ export const runLaunchSchedule = (store: LaunchServiceStore, slots: SlotStore, c
 const runScheduleStep = <A>(operation: string, task: () => Promise<A>) =>
   Effect.gen(function* () {
     const result = yield* Effect.result(databaseOperation(operation, task));
-    if (Result.isFailure(result)) yield* Effect.logError("launch_schedule_step_failed", result.failure);
+    if (Result.isFailure(result))
+      console.error("launch_schedule_step_failed", { operation, ...launchFailure(result.failure) });
   });
 
 /** A slot belongs to the Blitz window when its games start inside it. */

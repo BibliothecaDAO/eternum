@@ -327,6 +327,21 @@ describe("InputManager touch", () => {
     expect(frameHarness.requestAnimationFrame).not.toHaveBeenCalled();
   });
 
+  it("cancels the touch's end so the browser sends no click to whatever the tap put under the finger", () => {
+    const fixture = createSubject();
+    fixture.manager.setSurface(fixture.surface);
+    fixture.manager.activate();
+
+    const end = new Event("touchend", { bubbles: true, cancelable: true });
+    fixture.surface.dispatchEvent(end);
+    expect(end.defaultPrevented).toBe(true);
+
+    fixture.manager.pauseListeners();
+    const endWhilePaused = new Event("touchend", { bubbles: true, cancelable: true });
+    fixture.surface.dispatchEvent(endWhilePaused);
+    expect(endWhilePaused.defaultPrevented).toBe(false);
+  });
+
   it("dispatches a touch long press as contextmenu and does not click on release", () => {
     vi.useFakeTimers();
     const clickCallback = vi.fn();

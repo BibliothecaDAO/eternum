@@ -141,7 +141,7 @@ test("one Frontier season is created once by every tick and continued like any f
   expect((await store.startNext(Date.now()))?.id).toBe(next.id);
 });
 
-test("a shard cutover preserves directory games and refuses new work until the old queue drains", async () => {
+test("retirement preserves history while unfinished live work remains observable", async () => {
   const seasonStart = "2027-01-01T00:00:00.000Z";
   const oldChain = new D1LaunchStore(database.db, testChain("0x1"));
   const launched = await oldChain.enqueue("game", { environment: "madara.blitz", gameName: "bltz-7" });
@@ -156,12 +156,16 @@ test("a shard cutover preserves directory games and refuses new work until the o
   const oldSeason = await scheduleFrontierSeason(oldChain, season(seasonStart));
 
   // Another official chain shares the D1; its work remains isolated.
-  const newChain = new D1LaunchStore(database.db, testChain("0x2"));
+  const live = ["0x1", "0x2"];
+  const newChain = new D1LaunchStore(database.db, testChain("0x2"), async () => live);
   expect(await newChain.playerDirectoryGames()).toEqual([
     { chainId: "0x1", games: [7].map((gameId) => ({ gameId, slotId: null })) },
   ]);
   expect(await newChain.startNext(Date.now())).toBeNull();
-  expect((await newChain.pendingOtherChains()).map(({ chainId }) => chainId)).toEqual(["0x1", "0x1"]);
+  expect((await newChain.pending()).map(({ chainId }) => chainId)).toEqual(["0x1", "0x1"]);
+  live.shift();
+  expect(await newChain.pending()).toEqual([]);
+  live.unshift("0x1");
   const result = (await oldChain.startNext(Date.now()))!;
   await completeFreeFixture(oldChain, result.id, {
     environment: "madara.blitz",
@@ -171,7 +175,7 @@ test("a shard cutover preserves directory games and refuses new work until the o
   });
   const frontier = (await oldChain.startNext(Date.now()))!;
   await completeFreeFixture(oldChain, frontier.id, frontierSummary(oldSeason.name, seasonStart));
-  expect(await newChain.pendingOtherChains()).toEqual([]);
+  expect(await newChain.pending()).toEqual([]);
   expect(await newChain.list("madara.blitz")).toEqual([]);
   const newSeason = await scheduleFrontierSeason(newChain, season(seasonStart));
   expect(newSeason).toMatchObject({ name: oldSeason.name, chainId: "0x2", status: "queued" });
@@ -188,7 +192,7 @@ test("pre-chain migration archives neither block a cutover nor enter the directo
   const store = new D1LaunchStore(database.db, testChain());
   const archived = await store.enqueue("game", { environment: "madara.blitz", gameName: "archive" });
   await database.db.prepare("UPDATE launch_runs SET chain_id = '' WHERE id = ?").bind(archived.id).run();
-  expect(await store.pendingOtherChains()).toEqual([]);
+  expect(await store.pending()).toEqual([]);
   expect(await store.enqueue("game", { environment: "madara.blitz", gameName: "new" })).toMatchObject({
     status: "queued",
   });

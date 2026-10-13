@@ -29,3 +29,10 @@ it("uses the directory URL and refuses a mismatched manifest rather than any con
   );
   await expect(readRegisteredShard(directory, "0x99", network)).rejects.toThrow("unlisted_shard");
 });
+
+it("names a manifest transport failure separately from an HTTP refusal", async () => {
+  const network = vi.fn<typeof fetch>().mockRejectedValue(new TypeError("private network detail"));
+  await expect(readRegisteredShard(directory, "0x1", network)).rejects.toMatchObject({
+    message: "directory_shard_manifest_fetch_failed",
+  });
+});

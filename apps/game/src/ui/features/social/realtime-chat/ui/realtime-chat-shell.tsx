@@ -186,7 +186,7 @@ export function RealtimeChatShell({
                   type="button"
                   aria-pressed={activeZoneId === GLOBAL_CHAT_CHANNEL_ID}
                   className={cn(
-                    "rounded px-3 py-1 text-sm",
+                    "rounded px-3 py-1 text-sm max-lg:min-h-11",
                     activeZoneId === GLOBAL_CHAT_CHANNEL_ID ? "bg-gold/20 text-gold" : "text-gold/60 hover:text-gold",
                   )}
                   onClick={() => selectWorldChannel(GLOBAL_CHAT_CHANNEL_ID)}
@@ -201,7 +201,7 @@ export function RealtimeChatShell({
                     hasGameChat ? "Chat with players in this game" : "Game chat requires registration in this game"
                   }
                   className={cn(
-                    "rounded px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-40",
+                    "rounded px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-40 max-lg:min-h-11",
                     activeZoneId === gameZoneId ? "bg-gold/20 text-gold" : "text-gold/60 hover:text-gold",
                   )}
                   onClick={() => selectWorldChannel(gameZoneId)}

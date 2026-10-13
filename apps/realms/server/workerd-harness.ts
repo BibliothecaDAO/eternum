@@ -1,9 +1,11 @@
+import { disposeWorker } from "../../../packages/value-ledger/test-support/workerd";
 import { SIGN_IN_CODE_LENGTH } from "@realms-world/identity";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Miniflare } from "miniflare";
+import { afterAll } from "vitest";
 import { unstable_readConfig } from "wrangler";
 
 /**
@@ -20,8 +22,30 @@ const STAGING_CONFIG = unstable_readConfig({
 export const ORIGIN = new URL(String(STAGING_CONFIG.vars.BASE_URL)).origin;
 const EMAIL_PROVIDER = "https://api.resend.com/emails";
 
+const directories = new Set<string>();
+const workers = new Set<Miniflare>();
+const temporaryDirectory = (prefix: string) => {
+  const directory = mkdtempSync(join(tmpdir(), prefix));
+  directories.add(directory);
+  return directory;
+};
+
+afterAll(async () => {
+  try {
+    const disposed = await Promise.allSettled([...workers].map((worker) => disposeWorker(worker)));
+    const failures = disposed.filter((result) => result.status === "rejected");
+    if (failures.length)
+      throw new AggregateError(
+        failures.map((result) => result.reason),
+        "Worker cleanup failed",
+      );
+  } finally {
+    for (const directory of directories) rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 export const buildWorkerBundle = (aliases: Record<string, string> = {}): string => {
-  const bundle = join(mkdtempSync(join(tmpdir(), "identity-bundle-")), "bundle");
+  const bundle = join(temporaryDirectory("identity-bundle-"), "bundle");
   execFileSync(
     "pnpm",
     [
@@ -94,6 +118,7 @@ export const startWorker = async (options: {
       return Response.json({ id: "sent" });
     },
   });
+  workers.add(mf);
   const inbox = new Map<string, string>();
   const signedIn = (response: { headers: { getSetCookie(): string[] } }) =>
     response.headers
@@ -121,7 +146,10 @@ export const startWorker = async (options: {
     mf,
     signInWithEmailCode,
     db: (await mf.getD1Database("DB")) as unknown as D1Database,
-    dispose: () => mf.dispose(),
+    dispose: async () => {
+      await disposeWorker(mf);
+      workers.delete(mf);
+    },
     runCron: async () => (await mf.getWorker()).scheduled({ cron: "* * * * *" }),
   };
 };
@@ -139,7 +167,7 @@ export const migrationStatements = (): string[] => {
     .filter(Boolean);
 };
 
-export const newStorage = () => mkdtempSync(join(tmpdir(), "identity-storage-"));
+export const newStorage = () => temporaryDirectory("identity-storage-");
 
 const base64url = (bytes: ArrayBuffer | Uint8Array) => Buffer.from(bytes as ArrayBuffer).toString("base64url");
 

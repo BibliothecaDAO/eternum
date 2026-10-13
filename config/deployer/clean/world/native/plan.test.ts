@@ -21,6 +21,7 @@ function serveHerald(local: NativeWorld, releaseSchemas: Record<string, string>)
 }
 
 const authentication = { account_class: "0x77", guardian_public_key: "0x88" };
+const catalogueDigest = realmCatalogueDigest(canonicalRealmTraits.length);
 function fixture() {
   const logic = Object.keys(schemaJson.logicClasses).map((name) => ({ name, classHash: "0x123", sierra: { abi: [] } }));
   const local = {
@@ -73,7 +74,7 @@ function fixture() {
   };
   const catalogue = {
     initialized: canonicalRealmTraits.length,
-    digest: realmCatalogueDigest(canonicalRealmTraits.length),
+    digest: catalogueDigest,
   };
   const rpc = {
     getBlockNumber: async () => 10,

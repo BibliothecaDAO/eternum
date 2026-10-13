@@ -9,8 +9,8 @@ import schema from "../../../contracts/l3/world-native/schema/schema.json";
 import { gamesAbi } from "../../../packages/value-ledger/test-support/abi";
 
 const rpc = vi.hoisted(() => ({ chain: vi.fn(), block: vi.fn() }));
-vi.mock("@realms-world/value-ledger", async (original) => ({
-  ...(await original<typeof import("@realms-world/value-ledger")>()),
+vi.mock("../../../packages/value-ledger/src/rpc", async (original) => ({
+  ...(await original<typeof import("../../../packages/value-ledger/src/rpc")>()),
   rpcAt: () => ({ getChainId: rpc.chain, getBlock: rpc.block }),
 }));
 const connection = { chainId: "0x1", gamesAddress: "0x10", rpcUrl: "https://shard.test/rpc" };

@@ -50,6 +50,7 @@ export interface MoveArmyInput {
 }
 
 export type MoveArmyResult = Awaited<ReturnType<ArmyActionManager["moveArmy"]>>;
+export type CreateExplorerArmyResult = Awaited<ReturnType<ArmyManager["createExplorerArmy"]>>;
 
 export interface CreateExplorerArmyInput {
   structureId: ID;
@@ -133,7 +134,10 @@ export const moveArmy = async (client: ActionClient, input: MoveArmyInput): Prom
     input.currentArmiesTick,
   );
 
-export const createExplorerArmy = async (client: ActionClient, input: CreateExplorerArmyInput): Promise<void> =>
+export const createExplorerArmy = async (
+  client: ActionClient,
+  input: CreateExplorerArmyInput,
+): Promise<CreateExplorerArmyResult> =>
   armyManager(client, input.structureId).createExplorerArmy(
     requireSigner(client),
     input.troopType,

@@ -1,3 +1,4 @@
+import { validateInputs } from "./dates";
 import { afterEach, expect, mock, test } from "bun:test";
 import { chmodSync, existsSync, lstatSync, mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -5,7 +6,7 @@ import { join } from "node:path";
 import { Account, hash, num, type RpcProvider } from "starknet";
 import { PrivateStore } from "./private-store";
 import { runSteps, type Step } from "./run";
-import { environments, validateInputs, ACCOUNT_CLASS, WEI, root, type Inputs } from "./settings";
+import { environments, ACCOUNT_CLASS, WEI, root, type Inputs } from "./settings";
 import { accountIdentity, classAt, prepareAccounts, send, type Keys } from "./chain";
 import {
   assetPlans,
@@ -53,6 +54,16 @@ const input: Inputs = {
   blitzEnd: "2027-02-01T00:00:00Z",
 };
 const assets = { ledger: "0x10", lords: "0x11", mmr: "0x12", chests: "0x13", cosmetics: "0x14" };
+
+test("retired resource settings in saved owner inputs do not require setup again", () => {
+  const { store } = storage();
+  const saved = { ...input, node_memory: "24g", herald_memory: "6g", NODE_MEMORY: "24g" };
+  store.write("inputs.json", saved);
+  const loaded = store.read<Inputs>("inputs.json")!;
+  expect(() => validateInputs(loaded, environments.dev)).not.toThrow();
+  expect(loaded.cloudflareToken && loaded.rpc).toBeTruthy();
+  expect(store.read<typeof saved>("inputs.json")).toEqual(saved);
+});
 
 test("default storage is read-only and creates no directory; explicit writes refuse", () => {
   const { store } = storage(false);
@@ -214,11 +225,12 @@ test("RPC outages are never interpreted as absent contracts", async () => {
   expect(await classAt(provider, "0x1")).toBeUndefined();
 });
 
-test("a lost invoke response retries the saved nonce and never fetches a new one", async () => {
+test("a lost invoke response retries the same nonce while it remains current", async () => {
   const { store } = storage();
   const nonces: string[] = [];
   let first = true;
   const account = {
+    address: "0x100",
     getNonce: mock(async () => "7"),
     execute: async (_calls: unknown, options: { nonce: string }) => {
       nonces.push(options.nonce);
@@ -231,12 +243,12 @@ test("a lost invoke response retries the saved nonce and never fetches a new one
     waitForTransaction: async () => ({ execution_status: "SUCCEEDED" }),
   } as unknown as Account;
   const calls = [{ contractAddress: "0x1", entrypoint: "transfer", calldata: ["2", "30", "0"] }];
-  await expect(send(account, calls, store, "relay", () => {})).rejects.toThrow("reply lost");
-  await send(account, calls, store, "relay", () => {});
+  await expect(send(account, calls, store, "relay", () => {}, 5)).rejects.toThrow("reply lost");
+  await send(account, calls, store, "relay", () => {}, 5);
   expect(nonces).toEqual(["7", "7"]);
-  expect(account.getNonce).toHaveBeenCalledTimes(1);
-  await send(account, [{ ...calls[0]!, calldata: ["2", "31", "0"] }], store, "relay", () => {});
-  expect(nonces).toEqual(["7", "7"]);
+  expect(account.getNonce).toHaveBeenCalledTimes(2);
+  await send(account, [{ ...calls[0]!, calldata: ["2", "31", "0"] }], store, "relay", () => {}, 5);
+  expect(nonces).toEqual(["7", "7", "7"]);
 });
 
 test("dev deploys five assets; production deploys only a cold-admin ledger with existing assets", () => {
@@ -408,66 +420,98 @@ test("release artifact list includes Sierra and CASM for each of the four declar
   expect(new Set(artifactFiles.map((file) => file.packageName))).toEqual(new Set(["ledger", "mmr", "collectibles"]));
 });
 
-test("one funded address deploys all accounts, transfers two reserves, then sends nothing on rerun", async () => {
-  const { store } = storage();
-  const deployed = new Set<string>();
-  const holdings = new Map<string, bigint>();
-  const identities = Object.values(keys).map((key) => accountIdentity(key));
-  const byAddress = new Map(identities.map((identity) => [identity.address, identity]));
-  const provider = {
-    getChainId: async () => "0x534e5f4d41494e",
-    getClassByHash: async () => ({}),
-    getClassHashAt: async (address: string) => {
-      if (deployed.has(address)) return ACCOUNT_CLASS;
-      throw { code: 20 };
-    },
-    callContract: async (call: { contractAddress: string; entrypoint: string; calldata: string[] }) =>
-      call.entrypoint === "get_public_key"
-        ? [byAddress.get(call.contractAddress)!.publicKey]
-        : [String(holdings.get(call.calldata[0]!) ?? 0n), "0"],
-    waitForTransaction: async () => ({ execution_status: "SUCCEEDED" }),
-  } as unknown as RpcProvider;
-  let nonce = 0;
-  const transfers: string[] = [];
-  for (const role of ["relay", "monitor"])
-    store.write(`transaction-fund-${role}.json`, {
-      nonce: "0",
-      calls: [{ contractAddress: "0xbad", entrypoint: "transfer", calldata: ["999", "99", "0"] }],
-    });
-  const factory = (address: string) =>
-    ({
-      address,
-      getNonce: async () => String(nonce),
-      execute: async (calls: { calldata: string[] }[]) => {
-        nonce++;
-        for (const call of calls) {
-          const [to, low] = call.calldata;
-          holdings.set(`0x${BigInt(to!).toString(16)}`, BigInt(low!));
-          transfers.push(`0x${BigInt(to!).toString(16)}`);
-        }
-        return { transaction_hash: "0xabc" };
+test.each(["none", "relay", "monitor"])(
+  "reserve funding is not repeated after a lost %s reply and lagging reads",
+  async (lostRole) => {
+    const { store } = storage();
+    const deployed = new Set<string>();
+    const holdings = new Map<string, bigint>();
+    const identities = Object.values(keys).map((key) => accountIdentity(key));
+    const byAddress = new Map(identities.map((identity) => [identity.address, identity]));
+    let nonce = 0;
+    let observedBlock: number | undefined;
+    let interrupted = false;
+    const blocks = new Map<number, Map<string, bigint>>();
+    const remember = () => blocks.set(nonce, new Map(holdings));
+    const provider = {
+      getChainId: async () => "0x534e5f4d41494e",
+      getBlockNumber: async () => observedBlock ?? nonce,
+      getClassByHash: async () => ({}),
+      getClassHashAt: async (address: string) => {
+        if (deployed.has(address)) return ACCOUNT_CLASS;
+        throw { code: 20 };
       },
-      deployAccount: async () => {
-        expect(holdings.get(address)).toBeGreaterThan(0n);
-        deployed.add(address);
-        return { transaction_hash: "0xdef" };
+      callContract: async (
+        call: { contractAddress: string; entrypoint: string; calldata: string[] },
+        block: number | "latest",
+      ) => {
+        remember();
+        if (call.entrypoint === "get_public_key") return [byAddress.get(call.contractAddress)!.publicKey];
+        const balances = typeof block === "number" ? blocks.get(block)! : holdings;
+        return [String(balances.get(call.calldata[0]!) ?? 0n), "0"];
       },
-      waitForTransaction: provider.waitForTransaction,
-    }) as unknown as Account;
-  const output: string[] = [];
-  expect(await prepareAccounts(provider, keys, store, (line) => output.push(line), factory)).toBeUndefined();
-  const deployer = accountIdentity(keys.deployer).address;
-  expect(output).toHaveLength(1);
-  expect(output[0]).toContain(deployer);
-  expect(output[0]).not.toContain(accountIdentity(keys.relay).address);
-  holdings.set(deployer, 250n * WEI);
-  await prepareAccounts(provider, keys, store, (line) => output.push(line), factory);
-  await prepareAccounts(provider, keys, store, (line) => output.push(line), factory);
-  expect(deployed.size).toBe(3);
-  expect(transfers).toEqual([accountIdentity(keys.relay).address, accountIdentity(keys.monitor).address]);
-  expect(holdings.get(accountIdentity(keys.relay).address)).toBe(30n * WEI);
-  expect(holdings.get(accountIdentity(keys.monitor).address)).toBe(WEI);
-});
+      waitForTransaction: async () => ({ execution_status: "SUCCEEDED" }),
+    } as unknown as RpcProvider;
+    const transfers: string[] = [];
+    for (const role of ["relay", "monitor"])
+      store.write(`transaction-fund-${role}.json`, {
+        nonce: "0",
+        calls: [{ contractAddress: "0xbad", entrypoint: "transfer", calldata: ["999", "99", "0"] }],
+      });
+    const factory = (address: string) =>
+      ({
+        address,
+        getNonce: async (block?: number) => String(block ?? nonce),
+        execute: async (calls: { calldata: string[] }[], options: { nonce: string }) => {
+          if (options.nonce !== String(nonce)) throw new Error("stale nonce");
+          remember();
+          nonce++;
+          for (const call of calls) {
+            const [to, low] = call.calldata;
+            const recipient = `0x${BigInt(to!).toString(16)}`;
+            holdings.set(recipient, (holdings.get(recipient) ?? 0n) + BigInt(low!));
+            transfers.push(`0x${BigInt(to!).toString(16)}`);
+          }
+          if (
+            !interrupted &&
+            lostRole !== "none" &&
+            transfers.at(-1) === accountIdentity(keys[lostRole as "relay" | "monitor"]).address
+          ) {
+            interrupted = true;
+            throw new Error("reply lost");
+          }
+          return { transaction_hash: "0xabc" };
+        },
+        deployAccount: async () => {
+          expect(holdings.get(address)).toBeGreaterThan(0n);
+          deployed.add(address);
+          return { transaction_hash: "0xdef" };
+        },
+        waitForTransaction: provider.waitForTransaction,
+      }) as unknown as Account;
+    const output: string[] = [];
+    expect(await prepareAccounts(provider, keys, store, (line) => output.push(line), factory)).toBeUndefined();
+    const deployer = accountIdentity(keys.deployer).address;
+    expect(output).toHaveLength(1);
+    expect(output[0]).toContain(deployer);
+    expect(output[0]).not.toContain(accountIdentity(keys.relay).address);
+    holdings.set(deployer, 250n * WEI);
+    if (lostRole !== "none") {
+      await expect(prepareAccounts(provider, keys, store, () => {}, factory)).rejects.toThrow("reply lost");
+      observedBlock = nonce - 1;
+      const sent = transfers.length;
+      await expect(prepareAccounts(provider, keys, store, () => {}, factory)).rejects.toThrow("stale nonce");
+      expect(transfers).toHaveLength(sent);
+      observedBlock = undefined;
+    }
+    await prepareAccounts(provider, keys, store, (line) => output.push(line), factory);
+    await prepareAccounts(provider, keys, store, (line) => output.push(line), factory);
+    expect(deployed.size).toBe(3);
+    expect(transfers).toEqual([accountIdentity(keys.relay).address, accountIdentity(keys.monitor).address]);
+    expect(holdings.get(accountIdentity(keys.relay).address)).toBe(30n * WEI);
+    expect(holdings.get(accountIdentity(keys.monitor).address)).toBe(WEI);
+  },
+);
 
 test("all four dates are required without defaults and invalid Frontier end gives two exact alternatives", () => {
   expect(() => validateDates(input)).not.toThrow();
@@ -479,7 +523,7 @@ test("all four dates are required without defaults and invalid Frontier end give
 
 test("the actual default command cannot write files, submit RPC or generate keys", async () => {
   const { base, store } = storage();
-  store.write("deployment.json", { environment: "dev", revision: "a".repeat(40) });
+  store.write("deployment.json", { environment: "dev", revision: "b".repeat(40) });
   store.write("inputs.json", input);
   store.write("keys.json", keys);
   store.write("secrets.json", secrets);
@@ -519,11 +563,11 @@ mock.module(${JSON.stringify(join(root, "deploy/first/process.ts"))}, () => ({..
  operations.push(argv.join(' '));
  if (argv[0] === 'ssh') {
   if (String(input).includes('print(f.read') || String(input).includes('git clone')) return deny();
-  return String(input).includes("print('present')") ? 'present' : '';
+  return String(input).includes("print('present')") ? 'present' : String(input).includes('native-world.json') ? 'null' : '';
  }
- if (argv[0] === 'git' && ['ls-remote', 'fetch', 'diff'].includes(argv[1])) return '';
+ if (argv[0] === 'git' && ['ls-remote', 'fetch', 'diff', 'status'].includes(argv[1])) return '';
  if (argv[0] === 'git' && argv[1] === 'rev-parse') return 'a'.repeat(40);
- if (argv[0] === 'git' && argv[1] === 'show') return fs.readFileSync('deploy/release/staging.json','utf8');
+ if (argv[0] === 'python3') return JSON.stringify({ revision: 'a'.repeat(40) });
  if (argv[0] === 'gh' && argv[1] === 'run') return '[]';
  if (argv[0] === 'gh' && argv[1] === 'api' && argv[2] === 'repos/{owner}/{repo}') return '{}';
  return deny();
@@ -552,7 +596,10 @@ mock.module(${JSON.stringify(join(root, "deploy/first/process.ts"))}, () => ({..
   expect(errors).toBe("");
   expect(await result.exited).toBe(0);
   expect(output).toContain("DRY RUN");
-  expect(output).toContain("Published pool and automatic Blitz slot");
+  expect(output).toContain(`Deployment commit ${"a".repeat(40)}.`);
+  expect(output).not.toContain("b".repeat(40));
+  expect(output).not.toContain("Published pool and automatic Blitz slot");
+  expect(output).toContain("Public address book commit");
   expect(output).not.toContain("unavailable; read failed");
   for (const secret of [
     input.cloudflareToken,

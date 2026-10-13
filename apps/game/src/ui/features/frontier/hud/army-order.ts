@@ -2,6 +2,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { pinsOrder } from "@/three/scenes/worldmap-order-request";
 import { computeEffectiveStaminaCost } from "@/hooks/exploration-automation-planner";
 import {
   ActionPaths,
@@ -58,9 +59,8 @@ export const useOrderAt = (target: { col: number; row: number } | null): ArmyOrd
   const { selectedEntityId, actionPaths } = useUIStore((state) => state.entityActions);
   if (selectedEntityId === null || selectedEntityId === undefined || !target) return null;
   const path = actionPaths.get(ActionPaths.posKey(target, true));
-  if (!path || path.length < 2) return null;
+  if (!path || !pinsOrder(path)) return null;
   const actionType = ActionPaths.getActionType(path);
-  if (actionType !== ActionType.Explore && actionType !== ActionType.Move) return null;
   const gameId = configManager.getActiveGameId();
   const army = setup.store.get("ExplorerTroops", { game_id: gameId, explorer_id: selectedEntityId });
   if (!army) return null;

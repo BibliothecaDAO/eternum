@@ -2,6 +2,7 @@ import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
+import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
@@ -17,13 +18,14 @@ import { configManager } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { useOrderAt } from "../hud/army-order";
 import { armyArt, useDockArmies } from "../hud/dock-armies";
 import { useApproachTile } from "./approach";
 import { type MapSiteKind, mapSiteKind, readMapSite } from "./map-site-plan";
 import { useSelectedOwnArmy } from "./selected-army";
+import { inFlightWord } from "./site-card-view";
 import { armWellRefill } from "./well-refill";
 
 const MAP_SITE_MODELS = ["ArmyProgress", "ArmyProgressionRules", "ExplorerTroops", "TileOccupancy"] as const;
@@ -60,24 +62,27 @@ export const MapSiteCard = ({
   const rules = setup.store.get("ArmyProgressionRules", { game_id: configManager.getActiveGameId() });
   const plan = readMapSite(selected.kind, siteTile, user && { ...user, progress: progress ?? undefined }, rules);
   const approach = useOrderAt(useApproachTile(siteTile, user !== null && !plan.usable));
-  const stamina = useUserStamina(user ? safeInteger(user.army.explorer_id) : undefined);
-  const [sending, setSending] = useState(false);
+  const userId = user ? safeInteger(user.army.explorer_id) : null;
+  const stamina = useUserStamina(userId ?? undefined);
+  const inFlight = useInFlight("army", userId);
 
   const use = async () => {
-    if (!user || !account.account) return;
-    setSending(true);
+    if (userId === null || !user || !account.account) return;
+    const signer = account.account;
     try {
-      playUnitCommandSound("move");
-      await setup.systemCalls.interact_site({
-        signer: account.account,
-        explorer_id: user.army.explorer_id,
-        coord: { alt: siteTile.alt, x: siteTile.col, y: siteTile.row },
+      await sendOnce("army", userId, "use", async () => {
+        playUnitCommandSound("move");
+        const sent = await setup.systemCalls.interact_site({
+          signer,
+          explorer_id: user.army.explorer_id,
+          coord: { alt: siteTile.alt, x: siteTile.col, y: siteTile.row },
+        });
+        // Armed as the order leaves: the refill plays when the stamina rises, which is the order applying.
+        if (plan.kind === "Well") armWellRefill(userId);
+        return sent;
       });
-      if (plan.kind === "Well") armWellRefill(safeInteger(user.army.explorer_id));
     } catch (error) {
       toast.error(extractReadableErrorMessage(error, "The site could not be used."));
-    } finally {
-      setSending(false);
     }
   };
 
@@ -108,7 +113,7 @@ export const MapSiteCard = ({
         )}
       </div>
       {plan.usable ? (
-        <Button role="primary" word={USE} loading={sending ? USING : undefined} onClick={() => void use()} />
+        <Button role="primary" word={USE} loading={inFlightWord(inFlight, "use", USING)} onClick={() => void use()} />
       ) : (
         approach && (
           <Button

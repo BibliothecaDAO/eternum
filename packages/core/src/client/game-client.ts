@@ -1,7 +1,8 @@
 import { safeInteger } from "../utils/safe-integer";
 import { nativeModelDefinition } from "./native-models";
 import { nativePlay } from "./native-submission";
-import { EternumProvider } from "@bibliothecadao/provider";
+import { invalidateGameplayNonce } from "./submit";
+import { EternumProvider, type TransactionType } from "@bibliothecadao/provider";
 import { NativeFactStore } from "./native-fact-store";
 import {
   ContractAddress,
@@ -155,6 +156,12 @@ const startSync = async (
     store: setupResult.store,
     socketFactory: input.socketFactory,
   });
+  session.onTransaction = (transaction) => {
+    // Herald routes transaction statuses only to their actor, including commands sent by another tab.
+    const actor = session.transport.completedActor();
+    if (actor && !runtime.isLocalTransaction(transaction.hash)) invalidateGameplayNonce(input.shard.chainId, actor);
+    input.observer?.onTransaction?.(transaction);
+  };
   // Pending action waits stop with the client, so none outlives it.
   const outcomes = new AbortController();
   session.onDispose = () => {
@@ -166,7 +173,7 @@ const startSync = async (
   // Chain time must be known before the first spatial projection reads it.
   await runtime.waitForConfirmedHead();
   const submit = nativePlay(
-    { bindings: input.bindings, release, shard: input.shard, stopped: outcomes.signal },
+    { bindings: input.bindings, release, shard: input.shard, stopped: outcomes.signal, runtime },
     setupResult.store,
     input.gameId,
     input.shard.worldAddress,
@@ -193,8 +200,22 @@ const routeActionOutcomes = (
   stopped: AbortSignal,
 ): GameClient["waitForAction"] => {
   const { provider } = setupResult.network;
-  const wait = (transactionHash: string, inBlock?: Promise<void>) =>
-    waitForActionOutcome(runtime, provider.provider, provider.contracts.world, transactionHash, stopped, inBlock);
+  const wait = (
+    transactionHash: string,
+    inBlock?: Promise<void>,
+    transactionType?: TransactionType,
+    startedAt?: number,
+  ) =>
+    waitForActionOutcome(
+      runtime,
+      provider.provider,
+      provider.contracts.world,
+      transactionHash,
+      stopped,
+      inBlock,
+      transactionType,
+      startedAt,
+    );
   provider.setTransactionStreamWaiter(wait, (transactionHash) => runtime.recordSubmittedTransaction(transactionHash));
   return wait;
 };

@@ -4,7 +4,11 @@ import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 /** Structures sit just above the terrain sample; the compact label floats above the roofline. */
 export const STRUCTURE_SURFACE_LIFT = 0.05;
-export const COMPACT_LABEL_LIFT = 2.72;
+/**
+ * How far over its model's top a structure's plate sits: just over the roof of whatever is drawn, a camp or a tower,
+ * so it neither cuts into a tall model nor floats over the tile behind a low one, where a unit may stand.
+ */
+export const PLATE_CLEARANCE = 0.45;
 
 /** The Bitcoin mine is modelled with its base at the terrain top: terrain owns its support, so it takes no lift. */
 export function sitsDirectlyOnTerrain(structureType: unknown): boolean {
@@ -37,6 +41,8 @@ interface ApplyVisibleStructurePresentationInput<
   getWorldPositionForHexCoordsInto: (col: number, row: number, target: Vector3) => void;
   getLabel: (entityId: TEntityId) => TLabel | undefined;
   updateLabel: (structure: TStructure, label: TLabel) => void;
+  /** How high the structure's model stands over its tile; its plate sits just over that. */
+  resolveModelHeight: (structure: TStructure) => number;
   syncCompactLabel?: (structure: TStructure, position: Vector3) => void;
   resolveAttachments: (structure: TStructure) => TAttachmentTemplate[];
   getAttachmentSignature: (templates: TAttachmentTemplate[]) => string;
@@ -85,7 +91,7 @@ export function applyVisibleStructurePresentation<
   }
 
   input.scratchCompactLabelPosition.copy(input.scratchPosition);
-  input.scratchCompactLabelPosition.y += COMPACT_LABEL_LIFT;
+  input.scratchCompactLabelPosition.y += input.resolveModelHeight(input.structure) + PLATE_CLEARANCE;
   input.syncCompactLabel?.(input.structure, input.scratchCompactLabelPosition);
 
   const entityNumericId = safeInteger(input.structure.entityId);

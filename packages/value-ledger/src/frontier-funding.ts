@@ -1,3 +1,4 @@
+import { isContractRevert } from "./rpc";
 import type { RpcProvider } from "starknet";
 import { decodeFrontierSeason, decodeLedgerPreset, readConfirmedLedgerHead } from "./codecs";
 
@@ -16,16 +17,23 @@ export async function readFrontierFunding(
   ledgerAddress: string,
   key: { chainId: string; gameId: number },
   native: FrontierFundingTerms,
+  block?: number,
 ) {
-  const head = await readConfirmedLedgerHead(provider);
+  const head = block ?? (await readConfirmedLedgerHead(provider)).number;
   const read = (entrypoint: string, calldata: string[]) =>
-    provider.callContract({ contractAddress: ledgerAddress, entrypoint, calldata }, head.number);
-  const season = decodeFrontierSeason(await read("get_frontier", [key.chainId, String(key.gameId)]));
+    provider.callContract({ contractAddress: ledgerAddress, entrypoint, calldata }, head);
+  const season = decodeFrontierSeason(
+    await read("get_frontier", [key.chainId, String(key.gameId)]).catch((error: unknown) => {
+      if (isContractRevert(error, "Ledger: unknown Frontier season"))
+        throw new Error("frontier_funding_missing", { cause: error });
+      throw error;
+    }),
+  );
   const preset = decodeLedgerPreset(await read("get_preset", [String(season.presetId)]));
   assertFrontierPreset(preset, native);
   if (season.start !== native.start || season.end !== native.end || BigInt(season.seed) !== BigInt(native.seed))
     throw new Error("frontier_funding_differs_from_game");
-  return { ...season, claimDeadline: season.end + preset.claimWindow, confirmedBlock: head.number };
+  return { ...season, claimDeadline: season.end + preset.claimWindow, confirmedBlock: head };
 }
 
 /** Compare the immutable day rules before funding and when checking an existing pool. */

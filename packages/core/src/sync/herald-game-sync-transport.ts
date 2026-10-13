@@ -190,11 +190,15 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     this.sendActorSelection();
   }
 
+  /**
+   * Chain time for the scope's absence, from the stream's heads; unknown from a fresh snapshot until its first head. A
+   * diff leaves it alone: Herald sends a scope a diff moves whole in that diff, so the rows and the clock still agree,
+   * and a player's own action never turns every absent row (no Essence yet, an army carrying nothing) unknown.
+   */
   private scopeTimestamp: number | undefined;
-  private scopeClockCurrent = false;
 
   public completedTimestamp(): number | undefined {
-    return this.scopeClockCurrent ? this.scopeTimestamp : undefined;
+    return this.scopeTimestamp;
   }
 
   /** Undefined until the current actor's entire scope has applied; null is a completed spectator snapshot. */
@@ -213,6 +217,13 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     });
   }
 
+  private showsComplete(selection: ScopeSelection): boolean {
+    return (
+      this.completeActor !== undefined &&
+      sameSelection({ actor: this.completeActor, visit: this.completeVisit }, selection)
+    );
+  }
+
   private finishActorSnapshot(selection: ScopeSelection, applied: boolean | Promise<boolean> | undefined): void {
     const { actor, visit } = selection;
     const generation = ++this.actorSnapshotGeneration;
@@ -221,14 +232,11 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
       if (!current()) return;
       if (!sameSelection(selectionOf(this.options.url), selection)) return;
       if (applied !== true) return;
-      const finish = () => {
-        if (!current()) return;
-        this.completeActor = actor;
-        this.completeVisit = visit;
-      };
-      const written = this.publishSnapshotState(actor, visit);
-      if (written) void written.then(finish);
-      else finish();
+      // The scope's rows are in the store, so the selection is complete from here: a head arriving before the gate
+      // write lands must publish it complete, not shut the gate again until the next head.
+      this.completeActor = actor;
+      this.completeVisit = visit;
+      void this.publishSnapshotState();
     };
     if (typeof applied === "boolean" || applied === undefined) complete(applied);
     // A failed application leaves the scope incomplete; the stream's own failure handling reports it.
@@ -360,13 +368,16 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   }
 
   private acceptScope(message: Extract<HeraldMessage, { type: "scope" }>): void {
-    this.completeActor = undefined;
-    this.publishSnapshotState();
+    const selection = { actor: canonicalAddress(message.actor), visit: canonicalAddress(message.visit) };
+    // A new scope for the selection on screen (the player's own, after each move, build or deploy) replaces its rows in
+    // one write: the gate stays open and every fact shown stays known until then. Only another selection's scope
+    // shuts it.
+    if (!this.showsComplete(selection)) {
+      this.completeActor = undefined;
+      this.publishSnapshotState();
+    }
     const applied = this.handlers?.onScope(message.set.map(toFact), message.expedition);
-    this.finishActorSnapshot(
-      { actor: canonicalAddress(message.actor), visit: canonicalAddress(message.visit) },
-      applied,
-    );
+    this.finishActorSnapshot(selection, applied);
     this.epoch = message.epoch;
     this.seq = message.seq;
     this.acceptingSnapshotOverlay = true;
@@ -375,7 +386,6 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   private acceptSnapshotModel(message: Extract<HeraldMessage, { type: "snapshot" }>, bytesReceived: number): void {
     if (!this.snapshotStreaming) {
       this.scopeTimestamp = undefined;
-      this.scopeClockCurrent = false;
       this.completeActor = undefined;
       this.publishSnapshotState();
       this.actorSnapshotGeneration++;
@@ -403,7 +413,6 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     this.publishSnapshotState();
     if (!this.snapshotStreaming) {
       this.scopeTimestamp = undefined;
-      this.scopeClockCurrent = false;
       this.handlers?.onSnapshotStart();
     }
     this.snapshotStreaming = false;
@@ -443,9 +452,6 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
 
   /** Facts and events are split before anything is delivered, so a rejected diff delivers nothing. */
   private acceptDiff(message: Extract<HeraldMessage, { type: "diff" }>): void {
-    // A scope-changing diff can precede its clock head; absence stays unknown across that boundary.
-    this.scopeClockCurrent = false;
-    this.publishSnapshotState();
     const isEvent = (model: string) => this.options.modelDefinition(model).deletion === "event-ephemeral";
     const events = message.set.filter((row) => isEvent(row.model));
     const facts = [
@@ -491,7 +497,6 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
 
   private acceptHead(message: Extract<HeraldMessage, { type: "head" }>): void {
     this.scopeTimestamp = Math.max(this.scopeTimestamp ?? 0, message.timestamp);
-    this.scopeClockCurrent = true;
     this.publishSnapshotState();
     const head: GameSyncHead = {
       block: message.block,

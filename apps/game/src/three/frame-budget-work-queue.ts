@@ -36,7 +36,6 @@ interface FrameBudgetWorkQueueOptions {
 
 interface QueuedWork {
   owner: string;
-  reject: (reason: unknown) => void;
   run: () => Promise<void>;
 }
 
@@ -50,21 +49,17 @@ const VISIBLE_BURST_LIMIT = 4;
 // fallback for tests and future callers that have not yet supplied one.
 const LONG_TASK_REPORT_MS = 33;
 
-export class FrameBudgetWorkQueueDisposedError extends Error {
-  constructor() {
-    super("Frame-budget work queue was disposed");
-    this.name = "FrameBudgetWorkQueueDisposedError";
-  }
-}
-
-export function isFrameBudgetWorkQueueDisposedError(error: unknown): boolean {
-  return error instanceof FrameBudgetWorkQueueDisposedError;
-}
+/** Work handed to a disposed queue, or dropped by one: it is never run, and its promise never settles. */
+const DROPPED = new Promise<never>(() => {});
 
 /**
  * One browser-frame queue for worldmap work that can be split into small units.
  * Priority is strict within normal bursts; bounded bursts guarantee that a
  * continuously busy critical lane cannot strand visible or prefetch work.
+ *
+ * Disposing the queue drops its work: nothing queued runs, and no caller is told. The queue is disposed with the
+ * scene that owns it, so whoever waits on that work is being torn down too; a rejection would only be an error every
+ * caller had to remember to swallow.
  */
 export class FrameBudgetWorkQueue implements FrameBudgetWorkScheduler {
   private readonly queues: Record<FrameBudgetWorkLane, QueuedWork[]> = {
@@ -96,15 +91,12 @@ export class FrameBudgetWorkQueue implements FrameBudgetWorkScheduler {
   }
 
   schedule<T>(lane: FrameBudgetWorkLane, work: () => T | Promise<T>, requestedOwner?: string): Promise<T> {
-    if (this.isDisposed) {
-      return Promise.reject(new FrameBudgetWorkQueueDisposedError());
-    }
+    if (this.isDisposed) return DROPPED;
 
     const owner = requestedOwner ?? getCurrentFrameWorkOwner() ?? `chunk-work:${lane}`;
     const result = new Promise<T>((resolve, reject) => {
       this.queues[lane].push({
         owner,
-        reject,
         run: async () => {
           try {
             resolve(await runWithFrameWorkOwner(owner, work, this.now));
@@ -136,10 +128,7 @@ export class FrameBudgetWorkQueue implements FrameBudgetWorkScheduler {
       this.cancelDrainRequest = null;
     }
 
-    const error = new FrameBudgetWorkQueueDisposedError();
-    for (const lane of ["critical", "visible", "prefetch"] as const) {
-      this.queues[lane].splice(0).forEach((work) => work.reject(error));
-    }
+    for (const lane of ["critical", "visible", "prefetch"] as const) this.queues[lane].length = 0;
   }
 
   private requestDrain(): void {

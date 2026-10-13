@@ -1,12 +1,15 @@
+import { disposeWorker } from "../../../packages/value-ledger/test-support/workerd";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { rmSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Miniflare } from "miniflare";
-import { expect, it } from "vitest";
+import { afterAll, expect, it } from "vitest";
+
+const root = mkdtempSync(join(tmpdir(), "value-relay-state-"));
+afterAll(() => rmSync(root, { recursive: true, force: true }));
 
 it("persists confirmed obligations, cursor and halt across actual Worker restarts", async () => {
-  const root = mkdtempSync(join(tmpdir(), "value-relay-state-"));
   const entry = join(root, "state-worker.ts");
   const config = join(root, "wrangler.json");
   const bundle = join(root, "bundle");
@@ -93,7 +96,7 @@ it("persists confirmed obligations, cursor and halt across actual Worker restart
       method: "POST",
       body: JSON.stringify({ head: 110, next: null, rows: [{ kind: "requested", request: chest }] }),
     });
-    await worker.dispose();
+    await disposeWorker(worker);
     worker = start();
     expect(await (await worker.dispatchFetch("https://state.test/read")).json()).toEqual({
       progress: { nextBlock: 1, lastHash: "0xa", halted: null, page: null },
@@ -104,7 +107,7 @@ it("persists confirmed obligations, cursor and halt across actual Worker restart
       chests: [chest],
     });
     await worker.dispatchFetch("https://state.test/halt");
-    await worker.dispose();
+    await disposeWorker(worker);
     worker = start();
     expect(await (await worker.dispatchFetch("https://state.test/read")).json()).toMatchObject({
       progress: { halted: "confirmed_block_changed:0" },
@@ -124,6 +127,6 @@ it("persists confirmed obligations, cursor and halt across actual Worker restart
     };
     expect(restored.progress).toMatchObject({ halted: null, nextBlock: 0, lastHash: null });
   } finally {
-    await worker.dispose();
+    await disposeWorker(worker);
   }
 }, 30_000);

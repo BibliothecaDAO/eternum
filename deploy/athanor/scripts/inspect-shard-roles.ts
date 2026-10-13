@@ -1,3 +1,4 @@
+import { launcherAccountAddress, relayAccountAddress } from "../../../packages/value-ledger/src/shard-accounts";
 import { assertPublicRpcBoundary } from "./public-rpc-check";
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
@@ -90,13 +91,13 @@ export async function inspectGameRoles({ provider, manifest, host, bootstrap, in
   equal(auth[0]!, manifest.shard.accountClassHash, "account class");
   equal(auth[1]!, manifest.shard.guardianPublicKey, "guardian");
   const roles = [{ role: "deployer", address: host.deployer.address }];
-  for (const [name, value] of [
-    ["Games owner", owner],
-    ["Games launcher", launcher],
-    ["Games ledger operator", ledger],
+  for (const [name, value, expected] of [
+    ["Games owner", owner, bootstrap],
+    ["Games launcher", launcher, launcherAccountAddress(manifest.shard)],
+    ["Games ledger operator", ledger, relayAccountAddress(manifest.shard)],
   ] as const) {
     if (value.length !== 1) throw new Error("Role view shape differs");
-    if (!initialized) equal(value[0]!, bootstrap, name);
+    equal(value[0]!, expected, name);
     roles.push({ role: name, address: value[0]! });
   }
   if (key.length !== 2 || bound.length !== 1) throw new Error("VRF configuration shape differs");
