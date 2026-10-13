@@ -138,7 +138,7 @@ export const TileCard = ({ selected, onClose }: { selected: AttackTarget; onClos
   const realm = useFrontierRealm();
   const goToPlace = useGoToFrontierPlace(realm);
   const armyId = actor ? safeInteger(actor.army.explorer_id) : null;
-  const inFlight = useInFlight("army", armyId);
+  const inFlight = useInFlight("army", armyId)?.order;
   const refused = useFightRefusal(armyId, targetId(selected));
 
   const attackSite = async () => {
@@ -146,7 +146,7 @@ export const TileCard = ({ selected, onClose }: { selected: AttackTarget; onClos
     const signer = account.account;
     const sent = fightSentBy(attack.army, selected, plan);
     try {
-      const fought = await sendOnce("army", armyId, "attack", () => {
+      const fought = await sendOnce("army", armyId, { order: "attack" }, () => {
         fightIsSent();
         playUnitCommandSound("attack");
         return sendAttack(setup.systemCalls, signer, armyId, selected);

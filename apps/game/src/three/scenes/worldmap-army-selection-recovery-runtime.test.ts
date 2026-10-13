@@ -17,7 +17,6 @@ describe("runWorldmapArmySelectionRecovery", () => {
         attempts += 1;
         return attempts >= 3;
       },
-      isArmyPendingMovement: () => false,
       onRecovered,
       wait,
     });
@@ -28,27 +27,6 @@ describe("runWorldmapArmySelectionRecovery", () => {
     expect(wait).toHaveBeenCalledTimes(2);
   });
 
-  it("stops retrying when the army enters pending movement", async () => {
-    const onRecovered = vi.fn();
-    const onUnavailable = vi.fn();
-    let checks = 0;
-
-    await runWorldmapArmySelectionRecovery({
-      forceChunkRefresh: vi.fn(async () => undefined),
-      isArmyAvailable: () => false,
-      isArmyPendingMovement: () => {
-        checks += 1;
-        return checks >= 2;
-      },
-      onRecovered,
-      onUnavailable,
-      wait: vi.fn(async () => undefined),
-    });
-
-    expect(onRecovered).not.toHaveBeenCalled();
-    expect(onUnavailable).toHaveBeenCalledTimes(1);
-  });
-
   it("reports failure when refresh throws", async () => {
     const onError = vi.fn();
 
@@ -57,7 +35,6 @@ describe("runWorldmapArmySelectionRecovery", () => {
         throw new Error("refresh failed");
       }),
       isArmyAvailable: () => false,
-      isArmyPendingMovement: () => false,
       onError,
       wait: vi.fn(async () => undefined),
     });

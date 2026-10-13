@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const waitForAction = vi.fn();
 vi.mock("@/sync/active-game-client", () => ({ requireActiveGameClient: () => ({ waitForAction }) }));
 
-import { inFlight, sendOnce } from "./use-actions-in-flight";
+import { inFlight, onOutcome, sendOnce } from "./use-actions-in-flight";
 
 afterEach(() => waitForAction.mockReset());
 
@@ -15,15 +15,15 @@ describe("an action in flight", () => {
     let apply: (outcome: unknown) => void = () => {};
     waitForAction.mockReturnValueOnce(new Promise((resolve) => (apply = resolve)));
     const explore = send();
-    const first = sendOnce("army", 7, "explore", explore);
-    expect(inFlight("army", 7)).toBe("explore");
+    const first = sendOnce("army", 7, { order: "explore" }, explore);
+    expect(inFlight("army", 7)).toEqual({ order: "explore" });
 
     const attack = send();
-    expect(await sendOnce("army", 7, "attack", attack)).toBeNull();
+    expect(await sendOnce("army", 7, { order: "attack" }, attack)).toBeNull();
     expect(attack).not.toHaveBeenCalled();
     // Another army is not held by it.
     waitForAction.mockResolvedValueOnce(APPLIED);
-    expect(await sendOnce("army", 8, "move", send())).toBe("0x1");
+    expect(await sendOnce("army", 8, { order: "move" }, send())).toBe("0x1");
 
     apply(APPLIED);
     expect(await first).toBe("0x1");
@@ -38,13 +38,45 @@ describe("an action in flight", () => {
       status: "REJECTED",
       revertReason: "Tile is occupied",
     });
-    await expect(sendOnce("army", 7, "move", send())).rejects.toThrow("Tile is occupied");
+    await expect(sendOnce("army", 7, { order: "move" }, send())).rejects.toThrow("Tile is occupied");
     expect(inFlight("army", 7)).toBeUndefined();
 
-    await expect(sendOnce("army", 7, "move", () => Promise.reject(new Error("refused by the shard")))).rejects.toThrow(
-      "refused by the shard",
-    );
+    await expect(
+      sendOnce("army", 7, { order: "move" }, () => Promise.reject(new Error("refused by the shard"))),
+    ).rejects.toThrow("refused by the shard");
     expect(inFlight("army", 7)).toBeUndefined();
+  });
+
+  it("carries the tile a move takes the army to, and tells its surface each army's outcome once it is free", async () => {
+    const heard: Array<{ key: string; stillInFlight: boolean }> = [];
+    const stop = onOutcome("army", (key) => heard.push({ key, stillInFlight: inFlight("army", key) !== undefined }));
+    let apply: (outcome: unknown) => void = () => {};
+    waitForAction.mockReturnValueOnce(new Promise((resolve) => (apply = resolve)));
+    const moved = sendOnce("army", 7, { order: "move", to: { col: 3, row: 4 } }, send());
+    expect(inFlight("army", 7)).toEqual({ order: "move", to: { col: 3, row: 4 } });
+    expect(heard).toEqual([]);
+    apply(APPLIED);
+    await moved;
+
+    waitForAction.mockResolvedValueOnce({
+      hash: "0x1",
+      block: 9,
+      status: "REJECTED",
+      revertReason: "Tile is occupied",
+    });
+    await expect(sendOnce("army", 8, { order: "explore" }, send())).rejects.toThrow("Tile is occupied");
+    // Another kind of subject is not an army's outcome.
+    waitForAction.mockResolvedValueOnce(APPLIED);
+    await sendOnce("deploy", 7, true, send());
+    expect(heard).toEqual([
+      { key: "7", stillInFlight: false },
+      { key: "8", stillInFlight: false },
+    ]);
+
+    stop();
+    waitForAction.mockResolvedValueOnce(APPLIED);
+    await sendOnce("army", 7, { order: "move" }, send());
+    expect(heard).toHaveLength(2);
   });
 
   it("holds each subject on its own: a plot, a realm's next army, a research row, a castle", async () => {

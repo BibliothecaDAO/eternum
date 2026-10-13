@@ -64,13 +64,13 @@ export const MapSiteCard = ({
   const approach = useOrderAt(useApproachTile(siteTile, user !== null && !plan.usable));
   const userId = user ? safeInteger(user.army.explorer_id) : null;
   const stamina = useUserStamina(userId ?? undefined);
-  const inFlight = useInFlight("army", userId);
+  const inFlight = useInFlight("army", userId)?.order;
 
   const use = async () => {
     if (userId === null || !user || !account.account) return;
     const signer = account.account;
     try {
-      await sendOnce("army", userId, "use", async () => {
+      await sendOnce("army", userId, { order: "use" }, async () => {
         playUnitCommandSound("move");
         const sent = await setup.systemCalls.interact_site({
           signer,

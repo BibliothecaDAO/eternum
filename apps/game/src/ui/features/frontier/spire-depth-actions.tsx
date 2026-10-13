@@ -56,7 +56,7 @@ export const SpireDepthActions = ({ armyEntityId }: { armyEntityId: ID }) => {
   const enter = async (depth: number) => {
     setPending(depth);
     try {
-      await sendOnce("army", armyEntityId, "move", () =>
+      await sendOnce("army", armyEntityId, { order: "move" }, () =>
         systemCalls.enter_depth({ signer: account as unknown as Account, explorerId: armyEntityId, depth }),
       );
     } catch (error) {

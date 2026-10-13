@@ -242,7 +242,7 @@ describe("an attack in flight on the tile card", () => {
     });
     expect(attack).toHaveBeenCalledTimes(1);
     expect(button("Attacking…")?.disabled).toBe(true);
-    expect(inFlight("army", 201)).toBe("attack");
+    expect(inFlight("army", 201)).toEqual({ order: "attack" });
     // The send returned long ago; only the outcome ends the wait.
     await act(async () => {});
     expect(button("Attacking…")?.disabled).toBe(true);
@@ -293,7 +293,9 @@ describe("an attack in flight on the tile card", () => {
   it("holds Attack back while another order of the same army is still on its way", async () => {
     const { attack, button, settle, unmount } = attackInFlight();
     let moved: Promise<string | null> = Promise.resolve(null);
-    act(() => void (moved = sendOnce("army", 201, "move", () => Promise.resolve({ transaction_hash: "0x2" }))));
+    act(
+      () => void (moved = sendOnce("army", 201, { order: "move" }, () => Promise.resolve({ transaction_hash: "0x2" }))),
+    );
     expect(button("On its way…")?.disabled).toBe(true);
     await act(async () => button("On its way…")!.click());
     expect(attack).not.toHaveBeenCalled();

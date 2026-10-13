@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "Armies answer right after an order",
+    description:
+      "Fixed the wait before an army you just ordered could be picked again: a click on the tile it is heading to selects it at once, and its next orders show as soon as the game has applied the last one, without waiting for its walk to end or a second click.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
     title: "Relics last their full duration",
     description:
       "Timed relic bonuses now start when you apply them and last their full duration. Their remaining time follows confirmed blocks.",

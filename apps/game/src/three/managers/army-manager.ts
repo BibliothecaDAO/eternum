@@ -1972,6 +1972,14 @@ export class ArmyManager {
 
     this.armyPaths.set(entityId, path);
 
+    // A walk still playing is replaced, never completed: the army walks on from where its model is, and its movement
+    // completes once, when it stops.
+    const walkingFrom = this.armyModel.isEntityMoving(numericEntityId)
+      ? this.armyModel.getEntityWorldPosition(numericEntityId)
+      : undefined;
+    if (walkingFrom) worldPath[0] = walkingFrom;
+    this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
+    this.armyModel.startMovement(numericEntityId, worldPath, matrixIndex, plan.armyCategory, plan.armyTier);
     this.armyModel.setMovementCompleteCallback(numericEntityId, () => {
       if (!this.armyPresentations.has(entityId)) return;
       this.armyPaths.delete(entityId);
@@ -1979,8 +1987,6 @@ export class ArmyManager {
       this.pathRenderer.removePath(numericEntityId);
       this.runMovementCompleteListeners(numericEntityId);
     });
-
-    this.armyModel.startMovement(numericEntityId, worldPath, matrixIndex, plan.armyCategory, plan.armyTier);
     this.runMovementStartListeners(numericEntityId);
 
     const colorProfile = this.getArmyColorProfile(armyData);
