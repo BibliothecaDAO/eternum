@@ -203,6 +203,16 @@ export const RETURNED = "troops returned";
 /** Default army names: "Army" and its place. */
 export const ARMY = "Army";
 
+/** The day log's lines for what the player did, in the names the build cards and the dock use. */
+export const revealLine = (amount: string, resource: string) => `+${amount} ${resource}`;
+export const builtLine = (building: string) => `${building} built`;
+export const deployedLine = (army: string) => `${army} deployed`;
+export const disbandedLine = (army: string) => `${army} disbanded`;
+/** A day's count of tiles explored, on its total. */
+export const REVEALS = "Reveals";
+/** How deep a season went, on its total. */
+export const REACH = "Reach";
+
 /** The player on any list. */
 export const YOU = "You";
 

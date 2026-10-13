@@ -184,29 +184,26 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
   },
   BuildingPlacementStory: (event, payload, components) => {
     const status = describeBuildingStatus(payload);
-    const structureDetails = describeStructureDetails(event, components, payload.category, payload.inner_coord);
     const categoryLabel = formatBuildingCategory(payload.category) ?? "Structure";
-    const coord = formatCoord(payload.inner_coord);
-    const statusDetail = status && status !== "Updated" ? status : undefined;
     const title =
-      status === "Constructed"
-        ? `Constructed: ${categoryLabel}`
-        : status === "Demolished"
-          ? `Demolished: ${categoryLabel}`
-          : `${categoryLabel} ${status.toLowerCase()}`;
+      status === "Constructed" || status === "Demolished"
+        ? `${status}: ${categoryLabel}`
+        : `${categoryLabel} ${status.toLowerCase()}`;
     return {
       title,
-      description: joinPieces([structureDetails, statusDetail, coord ? `Position ${coord}` : undefined]),
+      description: joinPieces([describeStructureDetails(event, components, payload.category), status]),
       icon: "building",
     };
   },
   BuildingPaymentStory: (event, payload, components) => {
     const categoryLabel = formatBuildingCategory(payload.category) ?? "Structure";
-    const structureDetails = describeStructureDetails(event, components, payload.category, payload.inner_coord);
     const cost = formatResourceList(payload.cost);
     return {
       title: `Building Constructed: ${categoryLabel}`,
-      description: joinPieces([structureDetails, cost ? `Cost: ${cost}` : undefined]),
+      description: joinPieces([
+        describeStructureDetails(event, components, payload.category),
+        cost ? `Cost: ${cost}` : undefined,
+      ]),
       icon: "building",
     };
   },
@@ -331,7 +328,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     };
   },
   GuardAddStory: (event, payload, components) => {
-    const structureSummary = describeStructureDetails(event, components, undefined, undefined, payload.structure_id);
+    const structureSummary = describeStructureDetails(event, components, undefined, payload.structure_id);
     const slotLabel = formatSlotLabel(payload.slot);
     const troopCategory = formatEnum(payload.category);
     const troopTier = formatEnum(payload.tier);
@@ -350,7 +347,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     };
   },
   GuardDeleteStory: (event, payload, components) => {
-    const structureSummary = describeStructureDetails(event, components, undefined, undefined, payload.structure_id);
+    const structureSummary = describeStructureDetails(event, components, undefined, payload.structure_id);
     const slotLabel = formatSlotLabel(payload.slot);
     return {
       title: "Guard dismissed",
@@ -359,7 +356,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     };
   },
   ExplorerCreateStory: (event, payload, components) => {
-    const structureSummary = describeStructureDetails(event, components, undefined, undefined, payload.structure_id);
+    const structureSummary = describeStructureDetails(event, components, undefined, payload.structure_id);
     const troopCategory = formatEnum(payload.category);
     const troopTier = formatEnum(payload.tier);
     const troopDescriptor = [troopCategory, troopTier].filter(Boolean).join(" ");
@@ -436,13 +433,18 @@ function formatBuildingCategory(value: unknown): string | undefined {
   return BuildingTypeToString[type] ?? `Building ${numeric}`;
 }
 
-function describeBuildingStatus(payload: Record<string, unknown>): string {
-  const truthy = 1;
-  if (payload.destroyed === truthy) return "Demolished";
-  if (payload.created === truthy) return "Constructed";
-  if (payload.paused === truthy) return "Paused";
-  if (payload.unpaused === truthy) return "Resumed";
-  return "Updated";
+/** What each change a placement story carries (the contract's BuildingChange) reads as. */
+const BUILDING_STATUS: Record<string, "Constructed" | "Demolished" | "Paused" | "Resumed"> = {
+  Created: "Constructed",
+  Destroyed: "Demolished",
+  Paused: "Paused",
+  Resumed: "Resumed",
+};
+
+function describeBuildingStatus(payload: Record<string, unknown>) {
+  const status = BUILDING_STATUS[formatEnum(payload.change) ?? ""];
+  if (!status) throw new Error("Incomplete building placement story");
+  return status;
 }
 
 function describeArmy(value: unknown, event: StoryEventSystemUpdate, components?: NativeFactStore): string {
@@ -452,7 +454,7 @@ function describeArmy(value: unknown, event: StoryEventSystemUpdate, components?
   if (!army.Guard || typeof army.Guard !== "object") throw new Error("Unknown troop transfer participant");
   const guard = army.Guard as Record<string, unknown>;
   const structure =
-    describeStructureDetails(event, components, undefined, undefined, guard.structure_id) ??
+    describeStructureDetails(event, components, undefined, guard.structure_id) ??
     `Structure ${formatNumber(guard.structure_id)}`;
   return `${structure} · ${formatSlotLabel(guard.slot)}`;
 }
@@ -461,17 +463,16 @@ function describeStructureDetails(
   event: StoryEventSystemUpdate,
   components?: NativeFactStore,
   fallbackCategory?: unknown,
-  fallbackCoord?: unknown,
   structureOverride?: unknown,
 ): string | undefined {
   const targetId = structureOverride ?? event.entityId;
 
   if (!components || targetId === null || targetId === undefined) {
-    return describeFallbackStructure(fallbackCategory, fallbackCoord);
+    return formatBuildingCategory(fallbackCategory);
   }
 
   const structure = readStructure(targetId, components);
-  if (!structure) return describeFallbackStructure(fallbackCategory, fallbackCoord);
+  if (!structure) return formatBuildingCategory(fallbackCategory);
 
   const name = getStructureName(structure, getIsBlitz()).name;
   const level = toNumber(structure.base?.level);
@@ -730,12 +731,6 @@ function toBigIntSafe(value: unknown): bigint | null {
     }
   }
   return null;
-}
-
-function describeFallbackStructure(fallbackCategory?: unknown, fallbackCoord?: unknown): string | undefined {
-  const categoryLabel = formatBuildingCategory(fallbackCategory);
-  const coordLabel = formatCoord(fallbackCoord);
-  return joinPieces([categoryLabel, coordLabel ? `at ${coordLabel}` : undefined]);
 }
 
 function formatResourceAmount(amount: unknown): string | undefined {

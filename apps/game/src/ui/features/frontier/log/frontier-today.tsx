@@ -8,7 +8,7 @@ import { useState } from "react";
 
 import { dayBounds, dayClock } from "../hud/day-clock";
 import { useDockArmies } from "../hud/dock-armies";
-import { fightLogLine } from "./fight-line";
+import { dayLogLine } from "./day-line";
 import { ownStoriesOfDay, totalToday } from "./today-totals";
 import { type LogLine, TodaySheet } from "./today-sheet";
 
@@ -52,7 +52,7 @@ export const FrontierToday = ({
       day={day}
       today={day === today}
       totals={{ ...unknownTotals, ...totals }}
-      lines={own.map((story) => logLine(story, setup.store))}
+      lines={logLines(own, setup.store)}
       armiesToUpgrade={day === today ? buyers.length : undefined}
       onArmies={buyers[0] ? () => onOpenArmy(buyers[0]!.explorerId) : undefined}
       failed={stories.isError}
@@ -73,9 +73,9 @@ const unknownTotals = {
   lords: undefined,
 };
 
-/** A story as its line: a fight in its own words (the site, how it ended, the numbers), anything else by its title. */
-const logLine = (story: ProcessedStoryEvent, store: NativeFactStore): LogLine => ({
-  id: story.id,
-  at: Math.floor(story.timestampMs / 1_000),
-  text: fightLogLine(story, store) ?? story.presentation.title,
-});
+/** The day's stories as its log: each in Frontier's own line, less the ones that only repeat another. */
+const logLines = (stories: readonly ProcessedStoryEvent[], store: NativeFactStore): LogLine[] =>
+  stories.flatMap((story) => {
+    const text = dayLogLine(story, store);
+    return text === null ? [] : [{ id: story.id, at: Math.floor(story.timestampMs / 1_000), text }];
+  });

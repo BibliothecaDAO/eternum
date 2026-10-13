@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "A day log in plain names",
+    description:
+      "Changed Frontier's Today: a reveal reads as a whole number (+98 labor), a building is one line by its build card's name (Farm built), an army is Army 1, and each of the six totals names itself on hover or hold. Production writes Wheat, Labor and Troops beside their icons.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
     title: "Your wallet opens by itself",
     description:
       "Changed paying from your linked wallet: Pay & join, a refund, a prize claim, a chest and the dev build's test-token mint now open that wallet's own prompt at once, with no wallet to pick again each time. If the wallet is on another account, one line names the linked one.",

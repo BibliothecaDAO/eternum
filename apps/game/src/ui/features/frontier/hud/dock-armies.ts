@@ -87,8 +87,18 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
 export const armyArt = (troops: { category: string; tier: string }) =>
   `/images/armies/${troops.category.toLowerCase()}${troops.tier}.png`;
 
+/**
+ * An army as every line outside the dock names it (the day log): by the same name as its card. An army no longer on
+ * the map has no number left to read, and is "Army".
+ */
+export const armyLabel = (store: NativeFactStore, explorerId: number): string => {
+  const army = store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: explorerId });
+  return armyName(store, explorerId, army && armyNumber(army));
+};
+
 /** The army's own name when it has one; otherwise its number, never its entity id. */
-const armyName = (store: NativeFactStore, explorerId: number, number: number): string => {
+const armyName = (store: NativeFactStore, explorerId: number, number: number | undefined): string => {
   const named = store.get("EntityName", { game_id: configManager.getActiveGameId(), entity_id: explorerId });
-  return named && named.name !== 0n ? getArmyName(explorerId, store) : `${ARMY} ${number}`;
+  if (named && named.name !== 0n) return getArmyName(explorerId, store);
+  return number === undefined ? ARMY : `${ARMY} ${number}`;
 };

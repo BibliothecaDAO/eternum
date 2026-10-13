@@ -14,9 +14,12 @@ const NAMES: Partial<Record<BuildingType, string>> = {
   [BuildingType.Hearth]: TRAINING_BUILDINGS[3],
 };
 
+/** The name of a building read off the chain, where it is one Frontier raises. */
+export const frontierBuildingName = (category: number): string | undefined => NAMES[category as BuildingType];
+
 /** A Frontier building's name; a building Frontier does not raise is loud. */
 export const buildingName = (category: BuildingType): string => {
-  const name = NAMES[category];
+  const name = frontierBuildingName(category);
   if (!name) throw new Error(`Frontier has no building ${category}`);
   return name;
 };
