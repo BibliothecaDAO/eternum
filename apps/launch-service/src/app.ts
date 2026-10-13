@@ -105,11 +105,12 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   // The schedule never requeues a failed season; its operator must continue it. Health names every failed run.
   app.get("/api/factory/health", async (context) => {
     try {
-      const [failed, pending, joins, wakeAt] = await Promise.all([
+      const [failed, pending, joins, wakeAt, freezes] = await Promise.all([
         dependencies.store.failed(),
         dependencies.store.pending(),
         dependencies.registrar.joinFailures(),
         dependencies.registrar.wakeAt(),
+        dependencies.slots.freezeFailures(),
       ]);
       const now = Date.now();
       const stranded = pending.filter(
@@ -121,9 +122,10 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
           ...dependencies.deployment,
           failedRuns: failed.map(failedRunReport),
           joinFailures: joins,
+          freezeFailures: freezes,
           strandedRuns: stranded.map(strandedRunReport),
         },
-        failed.length || stranded.length || joins.length ? 503 : 200,
+        failed.length || stranded.length || joins.length || freezes.length ? 503 : 200,
       );
     } catch {
       return context.json({ status: "unavailable" }, 503);

@@ -1,3 +1,4 @@
+import { launchFailure } from "./errors";
 import { BLITZ_SLOT_PREPARATION_SECONDS } from "@realms-world/value-ledger";
 import { Effect, Result } from "effect";
 import { isRunning, type CalendarStore, type SeasonPhase } from "./calendar";
@@ -24,7 +25,10 @@ export const runLaunchSchedule = (store: LaunchServiceStore, slots: SlotStore, c
       if (blitz && startsInside(blitz, slot.closesAt))
         yield* runScheduleStep("schedule blitz slot", () => slots.create(slot.name, slot.closesAt));
     } else {
-      yield* Effect.logError("launch_schedule_step_failed", calendarResult.failure);
+      console.error("launch_schedule_step_failed", {
+        operation: "read the season calendar",
+        ...launchFailure(calendarResult.failure),
+      });
     }
     yield* runScheduleStep("freeze playtest roster", () => slots.freezeDueSlots());
   });
@@ -32,7 +36,8 @@ export const runLaunchSchedule = (store: LaunchServiceStore, slots: SlotStore, c
 const runScheduleStep = <A>(operation: string, task: () => Promise<A>) =>
   Effect.gen(function* () {
     const result = yield* Effect.result(databaseOperation(operation, task));
-    if (Result.isFailure(result)) yield* Effect.logError("launch_schedule_step_failed", result.failure);
+    if (Result.isFailure(result))
+      console.error("launch_schedule_step_failed", { operation, ...launchFailure(result.failure) });
   });
 
 /** A slot belongs to the Blitz window when its games start inside it. */

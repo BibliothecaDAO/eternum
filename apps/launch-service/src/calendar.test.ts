@@ -209,3 +209,17 @@ test("a late-opened Frontier phase still keeps its running end", async () => {
   );
   expect(await calendar.list()).toEqual([entered]);
 });
+
+test("schedule failures log the fixed underlying code and still attempt due freezes", async () => {
+  const { slots, calendar, tick } = stores();
+  vi.spyOn(calendar, "list").mockRejectedValue(new Error("ledger_head_unconfirmed: Bearer secret-value"));
+  const freeze = vi.spyOn(slots, "freezeDueSlots");
+  const log = vi.spyOn(console, "error").mockImplementation(() => {});
+  await tick(day(1));
+  expect(freeze).toHaveBeenCalledOnce();
+  expect(log).toHaveBeenCalledWith(
+    "launch_schedule_step_failed",
+    expect.objectContaining({ code: "ledger_head_unconfirmed" }),
+  );
+  expect(JSON.stringify(log.mock.calls)).not.toContain("secret-value");
+});

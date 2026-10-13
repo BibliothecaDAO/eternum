@@ -195,3 +195,54 @@ test("health forgets retired work but names an unarmed due run on the live chain
   expect(failed.status).toBe(503);
   expect(await failed.json()).toMatchObject({ failedRuns: [{ name: "live", error: "game_creation_failed" }] });
 });
+
+test("health names a stalled ledger close, preserves the failure through reads, and clears it when the cron retries", async () => {
+  const { app, slots, value, store } = fixture();
+  await slots.create("stalled", close());
+  await database.db
+    .prepare("UPDATE playtest_slots SET closes_at=?")
+    .bind(Date.now() - 60_000)
+    .run();
+  const page = await value.registrations();
+  const registrations = vi.spyOn(value, "registrations").mockResolvedValue({ ...page, secondsUntilClose: 492 });
+  await slots.freezeDueSlots();
+  expect((await slots.get("stalled")).frozenAt).toBeNull();
+  expect(await store.list("madara.blitz")).toEqual([]);
+  const health = await app.request("/api/factory/health");
+  expect(health.status).toBe(503);
+  expect(await health.json()).toMatchObject({
+    freezeFailures: [
+      {
+        chainId: TEST_CHAIN,
+        name: "stalled",
+        code: "registration_open",
+        secondsUntilClose: 492,
+      },
+    ],
+  });
+  expect(await new D1SlotStore(database.db, store, value, registrationIdentityFixture).freezeFailures()).toHaveLength(
+    1,
+  );
+  registrations.mockResolvedValue(page);
+  await slots.freezeDueSlots();
+  expect((await slots.get("stalled")).frozenAt).not.toBeNull();
+  expect(await store.list("madara.blitz")).toHaveLength(1);
+  const recovered = await app.request("/api/factory/health");
+  expect(recovered.status).toBe(200);
+  expect(await recovered.json()).toMatchObject({ freezeFailures: [] });
+});
+
+test("health exposes fixed freeze codes but never private diagnostic text", async () => {
+  const { app, slots, value } = fixture();
+  await slots.create("failed", close());
+  await database.db.prepare("UPDATE playtest_slots SET closes_at=0").run();
+  vi.spyOn(value, "registrations").mockRejectedValue(new Error("registration_history_incomplete: Bearer secret-value"));
+  const log = vi.spyOn(console, "error").mockImplementation(() => {});
+  await slots.freezeDueSlots();
+  const health = await app.request("/api/factory/health");
+  expect(health.status).toBe(503);
+  const body = await health.text();
+  expect(body).toContain('"code":"registration_history_incomplete"');
+  expect(body).not.toContain("secret-value");
+  expect(JSON.stringify(log.mock.calls)).not.toContain("secret-value");
+});

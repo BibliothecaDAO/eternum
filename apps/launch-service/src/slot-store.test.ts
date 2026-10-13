@@ -130,7 +130,17 @@ it("continues closing later paid slots when an earlier ledger opening is unavail
   await store.freezeDueSlots();
   expect((await store.get("first")).frozenAt).toBeNull();
   expect((await store.get("second")).frozenAt).not.toBeNull();
-  expect(log).toHaveBeenCalledWith("slot_close_unavailable", { name: "first" });
+  expect(log).toHaveBeenCalledWith(
+    "slot_close_unavailable",
+    expect.objectContaining({
+      name: "first",
+      code: "launch_schedule_failed",
+      type: "Error",
+      message: "ledger slot missing",
+    }),
+  );
+  expect(await slots().freezeFailures()).toMatchObject([{ name: "first", code: "launch_schedule_failed" }]);
+  expect(await slots("0x2").freezeFailures()).toEqual([]);
 });
 it("marks refunds once at close and never makes a refund decision during an identity outage", async () => {
   const value = { ...slotValueFixture(26), markRefundable: vi.fn(async () => {}) };

@@ -1,9 +1,10 @@
+import { launchFailure } from "./errors";
 import { BLITZ_SLOT_PREPARATION_SECONDS, type RegistrationIdentity } from "@realms-world/value-ledger";
 import { loadNativePresetConfiguration } from "../../../config/deployer/clean/registrar/native-preset";
 import { closedSlotGroups, SlotCancelled, type BlitzValuePort } from "./paid-blitz";
 import { nativePresetIdFor } from "../../../config/source/native";
 import type { D1LaunchStore } from "./store";
-import { SlotConflict, SlotNotFound, type PlaytestSlot, type SlotStore } from "./slots";
+import { SlotConflict, SlotNotFound, type PlaytestSlot, type SlotStore, type SlotFreezeFailure } from "./slots";
 
 const SELECT_SLOTS = "SELECT * FROM playtest_slots";
 
@@ -122,24 +123,56 @@ export class D1SlotStore implements SlotStore {
     await this.db.batch([
       ...jobs,
       this.db
-        .prepare("UPDATE playtest_slots SET frozen_at=? WHERE chain_id=? AND slot_id=? AND frozen_at IS NULL")
+        .prepare(
+          "UPDATE playtest_slots SET frozen_at=?, freeze_failure=NULL WHERE chain_id=? AND slot_id=? AND frozen_at IS NULL",
+        )
         .bind(Date.now(), key.chainId, key.slotId),
     ]);
     return this.get(name);
   }
 
+  async freezeFailures(): Promise<SlotFreezeFailure[]> {
+    const { results } = await this.db
+      .prepare(
+        "SELECT chain_id,slot_id,name,freeze_failure FROM playtest_slots WHERE chain_id=? AND frozen_at IS NULL AND freeze_failure IS NOT NULL",
+      )
+      .bind(await this.launches.targetChain())
+      .all<SlotRow & { freeze_failure: string }>();
+    return results.map((row) => ({
+      chainId: row.chain_id,
+      slotId: row.slot_id,
+      name: row.name,
+      ...(JSON.parse(row.freeze_failure) as Pick<SlotFreezeFailure, "code" | "checkedAt" | "secondsUntilClose">),
+    }));
+  }
+
+  private async recordFreezeFailure(chainId: string, name: string, error: unknown): Promise<void> {
+    const diagnostic = launchFailure(error);
+    console.error("slot_close_unavailable", { chainId, name, ...diagnostic });
+    const failure = {
+      code: diagnostic.code,
+      checkedAt: Date.now(),
+      secondsUntilClose: diagnostic.secondsUntilClose,
+    };
+    await this.db
+      .prepare("UPDATE playtest_slots SET freeze_failure=? WHERE chain_id=? AND name=? AND frozen_at IS NULL")
+      .bind(JSON.stringify(failure), chainId, name)
+      .run();
+  }
+
   async freezeDueSlots(): Promise<void> {
+    const chainId = await this.launches.targetChain();
     const due = await this.db
       .prepare(
         `SELECT name FROM playtest_slots WHERE chain_id=? AND frozen_at IS NULL AND closes_at <= ? ORDER BY closes_at, name`,
       )
-      .bind(await this.launches.targetChain(), Date.now())
+      .bind(chainId, Date.now())
       .all<{ name: string }>();
     for (const slot of due.results) {
       try {
         await this.freeze(slot.name);
-      } catch {
-        console.error("slot_close_unavailable", { name: slot.name });
+      } catch (error) {
+        await this.recordFreezeFailure(chainId, slot.name, error);
       }
     }
   }
