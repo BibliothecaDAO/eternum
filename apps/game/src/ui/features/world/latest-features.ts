@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "A cleared site pays on screen",
+    description:
+      "Fixed clearing a camp, a rift, stragglers or a ruin passing in silence: the guard now falls with its dust, what the site paid flies home to its counter, and a ruin's chest opens, with the losses of the attack that won it.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
     title: "Community links on a phone",
     description:
       "Added Discord, X, Telegram and GitHub to Profile on a phone, which has no footer to hold them; each opens in a new tab.",
