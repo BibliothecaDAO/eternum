@@ -1,3 +1,4 @@
+import { byStructureCategory } from "@/lib/structure-category-table";
 import { SettlementAnimation } from "../structures/settlement-animation";
 import { HyperstructureModel } from "../structures/hyperstructure-model";
 import { readHyperstructureConstruction } from "../structures/hyperstructure-state";
@@ -182,6 +183,23 @@ const generateHexPositions = (center: HexPosition, radius: number) =>
     ...cell,
     color: new Color("gray"),
   }));
+
+/**
+ * What the keep on a structure's board is called, by the structure's category: the realm's castle by its level, the
+ * game mode's word for a village, or a name of its own. A new category fails typecheck here until it has one.
+ */
+const KEEP_NAMES: Record<StructureType, "realm-castle" | "village" | string> = {
+  [StructureType.Realm]: "realm-castle",
+  [StructureType.Village]: "village",
+  [StructureType.Camp]: "village",
+  [StructureType.Bank]: "Bank",
+  [StructureType.Hyperstructure]: "Hyperstructure",
+  [StructureType.Mine]: "Mine",
+  [StructureType.BitcoinMine]: "Mine",
+  [StructureType.Rift]: "Rift",
+  [StructureType.Ruin]: "Ruin",
+  [StructureType.Stragglers]: "Stragglers",
+};
 
 export default class HexceptionScene extends HexagonScene {
   /** A realm's buildings sit on their own local lattice, never moved by the world map's floating origin. */
@@ -1061,22 +1079,11 @@ export default class HexceptionScene extends HexagonScene {
     }
 
     if (buildingType === BuildingType.ResourceLabor) {
-      switch (building.structureType) {
-        case StructureType.Realm: {
-          const stage = this.structureStage as RealmLevels;
-          const castleName = castleLevelToRealmCastle[stage];
-          return castleName ?? "Castle";
-        }
-        case StructureType.Bank:
-          return "Bank";
-        case StructureType.Hyperstructure:
-          return "Hyperstructure";
-        case StructureType.Village:
-        case StructureType.Camp:
-          return this.mode.labels.village;
-        default:
-          return "Castle";
-      }
+      // The board of a structure whose category is not known yet shows a plain keep.
+      if (building.structureType === undefined) return "Castle";
+      const keep = byStructureCategory(KEEP_NAMES, building.structureType, "keep name", "Castle");
+      if (keep === "realm-castle") return castleLevelToRealmCastle[this.structureStage as RealmLevels] ?? "Castle";
+      return keep === "village" ? this.mode.labels.village : keep;
     }
 
     const baseName = BuildingTypeToString[buildingType];

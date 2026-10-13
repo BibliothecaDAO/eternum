@@ -426,6 +426,10 @@ export class ClientConfigManager {
       [StructureType.Bank]: 4,
       [StructureType.Camp]: 1,
       [StructureType.BitcoinMine]: 4,
+      // A Frontier site stands behind the one guard it was found with.
+      [StructureType.Rift]: 1,
+      [StructureType.Ruin]: 1,
+      [StructureType.Stragglers]: 1,
     };
   }
   getResourceBridgeFeeSplitConfig() {

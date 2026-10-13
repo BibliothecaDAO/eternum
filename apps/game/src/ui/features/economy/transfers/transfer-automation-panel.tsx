@@ -20,6 +20,7 @@ import {
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import type { VillageIconKey } from "@/config/game-modes";
+import { byStructureCategory } from "@/lib/structure-category-table";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -39,20 +40,26 @@ const VILLAGE_ICON_BY_KEY: Record<VillageIconKey, typeof Castle> = {
 const canOpenTransferInventory = (structure: Structure) =>
   resolveStructureUiCapabilities(structure.structure).canOpenTransferInventory;
 
+/**
+ * A structure's icon in the transfer lists, by category; a village takes the game mode's own. A new category fails
+ * typecheck here until it has one.
+ */
+const STRUCTURE_ICONS: Record<StructureType, typeof Castle | "village"> = {
+  [StructureType.Realm]: Crown,
+  [StructureType.Village]: "village",
+  [StructureType.Camp]: "village",
+  [StructureType.Mine]: Pickaxe,
+  [StructureType.Hyperstructure]: Hyperstructure,
+  [StructureType.Bank]: Castle,
+  [StructureType.BitcoinMine]: Castle,
+  [StructureType.Rift]: Castle,
+  [StructureType.Ruin]: Castle,
+  [StructureType.Stragglers]: Castle,
+};
+
 const getStructureIcon = (category: StructureType, villageIconKey: VillageIconKey) => {
-  switch (category) {
-    case StructureType.Realm:
-      return Crown;
-    case StructureType.Village:
-    case StructureType.Camp:
-      return VILLAGE_ICON_BY_KEY[villageIconKey];
-    case StructureType.Mine:
-      return Pickaxe;
-    case StructureType.Hyperstructure:
-      return Hyperstructure;
-    default:
-      return Castle;
-  }
+  const icon = byStructureCategory(STRUCTURE_ICONS, category, "transfer list icon", Castle);
+  return icon === "village" ? VILLAGE_ICON_BY_KEY[villageIconKey] : icon;
 };
 
 // Multi-select structure-category filter. Reuses the shared CATEGORY_FILTER_OPTIONS
