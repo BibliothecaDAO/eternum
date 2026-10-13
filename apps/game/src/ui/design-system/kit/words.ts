@@ -157,6 +157,21 @@ export const RESEARCHING = "Researching…";
 export const BUILDING = "Building…";
 export const UPGRADING = "Upgrading…";
 
+/** A slider's two ends, each a button: the least and the most the player can choose. */
+export const MINIMUM = "Minimum";
+export const MAXIMUM = "Maximum";
+
+/** The Deploy sheet's figures, each named on its tooltip (the screen shows icons and numbers). */
+export const DEPLOY_FIGURES = {
+  slots: "army slots",
+  wheatToDeploy: "wheat to deploy",
+  wheatLeft: "wheat left at home",
+  tilesPaid: "tiles the wheat left pays for",
+  revealSends: "Essence or labor each reveal sends home",
+  scout: "scout: its reveals send nothing home",
+  startingStamina: "stamina it starts with",
+} as const;
+
 /** Raise an army from troops at home. */
 export const DEPLOY = "Deploy";
 export const DEPLOYING = "Deploying…";
@@ -194,7 +209,6 @@ export const REFILLING = "Refilling…";
 /** LORDS leaving the game for the wallet linked to the account. */
 export const WITHDRAW = "Withdraw";
 export const SENDING = "Sending…";
-export const ALL = "All";
 export const LINK_WALLET = "Link wallet";
 export const NO_WALLET = "No wallet linked";
 export const TRANSACTION = "Transaction";

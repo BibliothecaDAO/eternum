@@ -53,7 +53,8 @@ describe("Withdraw", () => {
     const ways = render({});
     expect(host.textContent).toContain("0x04a1…9f3c");
     expect(host.innerHTML).not.toContain("Receives from");
-    act(() => button("All")!.click());
+    // The slider's Maximum takes all of it.
+    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Maximum 1,240"]')!.click());
     expect(ways.onAmount).toHaveBeenCalledWith(1_240);
     act(() => button("Withdraw")!.click());
     expect(ways.onWithdraw).toHaveBeenCalledTimes(1);

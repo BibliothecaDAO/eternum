@@ -7,7 +7,6 @@ import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import {
-  ALL,
   CONTINUE,
   LINK_WALLET,
   LORDS,
@@ -110,25 +109,7 @@ const Pick = ({
 }) => (
   <>
     <Hero icon="Lo" value={formatExact(amount)} />
-    <AmountSlider
-      label={LORDS}
-      icon="Lo"
-      value={amount}
-      max={held ?? 0}
-      disabled={!held}
-      end={
-        <button
-          type="button"
-          data-tone="lit"
-          disabled={!held}
-          onClick={() => held && onAmount(held)}
-          className="frontier-chip h-8 !px-3 font-ui text-[15px] text-kit-cream"
-        >
-          {ALL}
-        </button>
-      }
-      onChange={onAmount}
-    />
+    <AmountSlider label={LORDS} icon="Lo" value={amount} max={held ?? 0} disabled={!held} onChange={onAmount} />
     <Flow before={held} after={held === undefined ? undefined : held - amount} address={address} />
     <Button
       role="primary"

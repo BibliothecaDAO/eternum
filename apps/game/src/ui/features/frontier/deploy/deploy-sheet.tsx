@@ -49,8 +49,9 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
   );
   const range = plan ? deployRange(plan) : { troopsMax: 0, wheatMax: 0, max: 0 };
   const [count, setCount] = useState<number | null>(null);
-  // The sheet opens at the most the realm can field; a count being dragged survives fact revisions.
-  const shown = Math.min(count ?? range.max, range.max);
+  // The sheet opens at half of what the realm can field, leaving troops and wheat for the day's other armies; Maximum
+  // is one tap away. A count being dragged survives fact revisions.
+  const shown = Math.min(count ?? Math.ceil(range.max / 2), range.max);
   const preview = plan ? previewDeploy(setup.store, realm.game_id, plan, shown, armiesTick) : null;
   const ring = useDeployRing(realm);
   const ordered = useUIStore((state) => state.pendingMilitaryAction?.direction ?? null);

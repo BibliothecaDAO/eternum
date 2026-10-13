@@ -1,12 +1,13 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import type { ReactNode } from "react";
 
+import { formatExact } from "./amount";
 import { type IconCode, KitIcon } from "./kit-icon";
+import { MAXIMUM, MINIMUM } from "./words";
 
 /**
- * An amount from one up to the most the player can choose: the start's icon and 1, the track, then the end (the most,
- * or a way to take it all). Where something runs out before the end, a line marks it on the track and the thumb stops
- * there.
+ * An amount from one up to the most the player can choose: Minimum, the track, Maximum. Each end is a button that
+ * takes its amount, and says which it is when asked. Where something runs out before the end, a line marks it on the
+ * track, the thumb stops there, and Maximum takes that much.
  */
 export const AmountSlider = ({
   label,
@@ -14,7 +15,6 @@ export const AmountSlider = ({
   value,
   max,
   stop,
-  end,
   disabled = false,
   onChange,
 }: {
@@ -23,26 +23,26 @@ export const AmountSlider = ({
   value: number;
   max: number;
   stop?: number;
-  end: ReactNode;
   disabled?: boolean;
   onChange: (amount: number) => void;
 }) => {
   const share = (amount: number) => (max > 1 ? (amount - 1) / (max - 1) : 0);
+  const least = max > 0 ? 1 : 0;
+  const most = Math.min(stop ?? max, max);
   return (
-    <div className={cn("flex h-12 items-center gap-2.5", disabled && "opacity-40")}>
-      <span className="flex w-14 shrink-0 items-center gap-1">
+    <div className={cn("flex h-12 items-center gap-2", disabled && "opacity-40")}>
+      <End name={MINIMUM} amount={least} disabled={disabled} onTake={onChange}>
         <KitIcon code={icon} size={18} />
-        <span className="text-[15px] tabular-nums text-kit-cream">1</span>
-      </span>
+      </End>
       <span className="relative flex h-12 flex-1 items-center">
         <input
           type="range"
           aria-label={label}
-          min={max > 0 ? 1 : 0}
+          min={least}
           max={max}
           value={value}
           disabled={disabled}
-          onChange={(event) => onChange(Math.min(Number(event.target.value), stop ?? max))}
+          onChange={(event) => onChange(Math.min(Number(event.target.value), most))}
           className="h-2 w-full cursor-pointer appearance-none rounded bg-kit-line accent-kit-amber"
         />
         {stop !== undefined && (
@@ -53,7 +53,37 @@ export const AmountSlider = ({
           />
         )}
       </span>
-      <span className="flex min-w-[60px] shrink-0 justify-end text-[15px] tabular-nums text-kit-cream">{end}</span>
+      <End name={MAXIMUM} amount={most} disabled={disabled} onTake={onChange} />
     </div>
   );
 };
+
+/** One end of the track: a 48-tall button on the chip token that takes its amount. */
+const End = ({
+  name,
+  amount,
+  disabled,
+  onTake,
+  children,
+}: {
+  name: string;
+  amount: number;
+  disabled: boolean;
+  onTake: (amount: number) => void;
+  children?: React.ReactNode;
+}) => (
+  <button
+    type="button"
+    aria-label={`${name} ${formatExact(amount)}`}
+    disabled={disabled}
+    onClick={() => onTake(amount)}
+    className="flex h-12 shrink-0 items-center"
+  >
+    <span className="frontier-chip h-8 !gap-1 !px-2.5 !py-0 text-[15px] tabular-nums text-kit-cream">
+      <span className="contents">
+        {children}
+        {formatExact(amount)}
+      </span>
+    </span>
+  </button>
+);

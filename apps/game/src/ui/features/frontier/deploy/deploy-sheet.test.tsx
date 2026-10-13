@@ -61,7 +61,7 @@ const deployButton = (host: HTMLElement) =>
   [...host.querySelectorAll("button")].find((button) => button.textContent?.startsWith("Deploy"));
 
 describe("the Deploy sheet", () => {
-  it("starts at the most the realm can field, deploys the dragged count carrying its wheat price, and closes", async () => {
+  it("opens at half of what the realm can field, with Minimum and Maximum on its ends, and deploys the dragged count", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     const createExplorerArmy = vi.fn(() => Promise.resolve());
@@ -74,11 +74,25 @@ describe("the Deploy sheet", () => {
     const onClose = vi.fn();
     const { host, root } = render(store, row, onClose);
     const slider = host.querySelector<HTMLInputElement>("input[type=range]")!;
-    expect(slider.value).toBe(slider.max);
+    const most = Number(slider.max);
+    expect(Number(slider.value)).toBe(Math.ceil(most / 2));
+    // The ends are buttons that take their amount, and say which they are.
+    const end = (name: string) => host.querySelector<HTMLButtonElement>(`button[aria-label^="${name}"]`)!;
+    expect(end("Maximum").getAttribute("aria-label")).toBe(`Maximum ${most.toLocaleString("en-US")}`);
+    act(() => end("Maximum").click());
+    expect(Number(slider.value)).toBe(most);
+    act(() => end("Minimum").click());
+    expect(slider.value).toBe("1");
+    expect(deployButton(host)?.textContent).toBe("Deploy2");
 
     setSlider(host, 120);
     expect(deployButton(host)?.textContent).toBe("Deploy240");
-    expect(host.querySelector('[aria-label="wheat 760"]')).not.toBeNull();
+    // Every figure names itself: what the deploy costs, what it leaves, and how far that carries the army.
+    expect(host.querySelector('[aria-label="wheat to deploy −240"]')).not.toBeNull();
+    expect(host.querySelector('[aria-label="wheat left at home 760"]')).not.toBeNull();
+    expect(host.querySelector('[aria-label^="tiles the wheat left pays for "]')).not.toBeNull();
+    expect(host.querySelector('[aria-label^="stamina it starts with "]')).not.toBeNull();
+    expect(host.querySelector('[aria-label="troops 120"]')).not.toBeNull();
     await act(async () => deployButton(host)!.click());
     expect(createExplorerArmy).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -108,7 +122,9 @@ describe("the Deploy sheet", () => {
     expect(host.querySelector("u")).not.toBeNull();
     setSlider(host, 300);
     expect(deployButton(host)?.textContent).toBe("Deploy100");
-    expect(host.querySelector('[aria-label="wheat 0"]')?.getAttribute("data-tone")).toBe("loss");
+    expect(host.querySelector('[aria-label="wheat left at home 0"]')?.getAttribute("data-tone")).toBe("loss");
+    // Maximum takes what the wheat allows, not what the troops would.
+    expect(host.querySelector('button[aria-label^="Maximum"]')!.getAttribute("aria-label")).toBe("Maximum 50");
     act(() => root.unmount());
     host.remove();
   });

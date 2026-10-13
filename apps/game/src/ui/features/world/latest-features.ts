@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "Deploy opens at half",
+    description:
+      "Improved the Deploy sheet in Frontier: the slider opens at half your troops, so there is something left for the day's other armies, with Minimum and Maximum as buttons on its two ends. Every figure on the sheet says what it is when you hover it or press and hold it.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
     title: "XP says what it buys",
     description:
       "Improved the army card in Frontier: XP is written beside its number on desktop, over a thin bar toward the next attribute tier it buys, with a pip for each tier the army has reached. Hover the XP, or press and hold it on a phone, to read the goal.",
