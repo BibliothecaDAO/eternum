@@ -1,3 +1,4 @@
+import { readShardAbi } from "../../../packages/value-ledger/src/shard-abi";
 import { type Abi } from "starknet";
 import { ShardReader, sameFelt, felt, uint, type ShardConnection } from "./shard-rpc";
 import { MAX_LABOR_REALMS, relayOperation, type LaborClaim, type LaborGrant, type RelayEffect } from "./ports";
@@ -23,8 +24,7 @@ export const writeLaborGrants = (target: LaborTarget, claim: LaborClaim) =>
     const reader = new ShardReader(target.connection);
     const head = await reader.head();
     const provider = reader.provider();
-    const contract = await provider.getClassAt(target.connection.gamesAddress, head);
-    validateLaborAbi(contract.abi);
+    validateLaborAbi(await readShardAbi(provider, target.connection.gamesAddress, head));
     const realms = laborRealms(claim);
     const role = await provider.callContract(
       { contractAddress: target.connection.gamesAddress, entrypoint: "ledger_operator", calldata: [] },

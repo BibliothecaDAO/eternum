@@ -6,10 +6,22 @@ import { decodeBlitzResult, shardResultPort } from "./shard-results";
 import { ShardReader, type ValueRow } from "./shard-rpc";
 import { shardWithdrawalPorts } from "./shard-withdrawals";
 
-const rpc = vi.hoisted(() => ({ chain: vi.fn(), block: vi.fn(), contract: vi.fn(), call: vi.fn() }));
+const rpc = vi.hoisted(() => ({
+  classHash: vi.fn(),
+  chain: vi.fn(),
+  block: vi.fn(),
+  contract: vi.fn(),
+  call: vi.fn(),
+}));
 vi.mock("../../../packages/value-ledger/src/rpc", async (original) => ({
   ...(await original<typeof import("../../../packages/value-ledger/src/rpc")>()),
-  rpcAt: () => ({ getChainId: rpc.chain, getBlock: rpc.block, getClassAt: rpc.contract, callContract: rpc.call }),
+  rpcAt: () => ({
+    getChainId: rpc.chain,
+    getBlock: rpc.block,
+    getClassHashAt: rpc.classHash,
+    getClassByHash: rpc.contract,
+    callContract: rpc.call,
+  }),
 }));
 const rows = [
   { wallet: "0x123", rank: 1 },
@@ -26,8 +38,10 @@ const row = (): ValueRow => ({
 const reader = () => new ShardReader({ chainId: "0x1", gamesAddress: "0x10", rpcUrl: "https://shard.test/rpc" });
 const ranked = abi.find((entry) => entry.name === "world_native::blitz_results::RankedPlayer")!;
 const record = abi.find((entry) => entry.name === "world_native::blitz_results::BlitzResult")!;
+let classVersion = 0;
 beforeEach(() => {
   vi.clearAllMocks();
+  rpc.classHash.mockResolvedValue(`0x${(++classVersion).toString(16)}`);
   rpc.chain.mockResolvedValue("0x1");
   rpc.block.mockResolvedValue({
     block_number: 10,
@@ -42,7 +56,7 @@ beforeEach(() => {
 it("reads precisely the committed frozen wallets and competition ranks at a confirmed head", async () => {
   expect(await Effect.runPromise(shardResultPort(reader())("0x1", 7))).toEqual(result);
   expect(rpc.call).toHaveBeenCalledWith({ contractAddress: "0x10", entrypoint: "blitz_result", calldata: ["7"] }, 10);
-  expect(rpc.contract).toHaveBeenCalledWith("0x10", 10);
+  expect(rpc.classHash).toHaveBeenCalledWith("0x10", 10);
 });
 it("ingests only completed records while retaining withdrawals in the same confirmed block", async () => {
   const source = reader();

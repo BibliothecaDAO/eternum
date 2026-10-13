@@ -1,6 +1,7 @@
 import { normalizeStarknetAddress, isSameStarknetAddress } from "../../../packages/identity/src/address";
 import { RelayFailure } from "./failure";
 import { hash, shortString, type RpcProvider } from "starknet";
+import { readShardAbi } from "../../../packages/value-ledger/src/shard-abi";
 import { rpcAt } from "../../../packages/value-ledger/src/rpc";
 
 export interface ShardConnection {
@@ -62,7 +63,6 @@ export class ShardReader {
     validateHeader(block, number === "latest" ? undefined : number);
     return block;
   }
-  private prefixCache: Promise<string[][]> | undefined;
   async page(
     from: number,
     to: number,
@@ -194,15 +194,9 @@ export class ShardReader {
     if (!sameFelt(await provider.getChainId(), this.connection.chainId)) throw new Error("shard_chain_differs");
   }
   private async prefixes(provider: RpcProvider, number: number) {
-    this.prefixCache ??= provider
-      .getClassAt(this.connection.gamesAddress, number)
-      .then((contract) => rowSetPrefixes(contract.abi))
-      .catch((error) => {
-        this.prefixCache = undefined;
-        throw error;
-      });
-    return this.prefixCache;
+    return rowSetPrefixes(await readShardAbi(provider, this.connection.gamesAddress, number));
   }
+
   private rows(receipt: ShardReceipt, prefixes: string[][]): ValueRow[] {
     if (!Array.isArray(receipt.events)) throw new Error("invalid_receipt_events");
     const rows = receipt.events.flatMap((event) => {

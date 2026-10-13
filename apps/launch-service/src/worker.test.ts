@@ -48,6 +48,7 @@ let freshAccount = false;
 let approvalStatus = 401;
 let redirectRequests = 0;
 let approvalRequests = 0;
+let classReads = 0;
 const joinRpc = shardAccountRpc({
   address: LAUNCHER,
   classHash: SHARD_MANIFEST.accountClassHash,
@@ -89,6 +90,8 @@ function blitzRpc(
     request?: { entry_point_selector?: string; calldata?: string[] };
     invoke_transaction?: { calldata: string[] };
     transaction_hash?: string;
+    contract_address?: string;
+    class_hash?: string;
   },
 ) {
   if (method === "starknet_getNonce") return "0x0";
@@ -240,6 +243,10 @@ beforeAll(async () => {
             }
             const blitz = playBlitzFixture ? blitzRpc(method, params) : undefined;
             if (blitz !== undefined) return Response.json({ jsonrpc: "2.0", id, result: blitz });
+            if (method === "starknet_getClass") {
+              expect(params.class_hash).toBe("0xabc");
+              classReads++;
+            }
             const result =
               method === "starknet_chainId"
                 ? SHARD_CHAIN
@@ -252,11 +259,13 @@ beforeAll(async () => {
                       transactions: [],
                     }
                   : method === "starknet_getClassHashAt"
-                    ? SHARD_MANIFEST.accountClassHash
+                    ? BigInt(params.contract_address!) === 0x77n
+                      ? "0xabc"
+                      : SHARD_MANIFEST.accountClassHash
                     : method === "starknet_call" &&
                         params.request?.entry_point_selector === hash.getSelectorFromName("is_device")
                       ? ["0x1"]
-                      : method === "starknet_getClassAt"
+                      : method === "starknet_getClass"
                         ? { abi: gamesAbi }
                         : method === "starknet_call" &&
                             params.request?.entry_point_selector === hash.getSelectorFromName("launcher")
@@ -373,6 +382,7 @@ it.each([1, 2, 25])(
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
     expect(await completed()).toBe(sizes.length);
+    expect(classReads).toBe(1);
     const orderedGames = [...createdGames].sort((a, b) => (a.name < b.name ? -1 : 1));
     expect(orderedGames.map((game) => game.roster.length)).toEqual(sizes);
     expect(createdGames.every((game) => game.ready)).toBe(true);

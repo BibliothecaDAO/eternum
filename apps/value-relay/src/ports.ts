@@ -183,6 +183,7 @@ export const relayOperation = <A>(operation: string, run: () => Promise<A>): Rel
   });
 
 export const relayServiceErrors = [
+  "shard_abi_unavailable",
   "frontier_funding_missing",
   "frontier_funding_differs_from_game",
   "invalid_frontier_deposit",

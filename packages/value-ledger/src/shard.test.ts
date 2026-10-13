@@ -19,7 +19,8 @@ vi.mock("./rpc", () => ({
     getBlock: rpc.block,
     callContract: rpc.call,
     getTransactionReceipt: rpc.receipt,
-    getClassAt: async () => ({ abi }),
+    getClassHashAt: async () => "0xabc",
+    getClassByHash: async () => ({ abi }),
   }),
 }));
 vi.mock("starknet", async (original) => ({

@@ -38,6 +38,7 @@ it("keeps an undeclared join's fixed fallback across both Effect boundaries", as
 });
 
 it.each([
+  "shard_abi_unavailable",
   "frontier_funding_missing",
   "frontier_funding_differs_from_game",
   "invalid_frontier_deposit",
