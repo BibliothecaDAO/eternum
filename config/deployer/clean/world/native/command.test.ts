@@ -20,10 +20,12 @@ type RpcRequest = {
   };
 };
 const servers: Array<ReturnType<typeof Bun.serve>> = [];
+let chainSequence = 0;
 afterEach(() => {
   for (const server of servers.splice(0)) server.stop(true);
 });
 function setup() {
+  const chainId = `0x${(++chainSequence).toString(16)}`;
   const invokes: Invoke[] = [];
   let remaining = [0n];
   let events: (hash: string) => Event[] = (transactionHash) => [
@@ -45,7 +47,7 @@ function setup() {
           result = "0.9.0";
           break;
         case "starknet_chainId":
-          result = "0x1";
+          result = chainId;
           break;
         case "starknet_getNonce":
           result = `0x${invokes.length.toString(16)}`;
@@ -93,7 +95,7 @@ function setup() {
   servers.push(server);
   const manifest = {
     world: { address: "0x77" },
-    shard: { chainId: "0x1", l2GasBound: "0x1234" },
+    shard: { chainId, l2GasBound: "0x1234" },
     native: { activeSchema: schema.identity, schemas: { [schema.identity]: schema } },
   } as unknown as NativeWorldManifest;
   const input = {
