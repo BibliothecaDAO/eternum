@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "Community links on a phone",
+    description:
+      "Added Discord, X, Telegram and GitHub to Profile on a phone, which has no footer to hold them; each opens in a new tab.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
     title: "Stores read aloud in full",
     description:
       "Changed the four stores on Frontier's top bar: each one's full line (Wheat 1,771 of 6,000, its rate an hour and when it is full) is now also what a screen reader says, the same words its tooltip shows.",
