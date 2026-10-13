@@ -279,8 +279,9 @@ export const buildRealmResourceSnapshot = ({
 
   for (const resourceId of ALL_RESOURCE_IDS) {
     const current = manager.current(resourceId);
-    if (!current) continue;
-    const { balance } = manager.balanceWithProduction(currentTick, resourceId)!;
+    const withProduction = manager.balanceWithProduction(currentTick, resourceId);
+    if (!current || !withProduction) continue;
+    const { balance } = withProduction;
     const production = ResourceManager.calculateResourceProductionData(resourceId, current, currentTick);
     snapshot.set(resourceId, {
       resourceId,

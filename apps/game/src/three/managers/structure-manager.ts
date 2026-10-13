@@ -685,8 +685,9 @@ export class StructureManager {
     const slots = Array.from({ length: structure.base.troop_max_guard_count }, (_, slot) =>
       this.store!.requireOrAbsent("Guard", { game_id: game, structure_id: entityId, slot }),
     );
-    if (slots.some((slot) => !slot.known)) return undefined;
-    return slots.map((slot) => slot.known!).filter((guard) => guard.troops.count !== 0n || guard.destroyed_tick !== 0);
+    const guards = slots.flatMap((slot) => (slot.known ? [slot.known] : []));
+    if (guards.length !== slots.length) return undefined;
+    return guards.filter((guard) => guard.troops.count !== 0n || guard.destroyed_tick !== 0);
   }
 
   private resolveGuardArmies(guards: readonly NativeRows["Guard"][]): GuardArmy[] {

@@ -256,8 +256,10 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
       if (!balances) return;
 
       balances.forEach(({ resourceId, amount }) => {
-        const productionInfo = resourceValue.current(resourceId)!;
-        const { hasReachedMaxCapacity, balance } = resourceValue.balanceWithProduction(currentDefaultTick, resourceId)!;
+        const productionInfo = resourceValue.current(resourceId);
+        const withProduction = resourceValue.balanceWithProduction(currentDefaultTick, resourceId);
+        if (!productionInfo || !withProduction) return;
+        const { hasReachedMaxCapacity, balance } = withProduction;
 
         const { productionPerSecond, isProducing, outputRemaining, timeRemainingSeconds } =
           ResourceManager.calculateResourceProductionData(resourceId, productionInfo, currentDefaultTick);

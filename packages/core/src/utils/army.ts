@@ -109,21 +109,20 @@ export const getGuardsByStructure = (structure: NativeRows["Structure"], store: 
   const slots = Array.from({ length: structure.base.troop_max_guard_count }, (_, slot) =>
     store.requireOrAbsent("Guard", { game_id: structure.game_id, structure_id: structure.entity_id, slot }),
   );
-  if (slots.some((slot) => !slot.known)) return undefined;
-  return slots
-    .map((slot) => slot.known!)
-    .flatMap((guard) =>
-      guard.troops.count !== 0n || guard.destroyed_tick !== 0
-        ? [
-            {
-              slot: guard.slot,
-              troops: inlineTroops(guard.troops, store.require("SliceRules", { game_id: structure.game_id })),
-              destroyedTick: guard.destroyed_tick,
-              cooldownEnd: guard.destroyed_tick === 0 ? 0 : guard.destroyed_tick * tickSeconds + delay,
-            },
-          ]
-        : [],
-    );
+  const guards = slots.flatMap((slot) => (slot.known ? [slot.known] : []));
+  if (guards.length !== slots.length) return undefined;
+  return guards.flatMap((guard) =>
+    guard.troops.count !== 0n || guard.destroyed_tick !== 0
+      ? [
+          {
+            slot: guard.slot,
+            troops: inlineTroops(guard.troops, store.require("SliceRules", { game_id: structure.game_id })),
+            destroyedTick: guard.destroyed_tick,
+            cooldownEnd: guard.destroyed_tick === 0 ? 0 : guard.destroyed_tick * tickSeconds + delay,
+          },
+        ]
+      : [],
+  );
 };
 
 /** Seconds before a wiped guard slot accepts troops again; 0 when it is open. The contract only enforces the
