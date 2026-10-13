@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { GUIDE_STEPS } from "./guide-script";
+import { useCallback, useState } from "react";
+import { GUIDE_OFF } from "./guide-script";
 
 /**
  * Which of the guide's lines this viewer has seen: a per-viewer convenience in localStorage, one list per game and player.
@@ -7,7 +7,6 @@ import { GUIDE_STEPS } from "./guide-script";
  */
 const storageKey = (gameId: number, player: string) => `frontier-guide:${gameId}:${player.toLowerCase()}`;
 const sessionSeen = new Map<string, Set<string>>();
-const REPLAY_EVENT = "frontier-guide-replay";
 
 const readSeen = (key: string): Set<string> => {
   const session = sessionSeen.get(key);
@@ -35,28 +34,19 @@ const writeSeen = (key: string, seen: Set<string>) => {
 export const useGuideSeen = (gameId: number, player: string | null) => {
   const key = player ? storageKey(gameId, player) : null;
   const [seen, setSeen] = useState<ReadonlySet<string>>(() => (key ? readSeen(key) : new Set()));
-  const markSeen = useCallback(
-    (ids: readonly string[]) => {
+  const write = useCallback(
+    (change: (seen: Set<string>) => void) => {
       if (!key) return;
-      const next = new Set([...readSeen(key), ...ids]);
+      const next = new Set(readSeen(key));
+      change(next);
       writeSeen(key, next);
       setSeen(next);
     },
     [key],
   );
-  // A replay resets every mounted guide.
-  useEffect(() => {
-    if (!key) return;
-    const reset = () => setSeen(readSeen(key));
-    window.addEventListener(REPLAY_EVENT, reset);
-    return () => window.removeEventListener(REPLAY_EVENT, reset);
-  }, [key]);
-  const skipAll = useCallback(() => markSeen(GUIDE_STEPS.map((step) => step.id)), [markSeen]);
-  // Forget every line this viewer has seen in this game, so the guide starts over.
-  const replay = useCallback(() => {
-    if (!key) return;
-    writeSeen(key, new Set());
-    window.dispatchEvent(new Event(REPLAY_EVENT));
-  }, [key]);
-  return { seen, markSeen, skipAll, replay };
+  const markSeen = useCallback((ids: readonly string[]) => write((next) => ids.forEach((id) => next.add(id))), [write]);
+  // Off keeps every line the player has seen, to re-read; on again goes on from the next line not yet seen.
+  const turnOff = useCallback(() => write((next) => next.add(GUIDE_OFF)), [write]);
+  const turnOn = useCallback(() => write((next) => next.delete(GUIDE_OFF)), [write]);
+  return { seen, markSeen, turnOff, turnOn };
 };

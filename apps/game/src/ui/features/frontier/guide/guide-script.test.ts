@@ -1,5 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { canShowPlace, type GuideFacts, GUIDE_STEPS, isGuideOn, nextGuideStep } from "./guide-script";
+import {
+  canShowPlace,
+  GUIDE_OFF,
+  type GuideFacts,
+  type GuideRules,
+  GUIDE_STEPS,
+  isGuideOn,
+  nextGuideStep,
+  seenGuideLines,
+} from "./guide-script";
+
+/** The rules a preset serves, as the dev shard's read on 13 October; the lines must say these numbers and no others. */
+const RULES: GuideRules = {
+  hutAdds: 6,
+  stamina: { explore: 30, move: 10, attack: 30, anHour: 30 },
+  xp: { reveal: 2, firstTier: 100 },
+  homecomingPercent: 3,
+};
 
 const facts = (overrides: Partial<GuideFacts> = {}): GuideFacts => ({
   realm: true,
@@ -21,6 +38,13 @@ const facts = (overrides: Partial<GuideFacts> = {}): GuideFacts => ({
   losingFight: false,
   storeFull: null,
   seasonOver: false,
+  populationFull: false,
+  armySelected: false,
+  guardInReach: false,
+  xpEarned: false,
+  researchOpen: false,
+  lastHour: false,
+  rules: RULES,
   ...overrides,
 });
 
@@ -91,9 +115,54 @@ describe("the Aspect of Skill's script", () => {
     );
   });
 
-  it("is on while a line is still to come, and off once every line is seen", () => {
+  it("speaks a first-time line at each moment a new player meets a rule, stating the rule in the game's own numbers", () => {
+    const answered = seen("arrival", "build-barracks", "deploy", "first-reveal");
+    const said = (state: Partial<GuideFacts>) => {
+      const step = foot(facts({ barracks: true, armies: 1, ...state }), answered)!;
+      return [step.id, step.line(facts(state))];
+    };
+    expect(said({ populationFull: true })).toEqual([
+      "population-full",
+      "No population left. Every building takes some. A Hut adds 6.",
+    ]);
+    expect(said({ armySelected: true })).toEqual([
+      "first-army-selected",
+      "Explore costs 30 stamina, a move from 10 a tile, an attack 30. 30 come back each hour.",
+    ]);
+    expect(said({ xpEarned: true })).toEqual([
+      "first-xp",
+      "Each new tile gives 2 XP. 100 XP buy an attribute's first tier.",
+    ]);
+    expect(said({ guardInReach: true })[0]).toBe("first-guard-in-reach");
+    expect(said({ researchOpen: true })[0]).toBe("first-research");
+    expect(said({ lastHour: true })).toEqual([
+      "last-hour",
+      "The day ends within the hour. Armies still out end with it. Homecoming sends 3% of their troops home.",
+    ]);
+    // Another preset's numbers are the ones said: none is typed into a line.
+    const harsher = { ...RULES, stamina: { explore: 40, move: 15, attack: 50, anHour: 20 } };
+    expect(
+      foot(facts({ armies: 1, armySelected: true, rules: harsher }), answered)!.line(facts({ rules: harsher })),
+    ).toBe("Explore costs 40 stamina, a move from 15 a tile, an attack 50. 20 come back each hour.");
+    // A rule the game has not served yet makes no line speak.
+    expect(foot(facts({ armies: 1, xpEarned: true, rules: { ...RULES, xp: undefined } }), answered)).toBeNull();
+  });
+
+  it("lists every line seen so far in the script's order, as it reads now, for the Menu's Guide", () => {
+    const lines = seenGuideLines(facts(), seen("first-army-selected", "arrival", "store-full", "first-type-tier"));
+    expect(lines.map(({ id }) => id)).toEqual(["arrival", "first-army-selected", "first-type-tier", "store-full"]);
+    // A line whose fact no longer holds still reads as a sentence.
+    expect(lines[2].line).toBe("Store more, or make more. Each choice holds for every building of its type.");
+    expect(lines[3].line).toBe("A store is full. What does not fit is gone.");
+    expect(seenGuideLines(facts(), seen(GUIDE_OFF))).toEqual([]);
+  });
+
+  it("speaks until the player turns it off, and then says nothing while keeping what was seen", () => {
     expect(isGuideOn(seen())).toBe(true);
-    expect(isGuideOn(seen(...GUIDE_STEPS.map((step) => step.id)))).toBe(false);
+    expect(isGuideOn(seen(...GUIDE_STEPS.map((step) => step.id)))).toBe(true);
+    expect(isGuideOn(seen("arrival", GUIDE_OFF))).toBe(false);
+    expect(foot(facts(), seen("arrival", GUIDE_OFF))).toBeNull();
+    expect(foot(facts(), seen("arrival"))?.id).toBe("build-barracks");
   });
 
   it("offers Show me for a named place, and the realm only while the player is away from it", () => {

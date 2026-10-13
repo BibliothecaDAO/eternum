@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "The guide says the rules",
+    description:
+      "Added six first-time lines to the Frontier guide, each with the game's own numbers: when population runs out, when you first select an army (what exploring, moving and attacking cost in stamina), your first XP, a guard beside your army, your first look at Research, and the day's last hour. Menu, Guide now lists every line you have seen, to read again, with a switch to turn the guide off.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-13",
     title: "Deploy opens at half",
     description:
       "Improved the Deploy sheet in Frontier: the slider opens at half your troops, so there is something left for the day's other armies, with Minimum and Maximum as buttons on its two ends. Every figure on the sheet says what it is when you hover it or press and hold it.",

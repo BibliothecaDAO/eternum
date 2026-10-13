@@ -23,14 +23,15 @@ afterEach(() => {
 });
 
 describe("useGuideSeen", () => {
-  it("remembers dismissed lines per game and player, forgets them on replay, and turns every line off", async () => {
+  it("remembers dismissed lines per game and player, and keeps them when the guide is turned off and on again", async () => {
     const root = await mount("0xA1");
     await act(async () => latest!.markSeen(["arrival"]));
     expect(window.localStorage.getItem("frontier-guide:7:0xa1")).toBe('["arrival"]');
-    await act(async () => latest!.replay());
-    expect(latest!.seen.size).toBe(0);
-    await act(async () => latest!.skipAll());
-    expect(latest!.seen.has("season-over")).toBe(true);
+    await act(async () => latest!.turnOff());
+    expect([...latest!.seen]).toEqual(["arrival", "guide-off"]);
+    expect(window.localStorage.getItem("frontier-guide:7:0xa1")).toBe('["arrival","guide-off"]');
+    await act(async () => latest!.turnOn());
+    expect([...latest!.seen]).toEqual(["arrival"]);
     await act(async () => root.unmount());
   });
 

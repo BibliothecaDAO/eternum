@@ -437,6 +437,18 @@ const LAB_GUIDE_FACTS: GuideFacts = {
   losingFight: true,
   storeFull: null,
   seasonOver: true,
+  populationFull: false,
+  armySelected: false,
+  guardInReach: false,
+  xpEarned: false,
+  researchOpen: false,
+  lastHour: false,
+  rules: {
+    hutAdds: 6,
+    stamina: { explore: 30, move: 10, attack: 30, anHour: 30 },
+    xp: { reveal: 2, firstTier: 100 },
+    homecomingPercent: 3,
+  },
 };
 
 const STATES = {
@@ -1074,7 +1086,7 @@ export const HudLab = () => {
             onSeason={noop}
             onProduction={noop}
             realms={lab.menuRealms ? { waiting: true, onOpen: noop } : undefined}
-            guide={{ on: true, onToggle: noop }}
+            guide={{ on: true, onOpen: noop }}
             onSettings={noop}
             onExit={noop}
             onClose={noop}

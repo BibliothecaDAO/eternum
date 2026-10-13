@@ -19,7 +19,8 @@ import { FrontierArmy } from "./army/frontier-army";
 import { FrontierSelectionSheet } from "./frontier-selection-sheet";
 import { useRealmStores } from "./realm-stores";
 import { FrontierSurfaces } from "./frontier-surfaces";
-import { GuideProvider, GuideSlot, useGuideSwitch } from "./guide/frontier-guide";
+import { GuideProvider, GuideSlot, useGuideLines } from "./guide/frontier-guide";
+import { GuideLinesSheet } from "./guide/guide-lines-sheet";
 import { SelectedArmyBar, useArmyRevealYield } from "./hud/action-bar";
 import { type ArmyOrder, useArmyOrder } from "./hud/army-order";
 import { ArmyDock } from "./hud/army-dock";
@@ -95,7 +96,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   };
 
   return (
-    <GuideProvider rules={rules} realm={visit ? null : realm}>
+    <GuideProvider rules={rules} realm={visit ? null : realm} researchOpen={surface === "research"}>
       <HudBands
         strip={
           <>
@@ -170,6 +171,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
             <SettingsPanel />
           </Sheet>
         )}
+        {surface === "guide" && <HudGuide onClose={close} />}
         {surface === "today" && <FrontierToday rules={rules} realm={realm} onOpenArmy={openArmy} onClose={close} />}
         {/* The card covers the HUD: the season's board and Withdraw each open in its place. */}
         {surface !== "season" && surface !== "withdraw" && (
@@ -282,7 +284,7 @@ const HudMenu = ({
   onClose: () => void;
 }) => {
   const navigate = useNavigate();
-  const guide = useGuideSwitch();
+  const guide = useGuideLines();
   const rank = useSeasonRank();
   return (
     <MenuSheet
@@ -291,20 +293,18 @@ const HudMenu = ({
       onProduction={realm ? () => onOpen("production") : null}
       onSeason={() => onOpen("season")}
       realms={realm ? { waiting: laborWaiting, onOpen: () => onOpen("realms") } : undefined}
-      guide={
-        guide && {
-          on: guide.on,
-          onToggle: () => {
-            onClose();
-            guide.toggle();
-          },
-        }
-      }
+      guide={guide && { on: guide.on, onOpen: () => onOpen("guide") }}
       onSettings={() => onOpen("settings")}
       onExit={() => navigate("/")}
       onClose={onClose}
     />
   );
+};
+
+/** The Menu's Guide: every line said so far, and the switch; nothing for a player the guide does not speak to. */
+const HudGuide = ({ onClose }: { onClose: () => void }) => {
+  const guide = useGuideLines();
+  return guide && <GuideLinesSheet on={guide.on} lines={guide.lines} onToggle={guide.toggle} onClose={onClose} />;
 };
 
 /**
