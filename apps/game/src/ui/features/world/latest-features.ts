@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "Explored tiles keep their ground",
+    description:
+      "Fixed explored tiles staying black when part of the map's terrain could not be built: that part is now drawn as plain explored ground, without its trees, roads or settlement ground, instead of not at all. A structure of a kind this version does not know also keeps its marker in the far view instead of stopping the others.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
     title: "A map that cannot be drawn says so",
     description:
       "Changed what you see when the map fails to open on the way into a game: the screen now says the map could not be drawn, instead of blaming the world, and offers Open realm beside Try again, so you can still reach your realm, build and research while the map is unavailable.",

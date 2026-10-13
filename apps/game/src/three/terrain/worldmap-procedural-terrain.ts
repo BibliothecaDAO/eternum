@@ -13,6 +13,8 @@ import {
   type TerrainUploadMetrics,
 } from "./procedural-terrain";
 import { hexCellKey } from "./hex-cell-key";
+import type { TerrainFogMask } from "./terrain-fog-mask";
+import { plainTerrainPageRequest } from "./terrain-page-builder";
 import { terrainHexToWorld, type TerrainWorldCoordinate } from "./terrain-coordinates";
 import { buildTerrainRoadSegments } from "./terrain-roads";
 import { MAX_TERRAIN_SETTLEMENT_INFLUENCE_RADIUS } from "./terrain-settlements";
@@ -459,11 +461,7 @@ export class WorldmapProceduralTerrain {
     const fogMask = await this.terrain.prepareFogMaskAsync(nextPages);
     this.requireCurrent(run);
     const timing = await this.runTimedStep(run, "terrain:present:page", () =>
-      this.terrain.commitPages(
-        changedPages.map(({ page }) => page),
-        releasedPageKeys,
-        fogMask,
-      ),
+      this.commitPagesOrTheirGround(changedPages, releasedPageKeys, fogMask),
     );
     releasedPageKeys.forEach((pageKey) => this.presentedPages.delete(pageKey));
     changedPages.forEach(({ page, signature }) => {
@@ -780,6 +778,7 @@ export class WorldmapProceduralTerrain {
     const cacheRevision = this.preparedCacheRevision;
     const pending = this.terrain
       .preparePageAsync(preparation.request)
+      .catch((error) => this.preparePlainPage(preparation.request, error))
       .then((prepared) => {
         if (cacheRevision === this.preparedCacheRevision) {
           this.touchPreparedPage(preparation.signature, prepared);
@@ -793,6 +792,48 @@ export class WorldmapProceduralTerrain {
       });
     this.pendingBySignature.set(preparation.signature, pending);
     return pending;
+  }
+
+  /**
+   * An explored tile always has ground. A page whose build throws is built again as plain ground, without the
+   * settlement islands, roads and props a build can trip on, and the failure is logged for whoever must fix its cause.
+   */
+  private preparePlainPage(request: TerrainPageRequest, error: unknown): Promise<PreparedTerrainPage> {
+    if (this.disposed) throw error;
+    console.error(`[Terrain] Page ${request.pageKey} could not be built; drawing it as plain ground`, error);
+    return this.terrain.preparePageAsync(plainTerrainPageRequest(request));
+  }
+
+  /**
+   * The same rule at the commit: pages a commit refuses (a prop pool with no slot or room left for them) are
+   * committed again as their ground alone, and stay that way in the cache until their content changes.
+   */
+  private commitPagesOrTheirGround(
+    pages: readonly ResolvedTerrainPage[],
+    releasedPageKeys: readonly string[],
+    fogMask: TerrainFogMask | null,
+  ): void {
+    try {
+      this.terrain.commitPages(
+        pages.map(({ page }) => page),
+        releasedPageKeys,
+        fogMask,
+      );
+    } catch (error) {
+      if (this.disposed) throw error;
+      const pageKeys = pages.map(({ page }) => page.request.pageKey).join(", ");
+      console.error(`[Terrain] Pages ${pageKeys} could not be committed; drawing their ground without props`, error);
+      for (const resolved of pages) {
+        resolved.page = { ...resolved.page, propInstances: [] };
+        if (this.preparedBySignature.has(resolved.signature))
+          this.preparedBySignature.set(resolved.signature, resolved.page);
+      }
+      this.terrain.commitPages(
+        pages.map(({ page }) => page),
+        releasedPageKeys,
+        fogMask,
+      );
+    }
   }
 
   private touchPreparedPage(signature: string, prepared: PreparedTerrainPage): void {

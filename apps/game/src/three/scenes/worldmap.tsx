@@ -139,11 +139,8 @@ import type { TerrainPresentationEvent } from "@/three/terrain/worldmap-procedur
 import { getRendererDiagnosticActiveMode } from "@/three/renderer-diagnostics";
 import { requireBiomeTypeFromId } from "@/three/managers/biome-colors";
 import { CompactEntityLabelRenderer } from "@/three/managers/compact-entity-label-renderer";
-import {
-  StrategicMarkerLayer,
-  type StrategicArmyMarkerTier,
-  type StrategicStructureMarkerKind,
-} from "@/three/managers/strategic-marker-layer";
+import { StrategicMarkerLayer, type StrategicArmyMarkerTier } from "@/three/managers/strategic-marker-layer";
+import { structureMarkerKind } from "./worldmap-structure-marker-kind";
 import { playerColorManager } from "@/three/systems/player-colors";
 import {
   normalizeOwnerAddress,
@@ -586,20 +583,6 @@ const WORLDMAP_CHUNK_TRANSITION_HARD_TIMEOUT_MS = Math.max(WORLDMAP_CHUNK_PHASE_
 const WORLDMAP_STREAMING_ROLLOUT = {
   stagedPathEnabled: env.VITE_PUBLIC_WORLDMAP_STREAMING_STAGED !== false,
 };
-// The far view's marker for each structure category; a new category fails typecheck here until it has one.
-const STRUCTURE_MARKER_KIND: Record<StructureType, StrategicStructureMarkerKind> = {
-  [StructureType.Realm]: "realm",
-  [StructureType.Hyperstructure]: "hyperstructure",
-  [StructureType.Bank]: "bank",
-  [StructureType.Mine]: "mine",
-  [StructureType.BitcoinMine]: "mine",
-  [StructureType.Village]: "village",
-  [StructureType.Camp]: "village",
-  [StructureType.Rift]: "mine",
-  [StructureType.Ruin]: "realm",
-  [StructureType.Stragglers]: "village",
-};
-
 function isSameWorldSpatialHex(hex: WorldSpatialHex | undefined, contract: { x: number; y: number }): boolean {
   return hex !== undefined && hex.col === contract.x && hex.row === contract.y;
 }
@@ -1477,7 +1460,7 @@ export default class WorldmapScene extends WarpTravel {
     const color = playerColorManager.getProfileForUnit(facts.isMine, facts.isAlly, facts.ownerAddress).primary;
     this.strategicMarkers.setStructure(
       structure.entityId,
-      STRUCTURE_MARKER_KIND[facts.structureType],
+      structureMarkerKind(facts.structureType),
       position.x,
       position.z,
       color,

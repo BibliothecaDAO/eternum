@@ -1,3 +1,5 @@
+import { BiomeType } from "@bibliothecadao/types";
+
 import { BASALT_SHELL_TRIANGLES, BASALT_SHELL_VERTICES } from "./terrain-basalt";
 import { type SurfaceBasaltTransition, visitSurfaceBasaltSlabs } from "./terrain-basalt-transition";
 import { buildEtherealBorderCell } from "./terrain-ethereal-borders";
@@ -78,6 +80,32 @@ class TerrainVertexSampler {
 const DEFAULT_SUBDIVISIONS = 3;
 const FRONTIER_SKIRT_DEPTH = 0.24;
 
+/**
+ * The same page as plain explored ground: its cells under their biomes, and nothing laid over them that a build can
+ * trip on (settlement islands, roads, props). A cell whose exploration and biome disagree is read by its biome, so an
+ * explored tile is never left without ground.
+ */
+export function plainTerrainPageRequest(request: TerrainPageRequest): TerrainPageRequest {
+  return {
+    ...request,
+    plain: true,
+    roadSegments: [],
+    settlementAnchors: [],
+    strictBiomeParity: false,
+    cells: request.cells.map(readCellByItsBiome),
+    halo: request.halo.map(readCellByItsBiome),
+  };
+}
+
+const readCellByItsBiome = (cell: TerrainCellInput): TerrainCellInput => ({
+  ...cell,
+  explored: cell.biome !== null,
+  previewBiome: cell.biome ?? (cell.previewBiome === BiomeType.None ? PLAIN_PREVIEW_BIOME : cell.previewBiome),
+});
+
+/** What an unknown tile is taken for under the fog when its own preview is missing; it is never seen. */
+const PLAIN_PREVIEW_BIOME = BiomeType.Grassland;
+
 export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrainPage {
   const startedAt = performance.now();
   request = applySettlementIslands(request);
@@ -114,7 +142,7 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
   const waterBuffers = water.positions.length > 0 ? finalizeGeometry(water) : null;
   const basaltInstances = basalt.length ? new Float32Array(basalt) : null;
   const borderBuffers = borders.positions.length ? finalizeBorders(borders) : null;
-  const propInstances = prepareTerrainPropInstances(request, field);
+  const propInstances = request.plain ? [] : prepareTerrainPropInstances(request, field);
   const shroudInstances = prepareTerrainShroudInstances(request, field);
   const geometryBytes =
     countGeometryBytes(buffers) +
