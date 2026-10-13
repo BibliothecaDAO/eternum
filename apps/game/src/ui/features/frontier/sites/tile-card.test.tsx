@@ -25,6 +25,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ActionPaths, ActionType, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
+import { ResourcesIds } from "@bibliothecadao/types";
 import { closeFightResult, useFightResult } from "./fight-result";
 import { FightResultCard } from "./fight-result-card";
 import { campBeside, otherArmyAt, SITE, SITE_TILE } from "./site-fixture";
@@ -71,6 +72,39 @@ const battleArrives = (army: [number, number], guard: [number, number], defender
     },
     { chainId: "0x1", worldAddress: "0xabc", gameId: 1 },
   );
+
+/** The clear's payout, reaching the client in the winning battle's transaction: the reward the contract set. */
+const payoutArrives = (reward: { resource_type: number; amount: string } | null) =>
+  acceptGameSyncStoryEvent(
+    {
+      model: "StoryEvent",
+      key: `0xpayout${battles}`,
+      value: {
+        game_id: "0x1",
+        owner: "0x111",
+        entity_id: SITE,
+        story: { SitePayout: { structure_id: 7, explorer_id: 201, site_id: SITE, category: 9, reward } },
+        timestamp: 350,
+        event_position: { block_number: 9, transaction_hash: "0x1", transaction_index: 0, event_index: battles++ },
+      },
+    },
+    { chainId: "0x1", worldAddress: "0xabc", gameId: 1 },
+  );
+
+/** The realm's labor store as a payout leaves it when it could not take all of it: at its own limit. */
+const fillLaborStore = (store: ReturnType<typeof campBeside>["store"]) => {
+  const limit =
+    BigInt(store.require("SliceRules", { game_id: 1 }).troop_limit_config.settlement_deployment_cap) *
+    BigInt(store.require("BoardRules", { game_id: 1 }).castle_store_deploys) *
+    1_000_000_000n;
+  store.applyFacts([
+    {
+      model: "ResourceBalance",
+      key: "0x79",
+      value: { game_id: 1, entity_id: 7, resource_type: ResourcesIds.Labor, balance: String(limit) },
+    },
+  ] as never);
+};
 
 /** The card over the fixture's camp, its army beside it or moved away to stand out of reach. */
 const renderCard = (army: "beside" | "far") => {
@@ -328,11 +362,39 @@ describe("the result of the player's attack", () => {
     unmount();
   });
 
-  it("is a victory, with what the clear pays, only on the record of an army that stands over a fallen guard", async () => {
-    const { result, unmount } = await attackThatLands(() => battleArrives([1_498, 1_318], [1_100, 0]));
+  it("is a victory only on the record of an army that stands over a fallen guard, paying what the payout record names", async () => {
+    const { result, unmount } = await attackThatLands(() => {
+      battleArrives([1_498, 1_318], [1_100, 0]);
+      // The card's preview said 550 labor; the record of what the contract paid says 700, and the card says that.
+      payoutArrives({ resource_type: ResourcesIds.Labor, amount: whole(700) });
+    });
     expect(result()?.getAttribute("aria-label")).toBe("Camp: Victory");
     expect(result()!.querySelector('[aria-label="Army 1,498 → 1,318"]')).not.toBeNull();
+    expect(result()!.textContent).toContain("+700");
+    expect(result()!.textContent).not.toContain("550");
     expect(result()!.querySelector('[aria-label^="XP +"]')).not.toBeNull();
+    expect(result()!.querySelector('[aria-label="Store Full"]')).toBeNull();
+    unmount();
+  });
+
+  it("marks the reward Full when the store that took it stands at its limit after the fight", async () => {
+    const { result, unmount } = await attackThatLands((store) => {
+      battleArrives([1_498, 1_318], [1_100, 0]);
+      payoutArrives({ resource_type: ResourcesIds.Labor, amount: whole(550) });
+      fillLaborStore(store);
+    });
+    expect(result()!.textContent).toContain("+550");
+    expect(result()!.querySelector('[aria-label="Store Full"]')?.getAttribute("data-tip")).toBe(
+      "The store is full: the rest did not fit",
+    );
+    unmount();
+  });
+
+  it("shows a victory's XP alone when no payout record of the clear arrived", async () => {
+    const { result, unmount } = await attackThatLands(() => battleArrives([1_498, 1_318], [1_100, 0]));
+    expect(result()?.getAttribute("aria-label")).toBe("Camp: Victory");
+    expect(result()!.querySelector('[aria-label^="XP +"]')).not.toBeNull();
+    expect(result()!.textContent).not.toContain("550");
     unmount();
   });
 

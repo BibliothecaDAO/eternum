@@ -2,7 +2,17 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatExact } from "@/ui/design-system/kit/amount";
 import { Chip } from "@/ui/design-system/kit/chip";
 import { KitIcon } from "@/ui/design-system/kit/kit-icon";
-import { ARMY, ARMY_LOST, GUARD_HOLDS, TROOPS, VICTORY, XP } from "@/ui/design-system/kit/words";
+import {
+  ARMY,
+  ARMY_LOST,
+  FULL,
+  GUARD_HOLDS,
+  REST_DID_NOT_FIT,
+  STORE,
+  TROOPS,
+  VICTORY,
+  XP,
+} from "@/ui/design-system/kit/words";
 
 import type { ReactNode } from "react";
 
@@ -24,8 +34,9 @@ const VERDICT_TONES: Record<FightVerdict, string> = {
 
 /**
  * How an attack ended, in the sheet that sent it: the one word, then each side's troops before and after as the
- * battle recorded them (the army alone when no record of the battle is known), and on a clear what it paid home with
- * its XP. It stays until the player taps it away.
+ * battle recorded them (the army alone when no record of the battle is known), and on a clear what its own record
+ * says it paid, marked Full when the store that took it is at its limit, with its XP. It stays until the player taps
+ * it away.
  */
 export const FightResultCard = ({ result, onClose }: { result: FightResult; onClose: () => void }) => {
   const { word, icon } = TARGET_MARKS[result.site];
@@ -63,6 +74,9 @@ export const FightResultCard = ({ result, onClose }: { result: FightResult; onCl
               <span className="text-[24px] leading-none tabular-nums text-kit-gold2">
                 +{formatExact(result.gained.pay.amount)}
               </span>
+              {result.gained.pay.storeFull && (
+                <Chip icons={[]} label={STORE} value={FULL} ember tip={REST_DID_NOT_FIT} />
+              )}
             </span>
           )}
           <Chip icons={[]} label={XP} value={`+${formatExact(result.gained.xp)}`} unit={XP} />

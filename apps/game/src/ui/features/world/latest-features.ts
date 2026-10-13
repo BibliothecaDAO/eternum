@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "A victory shows what it paid",
+    description:
+      "Changed the Victory card in Frontier: the reward is the one the clear itself recorded, where it used to repeat the preview's figure. When the store that took it is at its limit, the figure carries a Full mark, and its tooltip says the rest did not fit.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
     title: "The forecast is this attack",
     description:
       "Fixed the attack forecast in Frontier disagreeing with the fight's result. When a fight takes several attacks, the forecast used to add up the losses of all of them, while Attack sends one and its result showed that one. The forecast now shows what this attack costs you and the guard it leaves, exactly as the result will read; the pips still count the attacks the whole fight takes.",

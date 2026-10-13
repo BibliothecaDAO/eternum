@@ -46,6 +46,9 @@ export const TODAY = "Today";
 export const PRODUCTION = "Production";
 /** A store at its limit. */
 export const FULL = "Full";
+export const STORE = "Store";
+/** On a payout's Full mark: the store took what it had room for. */
+export const REST_DID_NOT_FIT = "The store is full: the rest did not fit";
 export const SEASON = "Season";
 /** The season board's two number columns, named on their icons' tooltip. */
 export const SITES_CLEARED = "Sites cleared";

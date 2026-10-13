@@ -7,7 +7,7 @@ import type { AttackTargetKind } from "./site-marks";
 /** How one attack ended: the army is gone, the guard is gone, or both still stand and the fight goes on. */
 export type FightVerdict = "victory" | "army-lost" | "guard-holds";
 
-/** The player's own attack as it leaves: who fights whom, and what the preview said a clear pays. */
+/** The player's own attack as it leaves: who fights whom. */
 export interface FightSent {
   /** The site attacked, or the other player's army. */
   targetId: number;
@@ -16,8 +16,19 @@ export interface FightSent {
   armyArt: string;
   /** The army's whole troops as the attack leaves. */
   army: number;
-  /** What clearing the site pays: what fits home and the XP, as the preview showed them; nothing for an army. */
-  clearPays: { pay: { icon: IconCode; amount: number } | null; xp: number } | null;
+  /** The realm the army answers to, whose stores take what a clear pays. */
+  homeId: number;
+  /** The XP the rules give for clearing this site; undefined for an army, which pays nothing. */
+  clearXp: number | undefined;
+}
+
+/**
+ * What a victory paid: the reward as the clear's own payout record names it (none for stragglers or a ruin), marked
+ * when the store that received it stands at its limit, so some of it did not fit; and the clear's XP.
+ */
+export interface FightGain {
+  pay: { icon: IconCode; amount: number; storeFull: boolean } | null;
+  xp: number;
 }
 
 /** What one attack did, for its result: each side before and after, and what a clear paid. */
@@ -28,15 +39,22 @@ export interface FightResult {
   army: TroopsChange;
   /** The other side as the battle recorded it; null when no record of the battle reached this screen. */
   guard: TroopsChange | null;
-  gained: FightSent["clearPays"] | null;
+  gained: FightGain | null;
 }
 
 /** A lost army is lost whatever is left of the other side; a victory needs the army standing and the guard gone. */
 export const fightVerdict = (after: { army: number; guard: number }): FightVerdict =>
   after.army === 0 ? "army-lost" : after.guard === 0 ? "victory" : "guard-holds";
 
-/** The attack's result from the battle's own record: nothing here is read from what a row no longer says. */
-export const fightResultOf = (sent: FightSent, { army, guard }: FightRecord): FightResult => {
+/**
+ * The attack's result from the battle's own record: nothing here is read from what a row no longer says. Only a
+ * victory gains, and what it gained is the caller's to read from the clear's own record.
+ */
+export const fightResultOf = (
+  sent: FightSent,
+  { army, guard }: FightRecord,
+  gained: (sent: FightSent) => FightGain | null,
+): FightResult => {
   const verdict = fightVerdict({ army: army.after, guard: guard.after });
   return {
     site: sent.site,
@@ -44,7 +62,7 @@ export const fightResultOf = (sent: FightSent, { army, guard }: FightRecord): Fi
     armyArt: sent.armyArt,
     army,
     guard,
-    gained: verdict === "victory" ? sent.clearPays : null,
+    gained: verdict === "victory" ? gained(sent) : null,
   };
 };
 

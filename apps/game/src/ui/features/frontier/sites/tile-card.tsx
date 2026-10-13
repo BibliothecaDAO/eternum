@@ -28,9 +28,10 @@ import { GuideSlot } from "../guide/frontier-guide";
 import { type ArmyOrder, type Cost, isCovered, useArmyStamina, useOrderAt } from "../hud/army-order";
 import { armyArt, type DockArmy, useDockArmies } from "../hud/dock-armies";
 import { useApproachTile } from "./approach";
-import { readFightRecord } from "./fight-record";
+import { readFightRecord, readPayoutRecord } from "./fight-record";
 import {
   fightEnded,
+  type FightGain,
   fightIsSent,
   type FightResult,
   fightResultOf,
@@ -40,7 +41,14 @@ import {
   useFightRefusal,
 } from "./fight-result";
 import { useSelectedOwnArmy } from "./selected-army";
-import { readArmyCard, readSiteCard, type SiteAttack, type SiteCardPlan, type SiteFight } from "./site-card-plan";
+import {
+  readArmyCard,
+  readSiteCard,
+  type SiteAttack,
+  type SiteCardPlan,
+  type SiteFight,
+  storeAtLimit,
+} from "./site-card-plan";
 import { type SiteChoice, SiteCardView, type SiteVerb } from "./site-card-view";
 
 const SITE_MODELS = [
@@ -279,18 +287,16 @@ const sitePay = (plan: SiteCardPlan) => {
   return plan.payout && icon ? { icon, amount: plan.payout.amount, fits: plan.payout.fits } : null;
 };
 
-/** The attack as it leaves, for its result: who fights whom and what the card says a clear pays. */
-const fightSentBy = (army: NativeRows["ExplorerTroops"], selected: AttackTarget, plan: SiteCardPlan): FightSent => {
-  const pay = sitePay(plan);
-  return {
-    targetId: targetId(selected),
-    site: plan.kind,
-    armyId: safeInteger(army.explorer_id),
-    armyArt: armyArt(army.troops),
-    army: wholeTroops(army),
-    clearPays: plan.xp === undefined ? null : { pay: pay && { icon: pay.icon, amount: pay.fits }, xp: plan.xp },
-  };
-};
+/** The attack as it leaves, for its result: who fights whom, for which realm, and the XP a clear of it gives. */
+const fightSentBy = (army: NativeRows["ExplorerTroops"], selected: AttackTarget, plan: SiteCardPlan): FightSent => ({
+  targetId: targetId(selected),
+  site: plan.kind,
+  armyId: safeInteger(army.explorer_id),
+  armyArt: armyArt(army.troops),
+  army: wholeTroops(army),
+  homeId: safeInteger(army.owner),
+  clearXp: plan.xp,
+});
 
 /**
  * The applied attack's result, from evidence that exists. The battle's own record says what it did to both sides.
@@ -300,8 +306,23 @@ const fightSentBy = (army: NativeRows["ExplorerTroops"], selected: AttackTarget,
 const readFightResult = (store: NativeFactStore, sent: FightSent, transactionHash: string): FightResult | null => {
   const record = readFightRecord(transactionHash);
   if (!record) return armyIsGone(store, sent.armyId) ? lostArmyResult(sent) : null;
-  const result = fightResultOf(sent, record);
+  const result = fightResultOf(sent, record, () => readFightGain(store, sent, transactionHash));
   return result.verdict === "victory" && result.site === "Ruin" ? null : result;
+};
+
+/**
+ * What the victory paid: the reward the clear's own payout record names, never the preview's figure, and whether the
+ * store that took it stands at its limit now (the store's own fact, not a sum of what it held and what it got).
+ */
+const readFightGain = (store: NativeFactStore, sent: FightSent, transactionHash: string): FightGain | null => {
+  if (sent.clearXp === undefined) return null;
+  const paid = readPayoutRecord(transactionHash);
+  const icon = paid && PAY_ICONS[paid.resourceId];
+  return {
+    pay:
+      paid && icon ? { icon, amount: paid.amount, storeFull: storeAtLimit(store, sent.homeId, paid.resourceId) } : null,
+    xp: sent.clearXp,
+  };
 };
 
 const armyIsGone = (store: NativeFactStore, armyId: number): boolean =>
