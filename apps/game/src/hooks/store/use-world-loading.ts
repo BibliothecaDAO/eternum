@@ -8,7 +8,6 @@ export enum LoadingStateKey {
   Hyperstructure = "hyperstructure",
   MarketHistory = "marketHistory",
   Leaderboard = "leaderboard",
-  ChunkTransition = "chunkTransition",
 }
 
 type LoadingState = {
@@ -29,7 +28,6 @@ export const createWorldStoreSlice = (
     [LoadingStateKey.Hyperstructure]: false,
     [LoadingStateKey.Leaderboard]: false,
     [LoadingStateKey.MarketHistory]: false,
-    [LoadingStateKey.ChunkTransition]: false,
   },
 
   setLoading: (key: LoadingStateKey, value: boolean) =>

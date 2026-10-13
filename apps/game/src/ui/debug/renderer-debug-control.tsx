@@ -58,7 +58,7 @@ export const RendererDebugControl = ({
             <a
               key={mode}
               href={buildRendererDebugUrl(currentHref, mode)}
-              className={`rounded border px-2 py-1 text-center transition ${
+              className={`rounded border px-2 py-1 text-center transition max-lg:flex max-lg:min-h-11 max-lg:items-center max-lg:justify-center ${
                 isRequested
                   ? "border-gold/60 bg-gold/20 text-gold"
                   : "border-gold/20 bg-black/30 text-gold/55 hover:bg-gold/10 hover:text-gold"

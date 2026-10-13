@@ -70,12 +70,15 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   const [surface, setSurface] = useHudSurface();
   const realmLabor = useRealmLabor(rules, realm);
   const desktop = useLayout() === "desktop";
-  // Desktop keeps chat docked open beside the map, its Chat slot collapsing it; a phone opens it as a page.
-  const [chatDocked, setChatDocked] = useState(true);
+  // Desktop docks chat beside the map when its Chat slot opens it, and starts with it closed as a phone does, so the
+  // guide and the map's lower left are clear on the first screen; a phone opens it as a page.
+  const [chatDocked, setChatDocked] = useState(false);
   const chat = useGameChat(desktop ? chatDocked : surface === "chat");
   const chatPane = useChatKey(() => (desktop ? setChatDocked(true) : setSurface("chat")));
   if (showBlankOverlay) return null;
   const close = () => setSurface(null);
+  // A phone's nav page starts right under the strip, where the purse hangs: the purse waits while one is open.
+  const phonePageOpen = !desktop && (surface === "chat" || surface === "research" || surface === "season");
   const onSurface = (next: HudSurface | null) =>
     desktop && (next === "chat" || (next === null && surface === "chat"))
       ? setChatDocked((docked) => !docked)
@@ -103,7 +106,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
               realm={realm ?? visited}
               onOpenStores={realm && !visit ? () => setSurface("production") : undefined}
             />
-            {realm && !visit && (
+            {realm && !visit && !phonePageOpen && (
               <RealmPurse
                 realm={realm}
                 laborWaiting={realmLabor?.plan.total ?? 0}

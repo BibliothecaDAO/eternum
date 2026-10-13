@@ -30,7 +30,6 @@ import { resolveMovementStamina, type MovementStaminaResolution } from "@/lib/ar
 import { resolveStoredWorldmapCameraDistance, useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
-import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { buildPlayHref, mapRouteHex, parsePlayRoute } from "@/play/navigation/play-route";
 import { resolvePlayRouteWorldPosition } from "@/play/navigation/play-route-target";
 import {
@@ -4235,9 +4234,6 @@ export default class WorldmapScene extends WarpTravel {
       clearTimeout(this.chunkRecoveryTimeout);
       this.chunkRecoveryTimeout = null;
     }
-    // Clear transition state so the chunk overlay doesn't persist when
-    // switching away mid-transition.
-    this.state.setLoading(LoadingStateKey.ChunkTransition, false);
   }
 
   private resetWorldmapInteractionForSwitchOff(nextSceneName?: SceneName): void {
@@ -6332,7 +6328,6 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const areaKey = this.clearStalledChunkAreaState(this.currentChunk);
-    this.state.setLoading(LoadingStateKey.ChunkTransition, false);
     this.traceChunk("connection_failure_recovery", {
       areaKey,
       chunkKey: this.currentChunk,
@@ -7080,11 +7075,9 @@ export default class WorldmapScene extends WarpTravel {
         const transitionToken = this.claimNextChunkTransitionToken();
         const switchStartedAt = performance.now();
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_started");
-        this.state.setLoading(LoadingStateKey.ChunkTransition, true);
         return runWorldmapChunkTransition({
           hardTimeoutMs: WORLDMAP_CHUNK_TRANSITION_HARD_TIMEOUT_MS,
           onFinally: () => {
-            this.state.setLoading(LoadingStateKey.ChunkTransition, false);
             recordChunkDiagnosticsEvent(this.chunkDiagnostics, "switch_duration_recorded", {
               durationMs: performance.now() - switchStartedAt,
             });
@@ -7126,12 +7119,8 @@ export default class WorldmapScene extends WarpTravel {
           nextTransitionToken: transitionToken,
           previousTransitionToken: this.actionPathsTransitionToken,
         });
-        this.state.setLoading(LoadingStateKey.ChunkTransition, true);
         return runWorldmapChunkTransition({
           hardTimeoutMs: WORLDMAP_CHUNK_TRANSITION_HARD_TIMEOUT_MS,
-          onFinally: () => {
-            this.state.setLoading(LoadingStateKey.ChunkTransition, false);
-          },
           onHardTimeout: (info) => {
             this.handleChunkTransitionHardTimeout("refresh_current_chunk", chunkKey, info, transitionToken);
             return false;
@@ -8509,7 +8498,6 @@ export default class WorldmapScene extends WarpTravel {
     this.hoverLabelManager.onHexLeave();
     this.clearTileEntityCache();
     this.interactiveHexWindowKey = null;
-    this.state.setLoading(LoadingStateKey.ChunkTransition, false);
     if (!this.isSwitchedOff) {
       void Promise.all([
         this.refreshVisualTerrainWindowFromCamera(),

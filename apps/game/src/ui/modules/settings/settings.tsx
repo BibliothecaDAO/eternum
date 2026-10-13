@@ -88,7 +88,7 @@ function ProfileHeader() {
             <button
               type="button"
               aria-label="Copy address"
-              className="shrink-0 font-mono text-[11px] text-gold/60"
+              className="shrink-0 font-mono text-[11px] text-gold/60 max-lg:min-h-11"
               onClick={() => navigator.clipboard.writeText(address).catch(() => setError("Could not copy address"))}
             >
               {shortAddress(address)} ⧉
@@ -142,7 +142,10 @@ function UsernameEditor({ name }: { name: string | null }) {
         type="button"
         aria-label="Change username"
         onClick={startEditing}
-        className={cn("flex min-w-0 items-center gap-1.5 font-sans normal-case tracking-normal", HUD_HEADLINE)}
+        className={cn(
+          "flex min-w-0 items-center gap-1.5 font-sans normal-case tracking-normal max-lg:min-h-11",
+          HUD_HEADLINE,
+        )}
       >
         <span className="truncate">{name ?? "Choose a username"}</span>
         <Pencil className="h-3 w-3 shrink-0 text-gold/60" />
@@ -168,7 +171,7 @@ function UsernameEditor({ name }: { name: string | null }) {
           if (event.key === "Escape") setEditing(false);
           event.stopPropagation();
         }}
-        className="min-w-0 flex-1 rounded-md border border-gold/30 bg-black/40 px-2 py-0.5 font-sans text-sm text-gold outline-none focus:border-gold/60"
+        className="min-w-0 flex-1 rounded-md border border-gold/30 bg-black/40 px-2 py-0.5 font-sans text-sm text-gold outline-none focus:border-gold/60 max-lg:min-h-11"
       />
       <button type="submit" disabled={pending} className={HUD_PILL_BUTTON}>
         {pending ? "Saving…" : "Save"}
@@ -270,7 +273,7 @@ function VolumeSlider({ label, value, onChange }: { label: string; value: number
         max={100}
         value={value}
         aria-label={label}
-        className="w-full accent-gold"
+        className="w-full accent-gold max-lg:h-11"
         onChange={(event) => onChange(Number(event.target.value))}
       />
       <span className={cn("text-right tabular-nums", HUD_BODY)}>{value}</span>

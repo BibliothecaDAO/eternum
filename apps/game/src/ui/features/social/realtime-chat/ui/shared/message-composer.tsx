@@ -81,20 +81,20 @@ export function MessageComposer({
             setDraft(event.target.value);
           }}
           onKeyDown={(e) => e.stopPropagation()}
-          className="w-full px-2 py-1.5 bg-black/20 focus:bg-black/40 focus:outline-none text-gold placeholder-gold/30 rounded transition-all duration-300 text-sm"
+          className="w-full px-2 py-1.5 bg-black/20 focus:bg-black/40 focus:outline-none text-gold placeholder-gold/30 rounded transition-all duration-300 text-sm max-lg:min-h-11"
           maxLength={maxLength}
         />
         <button
           type="button"
           onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-          className="px-2 py-1.5 bg-black/20 hover:bg-black/40 rounded transition-all duration-300 text-sm text-gold/70 hover:text-gold"
+          className="px-2 py-1.5 bg-black/20 hover:bg-black/40 rounded transition-all duration-300 text-sm text-gold/70 hover:text-gold max-lg:min-h-11 max-lg:min-w-11"
           disabled={disabled || isSending}
         >
           😀
         </button>
         <button
           type="submit"
-          className="px-2 py-1.5 bg-black/20 hover:bg-black/40 rounded transition-all duration-300 text-sm text-gold/70 hover:text-gold"
+          className="px-2 py-1.5 bg-black/20 hover:bg-black/40 rounded transition-all duration-300 text-sm text-gold/70 hover:text-gold max-lg:min-h-11"
           disabled={disabled || isSending}
         >
           {isSending ? "Sending…" : "Send"}

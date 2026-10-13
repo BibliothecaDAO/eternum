@@ -17,6 +17,7 @@ import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
 import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
 import { HudBands } from "@/ui/features/frontier/hud/hud-bands";
 import { MenuSheet } from "@/ui/features/frontier/hud/menu-sheet";
+import { ChatPage } from "@/ui/features/frontier/hud/chat-page";
 import { OrderBar } from "@/ui/features/frontier/hud/order-bar";
 import { DeployView } from "@/ui/features/frontier/deploy/deploy-view";
 import { RuinChestMoment } from "@/ui/features/frontier/chest/ruin-chest-moment";
@@ -457,6 +458,7 @@ const STATES = {
   full: { clock: CLOCK, stores: FULL_STORES, armies: ARMIES, realmDot: "ember" as const },
   offline: { clock: UNKNOWN_CLOCK, stores: UNKNOWN_STORES, armies: UNKNOWN_ARMIES, offline: true },
   menu: { clock: CLOCK, stores: STORES, armies: ARMIES, menu: true },
+  chat: { clock: CLOCK, stores: STORES, armies: ARMIES, chat: true },
   empty: { clock: CLOCK, stores: STORES, armies: [] },
   explore: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, order: EXPLORE },
   move: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, order: MOVE },
@@ -878,6 +880,8 @@ type LabState = {
   realmDot?: "ember";
   offline?: boolean;
   menu?: boolean;
+  /** Chat open: a page on a phone, docked on desktop. Its controls are there to be measured for touch. */
+  chat?: boolean;
   /** The LORDS count under the strip, what a chest just added, and the labor the player's Realms have waiting. */
   purse?: { lords: number; gain?: number; realms?: number };
   menuRealms?: boolean;
@@ -900,6 +904,9 @@ export const HudLab = () => {
   const footLine =
     line ?? (lab.guide && lab.guide !== "fight" && lab.guide !== "season" ? GUIDE_LINES[lab.guide] : undefined);
   const selected = lab.selected === undefined ? undefined : lab.armies[lab.selected];
+  const desktop = useLayout() === "desktop";
+  const chatPane = useRef<HTMLElement>(null);
+  const chat = lab.chat && <ChatPage gameZoneId="lab-game" signedIn onSignIn={noop} pane={chatPane} />;
   return (
     <>
       <div
@@ -919,7 +926,9 @@ export const HudLab = () => {
           </>
         }
         page={
-          lab.tree ? (
+          chat && !desktop ? (
+            chat
+          ) : lab.tree ? (
             // A row's sheet opens from the page, as FrontierResearch opens it, so it takes the page's place.
             <>
               <TreePage
@@ -1003,7 +1012,17 @@ export const HudLab = () => {
         nav={
           !lab.visiting && (
             <PlaceNav
-              place={lab.menu || lab.season ? "menu" : lab.tree ? "research" : lab.realmView ? "realm" : "map"}
+              place={
+                lab.chat && !desktop
+                  ? "chat"
+                  : lab.menu || lab.season
+                    ? "menu"
+                    : lab.tree
+                      ? "research"
+                      : lab.realmView
+                        ? "realm"
+                        : "map"
+              }
               onGo={noop}
               realmDot={lab.realmDot}
               researchDot={!lab.offline}
@@ -1011,6 +1030,7 @@ export const HudLab = () => {
             />
           )
         }
+        chat={desktop && chat}
       >
         {lab.deploy && <LabDeploySheet deploy={lab.deploy} />}
         {lab.results && (

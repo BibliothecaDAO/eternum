@@ -5,7 +5,7 @@ import { LABOR, LORDS, REALMS } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 const TAB =
-  "flex h-[38px] items-center gap-1.5 rounded-b-xl border border-t-0 bg-[linear-gradient(180deg,#221a10,#120d08)] pl-1.5 pr-3";
+  "flex h-11 items-center gap-1.5 rounded-b-xl border border-t-0 bg-[linear-gradient(180deg,#221a10,#120d08)] pl-1.5 pr-3";
 
 /**
  * What hangs under the strip's right end: the realm's LORDS count (it opens Withdraw where one exists) and, while the

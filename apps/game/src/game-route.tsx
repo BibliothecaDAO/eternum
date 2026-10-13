@@ -4,7 +4,7 @@ import { getGameModeId } from "@/config/game-modes";
  * Game route module - lazy loaded to avoid pulling heavy deps (World, native contracts, Three.js, etc.)
  * into the landing page bundle.
  */
-import { ChunkTransitionIndicator, ErrorBoundary, WorldLoading } from "@/ui/shared";
+import { ErrorBoundary, WorldLoading } from "@/ui/shared";
 import { TransactionAudioCues } from "@/ui/shared/components/transaction-audio-cues";
 import { useEffect } from "react";
 import { PlaySceneHandoff } from "./game-entry/play-scene-handoff";
@@ -47,7 +47,6 @@ const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
           <TransactionListenerBridge />
           <TransactionAudioCues />
           <World backgroundImage={backgroundImage} />
-          <ChunkTransitionIndicator />
           <WorldLoading />
         </ErrorBoundary>
       </MusicRouterProvider>
