@@ -112,11 +112,18 @@ function raidCopy(payload: Record<string, unknown>, recipient: string | undefine
 }
 
 function buildingCopy(payload: Record<string, unknown>): NotificationCopy {
-  if (payload.destroyed === true)
-    return { title: "A building has fallen", body: "The site is clear for what comes next." };
-  if (payload.paused === true) return { title: "Construction paused", body: "The builders are awaiting fresh orders." };
-  if (payload.unpaused === true) return { title: "The hammers ring again", body: "Construction has resumed." };
-  return { title: "A new building takes shape", body: "Another piece of your realm is rising." };
+  switch (payload.change) {
+    case "Created":
+      return { title: "A new building takes shape", body: "Another piece of your realm is rising." };
+    case "Destroyed":
+      return { title: "A building has fallen", body: "The site is clear for what comes next." };
+    case "Paused":
+      return { title: "Construction paused", body: "The builders are awaiting fresh orders." };
+    case "Resumed":
+      return { title: "The hammers ring again", body: "Construction has resumed." };
+    default:
+      throw new Error("Incomplete building placement story");
+  }
 }
 
 function transferCopy(payload: Record<string, unknown>, value: Record<string, unknown>): NotificationCopy {
