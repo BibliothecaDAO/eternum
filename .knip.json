@@ -173,6 +173,12 @@
         ],
         "@bibliothecadao/eternum/shard": [
           "../../packages/core/src/client/shard-reader.ts"
+        ],
+        "@bibliothecadao/eternum/troop-stamina": [
+          "../../packages/core/src/managers/troop-stamina.ts"
+        ],
+        "@bibliothecadao/eternum/expeditions": [
+          "../../packages/core/src/utils/expeditions.ts"
         ]
       }
     },
