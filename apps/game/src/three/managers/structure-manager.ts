@@ -1,5 +1,5 @@
 import { MineKinds } from "@bibliothecadao/types";
-import { configManager, getRealmCountPerHyperstructure } from "@bibliothecadao/eternum";
+import { configManager, getRealmCountPerHyperstructure, siteKindOf, type SiteKind } from "@bibliothecadao/eternum";
 import {
   FALLEN_REALM_RUIN_MODEL_INDEX,
   fallenRealmBeastModelIndex,
@@ -631,8 +631,10 @@ export class StructureManager {
       cosmeticAssetPaths: cosmetic.skin.assetPaths,
       usesFallbackCosmeticSkin: cosmetic.skin.isFallback,
       attachments: cosmetic.attachments,
-      // A game that grants no guard slots has no guards to report, so its labels carry no guard row.
-      guardArmies: configManager.hasGuardSlots() ? this.resolveGuardArmies(guards) : undefined,
+      siteKind: this.resolveSiteKind(renderable.entityId, renderInfo.type),
+      // A structure without guards in a game that grants no guard slots has none to report: no guard row. A Frontier
+      // site's guard is its strength.
+      guardArmies: guards.length > 0 || configManager.hasGuardSlots() ? this.resolveGuardArmies(guards) : undefined,
       activeProductions: this.resolveActiveProductions(renderable.entityId),
       incomingTroopArrivals: this.incomingTroopArrivalsByStructure.get(renderable.entityId),
       hyperstructureRealmCount: this.store
@@ -643,6 +645,12 @@ export class StructureManager {
       battleCooldownEnd,
       battleTimerLeft: getBattleTimerLeft(battleCooldownEnd),
     };
+  }
+
+  /** The kind of a guarded Frontier site still standing; undefined for every other structure. */
+  private resolveSiteKind(entityId: ID, structureType: StructureType): SiteKind | undefined {
+    const site = this.store?.get("ExpeditionSite", { game_id: configManager.getActiveGameId(), entity_id: entityId });
+    return site ? siteKindOf(structureType) : undefined;
   }
 
   private resolveHyperstructureInitialized(entityId: ID, structureType: StructureType): boolean {
@@ -783,6 +791,9 @@ export class StructureManager {
   }
 
   private shouldShowStructureTextLabel(structure: StructureInfo): boolean {
+    // A standing site wears its plate wherever plates are drawn: its guard's strength is what the player weighs an
+    // army against, and a phone has no hover to ask for it.
+    if (structure.siteKind !== undefined && this.contentLadder.textLabels !== "none") return true;
     return shouldShowTextLabel(
       this.contentLadder.textLabels,
       {
@@ -2076,7 +2087,9 @@ export class StructureManager {
     }
 
     const structure = this.resolveStructureInfoByEntityId(normalizedEntityId);
-    if (!structure) {
+    // A site has no second label: its plate carries its kind and strength, and its card the rest. The wide label
+    // covered the units beside it.
+    if (!structure || structure.siteKind !== undefined) {
       return { status: "missing" };
     }
 

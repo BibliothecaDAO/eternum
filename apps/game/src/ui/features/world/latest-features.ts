@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "Sites show their strength",
+    description:
+      "Changed the plate over a Frontier camp, rift, ruin or band of stragglers: it now reads the site's kind and the strength of its guard, such as Camp 1.2k, instead of a long id, and is always shown. The wide second label with its empty picture frame is gone, and plates sit just over the roof so they no longer cover a unit standing behind.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
     title: "The season board opens from Menu",
     description:
       "Changed the Frontier season board: it no longer sits over the map on desktop, and opens from Menu, Season on every screen. Its two number columns say what they count when you hover their icon or press and hold it, and a name you have just claimed shows at once.",

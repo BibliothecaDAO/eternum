@@ -4,7 +4,11 @@ import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 /** Structures sit just above the terrain sample; the compact label floats above the roofline. */
 export const STRUCTURE_SURFACE_LIFT = 0.05;
-export const COMPACT_LABEL_LIFT = 2.72;
+/**
+ * How far above its tile a structure's plate sits: just over the roof, and below the tile behind it, where a unit may
+ * stand. A plate keeps one size on screen, so a higher one covered that unit.
+ */
+export const COMPACT_LABEL_LIFT = 1.9;
 
 /** The Bitcoin mine is modelled with its base at the terrain top: terrain owns its support, so it takes no lift. */
 export function sitsDirectlyOnTerrain(structureType: unknown): boolean {
