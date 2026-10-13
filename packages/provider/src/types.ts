@@ -57,11 +57,12 @@ interface TransactionStreamStatus {
 
 /**
  * Waits for a transaction's outcome, settled once Herald has applied it; `inBlock`, when the submission reconciles
- * its sends, settles first and rejects only on proof the transaction was never sent.
+ * its sends, is a fallback while Herald is silent. Command identity identifies batch receipt requirements.
  */
 export type TransactionStreamWaiter = (
   transactionHash: string,
   inBlock?: Promise<void>,
+  transactionType?: TransactionType,
 ) => Promise<TransactionStreamStatus>;
 
 export enum TransactionType {

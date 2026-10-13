@@ -499,7 +499,7 @@ export class EternumProvider extends EventEmitter {
         transaction_hash: tx.transaction_hash,
       } as unknown as GetTransactionReceiptResponse;
     }
-    const streamReceipt = this.waitForTransactionWithCheckInternal(tx.transaction_hash, tx.inBlock);
+    const streamReceipt = this.waitForTransactionWithCheckInternal(tx.transaction_hash, tx.inBlock, txType);
     // Any action still unsettled after the checking window is checking: the player's next command may go.
     const checking = setTimeout(() => {
       this.emit("transactionChecking", transactionMetaWithHash);
@@ -600,6 +600,7 @@ export class EternumProvider extends EventEmitter {
   private async waitForTransactionWithCheckInternal(
     transactionHash: string,
     inBlock?: Promise<void>,
+    transactionType?: TransactionType,
   ): Promise<GetTransactionReceiptResponse> {
     if (!this.transactionStreamWaiter) {
       return {
@@ -608,7 +609,7 @@ export class EternumProvider extends EventEmitter {
       } as unknown as GetTransactionReceiptResponse;
     }
 
-    const transaction = await this.transactionStreamWaiter(transactionHash, inBlock).catch((error) => {
+    const transaction = await this.transactionStreamWaiter(transactionHash, inBlock, transactionType).catch((error) => {
       throw attachTransactionFailureStage(error, "confirmation");
     });
 
