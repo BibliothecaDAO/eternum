@@ -94,6 +94,10 @@ describe("the status strip", () => {
     );
     expect(markup.match(/role="meter"/g)).toHaveLength(2);
     expect(markup).toContain("width:50%");
+    // Each plate is one image named by its line, so the tooltip and a screen reader say the same words.
+    expect(markup).toContain('role="img" aria-label="Essence 18,250"');
+    expect(markup).toContain('role="img" aria-label="labor 9,000 of 18,000"');
+    expect(markup).toContain('role="img" aria-label="wheat — of 18,000"');
     expect(text(markup)).toContain("—");
     expect(text(markup)).toContain("Tomorrow lasts16h");
   });

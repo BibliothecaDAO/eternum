@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "Stores read aloud in full",
+    description:
+      "Changed the four stores on Frontier's top bar: each one's full line (Wheat 1,771 of 6,000, its rate an hour and when it is full) is now also what a screen reader says, the same words its tooltip shows.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
     title: "A Blitz slot that is opening",
     description:
       "Fixed a Blitz slot's page saying The ledger did not answer, with Try again and a dash for its registrations, in the minute between a slot being listed and its entry opening: it now says Entry is opening, shows 0 registered, and opens by itself a few seconds later. A read that really failed keeps its line.",

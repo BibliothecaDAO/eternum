@@ -95,23 +95,31 @@ export const storeLine = ({ kind, amount, limit, perHour, fullIn }: StoreReading
   return `${against}${rate}${fullIn === undefined ? "" : ` · ${FULL_IN} ${formatDuration(fullIn)}`}`;
 };
 
-/** A store's plate: its icon and amount, rolling as it changes, over the bar of its limit; its line on its tooltip. */
+/**
+ * A store's plate: its icon and amount, rolling as it changes, over the bar of its limit. Its line is its one name:
+ * what a screen reader says and what the tooltip shows.
+ */
 const StorePlate = ({ store }: { store: StoreReading }) => {
-  const { icon, word } = STORES[store.kind];
+  const { icon } = STORES[store.kind];
   const shown = useLandedValue(store.flyTarget, store.amount);
   return (
-    <span data-tip={storeLine(store)} className="relative flex min-w-0 flex-1 flex-col justify-center gap-1 px-0.5">
+    <span className="relative flex min-w-0 flex-1">
       <LandingDelta target={store.flyTarget} />
-      <span className="flex items-center justify-center gap-0.5">
-        <span data-fly-target={store.flyTarget} className="inline-flex">
-          <KitIcon code={icon} size={18} />
+      <span
+        role="img"
+        aria-label={storeLine(store)}
+        className="flex min-w-0 flex-1 flex-col justify-center gap-1 px-0.5"
+      >
+        <span className="flex items-center justify-center gap-0.5">
+          <span data-fly-target={store.flyTarget} className="inline-flex">
+            <KitIcon code={icon} size={18} />
+          </span>
+          <span className={cn("text-[15px] leading-none tabular-nums", TONE_TEXT[store.tone])}>
+            {shown === undefined ? "—" : <TickNumber value={shown} format={formatAmount} />}
+          </span>
         </span>
-        <span className="sr-only">{word}</span>
-        <span className={cn("text-[15px] leading-none tabular-nums", TONE_TEXT[store.tone])}>
-          {shown === undefined ? "—" : <TickNumber value={shown} format={formatAmount} />}
-        </span>
+        <StoreBar amount={store.amount} limit={store.limit} tone={store.tone} />
       </span>
-      <StoreBar amount={store.amount} limit={store.limit} tone={store.tone} />
     </span>
   );
 };
