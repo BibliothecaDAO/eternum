@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "Phone sheets keep their margins",
+    description:
+      "Fixed Settings and the account sheet running into the screen's left and right edges on a phone: they keep the same margin as every other panel.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
     title: "A cleared site pays on screen",
     description:
       "Fixed clearing a camp, a rift, stragglers or a ruin passing in silence: the guard now falls with its dust, what the site paid flies home to its counter, and a ruin's chest opens, with the losses of the attack that won it.",
