@@ -1,6 +1,7 @@
 """Collect cgroup CPU samples and report sustained node commit degradation from the existing OTLP export."""
 
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -68,8 +69,20 @@ class CommitAlarm:
         self.timestamp = 0
         self.slow_samples = 0
         self.active = False
+        self.last_seen = time.monotonic()
+        self.missing = False
 
     def poll(self, path):
+        events = self.read_exports(path)
+        missing = time.monotonic() - self.last_seen >= 3 * INTERVAL_SECONDS
+        if missing != self.missing:
+            self.missing = missing
+            if missing:
+                self.slow_samples = 0
+            events.append({'event': 'node_commit_metric_missing' if missing else 'node_commit_metric_restored'})
+        return events
+
+    def read_exports(self, path):
         events = []
         try:
             stream = path.open()
@@ -95,7 +108,12 @@ class CommitAlarm:
                 if self.skip_remainder:
                     self.skip_remainder = False
                     continue
-                for timestamp, seconds in commit_samples(json.loads(line)):
+                try:
+                    samples = list(commit_samples(json.loads(line)))
+                except (ValueError, TypeError, KeyError, AttributeError, OverflowError) as error:
+                    events.append({'event': 'node_metric_record_invalid', 'error': type(error).__name__})
+                    continue
+                for timestamp, seconds in samples:
                     event = self.observe(timestamp, seconds)
                     if event is not None:
                         events.append(event)
@@ -105,6 +123,7 @@ class CommitAlarm:
         if timestamp <= self.timestamp:
             return None
         self.timestamp = timestamp
+        self.last_seen = time.monotonic()
         self.slow_samples = self.slow_samples + 1 if seconds > 0.020 else 0
         active = self.slow_samples >= 3 if not self.active else seconds > 0.020
         if active == self.active:
@@ -120,7 +139,11 @@ def commit_samples(row):
             for metric in scope.get('metrics', []):
                 if metric.get('name') == 'close_commit_stage_last_seconds':
                     for point in metric.get('gauge', {}).get('dataPoints', []):
-                        yield int(point['timeUnixNano']), float(point['asDouble'])
+                        timestamp = int(point['timeUnixNano'])
+                        seconds = float(point['asDouble'] if 'asDouble' in point else point['asInt'])
+                        if timestamp <= 0 or not math.isfinite(seconds) or seconds < 0:
+                            raise ValueError('Invalid commit metric point')
+                        yield timestamp, seconds
 
 
 def append_samples(root, output, previous):

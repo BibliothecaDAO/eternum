@@ -74,9 +74,11 @@ below 20 ms, block lifetime below the configured block time, and no flush stall 
 burst cannot establish long-running node health.
 
 The existing metrics collector emits `node_commit_slow` after three fresh OTLP exports above 20 ms and
-`node_commit_recovered` on recovery. Read these events in the metrics container log. This is a local alarm, not a
-notification delivery service; it uses `close_commit_stage_last_seconds` from the pinned node. One periodic flush
-outlier does not trigger it. The collector follows the rotating export and never counts the same sample twice.
+`node_commit_recovered` on recovery. Thirty seconds without a fresh commit metric emits `node_commit_metric_missing`;
+fresh data emits `node_commit_metric_restored`. Malformed records emit `node_metric_record_invalid` and are skipped.
+Read these events in the metrics container log. This is a local alarm, not a notification delivery service; it uses
+`close_commit_stage_last_seconds` from the pinned node. One periodic flush outlier does not trigger it. The collector
+follows the rotating export and never counts the same sample twice.
 
 ## Gameplay validation
 

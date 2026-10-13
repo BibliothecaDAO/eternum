@@ -504,6 +504,54 @@ class ShardTest(unittest.TestCase):
             self.assertEqual(alarm.poll(path), [])
             self.assertEqual(alarm.offset, path.stat().st_size)
 
+    def test_commit_alarm_reports_missing_and_stale_exports_then_restores(self):
+        sampler = load_cpu_sampler()
+        with tempfile.TemporaryDirectory() as directory, patch.object(sampler.time, 'monotonic', return_value=0) as clock:
+            alarm = sampler.CommitAlarm()
+            path = Path(directory) / 'metrics.jsonl'
+            self.assertEqual(alarm.poll(path), [])
+            clock.return_value = 30
+            self.assertEqual(alarm.poll(path), [{'event': 'node_commit_metric_missing'}])
+            path.write_text('{}\n')
+            self.assertEqual(alarm.poll(path), [])
+            point = {'timeUnixNano': '1', 'asInt': '0'}
+            record = json.dumps({'resourceMetrics': [{'scopeMetrics': [{'metrics': [{
+                'name': 'close_commit_stage_last_seconds', 'gauge': {'dataPoints': [point]},
+            }]}]}]}) + '\n'
+            with path.open('a') as stream:
+                stream.write(record)
+            self.assertEqual(alarm.poll(path), [{'event': 'node_commit_metric_restored'}])
+            clock.return_value = 60
+            with path.open('a') as stream:
+                stream.write(record)  # A repeated old point is not restored telemetry.
+            self.assertEqual(alarm.poll(path), [{'event': 'node_commit_metric_missing'}])
+            self.assertFalse(alarm.active)
+
+    def test_commit_alarm_skips_bad_records_loudly_and_keeps_reading(self):
+        sampler = load_cpu_sampler()
+        alarm = sampler.CommitAlarm()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'metrics.jsonl'
+            path.touch()
+            alarm.poll(path)
+            def record(point):
+                return json.dumps({'resourceMetrics': [{'scopeMetrics': [{'metrics': [{
+                    'name': 'close_commit_stage_last_seconds', 'gauge': {'dataPoints': [point]},
+                }]}]}]}) + '\n'
+            with path.open('a') as stream:
+                stream.write('not json\n' + record({'timeUnixNano': '1'}))
+                stream.write(record({'timeUnixNano': '2', 'asDouble': 'NaN'}))
+                for timestamp in range(3, 6):
+                    stream.write(record({'timeUnixNano': str(timestamp), 'asDouble': .030}))
+            events = alarm.poll(path)
+            self.assertEqual([row['event'] for row in events],
+                             ['node_metric_record_invalid'] * 3 + ['node_commit_slow'])
+            self.assertEqual([row['error'] for row in events[:3]], ['JSONDecodeError', 'KeyError', 'ValueError'])
+            self.assertEqual(alarm.poll(path), [])
+            with path.open('a') as stream:
+                stream.write(record({'timeUnixNano': '6', 'asInt': '0'}))
+            self.assertEqual([row['event'] for row in alarm.poll(path)], ['node_commit_recovered'])
+
     def test_cpu_samples_rotate_as_the_collector_export_does(self):
         sampler = load_cpu_sampler()
         with tempfile.TemporaryDirectory() as temporary:
