@@ -1,3 +1,5 @@
+import { isCoarsePointer } from "@/utils/pointer";
+
 /**
  * The Aspect of Skill's script (frontier-narrative-2026-10/script.html, beat for beat). Each step names the game state
  * it answers; a slot shows the first step for its place not yet seen whose state holds, so a reload lands on the same
@@ -134,6 +136,15 @@ export const GUIDE_STEPS: readonly GuideStep[] = [
         : "Exploring, moving and attacking each cost stamina. It comes back by the hour.",
     target: "army-stamina",
     when: (facts) => facts.armySelected && facts.rules !== null,
+  },
+  {
+    id: "fast-order",
+    mark: "speaking",
+    line: () =>
+      isCoarsePointer()
+        ? "Tap a tile to see an order first. Hold the tile to send it at once."
+        : "Click a tile to see an order first. Right-click sends it at once.",
+    when: (facts) => facts.armySelected,
   },
   {
     id: "first-reveal",

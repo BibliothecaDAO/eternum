@@ -252,7 +252,7 @@ import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-reco
 import { ARMY_SELECT_REQUEST_EVENT, readArmySelectRequest } from "./worldmap-army-select-request";
 import { ORDER_REQUEST_EVENT, orderOnTap, readOrderRequest, stepBackOnEscape } from "./worldmap-order-request";
 import { hudFor } from "@/ui/layouts/hud-for";
-import { orderTipLine } from "@/ui/features/frontier/hud/order-tip";
+import { type OrderTip, orderTip } from "@/ui/features/frontier/hud/order-tip";
 import { TARGET_MARKS } from "@/ui/features/frontier/sites/site-marks";
 import { showOrderTip } from "./worldmap-order-tip";
 import { getGameModeId } from "@/config/game-modes";
@@ -2410,8 +2410,8 @@ export default class WorldmapScene extends WarpTravel {
 
   /**
    * Whether this game's HUD carries the order's verb (Frontier's). There a click names the order's tile and the HUD
-   * confirms it, so no click on the map sends an army and the pointer never moves a named order. The other modes'
-   * HUD has no verb: the order under the pointer is the preview, and a right-click (a long-press) confirms it.
+   * confirms it, and the pointer never moves a named order. The other modes' HUD has no verb: the order under the
+   * pointer is the preview. In every mode a right-click (a long-press) sends the order at once.
    */
   private hudCarriesOrderVerb(): boolean {
     return hudFor(getGameModeId(), true) === "frontier";
@@ -2426,13 +2426,13 @@ export default class WorldmapScene extends WarpTravel {
       this.state.updateEntityActionHoveredHex(hexCoords);
       return;
     }
-    const line = hexCoords && this.nameOrderAt(hexCoords);
-    showOrderTip(line && hexCoords ? { line, at: projectHexToScreen(hexCoords, this.camera) } : null);
+    const tip = hexCoords && this.nameOrderAt(hexCoords);
+    showOrderTip(tip && hexCoords ? { ...tip, at: projectHexToScreen(hexCoords, this.camera) } : null);
   }
 
-  private nameOrderAt(hexCoords: HexPosition): string | null {
+  private nameOrderAt(hexCoords: HexPosition): OrderTip | null {
     const { structure } = this.getHexagonEntity(hexCoords);
-    return orderTipLine({
+    return orderTip({
       path: getLiveWorldmapEntityActions().actionPaths.get(ActionPaths.posKey(hexCoords, true)),
       target: structure ? this.siteWord(structure.id) : null,
       exploreStamina: configManager.getExploreStaminaCost(),
@@ -2743,14 +2743,15 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    // Where the HUD confirms orders, a right-click is the same order as a tap: the same preview, never a send.
-    if (this.hudCarriesOrderVerb() && this.answerTapWithSelectedArmyOrder(hexCoords)) return;
+    // The fast order: an explore or a move leaves at once, and an attack opens its forecast, never sent unseen.
+    showOrderTip(null);
     this.actAtHex(hexCoords);
   }
 
   /**
    * With an army selected, a tap on a tile answers with that army's order there (orderOnTap), never past a confirm:
-   * the pinned order's verb, the attack preview's, or the site card's own. False leaves the tile its own tap.
+   * the pinned order's verb, the attack preview's, or the site card's own. False leaves the tile its own tap. The
+   * order that skips the confirm is the right-click's (actAtHex).
    */
   private answerTapWithSelectedArmyOrder(hexCoords: HexPosition): boolean {
     if (!canIssueOrders()) return false;
@@ -2778,8 +2779,8 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
-   * Runs the selected army's order at this tile: the HUD's verb for a pinned order, or a right-click where the HUD has
-   * none. Help, spire travel and deploy open their own surface from either.
+   * Runs the selected army's order at this tile: the HUD's verb for a pinned order, or a right-click (a long-press)
+   * with no preview. An attack, a help, spire travel and deploy open their own surface from either.
    */
   private actAtHex(hexCoords: HexPosition) {
     const account = useAccountStore.getState().account;

@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "The fast order is back",
+    description:
+      "Restored the fast order in Frontier: with an army selected, a right-click on a highlighted tile, or a press-and-hold on a phone, sends the explore or the move at once, with no preview. A click or a tap still opens the preview with its costs and its confirm, and the tile's tooltip says which is which. An attack is never sent unseen: either gesture opens its forecast. The preview still stays on the tile you chose while the pointer moves, Esc backs out one step, and Enter confirms the open preview or puts the cursor in chat.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
     title: "Numbers stay after an action",
     description:
       "Fixed the top bar and the army cards turning into dashes for a second or two after every move, explore, build or deploy: Essence, wheat, troops and each army's stamina now stay on screen while the action lands.",
@@ -86,7 +93,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-13",
     title: "The map names its highlights",
     description:
-      "Added a name to every highlighted tile in Frontier: with an army selected, hover a tile and one line says what the army would do there and what it costs, such as Unexplored · Explore · 30 stamina, Move · 10 stamina or Rift · Attack · 30 stamina. On a phone a tap or a press-and-hold on the tile opens its preview, which names the same action.",
+      "Added a name to every highlighted tile in Frontier: with an army selected, hover a tile and one line says what the army would do there and what it costs, such as Unexplored · Explore · 30 stamina, Move · 10 stamina or Rift · Attack · 30 stamina. On a phone a tap on the tile opens its preview, which names the same action.",
     type: "feature",
   },
   {
@@ -130,13 +137,6 @@ const allLatestFeatures: LatestFeature[] = [
     description:
       "Fixed realm buildings drawing as solid black shapes on some graphics cards. Every building on your realm shows its own colours again.",
     type: "fix",
-  },
-  {
-    date: "2026-10-13",
-    title: "One rule for every click",
-    description:
-      "Changed how orders are given in Frontier: a right-click, or a press-and-hold on a phone, now opens the same preview as a click or a tap and never sends an army by itself. The preview stays on the tile you chose while the pointer moves. Esc backs out one step (the preview, then the selection), and Enter confirms the open preview or, with none open, puts the cursor in chat.",
-    type: "improvement",
   },
   {
     date: "2026-10-13",

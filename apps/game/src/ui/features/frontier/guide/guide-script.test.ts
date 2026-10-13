@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   canShowPlace,
   GUIDE_OFF,
@@ -146,6 +146,16 @@ describe("the Aspect of Skill's script", () => {
     ).toBe("Explore costs 40 stamina, a move from 15 a tile, an attack 50. 20 come back each hour.");
     // A rule the game has not served yet makes no line speak.
     expect(foot(facts({ armies: 1, xpEarned: true, rules: { ...RULES, xp: undefined } }), answered)).toBeNull();
+  });
+
+  it("says the order's two gestures once the stamina line is read, in the words of the player's own pointer", () => {
+    const read = seen("arrival", "build-barracks", "deploy", "first-army-selected");
+    const state = facts({ barracks: true, armies: 1, armySelected: true });
+    expect(foot(state, read)!.line(state)).toBe("Click a tile to see an order first. Right-click sends it at once.");
+    vi.stubGlobal("matchMedia", () => ({ matches: true }));
+    expect(foot(state, read)!.line(state)).toBe("Tap a tile to see an order first. Hold the tile to send it at once.");
+    vi.unstubAllGlobals();
+    expect(foot(facts({ barracks: true, armies: 1 }), read)).toBeNull();
   });
 
   it("lists every line seen so far in the script's order, as it reads now, for the Menu's Guide", () => {
