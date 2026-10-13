@@ -2,30 +2,21 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter, useLocation } from "react-router-dom";
-import type { Call } from "starknet";
 import { afterEach, expect, it, vi } from "vitest";
 
-const signed = vi.hoisted(() => ({ calls: [] as Call[][], owners: [] as string[] }));
 // The ledger answers nothing here: a refetch after a send stays pending, never reaching a network.
 vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/runtime/l2-rpc")>()),
   L2_LEDGER: "0x1ed9e7",
   l2Provider: () => ({ callContract: () => new Promise(() => {}) }),
 }));
-vi.mock("@/ui/modules/identity/wallet-actions", () => ({
-  WalletSign: ({ owner, calls, onLanded }: { owner: string; calls: Call[]; onLanded: () => void }) => (
-    <button
-      type="button"
-      onClick={() => {
-        signed.calls.push(calls);
-        signed.owners.push(owner);
-        onLanded();
-      }}
-    >
-      Sign
-    </button>
-  ),
+// The wallet chunk is the real one, over a wallet extension standing in the page: a press of a panel's button is all
+// that stands between the player and the wallet's own prompt.
+vi.mock("@/hooks/context/starknet-provider", async () => ({
+  StarknetProvider: (await import("@/ui/modules/identity/test-wallet")).StandInStarknetProvider,
 }));
+
+import { installWallet } from "@/ui/modules/identity/test-wallet";
 
 import type { DirectoryGame } from "../herald";
 import { type EnvironmentLedger, environmentLedger, type SlotKey } from "../value/ledger";
@@ -93,14 +84,30 @@ const press = (container: HTMLElement, text: string) =>
     [...container.querySelectorAll("button")].find((button) => button.textContent?.includes(text))!.click(),
   );
 
+/** The wallet's own prompts: every transaction it was asked to sign, once the one under way has landed. */
+const promptsOf = async (wallet: ReturnType<typeof installWallet>) => {
+  await settled(() => expect(wallet.transactions()).toHaveLength(1));
+  return wallet.transactions();
+};
+
+/** Waits for what the wallet chunk does on its own once a button is pressed. */
+const settled = (check: () => void) =>
+  vi.waitFor(async () => {
+    await act(async () => {});
+    check();
+  });
+
+const wordsOf = (panel: HTMLElement) => [...panel.querySelectorAll("button")].map((button) => button.textContent);
+
 afterEach(async () => {
   for (const unmount of unmounts.splice(0)) await unmount();
-  signed.calls = [];
-  signed.owners = [];
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+  localStorage.clear();
 });
 
 it("pays the seat and the chosen flags from the payout wallet, a credit paying for the sword", async () => {
+  const wallet = installWallet("argentX", { account: WALLET });
   const panel = await mount(TERMS);
   expect(panel.textContent).toContain("Credit ×2");
   await press(panel, "Sword");
@@ -110,18 +117,19 @@ it("pays the seat and the chosen flags from the payout wallet, a credit paying f
   const split = panel.querySelector('[aria-label^="Where this entry goes"]')!.textContent;
   expect(split).toBe("800100100");
   await press(panel, "Pay & join");
-  await press(panel, "Sign");
+  // One press, one prompt of the linked wallet, and no wallet offered to pick.
   // register names no account: the ledger registers the one it links to the paying wallet.
-  expect(signed.calls).toEqual([
+  expect(await promptsOf(wallet)).toEqual([
     [
-      expect.objectContaining({ entrypoint: "approve", calldata: ["0x1ed9e7", String(1_000n * WEI), "0"] }),
+      expect.objectContaining({ entry_point: "approve", calldata: ["0x1ed9e7", String(1_000n * WEI), "0"] }),
       expect.objectContaining({
-        contractAddress: "0x1ed9e7",
-        entrypoint: "register",
+        contract_address: "0x1ed9e7",
+        entry_point: "register",
         calldata: ["0x52", "7", "1", "1"],
       }),
     ],
   ]);
+  expect(wordsOf(panel).join()).not.toContain("Ready");
 });
 
 it("names what is short, the registration, and the refund", async () => {
@@ -145,11 +153,13 @@ it("names what is short, the registration, and the refund", async () => {
   expect(registered).toContain("Your seat is drawn when entry closes.");
   expect(registered).not.toContain("Seated");
   expect((await mount({ ...TERMS, registration: { ...seat, refundable: true } })).textContent).toContain("Not seated");
+  const wallet = installWallet("argentX", { account: WALLET });
   const refund = await mount({ ...TERMS, registration: seat, cancelled: true });
   expect(refund.textContent).toContain("Sword credit");
   await press(refund, "Take refund");
-  await press(refund, "Sign");
-  expect(signed.calls).toEqual([[expect.objectContaining({ entrypoint: "refund", calldata: ["0x52", "7"] })]]);
+  expect(await promptsOf(wallet)).toEqual([
+    [expect.objectContaining({ entry_point: "refund", calldata: ["0x52", "7"] })],
+  ]);
 
   expect((await mount(TERMS, null)).textContent).toContain("Entry is paid from your payout wallet");
 });
@@ -195,17 +205,21 @@ it("reads a slot's entry and refund with the payout wallet that pays, signed by 
     gameId: 0,
     registeredAt: 0,
   };
+  const payout = installWallet("argentX", { account: WALLET });
   const refund = await mount({ ...TERMS, registration: seat, cancelled: true });
   await press(refund, "Take refund");
-  await press(refund, "Sign");
-  expect(signed.owners).toEqual(["0x4a1"]);
+  expect(await promptsOf(payout)).toHaveLength(1);
 
-  // A refund owed to a wallet the player has since replaced is read for that wallet, named on the plate, signed by it.
+  // A refund owed to a wallet the player has since replaced is read for that wallet, named on the plate, signed by it:
+  // the payout wallet, still the one this browser's extension shares, is not prompted for it.
+  const former = installWallet("braavos", { account: "0xb0b", locked: true });
   const replaced = await mount({ ...TERMS, registration: seat, cancelled: true }, "0xb0b");
   expect(replaced.textContent).toContain("0xb0b");
   await press(replaced, "Take refund");
-  await press(replaced, "Sign");
-  expect(signed.owners).toEqual(["0x4a1", "0xb0b"]);
+  await settled(() => expect(replaced.textContent).toContain("Which wallet holds 0xb0b?"));
+  expect(payout.transactions()).toHaveLength(1);
+  await press(replaced, "Braavos");
+  expect(await promptsOf(former)).toHaveLength(1);
 });
 
 it("mints the test token to the paying wallet in a dev build, and offers no such thing in a production build", async () => {
@@ -215,17 +229,16 @@ it("mints the test token to the paying wallet in a dev build, and offers no such
   // The button names a test token: it never says LORDS.
   const mint = [...short.querySelectorAll("button")].find((button) => button.textContent?.startsWith("Mint"))!;
   expect(mint.textContent).toBe("Mint 1,000 test tokens");
+  const wallet = installWallet("argentX", { account: WALLET });
   await press(short, "Mint 1,000 test tokens");
-  await press(short, "Sign");
-  // The test token's own public mint, on the token the ledger names, to the wallet that pays: 1,000 of it.
-  expect(signed.calls).toEqual([
-    [{ contractAddress: "0x10e5", entrypoint: "mint", calldata: ["0x4a1", String(1_000n * WEI), "0"] }],
+  // The test token's own public mint, on the token the ledger names, to the wallet that pays: 1,000 of it, asked of
+  // that wallet by the one press.
+  expect(await promptsOf(wallet)).toEqual([
+    [{ contract_address: "0x10e5", entry_point: "mint", calldata: ["0x4a1", String(1_000n * WEI), "0"] }],
   ]);
-  expect(signed.owners).toEqual(["0x4a1"]);
 
   // Both environments are on Starknet mainnet: the build's environment, not its chain, decides.
   vi.stubEnv("VITE_PUBLIC_ENVIRONMENT", "production");
-  const words = (panel: HTMLElement) => [...panel.querySelectorAll("button")].map((button) => button.textContent);
-  expect(words(await mount({ ...TERMS, lords: 320n * WEI })).join()).not.toContain("Mint");
-  expect(words(await mount(TERMS)).join()).not.toContain("Mint");
+  expect(wordsOf(await mount({ ...TERMS, lords: 320n * WEI })).join()).not.toContain("Mint");
+  expect(wordsOf(await mount(TERMS)).join()).not.toContain("Mint");
 });

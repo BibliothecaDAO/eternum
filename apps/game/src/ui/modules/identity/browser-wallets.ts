@@ -1,16 +1,25 @@
-/** The wallet extensions a player links, by the name each injects itself into the page under. */
-const EXTENSIONS = ["starknet_argentX", "starknet_braavos"] as const;
+/** The wallet extensions a player links; each injects itself into the page as `starknet_<id>`, its connector's id. */
+const EXTENSIONS = ["argentX", "braavos"] as const;
 
 type Extension = { request: (call: { type: string; params?: object }) => Promise<unknown> };
 
+/** An account a wallet extension shares with this site, and the extension that holds it. */
+interface BrowserWallet {
+  extension: (typeof EXTENSIONS)[number];
+  address: string;
+}
+
 /**
  * The accounts the browser's wallet extensions already share with this site, asked silently: an extension that is
- * locked, or was never connected here, answers none and shows nothing. For display only; a wallet signs through the
- * wallet rows, which connect it.
+ * locked, or was never connected here, answers none and shows nothing.
  */
-export const readBrowserWallets = async (): Promise<string[]> => {
-  const injected = window as unknown as Partial<Record<(typeof EXTENSIONS)[number], Extension>>;
-  const answers = await Promise.all(EXTENSIONS.map((name) => sharedAccountsOf(injected[name])));
+export const readBrowserWallets = async (): Promise<BrowserWallet[]> => {
+  const injected = window as unknown as Partial<Record<string, Extension>>;
+  const answers = await Promise.all(
+    EXTENSIONS.map(async (extension) =>
+      (await sharedAccountsOf(injected[`starknet_${extension}`])).map((address) => ({ extension, address })),
+    ),
+  );
   return answers.flat();
 };
 

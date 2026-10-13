@@ -141,7 +141,9 @@ export const useRefundSlots = (slots: readonly PlaytestSlot[], payout: string | 
 /** The wallets a refund may be owed to: the payout wallet first, then the accounts this browser's wallets share. */
 const useRefundWallets = (payout: string | null, enabled: boolean): string[] => {
   const browser = useQuery({ queryKey: ["browser-wallets"], queryFn: readBrowserWallets, enabled, staleTime: 60_000 });
-  const others = (browser.data ?? []).filter((wallet) => payout === null || !isSameStarknetAddress(wallet, payout));
+  const others = (browser.data ?? [])
+    .map((wallet) => wallet.address)
+    .filter((wallet) => payout === null || !isSameStarknetAddress(wallet, payout));
   return [...(payout === null ? [] : [payout]), ...others];
 };
 

@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "Your wallet opens by itself",
+    description:
+      "Changed paying from your linked wallet: Pay & join, a refund, a prize claim, a chest and the dev build's test-token mint now open that wallet's own prompt at once, with no wallet to pick again each time. If the wallet is on another account, one line names the linked one.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
     title: "Chat comes back by itself",
     description:
       "Fixed chat staying on Chat unavailable until a reload after its connection dropped: the room and your inbox now reconnect on their own, and the panel says Reconnecting while they do.",

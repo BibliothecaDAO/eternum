@@ -222,6 +222,8 @@ export const WALLET_WORDS = {
   noneHere: "No wallet this browser can open. Ready by email needs none.",
   wrongWallet: (owner: string) => `Open ${owner}: only that wallet can sign this.`,
   paymentFailed: "The wallet did not confirm it. Check it, then try again.",
+  tryAgain: "Try again",
+  whichHolds: (owner: string) => `Which wallet holds ${owner}?`,
 } as const;
 
 /** What every value screen shares: a fee the payout wallet cannot pay yet. */
