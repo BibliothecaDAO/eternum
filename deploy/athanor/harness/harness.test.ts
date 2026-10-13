@@ -798,6 +798,7 @@ describe("Madara harness reporting", () => {
       transactions: { executed: 4, reverted: 0, rejected: 0 },
       transactionsPerBusyBlock: { p50: 1, max: 3 },
       blockProductionMs: { p50: 10, p95: 30, max: 30 },
+      closeBlockMs: { p50: 11, p95: 31, max: 31 },
       mempool: { samples: 2, maxTransactions: 7, maxReadyTransactions: 5, lastObservedTransactions: 2 },
       sierraGasPerBusyBlock: { p50: 100, p95: 300, max: 300 },
       slowestBlock: {
@@ -863,6 +864,11 @@ describe("Madara harness reporting", () => {
     const { bouncer_sierra_gas: _gas, ...gasless } = blockRow(10, 1, 10);
     const noGas = await runBlockStats([gasless], [metricsRow(1, 0, 0, 1, 1)]);
     expect(noGas.output.missingRequired).toEqual(["bouncer_sierra_gas"]);
+
+    const { close_block_total_ms: _close, ...withoutClose } = blockRow(10, 1, 10);
+    const noClose = await runBlockStats([withoutClose], [metricsRow(1, 0, 0, 1, 1)]);
+    expect(noClose.exitCode).toBe(1);
+    expect(noClose.output.missingRequired).toEqual(["close_block_total_ms"]);
 
     const serial = await runBlockStats([blockRow(10, 1, 10)], [metricsRow(1, 0, 0, 1, 1)], ["--pair", "concurrency"]);
     expect(serial.exitCode).toBe(1);
@@ -1181,7 +1187,7 @@ function blockRow(blockNumber: number, transactions: number, blockProductionMs: 
     bouncer_sierra_gas: transactions * 100,
     batches_executed: 1,
     block_production_ms: blockProductionMs,
-    close_end_to_end_ms: blockProductionMs + 1,
+    close_block_total_ms: blockProductionMs + 1,
     merklization_ms: 2,
     db_write_ms: 1,
   };
