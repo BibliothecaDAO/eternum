@@ -11,9 +11,22 @@ import type { ReactNode } from "react";
 /** One side of a tier's choice: its art and name, and what it gives every building of the type, before → after. */
 type Side = { icon: IconCode; name: string; gain: { icon: IconCode; label: string; value: string } };
 
+/** One figure of the building as it stands: its icons, its number, and the name its tooltip says. */
+export type Figure = { icons: IconCode[]; label: string; value: string };
+
+/** What a building is doing now, as chips: icons and numbers on the surface, each named when asked. */
+export const Figures = ({ figures }: { figures: readonly Figure[] }) => (
+  <div className="flex flex-wrap items-center justify-center gap-1.5">
+    {figures.map((figure) => (
+      <Chip key={figure.label} icons={figure.icons} label={figure.label} value={figure.value} />
+    ))}
+  </div>
+);
+
 /**
  * A building type's Upgrade sheet (wireframes 02 and 09): one sheet whichever way the player came, a building on the
- * board or its row in the castle's tree. The type, its tier now and next on their framed chips, then its two sides
+ * board or its row in the castle's tree. What the building does now (what each makes an hour, how many stand, what
+ * its store holds, the population it takes), then the type, its tier now and next on their framed chips, then its two sides
  * (farm, workshop, barracks) with what each gives every building of the type, the first tap lifting one, or what the
  * tier gives where there is no choice; then the seal (the choice is final for the season) and Upgrade carrying its
  * Essence and labor. Upgrade always ends the sheet: while it cannot run it stays, dimmed, with its price, over the one
@@ -24,6 +37,7 @@ type Side = { icon: IconCode; name: string; gain: { icon: IconCode; label: strin
 export const TypeUpgradeSheet = ({
   icon,
   name,
+  now,
   tier,
   sides,
   lifted,
@@ -38,6 +52,8 @@ export const TypeUpgradeSheet = ({
 }: {
   icon: IconCode;
   name: string;
+  /** What the building does as it stands. */
+  now?: readonly Figure[];
   tier: Tier;
   sides?: readonly [Side, Side];
   lifted?: 0 | 1;
@@ -68,6 +84,7 @@ export const TypeUpgradeSheet = ({
           <Button role="outline" icon="Rs" word={RESEARCH} className="!h-10 !px-3 lg:mr-10" onClick={onResearch} />
         )}
       </header>
+      {now && now.length > 0 && <Figures figures={now} />}
       <div className="flex items-center justify-center gap-2">
         <TierChip tier={tier} showWord />
         {!top && (

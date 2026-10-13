@@ -1049,6 +1049,10 @@ export const HudLab = () => {
           <CastleView
             now={CASTLE_SIDE(1, 18_000)}
             next={CASTLE_SIDE(2, 50_000)}
+            makes={[
+              { icons: ["La"], label: "labor the castle makes an hour", value: "+101/h" },
+              { icons: ["La", "Sg"], label: "labor held of its store's limit", value: "9,640 / 18,000" },
+            ]}
             prices={[{ of: "labor", amount: 15_000 }]}
             refusal={
               lab.realmView === "castle-short"

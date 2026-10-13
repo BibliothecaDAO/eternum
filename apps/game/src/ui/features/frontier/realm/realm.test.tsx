@@ -107,6 +107,30 @@ describe("the build sheet", () => {
 });
 
 describe("the castle", () => {
+  const CASTLE_MAKES = [
+    { icons: ["La" as const], label: "labor the castle makes an hour", value: "+101/h" },
+    { icons: ["La" as const, "Sg" as const], label: "labor held of its store's limit", value: "2,011 / 6,000" },
+  ];
+
+  it("shows what the castle itself makes an hour and what its store holds, each named for the tooltip", () => {
+    act(() =>
+      root.render(
+        <CastleView
+          makes={CASTLE_MAKES}
+          now={side(0)}
+          next={side(1)}
+          prices={[{ of: "labor", amount: 4_000 }]}
+          refusal={undefined}
+          sending={false}
+          onUpgrade={() => {}}
+          onClose={() => {}}
+        />,
+      ),
+    );
+    expect(host.querySelector('[aria-label="labor the castle makes an hour +101/h"]')!.textContent).toBe("+101/h");
+    expect(host.querySelector('[aria-label="labor held of its store\'s limit 2,011 / 6,000"]')).not.toBeNull();
+  });
+
   const side = (level: number) => ({
     level,
     art: "/images/buildings/construction/castleOne.png",
@@ -121,6 +145,7 @@ describe("the castle", () => {
     act(() =>
       root.render(
         <CastleView
+          makes={CASTLE_MAKES}
           now={side(1)}
           next={side(2)}
           prices={[{ of: "labor", amount: 15_000 }]}
@@ -149,6 +174,7 @@ describe("the castle", () => {
     act(() =>
       root.render(
         <CastleView
+          makes={CASTLE_MAKES}
           now={side(0)}
           next={side(1)}
           prices={[{ of: "labor", amount: 4_000 }]}
@@ -179,6 +205,7 @@ describe("the castle", () => {
     act(() =>
       root.render(
         <CastleView
+          makes={CASTLE_MAKES}
           now={side(3)}
           next={null}
           prices={[]}

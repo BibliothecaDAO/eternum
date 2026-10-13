@@ -7,6 +7,8 @@ import { type Refusal, RefusedVerb } from "@/ui/design-system/kit/refused-verb";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { CASTLE, REALM_LEVELS, TROOPS, UPGRADE, UPGRADING } from "@/ui/design-system/kit/words";
 
+import { type Figure, Figures } from "./type-upgrade-sheet";
+
 /** The castle at one level: its art and level, the plots it opens, its army slots, each store's limit, the deploy cap. */
 export type CastleSide = {
   level: number;
@@ -19,7 +21,7 @@ export type CastleSide = {
 };
 
 /**
- * The castle's sheet (wireframe 02): the castle now and at its next level side by side, what the next level brings lit,
+ * The castle's sheet (wireframe 02): what the castle makes and holds now, the castle now and at its next level side by side, what the next level brings lit,
  * and Upgrade carrying its labor price. When the realm cannot pay, Upgrade stays, dimmed, with its price; the line
  * under it says what it needs against what is held and the exact wait; the map is offered where a reveal pays labor.
  * At the last level there is no next side and no verb.
@@ -27,6 +29,7 @@ export type CastleSide = {
 export const CastleView = ({
   now,
   next,
+  makes,
   prices,
   refusal,
   sending,
@@ -35,6 +38,8 @@ export const CastleView = ({
 }: {
   now: CastleSide;
   next: CastleSide | null;
+  /** What the castle itself makes and holds now: its own labor an hour, and the labor in its store. */
+  makes: readonly Figure[];
   prices: Price[];
   refusal: Refusal | undefined;
   sending: boolean;
@@ -46,6 +51,7 @@ export const CastleView = ({
       <KitIcon code="Cs" size={30} />
       <h2 className="frontier-title flex-1 !text-[20px]">{CASTLE}</h2>
     </header>
+    {makes.length > 0 && <Figures figures={makes} />}
     <div className="flex items-center gap-2">
       <Side side={now} />
       {next && (

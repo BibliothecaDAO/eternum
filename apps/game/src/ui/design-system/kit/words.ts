@@ -157,6 +157,18 @@ export const RESEARCHING = "Researching…";
 export const BUILDING = "Building…";
 export const UPGRADING = "Upgrading…";
 
+/** A standing building's figures on its panel, each named on its tooltip (the screen shows icons and numbers). */
+export const BUILDING_FIGURES = {
+  eachMakes: (noun: string) => `${noun} each makes an hour`,
+  castleMakes: (noun: string) => `${noun} the castle makes an hour`,
+  standing: "standing",
+  held: (noun: string) => `${noun} held of its store's limit`,
+  eachAdds: `${POPULATION} each adds`,
+  eachTakes: `${POPULATION} each takes`,
+  free: `${POPULATION} free of all`,
+  startsAt: (attribute: string) => `${attribute} new armies start at`,
+} as const;
+
 /** A slider's two ends, each a button: the least and the most the player can choose. */
 export const MINIMUM = "Minimum";
 export const MAXIMUM = "Maximum";

@@ -6,11 +6,22 @@ import type { IconCode } from "@/ui/design-system/kit/kit-icon";
 import type { Reason } from "@/ui/design-system/kit/reason-plate";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import type { Fix } from "@/ui/design-system/kit/refused-verb";
-import { CASTLE, forNewArmies, LABOR, POPULATION, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
+import {
+  BUILDING_FIGURES,
+  CASTLE,
+  forNewArmies,
+  LABOR,
+  POPULATION,
+  TIER_WORDS,
+  TROOPS,
+  WHEAT,
+} from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import {
+  configManager,
   type ExpeditionRules,
+  getBuildingQuantity,
   rationedWheatPerTroop,
   researchChoice,
   researchTier,
@@ -29,7 +40,7 @@ import type { Account } from "starknet";
 
 import { KindChoice } from "../army/army-sheet";
 import { ATTRIBUTE_LOOK, type Attribute, nextTierPrice } from "../attributes/attributes";
-import { outputPerHour } from "../build/build-options";
+import { outputPerHour, readBuildingEffect } from "../build/build-options";
 import { buildingIcon, buildingName } from "../build/building-names";
 import { useGoToFrontierPlace } from "../frontier-home";
 import { exploreFix } from "../frontier-reveal-yield";
@@ -37,7 +48,7 @@ import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 import { armyArt } from "../hud/dock-armies";
 import { useRealmStores } from "../realm-stores";
 import { TrainingGives } from "../upgrade/training-gives";
-import { TypeUpgradeSheet } from "../upgrade/type-upgrade-sheet";
+import { type Figure, TypeUpgradeSheet } from "../upgrade/type-upgrade-sheet";
 import type { TypeRowView } from "./research-plan";
 
 /** Each choosing row's sides: their marks, names and what each adds to every building of the type. */
@@ -92,7 +103,8 @@ export const TypeUpgrade = ({
 }) => {
   const { setup, account } = useGame();
   const tick = useCurrentDefaultTick();
-  const labor = useRealmStores(realm, rules)?.labor;
+  const stores = useRealmStores(realm, rules);
+  const labor = stores?.labor;
   const goToPlace = useGoToFrontierPlace(realm);
   const [lifted, setLifted] = useState<0 | 1 | undefined>(undefined);
   const [kind, setKind] = useState<ScoutKey>("camp");
@@ -136,6 +148,7 @@ export const TypeUpgrade = ({
     <TypeUpgradeSheet
       icon={buildingIcon(view.category)}
       name={buildingName(view.category)}
+      now={standingFigures(setup.store, realm, view, stores)}
       tier={(view.tier + 1) as Tier}
       sides={sides}
       lifted={lifted}
@@ -265,6 +278,74 @@ const lodgeRates = (view: TypeRowView): Record<ScoutKey, readonly [string, strin
     rift: [rate(bonus.rift), rate(bonus.rift + next)],
     stragglers: [rate(bonus.stragglers), rate(bonus.stragglers + next)],
   };
+};
+
+/**
+ * What a standing building does now, as its panel's figures: what each makes an hour at the type's tier with how many
+ * stand and what their store holds, a Hut's population with what is free, a training building's starting tier, and
+ * the population each takes. Read from the same facts the build sheet reads.
+ */
+const standingFigures = (
+  store: NativeFactStore,
+  realm: NativeRows["Structure"],
+  view: TypeRowView,
+  stores: ReturnType<typeof useRealmStores>,
+): Figure[] => {
+  const effect = readBuildingEffect(store, realm, view.category, view.learned);
+  // The castle's own labor producer is not a Workshop.
+  const standing =
+    getBuildingQuantity(safeInteger(realm.entity_id), view.category, store) -
+    (view.category === BuildingType.ResourceLabor ? 1 : 0);
+  const count: Figure = {
+    icons: [buildingIcon(view.category)],
+    label: BUILDING_FIGURES.standing,
+    value: `×${standing}`,
+  };
+  const takes = store.require("BuildingRule", { game_id: realm.game_id, category: view.category }).population_cost;
+  const population: Figure[] =
+    takes > 0 ? [{ icons: ["Pp"], label: BUILDING_FIGURES.eachTakes, value: formatAmount(takes) }] : [];
+  if (effect.kind === "trains")
+    return [
+      {
+        icons: [TRAINING[view.row]!.mark],
+        label: BUILDING_FIGURES.startsAt(effect.attribute),
+        value: TIER_WORDS[view.tier],
+      },
+      ...population,
+    ];
+  if (effect.kind === "population") {
+    const people = store.get("StructureBuildings", { game_id: realm.game_id, entity_id: realm.entity_id })?.population;
+    const total = people && people.max + configManager.getBasePopulationCapacity();
+    return [
+      { icons: ["Pp"], label: BUILDING_FIGURES.eachAdds, value: `+${formatAmount(effect.amount)}` },
+      count,
+      {
+        icons: ["Pp", "Sg"],
+        label: BUILDING_FIGURES.free,
+        value: `${formatAmount(total === undefined ? undefined : total - people!.current)} / ${formatAmount(total)}`,
+      },
+    ];
+  }
+  const made = MADE[effect.resource];
+  if (!made) throw new Error(`No figure for resource ${effect.resource}`);
+  const held = stores?.[made.store];
+  return [
+    { icons: [made.icon], label: BUILDING_FIGURES.eachMakes(made.word), value: `+${formatAmount(effect.perHour)}/h` },
+    count,
+    {
+      icons: [made.icon, "Sg"],
+      label: BUILDING_FIGURES.held(made.word),
+      value: `${formatAmount(held?.amount)} / ${formatAmount(held?.limit)}`,
+    },
+    ...population,
+  ];
+};
+
+/** What each producing building makes: its icon, its glossary word and the realm store that holds it. */
+const MADE: Partial<Record<number, { icon: IconCode; word: string; store: "wheat" | "labor" | "troops" }>> = {
+  [ResourcesIds.Wheat]: { icon: "Wh", word: WHEAT, store: "wheat" },
+  [ResourcesIds.Labor]: { icon: "La", word: LABOR, store: "labor" },
+  [ResourcesIds.Knight]: { icon: "Tr", word: TROOPS, store: "troops" },
 };
 
 /**

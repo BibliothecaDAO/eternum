@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "Buildings show what they make",
+    description:
+      "Added to every building's panel in Frontier what it makes an hour, how many stand, what its store holds and the population it takes. The castle shows the labor it makes by itself and the labor it holds.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-13",
     title: "The fast order is back",
     description:
       "Restored the fast order in Frontier: with an army selected, a right-click on a highlighted tile, or a press-and-hold on a phone, sends the explore or the move at once, with no preview. A click or a tap still opens the preview with its costs and its confirm, and the tile's tooltip says which is which. An attack is never sent unseen: either gesture opens its forecast. The preview still stays on the tile you chose while the pointer moves, Esc backs out one step, and Enter confirms the open preview or puts the cursor in chat.",

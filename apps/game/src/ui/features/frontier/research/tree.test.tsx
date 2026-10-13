@@ -150,6 +150,37 @@ describe("the castle's tree", () => {
     expect(onResearch).toHaveBeenCalledOnce();
   });
 
+  it("shows what a standing building does now: what each makes, how many stand, what the store holds", () => {
+    act(() =>
+      root.render(
+        <TypeUpgradeSheet
+          icon="Bs"
+          name="Barracks"
+          now={[
+            { icons: ["Tr"], label: "troops each makes an hour", value: "+101/h" },
+            { icons: ["Bs"], label: "standing", value: "×2" },
+            { icons: ["Tr", "Sg"], label: "troops held of its store's limit", value: "2,976 / 6,000" },
+            { icons: ["Pp"], label: "population each takes", value: "3" },
+          ]}
+          tier={1}
+          prices={[]}
+          sending={false}
+          onUpgrade={() => {}}
+          onClose={() => {}}
+        />,
+      ),
+    );
+    const said = [...host.querySelectorAll('[role="img"][aria-label]')].map((chip) => chip.getAttribute("aria-label"));
+    expect(said).toEqual(
+      expect.arrayContaining([
+        "troops each makes an hour +101/h",
+        "standing ×2",
+        "troops held of its store's limit 2,976 / 6,000",
+        "population each takes 3",
+      ]),
+    );
+  });
+
   it("says which row a locked castle row waits for, with Research dimmed over it", () => {
     act(() =>
       root.render(

@@ -108,7 +108,7 @@ export const readBuildOptions = (
  * hut_bonus compute it: each Fields, Tools or Drill pick adds a share of the base output, each hut tier a share of a
  * hut's population. The one reading of it, for the build sheet and research's gains.
  */
-const readBuildingEffect = (
+export const readBuildingEffect = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
   category: BuildingType,
