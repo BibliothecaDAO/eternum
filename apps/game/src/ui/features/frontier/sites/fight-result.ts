@@ -1,29 +1,23 @@
 import type { IconCode } from "@/ui/design-system/kit/kit-icon";
 import { create } from "zustand";
 
+import type { FightRecord, TroopsChange } from "./fight-record";
 import type { AttackTargetKind } from "./site-marks";
 
-/** How one attack ended: the guard is gone, the army is gone, or both still stand and the fight goes on. */
+/** How one attack ended: the army is gone, the guard is gone, or both still stand and the fight goes on. */
 export type FightVerdict = "victory" | "army-lost" | "guard-holds";
 
-/** The player's own attack as it was sent: who fought, with what, and what the clear would pay. */
+/** The player's own attack as it leaves: who fights whom, and what the preview said a clear pays. */
 export interface FightSent {
   /** The site attacked, or the other player's army. */
   targetId: number;
   site: AttackTargetKind;
   armyId: number;
   armyArt: string;
-  /** Whole troops on each side as the attack was sent. */
+  /** The army's whole troops as the attack leaves. */
   army: number;
-  guard: number;
   /** What clearing the site pays: what fits home and the XP, as the preview showed them; nothing for an army. */
   clearPays: { pay: { icon: IconCode; amount: number } | null; xp: number } | null;
-}
-
-/** Whole troops on each side now; an army that is gone has none. */
-export interface FightSides {
-  army: number;
-  guard: number;
 }
 
 /** What one attack did, for its result: each side before and after, and what a clear paid. */
@@ -31,32 +25,43 @@ export interface FightResult {
   site: AttackTargetKind;
   verdict: FightVerdict;
   armyArt: string;
-  army: { before: number; after: number };
-  guard: { before: number; after: number };
+  army: TroopsChange;
+  /** The other side as the battle recorded it; null when no record of the battle reached this screen. */
+  guard: TroopsChange | null;
   gained: FightSent["clearPays"] | null;
 }
 
-export const fightVerdict = (after: FightSides): FightVerdict =>
-  after.guard === 0 ? "victory" : after.army === 0 ? "army-lost" : "guard-holds";
+/** A lost army is lost whatever is left of the other side; a victory needs the army standing and the guard gone. */
+export const fightVerdict = (after: { army: number; guard: number }): FightVerdict =>
+  after.army === 0 ? "army-lost" : after.guard === 0 ? "victory" : "guard-holds";
 
-/**
- * The attack's result once the facts carry it: nothing while both sides still read as they were sent. The result is
- * the entity diff around the player's own attack; no event has to arrive for it.
- */
-export const readFightResult = (sent: FightSent, now: FightSides): FightResult | null => {
-  if (now.army === sent.army && now.guard === sent.guard) return null;
-  const verdict = fightVerdict(now);
+/** The attack's result from the battle's own record: nothing here is read from what a row no longer says. */
+export const fightResultOf = (sent: FightSent, { army, guard }: FightRecord): FightResult => {
+  const verdict = fightVerdict({ army: army.after, guard: guard.after });
   return {
     site: sent.site,
     verdict,
     armyArt: sent.armyArt,
-    army: { before: sent.army, after: now.army },
-    guard: { before: sent.guard, after: now.guard },
+    army,
+    guard,
     gained: verdict === "victory" ? sent.clearPays : null,
   };
 };
 
-/** An attack that did not happen: the game refused it or it could not be sent, in the one line the card shows. */
+/** The one thing known of a fight with no record once the army's own row is gone: the army was lost. */
+export const lostArmyResult = (sent: FightSent): FightResult => ({
+  site: sent.site,
+  verdict: "army-lost",
+  armyArt: sent.armyArt,
+  army: { before: sent.army, after: 0 },
+  guard: null,
+  gained: null,
+});
+
+/**
+ * An attack with no result to show, in the one line the card shows instead: the game refused it, it could not be
+ * sent, or no answer came for it yet (the line then says it may still apply).
+ */
 interface FightRefusal {
   armyId: number;
   targetId: number;
@@ -64,15 +69,15 @@ interface FightRefusal {
 }
 
 /**
- * The acting surface's own state for its attack: the attack in flight, then its result until the player closes it,
- * or the reason it never happened until the next attack. It is never a game fact, only what this screen shows of the
- * fight it sent.
+ * The acting surface's own state for the attack it sent: its result until the player closes it, or the reason it
+ * never happened until the next attack. Both are set from the action's own outcome and never from a later change in
+ * the game's rows. It is never a game fact, only what this screen shows of the fight it sent.
  */
-const useFightStore = create<{ sent: FightSent | null; result: FightResult | null; refusal: FightRefusal | null }>(
-  () => ({ sent: null, result: null, refusal: null }),
-);
+const useFightStore = create<{ result: FightResult | null; refusal: FightRefusal | null }>(() => ({
+  result: null,
+  refusal: null,
+}));
 
-export const useFightSent = () => useFightStore((state) => state.sent);
 export const useFightResult = () => useFightStore((state) => state.result);
 /** Why this army's last attack on this target did not happen, until it attacks again. */
 export const useFightRefusal = (armyId: number | null, targetId: number): string | undefined =>
@@ -80,9 +85,10 @@ export const useFightRefusal = (armyId: number | null, targetId: number): string
     refusal && refusal.armyId === armyId && refusal.targetId === targetId ? refusal.line : undefined,
   );
 
-export const fightIsSent = (sent: FightSent | null): void =>
-  useFightStore.setState({ sent, result: null, refusal: null });
-/** The attack did not happen (refused by the game, or never sent): there is no fight to report, only the reason. */
-export const fightWasNotSent = (refusal: FightRefusal): void => useFightStore.setState({ sent: null, refusal });
-export const fightEnded = (result: FightResult | null): void => useFightStore.setState({ sent: null, result });
+/** An attack leaves: what the last one left on screen goes. */
+export const fightIsSent = (): void => useFightStore.setState({ result: null, refusal: null });
+/** The attack was refused, never sent or left unanswered: there is no fight to report, only that line. */
+export const fightWasNotSent = (refusal: FightRefusal): void => useFightStore.setState({ refusal });
+/** The attack was applied: its result stands until closed; null where another surface shows it or nothing is known. */
+export const fightEnded = (result: FightResult | null): void => useFightStore.setState({ result });
 export const closeFightResult = (): void => useFightStore.setState({ result: null });

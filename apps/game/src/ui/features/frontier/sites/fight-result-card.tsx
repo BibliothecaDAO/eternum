@@ -6,6 +6,7 @@ import { ARMY, ARMY_LOST, GUARD_HOLDS, TROOPS, VICTORY, XP } from "@/ui/design-s
 
 import type { ReactNode } from "react";
 
+import type { TroopsChange } from "./fight-record";
 import type { FightResult, FightVerdict } from "./fight-result";
 import { TARGET_MARKS } from "./site-marks";
 
@@ -22,8 +23,9 @@ const VERDICT_TONES: Record<FightVerdict, string> = {
 };
 
 /**
- * How an attack ended, in the sheet that sent it: the one word, then each side's troops before and after, and on a
- * clear what it paid home with its XP. It stays until the player taps it away.
+ * How an attack ended, in the sheet that sent it: the one word, then each side's troops before and after as the
+ * battle recorded them (the army alone when no record of the battle is known), and on a clear what it paid home with
+ * its XP. It stays until the player taps it away.
  */
 export const FightResultCard = ({ result, onClose }: { result: FightResult; onClose: () => void }) => {
   const { word, icon } = TARGET_MARKS[result.site];
@@ -51,7 +53,7 @@ export const FightResultCard = ({ result, onClose }: { result: FightResult; onCl
           mark={<img src={result.armyArt} alt="" className="size-7 rounded-full object-cover" />}
           troops={result.army}
         />
-        <Side label={TROOPS} mark={<KitIcon code="Tr" size={24} />} troops={result.guard} />
+        {result.guard && <Side label={TROOPS} mark={<KitIcon code="Tr" size={24} />} troops={result.guard} />}
       </span>
       {result.gained && (
         <span className="frontier-card flex h-14 items-center justify-center gap-3 !rounded-xl !border-2 !border-kit-gold">
@@ -70,16 +72,8 @@ export const FightResultCard = ({ result, onClose }: { result: FightResult; onCl
   );
 };
 
-/** One side of the fight: its troops as the attack was sent, and what is left of them, in red when none are. */
-const Side = ({
-  label,
-  mark,
-  troops,
-}: {
-  label: string;
-  mark: ReactNode;
-  troops: { before: number; after: number };
-}) => (
+/** One side of the fight: its troops before the battle, and what is left of them, in red when none are. */
+const Side = ({ label, mark, troops }: { label: string; mark: ReactNode; troops: TroopsChange }) => (
   <span
     role="img"
     aria-label={`${label} ${formatExact(troops.before)} → ${formatExact(troops.after)}`}

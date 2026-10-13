@@ -21,7 +21,8 @@ describe("a sent command's own outcome", () => {
     expect(settled).not.toHaveBeenCalled();
     apply({ hash: "0xabc", block: 7, status: "SUCCEEDED" });
     await applied;
-    expect(settled).toHaveBeenCalledTimes(1);
+    // It names the action it followed, for whoever reads that action's own record.
+    expect(settled).toHaveBeenCalledWith("0xabc");
   });
 
   it("rejects with the game's reason when the action was refused or reverted", async () => {

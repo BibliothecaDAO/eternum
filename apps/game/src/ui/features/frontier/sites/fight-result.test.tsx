@@ -9,24 +9,22 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useBlockTimestamp: () => ({ currentArmiesTick: 3, armiesTickTimeRemaining: 60 }),
 }));
 
-import { GameProvider } from "@/hooks/context/game-context";
-import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
-
-import { closeFightResult, type FightSent, fightIsSent, readFightResult, useFightResult } from "./fight-result";
+import { closeFightResult, type FightSent, fightResultOf, lostArmyResult } from "./fight-result";
 import { FightResultCard } from "./fight-result-card";
-import { useFightWatch } from "./fight-watch";
-import { campBeside, otherArmyAt, SITE } from "./site-fixture";
+import { SITE } from "./site-fixture";
 
-const PRECISION = 1_000_000_000n;
 const SENT: FightSent = {
   targetId: SITE,
   site: "Camp",
   armyId: 201,
   armyArt: "/images/armies/knightT1.png",
   army: 1_498,
-  guard: 1_100,
   clearPays: { pay: { icon: "La", amount: 550 }, xp: 82 },
 };
+const record = (army: [number, number], guard: [number, number]) => ({
+  army: { before: army[0], after: army[1] },
+  guard: { before: guard[0], after: guard[1] },
+});
 
 let host: HTMLDivElement;
 let root: Root;
@@ -44,21 +42,35 @@ afterEach(() => {
   closeFightResult();
 });
 
-describe("an attack's result", () => {
-  it("waits while both sides still read as they were sent", () => {
-    expect(readFightResult(SENT, { army: 1_498, guard: 1_100 })).toBeNull();
-  });
-
-  it("is a victory that pays when the guard is gone, the army's loss when the army is, else the guard holding", () => {
-    expect(readFightResult(SENT, { army: 1_318, guard: 0 })).toEqual(
+describe("an attack's result, from the battle's own record", () => {
+  it("is a victory that pays when the army stands and the guard is gone, else the guard holding", () => {
+    expect(fightResultOf(SENT, record([1_498, 1_318], [1_100, 0]))).toEqual(
       expect.objectContaining({ verdict: "victory", army: { before: 1_498, after: 1_318 }, gained: SENT.clearPays }),
     );
-    expect(readFightResult(SENT, { army: 0, guard: 1_028 })).toEqual(
-      expect.objectContaining({ verdict: "army-lost", guard: { before: 1_100, after: 1_028 }, gained: null }),
-    );
-    expect(readFightResult(SENT, { army: 1_400, guard: 600 })).toEqual(
+    expect(fightResultOf(SENT, record([1_498, 1_400], [1_100, 600]))).toEqual(
       expect.objectContaining({ verdict: "guard-holds", gained: null }),
     );
+  });
+
+  it("is the army's loss whenever the army is gone, whatever is left of the guard, and pays nothing", () => {
+    expect(fightResultOf(SENT, record([1_498, 0], [1_100, 1_028]))).toEqual(
+      expect.objectContaining({ verdict: "army-lost", guard: { before: 1_100, after: 1_028 }, gained: null }),
+    );
+    // Both sides fall in the same exchange: the army is still lost, and nothing is paid to it.
+    expect(fightResultOf(SENT, record([1_498, 0], [1_100, 0]))).toEqual(
+      expect.objectContaining({ verdict: "army-lost", gained: null }),
+    );
+  });
+
+  it("says only that the army was lost when no record of the battle is known", () => {
+    expect(lostArmyResult(SENT)).toEqual({
+      site: "Camp",
+      verdict: "army-lost",
+      armyArt: SENT.armyArt,
+      army: { before: 1_498, after: 0 },
+      guard: null,
+      gained: null,
+    });
   });
 });
 
@@ -66,7 +78,9 @@ describe("the result card", () => {
   it("says the one word, each side before and after, and what a clear paid, and goes with a tap", () => {
     const onClose = vi.fn();
     act(() =>
-      root.render(<FightResultCard result={readFightResult(SENT, { army: 1_318, guard: 0 })!} onClose={onClose} />),
+      root.render(
+        <FightResultCard result={fightResultOf(SENT, record([1_498, 1_318], [1_100, 0]))} onClose={onClose} />,
+      ),
     );
     const card = host.querySelector<HTMLButtonElement>('button[aria-label="Camp: Victory"]')!;
     expect(card.querySelector('[aria-label="Army 1,498 → 1,318"]')).not.toBeNull();
@@ -79,80 +93,21 @@ describe("the result card", () => {
 
   it("names a lost army and pays nothing", () => {
     act(() =>
-      root.render(<FightResultCard result={readFightResult(SENT, { army: 0, guard: 1_028 })!} onClose={() => {}} />),
+      root.render(
+        <FightResultCard result={fightResultOf(SENT, record([1_498, 0], [1_100, 1_028]))} onClose={() => {}} />,
+      ),
     );
     const card = host.querySelector('button[aria-label="Camp: Army lost"]')!;
     expect(card.querySelector('[aria-label="Army 1,498 → 0"]')).not.toBeNull();
+    expect(card.querySelector('[aria-label="troops 1,100 → 1,028"]')).not.toBeNull();
     expect(card.querySelector('[aria-label^="XP"]')).toBeNull();
   });
-});
 
-describe("the player's attack in flight", () => {
-  const Watch = () => {
-    useFightWatch();
-    const result = useFightResult();
-    return <output>{result ? `${result.verdict} ${result.army.after} ${result.guard.after}` : "waiting"}</output>;
-  };
-
-  it("ends on its result as soon as the facts carry what it did, with no event", () => {
-    const { store } = campBeside();
-    const guard = store.require("Guard", { game_id: 1, structure_id: SITE, slot: 0 });
-    const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
-    act(() =>
-      root.render(
-        <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
-          <Watch />
-        </GameProvider>,
-      ),
-    );
-    act(() => fightIsSent(SENT));
-    expect(host.textContent).toBe("waiting");
-
-    act(() =>
-      store.applyFacts([
-        {
-          model: "Guard",
-          key: "0x73",
-          value: wire({ ...guard, troops: { ...guard.troops, count: 600n * PRECISION } }),
-        },
-        {
-          model: "ExplorerTroops",
-          key: "0x74",
-          value: wire({ ...army, troops: { ...army.troops, count: 1_400n * PRECISION } }),
-        },
-      ] as never),
-    );
-    expect(host.textContent).toBe("guard-holds 1400 600");
+  it("shows the lost army alone when nothing is known of the other side", () => {
+    act(() => root.render(<FightResultCard result={lostArmyResult(SENT)} onClose={() => {}} />));
+    const card = host.querySelector('button[aria-label="Camp: Army lost"]')!;
+    expect(card.querySelector('[aria-label="Army 1,498 → 0"]')).not.toBeNull();
+    expect(card.querySelector('[aria-label^="troops"]')).toBeNull();
+    expect(card.textContent).not.toContain("+");
   });
 });
-
-describe("an attack on another player's army", () => {
-  it("ends on its result from both armies' troops, and pays nothing", () => {
-    const { store } = campBeside();
-    otherArmyAt(store, 42, 12);
-    const Watch = () => {
-      useFightWatch();
-      const result = useFightResult();
-      return (
-        <output>
-          {result ? `${result.site} ${result.verdict} ${result.guard.after} ${result.gained}` : "waiting"}
-        </output>
-      );
-    };
-    act(() =>
-      root.render(
-        <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
-          <Watch />
-        </GameProvider>,
-      ),
-    );
-    act(() => fightIsSent({ ...SENT, site: "Army", targetId: 301, guard: 300, clearPays: null }));
-    expect(host.textContent).toBe("waiting");
-    act(() => store.applyFacts([{ model: "ExplorerTroops", key: "0x90", value: null }] as never));
-    expect(host.textContent).toBe("Army victory 0 null");
-  });
-});
-
-/** A decoded row back in the wire's form: big integers as strings. */
-const wire = (row: unknown): unknown =>
-  JSON.parse(JSON.stringify(row, (_, value) => (typeof value === "bigint" ? value.toString() : value)));

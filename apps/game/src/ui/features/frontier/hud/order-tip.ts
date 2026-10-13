@@ -9,6 +9,8 @@ type TileOrder = {
   /** What stands on the tile, as its card names it; an army when it is no site. */
   target: string | null;
   exploreStamina: number;
+  /** Whether the tile has been revealed; one that has not names itself even where no order leads. */
+  explored: boolean;
 };
 
 export type OrderTip = {
@@ -19,15 +21,17 @@ export type OrderTip = {
 };
 
 /**
- * What a highlighted tile is, before any click. The map's highlight colours mean these orders and nothing else; the
- * tooltip is their legend, and where two clicks differ it says which previews and which sends.
+ * What a tile is, before any click. The map's highlight colours mean the selected army's orders and nothing else; the
+ * tooltip is their legend, and where two clicks differ it says which previews and which sends. A tile no order leads
+ * to says only that it is unexplored, when it is; a revealed one shows what it is and needs no line.
  */
 export const orderTip = (order: TileOrder): OrderTip | null => {
   const line = orderLine(order);
-  return line === null ? null : { line, gestures: pinsOrder(order.path) ? FAST_ORDER_GESTURES : null };
+  if (line === null) return order.explored ? null : { line: UNEXPLORED, gestures: null };
+  return { line, gestures: pinsOrder(order.path) ? FAST_ORDER_GESTURES : null };
 };
 
-const orderLine = ({ path, target, exploreStamina }: TileOrder): string | null => {
+const orderLine = ({ path, target, exploreStamina }: Omit<TileOrder, "explored">): string | null => {
   if (!path || path.length < 2) return null;
   const actionType = ActionPaths.getActionType(path);
   const stamina = `${formatExact(computeEffectiveStaminaCost(path.slice(1), actionType, exploreStamina))} ${STAMINA}`;

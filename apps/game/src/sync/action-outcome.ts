@@ -20,11 +20,14 @@ export const sentTransactionHash = (sent: SentCommand): string => {
 
 /**
  * A sent command's own outcome. A queued command resolves as soon as it is sent, which says nothing of what it did.
- * This resolves once the game has applied the action, with its facts in the store, and rejects with the game's reason
- * when it applied nothing. A send the shard refuses rejects earlier, with the send's own error. An action whose
- * outcome is not known yet keeps waiting: nothing here infers one from time passing.
+ * This resolves with the action's transaction once the game has applied it, with its facts in the store, and rejects
+ * with the game's reason when it applied nothing. A send the shard refuses rejects earlier, with the send's own
+ * error. When neither Herald nor the node answers in the client's window, it rejects with the client's own no-answer
+ * error, whose message says the action may still apply: that frees the surface, and claims nothing of the action.
  */
-export const untilApplied = async (sent: Promise<SentCommand>): Promise<void> => {
-  const outcome = await requireActiveGameClient().waitForAction(sentTransactionHash(await sent));
+export const untilApplied = async (sent: Promise<SentCommand>): Promise<string> => {
+  const transactionHash = sentTransactionHash(await sent);
+  const outcome = await requireActiveGameClient().waitForAction(transactionHash);
   if (outcome.status !== "SUCCEEDED") throw new ActionNotAppliedError(outcome.revertReason);
+  return transactionHash;
 };

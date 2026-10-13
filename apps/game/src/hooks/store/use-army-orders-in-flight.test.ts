@@ -19,14 +19,14 @@ describe("an army's order", () => {
     expect(armyOrderInFlight(7)).toBe("explore");
 
     const attack = send();
-    expect(await orderArmy(7, "attack", attack)).toBe(false);
+    expect(await orderArmy(7, "attack", attack)).toBeNull();
     expect(attack).not.toHaveBeenCalled();
     // Another army is not held by it.
     waitForAction.mockResolvedValueOnce(APPLIED);
-    expect(await orderArmy(8, "move", send())).toBe(true);
+    expect(await orderArmy(8, "move", send())).toBe("0x1");
 
     apply(APPLIED);
-    expect(await first).toBe(true);
+    expect(await first).toBe("0x1");
     expect(explore).toHaveBeenCalledTimes(1);
     expect(armyOrderInFlight(7)).toBeUndefined();
   });

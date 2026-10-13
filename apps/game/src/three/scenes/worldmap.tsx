@@ -2406,7 +2406,7 @@ export default class WorldmapScene extends WarpTravel {
     // Entity IDs can be valid falsy values (for example 0), so nullish checks
     // are required to distinguish "no selection" from a real selected entity.
     const hasOrders = selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0;
-    if (hasOrders || this.hudCarriesOrderVerb()) this.showOrderUnderPointer(hasOrders ? hexCoords : null);
+    if (hasOrders || this.hudCarriesOrderVerb()) this.showOrderUnderPointer(hexCoords);
 
     this.interactiveHexManager.applyHoverPalette(hoverPalette);
   }
@@ -2422,7 +2422,8 @@ export default class WorldmapScene extends WarpTravel {
 
   /**
    * The order under the pointer. Where the HUD has no verb it is the preview itself; where the HUD carries the verb
-   * the pointer only names the tile on the tooltip (the highlight colours' legend) and a click opens the preview.
+   * the pointer only names the tile on the tooltip (the highlight colours' legend, and "Unexplored" on a tile nobody
+   * has revealed) and a click opens the preview.
    */
   private showOrderUnderPointer(hexCoords: HexPosition | null): void {
     if (!this.hudCarriesOrderVerb()) {
@@ -2439,6 +2440,7 @@ export default class WorldmapScene extends WarpTravel {
       path: getLiveWorldmapEntityActions().actionPaths.get(ActionPaths.posKey(hexCoords, true)),
       target: structure ? this.siteWord(structure.id) : null,
       exploreStamina: configManager.getExploreStaminaCost(),
+      explored: this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) === true,
     });
   }
 

@@ -28,7 +28,17 @@ import { GuideSlot } from "../guide/frontier-guide";
 import { type ArmyOrder, type Cost, isCovered, useArmyStamina, useOrderAt } from "../hud/army-order";
 import { armyArt, type DockArmy, useDockArmies } from "../hud/dock-armies";
 import { useApproachTile } from "./approach";
-import { type FightSent, fightIsSent, fightWasNotSent, useFightRefusal } from "./fight-result";
+import { readFightRecord } from "./fight-record";
+import {
+  fightEnded,
+  fightIsSent,
+  type FightResult,
+  fightResultOf,
+  type FightSent,
+  fightWasNotSent,
+  lostArmyResult,
+  useFightRefusal,
+} from "./fight-result";
 import { useSelectedOwnArmy } from "./selected-army";
 import { readArmyCard, readSiteCard, type SiteAttack, type SiteCardPlan, type SiteFight } from "./site-card-plan";
 import { type SiteChoice, SiteCardView, type SiteVerb } from "./site-card-view";
@@ -128,11 +138,12 @@ export const TileCard = ({ selected, onClose }: { selected: AttackTarget; onClos
     const signer = account.account;
     const sent = fightSentBy(attack.army, selected, plan);
     try {
-      await orderArmy(armyId, "attack", () => {
-        fightIsSent(sent);
+      const fought = await orderArmy(armyId, "attack", () => {
+        fightIsSent();
         playUnitCommandSound("attack");
         return sendAttack(setup.systemCalls, signer, armyId, selected);
       });
+      if (fought !== null) fightEnded(readFightResult(setup.store, sent, fought));
     } catch (error) {
       fightWasNotSent({
         armyId,
@@ -268,13 +279,8 @@ const sitePay = (plan: SiteCardPlan) => {
   return plan.payout && icon ? { icon, amount: plan.payout.amount, fits: plan.payout.fits } : null;
 };
 
-/** The attack as it leaves, for its result: both sides' troops now and what the clear would pay, as the card shows. */
-const fightSentBy = (
-  army: NativeRows["ExplorerTroops"],
-  selected: AttackTarget,
-  plan: SiteCardPlan,
-): FightSent | null => {
-  if (!plan.guard) return null;
+/** The attack as it leaves, for its result: who fights whom and what the card says a clear pays. */
+const fightSentBy = (army: NativeRows["ExplorerTroops"], selected: AttackTarget, plan: SiteCardPlan): FightSent => {
   const pay = sitePay(plan);
   return {
     targetId: targetId(selected),
@@ -282,10 +288,24 @@ const fightSentBy = (
     armyId: safeInteger(army.explorer_id),
     armyArt: armyArt(army.troops),
     army: wholeTroops(army),
-    guard: plan.guard.count,
     clearPays: plan.xp === undefined ? null : { pay: pay && { icon: pay.icon, amount: pay.fits }, xp: plan.xp },
   };
 };
+
+/**
+ * The applied attack's result, from evidence that exists. The battle's own record says what it did to both sides.
+ * With no record, only the army's own row speaks: gone, the army was lost; still there, nothing is claimed. A ruin's
+ * clear shows as its chest opening, which is that fight's result.
+ */
+const readFightResult = (store: NativeFactStore, sent: FightSent, transactionHash: string): FightResult | null => {
+  const record = readFightRecord(transactionHash);
+  if (!record) return armyIsGone(store, sent.armyId) ? lostArmyResult(sent) : null;
+  const result = fightResultOf(sent, record);
+  return result.verdict === "victory" && result.site === "Ruin" ? null : result;
+};
+
+const armyIsGone = (store: NativeFactStore, armyId: number): boolean =>
+  store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: armyId }) === undefined;
 
 /** A forecast the army does not win: it loses, or the fight stalls. */
 const cannotWin = (fight: SiteFight | undefined): boolean =>

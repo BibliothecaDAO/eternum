@@ -19,20 +19,19 @@ export const armyOrderInFlight = (armyId: number): OrderInFlight | undefined =>
 
 /**
  * Gives an army its order, the one way any surface does: one order of an army at a time, held in flight until the
- * action's own outcome. Resolves true once the game has applied it, and false without sending anything when the army
- * already has an order in flight, so a second press on the same control, or another surface's order for the same
- * army, never becomes a second transaction. Rejects with the reason when the order was refused or could not be sent;
- * either way the army takes orders again.
+ * action's own outcome. Resolves with the action's transaction once the game has applied it, and with null, sending
+ * nothing, when the army already has an order in flight: a second press on the same control, or another surface's
+ * order for the same army, never becomes a second transaction. Rejects with the reason when the order was refused or
+ * could not be sent; either way the army takes orders again.
  */
 export const orderArmy = async (
   armyId: number,
   order: OrderInFlight,
   send: () => Promise<SentCommand>,
-): Promise<boolean> => {
-  if (!takeArmy(armyId, order)) return false;
+): Promise<string | null> => {
+  if (!takeArmy(armyId, order)) return null;
   try {
-    await untilApplied(send());
-    return true;
+    return await untilApplied(send());
   } finally {
     freeArmy(armyId);
   }

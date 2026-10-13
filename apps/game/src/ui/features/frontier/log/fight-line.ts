@@ -2,13 +2,12 @@ import { formatExact } from "@/ui/design-system/kit/amount";
 import { fightLine } from "@/ui/design-system/kit/words";
 import { configManager } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
+import { StructureType } from "@bibliothecadao/types";
 
+import { battleRecordOf } from "../sites/fight-record";
 import { fightVerdict } from "../sites/fight-result";
 import { VERDICT_WORDS } from "../sites/fight-result-card";
 import { TARGET_MARKS } from "../sites/site-marks";
-
-const PRECISION = BigInt(RESOURCE_PRECISION);
 
 /**
  * The day log's line for one of the player's attacks on a site, from its battle story: the site, how the attack ended
@@ -20,10 +19,10 @@ export const fightLogLine = (
   store: NativeFactStore,
 ): string | null => {
   if (story.story !== "BattleEvent") return null;
-  const army = troopsOf(story.storyPayload.attacker);
-  const guard = troopsOf(story.storyPayload.defender);
+  const record = battleRecordOf(story.storyPayload);
   const site = siteWord(store, story.storyPayload.defender_id);
-  if (!army || !guard || !site) return null;
+  if (!record || !site) return null;
+  const { army, guard } = record;
   const verdict = VERDICT_WORDS[fightVerdict({ army: army.after, guard: guard.after })];
   return fightLine(
     site,
@@ -32,13 +31,6 @@ export const fightLogLine = (
     formatExact(guard.before),
     formatExact(guard.after),
   );
-};
-
-/** One side's whole troops before and after the battle, as its story carries them in game precision. */
-const troopsOf = (side: unknown): { before: number; after: number } | null => {
-  if (!side || typeof side !== "object" || !("before" in side) || !("after" in side)) return null;
-  const whole = (count: unknown) => Number(BigInt(String(count)) / PRECISION);
-  return { before: whole(side.before), after: whole(side.after) };
 };
 
 const siteWord = (store: NativeFactStore, entityId: unknown): string | null => {

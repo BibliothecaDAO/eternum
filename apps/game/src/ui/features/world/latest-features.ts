@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "A fight's result is the fight's own",
+    description:
+      "Fixed the result of an attack in Frontier: it is now read from the battle's own record, so an army lost in a fight reads Army lost with the guard as the battle left it, and can no longer read Victory with a payout when its region left your map with it. An attack the game refused shows no result at all, only why. A black tile now says Unexplored when you hover it.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
     title: "A sent order stays sent",
     description:
       "Fixed orders in Frontier that looked as if they had not left: after you attack, the button reads Attacking… until the fight's own result arrives, where it used to fall back to Attack for several seconds. An army whose order is still on its way takes no second one, on the map or on a card, so a second press never sends a second transaction. If the game refuses an order, or it cannot be sent, one line says why and the army is free again.",
