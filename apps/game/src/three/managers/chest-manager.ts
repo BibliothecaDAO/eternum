@@ -47,7 +47,6 @@ import {
 import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
 import type { HoverLabelShowResult } from "./hover-label-show-result";
 import {
-  isFrameBudgetWorkQueueDisposedError,
   scheduleFrameBudgetWork,
   type FrameBudgetWorkLane,
   type FrameBudgetWorkScheduler,
@@ -401,9 +400,6 @@ export class ChestManager {
       () => this.renderVisibleChests(chunkKey),
       "manager:chest-visibility",
     ).catch((error) => {
-      if (isFrameBudgetWorkQueueDisposedError(error)) {
-        return;
-      }
       console.error("[ChestManager] Failed to refresh visible chests", error);
     });
   }

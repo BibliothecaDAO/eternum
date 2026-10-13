@@ -128,7 +128,6 @@ import { normalizeStructureEntityId as normalizeEntityId } from "./structure-ent
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 import {
-  isFrameBudgetWorkQueueDisposedError,
   scheduleFrameBudgetWork,
   type FrameBudgetWorkLane,
   type FrameBudgetWorkScheduler,
@@ -1267,9 +1266,6 @@ export class StructureManager {
     }
 
     return this.runVisibleStructuresUpdate().catch((error) => {
-      if (isFrameBudgetWorkQueueDisposedError(error)) {
-        return;
-      }
       console.error("Failed to update visible structures", error);
     });
   }

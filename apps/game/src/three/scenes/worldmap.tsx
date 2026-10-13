@@ -45,11 +45,7 @@ import { ChestManager } from "@/three/managers/chest-manager";
 import { ReservedHyperstructureManager } from "@/three/managers/reserved-hyperstructure-manager";
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { StructureManager } from "@/three/managers/structure-manager";
-import {
-  FrameBudgetWorkQueue,
-  isFrameBudgetWorkQueueDisposedError,
-  type FrameBudgetWorkLane,
-} from "@/three/frame-budget-work-queue";
+import { FrameBudgetWorkQueue, type FrameBudgetWorkLane } from "@/three/frame-budget-work-queue";
 import { SceneManager } from "@/three/scene-manager";
 import { CameraView } from "@/three/scenes/camera-view";
 import { CAMERA_CONFIG } from "@/three/constants";
@@ -4750,9 +4746,7 @@ export default class WorldmapScene extends WarpTravel {
     let rebuild: Promise<void>;
     rebuild = this.rebuildInvalidatedVisualTerrainPage(pageKey)
       .catch((error) => {
-        if (!isFrameBudgetWorkQueueDisposedError(error)) {
-          console.error(`[WorldMap] Live tile page ${pageKey} failed`, error);
-        }
+        console.error(`[WorldMap] Live tile page ${pageKey} failed`, error);
       })
       .finally(() => {
         if (this.liveTilePageRebuilds.get(pageKey) === rebuild) {
@@ -4919,9 +4913,6 @@ export default class WorldmapScene extends WarpTravel {
       incrementWorldmapRenderCounter("visualPageQueued");
       void this.buildAndApplyVisualTerrainPage(request)
         .catch((error) => {
-          if (isFrameBudgetWorkQueueDisposedError(error)) {
-            return;
-          }
           console.error(`[WorldMap] Visual terrain page ${pageKey} failed`, error);
         })
         .finally(() => {
@@ -5201,9 +5192,6 @@ export default class WorldmapScene extends WarpTravel {
     try {
       await this.prepareAndApplyChunkSwitchTerrainShell(input);
     } catch (error) {
-      if (isFrameBudgetWorkQueueDisposedError(error)) {
-        return;
-      }
       console.warn("[WorldMap] Failed to build chunk switch terrain shell:", error);
     }
   }
@@ -5808,10 +5796,6 @@ export default class WorldmapScene extends WarpTravel {
     }
     const commit = this.chunkWorkQueue
       .schedule("critical", () => this.commitVisualTerrainComposite(), "terrain:composite")
-      .catch((error: unknown) => {
-        if (isFrameBudgetWorkQueueDisposedError(error)) return null;
-        throw error;
-      })
       .finally(() => {
         if (this.pendingVisualTerrainCompositeCommit === commit) this.pendingVisualTerrainCompositeCommit = null;
       });
@@ -5830,15 +5814,11 @@ export default class WorldmapScene extends WarpTravel {
       targetChunkKey: this.currentChunk,
     });
     // Composing and presenting are separate budgeted tasks so neither alone exceeds the frame budget.
-    void this.chunkWorkQueue
-      .schedule(
-        "critical",
-        () => this.applyTerrainPresentationComposite(composite, transitionToken),
-        "terrain:composite:present",
-      )
-      .catch((error: unknown) => {
-        if (!isFrameBudgetWorkQueueDisposedError(error)) throw error;
-      });
+    void this.chunkWorkQueue.schedule(
+      "critical",
+      () => this.applyTerrainPresentationComposite(composite, transitionToken),
+      "terrain:composite:present",
+    );
     return composite;
   }
 

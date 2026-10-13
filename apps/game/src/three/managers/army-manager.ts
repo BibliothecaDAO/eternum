@@ -148,11 +148,7 @@ import {
   waitForVisualSettle,
 } from "./manager-update-convergence";
 import { getRendererDiagnosticActiveMode, snapshotRendererDiagnostics } from "../renderer-diagnostics";
-import {
-  isFrameBudgetWorkQueueDisposedError,
-  scheduleFrameBudgetWork,
-  type FrameBudgetWorkScheduler,
-} from "../frame-budget-work-queue";
+import { scheduleFrameBudgetWork, type FrameBudgetWorkScheduler } from "../frame-budget-work-queue";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { PipelineCompiler } from "../pipeline-compiler";
 import { armyHomeStructureId } from "@/utils/native-id";
@@ -456,9 +452,6 @@ export class ArmyManager {
         ),
       )
       .catch((error) => {
-        if (isFrameBudgetWorkQueueDisposedError(error)) {
-          return;
-        }
         console.error(`[ArmyManager] Failed to synchronize projected army ${entityId}`, error);
       })
       .finally(() => {

@@ -2,11 +2,7 @@ import { NEUTRAL_BIOME_CLIMATE, type BiomeClimateConfig } from "@bibliothecadao/
 import { BiomeType, getNeighborHexes } from "@bibliothecadao/types";
 import type { Group } from "three";
 
-import {
-  isFrameBudgetWorkQueueDisposedError,
-  scheduleFrameBudgetWork,
-  type FrameBudgetWorkScheduler,
-} from "../frame-budget-work-queue";
+import { scheduleFrameBudgetWork, type FrameBudgetWorkScheduler } from "../frame-budget-work-queue";
 import {
   ProceduralTerrain,
   type TerrainPresentationDiagnostics,
@@ -255,8 +251,8 @@ export class WorldmapProceduralTerrain {
    * Presents the composite as a chain of critical-lane tasks — partition, roads, one request per page, worker
    * builds, then progressive page commits with matching fog. Without a
    * scheduler every step runs inline. Resolves null once a newer presentation, `clear`, or `dispose` supersedes
-   * this one, or the queue is disposed; pages committed before that stay valid until a later presentation
-   * replaces or releases them.
+   * this one; pages committed before that stay valid until a later presentation replaces or releases them. A
+   * disposed queue drops the remaining steps, and the presentation then never resolves.
    */
   async presentAsync(
     input: WorldmapProceduralPresentationInput,
@@ -267,7 +263,7 @@ export class WorldmapProceduralTerrain {
     try {
       return await this.runPresentation(run, input);
     } catch (error) {
-      if (error instanceof SupersededPresentationError || isFrameBudgetWorkQueueDisposedError(error)) return null;
+      if (error instanceof SupersededPresentationError) return null;
       throw error;
     }
   }
