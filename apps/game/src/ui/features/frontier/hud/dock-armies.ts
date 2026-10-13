@@ -5,7 +5,7 @@ import { buildStaminaDisplayModel } from "@/lib/army-stamina/presentation";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { configManager, getArmyName, homecomingReturn, liveHomeArmies } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { armyNumber, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
@@ -18,6 +18,8 @@ const ARMY_MODELS = ["ArmySlot", "ArmyProgress", "ExplorerTroops", "TileOccupanc
 /** One army as the dock and the action bar read it. Unknown is undefined, never zero. */
 export type DockArmy = {
   explorerId: number;
+  /** Its number among the realm's armies, as its map plate shows it. */
+  number: number;
   troopsFact: NativeRows["ExplorerTroops"]["troops"];
   label: string;
   art: string;
@@ -61,10 +63,12 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
       : null;
     const progress = setup.store.get("ArmyProgress", { game_id: army.game_id, explorer_id: army.explorer_id });
     const xpRules = setup.store.get("ArmyProgressionRules", { game_id: army.game_id });
+    const number = armyNumber(army) ?? index + 1;
     return {
       explorerId,
+      number,
       troopsFact: army.troops,
-      label: armyName(setup.store, explorerId, index + 1),
+      label: armyName(setup.store, explorerId, number),
       art: armyArt(army.troops),
       xp: progress?.xp,
       xpGoal: progress && xpRules && nextTierGoal(progress, xpRules),
@@ -83,8 +87,8 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
 export const armyArt = (troops: { category: string; tier: string }) =>
   `/images/armies/${troops.category.toLowerCase()}${troops.tier}.png`;
 
-/** The army's own name when it has one; otherwise its place in the dock, never its entity id. */
-const armyName = (store: NativeFactStore, explorerId: number, position: number): string => {
+/** The army's own name when it has one; otherwise its number, never its entity id. */
+const armyName = (store: NativeFactStore, explorerId: number, number: number): string => {
   const named = store.get("EntityName", { game_id: configManager.getActiveGameId(), entity_id: explorerId });
-  return named && named.name !== 0n ? getArmyName(explorerId, store) : `${ARMY} ${position}`;
+  return named && named.name !== 0n ? getArmyName(explorerId, store) : `${ARMY} ${number}`;
 };

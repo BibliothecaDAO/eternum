@@ -17,6 +17,7 @@ function createCanvasElement() {
       clearRect: vi.fn(),
       closePath: vi.fn(),
       fill: vi.fn(),
+      fillRect: vi.fn(),
       fillText: vi.fn(),
       lineTo: vi.fn(),
       measureText: vi.fn((text: string) => ({ width: text.length * 9 })),
@@ -104,7 +105,7 @@ describe("CompactEntityLabelRenderer", () => {
     expect(texture.version).toBeGreaterThan(version);
   });
 
-  it("uses a compact default footprint and faces the active camera", () => {
+  it("faces the active camera", () => {
     const scene = new THREE.Scene();
     const renderer = createRenderer(scene);
     const camera = new THREE.PerspectiveCamera();
@@ -112,18 +113,57 @@ describe("CompactEntityLabelRenderer", () => {
     camera.updateMatrixWorld();
 
     renderer.setLabel({ entityId: 1, position: new THREE.Vector3(3, 1, 2), text: "Facing", variant: "ally" });
-    renderer.updateCamera(camera);
+    renderer.updateCamera(camera, 900);
 
     const position = new THREE.Vector3();
     const quaternion = new THREE.Quaternion();
     const scale = new THREE.Vector3();
     instanceMatrixOf(renderer, 1).decompose(position, quaternion, scale);
     expect(position.x).toBeCloseTo(3);
-    expect(scale.y).toBeCloseTo(0.46);
     expect(scale.x).toBeGreaterThan(scale.y);
     expect(quaternion.x).toBeCloseTo(camera.quaternion.x);
     expect(quaternion.y).toBeCloseTo(camera.quaternion.y);
     expect(quaternion.z).toBeCloseTo(camera.quaternion.z);
+  });
+
+  it("keeps one height on screen at every distance: twice as far, twice as tall in the world", () => {
+    const scene = new THREE.Scene();
+    const renderer = createRenderer(scene);
+    const camera = new THREE.PerspectiveCamera(50);
+    const heightAt = (distance: number, viewportHeightPx: number) => {
+      camera.position.set(0, 0, distance);
+      camera.updateMatrixWorld();
+      renderer.updateCamera(camera, viewportHeightPx);
+      const scale = new THREE.Vector3();
+      instanceMatrixOf(renderer, 1).decompose(new THREE.Vector3(), new THREE.Quaternion(), scale);
+      return scale.y;
+    };
+    renderer.setLabel({ entityId: 1, position: new THREE.Vector3(), text: "Realm", variant: "structure" });
+
+    const near = heightAt(10, 900);
+    expect(heightAt(20, 900)).toBeCloseTo(near * 2);
+    // On screen: world height over the world a pixel spans there. The same on a phone's shorter viewport.
+    const pixels = (worldHeight: number, distance: number, viewport: number) =>
+      worldHeight / ((2 * Math.tan(THREE.MathUtils.degToRad(50) / 2) * distance) / viewport);
+    expect(pixels(near, 10, 900)).toBeCloseTo(26);
+    expect(pixels(heightAt(35, 844), 35, 844)).toBeCloseTo(26);
+  });
+
+  it("gives a plate with a meter its own art per fill step, and shares it between equal fills", () => {
+    const scene = new THREE.Scene();
+    const renderer = createRenderer(scene);
+    const at = new THREE.Vector3();
+    renderer.setLabel({ entityId: 1, position: at, text: "1", variant: "mine", meter: 0.5 });
+    renderer.setLabel({ entityId: 2, position: at, text: "1", variant: "mine", meter: 0.51 });
+    renderer.setLabel({ entityId: 3, position: at, text: "1", variant: "mine", meter: 0.2 });
+    renderer.setLabel({ entityId: 4, position: at, text: "1", variant: "mine" });
+    const keys = [1, 2, 3, 4].map(
+      (id) =>
+        (renderer as unknown as { labels: Map<number, { atlasRecord: { key: string } }> }).labels.get(id)!.atlasRecord
+          .key,
+    );
+    expect(keys[0]).toBe(keys[1]);
+    expect(new Set(keys).size).toBe(3);
   });
 
   it("keeps labels out of raycast picking", () => {

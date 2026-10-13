@@ -3,12 +3,10 @@ import { formatAmount } from "@/ui/design-system/kit/amount";
 import { Chip, FullIn } from "@/ui/design-system/kit/chip";
 import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { ATTRIBUTES, RETURNED, STAMINA, TIER_WORDS, TROOPS, XP, xpToward } from "@/ui/design-system/kit/words";
+import { STAMINA_SEGMENTS, staminaFill } from "@/lib/army-stamina/segments";
 
 import { CardFanGlyph } from "../glyphs";
 import { guideTarget } from "../guide/guide-thread";
-
-/** A token's stamina bar: five segments of the army's own maximum, so a full bar reads full whatever its Logistics. */
-const SEGMENTS = 5;
 
 const TOKEN = "relative flex h-[72px] w-14 shrink-0 flex-col items-center justify-center gap-[3px] rounded-xl";
 const CARD = "relative flex w-full shrink-0 flex-col items-center gap-1 rounded-xl px-2 py-2";
@@ -24,14 +22,15 @@ export const xpLine = (xp: number | undefined, goal: XpGoal | undefined): string
   goal ? xpToward(formatAmount(xp), formatAmount(goal.price), TIER_WORDS[goal.tier - 1]) : `${XP} ${formatAmount(xp)}`;
 
 /**
- * One army on the dock: its portrait with its XP balance as the badge, a card fan when a tier is affordable now, its
- * stamina in segments, and its troops; the badge says what the XP buys next when asked. Desktop's wide card writes
- * "XP" beside the number over a thin bar toward that tier, marks each attribute tier the army has reached with a pip,
- * and adds what a phone shows only for the selected army: when the bar is full, and the troops its Homecoming sends
- * home. Read-only on a visit.
+ * One army on the dock: its number, the one its map plate carries; its portrait with its XP balance as the badge, a
+ * card fan when a tier is affordable now, its stamina in segments, and its troops; the badge says what the XP buys next
+ * when asked. Desktop's wide card writes "XP" beside the number over a thin bar toward that tier, marks each attribute
+ * tier the army has reached with a pip, and adds what a phone shows only for the selected army: when the bar is full,
+ * and the troops its Homecoming sends home. Read-only on a visit.
  */
 export const ArmyToken = ({
   label,
+  number,
   art,
   xp,
   xpGoal,
@@ -46,6 +45,8 @@ export const ArmyToken = ({
   onPick,
 }: {
   label: string;
+  /** The army's number among its realm's; absent where a token stands for no numbered army. */
+  number?: number;
   art: string | undefined;
   xp: number | undefined;
   /** The attribute tier the XP buys next; none once every attribute is legendary, or while unknown. */
@@ -80,6 +81,11 @@ export const ArmyToken = ({
             className="absolute -bottom-1 -right-2.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border border-kit-line2 bg-kit-ink px-1 text-[12px] leading-none text-kit-gold2 tabular-nums"
           >
             {formatAmount(xp)}
+          </span>
+        )}
+        {number !== undefined && (
+          <span className="absolute -left-2.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border border-kit-gold2 bg-kit-ink px-1 text-[12px] font-semibold leading-none text-kit-cream tabular-nums">
+            {number}
           </span>
         )}
         {canBuyTier && (
@@ -160,7 +166,7 @@ const StaminaSegments = ({
   stamina: { current: number; max: number } | undefined;
   guided: boolean;
 }) => {
-  const filled = stamina && stamina.max > 0 ? (SEGMENTS * stamina.current) / stamina.max : 0;
+  const filled = STAMINA_SEGMENTS * (staminaFill(stamina) ?? 0);
   return (
     <span
       role="meter"
@@ -170,7 +176,7 @@ const StaminaSegments = ({
       {...(guided ? guideTarget("army-stamina") : {})}
       className="flex w-full gap-0.5 px-1.5"
     >
-      {Array.from({ length: SEGMENTS }, (_, index) => (
+      {Array.from({ length: STAMINA_SEGMENTS }, (_, index) => (
         <i key={index} className="h-[5px] flex-1 overflow-hidden rounded-sm bg-kit-line">
           <b
             className="block h-full bg-kit-sage"

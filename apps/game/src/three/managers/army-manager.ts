@@ -1,4 +1,5 @@
-import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { armyNumber, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { staminaFill } from "@/lib/army-stamina/segments";
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
 import { activeMapLayer } from "@/three/map-layer";
 import { arePlayersAllied } from "@/utils/entity-ownership";
@@ -157,6 +158,8 @@ import type { PipelineCompiler } from "../pipeline-compiler";
 import { armyHomeStructureId } from "@/utils/native-id";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
+// How far above its tile an army's plate sits: just over the unit's head, so the plate reads as this unit's.
+const ARMY_PLATE_HEIGHT = 1.45;
 
 interface MovingArmySourceState {
   col: number;
@@ -1367,13 +1370,38 @@ export class ArmyManager {
       return;
     }
     const labelPosition = this.tempCompactLabelPosition.copy(position);
-    labelPosition.y += 2.78;
+    labelPosition.y += ARMY_PLATE_HEIGHT;
+    const number = this.resolveOwnArmyNumber(army);
     this.compactLabelRenderer.setLabel({
       entityId: army.entityId,
       position: labelPosition,
-      text: this.contentLadder.armyTierGlyphs ? army.tier : resolveArmyCompactEntityLabel(army),
       variant: resolveCompactEntityLabelVariant(army),
+      ...(number === undefined
+        ? { text: this.contentLadder.armyTierGlyphs ? army.tier : resolveArmyCompactEntityLabel(army) }
+        : {
+            text: String(number),
+            front: true,
+            meter: staminaFill(
+              army.currentStamina === undefined ? undefined : { current: army.currentStamina, max: army.maxStamina },
+            ),
+          }),
     });
+  }
+
+  /**
+   * The number on the plate of one of the player's own armies, the one its dock card carries; undefined for another
+   * player's army, and for an army in a game that does not number them.
+   */
+  private resolveOwnArmyNumber(army: ArmyData): number | undefined {
+    if (!army.isMine) return undefined;
+    const explorer = this.resolveLiveExplorerTroopsComponent(army.entityId);
+    return explorer && armyNumber(explorer);
+  }
+
+  /** The plate over an army follows its facts: its place, its number, its stamina. */
+  private refreshArmyCompactLabel(army: ArmyData): void {
+    const instance = this.armyModel.getInstanceData(this.toNumericId(army.entityId));
+    if (instance) this.updateArmyCompactLabel(army, instance.position);
   }
 
   private removeArmyCompactLabel(entityId: ID): void {
@@ -2889,7 +2917,9 @@ export class ArmyManager {
 
   public showLabel(entityId: ID): HoverLabelShowResult {
     const army = this.armyPresentations.get(entityId);
-    if (!army) {
+    // One of the player's own numbered armies has no second label: its plate carries its number and stamina, its
+    // dock card the rest.
+    if (!army || this.resolveOwnArmyNumber(army) !== undefined) {
       return { status: "missing" };
     }
 
@@ -3022,13 +3052,12 @@ export class ArmyManager {
   }
 
   private resyncVisibleArmyCompactLabels(): void {
-    this.visibleArmies.forEach((army) => {
-      const instance = this.armyModel.getInstanceData(this.toNumericId(army.entityId));
-      if (instance) this.updateArmyCompactLabel(army, instance.position);
-    });
+    this.visibleArmies.forEach((army) => this.refreshArmyCompactLabel(army));
   }
 
   private shouldShowArmyCompactLabel(army: ArmyData): boolean {
+    // The player's own numbered armies always wear their plate: it is how they are told apart at any zoom.
+    if (this.resolveOwnArmyNumber(army) !== undefined) return true;
     return shouldShowTextLabel(
       this.contentLadder.textLabels,
       {
@@ -3151,10 +3180,8 @@ ${
     try {
       const staminaSnapshot = this.resolveArmyStaminaSnapshot(entityId, currentArmiesTick);
       if (!staminaSnapshot) {
+        // The last stamina read stays on the label until the next one resolves; it is never blanked in between.
         this.staminaUnresolved.add(entityId);
-        army.currentStamina = undefined;
-        const label = this.entityIdLabels.get(entityId);
-        if (label) this.updateArmyLabelData(entityId, army, label);
         return;
       }
       this.staminaUnresolved.delete(entityId);
@@ -3163,6 +3190,7 @@ ${
       army.foodBlocked = this.resolveFoodBlocked(entityId, army.isMine);
       const label = this.entityIdLabels.get(entityId);
       if (label) this.updateArmyLabelData(entityId, army, label);
+      this.refreshArmyCompactLabel(army);
     } catch {
       // One bad entity must not block the others.
     }
@@ -3259,8 +3287,15 @@ ${
     army.troopCount = troopCount;
 
     const staminaSnapshot = this.resolveArmyStaminaSnapshot(entityId);
-    army.currentStamina = staminaSnapshot?.current;
-    army.maxStamina = staminaSnapshot?.max ?? army.maxStamina;
+    if (staminaSnapshot) {
+      this.staminaUnresolved.delete(entityId);
+      army.currentStamina = staminaSnapshot.current;
+      army.maxStamina = staminaSnapshot.max;
+    } else {
+      // Kept as last read, and resolved again on the next chain-time advance.
+      this.staminaUnresolved.add(entityId);
+    }
+    this.refreshArmyCompactLabel(army);
 
     const ownerStructureId = armyHomeStructureId(explorerTroops);
     const resolvedOwnerFromStructure = this.resolveArmyOwnerFromStructure({

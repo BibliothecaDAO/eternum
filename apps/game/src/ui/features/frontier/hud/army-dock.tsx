@@ -69,6 +69,7 @@ const DockToken = ({
   return (
     <ArmyToken
       label={army.label}
+      number={army.number}
       art={army.art}
       xp={army.xp}
       xpGoal={army.xpGoal}

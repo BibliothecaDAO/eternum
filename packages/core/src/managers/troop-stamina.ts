@@ -119,6 +119,13 @@ export function resolveExplorerTroops(
   };
 }
 
+/**
+ * An army's number among its realm's armies, the same wherever the army is shown (its dock card, its map plate): its
+ * army slot, counted from one. Undefined for an army that keeps its own bar, in a game without slots.
+ */
+export const armyNumber = (explorer: NativeRows["ExplorerTroops"]): number | undefined =>
+  "Slot" in explorer.troops.stamina ? explorer.troops.stamina.Slot + 1 : undefined;
+
 /** A slot a home can muster into today, with the bar the army starts on: fresh, or the bar its last army left. */
 export interface OpenArmySlot {
   slot: number;
