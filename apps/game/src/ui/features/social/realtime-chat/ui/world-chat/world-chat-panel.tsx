@@ -110,6 +110,8 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
   const hasChannelAccess = useRealtimeChatSelector((state) =>
     resolvedZoneId ? state.joinedZoneIds.includes(resolvedZoneId) : false,
   );
+  // A dropped room or inbox comes back by itself: the panel says so instead of that chat is unavailable.
+  const reconnecting = useRealtimeChatSelector((state) => state.connectionStatus === "reconnecting");
   const actions = useRealtimeChatActions();
   const { zone, isActive } = useRealtimeWorldZone(resolvedZoneId);
   const { sendMessage, loadHistory, markAsRead, setActive } = useWorldChatControls(resolvedZoneId);
@@ -268,7 +270,9 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
   return (
     <section className={`flex h-full min-h-0 flex-1 flex-col ${className ?? ""}`}>
       <div className="flex-1 min-h-0 px-4 py-3">
-        {!hasChannelAccess && <p className="text-sm text-gold/50">Chat unavailable.</p>}
+        {!hasChannelAccess && (
+          <p className="text-sm text-gold/50">{reconnecting ? "Reconnecting…" : "Chat unavailable."}</p>
+        )}
         {hasChannelAccess && zone && (
           <div className="flex h-full min-h-0 flex-col overflow-hidden">
             <div ref={scrollContainerRef} className="flex flex-1 min-h-0 flex-col overflow-y-auto pr-1 scroll-smooth">

@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "Chat comes back by itself",
+    description:
+      "Fixed chat staying on Chat unavailable until a reload after its connection dropped: the room and your inbox now reconnect on their own, and the panel says Reconnecting while they do.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
     title: "A clearer screen, bigger targets",
     description:
       "Changed several things that covered each other in Frontier. On desktop, chat now starts closed and opens from its tab, so it no longer hides the guide. The Updating terrain message is gone. On a phone, the LORDS button steps aside while Chat, Research or the season board is open, every control in chat is tall enough to tap, and the guide's mark sits beside what it points at instead of on top of the figures.",
