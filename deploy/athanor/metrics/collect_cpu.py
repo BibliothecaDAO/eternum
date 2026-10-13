@@ -1,4 +1,4 @@
-"""Collect cgroup CPU samples and report sustained node commit degradation from the existing OTLP export."""
+"""Collect cgroup CPU samples and report sustained node block-close degradation from the existing OTLP export."""
 
 import json
 import math
@@ -33,7 +33,7 @@ def main():
     if not (CGROUP_ROOT / 'cgroup.controllers').is_file():
         raise SystemExit('mount the host cgroup v2 tree read-only at /host-cgroup')
     previous = {}
-    commit_alarm = CommitAlarm()
+    close_alarm = CloseAlarm()
     collector = subprocess.Popen(['/otelcol-contrib', *sys.argv[1:]])
     for signum in (signal.SIGTERM, signal.SIGINT):
         signal.signal(signum, lambda received, _frame: collector.send_signal(received))
@@ -41,7 +41,7 @@ def main():
     try:
         while collector.poll() is None:
             previous = append_samples(CGROUP_ROOT, OUTPUT, previous)
-            for event in commit_alarm.poll(Path('/data/metrics.jsonl')):
+            for event in close_alarm.poll(Path('/data/metrics.jsonl')):
                 print(json.dumps(event), flush=True)
             deadline += INTERVAL_SECONDS
             try:
@@ -59,7 +59,7 @@ def main():
                 collector.wait()
 
 
-class CommitAlarm:
+class CloseAlarm:
     """Three fresh slow exports alarm; one healthy export recovers. A single flush is not sustained degradation."""
 
     def __init__(self):
@@ -79,7 +79,7 @@ class CommitAlarm:
             self.missing = missing
             if missing:
                 self.slow_samples = 0
-            events.append({'event': 'node_commit_metric_missing' if missing else 'node_commit_metric_restored'})
+            events.append({'event': 'node_close_metric_missing' if missing else 'node_close_metric_restored'})
         return events
 
     def read_exports(self, path):
@@ -109,7 +109,7 @@ class CommitAlarm:
                     self.skip_remainder = False
                     continue
                 try:
-                    samples = list(commit_samples(json.loads(line)))
+                    samples = list(close_samples(json.loads(line)))
                 except (ValueError, TypeError, KeyError, AttributeError, OverflowError) as error:
                     events.append({'event': 'node_metric_record_invalid', 'error': type(error).__name__})
                     continue
@@ -129,20 +129,20 @@ class CommitAlarm:
         if active == self.active:
             return None
         self.active = active
-        return {'event': 'node_commit_slow' if active else 'node_commit_recovered',
-                'timeUnixNano': str(timestamp), 'commitMs': seconds * 1000, 'limitMs': 20}
+        return {'event': 'node_close_slow' if active else 'node_close_recovered',
+                'timeUnixNano': str(timestamp), 'closeMs': seconds * 1000, 'limitMs': 20}
 
 
-def commit_samples(row):
+def close_samples(row):
     for resource in row.get('resourceMetrics', []):
         for scope in resource.get('scopeMetrics', []):
             for metric in scope.get('metrics', []):
-                if metric.get('name') == 'close_commit_stage_last_seconds':
+                if metric.get('name') == 'close_block_total_last_seconds':
                     for point in metric.get('gauge', {}).get('dataPoints', []):
                         timestamp = int(point['timeUnixNano'])
                         seconds = float(point['asDouble'] if 'asDouble' in point else point['asInt'])
                         if timestamp <= 0 or not math.isfinite(seconds) or seconds < 0:
-                            raise ValueError('Invalid commit metric point')
+                            raise ValueError('Invalid close metric point')
                         yield timestamp, seconds
 
 

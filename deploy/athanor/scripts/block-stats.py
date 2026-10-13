@@ -12,16 +12,16 @@ import sys
 EVERY_RUN = "every run"
 PAIRS = ("concurrency", "hash-cache")
 
-# Every node series this script reads, named as Madara exports them at the campaign's revision (802086d), and when each
+# Every node series this script reads, named as Madara exports them at the August revision (e674321), and when each
 # is required. The campaign gate and the reader share this one declaration, so what is read and what is required cannot
 # drift apart. A series required for a lever pair is required only when the run names that pair with --pair.
 Series = namedtuple("Series", "name key kind required label", defaults=(None,))
 NODE_SERIES = (
     Series("mempool_current_size", "transactions", "gauge", EVERY_RUN),
     Series("mempool_ready_transactions", "ready", "gauge", EVERY_RUN),
-    Series("mempool_preconfirmed_transaction_statuses", "preconfirmedStatuses", "gauge", EVERY_RUN),
-    Series("blockifier_execution_attempts_total", "attempts", "counter", EVERY_RUN),
-    Series("blockifier_committed_transactions_total", "committed", "counter", EVERY_RUN),
+    Series("mempool_preconfirmed_transaction_statuses", "preconfirmedStatuses", "gauge", None),
+    Series("blockifier_execution_attempts_total", "attempts", "counter", None),
+    Series("blockifier_committed_transactions_total", "committed", "counter", None),
     Series("blockifier_transactions_total", "transactions", "counter", "concurrency"),
     Series("blockifier_validation_attempts_total", "validationAttempts", "counter", "concurrency"),
     Series("blockifier_aborts_total", "aborts", "counter", "concurrency"),
@@ -35,7 +35,7 @@ NODE_SERIES = (
 SERIES_BY_NAME = {series.name: series for series in NODE_SERIES}
 
 # Close time and gas are read per block from the node's close_block_complete log; every closed block must carry them.
-REQUIRED_BLOCK_FIELDS = ("close_end_to_end_ms", "l2_gas_consumed", "bouncer_sierra_gas")
+REQUIRED_BLOCK_FIELDS = ("close_block_total_ms", "l2_gas_consumed", "bouncer_sierra_gas")
 
 
 def percentile(values, percentile_value):
@@ -147,7 +147,7 @@ def counter_delta(points):
 
 
 def missing_series(points, pair):
-    required = {EVERY_RUN, pair}
+    required = {EVERY_RUN} | ({pair} if pair else set())
     present = {name for name, _ in points}
     return [series.name for series in NODE_SERIES if series.required in required and series.name not in present]
 
@@ -229,7 +229,7 @@ def summarize_slowest_block(rows, mempool):
     return {
         "blockNumber": row["block_number"],
         "blockProductionMs": row["block_production_ms"],
-        "closeBlockMs": row["close_end_to_end_ms"],
+        "closeBlockMs": row["close_block_total_ms"],
         "transactions": row["txs_executed"],
         "batches": row.get("batches_executed"),
         "sierraGas": row["bouncer_sierra_gas"],
@@ -248,6 +248,9 @@ def summarize(rows, points, pair=None):
     summary = {
         "pair": pair,
         "missingRequired": missing,
+        "unavailableMetrics": [series.name for series in NODE_SERIES
+                               if not any(name == series.name for name, _ in points)],
+        "unavailableBlockFields": ["close_commit_stage_ms", "block_lifetime_ms"],
         "blocks": {
             "count": len(rows),
             "busy": len(busy),
@@ -261,13 +264,13 @@ def summarize(rows, points, pair=None):
             "rejected": sum(row["txs_rejected"] for row in rows),
             "classesDeclared": sum(row["classes_declared"] for row in rows),
             "contractsDeployed": sum(row["deployed_contracts"] for row in rows),
-            "l2GasConsumed": sum(row["l2_gas_consumed"] for row in complete),
+            "l2GasConsumed": sum(row["l2_gas_consumed"] for row in complete) if complete else None,
         },
         "transactionsPerBusyBlock": metric([row["txs_executed"] for row in busy], include_p95=False),
         "sierraGasPerBusyBlock": metric([row["bouncer_sierra_gas"] for row in busy]),
         "l2GasPerBusyBlock": metric([row["l2_gas_consumed"] for row in busy]),
         "blockProductionMs": metric([row["block_production_ms"] for row in rows]),
-        "closeBlockMs": metric([row["close_end_to_end_ms"] for row in complete]),
+        "closeBlockMs": metric([row["close_block_total_ms"] for row in complete]),
         "merklizationMs": metric(
             [row["merklization_ms"] for row in rows],
             include_p50=False,
@@ -290,6 +293,8 @@ def summarize(rows, points, pair=None):
 def print_text(summary):
     blocks = summary["blocks"]
     transactions = summary["transactions"]
+    print(f"unavailable metrics {', '.join(summary['unavailableMetrics'])}")
+    print(f"unavailable stages  {', '.join(summary['unavailableBlockFields'])}")
     if summary["missingRequired"]:
         print(f"missing required   {', '.join(summary['missingRequired'])}")
     print(f"blocks             {blocks['count']}  (busy: {blocks['busy']})")
