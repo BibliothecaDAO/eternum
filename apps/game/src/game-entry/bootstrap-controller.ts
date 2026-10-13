@@ -28,14 +28,6 @@ const BOOTSTRAP_TASKS: BootstrapTask[] = [
   { id: "renderer", label: "Preparing graphics", status: "pending" },
 ];
 
-const BOOTSTRAP_PROGRESS_WEIGHTS: Record<string, number> = {
-  world: 5,
-  manifest: 10,
-  game: 25,
-  sync: 50,
-  renderer: 10,
-};
-
 const createBootstrapTasks = (): BootstrapTask[] => BOOTSTRAP_TASKS.map((task) => ({ ...task }));
 
 const createCompletedBootstrapTasks = (): BootstrapTask[] =>
@@ -44,66 +36,56 @@ const createCompletedBootstrapTasks = (): BootstrapTask[] =>
     status: "complete",
   }));
 
-const resolveInitialState = (
-  context: ResolvedEntryContext | null,
-): {
-  session: BootstrappedEntrySession | null;
-  status: BootstrapStatus;
-  tasks: BootstrapTask[];
-} => {
-  const cachedSession = context ? getCachedBootstrappedEntrySession(context) : null;
+/** How far the first snapshot has come, as the boot's stages see it: a tick inside one stage changes nothing here. */
+type SyncStage = "waiting" | "syncing" | "synced";
+const resolveSyncStage = (syncProgress: number): SyncStage =>
+  syncProgress >= 100 ? "synced" : syncProgress > 0 ? "syncing" : "waiting";
 
-  if (cachedSession) {
-    return {
-      session: cachedSession,
-      status: "ready",
-      tasks: createCompletedBootstrapTasks(),
-    };
-  }
+type WorldSelection = "pending" | "running" | "complete";
 
-  return {
-    session: null,
-    status: context ? "idle" : "pending-world",
-    tasks: createBootstrapTasks(),
-  };
+const resolveInitialStatus = (context: ResolvedEntryContext | null): BootstrapStatus => {
+  if (!context) return "pending-world";
+  return getCachedBootstrappedEntrySession(context) ? "ready" : "idle";
 };
 
-const updateTasksForError = (tasks: BootstrapTask[]): BootstrapTask[] => {
-  return tasks.map((task) => (task.status === "running" ? { ...task, status: "error" } : task));
+/** The task under way is the furthest stage the boot has reported. */
+const resolveReachedTaskId = ({
+  syncStage,
+  worldSelection,
+}: {
+  syncStage: SyncStage;
+  worldSelection: WorldSelection;
+}): string | null => {
+  if (syncStage === "synced") return "renderer";
+  if (syncStage === "syncing") return "sync";
+  if (worldSelection === "complete") return "manifest";
+  if (worldSelection === "running") return "world";
+  return null;
 };
 
-const updateTaskStatus = (tasks: BootstrapTask[], taskId: string, status: BootstrapTask["status"]): BootstrapTask[] => {
-  return tasks.map((task) => (task.id === taskId ? { ...task, status } : task));
-};
-
-const calculateBootstrapProgress = ({
+/** Every task before the reached one is done, the reached one runs (or is where the boot failed), the rest wait. */
+const resolveBootstrapTasks = ({
   status,
-  syncProgress,
-  tasks,
+  syncStage,
+  worldSelection,
 }: {
   status: BootstrapStatus;
-  syncProgress: number;
-  tasks: BootstrapTask[];
-}): number => {
-  if (status === "ready") return 100;
-  if (status === "error" || status === "idle" || status === "pending-world") return 0;
-
-  let completed = 0;
-  tasks.forEach((task) => {
-    if (task.status === "complete") {
-      completed += BOOTSTRAP_PROGRESS_WEIGHTS[task.id] || 0;
-    } else if (task.status === "running" && task.id === "sync") {
-      completed += (BOOTSTRAP_PROGRESS_WEIGHTS[task.id] || 0) * (syncProgress / 100);
-    }
-  });
-
-  return Math.min(99, Math.round(completed));
+  syncStage: SyncStage;
+  worldSelection: WorldSelection;
+}): BootstrapTask[] => {
+  if (status === "ready") return createCompletedBootstrapTasks();
+  if (status !== "loading" && status !== "error") return createBootstrapTasks();
+  const reached = BOOTSTRAP_TASKS.findIndex((task) => task.id === resolveReachedTaskId({ syncStage, worldSelection }));
+  const reachedStatus = status === "error" ? "error" : "running";
+  return BOOTSTRAP_TASKS.map((task, index) => ({
+    ...task,
+    status: index < reached ? "complete" : index === reached ? reachedStatus : "pending",
+  }));
 };
 
 interface GameEntryBootstrapControllerState {
   currentTask: string | null;
   error: Error | null;
-  progress: number;
   retry: () => void;
   session: BootstrappedEntrySession | null;
   setupResult: SetupResult | null;
@@ -119,44 +101,34 @@ export const useGameEntryBootstrapController = ({
   context: ResolvedEntryContext | null;
   enabled: boolean;
 }): GameEntryBootstrapControllerState => {
-  const syncProgress = useSyncStore((state) => state.initialSyncProgress);
-  const initialState = useMemo(() => resolveInitialState(context), [context]);
-  const [session, setSession] = useState<BootstrappedEntrySession | null>(initialState.session);
-  const [status, setStatus] = useState<BootstrapStatus>(initialState.status);
-  const [tasks, setTasks] = useState<BootstrapTask[]>(initialState.tasks);
+  const syncStage = useSyncStore((state) => resolveSyncStage(state.initialSyncProgress));
+  const [session, setSession] = useState<BootstrappedEntrySession | null>(() =>
+    context ? getCachedBootstrappedEntrySession(context) : null,
+  );
+  const [status, setStatus] = useState<BootstrapStatus>(() => resolveInitialStatus(context));
+  const [worldSelection, setWorldSelection] = useState<WorldSelection>("pending");
   const [error, setError] = useState<Error | null>(null);
   const [attempt, setAttempt] = useState(0);
   const inFlightRef = useRef<Promise<BootstrappedEntrySession> | null>(null);
   const activeRunIdRef = useRef(0);
   const contextKey = context ? resolveEntryContextCacheKey(context) : null;
 
-  const currentTask = useMemo(() => tasks.find((task) => task.status === "running")?.id ?? null, [tasks]);
-  const progress = useMemo(
-    () =>
-      calculateBootstrapProgress({
-        status,
-        syncProgress,
-        tasks,
-      }),
-    [status, syncProgress, tasks],
+  const tasks = useMemo(
+    () => resolveBootstrapTasks({ status, syncStage, worldSelection }),
+    [status, syncStage, worldSelection],
   );
-
-  const setTaskStatus = useCallback((taskId: string, taskStatus: BootstrapTask["status"]) => {
-    setTasks((previousTasks) => updateTaskStatus(previousTasks, taskId, taskStatus));
-  }, []);
+  const currentTask = useMemo(() => tasks.find((task) => task.status === "running")?.id ?? null, [tasks]);
 
   const completeBootstrapRun = useCallback((result: BootstrappedEntrySession) => {
-    setTasks(createCompletedBootstrapTasks());
     setSession(result);
     setStatus("ready");
     markGameEntryMilestone("entry-ready");
   }, []);
 
   const refreshReadyState = useCallback((nextContext: ResolvedEntryContext | null) => {
-    const nextState = resolveInitialState(nextContext);
-    setSession(nextState.session);
-    setStatus(nextState.status);
-    setTasks(nextState.tasks);
+    setSession(nextContext ? getCachedBootstrappedEntrySession(nextContext) : null);
+    setStatus(resolveInitialStatus(nextContext));
+    setWorldSelection("pending");
     setError(null);
     activeRunIdRef.current += 1;
     inFlightRef.current = null;
@@ -181,18 +153,13 @@ export const useGameEntryBootstrapController = ({
     setError(null);
     setSession(null);
     setStatus("loading");
-    setTasks(createBootstrapTasks());
+    setWorldSelection("pending");
     const runId = activeRunIdRef.current + 1;
     activeRunIdRef.current = runId;
 
     const promise = bootstrapGameForEntryContext(context, {
-      onWorldSelectionStarted: () => {
-        setTaskStatus("world", "running");
-      },
-      onWorldSelectionCompleted: () => {
-        setTaskStatus("world", "complete");
-        setTaskStatus("manifest", "running");
-      },
+      onWorldSelectionStarted: () => setWorldSelection("running"),
+      onWorldSelectionCompleted: () => setWorldSelection("complete"),
     });
 
     inFlightRef.current = promise;
@@ -220,14 +187,13 @@ export const useGameEntryBootstrapController = ({
         const normalizedError = incomingError instanceof Error ? incomingError : new Error("Unknown bootstrap error");
         setError(normalizedError);
         setStatus("error");
-        setTasks((previousTasks) => updateTasksForError(previousTasks));
       })
       .finally(() => {
         if (activeRunIdRef.current === runId) {
           inFlightRef.current = null;
         }
       });
-  }, [completeBootstrapRun, context, refreshReadyState, setTaskStatus]);
+  }, [completeBootstrapRun, context, refreshReadyState]);
 
   const start = useCallback(() => {
     runBootstrap();
@@ -245,21 +211,6 @@ export const useGameEntryBootstrapController = ({
     start();
   }, [attempt, enabled, start]);
 
-  useEffect(() => {
-    if (status !== "loading") {
-      return;
-    }
-
-    if (syncProgress > 0 && syncProgress < 100) {
-      setTaskStatus("manifest", "complete");
-      setTaskStatus("game", "complete");
-      setTaskStatus("sync", "running");
-    } else if (syncProgress >= 100) {
-      setTaskStatus("sync", "complete");
-      setTaskStatus("renderer", "running");
-    }
-  }, [setTaskStatus, status, syncProgress]);
-
   const retry = useCallback(() => {
     if (status === "loading") {
       return;
@@ -271,7 +222,6 @@ export const useGameEntryBootstrapController = ({
   return {
     currentTask,
     error,
-    progress,
     retry,
     session,
     setupResult: session?.setupResult ?? null,

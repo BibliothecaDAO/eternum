@@ -85,7 +85,6 @@ interface PlayRouteBootSnapshot {
   currentTask: string | null;
   error: Error | null;
   phase: PlayRouteBootPhase;
-  progress: number;
   reconnectError: string | null;
   reconnectStatus: PlayRouteReconnectStatus;
   resolvedRequest: ResolvedPlayBootRequest | null;
@@ -144,7 +143,6 @@ const usePlayRouteBootStore = create<PlayRouteBootSnapshot>(() => ({
   currentTask: null,
   error: null,
   phase: "normalize_route",
-  progress: 0,
   reconnectError: null,
   reconnectStatus: "idle",
   resolvedRequest: null,
@@ -201,28 +199,6 @@ export const resolveBootPhase = ({
   }
 
   return "ready";
-};
-
-const resolveBootProgress = ({
-  bootstrapProgress,
-  phase,
-}: {
-  bootstrapProgress: number;
-  phase: PlayRouteBootPhase;
-}) => {
-  if (phase === "ready") {
-    return 100;
-  }
-
-  if (phase === "wait_worldmap_ready") {
-    return Math.max(bootstrapProgress, 92);
-  }
-
-  if (phase === "handoff_scene") {
-    return 97;
-  }
-
-  return bootstrapProgress;
 };
 
 // The identity session is the fact: anonymous means no gameplay account is coming, signed-in means one is being
@@ -360,10 +336,6 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
       currentTask: bootstrap.currentTask,
       error: bootstrap.error ?? (phase === "error" ? (readiness.sceneFailure?.error ?? null) : null),
       phase,
-      progress: resolveBootProgress({
-        bootstrapProgress: bootstrap.progress,
-        phase,
-      }),
       reconnectError,
       reconnectStatus,
       resolvedRequest,
@@ -374,7 +346,6 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
       bootToken,
       bootstrap.currentTask,
       bootstrap.error,
-      bootstrap.progress,
       bootstrap.setupResult,
       phase,
       readiness.sceneFailure,
