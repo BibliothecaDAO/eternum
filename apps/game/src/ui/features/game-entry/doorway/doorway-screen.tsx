@@ -32,6 +32,7 @@ export const DoorwayScreen = ({
   title,
   painting,
   onRetry,
+  onOpenRealm,
   onSignIn,
   onSpectate,
   children,
@@ -43,6 +44,8 @@ export const DoorwayScreen = ({
   /** The mode's painting behind the desktop's doorway, once the mode is known. */
   painting?: Painting;
   onRetry: () => void;
+  /** Opens the realm view without the map, when the map could not be drawn. */
+  onOpenRealm?: () => void;
   onSignIn: () => void;
   onSpectate?: () => void;
   /** A mode's own control at the realm step, kept inside the doorway's frame. */
@@ -50,7 +53,9 @@ export const DoorwayScreen = ({
 }) => {
   useFrontierType();
   const desktop = useLayout() === "desktop";
-  const hold = <Hold view={view} onRetry={onRetry} onSignIn={onSignIn} onSpectate={onSpectate} />;
+  const hold = (
+    <Hold view={view} onRetry={onRetry} onOpenRealm={onOpenRealm} onSignIn={onSignIn} onSpectate={onSpectate} />
+  );
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-kit-ground">
       <PageFrame back="/" title={title} tabs={false} painting={painting} stage>
@@ -88,11 +93,13 @@ const RealmRising = ({ realm }: { realm: DoorwayRealm }) => (
 const Hold = ({
   view,
   onRetry,
+  onOpenRealm,
   onSignIn,
   onSpectate,
 }: {
   view: DoorwayView;
   onRetry: () => void;
+  onOpenRealm?: () => void;
   onSignIn: () => void;
   onSpectate?: () => void;
 }) => {
@@ -117,7 +124,15 @@ const Hold = ({
         <Button role="primary" word={WORDS.signIn} icon="Pf" onClick={onSignIn} />,
       );
     case "retry":
-      return plate(view.blocker.line, <Button role="outline" word={TRY_AGAIN} icon="Sp" onClick={onRetry} />);
+      return plate(
+        view.blocker.line,
+        <>
+          <Button role="outline" word={TRY_AGAIN} icon="Sp" onClick={onRetry} />
+          {view.blocker.openRealm && onOpenRealm && (
+            <Button role="primary" word={DOORWAY_WORDS.openRealm} icon="Cs" onClick={onOpenRealm} />
+          )}
+        </>,
+      );
     case "devices":
       return plate(
         DOORWAY_WORDS.deviceLimit,

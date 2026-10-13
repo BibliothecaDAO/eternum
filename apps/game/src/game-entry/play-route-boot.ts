@@ -190,12 +190,13 @@ export const resolveBootPhase = ({
   }
 
   // A scene the boot waits on that failed to set up ends the wait in the error state; once ready, a later
-  // failure leaves the running game as it is.
-  if (!readiness.worldmapReady) {
+  // failure leaves the running game as it is. A player who opens their realm after the map could not be drawn
+  // waits on the realm view alone.
+  if (!readiness.worldmapReady && !readiness.mapSkipped) {
     return readiness.sceneFailure ? "error" : "wait_worldmap_ready";
   }
 
-  if (resolvedRequest.resumeScene === "hex" && !readiness.hexReady) {
+  if ((resolvedRequest.resumeScene === "hex" || readiness.mapSkipped) && !readiness.hexReady) {
     return readiness.sceneFailure ? "error" : "handoff_scene";
   }
 
@@ -357,7 +358,7 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
       account: resolvedAccount,
       bootToken,
       currentTask: bootstrap.currentTask,
-      error: bootstrap.error ?? (phase === "error" ? readiness.sceneFailure : null),
+      error: bootstrap.error ?? (phase === "error" ? (readiness.sceneFailure?.error ?? null) : null),
       phase,
       progress: resolveBootProgress({
         bootstrapProgress: bootstrap.progress,

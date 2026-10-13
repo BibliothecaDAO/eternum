@@ -64,18 +64,15 @@ export const PlaySceneHandoff = () => {
   }, [readiness.worldmapReady]);
 
   useEffect(() => {
-    if (
-      playRoute == null ||
-      snapshot.resolvedRequest?.resumeScene !== "hex" ||
-      !readiness.worldmapConverged ||
-      handoffStartedRef.current
-    ) {
-      return;
-    }
-
-    if (playRoute.scene !== "map" || playRoute.bootMode !== "map-first") {
-      return;
-    }
+    if (playRoute == null || snapshot.resolvedRequest == null || handoffStartedRef.current) return;
+    // The map hands off to the realm view once it has converged; when it could not be drawn and the player opens
+    // their realm instead, the hand-off goes ahead without it, from whatever route the boot was on.
+    const mapHandsOff =
+      snapshot.resolvedRequest.resumeScene === "hex" &&
+      readiness.worldmapConverged &&
+      playRoute.scene === "map" &&
+      playRoute.bootMode === "map-first";
+    if (!mapHandsOff && !readiness.mapSkipped) return;
 
     // The local view opens on a realm: the map waits until the entry knows which, and keeps the entry when there is
     // none to open.
@@ -109,6 +106,7 @@ export const PlaySceneHandoff = () => {
     window.dispatchEvent(new Event("urlChanged"));
   }, [
     readiness.worldmapConverged,
+    readiness.mapSkipped,
     navigate,
     playRoute,
     snapshot.resolvedRequest,

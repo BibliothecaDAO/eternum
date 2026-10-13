@@ -10,19 +10,20 @@ import {
 } from "./scene-manager-transition-policy";
 import { SceneName } from "./types";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
+import type { PlayScene } from "@/play/navigation/play-route";
 
 /**
  * A scene that did not set up fails the entry waiting on it rather than leaving it to wait. The player reads which view
  * did not open; the cause is already in the console.
  */
-const reportSceneFailure = (sceneName: SceneName): void =>
-  usePlayRouteReadinessStore
-    .getState()
-    .markSceneFailed(getCurrentPlayRouteBootToken(), new Error(SCENE_FAILURE_SENTENCE[sceneName]));
+const reportSceneFailure = (sceneName: SceneName): void => {
+  const { scene, sentence } = SCENE_FAILURES[sceneName];
+  usePlayRouteReadinessStore.getState().markSceneFailed(getCurrentPlayRouteBootToken(), scene, new Error(sentence));
+};
 
-const SCENE_FAILURE_SENTENCE: Record<SceneName, string> = {
-  [SceneName.WorldMap]: "The world map did not open.",
-  [SceneName.Hexception]: "The realm view did not open.",
+const SCENE_FAILURES: Record<SceneName, { scene: PlayScene; sentence: string }> = {
+  [SceneName.WorldMap]: { scene: "map", sentence: "The world map did not open." },
+  [SceneName.Hexception]: { scene: "hex", sentence: "The realm view did not open." },
 };
 
 type SceneSetupResult = { succeeded: true } | { error: unknown; succeeded: false };

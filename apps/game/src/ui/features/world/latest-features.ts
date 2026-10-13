@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "A map that cannot be drawn says so",
+    description:
+      "Changed what you see when the map fails to open on the way into a game: the screen now says the map could not be drawn, instead of blaming the world, and offers Open realm beside Try again, so you can still reach your realm, build and research while the map is unavailable.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
     title: "Every action waits in its place",
     description:
       "Fixed building, deploying, research, the castle's upgrade, an army's refill and its tier upgrade in Frontier: a second press no longer sends a second time, and a refusal is no longer silent. The sheet still closes as the action leaves; the wait then shows where you look next, a ghost on the plot, Deploying… on the dock's open slot, Upgrading… or Researching… on the Research row, and the button itself on the castle and the army. If the game refuses, or no answer comes, one line says so and the control is free again.",

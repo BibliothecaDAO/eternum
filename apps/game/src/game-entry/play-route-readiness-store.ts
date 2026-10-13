@@ -1,5 +1,7 @@
 import { create } from "zustand";
 
+import type { PlayScene } from "@/play/navigation/play-route";
+
 type SceneCoordinates = {
   col: number;
   row: number;
@@ -11,11 +13,14 @@ interface PlayRouteReadinessState {
   hexReady: boolean;
   markHexReady: (token: number, coords?: SceneCoordinates | null) => void;
   /** A scene the boot waits on failed to set up: the boot ends in its error state instead of waiting on. */
-  markSceneFailed: (token: number, error: Error) => void;
+  markSceneFailed: (token: number, scene: PlayScene, error: Error) => void;
+  /** The map could not be drawn and the player opens their realm instead: the boot goes on without the map. */
+  openRealmWithoutMap: (token: number) => void;
+  mapSkipped: boolean;
   markWorldmapConverged: (token: number) => void;
   markWorldmapReady: (token: number) => void;
   reset: (token: number) => void;
-  sceneFailure: Error | null;
+  sceneFailure: { scene: PlayScene; error: Error } | null;
   worldmapConverged: boolean;
   worldmapReady: boolean;
 }
@@ -35,7 +40,11 @@ export const usePlayRouteReadinessStore = create<PlayRouteReadinessState>((set) 
         hexReady: true,
       };
     }),
-  markSceneFailed: (token, error) => set((state) => (token === state.bootToken ? { sceneFailure: error } : state)),
+  markSceneFailed: (token, scene, error) =>
+    set((state) => (token === state.bootToken ? { sceneFailure: { scene, error } } : state)),
+  openRealmWithoutMap: (token) =>
+    set((state) => (token === state.bootToken ? { mapSkipped: true, sceneFailure: null } : state)),
+  mapSkipped: false,
   markWorldmapReady: (token) =>
     set((state) => {
       if (token !== state.bootToken) {
@@ -61,6 +70,7 @@ export const usePlayRouteReadinessStore = create<PlayRouteReadinessState>((set) 
       bootToken: token,
       hexCoordinates: null,
       hexReady: false,
+      mapSkipped: false,
       sceneFailure: null,
       worldmapConverged: false,
       worldmapReady: false,

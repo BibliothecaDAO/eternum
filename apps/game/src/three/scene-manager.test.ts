@@ -336,7 +336,9 @@ describe("SceneManager transitions", () => {
     expect(hexception.moveCameraToURLLocation).not.toHaveBeenCalled();
     expect(errorSpy).toHaveBeenCalledWith("[SceneManager] Failed to set up scene hex: setup failed");
     // The entry waiting on the realm view learns it did not open, in words a player can read.
-    expect(usePlayRouteReadinessStore.getState().sceneFailure?.message).toBe("The realm view did not open.");
+    const failure = usePlayRouteReadinessStore.getState().sceneFailure;
+    expect(failure?.scene).toBe("hex");
+    expect(failure?.error.message).toBe("The realm view did not open.");
   });
 
   it("cleans a candidate and starts the pending request when fade-out is canceled", async () => {

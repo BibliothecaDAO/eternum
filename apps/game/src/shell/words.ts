@@ -119,6 +119,11 @@ export const DOORWAY_WORDS = {
   ended: "This game has ended.",
   deviceLimit: "Device limit reached.",
   devices: "Devices",
+  /** A scene that could not be set up, named for what the player does not see; the cause is in the console. */
+  mapNotDrawn: "The map could not be drawn.",
+  realmNotDrawn: "The realm could not be drawn.",
+  /** The way on when the map cannot be drawn: the realm view opens without it. */
+  openRealm: "Open realm",
 } as const;
 
 /** The Season tab and a game's Results. */

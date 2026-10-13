@@ -52,12 +52,29 @@ describe("the doorway", () => {
     expect(
       doorwayView({ source: "boot", phase: "reconnect_required", audience: "player", accountError: unset }).blocker,
     ).toEqual({ kind: "retry", line: unset });
-    // A failed scene or board ends the boot in its error state: the doorway shows Try again, never an endless track.
+    // A service that did not answer ends the boot in its error state: the doorway shows Try again, never an endless
+    // track.
     const failed = doorwayView({ source: "boot", phase: "error", audience: "player" });
     expect(failed.blocker).toEqual({ kind: "retry", line: "The world did not answer." });
     expect(doorwayView({ source: "entry", phase: "error", audience: "player", signedIn: true }).blocker?.kind).toBe(
       "retry",
     );
+  });
+
+  it("says the map could not be drawn when it is the map that failed, and offers the realm when there is one", () => {
+    const boot = { source: "boot", phase: "error", audience: "player" } as const;
+    const withRealm = doorwayView({ ...boot, failedScene: "map", realmCanOpen: true });
+    expect(withRealm.blocker).toEqual({ kind: "retry", line: "The map could not be drawn.", openRealm: true });
+    expect(withRealm.steps.find(({ state }) => state === "running")?.step).toBe("map");
+    // No realm to open (a spectator, or a player whose realm is not known yet): the same true line, Try again only.
+    expect(doorwayView({ ...boot, failedScene: "map" }).blocker).toEqual({
+      kind: "retry",
+      line: "The map could not be drawn.",
+    });
+    // The realm view's own failure stands at the play step and offers no way round it.
+    const realmFailed = doorwayView({ ...boot, failedScene: "hex", realmCanOpen: true });
+    expect(realmFailed.blocker).toEqual({ kind: "retry", line: "The realm could not be drawn." });
+    expect(realmFailed.steps.find(({ state }) => state === "running")?.step).toBe("play");
   });
 
   it("offers Devices as the step when the account has reached its device limit", () => {
