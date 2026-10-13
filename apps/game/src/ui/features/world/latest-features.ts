@@ -35,10 +35,10 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
-    title: "Production Every Second",
+    title: "Production and stamina follow blocks",
     description:
-      "Stores and barracks earn production for every elapsed second in all game modes. Stamina keeps its existing rhythm.",
-    type: "fix",
+      "Stores, barracks and armies earn each elapsed second at the same rates. Their figures advance with confirmed blocks, so what you see is available to spend.",
+    type: "improvement",
   },
   {
     date: "2026-10-13",

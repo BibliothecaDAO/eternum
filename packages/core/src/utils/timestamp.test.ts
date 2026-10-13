@@ -1,20 +1,14 @@
 // @vitest-environment node
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  getAutomationProjectionTick,
-  getBlockTimestamp,
-  setBlockTimestampSource,
-  setChainProvenTimestampSource,
-} from "./timestamp";
+import { getBlockTimestamp, setBlockTimestampSource, setChainProvenTimestampSource } from "./timestamp";
 
 import { configManager } from "../managers/config-manager";
 beforeEach(() => {
   vi.spyOn(configManager, "getTick").mockReturnValue(1);
 });
 
-// getTick(Default) is a fixed 1s, so ticks equal source seconds and the
-// buffers are directly observable as tick differences.
+// The default tick is one second, so it names the proven second.
 const SOURCE_SECONDS = 1_787_000_000;
 
 afterEach(() => {
@@ -24,7 +18,7 @@ afterEach(() => {
 });
 
 describe("chain time", () => {
-  it("projects production at chain-proven time while clocks keep the estimate", () => {
+  it("projects production and stamina at chain-proven time while countdowns keep the estimate", () => {
     setBlockTimestampSource(() => SOURCE_SECONDS + 4);
     setChainProvenTimestampSource(() => SOURCE_SECONDS);
 
@@ -33,17 +27,9 @@ describe("chain time", () => {
     expect(currentDefaultTick).toBe(SOURCE_SECONDS);
   });
 
-  it("falls back to the estimate until the chain has written a timestamp", () => {
+  it("does not project balances before the confirmed clock is known", () => {
     setBlockTimestampSource(() => SOURCE_SECONDS);
     setChainProvenTimestampSource(() => null);
-
-    expect(getBlockTimestamp().currentDefaultTick).toBe(SOURCE_SECONDS);
-  });
-
-  it("holds the automation projection 3s behind the proven tick — jitter belt under the revert-resync chokepoint", () => {
-    setBlockTimestampSource(() => SOURCE_SECONDS + 4);
-    setChainProvenTimestampSource(() => SOURCE_SECONDS);
-
-    expect(getAutomationProjectionTick().currentDefaultTick).toBe(SOURCE_SECONDS - 3);
+    expect(() => getBlockTimestamp().currentDefaultTick).toThrow("No chain-proven timestamp");
   });
 });

@@ -47,11 +47,11 @@ fn troop_boost_storage_has_one_slot_and_preserves_boundaries() {
         decr_damage_gotten_percent_num: 0xffff,
         decr_damage_gotten_end_tick: 0xffffffff,
         incr_stamina_regen_percent_num: 0xffff,
-        incr_stamina_regen_tick_count: 0xff,
+        incr_stamina_regen_tick_count: 0xffff,
         incr_explore_reward_percent_num: 0xffff,
         incr_explore_reward_end_tick: 0xffffffff,
     };
-    let packed = 0xffffffffffff00ffffffffffffffffffffffffffffff;
+    let packed = 0xffffffffffffffffffffffffffffffffffffffffffff;
     assert!(TroopBoostsPacking::pack(maximum) == packed);
     assert!(TroopBoostsPacking::unpack(packed) == maximum);
 }
@@ -64,7 +64,7 @@ fn troop_boost_storage_keeps_fields_independent(
     defense: u16,
     defense_end: u32,
     stamina: u16,
-    stamina_ticks: u8,
+    stamina_seconds: u16,
     reward: u16,
     reward_end: u32,
 ) {
@@ -74,7 +74,7 @@ fn troop_boost_storage_keeps_fields_independent(
         decr_damage_gotten_percent_num: defense,
         decr_damage_gotten_end_tick: defense_end,
         incr_stamina_regen_percent_num: stamina,
-        incr_stamina_regen_tick_count: stamina_ticks,
+        incr_stamina_regen_tick_count: stamina_seconds,
         incr_explore_reward_percent_num: reward,
         incr_explore_reward_end_tick: reward_end,
     };
@@ -112,7 +112,7 @@ fn troop_storage_preserves_counts_stamina_and_combat(
         decr_damage_gotten_percent_num: 0xffff,
         decr_damage_gotten_end_tick: 0xffffffff,
         incr_stamina_regen_percent_num: 0xffff,
-        incr_stamina_regen_tick_count: 0xff,
+        incr_stamina_regen_tick_count: 0xffff,
         incr_explore_reward_percent_num: 0xffff,
         incr_explore_reward_end_tick: 0xffffffff,
     };

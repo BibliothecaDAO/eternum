@@ -1,5 +1,6 @@
+import { staminaClock } from "../managers/troop-stamina";
 import {
-  RelicEffectWithEndTick,
+  RelicEffect,
   RelicRecipientType,
   RelicRecipientTypeParam,
   RELICS,
@@ -8,8 +9,8 @@ import {
 } from "@bibliothecadao/types";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 
-export const getArmyRelicEffects = (troops: Troops, currentTick: number): RelicEffectWithEndTick[] => {
-  const relicEffects: RelicEffectWithEndTick[] = [];
+export const getArmyRelicEffects = (troops: Troops, currentTick: number, timestamp: number): RelicEffect[] => {
+  const relicEffects: RelicEffect[] = [];
 
   if (!troops) return relicEffects;
 
@@ -19,9 +20,8 @@ export const getArmyRelicEffects = (troops: Troops, currentTick: number): RelicE
     const expectedBonus = (10000 + troops.boosts.incr_stamina_regen_percent_num) / 10000;
     const match = staminaRelics.find((r) => r.bonus === expectedBonus);
     const id = match ? match.id : ResourcesIds.StaminaRelic1;
-    // For stamina, use currentTick + tick_count as endTick
-    const endTick = Number(troops.stamina.updated_tick) + troops.boosts.incr_stamina_regen_tick_count;
-    relicEffects.push({ id, endTick });
+    const endAt = staminaClock.read(troops.stamina).settledAt + troops.boosts.incr_stamina_regen_tick_count;
+    if (endAt > timestamp) relicEffects.push({ id, endAt });
   }
 
   // Damage Relics
@@ -61,8 +61,8 @@ export const getArmyRelicEffects = (troops: Troops, currentTick: number): RelicE
 export const getStructureRelicEffects = (
   productionBoostBonus: NativeRows["ProductionBonus"],
   currentTick: number,
-): RelicEffectWithEndTick[] => {
-  const relicEffects: RelicEffectWithEndTick[] = [];
+): RelicEffect[] => {
+  const relicEffects: RelicEffect[] = [];
 
   if (!productionBoostBonus) return relicEffects;
 
@@ -123,10 +123,10 @@ export const getStructureRelicEffects = (
 export const getStructureArmyRelicEffects = (
   guard: { troops: Pick<Troops, "boosts"> } | undefined,
   currentTick: number,
-): RelicEffectWithEndTick[] => {
+): RelicEffect[] => {
   const troopBoosts = guard?.troops.boosts;
 
-  const relicEffects: RelicEffectWithEndTick[] = [];
+  const relicEffects: RelicEffect[] = [];
 
   if (!troopBoosts) return relicEffects;
 

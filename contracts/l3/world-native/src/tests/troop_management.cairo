@@ -163,7 +163,7 @@ fn explorer_transfer_preserves_the_worse_stamina_and_cooldown_and_deletes_an_emp
     for (id, stamina, cooldown) in array![(first, 2_u64, 190_u32), (second, 9, 150)] {
         let mut row = troop(d, id).unwrap();
         row.troops.stamina.set_amount(stamina);
-        row.troops.stamina.set_updated_tick(2);
+        row.troops.stamina.set_settled_at(140);
         row.troops.battle_cooldown_end = cooldown;
         crate::tests::resource_commands::set_explorer_fixture(
             d.games, crate::troops::ExplorerKey { game_id: 3, explorer_id: id }, row,
@@ -523,7 +523,7 @@ fn five_step_move_charges_five_times_one_step_food() {
         map.reveal(crate::geometry::tile_key(3, crate::troops::Coord { x: start.x + offset, ..start }), 11);
     }
     explorer.troops.stamina.set_amount(120);
-    explorer.troops.stamina.set_updated_tick(2);
+    explorer.troops.stamina.set_settled_at(120);
     super::resource_commands::set_explorer_fixture(d.games, ExplorerKey { game_id: 3, explorer_id: first }, explorer);
     let wheat = ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 35 };
     let fish = ResourceSlot { resource_type: 36, ..wheat };
@@ -558,7 +558,7 @@ fn multi_tile_move_spends_each_steps_stamina_and_rejects_a_blocked_path_atomical
     stop_cheat_caller_address(d.games);
     let mut before = troop(d, first).unwrap();
     before.troops.stamina.set_amount(120);
-    before.troops.stamina.set_updated_tick(2);
+    before.troops.stamina.set_settled_at(120);
     crate::tests::resource_commands::set_explorer_fixture(
         d.games, crate::troops::ExplorerKey { game_id: 3, explorer_id: first }, before,
     );

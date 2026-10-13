@@ -137,7 +137,7 @@ pub fn set_guard(d: super::Deployment, key: ResourceKey, slot: u8, count: u128) 
         Guard {
             troops: Troops {
                 count: count * RESOURCE_PRECISION,
-                stamina: Stamina { amount: 120, updated_tick: 16 }.into(),
+                stamina: Stamina { amount: 120, updated_tick: 80 }.into(),
                 ..Default::default(),
             },
             destroyed_tick: 0,
@@ -435,7 +435,7 @@ fn blitz_ethereal_battle_uses_both_root_d20_rolls_in_damage_and_history() {
             },
             rules.troop_stamina_config,
             rules.troop_damage_config,
-            16,
+            rules.tick_config.armies_tick_in_seconds,
             5,
         );
     let mut spy = spy_events();
@@ -552,7 +552,7 @@ fn a_dice_game_rolls_both_root_d20s_on_the_surface_too() {
             },
             rules.troop_stamina_config,
             rules.troop_damage_config,
-            16,
+            rules.tick_config.armies_tick_in_seconds,
             5,
         );
     let mut spy = spy_events();

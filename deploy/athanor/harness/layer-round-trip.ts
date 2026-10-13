@@ -1,6 +1,7 @@
-import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { resolveExplorerTroops, staminaAt } from "@bibliothecadao/eternum/troop-stamina";
 import { attachAcceptedBlocks } from "./gas-collector";
-import { ETHEREAL_STRIDE, type Tile } from "@bibliothecadao/types";
+import { ETHEREAL_STRIDE, type Tile, type Troops } from "@bibliothecadao/types";
 import { setTimeout as sleep } from "node:timers/promises";
 import type { HarnessProvider } from "./provider";
 import { entityMapPosition, getTileAt, type GameClient } from "@bibliothecadao/eternum";
@@ -8,7 +9,7 @@ import { cubeDistance, neighbor, trackTransaction, type HarnessBot, type Tracked
 import type { HarnessGame } from "./harness-game";
 
 type Coord = { alt: boolean; x: number; y: number };
-type Explorer = Coord & { explorerId: string; owner: string; stamina: number; staminaUpdatedTick: number };
+type Explorer = Coord & { explorerId: string; owner: string; troops: Troops };
 type StepKind = "approach" | "enter" | "explore" | "return" | "exit";
 
 export interface LayerRoundTripEvidence {
@@ -34,7 +35,7 @@ interface RoundTripContext extends RoundTripOptions {
   bot: HarnessBot;
   explorer: Explorer;
   evidence: LayerRoundTripEvidence;
-  stamina: { gain: number; tickSeconds: number; required: number };
+  stamina: { rules: Parameters<typeof staminaAt>[2]; tickSeconds: number; required: number };
 }
 
 // The contract's ethereal stride is 15 coordinates. East/west are exact inverses on either row parity.
@@ -88,11 +89,11 @@ async function prepareRoundTrip(
   return { ...options, ...candidate, evidence, stamina: resolveMovementStamina(preset) };
 }
 
-function resolveMovementStamina(preset: Record<string, unknown>): RoundTripContext["stamina"] {
-  const troops = requireRecord(preset.troop_stamina_config, "troop_stamina_config");
-  const ticks = requireRecord(preset.tick_config, "tick_config");
+function resolveMovementStamina(preset: NativeRows["SliceRules"]): RoundTripContext["stamina"] {
+  const troops = preset.troop_stamina_config;
+  const ticks = preset.tick_config;
   return {
-    gain: nonnegative(troops.stamina_gain_per_tick, "stamina gain"),
+    rules: troops,
     tickSeconds: positive(ticks.armies_tick_in_seconds, "army tick"),
     required: Math.max(
       nonnegative(troops.stamina_explore_stamina_cost, "exploration cost"),
@@ -277,9 +278,10 @@ async function waitForStamina(context: RoundTripContext) {
   const deadline = Date.now() + 360_000;
   while (Date.now() < deadline) {
     const block = await context.provider.getBlock("latest");
-    const tick = Math.floor(Number(block.timestamp) / context.stamina.tickSeconds);
-    const available =
-      context.explorer.stamina + Math.max(0, tick - context.explorer.staminaUpdatedTick) * context.stamina.gain;
+    const available = Number(
+      staminaAt(context.explorer.troops, Number(block.timestamp), context.stamina.rules, context.stamina.tickSeconds)
+        .amount,
+    );
     if (available >= context.stamina.required) return;
     await sleep(1_000);
   }
@@ -307,18 +309,12 @@ function readExplorer(
 ): Explorer {
   const troops = resolveExplorerTroops(client.setup.store, row);
   if (!troops) throw new Error(`Explorer ${row.explorer_id} stamina is not synchronized`);
-  const { stamina } = troops;
   return {
     explorerId: String(row.explorer_id),
     owner: String(row.owner),
     ...entityMapPosition(client.setup.store, client.gameId, row.explorer_id),
-    stamina: Number(stamina.amount),
-    staminaUpdatedTick: Number(stamina.updated_tick),
+    troops,
   };
-}
-function requireRecord(value: unknown, name: string): Record<string, unknown> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`Missing ${name}`);
-  return value as Record<string, unknown>;
 }
 function positive(value: unknown, name: string) {
   const number = Number(value);

@@ -117,7 +117,6 @@ import { resolveArmyCosmeticPresentation, resolveArmyPresentationPosition } from
 import type { CompactEntityLabelScope } from "./compact-entity-label-renderer";
 import { resolveArmyCompactEntityLabel, resolveCompactEntityLabelVariant } from "./compact-entity-label-policy";
 import { createArmyRecord } from "./army-record";
-import { resolveArmyStaminaTickRefresh } from "./army-stamina-tick-policy";
 import { finalizeArmyChunkTransition } from "./army-chunk-transition-finalizer";
 import { reconcileVisibleArmySet } from "./army-visible-set-reconciler";
 import { createManagerVisibilityDiff } from "./manager-visibility-diff";
@@ -248,7 +247,6 @@ export class ArmyManager {
   private hadMovingArmiesLastFrame = false;
   private visibilityManager?: CentralizedVisibilityManager;
   private unsubscribeVisibility?: () => void;
-  private lastKnownArmiesTick: number = 0;
   private unsubscribeChainTime?: () => void;
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private latestTransitionToken = 0;
@@ -380,9 +378,9 @@ export class ArmyManager {
     // Identity names arrive after the armies spawned: every label re-reads its owner through the one resolver.
     this.unsubscribePlayers = this.store && watchPlayerNames(() => this.refreshOwnerNames());
 
-    // Initialize the last known armies tick to current tick
-    this.lastKnownArmiesTick = getBlockTimestamp().currentArmiesTick;
-    this.unsubscribeChainTime = useChainTimeStore.subscribe(() => this.handleChainTimeAdvanceSafely());
+    this.unsubscribeChainTime = useChainTimeStore.subscribe((next, previous) =>
+      this.handleChainTimeAdvanceSafely(next.executionFloorMs !== previous.executionFloorMs),
+    );
   }
 
   private subscribeToExplorerTroopsPresentation(): void {
@@ -581,26 +579,16 @@ export class ArmyManager {
     );
   }
 
-  private handleChainTimeAdvanceSafely(): void {
+  private handleChainTimeAdvanceSafely(floorAdvanced: boolean): void {
     try {
-      this.handleChainTimeAdvance();
+      this.handleChainTimeAdvance(floorAdvanced);
     } catch (error) {
       console.error("[ArmyManager] Failed to apply a chain-time update", error);
     }
   }
 
-  private handleChainTimeAdvance(): void {
-    const { currentArmiesTick } = getBlockTimestamp();
-    const tickRefresh = resolveArmyStaminaTickRefresh({
-      currentTick: currentArmiesTick,
-      previousTick: this.lastKnownArmiesTick,
-    });
-    if (tickRefresh.shouldRecompute) {
-      this.lastKnownArmiesTick = tickRefresh.nextTrackedTick;
-      this.recomputeStaminaForAllArmies(currentArmiesTick);
-    } else if (this.staminaUnresolved.size > 0) {
-      this.staminaUnresolved.forEach((entityId) => this.refreshArmyStamina(entityId, currentArmiesTick));
-    }
+  private handleChainTimeAdvance(floorAdvanced: boolean): void {
+    if (floorAdvanced) this.recomputeStaminaForAllArmies(getBlockTimestamp().currentDefaultTick);
     this.recomputeBattleTimersForAllArmies();
   }
 
@@ -2787,13 +2775,12 @@ export class ArmyManager {
     if (!isMine || !this.store) return false;
     const army = this.store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: entityId });
     if (!army?.owner) return false;
-    const { currentArmiesTick, currentDefaultTick } = getBlockTimestamp();
+    const { currentDefaultTick } = getBlockTimestamp();
     return Boolean(
       readArmyMovementReadiness({
         army,
         structureResources: new ResourceManager(this.store, safeInteger(army.owner)),
         store: this.store,
-        currentArmiesTick,
         currentDefaultTick,
       })?.foodBlock,
     );
@@ -3137,14 +3124,14 @@ ${
 
   private resolveArmyStaminaSnapshot(
     entityId: ID,
-    currentArmiesTick = getBlockTimestamp().currentArmiesTick,
+    timestamp = getBlockTimestamp().currentDefaultTick,
   ): { current: number; max: number } | null {
-    if (!Number.isFinite(currentArmiesTick) || currentArmiesTick <= 0) {
+    if (!Number.isFinite(timestamp) || timestamp <= 0) {
       return null;
     }
 
     const staminaSnapshot = getExplorerStaminaSnapshot({
-      currentArmiesTick,
+      timestamp,
       liveTroops: this.resolveLiveExplorerTroops(entityId),
     });
     if (!staminaSnapshot) {
@@ -3152,26 +3139,26 @@ ${
     }
 
     // staminaSnapshot.current is already the computed regen value from
-    // StaminaManager.getStamina(troops, currentArmiesTick). Use it directly.
+    // StaminaManager.getStamina(troops, timestamp). Use it directly.
     return { current: staminaSnapshot.current, max: staminaSnapshot.max };
   }
 
   /**
-   * Recompute stamina for all armies and update visible labels when armies tick changes
+   * Recompute stamina for all armies and update visible labels when the execution floor advances
    */
-  private recomputeStaminaForAllArmies(currentArmiesTick: number): void {
-    this.armyPresentations.forEach((_army, entityId) => this.refreshArmyStamina(entityId, currentArmiesTick));
+  private recomputeStaminaForAllArmies(timestamp: number): void {
+    this.armyPresentations.forEach((_army, entityId) => this.refreshArmyStamina(entityId, timestamp));
   }
 
-  /** Reads the tick-aware stamina for one army into its record and label; a miss leaves it for the next advance. */
-  private refreshArmyStamina(entityId: ID, currentArmiesTick: number): void {
+  /** Reads the second-based stamina for one army into its record and label; a miss leaves it for the next advance. */
+  private refreshArmyStamina(entityId: ID, timestamp: number): void {
     const army = this.armyPresentations.get(entityId);
     if (!army) {
       this.staminaUnresolved.delete(entityId);
       return;
     }
     try {
-      const staminaSnapshot = this.resolveArmyStaminaSnapshot(entityId, currentArmiesTick);
+      const staminaSnapshot = this.resolveArmyStaminaSnapshot(entityId, timestamp);
       if (!staminaSnapshot) {
         // The last stamina read stays on the label until the next one resolves; it is never blanked in between.
         this.staminaUnresolved.add(entityId);

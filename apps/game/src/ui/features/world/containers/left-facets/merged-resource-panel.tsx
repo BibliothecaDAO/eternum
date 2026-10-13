@@ -2,7 +2,7 @@ import { Plus } from "@/ui/design-system/atoms/game-icons";
 import { memo, useCallback, useMemo, useRef } from "react";
 
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ProductionStatusBadge } from "@/ui/shared";
@@ -83,13 +83,10 @@ export const MergedResourcePanel = memo(
       [entityId, store],
     );
 
-    // 1s tick so production timers/rings decay live (same pattern as the
-    // production panel + build menu).
-    const currentTime = useNowMs();
-    const now = Math.floor(currentTime / 1000);
+    const now = useCurrentDefaultTick();
+    const currentTime = now * 1000;
 
-    // Production accrues every tick, so the held amount changes every second. One sweep per token per
-    // minute, automation's own cadence, is the most a player should see.
+    // Limit the accrual animation to one sweep per minute as confirmed production arrives.
     const accrualSweeps = useRef(new Map<ResourcesIds, { label: string | undefined; at: number; key: number }>());
     const resolveAccrualKey = (resourceId: ResourcesIds, label: string | undefined): number => {
       const previous = accrualSweeps.current.get(resourceId);
@@ -184,9 +181,7 @@ export const MergedResourcePanel = memo(
         if (!item && balance <= 0) return null;
 
         const label = ResourcesIds[resourceId];
-        const elapsedSeconds = item ? (currentTime - item.calculatedAt) / 1000 : 0;
-        const effectiveRemaining =
-          item && item.timeRemainingSeconds !== null ? Math.max(item.timeRemainingSeconds - elapsedSeconds, 0) : null;
+        const effectiveRemaining = item?.timeRemainingSeconds ?? null;
         // Whole minutes only: automation refills inputs every minute, so seconds are noise and anything
         // under a minute is the normal state of a topped-up resource, not a warning.
         const timer =

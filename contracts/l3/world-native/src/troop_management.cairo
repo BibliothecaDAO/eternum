@@ -102,15 +102,15 @@ pub fn refill(ref troops: Troops, rules: SliceRules, timestamp: u64) {
             troops.category,
             troops.tier,
             rules.troop_stamina_config,
-            timestamp / rules.tick_config.armies_tick_in_seconds,
+            rules.tick_config.armies_tick_in_seconds,
+            timestamp,
         );
 }
 pub fn merge_timers(ref source: Troops, ref target: Troops, rules: SliceRules, timestamp: u64) {
     refill(ref source, rules, timestamp);
     refill(ref target, rules, timestamp);
     if source.stamina.inline().amount < target.stamina.inline().amount {
-        target.stamina.set_amount(source.stamina.inline().amount);
-        target.stamina.set_updated_tick(timestamp / rules.tick_config.armies_tick_in_seconds);
+        target.stamina = source.stamina;
     }
     target.battle_cooldown_end = core::cmp::max(source.battle_cooldown_end, target.battle_cooldown_end);
 }

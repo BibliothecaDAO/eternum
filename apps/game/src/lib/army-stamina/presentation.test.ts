@@ -33,12 +33,10 @@ const knights = (amount: number, updatedTick: number): Troops => ({
 
 /** The model as the HUD builds it each second from chain time. */
 const displayAt = (troops: Troops, nowSeconds: number) => {
-  const currentArmiesTick = Math.floor(nowSeconds / TICK_SECONDS);
   return buildStaminaDisplayModel({
-    committedCurrent: Number(StaminaManager.getStamina(troops, currentArmiesTick).amount),
+    committedCurrent: Number(StaminaManager.getStamina(troops, nowSeconds).amount),
     committedMax: 150,
-    armiesTickTimeRemaining: (currentArmiesTick + 1) * TICK_SECONDS - nowSeconds,
-    currentArmiesTick,
+    timestamp: nowSeconds,
     troops,
   });
 };
@@ -46,13 +44,13 @@ const displayAt = (troops: Troops, nowSeconds: number) => {
 describe("time until an army is full", () => {
   afterEach(() => vi.restoreAllMocks());
 
-  it("lands on the contract's full tick every second for ten minutes", () => {
+  it("lands on the contract's full second every second for ten minutes", () => {
     vi.spyOn(configManager, "getTroopStaminaRules").mockReturnValue(rules as never);
     vi.spyOn(configManager, "getTick").mockReturnValue(TICK_SECONDS);
     const updatedTick = 1_000;
-    const troops = knights(90, updatedTick);
-    // The contract refills one point per elapsed tick, so the bar is full at tick updated + (150 - 90).
-    const contractFullAt = (updatedTick + 60) * TICK_SECONDS;
+    const troops = knights(90, updatedTick * TICK_SECONDS + 37);
+    // The army starts 37 seconds past the shared boundary; its own clock determines regeneration.
+    const contractFullAt = (updatedTick + 60) * TICK_SECONDS + 37;
     const start = updatedTick * TICK_SECONDS + 37;
 
     for (let now = start; now <= start + 600; now += 1) {

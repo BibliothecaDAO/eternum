@@ -248,12 +248,16 @@ pub fn draw_relics(rules: Span<RelicRule>, seed: u256, count: u8) -> Span<u8> {
     }
     chosen.span()
 }
-pub fn boost_explorer(ref boosts: crate::troops::TroopBoosts, id: u8, rule: RelicRule, tick: u32) {
+pub fn boost_explorer(
+    ref boosts: crate::troops::TroopBoosts, id: u8, rule: RelicRule, tick: u32, tick_seconds: u64,
+) {
     match id {
         39 |
         40 => {
             boosts.incr_stamina_regen_percent_num = rule.rate_bps;
-            boosts.incr_stamina_regen_tick_count = rule.uses;
+            boosts.incr_stamina_regen_tick_count = (Into::<u8, u64>::into(rule.uses) * tick_seconds)
+                .try_into()
+                .unwrap();
         },
         41 |
         42 => {

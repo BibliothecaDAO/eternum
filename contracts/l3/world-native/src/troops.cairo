@@ -33,6 +33,7 @@ pub enum TroopTier {
 #[derive(Copy, Drop, Serde, Default, Debug, PartialEq, starknet::Store)]
 pub struct Stamina {
     pub amount: u64,
+    // Low 32 bits: settled second; high 32 bits: regeneration remainder. Renamed at the schema rebuild.
     pub updated_tick: u64,
 }
 #[derive(Copy, Drop, Serde, Default, Debug, PartialEq)]
@@ -72,7 +73,8 @@ pub struct TroopBoosts {
     pub decr_damage_gotten_percent_num: u16,
     pub decr_damage_gotten_end_tick: u32,
     pub incr_stamina_regen_percent_num: u16,
-    pub incr_stamina_regen_tick_count: u8,
+    // Remaining boosted seconds; the wire name changes at the schema rebuild.
+    pub incr_stamina_regen_tick_count: u16,
     pub incr_explore_reward_percent_num: u16,
     pub incr_explore_reward_end_tick: u32,
 }
@@ -81,9 +83,9 @@ const DAMAGE_END_SCALE: u128 = 0x10000;
 const DEFENSE_PERCENT_SCALE: u128 = 0x1000000000000;
 const DEFENSE_END_SCALE: u128 = 0x10000000000000000;
 const STAMINA_PERCENT_SCALE: u128 = 0x1000000000000000000000000;
-const STAMINA_TICKS_SCALE: u128 = 0x10000000000000000000000000000;
+const STAMINA_SECONDS_SCALE: u128 = 0x10000000000000000000000000000;
 
-// Damage, defense and stamina use 120 low-limb bits; exploration uses 48 high-limb bits.
+// Damage, defense and stamina use 128 low-limb bits; exploration uses 48 high-limb bits.
 pub impl TroopBoostsPacking of starknet::storage_access::StorePacking<TroopBoosts, felt252> {
     fn pack(value: TroopBoosts) -> felt252 {
         let low = value.incr_damage_dealt_percent_num.into()
@@ -91,7 +93,7 @@ pub impl TroopBoostsPacking of starknet::storage_access::StorePacking<TroopBoost
             + value.decr_damage_gotten_percent_num.into() * DEFENSE_PERCENT_SCALE
             + value.decr_damage_gotten_end_tick.into() * DEFENSE_END_SCALE
             + value.incr_stamina_regen_percent_num.into() * STAMINA_PERCENT_SCALE
-            + value.incr_stamina_regen_tick_count.into() * STAMINA_TICKS_SCALE;
+            + value.incr_stamina_regen_tick_count.into() * STAMINA_SECONDS_SCALE;
         let high = value.incr_explore_reward_percent_num.into()
             + value.incr_explore_reward_end_tick.into() * DAMAGE_END_SCALE;
         u256 { low, high }.try_into().unwrap()
@@ -104,7 +106,7 @@ pub impl TroopBoostsPacking of starknet::storage_access::StorePacking<TroopBoost
             decr_damage_gotten_percent_num: (value.low / DEFENSE_PERCENT_SCALE % 0x10000).try_into().unwrap(),
             decr_damage_gotten_end_tick: (value.low / DEFENSE_END_SCALE % 0x100000000).try_into().unwrap(),
             incr_stamina_regen_percent_num: (value.low / STAMINA_PERCENT_SCALE % 0x10000).try_into().unwrap(),
-            incr_stamina_regen_tick_count: (value.low / STAMINA_TICKS_SCALE).try_into().unwrap(),
+            incr_stamina_regen_tick_count: (value.low / STAMINA_SECONDS_SCALE).try_into().unwrap(),
             incr_explore_reward_percent_num: (value.high % 0x10000).try_into().unwrap(),
             incr_explore_reward_end_tick: (value.high / DAMAGE_END_SCALE).try_into().unwrap(),
         }
@@ -127,7 +129,7 @@ pub struct PackedTroops {
     pub boosts: felt252,
     pub combat: u64,
 }
-const STAMINA_TICK_SCALE: u128 = 0x10000000000000000;
+const STAMINA_CLOCK_SCALE: u128 = 0x10000000000000000;
 const TIER_SCALE: u64 = 4;
 const COOLDOWN_SCALE: u64 = 16;
 pub impl TroopsPacking of starknet::storage_access::StorePacking<Troops, PackedTroops> {
@@ -142,7 +144,7 @@ pub impl TroopsPacking of starknet::storage_access::StorePacking<Troops, PackedT
             count: value.count,
             stamina: match value.stamina {
                 StaminaSource::Inline(bar) => (Into::<u64, u128>::into(bar.amount)
-                    + Into::<u64, u128>::into(bar.updated_tick) * STAMINA_TICK_SCALE)
+                    + Into::<u64, u128>::into(bar.updated_tick) * STAMINA_CLOCK_SCALE)
                     .into(),
                 StaminaSource::Slot(slot) => u256 { low: slot.into(), high: 1 }.try_into().unwrap(),
             },
@@ -172,8 +174,8 @@ pub impl TroopsPacking of starknet::storage_access::StorePacking<Troops, PackedT
                 match packed.high {
                     0 => StaminaSource::Inline(
                         Stamina {
-                            amount: (packed.low % STAMINA_TICK_SCALE).try_into().unwrap(),
-                            updated_tick: (packed.low / STAMINA_TICK_SCALE).try_into().unwrap(),
+                            amount: (packed.low % STAMINA_CLOCK_SCALE).try_into().unwrap(),
+                            updated_tick: (packed.low / STAMINA_CLOCK_SCALE).try_into().unwrap(),
                         },
                     ),
                     1 => StaminaSource::Slot(packed.low.try_into().expect('invalid stamina slot')),
@@ -313,7 +315,8 @@ pub(crate) fn spend_stamina(
             explorer.troops.tier,
             stamina,
             cost,
-            timestamp / rules.tick_config.armies_tick_in_seconds,
+            rules.tick_config.armies_tick_in_seconds,
+            timestamp,
             true,
         );
 }
@@ -412,7 +415,7 @@ fn discovered_guard(
         tier,
         count: count * crate::rules::RESOURCE_PRECISION,
         stamina: crate::troops::Stamina {
-            amount: 0, updated_tick: timestamp / rules.tick_config.armies_tick_in_seconds,
+            amount: 0, updated_tick: timestamp,
         }
             .into(),
         boosts: Default::default(),

@@ -1,3 +1,4 @@
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { researchedDepth } from "@bibliothecadao/eternum";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -31,6 +32,7 @@ export const SpireDepthActions = ({ armyEntityId }: { armyEntityId: ID }) => {
   } = useGame();
   const account = useAccountStore((state) => state.account);
   const [pending, setPending] = useState<number | null>(null);
+  const executionSecond = useCurrentDefaultTick();
   useNativeRevision(["ArmySlot", "ExplorerTroops", "Structure", "RealmKnowledge", "TileOccupancy"]);
   const gameId = configManager.getActiveGameId();
   const explorer = store.get("ExplorerTroops", { game_id: gameId, explorer_id: armyEntityId });
@@ -44,9 +46,7 @@ export const SpireDepthActions = ({ armyEntityId }: { armyEntityId: ID }) => {
   if (!spire) return null;
   const besideSpire = isAtExpeditionSpire(spire, entityMapPosition(store, gameId, armyEntityId));
   const troops = resolveExplorerTroops(store, explorer);
-  const stamina = troops
-    ? Number(StaminaManager.getStamina(troops, getBlockTimestamp().currentArmiesTick).amount)
-    : undefined;
+  const stamina = troops ? Number(StaminaManager.getStamina(troops, executionSecond).amount) : undefined;
   // Depths are researched in order: every layer down to the deepest is open.
   const depths = Array.from({ length: deepest }, (_, index) => index + 1).map((depth) => ({
     depth,

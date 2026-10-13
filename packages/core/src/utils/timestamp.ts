@@ -7,31 +7,20 @@ import { configManager } from "../managers/config-manager";
 type TimestampSource = () => number;
 
 /**
- * The client's running estimate of chain time: clocks, cooldowns and stamina read it. It is bound from confirmed
+ * The client's running estimate of chain time: countdowns to known future times read it. It is bound from confirmed
  * heads; until one is known there is no chain time, and a reader fails by name instead of guessing a wall clock.
  */
 let timestampSource: TimestampSource | null = null;
 /** The newest timestamp the chain itself has written (a closed head or a row). Null until one is known. */
 let chainProvenTimestampSource: (() => number | null) | null = null;
 
-// Small extra buffer for automation projections — clock-jitter insurance only.
-// The Aug 19 playtest proved buffer depth cannot fix automation reverts: with
-// zero player transactions the projection diverged from chain lazy-harvest
-// math and the shortfall GREW over the hour. The real repair is the
-// revert→resync→replan chokepoint in use-automation (refetch the realm's
-// Resource rows on an Insufficient Balance revert so the next plan starts
-// from chain truth). Owner ruling: keep 3s as a belt, never deepen it again.
-const CONSERVATIVE_TICK_BUFFER_AUTOMATION = 3;
-
 export const setBlockTimestampSource = (source: TimestampSource | null) => {
   timestampSource = source ? () => Math.floor(source()) : null;
 };
 
 /**
- * Spendable production is projected at chain-proven time. Displays may use the running estimate, but actions use
- * this floor. A transaction executes at or after the newest chain-written timestamp, so a balance projected there
- * is a floor on what the chain will hold; the estimate can lead the executing block by seconds and a MAX taken
- * from it reverts.
+ * Production and stamina figures and action gates use the same chain-proven time. A transaction executes at or
+ * after the newest chain-written timestamp; the running estimate may lead it and cannot justify a balance.
  */
 export const setChainProvenTimestampSource = (source: (() => number | null) | null) => {
   chainProvenTimestampSource = source;
@@ -56,7 +45,7 @@ export const reportObservedChainTimestamp = (timestampSeconds: number) => {
 export const getBlockTimestamp = () => {
   if (!timestampSource) throw new Error("Chain time is not known yet: no confirmed head has bound a clock");
   const timestamp = timestampSource();
-  const provenTimestamp = chainProvenTimestampSource?.() ?? timestamp;
+  const provenTimestamp = chainProvenTimestampSource ? chainProvenTimestampSource() : timestamp;
   const tickAt = (seconds: number, tick: TickIds) => {
     const interval = Number(configManager.getTick(tick));
     if (!Number.isFinite(interval) || interval <= 0) throw new Error(`Invalid tick interval for ${tick}`);
@@ -66,27 +55,11 @@ export const getBlockTimestamp = () => {
   return {
     currentBlockTimestamp: timestamp,
     get currentDefaultTick() {
+      if (provenTimestamp === null) throw new Error("No chain-proven timestamp for balances or stamina");
       return tickAt(provenTimestamp, TickIds.Default);
     },
     get currentArmiesTick() {
       return tickAt(timestamp, TickIds.Armies);
     },
-  };
-};
-
-/**
- * Projection tick for automation plan building. Carries a slightly deeper
- * jitter belt than the UI accessor, but reverts are NOT prevented here: the
- * projection can diverge from chain lazy-harvest math regardless of buffer
- * depth, and automation repairs that with its revert→resync chokepoint
- * (see CONSERVATIVE_TICK_BUFFER_AUTOMATION).
- */
-export const getAutomationProjectionTick = () => {
-  const { currentBlockTimestamp, currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
-
-  return {
-    currentBlockTimestamp,
-    currentDefaultTick: Math.max(0, currentDefaultTick - CONSERVATIVE_TICK_BUFFER_AUTOMATION),
-    currentArmiesTick: Math.max(0, currentArmiesTick - CONSERVATIVE_TICK_BUFFER_AUTOMATION),
   };
 };

@@ -81,9 +81,9 @@ const recordedItem = (model: string, story?: string): RecordedItem => {
 const createHerald = () => {
   const log: HeraldHistoryEvent[] = [];
   const state = {
-    army: null as null | { amount: number; updatedTick: number; day: number },
+    army: null as null | { amount: number; settledAt: number; day: number },
     /** The neighbour's army, spent whenever the player acts, so it rests alongside the player's. */
-    neighbourArmy: null as null | { amount: number; updatedTick: number; day: number },
+    neighbourArmy: null as null | { amount: number; settledAt: number; day: number },
     status: "Live" as "Live" | "Settled",
     chain: CHAIN_ID,
     /** Snapshot reads answered, and whether this Herald is failing them. */
@@ -143,9 +143,9 @@ const createHerald = () => {
       value: { ...value, order: block, index: 0 },
     });
   };
-  /** The player acts: an explore story on the next block, their army's stamina spent at this tick. */
+  /** The player acts: an explore story on the next block, their army's stamina spent at this second. */
   const act = (stamina: number, day = TODAY) => {
-    state.army = { amount: stamina, updatedTick: armiesTick(), day };
+    state.army = { amount: stamina, settledAt: Math.floor(Date.now() / 1000), day };
     state.neighbourArmy = { ...state.army };
     const explore = recordedItem("StoryEvent", "ExplorationReward");
     const reward = (explore.value as { story: { ExplorationReward: object } }).story.ExplorationReward;
@@ -180,7 +180,7 @@ const createHerald = () => {
 };
 
 /** The game's rules with a short armies tick, the player's home realm, and their army if it still exists. */
-type ArmyState = { amount: number; updatedTick: number; day: number };
+type ArmyState = { amount: number; settledAt: number; day: number };
 
 /** Structure owners, so the fake narrows armies to one account's as Herald's owner filter does. */
 const STRUCTURE_OWNERS = new Map([
@@ -330,7 +330,7 @@ const armySlotRow = (explorerId: number, home: number, army: ArmyState) => ({
     epoch: army.day,
     slot: 0,
     explorer_id: explorerId,
-    stamina: { amount: army.amount, updated_tick: army.updatedTick },
+    stamina: { amount: army.amount, updated_tick: army.settledAt },
   },
 });
 

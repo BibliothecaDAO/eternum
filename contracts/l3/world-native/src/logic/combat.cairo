@@ -77,7 +77,8 @@ pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, conte
                 attacker.troops.tier,
                 rules.troop_stamina_config,
                 rules.troop_stamina_config.stamina_attack_req.into(),
-                tick,
+                rules.tick_config.armies_tick_in_seconds,
+                context.timestamp,
                 true,
             );
         crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(attacker));
@@ -607,7 +608,6 @@ pub fn resolve_battle(
 ) -> (Troops, Troops) {
     let rules = game_context.rules.unbox();
     if rules.day_unit_seconds != 0 {
-        let tick = context.timestamp / rules.tick_config.armies_tick_in_seconds;
         if context.attacker_is_structure_guard {
             attacker
                 .stamina
@@ -616,7 +616,8 @@ pub fn resolve_battle(
                     attacker.category,
                     crate::troops::TroopTier::T1,
                     rules.troop_stamina_config,
-                    tick,
+                    rules.tick_config.armies_tick_in_seconds,
+                    context.timestamp,
                 );
         }
         if context.defender_is_structure_guard {
@@ -627,7 +628,8 @@ pub fn resolve_battle(
                     defender.category,
                     crate::troops::TroopTier::T1,
                     rules.troop_stamina_config,
-                    tick,
+                    rules.tick_config.armies_tick_in_seconds,
+                    context.timestamp,
                 );
         }
     }
@@ -637,7 +639,7 @@ pub fn resolve_battle(
             context,
             rules.troop_stamina_config,
             rules.troop_damage_config,
-            context.timestamp / rules.tick_config.armies_tick_in_seconds,
+            rules.tick_config.armies_tick_in_seconds,
             rules.battle_config.cooldown_seconds,
         );
     (attacker, defender)

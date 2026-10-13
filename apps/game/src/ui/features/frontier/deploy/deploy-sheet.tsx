@@ -1,5 +1,5 @@
 import { useGame } from "@/hooks/context/game-context";
-import { useCurrentArmiesTick, useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -40,7 +40,6 @@ const DEPLOY_MODELS = [
 export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]; onClose: () => void }) => {
   const { setup } = useGame();
   const defaultTick = useCurrentDefaultTick();
-  const armiesTick = useCurrentArmiesTick();
   const revision = useNativeRevision(DEPLOY_MODELS);
   const rules = useExpeditionRules();
   const now = useNowSeconds();
@@ -53,7 +52,7 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
   // The sheet opens at half of what the realm can field, leaving troops and wheat for the day's other armies; Maximum
   // is one tap away. A count being dragged survives fact revisions.
   const shown = Math.min(count ?? Math.ceil(range.max / 2), range.max);
-  const preview = plan ? previewDeploy(setup.store, realm.game_id, plan, shown, armiesTick) : null;
+  const preview = plan ? previewDeploy(setup.store, realm.game_id, plan, shown, defaultTick) : null;
   const ring = useDeployRing(realm);
   const ordered = useUIStore((state) => state.pendingMilitaryAction?.direction ?? null);
   const direction = deployDirection(ring, ordered);

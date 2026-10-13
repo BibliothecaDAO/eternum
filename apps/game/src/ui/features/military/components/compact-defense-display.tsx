@@ -1,3 +1,4 @@
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { ArrowLeft, Plus } from "@/ui/design-system/atoms/game-icons";
 import { ARMY_DEPLOYMENT_SURFACE_ID, openArmyDeployment } from "../utils/open-army-deployment";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
@@ -5,7 +6,7 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { OVERLAY_SURFACE_ACTIVE } from "@/ui/design-system/atoms/overlay-surface";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useCurrentArmiesTick, useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getTierStyle } from "@/ui/utils/tier-styles";
@@ -65,7 +66,7 @@ export const CompactDefenseDisplay = ({
   hideSlotSummary = false,
 }: CompactDefenseDisplayProps) => {
   const ordersAllowed = useUIStore(canIssueOrders);
-  const currentArmiesTick = useCurrentArmiesTick();
+  const staminaTimestamp = useCurrentDefaultTick();
   const currentBlockTimestamp = useCurrentBlockTimestamp();
   const isBanner = variant === "banner";
   const canOpenPicker = Boolean(canManageDefense && structureId && structureId > 0 && ordersAllowed);
@@ -152,7 +153,7 @@ export const CompactDefenseDisplay = ({
 
   const renderSlot = (defense: DefenseTroop) => {
     const troopCount = Number(defense.troops.count);
-    const staminaSnapshot = getGuardStaminaSnapshot(defense.troops, currentArmiesTick);
+    const staminaSnapshot = getGuardStaminaSnapshot(defense.troops, staminaTimestamp);
     const staminaCurrent = staminaSnapshot?.current;
     const staminaMax = staminaSnapshot?.max;
     const rawSlot = defense.slot;

@@ -648,11 +648,11 @@ describe("declared fact absence", () => {
     const rules = store.get("SliceRules", { game_id: 1 })!.troop_stamina_config;
     const knight = { category: "Knight", tier: "T1" } as const;
     const { staminaMax } = troopStaminaLimits(rules, knight.category, knight.tier);
-    expect(musterStamina(open[0], knight, 12, rules, 0)).toEqual({
+    expect(musterStamina(open[0], knight, 12, rules, 0, 1)).toEqual({
       amount: Math.min(4 + 2 * Number(rules.stamina_gain_per_tick), staminaMax),
       max: staminaMax,
     });
-    expect(musterStamina(open[1], knight, 12, rules, 0)).toEqual({ amount: staminaMax, max: staminaMax });
+    expect(musterStamina(open[1], knight, 12, rules, 0, 1)).toEqual({ amount: staminaMax, max: staminaMax });
 
     store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 });
     expect(openArmySlots(store, home)).toBeUndefined();
@@ -706,12 +706,12 @@ describe("declared fact absence", () => {
 
     const released = openArmySlots(store, home)![0];
     expect(released.slot).toBe(0);
-    expect(musterStamina(released, knight, 35, rules, 0).amount).toBe(7);
+    expect(musterStamina(released, knight, 35, rules, 0, 1).amount).toBe(7);
 
     day(400);
     const nextDay = openArmySlots(store, home)![0];
     expect(nextDay).toEqual({ slot: 0, inherited: null });
-    expect(musterStamina(nextDay, knight, 40, rules, 0).amount).toBe(
+    expect(musterStamina(nextDay, knight, 40, rules, 0, 1).amount).toBe(
       troopStaminaLimits(rules, knight.category, knight.tier).staminaMax,
     );
   });

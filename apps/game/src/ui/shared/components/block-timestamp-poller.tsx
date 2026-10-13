@@ -1,20 +1,13 @@
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useEffect } from "react";
-
-const POLL_INTERVAL_MS = 1_000;
 
 export const BlockTimestampPoller = () => {
   const tick = useBlockTimestampStore((state) => state.tick);
 
   useEffect(() => {
     tick();
-    const intervalId = window.setInterval(() => {
-      tick();
-    }, POLL_INTERVAL_MS);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
+    return useChainTimeStore.subscribe(() => tick());
   }, [tick]);
 
   return null;

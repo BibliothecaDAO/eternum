@@ -2,7 +2,7 @@ import { LeftView } from "@/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY_MUTED, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getTierStyle } from "@/ui/utils/tier-styles";
 import { currencyFormat } from "@/ui/utils/utils";
@@ -54,7 +54,7 @@ ExistingArmiesPanel.displayName = "ExistingArmiesPanel";
 const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: ID }) => {
   const setSelectedHex = useUIStore((state) => state.setSelectedHex);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
-  const currentArmiesTick = useBlockTimestampStore((state) => state.currentArmiesTick);
+  const timestamp = useCurrentDefaultTick();
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -63,8 +63,8 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
 
   const stamina = useMemo(() => {
     if (!army.troops) return null;
-    return StaminaManager.getStamina(army.troops, currentArmiesTick);
-  }, [army.troops, currentArmiesTick]);
+    return StaminaManager.getStamina(army.troops, timestamp);
+  }, [army.troops, timestamp]);
 
   const maxStamina = useMemo(() => {
     if (!army.troops) return 0;

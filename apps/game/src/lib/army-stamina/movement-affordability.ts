@@ -1,3 +1,4 @@
+import { staminaClock } from "@bibliothecadao/eternum/troop-stamina";
 import { StaminaManager } from "@bibliothecadao/eternum";
 import type { Troops } from "@bibliothecadao/types";
 
@@ -12,11 +13,11 @@ export interface MovementStaminaResolution {
   canAfford: boolean;
   staminaCost: number;
   currentStamina: number;
-  currentArmiesTick: number;
+  timestamp: number;
   source: ArmyStaminaSourceKind | "none";
   diagnostics: {
     liveAmount?: number;
-    liveUpdatedTick?: number;
+    liveSettledAt?: number;
   };
 }
 
@@ -28,7 +29,7 @@ const calculateMovementStaminaCost = (actionPath: MovementStaminaPathStep[]): nu
 
 export const resolveMovementStamina = (input: {
   actionPath: MovementStaminaPathStep[];
-  currentArmiesTick: number;
+  timestamp: number;
   liveTroops?: Troops | null;
 }): MovementStaminaResolution => {
   const staminaCost = calculateMovementStaminaCost(input.actionPath);
@@ -39,7 +40,7 @@ export const resolveMovementStamina = (input: {
       canAfford: true,
       staminaCost,
       currentStamina: 0,
-      currentArmiesTick: input.currentArmiesTick,
+      timestamp: input.timestamp,
       source: "none",
       diagnostics,
     };
@@ -48,12 +49,12 @@ export const resolveMovementStamina = (input: {
   const selectedSource = selectFreshestArmyStaminaSource({ liveTroops: input.liveTroops });
 
   if (selectedSource?.troops) {
-    const stamina = StaminaManager.getStamina(selectedSource.troops, input.currentArmiesTick);
+    const stamina = StaminaManager.getStamina(selectedSource.troops, input.timestamp);
     return {
       canAfford: canAffordStaminaCost(Number(stamina.amount), staminaCost),
       staminaCost,
       currentStamina: Number(stamina.amount),
-      currentArmiesTick: input.currentArmiesTick,
+      timestamp: input.timestamp,
       source: selectedSource.source,
       diagnostics,
     };
@@ -63,7 +64,7 @@ export const resolveMovementStamina = (input: {
     canAfford: false,
     staminaCost,
     currentStamina: 0,
-    currentArmiesTick: input.currentArmiesTick,
+    timestamp: input.timestamp,
     source: "none",
     diagnostics,
   };
@@ -71,7 +72,7 @@ export const resolveMovementStamina = (input: {
 
 const buildMovementStaminaDiagnostics = (liveTroops?: Troops | null): MovementStaminaResolution["diagnostics"] => ({
   liveAmount: liveTroops?.stamina ? Number(liveTroops.stamina.amount) : undefined,
-  liveUpdatedTick: liveTroops?.stamina ? Number(liveTroops.stamina.updated_tick) : undefined,
+  liveSettledAt: liveTroops?.stamina ? staminaClock.read(liveTroops.stamina).settledAt : undefined,
 });
 
 const canAffordStaminaCost = (currentStamina: number, staminaCost: number): boolean =>

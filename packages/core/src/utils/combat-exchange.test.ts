@@ -27,7 +27,7 @@ const readFixture = () => {
   if (version !== 1n) throw new Error(`Combat fixture version ${version}`);
   if (felts.length !== HEADER_FELTS + Number(caseCount) * RECORD_FELTS) throw new Error("Combat fixture length");
   const rules = readRules(header.slice(2));
-  const cases = Array.from({ length: Number(caseCount) }, () => readCase(next));
+  const cases = Array.from({ length: Number(caseCount) }, () => readCase(next, rules.tickSeconds));
   return { rules, cases };
 };
 
@@ -36,6 +36,7 @@ const readRules = (felts: bigint[]): CombatRules => {
   const flags = stamina.map(Number);
   return {
     cooldownSeconds: 0,
+    tickSeconds: flags[16]!,
     damage: {
       damage_raid_percent_num: Number(raid),
       damage_biome_bonus_num: Number(biomeBonus),
@@ -65,11 +66,12 @@ const readRules = (felts: bigint[]): CombatRules => {
   };
 };
 
-const readSide = (next: () => bigint, currentTick: bigint): ExchangeTroops => {
+const readSide = (next: () => bigint, currentTick: bigint, tickSeconds: number): ExchangeTroops => {
   const category = CATEGORIES[Number(next())]!;
   const tier = TIERS[Number(next())]!;
   const count = next();
-  const stamina = { amount: next(), updated_tick: next() };
+  // The archived vector stores a tick index; convert its input to seconds.
+  const stamina = { amount: next(), updated_tick: next() * BigInt(tickSeconds) };
   const damageBonusPercent = Number(next());
   return {
     category,
@@ -90,7 +92,7 @@ const readSide = (next: () => bigint, currentTick: bigint): ExchangeTroops => {
   };
 };
 
-const readCase = (next: () => bigint) => {
+const readCase = (next: () => bigint, tickSeconds: number) => {
   const id = Number(next());
   const alt = next() === 1n;
   const biome = BIOMES.get(Number(next()));
@@ -100,8 +102,8 @@ const readCase = (next: () => bigint) => {
   const currentTick = next();
   const attackerIsStructureGuard = next() === 1n;
   const defenderIsStructureGuard = next() === 1n;
-  const attacker = readSide(next, currentTick);
-  const defender = readSide(next, currentTick);
+  const attacker = readSide(next, currentTick, tickSeconds);
+  const defender = readSide(next, currentTick, tickSeconds);
   const expected = {
     attackerLoss: next(),
     defenderLoss: next(),

@@ -9,7 +9,7 @@ import {
 import type { HeraldStoryHistoryPage } from "@bibliothecadao/eternum/game-sync";
 import { isCurrentExpeditionArmy, readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
 import {
-  fullAtTick,
+  affordableAt,
   staminaAt,
   troopStaminaLimits,
   resolveExplorerTroops,
@@ -124,7 +124,7 @@ export const readActorArmies = async (
   store.setSnapshot({ gameId, actor, complete: true, timestamp: Math.floor(now / 1000) });
   const rules = store.require("SliceRules", { game_id: gameId });
   const tickSeconds = Number(rules.tick_config.armies_tick_in_seconds);
-  const currentTick = Math.floor(now / 1000 / tickSeconds);
+  const timestamp = Math.floor(now / 1000);
   const expedition = readExpeditionRules(store, gameId);
   return [...store.inGame("ExplorerTroops", gameId)]
     .filter(
@@ -135,18 +135,24 @@ export const readActorArmies = async (
     .flatMap((army) => {
       const troops = resolveExplorerTroops(store, army);
       if (!troops) return [];
-      const stamina = staminaAt(troops, currentTick, rules.troop_stamina_config);
+      const stamina = staminaAt(troops, timestamp, rules.troop_stamina_config, tickSeconds);
       const { staminaMax } = troopStaminaLimits(
         rules.troop_stamina_config,
         army.troops.category as TroopType,
         army.troops.tier as TroopTier,
       );
-      const fullTick = fullAtTick(troops, currentTick, rules.troop_stamina_config);
+      const fullSecond = affordableAt(
+        troops,
+        timestamp,
+        rules.troop_stamina_config,
+        tickSeconds,
+        troops.staminaMax ?? staminaMax,
+      );
       return [
         {
           armyId: safeInteger(army.explorer_id),
           full: Number(stamina.amount) >= (troops.staminaMax ?? staminaMax),
-          fullAt: fullTick === null ? null : fullTick * tickSeconds * 1000,
+          fullAt: fullSecond === null ? null : fullSecond * 1000,
         },
       ];
     });

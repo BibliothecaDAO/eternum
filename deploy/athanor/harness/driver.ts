@@ -253,7 +253,7 @@ class PathReservations {
 }
 
 // The ten-minute acceptance window gives the exact requested 50/30/20 mix. Three explores prime independent travel
-// routes, then later explores are spaced across stamina ticks instead of being re-bursted at each ten-action boundary.
+// routes, then later explores are spaced across stamina regeneration instead of being re-bursted at each ten-action boundary.
 const ACTION_PATTERN: readonly WorkloadActionKind[] = [
   "explore",
   "explore",
@@ -393,7 +393,7 @@ async function prepareExplorerRoute(
       return;
     }
     const chainTicks = game.currentTicks();
-    if (game.explorerStamina(explorer.explorerId, chainTicks.armies) < game.minimumStaminaFor("explore")) {
+    if (game.explorerStamina(explorer.explorerId, chainTicks.default) < game.minimumStaminaFor("explore")) {
       await sleep(ACTION_READINESS_POLL_INTERVAL_MS);
       continue;
     }
@@ -645,7 +645,7 @@ function battleCandidates(bot: HarnessBot, chainTicks: ChainTicks, game: Harness
       explorerId: explorer.explorerId,
       ...indexes,
       currentDefaultTick: chainTicks.default,
-      currentArmiesTick: chainTicks.armies,
+
       playerAddress: ContractAddress(bot.address),
     });
     for (const path of paths.values()) {
@@ -792,7 +792,6 @@ async function runExplorerAction({
         bot.actions.moveArmy({
           explorerId: selectedExplorer.explorerId,
           path: plan.path,
-          currentArmiesTick: chainTicks.armies,
         }),
       ),
     stage,
@@ -878,7 +877,7 @@ function planExplorerAction(
   const wantedActionType = kind === "explore" ? ActionType.Explore : ActionType.Move;
   const minimumStamina = game.minimumStaminaFor(kind);
   const remaining = bot.explorers.filter(
-    (explorer) => game.explorerStamina(explorer.explorerId, chainTicks.armies) >= minimumStamina,
+    (explorer) => game.explorerStamina(explorer.explorerId, chainTicks.default) >= minimumStamina,
   );
   // No explorer can pay for the step, as after a battle: the bot has nothing to send this tick, and nothing failed.
   if (remaining.length === 0) return undefined;
@@ -890,7 +889,7 @@ function planExplorerAction(
       explorerId: explorer.explorerId,
       ...indexes,
       currentDefaultTick: chainTicks.default,
-      currentArmiesTick: chainTicks.armies,
+
       playerAddress: ContractAddress(bot.address),
     });
     const directions = chooseDirections(explorer, kind, from, bot.structures);
@@ -946,10 +945,11 @@ async function waitForExplorerStaminaRestored(game: HarnessGame, bots: HarnessBo
   const deadline = startedAtMs + ACTION_READINESS_TIMEOUT_MS;
 
   while (Date.now() <= deadline) {
-    const { armies } = game.currentTicks();
+    const { default: timestamp } = game.currentTicks();
     const everyBotReady = bots.every((bot) =>
       bot.explorers.every(
-        (explorer) => game.explorerStamina(explorer.explorerId, armies) >= game.explorerMaxStamina(explorer.explorerId),
+        (explorer) =>
+          game.explorerStamina(explorer.explorerId, timestamp) >= game.explorerMaxStamina(explorer.explorerId),
       ),
     );
     if (everyBotReady) return Date.now() - startedAtMs;
@@ -1243,7 +1243,7 @@ const changedExplorer = (before: ExplorerRow, current: ExplorerRow | undefined):
   (current.coord.x !== before.coord.x ||
     current.coord.y !== before.coord.y ||
     current.staminaAmount !== before.staminaAmount ||
-    current.staminaUpdatedTick !== before.staminaUpdatedTick)
+    current.staminaClock !== before.staminaClock)
     ? current
     : undefined;
 

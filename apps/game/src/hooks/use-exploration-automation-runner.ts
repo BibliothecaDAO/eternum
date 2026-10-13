@@ -136,7 +136,7 @@ export const useExplorationAutomationRunner = () => {
         return;
       }
 
-      const { currentBlockTimestamp, currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
+      const { currentBlockTimestamp, currentDefaultTick } = getBlockTimestamp();
       if (configManager.isGameOver()) {
         stopAutomation();
         return;
@@ -180,7 +180,7 @@ export const useExplorationAutomationRunner = () => {
 
             // Check stamina before doing anything - wait for regen if too low
             const staminaManager = new StaminaManager(store, explorerId);
-            const currentStamina = staminaManager.getStamina(currentArmiesTick);
+            const currentStamina = staminaManager.getStamina(currentDefaultTick);
             const exploreStaminaCost = configManager.getExploreStaminaCost();
             if (!currentStamina || Number(currentStamina.amount) < exploreStaminaCost) {
               update(entry.id, { blockedReason: "low-stamina", lastError: null });
@@ -224,7 +224,6 @@ export const useExplorationAutomationRunner = () => {
                   exploredHexes: map.exploredTiles,
                   chestHexes: map.chestHexes,
                   currentDefaultTick,
-                  currentArmiesTick,
                   playerAddress: ContractAddress(account.address),
                 })
                 .getPaths();
@@ -274,7 +273,7 @@ export const useExplorationAutomationRunner = () => {
             }
 
             const actionType = ActionPaths.getActionType(selection.path);
-            await actions.moveArmy({ explorerId, path: selection.path, currentArmiesTick });
+            await actions.moveArmy({ explorerId, path: selection.path });
 
             const effectiveCost = computeEffectiveStaminaCost(selection.path, actionType, exploreStaminaCost);
             const remainingStamina = Math.max(0, Number(currentStamina.amount) - effectiveCost);

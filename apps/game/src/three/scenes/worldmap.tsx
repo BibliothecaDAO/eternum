@@ -1,3 +1,4 @@
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { isWithinWorldOriginReach, setWorldOrigin } from "../world-origin";
 import { followArmyLayerChange } from "./worldmap-layer-follow";
@@ -2845,11 +2846,10 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const actionType = ActionPaths.getActionType(actionPath);
-    const currentArmiesTick = getBlockTimestamp().currentArmiesTick;
     const movementStamina = this.resolveMovementStaminaForAction({
       entityId: selectedEntityId,
       actionPath,
-      currentArmiesTick,
+      timestamp: getBlockTimestamp().currentDefaultTick,
     });
 
     if (actionPath.length > 0 && !movementStamina.canAfford) {
@@ -3014,7 +3014,6 @@ export default class WorldmapScene extends WarpTravel {
         const sent = requireActiveGameClient().actions.moveArmy({
           explorerId: selectedEntityId,
           path: actionPath,
-          currentArmiesTick,
         });
         this.recordMovementSubmission(sent, { entityId: selectedEntityId, actionType, exploreLatencyActionId });
         return sent;
@@ -3467,11 +3466,11 @@ export default class WorldmapScene extends WarpTravel {
   private resolveMovementStaminaForAction(input: {
     entityId: ID;
     actionPath: ActionPath[];
-    currentArmiesTick: number;
+    timestamp: number;
   }): MovementStaminaResolution {
     return resolveMovementStamina({
       actionPath: input.actionPath,
-      currentArmiesTick: input.currentArmiesTick,
+      timestamp: input.timestamp,
       liveTroops: this.resolveLiveExplorerTroopsForMovementStamina(input.entityId),
     });
   }
@@ -3504,7 +3503,7 @@ export default class WorldmapScene extends WarpTravel {
       staminaCost: input.movementStamina.staminaCost,
       currentStamina: input.movementStamina.currentStamina,
       source: input.movementStamina.source,
-      currentArmiesTick: input.movementStamina.currentArmiesTick,
+      timestamp: input.movementStamina.timestamp,
       ...input.movementStamina.diagnostics,
     });
   }
@@ -3618,8 +3617,11 @@ export default class WorldmapScene extends WarpTravel {
       return true;
     }
 
-    const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
-    const armyPosition = this.getArmyDisplayPosition(selectedEntityId);
+    return this.refreshArmyActionPaths(selectedEntityId, playerAddress);
+  }
+
+  private refreshArmyActionPaths(selectedEntityId: ID, playerAddress: ContractAddress): boolean {
+    const { currentDefaultTick } = getBlockTimestamp();
     // Paths and the submission freshness guard read the same canonical occupancy.
     const occupancy = this.game.store.entityOccupancy(configManager.getActiveGameId(), selectedEntityId);
     if (!occupancy) {
@@ -3638,7 +3640,6 @@ export default class WorldmapScene extends WarpTravel {
       exploredHexes: this.buildProjectedExploredTileIndex(),
       chestHexes: this.buildProjectedChestActionIndex(),
       currentDefaultTick,
-      currentArmiesTick,
       playerAddress,
     });
 
@@ -8541,6 +8542,25 @@ export default class WorldmapScene extends WarpTravel {
         this.state.selectedHex = selectedHex;
       },
     });
+    this.storeSubscriptions.push(
+      useChainTimeStore.subscribe((next, previous) => {
+        if (
+          next.executionFloorMs === previous.executionFloorMs ||
+          this.isSwitchedOff ||
+          this.isChunkTransitioning ||
+          useUIStore.getState().isSpectating
+        )
+          return;
+        const { selectedEntityId } = getLiveWorldmapEntityActions();
+        if (
+          selectedEntityId == null ||
+          !this.armyManager.hasArmy(selectedEntityId) ||
+          this.isArmyMovementInputLocked(selectedEntityId)
+        )
+          return;
+        this.refreshArmyActionPaths(selectedEntityId, this.getArmyOwnerAddress(selectedEntityId));
+      }),
+    );
     this.storeSubscriptions.push(
       useUIStore.subscribe(
         (state) => state.suggestedArmyDeploymentStructureId,

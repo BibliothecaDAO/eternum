@@ -89,7 +89,7 @@ const buildGuardTroopsForStaminaComputation = (
 
 export const getGuardStaminaSnapshot = (
   troops: unknown,
-  currentArmiesTick: number,
+  timestamp: number,
 ): { current: number; max: number } | null => {
   const data = toGuardTroopsLike(troops);
   const category = data.category as TroopType | undefined | null;
@@ -114,7 +114,7 @@ export const getGuardStaminaSnapshot = (
       current: Number(
         StaminaManager.getStamina(
           buildGuardTroopsForStaminaComputation(data, category as TroopType, tier as TroopTier),
-          currentArmiesTick,
+          timestamp,
         ).amount,
       ),
       max,

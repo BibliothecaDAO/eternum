@@ -20,7 +20,7 @@ import { usePlayerProfile } from "@/hooks/use-player-profile";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRowOrAbsent, useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { ContractAddress, ID, BANDITS_NAME, RelicEffectWithEndTick, StructureType } from "@bibliothecadao/types";
+import { ContractAddress, ID, BANDITS_NAME, RelicEffect, StructureType } from "@bibliothecadao/types";
 import { useCallback, useMemo } from "react";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { presentedMineKind } from "@bibliothecadao/eternum";
@@ -95,8 +95,8 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   const isAlly = isMine || Boolean(playerGuild && userGuild && playerGuild.entityId === userGuild.entityId);
   const ownerProfile = usePlayerProfile(structure?.owner);
   const addressName = structure?.owner ? (ownerProfile.name ?? undefined) : BANDITS_NAME;
-  const relicEffects: RelicEffectWithEndTick[] = useMemo(() => {
-    const effects: RelicEffectWithEndTick[] = [];
+  const relicEffects: RelicEffect[] = useMemo(() => {
+    const effects: RelicEffect[] = [];
     const { currentArmiesTick } = getBlockTimestamp();
     if (structure) {
       for (const guard of store.inGame("Guard", structure.game_id)) {

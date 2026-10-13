@@ -44,7 +44,7 @@ export const ACTION_CATALOG: Record<ActionName, ActionCatalogEntry> = {
     description:
       "Plan from an explorer's current hex: every move, explore, attack, help, chest, and spire option it can reach now, with stamina costs.",
     params: Type.Object({ explorerId: EntityId("The explorer army to plan for.") }),
-    preconditions: "The explorer exists and has stamina; results depend on the current armies tick.",
+    preconditions: "The explorer exists and has enough stamina at the confirmed block time.",
     submits: false,
   },
   structurePaths: {

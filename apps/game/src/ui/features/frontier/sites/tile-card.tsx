@@ -1,6 +1,6 @@
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useGame } from "@/hooks/context/game-context";
-import { useCurrentArmiesTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentArmiesTick, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
@@ -246,7 +246,7 @@ const useSiteAttack = (
   siteTile: TileSpatialRenderable,
   actor: ReturnType<typeof useSelectedOwnArmy>,
 ): SiteAttack | null => {
-  const timestamp = useNowSeconds();
+  const timestamp = useCurrentDefaultTick();
   const armiesTick = useCurrentArmiesTick();
   return actor && { ...actor, biome: biomeTypeOf(siteTile.biome), timestamp, armiesTick };
 };
@@ -256,7 +256,7 @@ const useSiteChoices = (selected: AttackTarget, wanted: boolean): SiteChoice[] =
   const { setup } = useGame();
   const realm = useFrontierRealm();
   const armies = useDockArmies(realm);
-  const timestamp = useNowSeconds();
+  const timestamp = useCurrentDefaultTick();
   const armiesTick = useCurrentArmiesTick();
   if (!wanted || !realm) return [];
   return armies.map((army: DockArmy) => {

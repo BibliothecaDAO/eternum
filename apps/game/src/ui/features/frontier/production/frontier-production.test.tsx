@@ -1,10 +1,11 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
-import { readExpeditionRules, setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { readExpeditionRules, setBlockTimestampSource, setChainProvenTimestampSource } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
+import { BlockTimestampPoller } from "@/ui/shared/components/block-timestamp-poller";
 import { frontierDay } from "../deploy/deploy-fixture";
 import { FrontierProduction } from "./frontier-production";
 
@@ -20,10 +21,11 @@ vi.mock("../frontier-home", async (original) => ({
 
 afterEach(() => {
   setBlockTimestampSource(null);
+  setChainProvenTimestampSource(null);
   vi.useRealTimers();
 });
 
-it("keeps an open barracks display rising every second without a new fact or armies tick", () => {
+it("keeps an open barracks figure fixed until the chain-proven floor advances", () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store, row } = frontierDay();
   context.store = store;
@@ -44,18 +46,31 @@ it("keeps an open barracks display rising every second without a new fact or arm
     },
   ]);
   useChainTimeStore.getState().anchor({ timestamp: 350_000 });
+  setBlockTimestampSource(() => useChainTimeStore.getState().getNowSeconds());
+  setChainProvenTimestampSource(() => useChainTimeStore.getState().executionFloorMs! / 1_000);
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
   try {
-    act(() => root.render(<FrontierProduction realm={row} rules={rules} onClose={() => {}} />));
+    act(() =>
+      root.render(
+        <>
+          <BlockTimestampPoller />
+          <FrontierProduction realm={row} rules={rules} onClose={() => {}} />
+        </>,
+      ),
+    );
     const troopRow = () => host.querySelectorAll("section[aria-label='Production'] > div > div")[2].textContent;
     expect(troopRow()).toContain("420");
     act(() => vi.advanceTimersByTime(1000));
-    expect(troopRow()).toContain("422");
+    expect(troopRow()).toContain("420");
     act(() => vi.advanceTimersByTime(1000));
+    expect(troopRow()).toContain("420");
+    act(() => useChainTimeStore.getState().setHeartbeat({ timestamp: 352_000, preconfirmed: true }));
+    expect(troopRow()).toContain("420");
+    act(() => useChainTimeStore.getState().setHeartbeat({ timestamp: 352_000 }));
     expect(troopRow()).toContain("424");
-    expect(useChainTimeStore.getState().executionFloorMs).toBe(350_000);
+    expect(useChainTimeStore.getState().executionFloorMs).toBe(352_000);
     expect(
       store.require("ResourceBalance", { game_id: 1, entity_id: 7, resource_type: ResourcesIds.Knight }).balance,
     ).toBe(420n * BigInt(RESOURCE_PRECISION));

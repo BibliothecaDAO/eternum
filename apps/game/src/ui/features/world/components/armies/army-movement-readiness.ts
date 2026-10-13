@@ -3,7 +3,7 @@ import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useMemo } from "react";
 
 import { useGame } from "@/hooks/context/game-context";
-import { useCurrentArmiesTick, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import {
   computeExploreFoodCosts,
   computeTravelFoodCosts,
@@ -92,13 +92,11 @@ export const readArmyMovementReadiness = ({
   army,
   structureResources,
   store,
-  currentArmiesTick,
   currentDefaultTick,
 }: {
   army: ExplorerTroopsValue;
   structureResources: ResourceValue | null | undefined;
   store: NativeFactStore;
-  currentArmiesTick: number;
   currentDefaultTick: number;
 }): ArmyMovementReadiness | null => {
   const troops = resolveExplorerTroops(store, army);
@@ -111,7 +109,7 @@ export const readArmyMovementReadiness = ({
       };
 
   return deriveArmyMovementReadiness({
-    currentStamina: Number(StaminaManager.getStamina(troops, currentArmiesTick).amount),
+    currentStamina: Number(StaminaManager.getStamina(troops, currentDefaultTick).amount),
     minTravelStamina: resolveCheapestNeighborTravelStamina(army, store),
     minExploreStamina: configManager.getExploreStaminaCost(),
     travelFoodCosts: movementFoodCosts.travel,
@@ -128,15 +126,11 @@ export const useArmyMovementReadiness = (
     setup: { store },
   } = useGame();
   const slotRevision = useNativeRevision(["ArmySlot"]);
-  const currentArmiesTick = useCurrentArmiesTick();
   const currentDefaultTick = useCurrentDefaultTick();
 
   return useMemo(
-    () =>
-      army
-        ? readArmyMovementReadiness({ army, structureResources, store, currentArmiesTick, currentDefaultTick })
-        : null,
-    [army, structureResources, currentArmiesTick, currentDefaultTick, store, slotRevision],
+    () => (army ? readArmyMovementReadiness({ army, structureResources, store, currentDefaultTick }) : null),
+    [army, structureResources, currentDefaultTick, store, slotRevision],
   );
 };
 

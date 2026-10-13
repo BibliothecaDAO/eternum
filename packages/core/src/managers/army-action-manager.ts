@@ -51,8 +51,8 @@ export class ArmyActionManager {
   }
 
   /** Whether the army can explore one hex now: its stamina and its owner's food for the explore. */
-  public canExplore(currentDefaultTick: number, currentArmiesTick: number): boolean {
-    const stamina = this.staminaManager.getStamina(currentArmiesTick);
+  public canExplore(currentDefaultTick: number): boolean {
+    const stamina = this.staminaManager.getStamina(currentDefaultTick);
 
     if (Number(stamina?.amount ?? 0n) < configManager.getExploreStaminaCost()) {
       return false;
@@ -83,8 +83,8 @@ export class ArmyActionManager {
   }
 
   /** How many hexes the army can travel now, by its stamina and its owner's food. */
-  public readonly maxTravelSteps = (currentDefaultTick: number, currentArmiesTick: number) => {
-    const stamina = this.staminaManager.getStamina(currentArmiesTick);
+  public readonly maxTravelSteps = (currentDefaultTick: number) => {
+    const stamina = this.staminaManager.getStamina(currentDefaultTick);
     // Calculate minimum stamina cost across all biomes for this troop type
     const minTravelStaminaCost = configManager.getMinTravelStaminaCost();
     const maxStaminaSteps = Math.floor(Number(stamina?.amount ?? 0n) / minTravelStaminaCost);
@@ -220,18 +220,17 @@ export class ArmyActionManager {
     exploredHexes: Map<number, Map<number, BiomeType>>,
     chestHexes: Map<number, Map<number, HexEntityInfo>>,
     currentDefaultTick: number,
-    currentArmiesTick: number,
     playerAddress: ContractAddress,
   ): ActionPaths {
-    const armyStamina = Number(this.staminaManager.getStamina(currentArmiesTick)?.amount ?? 0n);
+    const armyStamina = Number(this.staminaManager.getStamina(currentDefaultTick)?.amount ?? 0n);
 
     const troopType = this._getTroopType();
     // One truth: paths plan from the same ExplorerTroops coord the submit
     // freshness guard checks. Callers must not substitute a visual position.
     const startPos = this._getCurrentPosition();
     // max hex based on food
-    const maxHex = this.maxTravelSteps(currentDefaultTick, currentArmiesTick);
-    const canExplore = this.canExplore(currentDefaultTick, currentArmiesTick);
+    const maxHex = this.maxTravelSteps(currentDefaultTick);
+    const canExplore = this.canExplore(currentDefaultTick);
 
     const actionPaths = new ActionPaths();
     const lowestStaminaUse = new Map<string, number>();
@@ -415,7 +414,7 @@ export class ArmyActionManager {
     )?.direction;
   };
 
-  private readonly _exploreHex = async (signer: GameplayAccount, path: ActionPath[], currentArmiesTick: number) => {
+  private readonly _exploreHex = async (signer: GameplayAccount, path: ActionPath[]) => {
     const direction = this._findDirection(path.map((p) => p.hex));
     if (direction === undefined || direction === null) {
       return Promise.reject(new Error("Invalid direction"));
@@ -443,11 +442,7 @@ export class ArmyActionManager {
     });
   };
 
-  private readonly _travelToHex = async (
-    signer: Account | AccountInterface,
-    path: ActionPath[],
-    currentArmiesTick: number,
-  ) => {
+  private readonly _travelToHex = async (signer: Account | AccountInterface, path: ActionPath[]) => {
     const directions = path.slice(0, -1).map((step, index) => this._findDirection([step.hex, path[index + 1].hex]));
     if (!directions.length || directions.some((direction) => direction === undefined)) {
       throw new Error("Invalid travel direction for the army's layer");
@@ -459,11 +454,7 @@ export class ArmyActionManager {
     });
   };
 
-  private readonly _travelThroughSpire = async (
-    signer: Account | AccountInterface,
-    path: ActionPath[],
-    currentArmiesTick: number,
-  ) => {
+  private readonly _travelThroughSpire = async (signer: Account | AccountInterface, path: ActionPath[]) => {
     const direction = this._findDirection(
       path.map((p) => p.hex),
       true,
@@ -483,21 +474,16 @@ export class ArmyActionManager {
     }
   };
 
-  public moveArmy = (
-    signer: Account | AccountInterface,
-    path: ActionPath[],
-    isExplored: boolean,
-    currentArmiesTick: number,
-  ) => {
+  public moveArmy = (signer: Account | AccountInterface, path: ActionPath[], isExplored: boolean) => {
     const actionType = ActionPaths.getActionType(path);
     if (actionType === ActionType.SpireTravel) {
-      return this._travelThroughSpire(signer, path, currentArmiesTick);
+      return this._travelThroughSpire(signer, path);
     }
 
     if (!isExplored) {
-      return this._exploreHex(signer, path, currentArmiesTick);
+      return this._exploreHex(signer, path);
     } else {
-      return this._travelToHex(signer, path, currentArmiesTick);
+      return this._travelToHex(signer, path);
     }
   };
 

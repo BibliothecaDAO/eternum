@@ -4,7 +4,7 @@ import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { REQUIREMENT_CHIP, RequirementChips } from "@/ui/design-system/molecules/requirement-chips";
-import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 
@@ -148,7 +148,7 @@ const LaborRateRow = ({ structureId }: { structureId: ID }) => {
   const { setup } = useGame();
   useNativeRevision(PRODUCTION_MODELS);
   const labor = new ResourceManager(setup.store, structureId).current(ResourcesIds.Labor);
-  const timestamp = useCurrentBlockTimestamp();
+  const timestamp = useCurrentDefaultTick();
   const perHour =
     labor && timestamp > 0
       ? ResourceManager.calculateResourceProductionData(ResourcesIds.Labor, labor, timestamp).productionPerSecond * 3600

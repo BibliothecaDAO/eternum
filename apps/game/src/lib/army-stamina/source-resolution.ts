@@ -1,10 +1,11 @@
+import { staminaClock } from "@bibliothecadao/eternum/troop-stamina";
 import { StaminaManager } from "@bibliothecadao/eternum";
 import { Troops, TroopTier, TroopType } from "@bibliothecadao/types";
 
 import { ArmyStaminaSourceSnapshot } from "./types";
 
 interface ExplorerStaminaSnapshotInput {
-  currentArmiesTick: number;
+  timestamp: number;
   liveTroops?: Troops | null;
 }
 
@@ -15,7 +16,7 @@ export const selectFreshestArmyStaminaSource = (input: {
   return {
     source: "live",
     amount: input.liveTroops.stamina?.amount ?? 0n,
-    updatedTick: Number(input.liveTroops.stamina?.updated_tick ?? 0n),
+    settledAt: staminaClock.read(input.liveTroops.stamina).settledAt,
     troopCount: Number(input.liveTroops.count ?? 0n),
     troops: input.liveTroops,
   };
@@ -26,11 +27,11 @@ const selectFreshestTroopsSnapshot = (input: { liveTroops?: Troops | null }): Tr
 
 export const getExplorerStaminaSnapshot = (
   input: ExplorerStaminaSnapshotInput,
-): { current: number; max: number; stamina: { amount: bigint; updated_tick: bigint }; troops: Troops } | null => {
+): { current: number; max: number; stamina: ReturnType<typeof StaminaManager.getStamina>; troops: Troops } | null => {
   const troops = selectFreshestTroopsSnapshot(input);
   if (!troops) return null;
 
-  const stamina = StaminaManager.getStamina(troops, input.currentArmiesTick);
+  const stamina = StaminaManager.getStamina(troops, input.timestamp);
   return {
     current: Number(stamina.amount),
     max: StaminaManager.getMaxStamina(troops.category as TroopType, troops.tier as TroopTier, troops.staminaMax),

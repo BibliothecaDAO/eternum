@@ -29,7 +29,6 @@ export interface ArmyPathsInput {
   exploredHexes: HexIndex<BiomeType>;
   chestHexes: HexIndex<HexEntityInfo>;
   currentDefaultTick: number;
-  currentArmiesTick: number;
   /** Whose armies count as friendly; a spectator plans with no player. */
   playerAddress: ContractAddress;
 }
@@ -46,7 +45,6 @@ export interface MoveArmyInput {
   explorerId: ID;
   /** One of the paths armyPaths returned for this explorer. */
   path: ActionPath[];
-  currentArmiesTick: number;
 }
 
 export type MoveArmyResult = Awaited<ReturnType<ArmyActionManager["moveArmy"]>>;
@@ -88,7 +86,6 @@ export const findArmyPaths = (client: ActionClient, input: ArmyPathsInput): Acti
     input.exploredHexes,
     input.chestHexes,
     input.currentDefaultTick,
-    input.currentArmiesTick,
     input.playerAddress,
   );
 
@@ -131,7 +128,6 @@ export const moveArmy = async (client: ActionClient, input: MoveArmyInput): Prom
     requireSigner(client),
     input.path,
     ActionPaths.getActionType(input.path) === ActionType.Move,
-    input.currentArmiesTick,
   );
 
 export const createExplorerArmy = async (

@@ -1,4 +1,4 @@
-import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceChip } from "@/ui/features/economy/resources";
 import {
@@ -51,7 +51,7 @@ export const EntityResourceTableOld = React.memo(
     const productionBoostBonus = useNativeRowOrAbsent("ProductionBonus", keys);
     const guardRevision = useNativeRevision(["Guard"]);
     const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
-    const now = useNowSeconds();
+    const now = useCurrentDefaultTick();
 
     const activeRelicEffects = useMemo(() => {
       const structureArmyRelicEffects = [...setup.store.inGame("Guard", configManager.getActiveGameId())]

@@ -162,9 +162,7 @@ export class ClientConfigManager {
       this.facts().require("ProductionRecipe", { game_id: this.gameId, resource_type: resourceId }).complex_inputs,
     );
   }
-  getRefillPerTick() {
-    return this.rules().troop_stamina_config.stamina_gain_per_tick;
-  }
+
   getMaxLevel(category: StructureType) {
     const limits = this.facts().require("UpgradeLimits", { game_id: this.gameId });
     if (category === StructureType.Realm) return limits.realm_max;

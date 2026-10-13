@@ -50,11 +50,7 @@ export function expectedWheat(definition: PresetDefinition, charge: WheatCharge)
 export function wheatCharged(before: WheatState, after: WheatState): bigint | null {
   if (after.production.last_settled_tick === before.production.last_settled_tick && after.balance === before.balance)
     return null;
-  return (
-    before.balance +
-    productionOutput(before.production, after.production.last_settled_tick * after.tickSeconds, before.tickSeconds) -
-    after.balance
-  );
+  return before.balance + productionOutput(before.production, after.production.last_settled_tick) - after.balance;
 }
 
 /** Each producing row on chain beside the preset's rate for one building of its resource. */

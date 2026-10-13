@@ -31,6 +31,7 @@ mod building_commands;
 mod camps;
 mod combat_actions;
 mod combat_formula;
+mod stamina;
 mod days;
 mod entity_ids;
 mod entry;

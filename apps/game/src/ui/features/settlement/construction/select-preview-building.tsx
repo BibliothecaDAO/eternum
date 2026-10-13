@@ -3,7 +3,7 @@ import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { CompactBuildingCard } from "./compact-building-card";
 import { getConstructionBuildingGroups } from "./construction-groups";
 import { usePlayResourceSound } from "@/audio";
-import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -36,7 +36,6 @@ import {
   configManager,
   divideByPrecision,
   getBalance,
-  getBlockTimestamp,
   getBuildingCosts,
   getBuildingCount,
   getConsumedBy,
@@ -143,7 +142,6 @@ type ResourceProductionStatus = {
   outputRemaining: number | null;
   totalBuildings: number;
   activeBuildings: number;
-  calculatedAt: number;
 };
 
 export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?: string; entityId: number }) => {
@@ -152,7 +150,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const lane = useCompactLane();
   const [summaryOpen, setSummaryOpen] = useState(false);
 
-  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
+  const currentDefaultTick = useCurrentDefaultTick();
   const buildPendingRef = useRef(false);
   const [isBuildPending, setIsBuildPending] = useState(false);
   const [pendingAction, setPendingAction] = useState<"destroy" | "production" | null>(null);
@@ -174,9 +172,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   });
   const resourceData = useResourceManager(entityId);
   const realm = getRealmInfo(entityId, game.setup.store, getPlayerName);
-  const currentTime = useNowMs();
-  const currentTimeRef = useRef(currentTime);
-  currentTimeRef.current = currentTime;
 
   const existingBuildings = useMemo(
     () => (realm?.position ? requireActiveGameClient().views.buildingTiles(entityId).existingBuildings() : []),
@@ -426,8 +421,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     const map = new Map<ResourcesIds, ResourceProductionStatus>();
     if (!resourceData) return map;
 
-    const calculatedAt = Date.now();
-
     producedResourceIds.forEach((resourceId) => {
       const productionInfo = resourceData.current(resourceId);
       if (!productionInfo?.production) return;
@@ -450,7 +443,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         outputRemaining: productionData.outputRemaining,
         totalBuildings,
         activeBuildings: productionData.isProducing ? (totalBuildings > 0 ? totalBuildings : 0) : 0,
-        calculatedAt,
       });
     });
 
@@ -654,7 +646,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             buildingName={resource?.trait}
                             resourceName={resource?.trait}
                             productionStatus={productionStatus}
-                            currentTime={currentTimeRef.current}
                             troopHint={troopHint}
                             toolTip={
                               <ResourceInfo
@@ -742,7 +733,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             buildingName={resource?.trait}
                             resourceName={resource?.trait}
                             productionStatus={productionStatus}
-                            currentTime={currentTimeRef.current}
                             toolTip={
                               <ResourceInfo
                                 buildingId={building}
@@ -865,7 +855,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     }
                     isWorkersHut={isWorkersHut}
                     productionStatus={productionStatus}
-                    currentTime={currentTimeRef.current}
                     toolTip={<BuildingInfo buildingId={building} entityId={entityId} useSimpleCost={useSimpleCost} />}
                     disabled={disabled}
                     disabledReason={disabledReason}
@@ -998,7 +987,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                 buildingName={`${BuildingTypeToString[building]}`}
                                 resourceName={getProducedResourceName(building) as keyof typeof ResourcesIds}
                                 productionStatus={productionStatus}
-                                currentTime={currentTimeRef.current}
                                 toolTip={
                                   <BuildingInfo
                                     buildingId={building}
@@ -1136,7 +1124,6 @@ const BuildingCard = ({
   resourceName,
   isWorkersHut,
   productionStatus,
-  currentTime,
   toolTip,
   requirements,
   resourceId,
@@ -1165,7 +1152,6 @@ const BuildingCard = ({
   resourceName?: string;
   isWorkersHut?: boolean;
   productionStatus?: ResourceProductionStatus;
-  currentTime?: number;
   toolTip: React.ReactElement;
   /** Held / needed per resource, shown while the card is hovered. */
   requirements: ResourceRequirement[] | undefined;
@@ -1196,24 +1182,8 @@ const BuildingCard = ({
   const setTooltip = useTooltipStore((state) => state.setTooltip);
   const isDisabled = disabled;
   const showDisabledMessage = isDisabled && disabledReason;
-  const effectiveRemainingSeconds =
-    productionStatus && currentTime
-      ? productionStatus.timeRemainingSeconds !== null
-        ? Math.max(productionStatus.timeRemainingSeconds - (currentTime - productionStatus.calculatedAt) / 1000, 0)
-        : null
-      : (productionStatus?.timeRemainingSeconds ?? null);
-  const effectiveOutputRemaining =
-    productionStatus &&
-    currentTime &&
-    productionStatus.outputRemaining !== null &&
-    productionStatus.productionPerSecond !== null &&
-    Number.isFinite(productionStatus.productionPerSecond)
-      ? Math.max(
-          productionStatus.outputRemaining -
-            ((currentTime - productionStatus.calculatedAt) / 1000) * productionStatus.productionPerSecond,
-          0,
-        )
-      : (productionStatus?.outputRemaining ?? null);
+  const effectiveRemainingSeconds = productionStatus?.timeRemainingSeconds ?? null;
+  const effectiveOutputRemaining = productionStatus?.outputRemaining ?? null;
   const outputLabel =
     productionStatus?.isProducing && effectiveOutputRemaining !== null
       ? currencyIntlFormat(effectiveOutputRemaining, Math.abs(effectiveOutputRemaining) >= 1000 ? 1 : 0)
@@ -1455,7 +1425,7 @@ const ResourceInfo = ({
 }) => {
   const game = useGame();
   useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Building", "RealmKnowledge"]);
-  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
+  const currentDefaultTick = useCurrentDefaultTick();
   // Undefined when the recipe is unknown here: shown as "—", never as a free cost. Relics hold an empty recipe.
   let cost = configManager.getRecipeInputs(resourceId, useSimpleCost);
 
@@ -1629,7 +1599,7 @@ const BuildingInfo = ({
 }) => {
   const game = useGame();
   useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Building", "RealmKnowledge"]);
-  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
+  const currentDefaultTick = useCurrentDefaultTick();
 
   const resourceProduced = configManager.getResourceBuildingProduced(buildingId);
   const resourceProducedName = resourceProduced ? findResourceById(resourceProduced)?.trait : undefined;

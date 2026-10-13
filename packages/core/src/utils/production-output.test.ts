@@ -1,5 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { setChainTimestampEvidenceSink } from "./timestamp";
 import { productionOutput } from "./production-output";
+
+afterEach(() => setChainTimestampEvidenceSink(null));
 
 describe("production paid by the second", () => {
   const farm = { last_settled_tick: 40, production_rate: 7n };
@@ -16,7 +19,10 @@ describe("production paid by the second", () => {
   });
 
   it("never pays before the exact start or twice for the same second", () => {
+    const evidence = vi.fn();
+    setChainTimestampEvidenceSink(evidence);
     expect(productionOutput(farm, 39)).toBe(0n);
+    expect(evidence).toHaveBeenCalledWith(40);
     expect(productionOutput(farm, 40)).toBe(0n);
     expect(productionOutput(farm, 41)).toBe(7n);
     expect(productionOutput(farm, 59)).toBe(133n);

@@ -10,7 +10,8 @@ vi.mock("@/sync/active-game-client", async (original) => ({
   }),
 }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
-  useCurrentDefaultTick: () => 3,
+  useCurrentDefaultTick: () => 360,
+  useNowSeconds: () => 360,
   useBlockTimestamp: () => ({ currentArmiesTick: 3, armiesTickTimeRemaining: 60 }),
 }));
 

@@ -58,7 +58,7 @@ pub fn resolve(
                     context,
                     rules.troop_stamina_config,
                     rules.troop_damage_config,
-                    tick,
+                    rules.tick_config.armies_tick_in_seconds,
                     rules.battle_config.cooldown_seconds,
                 );
             stamina_loss = core::cmp::max(stamina_loss, loss);
@@ -80,7 +80,7 @@ pub fn resolve(
     explorer
         .stamina
         .spend(
-            ref explorer.boosts, explorer.category, explorer.tier, rules.troop_stamina_config, stamina_loss, tick, true,
+            ref explorer.boosts, explorer.category, explorer.tier, rules.troop_stamina_config, stamina_loss, rules.tick_config.armies_tick_in_seconds, timestamp, true,
         );
     RaidResolution { explorer, guards: updated.span(), damage_to_explorer, damage_to_guards, guarded: true }
 }

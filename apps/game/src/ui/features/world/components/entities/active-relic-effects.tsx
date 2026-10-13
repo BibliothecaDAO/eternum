@@ -1,13 +1,13 @@
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useBlockTimestamp, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { formatRelicBonusText } from "@/ui/utils/relic-utils";
 import { configManager, formatTime, relicsArmiesTicksLeft } from "@bibliothecadao/eternum";
-import { getRelicInfo, ID, RelicEffectWithEndTick, RelicInfo, ResourcesIds, TickIds } from "@bibliothecadao/types";
+import { getRelicInfo, ID, RelicEffect, RelicInfo, ResourcesIds, TickIds } from "@bibliothecadao/types";
 import { Sparkles } from "@/ui/design-system/atoms/game-icons";
 import { useMemo } from "react";
 
 interface ActiveRelicEffectsProps {
-  relicEffects: RelicEffectWithEndTick[];
+  relicEffects: RelicEffect[];
   entityId: ID;
   compact?: boolean;
   className?: string;
@@ -54,6 +54,7 @@ export const ActiveRelicEffects = ({
   maxItems,
 }: ActiveRelicEffectsProps) => {
   const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
+  const now = useNowSeconds();
 
   const activeEffects = useMemo(() => {
     if (!relicEffects || relicEffects.length === 0) return [];
@@ -61,7 +62,7 @@ export const ActiveRelicEffects = ({
     return relicEffects
       .map((effect) => {
         const resourceId = Number(effect.id);
-        const endTick = Number(effect.endTick);
+        const endTick = "endTick" in effect ? effect.endTick : 0;
 
         if (isNaN(resourceId) || isNaN(endTick)) return null;
 
@@ -70,7 +71,12 @@ export const ActiveRelicEffects = ({
 
         const remainingTicks = relicsArmiesTicksLeft(endTick, currentArmiesTick);
         const armyTickInterval = configManager.getTick(TickIds.Armies) || 1;
-        const remainingSeconds = remainingTicks > 0 ? remainingTicks * armyTickInterval + armiesTickTimeRemaining : 0;
+        const remainingSeconds =
+          "endAt" in effect
+            ? effect.endAt - now
+            : remainingTicks > 0
+              ? remainingTicks * armyTickInterval + armiesTickTimeRemaining
+              : 0;
 
         if (remainingSeconds <= 0) return null;
 
@@ -82,7 +88,7 @@ export const ActiveRelicEffects = ({
         };
       })
       .filter((effect): effect is NonNullable<typeof effect> => effect !== null);
-  }, [relicEffects, currentArmiesTick, armiesTickTimeRemaining]);
+  }, [relicEffects, currentArmiesTick, armiesTickTimeRemaining, now]);
 
   if (activeEffects.length === 0) {
     return null;

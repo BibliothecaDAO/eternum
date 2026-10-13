@@ -1,5 +1,5 @@
 import { useGame } from "@/hooks/context/game-context";
-import { useBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { pinsOrder } from "@/three/scenes/worldmap-order-request";
@@ -16,12 +16,13 @@ import {
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
-import { ResourcesIds, TickIds, type Troops } from "@bibliothecadao/types";
+import { ResourcesIds, type Troops } from "@bibliothecadao/types";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 const ORDER_MODELS = [
   "ExplorerTroops",
   "ArmySlot",
+  "ArmyProgress",
   "ResourceBalance",
   "ResourceProduction",
   "ArmyProgressionRules",
@@ -54,7 +55,6 @@ export const useArmyOrder = (): ArmyOrder | null => useOrderAt(useUIStore((state
 export const useOrderAt = (target: { col: number; row: number } | null): ArmyOrder | null => {
   const { setup } = useGame();
   useNativeRevision(ORDER_MODELS);
-  const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
   const tick = useCurrentDefaultTick();
   const { selectedEntityId, actionPaths } = useUIStore((state) => state.entityActions);
   if (selectedEntityId === null || selectedEntityId === undefined || !target) return null;
@@ -69,7 +69,7 @@ export const useOrderAt = (target: { col: number; row: number } | null): ArmyOrd
   const tiles = path.length - 1;
 
   const staminaCost = computeEffectiveStaminaCost(path.slice(1), actionType, configManager.getExploreStaminaCost());
-  const staminaHeld = troops ? Number(StaminaManager.getStamina(troops, currentArmiesTick).amount) : undefined;
+  const staminaHeld = troops ? Number(StaminaManager.getStamina(troops, tick).amount) : undefined;
   const wheatCost = Math.abs(
     explore
       ? computeExploreFoodCosts(army.troops).wheatPayAmount
@@ -88,7 +88,7 @@ export const useOrderAt = (target: { col: number; row: number } | null): ArmyOrd
       held: staminaHeld,
       wait:
         troops && staminaHeld !== undefined && staminaHeld < staminaCost
-          ? secondsUntilStamina(troops, staminaCost, currentArmiesTick, armiesTickTimeRemaining)
+          ? secondsUntilStamina(troops, staminaCost, tick)
           : undefined,
     },
     wheat: { cost: wheatCost, held: wheatHeld, wait: secondsUntilHeld(wheatHeld, wheatCost, wheatPerHour) },
@@ -100,39 +100,25 @@ export const useOrderAt = (target: { col: number; row: number } | null): ArmyOrd
  * The stamina the selected army holds now, and when it reaches `need`: an attack's cost held against what it has.
  */
 export const useArmyStamina = (explorerId: number | null, need: number): Cost | undefined => {
+  const tick = useCurrentDefaultTick();
+  useNativeRevision(ORDER_MODELS);
   const { setup } = useGame();
-  const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
   if (explorerId === null) return undefined;
   const army = setup.store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: explorerId });
   const troops = army && resolveExplorerTroops(setup.store, army);
   if (!troops) return undefined;
-  const held = Number(StaminaManager.getStamina(troops, currentArmiesTick).amount);
+  const held = Number(StaminaManager.getStamina(troops, tick).amount);
   return {
     cost: need,
     held,
-    wait: held < need ? secondsUntilStamina(troops, need, currentArmiesTick, armiesTickTimeRemaining) : undefined,
+    wait: held < need ? secondsUntilStamina(troops, need, tick) : undefined,
   };
 };
 
-/**
- * When the army's stamina first reaches `need`: the rest of this tick, then whole ticks, as the contract refills it.
- * Undefined when its stamina never gets there today.
- */
-const secondsUntilStamina = (
-  troops: Troops,
-  need: number,
-  currentTick: number,
-  tickRemaining: number,
-): number | undefined => {
-  const full = StaminaManager.getFullAtTick(troops, currentTick);
-  if (full === null) return undefined;
-  const tickSeconds = Number(configManager.getTick(TickIds.Armies));
-  for (let tick = currentTick + 1; tick <= full; tick += 1) {
-    if (Number(StaminaManager.getStamina(troops, tick).amount) >= need) {
-      return tickRemaining + (tick - currentTick - 1) * tickSeconds;
-    }
-  }
-  return undefined;
+/** Seconds until the army can afford this order, including any remaining boost. */
+const secondsUntilStamina = (troops: Troops, need: number, timestamp: number): number | undefined => {
+  const ready = StaminaManager.getAffordableAt(troops, need, timestamp);
+  return ready === null ? undefined : Math.max(0, ready - timestamp);
 };
 
 /** How long until the realm's farms bring the held wheat up to `need`; undefined when it already holds it or never will. */

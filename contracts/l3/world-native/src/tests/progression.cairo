@@ -153,9 +153,9 @@ fn buying_a_tier_charges_its_price_raises_one_tier_and_refills_thirty_stamina() 
     let d = super::registrar::setup();
     let (game_id, preset, category) = super::registrar::expedition_home(d);
     let (key, _) = super::registrar::expedition_armies(d, game_id, category);
-    let tick = 360 / preset.rules.tick_config.armies_tick_in_seconds;
+    let timestamp = 360;
     write_progress(d, key, ArmyProgress { xp: 250, ..crate::progression::initial() });
-    set_bar(d, key, 0, tick);
+    set_bar(d, key, 0, timestamp);
     assert!(execute_buy(d, key, Attribute::Battle));
     assert_eq!(read_progress(d, key), ArmyProgress { xp: 150, battle: 2, ..crate::progression::initial() });
     assert_eq!(bar(d, key, game_id), 30);
@@ -171,12 +171,12 @@ fn a_logistics_tier_raises_the_maximum_and_the_bar_takes_only_the_purchase_refil
     let (game_id, preset, category) = super::registrar::expedition_home(d);
     let (key, _) = super::registrar::expedition_armies(d, game_id, category);
     let rules = preset.rules.troop_stamina_config;
-    let tick = 360 / preset.rules.tick_config.armies_tick_in_seconds;
+    let timestamp = 360;
     let base = crate::progression::stamina_max(crate::progression::initial(), crate::troops::TroopType::Knight, rules);
     // A full bar rises only as far as the new maximum; a low one takes the 30 a purchase refills.
     for (amount, after) in array![(base, base + 20), (40, 70)] {
         write_progress(d, key, ArmyProgress { xp: 100, ..crate::progression::initial() });
-        set_bar(d, key, amount, tick);
+        set_bar(d, key, amount, timestamp);
         assert!(execute_buy(d, key, Attribute::Logistics));
         assert_eq!(bar(d, key, game_id), after);
         assert_eq!(
@@ -185,13 +185,13 @@ fn a_logistics_tier_raises_the_maximum_and_the_bar_takes_only_the_purchase_refil
     }
 }
 
-/// Sets the slot army's bar to `amount` at the current tick, through the troop write every action uses.
-fn set_bar(d: super::Deployment, key: crate::troops::ExplorerKey, amount: u64, tick: u64) {
+/// Sets the slot army's bar to `amount` at the current second, through the troop write every action uses.
+fn set_bar(d: super::Deployment, key: crate::troops::ExplorerKey, amount: u64, timestamp: u64) {
     snforge_std::interact_with_state(
         d.games,
         || {
             let mut troops = crate::logic::troops::explorer(key).unwrap().troops;
-            troops.stamina = crate::troops::Stamina { amount, updated_tick: tick }.into();
+            troops.stamina = crate::troops::Stamina { amount, updated_tick: timestamp }.into();
             crate::logic::troops::TroopState::update_troops(key, troops);
         },
     );
@@ -205,8 +205,7 @@ fn damage_at_battle(
         d.games, || crate::logic::progression::write(key, ArmyProgress { battle, ..crate::progression::initial() }),
     );
     let attacker = super::state::GameState { contract_address: d.games }.resolved_explorer(key).unwrap().troops;
-    let tick = 360 / rules.tick_config.armies_tick_in_seconds;
-    let stamina: crate::troops::StaminaSource = crate::troops::Stamina { amount: 150, updated_tick: tick }.into();
+    let stamina: crate::troops::StaminaSource = crate::troops::Stamina { amount: 150, updated_tick: 360 }.into();
     let mut attacker = crate::troops::Troops { count: 1000 * crate::rules::RESOURCE_PRECISION, stamina, ..attacker };
     let mut defender = crate::troops::Troops {
         count: 1_000_000 * crate::rules::RESOURCE_PRECISION,
@@ -225,7 +224,7 @@ fn damage_at_battle(
         defender_is_structure_guard: false,
     };
     let (dealt, _, _, _) = crate::combat::TroopsTrait::damage_with_context(
-        ref attacker, ref defender, context, rules.troop_stamina_config, rules.troop_damage_config, tick, 0,
+        ref attacker, ref defender, context, rules.troop_stamina_config, rules.troop_damage_config, rules.tick_config.armies_tick_in_seconds, 0,
     );
     dealt
 }
@@ -272,9 +271,9 @@ fn added_stamina_stops_at_the_armys_own_maximum() {
     let mut boosts: crate::troops::TroopBoosts = Default::default();
     // Past the troop's base of 150, up to the army's own 200, and never beyond it.
     let mut bar = crate::troops::Stamina { amount: 140, updated_tick: 5 };
-    bar.add(ref boosts, maximum, rules, 25, 5);
+    bar.add(ref boosts, maximum, rules, 25, 120, 5);
     assert_eq!(bar.amount, 165);
-    bar.add(ref boosts, maximum, rules, 50, 5);
+    bar.add(ref boosts, maximum, rules, 50, 120, 5);
     assert_eq!(bar.amount, 200);
 }
 

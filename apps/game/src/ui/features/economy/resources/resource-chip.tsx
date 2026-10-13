@@ -1,4 +1,4 @@
-import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { Factory, FlaskConical, Sparkles } from "@/ui/design-system/atoms/game-icons";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
@@ -20,14 +20,7 @@ import {
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
-import {
-  ID,
-  RelicEffectWithEndTick,
-  RelicRecipientType,
-  ResourcesIds,
-  StructureType,
-  TickIds,
-} from "@bibliothecadao/types";
+import { ID, RelicEffect, RelicRecipientType, ResourcesIds, StructureType, TickIds } from "@bibliothecadao/types";
 import { useCallback, useMemo } from "react";
 
 export const ResourceChip = ({
@@ -52,7 +45,7 @@ export const ResourceChip = ({
   showTransfer?: boolean;
   storageCapacity?: number;
   storageCapacityUsed?: number;
-  activeRelicEffects: RelicEffectWithEndTick[];
+  activeRelicEffects: RelicEffect[];
   canOpenProduction?: boolean;
   disableButtons?: boolean;
   onManageProduction?: (resourceId: ResourcesIds) => void;
@@ -73,7 +66,7 @@ export const ResourceChip = ({
 
   const currentArmiesTick = currentArmiesTickProp ?? storeArmiesTick;
   const armiesTickTimeRemaining = armiesTickTimeRemainingProp ?? storeArmiesTickTimeRemaining;
-  const now = useNowSeconds();
+  const now = useCurrentDefaultTick();
   const resourceEnumId = resourceId as ResourcesIds;
 
   // Undefined when this client holds no resource owner for the structure: the chip then shows nothing.
@@ -151,9 +144,10 @@ export const ResourceChip = ({
   // todo: check relic effect active
   const relicEffectActivated = useMemo(() => {
     return activeRelicEffects.some(
-      (relicEffect) => relicEffect.id === resourceId && relicEffect.endTick > currentArmiesTick,
+      (effect) =>
+        effect.id === resourceId && ("endAt" in effect ? effect.endAt > now : effect.endTick > currentArmiesTick),
     );
-  }, [resourceManager, resourceId, currentArmiesTick]);
+  }, [activeRelicEffects, resourceId, currentArmiesTick, now]);
 
   // Calculate time remaining for active relic with real-time countdown
   const relicTimeRemaining = useMemo(() => {
@@ -162,6 +156,7 @@ export const ResourceChip = ({
     // Get the relic effect data to access end_tick
     const relicEffect = activeRelicEffects.find((relicEffect) => relicEffect.id === resourceId);
     if (!relicEffect) return 0;
+    if ("endAt" in relicEffect) return Math.max(0, relicEffect.endAt - now);
 
     // Calculate remaining ticks until effect ends
     const remainingTicks = relicsArmiesTicksLeft(relicEffect.endTick, currentArmiesTick);
@@ -174,7 +169,7 @@ export const ResourceChip = ({
     const remainingSeconds = remainingTicks > 0 ? remainingTicks * armyTickInterval + armiesTickTimeRemaining : 0;
 
     return Math.max(0, remainingSeconds);
-  }, [isRelic, relicEffectActivated, resourceManager, resourceId, currentArmiesTick, armiesTickTimeRemaining]);
+  }, [isRelic, relicEffectActivated, activeRelicEffects, resourceId, currentArmiesTick, armiesTickTimeRemaining, now]);
 
   // Check if we should hide this resource based on the balance and hideZeroBalance prop
   // Show relics with active effects even if balance is 0

@@ -104,8 +104,8 @@ fn check_vectors(record: bool) {
 fn resolve_exchange(
     exchange: Exchange, damage: TroopDamageConfig, stamina: TroopStaminaConfig, tick_interval: u64,
 ) -> Outcome {
-    let mut attacker = troops(exchange.attacker, exchange.current_tick);
-    let mut defender = troops(exchange.defender, exchange.current_tick);
+    let mut attacker = troops(exchange.attacker, exchange.current_tick, tick_interval);
+    let mut defender = troops(exchange.defender, exchange.current_tick, tick_interval);
     attacker
         .attack_with_context(
             ref defender,
@@ -121,7 +121,7 @@ fn resolve_exchange(
             },
             stamina,
             damage,
-            exchange.current_tick,
+            tick_interval,
             tick_interval.try_into().unwrap(),
         );
     Outcome {
@@ -132,13 +132,14 @@ fn resolve_exchange(
     }
 }
 
-fn troops(side: Side, tick: u64) -> Troops {
+fn troops(side: Side, tick: u64, tick_seconds: u64) -> Troops {
+    // The archived vector input records a tick index; convert it to a settled second.
     assert!(side.damage_bonus_percent <= 40, "unexpected Battle level");
     Troops {
         category: side.category,
         tier: side.tier,
         count: side.count,
-        stamina: Stamina { amount: side.stamina, updated_tick: side.updated_tick }.into(),
+        stamina: Stamina { amount: side.stamina, updated_tick: side.updated_tick * tick_seconds }.into(),
         boosts: TroopBoosts {
             incr_damage_dealt_percent_num: side.damage_bonus_percent * 100,
             incr_damage_dealt_end_tick: (tick + 1).try_into().unwrap(),

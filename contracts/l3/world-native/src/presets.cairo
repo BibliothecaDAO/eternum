@@ -93,6 +93,14 @@ pub fn validate(preset: PresetDefinition) {
         "expedition troops must have strength one",
     );
     assert!(rules.tick_config.armies_tick_in_seconds != 0, "zero army tick");
+    let tick_seconds = rules.tick_config.armies_tick_in_seconds;
+    assert!(
+        tick_seconds <= 0x100000000 / crate::math::PercentageValueImpl::_100(), "stamina remainder overflow",
+    );
+    for index in 0..core::cmp::min(preset.economy.relics.len(), 2) {
+        let seconds = Into::<u8, u64>::into(*preset.economy.relics.at(index).uses) * tick_seconds;
+        assert!(seconds <= 0xffff, "stamina boost duration overflow");
+    }
     assert!(
         Into::<u32, u64>::into(rules.day_unit_seconds) % rules.tick_config.armies_tick_in_seconds == 0,
         "day unit is not whole ticks",

@@ -494,7 +494,7 @@ pub mod TroopsLogic {
                 .troops
                 .stamina
                 .revert_initial_amount(
-                    rules.troop_stamina_config, timestamp / rules.tick_config.armies_tick_in_seconds,
+                    rules.troop_stamina_config, timestamp,
                 );
             crate::troop_management::assert_size(explorer.troops, home.base.level, rules);
             self
@@ -679,7 +679,7 @@ pub mod TroopsLogic {
                 guard.troops.stamina.set_amount(0);
             }
             if reset_stamina {
-                guard.troops.stamina.revert_initial_amount(rules.troop_stamina_config, tick);
+                guard.troops.stamina.revert_initial_amount(rules.troop_stamina_config, timestamp);
             }
             guard.troops.count += amount;
             crate::troop_management::assert_size(guard.troops, home.base.level, rules);
@@ -810,7 +810,8 @@ pub mod TroopsLogic {
                 category,
                 tier,
                 rules.troop_stamina_config,
-                timestamp / rules.tick_config.armies_tick_in_seconds,
+                rules.tick_config.armies_tick_in_seconds,
+                timestamp,
             );
         troops
     }
@@ -977,9 +978,13 @@ pub mod troop_helpers {
                     explorer.troops.category,
                     explorer.troops.tier,
                     rules.troop_stamina_config,
-                    tick,
+                    rules.tick_config.armies_tick_in_seconds,
+                    timestamp,
                 );
-            crate::relics::boost_explorer(ref explorer.troops.boosts, command.relic_id, rule, tick.try_into().unwrap());
+            crate::relics::boost_explorer(
+                ref explorer.troops.boosts, command.relic_id, rule, tick.try_into().unwrap(),
+                rules.tick_config.armies_tick_in_seconds,
+            );
             if command.relic_id == 45 || command.relic_id == 46 {
                 crate::relics::IRelicMapDispatcherTrait::reveal_relic_ring(
                     crate::relics::IRelicMapLibraryDispatcher {
@@ -1015,7 +1020,8 @@ pub mod troop_helpers {
                         guard.troops.category,
                         guard.troops.tier,
                         rules.troop_stamina_config,
-                        tick,
+                        rules.tick_config.armies_tick_in_seconds,
+                        timestamp,
                     );
                 guard.troops.boosts.decr_damage_gotten_percent_num = rule.rate_bps;
                 guard.troops.boosts.decr_damage_gotten_end_tick = TryInto::<u64, u32>::try_into(tick).unwrap()

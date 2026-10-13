@@ -147,15 +147,7 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
   it("anchors first-hop highlights to the TileOccupancy — the same coord the submit freshness guard checks", () => {
     const { manager, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } = createTestSetup();
 
-    const actionPaths = manager.findActionPaths(
-      structureHexes,
-      armyHexes,
-      exploredHexes,
-      chestHexes,
-      0,
-      0,
-      0x123n as any,
-    );
+    const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
 
     const highlightedHexes = new Set(
       actionPaths.getHighlightedHexes().map((action) => `${action.hex.col},${action.hex.row}`),
@@ -179,15 +171,7 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
       }),
     );
 
-    const actionPaths = manager.findActionPaths(
-      structureHexes,
-      armyHexes,
-      exploredHexes,
-      chestHexes,
-      0,
-      0,
-      0x123n as any,
-    );
+    const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
 
     const spireActionPath = actionPaths.get(ActionPaths.posKey(spireHex));
     expect(spireActionPath).toBeDefined();
@@ -208,15 +192,7 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
       );
     }
 
-    const actionPaths = manager.findActionPaths(
-      structureHexes,
-      armyHexes,
-      exploredHexes,
-      chestHexes,
-      0,
-      0,
-      0x123n as any,
-    );
+    const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
 
     expect(actionPaths.get(ActionPaths.posKey(shrineHex))).toBeUndefined();
     expect(actionPaths.get(ActionPaths.posKey(wellHex))).toBeUndefined();
@@ -232,7 +208,7 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
       toTileEntityKey(alt, spire.col, spire.row),
       buildTileOptData({ ...spire, alt, biome: 1, occupierType: TileOccupier.Spire, occupierId: 999 }),
     );
-    const paths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0, 0x123n as any);
+    const paths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
     expect(ActionPaths.getActionType(paths.get(ActionPaths.posKey(spire)) ?? [])).toBe(ActionType.SpireTravel);
     if (alt) {
       const step = getLayerNeighborHexes(oldFeltStart.col, oldFeltStart.row, true)[1];
@@ -258,7 +234,7 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
       owner: 0x999n,
     } as HexEntityInfo);
     vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({ amount: 5n, updated_tick: 0n } as any);
-    const paths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0, 0x123n as any);
+    const paths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
     expect(ActionPaths.getActionType(paths.get(ActionPaths.posKey(mineHex)) ?? [])).toBe(ActionType.Attack);
     expect(paths.get(ActionPaths.posKey(tooFar))).toBeUndefined();
   });
@@ -275,15 +251,7 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
       updated_tick: 0n,
     } as any);
 
-    const actionPaths = manager.findActionPaths(
-      structureHexes,
-      armyHexes,
-      exploredHexes,
-      chestHexes,
-      0,
-      0,
-      0x123n as any,
-    );
+    const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
 
     expect(actionPaths.get(ActionPaths.posKey(targetHex))).toBeUndefined();
   });
@@ -300,15 +268,7 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
       updated_tick: 0n,
     } as any);
 
-    const actionPaths = manager.findActionPaths(
-      structureHexes,
-      armyHexes,
-      exploredHexes,
-      chestHexes,
-      0,
-      0,
-      0x123n as any,
-    );
+    const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
 
     expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(targetHex)) ?? [])).toBe(ActionType.Attack);
   });
@@ -325,15 +285,7 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({ amount: 150n, updated_tick: 0n } as any);
     vi.spyOn(configManager, "attacksOnlyUnownedStructures").mockReturnValue(true);
 
-    const actionPaths = manager.findActionPaths(
-      structureHexes,
-      armyHexes,
-      exploredHexes,
-      chestHexes,
-      0,
-      0,
-      0x123n as any,
-    );
+    const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
 
     expect(actionPaths.get(ActionPaths.posKey(owned))).toBeUndefined();
     expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(site))!)).toBe(ActionType.Attack);
@@ -358,15 +310,7 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
       updated_tick: 0n,
     } as any);
 
-    const actionPaths = manager.findActionPaths(
-      structureHexes,
-      armyHexes,
-      exploredHexes,
-      chestHexes,
-      0,
-      0,
-      0x123n as any,
-    );
+    const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
 
     expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(targetHex)) ?? [])).toBe(ActionType.Attack);
   });
@@ -388,15 +332,7 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
       updated_tick: 0n,
     } as any);
 
-    const actionPaths = manager.findActionPaths(
-      structureHexes,
-      armyHexes,
-      exploredHexes,
-      chestHexes,
-      0,
-      0,
-      0x123n as any,
-    );
+    const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
 
     expect(actionPaths.get(ActionPaths.posKey(targetHex))).toBeUndefined();
   });
@@ -423,11 +359,11 @@ describe("ArmyActionManager food checks", () => {
   it("refuses an explore and limits travel to the steps the owner's wheat pays for", () => {
     const { manager } = createTestSetup();
     vi.mocked(manager.getFood).mockReturnValue({ wheat: 99, fish: 0 });
-    expect(manager.canExplore(0, 0)).toBe(false);
-    expect(manager.maxTravelSteps(0, 0)).toBe(3);
+    expect(manager.canExplore(0)).toBe(false);
+    expect(manager.maxTravelSteps(0)).toBe(3);
 
     vi.mocked(manager.getFood).mockReturnValue({ wheat: 100, fish: 0 });
-    expect(manager.canExplore(0, 0)).toBe(true);
+    expect(manager.canExplore(0)).toBe(true);
   });
 });
 
@@ -455,7 +391,7 @@ describe("ArmyActionManager.moveArmy explore position-freshness guard", () => {
 
     const signer = { address: "0x123" } as any;
 
-    await expect(manager.moveArmy(signer, actionPath as any, false, 0)).rejects.toThrow(/drifted|position/i);
+    await expect(manager.moveArmy(signer, actionPath as any, false)).rejects.toThrow(/drifted|position/i);
     expect(systemCalls.explorer_explore).not.toHaveBeenCalled();
   });
 
@@ -475,7 +411,7 @@ describe("ArmyActionManager.moveArmy explore position-freshness guard", () => {
 
     const signer = { address: "0x123" } as any;
 
-    await manager.moveArmy(signer, actionPath as any, false, 0);
+    await manager.moveArmy(signer, actionPath as any, false);
 
     expect(systemCalls.explorer_explore).toHaveBeenCalledTimes(1);
   });
@@ -499,7 +435,7 @@ describe("ArmyActionManager.moveArmy explore position-freshness guard", () => {
 
     const signer = { address: "0x123" } as any;
 
-    await expect(manager.moveArmy(signer, actionPath as any, false, 0)).rejects.toThrow(/drifted|position/i);
+    await expect(manager.moveArmy(signer, actionPath as any, false)).rejects.toThrow(/drifted|position/i);
     expect(systemCalls.explorer_explore).not.toHaveBeenCalled();
   });
 });
@@ -531,7 +467,7 @@ describe("ArmyActionManager.moveArmy spire traversal", () => {
 
     const signer = { address: "0x123" } as any;
 
-    await manager.moveArmy(signer, actionPath as any, true, 0);
+    await manager.moveArmy(signer, actionPath as any, true);
 
     expect(systemCalls.toggle_alternate).toHaveBeenCalledWith({
       signer,
@@ -566,7 +502,6 @@ describe("ArmyActionManager ethereal submissions", () => {
         { hex: destination, actionType: ActionType.Explore },
       ],
       false,
-      0,
     );
     expect(explorer_explore).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -588,7 +523,6 @@ describe("ArmyActionManager ethereal submissions", () => {
           { hex: destination, actionType: ActionType.Move },
         ],
         true,
-        0,
       ),
     ).rejects.toThrow("Invalid travel direction");
     expect(explorer_travel).not.toHaveBeenCalled();

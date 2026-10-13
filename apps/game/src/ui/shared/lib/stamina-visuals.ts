@@ -1,8 +1,4 @@
-export {
-  buildStaminaDisplayModel,
-  describeNextStaminaGain,
-  isStaminaRecharging,
-} from "@/lib/army-stamina/presentation";
+export { buildStaminaDisplayModel, isStaminaRecharging } from "@/lib/army-stamina/presentation";
 
 export const STAMINA_RECHARGING_FILL_CLASS = "stamina-recharging-fill";
 export const STAMINA_RECHARGING_TRACK_CLASS = "stamina-recharging-track";

@@ -1,5 +1,5 @@
 import { useGame } from "@/hooks/context/game-context";
-import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import type { Tone } from "@/ui/design-system/kit/tone";
 import { knownBalance } from "@/ui/utils/utils";
@@ -96,7 +96,7 @@ export const useRealmStores = (
   rules: ExpeditionRules,
 ): Record<"essence" | "labor" | "wheat" | "troops", RealmStore> | null => {
   const { setup } = useGame();
-  const now = useNowSeconds();
+  const now = useCurrentDefaultTick();
   useNativeRevision(STORE_MODELS);
   if (!realm) return null;
   const read = (resourceId: ResourcesIds | "troops") => readRealmStore(setup.store, realm, rules, resourceId, { now });

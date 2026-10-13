@@ -201,9 +201,10 @@ pub impl TroopsImpl of TroopsTrait {
         context: CombatContext,
         troop_stamina_config: TroopStaminaConfig,
         troop_damage_config: TroopDamageConfig,
-        current_tick: u64,
+        tick_seconds: u64,
         cooldown_seconds: u32,
     ) -> (u128, u128, u64, u64) {
+        let current_tick = context.timestamp / tick_seconds;
         assert!(self.count.is_non_zero(), "you have no troops");
         assert!(bravo.count.is_non_zero(), "the defender has no troops");
         assert!(context.defender_biome != Biome::None, "biome is not set");
@@ -223,8 +224,8 @@ pub impl TroopsImpl of TroopsTrait {
         );
 
         // update alpha and bravo's staminas
-        alpha.stamina.refill(ref alpha.boosts, alpha.category, alpha.tier, troop_stamina_config, current_tick);
-        bravo.stamina.refill(ref bravo.boosts, bravo.category, bravo.tier, troop_stamina_config, current_tick);
+        alpha.stamina.refill(ref alpha.boosts, alpha.category, alpha.tier, troop_stamina_config, tick_seconds, context.timestamp);
+        bravo.stamina.refill(ref bravo.boosts, bravo.category, bravo.tier, troop_stamina_config, tick_seconds, context.timestamp);
 
         // ensure alpha has enough stamina to launch attack
         assert!(
@@ -401,12 +402,12 @@ pub impl TroopsImpl of TroopsTrait {
         context: CombatContext,
         troop_stamina_config: TroopStaminaConfig,
         troop_damage_config: TroopDamageConfig,
-        current_tick: u64,
+        tick_seconds: u64,
         cooldown_seconds: u32,
     ) {
         let (alpha_damage_dealt, bravo_damage_dealt, alpha_stamina_loss, bravo_stamina_loss) = self
             .damage_with_context(
-                ref bravo, context, troop_stamina_config, troop_damage_config, current_tick, cooldown_seconds,
+                ref bravo, context, troop_stamina_config, troop_damage_config, tick_seconds, cooldown_seconds,
             );
 
         let mut alpha = self;
@@ -424,7 +425,8 @@ pub impl TroopsImpl of TroopsTrait {
                 alpha.tier,
                 troop_stamina_config,
                 alpha_stamina_loss,
-                current_tick,
+                tick_seconds,
+                context.timestamp,
                 true,
             );
 
@@ -436,7 +438,8 @@ pub impl TroopsImpl of TroopsTrait {
                 bravo.tier,
                 troop_stamina_config,
                 bravo_stamina_loss,
-                current_tick,
+                tick_seconds,
+                context.timestamp,
                 true,
             );
         self = alpha;

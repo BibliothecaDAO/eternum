@@ -157,7 +157,7 @@ pub fn move_fixture(deployment: super::Deployment, key: ResourceKey, coord: Coor
     );
 }
 #[test]
-fn explorer_relics_charge_the_home_and_use_the_block_tick_for_each_effect() {
+fn explorer_relics_charge_the_home_with_second_based_stamina_and_tick_based_combat_effects() {
     let (deployment, home, explorer) = setup(false);
     for id in array![39_u8, 40, 41, 42, 43, 44, 47, 48] {
         let before = balance(deployment, home, 38);
@@ -170,7 +170,7 @@ fn explorer_relics_charge_the_home_and_use_the_block_tick_for_each_effect() {
             39 |
             40 => {
                 assert_eq!(boost.incr_stamina_regen_percent_num, rule.rate_bps);
-                assert_eq!(boost.incr_stamina_regen_tick_count, 3);
+                assert_eq!(boost.incr_stamina_regen_tick_count, 30);
             },
             41 |
             42 => {

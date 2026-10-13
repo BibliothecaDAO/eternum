@@ -1,3 +1,5 @@
+import { reportObservedChainTimestamp } from "./timestamp";
+
 /** A producer pays its rate per elapsed second; the legacy wire field holds Unix seconds. */
 export function productionOutput(
   production: { last_settled_tick: number; production_rate: bigint },
@@ -5,5 +7,6 @@ export function productionOutput(
 ): bigint {
   const since = production.last_settled_tick;
   if (!Number.isSafeInteger(since) || !Number.isSafeInteger(timestamp)) throw new Error("Invalid production clock");
+  if (since > timestamp) reportObservedChainTimestamp(since);
   return BigInt(Math.max(0, timestamp - since)) * production.production_rate;
 }
