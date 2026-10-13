@@ -35,7 +35,6 @@ from service_requests import identity_service_base, service_json
 DOCKER = ["sudo", "-n", "--preserve-env=HARNESS_CPUSET", "docker"]
 # Campaign G's target, not yet a measured ceiling: a larger shard waits for a G measurement that supports it.
 MAX_PLAYER_CAPACITY = 2000
-DEFAULT_NODE_MEMORY_MIB = 24576
 SLICE = Path("/sys/fs/cgroup/athanor.slice")
 # The services that hold memory for the shard's lifetime; prepare and init exit once the shard is deployed.
 PRIVATE_NODE_RPC_URL = "http://madara:9944/rpc/v0_10_2"
@@ -73,21 +72,10 @@ def validate_configuration(config, allowed_cpus):
         raise ValueError("reserve isolated Herald and RPC ports base+1 and base+5 above 27999")
     if not cpu_numbers(config["cpuset"]) <= allowed_cpus:
         raise ValueError("cpuset exceeds the native slice allocation")
-    # The upper bound is the slice's: check_slice_memory refuses a shard whose limits exceed what the slice holds.
-    memory = config.get("node_memory_mib", DEFAULT_NODE_MEMORY_MIB)
-    if not isinstance(memory, int) or memory < 1024:
-        raise ValueError("node memory must be at least 1024 MiB")
-    # Lifecycle flags belong to the package. Repeating its fixed snapshot setting is harmless;
-    # the renderer keeps one instance and refuses a different snapshot policy.
     owned = ("--base-path", "--chain-config", "--rpc", "--name", "--db", "--devnet", "--l1", "--no-charge", "--otel")
-    fixed_snapshot_flag = "--db-max-kept-snapshots=0"
     for flag in config["node_flags"]:
-        if not isinstance(flag, str) or not flag.startswith("--") or (flag.startswith(owned)
-                                                                     and flag != fixed_snapshot_flag):
+        if not isinstance(flag, str) or not flag.startswith("--") or flag.startswith(owned):
             raise ValueError(f"node flag overrides shard ownership: {flag}")
-    if any(flag.startswith("--parallel-merkle-enabled") and flag != "--parallel-merkle-enabled"
-           for flag in config["node_flags"]):
-        raise ValueError("parallel Merkle is the shipped node setting")
     if not any(flag.startswith("--enable-native-execution=") for flag in config["node_flags"]):
         raise ValueError("record the native execution setting explicitly")
     if not any(flag.startswith("--native-compilation-mode=") for flag in config["node_flags"]):
@@ -158,7 +146,6 @@ def compose_configuration(config, directory):
         "TRUSTED_PROXY": config.get("trusted_proxy", ""),
         "HOST_UID": str(os.getuid()), "HOST_GID": str(os.getgid()), "BIND_ADDRESS": "127.0.0.1",
         "RPC_PORT": str(config["port_base"] + 5), "HERALD_PORT": str(config["port_base"] + 1),
-        "NODE_MEMORY": f"{config.get('node_memory_mib', DEFAULT_NODE_MEMORY_MIB)}m",
         "PRESETS": ",".join(str(preset) for preset in config["presets"]),
     }
     compose = json.loads(subprocess.check_output([
@@ -169,9 +156,9 @@ def compose_configuration(config, directory):
         "cgroup_parent": "athanor.slice", "cpuset": config["cpuset"], "pids_limit": 2048,
         "logging": {"driver": "json-file", "options": {"max-size": "20m", "max-file": "3"}},
     }
-    # The harness is the driver, not the shard: it keeps the CPUs HARNESS_CPUSET gives it.
+    # The node uses the host as deployed; only auxiliary measurement services use the slice.
     for name, service in compose["services"].items():
-        if name != "harness":
+        if name not in ("harness", "madara"):
             service.update(budget)
     for name in ("prepare", "init"):
         service = compose["services"][name]
@@ -203,7 +190,7 @@ def check_slice_memory(compose, slice_directory=SLICE):
         if limit == "max":
             raise ValueError(f"{scope.name} runs in the native slice without a memory limit")
         held += int(limit)
-    wanted = sum(memory_bytes(compose["services"][name]["mem_limit"]) for name in LONG_RUNNING)
+    wanted = sum(memory_bytes(compose["services"][name].get("mem_limit", 0)) for name in LONG_RUNNING if name != "madara")
     if held + wanted > int(budget):
         raise ValueError(f"the shard needs {wanted >> 20} MiB beside {held >> 20} MiB already held in the native "
                          f"slice, over its {int(budget) >> 20} MiB")
@@ -397,7 +384,7 @@ def resolve_images(config):
 
 
 def start_shard(config, directory):
-    config = {"node_memory_mib": DEFAULT_NODE_MEMORY_MIB, **resolve_images(config)}
+    config = resolve_images(config)
     allowed = cpu_numbers(Path("/sys/fs/cgroup/athanor.slice/cpuset.cpus.effective").read_text().strip())
     validate_configuration(config, allowed)
     ensure_fresh_project(config)

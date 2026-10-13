@@ -5,7 +5,9 @@
   "vrf_workers": 8,
   "l2_gas_bound": "0x47868c00",
   "player_capacity": 2000,
-  "presets": [2, 5, 101],
-  "node_memory": "24g",
-  "herald_memory": "6g"
+  "presets": [
+    2,
+    5,
+    101
+  ]
 }

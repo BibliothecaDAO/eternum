@@ -9,7 +9,7 @@ SLICE_UNIT = Path(__file__).resolve().parents[1] / "systemd/athanor.slice"
 
 
 class SliceTests(unittest.TestCase):
-    def test_the_shard_host_budget_accepts_a_64_gib_node_and_keeps_an_upper_bound(self):
+    def test_only_auxiliary_services_count_towards_the_slice_budget(self):
         unit = configparser.ConfigParser()
         unit.read(SLICE_UNIT)
         limits = unit["Slice"]
@@ -20,6 +20,8 @@ class SliceTests(unittest.TestCase):
             compose["services"]["madara"]["mem_limit"] = "64G"
             shard.check_slice_memory(compose, directory)
             compose["services"]["madara"]["mem_limit"] = "80G"
+            shard.check_slice_memory(compose, directory)
+            compose["services"]["herald"]["mem_limit"] = "80G"
             with self.assertRaisesRegex(ValueError, "over its"):
                 shard.check_slice_memory(compose, directory)
         self.assertEqual(limits["MemoryHigh"], "76G")

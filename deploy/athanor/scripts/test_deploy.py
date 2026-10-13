@@ -59,13 +59,13 @@ class DeployTest(unittest.TestCase):
         inputs = {"shard_name": "realms-staging-d", "chain_id": "REALMS_STAGING_D", "player_capacity": 96,
                   "guardian_url": "https://staging.test/api/guardian", "presets": [2, 5],
                   "public_rpc_url": "https://rpc.staging.test/rpc/v0_10_2",
-                  "public_herald_url": "https://herald.staging.test", "vrf_workers": 8, "l2_gas_bound": "0x47868c00", "node_memory": "8g", "herald_memory": "6g"}
+                  "public_herald_url": "https://herald.staging.test", "vrf_workers": 8, "l2_gas_bound": "0x47868c00"}
         rendered = deploy.render_environment(inputs, "SHARD_INIT_IMAGE=ghcr.io/x@sha256:1\n")
         self.assertIn("SHARD_INIT_IMAGE=ghcr.io/x@sha256:1\n", rendered)
         self.assertIn("PRESETS=2,5\n", rendered)
         self.assertIn("CHAIN_ID=REALMS_STAGING_D\n", rendered)
-        self.assertIn("NODE_MEMORY=8g\n", rendered)
-        self.assertIn("HERALD_MEMORY=6g\n", rendered)
+        self.assertNotIn("NODE_MEMORY", rendered)
+        self.assertNotIn("HERALD_MEMORY", rendered)
 
 
 class InputsTest(unittest.TestCase):

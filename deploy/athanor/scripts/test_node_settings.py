@@ -20,19 +20,14 @@ class NodeSettingsTest(unittest.TestCase):
                 self.assertIsNotNone(actual)
                 self.assertEqual(int(actual[1]), value)
 
-    def test_package_and_runner_keep_parallel_merkle_and_no_historical_snapshots(self):
+    def test_package_and_runner_use_the_live_node_without_resource_or_database_overrides(self):
         compose = shard.compose_configuration(configuration(), Path("/tmp/not-deployed"))
-        flags = compose["services"]["madara"]["command"]
-        self.assertEqual(flags.count("--flush-every-n-blocks=1000"), 1)
-        self.assertIn("--db-fsync", flags)
-        self.assertIn("--db-wal", flags)
-        self.assertEqual(flags.count("--parallel-merkle-enabled"), 1)
-        self.assertEqual(flags.count("--db-max-kept-snapshots=0"), 1)
-        self.assertFalse(any(flag.startswith("--rpc-max-response-size") for flag in flags))
+        node = compose["services"]["madara"]
+        self.assertTrue(node["image"].endswith("ec30298d51ce0780e1ad88cc00e1c17bef31530d0e338fe7fcc1d71d1bad31b2"))
+        for key in ("mem_limit", "memswap_limit", "cpuset", "cpus", "cpu_quota", "ulimits", "cgroup_parent", "pids_limit"):
+            self.assertNotIn(key, node)
+        for prefix in ("--db-", "--parallel-merkle", "--flush-every", "--rpc-admin", "--gateway", "--feeder-gateway"):
+            self.assertFalse(any(flag.startswith(prefix) for flag in node["command"]))
+        self.assertIn("--devnet-contracts=0", node["command"])
+        self.assertIn("--enable-native-execution=true", node["command"])
         self.assertNotIn("gateway", compose["services"])
-        explicit = {**configuration(),
-                    "node_flags": [*configuration()["node_flags"], "--db-max-kept-snapshots=0"]}
-        flags = shard.compose_configuration(explicit, Path("/tmp/not-deployed"))["services"]["madara"]["command"]
-        self.assertEqual(flags.count("--db-max-kept-snapshots=0"), 1)
-        self.assertFalse(any(flag.startswith("--rpc-max-response-size") for flag in flags))
-

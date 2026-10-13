@@ -26,7 +26,7 @@ def operator_fixture(data, testcase):
 
 def configuration():
     return {
-        "shard": "smoke", "chain_id": "SHARD_A", "port_base": 28050, "cpuset": "8-11,20-23", "node_memory_mib": 16384,
+        "shard": "smoke", "chain_id": "SHARD_A", "port_base": 28050, "cpuset": "8-11,20-23",
         "player_capacity": 96,
         "herald_image": "sha256:" + "b" * 64,
         "init_image": "sha256:" + "d" * 64,
@@ -135,12 +135,9 @@ class ShardTest(unittest.TestCase):
         config = configuration()
         allowed = set(range(8, 12)) | set(range(20, 24))
         shard.validate_configuration(config, allowed)
-        shard.validate_configuration({key: value for key, value in config.items() if key != "node_memory_mib"}, allowed)
-        shard.validate_configuration({**config, "node_flags": [*config["node_flags"], "--db-max-kept-snapshots=0"]},
-                                     allowed)
         for key, value in (
             ("chain_id", ""), ("chain_id", "a" * 32), ("chain_id", "a\nb"),
-            ("port_base", 5050), ("cpuset", "0-23"), ("node_memory_mib", 512), ("player_capacity", 0),
+            ("port_base", 5050), ("cpuset", "0-23"), ("player_capacity", 0),
             ("madara_image", NODE_IMAGE), ("vrf_workers", 0), ("shard", "../live"),
             ("trusted_proxy", "cloudflared"), ("presets", []), ("presets", ["2"]),
             ("guardian_url", "https://identity.test/api"),
@@ -311,7 +308,7 @@ class ShardTest(unittest.TestCase):
             running.mkdir()
             (running / "memory.max").write_text(str(4 * 2**30) + "\n")
             shard.check_slice_memory(compose, slice_directory)
-            (running / "memory.max").write_text(str(6 * 2**30) + "\n")
+            (running / "memory.max").write_text(str(7 * 2**30) + "\n")
             with self.assertRaisesRegex(ValueError, "over its 10240 MiB"):
                 shard.check_slice_memory(compose, slice_directory)
             (running / "memory.max").write_text("max\n")

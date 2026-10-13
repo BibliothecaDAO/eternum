@@ -25,7 +25,7 @@ from service_requests import identity_service_base, service_json
 
 ENVIRONMENTS = shard.ROOT / "deploy/release"
 INPUTS = ("shard_name", "public_rpc_url", "public_herald_url",
-          "player_capacity", "presets", "node_memory", "herald_memory", "vrf_workers", "l2_gas_bound")
+          "player_capacity", "presets", "vrf_workers", "l2_gas_bound")
 
 
 def ignore_stage(_stage):
@@ -238,7 +238,6 @@ def render_environment(inputs, images):
         "VRF_WORKERS": inputs["vrf_workers"], "L2_GAS_BOUND": inputs["l2_gas_bound"],
         "PLAYER_CAPACITY": inputs["player_capacity"], "PRESETS": ",".join(str(preset) for preset in inputs["presets"]),
         # Each environment sizes its shard: a small staging playtest, a large perf or production shard.
-        "NODE_MEMORY": inputs["node_memory"], "HERALD_MEMORY": inputs["herald_memory"],
         "HOST_UID": os.getuid(), "HOST_GID": os.getgid(),
     }
     return images.rstrip("\n") + "\n" + "".join(f"{key}={value}\n" for key, value in values.items())
