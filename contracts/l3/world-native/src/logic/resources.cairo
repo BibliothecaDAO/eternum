@@ -75,11 +75,6 @@ pub fn rule(game_id: u32, resource_type: u8) -> crate::resources::ResourceRule {
     }
 }
 
-/// The armies tick in seconds: production pays in whole ticks of it.
-pub fn production_tick(game_id: u32) -> u32 {
-    crate::logic::preset_record::for_game(game_id).rules.tick_config.armies_tick_in_seconds.read().try_into().unwrap()
-}
-
 pub fn production_start(game_id: u32, game_context: crate::commands::ExecutionContext) -> u32 {
     if crate::rules::rule_enabled(game_context.rules.unbox(), crate::rules::PRODUCTION_START) {
         game_context.game.unbox().start_main_at.try_into().unwrap()
@@ -332,14 +327,9 @@ pub mod ResourceState {
                 weight: self.data.resources.weights.read((key.game_id, key.entity_id)),
                 limit: crate::logic::resources::store_limit(key, resource_type),
             };
-            // Production runs on the armies tick, counted from absolute time, as stamina does.
-            let tick_seconds = crate::logic::resources::production_tick(key.game_id);
-            let tick = now / tick_seconds;
-            let since = core::cmp::max(
-                resource.production.last_settled_tick, core::cmp::min(tick, start_at / tick_seconds),
-            );
-            resource.production.last_settled_tick = since;
-            if since != tick {
+            let since = core::cmp::max(resource.production.last_settled_at, core::cmp::min(now, start_at));
+            resource.production.last_settled_at = since;
+            if since != now {
                 settle(
                     resource_type,
                     ref resource.balance,
@@ -347,8 +337,7 @@ pub mod ResourceState {
                     ref resource.weight,
                     unit_weight,
                     resource.limit,
-                    tick,
-                    tick_seconds,
+                    now,
                 );
             }
             resource
@@ -383,7 +372,7 @@ pub mod ResourceState {
                 return;
             }
             let production = if production.building_count == 0 {
-                Production { last_settled_tick: 0, ..production }
+                Production { last_settled_at: 0, ..production }
             } else {
                 production
             };

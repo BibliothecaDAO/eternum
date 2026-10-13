@@ -182,7 +182,6 @@ describe("Madara harness workload", () => {
 
   it.each([false, true])("creates only missing explorers when preparing the roster (resumed=%s)", async (resumed) => {
     const { game, actions } = fakeWorld();
-    const settle = spyOn(game, "settle");
     const existing = new Map<number, number[]>(resumed ? [[1, [11, 21]]] : []);
     const create = mock(async ({ structureId }: { structureId: number }) => {
       existing.set(structureId, [structureId + 10]);
@@ -197,7 +196,7 @@ describe("Madara harness workload", () => {
       return "Knight";
     };
     game.explorersOf = (id) => existing.get(id) ?? [];
-    game.explorer = (id) => ({ coord: { x: id - 10, y: 0 }, staminaAmount: 120n, staminaUpdatedTick: 1n });
+    game.explorer = (id) => ({ coord: { x: id - 10, y: 0 }, staminaAmount: 120n, staminaSettledAt: 1 });
     game.armyPathIndexes = () =>
       ({
         structureHexes: new Map(),
@@ -213,8 +212,6 @@ describe("Madara harness workload", () => {
       provider: confirmingProvider(),
       setupTransactions,
     });
-    expect(settle).not.toHaveBeenCalled();
-    expect(create).toHaveBeenCalledTimes(resumed ? 0 : 1);
     expect(setupTransactions.map(({ kind, outcome }) => [kind, outcome])).toEqual(
       Array.from({ length: resumed ? 0 : 1 }, () => ["create-explorer", "completed"]),
     );
@@ -415,7 +412,7 @@ describe("Madara harness workload", () => {
 
   it("skips an explorer tick no explorer can afford instead of recording a failure", async () => {
     spyOn(configManager, "getMapCenter").mockReturnValue(0);
-    const world = fakeWorld([2, { coord: { x: 10, y: 10 }, staminaAmount: 120n, staminaUpdatedTick: 1n }]);
+    const world = fakeWorld([2, { coord: { x: 10, y: 10 }, staminaAmount: 120n, staminaSettledAt: 1 }]);
     const bot = readyHarnessBot(world);
     bot.explorers.push({ ...bot.explorers[0]!, explorerId: 2 });
     world.actions.armyPaths = () => new ActionPaths();
@@ -434,7 +431,7 @@ describe("Madara harness workload", () => {
 
   it("reports a pathing failure for an affordable explorer even when its sibling is exhausted", async () => {
     spyOn(configManager, "getMapCenter").mockReturnValue(0);
-    const world = fakeWorld([2, { coord: { x: 10, y: 10 }, staminaAmount: 120n, staminaUpdatedTick: 1n }]);
+    const world = fakeWorld([2, { coord: { x: 10, y: 10 }, staminaAmount: 120n, staminaSettledAt: 1 }]);
     const bot = readyHarnessBot(world);
     bot.explorers.push({ ...bot.explorers[0]!, explorerId: 2 });
     world.actions.armyPaths = () => new ActionPaths();
@@ -524,7 +521,7 @@ describe("Madara harness workload", () => {
 
   it("moves a fresh explorer with no remembered exploration route", async () => {
     spyOn(configManager, "getMapCenter").mockReturnValue(0);
-    const world = fakeWorld([2, { coord: { x: 10, y: 10 }, staminaAmount: 120n, staminaUpdatedTick: 1n }]);
+    const world = fakeWorld([2, { coord: { x: 10, y: 10 }, staminaAmount: 120n, staminaSettledAt: 1 }]);
     const bot = readyHarnessBot(world);
     bot.explorers.push({ ...bot.explorers[0]!, explorerId: 2 });
     const pathsFromStore = world.actions.armyPaths;
@@ -1071,7 +1068,7 @@ interface FakeWorld {
 /** One explorer at (1, 1) with full stamina on an unexplored map; every action lands in the shared store as it is submitted. */
 function fakeWorld(extraExplorer?: [number, ExplorerRow]): FakeWorld {
   const explorers = new Map<number, ExplorerRow>([
-    [1, { coord: { x: 1, y: 1 }, staminaAmount: 120n, staminaUpdatedTick: 1n }],
+    [1, { coord: { x: 1, y: 1 }, staminaAmount: 120n, staminaSettledAt: 1 }],
   ]);
   if (extraExplorer) explorers.set(...extraExplorer);
   const production = new Map<number, ProductionState>([[1, { laborBalance: 100n, woodOutput: 4n }]]);

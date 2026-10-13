@@ -15,6 +15,7 @@ x-init: &init
       read_only: true
       bind: { create_host_path: false }
   environment:
+    BLOCK_TIME: ${BLOCK_TIME:-2s}
     CHAIN_ID: ${CHAIN_ID:?Choose a unique chain id}
     GUARDIAN_URL: ${GUARDIAN_URL:?Set the identity guardian endpoint}
     PUBLIC_RPC_URL: ${PUBLIC_RPC_URL:?Set the read RPC URL}

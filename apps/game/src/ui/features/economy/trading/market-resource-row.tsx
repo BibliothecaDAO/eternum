@@ -1,4 +1,4 @@
-import { useCoarseCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { HUD_CUE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -23,7 +23,7 @@ const PRICE_CLASS = "text-right text-[11px] font-semibold tabular-nums";
 
 export const MarketResourceRow = memo(
   ({ entityId, resourceId, active, onClick, buyPrice, sellPrice, ammPrice }: MarketResourceRowProps) => {
-    const currentDefaultTick = useCoarseCurrentDefaultTick();
+    const currentDefaultTick = useCurrentDefaultTick();
     const resourceManager = useResourceManager(entityId);
     const balance = useMemo(
       () => resourceManager.balanceWithProduction(currentDefaultTick, resourceId)?.balance,

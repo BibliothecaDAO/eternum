@@ -1,5 +1,4 @@
 use snforge_std::{ContractClassTrait, DeclareResultTrait, EventSpyTrait, EventsFilterTrait, declare, spy_events};
-use starknet::storage_access::Store;
 use crate::resources::{Production, ProductionPacking, ResourceKey, Weight};
 use crate::rules::RESOURCE_PRECISION;
 
@@ -46,8 +45,6 @@ mod ResourceFixture {
             state.games.games.entry(key.game_id).preset_id.write(1);
             state.registrar.presets.write(1, 1);
             state.presets.entry(1).rules.day_unit_seconds.write(0);
-            // One-second ticks: this fixture's clock reads production in seconds.
-            state.presets.entry(1).rules.tick_config.armies_tick_in_seconds.write(1);
             self.resources.initialize(key, capacity);
         }
         fn grant(ref self: ContractState, key: ResourceKey, amount: u128) {
@@ -161,25 +158,22 @@ fn resource_deletion_clears_production_without_affecting_another_game() {
 }
 
 #[test]
-fn production_storage_preserves_all_232_bits_in_one_slot() {
-    assert_eq!(Store::<Production>::size(), 1);
-    assert_eq!(ProductionPacking::pack(Default::default()), 0);
+fn production_storage_round_trips_empty_and_maximum_values() {
+    assert_eq!(ProductionPacking::unpack(ProductionPacking::pack(Default::default())), Default::default());
     let maximum = Production {
         building_count: 0xff,
         production_rate: 0xffffffffffffffff,
         output_amount_left: 0xffffffffffffffffffffffffffffffff,
-        last_settled_tick: 0xffffffff,
+        last_settled_at: 0xffffffff,
     };
-    let packed: u256 = ProductionPacking::pack(maximum).into();
-    assert_eq!(packed, u256 { low: 0xffffffffffffffffffffffffffffffff, high: 0xffffffffffffffffffffffffff });
-    assert_eq!(ProductionPacking::unpack(packed.try_into().unwrap()), maximum);
+    assert_eq!(ProductionPacking::unpack(ProductionPacking::pack(maximum)), maximum);
 }
 
 #[test]
 #[fuzzer(runs: 256)]
 fn packed_production_fields_do_not_overlap(buildings: u8, rate: u64, cap: u128, time: u32) {
     let production = Production {
-        building_count: buildings, production_rate: rate, output_amount_left: cap, last_settled_tick: time,
+        building_count: buildings, production_rate: rate, output_amount_left: cap, last_settled_at: time,
     };
     assert_eq!(ProductionPacking::unpack(ProductionPacking::pack(production)), production);
 }
@@ -202,7 +196,7 @@ fn spending_settles_once_and_emits_only_the_final_resource_facts() {
     assert_eq!(resources.weight(key), Weight { capacity: 100, weight: 15 });
     assert_eq!(
         resources.production(key),
-        Production { building_count: 1, production_rate: 2, output_amount_left: 80, last_settled_tick: 20 },
+        Production { building_count: 1, production_rate: 2, output_amount_left: 80, last_settled_at: 20 },
     );
     let mut spy = spy_events();
     resources.grant_at(key, 23, 10, 1, 25);
@@ -284,24 +278,45 @@ fn inactive_resources_have_no_clock_and_activation_starts_at_block_time() {
     let (balance, production, _) = resources.read_slot(key, 1);
     assert_eq!(balance, 8);
     assert_eq!(
-        production,
-        Production { building_count: 1, production_rate: 2, output_amount_left: 100, last_settled_tick: 200 },
+        production, Production { building_count: 1, production_rate: 2, output_amount_left: 100, last_settled_at: 200 },
     );
     resources.spend_at(key, 1, 0, 1, 205);
     let (balance, production, weight) = resources.read_slot(key, 1);
     assert_eq!(balance, 18);
     assert_eq!(weight.weight, 18);
     assert_eq!(production.output_amount_left, 90);
-    assert_eq!(production.last_settled_tick, 205);
+    assert_eq!(production.last_settled_at, 205);
 }
 
 #[test]
-fn whole_ticks_pay_exactly_however_often_production_settles() {
-    // The exact Frontier farm rate pays 10.08 wheat per two-minute tick.
-    let tick_seconds = 120_u32;
+fn consecutive_seconds_pay_one_second_and_match_a_single_settlement() {
+    let resources = fixture();
+    let repeated = ResourceKey { game_id: 1, entity_id: 7 };
+    let once = ResourceKey { game_id: 1, entity_id: 8 };
+    for key in array![repeated, once] {
+        resources.initialize(key, 1000);
+        resources.start_at(key, 1, 7, 1000, 40);
+    }
+    for now in 41_u32..101 {
+        let (before, _, _) = resources.read_slot(repeated, 1);
+        resources.spend_at(repeated, 1, 0, 1, now);
+        let (after, _, _) = resources.read_slot(repeated, 1);
+        assert_eq!(after - before, 7);
+    }
+    resources.spend_at(once, 1, 0, 1, 100);
+    let (once_balance, _, _) = resources.read_slot(once, 1);
+    assert_eq!(once_balance, 420);
+    resources.spend_at(repeated, 1, 0, 1, 100);
+    let (repeated_balance, _, _) = resources.read_slot(repeated, 1);
+    assert_eq!(repeated_balance, once_balance);
+}
+
+#[test]
+fn elapsed_seconds_pay_exactly_however_often_production_settles() {
+    // The exact Frontier farm rate pays for every second, including between armies ticks.
     let rate = 84000000_u64;
     let mut production = Production {
-        building_count: 1, production_rate: rate, output_amount_left: 0, last_settled_tick: 0,
+        building_count: 1, production_rate: rate, output_amount_left: 0, last_settled_at: 0,
     };
     let mut balance = 0_u128;
     let mut weight = Weight { capacity: core::num::traits::Bounded::MAX, weight: 0 };
@@ -310,17 +325,13 @@ fn whole_ticks_pay_exactly_however_often_production_settles() {
     for _ in 0..10000_u32 {
         seed = (seed * 6364136223846793005 + 1442695040888963407) % 0x10000000000000000;
         now += (seed % 300).try_into().unwrap();
-        crate::resources::settle(
-            crate::resources::WHEAT, ref balance, ref production, ref weight, 1, None, now / tick_seconds, tick_seconds,
-        );
-        // Every ended tick is paid in full, and nothing of the tick in progress is paid early.
-        let ended: u128 = (now / tick_seconds).into();
-        assert_eq!(balance, ended * Into::<u64, u128>::into(rate) * Into::<u32, u128>::into(tick_seconds));
+        crate::resources::settle(crate::resources::WHEAT, ref balance, ref production, ref weight, 1, None, now);
+        assert_eq!(balance, Into::<u32, u128>::into(now) * Into::<u64, u128>::into(rate));
     }
 }
 
 #[test]
-fn frontier_rates_pay_exactly_for_ten_thousand_ticks_at_every_output_tier() {
+fn frontier_rates_keep_the_same_total_at_every_output_tier() {
     for (resource, rate, base_cents) in array![
         (crate::resources::WHEAT, 84_000_000_u64, 1008_u128), (crate::resources::LABOR, 56_000_000, 672),
         (26, 28_000_000, 336), (crate::resources::LABOR, 28_000_000, 336),
@@ -331,11 +342,11 @@ fn frontier_rates_pay_exactly_for_ten_thousand_ticks_at_every_output_tier() {
                 building_count: 1,
                 production_rate: tier_rate.try_into().unwrap(),
                 output_amount_left: crate::resources::UNLIMITED_OUTPUT,
-                last_settled_tick: 0,
+                last_settled_at: 0,
             };
             let mut balance = 0;
             let mut weight = Weight { capacity: core::num::traits::Bounded::MAX, weight: 0 };
-            crate::resources::settle(resource, ref balance, ref production, ref weight, 0, None, 10000, 120);
+            crate::resources::settle(resource, ref balance, ref production, ref weight, 0, None, 10000 * 120);
             let cents = base_cents * (4 + picks) / 4;
             assert_eq!(balance, cents * crate::rules::RESOURCE_PRECISION / 100 * 10000);
         }

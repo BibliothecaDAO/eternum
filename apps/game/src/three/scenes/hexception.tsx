@@ -1188,13 +1188,13 @@ export default class HexceptionScene extends HexagonScene {
     this.moveCameraToColRow(BUILDINGS_CENTER[0], BUILDINGS_CENTER[1], 0);
   }
 
+  // Every structure answers its own stage: one left unanswered would keep the last board's, and its rings.
   updateCastleLevel() {
     const structureType = this.tileManager.structureType();
-    if (structureType === StructureType.Realm || structureType === StructureType.Village) {
-      this.structureStage = this.tileManager.getRealmLevel(this.state.structureEntityId);
-    } else if (structureType === StructureType.Hyperstructure) {
-      this.structureStage = getStructureStage(structureType, useUIStore.getState().structureEntityId, this.game.store);
-    }
+    this.structureStage =
+      structureType === StructureType.Hyperstructure
+        ? getStructureStage(structureType, useUIStore.getState().structureEntityId, this.game.store)
+        : this.tileManager.getRealmLevel(this.state.structureEntityId);
   }
 
   private handleBuildingUpdate(update: BuildingSystemUpdate, realmGeneration: number): void {

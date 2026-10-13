@@ -878,7 +878,7 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
   const day = currentDay(player);
   const stamina = rules.troop_stamina_config;
   for (const army of activeArmies(client, player)) {
-    const amount = game.explorerStamina(safeInteger(army.explorer_id), game.currentTicks().armies);
+    const amount = game.explorerStamina(safeInteger(army.explorer_id), game.currentTicks().default);
     const upgrade = affordableUpgrade(client, safeInteger(army.explorer_id));
     if (upgrade)
       return command(client, player, {
@@ -989,7 +989,7 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
       safeInteger(army.explorer_id),
     );
     const ticks = game.currentTicks();
-    if (frontier && armyActions.canExplore(ticks.default, ticks.armies)) {
+    if (frontier && armyActions.canExplore(ticks.default)) {
       const explore = {
         ...command(client, player, {
           kind: "Explore",
@@ -1004,7 +1004,7 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
       };
       return explore;
     }
-    if (!frontier && armyActions.maxTravelSteps(ticks.default, ticks.armies) >= 1) {
+    if (!frontier && armyActions.maxTravelSteps(ticks.default) >= 1) {
       const direction = pathToUnexplored(client, army);
       if (direction !== undefined) {
         const move = {

@@ -96,7 +96,7 @@ pub mod TroopFixture {
                         category: TroopType::Knight,
                         tier: TroopTier::T1,
                         count: command.amount,
-                        stamina: Stamina { amount: 0, updated_tick: 0 }.into(),
+                        stamina: Stamina { amount: 0, settled_at: 0, remainder: 0 }.into(),
                         boosts: Default::default(),
                         battle_cooldown_end: 0,
                     },

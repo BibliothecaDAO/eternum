@@ -1,7 +1,7 @@
 import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { useCoarseCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceChip } from "@/ui/features/economy/resources";
 
 import { configManager, getRealmInfo, getStructureRelicEffects } from "@bibliothecadao/eternum";
@@ -25,7 +25,7 @@ export const BuildingsList = ({
   producedResources: ResourcesIds[];
   productionBuildings: Building[];
 }) => {
-  const currentDefaultTick = useCoarseCurrentDefaultTick();
+  const currentDefaultTick = useCurrentDefaultTick();
   const { setup } = useGame();
 
   const resourceManager = useResourceManager(realm.entityId);

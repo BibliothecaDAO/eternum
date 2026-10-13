@@ -82,6 +82,9 @@ def validate_configuration(config, allowed_cpus):
 
 
 def validate_runtime_configuration(config):
+    block_time = config.get("block_time", "2s")
+    if not isinstance(block_time, str) or not re.fullmatch(r"[1-9][0-9]*s", block_time):
+        raise ValueError("block_time must be a positive whole number of seconds")
     if type(config.get("vrf_workers")) is not int or not 1 <= config["vrf_workers"] <= 64:
         raise ValueError("vrf_workers must be explicit 1..64")
     bound = config.get("l2_gas_bound")
@@ -136,6 +139,7 @@ def identity_url(config):
 def compose_configuration(config, directory):
     environment = {
         **os.environ, "SHARD_NAME": f"athanor-{config['shard']}", "CHAIN_ID": config["chain_id"],
+        "BLOCK_TIME": config.get("block_time", "2s"),
         "SHARD_DATA": str(directory), "SHARD_INIT_IMAGE": config["init_image"],
         "SHARD_METRICS_IMAGE": config["metrics_image"],
         "SHARD_HERALD_IMAGE": config["herald_image"],
@@ -312,10 +316,11 @@ def initialize_shard_identity(config, directory, deployer_address):
         "chainId": chain_id, **identity, "l2GasBound": bound, "vrfPublicKey": host["vrfPublicKey"],
     }})
     template = (ROOT / config["chain_config"]).read_text()
-    # Identity belongs to the initialized shard, not to a benchmark template.
-    template = re.sub(r"^(chain_id|sequencer_address):.*\n?", "", template, flags=re.MULTILINE)
+    # The initialized shard owns identity and cadence; the template is shared by environments.
+    template = re.sub(r"^(chain_id|sequencer_address|block_time):.*\n?", "", template, flags=re.MULTILINE)
     (directory / "chain-config.yaml").write_text(
-        template + f'\nchain_id: "{config["chain_id"]}"\nsequencer_address: "{deployer_address}"\n'
+        template + f'\nblock_time: "{config.get("block_time", "2s")}"\n'
+        + f'chain_id: "{config["chain_id"]}"\nsequencer_address: "{deployer_address}"\n'
     )
 
 

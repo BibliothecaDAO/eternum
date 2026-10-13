@@ -1,9 +1,5 @@
 import { knownBalance } from "@/ui/utils/utils";
-import {
-  useCurrentArmiesTick,
-  useCurrentBlockTimestamp,
-  useCurrentDefaultTick,
-} from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import {
@@ -101,7 +97,6 @@ export const useArmyCreation = ({
   const [troopCount, setTroopCount] = useState(0);
   const [guardSlot, setGuardSlot] = useState(initialGuardSlot ?? 0);
   const [armyType, setArmyType] = useState(isExplorer);
-  const currentArmiesTick = useCurrentArmiesTick();
   const currentDefaultTick = useCurrentDefaultTick();
   const currentBlockTimestamp = useCurrentBlockTimestamp();
 
@@ -234,7 +229,7 @@ export const useArmyCreation = ({
       const count = troops && troops.count !== undefined ? divideByPrecision(Number(troops.count)) : undefined;
       const category = troops?.category as TroopType | undefined;
       const tier = troops?.tier as TroopTier | undefined;
-      const staminaSnapshot = getGuardStaminaSnapshot(troops, currentArmiesTick);
+      const staminaSnapshot = getGuardStaminaSnapshot(troops, currentDefaultTick);
       const staminaCurrent = staminaSnapshot?.current;
       const staminaMax = staminaSnapshot?.max;
 
@@ -253,7 +248,7 @@ export const useArmyCreation = ({
       });
     });
     return map;
-  }, [guardsData, availableGuardSlotSet, currentArmiesTick, currentBlockTimestamp]);
+  }, [guardsData, availableGuardSlotSet, currentDefaultTick, currentBlockTimestamp]);
 
   const selectedGuard = guardsBySlot.get(guardSlot);
   const selectedGuardCountValue = Number(selectedGuard?.troops?.count ?? 0);

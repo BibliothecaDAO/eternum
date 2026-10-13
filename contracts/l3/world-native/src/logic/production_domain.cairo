@@ -97,7 +97,7 @@ pub mod ProductionLogic {
             let rules = game_context.rules.unbox();
             let mut bonus = self.production.bonus(key);
             crate::relics::boost_production(
-                ref bonus, relic_id, rule, (timestamp / rules.tick_config.armies_tick_in_seconds).try_into().unwrap(),
+                ref bonus, relic_id, rule, timestamp, rules.tick_config.armies_tick_in_seconds,
             );
             self.production.data.production.bonuses.write((key.game_id, key.entity_id), bonus);
             let mut values = array![];
@@ -225,10 +225,7 @@ pub mod ProductionLogic {
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
         ) {
-            let tick: u32 = (timestamp / game_context.rules.unbox().tick_config.armies_tick_in_seconds)
-                .try_into()
-                .unwrap();
-            let output = crate::production::bonus_output(self.production.bonus(key), resource_type, output, tick);
+            let output = crate::production::bonus_output(self.production.bonus(key), resource_type, output, timestamp);
             self
                 .resources
                 .refill_production(

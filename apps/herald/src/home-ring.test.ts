@@ -274,7 +274,7 @@ describe("home ring", () => {
         expect(positions.map((row) => row.col)).toEqual([53]);
         expect(facts.require("ResourceBalance", { game_id: 1, entity_id: 1, resource_type: 23 }).balance).toBe(5n);
         expect(facts.require("ExplorerTroops", { game_id: 1, explorer_id: 20 }).troops.stamina).toEqual({
-          Inline: { amount: 10n, updated_tick: 1n },
+          Inline: { amount: 10n, settled_at: 1, remainder: 0 },
         });
         expect(facts.subscriptionScope().unknown).toBeUndefined();
       };
@@ -610,7 +610,7 @@ describe("client and Herald subscription scope parity", () => {
           rowEvent("ArmySlot", ["1", "1", String(TODAY.index), "0"], {
             epoch: TODAY.index,
             explorer_id: 20,
-            stamina: { amount: 30, updated_tick: 1 },
+            stamina: { amount: 30, settled_at: 1, remainder: 0 },
           }),
           rowEvent("ExplorerTroops", ["1", "20"], {
             ...army,

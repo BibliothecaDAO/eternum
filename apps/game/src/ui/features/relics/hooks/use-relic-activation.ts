@@ -1,3 +1,5 @@
+import { configManager, formatTime } from "@bibliothecadao/eternum";
+import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { useMemo } from "react";
 
 import { knownBalance } from "@/ui/utils/utils";
@@ -47,7 +49,20 @@ const getEssenceCostForRelic = (relicInfo: RelicInfoResult): number => {
 };
 
 export const useRelicMetadata = (relicId: ID) => {
-  const relicInfo = useMemo(() => getRelicInfo(relicId as ResourcesIds), [relicId]);
+  const keys = { game_id: configManager.getActiveGameId() };
+  const rules = useNativeRow("RelicRules", keys);
+  const preset = useNativeRow("SliceRules", keys);
+  const relicInfo = useMemo(() => {
+    const info = getRelicInfo(relicId as ResourcesIds);
+    if (!info || !rules || !preset) return undefined;
+    const rule = rules.rules[Number(relicId) - 39];
+    if (!rule) throw new Error(`Missing relic rule ${relicId}`);
+    const ticks = info.type === "Stamina" ? rule.uses : rule.duration;
+    return {
+      ...info,
+      duration: ticks ? formatTime(ticks * Number(preset.tick_config.armies_tick_in_seconds)) : undefined,
+    };
+  }, [relicId, rules, preset]);
   const resourceName = useMemo(() => findResourceById(relicId)?.trait ?? "Unknown Relic", [relicId]);
   const resourceKey = useMemo(() => resolveRelicResourceKey(relicId), [relicId]);
   const essenceCost = useMemo(() => getEssenceCostForRelic(relicInfo), [relicInfo]);

@@ -59,9 +59,10 @@ pub fn resolve(key: ExplorerKey, mut explorer: ExplorerTroops, timestamp: Option
                     ref explorer.troops.boosts,
                     maximum,
                     rules.troop_stamina_config,
-                    timestamp / rules.tick_config.armies_tick_in_seconds,
+                    rules.tick_config.armies_tick_in_seconds,
+                    timestamp,
                 );
-            stamina.amount = core::cmp::min(stamina.amount, maximum);
+            stamina.clamp(maximum);
         }
         explorer.troops.stamina = StaminaSource::Inline(stamina);
     }
@@ -75,10 +76,11 @@ pub fn allocate(
         let slot_key = ArmySlotKey { game_id: key.game_id, structure_id: home, epoch, slot };
         let value = read(slot_key);
         if value.is_none() || value.unwrap().explorer_id == 0 {
-            let stamina = match value {
-                Some(value) => Stamina { amount: core::cmp::min(value.stamina.amount, maximum), ..value.stamina },
+            let mut stamina = match value {
+                Some(value) => value.stamina,
                 None => initial,
             };
+            stamina.clamp(maximum);
             write(slot_key, ArmySlot { explorer_id: key.explorer_id, stamina });
             return StaminaSource::Slot(slot);
         }

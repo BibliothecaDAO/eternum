@@ -83,7 +83,7 @@ export const TransferTroopsContainer = ({
       },
     },
   } = useGame();
-  const { currentBlockTimestamp, currentDefaultTick, currentArmiesTick } = useBlockTimestamp();
+  const { currentBlockTimestamp, currentDefaultTick } = useBlockTimestamp();
 
   const [loading, setLoading] = useState(false);
   const [troopAmount, setTroopAmount] = useState<number>(0);
@@ -286,7 +286,7 @@ export const TransferTroopsContainer = ({
     return guards.map((guard) => {
       const troopCategory = guard.troops.category as TroopType;
       const troopTier = guard.troops.tier as TroopTier;
-      const staminaSnapshot = getGuardStaminaSnapshot(guard.troops, currentArmiesTick);
+      const staminaSnapshot = getGuardStaminaSnapshot(guard.troops, currentDefaultTick);
 
       return {
         ...guard,
@@ -301,7 +301,7 @@ export const TransferTroopsContainer = ({
         },
       };
     });
-  }, [store, guardRevision, targetStructure, targetGuardSlotSet, currentArmiesTick, currentBlockTimestamp]);
+  }, [store, guardRevision, targetStructure, targetGuardSlotSet, currentDefaultTick, currentBlockTimestamp]);
 
   // list of guards
   const selectedGuards = useMemo(() => {
@@ -312,7 +312,7 @@ export const TransferTroopsContainer = ({
     return guards.map((guard) => {
       const troopCategory = guard.troops.category as TroopType;
       const troopTier = guard.troops.tier as TroopTier;
-      const staminaSnapshot = getGuardStaminaSnapshot(guard.troops, currentArmiesTick);
+      const staminaSnapshot = getGuardStaminaSnapshot(guard.troops, currentDefaultTick);
 
       return {
         ...guard,
@@ -327,7 +327,7 @@ export const TransferTroopsContainer = ({
         },
       };
     });
-  }, [store, guardRevision, selectedStructure, selectedGuardSlotSet, currentArmiesTick, currentBlockTimestamp]);
+  }, [store, guardRevision, selectedStructure, selectedGuardSlotSet, currentDefaultTick, currentBlockTimestamp]);
 
   const selectedTroop = useMemo(() => {
     if (transferDirection === TransferDirection.StructureToExplorer) {

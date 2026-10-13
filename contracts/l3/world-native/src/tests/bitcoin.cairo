@@ -487,7 +487,7 @@ fn attacking_explorer(deployment: super::Deployment, home: ResourceKey, x: u32) 
         troops: crate::troops::Troops {
             count: 3000 * crate::rules::RESOURCE_PRECISION,
             tier: crate::troops::TroopTier::T3,
-            stamina: crate::troops::Stamina { amount: 120, updated_tick: 0 }.into(),
+            stamina: crate::troops::Stamina { amount: 120, settled_at: 0, remainder: 0 }.into(),
             ..Default::default(),
         },
     };

@@ -1,5 +1,5 @@
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { Factory, FlaskConical, Sparkles } from "@/ui/design-system/atoms/game-icons";
-import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -11,22 +11,15 @@ import { HUD_CUE, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { currencyFormat, currencyIntlFormat } from "@/ui/utils/utils";
 import {
+  bonusActive,
   configManager,
   divideByPrecision,
   formatTime,
   isRelic as isResourceRelic,
-  relicsArmiesTicksLeft,
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
-import {
-  ID,
-  RelicEffectWithEndTick,
-  RelicRecipientType,
-  ResourcesIds,
-  StructureType,
-  TickIds,
-} from "@bibliothecadao/types";
+import { ID, RelicEffect, RelicRecipientType, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useCallback, useMemo } from "react";
 
 export const ResourceChip = ({
@@ -41,9 +34,6 @@ export const ResourceChip = ({
   canOpenProduction = false,
   disableButtons = false,
   onManageProduction,
-  currentDefaultTick: currentDefaultTickProp,
-  currentArmiesTick: currentArmiesTickProp,
-  armiesTickTimeRemaining: armiesTickTimeRemainingProp,
 }: {
   resourceId: ID;
   resourceManager: ResourceManager;
@@ -52,13 +42,10 @@ export const ResourceChip = ({
   showTransfer?: boolean;
   storageCapacity?: number;
   storageCapacityUsed?: number;
-  activeRelicEffects: RelicEffectWithEndTick[];
+  activeRelicEffects: RelicEffect[];
   canOpenProduction?: boolean;
   disableButtons?: boolean;
   onManageProduction?: (resourceId: ResourcesIds) => void;
-  currentDefaultTick?: number;
-  currentArmiesTick?: number;
-  armiesTickTimeRemaining?: number;
 }) => {
   const setTooltip = useTooltipStore((state) => state.setTooltip);
   const openSurface = usePopoverStore((state) => state.openSurface);
@@ -69,20 +56,13 @@ export const ResourceChip = ({
     entity_id: resourceManager.entityId,
   });
 
-  const storeDefaultTick = useBlockTimestampStore((state) => state.currentDefaultTick);
-  const storeArmiesTick = useBlockTimestampStore((state) => state.currentArmiesTick);
-  const storeArmiesTickTimeRemaining = useBlockTimestampStore((state) => state.armiesTickTimeRemaining);
-
-  const currentDefaultTick = currentDefaultTickProp ?? storeDefaultTick;
-  const currentArmiesTick = currentArmiesTickProp ?? storeArmiesTick;
-  const armiesTickTimeRemaining = armiesTickTimeRemainingProp ?? storeArmiesTickTimeRemaining;
-  const currentTick = currentDefaultTick;
+  const now = useCurrentDefaultTick();
   const resourceEnumId = resourceId as ResourcesIds;
 
   // Undefined when this client holds no resource owner for the structure: the chip then shows nothing.
   const production = useMemo(
-    () => resourceManager.balanceWithProduction(currentTick, resourceEnumId),
-    [resourceManager, currentTick, resourceEnumId, revision],
+    () => resourceManager.balanceWithProduction(now, resourceEnumId),
+    [resourceManager, now, resourceEnumId, revision],
   );
   const balance = production?.balance;
   const productionInfo = useMemo(
@@ -93,15 +73,15 @@ export const ResourceChip = ({
   const productionData = useMemo(() => {
     if (!productionInfo) return null;
 
-    return ResourceManager.calculateResourceProductionData(resourceEnumId, productionInfo, currentTick);
-  }, [productionInfo, resourceEnumId, currentTick]);
+    return ResourceManager.calculateResourceProductionData(resourceEnumId, productionInfo, now);
+  }, [productionInfo, resourceEnumId, now]);
 
   const productionRate = productionData?.productionPerSecond ?? 0;
   const isProducing = productionData?.isProducing ?? false;
 
   const timeUntilValueReached = useMemo(() => {
-    return resourceManager.timeUntilValueReached(currentTick, resourceId);
-  }, [resourceManager, currentTick]);
+    return resourceManager.timeUntilValueReached(now, resourceId);
+  }, [resourceManager, now]);
 
   const icon = useMemo(() => {
     return <ResourceIcon withTooltip={false} resource={ResourcesIds[resourceId]} size="sm" className="self-center" />;
@@ -153,31 +133,16 @@ export const ResourceChip = ({
 
   // todo: check relic effect active
   const relicEffectActivated = useMemo(() => {
-    return activeRelicEffects.some(
-      (relicEffect) => relicEffect.id === resourceId && relicEffect.endTick > currentArmiesTick,
-    );
-  }, [resourceManager, resourceId, currentArmiesTick]);
+    return activeRelicEffects.some((effect) => effect.id === resourceId && bonusActive(effect.endAt, now));
+  }, [activeRelicEffects, resourceId, now]);
 
   // Calculate time remaining for active relic with real-time countdown
   const relicTimeRemaining = useMemo(() => {
     if (!isRelic || !relicEffectActivated) return 0;
 
-    // Get the relic effect data to access end_tick
-    const relicEffect = activeRelicEffects.find((relicEffect) => relicEffect.id === resourceId);
-    if (!relicEffect) return 0;
-
-    // Calculate remaining ticks until effect ends
-    const remainingTicks = relicsArmiesTicksLeft(relicEffect.endTick, currentArmiesTick);
-
-    // Get tick interval for armies (relics use army ticks)
-    const armyTickInterval = configManager.getTick(TickIds.Armies) || 1;
-
-    // Calculate total remaining time: (full remaining ticks * tick duration) + time left in current tick
-    // Only add current tick time remaining if there are remaining ticks
-    const remainingSeconds = remainingTicks > 0 ? remainingTicks * armyTickInterval + armiesTickTimeRemaining : 0;
-
-    return Math.max(0, remainingSeconds);
-  }, [isRelic, relicEffectActivated, resourceManager, resourceId, currentArmiesTick, armiesTickTimeRemaining]);
+    const relicEffect = activeRelicEffects.find((effect) => effect.id === resourceId);
+    return relicEffect ? Math.max(0, relicEffect.endAt - now) : 0;
+  }, [isRelic, relicEffectActivated, activeRelicEffects, resourceId, now]);
 
   // Check if we should hide this resource based on the balance and hideZeroBalance prop
   // Show relics with active effects even if balance is 0

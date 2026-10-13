@@ -157,7 +157,7 @@ fn explicit_burn_does_not_harvest_and_rejection_keeps_the_stream_moving() {
     let burn = ResourceBurn { entity_id: source.entity_id, resources: amount(1, 10) };
     assert!(execute(deployment, Command::BurnStructureResources(burn), 40));
     assert_eq!(resources.resource_balance(slot), 90);
-    assert_eq!(resources.resource_production(slot).last_settled_tick, 0);
+    assert_eq!(resources.resource_production(slot).last_settled_at, 30);
     let production = resources.resource_production(slot);
     assert!(
         !execute(deployment, Command::BurnStructureResources(ResourceBurn { resources: amount(1, 120), ..burn }), 45),
@@ -321,11 +321,11 @@ fn structure_transfer_harvests_but_rejects_all_nine_troop_resources() {
     let transfer = crate::resources::ResourceTransfer {
         from_entity_id: home.entity_id, to_entity_id: explorer.entity_id, resources: amount(1, 110),
     };
-    // By 70 the minute tick from 0 has ended and paid the producer's whole 100: 200 held, 110 sent.
+    // From 30 to 70 production pays 80: 180 held, 110 sent.
     assert!(execute(deployment, Command::TransferStructureResourcesToExplorer(transfer), 70));
     let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     assert_eq!(
-        resources.resource_balance(ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 1 }), 90,
+        resources.resource_balance(ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 1 }), 70,
     );
     assert_eq!(
         resources.resource_balance(ResourceSlot { game_id: 3, entity_id: explorer.entity_id, resource_type: 1 }), 100,

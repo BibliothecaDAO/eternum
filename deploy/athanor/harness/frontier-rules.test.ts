@@ -23,17 +23,16 @@ describe("Frontier rules at real speed", () => {
   });
 
   it("reads what an action took from the realm's balance and the farms' output up to the block that settled it", () => {
-    const farm = { building_count: 1, production_rate: 84_000_000n, output_amount_left: 0n, last_settled_tick: 50 };
-    const before = { balance: 1_000n * precision, production: farm, tickSeconds: 20 };
+    const farm = { building_count: 1, production_rate: 84_000_000n, output_amount_left: 0n, last_settled_at: 1000 };
+    const before = { balance: 1_000n * precision, production: farm };
     const after = {
       balance: 1_000n * precision + 60n * 84_000_000n - 900n * precision,
-      production: { ...farm, last_settled_tick: 53 },
-      tickSeconds: 20,
+      production: { ...farm, last_settled_at: 1060 },
     };
     expect(wheatCharged(before, after)).toBe(900n * precision);
     // An action that did not settle the realm's wheat says nothing about what it cost.
     expect(wheatCharged(before, { ...before })).toBeNull();
-    // Spending within the same tick still has a charge, with no intervening production.
+    // Spending within the same second still has a charge, with no intervening production.
     expect(wheatCharged(before, { ...before, balance: before.balance - 900n * precision })).toBe(900n * precision);
   });
 

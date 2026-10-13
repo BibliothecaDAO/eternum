@@ -181,9 +181,7 @@ const frontierArmy = (game: number, player: number, army: number, x: number) => 
     row("ArmySlot", [game, realm(game, player), seasonDay(expedition(), Math.floor(now / 1000))!, army], {
       explorer_id: String(entity),
       "stamina.amount": String(preset.definition.rules.troop_stamina_config.stamina_initial),
-      "stamina.updated_tick": String(
-        Math.floor(now / 1000 / Number(preset.definition.rules.tick_config.armies_tick_in_seconds)),
-      ),
+      "stamina.settled_at": String(Math.floor(now / 1000)),
     }),
     ...place(game, entity, player * SPACING + x, 5, 15, false),
   ];

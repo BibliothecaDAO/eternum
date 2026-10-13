@@ -232,12 +232,11 @@ pub mod TroopsLogic {
 
             assert_playing(game_context.game.unbox(), timestamp);
             let rules = game_context.rules.unbox();
-            let tick = timestamp / rules.tick_config.armies_tick_in_seconds;
             match command.recipient {
                 crate::relics::Recipient::Explorer => self
-                    .boost_explorer(game_id, actor, command, rule, rules, tick, timestamp, game_context),
+                    .boost_explorer(game_id, actor, command, rule, rules, timestamp, game_context),
                 crate::relics::Recipient::StructureGuard => self
-                    .boost_guards(game_id, actor, command, rule, rules, tick),
+                    .boost_guards(game_id, actor, command, rule, rules, timestamp),
                 crate::relics::Recipient::StructureProduction => panic!("production relic requires resources domain"),
             }
         }
@@ -490,12 +489,7 @@ pub mod TroopsLogic {
                 );
             explorer.troops.count += command.amount;
             crate::troop_management::refill(ref explorer.troops, rules, timestamp);
-            explorer
-                .troops
-                .stamina
-                .revert_initial_amount(
-                    rules.troop_stamina_config, timestamp / rules.tick_config.armies_tick_in_seconds,
-                );
+            explorer.troops.stamina.revert_initial_amount(rules.troop_stamina_config, timestamp);
             crate::troop_management::assert_size(explorer.troops, home.base.level, rules);
             self
                 .resources_dispatcher(game_id)
@@ -679,7 +673,7 @@ pub mod TroopsLogic {
                 guard.troops.stamina.set_amount(0);
             }
             if reset_stamina {
-                guard.troops.stamina.revert_initial_amount(rules.troop_stamina_config, tick);
+                guard.troops.stamina.revert_initial_amount(rules.troop_stamina_config, timestamp);
             }
             guard.troops.count += amount;
             crate::troop_management::assert_size(guard.troops, home.base.level, rules);
@@ -810,7 +804,8 @@ pub mod TroopsLogic {
                 category,
                 tier,
                 rules.troop_stamina_config,
-                timestamp / rules.tick_config.armies_tick_in_seconds,
+                rules.tick_config.armies_tick_in_seconds,
+                timestamp,
             );
         troops
     }
@@ -962,7 +957,6 @@ pub mod troop_helpers {
             command: crate::relics::ApplyRelic,
             rule: crate::relics::RelicRule,
             rules: SliceRules,
-            tick: u64,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
         ) {
@@ -977,9 +971,12 @@ pub mod troop_helpers {
                     explorer.troops.category,
                     explorer.troops.tier,
                     rules.troop_stamina_config,
-                    tick,
+                    rules.tick_config.armies_tick_in_seconds,
+                    timestamp,
                 );
-            crate::relics::boost_explorer(ref explorer.troops.boosts, command.relic_id, rule, tick.try_into().unwrap());
+            crate::relics::boost_explorer(
+                ref explorer.troops.boosts, command.relic_id, rule, timestamp, rules.tick_config.armies_tick_in_seconds,
+            );
             if command.relic_id == 45 || command.relic_id == 46 {
                 crate::relics::IRelicMapDispatcherTrait::reveal_relic_ring(
                     crate::relics::IRelicMapLibraryDispatcher {
@@ -1000,7 +997,7 @@ pub mod troop_helpers {
             command: crate::relics::ApplyRelic,
             rule: crate::relics::RelicRule,
             rules: SliceRules,
-            tick: u64,
+            timestamp: u64,
         ) {
             crate::logic::troops::owned_structure(game_id, command.entity_id, actor);
             assert!(command.relic_id == 49 || command.relic_id == 50, "invalid guard relic");
@@ -1015,11 +1012,15 @@ pub mod troop_helpers {
                         guard.troops.category,
                         guard.troops.tier,
                         rules.troop_stamina_config,
-                        tick,
+                        rules.tick_config.armies_tick_in_seconds,
+                        timestamp,
                     );
                 guard.troops.boosts.decr_damage_gotten_percent_num = rule.rate_bps;
-                guard.troops.boosts.decr_damage_gotten_end_tick = TryInto::<u64, u32>::try_into(tick).unwrap()
-                    + rule.duration;
+                guard
+                    .troops
+                    .boosts
+                    .decr_damage_gotten_end_at =
+                        crate::relics::bonus_end_at(timestamp, rule.duration, rules.tick_config.armies_tick_in_seconds);
                 crate::logic::guards::GuardState::save(key, guard);
             }
         }

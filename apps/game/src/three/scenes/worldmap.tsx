@@ -1,3 +1,4 @@
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { isWithinWorldOriginReach, setWorldOrigin } from "../world-origin";
 import { followArmyLayerChange } from "./worldmap-layer-follow";
@@ -111,7 +112,7 @@ import {
   SelectableArmy,
 } from "@bibliothecadao/eternum";
 import { requireActiveGameClient } from "@/sync/active-game-client";
-import { inFlight, sendOnce } from "@/hooks/store/use-actions-in-flight";
+import { inFlight, onOutcome, sendOnce } from "@/hooks/store/use-actions-in-flight";
 import { type SentCommand, sentTransactionHash } from "@/sync/action-outcome";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import {
@@ -2215,6 +2216,18 @@ export default class WorldmapScene extends WarpTravel {
     return renderable ? { id: renderable.entityId, owner: this.getArmyOwnerAddress(renderable.entityId) } : undefined;
   }
 
+  /**
+   * The viewer's army whose order in flight takes it to this tile (a scene hex). It answers the viewer's own click
+   * there until the order's outcome; the army stands where the store has it for everything else.
+   */
+  private getOwnArmyOrderedTo(hexCoords: HexPosition): HexEntityInfo | undefined {
+    const ordered = this.selectableArmies.find(({ entityId }) => {
+      const to = inFlight("army", entityId)?.to;
+      return to?.col === hexCoords.col && to.row === hexCoords.row;
+    });
+    return ordered && { id: ordered.entityId, owner: this.getArmyOwnerAddress(ordered.entityId) };
+  }
+
   private resolveContractHexKey(hexCoords: HexPosition): string {
     const contract = Position.fromContract({ x: hexCoords.col, y: hexCoords.row }).getContract();
     return `${contract.x},${contract.y}`;
@@ -2619,9 +2632,12 @@ export default class WorldmapScene extends WarpTravel {
       return;
     if (hexCoords && this.answerTapWithSelectedArmyOrder(hexCoords)) return;
     const viewer = accountAddress();
-    const { army, structure, chest } = hexCoords
-      ? this.getHexagonEntity(hexCoords)
-      : { army: undefined, structure: undefined, chest: undefined };
+    const {
+      army: standingArmy,
+      structure,
+      chest,
+    } = hexCoords ? this.getHexagonEntity(hexCoords) : { army: undefined, structure: undefined, chest: undefined };
+    const army = standingArmy ?? (hexCoords ? this.getOwnArmyOrderedTo(hexCoords) : undefined);
     const clickPlan = resolveWorldmapHexClickPlan({
       hexCoords,
       accountAddress: viewer,
@@ -2837,7 +2853,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private onArmyMovement(actionPath: ActionPath[], selectedEntityId: ID) {
-    if (actionPath.length > 0 && this.isArmyMovementInputLocked(selectedEntityId)) {
+    if (actionPath.length > 0 && this.hasOrderInFlight(selectedEntityId)) {
       toast.info("This army's last order is still on its way");
       this.state.updateEntityActionHoveredHex(null);
       this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
@@ -2845,11 +2861,10 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const actionType = ActionPaths.getActionType(actionPath);
-    const currentArmiesTick = getBlockTimestamp().currentArmiesTick;
     const movementStamina = this.resolveMovementStaminaForAction({
       entityId: selectedEntityId,
       actionPath,
-      currentArmiesTick,
+      timestamp: getBlockTimestamp().currentDefaultTick,
     });
 
     if (actionPath.length > 0 && !movementStamina.canAfford) {
@@ -3014,20 +3029,21 @@ export default class WorldmapScene extends WarpTravel {
         const sent = requireActiveGameClient().actions.moveArmy({
           explorerId: selectedEntityId,
           path: actionPath,
-          currentArmiesTick,
         });
         this.recordMovementSubmission(sent, { entityId: selectedEntityId, actionType, exploreLatencyActionId });
         return sent;
       };
-      sendOnce("army", selectedEntityId, actionType === ActionType.Explore ? "explore" : "move", sendMovement).catch(
-        (error) => {
-          if (exploreLatencyActionId) recordClientActionFailed(exploreLatencyActionId, error);
-          this.pendingExploreLatencyActions.delete(selectedEntityId);
-          this.handlePendingArmyMovementFailure(selectedEntityId, cleanup);
-          console.error("Army movement failed:", error);
-          toast.error(extractReadableErrorMessage(error, "The order was not sent."));
-        },
-      );
+      const order = {
+        order: actionType === ActionType.Explore ? "explore" : "move",
+        to: sceneHexOf(targetHex),
+      } as const;
+      sendOnce("army", selectedEntityId, order, sendMovement).catch((error) => {
+        if (exploreLatencyActionId) recordClientActionFailed(exploreLatencyActionId, error);
+        this.pendingExploreLatencyActions.delete(selectedEntityId);
+        this.handlePendingArmyMovementFailure(selectedEntityId, cleanup);
+        console.error("Army movement failed:", error);
+        toast.error(extractReadableErrorMessage(error, "The order was not sent."));
+      });
 
       this.state.updateEntityActionHoveredHex(null);
       this.keepMovementDestinationSelected(targetHex);
@@ -3467,11 +3483,11 @@ export default class WorldmapScene extends WarpTravel {
   private resolveMovementStaminaForAction(input: {
     entityId: ID;
     actionPath: ActionPath[];
-    currentArmiesTick: number;
+    timestamp: number;
   }): MovementStaminaResolution {
     return resolveMovementStamina({
       actionPath: input.actionPath,
-      currentArmiesTick: input.currentArmiesTick,
+      timestamp: input.timestamp,
       liveTroops: this.resolveLiveExplorerTroopsForMovementStamina(input.entityId),
     });
   }
@@ -3504,7 +3520,7 @@ export default class WorldmapScene extends WarpTravel {
       staminaCost: input.movementStamina.staminaCost,
       currentStamina: input.movementStamina.currentStamina,
       source: input.movementStamina.source,
-      currentArmiesTick: input.movementStamina.currentArmiesTick,
+      timestamp: input.movementStamina.timestamp,
       ...input.movementStamina.diagnostics,
     });
   }
@@ -3531,18 +3547,22 @@ export default class WorldmapScene extends WarpTravel {
     return true;
   }
 
-  /** No order for an army whose last one has no outcome yet, or whose move is still being played on the map. */
-  private isArmyMovementInputLocked(entityId: ID): boolean {
-    return inFlight("army", entityId) !== undefined || this.pendingArmyMovementVisualLifecycleDisposers.has(entityId);
+  /** One order at a time: an army takes no order until its last one has its outcome. Its walk never holds it. */
+  private hasOrderInFlight(entityId: ID): boolean {
+    return inFlight("army", entityId) !== undefined;
   }
 
-  private isArmyMovementActionUnavailable(entityId: ID): boolean {
-    return this.isArmyMovementInputLocked(entityId);
+  /** An order's outcome frees its army: a selected one is offered its next orders from where the store now has it. */
+  private offerOrdersAtOutcome(entityId: ID): void {
+    if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
+    const viewer = accountAddress();
+    if (viewer === null || getLiveWorldmapEntityActions().selectedEntityId !== entityId) return;
+    this.offerSelectedArmyOrders(entityId, viewer);
   }
 
   private hasEligibleArmyForTabCycle(): boolean {
     return this.selectableArmies.some(
-      (army) => !this.isArmyMovementInputLocked(army.entityId) && this.canArmyAct(army.entityId),
+      (army) => !this.hasOrderInFlight(army.entityId) && this.canArmyAct(army.entityId),
     );
   }
 
@@ -3562,7 +3582,6 @@ export default class WorldmapScene extends WarpTravel {
           } else {
             const shouldQueueRecovery = shouldQueueArmySelectionRecovery({
               deferDuringChunkTransition,
-              hasPendingMovement: this.isArmyMovementInputLocked(selectedEntityId),
               isChunkTransitioning: this.isChunkTransitioning,
               armyPresentInManager: false,
               recoveryInFlight: this.armySelectionRecoveryInFlight.has(selectedEntityId),
@@ -3593,7 +3612,6 @@ export default class WorldmapScene extends WarpTravel {
       if (
         shouldQueueArmySelectionRecovery({
           deferDuringChunkTransition,
-          hasPendingMovement: this.isArmyMovementInputLocked(selectedEntityId),
           isChunkTransitioning: this.isChunkTransitioning,
           armyPresentInManager: false,
           recoveryInFlight: this.armySelectionRecoveryInFlight.has(selectedEntityId),
@@ -3611,15 +3629,22 @@ export default class WorldmapScene extends WarpTravel {
 
     this.state.updateEntityActionSelectedEntityId(selectedEntityId);
     playUnitCommandSound("select");
+    this.offerSelectedArmyOrders(selectedEntityId, playerAddress);
+    return true;
+  }
 
-    if (this.isArmyMovementActionUnavailable(selectedEntityId)) {
+  /**
+   * The selected army's orders, from where the store has it. While its last order is in flight it has none: they are
+   * offered again at that order's outcome (offerOrdersAtOutcome), with no second click.
+   */
+  private offerSelectedArmyOrders(selectedEntityId: ID, playerAddress: ContractAddress): void {
+    this.showSelectedArmyTile(selectedEntityId);
+    if (this.hasOrderInFlight(selectedEntityId)) {
       this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
-      this.showSelectedArmyTile(selectedEntityId);
-      return true;
+      return;
     }
 
-    const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
-    const armyPosition = this.getArmyDisplayPosition(selectedEntityId);
+    const { currentDefaultTick } = getBlockTimestamp();
     // Paths and the submission freshness guard read the same canonical occupancy.
     const occupancy = this.game.store.entityOccupancy(configManager.getActiveGameId(), selectedEntityId);
     if (!occupancy) {
@@ -3627,8 +3652,7 @@ export default class WorldmapScene extends WarpTravel {
         console.error(`[Worldmap] Army ${selectedEntityId} has no TileOccupancy; suppressing action paths`);
       }
       this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
-      this.showSelectedArmyTile(selectedEntityId);
-      return true;
+      return;
     }
 
     const actionPaths = requireActiveGameClient().actions.armyPaths({
@@ -3638,7 +3662,6 @@ export default class WorldmapScene extends WarpTravel {
       exploredHexes: this.buildProjectedExploredTileIndex(),
       chestHexes: this.buildProjectedChestActionIndex(),
       currentDefaultTick,
-      currentArmiesTick,
       playerAddress,
     });
 
@@ -3647,10 +3670,7 @@ export default class WorldmapScene extends WarpTravel {
 
     this.updateEntityActionPaths(paths);
     this.highlightHexManager.highlightHexes(highlightedHexes);
-
-    this.showSelectedArmyTile(selectedEntityId);
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
-    return true;
   }
 
   private buildProjectedChestActionIndex(): Map<number, Map<number, HexEntityInfo>> {
@@ -3752,7 +3772,6 @@ export default class WorldmapScene extends WarpTravel {
             });
           },
           isArmyAvailable: () => this.armyManager.hasArmy(selectedEntityId),
-          isArmyPendingMovement: () => this.isArmyMovementInputLocked(selectedEntityId),
           onRecovered: () => {
             this.onArmySelection(selectedEntityId, playerAddress, { deferDuringChunkTransition: false });
           },
@@ -8203,10 +8222,8 @@ export default class WorldmapScene extends WarpTravel {
       while (attempts < this.selectableArmies.length) {
         this.armyIndex = (this.armyIndex + 1) % this.selectableArmies.length;
         const army = this.selectableArmies[this.armyIndex];
-        const hasMovementInputLock = this.isArmyMovementInputLocked(army.entityId);
-
-        // Skip armies whose previous movement is still pending in this scene.
-        if (hasMovementInputLock) {
+        // Skip armies whose last order has no outcome yet.
+        if (this.hasOrderInFlight(army.entityId)) {
           attempts++;
           continue;
         }
@@ -8232,7 +8249,7 @@ export default class WorldmapScene extends WarpTravel {
         // which would cause the camera to flicker between positions.
         break;
       }
-      // If all armies have pending movements, do nothing
+      // If no army can take an order, do nothing
     });
   }
 
@@ -8542,6 +8559,20 @@ export default class WorldmapScene extends WarpTravel {
       },
     });
     this.storeSubscriptions.push(
+      useChainTimeStore.subscribe((next, previous) => {
+        if (
+          next.executionFloorMs === previous.executionFloorMs ||
+          this.isSwitchedOff ||
+          this.isChunkTransitioning ||
+          useUIStore.getState().isSpectating
+        )
+          return;
+        const { selectedEntityId } = getLiveWorldmapEntityActions();
+        if (selectedEntityId == null || !this.armyManager.hasArmy(selectedEntityId)) return;
+        this.offerSelectedArmyOrders(selectedEntityId, this.getArmyOwnerAddress(selectedEntityId));
+      }),
+    );
+    this.storeSubscriptions.push(
       useUIStore.subscribe(
         (state) => state.suggestedArmyDeploymentStructureId,
         () => this.showSuggestedArmyDeployment(),
@@ -8565,6 +8596,7 @@ export default class WorldmapScene extends WarpTravel {
         () => this.syncMapLayer(),
       ),
     );
+    this.storeSubscriptions.push(onOutcome("army", (entityId) => this.offerOrdersAtOutcome(Number(entityId))));
     this.syncMapLayer();
     this.showSuggestedArmyDeployment();
     this.bindRouteOwnedRefreshLifecycle();

@@ -10,7 +10,6 @@ import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
 import {
-  describeNextStaminaGain,
   isStaminaRecharging,
   STAMINA_RECHARGING_FILL_CLASS,
   STAMINA_RECHARGING_TEXT_CLASS,
@@ -105,7 +104,6 @@ const ArmyBannerEntityDetailContent = memo(
       ? "border-emerald-400/40 bg-emerald-400/15 text-emerald-200"
       : "border-red-400/40 bg-red-400/15 text-red-200";
     const currentStamina = derivedData.staminaDisplay?.committedCurrent ?? Number(derivedData.stamina.amount);
-    const nextStaminaGain = derivedData.staminaDisplay ? describeNextStaminaGain(derivedData.staminaDisplay) : null;
     const maxStamina = derivedData.maxStamina;
     const travelBlocked = movementReadiness ? !movementReadiness.canTravel : false;
     const travelBlockedTitle = movementReadiness
@@ -197,9 +195,9 @@ const ArmyBannerEntityDetailContent = memo(
               {formatFoodBlock(movementReadiness.foodBlock, (amount) => formatNumber(amount, 0))}
             </p>
           ) : null}
-          {nextStaminaGain && derivedData.staminaDisplay ? (
+          {derivedData.staminaDisplay?.isRecharging && derivedData.staminaDisplay ? (
             <p className="text-[10px] text-gold/60">
-              {nextStaminaGain} · rested in {formatRestTime(derivedData.staminaDisplay.secondsUntilFull)}
+              Rested in {formatRestTime(derivedData.staminaDisplay.secondsUntilFull)}
             </p>
           ) : null}
           {showRelicsInline && (

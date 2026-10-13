@@ -11,7 +11,7 @@ export function useStaminaManager(entityId: ID | undefined): StaminaManager | un
   const {
     setup: { store },
   } = useGame();
-  const revision = useNativeRevision(["ExplorerTroops"]);
+  const revision = useNativeRevision(["ExplorerTroops", "ArmySlot", "ArmyProgress"]);
   return useMemo(
     () => (entityId === undefined ? undefined : readStaminaManager(store, entityId)),
     [store, entityId, revision],

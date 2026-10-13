@@ -35,6 +35,27 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "Armies answer right after an order",
+    description:
+      "Fixed the wait before an army you just ordered could be picked again: a click on the tile it is heading to selects it at once, and its next orders show as soon as the game has applied the last one, without waiting for its walk to end or a second click.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
+    title: "Relics last their full duration",
+    description:
+      "Timed relic bonuses now start when you apply them and last their full duration. Their remaining time follows confirmed blocks.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
+    title: "Production and stamina follow blocks",
+    description:
+      "Stores, barracks and armies earn each elapsed second at the same rates. Their figures advance with confirmed blocks, so what you see is available to spend.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
     title: "Blitz opens for its players",
     description:
       "Fixed the game view failing as a player entered a Blitz game: a realm's stores are read as not known yet for the moment your account's view of the world is being loaded, and the panels fill in as it arrives.",

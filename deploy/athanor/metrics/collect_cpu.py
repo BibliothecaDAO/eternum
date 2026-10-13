@@ -12,6 +12,8 @@ import time
 
 
 INTERVAL_SECONDS = 10
+# Twice the pinned node’s measured idle total-close p95 upper bound (3 ms).
+CLOSE_LIMIT_SECONDS = 0.006
 CGROUP_ROOT = Path('/host-cgroup')
 OUTPUT = Path('/data/container-metrics.jsonl')
 # The collector's own export rotates at 100 MB and keeps two older files (collector.json); these samples do the same,
@@ -124,13 +126,13 @@ class CloseAlarm:
             return None
         self.timestamp = timestamp
         self.last_seen = time.monotonic()
-        self.slow_samples = self.slow_samples + 1 if seconds > 0.020 else 0
-        active = self.slow_samples >= 3 if not self.active else seconds > 0.020
+        self.slow_samples = self.slow_samples + 1 if seconds > CLOSE_LIMIT_SECONDS else 0
+        active = self.slow_samples >= 3 if not self.active else seconds > CLOSE_LIMIT_SECONDS
         if active == self.active:
             return None
         self.active = active
         return {'event': 'node_close_slow' if active else 'node_close_recovered',
-                'timeUnixNano': str(timestamp), 'closeMs': seconds * 1000, 'limitMs': 20}
+                'timeUnixNano': str(timestamp), 'closeMs': seconds * 1000, 'limitMs': CLOSE_LIMIT_SECONDS * 1000}
 
 
 def close_samples(row):

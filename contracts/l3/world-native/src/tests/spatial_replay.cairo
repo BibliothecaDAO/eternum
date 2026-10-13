@@ -102,9 +102,13 @@ pub fn capture(
     Frame { events, rows: observe(address, game_id, entities, tiles) }
 }
 
-pub fn compare(name: ByteArray, frames: Array<Frame>) {
+pub fn compare(name: ByteArray, frames: Array<Frame>, record: bool) {
     let mut serialized = array![];
     frames.serialize(ref serialized);
+    if record {
+        println!("SPATIAL_REPLAY {} {:?}", name, serialized);
+        return;
+    }
     let expected = read_txt(@FileTrait::new(format!("src/tests/fixtures/spatial-replay/{}.txt", name)));
     assert_eq!(serialized, expected);
 }

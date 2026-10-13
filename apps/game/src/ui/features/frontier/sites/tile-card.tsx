@@ -1,6 +1,6 @@
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useGame } from "@/hooks/context/game-context";
-import { useCurrentArmiesTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
@@ -138,7 +138,7 @@ export const TileCard = ({ selected, onClose }: { selected: AttackTarget; onClos
   const realm = useFrontierRealm();
   const goToPlace = useGoToFrontierPlace(realm);
   const armyId = actor ? safeInteger(actor.army.explorer_id) : null;
-  const inFlight = useInFlight("army", armyId);
+  const inFlight = useInFlight("army", armyId)?.order;
   const refused = useFightRefusal(armyId, targetId(selected));
 
   const attackSite = async () => {
@@ -146,7 +146,7 @@ export const TileCard = ({ selected, onClose }: { selected: AttackTarget; onClos
     const signer = account.account;
     const sent = fightSentBy(attack.army, selected, plan);
     try {
-      const fought = await sendOnce("army", armyId, "attack", () => {
+      const fought = await sendOnce("army", armyId, { order: "attack" }, () => {
         fightIsSent();
         playUnitCommandSound("attack");
         return sendAttack(setup.systemCalls, signer, armyId, selected);
@@ -246,9 +246,8 @@ const useSiteAttack = (
   siteTile: TileSpatialRenderable,
   actor: ReturnType<typeof useSelectedOwnArmy>,
 ): SiteAttack | null => {
-  const timestamp = useNowSeconds();
-  const armiesTick = useCurrentArmiesTick();
-  return actor && { ...actor, biome: biomeTypeOf(siteTile.biome), timestamp, armiesTick };
+  const timestamp = useCurrentDefaultTick();
+  return actor && { ...actor, biome: biomeTypeOf(siteTile.biome), timestamp };
 };
 
 /** With no army selected, each of the realm's armies as a choice, with the fight it would have from where it stands. */
@@ -256,8 +255,7 @@ const useSiteChoices = (selected: AttackTarget, wanted: boolean): SiteChoice[] =
   const { setup } = useGame();
   const realm = useFrontierRealm();
   const armies = useDockArmies(realm);
-  const timestamp = useNowSeconds();
-  const armiesTick = useCurrentArmiesTick();
+  const timestamp = useCurrentDefaultTick();
   if (!wanted || !realm) return [];
   return armies.map((army: DockArmy) => {
     const troops = setup.store.get("ExplorerTroops", { game_id: realm.game_id, explorer_id: army.explorerId });
@@ -269,7 +267,6 @@ const useSiteChoices = (selected: AttackTarget, wanted: boolean): SiteChoice[] =
         armyTile: { col: position.x, row: position.y, alt: position.alt },
         biome: biomeTypeOf(selected.tile.biome),
         timestamp,
-        armiesTick,
       }).fight;
     return {
       label: army.label,

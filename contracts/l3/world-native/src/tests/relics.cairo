@@ -157,7 +157,7 @@ pub fn move_fixture(deployment: super::Deployment, key: ResourceKey, coord: Coor
     );
 }
 #[test]
-fn explorer_relics_charge_the_home_and_use_the_block_tick_for_each_effect() {
+fn explorer_relics_charge_the_home_with_second_based_effects() {
     let (deployment, home, explorer) = setup(false);
     for id in array![39_u8, 40, 41, 42, 43, 44, 47, 48] {
         let before = balance(deployment, home, 38);
@@ -170,45 +170,57 @@ fn explorer_relics_charge_the_home_and_use_the_block_tick_for_each_effect() {
             39 |
             40 => {
                 assert_eq!(boost.incr_stamina_regen_percent_num, rule.rate_bps);
-                assert_eq!(boost.incr_stamina_regen_tick_count, 3);
+                assert_eq!(boost.incr_stamina_regen_seconds_left, 30);
             },
             41 |
             42 => {
                 assert_eq!(boost.incr_damage_dealt_percent_num, rule.rate_bps);
-                assert_eq!(boost.incr_damage_dealt_end_tick, 7);
+                assert_eq!(boost.incr_damage_dealt_end_at, 70);
             },
             43 |
             44 => {
                 assert_eq!(boost.decr_damage_gotten_percent_num, rule.rate_bps);
-                assert_eq!(boost.decr_damage_gotten_end_tick, 7);
+                assert_eq!(boost.decr_damage_gotten_end_at, 70);
             },
             _ => {
                 assert_eq!(boost.incr_explore_reward_percent_num, rule.rate_bps);
-                assert_eq!(boost.incr_explore_reward_end_tick, 7);
+                assert_eq!(boost.incr_explore_reward_end_at, 70);
             },
         }
     }
 }
 #[test]
-fn production_relics_update_only_their_bonus_and_keep_inclusive_expiry() {
-    let (deployment, home, _) = setup(false);
-    let view = crate::production::IProductionRulesDispatcher { contract_address: deployment.games };
-    for id in 51_u8..57 {
-        assert!(execute(deployment, apply(home, id, Recipient::StructureProduction), 40));
-        let bonus = crate::production::IProductionRulesDispatcherTrait::production_bonus(view, home);
-        let resource = if id < 53 {
-            2
-        } else if id < 55 {
-            23
-        } else {
-            26
-        };
-        let rule = *rules().at((id - 39).into());
-        assert_eq!(
-            crate::production::bonus_output(bonus, resource, 10000, 7), 10000 + Into::<u16, u128>::into(rule.rate_bps),
-        );
-        assert_eq!(crate::production::bonus_output(bonus, resource, 10000, 8), 10000);
-        assert_eq!(balance(deployment, home, id), 2 * RESOURCE_PRECISION);
+fn production_relics_pay_their_full_window_and_reapplication_replaces_the_bonus() {
+    for (weak, strong, resource, first_output, replacement_output) in array![
+        (51_u8, 52_u8, 4_u8, 140_u128, 120_u128), (53, 54, 23, 120, 120), (55, 56, 26, 130, 115),
+    ] {
+        for replace in array![false, true] {
+            let (deployment, home, _) = setup(false);
+            grant(deployment, home, 2, 1000);
+            assert!(execute(deployment, apply(home, strong, Recipient::StructureProduction), 47));
+            let (end, output) = if replace {
+                assert!(execute(deployment, apply(home, weak, Recipient::StructureProduction), 52));
+                (82_u64, replacement_output)
+            } else {
+                (77_u64, first_output)
+            };
+            let refill = Command::BurnLaborForResourceProduction(
+                crate::production::RefillProduction {
+                    structure_id: home.entity_id,
+                    resource_types: array![resource].span(),
+                    amounts: array![1_u128].span(),
+                },
+            );
+            let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
+            let slot = ResourceSlot { game_id: home.game_id, entity_id: home.entity_id, resource_type: resource };
+            let stored_before = resources.resource_balance(slot);
+            assert!(execute(deployment, refill, end - 1));
+            assert_eq!(resources.resource_production(slot).output_amount_left, output);
+            assert!(execute(deployment, refill, end));
+            assert_eq!(resources.resource_production(slot).output_amount_left, output + 100);
+            assert_eq!(resources.resource_balance(slot), stored_before);
+            assert_eq!(balance(deployment, home, 2), 980);
+        }
     }
 }
 #[test]
@@ -220,13 +232,18 @@ fn guard_relics_apply_to_all_four_slots_and_preserve_destroyed_ticks() {
         deployment.games, selector!("guards"), selector!("guards"), array![3, home.entity_id.into(), 2].span(), guard,
     );
     for id in array![49_u8, 50] {
-        assert!(execute(deployment, apply(home, id, Recipient::StructureGuard), 40));
+        let applied_at = if id == 49 {
+            47
+        } else {
+            52
+        };
+        assert!(execute(deployment, apply(home, id, Recipient::StructureGuard), applied_at));
         for slot in 0_u8..4 {
             let value = crate::guards::IGuardsDispatcherTrait::guard(
                 crate::guards::IGuardsDispatcher { contract_address: deployment.games },
                 crate::guards::GuardKey { slot, ..key },
             );
-            assert_eq!(value.troops.boosts.decr_damage_gotten_end_tick, 7);
+            assert_eq!(value.troops.boosts.decr_damage_gotten_end_at, (applied_at + 30).try_into().unwrap());
             assert_eq!(value.troops.boosts.decr_damage_gotten_percent_num, if id == 49 {
                 1500
             } else {
@@ -514,10 +531,10 @@ fn extraction_applies_active_boost_once_and_routes_eternum_rewards_to_the_explor
     assert!(execute(deployment, apply(explorer, 48, Recipient::Explorer), 40));
     let before = balance(deployment, explorer, 2);
     let home_before = balance(deployment, home, 2);
-    assert!(extract_reward(deployment, explorer.entity_id, 70));
+    assert!(extract_reward(deployment, explorer.entity_id, 69));
     assert_eq!(balance(deployment, explorer, 2), before + 30 * RESOURCE_PRECISION);
     assert_eq!(balance(deployment, home, 2), home_before);
-    assert!(extract_reward(deployment, explorer.entity_id, 71));
+    assert!(extract_reward(deployment, explorer.entity_id, 70));
     assert_eq!(balance(deployment, explorer, 2), before + 30 * RESOURCE_PRECISION);
 }
 #[test]
@@ -525,7 +542,7 @@ fn extraction_after_bonus_expiry_routes_blitz_resources_to_home() {
     let (deployment, home, explorer) = setup(true);
     assert!(execute(deployment, apply(explorer, 48, Recipient::Explorer), 40));
     let before = balance(deployment, home, 2);
-    assert!(extract_reward(deployment, explorer.entity_id, 80));
+    assert!(extract_reward(deployment, explorer.entity_id, 70));
     assert_eq!(balance(deployment, home, 2), before + 10 * RESOURCE_PRECISION);
     assert_eq!(balance(deployment, explorer, 2), 0);
 }
@@ -692,4 +709,31 @@ fn opened_contents_with_launch_seed(seed: felt252) -> Array<u128> {
 #[test]
 fn different_launch_seeds_cannot_change_the_same_stamped_chest_draw() {
     assert_eq!(opened_contents_with_launch_seed(1), opened_contents_with_launch_seed(999));
+}
+
+#[test]
+fn exploration_relics_pay_the_full_window_and_replace_on_reapplication() {
+    for replace in array![false, true] {
+        for at_end in array![false, true] {
+            let (deployment, _, explorer) = setup(false);
+            assert!(execute(deployment, apply(explorer, 48, Recipient::Explorer), 47));
+            let (end, reward) = if replace {
+                assert!(execute(deployment, apply(explorer, 47, Recipient::Explorer), 52));
+                (82_u64, 20_u128)
+            } else {
+                (77_u64, 30_u128)
+            };
+            let now = if at_end {
+                end
+            } else {
+                end - 1
+            };
+            assert!(extract_reward(deployment, explorer.entity_id, now));
+            assert_eq!(balance(deployment, explorer, 2), (if at_end {
+                10
+            } else {
+                reward
+            }) * RESOURCE_PRECISION);
+        }
+    }
 }

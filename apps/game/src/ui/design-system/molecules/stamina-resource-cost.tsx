@@ -1,4 +1,4 @@
-import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { ActionPath, configManager } from "@bibliothecadao/eternum";
 import { ID } from "@bibliothecadao/types";
 import { useStaminaManager } from "@/hooks/helpers/use-stamina";
@@ -9,19 +9,19 @@ const StaminaResourceCost = ({
   selectedEntityId,
   isExplored,
   path,
-  currentArmiesTick: currentArmiesTickProp,
+  timestamp: timestampProp,
 }: {
   selectedEntityId: ID | undefined;
   isExplored: boolean;
   path: ActionPath[];
-  currentArmiesTick?: number;
+  timestamp?: number;
 }) => {
-  const storeArmiesTick = useBlockTimestampStore((state) => state.currentArmiesTick);
-  const currentArmiesTick = currentArmiesTickProp ?? storeArmiesTick;
+  const now = useCurrentDefaultTick();
+  const timestamp = timestampProp ?? now;
 
   const staminaManager = useStaminaManager(selectedEntityId);
 
-  const stamina = useMemo(() => staminaManager?.getStamina(currentArmiesTick), [currentArmiesTick, staminaManager]);
+  const stamina = useMemo(() => staminaManager?.getStamina(timestamp), [timestamp, staminaManager]);
 
   const pathInfo = useMemo(() => {
     if (!stamina) return;

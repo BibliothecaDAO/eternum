@@ -1,6 +1,6 @@
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
 import {
@@ -26,7 +26,7 @@ interface UseArmyEntityDetailOptions {
 }
 
 interface DerivedArmyData {
-  stamina: { amount: bigint; updated_tick: bigint };
+  stamina: { amount: bigint };
   maxStamina: number;
   staminaDisplay: ArmyStaminaPresentation | null;
   playerGuild?: { name: string } | undefined;
@@ -50,7 +50,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   } = useGame();
   const mode = useGameModeConfig();
 
-  const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
+  const timestamp = useCurrentDefaultTick();
   const userAddress = useAccountAddress();
   const [isLoadingDelete, setIsLoadingDelete] = useState(false);
   const explorer = useNativeRow("ExplorerTroops", {
@@ -69,15 +69,15 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
 
   const staminaSnapshot = useMemo(() => {
     return getExplorerStaminaSnapshot({
-      currentArmiesTick,
+      timestamp,
       liveTroops: explorer ? resolveExplorerTroops(store, explorer) : undefined,
     });
-  }, [armyEntityId, currentArmiesTick, explorer, store, slotRevision]);
+  }, [armyEntityId, timestamp, explorer, store, slotRevision]);
 
   const currentTroops = staminaSnapshot?.troops ?? null;
   const relicEffects = useMemo(
-    () => (currentTroops ? getArmyRelicEffects(currentTroops, currentArmiesTick) : []),
-    [currentArmiesTick, currentTroops],
+    () => (currentTroops ? getArmyRelicEffects(currentTroops, timestamp) : []),
+    [currentTroops, timestamp],
   );
 
   const ownerProfile = usePlayerProfile(owner);
@@ -85,13 +85,12 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     if (!explorer) return undefined;
 
     const maxStamina = staminaSnapshot?.max ?? 0;
-    const stamina = staminaSnapshot?.stamina ?? { amount: 0n, updated_tick: 0n };
+    const stamina = staminaSnapshot?.stamina ?? { amount: 0n };
     const staminaDisplay = staminaSnapshot
       ? buildStaminaDisplayModel({
           committedCurrent: staminaSnapshot.current,
           committedMax: maxStamina,
-          armiesTickTimeRemaining,
-          currentArmiesTick,
+          timestamp,
           troops: staminaSnapshot.troops,
         })
       : null;
@@ -117,7 +116,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     store,
     owner,
     ownershipRevision,
-    currentArmiesTick,
+    timestamp,
     explorer,
     mode,
     ownerProfile.name,

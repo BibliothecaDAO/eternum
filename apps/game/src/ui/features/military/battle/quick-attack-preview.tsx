@@ -3,7 +3,7 @@ import { useStoredBiome } from "@/hooks/helpers/use-tile-at";
 import { type MouseEvent, useEffect, useMemo, useState } from "react";
 
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
-import { useBlockTimestamp, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
+import { useNowSeconds, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { Checkbox } from "@/ui/design-system/atoms/checkbox";
@@ -44,12 +44,9 @@ import {
   getTroopAttackRange,
   RESOURCE_PRECISION,
   resources,
-  TickIds,
   type ActorType,
   type ID,
   type Troops,
-  type TroopTier,
-  type TroopType,
 } from "@bibliothecadao/types";
 
 interface ActorSummary {
@@ -69,32 +66,6 @@ enum AttackerType {
   Structure,
   Army,
 }
-
-const buildTroopSnapshot = (troops: Troops) => ({
-  count: troops.count || 0n,
-  category: troops.category as TroopType,
-  tier: troops.tier as TroopTier,
-  stamina: troops.stamina || { amount: 0n, updated_tick: 0n },
-  boosts: troops.boosts || {
-    incr_damage_dealt_percent_num: 0,
-    incr_damage_dealt_end_tick: 0,
-    decr_damage_gotten_percent_num: 0,
-    decr_damage_gotten_end_tick: 0,
-    incr_stamina_regen_percent_num: 0,
-    incr_stamina_regen_tick_count: 0,
-    incr_explore_reward_percent_num: 0,
-    incr_explore_reward_end_tick: 0,
-  },
-  battle_cooldown_end: troops.battle_cooldown_end,
-});
-
-const buildProjectedTroopSnapshot = (
-  troops: Troops,
-  stamina: { amount: bigint; updated_tick: bigint } = troops.stamina,
-) => ({
-  ...buildTroopSnapshot(troops),
-  stamina,
-});
 
 /** Each side's losses at both ends of the dice, from this attack's exact exchanges; null when the attack is refused. */
 const exchangeSides = (
@@ -141,7 +112,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const [garrisonEnabled, setGarrisonEnabled] = useState(false);
 
   const currentTime = useNowSeconds();
-  const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
+  const executionSecond = useCurrentDefaultTick();
 
   const { target: targetData, targetResources, isLoading } = useAttackTargetData(attacker.id, target.hex, target.alt);
 
@@ -184,69 +155,23 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
   const activeGuard = attackerType === AttackerType.Structure ? eligibleStructureGuards[0] : undefined;
 
-  const attackerStamina = useMemo(() => {
-    if (attackerType === AttackerType.Structure) {
-      if (!activeGuard || !activeGuard.troops.stamina) return undefined;
-      return StaminaManager.getStamina(activeGuard.troops, currentArmiesTick).amount;
-    }
-
-    return new StaminaManager(store, attacker.id).getStamina(currentArmiesTick)?.amount;
-  }, [attackerType, activeGuard, store, attacker.id, currentArmiesTick, revision]);
-
-  const attackerStaminaValue = attackerStamina === undefined ? undefined : Number(attackerStamina);
-  const requiredAttackStamina = Number(combatConfig.stamina_attack_req);
-
-  const staminaWaitSeconds = useMemo(() => {
-    if (attackerStaminaValue === undefined) return null;
-    if (attackerStaminaValue >= requiredAttackStamina) return 0;
-
-    const deficit = requiredAttackStamina - attackerStaminaValue;
-    const refillPerTick = Number(configManager.getRefillPerTick());
-    const tickDuration = Number(configManager.getTick(TickIds.Armies));
-
-    if (!Number.isFinite(deficit) || !Number.isFinite(refillPerTick) || !Number.isFinite(tickDuration)) {
-      return null;
-    }
-    if (deficit <= 0) return 0;
-    if (refillPerTick <= 0 || tickDuration <= 0) return null;
-
-    const ticksNeeded = Math.ceil(deficit / refillPerTick);
-    const timeToNextArmiesTick = Math.max(0, Math.ceil(armiesTickTimeRemaining));
-
-    if (ticksNeeded <= 0) return 0;
-
-    return timeToNextArmiesTick + Math.max(0, ticksNeeded - 1) * tickDuration;
-  }, [attackerStaminaValue, requiredAttackStamina, armiesTickTimeRemaining]);
-
   const attackerArmyData: { troops: Troops } | null = useMemo(() => {
-    if (attackerStamina === undefined) return null;
-    if (attackerType === AttackerType.Structure) {
-      const guard = activeGuard;
-      if (!guard) return null;
-      return {
-        troops: buildProjectedTroopSnapshot(guard.troops, {
-          amount: attackerStamina,
-          updated_tick: BigInt(currentArmiesTick),
-        }),
-      };
-    }
-
+    if (attackerType === AttackerType.Structure) return activeGuard ? { troops: activeGuard.troops } : null;
     const army = store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: attacker.id });
     const troops = army ? resolveExplorerTroops(store, army) : undefined;
-    return troops
-      ? {
-          troops: buildProjectedTroopSnapshot(troops, {
-            amount: attackerStamina,
-            updated_tick: BigInt(currentArmiesTick),
-          }),
-        }
-      : null;
-  }, [store, revision, attacker.id, attackerStamina, attackerType, currentArmiesTick, activeGuard]);
+    return troops ? { troops } : null;
+  }, [store, revision, attacker.id, attackerType, activeGuard]);
+  const attackerStamina = attackerArmyData
+    ? StaminaManager.getStamina(attackerArmyData.troops, executionSecond).amount
+    : undefined;
+  const attackerStaminaValue = attackerStamina === undefined ? undefined : Number(attackerStamina);
+  const requiredAttackStamina = Number(combatConfig.stamina_attack_req);
+  const readyAt = attackerArmyData
+    ? StaminaManager.getAffordableAt(attackerArmyData.troops, requiredAttackStamina, executionSecond)
+    : null;
+  const staminaWaitSeconds = readyAt === null ? null : Math.max(0, readyAt - executionSecond);
 
-  const targetTroopSnapshots = useMemo(() => {
-    if (!targetData?.info) return [];
-    return targetData.info.map((info) => buildProjectedTroopSnapshot(info, info.stamina));
-  }, [targetData]);
+  const targetTroopSnapshots = useMemo(() => targetData?.info ?? [], [targetData]);
 
   const isStructureTarget = targetData?.targetType === TargetType.Structure;
 
@@ -271,8 +196,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     const rules = activeCombatRules();
     const at = (attackerRoll: number, defenderRoll: number) => {
       const context = {
-        timestamp: currentTime,
-        currentTick: currentArmiesTick,
+        timestamp: executionSecond,
         attackDistance: targetDistance,
         attackerBiome: biome,
         defenderBiome: biome,
@@ -294,8 +218,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   }, [
     attackerArmyData,
     targetArmyData,
-    currentTime,
-    currentArmiesTick,
+    executionSecond,
     targetDistance,
     biome,
     attackerType,
@@ -328,9 +251,9 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     return targetTroopSnapshots.map((snapshot, index) => {
       const isActive = index === 0;
       const remaining = isActive ? defenderRemaining : Number(snapshot.count) / RESOURCE_PRECISION;
-      const resourceId = getTroopResourceId(snapshot.category as TroopType, snapshot.tier as TroopTier);
+      const resourceId = getTroopResourceId(snapshot.category, snapshot.tier);
       const trait = resources.find((resource) => resource.id === resourceId)?.trait ?? "";
-      return { tier: snapshot.tier as TroopTier, trait, remaining, isActive, eliminated: remaining <= 0 };
+      return { tier: snapshot.tier, trait, remaining, isActive, eliminated: remaining <= 0 };
     });
   }, [isStructureTarget, targetTroopSnapshots, defenderRemaining]);
 
@@ -364,7 +287,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     if (!willCaptureStructure || !attackerArmyData || structureLevel == null) return 0;
     const survivors = targetArmyData ? attackerRemaining : attackerTroopsTotal;
     const buffered = Math.floor(survivors * 0.99);
-    const maxArmySize = configManager.getMaxArmySize(structureLevel, attackerArmyData.troops.tier as TroopTier);
+    const maxArmySize = configManager.getMaxArmySize(structureLevel, attackerArmyData.troops.tier);
     return Math.max(0, Math.min(buffered, maxArmySize));
   }, [willCaptureStructure, attackerArmyData, targetArmyData, attackerRemaining, attackerTroopsTotal, targetData]);
 

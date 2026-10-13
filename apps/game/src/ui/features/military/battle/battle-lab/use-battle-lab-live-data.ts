@@ -1,5 +1,5 @@
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
-import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import {
   configManager,
   divideByPrecision,
@@ -13,7 +13,7 @@ import {
   BiomeType,
   DISPLAYED_SLOT_NUMBER_MAP,
   ID,
-  RelicEffectWithEndTick,
+  RelicEffect,
   ResourcesIds,
   TroopTier,
   TroopType,
@@ -25,15 +25,15 @@ import { useAttackTargetData } from "../hooks/use-attack-target";
 import { AttackTarget } from "../types";
 import type { GuardOption, LiveSnapshot, WorkingArmy } from "./battle-lab.types";
 
-const toResourceIds = (effects: RelicEffectWithEndTick[]): ResourcesIds[] =>
+const toResourceIds = (effects: RelicEffect[]): ResourcesIds[] =>
   effects.map((effect) => Number(effect.id)) as ResourcesIds[];
 
 interface BattleLabLiveData {
   snapshot: LiveSnapshot | null;
   target: AttackTarget | null;
   targetResources: Array<{ resourceId: number; amount: number }>;
-  attackerRelicEffects: RelicEffectWithEndTick[];
-  targetRelicEffects: RelicEffectWithEndTick[];
+  attackerRelicEffects: RelicEffect[];
+  targetRelicEffects: RelicEffect[];
   isLoading: boolean;
 }
 
@@ -52,7 +52,7 @@ export const useBattleLabLiveData = (
     setup: { store },
   } = useGame();
   const revision = useNativeRevision(["ArmySlot", "Structure", "Guard", "ExplorerTroops", "TileOccupancy"]);
-  const currentArmiesTick = useCurrentArmiesTick();
+  const staminaTimestamp = useCurrentDefaultTick();
 
   const { attackerRelicEffects, targetRelicEffects, target, targetResources, isLoading } = useAttackTargetData(
     attackerEntityId,
@@ -84,7 +84,7 @@ export const useBattleLabLiveData = (
         .filter((guard) => guard.troops.count > 0n)
         .toSorted((a, b) => a.slot - b.slot)
         .map((guard) => {
-          const staminaSnapshot = getGuardStaminaSnapshot(guard.troops, currentArmiesTick);
+          const staminaSnapshot = getGuardStaminaSnapshot(guard.troops, staminaTimestamp);
           const army: WorkingArmy = {
             stamina: Math.floor(staminaSnapshot?.current ?? Number(guard.troops.stamina.amount)),
             troopCount: divideByPrecision(Number(guard.troops.count)),
@@ -103,7 +103,7 @@ export const useBattleLabLiveData = (
       });
       const troops = army ? resolveExplorerTroops(store, army) : undefined;
       if (army && troops) {
-        const stamina = StaminaManager.getStamina(troops, currentArmiesTick).amount;
+        const stamina = StaminaManager.getStamina(troops, staminaTimestamp).amount;
         armyAttacker = {
           stamina: Number(stamina),
           troopCount: divideByPrecision(Number(army.troops.count)),
@@ -119,7 +119,7 @@ export const useBattleLabLiveData = (
     const defenderTroop = target?.info?.[0] ?? null;
     const defender: WorkingArmy | null = defenderTroop
       ? {
-          stamina: Number(defenderTroop.stamina.amount),
+          stamina: Number(StaminaManager.getStamina(defenderTroop, staminaTimestamp).amount),
           troopCount: divideByPrecision(Number(defenderTroop.count)),
           troopType: defenderTroop.category as TroopType,
           tier: defenderTroop.tier as TroopTier,
@@ -152,7 +152,7 @@ export const useBattleLabLiveData = (
     attackerEntityId,
     targetHex.x,
     targetHex.y,
-    currentArmiesTick,
+    staminaTimestamp,
     target,
     attackerRelicIds,
     targetRelicIds,

@@ -1,6 +1,6 @@
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useGame } from "@/hooks/context/game-context";
-import { useCurrentArmiesTick, useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -67,13 +67,12 @@ export const useGuideFacts = (rules: ExpeditionRules, realm: NativeRows["Structu
   const revision = useNativeRevision(GUIDE_MODELS);
   const now = useNowSeconds();
   const tick = useCurrentDefaultTick();
-  const armiesTick = useCurrentArmiesTick();
   const { isMapView } = useQuery();
   const selected = useUIStore((state) => state.entityActions.selectedEntityId);
   return useMemo(
-    () => readGuideFacts(setup.store, rules, realm, { now, tick, armiesTick, onMap: isMapView, selected }),
+    () => readGuideFacts(setup.store, rules, realm, { now, tick, onMap: isMapView, selected }),
     // The revision is the recompute signal for store writes; the clocks for time passing.
-    [setup.store, rules, realm, now, tick, armiesTick, isMapView, selected, revision],
+    [setup.store, rules, realm, now, tick, isMapView, selected, revision],
   );
 };
 
@@ -81,7 +80,7 @@ const readGuideFacts = (
   store: NativeFactStore,
   rules: ExpeditionRules,
   realm: NativeRows["Structure"] | null,
-  clock: { now: number; tick: number; armiesTick: number; onMap: boolean; selected: number | null },
+  clock: { now: number; tick: number; onMap: boolean; selected: number | null },
 ): GuideFacts => {
   if (!realm) return { ...NO_REALM, onMap: clock.onMap };
   const armies = liveHomeArmies(store, safeInteger(realm.entity_id), realm.game_id);
@@ -90,7 +89,7 @@ const readGuideFacts = (
     return troops
       ? [
           {
-            current: Number(StaminaManager.getStamina(troops, clock.armiesTick).amount),
+            current: Number(StaminaManager.getStamina(troops, clock.tick).amount),
             max: StaminaManager.getMaxStamina(
               army.troops.category as TroopType,
               army.troops.tier as TroopTier,

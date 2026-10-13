@@ -1,5 +1,5 @@
 import { useGame } from "@/hooks/context/game-context";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { buildStaminaDisplayModel } from "@/lib/army-stamina/presentation";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
@@ -41,23 +41,22 @@ export type DockArmy = {
 export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[] => {
   const { setup } = useGame();
   const revision = useNativeRevision(ARMY_MODELS);
-  const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
+  const timestamp = useCurrentDefaultTick();
   const armies = useMemo(
     () => (realm ? liveHomeArmies(setup.store, safeInteger(realm.entity_id), configManager.getActiveGameId()) : []),
-    [realm?.entity_id, revision, setup.store, currentArmiesTick],
+    [realm?.entity_id, revision, setup.store, timestamp],
   );
   return armies.map((army, index) => {
     const explorerId = safeInteger(army.explorer_id);
     const snapshot = getExplorerStaminaSnapshot({
-      currentArmiesTick,
+      timestamp,
       liveTroops: resolveExplorerTroops(setup.store, army),
     });
     const stamina = snapshot
       ? buildStaminaDisplayModel({
           committedCurrent: snapshot.current,
           committedMax: snapshot.max,
-          armiesTickTimeRemaining,
-          currentArmiesTick,
+          timestamp,
           troops: snapshot.troops,
         })
       : null;

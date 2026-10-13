@@ -29,7 +29,7 @@ import {
 import { calculatePresetAllocations, getAutomationOverallocation } from "@bibliothecadao/eternum/automation";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGame } from "@/hooks/context/game-context";
-import { getAutomationProjectionTick, getBlockTimestamp, configManager } from "@bibliothecadao/eternum";
+import { getBlockTimestamp, configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -298,15 +298,15 @@ export const useAutomation = () => {
           continue;
         }
 
-        // Rebuild the conservative projection immediately before each realm submission so
+        // Rebuild the floor projection immediately before each realm submission so
         // projected balances reflect the freshest local state available at submit time.
-        const { currentDefaultTick: conservativeTick } = getAutomationProjectionTick();
+        const { currentDefaultTick } = getBlockTimestamp();
         const rawSnapshot: RealmResourceSnapshot =
           Number.isFinite(realmIdNum) && realmIdNum > 0
             ? buildRealmResourceSnapshot({
                 store,
                 realmId: realmIdNum,
-                currentTick: conservativeTick,
+                currentTick: currentDefaultTick,
               })
             : new Map();
         const snapshot = rawSnapshot;
@@ -314,7 +314,7 @@ export const useAutomation = () => {
         verboseLog("[Automation] Prepared realm snapshot", {
           realmId: activeRealmConfig.realmId,
           realmName: realmLabel,
-          blockTick: conservativeTick,
+          blockTick: currentDefaultTick,
           balances: formatSnapshotLog(snapshot, activeRealmConfig.customPercentages),
         });
 

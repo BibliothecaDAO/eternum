@@ -85,12 +85,11 @@ const plan = (client: GameClient, action: PlannerName, params: Params): ActOutco
 const armyPaths = (client: GameClient, explorerId: ID): ActionPaths => {
   const explorer = client.setup.store.get("ExplorerTroops", { game_id: client.gameId, explorer_id: explorerId });
   if (!explorer) throw new Error(`Explorer ${explorerId} is not in the native store`);
-  const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
+  const { currentDefaultTick } = getBlockTimestamp();
   return client.actions.armyPaths({
     explorerId,
     ...buildArmyPathIndexes(client, entityMapPosition(client.setup.store, client.gameId, explorer.explorer_id).alt),
     currentDefaultTick,
-    currentArmiesTick,
     playerAddress: viewerOf(client),
   });
 };
@@ -135,7 +134,7 @@ const moveArmy = async (client: GameClient, params: Params): Promise<ActOutcome 
       reason: `(${target.col},${target.row}) is not reachable by explorer ${explorerId}. ${renderPaths(reachable)}`,
     };
   }
-  await client.actions.moveArmy({ explorerId, path, currentArmiesTick: getBlockTimestamp().currentArmiesTick });
+  await client.actions.moveArmy({ explorerId, path });
   return null;
 };
 

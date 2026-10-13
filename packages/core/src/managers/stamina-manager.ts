@@ -1,7 +1,7 @@
-import { ID, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
+import { ID, TickIds, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { configManager } from "./config-manager";
-import { fullAtTick, staminaAt, troopStaminaLimits, resolveExplorerTroops } from "./troop-stamina";
+import { affordableAt, staminaAt, troopStaminaLimits, resolveExplorerTroops } from "./troop-stamina";
 
 export class StaminaManager {
   constructor(
@@ -9,7 +9,7 @@ export class StaminaManager {
     private armyEntityId: ID,
   ) {}
 
-  public getStamina(currentArmiesTick: number) {
+  public getStamina(timestamp: number) {
     const explorer = this.store.get("ExplorerTroops", {
       game_id: configManager.getActiveGameId(),
       explorer_id: this.armyEntityId,
@@ -17,17 +17,28 @@ export class StaminaManager {
     if (!explorer) return undefined;
 
     const troops = resolveExplorerTroops(this.store, explorer);
-    return troops ? StaminaManager.getStamina(troops, currentArmiesTick) : undefined;
+    return troops ? StaminaManager.getStamina(troops, timestamp) : undefined;
   }
 
-  /** The active game's stamina, for the client that has one active game. */
-  public static getStamina(troops: Troops, currentArmiesTick: number) {
-    return staminaAt(troops, currentArmiesTick, configManager.getTroopStaminaRules());
+  /** The active game's stamina at the chain-proven second used by both figures and actions. */
+  public static getStamina(troops: Troops, timestamp: number) {
+    return staminaAt(
+      troops,
+      timestamp,
+      configManager.getTroopStaminaRules(),
+      Number(configManager.getTick(TickIds.Armies)),
+    );
   }
 
-  /** The first tick at which the troops are full under the active game's rules; null when stamina never refills. */
-  public static getFullAtTick(troops: Troops, currentArmiesTick: number): number | null {
-    return fullAtTick(troops, currentArmiesTick, configManager.getTroopStaminaRules());
+  /** The first second this army can pay the requested stamina cost. */
+  public static getAffordableAt(troops: Troops, cost: number, timestamp: number): number | null {
+    return affordableAt(
+      troops,
+      timestamp,
+      configManager.getTroopStaminaRules(),
+      Number(configManager.getTick(TickIds.Armies)),
+      cost,
+    );
   }
 
   public static getMaxStamina = (troopCategory: TroopType, troopTier: TroopTier, resolvedMaximum?: number): number =>

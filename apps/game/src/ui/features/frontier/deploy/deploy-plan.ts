@@ -1,3 +1,4 @@
+import { TickIds } from "@bibliothecadao/types";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import {
   computeTravelFoodCosts,
@@ -157,7 +158,7 @@ export const previewDeploy = (
   gameId: number,
   plan: DeployPlan,
   count: number,
-  armiesTick: number,
+  timestamp: number,
 ): {
   count: number;
   wheatCost: number;
@@ -188,9 +189,10 @@ export const previewDeploy = (
         ? musterStamina(
             plan.next,
             { category: troops.type, tier: troops.tier },
-            armiesTick,
+            timestamp,
             staminaRules,
             plan.trainedLogistics,
+            Number(configManager.getTick(TickIds.Armies)),
           )
         : null,
   };

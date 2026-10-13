@@ -7,11 +7,12 @@ interface GuardTroopsLike {
   tier?: unknown;
   stamina?: {
     amount?: unknown;
-    updated_tick?: unknown;
+    settled_at?: unknown;
+    remainder?: unknown;
   } | null;
   boosts?: {
     incr_stamina_regen_percent_num?: unknown;
-    incr_stamina_regen_tick_count?: unknown;
+    incr_stamina_regen_seconds_left?: unknown;
   } | null;
 }
 
@@ -23,7 +24,7 @@ const toGuardTroopsLike = (troops: unknown): GuardTroopsLike => {
 };
 
 const hasTrackedStamina = (troops: GuardTroopsLike): boolean => {
-  return troops?.stamina?.updated_tick !== undefined && troops.stamina.updated_tick !== null;
+  return troops?.stamina?.settled_at !== undefined && troops.stamina.settled_at !== null;
 };
 
 const toBigIntOrZero = (value: unknown): bigint => {
@@ -71,17 +72,18 @@ const buildGuardTroopsForStaminaComputation = (
     staminaMax: troops.staminaMax,
     stamina: {
       amount: toBigIntOrZero(troops.stamina?.amount),
-      updated_tick: toBigIntOrZero(troops.stamina?.updated_tick),
+      settled_at: toNumberOrZero(troops.stamina?.settled_at),
+      remainder: toNumberOrZero(troops.stamina?.remainder),
     },
     boosts: {
       incr_damage_dealt_percent_num: 0,
-      incr_damage_dealt_end_tick: 0,
+      incr_damage_dealt_end_at: 0,
       decr_damage_gotten_percent_num: 0,
-      decr_damage_gotten_end_tick: 0,
+      decr_damage_gotten_end_at: 0,
       incr_stamina_regen_percent_num: toNumberOrZero(troops.boosts?.incr_stamina_regen_percent_num),
-      incr_stamina_regen_tick_count: toNumberOrZero(troops.boosts?.incr_stamina_regen_tick_count),
+      incr_stamina_regen_seconds_left: toNumberOrZero(troops.boosts?.incr_stamina_regen_seconds_left),
       incr_explore_reward_percent_num: 0,
-      incr_explore_reward_end_tick: 0,
+      incr_explore_reward_end_at: 0,
     },
     battle_cooldown_end: 0,
   };
@@ -89,7 +91,7 @@ const buildGuardTroopsForStaminaComputation = (
 
 export const getGuardStaminaSnapshot = (
   troops: unknown,
-  currentArmiesTick: number,
+  timestamp: number,
 ): { current: number; max: number } | null => {
   const data = toGuardTroopsLike(troops);
   const category = data.category as TroopType | undefined | null;
@@ -114,7 +116,7 @@ export const getGuardStaminaSnapshot = (
       current: Number(
         StaminaManager.getStamina(
           buildGuardTroopsForStaminaComputation(data, category as TroopType, tier as TroopTier),
-          currentArmiesTick,
+          timestamp,
         ).amount,
       ),
       max,

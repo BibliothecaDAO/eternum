@@ -11,7 +11,7 @@ struct Side {
     tier: TroopTier,
     count: u128,
     stamina: u64,
-    updated_tick: u64,
+    fixture_tick: u64,
     damage_bonus_percent: u16,
 }
 
@@ -104,8 +104,8 @@ fn check_vectors(record: bool) {
 fn resolve_exchange(
     exchange: Exchange, damage: TroopDamageConfig, stamina: TroopStaminaConfig, tick_interval: u64,
 ) -> Outcome {
-    let mut attacker = troops(exchange.attacker, exchange.current_tick);
-    let mut defender = troops(exchange.defender, exchange.current_tick);
+    let mut attacker = troops(exchange.attacker, exchange.current_tick, tick_interval);
+    let mut defender = troops(exchange.defender, exchange.current_tick, tick_interval);
     attacker
         .attack_with_context(
             ref defender,
@@ -121,7 +121,7 @@ fn resolve_exchange(
             },
             stamina,
             damage,
-            exchange.current_tick,
+            tick_interval,
             tick_interval.try_into().unwrap(),
         );
     Outcome {
@@ -132,22 +132,26 @@ fn resolve_exchange(
     }
 }
 
-fn troops(side: Side, tick: u64) -> Troops {
+fn troops(side: Side, tick: u64, tick_seconds: u64) -> Troops {
+    // The archived vector input records a tick index; convert it to a settled second.
     assert!(side.damage_bonus_percent <= 40, "unexpected Battle level");
     Troops {
         category: side.category,
         tier: side.tier,
         count: side.count,
-        stamina: Stamina { amount: side.stamina, updated_tick: side.updated_tick }.into(),
+        stamina: Stamina {
+            amount: side.stamina, settled_at: (side.fixture_tick * tick_seconds).try_into().unwrap(), remainder: 0,
+        }
+            .into(),
         boosts: TroopBoosts {
             incr_damage_dealt_percent_num: side.damage_bonus_percent * 100,
-            incr_damage_dealt_end_tick: (tick + 1).try_into().unwrap(),
+            incr_damage_dealt_end_at: ((tick + 1) * tick_seconds).try_into().unwrap(),
             decr_damage_gotten_percent_num: 0,
-            decr_damage_gotten_end_tick: 0,
+            decr_damage_gotten_end_at: 0,
             incr_stamina_regen_percent_num: 0,
-            incr_stamina_regen_tick_count: 0,
+            incr_stamina_regen_seconds_left: 0,
             incr_explore_reward_percent_num: 0,
-            incr_explore_reward_end_tick: 0,
+            incr_explore_reward_end_at: 0,
         },
         battle_cooldown_end: 0,
     }

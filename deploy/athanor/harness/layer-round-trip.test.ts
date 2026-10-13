@@ -36,6 +36,10 @@ function fixture(
             tick_config: { armies_tick_in_seconds: 60 },
             troop_stamina_config: {
               stamina_gain_per_tick: 30,
+              stamina_initial: 120,
+              stamina_knight_max: 120,
+              stamina_paladin_max: 140,
+              stamina_crossbowman_max: 120,
               stamina_explore_stamina_cost: 30,
               stamina_travel_stamina_cost: 20,
               stamina_bonus_value: 10,
@@ -48,7 +52,13 @@ function fixture(
             game_id: 7,
             explorer_id: 9,
             owner: 5,
-            troops: { stamina: { Inline: { amount: stamina, updated_tick: 1 } } },
+            troops: {
+              category: "Knight",
+              tier: "T1",
+              count: 10n,
+              stamina: { Inline: { amount: BigInt(stamina), settled_at: 6_000, remainder: 0 } },
+              boosts: { incr_stamina_regen_percent_num: 0, incr_stamina_regen_seconds_left: 0 },
+            },
           },
         ];
       case "TileOpt":

@@ -6,13 +6,16 @@ import { create } from "zustand";
 /** The order an army has in flight. */
 export type OrderInFlight = "explore" | "move" | "attack" | "use";
 
+/** An army's order in flight and, for one that takes it to a tile, that tile (a scene hex). */
+type ArmyOrderInFlight = { order: OrderInFlight; to?: { col: number; row: number } };
+
 /**
  * What an action is sent for, and what the place that shows it needs to draw it while it is in flight. One action at
  * a time for each: an army's order, a plot's building, a realm's next army, a research row, a castle's level, an
  * army's refill, an army's tier.
  */
 interface InFlight {
-  army: OrderInFlight;
+  army: ArmyOrderInFlight;
   plot: { type: BuildingType; plot: { col: number; row: number } };
   deploy: true;
   research: true;
@@ -49,6 +52,16 @@ export const useAllInFlight = <S extends Subject>(subject: S): ReadonlyMap<strin
     return new Map(ofSubject.map(([id, what]) => [id.slice(prefix.length), what as InFlight[S]]));
   }, [flights, subject]);
 };
+
+/**
+ * Hears each outcome for one kind of subject, by its key: the action is no longer in flight (applied, refused or
+ * unanswered), and a surface that held its subject can offer it again.
+ */
+export const onOutcome = (subject: Subject, heard: (key: string) => void): (() => void) =>
+  useActionsInFlight.subscribe(({ flights }, { flights: before }) => {
+    const prefix = `${subject}:`;
+    for (const id of before.keys()) if (id.startsWith(prefix) && !flights.has(id)) heard(id.slice(prefix.length));
+  });
 
 /**
  * Sends an action, the one way any surface does: one at a time for its subject, held in flight until the action's

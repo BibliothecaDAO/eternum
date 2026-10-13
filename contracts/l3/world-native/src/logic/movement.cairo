@@ -233,7 +233,8 @@ pub mod MovementLogic {
                     explorer.troops.tier,
                     rules.troop_stamina_config,
                     depth.entry_stamina.into(),
-                    context.timestamp / rules.tick_config.armies_tick_in_seconds,
+                    rules.tick_config.armies_tick_in_seconds,
+                    context.timestamp,
                     true,
                 );
             let destination = Coord {

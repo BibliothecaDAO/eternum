@@ -13,7 +13,7 @@ const set = (key: string, model: string, value: Record<string, unknown>) => ({ m
 const troops = (count: bigint, stamina: bigint) => ({
   ...rowFixture.expected.value.troops,
   count: String(count * PRECISION),
-  stamina: { Inline: { amount: String(stamina), updated_tick: "3" } },
+  stamina: { Inline: { amount: String(stamina), settled_at: "360", remainder: 0 } },
 });
 
 /**
@@ -89,7 +89,6 @@ export const campBeside = (kind: SiteKind = "Camp", guardKnown = true) => {
     armyTile,
     biome: BiomeType.Grassland,
     timestamp: 350,
-    armiesTick: 3,
   });
   return {
     store,

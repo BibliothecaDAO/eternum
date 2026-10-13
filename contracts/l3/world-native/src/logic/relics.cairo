@@ -13,7 +13,7 @@ pub mod RelicState {
         Recipient, RelicRule,
     };
     use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
-    use crate::stamina::StaminaSourceTrait;
+    use crate::stamina::{StaminaSourceTrait, StaminaTrait};
     use crate::troops::{ExplorerKey, ExplorerRecordTrait};
 
     #[storage]
@@ -245,6 +245,7 @@ pub mod RelicState {
                 );
             crate::logic::lords_budget::return_to_pool(game_id, missing, context);
             stamina.amount = maximum;
+            stamina.clamp(maximum);
             crate::troops::IArmySlotStaminaDispatcherTrait::army_slot_stamina(
                 crate::troops::IArmySlotStaminaLibraryDispatcher {
                     class_hash: self.logic_classes(game_id).relics.read(),
@@ -444,7 +445,8 @@ pub mod RelicState {
                 progress, explorer.troops.category, context.rules.unbox().troop_stamina_config,
             );
             let mut stamina = explorer.troops.stamina.inline();
-            stamina.amount = core::cmp::min(maximum, stamina.amount + amount.into());
+            stamina.amount += amount.into();
+            stamina.clamp(maximum);
             crate::troops::IArmySlotStaminaDispatcherTrait::army_slot_stamina(
                 crate::troops::IArmySlotStaminaLibraryDispatcher {
                     class_hash: self.logic_classes(key.game_id).relics.read(),
@@ -473,7 +475,8 @@ pub mod RelicState {
                     crate::logic::progression::own_stamina_max(key, explorer.troops, rules.troop_stamina_config),
                     rules.troop_stamina_config,
                     refund.into(),
-                    context.timestamp / rules.tick_config.armies_tick_in_seconds,
+                    rules.tick_config.armies_tick_in_seconds,
+                    context.timestamp,
                 );
             crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
         }

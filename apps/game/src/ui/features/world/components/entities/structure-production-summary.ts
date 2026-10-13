@@ -13,7 +13,6 @@ export interface ResourceProductionSummaryItem {
   timeRemainingSeconds: number | null;
   productionPerSecond: number | null;
   outputRemaining: number | null;
-  calculatedAt: number;
 }
 
 export interface StructureProductionSummary {
@@ -33,7 +32,6 @@ interface BuildStructureProductionSummaryInput {
   productionBuildings: ProductionBuildingLike[];
   resources: ResourceManager;
   currentDefaultTick: number;
-  calculatedAt?: number;
 }
 
 const EMPTY_PRODUCTION_SUMMARY: StructureProductionSummary = {
@@ -53,7 +51,6 @@ const buildStructureProductionSummary = ({
   productionBuildings,
   resources,
   currentDefaultTick,
-  calculatedAt = Date.now(),
 }: BuildStructureProductionSummaryInput): StructureProductionSummary => {
   if (!productionBuildings.length) return EMPTY_PRODUCTION_SUMMARY;
 
@@ -98,7 +95,6 @@ const buildStructureProductionSummary = ({
           ? productionData.productionPerSecond
           : null,
         outputRemaining: productionData.outputRemaining,
-        calculatedAt,
       },
     ];
   });

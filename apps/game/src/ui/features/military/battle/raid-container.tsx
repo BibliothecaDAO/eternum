@@ -1,5 +1,5 @@
 import { useStoredBiome } from "@/hooks/helpers/use-tile-at";
-import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { Panel } from "@/ui/design-system/atoms";
@@ -31,7 +31,7 @@ import {
   ContractAddress,
   getDirectionBetweenAdjacentHexes,
   ID,
-  RelicEffectWithEndTick,
+  RelicEffect,
   RESOURCE_PRECISION,
   resources,
   ResourcesIds,
@@ -61,8 +61,8 @@ export const RaidContainer = ({
   attackerEntityId: ID;
   target: AttackTarget;
   targetResources: Array<{ resourceId: number; amount: number }>;
-  attackerActiveRelicEffects: RelicEffectWithEndTick[];
-  targetActiveRelicEffects: RelicEffectWithEndTick[];
+  attackerActiveRelicEffects: RelicEffect[];
+  targetActiveRelicEffects: RelicEffect[];
 }) => {
   const {
     account: { account },
@@ -83,7 +83,15 @@ export const RaidContainer = ({
 
   const updateSelectedEntityId = useUIStore((state) => state.updateEntityActionSelectedEntityId);
   const selectedHex = useUIStore((state) => state.selectedHex);
-  const currentArmiesTick = useCurrentArmiesTick();
+  const timestamp = useCurrentDefaultTick();
+  const targetTroops = useMemo(
+    () =>
+      target.info.map((troops) => ({
+        ...troops,
+        stamina: StaminaManager.getStamina(troops, timestamp),
+      })),
+    [target.info, timestamp],
+  );
 
   const combatConfig = useMemo(() => {
     return configManager.getCombatConfig();
@@ -103,11 +111,11 @@ export const RaidContainer = ({
         count: Number(army.troops.count),
         category: army.troops.category as TroopType,
         tier: army.troops.tier as TroopTier,
-        stamina: StaminaManager.getStamina(army.troops, currentArmiesTick),
+        stamina: StaminaManager.getStamina(army.troops, timestamp),
         battle_cooldown_end: army.troops.battle_cooldown_end,
       },
     };
-  }, [account.address, attackerEntityId, store, currentArmiesTick, revision]);
+  }, [account.address, attackerEntityId, store, timestamp, revision]);
   const attackerRecharging =
     attackerArmyData !== null &&
     isStaminaRecharging(Number(attackerArmyData.troops.stamina.amount), combatConfig.stamina_attack_req);
@@ -131,7 +139,7 @@ export const RaidContainer = ({
     };
 
     // Convert all defender troops into simulator armies
-    const defenders = target.info.map((troop) => ({
+    const defenders = targetTroops.map((troop) => ({
       entity_id: target.id,
       stamina: Number(troop.stamina.amount),
       troopCount: divideByPrecision(Number(troop.count)),
@@ -172,6 +180,7 @@ export const RaidContainer = ({
   }, [
     attackerEntityId,
     target,
+    targetTroops,
     attackerArmyData,
     biome,
     combatConfig,
@@ -438,23 +447,23 @@ export const RaidContainer = ({
                 <Panel padding="md" blur className="flex flex-col gap-3">
                   <div className="flex justify-between items-center">
                     <h4 className="text-xl font-semibold text-gold">Defender Forces</h4>
-                    {target.info.length > 0 && (
+                    {targetTroops.length > 0 && (
                       <span className="bg-brown-800 text-gold px-2 py-1 rounded-md text-sm">
-                        {target.info.length} {target.info.length === 1 ? "Guard" : "Guards"}
+                        {targetTroops.length} {targetTroops.length === 1 ? "Guard" : "Guards"}
                       </span>
                     )}
                   </div>
 
-                  {target.info.length > 0 ? (
+                  {targetTroops.length > 0 ? (
                     <div className="mt-4 space-y-4">
                       {/* Guard Header - shows when multiple guards are present */}
-                      {target.info.length > 1 && (
+                      {targetTroops.length > 1 && (
                         <div className="grid grid-cols-2 gap-2 mb-2">
                           <div className="col-span-2">
                             <div className="flex items-center justify-between border-b border-gold/20 pb-2">
                               <span className="text-gold/90 font-medium">Total Defender Troops: </span>
                               <span className="text-gold font-bold">
-                                {target.info.reduce(
+                                {targetTroops.reduce(
                                   (total, troop) => total + divideByPrecision(Number(troop.count)),
                                   0,
                                 )}
@@ -465,33 +474,33 @@ export const RaidContainer = ({
                       )}
 
                       {/* Grid layout when there are multiple guards */}
-                      <div className={`grid ${target.info.length > 2 ? "grid-cols-2" : "grid-cols-1"} gap-2`}>
+                      <div className={`grid ${targetTroops.length > 2 ? "grid-cols-2" : "grid-cols-1"} gap-2`}>
                         {/* Troop Information */}
-                        {target.info.map((troops, index) => (
+                        {targetTroops.map((troops, index) => (
                           <div
                             key={index}
-                            className={`${target.info.length > 2 ? "p-2" : "p-3"} border border-gold/10 rounded relative`}
+                            className={`${targetTroops.length > 2 ? "p-2" : "p-3"} border border-gold/10 rounded relative`}
                           >
-                            {target.info.length > 1 && (
+                            {targetTroops.length > 1 && (
                               <div className="absolute top-0 right-0 bg-brown-800 text-gold px-2 py-0.5 text-xs rounded-bl-md rounded-tr-md">
                                 #{index + 1}
                               </div>
                             )}
 
-                            <div className={`${target.info.length > 2 ? "mt-1" : "mt-2"}`}>
+                            <div className={`${targetTroops.length > 2 ? "mt-1" : "mt-2"}`}>
                               {formatTypeAndBonuses(
                                 troops.category as TroopType,
                                 troops.tier as TroopTier,
                                 configManager.getBiomeCombatBonus(troops.category as TroopType, biome),
                                 combatSimulator.calculateStaminaModifier(Number(troops.stamina.amount || 0), false),
                                 false,
-                                target.info.length > 2, // Use compact layout when there are more than 2 guards
+                                targetTroops.length > 2, // Use compact layout when there are more than 2 guards
                               )}
                               <div
-                                className={`flex justify-between items-center ${target.info.length > 2 ? "mt-1 text-sm" : "mt-2"}`}
+                                className={`flex justify-between items-center ${targetTroops.length > 2 ? "mt-1 text-sm" : "mt-2"}`}
                               >
                                 <span
-                                  className={`${target.info.length > 2 ? "text-base" : "text-lg"} font-bold text-gold`}
+                                  className={`${targetTroops.length > 2 ? "text-base" : "text-lg"} font-bold text-gold`}
                                 >
                                   {divideByPrecision(Number(troops.count))} troops
                                 </span>
@@ -501,7 +510,7 @@ export const RaidContainer = ({
                                   </span>
                                 )}
                               </div>
-                              <div className={`${target.info.length > 2 ? "text-xs" : "text-sm"} text-gold/80 mt-0.5`}>
+                              <div className={`${targetTroops.length > 2 ? "text-xs" : "text-sm"} text-gold/80 mt-0.5`}>
                                 Current Stamina: {Number(troops.stamina.amount || 0)}
                               </div>
                             </div>

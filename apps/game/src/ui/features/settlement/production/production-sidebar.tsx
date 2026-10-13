@@ -1,5 +1,4 @@
-import { getBlockTimestamp } from "@bibliothecadao/eternum";
-import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { configManager, getStructureRelicEffects, ResourceManager } from "@bibliothecadao/eternum";
 import { useBuildings } from "@/hooks/helpers/use-buildings";
@@ -32,7 +31,6 @@ interface ResourceProductionSummaryItem {
   timeRemainingSeconds: number | null;
   productionPerSecond: number | null;
   outputRemaining: number | null;
-  calculatedAt: number;
 }
 
 const SidebarRealm = ({
@@ -47,10 +45,8 @@ const SidebarRealm = ({
   onSelectResource: (realmId: ID, resource: ResourcesIds) => void;
 }) => {
   const mode = useGameModeConfig();
-  const currentTime = useNowMs();
+  const now = useCurrentDefaultTick();
   const resourceData = useResourceManager(realm.entityId);
-
-  const { currentDefaultTick } = getBlockTimestamp();
 
   const buildingsData = useBuildings(realm.entityId);
   const productionBuildings = useMemo(
@@ -75,8 +71,6 @@ const SidebarRealm = ({
       }
     });
 
-    const calculatedAt = Date.now();
-
     return Array.from(summaries.entries()).map(([resourceId, stats]) => {
       let isProducing = false;
       let timeRemainingSeconds: number | null = null;
@@ -86,11 +80,7 @@ const SidebarRealm = ({
 
       const productionInfo = resourceData.current(resourceId);
       if (productionInfo) {
-        const productionData = ResourceManager.calculateResourceProductionData(
-          resourceId,
-          productionInfo,
-          currentDefaultTick,
-        );
+        const productionData = ResourceManager.calculateResourceProductionData(resourceId, productionInfo, now);
         isProducing = productionData.isProducing;
         if (isProducing) {
           const buildingCount = productionInfo.production.building_count;
@@ -112,10 +102,9 @@ const SidebarRealm = ({
         timeRemainingSeconds,
         productionPerSecond,
         outputRemaining,
-        calculatedAt,
       };
     });
-  }, [productionBuildings, resourceData, currentDefaultTick]);
+  }, [productionBuildings, resourceData, now]);
 
   const totalProductionBuildings = resourceProductionSummary.reduce(
     (accumulator, summary) => accumulator + summary.totalBuildings,
@@ -134,8 +123,8 @@ const SidebarRealm = ({
 
   const activeRelics = useMemo(() => {
     if (!productionBoostBonus) return [];
-    return getStructureRelicEffects(productionBoostBonus, getBlockTimestamp().currentArmiesTick);
-  }, [productionBoostBonus, currentDefaultTick]);
+    return getStructureRelicEffects(productionBoostBonus, now);
+  }, [productionBoostBonus, now]);
 
   if (!productionBoostBonus) return <p>Loading production…</p>;
 
@@ -184,11 +173,7 @@ const SidebarRealm = ({
               })
               .map((summary) => {
                 const resourceLabel = ResourcesIds[summary.resourceId];
-                const elapsedSeconds = (currentTime - summary.calculatedAt) / 1000;
-                const effectiveRemainingSeconds =
-                  summary.timeRemainingSeconds !== null
-                    ? Math.max(summary.timeRemainingSeconds - elapsedSeconds, 0)
-                    : null;
+                const effectiveRemainingSeconds = summary.timeRemainingSeconds;
                 const formattedRemaining =
                   summary.isProducing && effectiveRemainingSeconds !== null
                     ? formatTimeRemaining(Math.ceil(effectiveRemainingSeconds))

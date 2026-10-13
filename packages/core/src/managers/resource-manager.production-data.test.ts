@@ -2,16 +2,15 @@ import { ResourcesIds } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import { ResourceManager } from "./resource-manager";
 
-const RATE = 1_000_000n; // one unit per one-second tick at resource precision
+const RATE = 1_000_000n; // rate in resource precision per second
 
 const productionInfo = (outputAmountLeft: bigint) => ({
   balance: 0n,
-  tickSeconds: 1,
   production: {
     building_count: 2,
     production_rate: RATE,
     output_amount_left: outputAmountLeft,
-    last_settled_tick: 100,
+    last_settled_at: 100,
   },
 });
 
@@ -45,11 +44,16 @@ describe("ResourceManager.calculateResourceProductionData", () => {
     expect(limited.outputRemaining).toBeLessThan(Number.POSITIVE_INFINITY);
   });
 
-  it("counts the time left in whole ticks, to the boundary that pays the last of it", () => {
-    const info = { ...productionInfo(RATE * 120n * 3n), tickSeconds: 120 };
-    info.production = { ...info.production, last_settled_tick: 1 };
-    // At 250 one tick has ended since tick 1; two more pay the rest, at the boundary of 480.
+  it("counts exact seconds to exhaustion and rounds a partial last second up", () => {
+    const info = productionInfo(RATE * 360n + 1n);
     const data = ResourceManager.calculateResourceProductionData(ResourcesIds.Wood, info, 250);
-    expect(data.timeRemainingSeconds).toBe(480 - 250);
+    expect(data.timeRemainingSeconds).toBe(211);
+    expect(data.productionPerSecond).toBe(Number(RATE) / 1e9);
+    expect(data.outputRemaining).toBe(Number(RATE * 210n + 1n) / 1e9);
+    expect(ResourceManager.calculateResourceProductionData(ResourcesIds.Wood, info, 461)).toMatchObject({
+      isProducing: false,
+      outputRemaining: 0,
+      timeRemainingSeconds: 0,
+    });
   });
 });

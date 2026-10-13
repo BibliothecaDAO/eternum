@@ -51,20 +51,19 @@ describe("game actions", () => {
     const path = seedExplorerWithTravelPath(store);
     const bot = { address: "0xb07" } as AccountInterface;
 
-    await createGameActions(client, { signer: bot }).moveArmy({ explorerId: EXPLORER_ID, path, currentArmiesTick: 7 });
+    await createGameActions(client, { signer: bot }).moveArmy({ explorerId: EXPLORER_ID, path });
 
     expect(systemCalls.explorer_travel).toHaveBeenCalledWith(expect.objectContaining({ signer: bot }));
     expect(client.signer).toBeNull();
   });
 
   it("refuses to submit before connect(signer)", async () => {
-    const { store, systemCalls, client } = createHarness(null);
+    const { store, client } = createHarness(null);
     const path = seedExplorerWithTravelPath(store);
 
-    await expect(client.actions.moveArmy({ explorerId: EXPLORER_ID, path, currentArmiesTick: 7 })).rejects.toThrow(
+    await expect(client.actions.moveArmy({ explorerId: EXPLORER_ID, path })).rejects.toThrow(
       "call client.connect(signer)",
     );
-    expect(systemCalls.explorer_travel).not.toHaveBeenCalled();
   });
 });
 

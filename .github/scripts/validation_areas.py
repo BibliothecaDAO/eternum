@@ -35,6 +35,7 @@ AREAS = {
         "contracts/l2/ledger/src/contract.cairo",
         "contracts/l3/world-native/schema/**",
         "contracts/l3/world-native/tests/fixtures/**",
+        "contracts/l3/world-native/src/tests/fixtures/spatial-replay/**",
         "contracts/common/addresses/**",
         "contracts/utils/**"
     ],
@@ -52,6 +53,7 @@ AREAS = {
         "contracts/l2/ledger/src/contract.cairo",
         "contracts/l3/world-native/schema/**",
         "contracts/l3/world-native/tests/fixtures/**",
+        "contracts/l3/world-native/src/tests/fixtures/spatial-replay/**",
         "contracts/common/addresses/**",
         "contracts/utils/**"
     ],

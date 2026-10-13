@@ -201,7 +201,7 @@ pub impl TroopsImpl of TroopsTrait {
         context: CombatContext,
         troop_stamina_config: TroopStaminaConfig,
         troop_damage_config: TroopDamageConfig,
-        current_tick: u64,
+        tick_seconds: u64,
         cooldown_seconds: u32,
     ) -> (u128, u128, u64, u64) {
         assert!(self.count.is_non_zero(), "you have no troops");
@@ -223,8 +223,16 @@ pub impl TroopsImpl of TroopsTrait {
         );
 
         // update alpha and bravo's staminas
-        alpha.stamina.refill(ref alpha.boosts, alpha.category, alpha.tier, troop_stamina_config, current_tick);
-        bravo.stamina.refill(ref bravo.boosts, bravo.category, bravo.tier, troop_stamina_config, current_tick);
+        alpha
+            .stamina
+            .refill(
+                ref alpha.boosts, alpha.category, alpha.tier, troop_stamina_config, tick_seconds, context.timestamp,
+            );
+        bravo
+            .stamina
+            .refill(
+                ref bravo.boosts, bravo.category, bravo.tier, troop_stamina_config, tick_seconds, context.timestamp,
+            );
 
         // ensure alpha has enough stamina to launch attack
         assert!(
@@ -307,22 +315,22 @@ pub impl TroopsImpl of TroopsTrait {
         /// APPLY BATTLE DAMAGE BOOST/REDUCTION EFFECTS
         //////////////////////////////////////////////////
 
-        // A zero end tick marks a derived attribute bonus with no expiry.
-        if alpha.boosts.incr_damage_dealt_end_tick != 0
-            && alpha.boosts.incr_damage_dealt_end_tick.into() <= current_tick {
+        // A zero end second marks a derived attribute bonus with no expiry.
+        if alpha.boosts.incr_damage_dealt_end_at != 0
+            && !crate::relics::bonus_active(alpha.boosts.incr_damage_dealt_end_at, context.timestamp) {
             alpha.boosts.incr_damage_dealt_percent_num = 0;
         }
-        if alpha.boosts.decr_damage_gotten_end_tick != 0
-            && alpha.boosts.decr_damage_gotten_end_tick.into() <= current_tick {
+        if alpha.boosts.decr_damage_gotten_end_at != 0
+            && !crate::relics::bonus_active(alpha.boosts.decr_damage_gotten_end_at, context.timestamp) {
             alpha.boosts.decr_damage_gotten_percent_num = 0;
         }
 
-        if bravo.boosts.incr_damage_dealt_end_tick != 0
-            && bravo.boosts.incr_damage_dealt_end_tick.into() <= current_tick {
+        if bravo.boosts.incr_damage_dealt_end_at != 0
+            && !crate::relics::bonus_active(bravo.boosts.incr_damage_dealt_end_at, context.timestamp) {
             bravo.boosts.incr_damage_dealt_percent_num = 0;
         }
-        if bravo.boosts.decr_damage_gotten_end_tick != 0
-            && bravo.boosts.decr_damage_gotten_end_tick.into() <= current_tick {
+        if bravo.boosts.decr_damage_gotten_end_at != 0
+            && !crate::relics::bonus_active(bravo.boosts.decr_damage_gotten_end_at, context.timestamp) {
             bravo.boosts.decr_damage_gotten_percent_num = 0;
         }
 
@@ -401,12 +409,12 @@ pub impl TroopsImpl of TroopsTrait {
         context: CombatContext,
         troop_stamina_config: TroopStaminaConfig,
         troop_damage_config: TroopDamageConfig,
-        current_tick: u64,
+        tick_seconds: u64,
         cooldown_seconds: u32,
     ) {
         let (alpha_damage_dealt, bravo_damage_dealt, alpha_stamina_loss, bravo_stamina_loss) = self
             .damage_with_context(
-                ref bravo, context, troop_stamina_config, troop_damage_config, current_tick, cooldown_seconds,
+                ref bravo, context, troop_stamina_config, troop_damage_config, tick_seconds, cooldown_seconds,
             );
 
         let mut alpha = self;
@@ -424,7 +432,8 @@ pub impl TroopsImpl of TroopsTrait {
                 alpha.tier,
                 troop_stamina_config,
                 alpha_stamina_loss,
-                current_tick,
+                tick_seconds,
+                context.timestamp,
                 true,
             );
 
@@ -436,7 +445,8 @@ pub impl TroopsImpl of TroopsTrait {
                 bravo.tier,
                 troop_stamina_config,
                 bravo_stamina_loss,
-                current_tick,
+                tick_seconds,
+                context.timestamp,
                 true,
             );
         self = alpha;

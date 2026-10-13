@@ -67,6 +67,7 @@ mod settlement;
 mod shared_storage;
 mod spatial_replay;
 mod spires;
+mod stamina;
 mod state;
 mod structure_rules;
 mod structure_storage;

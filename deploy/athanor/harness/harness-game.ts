@@ -35,7 +35,7 @@ export interface ChainTicks {
 export interface ExplorerRow {
   coord: Coord;
   staminaAmount: bigint;
-  staminaUpdatedTick: bigint;
+  staminaSettledAt: number;
 }
 
 export interface ProductionState {
@@ -84,7 +84,7 @@ export interface HarnessGame {
   startingTroopType(structureId: ID): TroopType | undefined;
   explorersOf(structureId: ID): ID[];
   explorer(explorerId: ID): ExplorerRow | undefined;
-  explorerStamina(explorerId: ID, armiesTick: number): number;
+  explorerStamina(explorerId: ID, timestamp: number): number;
   explorerMaxStamina(explorerId: ID): number;
   /** The cheapest stamina an action of this kind can cost under the game's rulebook. */
   minimumStaminaFor(kind: "move" | "explore"): number;
@@ -189,11 +189,11 @@ function createClientGame(client: GameClient, heraldConfirmations?: HeraldConfir
       return {
         coord: entityMapPosition(store, game_id, explorerId),
         staminaAmount: stamina.amount,
-        staminaUpdatedTick: stamina.updated_tick,
+        staminaSettledAt: stamina.settled_at,
       };
     },
-    explorerStamina: (explorerId, armiesTick) => {
-      const stamina = client.views.stamina(explorerId).getStamina(armiesTick);
+    explorerStamina: (explorerId, timestamp) => {
+      const stamina = client.views.stamina(explorerId).getStamina(timestamp);
       if (!stamina) throw new Error(`Explorer ${explorerId} has no synchronized stamina`);
       return Number(stamina.amount);
     },

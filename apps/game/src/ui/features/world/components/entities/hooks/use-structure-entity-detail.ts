@@ -1,3 +1,4 @@
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { byStructureCategory } from "@/lib/structure-category-table";
@@ -5,7 +6,6 @@ import {
   Position,
   configManager,
   displayPlayerName,
-  getBlockTimestamp,
   getGuardsByStructure,
   getGuildFromPlayerAddress,
   getHyperstructureProgress,
@@ -20,7 +20,7 @@ import { usePlayerProfile } from "@/hooks/use-player-profile";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRowOrAbsent, useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { ContractAddress, ID, BANDITS_NAME, RelicEffectWithEndTick, StructureType } from "@bibliothecadao/types";
+import { ContractAddress, ID, BANDITS_NAME, RelicEffect, StructureType } from "@bibliothecadao/types";
 import { useCallback, useMemo } from "react";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { presentedMineKind } from "@bibliothecadao/eternum";
@@ -95,18 +95,17 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   const isAlly = isMine || Boolean(playerGuild && userGuild && playerGuild.entityId === userGuild.entityId);
   const ownerProfile = usePlayerProfile(structure?.owner);
   const addressName = structure?.owner ? (ownerProfile.name ?? undefined) : BANDITS_NAME;
-  const relicEffects: RelicEffectWithEndTick[] = useMemo(() => {
-    const effects: RelicEffectWithEndTick[] = [];
-    const { currentArmiesTick } = getBlockTimestamp();
+  const timestamp = useCurrentDefaultTick();
+  const relicEffects: RelicEffect[] = useMemo(() => {
+    const effects: RelicEffect[] = [];
     if (structure) {
       for (const guard of store.inGame("Guard", structure.game_id)) {
-        if (guard.structure_id === structure.entity_id)
-          effects.push(...getStructureArmyRelicEffects(guard, currentArmiesTick));
+        if (guard.structure_id === structure.entity_id) effects.push(...getStructureArmyRelicEffects(guard, timestamp));
       }
     }
-    if (productionBoostBonus) effects.push(...getStructureRelicEffects(productionBoostBonus, currentArmiesTick));
+    if (productionBoostBonus) effects.push(...getStructureRelicEffects(productionBoostBonus, timestamp));
     return effects;
-  }, [productionBoostBonus, structure, store, revision]);
+  }, [productionBoostBonus, structure, store, revision, timestamp]);
   const structureDetails = structure
     ? { structure, resources, playerGuild, guards, isAlly, addressName, isMine, relicEffects }
     : null;

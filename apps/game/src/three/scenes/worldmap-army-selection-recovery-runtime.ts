@@ -2,7 +2,6 @@ interface RunWorldmapArmySelectionRecoveryInput {
   awaitActiveChunkSwitch?: () => Promise<void>;
   forceChunkRefresh: () => Promise<void>;
   isArmyAvailable: () => boolean;
-  isArmyPendingMovement: () => boolean;
   maxRetries?: number;
   onError?: (error: unknown) => void;
   onRecovered?: () => void;
@@ -20,11 +19,6 @@ export async function runWorldmapArmySelectionRecovery(input: RunWorldmapArmySel
     const retryDelayMs = input.retryDelayMs ?? 200;
 
     for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
-      if (input.isArmyPendingMovement()) {
-        input.onUnavailable?.();
-        return;
-      }
-
       if (input.isArmyAvailable()) {
         input.onRecovered?.();
         return;

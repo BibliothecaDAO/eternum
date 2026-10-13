@@ -66,6 +66,16 @@ fn setup() -> (super::Deployment, ResourceKey, u64, u64) {
 
 #[test]
 fn spatial_commands_match_replay_views() {
+    replay_armies(false);
+}
+
+#[test]
+#[ignore]
+fn record_spatial_replay_armies() {
+    replay_armies(true);
+}
+
+fn replay_armies(record: bool) {
     let (d, home, other, first, second) = setup_homes();
     grant(d, home, 35, 1000 * RESOURCE_PRECISION);
     grant(d, home, 36, 1000 * RESOURCE_PRECISION);
@@ -85,11 +95,11 @@ fn spatial_commands_match_replay_views() {
     let mut spy = spy_events();
     for (command, timestamp) in array![
         (Command::Move(Move { explorer_id: first, directions: array![0_u8].span() }), 120_u64),
-        (Command::Move(Move { explorer_id: first, directions: array![3_u8].span() }), 120),
+        (Command::Move(Move { explorer_id: first, directions: array![3_u8].span() }), 140),
         (transfer(Army::Explorer(first), Army::Explorer(second), 10), 140),
         (manage(ManageTroops::RemoveExplorer(second)), 150),
     ] {
-        assert!(execute(d, command, timestamp));
+        assert!(execute(d, command, timestamp), "replay command refused at {}", timestamp);
         super::state::assert_inline_armies_have_no_progress(d.games, 3, array![first, second].span());
         for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
             for key in event.keys.span() {
@@ -99,7 +109,7 @@ fn spatial_commands_match_replay_views() {
         super::state::assert_spatial_indexes(d.games, 3, entities, tiles);
         frames.append(super::spatial_replay::capture(d.games, 3, entities, tiles, ref spy));
     }
-    super::spatial_replay::compare("armies", frames);
+    super::spatial_replay::compare("armies", frames, record);
 }
 fn troop(d: super::Deployment, id: u64) -> Option<ExplorerTroops> {
     GameState { contract_address: d.games }.resolved_explorer(ExplorerKey { game_id: 3, explorer_id: id })
@@ -163,7 +173,7 @@ fn explorer_transfer_preserves_the_worse_stamina_and_cooldown_and_deletes_an_emp
     for (id, stamina, cooldown) in array![(first, 2_u64, 190_u32), (second, 9, 150)] {
         let mut row = troop(d, id).unwrap();
         row.troops.stamina.set_amount(stamina);
-        row.troops.stamina.set_updated_tick(2);
+        row.troops.stamina.set_settled_at(140);
         row.troops.battle_cooldown_end = cooldown;
         crate::tests::resource_commands::set_explorer_fixture(
             d.games, crate::troops::ExplorerKey { game_id: 3, explorer_id: id }, row,
@@ -523,7 +533,7 @@ fn five_step_move_charges_five_times_one_step_food() {
         map.reveal(crate::geometry::tile_key(3, crate::troops::Coord { x: start.x + offset, ..start }), 11);
     }
     explorer.troops.stamina.set_amount(120);
-    explorer.troops.stamina.set_updated_tick(2);
+    explorer.troops.stamina.set_settled_at(120);
     super::resource_commands::set_explorer_fixture(d.games, ExplorerKey { game_id: 3, explorer_id: first }, explorer);
     let wheat = ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 35 };
     let fish = ResourceSlot { resource_type: 36, ..wheat };
@@ -558,7 +568,7 @@ fn multi_tile_move_spends_each_steps_stamina_and_rejects_a_blocked_path_atomical
     stop_cheat_caller_address(d.games);
     let mut before = troop(d, first).unwrap();
     before.troops.stamina.set_amount(120);
-    before.troops.stamina.set_updated_tick(2);
+    before.troops.stamina.set_settled_at(120);
     crate::tests::resource_commands::set_explorer_fixture(
         d.games, crate::troops::ExplorerKey { game_id: 3, explorer_id: first }, before,
     );

@@ -2,13 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useGame } from "@/hooks/context/game-context";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import {
-  configManager,
-  getAutomationProjectionTick,
-  getBlockTimestamp,
-  isMilitaryResource,
-  ResourceManager,
-} from "@bibliothecadao/eternum";
+import { configManager, getBlockTimestamp, isMilitaryResource, ResourceManager } from "@bibliothecadao/eternum";
 import { ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { canTransferMilitaryInventoryBetweenStructureIds } from "@/ui/lib/structure-capabilities";
 import { isEntityOwnedByAccount } from "@/utils/entity-ownership";
@@ -119,9 +113,7 @@ export const useTransferAutomationRunner = () => {
         return;
       }
 
-      const { currentBlockTimestamp } = getBlockTimestamp();
-      // Use conservative tick for resource validation to prevent tx failures from clock desync
-      const { currentDefaultTick: conservativeTick } = getAutomationProjectionTick();
+      const { currentBlockTimestamp, currentDefaultTick } = getBlockTimestamp();
       if (configManager.isGameOver()) {
         stopTransferAutomation();
         return;
@@ -181,10 +173,16 @@ export const useTransferAutomationRunner = () => {
             }
 
             const rm = new ResourceManager(store, sourceId);
-            const donkeyBalHuman = availableBalance(rm, conservativeTick, sourceId, ResourcesIds.Donkey, plannedDebits);
+            const donkeyBalHuman = availableBalance(
+              rm,
+              currentDefaultTick,
+              sourceId,
+              ResourcesIds.Donkey,
+              plannedDebits,
+            );
 
             const transferList = planTransferAmounts(entry, (resourceId) =>
-              availableBalance(rm, conservativeTick, sourceId, resourceId, plannedDebits),
+              availableBalance(rm, currentDefaultTick, sourceId, resourceId, plannedDebits),
             );
 
             if (transferList.length === 0) {

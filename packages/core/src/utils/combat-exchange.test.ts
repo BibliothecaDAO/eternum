@@ -27,7 +27,7 @@ const readFixture = () => {
   if (version !== 1n) throw new Error(`Combat fixture version ${version}`);
   if (felts.length !== HEADER_FELTS + Number(caseCount) * RECORD_FELTS) throw new Error("Combat fixture length");
   const rules = readRules(header.slice(2));
-  const cases = Array.from({ length: Number(caseCount) }, () => readCase(next));
+  const cases = Array.from({ length: Number(caseCount) }, () => readCase(next, rules.tickSeconds));
   return { rules, cases };
 };
 
@@ -36,6 +36,7 @@ const readRules = (felts: bigint[]): CombatRules => {
   const flags = stamina.map(Number);
   return {
     cooldownSeconds: 0,
+    tickSeconds: flags[16]!,
     damage: {
       damage_raid_percent_num: Number(raid),
       damage_biome_bonus_num: Number(biomeBonus),
@@ -65,11 +66,12 @@ const readRules = (felts: bigint[]): CombatRules => {
   };
 };
 
-const readSide = (next: () => bigint, currentTick: bigint): ExchangeTroops => {
+const readSide = (next: () => bigint, currentTick: bigint, tickSeconds: number): ExchangeTroops => {
   const category = CATEGORIES[Number(next())]!;
   const tier = TIERS[Number(next())]!;
   const count = next();
-  const stamina = { amount: next(), updated_tick: next() };
+  // The archived vector stores a tick index; convert its input to seconds.
+  const stamina = { amount: next(), settled_at: Number(next()) * tickSeconds, remainder: 0 };
   const damageBonusPercent = Number(next());
   return {
     category,
@@ -78,19 +80,19 @@ const readSide = (next: () => bigint, currentTick: bigint): ExchangeTroops => {
     stamina,
     boosts: {
       incr_damage_dealt_percent_num: damageBonusPercent * 100,
-      incr_damage_dealt_end_tick: Number(currentTick) + 1,
+      incr_damage_dealt_end_at: (Number(currentTick) + 1) * tickSeconds,
       decr_damage_gotten_percent_num: 0,
-      decr_damage_gotten_end_tick: 0,
+      decr_damage_gotten_end_at: 0,
       incr_stamina_regen_percent_num: 0,
-      incr_stamina_regen_tick_count: 0,
+      incr_stamina_regen_seconds_left: 0,
       incr_explore_reward_percent_num: 0,
-      incr_explore_reward_end_tick: 0,
+      incr_explore_reward_end_at: 0,
     },
     battle_cooldown_end: 0,
   };
 };
 
-const readCase = (next: () => bigint) => {
+const readCase = (next: () => bigint, tickSeconds: number) => {
   const id = Number(next());
   const alt = next() === 1n;
   const biome = BIOMES.get(Number(next()));
@@ -100,8 +102,8 @@ const readCase = (next: () => bigint) => {
   const currentTick = next();
   const attackerIsStructureGuard = next() === 1n;
   const defenderIsStructureGuard = next() === 1n;
-  const attacker = readSide(next, currentTick);
-  const defender = readSide(next, currentTick);
+  const attacker = readSide(next, currentTick, tickSeconds);
+  const defender = readSide(next, currentTick, tickSeconds);
   const expected = {
     attackerLoss: next(),
     defenderLoss: next(),
@@ -110,7 +112,6 @@ const readCase = (next: () => bigint) => {
   };
   const context = {
     timestamp,
-    currentTick: Number(currentTick),
     attackDistance,
     attackerBiome: biome,
     defenderBiome: biome,
@@ -138,6 +139,37 @@ describe("an exchange resolves as the contract resolves it", () => {
         defenderStamina: result.defender.stamina.amount,
       }).toEqual({ id: recorded.id, ...recorded.expected });
     }
+  });
+
+  it("drops damage and defence relics exactly at their end second", () => {
+    const recorded = cases.find((candidate) => candidate.expected.defenderLoss < candidate.defender.count)!;
+    const { timestamp } = recorded.context;
+    const army = (endAt: number, percent: number): ExchangeTroops => ({
+      ...recorded.attacker,
+      boosts: {
+        ...recorded.attacker.boosts,
+        incr_damage_dealt_percent_num: percent,
+        incr_damage_dealt_end_at: endAt,
+      },
+    });
+    const guard = (endAt: number, percent: number): ExchangeTroops => ({
+      ...recorded.defender,
+      boosts: {
+        ...recorded.defender.boosts,
+        decr_damage_gotten_percent_num: percent,
+        decr_damage_gotten_end_at: endAt,
+      },
+    });
+    const resolve = (endAt: number, damage: number, defence: number) => {
+      const result = resolveExchange(army(endAt, damage), guard(endAt, defence), recorded.context, rules);
+      if (!result.ok) throw new Error(result.refusal);
+      return result.defenderLoss;
+    };
+    const plain = resolve(timestamp, 0, 0);
+    expect(resolve(timestamp, 5000, 0)).toBe(plain);
+    expect(resolve(timestamp, 0, 5000)).toBe(plain);
+    expect(resolve(timestamp + 1, 5000, 0)).toBeGreaterThan(plain);
+    expect(resolve(timestamp + 1, 0, 5000)).toBeLessThan(plain);
   });
 
   it("gives the surface and Ethereal twin of each exchange the same result", () => {

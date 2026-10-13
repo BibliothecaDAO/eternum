@@ -18,7 +18,7 @@ fn frontier_reveal_keeps_scaled_precision_and_ignores_boosts() {
     };
     assert_eq!(reveal_reward(troops, limits, 15, 123).amount, 225075000000);
     troops.boosts.incr_explore_reward_percent_num = 5000;
-    troops.boosts.incr_explore_reward_end_tick = 100000;
+    troops.boosts.incr_explore_reward_end_at = 100000;
     troops.boosts.incr_damage_dealt_percent_num = 40;
     troops.boosts.incr_stamina_regen_percent_num = 5000;
     assert_eq!(reveal_reward(troops, limits, 15, 123).amount, 225075000000);

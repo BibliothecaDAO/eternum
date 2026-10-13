@@ -626,7 +626,7 @@ fn automatic_blitz_settlement_is_open_atomic_and_resumes_its_fixed_order() {
             1002,
             crate::commands::resource_context(super::context(d.games, game_id)),
         );
-    assert_eq!(resources.resource_balance(slot), balance - 1, "production paid before the first pulse");
+    assert_eq!(resources.resource_balance(slot), balance + 10 - 1, "first second of production missing");
     resources
         .spend_resource(
             ResourceKey { game_id, entity_id },
@@ -635,7 +635,7 @@ fn automatic_blitz_settlement_is_open_atomic_and_resumes_its_fixed_order() {
             1020,
             crate::commands::resource_context(super::context(d.games, game_id)),
         );
-    assert_eq!(resources.resource_balance(slot), balance + 60 * 10 - 1, "first production pulse missing");
+    assert_eq!(resources.resource_balance(slot), balance + 19 * 10 - 1, "elapsed production missing");
     stop_cheat_caller_address(d.games);
     let progress = views.settlement_progress(game_id);
     assert!(commands.settle_blitz_roster(game_id, super::authority(), crate::commands::action_context(context)) == 0);
@@ -716,7 +716,7 @@ fn roster_settlement_displaces_an_army_without_a_stale_position_or_home_entry() 
                 category: crate::troops::TroopType::Knight,
                 tier: crate::troops::TroopTier::T1,
                 count: RESOURCE_PRECISION,
-                stamina: crate::troops::Stamina { amount: 120, updated_tick: 0 }.into(),
+                stamina: crate::troops::Stamina { amount: 120, settled_at: 0, remainder: 0 }.into(),
                 boosts: Default::default(),
                 battle_cooldown_end: 0,
             },
@@ -1272,7 +1272,7 @@ fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
             ),
         );
     stop_cheat_caller_address(d.games);
-    let elapsed: u128 = ((tomorrow + 20) / 60 * 60 - 350 / 60 * 60).into();
+    let elapsed: u128 = (tomorrow + 20 - 350).into();
     assert_eq!(resources.resource_balance(labor), stored + elapsed * producer.production_rate.into());
     assert_eq!(resources.resource_production(labor).production_rate, producer.production_rate);
     assert!(execute_in_game(d, game_id, Command::LevelUp(home_id), tomorrow + 30));

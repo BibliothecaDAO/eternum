@@ -140,9 +140,9 @@ const renderBuildings = (client: GameClient, structureId: ID): string => {
 const renderArmies = (game: RunnerGame): string => {
   const armies = ownExplorers(game);
   if (armies.length === 0) return "I have no explorer armies.";
-  const { currentArmiesTick } = getBlockTimestamp();
+  const { currentDefaultTick } = getBlockTimestamp();
   return clipList(
-    armies.map((army) => renderArmy(game.client, army, currentArmiesTick)),
+    armies.map((army) => renderArmy(game.client, army, currentDefaultTick)),
     LIST_LIMIT,
   ).join("\n");
 };
@@ -150,8 +150,8 @@ const renderArmies = (game: RunnerGame): string => {
 const ownExplorers = (game: RunnerGame): ArmyInfo[] =>
   game.client.views.structures(game.viewer()).flatMap((structure) => game.client.views.explorers(structure.entityId));
 
-const renderArmy = (client: GameClient, army: ArmyInfo, currentArmiesTick: number): string => {
-  const stamina = client.views.stamina(army.entityId).getStamina(currentArmiesTick);
+const renderArmy = (client: GameClient, army: ArmyInfo, timestamp: number): string => {
+  const stamina = client.views.stamina(army.entityId).getStamina(timestamp);
   if (!stamina) throw new Error(`Explorer ${army.entityId} is not synchronized`);
   const troops = `${formatAmount(army.troops.count)} ${army.troops.category} ${army.troops.tier}`;
   const home = army.isHome ? ", at home" : "";

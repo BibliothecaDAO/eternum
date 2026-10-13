@@ -1,4 +1,5 @@
-import { BiomeType, RESOURCE_PRECISION, type Troops } from "@bibliothecadao/types";
+import { bonusActive } from "./relic";
+import { BiomeType, TickIds, RESOURCE_PRECISION, type Troops } from "@bibliothecadao/types";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { configManager } from "../managers/config-manager";
 import { staminaAt } from "../managers/troop-stamina";
@@ -31,6 +32,7 @@ export type TroopStaminaConfig = NativeRows["SliceRules"]["troop_stamina_config"
 
 export interface CombatRules {
   cooldownSeconds: number;
+  tickSeconds: number;
   damage: TroopDamageConfig;
   stamina: TroopStaminaConfig;
 }
@@ -40,6 +42,7 @@ export const activeCombatRules = (): CombatRules => {
   const { battle_config, troop_damage_config, troop_stamina_config } = configManager.getTroopConfig();
   return {
     cooldownSeconds: battle_config.cooldown_seconds,
+    tickSeconds: Number(configManager.getTick(TickIds.Armies)),
     damage: troop_damage_config,
     stamina: troop_stamina_config,
   };
@@ -47,7 +50,6 @@ export const activeCombatRules = (): CombatRules => {
 
 interface ExchangeContext {
   timestamp: number;
-  currentTick: number;
   attackDistance: number;
   attackerBiome: BiomeType;
   defenderBiome: BiomeType;
@@ -94,8 +96,10 @@ export const resolveExchange = (
   const defenderCooldownEnd = Math.max(defender.battle_cooldown_end, now);
   if (attackerCooldownEnd > now) return { ok: false, refusal: "cooldown" };
 
-  const attackerStamina = staminaAt(attacker, context.currentTick, rules.stamina).amount;
-  const defenderStamina = staminaAt(defender, context.currentTick, rules.stamina).amount;
+  const attackerBar = staminaAt(attacker, now, rules.stamina, rules.tickSeconds);
+  const attackerStamina = attackerBar.amount;
+  const defenderBar = staminaAt(defender, now, rules.stamina, rules.tickSeconds);
+  const defenderStamina = defenderBar.amount;
   if (attackerStamina < BigInt(rules.stamina.stamina_attack_req)) return { ok: false, refusal: "insufficient-stamina" };
 
   const ranged = context.attackDistance > 1;
@@ -133,14 +137,14 @@ export const resolveExchange = (
       attacker,
       attackerLoss,
       attackerStamina - attackerStaminaLoss,
-      context.currentTick,
+      attackerBar,
       attackerCooldownEnd + exchangeCooldown(rules.cooldownSeconds, ranged, damage.attacker, damage.defender),
     ),
     defender: afterExchange(
       defender,
       defenderLoss,
       defenderStamina - defenderStaminaLoss,
-      context.currentTick,
+      defenderBar,
       defenderCooldownEnd + exchangeCooldown(rules.cooldownSeconds, ranged, damage.defender, damage.attacker),
     ),
   };
@@ -150,13 +154,14 @@ const afterExchange = (
   troops: ExchangeTroops,
   loss: bigint,
   stamina: bigint,
-  tick: number,
+  bar: ReturnType<typeof staminaAt>,
   cooldownEnd: number,
 ): ExchangeTroops => ({
   ...troops,
   count: troops.count - loss,
   battle_cooldown_end: cooldownEnd,
-  stamina: { amount: stamina, updated_tick: BigInt(tick) },
+  stamina: { amount: stamina, settled_at: bar.settled_at, remainder: bar.remainder },
+  boosts: { ...troops.boosts, incr_stamina_regen_seconds_left: bar.boostSecondsLeft },
 });
 
 /** Ranged attacks add half the timer; melee refunds the timer by the same damage ratio as the contract. */
@@ -201,8 +206,8 @@ const exchangeDamage = (
   defenderDamage = mul(defenderDamage, incomingMultiplier(attacker, context.attackerIsStructureGuard));
   if (context.attackDistance > 1) defenderDamage = ZERO;
 
-  const attackerBoosts = activeBoosts(attacker, context.currentTick);
-  const defenderBoosts = activeBoosts(defender, context.currentTick);
+  const attackerBoosts = activeBoosts(attacker, context.timestamp);
+  const defenderBoosts = activeBoosts(defender, context.timestamp);
   attackerDamage = add(attackerDamage, div(mul(attackerDamage, unscaled(attackerBoosts.dealt)), BPS_100));
   defenderDamage = add(defenderDamage, div(mul(defenderDamage, unscaled(defenderBoosts.dealt)), BPS_100));
   defenderDamage = sub(defenderDamage, div(mul(defenderDamage, unscaled(attackerBoosts.gotten)), BPS_100));
@@ -280,13 +285,13 @@ const outgoingMultiplier = (attacker: ExchangeTroops, context: ExchangeContext):
 const incomingMultiplier = (troops: ExchangeTroops, isStructureGuard: boolean): Fixed =>
   isStructureGuard && troops.category === "Knight" ? percent(85) : unscaled(1);
 
-const activeBoosts = (troops: ExchangeTroops, currentTick: number) => ({
+const activeBoosts = (troops: ExchangeTroops, timestamp: number) => ({
   dealt:
-    troops.boosts.incr_damage_dealt_end_tick !== 0 && troops.boosts.incr_damage_dealt_end_tick <= currentTick
+    troops.boosts.incr_damage_dealt_end_at !== 0 && !bonusActive(troops.boosts.incr_damage_dealt_end_at, timestamp)
       ? 0
       : troops.boosts.incr_damage_dealt_percent_num,
   gotten:
-    troops.boosts.decr_damage_gotten_end_tick !== 0 && troops.boosts.decr_damage_gotten_end_tick <= currentTick
+    troops.boosts.decr_damage_gotten_end_at !== 0 && !bonusActive(troops.boosts.decr_damage_gotten_end_at, timestamp)
       ? 0
       : troops.boosts.decr_damage_gotten_percent_num,
 });
@@ -327,7 +332,7 @@ export const forecastFight = (
 ): FightForecast => {
   const first = resolveExchange(attacker, defender, context, rules);
   if (!first.ok) return { outcome: "refused", refusal: first.refusal };
-  const startingStamina = staminaAt(attacker, context.currentTick, rules.stamina).amount;
+  const startingStamina = staminaAt(attacker, context.timestamp, rules.stamina, rules.tickSeconds).amount;
   let state = first;
   let exchanges = 1;
   let stoppedBy: ExchangeRefusal | undefined;

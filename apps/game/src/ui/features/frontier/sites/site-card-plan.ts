@@ -37,7 +37,6 @@ export interface SiteAttack {
   /** The site tile's biome, which both sides fight on. */
   biome: BiomeType;
   timestamp: number;
-  armiesTick: number;
 }
 
 /**
@@ -205,7 +204,6 @@ const forecastFightAt = (
     guard,
     {
       timestamp: attack.timestamp,
-      currentTick: attack.armiesTick,
       attackDistance: distance,
       attackerBiome: attack.biome,
       defenderBiome: attack.biome,
