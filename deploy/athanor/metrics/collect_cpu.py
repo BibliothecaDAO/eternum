@@ -1,6 +1,7 @@
-"""Replace the Docker stats receiver with read-only cgroup v2 CPU samples."""
+"""Collect cgroup CPU samples and report sustained node commit degradation from the existing OTLP export."""
 
 import json
+import os
 from pathlib import Path
 import re
 import signal
@@ -31,6 +32,7 @@ def main():
     if not (CGROUP_ROOT / 'cgroup.controllers').is_file():
         raise SystemExit('mount the host cgroup v2 tree read-only at /host-cgroup')
     previous = {}
+    commit_alarm = CommitAlarm()
     collector = subprocess.Popen(['/otelcol-contrib', *sys.argv[1:]])
     for signum in (signal.SIGTERM, signal.SIGINT):
         signal.signal(signum, lambda received, _frame: collector.send_signal(received))
@@ -38,6 +40,8 @@ def main():
     try:
         while collector.poll() is None:
             previous = append_samples(CGROUP_ROOT, OUTPUT, previous)
+            for event in commit_alarm.poll(Path('/data/metrics.jsonl')):
+                print(json.dumps(event), flush=True)
             deadline += INTERVAL_SECONDS
             try:
                 return collector.wait(timeout=max(0, deadline - time.monotonic()))
@@ -52,6 +56,71 @@ def main():
             except subprocess.TimeoutExpired:
                 collector.kill()
                 collector.wait()
+
+
+class CommitAlarm:
+    """Three fresh slow exports alarm; one healthy export recovers. A single flush is not sustained degradation."""
+
+    def __init__(self):
+        self.identity = None
+        self.offset = 0
+        self.skip_remainder = False
+        self.timestamp = 0
+        self.slow_samples = 0
+        self.active = False
+
+    def poll(self, path):
+        events = []
+        try:
+            stream = path.open()
+        except FileNotFoundError:
+            return events
+        with stream:
+            stat = os.fstat(stream.fileno())
+            identity = (stat.st_dev, stat.st_ino)
+            if self.identity is None:
+                self.offset = stat.st_size  # Do not replay yesterday's alarms after a collector restart.
+                if self.offset:
+                    stream.seek(self.offset - 1)
+                    self.skip_remainder = stream.read(1) != '\n'
+            elif self.identity != identity or stat.st_size < self.offset:
+                self.offset = 0
+                self.skip_remainder = False
+            self.identity = identity
+            stream.seek(self.offset)
+            while line := stream.readline():
+                if not line.endswith('\n'):
+                    break  # The exporter may still be writing this record.
+                self.offset = stream.tell()
+                if self.skip_remainder:
+                    self.skip_remainder = False
+                    continue
+                for timestamp, seconds in commit_samples(json.loads(line)):
+                    event = self.observe(timestamp, seconds)
+                    if event is not None:
+                        events.append(event)
+        return events
+
+    def observe(self, timestamp, seconds):
+        if timestamp <= self.timestamp:
+            return None
+        self.timestamp = timestamp
+        self.slow_samples = self.slow_samples + 1 if seconds > 0.020 else 0
+        active = self.slow_samples >= 3 if not self.active else seconds > 0.020
+        if active == self.active:
+            return None
+        self.active = active
+        return {'event': 'node_commit_slow' if active else 'node_commit_recovered',
+                'timeUnixNano': str(timestamp), 'commitMs': seconds * 1000, 'limitMs': 20}
+
+
+def commit_samples(row):
+    for resource in row.get('resourceMetrics', []):
+        for scope in resource.get('scopeMetrics', []):
+            for metric in scope.get('metrics', []):
+                if metric.get('name') == 'close_commit_stage_last_seconds':
+                    for point in metric.get('gauge', {}).get('dataPoints', []):
+                        yield int(point['timeUnixNano']), float(point['asDouble'])
 
 
 def append_samples(root, output, previous):

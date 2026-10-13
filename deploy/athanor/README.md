@@ -65,6 +65,19 @@ Herald's `LordsBudget` row. The preset carries no pool.
 Close a Frontier pool only after `frontier_claim_deadline(shard, season_id)` and with an empty relay queue for that
 pool. Payments can still complete after the claim deadline; `close_frontier` voids all unpaid reports.
 
+## Uptime qualification
+
+Every load qualification includes an idle leg after gameplay: observe the same chain for at least nine hours, long
+enough to cover the measured tombstone accumulation cycle. Record commit p95 and block lifetime every thirty minutes,
+through at least two periodic database flushes, and repeat a modest gameplay check at the end. Require idle commit p95
+below 20 ms, block lifetime below the configured block time, and no flush stall longer than one block time. A short
+burst cannot establish long-running node health.
+
+The existing metrics collector emits `node_commit_slow` after three fresh OTLP exports above 20 ms and
+`node_commit_recovered` on recovery. Read these events in the metrics container log. This is a local alarm, not a
+notification delivery service; it uses `close_commit_stage_last_seconds` from the pinned node. One periodic flush
+outlier does not trigger it. The collector follows the rotating export and never counts the same sample twice.
+
 ## Gameplay validation
 
 The harness uses the shared client, native fact store, direct signed invokes and public receipt polling. On one of our

@@ -458,6 +458,52 @@ class ShardTest(unittest.TestCase):
         self.assertTrue(metrics["read_only"])
         self.assertEqual(metrics["cap_drop"], ["ALL"])
 
+    def test_commit_alarm_requires_fresh_sustained_slow_exports_and_recovers(self):
+        alarm = load_cpu_sampler().CommitAlarm()
+        self.assertIsNone(alarm.observe(1, .111))  # One periodic flush is not an incident.
+        self.assertIsNone(alarm.observe(2, .001))
+        self.assertIsNone(alarm.observe(3, .030))
+        self.assertIsNone(alarm.observe(3, .030))  # Re-reading a point cannot advance the count.
+        self.assertIsNone(alarm.observe(4, .040))
+        self.assertEqual(alarm.observe(5, .050)['event'], 'node_commit_slow')
+        self.assertIsNone(alarm.observe(6, .060))
+        self.assertEqual(alarm.observe(7, .001)['event'], 'node_commit_recovered')
+
+    def test_commit_alarm_tails_complete_records_across_export_rotation(self):
+        sampler = load_cpu_sampler()
+        alarm = sampler.CommitAlarm()
+        def record(timestamp):
+            return json.dumps({'resourceMetrics': [{'scopeMetrics': [{'metrics': [{
+                'name': 'close_commit_stage_last_seconds',
+                'gauge': {'dataPoints': [{'timeUnixNano': str(timestamp), 'asDouble': .030}]},
+            }]}]}]}) + '\n'
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'metrics.jsonl'
+            self.assertEqual(alarm.poll(path), [])
+            path.write_text(record(1))
+            self.assertEqual(alarm.poll(path), [])  # Ignore records from before startup.
+            with path.open('a') as stream:
+                stream.write(record(2) + record(3)[:-1])
+            self.assertEqual(alarm.poll(path), [])
+            with path.open('a') as stream:
+                stream.write('\n')
+            self.assertEqual(alarm.poll(path), [])
+            path.rename(path.with_suffix('.old'))
+            path.write_text(record(4))
+            self.assertEqual([row['event'] for row in alarm.poll(path)], ['node_commit_slow'])
+            self.assertEqual(alarm.poll(path), [])
+
+    def test_commit_alarm_starting_during_a_write_skips_that_record(self):
+        alarm = load_cpu_sampler().CommitAlarm()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'metrics.jsonl'
+            path.write_text('{"resourceMetrics":')
+            self.assertEqual(alarm.poll(path), [])
+            with path.open('a') as stream:
+                stream.write('[]}\n{}\n')
+            self.assertEqual(alarm.poll(path), [])
+            self.assertEqual(alarm.offset, path.stat().st_size)
+
     def test_cpu_samples_rotate_as_the_collector_export_does(self):
         sampler = load_cpu_sampler()
         with tempfile.TemporaryDirectory() as temporary:
