@@ -35,6 +35,7 @@ def configuration():
         "public_herald_url": os.environ["PUBLIC_HERALD_URL"],
         "vrf_workers": int(os.environ["VRF_WORKERS"]), "l2_gas_bound": os.environ["L2_GAS_BOUND"],
         "player_capacity": int(os.environ["PLAYER_CAPACITY"]),
+        "block_time": os.environ.get("BLOCK_TIME", "2s"),
         "chain_config": os.environ.get("CHAIN_CONFIG", str(ROOT / "deploy/athanor/chain-config.yaml")),
     }
     shard.validate_shard_identity(config)

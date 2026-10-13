@@ -112,9 +112,25 @@ release's contents or reuse a chain identity for a fresh world.
 
 ## Shipped node settings
 
-Closed blocks remain 2 seconds. Block caps are 10,000 transactions, 1,000,000 state-diff entries, 1,000,000 events and
-10^13 for each of Sierra, proving and receipt L2 gas. Parallel Merkle construction is enabled and historical database
-snapshots are disabled (`--db-max-kept-snapshots=0`). These are the shipped leader configuration, not trial scripts.
+The next fresh dev chain closes blocks every second, selected by `block_time: "1s"` in `deploy/release/dev.json`. The
+shared initializer renders `BLOCK_TIME` into the chain configuration; environments without an override retain 2 seconds,
+including production. Existing chain configuration is never rewritten by this change. Measurement runner inputs use the
+same `block_time` value. This is an environment value, not a gameplay mode.
+
+Block capacity limits stay unchanged: they bound work per block, not a duration or a throughput target. There is no
+pending-update interval in the shipped configuration; pre-confirmation keeps the pinned node’s default. Measure its
+cadence during qualification rather than inferring it from block time.
+
+Block caps are 10,000 transactions, 1,000,000 state-diff entries, 1,000,000 events and 10^13 for each of Sierra, proving
+and receipt L2 gas. Database, Merkle and executor settings use the pinned node’s defaults.
 
 The node keeps its own response-size default. The response size of a full 2,000-action block remains unmeasured; ops
-must measure it before adding an override. Execution batches are 4; block-production batches are explicitly 1,024.
+must measure it before adding an override. Compose supplies no execution-batch override.
+
+Qualify 1-second blocks on a fresh dev chain before changing production: repeat the 2-second idle baseline for at least
+120 minutes, then the nine-hour soak that covers database maintenance. Record run count, p50/p95/max total-close time,
+node RSS, Herald lag and CPU, actual block lifetime and addInvoke latency; compare like-for-like idle and burst loads.
+The reference is idle total-close p95 2–3 ms and RSS 3.9 GiB at 120 minutes. The close alarm is 6 ms (twice the
+reference p95 upper bound), sustained across three fresh exports. Record stalls and missing measurements explicitly;
+block lifetime must come from observed close timestamps if the pinned node does not export it. No qualification has been
+run by changing these inputs.

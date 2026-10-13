@@ -62,6 +62,9 @@ class DeployTest(unittest.TestCase):
                   "public_herald_url": "https://herald.staging.test", "vrf_workers": 8, "l2_gas_bound": "0x47868c00"}
         rendered = deploy.render_environment(inputs, "SHARD_INIT_IMAGE=ghcr.io/x@sha256:1\n")
         self.assertIn("SHARD_INIT_IMAGE=ghcr.io/x@sha256:1\n", rendered)
+        self.assertIn("BLOCK_TIME=2s\n", rendered)
+        dev = deploy.render_environment({**inputs, "block_time": "1s"}, "")
+        self.assertIn("BLOCK_TIME=1s\n", dev)
         self.assertIn("PRESETS=2,5\n", rendered)
         self.assertIn("CHAIN_ID=REALMS_STAGING_D\n", rendered)
         self.assertNotIn("NODE_MEMORY", rendered)

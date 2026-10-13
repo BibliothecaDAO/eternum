@@ -138,7 +138,7 @@ class ShardTest(unittest.TestCase):
         for key, value in (
             ("chain_id", ""), ("chain_id", "a" * 32), ("chain_id", "a\nb"),
             ("port_base", 5050), ("cpuset", "0-23"), ("player_capacity", 0),
-            ("madara_image", NODE_IMAGE), ("vrf_workers", 0), ("shard", "../live"),
+            ("madara_image", NODE_IMAGE), ("vrf_workers", 0), ("block_time", 1), ("block_time", "0s"), ("shard", "../live"),
             ("trusted_proxy", "cloudflared"), ("presets", []), ("presets", ["2"]),
             ("guardian_url", "https://identity.test/api"),
             ("node_flags", ["--base-path=/live"]),
@@ -269,12 +269,12 @@ class ShardTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             template = root / "template.yaml"
-            template.write_text('chain_name: "Template"\nchain_id: "OLD_SHARD"\nsequencer_address: "0x123"\n')
-            for name in ("SHARD_A", "SHARD_B"):
+            template.write_text('block_time: "9s"\nchain_name: "Template"\nchain_id: "OLD_SHARD"\nsequencer_address: "0x123"\n')
+            for name, cadence in (("SHARD_A", "1s"), ("SHARD_B", "2s")):
                 directory = root / name
                 directory.mkdir()
                 (directory / "host-accounts.json").write_text(json.dumps({"vrfPublicKey": {"x": "0x4", "y": "0x5"}}))
-                config = {**configuration(), "chain_id": name, "chain_config": str(template)}
+                config = {**configuration(), "chain_id": name, "block_time": cadence, "chain_config": str(template)}
                 guardian = {"publicKey": "0x123", "accountClassHash": "0x456"}
                 with patch("urllib.request.OpenerDirector.open", return_value=io.StringIO(json.dumps(guardian))):
                     shard.initialize_shard_identity(config, directory, "0x789")
@@ -283,6 +283,8 @@ class ShardTest(unittest.TestCase):
                 self.assertEqual(manifest["shard"]["guardianPublicKey"], guardian["publicKey"])
                 self.assertEqual(manifest["shard"]["accountClassHash"], guardian["accountClassHash"])
                 config = (directory / "chain-config.yaml").read_text()
+                self.assertIn(f'block_time: "{cadence}"', config)
+                self.assertEqual(config.count("block_time:"), 1)
                 self.assertEqual(config.count("chain_id:"), 1)
                 self.assertIn(f'chain_id: "{name}"', config)
                 self.assertNotIn("OLD_SHARD", config)
@@ -444,10 +446,10 @@ class ShardTest(unittest.TestCase):
         alarm = load_cpu_sampler().CloseAlarm()
         self.assertIsNone(alarm.observe(1, .111))  # One periodic flush is not an incident.
         self.assertIsNone(alarm.observe(2, .001))
-        self.assertIsNone(alarm.observe(3, .030))
-        self.assertIsNone(alarm.observe(3, .030))  # Re-reading a point cannot advance the count.
-        self.assertIsNone(alarm.observe(4, .040))
-        self.assertEqual(alarm.observe(5, .050)['event'], 'node_close_slow')
+        self.assertIsNone(alarm.observe(3, .007))
+        self.assertIsNone(alarm.observe(3, .007))  # Re-reading a point cannot advance the count.
+        self.assertIsNone(alarm.observe(4, .008))
+        self.assertEqual(alarm.observe(5, .009), {'event': 'node_close_slow', 'timeUnixNano': '5', 'closeMs': 9, 'limitMs': 6})
         self.assertIsNone(alarm.observe(6, .060))
         self.assertEqual(alarm.observe(7, .001)['event'], 'node_close_recovered')
 

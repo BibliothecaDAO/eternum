@@ -69,11 +69,11 @@ pool. Payments can still complete after the claim deadline; `close_frontier` voi
 
 Every load qualification includes an idle leg after gameplay: observe the same chain for at least nine hours, long
 enough to cover the measured tombstone accumulation cycle. Record total block-close p95 every thirty minutes and repeat
-a modest gameplay check at the end. Require idle block-close p95 below 20 ms and no close stall longer than the
+a modest gameplay check at the end. Require idle block-close p95 below 6 ms and no close stall longer than the
 configured block time. A short burst cannot establish long-running node health.
 
 The existing metrics collector observes total block close, not a separate commit stage. It emits `node_close_slow` after
-three fresh OTLP exports above 20 ms and `node_close_recovered` on recovery. Thirty seconds without a fresh block-close
+three fresh OTLP exports above 6 ms and `node_close_recovered` on recovery. Thirty seconds without a fresh block-close
 metric emits `node_close_metric_missing`; fresh data emits `node_close_metric_restored`. Malformed records emit
 `node_metric_record_invalid` and are skipped. Read these events in the metrics container log. This is a local alarm, not
 a notification delivery service; it uses `close_block_total_last_seconds` from the pinned node. One outlier does not
