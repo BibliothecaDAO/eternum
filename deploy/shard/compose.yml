@@ -41,6 +41,8 @@ services:
       - --base-path=/data
       - --db-fsync
       - --db-wal
+      # Per-block pre-confirmed range deletes accumulate tombstones until a flush; first 1,000 blocks measured p95 <8ms.
+      - --flush-every-n-blocks=1000
       - --chain-config-path=/config/chain-config.yaml
       - --rpc-external
       - --rpc-cors=all

@@ -23,6 +23,9 @@ class NodeSettingsTest(unittest.TestCase):
     def test_package_and_runner_keep_parallel_merkle_and_no_historical_snapshots(self):
         compose = shard.compose_configuration(configuration(), Path("/tmp/not-deployed"))
         flags = compose["services"]["madara"]["command"]
+        self.assertEqual(flags.count("--flush-every-n-blocks=1000"), 1)
+        self.assertIn("--db-fsync", flags)
+        self.assertIn("--db-wal", flags)
         self.assertEqual(flags.count("--parallel-merkle-enabled"), 1)
         self.assertEqual(flags.count("--db-max-kept-snapshots=0"), 1)
         self.assertFalse(any(flag.startswith("--rpc-max-response-size") for flag in flags))
