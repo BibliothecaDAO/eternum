@@ -54,6 +54,8 @@ export class HyperstructureModel extends InstancedModel {
   private readonly orientation = new Quaternion();
   private readonly position = new Vector3();
   private readonly partHeights: number[];
+  /** The assembled tower's, base to crown: the kit's parts are stacked when placed, so no one of them measures it. */
+  override readonly height = HYPERSTRUCTURE_HEIGHT;
   private readonly power: ReturnType<typeof createHyperstructurePower>;
   private seconds = 0;
 

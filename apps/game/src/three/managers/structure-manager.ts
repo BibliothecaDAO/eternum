@@ -107,7 +107,7 @@ import {
 import { cleanupVisibleStructurePass } from "./structure-visible-pass-cleanup";
 import {
   applyVisibleStructurePresentation,
-  COMPACT_LABEL_LIFT,
+  PLATE_CLEARANCE,
   STRUCTURE_SURFACE_LIFT,
 } from "./structure-visible-presentation";
 import {
@@ -811,7 +811,7 @@ export class StructureManager {
     const position = this.scratchCompactLabelPosition;
     getWorldPositionForHexCoordsInto(structure.hexCoords.col, structure.hexCoords.row, position);
     placePositionOnTerrain(position, this.resolveTerrainSurface());
-    position.y += STRUCTURE_SURFACE_LIFT + COMPACT_LABEL_LIFT;
+    position.y += STRUCTURE_SURFACE_LIFT + this.resolveStructureModelHeight(structure) + PLATE_CLEARANCE;
     return position;
   }
 
@@ -1339,6 +1339,11 @@ export class StructureManager {
     return !structure.usesFallbackCosmeticSkin;
   }
 
+  /** The height of the model the structure is drawn with; nothing stands over its tile until that model is loaded. */
+  private resolveStructureModelHeight(structure: StructureInfo): number {
+    return this.getModelForStructure(structure)?.height ?? 0;
+  }
+
   private getModelForStructure(structure: StructureInfo): StructureModel | undefined {
     if (this.hasCosmeticSkin(structure)) {
       return this.cosmeticStructureModels.get(structure.cosmeticId ?? "")?.[0];
@@ -1509,6 +1514,7 @@ export class StructureManager {
       },
       getLabel: (entityId) => this.entityIdLabels.get(safeInteger(entityId) as ID),
       updateLabel: (structure, label) => this.updateStructureLabelData(structure, label),
+      resolveModelHeight: (structure) => this.resolveStructureModelHeight(structure),
       syncCompactLabel: (structure, position) => this.updateStructureCompactLabel(structure, position),
       resolveAttachments: (structure) => this.resolveStructureAttachmentsForRender(structure),
       getAttachmentSignature: (templates) => this.getAttachmentSignature(templates),

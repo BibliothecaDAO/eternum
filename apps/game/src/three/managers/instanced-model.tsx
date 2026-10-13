@@ -7,6 +7,7 @@ import {
   AnimationClip,
   AnimationMixer,
   Box3,
+  type BufferAttribute,
   Color,
   Group,
   InstancedBufferAttribute,
@@ -89,6 +90,16 @@ interface AnimatedInstancedMesh extends InstancedMesh {
   animated: boolean;
 }
 
+/** The top of a model as it is drawn: the highest vertex of any of its meshes. */
+function measureModelHeight(meshes: InstancedMesh[]): number {
+  const box = new Box3();
+  return meshes.reduce(
+    (top, mesh) =>
+      Math.max(top, box.setFromBufferAttribute(mesh.geometry.getAttribute("position") as BufferAttribute).max.y),
+    0,
+  );
+}
+
 function createAnimatedInstancedMesh(geometry: Mesh["geometry"], material: MeshStandardMaterial, capacity: number) {
   const mesh = Object.assign(createInstancedMesh(geometry, material, capacity), {
     animated: false,
@@ -113,6 +124,8 @@ export default class InstancedModel {
   private animationActions: Map<number, AnimationAction> = new Map();
   private name: string;
   private worldBounds?: { box: Box3; sphere: Sphere };
+  /** How high the model stands over its origin: whatever is placed above it (its plate) clears this. */
+  readonly height: number;
   timeOffsets: Float32Array;
   private contactShadowMesh?: InstancedMesh;
   private readonly localGlows: LocalEmissiveGlow[] = [];
@@ -232,6 +245,7 @@ export default class InstancedModel {
     }
     this.localGlows.forEach((glow) => glow.updateBoundsAndCount());
     this.createContactShadowMesh(gltf);
+    this.height = measureModelHeight(this.instancedMeshes);
   }
 
   private createContactShadowMesh(gltf: any): void {

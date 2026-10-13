@@ -41,12 +41,16 @@ export class RewardTileModel {
   private readonly chest?: ChestPresentation;
   private readonly rift?: RiftPresentation;
   private readonly cameraPosition = new Vector3(0, 0, 1);
+  /** How high the tile's model stands over its origin: its plate clears this. */
+  readonly height: number;
 
   constructor(
     gltf: GLTF,
     private readonly capacity: number,
   ) {
     this.template = gltf;
+    gltf.scene.updateMatrixWorld(true);
+    this.height = Math.max(0, new Box3().setFromObject(gltf.scene).max.y);
     this.pose = gltf.scene.clone(true);
     if (this.pose.getObjectByName("ChestBody")) this.chest = new ChestPresentation(this.pose);
     else this.rift = new RiftPresentation(this.pose);
