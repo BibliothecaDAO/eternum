@@ -186,6 +186,8 @@ describe("Madara harness workload", () => {
     const existing = new Map<number, number[]>(resumed ? [[1, [11, 21]]] : []);
     const create = mock(async ({ structureId }: { structureId: number }) => {
       existing.set(structureId, [structureId + 10]);
+      // The action resolves with its sent command, as the real one does.
+      return { transaction_hash: "0x1" } as Awaited<ReturnType<GameActions["createExplorerArmy"]>>;
     });
     actions.createExplorerArmy = create;
     game.settlementStructureIds = () => [1];
