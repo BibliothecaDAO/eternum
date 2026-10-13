@@ -24,7 +24,7 @@ const routineProductionTypes = new Set<TransactionType>([
 ]);
 
 /** Even a routine action shows while its outcome is unsettled or did not go the player's way. */
-const needsThePlayersEye = new Set<Transaction["status"]>(["checking", "reverted", "not_sent"]);
+const needsThePlayersEye = new Set<Transaction["status"]>(["checking", "reverted", "not_sent", "no_answer"]);
 
 function isImportantPersonalRow(row: FeedRow): boolean {
   if (row.kind !== "transaction") return true;

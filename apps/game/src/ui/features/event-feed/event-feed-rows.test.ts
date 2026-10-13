@@ -102,6 +102,16 @@ describe("an action's one status line", () => {
     expect(transactionStatusLine(transfer({ status: "not_sent" }))).toBe("Not sent");
   });
 
+  it("says the client's own words when no answer came for the action, and lists it with what has ended", () => {
+    const words = "No answer yet. This action may still apply. You can try another action.";
+    const unanswered = transfer({ status: "no_answer", errorMessage: words });
+    expect(transactionStatusLine(unanswered)).toBe(words);
+    expect(transactionStatusLine(transfer({ status: "no_answer" }))).toBe("No answer yet");
+    const rows = derive({ transactions: [unanswered] });
+    expect(rows.inFlight).toEqual([]);
+    expect(rows.recent).toHaveLength(1);
+  });
+
   it("keeps a checking action in flight: its outcome is still being reconciled", () => {
     const checking = transfer({ status: "checking", submittedAt: NOW_MS - 60_000 });
     expect(derive({ transactions: [checking] }).inFlight).toEqual([

@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "No answer yet, said plainly",
+    description:
+      "Changed the event feed's line for an action the game has not answered: it now says No answer yet, that the action may still apply and that you can try another, where it used to stay on Checking and count as still in flight.",
+  },
+  {
+    date: "2026-10-13",
     title: "Explored tiles keep their ground",
     description:
       "Fixed explored tiles staying black when part of the map's terrain could not be built: that part is now drawn as plain explored ground, without its trees, roads or settlement ground, instead of not at all. A structure of a kind this version does not know also keeps its marker in the far view instead of stopping the others.",
