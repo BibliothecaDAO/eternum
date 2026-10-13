@@ -42,7 +42,13 @@ export async function waitForActionOutcome(
     .waitForTransaction(transactionHash)
     .then((status) => (reported = status))
     .catch(silent);
-  const receipt = receiptOf(rpc, transactionHash, until).then((value) => (read = value));
+  const receipt = Promise.resolve()
+    .then(() =>
+      reported && (appliedNothing(reported) || !isBatchCommand(transactionType))
+        ? silent()
+        : receiptOf(rpc, transactionHash, until),
+    )
+    .then((value) => (read = value));
   const outcome = herald.then(async (status) => {
     if (!appliedNothing(status) && isBatchCommand(transactionType) && !read) {
       await Promise.race([receipt.catch(() => undefined), pause(RECEIPT_GRACE_MS, until)]);

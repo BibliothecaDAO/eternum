@@ -9,7 +9,7 @@ export interface BatchedTransactionDetail {
 
 export type TransactionFailureStage = "submit" | "confirmation" | "revert" | "background_confirmation";
 
-/** not_sent: the action is proven absent from every block, so nothing of it applied and sending again is safe. */
+/** not_sent: this submission was explicitly refused at admission; an unknown hash never establishes this. */
 export type TransactionSubmitFailureKind = "provider_connection_destroyed" | "submit_failed" | "not_sent";
 
 export type TransactionProviderState = "ready" | "destroyed" | "unavailable" | "unknown";

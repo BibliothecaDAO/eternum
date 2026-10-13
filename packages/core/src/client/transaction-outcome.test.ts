@@ -59,7 +59,7 @@ describe("an action's outcome", () => {
         }),
       };
       const inBlock = new Promise<void>((_, reject) =>
-        setTimeout(() => reject(new TransactionNotSentError(TX, reason)), 12_000),
+        setTimeout(() => reject(new Error(`Transaction ${TX} not sent (${reason})`)), 12_000),
       );
       const outcome = waitForActionOutcome(runtime, rpc, GAMES, TX, running, inBlock);
       await vi.advanceTimersByTimeAsync(300);
@@ -81,23 +81,17 @@ describe("an action's outcome", () => {
         GAMES,
         TX,
         running,
-        Promise.reject(new TransactionNotSentError(TX, "dropped")),
+        Promise.reject(new Error(`Transaction ${TX} not sent (dropped)`)),
       ),
     ).resolves.toMatchObject({ status: "SUCCEEDED" });
+    expect(rpc.getTransactionReceipt).not.toHaveBeenCalled();
   });
 
   it("keeps an inclusion refusal while Herald has said nothing", async () => {
     const runtime = runtimeWith(new Promise(() => {}));
     const rpc = { getTransactionReceipt: vi.fn(() => new Promise<never>(() => {})) };
     await expect(
-      waitForActionOutcome(
-        runtime,
-        rpc,
-        GAMES,
-        TX,
-        running,
-        Promise.reject(new TransactionNotSentError(TX, "refused")),
-      ),
+      waitForActionOutcome(runtime, rpc, GAMES, TX, running, Promise.reject(new TransactionNotSentError(TX))),
     ).rejects.toThrow("not sent (refused)");
   });
 
@@ -147,7 +141,15 @@ describe("an action's outcome", () => {
       keys: [hash.getSelectorFromName("BatchProgress"), "0x7"],
       data: ["0x111", TX, "3"],
     };
-    const outcome = waitForActionOutcome(runtime, rpcAnswering(receipt({ events: [progress] })), GAMES, TX, running);
+    const outcome = waitForActionOutcome(
+      runtime,
+      rpcAnswering(receipt({ events: [progress] })),
+      GAMES,
+      TX,
+      running,
+      undefined,
+      TransactionType.END_GAME,
+    );
     await vi.waitFor(() => expect(runtime.waitForTransaction).toHaveBeenCalledWith(TX));
     applied({ block: 12, hash: TX, status: "PRE_CONFIRMED" });
     await expect(outcome).resolves.toEqual({ hash: TX, block: 12, status: "SUCCEEDED", batchRemaining: "3" });

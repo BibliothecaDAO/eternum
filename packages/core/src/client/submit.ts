@@ -14,9 +14,10 @@ import {
   type InvocationsSignerDetails,
 } from "starknet";
 
-import { isTransactionHashNotFound, TransactionNotSentError } from "@bibliothecadao/provider";
+import { TransactionNotSentError } from "@bibliothecadao/provider";
 
 import type { Shard } from "./shard";
+import type { GameSyncTransaction } from "../sync/game-sync-types";
 
 /** What a gameplay account needs of its shard: the chain it signs for and the one gas bound the shard takes. */
 export type GameplayShard = Pick<Shard, "chainId" | "l2GasBound">;
@@ -42,19 +43,16 @@ interface ExecuteGameplayAccountTransactionOptions {
    */
   stopped?: AbortSignal;
   /** Herald reports only after the transaction facts are written. */
-  waitForTransaction?: (transactionHash: string) => Promise<unknown>;
+  waitForTransaction?: (transactionHash: string) => Promise<GameSyncTransaction>;
 }
 
 /**
- * A sent action: its hash as soon as the send returns, and `inBlock`, which keeps reconciling with the node until
- * the action is in a block (resolves) or proven not sent (rejects TransactionNotSentError), or its owner stops it.
+ * A sent action: its hash as soon as the send returns, and `inBlock`, which resolves on Herald or node inclusion.
+ * It rejects only when its owner stops waiting; a missing hash stays pending.
  */
 export interface SentGameplayTransaction extends InvokeFunctionResponse {
   inBlock: Promise<void>;
 }
-
-/** What one read of a hash says: in a block, held by the node, unknown to the node, or no answer at all. */
-type HashReading = "in_block" | "held" | "absent" | "unavailable";
 
 const configuredGameplaySubmits = new WeakMap<object, ConfiguredGameplaySubmit>();
 /** Own submission bookkeeping, shared by every account object for the same chain and address. */
@@ -64,15 +62,6 @@ interface AccountSubmission {
 }
 const accountSubmissions = new Map<string, AccountSubmission>();
 const STATUS_POLL_MS = 250;
-/**
- * The stamping proxy forwards a request within 7,000 ms of receiving it, or never (its published bound). An unknown
- * hash and an unmoved nonce prove absence only once they have outlasted that bound plus a margin for the request's
- * transit to the proxy.
- */
-const PROXY_FORWARD_BOUND_MS = 7_000;
-const DROP_PROOF_MS = PROXY_FORWARD_BOUND_MS + 5_000;
-/** After a drop, the hash is still checked once a block until the nonce moves. */
-const LATE_WATCH_POLL_MS = 2_000;
 const IN_BLOCK = new Set<string>([
   TransactionFinalityStatus.PRE_CONFIRMED,
   TransactionFinalityStatus.ACCEPTED_ON_L2,
@@ -101,9 +90,8 @@ export function configureGameplayAccountSubmits<TAccount extends AccountInterfac
 }
 
 /**
- * One send in flight per account: Herald inclusion frees the next send at the nonce after the one just used. The send resolves with the hash as soon as it returns, and
- * rejects only when the shard refused it before forwarding it; any other send error proves nothing, so the send is
- * reconciled. Nothing is ever resent.
+ * One send in flight per account: Herald inclusion frees the next send at the nonce after the one just used.
+ * The send returns its hash or rejects on an explicit admission refusal. Other errors are reconciled, never resent.
  */
 export function executeGameplayAccountTransaction({
   account,
@@ -148,7 +136,7 @@ async function sendAndReconcile(
   details: UniversalDetails | undefined,
   stopped: AbortSignal | undefined,
   submission: AccountSubmission,
-  waitForTransaction?: (transactionHash: string) => Promise<unknown>,
+  waitForTransaction?: (transactionHash: string) => Promise<GameSyncTransaction>,
 ): Promise<SentGameplayTransaction> {
   const nonce =
     submission.nextNonce === undefined
@@ -156,13 +144,19 @@ async function sendAndReconcile(
       : `0x${submission.nextNonce.toString(16)}`;
   const frame = playFrame(nonce, shard, details);
   const expectedHash = ordinaryHash(account.address, calls, shard, frame);
-  const reported = waitForTransaction?.(expectedHash).catch(() => new Promise<never>(() => {}));
+  let heraldReported: GameSyncTransaction | undefined;
+  const reported = waitForTransaction?.(expectedHash)
+    .then((status) => {
+      heraldReported = status;
+      return status;
+    })
+    .catch(() => new Promise<never>(() => {}));
   const transactionHash = await execute(calls, frame).then(
     (response) => response.transaction_hash,
     (error: unknown) => {
-      if (isRefusedBeforeForwarding(error)) {
+      if (isAdmissionRefused(error) && !heraldReported) {
         submission.nextNonce = undefined;
-        throw new TransactionNotSentError(expectedHash, "refused");
+        throw new TransactionNotSentError(expectedHash, { cause: error });
       }
       // Anything after forwarding began proves nothing (-32011, a lost reply): reconcile, never resend.
       return hashOfUnansweredSend(error) ?? expectedHash;
@@ -182,13 +176,15 @@ function reconcile(
   transactionHash: string,
   stopped: AbortSignal | undefined,
   submission: AccountSubmission,
-  herald?: Promise<unknown>,
+  herald?: Promise<GameSyncTransaction>,
 ): SentGameplayTransaction {
   const settled = new AbortController();
   const until = stopped ? AbortSignal.any([stopped, settled.signal]) : settled.signal;
+  const reported = herald?.then(() => settled.abort());
   const inBlock = Promise.race([
-    herald ?? new Promise<never>(() => {}),
-    untilInBlock(account, frameNonce, transactionHash, until),
+    reported ?? new Promise<never>(() => {}),
+    // Give a cached Herald answer the first word before starting a node read.
+    Promise.resolve().then(() => untilInBlock(account, transactionHash, until)),
   ]).then(
     () => {
       submission.nextNonce = frameNonce + 1n;
@@ -238,100 +234,57 @@ function ordinaryHash(
 
 /** The stamping proxy's "Transaction outcome unknown": it tried to forward, and names the hash it computed. */
 const OUTCOME_UNKNOWN = -32011;
-/**
- * Refusals the proxy answers before it forwards anything: its own -32010, and its JSON, method, admission and
- * account-rate gates. This request never reached the node, so it is not sent; another tab's copy of the same hash is
- * that tab's to reconcile.
- */
-const REFUSED_BEFORE_FORWARDING = new Set([-32010, -32700, -32600, -32601, -32005]);
+/** Explicit proxy or node admission refusals. Duplicate / unknown replies still need reconciliation. */
+const ADMISSION_REFUSED = new Set([
+  -32010,
+  -32700,
+  -32600,
+  -32601,
+  -32005,
+  52, // invalid nonce
+  53,
+  54, // insufficient validation resources / balance
+  55,
+  58, // validation failed / not an account
+  61,
+  64,
+  65, // unsupported version / underpriced replacement / fee below minimum
+]);
 
-function isRefusedBeforeForwarding(error: unknown): boolean {
-  const candidate = error as { code?: number; baseError?: { code?: number } } | null;
-  const code = candidate?.baseError?.code ?? candidate?.code;
-  return code !== undefined && REFUSED_BEFORE_FORWARDING.has(code);
+function isAdmissionRefused(error: unknown): boolean {
+  const code = rpcError(error)?.code;
+  return code !== undefined && ADMISSION_REFUSED.has(code);
 }
 
 function hashOfUnansweredSend(error: unknown): string | undefined {
-  const candidate = error as { code?: number; data?: unknown; baseError?: { code?: number; data?: unknown } } | null;
-  const answer = candidate?.baseError ?? candidate;
+  const answer = rpcError(error);
   if (answer?.code !== OUTCOME_UNKNOWN) return undefined;
   const named = (answer.data as { transaction_hash?: unknown } | undefined)?.transaction_hash;
   return typeof named === "string" ? named : undefined;
 }
 
+function rpcError(error: unknown): { code?: number; data?: unknown } | undefined {
+  const candidate = error as { code?: number; data?: unknown; baseError?: { code?: number; data?: unknown } } | null;
+  return candidate?.baseError ?? candidate ?? undefined;
+}
+
 /**
- * Until the transaction is in a block (pre-confirmed or later, a revert included). Not sent is claimed only on the
- * node's own answers: this hash unknown once the frame's nonce is spent (replaced), or this hash unknown with the
- * nonce unmoved for DROP_PROOF_MS (dropped, still watched for a late landing). A read that fails is no evidence either
- * way, and a hash the node holds is slow, not lost; both keep reconciling until the owner stops it.
+ * Only positive inclusion is evidence. A missing hash, even with a spent nonce or after the proxy's forwarding
+ * bound, cannot distinguish a node visibility gap from a drop or replacement. Herald stops this fallback first.
  */
 async function untilInBlock(
   account: GameplaySubmitAccount,
-  frameNonce: bigint,
   transactionHash: string,
-  stopped: AbortSignal | undefined,
+  stopped: AbortSignal,
 ): Promise<void> {
-  let absentSince: number | undefined;
   while (true) {
-    stopped?.throwIfAborted();
-    const reading = await readHash(account, transactionHash);
-    if (reading === "in_block") return;
-    const nonce = await readNonce(account);
-    if (nonce !== undefined && nonce > frameNonce) {
-      // The frame's nonce is spent, by this transaction only if this hash is in a block.
-      const spentBy = await readHash(account, transactionHash);
-      if (spentBy === "in_block") return;
-      if (spentBy === "absent") throw new TransactionNotSentError(transactionHash, "replaced");
-    } else if (reading === "absent" && nonce !== undefined) {
-      absentSince ??= Date.now();
-      if (Date.now() - absentSince >= DROP_PROOF_MS) {
-        const landedLate = watchForLateLanding(account, frameNonce, transactionHash, stopped);
-        throw new TransactionNotSentError(transactionHash, "dropped", landedLate);
-      }
-    } else if (reading === "held") absentSince = undefined;
+    stopped.throwIfAborted();
+    const status = await account.getTransactionStatus(transactionHash).catch(() => undefined);
+    stopped.throwIfAborted();
+    if (status?.finality_status && IN_BLOCK.has(status.finality_status)) return;
     await pause(STATUS_POLL_MS, stopped);
   }
 }
-
-/**
- * After a drop, until the nonce moves: true if this hash lands after all, false once the nonce is spent without it
- * or the owner stops watching.
- */
-async function watchForLateLanding(
-  account: GameplaySubmitAccount,
-  frameNonce: bigint,
-  transactionHash: string,
-  stopped: AbortSignal | undefined,
-): Promise<boolean> {
-  try {
-    while (true) {
-      await pause(LATE_WATCH_POLL_MS, stopped);
-      if ((await readHash(account, transactionHash)) === "in_block") return true;
-      const nonce = await readNonce(account);
-      if (nonce === undefined || nonce <= frameNonce) continue;
-      const spentBy = await readHash(account, transactionHash);
-      if (spentBy === "in_block") return true;
-      if (spentBy === "absent") return false;
-    }
-  } catch {
-    // The owner stopped watching; nothing landed that this client saw.
-    return false;
-  }
-}
-
-const readHash = (account: GameplaySubmitAccount, transactionHash: string): Promise<HashReading> =>
-  account.getTransactionStatus(transactionHash).then(
-    ({ finality_status }: { finality_status?: string }) =>
-      finality_status === undefined ? "unavailable" : IN_BLOCK.has(finality_status) ? "in_block" : "held",
-    (error: unknown) => (isTransactionHashNotFound(error) ? "absent" : "unavailable"),
-  );
-
-/** The account's pre-confirmed nonce, or undefined when the read fails: never a guess. */
-const readNonce = (account: GameplaySubmitAccount): Promise<bigint | undefined> =>
-  account.getNonce(BlockTag.PRE_CONFIRMED).then(
-    (nonce) => BigInt(nonce),
-    () => undefined,
-  );
 
 const pause = (ms: number, stopped: AbortSignal | undefined): Promise<void> =>
   new Promise((resolve, reject) => {

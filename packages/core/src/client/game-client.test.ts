@@ -172,6 +172,78 @@ describe("createGameClient", () => {
     client.dispose();
   });
 
+  it("writes Herald facts and sends the next command at 300 ms despite a 19 s node visibility gap", async () => {
+    const harness = createHarness({ actor: "0x303019" });
+    const client = await bootClient(harness);
+    vi.useFakeTimers();
+    const provider = client.setup.network.provider;
+    const notFound = () => Promise.reject(Object.assign(new Error("Transaction hash not found"), { code: 29 }));
+    vi.spyOn(provider.provider, "getTransactionReceipt").mockImplementation(notFound);
+    let sequence = 0;
+    const nonces: string[] = [];
+    const execute = vi.fn(async (_calls, details) => {
+      nonces.push(String(details.nonce));
+      const ordinal = nonces.length;
+      const transactionHash = `0x${ordinal}`;
+      setTimeout(() => {
+        harness.sockets[0]!.receive({
+          type: "diff",
+          epoch: "epoch-a",
+          seq: ++sequence,
+          block: null,
+          preconfirmed: true,
+          transaction_hash: transactionHash,
+          del: [],
+          set: [
+            {
+              model: "EntityName",
+              key: hash.computePoseidonHashOnElements([54, 9]),
+              value: { game_id: 54, entity_id: 9, name: String(ordinal) },
+            },
+          ],
+        });
+        harness.sockets[0]!.receive({
+          type: "tx",
+          epoch: "epoch-a",
+          seq: ++sequence,
+          hash: transactionHash,
+          block: null,
+          status: "PRE_CONFIRMED",
+        });
+      }, 300);
+      return { transaction_hash: transactionHash };
+    });
+    const getNonce = vi.fn(async () => "0x7");
+    const account = {
+      address: "0x303019",
+      execute,
+      getNonce,
+      getTransactionStatus: vi.fn(notFound),
+    } as unknown as AccountInterface;
+    const complete = vi.fn();
+    const failed = vi.fn();
+    provider.on("transactionComplete", complete);
+    provider.on("transactionFailed", failed);
+    try {
+      const first = provider.submitCommand(account, explore);
+      const next = provider.submitCommand(account, explore);
+      await vi.advanceTimersByTimeAsync(299);
+      expect(nonces).toEqual(["0x7"]);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(client.setup.store.require("EntityName", { game_id: 54, entity_id: 9 }).name).toBe(1n);
+      expect(complete).toHaveBeenCalledOnce();
+      expect(nonces).toEqual(["0x7", "0x8"]);
+      await vi.advanceTimersByTimeAsync(300);
+      await Promise.all([first, next]);
+      expect(complete).toHaveBeenCalledTimes(2);
+      expect(getNonce).toHaveBeenCalledOnce();
+      await vi.advanceTimersByTimeAsync(19_000);
+      expect(failed).not.toHaveBeenCalled();
+    } finally {
+      client.dispose();
+    }
+  });
+
   it("visits a realm for a spectator or a connected player, and connecting again leaves the visit", async () => {
     const harness = createHarness({ actor: "0x111" });
     const client = await bootClient(harness);
