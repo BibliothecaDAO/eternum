@@ -329,7 +329,7 @@ const RegistrantChat = ({
   address: string;
 }) => {
   const terms = useEntryTerms(ledger, slotKeyOf(slot), address).data;
-  return <LobbyChatPanel slot={slot} membership={chatMembershipOf(address, terms)} />;
+  return <LobbyChatPanel slot={slot} membership={chatMembershipOf(address, terms ?? undefined)} />;
 };
 
 /**

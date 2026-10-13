@@ -249,6 +249,8 @@ export const ENTRY_WORDS = {
   needMore: (amount: string) => `Need ${amount} more LORDS`,
   paidFromWallet: "Entry is paid from your payout wallet",
   registered: "Registered",
+  /** The slot is listed and the ledger does not hold it yet: a moment, not a failure. */
+  openingLine: "Entry is opening. It will be ready in a moment.",
   registeredLine: "Your seat is drawn when entry closes.",
   /** Past the close, until a game's roster names the wallet. */
   drawingLine: "Entry has closed. Your seat is being drawn.",

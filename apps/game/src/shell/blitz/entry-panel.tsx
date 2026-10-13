@@ -61,6 +61,7 @@ export const PaidEntry = ({
   const refundsChanged = useRefundsChanged();
   if (owner === null) return <NoWallet />;
   if (terms.isError) return <ServiceFailure service="ledger" error={terms.error} retry={() => void terms.refetch()} />;
+  if (terms.data === null) return <Opening />;
   return (
     <EntryPanel
       ledger={ledger.address}
@@ -325,6 +326,13 @@ const PaidReceipt = ({ terms }: { terms: EntryTerms }) => {
     />
   );
 };
+
+/** Listed, and not on the ledger yet: nothing failed and nothing is asked of the player; the panel reads again itself. */
+const Opening = () => (
+  <Plate icon="Hg" title={ENTRY_WORDS.entry}>
+    <p className="font-body text-[16px] text-kit-cream">{ENTRY_WORDS.openingLine}</p>
+  </Plate>
+);
 
 const Closed = () => (
   <Plate icon="Lk" title={ENTRY_WORDS.closed}>

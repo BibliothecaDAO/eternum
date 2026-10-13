@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "A Blitz slot that is opening",
+    description:
+      "Fixed a Blitz slot's page saying The ledger did not answer, with Try again and a dash for its registrations, in the minute between a slot being listed and its entry opening: it now says Entry is opening, shows 0 registered, and opens by itself a few seconds later. A read that really failed keeps its line.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
     title: "A day log in plain names",
     description:
       "Changed Frontier's Today: a reveal reads as a whole number (+98 labor), a building is one line by its build card's name (Farm built), an army is Army 1, and each of the six totals names itself on hover or hold. Production writes Wheat, Labor and Troops beside their icons.",
