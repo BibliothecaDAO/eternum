@@ -89,23 +89,23 @@ export const structureValue = {
   },
 } satisfies Omit<NativeRows["Structure"], "game_id" | "entity_id">;
 
-export function explorerValue(owner: string, count = 0n, amount = 0n, updatedTick = 0n): DecodedRecord {
+export function explorerValue(owner: string, count = 0n, amount = 0n, settledAt = 0n): DecodedRecord {
   return {
     owner,
     troops: {
       category: new CairoCustomEnum({ Knight: {} }),
       tier: new CairoCustomEnum({ T1: {} }),
       count,
-      stamina: new CairoCustomEnum({ Inline: { amount, updated_tick: updatedTick } }),
+      stamina: new CairoCustomEnum({ Inline: { amount, settled_at: settledAt, remainder: 0 } }),
       boosts: {
         incr_damage_dealt_percent_num: 0,
-        incr_damage_dealt_end_tick: 0,
+        incr_damage_dealt_end_at: 0,
         decr_damage_gotten_percent_num: 0,
-        decr_damage_gotten_end_tick: 0,
+        decr_damage_gotten_end_at: 0,
         incr_stamina_regen_percent_num: 0,
-        incr_stamina_regen_tick_count: 0,
+        incr_stamina_regen_seconds_left: 0,
         incr_explore_reward_percent_num: 0,
-        incr_explore_reward_end_tick: 0,
+        incr_explore_reward_end_at: 0,
       },
       battle_cooldown_end: 0,
     },

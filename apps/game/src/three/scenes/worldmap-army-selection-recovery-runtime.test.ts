@@ -1,44 +1,57 @@
-import { describe, expect, it, vi } from "vitest";
-
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
 
-describe("runWorldmapArmySelectionRecovery", () => {
-  it("waits for the active chunk switch, refreshes, and retries until the army appears", async () => {
-    const awaitActiveChunkSwitch = vi.fn(async () => undefined);
-    const forceChunkRefresh = vi.fn(async () => undefined);
-    const onRecovered = vi.fn();
-    const wait = vi.fn(async () => undefined);
-    let attempts = 0;
+afterEach(() => vi.useRealTimers());
 
-    await runWorldmapArmySelectionRecovery({
-      awaitActiveChunkSwitch,
-      forceChunkRefresh,
-      isArmyAvailable: () => {
-        attempts += 1;
-        return attempts >= 3;
+describe("army selection recovery", () => {
+  it("recovers the army after its chunk becomes available", async () => {
+    vi.useFakeTimers();
+    let switched = false;
+    let available = false;
+    let outcome = "pending";
+    const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+    const recovery = runWorldmapArmySelectionRecovery({
+      awaitActiveChunkSwitch: async () => {
+        await wait(10);
+        switched = true;
       },
-      onRecovered,
+      forceChunkRefresh: async () => {
+        if (!switched) throw new Error("chunk not ready");
+        setTimeout(() => {
+          available = true;
+        }, 400);
+      },
+      isArmyAvailable: () => available,
+      onRecovered: () => {
+        outcome = "recovered";
+      },
+      onUnavailable: () => {
+        outcome = "unavailable";
+      },
+      onError: () => {
+        outcome = "error";
+      },
       wait,
     });
-
-    expect(awaitActiveChunkSwitch).toHaveBeenCalledTimes(1);
-    expect(forceChunkRefresh).toHaveBeenCalledTimes(1);
-    expect(onRecovered).toHaveBeenCalledTimes(1);
-    expect(wait).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(409);
+    expect(outcome).toBe("pending");
+    await vi.advanceTimersByTimeAsync(1);
+    await recovery;
+    expect(outcome).toBe("recovered");
   });
 
-  it("reports failure when refresh throws", async () => {
-    const onError = vi.fn();
-
+  it("reports the refresh failure to its caller", async () => {
+    let failure: unknown;
     await runWorldmapArmySelectionRecovery({
-      forceChunkRefresh: vi.fn(async () => {
+      forceChunkRefresh: async () => {
         throw new Error("refresh failed");
-      }),
+      },
       isArmyAvailable: () => false,
-      onError,
-      wait: vi.fn(async () => undefined),
+      onError: (error) => {
+        failure = error;
+      },
+      wait: async () => {},
     });
-
-    expect(onError).toHaveBeenCalledWith(expect.any(Error));
+    expect(failure).toEqual(new Error("refresh failed"));
   });
 });

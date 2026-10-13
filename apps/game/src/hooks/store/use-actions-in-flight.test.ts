@@ -20,7 +20,7 @@ describe("an action in flight", () => {
 
     const attack = send();
     expect(await sendOnce("army", 7, { order: "attack" }, attack)).toBeNull();
-    expect(attack).not.toHaveBeenCalled();
+    expect(inFlight("army", 7)).toEqual({ order: "explore" });
     // Another army is not held by it.
     waitForAction.mockResolvedValueOnce(APPLIED);
     expect(await sendOnce("army", 8, { order: "move" }, send())).toBe("0x1");
@@ -76,7 +76,10 @@ describe("an action in flight", () => {
     stop();
     waitForAction.mockResolvedValueOnce(APPLIED);
     await sendOnce("army", 7, { order: "move" }, send());
-    expect(heard).toHaveLength(2);
+    expect(heard).toEqual([
+      { key: "7", stillInFlight: false },
+      { key: "8", stillInFlight: false },
+    ]);
   });
 
   it("holds each subject on its own: a plot, a realm's next army, a research row, a castle", async () => {

@@ -1,4 +1,3 @@
-import { staminaClock } from "@bibliothecadao/eternum/troop-stamina";
 import { StaminaManager } from "@bibliothecadao/eternum";
 import type { Troops } from "@bibliothecadao/types";
 
@@ -72,7 +71,7 @@ export const resolveMovementStamina = (input: {
 
 const buildMovementStaminaDiagnostics = (liveTroops?: Troops | null): MovementStaminaResolution["diagnostics"] => ({
   liveAmount: liveTroops?.stamina ? Number(liveTroops.stamina.amount) : undefined,
-  liveSettledAt: liveTroops?.stamina ? staminaClock.read(liveTroops.stamina).settledAt : undefined,
+  liveSettledAt: liveTroops?.stamina ? liveTroops.stamina.settled_at : undefined,
 });
 
 const canAffordStaminaCost = (currentStamina: number, staminaCost: number): boolean =>

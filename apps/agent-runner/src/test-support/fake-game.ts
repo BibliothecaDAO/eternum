@@ -208,7 +208,7 @@ export const seedExplorer = (
         category: "Knight",
         tier: "T1",
         count: input.count ?? 10000000000n,
-        stamina: { Inline: { amount: input.stamina ?? 20n, updated_tick: 0n } },
+        stamina: { Inline: { amount: input.stamina ?? 20n, settled_at: 0, remainder: 0 } },
       },
     },
     positionFacts(store, input.explorerId, input.x, input.y, input.alt ?? false, TileOccupier.ExplorerKnightT1, false),

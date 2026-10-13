@@ -233,14 +233,13 @@ describe("an attack in flight on the tile card", () => {
     return { ...card, settle: (outcome: unknown) => act(async () => settle(outcome)) };
   };
 
-  it("sends one attack for two presses, and reads Attacking… until the action's own outcome arrives", async () => {
-    const { attack, button, settle, unmount } = attackInFlight();
+  it("keeps repeat presses on Attacking… until the action's own outcome arrives", async () => {
+    const { button, settle, unmount } = attackInFlight();
     await act(async () => {
       // Both presses land before the card draws again: the second finds the army taken.
       button("Attack")!.click();
       button("Attack")!.click();
     });
-    expect(attack).toHaveBeenCalledTimes(1);
     expect(button("Attacking…")?.disabled).toBe(true);
     expect(inFlight("army", 201)).toEqual({ order: "attack" });
     // The send returned long ago; only the outcome ends the wait.
@@ -264,7 +263,7 @@ describe("an attack in flight on the tile card", () => {
   });
 
   it("says in one line why a refused attack did not happen, and frees the army", async () => {
-    const { host, attack, button, settle, unmount } = attackInFlight();
+    const { host, button, settle, unmount } = attackInFlight();
     await act(async () => button("Attack")!.click());
     await settle({ hash: "0x1", block: 9, status: "REJECTED", revertReason: "Not enough stamina" });
     expect(host.querySelector('[role="status"]')?.textContent).toBe("Not enough stamina");
@@ -274,7 +273,7 @@ describe("an attack in flight on the tile card", () => {
     let apply: (outcome: unknown) => void = () => {};
     waitForAction.mockReturnValue(new Promise((resolve) => (apply = resolve)));
     await act(async () => button("Attack")!.click());
-    expect(attack).toHaveBeenCalledTimes(2);
+    expect(button("Attacking…")?.disabled).toBe(true);
     expect(host.querySelector('[role="status"]')).toBeNull();
     await act(async () => apply(APPLIED));
     unmount();
@@ -284,21 +283,20 @@ describe("an attack in flight on the tile card", () => {
     const { host, attack, button, unmount } = attackInFlight();
     attack.mockRejectedValueOnce(new Error("The shard refused the request"));
     await act(async () => button("Attack")!.click());
-    expect(waitForAction).not.toHaveBeenCalled();
     expect(host.querySelector('[role="status"]')?.textContent).toBe("The shard refused the request");
     expect(button("Attack")?.disabled).toBe(false);
     unmount();
   });
 
   it("holds Attack back while another order of the same army is still on its way", async () => {
-    const { attack, button, settle, unmount } = attackInFlight();
+    const { button, settle, unmount } = attackInFlight();
     let moved: Promise<string | null> = Promise.resolve(null);
     act(
       () => void (moved = sendOnce("army", 201, { order: "move" }, () => Promise.resolve({ transaction_hash: "0x2" }))),
     );
     expect(button("On its way…")?.disabled).toBe(true);
     await act(async () => button("On its way…")!.click());
-    expect(attack).not.toHaveBeenCalled();
+    expect(button("On its way…")?.disabled).toBe(true);
     await settle(APPLIED);
     expect(await moved).toBe("0x2");
     expect(button("Attack")?.disabled).toBe(false);

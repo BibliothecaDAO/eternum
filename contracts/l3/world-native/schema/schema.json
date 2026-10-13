@@ -4557,11 +4557,11 @@
           "name": "stamina",
           "type": "world_native::troops::Stamina",
           "id": "0x7374616d696e61",
-          "feltLength": 2
+          "feltLength": 3
         }
       ],
       "keyLength": 4,
-      "valueLength": 3,
+      "valueLength": 4,
       "absence": {
         "parent": "Structure",
         "parentKeys": {
@@ -4796,9 +4796,9 @@
           "feltLength": 1
         },
         {
-          "name": "last_settled_tick",
+          "name": "last_settled_at",
           "type": "core::integer::u32",
-          "id": "0x6c6173745f736574746c65645f7469636b",
+          "id": "0x6c6173745f736574746c65645f6174",
           "feltLength": 1
         }
       ],
@@ -4816,12 +4816,12 @@
       "observation": {
         "domain": "resources",
         "transform": "production",
-        "meaning": "Production pays its per-second rate for each whole armies tick after the settled tick, which is meaningful only while at least one production building exists; inactive time projects to zero.",
+        "meaning": "Production pays its per-second rate for elapsed seconds after last_settled_at, while at least one production building exists; inactive time projects to zero.",
         "fields": {
           "buildingCount": "building_count",
           "rate": "production_rate",
           "outputRemaining": "output_amount_left",
-          "settledTick": "last_settled_tick"
+          "settledAt": "last_settled_at"
         }
       }
     },
@@ -4861,21 +4861,21 @@
           "feltLength": 1
         },
         {
-          "name": "incr_resource_rate_end_tick",
+          "name": "incr_resource_rate_end_at",
           "type": "core::integer::u32",
-          "id": "0x696e63725f7265736f757263655f726174655f656e645f7469636b",
+          "id": "0x696e63725f7265736f757263655f726174655f656e645f6174",
           "feltLength": 1
         },
         {
-          "name": "incr_labor_rate_end_tick",
+          "name": "incr_labor_rate_end_at",
           "type": "core::integer::u32",
-          "id": "0x696e63725f6c61626f725f726174655f656e645f7469636b",
+          "id": "0x696e63725f6c61626f725f726174655f656e645f6174",
           "feltLength": 1
         },
         {
-          "name": "incr_troop_rate_end_tick",
+          "name": "incr_troop_rate_end_at",
           "type": "core::integer::u32",
-          "id": "0x696e63725f74726f6f705f726174655f656e645f7469636b",
+          "id": "0x696e63725f74726f6f705f726174655f656e645f6174",
           "feltLength": 1
         }
       ],
@@ -4896,9 +4896,9 @@
           "resourcePercent": "incr_resource_rate_percent_num",
           "laborPercent": "incr_labor_rate_percent_num",
           "troopPercent": "incr_troop_rate_percent_num",
-          "resourceEndTick": "incr_resource_rate_end_tick",
-          "laborEndTick": "incr_labor_rate_end_tick",
-          "troopEndTick": "incr_troop_rate_end_tick"
+          "resourceEndAt": "incr_resource_rate_end_at",
+          "laborEndAt": "incr_labor_rate_end_at",
+          "troopEndAt": "incr_troop_rate_end_at"
         }
       }
     },
@@ -10333,15 +10333,15 @@
           "type": "core::integer::u16"
         },
         {
-          "name": "incr_resource_rate_end_tick",
+          "name": "incr_resource_rate_end_at",
           "type": "core::integer::u32"
         },
         {
-          "name": "incr_labor_rate_end_tick",
+          "name": "incr_labor_rate_end_at",
           "type": "core::integer::u32"
         },
         {
-          "name": "incr_troop_rate_end_tick",
+          "name": "incr_troop_rate_end_at",
           "type": "core::integer::u32"
         }
       ]
@@ -11013,7 +11013,7 @@
           "type": "core::integer::u128"
         },
         {
-          "name": "last_settled_tick",
+          "name": "last_settled_at",
           "type": "core::integer::u32"
         }
       ]
@@ -12457,8 +12457,12 @@
           "type": "core::integer::u64"
         },
         {
-          "name": "updated_tick",
-          "type": "core::integer::u64"
+          "name": "settled_at",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "remainder",
+          "type": "core::integer::u32"
         }
       ]
     },
@@ -12485,7 +12489,7 @@
           "type": "core::integer::u16"
         },
         {
-          "name": "incr_damage_dealt_end_tick",
+          "name": "incr_damage_dealt_end_at",
           "type": "core::integer::u32"
         },
         {
@@ -12493,7 +12497,7 @@
           "type": "core::integer::u16"
         },
         {
-          "name": "decr_damage_gotten_end_tick",
+          "name": "decr_damage_gotten_end_at",
           "type": "core::integer::u32"
         },
         {
@@ -12501,15 +12505,15 @@
           "type": "core::integer::u16"
         },
         {
-          "name": "incr_stamina_regen_tick_count",
-          "type": "core::integer::u8"
+          "name": "incr_stamina_regen_seconds_left",
+          "type": "core::integer::u16"
         },
         {
           "name": "incr_explore_reward_percent_num",
           "type": "core::integer::u16"
         },
         {
-          "name": "incr_explore_reward_end_tick",
+          "name": "incr_explore_reward_end_at",
           "type": "core::integer::u32"
         }
       ]
@@ -12745,5 +12749,5 @@
       ]
     }
   },
-  "identity": "90df4c2462c67b80d61cf88d10a3b23a51ebb17bad33916c10eb71f11a3c05e9"
+  "identity": "e181850338febef8b5fd8a562b0e1131a438299a494322f5235ae60c6faf5ac8"
 }

@@ -59,8 +59,7 @@ pub struct Production {
     pub building_count: u8,
     pub production_rate: u64,
     pub output_amount_left: u128,
-    // Unix seconds paid through. The legacy wire name stays stable for existing schema consumers.
-    pub last_settled_tick: u32,
+    pub last_settled_at: u32,
 }
 
 const PRODUCTION_TIME_SCALE: u128 = 0x10000000000000000;
@@ -70,7 +69,7 @@ const PRODUCTION_COUNT_SCALE: u128 = 0x1000000000000000000000000;
 pub impl ProductionPacking of starknet::storage_access::StorePacking<Production, felt252> {
     fn pack(value: Production) -> felt252 {
         let high = value.production_rate.into()
-            + value.last_settled_tick.into() * PRODUCTION_TIME_SCALE
+            + value.last_settled_at.into() * PRODUCTION_TIME_SCALE
             + value.building_count.into() * PRODUCTION_COUNT_SCALE;
         u256 { low: value.output_amount_left, high }.try_into().unwrap()
     }
@@ -80,7 +79,7 @@ pub impl ProductionPacking of starknet::storage_access::StorePacking<Production,
             building_count: (value.high / PRODUCTION_COUNT_SCALE).try_into().unwrap(),
             production_rate: (value.high % PRODUCTION_TIME_SCALE).try_into().unwrap(),
             output_amount_left: value.low,
-            last_settled_tick: (value.high / PRODUCTION_TIME_SCALE % 0x100000000).try_into().unwrap(),
+            last_settled_at: (value.high / PRODUCTION_TIME_SCALE % 0x100000000).try_into().unwrap(),
         }
     }
 }
@@ -133,8 +132,8 @@ pub fn settle(
     limit: Option<u128>,
     now: u32,
 ) {
-    let since = production.last_settled_tick;
-    production.last_settled_tick = now;
+    let since = production.last_settled_at;
+    production.last_settled_at = now;
     if resource_type == LORDS || production.building_count == 0 {
         return;
     }

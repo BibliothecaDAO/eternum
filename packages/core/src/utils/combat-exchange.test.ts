@@ -71,7 +71,7 @@ const readSide = (next: () => bigint, currentTick: bigint, tickSeconds: number):
   const tier = TIERS[Number(next())]!;
   const count = next();
   // The archived vector stores a tick index; convert its input to seconds.
-  const stamina = { amount: next(), updated_tick: next() * BigInt(tickSeconds) };
+  const stamina = { amount: next(), settled_at: Number(next()) * tickSeconds, remainder: 0 };
   const damageBonusPercent = Number(next());
   return {
     category,
@@ -80,13 +80,13 @@ const readSide = (next: () => bigint, currentTick: bigint, tickSeconds: number):
     stamina,
     boosts: {
       incr_damage_dealt_percent_num: damageBonusPercent * 100,
-      incr_damage_dealt_end_tick: (Number(currentTick) + 1) * tickSeconds,
+      incr_damage_dealt_end_at: (Number(currentTick) + 1) * tickSeconds,
       decr_damage_gotten_percent_num: 0,
-      decr_damage_gotten_end_tick: 0,
+      decr_damage_gotten_end_at: 0,
       incr_stamina_regen_percent_num: 0,
-      incr_stamina_regen_tick_count: 0,
+      incr_stamina_regen_seconds_left: 0,
       incr_explore_reward_percent_num: 0,
-      incr_explore_reward_end_tick: 0,
+      incr_explore_reward_end_at: 0,
     },
     battle_cooldown_end: 0,
   };
@@ -149,7 +149,7 @@ describe("an exchange resolves as the contract resolves it", () => {
       boosts: {
         ...recorded.attacker.boosts,
         incr_damage_dealt_percent_num: percent,
-        incr_damage_dealt_end_tick: endAt,
+        incr_damage_dealt_end_at: endAt,
       },
     });
     const guard = (endAt: number, percent: number): ExchangeTroops => ({
@@ -157,7 +157,7 @@ describe("an exchange resolves as the contract resolves it", () => {
       boosts: {
         ...recorded.defender.boosts,
         decr_damage_gotten_percent_num: percent,
-        decr_damage_gotten_end_tick: endAt,
+        decr_damage_gotten_end_at: endAt,
       },
     });
     const resolve = (endAt: number, damage: number, defence: number) => {

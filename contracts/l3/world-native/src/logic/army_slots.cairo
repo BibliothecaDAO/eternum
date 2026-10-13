@@ -18,7 +18,7 @@ pub fn resolve(key: ExplorerKey, mut explorer: ExplorerTroops, timestamp: Option
         let slot = dispatch(key, ArmySlotAction::Resolve(timestamp));
         explorer.troops.stamina = slot.stamina;
         explorer.troops.boosts.incr_damage_dealt_percent_num = slot.battle_bonus_percent;
-        explorer.troops.boosts.incr_damage_dealt_end_tick = 0;
+        explorer.troops.boosts.incr_damage_dealt_end_at = 0;
     }
     explorer
 }

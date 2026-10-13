@@ -1,7 +1,7 @@
 use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
 use crate::commands::Command;
 use crate::game::{IGameDispatcher, IGameDispatcherTrait};
-use crate::production::{ProductionBonus, ProductionRecipe, RecipeConfig, RefillProduction, bonus_output};
+use crate::production::{ProductionBonus, ProductionRecipe, RecipeConfig, RefillProduction};
 use crate::registrar::{IRegistrarSafeDispatcher, IRegistrarSafeDispatcherTrait};
 use crate::resources::{IResourceOperationsDispatcher, ResourceAmount, ResourceRule, ResourceSlot};
 use crate::tests::state::ResourceObservationTrait;
@@ -10,33 +10,15 @@ use super::resource_commands::{
 };
 
 #[test]
-fn all_production_bonuses_expire_at_the_end_second() {
-    let bonus = ProductionBonus {
-        incr_resource_rate_percent_num: 2500,
-        incr_labor_rate_percent_num: 3000,
-        incr_troop_rate_percent_num: 5000,
-        incr_resource_rate_end_tick: 10,
-        incr_labor_rate_end_tick: 11,
-        incr_troop_rate_end_tick: 12,
-    };
-    for (resource, end, output) in array![(1_u8, 10_u64, 125_u128), (23, 11, 130), (26, 12, 150), (34, 12, 150)] {
-        assert_eq!(bonus_output(bonus, resource, 100, end - 1), output);
-        assert_eq!(bonus_output(bonus, resource, 100, end), 100);
-        assert_eq!(bonus_output(bonus, resource, 100, end + 1), 100);
-    }
-    assert_eq!(bonus_output(bonus, 26, 3, 11), 4);
-}
-
-#[test]
 #[fuzzer(runs: 64)]
 fn production_bonus_packing_retains_full_width_percentages_and_seconds(a: u16, b: u16, c: u16, d: u32, e: u32, f: u32) {
     let bonus = ProductionBonus {
         incr_resource_rate_percent_num: a,
         incr_labor_rate_percent_num: b,
         incr_troop_rate_percent_num: c,
-        incr_resource_rate_end_tick: d,
-        incr_labor_rate_end_tick: e,
-        incr_troop_rate_end_tick: f,
+        incr_resource_rate_end_at: d,
+        incr_labor_rate_end_at: e,
+        incr_troop_rate_end_at: f,
     };
     let packed = crate::production::BonusPacking::pack(bonus);
     assert_eq!(crate::production::BonusPacking::unpack(packed), bonus);
@@ -100,7 +82,7 @@ fn refills_use_block_time_bonus_expiry_without_retroactive_production() {
         selector!("production"),
         selector!("bonuses"),
         array![3, key.entity_id.into()].span(),
-        ProductionBonus { incr_troop_rate_percent_num: 5000, incr_troop_rate_end_tick: 120, ..Default::default() },
+        ProductionBonus { incr_troop_rate_percent_num: 5000, incr_troop_rate_end_at: 120, ..Default::default() },
     );
     let refill = RefillProduction {
         structure_id: key.entity_id, resource_types: array![26].span(), amounts: array![1].span(),
@@ -110,7 +92,7 @@ fn refills_use_block_time_bonus_expiry_without_retroactive_production() {
     let slot = ResourceSlot { game_id: 3, entity_id: key.entity_id, resource_type: 26 };
     let at_end = resources.resource_production(slot);
     assert_eq!(at_end.output_amount_left, 150);
-    assert_eq!(at_end.last_settled_tick, 0);
+    assert_eq!(at_end.last_settled_at, 0);
     // The bonus applies through second 119 and expires at second 120.
     assert!(execute(deployment, Command::BurnLaborForResourceProduction(refill), 119));
     assert_eq!(resources.resource_production(slot).output_amount_left, 300);

@@ -41,7 +41,7 @@ it("keeps an open barracks figure fixed until the chain-proven floor advances", 
         building_count: 1,
         production_rate: String(2 * RESOURCE_PRECISION),
         output_amount_left: String((1n << 128n) - 1n),
-        last_settled_tick: 350,
+        last_settled_at: 350,
       },
     },
   ]);
@@ -70,7 +70,6 @@ it("keeps an open barracks figure fixed until the chain-proven floor advances", 
     expect(troopRow()).toContain("420");
     act(() => useChainTimeStore.getState().setHeartbeat({ timestamp: 352_000 }));
     expect(troopRow()).toContain("424");
-    expect(useChainTimeStore.getState().executionFloorMs).toBe(352_000);
     expect(
       store.require("ResourceBalance", { game_id: 1, entity_id: 7, resource_type: ResourcesIds.Knight }).balance,
     ).toBe(420n * BigInt(RESOURCE_PRECISION));

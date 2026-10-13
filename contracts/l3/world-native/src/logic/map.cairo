@@ -463,9 +463,7 @@ pub mod MapLogic {
                 crate::resources::ResourceAmount {
                     resource_type: drawn.resource_type,
                     amount: crate::exploration_rewards::boosted_amount(
-                        drawn.amount,
-                        explorer.troops.boosts,
-                        context.timestamp,
+                        drawn.amount, explorer.troops.boosts, context.timestamp,
                     ),
                 }
             };

@@ -330,7 +330,7 @@ const armySlotRow = (explorerId: number, home: number, army: ArmyState) => ({
     epoch: army.day,
     slot: 0,
     explorer_id: explorerId,
-    stamina: { amount: army.amount, updated_tick: army.settledAt },
+    stamina: { amount: army.amount, settled_at: army.settledAt, remainder: 0 },
   },
 });
 

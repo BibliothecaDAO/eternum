@@ -248,7 +248,6 @@ pub fn draw_relics(rules: Span<RelicRule>, seed: u256, count: u8) -> Span<u8> {
     }
     chosen.span()
 }
-// All timed bonuses use an exclusive end second; the legacy wire names change with the landing schema.
 pub fn bonus_active(end_at: u32, timestamp: u64) -> bool {
     timestamp < end_at.into()
 }
@@ -264,24 +263,25 @@ pub fn boost_explorer(
         39 |
         40 => {
             boosts.incr_stamina_regen_percent_num = rule.rate_bps;
-            boosts.incr_stamina_regen_tick_count = (Into::<u8, u64>::into(rule.uses) * tick_seconds)
+            boosts
+                .incr_stamina_regen_seconds_left = (Into::<u8, u64>::into(rule.uses) * tick_seconds)
                 .try_into()
                 .unwrap();
         },
         41 |
         42 => {
             boosts.incr_damage_dealt_percent_num = rule.rate_bps;
-            boosts.incr_damage_dealt_end_tick = bonus_end_at(timestamp, rule.duration, tick_seconds);
+            boosts.incr_damage_dealt_end_at = bonus_end_at(timestamp, rule.duration, tick_seconds);
         },
         43 |
         44 => {
             boosts.decr_damage_gotten_percent_num = rule.rate_bps;
-            boosts.decr_damage_gotten_end_tick = bonus_end_at(timestamp, rule.duration, tick_seconds);
+            boosts.decr_damage_gotten_end_at = bonus_end_at(timestamp, rule.duration, tick_seconds);
         },
         47 |
         48 => {
             boosts.incr_explore_reward_percent_num = rule.rate_bps;
-            boosts.incr_explore_reward_end_tick = bonus_end_at(timestamp, rule.duration, tick_seconds);
+            boosts.incr_explore_reward_end_at = bonus_end_at(timestamp, rule.duration, tick_seconds);
         },
         45 | 46 => {},
         _ => panic!("invalid explorer relic"),
@@ -294,17 +294,17 @@ pub fn boost_production(
         51 |
         52 => {
             bonus.incr_resource_rate_percent_num = rule.rate_bps;
-            bonus.incr_resource_rate_end_tick = bonus_end_at(timestamp, rule.duration, tick_seconds);
+            bonus.incr_resource_rate_end_at = bonus_end_at(timestamp, rule.duration, tick_seconds);
         },
         53 |
         54 => {
             bonus.incr_labor_rate_percent_num = rule.rate_bps;
-            bonus.incr_labor_rate_end_tick = bonus_end_at(timestamp, rule.duration, tick_seconds);
+            bonus.incr_labor_rate_end_at = bonus_end_at(timestamp, rule.duration, tick_seconds);
         },
         55 |
         56 => {
             bonus.incr_troop_rate_percent_num = rule.rate_bps;
-            bonus.incr_troop_rate_end_tick = bonus_end_at(timestamp, rule.duration, tick_seconds);
+            bonus.incr_troop_rate_end_at = bonus_end_at(timestamp, rule.duration, tick_seconds);
         },
         _ => panic!("invalid production relic"),
     }

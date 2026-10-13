@@ -301,7 +301,7 @@ async function writeFixtures(schema) {
     return { from_address: emitter, keys, data: data.map((value) => `0x${BigInt(value).toString(16)}`) };
   }
   // These values match the raw events asserted by the Cairo event-shape test.
-  const zeroTroops = Array(15).fill(0);
+  const zeroTroops = Array(16).fill(0);
   const decoder = new CallData([
     ...Object.values(schema.types),
     { type: "function", name: "key", inputs: [], outputs: model.keys, state_mutability: "view" },

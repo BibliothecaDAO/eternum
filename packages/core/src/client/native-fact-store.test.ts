@@ -148,14 +148,14 @@ describe("native fact store", () => {
 
   it("decodes tagged stamina and refuses ambiguous or unknown sources", () => {
     const store = new NativeFactStore();
-    for (const stamina of [{ Slot: 0 }, { Inline: { amount: "12", updated_tick: "4" } }]) {
+    for (const stamina of [{ Slot: 0 }, { Inline: { amount: "12", settled_at: "4", remainder: 0 } }]) {
       store.applyFacts([set("0x7", "ExplorerTroops", { ...explorer, troops: { ...explorer.troops, stamina } })]);
       const row = store.require("ExplorerTroops", { game_id: 1, explorer_id: 7 });
       if ("Inline" in stamina) expect(resolveExplorerTroops(store, row)?.stamina.amount).toBe(12n);
       else expect(row.troops.stamina).toEqual({ Slot: 0 });
     }
     for (const stamina of [
-      { Slot: 0, Inline: { amount: "1", updated_tick: "1" } },
+      { Slot: 0, Inline: { amount: "1", settled_at: "1", remainder: 0 } },
       { Unknown: 0 },
       { Inline: { amount: "1" } },
     ])
@@ -487,7 +487,7 @@ describe("declared fact absence", () => {
       building_count: 0,
       production_rate: 0n,
       output_amount_left: 0n,
-      last_settled_tick: 0,
+      last_settled_at: 0,
     });
     expect(store.requireOrAbsent("HyperstructureProgress", resource).known?.contributed).toBe(0n);
     expect(store.requireOrAbsent("SettlementProgress", { game_id: 1 }).known).toEqual({
@@ -544,7 +544,11 @@ describe("declared fact absence", () => {
     expect(resolveExplorerTroops(new NativeFactStore(), army)).toBeUndefined();
     expect(resolveExplorerTroops(store, { ...army, owner: 8n })).toBeUndefined();
     expect(() => resolveExplorerTroops(store, army)).toThrow("unused");
-    const occupied = { ...slot, explorer_id: army.explorer_id, stamina: { amount: "7", updated_tick: "17" } };
+    const occupied = {
+      ...slot,
+      explorer_id: army.explorer_id,
+      stamina: { amount: "7", settled_at: "17", remainder: 0 },
+    };
     store.applyFacts([
       set("0x70", "ArmySlot", occupied),
       set("0x72", "ArmyProgress", {
@@ -558,7 +562,7 @@ describe("declared fact absence", () => {
         homecoming: 1,
       }),
     ]);
-    expect(resolveExplorerTroops(store, army)?.stamina).toEqual({ amount: 7n, updated_tick: 17n });
+    expect(resolveExplorerTroops(store, army)?.stamina).toEqual({ amount: 7n, settled_at: 17, remainder: 0 });
     expect(resolveExplorerTroops(store, army)?.staminaMax).toBe(
       Number(preset.rules.troop_stamina_config.stamina_knight_max) + 50,
     );
@@ -633,7 +637,7 @@ describe("declared fact absence", () => {
         epoch: "0",
         slot: index,
         explorer_id: explorerId,
-        stamina: { amount, updated_tick: "10" },
+        stamina: { amount, settled_at: "10", remainder: 0 },
       });
 
     expect(openArmySlots(store, home)?.map((open) => open.inherited)).toEqual([null, null, null]);
@@ -641,7 +645,7 @@ describe("declared fact absence", () => {
     store.applyFacts([slot(0, 70, "30"), slot(1, 0, "4")]);
     const open = openArmySlots(store, home)!;
     expect(open).toEqual([
-      { slot: 1, inherited: { amount: 4n, updated_tick: 10n } },
+      { slot: 1, inherited: { amount: 4n, settled_at: 10, remainder: 0 } },
       { slot: 2, inherited: null },
     ]);
 
@@ -697,7 +701,7 @@ describe("declared fact absence", () => {
         epoch: "0",
         slot: 0,
         explorer_id: 0,
-        stamina: { amount: "7", updated_tick: "35" },
+        stamina: { amount: "7", settled_at: "35", remainder: 0 },
       }),
     ]);
     const home = { game_id: 1, entity_id: 7, allowedSlots: 2 };

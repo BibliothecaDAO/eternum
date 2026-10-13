@@ -327,8 +327,8 @@ pub mod ResourceState {
                 weight: self.data.resources.weights.read((key.game_id, key.entity_id)),
                 limit: crate::logic::resources::store_limit(key, resource_type),
             };
-            let since = core::cmp::max(resource.production.last_settled_tick, core::cmp::min(now, start_at));
-            resource.production.last_settled_tick = since;
+            let since = core::cmp::max(resource.production.last_settled_at, core::cmp::min(now, start_at));
+            resource.production.last_settled_at = since;
             if since != now {
                 settle(
                     resource_type,
@@ -372,7 +372,7 @@ pub mod ResourceState {
                 return;
             }
             let production = if production.building_count == 0 {
-                Production { last_settled_tick: 0, ..production }
+                Production { last_settled_at: 0, ..production }
             } else {
                 production
             };

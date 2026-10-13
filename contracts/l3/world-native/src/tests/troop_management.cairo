@@ -66,6 +66,16 @@ fn setup() -> (super::Deployment, ResourceKey, u64, u64) {
 
 #[test]
 fn spatial_commands_match_replay_views() {
+    replay_armies(false);
+}
+
+#[test]
+#[ignore]
+fn record_spatial_replay_armies() {
+    replay_armies(true);
+}
+
+fn replay_armies(record: bool) {
     let (d, home, other, first, second) = setup_homes();
     grant(d, home, 35, 1000 * RESOURCE_PRECISION);
     grant(d, home, 36, 1000 * RESOURCE_PRECISION);
@@ -85,11 +95,11 @@ fn spatial_commands_match_replay_views() {
     let mut spy = spy_events();
     for (command, timestamp) in array![
         (Command::Move(Move { explorer_id: first, directions: array![0_u8].span() }), 120_u64),
-        (Command::Move(Move { explorer_id: first, directions: array![3_u8].span() }), 120),
+        (Command::Move(Move { explorer_id: first, directions: array![3_u8].span() }), 140),
         (transfer(Army::Explorer(first), Army::Explorer(second), 10), 140),
         (manage(ManageTroops::RemoveExplorer(second)), 150),
     ] {
-        assert!(execute(d, command, timestamp));
+        assert!(execute(d, command, timestamp), "replay command refused at {}", timestamp);
         super::state::assert_inline_armies_have_no_progress(d.games, 3, array![first, second].span());
         for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
             for key in event.keys.span() {
@@ -99,7 +109,7 @@ fn spatial_commands_match_replay_views() {
         super::state::assert_spatial_indexes(d.games, 3, entities, tiles);
         frames.append(super::spatial_replay::capture(d.games, 3, entities, tiles, ref spy));
     }
-    super::spatial_replay::compare("armies", frames);
+    super::spatial_replay::compare("armies", frames, record);
 }
 fn troop(d: super::Deployment, id: u64) -> Option<ExplorerTroops> {
     GameState { contract_address: d.games }.resolved_explorer(ExplorerKey { game_id: 3, explorer_id: id })

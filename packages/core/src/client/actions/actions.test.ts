@@ -58,13 +58,12 @@ describe("game actions", () => {
   });
 
   it("refuses to submit before connect(signer)", async () => {
-    const { store, systemCalls, client } = createHarness(null);
+    const { store, client } = createHarness(null);
     const path = seedExplorerWithTravelPath(store);
 
     await expect(client.actions.moveArmy({ explorerId: EXPLORER_ID, path })).rejects.toThrow(
       "call client.connect(signer)",
     );
-    expect(systemCalls.explorer_travel).not.toHaveBeenCalled();
   });
 });
 

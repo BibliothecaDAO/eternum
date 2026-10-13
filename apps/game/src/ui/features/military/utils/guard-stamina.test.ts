@@ -15,7 +15,7 @@ it("keeps the resolved Frontier guard cap through refill and display, while lega
   const guard = {
     category: TroopType.Knight,
     tier: TroopTier.T3,
-    stamina: { amount: 100n, updated_tick: 10n },
+    stamina: { amount: 100n, settled_at: 10, remainder: 0 },
   };
   expect(getGuardStaminaSnapshot({ ...guard, staminaMax: 120 }, 190)).toEqual({ current: 120, max: 120 });
   expect(getGuardStaminaSnapshot(guard, 190)).toEqual({ current: 160, max: 160 });

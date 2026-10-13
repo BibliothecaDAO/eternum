@@ -78,7 +78,7 @@ pub fn reveal_reward(
 }
 
 pub fn boosted_amount(amount: u128, boosts: crate::troops::TroopBoosts, timestamp: u64) -> u128 {
-    let bonus = if crate::relics::bonus_active(boosts.incr_explore_reward_end_tick, timestamp) {
+    let bonus = if crate::relics::bonus_active(boosts.incr_explore_reward_end_at, timestamp) {
         amount * boosts.incr_explore_reward_percent_num.into() / 10000
     } else {
         0

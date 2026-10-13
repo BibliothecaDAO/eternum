@@ -56,8 +56,8 @@ function fixture(
               category: "Knight",
               tier: "T1",
               count: 10n,
-              stamina: { Inline: { amount: BigInt(stamina), updated_tick: 6_000n } },
-              boosts: { incr_stamina_regen_percent_num: 0, incr_stamina_regen_tick_count: 0 },
+              stamina: { Inline: { amount: BigInt(stamina), settled_at: 6_000, remainder: 0 } },
+              boosts: { incr_stamina_regen_percent_num: 0, incr_stamina_regen_seconds_left: 0 },
             },
           },
         ];

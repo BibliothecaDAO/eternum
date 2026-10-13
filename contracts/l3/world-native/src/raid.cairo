@@ -80,7 +80,14 @@ pub fn resolve(
     explorer
         .stamina
         .spend(
-            ref explorer.boosts, explorer.category, explorer.tier, rules.troop_stamina_config, stamina_loss, rules.tick_config.armies_tick_in_seconds, timestamp, true,
+            ref explorer.boosts,
+            explorer.category,
+            explorer.tier,
+            rules.troop_stamina_config,
+            stamina_loss,
+            rules.tick_config.armies_tick_in_seconds,
+            timestamp,
+            true,
         );
     RaidResolution { explorer, guards: updated.span(), damage_to_explorer, damage_to_guards, guarded: true }
 }

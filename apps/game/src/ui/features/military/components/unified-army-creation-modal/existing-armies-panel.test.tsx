@@ -42,16 +42,16 @@ it("keeps the visible army bar and movement gate fixed until the chain-proven fl
     tier: "T1",
     count: 10n,
     battle_cooldown_end: 0,
-    stamina: { amount: 10n, updated_tick: 101n },
+    stamina: { amount: 10n, settled_at: 101, remainder: 0 },
     boosts: {
       incr_damage_dealt_percent_num: 0,
-      incr_damage_dealt_end_tick: 0,
+      incr_damage_dealt_end_at: 0,
       decr_damage_gotten_percent_num: 0,
-      decr_damage_gotten_end_tick: 0,
+      decr_damage_gotten_end_at: 0,
       incr_stamina_regen_percent_num: 0,
-      incr_stamina_regen_tick_count: 0,
+      incr_stamina_regen_seconds_left: 0,
       incr_explore_reward_percent_num: 0,
-      incr_explore_reward_end_tick: 0,
+      incr_explore_reward_end_at: 0,
     },
   };
   fixture.troops = troops;

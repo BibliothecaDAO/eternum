@@ -489,12 +489,7 @@ pub mod TroopsLogic {
                 );
             explorer.troops.count += command.amount;
             crate::troop_management::refill(ref explorer.troops, rules, timestamp);
-            explorer
-                .troops
-                .stamina
-                .revert_initial_amount(
-                    rules.troop_stamina_config, timestamp,
-                );
+            explorer.troops.stamina.revert_initial_amount(rules.troop_stamina_config, timestamp);
             crate::troop_management::assert_size(explorer.troops, home.base.level, rules);
             self
                 .resources_dispatcher(game_id)
@@ -980,8 +975,7 @@ pub mod troop_helpers {
                     timestamp,
                 );
             crate::relics::boost_explorer(
-                ref explorer.troops.boosts, command.relic_id, rule, timestamp,
-                rules.tick_config.armies_tick_in_seconds,
+                ref explorer.troops.boosts, command.relic_id, rule, timestamp, rules.tick_config.armies_tick_in_seconds,
             );
             if command.relic_id == 45 || command.relic_id == 46 {
                 crate::relics::IRelicMapDispatcherTrait::reveal_relic_ring(
@@ -1022,9 +1016,11 @@ pub mod troop_helpers {
                         timestamp,
                     );
                 guard.troops.boosts.decr_damage_gotten_percent_num = rule.rate_bps;
-                guard.troops.boosts.decr_damage_gotten_end_tick = crate::relics::bonus_end_at(
-                    timestamp, rule.duration, rules.tick_config.armies_tick_in_seconds,
-                );
+                guard
+                    .troops
+                    .boosts
+                    .decr_damage_gotten_end_at =
+                        crate::relics::bonus_end_at(timestamp, rule.duration, rules.tick_config.armies_tick_in_seconds);
                 crate::logic::guards::GuardState::save(key, guard);
             }
         }

@@ -1,4 +1,3 @@
-import { staminaClock } from "@bibliothecadao/eternum/troop-stamina";
 import { StaminaManager } from "@bibliothecadao/eternum";
 import { Troops, TroopTier, TroopType } from "@bibliothecadao/types";
 
@@ -16,7 +15,7 @@ export const selectFreshestArmyStaminaSource = (input: {
   return {
     source: "live",
     amount: input.liveTroops.stamina?.amount ?? 0n,
-    settledAt: staminaClock.read(input.liveTroops.stamina).settledAt,
+    settledAt: input.liveTroops.stamina.settled_at,
     troopCount: Number(input.liveTroops.count ?? 0n),
     troops: input.liveTroops,
   };

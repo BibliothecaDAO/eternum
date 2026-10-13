@@ -13,20 +13,20 @@ const rules = {
   stamina_gain_per_tick: 1,
 };
 
-const knights = (amount: number, updatedTick: number): Troops => ({
+const knights = (amount: number, settledAt: number): Troops => ({
   category: TroopType.Knight,
   tier: TroopTier.T1,
   count: 1_500_000_000_000n,
-  stamina: { amount: BigInt(amount), updated_tick: BigInt(updatedTick) },
+  stamina: { amount: BigInt(amount), settled_at: settledAt, remainder: 0 },
   boosts: {
     incr_damage_dealt_percent_num: 0,
-    incr_damage_dealt_end_tick: 0,
+    incr_damage_dealt_end_at: 0,
     decr_damage_gotten_percent_num: 0,
-    decr_damage_gotten_end_tick: 0,
+    decr_damage_gotten_end_at: 0,
     incr_stamina_regen_percent_num: 0,
-    incr_stamina_regen_tick_count: 0,
+    incr_stamina_regen_seconds_left: 0,
     incr_explore_reward_percent_num: 0,
-    incr_explore_reward_end_tick: 0,
+    incr_explore_reward_end_at: 0,
   },
   battle_cooldown_end: 0,
 });
@@ -47,11 +47,10 @@ describe("time until an army is full", () => {
   it("lands on the contract's full second every second for ten minutes", () => {
     vi.spyOn(configManager, "getTroopStaminaRules").mockReturnValue(rules as never);
     vi.spyOn(configManager, "getTick").mockReturnValue(TICK_SECONDS);
-    const updatedTick = 1_000;
-    const troops = knights(90, updatedTick * TICK_SECONDS + 37);
+    const start = 1_000 * TICK_SECONDS + 37;
+    const troops = knights(90, start);
     // The army starts 37 seconds past the shared boundary; its own clock determines regeneration.
-    const contractFullAt = (updatedTick + 60) * TICK_SECONDS + 37;
-    const start = updatedTick * TICK_SECONDS + 37;
+    const contractFullAt = start + 60 * TICK_SECONDS;
 
     for (let now = start; now <= start + 600; now += 1) {
       expect(now + displayAt(troops, now).secondsUntilFull).toBe(contractFullAt);

@@ -13,7 +13,7 @@ const models: NativeModelName[] = ["Structure", "ExplorerTroops", "TileOccupancy
 /** Raw successful command events and the contract's own views after each command. */
 function frames(name: string) {
   const path = new URL(
-    `../../../../contracts/l3/world-native/tests/fixtures/spatial-replay/${name}.txt`,
+    `../../../../contracts/l3/world-native/src/tests/fixtures/spatial-replay/${name}.txt`,
     import.meta.url,
   );
   const values = readFileSync(path, "utf8").trim().split(/\s+/);

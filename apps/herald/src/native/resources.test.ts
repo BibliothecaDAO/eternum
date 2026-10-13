@@ -90,9 +90,9 @@ describe("native production facts", () => {
             incr_resource_rate_percent_num: 65535n,
             incr_labor_rate_percent_num: 2500n,
             incr_troop_rate_percent_num: 5000n,
-            incr_resource_rate_end_tick: 4294967295n,
-            incr_labor_rate_end_tick: 31n,
-            incr_troop_rate_end_tick: 32n,
+            incr_resource_rate_end_at: 4294967295n,
+            incr_labor_rate_end_at: 31n,
+            incr_troop_rate_end_at: 32n,
           }),
         ]),
       ),
@@ -113,8 +113,8 @@ describe("native production facts", () => {
     expect(fold.modelRows("ProductionBonus")[0].value).toMatchObject({
       incr_resource_rate_percent_num: "0xffff",
       incr_troop_rate_percent_num: "0x1388",
-      incr_resource_rate_end_tick: "0xffffffff",
-      incr_troop_rate_end_tick: "0x20",
+      incr_resource_rate_end_at: "0xffffffff",
+      incr_troop_rate_end_at: "0x20",
     });
   });
 
@@ -130,9 +130,9 @@ describe("native production facts", () => {
       incr_resource_rate_percent_num: 0,
       incr_labor_rate_percent_num: 0,
       incr_troop_rate_percent_num: 1,
-      incr_resource_rate_end_tick: 0,
-      incr_labor_rate_end_tick: 0,
-      incr_troop_rate_end_tick: 31,
+      incr_resource_rate_end_at: 0,
+      incr_labor_rate_end_at: 0,
+      incr_troop_rate_end_at: 31,
     });
     const invalidBonus = bonus.data.map((felt, index) => (index === bonus.data.length - 4 ? "65536" : felt));
     for (const invalid of [

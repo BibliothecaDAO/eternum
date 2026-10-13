@@ -1,16 +1,13 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { setChainTimestampEvidenceSink } from "./timestamp";
+import { describe, expect, it } from "vitest";
 import { productionOutput } from "./production-output";
 
-afterEach(() => setChainTimestampEvidenceSink(null));
-
 describe("production paid by the second", () => {
-  const farm = { last_settled_tick: 40, production_rate: 7n };
+  const farm = { last_settled_at: 40, production_rate: 7n };
 
   it("pays one second between consecutive settles and the same total for one long settle", () => {
     let total = 0n;
     for (let timestamp = 41; timestamp <= 3640; timestamp++) {
-      const paid = productionOutput({ ...farm, last_settled_tick: timestamp - 1 }, timestamp);
+      const paid = productionOutput({ ...farm, last_settled_at: timestamp - 1 }, timestamp);
       expect(paid).toBe(7n);
       total += paid;
     }
@@ -19,10 +16,7 @@ describe("production paid by the second", () => {
   });
 
   it("never pays before the exact start or twice for the same second", () => {
-    const evidence = vi.fn();
-    setChainTimestampEvidenceSink(evidence);
     expect(productionOutput(farm, 39)).toBe(0n);
-    expect(evidence).toHaveBeenCalledWith(40);
     expect(productionOutput(farm, 40)).toBe(0n);
     expect(productionOutput(farm, 41)).toBe(7n);
     expect(productionOutput(farm, 59)).toBe(133n);
@@ -32,7 +26,7 @@ describe("production paid by the second", () => {
   it("refuses invalid clocks", () => {
     for (const timestamp of [NaN, Infinity, 40.5]) {
       expect(() => productionOutput(farm, timestamp)).toThrow("clock");
-      expect(() => productionOutput({ ...farm, last_settled_tick: timestamp }, 100)).toThrow("clock");
+      expect(() => productionOutput({ ...farm, last_settled_at: timestamp }, 100)).toThrow("clock");
     }
   });
 });

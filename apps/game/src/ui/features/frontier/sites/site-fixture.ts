@@ -13,7 +13,7 @@ const set = (key: string, model: string, value: Record<string, unknown>) => ({ m
 const troops = (count: bigint, stamina: bigint) => ({
   ...rowFixture.expected.value.troops,
   count: String(count * PRECISION),
-  stamina: { Inline: { amount: String(stamina), updated_tick: "360" } },
+  stamina: { Inline: { amount: String(stamina), settled_at: "360", remainder: 0 } },
 });
 
 /**

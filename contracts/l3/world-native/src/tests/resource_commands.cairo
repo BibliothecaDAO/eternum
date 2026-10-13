@@ -157,7 +157,7 @@ fn explicit_burn_does_not_harvest_and_rejection_keeps_the_stream_moving() {
     let burn = ResourceBurn { entity_id: source.entity_id, resources: amount(1, 10) };
     assert!(execute(deployment, Command::BurnStructureResources(burn), 40));
     assert_eq!(resources.resource_balance(slot), 90);
-    assert_eq!(resources.resource_production(slot).last_settled_tick, 30);
+    assert_eq!(resources.resource_production(slot).last_settled_at, 30);
     let production = resources.resource_production(slot);
     assert!(
         !execute(deployment, Command::BurnStructureResources(ResourceBurn { resources: amount(1, 120), ..burn }), 45),

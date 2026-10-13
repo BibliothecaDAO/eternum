@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "90df4c2462c67b80d61cf88d10a3b23a51ebb17bad33916c10eb71f11a3c05e9";
+export const nativeFactSchemaIdentity = "e181850338febef8b5fd8a562b0e1131a438299a494322f5235ae60c6faf5ac8";
 export const nativeRuleConstants = {
   "ATTRIBUTE_CAP": 5,
   "BATTLE_UNCOMMON_BPS": 1000,
@@ -195,7 +195,7 @@ export interface NativeRows {
   Liquidity: { readonly game_id: number; readonly owner: bigint; readonly resource_type: number; readonly shares: bigint };
   TradeOrder: { readonly game_id: number; readonly trade_id: bigint; readonly maker_id: bigint; readonly taker_id: bigint; readonly offered_resource: number; readonly requested_resource: number; readonly offered_per_lot: bigint; readonly requested_per_lot: bigint; readonly remaining_lots: bigint; readonly expires_at: number };
   TradeRules: { readonly game_id: number; readonly max_count: number };
-  Guard: { readonly game_id: number; readonly structure_id: bigint; readonly slot: number; readonly troops: { readonly category: "Knight" | "Paladin" | "Crossbowman"; readonly tier: "T1" | "T2" | "T3"; readonly count: bigint; readonly stamina: { readonly Inline: { readonly amount: bigint; readonly updated_tick: bigint } } | { readonly Slot: number }; readonly boosts: { readonly incr_damage_dealt_percent_num: number; readonly incr_damage_dealt_end_tick: number; readonly decr_damage_gotten_percent_num: number; readonly decr_damage_gotten_end_tick: number; readonly incr_stamina_regen_percent_num: number; readonly incr_stamina_regen_tick_count: number; readonly incr_explore_reward_percent_num: number; readonly incr_explore_reward_end_tick: number }; readonly battle_cooldown_end: number }; readonly destroyed_tick: number };
+  Guard: { readonly game_id: number; readonly structure_id: bigint; readonly slot: number; readonly troops: { readonly category: "Knight" | "Paladin" | "Crossbowman"; readonly tier: "T1" | "T2" | "T3"; readonly count: bigint; readonly stamina: { readonly Inline: { readonly amount: bigint; readonly settled_at: number; readonly remainder: number } } | { readonly Slot: number }; readonly boosts: { readonly incr_damage_dealt_percent_num: number; readonly incr_damage_dealt_end_at: number; readonly decr_damage_gotten_percent_num: number; readonly decr_damage_gotten_end_at: number; readonly incr_stamina_regen_percent_num: number; readonly incr_stamina_regen_seconds_left: number; readonly incr_explore_reward_percent_num: number; readonly incr_explore_reward_end_at: number }; readonly battle_cooldown_end: number }; readonly destroyed_tick: number };
   VillageRaid: { readonly game_id: number; readonly entity_id: bigint; readonly last_tick: bigint };
   BitcoinMine: { readonly game_id: number; readonly entity_id: bigint; readonly eligible_from: bigint; readonly next_phase: bigint; readonly unsplit_carry: bigint; readonly winner_carry: bigint };
   BitcoinClaim: { readonly game_id: number; readonly phase: bigint; readonly mine_id: bigint; readonly claimed: boolean };
@@ -219,13 +219,13 @@ export interface NativeRows {
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly data: bigint };
   TileOccupancy: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly entity_id: bigint; readonly category: number; readonly is_structure: boolean };
   ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint; readonly xp: number; readonly battle: number; readonly logistics: number; readonly scouting: number; readonly scouting_kinds: number; readonly homecoming: number };
-  ArmySlot: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly slot: number; readonly explorer_id: bigint; readonly stamina: { readonly amount: bigint; readonly updated_tick: bigint } };
-  ExplorerTroops: { readonly game_id: number; readonly explorer_id: bigint; readonly owner: bigint; readonly troops: { readonly category: "Knight" | "Paladin" | "Crossbowman"; readonly tier: "T1" | "T2" | "T3"; readonly count: bigint; readonly stamina: { readonly Inline: { readonly amount: bigint; readonly updated_tick: bigint } } | { readonly Slot: number }; readonly boosts: { readonly incr_damage_dealt_percent_num: number; readonly incr_damage_dealt_end_tick: number; readonly decr_damage_gotten_percent_num: number; readonly decr_damage_gotten_end_tick: number; readonly incr_stamina_regen_percent_num: number; readonly incr_stamina_regen_tick_count: number; readonly incr_explore_reward_percent_num: number; readonly incr_explore_reward_end_tick: number }; readonly battle_cooldown_end: number } };
+  ArmySlot: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly slot: number; readonly explorer_id: bigint; readonly stamina: { readonly amount: bigint; readonly settled_at: number; readonly remainder: number } };
+  ExplorerTroops: { readonly game_id: number; readonly explorer_id: bigint; readonly owner: bigint; readonly troops: { readonly category: "Knight" | "Paladin" | "Crossbowman"; readonly tier: "T1" | "T2" | "T3"; readonly count: bigint; readonly stamina: { readonly Inline: { readonly amount: bigint; readonly settled_at: number; readonly remainder: number } } | { readonly Slot: number }; readonly boosts: { readonly incr_damage_dealt_percent_num: number; readonly incr_damage_dealt_end_at: number; readonly decr_damage_gotten_percent_num: number; readonly decr_damage_gotten_end_at: number; readonly incr_stamina_regen_percent_num: number; readonly incr_stamina_regen_seconds_left: number; readonly incr_explore_reward_percent_num: number; readonly incr_explore_reward_end_at: number }; readonly battle_cooldown_end: number } };
   ExpeditionSite: { readonly game_id: number; readonly entity_id: bigint; readonly initial_guard_count: bigint; readonly cleared: boolean };
   Structure: { readonly game_id: number; readonly entity_id: bigint; readonly owner: bigint; readonly base: { readonly troop_max_guard_count: number; readonly troop_max_explorer_count: number; readonly created_at: number; readonly category: number; readonly level: number; readonly starting_troops_granted: boolean }; readonly resources_packed: bigint; readonly metadata: { readonly realm_id: number; readonly order: number; readonly has_wonder: boolean; readonly village_realm: bigint; readonly mine_kind: number; readonly deepest_depth: number } };
   ResourceBalance: { readonly game_id: number; readonly entity_id: bigint; readonly resource_type: number; readonly balance: bigint };
-  ResourceProduction: { readonly game_id: number; readonly entity_id: bigint; readonly resource_type: number; readonly building_count: number; readonly production_rate: bigint; readonly output_amount_left: bigint; readonly last_settled_tick: number };
-  ProductionBonus: { readonly game_id: number; readonly entity_id: bigint; readonly incr_resource_rate_percent_num: number; readonly incr_labor_rate_percent_num: number; readonly incr_troop_rate_percent_num: number; readonly incr_resource_rate_end_tick: number; readonly incr_labor_rate_end_tick: number; readonly incr_troop_rate_end_tick: number };
+  ResourceProduction: { readonly game_id: number; readonly entity_id: bigint; readonly resource_type: number; readonly building_count: number; readonly production_rate: bigint; readonly output_amount_left: bigint; readonly last_settled_at: number };
+  ProductionBonus: { readonly game_id: number; readonly entity_id: bigint; readonly incr_resource_rate_percent_num: number; readonly incr_labor_rate_percent_num: number; readonly incr_troop_rate_percent_num: number; readonly incr_resource_rate_end_at: number; readonly incr_labor_rate_end_at: number; readonly incr_troop_rate_end_at: number };
   ProductionRecipe: { readonly game_id: number; readonly resource_type: number; readonly simple_output: bigint; readonly complex_output: bigint; readonly simple_inputs: readonly ({ readonly resource_type: number; readonly amount: bigint })[]; readonly complex_inputs: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
   ResourceWeight: { readonly game_id: number; readonly entity_id: bigint; readonly capacity: bigint; readonly weight: bigint };
   ResourceArrival: { readonly game_id: number; readonly entity_id: bigint; readonly day: bigint; readonly slot: number; readonly resources: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
@@ -824,20 +824,21 @@ export const nativeFactModels = {
           "variants": {
             "Inline": {
               "amount": "u64",
-              "updated_tick": "u64"
+              "settled_at": "u32",
+              "remainder": "u32"
             },
             "Slot": "u8"
           }
         },
         "boosts": {
           "incr_damage_dealt_percent_num": "u16",
-          "incr_damage_dealt_end_tick": "u32",
+          "incr_damage_dealt_end_at": "u32",
           "decr_damage_gotten_percent_num": "u16",
-          "decr_damage_gotten_end_tick": "u32",
+          "decr_damage_gotten_end_at": "u32",
           "incr_stamina_regen_percent_num": "u16",
-          "incr_stamina_regen_tick_count": "u8",
+          "incr_stamina_regen_seconds_left": "u16",
           "incr_explore_reward_percent_num": "u16",
-          "incr_explore_reward_end_tick": "u32"
+          "incr_explore_reward_end_at": "u32"
         },
         "battle_cooldown_end": "u32"
       },
@@ -1258,7 +1259,8 @@ export const nativeFactModels = {
       "explorer_id": "u64",
       "stamina": {
         "amount": "u64",
-        "updated_tick": "u64"
+        "settled_at": "u32",
+        "remainder": "u32"
       }
     },
     "absence": {
@@ -1301,20 +1303,21 @@ export const nativeFactModels = {
           "variants": {
             "Inline": {
               "amount": "u64",
-              "updated_tick": "u64"
+              "settled_at": "u32",
+              "remainder": "u32"
             },
             "Slot": "u8"
           }
         },
         "boosts": {
           "incr_damage_dealt_percent_num": "u16",
-          "incr_damage_dealt_end_tick": "u32",
+          "incr_damage_dealt_end_at": "u32",
           "decr_damage_gotten_percent_num": "u16",
-          "decr_damage_gotten_end_tick": "u32",
+          "decr_damage_gotten_end_at": "u32",
           "incr_stamina_regen_percent_num": "u16",
-          "incr_stamina_regen_tick_count": "u8",
+          "incr_stamina_regen_seconds_left": "u16",
           "incr_explore_reward_percent_num": "u16",
-          "incr_explore_reward_end_tick": "u32"
+          "incr_explore_reward_end_at": "u32"
         },
         "battle_cooldown_end": "u32"
       }
@@ -1399,7 +1402,7 @@ export const nativeFactModels = {
       "building_count": "u8",
       "production_rate": "u64",
       "output_amount_left": "u128",
-      "last_settled_tick": "u32"
+      "last_settled_at": "u32"
     },
     "absence": {
       "parent": "ResourceWeight",
@@ -1423,9 +1426,9 @@ export const nativeFactModels = {
       "incr_resource_rate_percent_num": "u16",
       "incr_labor_rate_percent_num": "u16",
       "incr_troop_rate_percent_num": "u16",
-      "incr_resource_rate_end_tick": "u32",
-      "incr_labor_rate_end_tick": "u32",
-      "incr_troop_rate_end_tick": "u32"
+      "incr_resource_rate_end_at": "u32",
+      "incr_labor_rate_end_at": "u32",
+      "incr_troop_rate_end_at": "u32"
     },
     "absence": {
       "parent": "Structure",

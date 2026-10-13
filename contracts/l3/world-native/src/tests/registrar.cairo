@@ -716,7 +716,7 @@ fn roster_settlement_displaces_an_army_without_a_stale_position_or_home_entry() 
                 category: crate::troops::TroopType::Knight,
                 tier: crate::troops::TroopTier::T1,
                 count: RESOURCE_PRECISION,
-                stamina: crate::troops::Stamina { amount: 120, updated_tick: 0 }.into(),
+                stamina: crate::troops::Stamina { amount: 120, settled_at: 0, remainder: 0 }.into(),
                 boosts: Default::default(),
                 battle_cooldown_end: 0,
             },

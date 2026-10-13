@@ -10,7 +10,7 @@ const productionInfo = (outputAmountLeft: bigint) => ({
     building_count: 2,
     production_rate: RATE,
     output_amount_left: outputAmountLeft,
-    last_settled_tick: 100,
+    last_settled_at: 100,
   },
 });
 

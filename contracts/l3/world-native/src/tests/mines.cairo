@@ -225,7 +225,7 @@ fn discovered_surface_mines_use_kind_production_without_revealing_neighbors() {
         assert_eq!(production.output_amount_left, cap);
         assert_eq!(production.building_count, 1);
         // Discovered at time 30, with no production before that second.
-        assert_eq!(production.last_settled_tick, 30);
+        assert_eq!(production.last_settled_at, 30);
         assert!(map.tile(crate::geometry::tile_key(3, coord)).is_some());
         for direction in 0_u8..6 {
             assert!(map.tile(crate::geometry::tile_key(3, crate::geometry::neighbor(coord, direction))).is_none());

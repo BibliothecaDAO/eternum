@@ -17,7 +17,7 @@ import { configManager } from "./config-manager";
 
 type Production = Pick<
   NativeRows["ResourceProduction"],
-  "building_count" | "production_rate" | "output_amount_left" | "last_settled_tick"
+  "building_count" | "production_rate" | "output_amount_left" | "last_settled_at"
 >;
 interface ResourceState {
   balance: bigint;
@@ -106,7 +106,7 @@ export class ResourceManager {
     const game = this.store.require("GameRegistry", { game_id: this.gameId });
     return {
       ...production,
-      last_settled_tick: Math.max(production.last_settled_tick, Number(game.start_main_at)),
+      last_settled_at: Math.max(production.last_settled_at, Number(game.start_main_at)),
       production_rate: game.ready ? production.production_rate : 0n,
     };
   }
@@ -264,7 +264,7 @@ export class ResourceManager {
     if (!resource) return 0;
     const { production } = resource;
     if (production.building_count === 0) return 0;
-    const settledAt = production.last_settled_tick;
+    const settledAt = production.last_settled_at;
     if (production.production_rate === 0n || production.output_amount_left === 0n) return settledAt;
     if (ResourceManager.neverRunsOut(production, resourceId)) return Number.MAX_SAFE_INTEGER;
     return settledAt + secondsUntilPaid(production.output_amount_left, production.production_rate);
@@ -329,7 +329,7 @@ export class ResourceManager {
     productionRate: bigint;
     buildingCount: number;
     outputAmountLeft: bigint;
-    lastSettledTick: number;
+    lastSettledAt: number;
   }> {
     if (!this.hasResources()) return [];
     return [...this.store.inGame("ResourceProduction", this.gameId)].flatMap((row) => {
@@ -343,7 +343,7 @@ export class ResourceManager {
           productionRate: production.production_rate,
           buildingCount: production.building_count,
           outputAmountLeft: production.output_amount_left,
-          lastSettledTick: production.last_settled_tick,
+          lastSettledAt: production.last_settled_at,
         },
       ];
     });

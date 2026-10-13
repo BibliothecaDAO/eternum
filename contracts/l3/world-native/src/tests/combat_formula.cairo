@@ -57,13 +57,13 @@ fn stamina_config() -> TroopStaminaConfig {
 fn troop_boosts() -> TroopBoosts {
     TroopBoosts {
         incr_damage_dealt_percent_num: 0,
-        incr_damage_dealt_end_tick: 0,
+        incr_damage_dealt_end_at: 0,
         decr_damage_gotten_percent_num: 0,
-        decr_damage_gotten_end_tick: 0,
+        decr_damage_gotten_end_at: 0,
         incr_stamina_regen_percent_num: 0,
-        incr_stamina_regen_tick_count: 0,
+        incr_stamina_regen_seconds_left: 0,
         incr_explore_reward_percent_num: 0,
-        incr_explore_reward_end_tick: 0,
+        incr_explore_reward_end_at: 0,
     }
 }
 
@@ -134,7 +134,7 @@ fn tests_troop_attack_simple_1() {
         category: TroopType::Knight,
         tier: TroopTier::T1,
         count: 1 * RESOURCE_PRECISION,
-        stamina: Stamina { amount: 100, updated_tick: 1 }.into(),
+        stamina: Stamina { amount: 100, settled_at: 1, remainder: 0 }.into(),
         boosts: troop_boosts(),
         battle_cooldown_end: 0,
     };
@@ -142,7 +142,7 @@ fn tests_troop_attack_simple_1() {
         category: TroopType::Paladin,
         tier: TroopTier::T1,
         count: 95_000 * RESOURCE_PRECISION,
-        stamina: Stamina { amount: 100, updated_tick: 1 }.into(),
+        stamina: Stamina { amount: 100, settled_at: 1, remainder: 0 }.into(),
         boosts: troop_boosts(),
         battle_cooldown_end: 0,
     };
@@ -159,7 +159,7 @@ fn tests_troop_attack_simple_2() {
         category: TroopType::Knight,
         tier: TroopTier::T2, // Tier 2
         count: 61_293 * RESOURCE_PRECISION,
-        stamina: Stamina { amount: 100, updated_tick: 1 }.into(),
+        stamina: Stamina { amount: 100, settled_at: 1, remainder: 0 }.into(),
         boosts: troop_boosts(),
         battle_cooldown_end: 0,
     };
@@ -167,7 +167,7 @@ fn tests_troop_attack_simple_2() {
         category: TroopType::Crossbowman,
         tier: TroopTier::T1, // Tier 1
         count: 159_303 * RESOURCE_PRECISION,
-        stamina: Stamina { amount: 100, updated_tick: 1 }.into(),
+        stamina: Stamina { amount: 100, settled_at: 1, remainder: 0 }.into(),
         boosts: troop_boosts(),
         battle_cooldown_end: 0,
     };
@@ -361,7 +361,7 @@ fn test_troops(category: TroopType, tier: TroopTier, troop_count: u128, stamina:
         category,
         tier,
         count: troop_count * RESOURCE_PRECISION,
-        stamina: Stamina { amount: stamina, updated_tick: 1 }.into(),
+        stamina: Stamina { amount: stamina, settled_at: 1, remainder: 0 }.into(),
         boosts: troop_boosts(),
         battle_cooldown_end: 0,
     }
@@ -382,24 +382,49 @@ fn an_exchange_without_a_capture_spends_the_full_attack_stamina() {
 }
 
 #[test]
-fn combat_relic_damage_and_defence_expire_at_the_end_second() {
-    for timestamp in array![76_u64, 77] {
-        let mut attacker = test_troops(TroopType::Knight, TroopTier::T2, 1000, 120);
-        let mut defender = test_troops(TroopType::Knight, TroopTier::T2, 1000, 120);
-        attacker.boosts.incr_damage_dealt_percent_num = 5000;
-        attacker.boosts.incr_damage_dealt_end_tick = 77;
-        defender.boosts.decr_damage_gotten_percent_num = 5000;
-        defender.boosts.decr_damage_gotten_end_tick = 77;
-        let _ = attacker.damage_with_context(
-            ref defender, CombatContext { timestamp, ..context(Biome::Underground) },
-            stamina_config(), damage_config(), 60, 60,
-        );
-        let expected = if timestamp < 77 {
-            5000
-        } else {
-            0
-        };
-        assert_eq!(attacker.boosts.incr_damage_dealt_percent_num, expected);
-        assert_eq!(defender.boosts.decr_damage_gotten_percent_num, expected);
+fn combat_relics_change_casualties_for_their_full_window_and_replace_on_reapplication() {
+    for id in array![41_u8, 43] {
+        for replace in array![false, true] {
+            let mut boosted = test_troops(TroopType::Knight, TroopTier::T2, 10000, 120);
+            let rule = crate::relics::RelicRule {
+                duration: 3, rate_bps: 5000, uses: 0, essence_cost: 0, draw_weight: 0,
+            };
+            crate::relics::boost_explorer(ref boosted.boosts, id, rule, 47, 10);
+            let end = if replace {
+                crate::relics::boost_explorer(
+                    ref boosted.boosts, id, crate::relics::RelicRule { duration: 1, ..rule }, 52, 10,
+                );
+                62_u64
+            } else {
+                77
+            };
+            for now in array![end - 1, end] {
+                let plain = test_troops(TroopType::Knight, TroopTier::T2, 10000, 120);
+                let mut attacker = if id == 41 {
+                    boosted
+                } else {
+                    plain
+                };
+                let mut defender = if id == 43 {
+                    boosted
+                } else {
+                    plain
+                };
+                let mut plain_attacker = plain;
+                let mut plain_defender = plain;
+                let battle = CombatContext { timestamp: now, ..context(Biome::Underground) };
+                attacker.attack_with_context(ref defender, battle, stamina_config(), damage_config(), 60, 60);
+                plain_attacker
+                    .attack_with_context(ref plain_defender, battle, stamina_config(), damage_config(), 60, 60);
+                if now == end {
+                    assert_eq!(defender.count, plain_defender.count);
+                    assert_eq!(attacker.count, plain_attacker.count);
+                } else if id == 41 {
+                    assert!(defender.count < plain_defender.count, "active damage relic must increase casualties");
+                } else {
+                    assert!(defender.count > plain_defender.count, "active defence relic must reduce casualties");
+                }
+            }
+        }
     }
 }

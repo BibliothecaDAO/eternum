@@ -19,41 +19,26 @@ export const troopStaminaLimits = (rules: TroopStaminaRules, troopType: TroopTyp
   return { staminaInitial: Number(rules.stamina_initial), staminaMax: Number(maximum) + tier * 20 };
 };
 
-/** The wire names remain until the landing schema rebuild; only this codec knows the packed clock. */
-export const staminaClock = {
-  read(bar: Troops["stamina"]) {
-    return {
-      amount: bar.amount,
-      settledAt: Number(bar.updated_tick & 0xffff_ffffn),
-      remainder: bar.updated_tick >> 32n,
-    };
-  },
-  write(bar: { amount: bigint; settledAt: number; remainder: bigint }): Troops["stamina"] {
-    return { amount: bar.amount, updated_tick: BigInt(bar.settledAt) | (bar.remainder << 32n) };
-  },
-};
-
 /** Below the cap, any partition of the same seconds yields the same gain and remainder, including boost expiry. */
 export function staminaAt(troops: Troops, timestamp: number, rules: TroopStaminaRules, tickSeconds: number) {
-  const bar = staminaClock.read(troops.stamina);
-  if (bar.settledAt > timestamp) reportObservedChainTimestamp(bar.settledAt);
+  const bar = troops.stamina;
+  if (bar.settled_at > timestamp) reportObservedChainTimestamp(bar.settled_at);
   const { staminaInitial, staminaMax } = troopStaminaLimits(rules, troops.category, troops.tier);
   const maximum = BigInt(troops.staminaMax ?? staminaMax);
-  // This legacy wire field now holds remaining seconds, not ticks.
-  const secondsLeft = troops.boosts.incr_stamina_regen_tick_count;
-  const now = Math.max(bar.settledAt, Math.floor(timestamp));
-  const elapsed = bar.settledAt === 0 ? 0 : now - bar.settledAt;
+  const secondsLeft = troops.boosts.incr_stamina_regen_seconds_left;
+  const now = Math.max(bar.settled_at, Math.floor(timestamp));
+  const elapsed = bar.settled_at === 0 ? 0 : now - bar.settled_at;
   const boosted = Math.min(elapsed, secondsLeft);
   const denominator = BigInt(tickSeconds) * 10_000n;
   const numerator =
-    bar.remainder +
+    BigInt(bar.remainder) +
     BigInt(rules.stamina_gain_per_tick) *
       (BigInt(elapsed) * 10_000n + BigInt(boosted) * BigInt(troops.boosts.incr_stamina_regen_percent_num));
-  const total = bar.settledAt === 0 ? BigInt(staminaInitial) : bar.amount + numerator / denominator;
+  const total = bar.settled_at === 0 ? BigInt(staminaInitial) : bar.amount + numerator / denominator;
   return {
     amount: total >= maximum ? maximum : total,
-    settledAt: now,
-    remainder: total >= maximum || bar.settledAt === 0 ? 0n : numerator % denominator,
+    settled_at: now,
+    remainder: total >= maximum || bar.settled_at === 0 ? 0 : Number(numerator % denominator),
     boostSecondsLeft: secondsLeft - boosted,
   };
 }
@@ -73,7 +58,7 @@ export function affordableAt(
   const gain = Number(rules.stamina_gain_per_tick);
   if (cost > maximum || gain <= 0) return null;
   let low = now;
-  let high = Math.max(now, staminaClock.read(troops.stamina).settledAt) + Math.ceil((cost * tickSeconds) / gain) + 1;
+  let high = Math.max(now, troops.stamina.settled_at) + Math.ceil((cost * tickSeconds) / gain) + 1;
   while (high - low > 1) {
     const middle = Math.floor((low + high) / 2);
     if (canAfford(middle)) high = middle;
@@ -124,7 +109,7 @@ export function resolveExplorerTroops(
     boosts: {
       ...explorer.troops.boosts,
       incr_damage_dealt_percent_num: battleBonusBps(progress.battle),
-      incr_damage_dealt_end_tick: 0,
+      incr_damage_dealt_end_at: 0,
     },
   };
 }
@@ -202,13 +187,13 @@ export function musterStamina(
 /** A newly mustered army carries no relic boosts yet. */
 const NO_BOOSTS: Troops["boosts"] = {
   incr_damage_dealt_percent_num: 0,
-  incr_damage_dealt_end_tick: 0,
+  incr_damage_dealt_end_at: 0,
   decr_damage_gotten_percent_num: 0,
-  decr_damage_gotten_end_tick: 0,
+  decr_damage_gotten_end_at: 0,
   incr_stamina_regen_percent_num: 0,
-  incr_stamina_regen_tick_count: 0,
+  incr_stamina_regen_seconds_left: 0,
   incr_explore_reward_percent_num: 0,
-  incr_explore_reward_end_tick: 0,
+  incr_explore_reward_end_at: 0,
 };
 
 /** Slots are keyed by the season day, known once the expedition scope and its clock are. */

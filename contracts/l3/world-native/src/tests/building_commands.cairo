@@ -127,6 +127,16 @@ fn change(home: ResourceKey) -> ChangeBuilding {
 
 #[test]
 fn building_commands_match_replay_views() {
+    replay_buildings(false);
+}
+
+#[test]
+#[ignore]
+fn record_spatial_replay_buildings() {
+    replay_buildings(true);
+}
+
+fn replay_buildings(record: bool) {
     let (d, home) = building_world(None);
     let entities = array![home.entity_id].span();
     let tiles = array![IStructureOperationsDispatcher { contract_address: d.games }.position(home).unwrap()].span();
@@ -140,7 +150,7 @@ fn building_commands_match_replay_views() {
         super::state::assert_spatial_indexes(d.games, 3, entities, tiles);
         frames.append(super::spatial_replay::capture(d.games, 3, entities, tiles, ref spy));
     }
-    super::spatial_replay::compare("buildings", frames);
+    super::spatial_replay::compare("buildings", frames, record);
 }
 
 #[test]
@@ -161,7 +171,7 @@ fn building_lifecycle_settles_before_rate_changes_and_removes_the_final_building
     assert_terminal_rejection(deployment, Command::PauseBuildingProduction(change(home)), 80);
     assert!(execute(deployment, Command::ResumeBuildingProduction(change(home)), 100));
     assert_eq!(resources.resource_balance(slot), 60);
-    assert_eq!(resources.resource_production(slot).last_settled_tick, 100);
+    assert_eq!(resources.resource_production(slot).last_settled_at, 100);
     assert!(execute(deployment, Command::DestroyBuilding(change(home)), 130));
     assert_eq!(resources.resource_balance(slot), 120);
     assert_eq!(resources.resource_production(slot).building_count, 0);
@@ -908,25 +918,29 @@ fn board_buildings_never_pause() {
 #[test]
 fn granary_settles_overflow_under_the_old_limit_before_enlarging_it() {
     let (d, home, _) = research_world();
-    assert!(execute(d, build_toward(home, crate::research::FARM, 0), 40));
-    let base = snforge_std::interact_with_state(
-        d.games, || crate::logic::resources::store_limit(home, crate::resources::WHEAT).unwrap(),
-    );
-    super::resource_commands::grant(d, home, crate::resources::WHEAT, base);
-    assert!(execute(d, research(home, crate::research::ROW_FARM, crate::research::CHOICE_STORE), 100));
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     let wheat = ResourceSlot {
         game_id: home.game_id, entity_id: home.entity_id, resource_type: crate::resources::WHEAT,
     };
-    // The old store was full: enlarging it cannot recover any of the earlier overflow.
+    super::resource_commands::grant(d, home, crate::resources::WHEAT, 10000000 * crate::rules::RESOURCE_PRECISION);
+    let base = resources.resource_balance(wheat);
+    assert!(base > 0);
+    assert!(execute(d, build_toward(home, crate::research::FARM, 0), 40));
+    assert!(execute(d, research(home, crate::research::ROW_FARM, crate::research::CHOICE_STORE), 100));
+    // Enlarging a full store cannot recover any earlier overflow.
     assert_eq!(resources.resource_balance(wheat), base);
-    assert_eq!(
-        snforge_std::interact_with_state(
-            d.games, || crate::logic::resources::store_limit(home, crate::resources::WHEAT).unwrap(),
-        ),
-        base * 3 / 2,
-    );
-    assert_eq!(
-        snforge_std::interact_with_state(d.games, || crate::logic::resources::store_limit(home, 26).unwrap()), base,
-    );
+    start_cheat_caller_address(d.games, d.games);
+    for resource in array![crate::resources::WHEAT, 26] {
+        crate::resources::IResourceOperationsDispatcherTrait::grant_resource(
+            resources,
+            home,
+            resource,
+            10000000 * crate::rules::RESOURCE_PRECISION,
+            101,
+            crate::commands::resource_context(super::context(d.games, home.game_id)),
+        );
+    }
+    stop_cheat_caller_address(d.games);
+    assert_eq!(resources.resource_balance(wheat), base * 3 / 2);
+    assert_eq!(resources.resource_balance(ResourceSlot { resource_type: 26, ..wheat }), base);
 }

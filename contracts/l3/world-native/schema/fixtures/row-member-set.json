@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "90df4c2462c67b80d61cf88d10a3b23a51ebb17bad33916c10eb71f11a3c05e9",
+  "schemaIdentity": "e181850338febef8b5fd8a562b0e1131a438299a494322f5235ae60c6faf5ac8",
   "deployment": {
     "games": "0x100"
   },
@@ -16,10 +16,11 @@
       "0x2",
       "0x1",
       "0x7",
-      "0xf",
+      "0x10",
       "0x0",
       "0x0",
       "0x19",
+      "0x0",
       "0x0",
       "0x0",
       "0x0",
@@ -50,18 +51,19 @@
         "stamina": {
           "Inline": {
             "amount": "0x0",
-            "updated_tick": "0x0"
+            "settled_at": "0x0",
+            "remainder": "0x0"
           }
         },
         "boosts": {
           "incr_damage_dealt_percent_num": "0x0",
-          "incr_damage_dealt_end_tick": "0x0",
+          "incr_damage_dealt_end_at": "0x0",
           "decr_damage_gotten_percent_num": "0x0",
-          "decr_damage_gotten_end_tick": "0x0",
+          "decr_damage_gotten_end_at": "0x0",
           "incr_stamina_regen_percent_num": "0x0",
-          "incr_stamina_regen_tick_count": "0x0",
+          "incr_stamina_regen_seconds_left": "0x0",
           "incr_explore_reward_percent_num": "0x0",
-          "incr_explore_reward_end_tick": "0x0"
+          "incr_explore_reward_end_at": "0x0"
         },
         "battle_cooldown_end": "0x0"
       }
@@ -81,18 +83,19 @@
         "stamina": {
           "Inline": {
             "amount": "0x0",
-            "updated_tick": "0x0"
+            "settled_at": "0x0",
+            "remainder": "0x0"
           }
         },
         "boosts": {
           "incr_damage_dealt_percent_num": "0x0",
-          "incr_damage_dealt_end_tick": "0x0",
+          "incr_damage_dealt_end_at": "0x0",
           "decr_damage_gotten_percent_num": "0x0",
-          "decr_damage_gotten_end_tick": "0x0",
+          "decr_damage_gotten_end_at": "0x0",
           "incr_stamina_regen_percent_num": "0x0",
-          "incr_stamina_regen_tick_count": "0x0",
+          "incr_stamina_regen_seconds_left": "0x0",
           "incr_explore_reward_percent_num": "0x0",
-          "incr_explore_reward_end_tick": "0x0"
+          "incr_explore_reward_end_at": "0x0"
         },
         "battle_cooldown_end": "0x0"
       }

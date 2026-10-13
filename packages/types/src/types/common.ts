@@ -119,8 +119,7 @@ export enum EntityType {
 export type RelicEffect = { id: ResourcesIds; endAt: number };
 
 export type Troops = Omit<NativeRows["ExplorerTroops"]["troops"], "stamina"> & {
-  /** updated_tick temporarily packs the settled second (low 32 bits) and remainder (high 32 bits). */
-  readonly stamina: { readonly amount: bigint; readonly updated_tick: bigint };
+  readonly stamina: NativeRows["ArmySlot"]["stamina"];
   /** Derived from the slot army's current attributes; never a stored fact. */
   readonly staminaMax?: number;
 };

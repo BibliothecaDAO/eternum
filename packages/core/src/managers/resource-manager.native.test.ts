@@ -1,6 +1,6 @@
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { NativeFactStore } from "../client/native-fact-store";
 import { waitForWorldState } from "../client/wait-for-world-state";
 import { ResourceManager } from "./resource-manager";
@@ -33,38 +33,42 @@ const production = {
   building_count: 1,
   production_rate: 2n,
   output_amount_left: 10n,
-  last_settled_tick: 100,
+  last_settled_at: 100,
 };
 
 describe("native resource facts", () => {
-  it("reads sparse resources and observes a transaction once, including deletion", () => {
+  it("publishes sparse resource balances to subscribers, including deletion", () => {
     const store = new NativeFactStore();
     store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 350 });
     store.applyFacts([...upsert("0x100", { SliceRules: { ...rules, game_id: 1, mode_rules: 0 } })]);
     const manager = new ResourceManager(store, 7, 1);
     store.applyFacts([...upsert("0x1", { ResourceWeight: weight() })]);
-    const changed = vi.fn();
-    const unsubscribe = manager.subscribe(changed);
+    let observedBalance: bigint | undefined = -1n;
+    const unsubscribe = manager.subscribe(() => {
+      observedBalance = manager.balance(23);
+    });
     expect(manager.hasResources()).toBe(true);
     expect(manager.balance(23)).toBe(0n);
     expect(manager.isActive(23)).toBe(false);
     store.applyFacts([...upsert("0x2", { ResourceBalance: balance(), ResourceProduction: production })]);
-    expect(changed).toHaveBeenCalledTimes(1);
+    expect(observedBalance).toBe(9007199254740993n);
     expect(manager.balance(23)).toBe(9007199254740993n);
     expect(manager.getActiveProductions()).toEqual([
-      { resourceId: 23, productionRate: 2n, buildingCount: 1, outputAmountLeft: 10n, lastSettledTick: 100 },
+      { resourceId: 23, productionRate: 2n, buildingCount: 1, outputAmountLeft: 10n, lastSettledAt: 100 },
     ]);
     store.applyFacts([{ model: "ResourceBalance", key: "0x2", value: null }]);
     expect(manager.balance(23)).toBe(0n);
+    expect(observedBalance).toBe(0n);
     store.applyFacts([{ model: "ResourceProduction", key: "0x2", value: null }]);
     expect(manager.getActiveProductions()).toEqual([]);
     store.applyFacts([{ model: "ResourceWeight", key: "0x1", value: null }]);
     expect(manager.current(23)).toBeUndefined();
     expect(manager.hasResources()).toBe(false);
-    expect(changed).toHaveBeenCalledTimes(4);
+    expect(observedBalance).toBeUndefined();
     unsubscribe();
-    store.applyFacts([...upsert("0x1", { ResourceWeight: weight() })]);
-    expect(changed).toHaveBeenCalledTimes(4);
+    store.applyFacts([...upsert("0x1", { ResourceWeight: weight(), ResourceBalance: { ...balance(), balance: 9n } })]);
+    expect(manager.balance(23)).toBe(9n);
+    expect(observedBalance).toBeUndefined();
   });
 
   it("answers a Blitz realm's balances as unknown, not as a crash, while the acting account is being selected", () => {
@@ -171,8 +175,10 @@ describe("native resource facts", () => {
     store.applyFacts([...upsert("0x100", { SliceRules: { ...rules, game_id: 1, mode_rules: 0 } })]);
     const first = new ResourceManager(store, 7, 1);
     const second = new ResourceManager(store, 7, 2);
-    const changed = vi.fn();
-    first.subscribe(changed);
+    let observed: bigint | undefined = -1n;
+    first.subscribe(() => {
+      observed = first.balance(23);
+    });
     store.applyFacts([...upsert("0x1", { ResourceBalance: balance() })]);
     expect(first.current(23)).toBeUndefined();
     expect(first.balance(23)).toBeUndefined();
@@ -183,7 +189,7 @@ describe("native resource facts", () => {
     store.setSnapshot({ gameId: 2, complete: true, actor: null, timestamp: 350 });
     expect(second.balance(23)).toBe(9007199254740993n);
     expect(first.hasResources()).toBe(false);
-    expect(changed).toHaveBeenCalledTimes(2);
+    expect(observed).toBeUndefined();
     expect(() => second.current(0)).toThrow("Invalid resource");
   });
   it("starts every Blitz producer at the final main clock after delayed roster preparation", () => {
@@ -192,7 +198,7 @@ describe("native resource facts", () => {
     store.applyFacts([
       ...upsert("0x1", {
         ResourceWeight: { ...weight(), capacity: (1n << 128n) - 1n },
-        ResourceProduction: { ...production, last_settled_tick: 100 },
+        ResourceProduction: { ...production, last_settled_at: 100 },
       }),
       ...upsert("0x2", {
         SliceRules: { ...rules, game_id: 1, mode_rules: nativeRuleConstants.PRODUCTION_START },
@@ -200,14 +206,9 @@ describe("native resource facts", () => {
       }),
     ]);
     const manager = new ResourceManager(store, 7, 1);
-    const changed = vi.fn();
-    manager.subscribe(changed);
-    expect(manager.current(23)!.production.production_rate).toBe(0n);
+    expect(manager.balanceWithProduction(999, 23)!.balance).toBe(0);
     expect(manager.getActiveProductions()).toEqual([]);
     store.applyFacts([...upsert("0x2", { GameRegistry: { ...game, ready: true, start_main_at: 1000n } })]);
-    expect(changed).toHaveBeenCalledTimes(1);
-    expect(manager.current(23)!.production).toMatchObject({ last_settled_tick: 1000, production_rate: 2n });
-    expect(manager.getActiveProductions()[0]).toMatchObject({ lastSettledTick: 1000, productionRate: 2n });
     expect(manager.balanceWithProduction(999, 23)!.balance).toBe(0);
     expect(manager.balanceWithProduction(1000, 23)!.balance).toBe(0);
     expect(manager.balanceWithProduction(1001, 23)!.balance).toBe(2);
@@ -290,7 +291,7 @@ it.each([60, 120])("pays every second with an unchanged %s-second armies tick", 
         resource_type: 35,
         production_rate: 100n,
         output_amount_left: (1n << 128n) - 1n,
-        last_settled_tick: 0,
+        last_settled_at: 0,
       },
     }),
   ]);

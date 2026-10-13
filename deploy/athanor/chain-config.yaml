@@ -12,8 +12,8 @@ parent_fee_token_address: "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b156
 latest_protocol_version: "0.14.2"
 # Game clocks read get_block_timestamp: keep closed blocks frequent so time advances while idle.
 # Pre-confirmed blocks give sub-second inclusion independently of this value.
-# Fresh dev cadence; initialization supplies each environment’s BLOCK_TIME (2s unless explicitly selected).
-block_time: "1s"
+# Initialization supplies each environment’s BLOCK_TIME; the default is 2s.
+block_time: "2s"
 bouncer_config:
   block_max_capacity:
     sierra_gas: 10000000000000

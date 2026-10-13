@@ -223,8 +223,16 @@ pub impl TroopsImpl of TroopsTrait {
         );
 
         // update alpha and bravo's staminas
-        alpha.stamina.refill(ref alpha.boosts, alpha.category, alpha.tier, troop_stamina_config, tick_seconds, context.timestamp);
-        bravo.stamina.refill(ref bravo.boosts, bravo.category, bravo.tier, troop_stamina_config, tick_seconds, context.timestamp);
+        alpha
+            .stamina
+            .refill(
+                ref alpha.boosts, alpha.category, alpha.tier, troop_stamina_config, tick_seconds, context.timestamp,
+            );
+        bravo
+            .stamina
+            .refill(
+                ref bravo.boosts, bravo.category, bravo.tier, troop_stamina_config, tick_seconds, context.timestamp,
+            );
 
         // ensure alpha has enough stamina to launch attack
         assert!(
@@ -308,21 +316,21 @@ pub impl TroopsImpl of TroopsTrait {
         //////////////////////////////////////////////////
 
         // A zero end second marks a derived attribute bonus with no expiry.
-        if alpha.boosts.incr_damage_dealt_end_tick != 0
-            && !crate::relics::bonus_active(alpha.boosts.incr_damage_dealt_end_tick, context.timestamp) {
+        if alpha.boosts.incr_damage_dealt_end_at != 0
+            && !crate::relics::bonus_active(alpha.boosts.incr_damage_dealt_end_at, context.timestamp) {
             alpha.boosts.incr_damage_dealt_percent_num = 0;
         }
-        if alpha.boosts.decr_damage_gotten_end_tick != 0
-            && !crate::relics::bonus_active(alpha.boosts.decr_damage_gotten_end_tick, context.timestamp) {
+        if alpha.boosts.decr_damage_gotten_end_at != 0
+            && !crate::relics::bonus_active(alpha.boosts.decr_damage_gotten_end_at, context.timestamp) {
             alpha.boosts.decr_damage_gotten_percent_num = 0;
         }
 
-        if bravo.boosts.incr_damage_dealt_end_tick != 0
-            && !crate::relics::bonus_active(bravo.boosts.incr_damage_dealt_end_tick, context.timestamp) {
+        if bravo.boosts.incr_damage_dealt_end_at != 0
+            && !crate::relics::bonus_active(bravo.boosts.incr_damage_dealt_end_at, context.timestamp) {
             bravo.boosts.incr_damage_dealt_percent_num = 0;
         }
-        if bravo.boosts.decr_damage_gotten_end_tick != 0
-            && !crate::relics::bonus_active(bravo.boosts.decr_damage_gotten_end_tick, context.timestamp) {
+        if bravo.boosts.decr_damage_gotten_end_at != 0
+            && !crate::relics::bonus_active(bravo.boosts.decr_damage_gotten_end_at, context.timestamp) {
             bravo.boosts.decr_damage_gotten_percent_num = 0;
         }
 

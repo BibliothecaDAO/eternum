@@ -2,7 +2,7 @@ import { bonusActive } from "./relic";
 import { BiomeType, TickIds, RESOURCE_PRECISION, type Troops } from "@bibliothecadao/types";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { configManager } from "../managers/config-manager";
-import { staminaAt, staminaClock } from "../managers/troop-stamina";
+import { staminaAt } from "../managers/troop-stamina";
 import {
   add,
   ceil,
@@ -160,8 +160,8 @@ const afterExchange = (
   ...troops,
   count: troops.count - loss,
   battle_cooldown_end: cooldownEnd,
-  stamina: staminaClock.write({ ...bar, amount: stamina }),
-  boosts: { ...troops.boosts, incr_stamina_regen_tick_count: bar.boostSecondsLeft },
+  stamina: { amount: stamina, settled_at: bar.settled_at, remainder: bar.remainder },
+  boosts: { ...troops.boosts, incr_stamina_regen_seconds_left: bar.boostSecondsLeft },
 });
 
 /** Ranged attacks add half the timer; melee refunds the timer by the same damage ratio as the contract. */
@@ -287,12 +287,11 @@ const incomingMultiplier = (troops: ExchangeTroops, isStructureGuard: boolean): 
 
 const activeBoosts = (troops: ExchangeTroops, timestamp: number) => ({
   dealt:
-    troops.boosts.incr_damage_dealt_end_tick !== 0 && !bonusActive(troops.boosts.incr_damage_dealt_end_tick, timestamp)
+    troops.boosts.incr_damage_dealt_end_at !== 0 && !bonusActive(troops.boosts.incr_damage_dealt_end_at, timestamp)
       ? 0
       : troops.boosts.incr_damage_dealt_percent_num,
   gotten:
-    troops.boosts.decr_damage_gotten_end_tick !== 0 &&
-    !bonusActive(troops.boosts.decr_damage_gotten_end_tick, timestamp)
+    troops.boosts.decr_damage_gotten_end_at !== 0 && !bonusActive(troops.boosts.decr_damage_gotten_end_at, timestamp)
       ? 0
       : troops.boosts.decr_damage_gotten_percent_num,
 });

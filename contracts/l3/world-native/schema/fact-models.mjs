@@ -494,15 +494,15 @@ export const factWireTypes = [
         type: "core::integer::u16",
       },
       {
-        name: "incr_resource_rate_end_tick",
+        name: "incr_resource_rate_end_at",
         type: "core::integer::u32",
       },
       {
-        name: "incr_labor_rate_end_tick",
+        name: "incr_labor_rate_end_at",
         type: "core::integer::u32",
       },
       {
-        name: "incr_troop_rate_end_tick",
+        name: "incr_troop_rate_end_at",
         type: "core::integer::u32",
       },
     ],
@@ -538,7 +538,7 @@ export const factWireTypes = [
         type: "core::integer::u128",
       },
       {
-        name: "last_settled_tick",
+        name: "last_settled_at",
         type: "core::integer::u32",
       },
     ],
@@ -1125,12 +1125,12 @@ const behaviouralFacts = {
     domain: "resources",
     transform: "production",
     meaning:
-      "Production pays its per-second rate for each whole armies tick after the settled tick, which is meaningful only while at least one production building exists; inactive time projects to zero.",
+      "Production pays its per-second rate for elapsed seconds after last_settled_at, while at least one production building exists; inactive time projects to zero.",
     fields: {
       buildingCount: "building_count",
       rate: "production_rate",
       outputRemaining: "output_amount_left",
-      settledTick: "last_settled_tick",
+      settledAt: "last_settled_at",
     },
   },
   ProductionBonus: {
@@ -1139,9 +1139,9 @@ const behaviouralFacts = {
       resourcePercent: "incr_resource_rate_percent_num",
       laborPercent: "incr_labor_rate_percent_num",
       troopPercent: "incr_troop_rate_percent_num",
-      resourceEndTick: "incr_resource_rate_end_tick",
-      laborEndTick: "incr_labor_rate_end_tick",
-      troopEndTick: "incr_troop_rate_end_tick",
+      resourceEndAt: "incr_resource_rate_end_at",
+      laborEndAt: "incr_labor_rate_end_at",
+      troopEndAt: "incr_troop_rate_end_at",
     },
   },
   ProductionRecipe: {

@@ -111,7 +111,7 @@ export const frontierDay = () => {
       epoch: "0",
       slot: 0,
       explorer_id: 70,
-      stamina: { amount: "30", updated_tick: "360" },
+      stamina: { amount: "30", settled_at: "360", remainder: 0 },
     }),
   ] as never);
   setBlockTimestampSource(() => 350);

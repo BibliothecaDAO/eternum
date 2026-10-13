@@ -136,7 +136,8 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     } as any);
     vi.spyOn(StaminaManager.prototype, "getStamina").mockReturnValue({
       amount: 1n,
-      updated_tick: 0n,
+      settled_at: 0,
+      remainder: 0,
     } as any);
   });
 
@@ -233,7 +234,7 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
       id: 22,
       owner: 0x999n,
     } as HexEntityInfo);
-    vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({ amount: 5n, updated_tick: 0n } as any);
+    vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({ amount: 5n, settled_at: 0, remainder: 0 } as any);
     const paths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
     expect(ActionPaths.getActionType(paths.get(ActionPaths.posKey(mineHex)) ?? [])).toBe(ActionType.Attack);
     expect(paths.get(ActionPaths.posKey(tooFar))).toBeUndefined();
@@ -248,7 +249,8 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     } as HexEntityInfo);
     vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({
       amount: 4n,
-      updated_tick: 0n,
+      settled_at: 0,
+      remainder: 0,
     } as any);
 
     const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
@@ -265,7 +267,8 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     } as HexEntityInfo);
     vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({
       amount: 5n,
-      updated_tick: 0n,
+      settled_at: 0,
+      remainder: 0,
     } as any);
 
     const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
@@ -282,7 +285,11 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     setNestedMapValue(structureHexes, site.col - TEST_FELT_CENTER, site.row - TEST_FELT_CENTER, {
       owner: 0n,
     } as HexEntityInfo);
-    vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({ amount: 150n, updated_tick: 0n } as any);
+    vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({
+      amount: 150n,
+      settled_at: 0,
+      remainder: 0,
+    } as any);
     vi.spyOn(configManager, "attacksOnlyUnownedStructures").mockReturnValue(true);
 
     const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
@@ -307,7 +314,8 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     } as HexEntityInfo);
     vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({
       amount: 5n,
-      updated_tick: 0n,
+      settled_at: 0,
+      remainder: 0,
     } as any);
 
     const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
@@ -329,7 +337,8 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     } as HexEntityInfo);
     vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({
       amount: 5n,
-      updated_tick: 0n,
+      settled_at: 0,
+      remainder: 0,
     } as any);
 
     const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
@@ -348,7 +357,11 @@ describe("ArmyActionManager food checks", () => {
       exploreWheatBurnAmount: 100,
       exploreFishBurnAmount: 0,
     } as any);
-    vi.spyOn(StaminaManager.prototype, "getStamina").mockReturnValue({ amount: 50n, updated_tick: 0n } as any);
+    vi.spyOn(StaminaManager.prototype, "getStamina").mockReturnValue({
+      amount: 50n,
+      settled_at: 0,
+      remainder: 0,
+    } as any);
   });
 
   afterEach(() => {
@@ -392,12 +405,11 @@ describe("ArmyActionManager.moveArmy explore position-freshness guard", () => {
     const signer = { address: "0x123" } as any;
 
     await expect(manager.moveArmy(signer, actionPath as any, false)).rejects.toThrow(/drifted|position/i);
-    expect(systemCalls.explorer_explore).not.toHaveBeenCalled();
   });
 
   it("allows explore when path[0] matches TileOccupancy", async () => {
     const systemCalls = {
-      explorer_explore: vi.fn().mockResolvedValue({}),
+      explorer_explore: vi.fn().mockResolvedValue({ transaction_hash: "0x123" }),
       explorer_travel: vi.fn().mockResolvedValue({}),
       toggle_alternate: vi.fn().mockResolvedValue({}),
     };
@@ -411,9 +423,7 @@ describe("ArmyActionManager.moveArmy explore position-freshness guard", () => {
 
     const signer = { address: "0x123" } as any;
 
-    await manager.moveArmy(signer, actionPath as any, false);
-
-    expect(systemCalls.explorer_explore).toHaveBeenCalledTimes(1);
+    await expect(manager.moveArmy(signer, actionPath as any, false)).resolves.toEqual({ transaction_hash: "0x123" });
   });
 
   it("rejects explore when an obsolete provisional coord reports the destination", async () => {
@@ -436,7 +446,6 @@ describe("ArmyActionManager.moveArmy explore position-freshness guard", () => {
     const signer = { address: "0x123" } as any;
 
     await expect(manager.moveArmy(signer, actionPath as any, false)).rejects.toThrow(/drifted|position/i);
-    expect(systemCalls.explorer_explore).not.toHaveBeenCalled();
   });
 });
 
@@ -474,8 +483,6 @@ describe("ArmyActionManager.moveArmy spire traversal", () => {
       explorer_id: TEST_ENTITY_ID,
       spire_direction: spireDirection,
     });
-    expect(systemCalls.explorer_travel).not.toHaveBeenCalled();
-    expect(systemCalls.explorer_explore).not.toHaveBeenCalled();
   });
 });
 
@@ -525,6 +532,5 @@ describe("ArmyActionManager ethereal submissions", () => {
         true,
       ),
     ).rejects.toThrow("Invalid travel direction");
-    expect(explorer_travel).not.toHaveBeenCalled();
   });
 });

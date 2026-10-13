@@ -11,7 +11,7 @@ struct Side {
     tier: TroopTier,
     count: u128,
     stamina: u64,
-    updated_tick: u64,
+    fixture_tick: u64,
     damage_bonus_percent: u16,
 }
 
@@ -139,16 +139,19 @@ fn troops(side: Side, tick: u64, tick_seconds: u64) -> Troops {
         category: side.category,
         tier: side.tier,
         count: side.count,
-        stamina: Stamina { amount: side.stamina, updated_tick: side.updated_tick * tick_seconds }.into(),
+        stamina: Stamina {
+            amount: side.stamina, settled_at: (side.fixture_tick * tick_seconds).try_into().unwrap(), remainder: 0,
+        }
+            .into(),
         boosts: TroopBoosts {
             incr_damage_dealt_percent_num: side.damage_bonus_percent * 100,
-            incr_damage_dealt_end_tick: ((tick + 1) * tick_seconds).try_into().unwrap(),
+            incr_damage_dealt_end_at: ((tick + 1) * tick_seconds).try_into().unwrap(),
             decr_damage_gotten_percent_num: 0,
-            decr_damage_gotten_end_tick: 0,
+            decr_damage_gotten_end_at: 0,
             incr_stamina_regen_percent_num: 0,
-            incr_stamina_regen_tick_count: 0,
+            incr_stamina_regen_seconds_left: 0,
             incr_explore_reward_percent_num: 0,
-            incr_explore_reward_end_tick: 0,
+            incr_explore_reward_end_at: 0,
         },
         battle_cooldown_end: 0,
     }

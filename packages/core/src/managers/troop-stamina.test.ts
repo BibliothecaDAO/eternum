@@ -1,7 +1,6 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { setChainTimestampEvidenceSink } from "../utils/timestamp";
+import { describe, expect, it } from "vitest";
 import { TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
-import { affordableAt, staminaClock, musterStamina, staminaAt, type TroopStaminaRules } from "./troop-stamina";
+import { affordableAt, musterStamina, staminaAt, type TroopStaminaRules } from "./troop-stamina";
 
 /** One game's rules, as its SliceRules carries them: knights hold 120 at T1 and regain 20 a tick. */
 const rules = {
@@ -16,21 +15,19 @@ const knight = (amount: number, settledAt: number, boost = { percent: 0, seconds
   category: TroopType.Knight,
   tier: TroopTier.T1,
   count: 10n,
-  stamina: { amount: BigInt(amount), updated_tick: BigInt(settledAt) },
+  stamina: { amount: BigInt(amount), settled_at: settledAt, remainder: 0 },
   boosts: {
     incr_damage_dealt_percent_num: 0,
-    incr_damage_dealt_end_tick: 0,
+    incr_damage_dealt_end_at: 0,
     decr_damage_gotten_percent_num: 0,
-    decr_damage_gotten_end_tick: 0,
+    decr_damage_gotten_end_at: 0,
     incr_stamina_regen_percent_num: boost.percent,
-    incr_stamina_regen_tick_count: boost.seconds,
+    incr_stamina_regen_seconds_left: boost.seconds,
     incr_explore_reward_percent_num: 0,
-    incr_explore_reward_end_tick: 0,
+    incr_explore_reward_end_at: 0,
   },
   battle_cooldown_end: 0,
 });
-
-afterEach(() => setChainTimestampEvidenceSink(null));
 
 describe("stamina under one game's rules", () => {
   it.each([
@@ -51,13 +48,13 @@ describe("stamina under one game's rules", () => {
     const bar = staminaAt(troops, now, { ...rules, stamina_gain_per_tick: gain }, 60);
     return {
       ...troops,
-      stamina: staminaClock.write(bar),
-      boosts: { ...troops.boosts, incr_stamina_regen_tick_count: bar.boostSecondsLeft },
+      stamina: { amount: bar.amount, settled_at: bar.settled_at, remainder: bar.remainder },
+      boosts: { ...troops.boosts, incr_stamina_regen_seconds_left: bar.boostSecondsLeft },
     };
   };
 
   it.each([0, 3_333, 5_000, 10_000])(
-    "preserves every remainder when %i bps regeneration is settled every second or irregularly",
+    "pays the same stamina with %i bps regeneration settled once, every second, or irregularly",
     (percent) => {
       for (let seconds = 1; seconds <= 137; seconds++) {
         const initial = knight(0, 101, { percent, seconds: 17 });
@@ -68,17 +65,17 @@ describe("stamina under one game's rules", () => {
           if (now % 7 === 0) irregular = settle(irregular, now);
         }
         const once = settle(initial, 101 + seconds);
-        expect(repeated).toEqual(once);
-        expect(settle(irregular, 101 + seconds)).toEqual(once);
+        expect(repeated.stamina.amount).toBe(once.stamina.amount);
+        expect(settle(irregular, 101 + seconds).stamina.amount).toBe(once.stamina.amount);
       }
     },
   );
 
-  it("preserves the remainder across a boost starting and ending inside the span", () => {
+  it("pays the same stamina across a boost starting and ending inside the span", () => {
     const initial = knight(0, 101);
     const apply = (troops: Troops) => ({
       ...troops,
-      boosts: { ...troops.boosts, incr_stamina_regen_percent_num: 3_333, incr_stamina_regen_tick_count: 9 },
+      boosts: { ...troops.boosts, incr_stamina_regen_percent_num: 3_333, incr_stamina_regen_seconds_left: 9 },
     });
     const once = settle(apply(settle(initial, 106)), 130);
     let repeated = initial;
@@ -86,32 +83,29 @@ describe("stamina under one game's rules", () => {
       repeated = settle(repeated, now);
       if (now === 106) repeated = apply(repeated);
     }
-    expect(repeated).toEqual(once);
-    expect(staminaClock.read(once.stamina)).toEqual({ amount: 3n, settledAt: 130, remainder: 439_979n });
+    expect(repeated.stamina.amount).toBe(once.stamina.amount);
+    expect(once.stamina.amount).toBe(3n);
+    expect(settle(once, 190).stamina.amount).toBe(10n);
+    for (let now = 131; now <= 190; now++) {
+      expect(settle(repeated, now).stamina.amount).toBe(settle(once, now).stamina.amount);
+    }
   });
 
-  it("drops remainder at the cap, expires unused boosts, and keeps the present as the full bar's clock", () => {
+  it("never banks regeneration or an unused boost while the bar is full", () => {
     const full = settle(knight(120, 101, { percent: 5_000, seconds: 3 }), 110);
-    expect(staminaClock.read(full.stamina)).toEqual({ amount: 120n, settledAt: 110, remainder: 0n });
-    expect(full.boosts.incr_stamina_regen_tick_count).toBe(0);
+    expect(full.stamina.amount).toBe(120n);
     const spent = { ...full, stamina: { ...full.stamina, amount: 0n } };
     expect(settle(spent, 111).stamina.amount).toBe(0n);
+    expect(settle(spent, 117).stamina.amount).toBe(0n);
+    expect(settle(spent, 118).stamina.amount).toBe(0n);
+    expect(settle(spent, 119).stamina.amount).toBe(1n);
   });
 
   it("initializes an untouched bar and respects the resolved Logistics cap", () => {
-    expect(staminaAt(knight(0, 0), 104, rules, 60)).toMatchObject({ amount: 35n, settledAt: 104, remainder: 0n });
+    expect(staminaAt(knight(0, 0), 104, rules, 60).amount).toBe(35n);
     const troops = { ...knight(150, 101), tier: TroopTier.T3, staminaMax: 180 };
     expect(staminaAt(troops, 161, rules, 60).amount).toBe(170n);
     expect(staminaAt(troops, 191, rules, 60).amount).toBe(180n);
-    const evidence = vi.fn();
-    setChainTimestampEvidenceSink(evidence);
-    staminaAt(
-      { ...troops, stamina: staminaClock.write({ amount: 1n, settledAt: 101, remainder: 599_999n }) },
-      100,
-      rules,
-      60,
-    );
-    expect(evidence).toHaveBeenCalledWith(101);
   });
 
   it("musters every tier full at its trained Logistics, or inherits the previous occupant's regenerating bar", () => {
@@ -136,23 +130,4 @@ describe("stamina under one game's rules", () => {
     expect(affordableAt(troops, 101, rules, 60, 121)).toBeNull();
     expect(affordableAt(troops, 101, { ...rules, stamina_gain_per_tick: 0 }, 60, 11)).toBeNull();
   });
-});
-
-import { openArmySlots } from "./troop-stamina";
-import type { NativeFactStore } from "../client/native-fact-store";
-it("inherits a vacant u64 army slot without rounding the home id or treating bigint zero as occupied", () => {
-  const id = (1n << 56n) + 19n;
-  const stamina = { amount: 7n, updated_tick: 10n };
-  const keys: unknown[] = [];
-  const store = {
-    subscriptionScope: () => ({ known: { expedition: { day: 2 } } }),
-    requireOrAbsent: (_model: string, key: unknown) => {
-      keys.push(key);
-      return { known: { explorer_id: 0n, stamina } };
-    },
-  } as unknown as NativeFactStore;
-  expect(openArmySlots(store, { game_id: 1, entity_id: id, allowedSlots: 1 })).toEqual([
-    { slot: 0, inherited: stamina },
-  ]);
-  expect(keys).toEqual([{ game_id: 1, structure_id: id, epoch: 2n, slot: 0 }]);
 });

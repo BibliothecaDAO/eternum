@@ -137,7 +137,7 @@ pub fn set_guard(d: super::Deployment, key: ResourceKey, slot: u8, count: u128) 
         Guard {
             troops: Troops {
                 count: count * RESOURCE_PRECISION,
-                stamina: Stamina { amount: 120, updated_tick: 80 }.into(),
+                stamina: Stamina { amount: 120, settled_at: 80, remainder: 0 }.into(),
                 ..Default::default(),
             },
             destroyed_tick: 0,

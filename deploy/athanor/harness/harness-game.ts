@@ -35,7 +35,7 @@ export interface ChainTicks {
 export interface ExplorerRow {
   coord: Coord;
   staminaAmount: bigint;
-  staminaClock: bigint;
+  staminaSettledAt: number;
 }
 
 export interface ProductionState {
@@ -189,7 +189,7 @@ function createClientGame(client: GameClient, heraldConfirmations?: HeraldConfir
       return {
         coord: entityMapPosition(store, game_id, explorerId),
         staminaAmount: stamina.amount,
-        staminaClock: stamina.updated_tick,
+        staminaSettledAt: stamina.settled_at,
       };
     },
     explorerStamina: (explorerId, timestamp) => {

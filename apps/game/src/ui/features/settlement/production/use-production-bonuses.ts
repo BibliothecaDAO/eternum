@@ -11,8 +11,8 @@ export function useProductionBonuses(entityId: number) {
   const multiplier = (percent: number, end: number) => (bonusActive(end, timestamp) ? 1 + percent / 10_000 : 1);
   if (!bonus) return undefined;
   return {
-    productionBonus: multiplier(bonus.incr_resource_rate_percent_num, bonus.incr_resource_rate_end_tick),
-    laborBonus: multiplier(bonus.incr_labor_rate_percent_num, bonus.incr_labor_rate_end_tick),
-    troopsBonus: multiplier(bonus.incr_troop_rate_percent_num, bonus.incr_troop_rate_end_tick),
+    productionBonus: multiplier(bonus.incr_resource_rate_percent_num, bonus.incr_resource_rate_end_at),
+    laborBonus: multiplier(bonus.incr_labor_rate_percent_num, bonus.incr_labor_rate_end_at),
+    troopsBonus: multiplier(bonus.incr_troop_rate_percent_num, bonus.incr_troop_rate_end_at),
   };
 }

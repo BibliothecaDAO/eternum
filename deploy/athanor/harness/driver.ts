@@ -1243,7 +1243,7 @@ const changedExplorer = (before: ExplorerRow, current: ExplorerRow | undefined):
   (current.coord.x !== before.coord.x ||
     current.coord.y !== before.coord.y ||
     current.staminaAmount !== before.staminaAmount ||
-    current.staminaClock !== before.staminaClock)
+    current.staminaSettledAt !== before.staminaSettledAt)
     ? current
     : undefined;
 
