@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "Numbers stay after an action",
+    description:
+      "Fixed the top bar and the army cards turning into dashes for a second or two after every move, explore, build or deploy: Essence, wheat, troops and each army's stamina now stay on screen while the action lands.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-13",
     title: "The game leaves the page with you",
     description:
       "Fixed the game's view staying on the app's pages after you left a match: it showed under the footer of Play and Learn and kept drawing. Outside a match it is off the page and at rest, and it returns when you go back in.",

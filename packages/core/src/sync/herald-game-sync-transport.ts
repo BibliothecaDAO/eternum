@@ -190,11 +190,15 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     this.sendActorSelection();
   }
 
+  /**
+   * Chain time for the scope's absence, from the stream's heads; unknown from a fresh snapshot until its first head. A
+   * diff leaves it alone: Herald sends a scope a diff moves whole in that diff, so the rows and the clock still agree,
+   * and a player's own action never turns every absent row (no Essence yet, an army carrying nothing) unknown.
+   */
   private scopeTimestamp: number | undefined;
-  private scopeClockCurrent = false;
 
   public completedTimestamp(): number | undefined {
-    return this.scopeClockCurrent ? this.scopeTimestamp : undefined;
+    return this.scopeTimestamp;
   }
 
   /** Undefined until the current actor's entire scope has applied; null is a completed spectator snapshot. */
@@ -382,7 +386,6 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   private acceptSnapshotModel(message: Extract<HeraldMessage, { type: "snapshot" }>, bytesReceived: number): void {
     if (!this.snapshotStreaming) {
       this.scopeTimestamp = undefined;
-      this.scopeClockCurrent = false;
       this.completeActor = undefined;
       this.publishSnapshotState();
       this.actorSnapshotGeneration++;
@@ -410,7 +413,6 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     this.publishSnapshotState();
     if (!this.snapshotStreaming) {
       this.scopeTimestamp = undefined;
-      this.scopeClockCurrent = false;
       this.handlers?.onSnapshotStart();
     }
     this.snapshotStreaming = false;
@@ -450,9 +452,6 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
 
   /** Facts and events are split before anything is delivered, so a rejected diff delivers nothing. */
   private acceptDiff(message: Extract<HeraldMessage, { type: "diff" }>): void {
-    // A scope-changing diff can precede its clock head; absence stays unknown across that boundary.
-    this.scopeClockCurrent = false;
-    this.publishSnapshotState();
     const isEvent = (model: string) => this.options.modelDefinition(model).deletion === "event-ephemeral";
     const events = message.set.filter((row) => isEvent(row.model));
     const facts = [
@@ -498,7 +497,6 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
 
   private acceptHead(message: Extract<HeraldMessage, { type: "head" }>): void {
     this.scopeTimestamp = Math.max(this.scopeTimestamp ?? 0, message.timestamp);
-    this.scopeClockCurrent = true;
     this.publishSnapshotState();
     const head: GameSyncHead = {
       block: message.block,

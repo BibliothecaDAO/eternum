@@ -148,6 +148,8 @@ afterEach(() => {
 describe("HeraldGameSyncTransport", () => {
   it("uses streamed head time for absence scope and forgets it on disposal", async () => {
     const harness = streamHarness();
+    const gates: GameSyncSnapshotState[] = [];
+    harness.handlers.onSnapshotState = (state) => void gates.push(state);
     const { socket, writer } = await attached(harness);
     socket.receive({ epoch: "epoch-a", seq: 0, type: "snapshot_end" });
     expect(harness.transport.completedTimestamp()).toBeUndefined();
@@ -155,8 +157,12 @@ describe("HeraldGameSyncTransport", () => {
     expect(harness.transport.completedTimestamp()).toBe(350);
     socket.receive({ type: "head", epoch: "epoch-a", seq: 2, block: 12, preconfirmed: false, timestamp: 340 });
     expect(harness.transport.completedTimestamp()).toBe(350);
+    // A diff leaves the store's gate as it is: a player's own action never turns every absent row unknown.
+    const gatesBeforeDiff = gates.length;
     socket.receive(diff("epoch-a", 3, "0x1", 2, true));
-    expect(harness.transport.completedTimestamp()).toBeUndefined();
+    expect(gates).toHaveLength(gatesBeforeDiff);
+    expect(gates.at(-1)).toMatchObject({ complete: true, timestamp: 350 });
+    expect(harness.transport.completedTimestamp()).toBe(350);
     socket.receive({ type: "head", epoch: "epoch-a", seq: 4, block: 12, preconfirmed: false, timestamp: 340 });
     expect(harness.transport.completedTimestamp()).toBe(350);
     snapshot("epoch-b", 0, "0x1", 2).forEach((message) => socket.receive(message));
