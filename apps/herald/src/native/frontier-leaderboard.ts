@@ -30,9 +30,14 @@ export function buildFrontierLeaderboard(
     if (!player) throw new Error("Frontier reward has no settled realm");
     applyStory(player, record(event.value.story), event);
   }
-  const entries = [...players.values()]
-    .sort(compareStandings)
-    .map(({ entry }, index) => ({ ...entry, rank: index + 1 }));
+  const standings = [...players.values()].sort(
+    (a, b) => compareStandings(a, b) || a.entry.address.localeCompare(b.entry.address),
+  );
+  let rank = 0;
+  const entries = standings.map((standing, index) => {
+    if (index === 0 || compareStandings(standings[index - 1]!, standing) !== 0) rank = index + 1;
+    return { ...standing.entry, rank };
+  });
   return { game_id: integer(gameId).toString(), mode: "frontier", entries };
 }
 
@@ -107,7 +112,6 @@ function compareStandings(a: Standing, b: Standing): number {
   return (
     b.entry.sites_cleared.total - a.entry.sites_cleared.total ||
     b.entry.deepest_depth - a.entry.deepest_depth ||
-    (a.lastClear && b.lastClear ? comparePosition(a.lastClear, b.lastClear) : 0) ||
-    a.entry.address.localeCompare(b.entry.address)
+    (a.lastClear && b.lastClear ? comparePosition(a.lastClear, b.lastClear) : 0)
   );
 }
