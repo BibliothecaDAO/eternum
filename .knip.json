@@ -168,6 +168,9 @@
         "@bibliothecadao/eternum/biome": [
           "../../packages/core/src/utils/biome/biome.ts"
         ],
+        "@bibliothecadao/eternum/troop-stamina": [
+          "../../packages/core/src/managers/troop-stamina.ts"
+        ],
         "@bibliothecadao/eternum/shard": [
           "../../packages/core/src/client/shard-reader.ts"
         ]
