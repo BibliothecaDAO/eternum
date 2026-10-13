@@ -13,11 +13,11 @@ const SAFE_AREA: CSSProperties = {
  * The HUD's slots over the stage, in two compositions of the same parts. On a phone, three bands: the strip on top,
  * the map (or a nav page) in the middle, and the foot rows read upward from the nav: the dock, the action bar, the
  * notices, the guide. On desktop, the corners: the strip top left with the armies down the left, the nav top right
- * with the season's top five under it, a nav page or a sheet as the right panel, the action bar and notices bottom
- * centre, and chat docked bottom left with the guide above it, beside the armies' column so a long dock never covers
- * it. A nav page is as tall as its content. Sheets and moments render beside the slots and place themselves; a desktop
- * sheet docks where the page and the peek stand, so while one is open the guide, the peek and the page wait out of its
- * way (a sheet opened from the page takes the page's place).
+ * with a nav page or a sheet as the right panel under it (the season's board is one, opened from the Menu), the action
+ * bar and notices bottom centre, and chat docked bottom left with the guide above it, beside the armies' column so a
+ * long dock never covers it. A nav page is as tall as its content. Sheets and moments render beside the slots and
+ * place themselves; a desktop sheet docks where the page stands, so while one is open the guide and the page wait out
+ * of its way (a sheet opened from the page takes the page's place).
  */
 export const HudBands = ({
   strip,
@@ -28,7 +28,6 @@ export const HudBands = ({
   action,
   dock,
   nav,
-  peek,
   chat,
   children,
 }: {
@@ -42,15 +41,13 @@ export const HudBands = ({
   action?: ReactNode;
   dock?: ReactNode;
   nav?: ReactNode;
-  /** Desktop only: the season's top five under the nav, while no panel is open. */
-  peek?: ReactNode;
   /** Desktop only: chat docked open. */
   chat?: ReactNode;
   children?: ReactNode;
 }) => (
   <div
     aria-label="Frontier HUD"
-    className="pointer-events-none fixed inset-0 z-30 flex flex-col gap-1.5 font-sans lg:block [&:has([data-kit-sheet])_[data-guide]]:hidden [&:has([data-kit-sheet])_[data-peek]]:hidden lg:[&:has([data-kit-sheet])_[data-page]]:invisible"
+    className="pointer-events-none fixed inset-0 z-30 flex flex-col gap-1.5 font-sans lg:block [&:has([data-kit-sheet])_[data-guide]]:hidden lg:[&:has([data-kit-sheet])_[data-page]]:invisible"
     style={SAFE_AREA}
   >
     <div className="relative lg:absolute lg:left-2 lg:top-2 lg:w-[560px]">{strip}</div>
@@ -75,11 +72,6 @@ export const HudBands = ({
     </div>
     <div className="lg:absolute lg:left-2 lg:top-[150px] lg:w-[220px]">{dock}</div>
     <div className="lg:absolute lg:right-2 lg:top-2 lg:w-[460px]">{nav}</div>
-    {peek && !page && (
-      <div data-peek className="hidden lg:absolute lg:right-2 lg:top-[76px] lg:block lg:w-[340px]">
-        {peek}
-      </div>
-    )}
     {chat && <div className="hidden lg:absolute lg:bottom-2 lg:left-2 lg:block lg:w-[380px]">{chat}</div>}
     {children}
   </div>

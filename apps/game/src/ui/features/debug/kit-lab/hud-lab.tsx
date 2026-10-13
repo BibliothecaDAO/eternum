@@ -47,7 +47,6 @@ import { SeasonDetailSheet } from "@/ui/features/frontier/board/season-detail";
 import { SeasonOverCard } from "@/ui/features/frontier/board/season-over-card";
 import { SeasonWithdrawRow } from "@/ui/features/frontier/value/season-withdraw";
 import { VisitFoot } from "@/ui/features/frontier/board/visit-foot";
-import { SeasonPeekView } from "@/ui/features/frontier/board/season-peek";
 import { useLayout } from "@/shell/frame/layout";
 import { GuideCard } from "@/ui/features/frontier/guide/guide-card";
 import { type GuideFacts, GUIDE_STEPS } from "@/ui/features/frontier/guide/guide-script";
@@ -1011,7 +1010,6 @@ export const HudLab = () => {
             />
           )
         }
-        peek={<SeasonPeekView rows={[...SEASON_ROWS.slice(0, 5), OWN_ROW]} onOpen={noop} />}
       >
         {lab.deploy && <LabDeploySheet deploy={lab.deploy} />}
         {lab.results && (

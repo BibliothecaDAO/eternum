@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-13",
+    title: "The season board opens from Menu",
+    description:
+      "Changed the Frontier season board: it no longer sits over the map on desktop, and opens from Menu, Season on every screen. Its two number columns say what they count when you hover their icon or press and hold it, and a name you have just claimed shows at once.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-13",
     title: "Armies wear a number",
     description:
       "Changed the plate over each of your Frontier armies: it now shows the army's number and its stamina bar, sits on the unit instead of a tile above it, and keeps one readable size at every zoom and on a phone. The army's card carries the same number, and the second label that used to open over your own army is gone.",

@@ -47,6 +47,9 @@ export const PRODUCTION = "Production";
 /** A store at its limit. */
 export const FULL = "Full";
 export const SEASON = "Season";
+/** The season board's two number columns, named on their icons' tooltip. */
+export const SITES_CLEARED = "Sites cleared";
+export const LORDS_EARNED = "LORDS earned";
 export const GUIDE = "Guide";
 export const SETTINGS = "Settings";
 export const EXIT = "Exit";

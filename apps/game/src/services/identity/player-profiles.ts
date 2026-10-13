@@ -74,14 +74,15 @@ export const identityProfiles = createIdentityProfiles({
 
 /**
  * The one place a player's name comes from, for every display: a known internal address's name (the bank and the
- * like), else the player's Realms profile, asked for on first read; the signed-in player's own session stands in
- * until identity answers. A name written on chain is never read.
+ * like), else the signed-in player's own session for their own account (a name just claimed shows at once, where
+ * identity's answer for it was cached before the claim), else the player's Realms profile, asked for on first read. A
+ * name written on chain is never read.
  */
 export const readPlayerProfile = (address: string | bigint): IdentityProfile => {
   const internalName = getInternalAddressName(address.toString());
   if (internalName) return { name: internalName, portrait: null };
   identityProfiles.request([address]);
-  return identityProfiles.get(address) ?? readOwnProfile(address) ?? { name: null, portrait: null };
+  return readOwnProfile(address) ?? identityProfiles.get(address) ?? { name: null, portrait: null };
 };
 
 const readOwnProfile = (address: string | bigint): IdentityProfile | null => {

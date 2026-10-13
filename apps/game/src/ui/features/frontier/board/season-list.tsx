@@ -7,12 +7,14 @@ import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
 import {
   BACK,
   LORDS,
+  LORDS_EARNED,
   PER_SHARE,
   POOL_NOT_PUBLISHED,
   SEASON,
   SEASON_ERROR,
   SEASON_POOL,
   SHARE_CEILING,
+  SITES_CLEARED,
   TODAY,
   TRY_AGAIN,
 } from "@/ui/design-system/kit/words";
@@ -156,14 +158,17 @@ const ListRow = ({ row, onOpen }: { row: SeasonListRow; onOpen: (key: string) =>
   />
 );
 
-/** The columns' icons over SeasonRow's numbers: sites cleared, then LORDS. */
+/**
+ * The columns' icons over SeasonRow's numbers: sites cleared, then LORDS. Each icon names its column on the tooltip:
+ * hover it, or press and hold it on a phone.
+ */
 const BoardHead = () => (
-  <div aria-hidden className="flex h-6 shrink-0 items-center gap-2 px-1">
+  <div className="flex h-6 shrink-0 items-center gap-2 px-1">
     <span className="flex-1" />
-    <span className="flex w-12 justify-end">
+    <span role="img" aria-label={SITES_CLEARED} className="flex h-6 w-12 items-center justify-end">
       <KitIcon code="Fl" size={18} />
     </span>
-    <span className="flex w-14 justify-end">
+    <span role="img" aria-label={LORDS_EARNED} className="flex h-6 w-14 items-center justify-end">
       <KitIcon code="Lo" size={18} />
     </span>
     <span className="w-[18px]" />

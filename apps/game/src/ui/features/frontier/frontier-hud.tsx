@@ -10,7 +10,6 @@ import { useLayout } from "@/shell/frame/layout";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { RealmVisitFoot, useVisitedRealm } from "./board/realm-visit";
-import { SeasonPeek } from "./board/season-peek";
 import { FrontierSeason, SeasonOver, useSeasonRank } from "./board/season-board";
 import { useSpectatorWatchesTheLeader } from "./board/spectator-watch";
 import { useExpeditionRules, useFrontierRealm } from "./frontier-home";
@@ -152,7 +151,6 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
             />
           )
         }
-        peek={<SeasonPeek onOpen={() => setSurface("season")} />}
         chat={desktop && chatDocked && chatPage}
       >
         <FrontierSurfaces realm={realm} />
