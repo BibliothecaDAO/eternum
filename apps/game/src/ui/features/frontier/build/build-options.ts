@@ -16,6 +16,9 @@ import {
 } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, getProducedResource, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 
+import type { IconCode } from "@/ui/design-system/kit/kit-icon";
+import { LABOR, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
+
 /**
  * What Frontier's build sheet needs for one plot, read from facts with no UI of its own: each building the realm may
  * raise there, its type's tier, its price, what it gives (with its type's tiers, as the contract's board_output and
@@ -41,8 +44,24 @@ const TRAINS: Partial<Record<BuildingType, "Battle" | "Logistics" | "Scouting" |
   [BuildingType.Hearth]: "Homecoming",
 };
 
+/** What a Frontier building makes: wheat, labor, or the realm's one troop type. */
+type Product = ResourcesIds.Wheat | ResourcesIds.Labor | ResourcesIds.Knight;
+
+/**
+ * Each product as the sheets show it: its icon, its glossary word and the realm store that holds it. Keyed by the
+ * products themselves, so one without its word or icon does not compile, and no sheet looks one up at its own risk.
+ */
+export const PRODUCTS: Record<Product, { icon: IconCode; word: string; store: "wheat" | "labor" | "troops" }> = {
+  [ResourcesIds.Wheat]: { icon: "Wh", word: WHEAT, store: "wheat" },
+  [ResourcesIds.Labor]: { icon: "La", word: LABOR, store: "labor" },
+  [ResourcesIds.Knight]: { icon: "Tr", word: TROOPS, store: "troops" },
+};
+
+const isProduct = (resource: ResourcesIds | undefined): resource is Product =>
+  resource !== undefined && resource in PRODUCTS;
+
 export type BuildEffect =
-  | { kind: "produces"; resource: ResourcesIds; perHour: number }
+  | { kind: "produces"; resource: Product; perHour: number }
   | { kind: "population"; amount: number }
   | { kind: "trains"; attribute: "Battle" | "Logistics" | "Scouting" | "Homecoming" };
 
@@ -126,7 +145,7 @@ export const readBuildingEffect = (
       amount: rule.capacity_grant + (rule.capacity_grant * tier * board.population_step_bps) / 10_000,
     };
   const resource = getProducedResource(category);
-  if (resource === undefined) throw new Error(`Building ${category} produces nothing`);
+  if (!isProduct(resource)) throw new Error(`Building ${category} makes nothing a Frontier realm stores`);
   let makes = 0;
   for (let at = 1; at <= tier; at++) if (researchChoice(learned, row!, at) === 0) makes++;
   return { kind: "produces", resource, perHour: outputPerHour(store, realm, category, makes) };

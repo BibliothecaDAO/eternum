@@ -27,8 +27,6 @@ import {
   startsNewArmies,
   takesPopulation,
   TIER_WORDS,
-  TROOPS,
-  WHEAT,
 } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { knownBalance } from "@/ui/utils/utils";
@@ -50,7 +48,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useGoToFrontierPlace } from "../frontier-home";
 import { exploreFix } from "../frontier-reveal-yield";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
-import { type BuildOption, readBuildOptions } from "./build-options";
+import { type BuildOption, PRODUCTS, readBuildOptions } from "./build-options";
 import { type BuildGain, type BuildTile, BuildView } from "./build-view";
 import { buildingIcon, buildingName } from "./building-names";
 
@@ -262,16 +260,6 @@ const ATTRIBUTE_MARKS: Record<Extract<BuildOption["effect"], { kind: "trains" }>
   Homecoming: "Su",
 };
 
-const RESOURCE_ICONS: Partial<Record<number, IconCode>> = {
-  // A barracks trains the troops of its tier: one troop type, drawn as troops.
-  [ResourcesIds.Knight]: "Tr",
-  [ResourcesIds.KnightT2]: "Tr",
-  [ResourcesIds.KnightT3]: "Tr",
-  [ResourcesIds.Labor]: "La",
-  [ResourcesIds.Wheat]: "Wh",
-  [ResourcesIds.Essence]: "Es",
-};
-
 const PRICE_KINDS: Partial<Record<number, PriceKind>> = {
   [ResourcesIds.Labor]: "labor",
   [ResourcesIds.Wheat]: "wheat",
@@ -283,12 +271,6 @@ const priceKind = (resource: number): PriceKind => {
   const kind = PRICE_KINDS[resource];
   if (!kind) throw new Error(`A Frontier building is priced in resource ${resource}`);
   return kind;
-};
-
-const iconOf = (resource: number): IconCode => {
-  const icon = RESOURCE_ICONS[resource];
-  if (!icon) throw new Error(`No icon for resource ${resource}`);
-  return icon;
 };
 
 const buildTile = (option: BuildOption, labor: number | undefined): BuildTile => {
@@ -314,21 +296,6 @@ const buildTile = (option: BuildOption, labor: number | undefined): BuildTile =>
   };
 };
 
-const RESOURCE_WORDS: Partial<Record<number, string>> = {
-  [ResourcesIds.Knight]: TROOPS,
-  [ResourcesIds.KnightT2]: TROOPS,
-  [ResourcesIds.KnightT3]: TROOPS,
-  [ResourcesIds.Labor]: LABOR,
-  [ResourcesIds.Wheat]: WHEAT,
-};
-
-/** A resource a building makes, by its glossary word; one Frontier does not make is loud. */
-const wordOf = (resource: number): string => {
-  const word = RESOURCE_WORDS[resource];
-  if (!word) throw new Error(`No word for resource ${resource}`);
-  return word;
-};
-
 const times = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
 
 /**
@@ -339,7 +306,7 @@ const buildingLine = (option: BuildOption): string => {
   const { effect } = option;
   const does =
     effect.kind === "produces"
-      ? makesAnHour(formatAmount(effect.perHour), wordOf(effect.resource))
+      ? makesAnHour(formatAmount(effect.perHour), PRODUCTS[effect.resource].word)
       : effect.kind === "trains"
         ? startsNewArmies(effect.attribute, TIER_WORDS[option.tier - 1])
         : `+${formatAmount(effect.amount)} ${POPULATION}`;
@@ -369,7 +336,7 @@ const buildGains = (option: BuildOption): BuildGain[] => {
   const { effect } = option;
   const gain: BuildGain =
     effect.kind === "produces"
-      ? { icon: iconOf(effect.resource), value: `+${formatAmount(effect.perHour)}/h`, label: "produces" }
+      ? { icon: PRODUCTS[effect.resource].icon, value: `+${formatAmount(effect.perHour)}/h`, label: "produces" }
       : effect.kind === "trains"
         ? { icon: ATTRIBUTE_MARKS[effect.attribute], value: TIER_WORDS[option.tier - 1], label: "trains" }
         : { icon: "Pp", value: `+${formatAmount(effect.amount)}`, label: "houses" };

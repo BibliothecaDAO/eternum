@@ -40,7 +40,7 @@ import { type ReactNode, useState } from "react";
 
 import { KindChoice } from "../army/army-sheet";
 import { ATTRIBUTE_LOOK, type Attribute, nextTierPrice } from "../attributes/attributes";
-import { outputPerHour, readBuildingEffect } from "../build/build-options";
+import { outputPerHour, PRODUCTS, readBuildingEffect } from "../build/build-options";
 import { buildingIcon, buildingName } from "../build/building-names";
 import { useGoToFrontierPlace } from "../frontier-home";
 import { exploreFix } from "../frontier-reveal-yield";
@@ -318,8 +318,7 @@ const standingFigures = (
       },
     ];
   }
-  const made = MADE[effect.resource];
-  if (!made) throw new Error(`No figure for resource ${effect.resource}`);
+  const made = PRODUCTS[effect.resource];
   const held = stores?.[made.store];
   return [
     { icons: [made.icon], label: BUILDING_FIGURES.eachMakes(made.word), value: `+${formatAmount(effect.perHour)}/h` },
@@ -331,13 +330,6 @@ const standingFigures = (
     },
     ...population,
   ];
-};
-
-/** What each producing building makes: its icon, its glossary word and the realm store that holds it. */
-const MADE: Partial<Record<number, { icon: IconCode; word: string; store: "wheat" | "labor" | "troops" }>> = {
-  [ResourcesIds.Wheat]: { icon: "Wh", word: WHEAT, store: "wheat" },
-  [ResourcesIds.Labor]: { icon: "La", word: LABOR, store: "labor" },
-  [ResourcesIds.Knight]: { icon: "Tr", word: TROOPS, store: "troops" },
 };
 
 /**
