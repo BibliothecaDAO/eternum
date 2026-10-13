@@ -8,7 +8,7 @@ import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import { createMadaraAccount } from "../../../config/deployer/clean/shared/madara-account";
 import { deployedClass, waitForSuccess } from "../../../config/deployer/clean/shared/declare";
 
-// AccountUpgradeable declared by the pinned upstream Madara 802086d genesis, including with zero accounts.
+// AccountUpgradeable declared by the pinned upstream Madara e674321 genesis, including with zero accounts.
 const ACCOUNT_CLASS_HASH = "0xe2eb8f5672af4e6a4e8a8f1b44989685e668489b0a25437733756c5a34a1d6";
 
 interface HostKeys {
