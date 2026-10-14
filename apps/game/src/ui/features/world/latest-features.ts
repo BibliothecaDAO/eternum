@@ -77,6 +77,13 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-10-14",
+    title: "Three places: Play, Season, You",
+    description:
+      "The app now has three places. Season shows one board per mode, and Blitz's rating board carries the prize each place would take if the season ended now. You holds your card, your finished games and one Settings page for your account, payout wallet, notifications, music and devices, plus How to play and What's new. The Blitz lobby counts down to one moment at a time, and a result's chest Open is its main button.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-14",
     title: "Leaderboard fits a phone",
     description:
       "On a narrow screen the leaderboard shows rank, name and points in full, with what each player did written under their name.",

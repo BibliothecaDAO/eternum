@@ -8,34 +8,58 @@ Play's paths have a command: `pnpm --dir apps/game prove:play --base-url https:/
 Play against a running dev build. It opens each lab fixture and the live page signed out (once with the slots read
 failing) at desktop and phone sizes, counts what is on the page, presses each row's verb and checks that it reached that
 row's own game, lobby or results (`scripts/prove-play.mjs`, writing `play-proof.json` and screenshots into a new
-directory per run, and exiting 1 unless every press arrived). `apps/game/AGENTS.md` documents a spectator smoke test
-(agent-browser steps that open the client, watch a running game and check the canvas). Inside a match,
-`prove:play --game <chain>:<game> --profile <dir>` drives one game signed in (a browser profile signed in once through
-the game's own sign-in, kept outside the repo): `--crate <col>,<row>` finds a crate next to the player's army by
-pointer, opens it and reads it back from the log after a reload; `--until-end <minutes>` stays on the map until the game
-ends and leaves through **Game finished** → **See the results**, checking the page logged no "No game client is active";
-`--ended` presses **Results** on the ended game's doorway and on its map address, at desktop and phone
+directory per run, and exiting 1 unless every press arrived). The places beyond Play have their own:
+`pnpm --dir apps/game prove:shell --base-url https://127.0.0.1:<port> --out <dir> [--state <file>]` presses each flow of
+Season, You, Settings and What's new from a fresh Play at both sizes, as a new visitor or, given a saved signed-in
+browser state, as a returning player, and records every press, the page it led to and that page's counts; signed out it
+also measures the lab's fixture pages (a running Blitz season, a claim, a sealed chest, a paid entry, You and Settings)
+(`scripts/prove-shell.mjs`, writing `shell-proof-<persona>.json` and screenshots). It puts back what it changes (the
+alert level, music) and stops before anything outward (paying, leaving for the docs, signing out). `apps/game/AGENTS.md`
+documents a spectator smoke test (agent-browser steps that open the client, watch a running game and check the canvas).
+Inside a match, `prove:play --game <chain>:<game> --profile <dir>` drives one game signed in (a browser profile signed
+in once through the game's own sign-in, kept outside the repo): `--crate <col>,<row>` finds a crate next to the player's
+army by pointer, opens it and reads it back from the log after a reload; `--until-end <minutes>` stays on the map until
+the game ends and leaves through **Game finished** → **See the results**, checking the page logged no "No game client is
+active"; `--ended` presses **Results** on the ended game's doorway and on its map address, at desktop and phone
 (`scripts/prove-play-game.mjs`, writing `game-proof.json` and screenshots into a new directory per run). The outpost
 proof below drives the runtime lab; live actions still need an eligible player.
 
 ## Shell (outside a game)
 
-On a desktop, keys `1`–`4` open the four places and `Esc` goes back (`shell/frame/desktop-keys.ts`). `Enter` presses the
-page's step button (the one marked as its step) when it is enabled, nothing has focus that answers Enter itself, and no
-dialog is open. On a phone the places are a tab bar at the foot.
+On a desktop, the left rail holds the three places, Play, Season and You, and keys `1`–`3` open them; `Esc` goes back
+(`shell/frame/desktop-keys.ts`). `Enter` presses the page's step button (the one marked as its step) when it is enabled,
+nothing has focus that answers Enter itself, and no dialog is open. On a phone the places are a tab bar at the foot. The
+install notice shows on Play only.
 
-| Feature                                        | Route                                                                        | How to reach it                                                                                                                                                   |
-| ---------------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Play: what to do now, then each mode's games   | `/`                                                                          | Rail **Play**, key `1` (see Play below)                                                                                                                           |
-| Season standings and Blitz ratings             | `/season`                                                                    | Rail **Season**, key `2`                                                                                                                                          |
-| Guides and news                                | `/learn`, `/scroll/:post`                                                    | Rail **Learn**, key `3`                                                                                                                                           |
-| Account, payout wallet, notifications, devices | `/profile`, `/profile/account`, `/profile/notifications`, `/profile/devices` | Rail **Profile**, key `4`                                                                                                                                         |
-| Sign in (Discord or an emailed code)           | `/sign-in`                                                                   | Rail **Sign in**; Play free; a lobby's **Sign in**                                                                                                                |
-| A player's history                             | `/p/:address`                                                                | Click a name in the standings                                                                                                                                     |
-| Blitz lobby: entry, payment, countdown, chat   | `/blitz/:slot`, `/blitz/game-:chain-:game`                                   | Play, **Join** on a slot, **Lobby** on a seat                                                                                                                     |
-| Enter or watch a running Blitz                 | `/g/:chain/:game/...`                                                        | Play, **Enter** (seated) or **Watch**                                                                                                                             |
-| A finished game's results and review           | `/results/:chainId-:gameId`                                                  | Play, **Results**; or Season or Profile, a played game; in the game, **Game finished** → **See the results**; an ended game's doorway or map address, **Results** |
-| Install the app (PWA)                          | —                                                                            | The banner, **Install**                                                                                                                                           |
+| Feature                                                                   | Route                                      | How to reach it                                                                                                                                                         |
+| ------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Play: what to do now, then each mode's games                              | `/`                                        | Rail **Play**, key `1` (see Play below)                                                                                                                                 |
+| Season: Frontier's board, Blitz's rating and its prize                    | `/season`                                  | Rail **Season**, key `2`; a phone switches Frontier / Blitz                                                                                                             |
+| A player's card and finished games                                        | `/p/:address`                              | A row of Frontier's board (Season or a result); **Back** returns to it                                                                                                  |
+| You: your card, finished games, Settings, docs, news                      | `/profile`                                 | Rail **You**, key `3` (signed out: **Sign in**)                                                                                                                         |
+| Settings: account, payout wallet, notifications, music, devices, sign out | `/profile/settings`                        | You, **Settings**                                                                                                                                                       |
+| How to play (docs.realms.world, a new tab)                                | —                                          | You, **How to play**                                                                                                                                                    |
+| What's new: the Scroll's posts and the latest changes                     | `/scroll`, `/scroll/:post`                 | You, **What's new**; its footer holds the community and legal links                                                                                                     |
+| Terms, privacy, credits                                                   | `/terms`, `/privacy`, `/credits`           | The footer of What's new                                                                                                                                                |
+| Sign in (Discord or an emailed code)                                      | `/sign-in`                                 | You, **Sign in**; Play free; a lobby's **Sign in**                                                                                                                      |
+| Blitz lobby: entry, payment, countdown, chat                              | `/blitz/:slot`, `/blitz/game-:chain-:game` | Play, **Join** on a slot, **Lobby** on a seat                                                                                                                           |
+| Enter or watch a running Blitz                                            | `/g/:chain/:game/...`                      | Play, **Enter** (seated) or **Watch**                                                                                                                                   |
+| A finished game's results and review                                      | `/results/:chainId-:gameId`                | Play, **Results**; a finished game on You or a player's page; in the game, **Game finished** → **See the results**; an ended game's doorway or map address, **Results** |
+| Install the app (PWA)                                                     | —                                          | Play's notice, **Install**                                                                                                                                              |
+
+### Season, You and Results
+
+- **Season** shows Frontier's board (its first rows, yours lit or pinned under them) and Blitz's rating board. While a
+  Blitz season runs, each paid rating place shows what it would take of the pool if the season ended now; the pool and
+  its end stand at the board's title. Once it is over, your share and its **Claim** stand above the rows. The prize is
+  read from your own paid games, so signed out the board shows the rating alone. A Frontier row opens that player.
+- **You** lists your last 8 finished games in every mode; a row opens its Results, whose **Back** returns to the list
+  (Results reached from Play or after a match have **Continue** instead).
+- **Results** of a paid Blitz: a sealed chest's **Open** is the gold button; **Continue** stands beside it in outline.
+- **Settings** opens the payout wallet directly when a page sent you to link one (`/profile/settings?next=…`) and
+  returns you there once it is linked.
+- **The Blitz lobby** counts down to one moment: entry closing while the slot takes players, then the games' start (the
+  lobby's title names the start time).
 
 ### Play
 
@@ -48,9 +72,9 @@ dialog is open. On a phone the places are a tab bar at the foot.
   mode holding something of yours. Blitz: slots to **Join**, a refund to **Take refund**, a seat's **Lobby**,
   **Results**. Eternum: when it opens.
 - A read that fails (Blitz's slots, your results) says so with **Try again**; the games that answered stay usable.
-- A Blitz lobby, signed out, asks to **Sign in** and returns to it. With no payout wallet, **Link wallet** opens Account
-  on the wallet (`/profile/account?next=…`) and returns to the lobby once one is linked. The lobby's **Back** leads to
-  Play. Sign-in from Profile or Account returns to the page it was asked from.
+- A Blitz lobby, signed out, asks to **Sign in** and returns to it. With no payout wallet, **Link wallet** opens
+  Settings on the wallet (`/profile/settings?next=…`) and returns to the lobby once one is linked. The lobby's **Back**
+  leads to Play. Sign-in from You or Settings returns to the page it was asked from.
 - Play's former addresses, shared publicly (`/blitz`, `/frontier`, `/eternum`, `/dominion`), lead to Play: a permanent
   redirect on a full load (`public/_redirects`), and Play in the app (`RETIRED_PLAY_PATHS` in `src/app.tsx`).
 
