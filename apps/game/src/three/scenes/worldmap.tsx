@@ -2485,7 +2485,9 @@ export default class WorldmapScene extends WarpTravel {
 
   private async createReservedHyperstructureFromWorldmap(hexCoords: HexPosition): Promise<void> {
     if (!canIssueOrders()) return;
-    if (isPendingReservedHyperstructureCreation(hexCoords)) {
+    const contract = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const contractHex = { col: contract.x, row: contract.y };
+    if (isPendingReservedHyperstructureCreation(contractHex)) {
       return;
     }
 
@@ -2498,7 +2500,7 @@ export default class WorldmapScene extends WarpTravel {
     try {
       const didSubmit = await submitActiveWorldBlitzHyperstructureCreation({
         account,
-        hexCoords,
+        contractHex,
         systemCalls: this.game.systemCalls,
       });
 
@@ -2506,9 +2508,7 @@ export default class WorldmapScene extends WarpTravel {
         return;
       }
 
-      toast.success("Creating Hyperstructure...", {
-        location: Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract(),
-      });
+      toast.success("Creating Hyperstructure...", { location: contract });
     } catch (error) {
       console.error("[Worldmap] Failed to create reserved hyperstructure", error);
       toast.error("Unable to create this Hyperstructure right now.");

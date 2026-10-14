@@ -298,9 +298,7 @@ const TileChrome = ({
 );
 
 const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition }) => {
-  const { canCreate, createHyperstructure, isCreating } = useBlitzHyperstructureCreation({
-    hexCoords: selectedHex,
-  });
+  const { canCreate, createHyperstructure, isCreating } = useBlitzHyperstructureCreation({ contractHex: selectedHex });
 
   const handleCreateHyperstructure = useCallback(async () => {
     try {

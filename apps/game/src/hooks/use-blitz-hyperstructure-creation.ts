@@ -11,10 +11,10 @@ import type { HexPosition } from "@bibliothecadao/types";
 import { useCallback, useState, useSyncExternalStore } from "react";
 
 export const useBlitzHyperstructureCreation = ({
-  hexCoords,
+  contractHex,
   enabled = true,
 }: {
-  hexCoords: HexPosition | null;
+  contractHex: HexPosition | null;
   enabled?: boolean;
 }) => {
   const {
@@ -26,11 +26,11 @@ export const useBlitzHyperstructureCreation = ({
   const [isCreating, setIsCreating] = useState(false);
   const isPending = useSyncExternalStore(
     subscribeBlitzHyperstructureCreationPending,
-    () => (hexCoords ? isPendingReservedHyperstructureCreation(hexCoords) : false),
+    () => (contractHex ? isPendingReservedHyperstructureCreation(contractHex) : false),
     () => false,
   );
 
-  const canCreate = Boolean(ordersAllowed && enabled && account && hexCoords && !isPending && !isCreating);
+  const canCreate = Boolean(ordersAllowed && enabled && account && contractHex && !isPending && !isCreating);
 
   const createHyperstructure = useCallback(async () => {
     if (!enabled) {
@@ -39,25 +39,21 @@ export const useBlitzHyperstructureCreation = ({
     if (!account) {
       throw new Error("Wait for your gameplay account before creating this hyperstructure.");
     }
-    if (!hexCoords) {
+    if (!contractHex) {
       throw new Error("Select a reserved hyperstructure tile before creating it.");
     }
-    if (isPendingReservedHyperstructureCreation(hexCoords)) {
+    if (isPendingReservedHyperstructureCreation(contractHex)) {
       throw new Error("This hyperstructure is already being created.");
     }
 
     setIsCreating(true);
 
     try {
-      await submitActiveWorldBlitzHyperstructureCreation({
-        account,
-        hexCoords,
-        systemCalls,
-      });
+      await submitActiveWorldBlitzHyperstructureCreation({ account, contractHex, systemCalls });
     } finally {
       setIsCreating(false);
     }
-  }, [account, enabled, hexCoords, systemCalls]);
+  }, [account, enabled, contractHex, systemCalls]);
 
   return {
     canCreate,

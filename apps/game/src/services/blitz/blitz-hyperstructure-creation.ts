@@ -1,5 +1,5 @@
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import { DEFAULT_COORD_ALT, Position } from "@bibliothecadao/eternum";
+import { DEFAULT_COORD_ALT } from "@bibliothecadao/eternum";
 import type { HexPosition, SystemCalls } from "@bibliothecadao/types";
 import type { AccountInterface } from "starknet";
 
@@ -61,44 +61,32 @@ export const clearPendingReservedHyperstructureCreation = (hexCoords: HexPositio
 
 export const subscribeBlitzHyperstructureCreationPending = subscribePendingReservedHyperstructureCreation;
 
-const createActiveWorldBlitzHyperstructure = async ({
-  account,
-  hexCoords,
-  systemCalls,
-}: {
-  account: HyperstructureCreationAccount;
-  hexCoords: HexPosition;
-  systemCalls: Pick<SystemCalls, "create_hyperstructure">;
-}) => {
-  assertHyperstructureCreationAllowed();
-  const coord = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
-  return systemCalls.create_hyperstructure({ signer: account, alt: DEFAULT_COORD_ALT, x: coord.x, y: coord.y });
-};
-
+/**
+ * Creates the reserved hyperstructure at a contract hex, the reservation's own coordinates: every action input takes
+ * contract hexes, so a caller holding a scene hex converts it first. False when that hex already has a creation pending.
+ */
 export const submitActiveWorldBlitzHyperstructureCreation = async ({
   account,
-  hexCoords,
+  contractHex,
   systemCalls,
 }: {
   account: HyperstructureCreationAccount;
-  hexCoords: HexPosition;
+  contractHex: HexPosition;
   systemCalls: Pick<SystemCalls, "create_hyperstructure">;
 }) => {
   assertHyperstructureCreationAllowed();
-  const markedPending = markPendingReservedHyperstructureCreation(hexCoords);
-  if (!markedPending) {
-    return false;
-  }
+  if (!markPendingReservedHyperstructureCreation(contractHex)) return false;
 
   try {
-    await createActiveWorldBlitzHyperstructure({
-      account,
-      hexCoords,
-      systemCalls,
+    await systemCalls.create_hyperstructure({
+      signer: account,
+      alt: DEFAULT_COORD_ALT,
+      x: contractHex.col,
+      y: contractHex.row,
     });
     return true;
   } catch (error) {
-    clearPendingReservedHyperstructureCreation(hexCoords);
+    clearPendingReservedHyperstructureCreation(contractHex);
     throw error;
   }
 };
