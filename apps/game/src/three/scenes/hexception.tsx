@@ -55,7 +55,7 @@ import { SceneManager } from "@/three/scene-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
 import type { TerrainSurface } from "@/three/terrain/terrain-surface";
-import type { TerrainCellInput } from "@/three/terrain/terrain-types";
+import type { PreparedTerrainPage, TerrainCellInput } from "@/three/terrain/terrain-types";
 import {
   type BuildingInstanceAction,
   buildingKey,
@@ -199,6 +199,43 @@ const KEEP_NAMES: Record<StructureType, "realm-castle" | "village" | string> = {
   [StructureType.Rift]: "Rift",
   [StructureType.Ruin]: "Ruin",
   [StructureType.Stragglers]: "Stragglers",
+};
+
+const BIOME_MATRIX_KEYS = [
+  "None",
+  "Ocean",
+  "DeepOcean",
+  "Beach",
+  "Scorched",
+  "Bare",
+  "Tundra",
+  "Snow",
+  "TemperateDesert",
+  "Shrubland",
+  "ShrublandAlt",
+  "Taiga",
+  "Grassland",
+  "GrasslandAlt",
+  "TemperateDeciduousForest",
+  "TemperateDeciduousForestAlt",
+  "TemperateRainForest",
+  "SubtropicalDesert",
+  "TropicalSeasonalForest",
+  "TropicalRainForest",
+  "Empty",
+] as const;
+
+const emptyTerrainMatricesByBiome = (): Record<BiomeType | "Empty" | string, Matrix4[]> =>
+  Object.fromEntries(BIOME_MATRIX_KEYS.map((key) => [key, []]));
+
+/** The grid's matrices go back to the pool once the page they described is presented or dropped. */
+const releaseGridMatrices = (terrainMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>): void => {
+  const matrixPool = MatrixPool.getInstance();
+  for (const matrices of Object.values(terrainMatricesByBiome)) {
+    matrixPool.releaseAll(matrices);
+    // Cleared so a released matrix is never reused through this record.
+    matrices.length = 0;
+  }
 };
 
 export default class HexceptionScene extends HexagonScene {
@@ -1331,88 +1368,59 @@ export default class HexceptionScene extends HexagonScene {
 
   updateHexceptionGrid(radius: number) {
     if (!this.isEntered) return;
-    const realmGeneration = this.activeRealmGeneration;
-    const dummy = new Object3D();
     const mainStructureType = this.tileManager.structureType();
     this.updateCastleLevel();
-
-    const terrainMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]> = {
-      None: [],
-      Ocean: [],
-      DeepOcean: [],
-      Beach: [],
-      Scorched: [],
-      Bare: [],
-      Tundra: [],
-      Snow: [],
-      TemperateDesert: [],
-      Shrubland: [],
-      ShrublandAlt: [],
-      Taiga: [],
-      Grassland: [],
-      GrasslandAlt: [],
-      TemperateDeciduousForest: [],
-      TemperateDeciduousForestAlt: [],
-      TemperateRainForest: [],
-      SubtropicalDesert: [],
-      TropicalSeasonalForest: [],
-      TropicalRainForest: [],
-      Empty: [],
-    };
-
-    // The whole grid build runs as one macrotask once models resolve; the
-    // frame-owner marker is what attributes the local-view freeze to it.
-    this.localGridBuilt = runOwnedBuildingWorkAfterModelsLoad({
-      apply: () =>
-        runWithFrameWorkOwner("scene:hexception:grid", () => {
-          const regions = getLocalTerrainRegions(this.tileManager.getHexCoords(), radius);
-          this.highlights = [];
-          this.shownMapHexes.clear();
-          this.groundIsStale = false;
-          // The buildable set belongs to this realm and its level; a previous realm's must not linger.
-          this.interactiveHexManager.clearHexes();
-
-          for (const { center, targetHex, isMainHex } of regions) {
-            if (isMainHex) {
-              this.computeMainHexMatrices(radius, dummy, center, targetHex, terrainMatricesByBiome);
-            } else {
-              this.computeNeighborHexMatrices(radius, dummy, center, targetHex, terrainMatricesByBiome);
-            }
-          }
-
-          this.presentProceduralTerrain(terrainMatricesByBiome);
-          this.reconcileAllBuildingInstances(mainStructureType);
-          this.interactiveHexManager.renderAllHexes();
-          if (!this.buildingPreview?.getPreviewBuilding()) this.renderRestingOrNewRing();
-
-          // CRITICAL: Release all matrices back to the pool to prevent memory leaks
-          const matrixPool = MatrixPool.getInstance();
-          let totalMatricesReleased = 0;
-          for (const matrices of Object.values(terrainMatricesByBiome)) {
-            matrixPool.releaseAll(matrices);
-            totalMatricesReleased += matrices.length;
-            // Clear the array to prevent accidental reuse of released matrices
-            matrices.length = 0;
-          }
-          if (VERBOSE_LOGS_ENABLED) console.log(`🧹 Released ${totalMatricesReleased} matrices back to pool`);
-
-          if (typeof window !== "undefined" && this.isEntered) {
-            usePlayRouteReadinessStore.getState().markHexReady(getCurrentPlayRouteBootToken(), {
-              col: this.centerColRow[0],
-              row: this.centerColRow[1],
-            });
-          }
-        }),
-      isOwned: () => this.ownsRealmGeneration(realmGeneration),
-      modelLoadPromises: this.modelLoadPromises,
-    });
+    this.localGridBuilt = this.buildHexceptionGrid(radius, this.activeRealmGeneration, mainStructureType);
   }
 
-  private presentProceduralTerrain(terrainMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>): void {
+  /**
+   * The realm's grid, in three steps so that none holds a frame. Once the building models load, its cells are laid
+   * out. The terrain page for them is prepared in the terrain worker. Then the page, the buildings and the buildable
+   * hexes are presented. A realm left while it builds keeps nothing of it.
+   */
+  private async buildHexceptionGrid(
+    radius: number,
+    realmGeneration: number,
+    mainStructureType: StructureType | undefined,
+  ): Promise<void> {
+    await Promise.allSettled(this.modelLoadPromises);
+    if (!this.ownsRealmGeneration(realmGeneration)) return;
+    const terrainMatricesByBiome = runWithFrameWorkOwner("scene:hexception:grid", () => this.layOutGridCells(radius));
+    try {
+      const page = await this.proceduralTerrain.preparePageAsync(this.terrainPageRequest(terrainMatricesByBiome));
+      if (!this.ownsRealmGeneration(realmGeneration)) return;
+      runWithFrameWorkOwner("scene:hexception:grid", () => this.presentGrid(page, mainStructureType));
+    } finally {
+      releaseGridMatrices(terrainMatricesByBiome);
+    }
+  }
+
+  /** Each cell of the realm and its surroundings, as a matrix under its biome; the buildable hexes are registered. */
+  private layOutGridCells(radius: number): Record<BiomeType | "Empty" | string, Matrix4[]> {
+    const dummy = new Object3D();
+    const terrainMatricesByBiome = emptyTerrainMatricesByBiome();
+    const regions = getLocalTerrainRegions(this.tileManager.getHexCoords(), radius);
+    this.highlights = [];
+    this.shownMapHexes.clear();
+    this.groundIsStale = false;
+    // The buildable set belongs to this realm and its level; a previous realm's must not linger.
+    this.interactiveHexManager.clearHexes();
+
+    for (const { center, targetHex, isMainHex } of regions) {
+      if (isMainHex) {
+        this.computeMainHexMatrices(radius, dummy, center, targetHex, terrainMatricesByBiome);
+      } else {
+        this.computeNeighborHexMatrices(radius, dummy, center, targetHex, terrainMatricesByBiome);
+      }
+    }
+    return terrainMatricesByBiome;
+  }
+
+  /** The terrain page request for the laid-out cells: only a cell with a building gets the packed structure pad. */
+  private terrainPageRequest(terrainMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>) {
     const fallbackBiome = this.localBiome(this.centerColRow[0], this.centerColRow[1]);
     const cellsByKey = new Map<string, TerrainCellInput>();
     const worldPosition = new Vector3();
-    // Only a cell with a building gets the packed structure pad; an empty buildable cell keeps its ground.
     const builtKeys = new Set(
       this.buildings.map((building) => {
         worldPosition.setFromMatrixPosition(building.matrix);
@@ -1438,19 +1446,32 @@ export default class HexceptionScene extends HexagonScene {
       });
     });
 
-    const prepared = this.proceduralTerrain.preparePage(
-      createHexceptionTerrainRequest(
-        cellsByKey.values(),
-        configManager.getBiomeClimateConfig() ?? NEUTRAL_BIOME_CLIMATE,
-        `hexception:${this.centerColRow[0]},${this.centerColRow[1]}`,
-      ),
+    return createHexceptionTerrainRequest(
+      cellsByKey.values(),
+      configManager.getBiomeClimateConfig() ?? NEUTRAL_BIOME_CLIMATE,
+      `hexception:${this.centerColRow[0]},${this.centerColRow[1]}`,
     );
-    this.proceduralTerrain.present([prepared]);
+  }
+
+  /** The prepared page, the buildings standing on its surface, the buildable hexes, then the realm is ready. */
+  private presentGrid(page: PreparedTerrainPage, mainStructureType: StructureType | undefined): void {
+    this.proceduralTerrain.present([page]);
+    const worldPosition = new Vector3();
     this.buildings.forEach((building) => {
       worldPosition.setFromMatrixPosition(building.matrix);
       worldPosition.y = this.proceduralTerrain.sampleSurface(worldPosition.x, worldPosition.z).height;
       building.matrix.setPosition(worldPosition);
     });
+    this.reconcileAllBuildingInstances(mainStructureType);
+    this.interactiveHexManager.renderAllHexes();
+    if (!this.buildingPreview?.getPreviewBuilding()) this.renderRestingOrNewRing();
+
+    if (typeof window !== "undefined" && this.isEntered) {
+      usePlayRouteReadinessStore.getState().markHexReady(getCurrentPlayRouteBootToken(), {
+        col: this.centerColRow[0],
+        row: this.centerColRow[1],
+      });
+    }
   }
 
   private reconcileAllBuildingInstances(mainStructureType: StructureType | undefined): void {

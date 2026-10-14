@@ -9,6 +9,7 @@ import { TerrainField } from "./terrain-field";
 import { BASALT_SUPPORT_HEIGHT } from "./terrain-basalt";
 import { TerrainFogField } from "./terrain-fog-field";
 import { ProceduralTerrain } from "./procedural-terrain";
+import { prepareTerrainPage } from "./terrain-page-builder";
 import { TerrainPropPools } from "./terrain-prop-pools";
 import type { TerrainCellInput } from "./terrain-types";
 
@@ -22,7 +23,7 @@ describe("ProceduralTerrain", () => {
     const terrain = new ProceduralTerrain();
     const pages = [-1, 0].flatMap((pageRow) =>
       [-1, 0].map((pageCol) =>
-        terrain.preparePage({
+        prepareTerrainPage({
           ...request(BiomeType.Grassland, false),
           surfacePresentation: "ethereal",
           pageKey: `basalt:${pageCol}:${pageRow}`,
@@ -92,7 +93,7 @@ describe("ProceduralTerrain", () => {
   it("builds basalt without world textures and retains its material across quality changes", async () => {
     const terrain = new ProceduralTerrain();
     terrain.setSurfacePresentation("ethereal");
-    const prepared = terrain.preparePage({ ...forestRequest(), surfacePresentation: "ethereal" });
+    const prepared = prepareTerrainPage({ ...forestRequest(), surfacePresentation: "ethereal" });
     terrain.present([prepared]);
     const basalt = terrain.object3d.getObjectByName("procedural-terrain-basalt") as Mesh;
     const borders = terrain.object3d.getObjectByName("procedural-terrain-borders") as Mesh;
@@ -108,7 +109,7 @@ describe("ProceduralTerrain", () => {
     const basaltGeometryDispose = vi.spyOn(basalt.geometry, "dispose");
     const borderGeometryDispose = vi.spyOn(borders.geometry, "dispose");
     terrain.setSurfacePresentation("world");
-    terrain.present([terrain.preparePage(forestRequest())]);
+    terrain.present([prepareTerrainPage(forestRequest())]);
     expect(basaltGeometryDispose).not.toHaveBeenCalled();
     expect(borderGeometryDispose).toHaveBeenCalledOnce();
     expect(terrain.object3d.getObjectByName("procedural-terrain-land")).toBeDefined();
@@ -119,18 +120,18 @@ describe("ProceduralTerrain", () => {
 
   it("atomically presents, reuses, replaces, and disposes page geometry", () => {
     const terrain = new ProceduralTerrain();
-    const first = terrain.preparePage(request(BiomeType.Grassland, false));
+    const first = prepareTerrainPage(request(BiomeType.Grassland, false));
     const firstSummary = terrain.present([first]);
     const firstMesh = terrain.object3d.getObjectByName("procedural-terrain-land") as Mesh;
     const dispose = vi.spyOn(firstMesh.geometry, "dispose");
 
     expect(firstSummary.pages).toBe(1);
-    const sameContent = terrain.preparePage(request(BiomeType.Grassland, false));
+    const sameContent = prepareTerrainPage(request(BiomeType.Grassland, false));
     expect(sameContent.fingerprint).toBe(first.fingerprint);
     terrain.present([sameContent]);
     expect(dispose).not.toHaveBeenCalled();
 
-    const replacement = terrain.preparePage(request(BiomeType.Grassland, true));
+    const replacement = prepareTerrainPage(request(BiomeType.Grassland, true));
     terrain.present([replacement]);
     expect(dispose).toHaveBeenCalledOnce();
 
@@ -144,7 +145,7 @@ describe("ProceduralTerrain", () => {
   it("clears occupied prop tiles atomically and restores them without rebuilding terrain", async () => {
     const terrain = new ProceduralTerrain();
     await terrain.loadProps();
-    const page = terrain.preparePage(blockRequest("occupied", 0));
+    const page = prepareTerrainPage(blockRequest("occupied", 0));
     terrain.present([page]);
     expect(page.propInstances.length).toBeGreaterThan(0);
     const mesh = terrain.object3d.getObjectByName("procedural-terrain-land") as Mesh;
@@ -166,7 +167,7 @@ describe("ProceduralTerrain", () => {
 
   it("samples the presented surface and rejects use after disposal", () => {
     const terrain = new ProceduralTerrain();
-    terrain.present([terrain.preparePage(request(BiomeType.Bare, true))]);
+    terrain.present([prepareTerrainPage(request(BiomeType.Bare, true))]);
     const center = terrainHexToWorld(0, 0);
 
     expect(terrain.sampleSurface(center.x, center.z).biome).toBe(BiomeType.Bare);
@@ -183,7 +184,7 @@ describe("ProceduralTerrain", () => {
       cells: request(BiomeType.Bare, false).cells.map((cell) => ({ ...cell, col: 1 })),
       halo: request(BiomeType.Grassland, false).cells,
     };
-    terrain.present([terrain.preparePage(neighbor), terrain.preparePage(covered)]);
+    terrain.present([prepareTerrainPage(neighbor), prepareTerrainPage(covered)]);
     const expected = new TerrainField(covered).sampleSurface(0, 0);
     expect(terrain.sampleSurface(0, 0)).toEqual(expected);
     expect(expected.biome).toBeNull();
@@ -193,7 +194,7 @@ describe("ProceduralTerrain", () => {
 
   it("keeps terrain out of the interaction raycast path", () => {
     const terrain = new ProceduralTerrain();
-    terrain.present([terrain.preparePage(request(BiomeType.Snow, false))]);
+    terrain.present([prepareTerrainPage(request(BiomeType.Snow, false))]);
     const mesh = terrain.object3d.getObjectByName("procedural-terrain-land") as Mesh;
 
     expect(mesh.raycast.name).toBe("disableTerrainRaycast");
@@ -202,11 +203,11 @@ describe("ProceduralTerrain", () => {
 
   it("keeps newly explored terrain covered until commit and finishes the reveal without retained state", () => {
     const terrain = new ProceduralTerrain();
-    terrain.present([terrain.preparePage(unknownRequest())]);
+    terrain.present([prepareTerrainPage(unknownRequest())]);
     expect(terrain.getShroudStats()).toMatchObject({ activeReveals: 0, instances: 1 });
 
     terrain.queueShroudReveal(0, 0);
-    terrain.present([terrain.preparePage(request(BiomeType.Grassland, false))]);
+    terrain.present([prepareTerrainPage(request(BiomeType.Grassland, false))]);
     expect(terrain.getShroudStats()).toMatchObject({ activeReveals: 1, instances: 0 });
     for (let frame = 0; frame < 20; frame += 1) terrain.update(0.05);
     expect(terrain.getShroudStats()).toMatchObject({ activeReveals: 0, instances: 0 });
@@ -216,8 +217,8 @@ describe("ProceduralTerrain", () => {
   it("writes only the changed page's prop slots and fog sub-rect on a later present", async () => {
     const terrain = new ProceduralTerrain();
     await terrain.loadProps();
-    const west = terrain.preparePage(blockRequest("west", 0));
-    const east = terrain.preparePage(blockRequest("east", 10));
+    const west = prepareTerrainPage(blockRequest("west", 0));
+    const east = prepareTerrainPage(blockRequest("east", 10));
     terrain.present([west]);
     const westUploads = collectPropUploads(terrain);
     clearPropUploads(terrain);
@@ -231,7 +232,7 @@ describe("ProceduralTerrain", () => {
     expect(terrain.getUploadMetrics()).toEqual(settled);
     expect(collectPropUploads(terrain)).toHaveLength(0);
 
-    const changedEast = terrain.preparePage(blockRequest("east", 10, { exploredCell: [12, 6] }));
+    const changedEast = prepareTerrainPage(blockRequest("east", 10, { exploredCell: [12, 6] }));
     expect(changedEast.fingerprint).not.toBe(east.fingerprint);
     terrain.present([west, changedEast]);
     const eastUploads = collectPropUploads(terrain);
@@ -254,8 +255,8 @@ describe("ProceduralTerrain", () => {
   it("commits ready pages incrementally with the same writes as one full presentation", async () => {
     const terrain = new ProceduralTerrain();
     await terrain.loadProps();
-    const west = terrain.preparePage(blockRequest("west", 0));
-    const east = terrain.preparePage(blockRequest("east", 10));
+    const west = prepareTerrainPage(blockRequest("west", 0));
+    const east = prepareTerrainPage(blockRequest("east", 10));
 
     expect(terrain.isPagePresented(west)).toBe(false);
     terrain.commitPages([west]);
@@ -277,14 +278,14 @@ describe("ProceduralTerrain", () => {
     const terrain = new ProceduralTerrain();
     await terrain.loadProps();
     const writeProps = vi.spyOn(TerrainPropPools.prototype, "writePage");
-    const previous = terrain.preparePage(blockRequest("page", 0));
+    const previous = prepareTerrainPage(blockRequest("page", 0));
     terrain.present([previous]);
     const previousProps = writeProps.mock.calls.at(-1)![1];
     expect(previousProps.length).toBeGreaterThan(0);
     const previousMesh = terrain.object3d.getObjectByName("procedural-terrain-land") as Mesh;
     const disposePrevious = vi.spyOn(previousMesh.geometry, "dispose");
-    const replacement = terrain.preparePage(request(BiomeType.Taiga, false));
-    const added = terrain.preparePage({
+    const replacement = prepareTerrainPage(request(BiomeType.Taiga, false));
+    const added = prepareTerrainPage({
       ...request(BiomeType.Beach, false),
       cells: [{ biome: null, col: 10, explored: false, occupied: false, previewBiome: BiomeType.Beach, row: 0 }],
       pageKey: "added",
@@ -324,7 +325,7 @@ describe("ProceduralTerrain", () => {
 
   it("writes every retained page once when the prop catalog arrives after the pages", async () => {
     const terrain = new ProceduralTerrain();
-    terrain.present([terrain.preparePage(blockRequest("west", 0)), terrain.preparePage(blockRequest("east", 10))]);
+    terrain.present([prepareTerrainPage(blockRequest("west", 0)), prepareTerrainPage(blockRequest("east", 10))]);
     expect(terrain.getUploadMetrics()).toMatchObject({ propPoolFullRewrites: 0, propPoolPageWrites: 0 });
 
     await terrain.loadProps();
@@ -336,7 +337,7 @@ describe("ProceduralTerrain", () => {
 
   it("applies ambient motion preferences across LOD changes and releases its subscription", async () => {
     const terrain = new ProceduralTerrain();
-    terrain.present([terrain.preparePage(unknownRequest())]);
+    terrain.present([prepareTerrainPage(unknownRequest())]);
     await terrain.loadProps();
     const setWind = vi.spyOn(TerrainPropPools.prototype, "setWindStrength");
     const fogBefore = terrain.getShroudStats();
@@ -356,7 +357,7 @@ describe("ProceduralTerrain", () => {
 
   it("hides wildlife for overview and reduced motion, then releases it with its terrain page", () => {
     const terrain = new ProceduralTerrain();
-    terrain.present([terrain.preparePage(forestRequest())]);
+    terrain.present([prepareTerrainPage(forestRequest())]);
     const wildlife = terrain.object3d.getObjectByName("terrain-wildlife")!;
     expect(terrain.getWildlifeStats().count).toBe(0); // Ambient spawning is deferred beyond the terrain commit.
     expect(wildlife.visible).toBe(true);
@@ -396,7 +397,7 @@ describe("ProceduralTerrain", () => {
 
   it("presents bounded movement effects according to the terrain quality tier", () => {
     const terrain = new ProceduralTerrain();
-    terrain.present([terrain.preparePage(request(BiomeType.Bare, false))]);
+    terrain.present([prepareTerrainPage(request(BiomeType.Bare, false))]);
     terrain.setMovementInteractions([
       { entityId: 3, isMoving: true, mode: "naval", worldX: 2, worldY: 0, worldZ: 4, yaw: 0.5 },
       { entityId: 8, isMoving: false, mode: "naval", worldX: 5, worldY: 0, worldZ: 6, yaw: 0 },
@@ -429,12 +430,12 @@ describe("ProceduralTerrain", () => {
   it("counts a settlement influence once when it overlaps multiple prepared pages", () => {
     const terrain = new ProceduralTerrain();
     const anchor = { col: 0, level: 2, row: 0, structureId: "realm", structureType: StructureType.Realm };
-    const first = terrain.preparePage({
+    const first = prepareTerrainPage({
       ...request(BiomeType.Grassland, true),
       pageKey: "first",
       settlementAnchors: [anchor],
     });
-    const second = terrain.preparePage({
+    const second = prepareTerrainPage({
       ...request(BiomeType.Grassland, false),
       cells: [
         {

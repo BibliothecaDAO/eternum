@@ -26,7 +26,6 @@ import { createEtherealTerrainMaterial } from "./terrain-ethereal-material";
 import type { TerrainFogMask } from "./terrain-fog-mask";
 import { acquireTerrainGroundTextures, type TerrainGroundTextureHandle } from "./terrain-ground-textures";
 import { createTerrainGroundMaterial, createTerrainMaterials, type TerrainMaterials } from "./terrain-material";
-import { prepareTerrainPage } from "./terrain-page-builder";
 import { TerrainPageWorkerClient } from "./terrain-page-worker-client";
 import { isTerrainPropFootprintClear } from "./terrain-prop-footprint";
 import { TerrainPropPools, type TerrainPropPoolStats } from "./terrain-prop-pools";
@@ -136,11 +135,6 @@ export class ProceduralTerrain {
     this.fogField.applyRevealToMaterial(this.etherealBorders.material);
     this.setQualityTier(this.qualityTier);
     this.releaseAppearance = useWorldAppearanceStore.subscribe(() => this.applyAppearance());
-  }
-
-  preparePage(request: TerrainPageRequest): PreparedTerrainPage {
-    this.requireActive();
-    return prepareTerrainPage(request);
   }
 
   preparePageAsync(request: TerrainPageRequest): Promise<PreparedTerrainPage> {
