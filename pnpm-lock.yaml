@@ -1356,6 +1356,9 @@ importers:
 
   packages/identity:
     dependencies:
+      effect:
+        specifier: 4.0.4
+        version: 4.0.4
       '@bibliothecadao/notifications':
         specifier: workspace:*
         version: link:../notifications

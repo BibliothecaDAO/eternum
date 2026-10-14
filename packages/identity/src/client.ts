@@ -1,9 +1,11 @@
+import * as Data from "effect/Data";
+import * as Schema from "effect/Schema";
+import * as Result from "effect/Result";
 import { resolveEndpoint } from "@realms-world/chain";
 import {
   parseNotificationPreferences,
   type NotificationPreferences,
   type PushRegistration,
-  type PushConfiguration,
 } from "@bibliothecadao/notifications";
 import type { SiwsTypedData } from "./siws";
 import { buildSiwsMessage, payoutWalletStatement } from "./siws";
@@ -21,13 +23,27 @@ export interface DeviceChangeRequest {
 }
 
 /** A refusal the identity service names, such as `INVALID_OTP` or `WALLET_LINKED_ELSEWHERE`. */
-export class IdentityRequestError extends Error {
-  constructor(
-    readonly status: number,
-    readonly code: string | undefined,
-  ) {
-    super(code ?? `Identity request failed with status ${status}`);
+export class IdentityRequestError extends Data.TaggedError("IdentityRequestError")<{
+  status: number;
+  code: string | undefined;
+  message: string;
+}> {
+  constructor(status: number, code?: string, message = code ?? `Identity request failed with status ${status}`) {
+    super({ status, code, message });
   }
+}
+
+export class IdentityUnavailable extends Data.TaggedError("IdentityUnavailable")<{
+  cause: unknown;
+}> {
+  readonly message = "Identity service unavailable";
+}
+
+export class IdentityInvalidResponse extends Data.TaggedError("IdentityInvalidResponse")<{
+  status: number;
+  cause: unknown;
+}> {
+  readonly message = "Identity service returned an invalid response";
 }
 
 /** The one fetch call the identity client makes; a browser's fetch, or a tool's that keeps the session cookie. */
@@ -55,17 +71,60 @@ export interface SignInOptions {
   statement?: string;
 }
 
-const readJson = async <T>(response: Response): Promise<T> => {
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as {
-      error?: string;
-      message?: string;
-      code?: string;
-    } | null;
-    throw new IdentityRequestError(response.status, payload?.error ?? payload?.code ?? payload?.message);
+const sessionSchema = Schema.NullOr(
+  Schema.Struct({
+    session: Schema.Struct({ id: Schema.String, expiresAt: Schema.String, userId: Schema.String }),
+    user: Schema.Struct({
+      id: Schema.String,
+      realmsId: Schema.String,
+      name: Schema.String,
+      email: Schema.String,
+      walletLinkedAt: Schema.optional(Schema.NullOr(Schema.Number)),
+      address: Schema.optional(Schema.NullOr(Schema.String)),
+      emailVerified: Schema.optional(Schema.Boolean),
+      suggestedName: Schema.optional(Schema.NullOr(Schema.String)),
+      image: Schema.optional(Schema.NullOr(Schema.String)),
+    }),
+  }),
+);
+const refusalSchema = Schema.Struct({
+  error: Schema.optional(Schema.String),
+  code: Schema.optional(Schema.String),
+  message: Schema.optional(Schema.String),
+});
+const pushConfigurationSchema = Schema.Union([
+  Schema.Struct({ enabled: Schema.Literal(false) }),
+  Schema.Struct({
+    enabled: Schema.Literal(true),
+    publicKey: Schema.String,
+    gameAlerts: Schema.Boolean,
+    directMessages: Schema.Boolean,
+  }),
+]);
+const acknowledgementSchema = Schema.Record(Schema.String, Schema.Unknown);
+
+const readJson = async <T>(response: Response, decode: (value: unknown) => T): Promise<T> => {
+  if (!response.ok) throw await requestFailure(response);
+  try {
+    return decode(await response.json());
+  } catch (cause) {
+    throw new IdentityInvalidResponse({ status: response.status, cause });
   }
-  return (await response.json()) as T;
 };
+
+const requestFailure = async (response: Response): Promise<IdentityRequestError> => {
+  try {
+    const payload = Schema.decodeUnknownResult(refusalSchema)(await response.json());
+    if (Result.isSuccess(payload)) {
+      const { error, code, message } = payload.success;
+      return new IdentityRequestError(response.status, error ?? code ?? message, message ?? error ?? code);
+    }
+  } catch {
+    /* HTTP status remains authoritative when a refusal has no JSON body. */
+  }
+  return new IdentityRequestError(response.status);
+};
+const decode = Schema.decodeUnknownSync;
 
 const resolveApiUrl = (apiUrl: string): string =>
   apiUrl.startsWith("/")
@@ -74,39 +133,40 @@ const resolveApiUrl = (apiUrl: string): string =>
 
 export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: IdentityClientOptions) => {
   const api = resolveApiUrl(apiUrl);
-  const request = (path: string, init?: RequestInit) =>
-    fetch(`${api}${path}`, {
-      ...init,
-      credentials: "include",
-      headers: { "content-type": "application/json", ...init?.headers },
-    });
+  const request = async (path: string, init?: RequestInit) => {
+    try {
+      return await fetch(`${api}${path}`, {
+        ...init,
+        credentials: "include",
+        headers: { "content-type": "application/json", ...init?.headers },
+      });
+    } catch (cause) {
+      throw new IdentityUnavailable({ cause });
+    }
+  };
 
   const getSession = async (): Promise<Session | null> => {
     const response = await request("/auth/get-session", { method: "GET" });
-    return response.status === 401 ? null : await readJson<Session | null>(response);
+    return response.status === 401 ? null : await readJson(response, decode(sessionSchema));
   };
 
   /** Changes the chosen username or portrait; the server answers 422 with its reason when a name breaks a rule. */
   const updateUser = async (body: { name?: string; image?: string | null }): Promise<void> => {
     const response = await request("/auth/update-user", { method: "POST", body: JSON.stringify(body) });
     if (response.ok) return;
-    const reason = await response
-      .json()
-      .then((payload: { message?: string; code?: string }) => payload.message ?? payload.code)
-      .catch(() => undefined);
-    throw new Error(reason ?? `Identity request failed with status ${response.status}`);
+    throw await requestFailure(response);
   };
 
   const signOut = async (): Promise<void> => {
     const response = await request("/auth/sign-out", { method: "POST", body: JSON.stringify({}) });
     if (!response.ok) {
-      throw new Error(`Identity request failed with status ${response.status}`);
+      throw await requestFailure(response);
     }
   };
 
   const requireSession = async (): Promise<Session> => {
     const session = await getSession();
-    if (!session) throw new Error("Identity session was not created");
+    if (!session) throw new IdentityRequestError(401, "SESSION_NOT_CREATED");
     return session;
   };
 
@@ -116,11 +176,16 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
       method: "POST",
       body: JSON.stringify({ address: options.address }),
     });
-    const { nonce, realmsId } = await readJson<{ nonce: string; realmsId: string }>(nonceResponse);
+    const { nonce, realmsId } = await readJson(
+      nonceResponse,
+      decode(Schema.Struct({ nonce: Schema.String, realmsId: Schema.optional(Schema.String) })),
+    );
+    if (linking && !realmsId)
+      throw new IdentityInvalidResponse({ status: nonceResponse.status, cause: "Missing realmsId" });
     const message = buildSiwsMessage({
       ...options,
       nonce,
-      ...(linking ? { statement: payoutWalletStatement(realmsId) } : {}),
+      ...(linking ? { statement: payoutWalletStatement(realmsId!) } : {}),
     });
     return {
       address: options.address,
@@ -137,6 +202,7 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
   const signIn = async (options: SignInOptions): Promise<Session> => {
     await readJson(
       await request("/auth/siws/verify", { method: "POST", body: JSON.stringify(await siwsProof(options)) }),
+      decode(acknowledgementSchema),
     );
     return requireSession();
   };
@@ -146,25 +212,32 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
    * account holds.
    */
   const linkWallet = async (options: SignInOptions & { code: string }): Promise<string> => {
-    const linked = await readJson<{ address: string }>(
+    const linked = await readJson(
       await request("/auth/siws/link", {
         method: "POST",
         body: JSON.stringify({ ...(await siwsProof(options, true)), otp: options.code }),
       }),
+      decode(Schema.Struct({ address: Schema.String })),
     );
     return linked.address;
   };
 
   /** Unlinks the account's wallet, freeing it for another account. */
   const unlinkWallet = async (code: string): Promise<void> => {
-    await readJson(await request("/auth/siws/unlink", { method: "POST", body: JSON.stringify({ otp: code }) }));
+    await readJson(
+      await request("/auth/siws/unlink", { method: "POST", body: JSON.stringify({ otp: code }) }),
+      decode(Schema.Struct({ address: Schema.Null })),
+    );
   };
 
   /** The sign-in providers linked to the signed-in account, such as "discord". */
   const listSignInProviders = async (): Promise<string[]> =>
-    (await readJson<{ providerId: string }[]>(await request("/auth/list-accounts", { method: "GET" }))).map(
-      (account) => account.providerId,
-    );
+    (
+      await readJson(
+        await request("/auth/list-accounts", { method: "GET" }),
+        decode(Schema.Array(Schema.Struct({ providerId: Schema.String }))),
+      )
+    ).map((account) => account.providerId);
 
   /** Emails a one-time sign-in code; the service limits how many an address and a client get a minute. */
   const sendSignInCode = async (email: string): Promise<{ success: true; expires_at: number }> => {
@@ -173,6 +246,7 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
         method: "POST",
         body: JSON.stringify({ email, type: "sign-in" }),
       }),
+      decode(Schema.Struct({ success: Schema.Literal(true), expires_at: Schema.Number })),
     );
   };
 
@@ -180,6 +254,7 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
   const signInWithCode = async (email: string, code: string): Promise<Session> => {
     await readJson(
       await request("/auth/sign-in/email-otp", { method: "POST", body: JSON.stringify({ email, otp: code }) }),
+      decode(acknowledgementSchema),
     );
     return requireSession();
   };
@@ -189,26 +264,29 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
    * `error` query parameter when sign-in did not complete.
    */
   const discordSignInUrl = async (returnTo: string): Promise<string> => {
-    const started = await readJson<{ url: string }>(
+    const started = await readJson(
       await request("/auth/sign-in/social", {
         method: "POST",
         body: JSON.stringify({ provider: "discord", callbackURL: returnTo, errorCallbackURL: returnTo }),
       }),
+      decode(Schema.Struct({ url: Schema.String })),
     );
     return started.url;
   };
 
   /** The guardian's `[r, s]` over one device change on the signed-in player's own account. */
   const approveDeviceChange = async (change: DeviceChangeRequest): Promise<string[]> => {
-    const approved = await readJson<{ signature: string[] }>(
+    const approved = await readJson(
       await request("/devices", { method: "POST", body: JSON.stringify(change) }),
+      decode(Schema.Struct({ signature: Schema.mutable(Schema.Array(Schema.String)) })),
     );
     return approved.signature;
   };
 
   const getNotificationPreferences = async (): Promise<NotificationPreferences> =>
-    parseNotificationPreferences(
-      await readJson(await request("/notifications/preferences", { method: "GET", cache: "no-store" })),
+    readJson(
+      await request("/notifications/preferences", { method: "GET", cache: "no-store" }),
+      parseNotificationPreferences,
     );
   const saveNotificationPreferences = async (
     preferences: NotificationPreferences,
@@ -218,14 +296,27 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
       body: JSON.stringify(preferences),
     });
     if (response.status === 409)
-      throw new Error("Preferences changed on another device. Reload them before saving again.");
+      throw new IdentityRequestError(
+        409,
+        "preference_conflict",
+        "Preferences changed on another device. Reload them before saving again.",
+      );
     if (response.status === 403 || response.status === 401)
-      throw new Error("Your account changed or signed out. Reload your preferences.");
-    return parseNotificationPreferences(await readJson(response));
+      throw new IdentityRequestError(
+        response.status,
+        "unauthorized",
+        "Your account changed or signed out. Reload your preferences.",
+      );
+    return readJson(response, parseNotificationPreferences);
   };
 
-  const pushRequest = async <T>(action: string, body?: unknown, options: { keepalive?: boolean } = {}): Promise<T> =>
-    readJson<T>(
+  const pushRequest = async <T>(
+    action: string,
+    decode: (value: unknown) => T,
+    body?: unknown,
+    options: { keepalive?: boolean } = {},
+  ): Promise<T> =>
+    readJson(
       await request(`/notifications/push/${action}`, {
         ...(body === undefined
           ? { method: "GET", cache: "no-store" as const }
@@ -233,6 +324,7 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
         keepalive: options.keepalive,
         signal: AbortSignal.timeout(10_000),
       }),
+      decode,
     );
   return {
     getSession,
@@ -241,7 +333,12 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     unlinkWallet,
     listSignInProviders,
     availableSignInProviders: async () =>
-      (await readJson<{ providers: string[] }>(await request("/auth/providers", { method: "GET" }))).providers,
+      (
+        await readJson(
+          await request("/auth/providers", { method: "GET" }),
+          decode(Schema.Struct({ providers: Schema.mutable(Schema.Array(Schema.String)) })),
+        )
+      ).providers,
     sendSignInCode,
     signInWithCode,
     discordSignInUrl,
@@ -250,15 +347,28 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     updateUser,
     getNotificationPreferences,
     saveNotificationPreferences,
-    getPushConfiguration: () => pushRequest<PushConfiguration>("config"),
-    registerPushSubscription: (input: PushRegistration) => pushRequest<{ id: string }>("subscribe", input),
+    getPushConfiguration: () => pushRequest("config", decode(pushConfigurationSchema)),
+    registerPushSubscription: (input: PushRegistration) =>
+      pushRequest("subscribe", decode(Schema.Struct({ id: Schema.String })), input),
     getPushSubscriptionStatus: (owner: string, id: string) =>
-      pushRequest<{ registered: boolean; gameAlerts: boolean; directMessages: boolean }>("status", {
-        owner,
-        id,
-      }),
+      pushRequest(
+        "status",
+        decode(
+          Schema.Struct({ registered: Schema.Boolean, gameAlerts: Schema.Boolean, directMessages: Schema.Boolean }),
+        ),
+        {
+          owner,
+          id,
+        },
+      ),
     setPushGameForeground: (owner: string, id: string, foreground: boolean) =>
-      pushRequest<{ foreground: boolean }>("foreground", { owner, id, foreground }, { keepalive: true }),
-    revokePushSubscription: (id: string, token: string) => pushRequest<{ revoked: boolean }>("revoke", { id, token }),
+      pushRequest(
+        "foreground",
+        decode(Schema.Struct({ foreground: Schema.Boolean })),
+        { owner, id, foreground },
+        { keepalive: true },
+      ),
+    revokePushSubscription: (id: string, token: string) =>
+      pushRequest("revoke", decode(Schema.Struct({ revoked: Schema.Boolean })), { id, token }),
   };
 };

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { createIdentityClient } from "./client";
+import { createIdentityClient, IdentityInvalidResponse, IdentityRequestError } from "./client";
 
 describe("identity client", () => {
   it("uses the credentialed identity transport for preference reads and conditional saves", async () => {
@@ -26,7 +26,7 @@ describe("identity client", () => {
   it("signs the server nonce and returns the resulting session", async () => {
     const session = {
       session: { id: "session-1", expiresAt: "2026-08-26T00:00:00.000Z", userId: "0x123" },
-      user: { id: "0x123", name: "0x123", email: "0x123@realms.test" },
+      user: { id: "0x123", realmsId: "0x123", name: "0x123", email: "0x123@realms.test" },
     };
     const fetch = vi
       .fn<typeof globalThis.fetch>()
@@ -82,13 +82,16 @@ it("uses credentialed identity routes for push setup and a device capability for
     token: id,
     subscription: { endpoint: "https://web.push.apple.com/test", keys: { p256dh: "key", auth: "secret" } },
   };
+  fetch.mockResolvedValueOnce(Response.json({ id }));
   await client.registerPushSubscription(registration);
   expect(fetch.mock.calls.at(-1)).toEqual([
     "https://realms.test/api/notifications/push/subscribe",
     expect.objectContaining({ method: "POST", credentials: "include", body: JSON.stringify(registration) }),
   ]);
+  fetch.mockResolvedValueOnce(Response.json({ registered: true, gameAlerts: true, directMessages: true }));
   await client.getPushSubscriptionStatus("0x1", id);
   expect(fetch.mock.calls.at(-1)?.[0]).toBe("https://realms.test/api/notifications/push/status");
+  fetch.mockResolvedValueOnce(Response.json({ foreground: true }));
   await client.setPushGameForeground("0x1", id, true);
   expect(fetch.mock.calls.at(-1)).toEqual([
     "https://realms.test/api/notifications/push/foreground",
@@ -98,6 +101,7 @@ it("uses credentialed identity routes for push setup and a device capability for
       body: JSON.stringify({ owner: "0x1", id, foreground: true }),
     }),
   ]);
+  fetch.mockResolvedValueOnce(Response.json({ revoked: true }));
   await client.revokePushSubscription(id, id);
   expect(fetch.mock.calls.at(-1)?.[1]?.body).toBe(JSON.stringify({ id, token: id }));
   expect(fetch.mock.calls.at(-1)?.[0]).toBe("https://realms.test/api/notifications/push/revoke");
@@ -115,7 +119,10 @@ it("bounds a stalled push request with an abort signal", async () => {
     );
     const client = createIdentityClient({ apiUrl: "https://realms.test/api", fetch });
     const request = client.getPushSubscriptionStatus("0x1", "device");
-    const rejected = expect(request).rejects.toThrow("Timed out");
+    const rejected = expect(request).rejects.toMatchObject({
+      _tag: "IdentityUnavailable",
+      cause: new Error("Timed out"),
+    });
     expect(timeout).toHaveBeenCalledWith(10_000);
     controller.abort(new Error("Timed out"));
     await rejected;
@@ -174,4 +181,82 @@ it("carries deployment data alongside the account-bound SIWS signature and email
     signTypedData: async () => ["1", "2"],
   });
   expect(requests.at(-1)?.body).toMatchObject({ address: "0x123", signature: ["1", "2"], otp: "123456", deployment });
+});
+
+describe("decoded identity boundary", () => {
+  it.each([
+    null,
+    {
+      session: { id: "s", userId: "u", expiresAt: "2026-10-14T00:00:00Z" },
+      user: { id: "u", realmsId: "0x1", name: "name", email: "a@b.test", image: null, emailVerified: true },
+    },
+  ])("preserves a valid session response", async (session) => {
+    const client = createIdentityClient({ apiUrl: "/api", fetch: async () => Response.json(session) });
+    expect(await client.getSession()).toEqual(session);
+  });
+  it.each([
+    {},
+    { user: {} },
+    { session: null, user: null },
+    { session: { id: "s", userId: "u", expiresAt: 123 }, user: {} },
+  ])("rejects malformed sessions instead of signing out", async (payload) => {
+    const client = createIdentityClient({ apiUrl: "/api", fetch: async () => Response.json(payload) });
+    await expect(client.getSession()).rejects.toBeInstanceOf(IdentityInvalidResponse);
+  });
+  it("keeps transport, HTTP failure, invalid JSON, and anonymous separate", async () => {
+    const cause = new TypeError("offline");
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockRejectedValueOnce(cause)
+      .mockResolvedValueOnce(Response.json({ error: "unavailable" }, { status: 503 }))
+      .mockResolvedValueOnce(new Response("bad json"))
+      .mockResolvedValueOnce(new Response(null, { status: 401 }));
+    const client = createIdentityClient({ apiUrl: "/api", fetch });
+    await expect(client.getSession()).rejects.toMatchObject({ _tag: "IdentityUnavailable", cause });
+    await expect(client.getSession()).rejects.toMatchObject({
+      _tag: "IdentityRequestError",
+      status: 503,
+      code: "unavailable",
+    });
+    await expect(client.getSession()).rejects.toBeInstanceOf(IdentityInvalidResponse);
+    expect(await client.getSession()).toBeNull();
+  });
+  it("keeps refusals typed even with malformed error bodies", async () => {
+    const client = createIdentityClient({
+      apiUrl: "/api",
+      fetch: async () => new Response("proxy failure", { status: 502 }),
+    });
+    await expect(client.updateUser({ name: "name" })).rejects.toMatchObject({
+      _tag: "IdentityRequestError",
+      status: 502,
+      code: undefined,
+    });
+    await expect(client.signOut()).rejects.toBeInstanceOf(IdentityRequestError);
+  });
+  it("does not call the signer or link route when a linking nonce lacks the account id", async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(Response.json({ nonce: "n" }));
+    const signTypedData = vi.fn();
+    const client = createIdentityClient({ apiUrl: "/api", fetch });
+    await expect(
+      client.linkWallet({
+        code: "123456",
+        address: "0x1",
+        chainId: "SN_MAIN",
+        domain: "test",
+        uri: "https://test",
+        signTypedData,
+      }),
+    ).rejects.toBeInstanceOf(IdentityInvalidResponse);
+    expect(signTypedData).not.toHaveBeenCalled();
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+  it.each([
+    "getPushConfiguration",
+    "getNotificationPreferences",
+    "availableSignInProviders",
+    "listSignInProviders",
+  ] as const)("rejects invalid %s data", async (method) => {
+    const client = createIdentityClient({ apiUrl: "/api", fetch: async () => Response.json({}) });
+    await expect(client[method]()).rejects.toBeInstanceOf(IdentityInvalidResponse);
+  });
 });

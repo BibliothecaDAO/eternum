@@ -35,6 +35,7 @@ export const identityUsername = (session: Session | null): string | null =>
 let sessionRevision = 0;
 let retryTimer: ReturnType<typeof setTimeout> | null = null;
 let initialLoad: Promise<void> | null = null;
+let refreshInFlight: { revision: number; promise: Promise<void> } | null = null;
 
 export const useIdentitySessionStore = create<IdentitySessionStore>()((set, get) => ({
   status: "loading",
@@ -46,24 +47,38 @@ export const useIdentitySessionStore = create<IdentitySessionStore>()((set, get)
     if (!session) useAccountStore.getState().setGameplayAccount(null, null);
     set({ session, status: resolveStatus(session) });
   },
-  refresh: async () => {
-    const revision = ++sessionRevision;
-    try {
-      const session = await identityClient.getSession();
-      if (revision === sessionRevision) get().applySession(session);
-    } catch (error) {
-      if (revision !== sessionRevision) return;
-      console.error("identity_session_load_failed", error);
-      initialLoad = null;
-      // An unreadable session is unknown, never evidence of sign-out. Keep the last known fact and retry.
-      if (!retryTimer)
-        retryTimer = setTimeout(() => {
-          retryTimer = null;
-          void loadIdentitySessionOnce();
-        }, 5_000);
+  refresh: () => {
+    if (refreshInFlight) {
+      return refreshInFlight.revision === sessionRevision
+        ? refreshInFlight.promise
+        : refreshInFlight.promise.then(() => get().refresh());
     }
+    const revision = ++sessionRevision;
+    if (retryTimer) clearTimeout(retryTimer);
+    retryTimer = null;
+    const promise = readSessionRevision(revision, get().applySession).finally(() => {
+      refreshInFlight = null;
+    });
+    refreshInFlight = { revision, promise };
+    return promise;
   },
 }));
+
+async function readSessionRevision(revision: number, applySession: (session: Session | null) => void): Promise<void> {
+  try {
+    const session = await identityClient.getSession();
+    if (revision === sessionRevision) applySession(session);
+  } catch (error) {
+    if (revision !== sessionRevision) return;
+    console.error("identity_session_load_failed", error);
+    initialLoad = null;
+    if (!retryTimer)
+      retryTimer = setTimeout(() => {
+        retryTimer = null;
+        void loadIdentitySessionOnce();
+      }, 5_000);
+  }
+}
 
 /** Ends the identity session; no wallet stays connected to detach, since a wallet only links from the account page. */
 export async function signOutIdentitySession(): Promise<void> {
