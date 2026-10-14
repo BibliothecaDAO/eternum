@@ -1,5 +1,5 @@
 import { extractErrorMessage } from "@bibliothecadao/provider";
-import type { GameClient } from "@bibliothecadao/eternum";
+import { gameTaskScope } from "./game-task-scope";
 import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
 
@@ -36,10 +36,6 @@ const classifySubmissionError = (cause: unknown) => {
   return new AutomationRejected({ message, cause });
 };
 
-type ClientIdentity = Pick<GameClient, "gameId"> & {
-  shard: Pick<GameClient["shard"], "chainId" | "worldAddress">;
-};
-
 type Submission<Action> = {
   action: Action;
   result: Promise<unknown>;
@@ -48,7 +44,7 @@ type Submission<Action> = {
 };
 
 type PassObserver<Action> = {
-  client: ClientIdentity;
+  client: Parameters<typeof gameTaskScope>[0];
   signer: string;
   signal: AbortSignal;
   onConfirmed: (action: Action) => void;
@@ -57,8 +53,8 @@ type PassObserver<Action> = {
 type Submit<Action> = (action: Action, execute: (submitted: Action) => Promise<unknown>) => Promise<void>;
 
 const signerSubmissions = new Map<string, Set<Submission<unknown>>>();
-const signerIdentity = (client: ClientIdentity, signer: string) =>
-  `${BigInt(client.shard.chainId)}:${BigInt(client.shard.worldAddress)}:${client.gameId}:${BigInt(signer)}`;
+const signerIdentity = (client: Parameters<typeof gameTaskScope>[0], signer: string) =>
+  `${gameTaskScope(client)}:${BigInt(signer)}`;
 
 /** Each task retains typed action receipts; a new pass reconciles them before it can plan another action. */
 export const createAutomationTask = <Action>() => {
