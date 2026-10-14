@@ -24,18 +24,9 @@ const ENDPOINT_ACCENT_LIFT = new Color(0xffffff);
 const MAX_HIGHLIGHTS = 500;
 
 const tempMatrix = new Matrix4();
-const tempPosition = new Vector3();
 const tempScale = new Vector3();
 const tempColor = new Color();
 const HIGHLIGHT_ROTATION = new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), -Math.PI / 2);
-
-interface InstanceAnimationState {
-  mesh: InstancedMesh;
-  index: number;
-  position: Vector3;
-  targetScale: number;
-  currentScale: number;
-}
 
 interface HighlightRenderLayer {
   mesh: InstancedMesh;
@@ -45,6 +36,29 @@ interface HighlightRenderLayer {
   targetScale: number;
   baseY: number;
 }
+
+/** Which hexes roll in on a draw, and whether the first one flashes as a new selection does. */
+interface HighlightEntry {
+  isEntering: (descriptor: ActionHighlightDescriptor) => boolean;
+  launchGlow: boolean;
+}
+
+const hexKey = (descriptor: ActionHighlightDescriptor): string => `${descriptor.hex.col},${descriptor.hex.row}`;
+
+/** Whether a drawn hex would be drawn the same way: same layers, colour and scale. */
+const looksTheSame = (drawn: ActionHighlightDescriptor | undefined, next: ActionHighlightDescriptor): boolean =>
+  drawn !== undefined &&
+  drawn.actionType === next.actionType &&
+  drawn.kind === next.kind &&
+  drawn.isEndpoint === next.isEndpoint &&
+  drawn.isSharedRoute === next.isSharedRoute;
+
+const isAlreadyDrawn = (
+  descriptors: ActionHighlightDescriptor[],
+  drawn: ReadonlyMap<string, ActionHighlightDescriptor>,
+): boolean =>
+  descriptors.length === drawn.size &&
+  descriptors.every((descriptor) => looksTheSame(drawn.get(hexKey(descriptor)), descriptor));
 
 const createColorForAction = (actionType: ActionType): Color =>
   new Color(resolveHighlightLayerPalette(actionType).routeColor);
@@ -74,8 +88,7 @@ export class HighlightHexManager {
   private hexGeometryPool: HexGeometryPool;
   private highlightTimeline: gsap.core.Timeline | null = null;
   private activeLaunchGlows: Array<{ mesh: Mesh; material: MeshBasicMaterial }> = [];
-  private activeInstances: InstanceAnimationState[] = [];
-  private lastDescriptors: ActionHighlightDescriptor[] = [];
+  private drawnDescriptors: ActionHighlightDescriptor[] = [];
   private readonly rolloutConfig = {
     stepDelay: 0.018,
     entryDuration: 0.18,
@@ -164,106 +177,113 @@ export class HighlightHexManager {
     };
   }
 
+  /**
+   * Draws the given hexes. Hexes already drawn stay where they are and only new ones roll in, so republishing an
+   * unchanged set (a new block, a zoom band) changes nothing on screen.
+   */
   highlightHexes(descriptors: ActionHighlightDescriptor[]) {
-    this.lastDescriptors = descriptors.slice(0, MAX_HIGHLIGHTS);
+    const next = descriptors.slice(0, MAX_HIGHLIGHTS);
+    const drawn = new Map(this.drawnDescriptors.map((descriptor) => [hexKey(descriptor), descriptor]));
+    if (isAlreadyDrawn(next, drawn)) {
+      return;
+    }
+
+    this.drawLayers(next, {
+      isEntering: (descriptor) => !drawn.has(hexKey(descriptor)),
+      launchGlow: drawn.size === 0,
+    });
+  }
+
+  private drawLayers(descriptors: ActionHighlightDescriptor[], entry: HighlightEntry): void {
+    this.drawnDescriptors = descriptors;
     this.highlightTimeline?.kill();
     this.highlightTimeline = null;
     this.cleanupLaunchGlows();
-    this.activeInstances = [];
 
     this.resetLayer(this.routeLayer);
     this.resetLayer(this.endpointLayer);
     this.resetLayer(this.frontierLayer);
 
-    if (this.lastDescriptors.length === 0) {
+    if (descriptors.length === 0) {
       return;
     }
 
     const timeline = gsap.timeline();
-    const routeDescriptors = this.lastDescriptors;
-    const endpointDescriptors = this.lastDescriptors.filter(
+    const endpointDescriptors = descriptors.filter(
       (descriptor) => descriptor.isEndpoint && descriptor.kind !== "frontier",
     );
-    const frontierDescriptors = this.lastDescriptors.filter((descriptor) => descriptor.kind === "frontier");
+    const frontierDescriptors = descriptors.filter((descriptor) => descriptor.kind === "frontier");
 
-    this.populateLayer(
-      this.routeLayer,
-      routeDescriptors,
-      timeline,
-      (descriptor) => this.resolveRouteColor(descriptor),
-      (descriptor) =>
+    const quietEntry = { ...entry, launchGlow: false };
+
+    this.populateLayer(this.routeLayer, descriptors, timeline, entry, {
+      getColor: (descriptor) => this.resolveRouteColor(descriptor),
+      getScale: (descriptor) =>
         descriptor.isEndpoint
           ? this.routeLayer.targetScale + 0.06
           : descriptor.isSharedRoute
             ? this.routeLayer.targetScale - 0.04
             : this.routeLayer.targetScale,
-      true,
-    );
-    this.populateLayer(
-      this.endpointLayer,
-      endpointDescriptors,
-      timeline,
-      (descriptor) => this.resolveEndpointColor(descriptor),
-      () => this.endpointLayer.targetScale,
-      false,
-    );
-    this.populateLayer(
-      this.frontierLayer,
-      frontierDescriptors,
-      timeline,
-      () => FRONTIER_ACCENT_COLOR,
-      () => this.frontierLayer.targetScale,
-      false,
-    );
+    });
+    this.populateLayer(this.endpointLayer, endpointDescriptors, timeline, quietEntry, {
+      getColor: (descriptor) => this.resolveEndpointColor(descriptor),
+      getScale: () => this.endpointLayer.targetScale,
+    });
+    this.populateLayer(this.frontierLayer, frontierDescriptors, timeline, quietEntry, {
+      getColor: () => FRONTIER_ACCENT_COLOR,
+      getScale: () => this.frontierLayer.targetScale,
+    });
 
     this.highlightTimeline = timeline;
   }
 
+  /** Writes a layer's instances: a hex already drawn sits at its full scale, a new one rolls in after the new ones before it. */
   private populateLayer(
     layer: HighlightRenderLayer,
     descriptors: ActionHighlightDescriptor[],
     timeline: gsap.core.Timeline,
-    getColor: (descriptor: ActionHighlightDescriptor) => Color,
-    getScale: (descriptor: ActionHighlightDescriptor) => number,
-    launchGlow: boolean,
+    entry: HighlightEntry,
+    style: {
+      getColor: (descriptor: ActionHighlightDescriptor) => Color;
+      getScale: (descriptor: ActionHighlightDescriptor) => number;
+    },
   ): void {
     const count = Math.min(descriptors.length, MAX_HIGHLIGHTS);
     layer.mesh.count = count;
+    let enteringIndex = 0;
 
     for (let i = 0; i < count; i++) {
       const descriptor = descriptors[i];
       const position = this.space.positionForHex(descriptor.hex);
-      tempPosition.set(position.x, layer.baseY + this.yOffset, position.z);
+      const instancePosition = new Vector3(position.x, layer.baseY + this.yOffset, position.z);
+      const targetScale = style.getScale(descriptor);
 
-      const animState: InstanceAnimationState = {
-        mesh: layer.mesh,
-        index: i,
-        position: tempPosition.clone(),
-        targetScale: getScale(descriptor),
-        currentScale: this.rolloutConfig.initialScale,
-      };
-      this.activeInstances.push(animState);
-
-      this.updateInstanceMatrix(layer.mesh, i, animState.position, this.rolloutConfig.initialScale);
-
-      tempColor.copy(getColor(descriptor));
+      tempColor.copy(style.getColor(descriptor));
       layer.mesh.setColorAt(i, tempColor);
 
-      const startTime = i * this.rolloutConfig.stepDelay;
+      if (!entry.isEntering(descriptor)) {
+        this.updateInstanceMatrix(layer.mesh, i, instancePosition, targetScale);
+        continue;
+      }
+
+      const startTime = enteringIndex * this.rolloutConfig.stepDelay;
+      enteringIndex += 1;
+      const animState = { currentScale: this.rolloutConfig.initialScale };
+      this.updateInstanceMatrix(layer.mesh, i, instancePosition, animState.currentScale);
       timeline.to(
         animState,
         {
-          currentScale: animState.targetScale,
+          currentScale: targetScale,
           duration: this.rolloutConfig.entryDuration,
           ease: this.rolloutConfig.ease,
           onUpdate: () => {
-            this.updateInstanceMatrix(animState.mesh, animState.index, animState.position, animState.currentScale);
+            this.updateInstanceMatrix(layer.mesh, i, instancePosition, animState.currentScale);
           },
         },
         startTime,
       );
 
-      if (launchGlow && i === 0) {
+      if (entry.launchGlow && i === 0) {
         this.triggerLaunchGlow(position, tempColor, timeline, startTime);
       }
     }
@@ -324,8 +344,8 @@ export class HighlightHexManager {
 
     this.cameraView = cameraView;
     this.applyViewTuning();
-    if (this.lastDescriptors.length > 0) {
-      this.highlightHexes(this.lastDescriptors);
+    if (this.drawnDescriptors.length > 0) {
+      this.drawLayers(this.drawnDescriptors, { isEntering: () => false, launchGlow: false });
     }
   }
 
@@ -439,7 +459,5 @@ export class HighlightHexManager {
       layer.material.dispose();
       layer.mesh.dispose();
     });
-
-    this.activeInstances = [];
   }
 }

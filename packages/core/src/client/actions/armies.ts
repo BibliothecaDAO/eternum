@@ -10,7 +10,7 @@ import {
 } from "@bibliothecadao/types";
 import type { NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
 
-import { ArmyActionManager } from "../../managers/army-action-manager";
+import { ArmyActionManager, type ArmyReach } from "../../managers/army-action-manager";
 import { ArmyManager } from "../../managers/army-manager";
 import { configManager } from "../../managers/config-manager";
 import { StructureActionManager } from "../../managers/structure-action-manager";
@@ -31,6 +31,11 @@ export interface ArmyPathsInput {
   currentDefaultTick: number;
   /** Whose armies count as friendly; a spectator plans with no player. */
   playerAddress: ContractAddress;
+}
+
+interface ArmyReachInput {
+  explorerId: ID;
+  currentDefaultTick: number;
 }
 
 export interface StructurePathsInput {
@@ -88,6 +93,10 @@ export const findArmyPaths = (client: ActionClient, input: ArmyPathsInput): Acti
     input.currentDefaultTick,
     input.playerAddress,
   );
+
+/** What bounds an explorer's orders at this tick: armyPaths offers the same orders while it and the map hold. */
+export const findArmyReach = (client: ActionClient, input: ArmyReachInput): ArmyReach =>
+  armyActionManager(client, input.explorerId).reach(input.currentDefaultTick);
 
 export const findStructurePaths = (client: ActionClient, input: StructurePathsInput): ActionPaths => {
   const { store } = client.setup;
