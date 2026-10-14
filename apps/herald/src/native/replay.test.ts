@@ -27,7 +27,6 @@ function wireHistory() {
   launched.transactions[0]!.transaction.calldata = preset.calldata;
   return [launched, block(11, [setFixture.raw]), block(12, [deleted.raw]), block(13, [setFixture.raw])];
 }
-const metrics = { decoded_events: 1, event_messages: 0, pages: 1, store_events: 1, retained_rows: 1 };
 
 describe("native confirmed replay and transaction delivery", () => {
   it("rebuilds native event fixtures through deletes and a checkpoint reconnect", async () => {
@@ -57,7 +56,6 @@ describe("native confirmed replay and transaction delivery", () => {
           directoryRevision: () => world.directoryRevision(),
           snapshot: (game, block, models) => world.snapshot(game, block, models),
         },
-        metrics,
         undecodableEventCount: () => 0,
       });
     for (const path of ["/games", "/games/1/leaderboard"]) {
@@ -319,7 +317,6 @@ it("halts a live confirmed fold atomically while leaving the process available",
       directoryRevision: () => fold.directoryRevision(),
       snapshot: (game, block, models) => fold.snapshot(game, block, models),
     },
-    metrics,
     undecodableEventCount: () => native.receiptFailures,
     ingestionFailure: () =>
       native.halted

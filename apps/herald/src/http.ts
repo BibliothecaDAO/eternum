@@ -11,7 +11,7 @@ import {
 } from "./native/read-models";
 import { isCheckGame, type DirectoryInput, type GameDirectorySource } from "./game-directory";
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
-import type { GameSnapshot, ReplayMetrics } from "./types";
+import type { GameSnapshot } from "./types";
 import type { HistoryQuery, HistoryStore } from "./history-store";
 import type { ShardManifest } from "@bibliothecadao/eternum/game-sync";
 
@@ -42,7 +42,6 @@ interface HeraldHttpState {
   chainTimestamp: () => number;
   decodedModelCount: number;
   fold: SnapshotSource;
-  metrics: ReplayMetrics;
   history?: Pick<
     HistoryStore,
     "queryStoryCursor" | "queryEvents" | "reviewSnapshot" | "activity" | "frontierHistory" | "frontierDayRanks"
@@ -139,7 +138,6 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
           ...(failure ? { ingestion_failure: failure } : {}),
           confirmed_block: state.confirmedBlock(),
           decoded_models: state.decodedModelCount,
-          metrics: state.metrics,
           service: "herald",
           success: !failure,
           undecodable_events: state.undecodableEventCount(),

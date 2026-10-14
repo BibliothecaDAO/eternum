@@ -153,11 +153,3 @@ export interface GameSnapshot {
   confirmed_block: number;
   models: SnapshotModel[];
 }
-
-export interface ReplayMetrics {
-  decoded_events: number;
-  retained_rows: number;
-  store_events: number;
-  event_messages: number;
-  pages: number;
-}

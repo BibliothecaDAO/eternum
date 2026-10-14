@@ -3,15 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { buildNativeDirectory, buildNativeLeaderboard } from "./native/read-models";
 import { createHeraldRequestHandler } from "./http";
 import { shardManifest } from "./native/fixtures";
-import type { GameSnapshot, ReplayMetrics } from "./types";
-
-const metrics: ReplayMetrics = {
-  decoded_events: 10,
-  event_messages: 1,
-  pages: 1,
-  retained_rows: 2,
-  store_events: 9,
-};
+import type { GameSnapshot } from "./types";
 
 const snapshot: GameSnapshot = {
   confirmed_block: 12,
@@ -71,7 +63,6 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
     },
     snapshot: () => snapshot,
   },
-  metrics,
   history: {
     frontierDayRanks: async () => null,
     frontierHistory: async () => [],
@@ -127,6 +118,8 @@ describe("herald HTTP", () => {
       success: true,
       undecodable_events: 2,
     });
+    // Startup replay counts belong to the herald_ready log line; health reports only live facts.
+    expect(health).not.toHaveProperty("metrics");
 
     const response = await handler(new Request("http://herald/games/7/snapshot?models=Structure"));
     expect(response.status).toBe(200);
@@ -182,7 +175,6 @@ it("passes a battle-only history filter to the store before pagination", async (
     confirmedBlock: () => 12,
     chainTimestamp: () => 100,
     decodedModelCount: 0,
-    metrics,
     fold: { ...httpState.fold, modelRows: () => [], snapshot: () => snapshot },
     undecodableEventCount: () => 0,
     history: {
