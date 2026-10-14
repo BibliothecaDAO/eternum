@@ -89,7 +89,7 @@ export const TooltipContent = memo(
     const actionLabel =
       actionType && ACTION_STATE_LABELS[actionType as ActionType]
         ? ACTION_STATE_LABELS[actionType as ActionType]
-        : actionType?.toUpperCase();
+        : actionType;
 
     return (
       <>

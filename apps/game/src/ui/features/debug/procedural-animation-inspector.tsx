@@ -479,10 +479,10 @@ function drawContactSheetViewHeaders(
 }
 
 function resolveShortViewLabel(viewId: ProceduralAnimationViewCapture["id"]): string {
-  if (viewId === "right-profile") return "RIGHT PROFILE";
-  if (viewId === "left-profile") return "LEFT PROFILE";
-  if (viewId === "elevated-three-quarter") return "ELEVATED 3/4";
-  if (viewId === "front-three-quarter") return "FRONT 3/4";
+  if (viewId === "right-profile") return "Right profile";
+  if (viewId === "left-profile") return "Left profile";
+  if (viewId === "elevated-three-quarter") return "Elevated 3/4";
+  if (viewId === "front-three-quarter") return "Front 3/4";
   return viewId.toUpperCase();
 }
 

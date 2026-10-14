@@ -32,7 +32,7 @@ const MilitaryDeployHeader = ({ focusedRealmId }: { focusedRealmId: ID }) => {
   return (
     <header className="flex items-center gap-2 border-b border-gold/15 px-5 py-3">
       <Swords className="h-4 w-4 text-gold" />
-      <span className={cn(HUD_LABEL_BRIGHT, "text-gold")}>{(detail.structureName ?? "Structure").toUpperCase()}</span>
+      <span className={cn(HUD_LABEL_BRIGHT, "text-gold")}>{detail.structureName ?? "Structure"}</span>
       <span className={cn(HUD_LABEL_BRIGHT, "text-kit-muted")}>· Level {detail.structure.base.level}</span>
     </header>
   );

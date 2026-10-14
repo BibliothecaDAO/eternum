@@ -34,7 +34,7 @@ const getFormattedRaidTweet = ({
   const resourcesText = stolenResources
     .map((resource) => {
       const resourceName = resources.find((r) => r.id === resource.resourceId)?.trait || "";
-      return `${resource.amount} ${resourceName.toUpperCase()}`;
+      return `${resource.amount} ${resourceName}`;
     })
     .join(", ");
 

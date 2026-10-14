@@ -34,8 +34,16 @@ const NO_UNREADABLE_TYPE = {
     "Readable type only: no uppercase, italic or tracking-*, nothing under 14 px (text-sm and up), no text-gold below /70 (use text-kit-muted).",
 };
 
+// The same rule for words written in capitals: a phrase is set in sentence case where it is written. A word of four
+// capitals or more marks it, so acronyms ("CPU P95", "AMM") pass.
+const CAPITALS_PHRASE = "/^(?=.*[A-Z]{4})[A-Z][A-Z'’]+( [A-Z0-9][A-Z0-9'’/-]*)+[.!]?$/";
+const NO_CAPITALS_PHRASE = {
+  selector: `Literal[value=${CAPITALS_PHRASE}], TemplateElement[value.raw=${CAPITALS_PHRASE}]`,
+  message: "Readable type only: write the phrase in sentence case, not in capitals.",
+};
+
 // Every file keeps these; later blocks add to them.
-const BASE_RULES = [NO_MUTATING_SORT, NO_RETIRED_TOKENS, NO_NAMED_FONT, NO_UNREADABLE_TYPE];
+const BASE_RULES = [NO_MUTATING_SORT, NO_RETIRED_TOKENS, NO_NAMED_FONT, NO_UNREADABLE_TYPE, NO_CAPITALS_PHRASE];
 
 // A colour written into a shell component is a second palette; the shell's colours come from src/tokens.ts.
 const COLOUR_LITERAL = "/#[0-9a-fA-F]{3,8}(?![0-9a-zA-Z])|rgba?\\(/";
@@ -109,7 +117,7 @@ export default tseslint.config(
     // The token file is where the faces are named.
     files: ["src/tokens.ts"],
     rules: {
-      "no-restricted-syntax": ["error", NO_MUTATING_SORT, NO_RETIRED_TOKENS, NO_UNREADABLE_TYPE],
+      "no-restricted-syntax": ["error", NO_MUTATING_SORT, NO_RETIRED_TOKENS, NO_UNREADABLE_TYPE, NO_CAPITALS_PHRASE],
     },
   },
   {

@@ -16,12 +16,11 @@ export const formatBlitzRankParts = (rank: number | null | undefined): { value: 
   if (!rank || rank < 1) {
     return { value: "--", suffix: "" };
   }
-  const ordinal = formatOrdinal(rank).toUpperCase();
-  const match = ordinal.match(/^(\d+)(ST|ND|RD|TH)$/);
+  const match = formatOrdinal(rank).match(/^(\d+)(st|nd|rd|th)$/i);
   if (!match) {
     return { value: `${rank}`, suffix: "" };
   }
-  return { value: match[1], suffix: match[2] };
+  return { value: match[1], suffix: match[2].toLowerCase() };
 };
 
 /** The share cards draw in the app's own faces, served by the app (no font service), so an exported image matches the game. */

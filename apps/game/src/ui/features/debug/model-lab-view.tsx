@@ -343,7 +343,7 @@ export function ModelLabView() {
             <h2>{title}</h2>
           </div>
           <span className="ml-status">
-            {busy ? "Loading selection" : isStudy ? "SAME SIZE · 1 HEX" : "CURRENT ASSETS"}
+            {busy ? "Loading selection" : isStudy ? "Same size · 1 hex" : "Current assets"}
           </span>
         </div>
         <div className="ml-toolbar">

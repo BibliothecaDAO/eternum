@@ -32,10 +32,10 @@ import { getPlayerDisplayName } from "@/hooks/use-player-profile";
 const NEWSWORTHY_CAPTURES = new Set<StructureType>([StructureType.Realm, StructureType.Hyperstructure]);
 
 const resolveCaptureTitle = (isHyperstructure: boolean, playerTook: boolean, playerLost: boolean) => {
-  if (isHyperstructure) return "HYPERSTRUCTURE SEIZED";
-  if (playerTook) return "REALM CAPTURED";
-  if (playerLost) return "REALM LOST";
-  return "REALM FALLS";
+  if (isHyperstructure) return "Hyperstructure seized";
+  if (playerTook) return "Realm captured";
+  if (playerLost) return "Realm lost";
+  return "Realm falls";
 };
 
 export function NewsHeadlineBridge() {
@@ -143,7 +143,7 @@ export function NewsHeadlineBridge() {
       id: `game-start:${startAt}`,
       type: "game-start",
       icon: "game-start",
-      title: "THE GAME HAS BEGUN",
+      title: "The game has begun",
       description: "The world is open. Let the campaign begin.",
       timestamp: Date.now(),
     });
@@ -165,7 +165,7 @@ export function NewsHeadlineBridge() {
           id: `t3-building:${structureId}`,
           type: "t3-building",
           icon: "t3-building",
-          title: "TIER 3 BUILDING RAISED",
+          title: "Tier 3 building raised",
           description: `${realmName} has raised a Tier 3 ${buildingName}`,
           location: structure ? { x: structure.coordX, y: structure.coordY, entityId: structureId } : undefined,
           timestamp: Date.now(),
