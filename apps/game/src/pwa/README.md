@@ -12,6 +12,16 @@ The build stamps the client release into the worker. The update prompt asks a wa
 appears once per worker, only when that release differs from the running page's: pages always load current HTML, so a
 page opened after a deploy already runs the new client while the previous worker still controls it.
 
+Release probes and notification requests use scoped MessageChannels: success, invalid replies, send failures, timeout
+and cancellation close both ports. An explicit `null` release identifies a legacy worker; a silent worker times out and
+can be queried again on focus. Accepting an offer activates that specific worker. Unmounting stops probes, activation
+listeners and foreground-lease refreshes; it does not unregister the installed worker or reload other tabs.
+
+Run `pnpm --dir apps/game test src/pwa` for update, cancellation, offline navigation, lease and notification-delivery
+checks, and `pnpm --dir packages/notifications test` for payload contracts. Validate installation with a production
+build and preview. Measure `dist/sw.js` separately from page assets: the worker has its own bundled validator and Effect
+runtime, so page chunk totals do not include its cost.
+
 ## Cache policy
 
 `public/_headers` asks browsers to revalidate the worker, manifest and offline document. The custom domain also passes

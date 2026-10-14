@@ -1,3 +1,5 @@
+import * as Schema from "effect/Schema";
+import { decodeNotification, notificationRecord, pushDeviceIdSchema, pushOwnerSchema } from "./validation";
 import { parseNotificationPayload, type LocalNotificationPayload } from "./delivery";
 
 export interface WebPushSubscription {
@@ -23,20 +25,45 @@ export interface PushEnvelope {
   notification: LocalNotificationPayload;
 }
 
-export function isPushDeviceId(value: unknown): value is string {
-  return (
-    typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value)
-  );
-}
+const registrationSchema = Schema.Struct({
+  owner: pushOwnerSchema,
+  id: pushDeviceIdSchema,
+  token: pushDeviceIdSchema,
+  gameAlerts: Schema.optional(Schema.Boolean),
+  directMessages: Schema.optional(Schema.Boolean),
+  subscription: Schema.optional(Schema.Unknown),
+});
+const endpointSchema = Schema.String.check(Schema.isMaxLength(2048));
+const providerSchema = Schema.URL.check(
+  Schema.makeFilter(
+    (url) =>
+      (["fcm.googleapis.com", "updates.push.services.mozilla.com", "web.push.apple.com"].includes(url.hostname) ||
+        /^[a-z0-9-]+\.notify\.windows\.com$/.test(url.hostname)) &&
+      url.protocol === "https:" &&
+      !url.port &&
+      !url.username &&
+      !url.password &&
+      !url.hash,
+  ),
+);
+const keysSchema = Schema.Struct({
+  p256dh: Schema.String.check(Schema.isPattern(/^[A-Za-z0-9_-]{87}$/)),
+  auth: Schema.String.check(Schema.isPattern(/^[A-Za-z0-9_-]{22}$/)),
+});
+const envelopeSchema = Schema.Struct({
+  version: Schema.Literal(1),
+  subscriptionId: pushDeviceIdSchema,
+  kind: Schema.optional(Schema.Unknown),
+  notification: Schema.optional(Schema.Unknown),
+});
+const kindSchema = Schema.optional(Schema.Literals(["test", "game", "direct-message"]));
+
+export const isPushDeviceId = Schema.is(pushDeviceIdSchema);
+export const isPushOwner = Schema.is(pushOwnerSchema);
 
 export function parsePushRegistration(value: unknown): PushRegistration {
-  const input = record(value);
-  if (!isPushOwner(input.owner) || !isPushDeviceId(input.id) || !isPushDeviceId(input.token))
-    throw new Error("invalid_push_registration");
-  if (input.gameAlerts !== undefined && typeof input.gameAlerts !== "boolean")
-    throw new Error("invalid_push_registration");
-  if (input.directMessages !== undefined && typeof input.directMessages !== "boolean")
-    throw new Error("invalid_push_registration");
+  const record = decodeNotification(notificationRecord, value, "invalid_push_input");
+  const input = decodeNotification(registrationSchema, record, "invalid_push_registration", "ignore");
   return {
     ...(input.directMessages === undefined ? {} : { directMessages: input.directMessages }),
     ...(input.gameAlerts === undefined ? {} : { gameAlerts: input.gameAlerts }),
@@ -47,49 +74,24 @@ export function parsePushRegistration(value: unknown): PushRegistration {
   };
 }
 
-export function isPushOwner(value: unknown): value is string {
-  return typeof value === "string" && /^0x[0-9a-f]{1,64}$/.test(value);
-}
-
 export function parseWebPushSubscription(value: unknown): WebPushSubscription {
-  const input = record(value);
-  if (typeof input.endpoint !== "string" || input.endpoint.length > 2048) throw new Error("invalid_push_endpoint");
-  const url = new URL(input.endpoint);
-  // Subscription URLs are supplied by a browser but remain untrusted server egress destinations.
-  const provider =
-    ["fcm.googleapis.com", "updates.push.services.mozilla.com", "web.push.apple.com"].includes(url.hostname) ||
-    /^[a-z0-9-]+\.notify\.windows\.com$/.test(url.hostname);
-  if (!provider || url.protocol !== "https:" || url.port || url.username || url.password || url.hash)
-    throw new Error("unsupported_push_provider");
-  const keys = record(input.keys);
-  if (
-    typeof keys.p256dh !== "string" ||
-    !/^[A-Za-z0-9_-]{87}$/.test(keys.p256dh) ||
-    typeof keys.auth !== "string" ||
-    !/^[A-Za-z0-9_-]{22}$/.test(keys.auth)
-  )
-    throw new Error("invalid_push_keys");
-  return { endpoint: url.href, keys: { p256dh: keys.p256dh, auth: keys.auth } };
+  const input = decodeNotification(notificationRecord, value, "invalid_push_input");
+  const endpoint = decodeNotification(endpointSchema, input.endpoint, "invalid_push_endpoint");
+  // Subscription URLs remain untrusted server egress destinations.
+  const url = decodeNotification(providerSchema, new URL(endpoint), "unsupported_push_provider");
+  const record = decodeNotification(notificationRecord, input.keys, "invalid_push_input");
+  const keys = decodeNotification(keysSchema, record, "invalid_push_keys", "ignore");
+  return { endpoint: url.href, keys };
 }
 
 export function parsePushEnvelope(value: unknown, now: number): PushEnvelope {
-  const input = record(value);
-  if (input.version !== 1 || !isPushDeviceId(input.subscriptionId)) throw new Error("invalid_push_envelope");
-  if (input.kind !== undefined && !isPushKind(input.kind)) throw new Error("invalid_push_kind");
-  const notification = parseNotificationPayload(input.notification, now);
+  const record = decodeNotification(notificationRecord, value, "invalid_push_input");
+  const input = decodeNotification(envelopeSchema, record, "invalid_push_envelope", "ignore");
+  const kind = decodeNotification(kindSchema, input.kind, "invalid_push_kind");
   return {
     version: 1,
-    ...(isPushKind(input.kind) ? { kind: input.kind } : {}),
+    ...(kind === undefined ? {} : { kind }),
     subscriptionId: input.subscriptionId,
-    notification,
+    notification: parseNotificationPayload(input.notification, now),
   };
-}
-
-function isPushKind(value: unknown): value is NonNullable<PushEnvelope["kind"]> {
-  return value === "test" || value === "game" || value === "direct-message";
-}
-
-function record(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("invalid_push_input");
-  return value as Record<string, unknown>;
 }

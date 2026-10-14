@@ -1,4 +1,4 @@
-export interface NotificationDevice {
+interface NotificationDevice {
   owner: string;
   token: string;
   enabledAt: number;

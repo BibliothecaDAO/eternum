@@ -4,6 +4,7 @@ import {
   parseNotificationPayload,
   parsePushEnvelope,
   isPushDeviceId,
+  isPushOwner,
 } from "@bibliothecadao/notifications";
 import {
   configureAutomaticPush,
@@ -68,7 +69,7 @@ async function handleNotificationMessage(
     if (!client || new URL(client.url).origin !== worker.location.origin)
       throw new Error("Invalid notification source");
     const owner = event.data.owner;
-    if (typeof owner !== "string" || !/^0x[\da-f]{1,64}$/.test(owner)) throw new Error("Invalid notification owner");
+    if (!isPushOwner(owner)) throw new Error("Invalid notification owner");
     const value = await runNotificationCommand(worker, client, event.data);
     event.ports[0]?.postMessage({ ok: true, value });
   } catch (error) {

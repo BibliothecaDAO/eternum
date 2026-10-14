@@ -1,5 +1,6 @@
 import { parseNotificationPayload, type LocalNotificationPayload } from "./delivery";
-import { isPushOwner } from "./push";
+import * as Schema from "effect/Schema";
+import { decodeNotification, notificationText, pushOwnerSchema } from "./validation";
 
 export interface DirectMessageNotificationInput {
   messageId: string;
@@ -29,24 +30,14 @@ export function buildDirectMessageNotification(value: unknown, now: number): Loc
   );
 }
 
-export function parseDirectMessageNotificationInput(value: unknown): DirectMessageNotificationInput {
-  if (!value || typeof value !== "object" || Array.isArray(value))
-    throw new Error("invalid_direct_message_notification");
-  const input = value as Record<string, unknown>;
-  const fields = ["messageId", "threadId", "recipientOwner", "senderDisplayName", "createdAt"];
-  if (
-    Object.keys(input).some((key) => !fields.includes(key)) ||
-    !boundedText(input.messageId, 100) ||
-    !boundedText(input.threadId, 200) ||
-    !isPushOwner(input.recipientOwner) ||
-    (input.senderDisplayName !== undefined && !boundedText(input.senderDisplayName, 64)) ||
-    !Number.isSafeInteger(input.createdAt) ||
-    (input.createdAt as number) < 0
-  )
-    throw new Error("invalid_direct_message_notification");
-  return input as unknown as DirectMessageNotificationInput;
-}
+const directMessageInputSchema = Schema.Struct({
+  messageId: notificationText(100),
+  threadId: notificationText(200),
+  recipientOwner: pushOwnerSchema,
+  senderDisplayName: Schema.optional(notificationText(64)),
+  createdAt: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+});
 
-function boundedText(value: unknown, max: number): value is string {
-  return typeof value === "string" && value.length > 0 && value.length <= max && !/[\u0000-\u001f\u007f]/.test(value);
+export function parseDirectMessageNotificationInput(value: unknown): DirectMessageNotificationInput {
+  return decodeNotification(directMessageInputSchema, value, "invalid_direct_message_notification");
 }

@@ -1,3 +1,6 @@
+import * as Schema from "effect/Schema";
+import { decodeNotification } from "./validation";
+
 export const NOTIFICATION_LEVELS = ["off", "important", "standard", "all"] as const;
 export type NotificationLevel = (typeof NOTIFICATION_LEVELS)[number];
 
@@ -16,28 +19,21 @@ export interface NotificationPreferences {
   revision: number;
 }
 
-export function isNotificationLevel(value: unknown): value is NotificationLevel {
-  return NOTIFICATION_LEVELS.some((level) => level === value);
-}
+const levelSchema = Schema.Literals(NOTIFICATION_LEVELS);
+const preferenceChangeSchema = Schema.Struct({
+  level: levelSchema,
+  revision: Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: 2147483647 })),
+});
+const preferencesSchema = Schema.Struct({
+  owner: Schema.String.check(Schema.isMinLength(1)),
+  ...preferenceChangeSchema.fields,
+});
+export const isNotificationLevel = Schema.is(levelSchema);
 
 export function parseNotificationPreferenceChange(value: unknown): { level: NotificationLevel; revision: number } {
-  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("invalid_preferences");
-  const input = value as Record<string, unknown>;
-  if (
-    Object.keys(input).some((key) => key !== "level" && key !== "revision") ||
-    !isNotificationLevel(input.level) ||
-    !Number.isSafeInteger(input.revision) ||
-    (input.revision as number) < 0 ||
-    (input.revision as number) > 2147483647
-  ) {
-    throw new Error("invalid_preferences");
-  }
-  return { level: input.level, revision: input.revision as number };
+  return decodeNotification(preferenceChangeSchema, value, "invalid_preferences");
 }
 
 export function parseNotificationPreferences(value: unknown): NotificationPreferences {
-  if (!value || typeof value !== "object") throw new Error("invalid_preferences");
-  const { owner, ...change } = value as Record<string, unknown>;
-  if (typeof owner !== "string" || !owner) throw new Error("invalid_preferences");
-  return { owner, ...parseNotificationPreferenceChange(change) };
+  return decodeNotification(preferencesSchema, value, "invalid_preferences");
 }
