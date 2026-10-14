@@ -8,7 +8,7 @@ import {
   resolvePostProcessingEffectPlan,
   shouldEnablePostProcessingConfig,
 } from "./game-renderer-policy";
-import { createRendererBackendCapabilities } from "./renderer-backend-v2";
+import { createRendererBackendCapabilities } from "./renderer-backend";
 
 describe("resolveLabelRenderIntervalMs", () => {
   it("floors the close-view cadence at one frame on desktop", () => {

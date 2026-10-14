@@ -17,7 +17,7 @@ import {
   type RendererPostProcessController,
   type RendererPostProcessPlan,
   type RendererPostProcessRuntime,
-} from "./renderer-backend-v2";
+} from "./renderer-backend";
 import { renderRendererOverlayPasses } from "./renderer-overlay-passes";
 
 interface WebGPUScenePass {

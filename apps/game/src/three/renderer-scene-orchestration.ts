@@ -22,7 +22,7 @@ interface PrepareGameRendererScenesInput {
   game: SetupResult;
   effectsBridgeRuntime: Pick<
     RendererEffectsBridgeRuntime,
-    "applyEnvironment" | "applyRenderVisualProfile" | "setupPostProcessingEffects"
+    "reportEnvironmentSupport" | "applyRenderVisualProfile" | "setupPostProcessingEffects"
   >;
   inputSurface: HTMLElement;
   compilePipelines?: PipelineCompiler;

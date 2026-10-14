@@ -7,17 +7,12 @@ import {
   snapshotRendererDiagnostics,
 } from "./renderer-diagnostics";
 import {
-  applyRendererBackendEnvironment,
-  applyRendererBackendPostProcessPlan,
-  applyRendererBackendVisuals,
-} from "./renderer-backend-compat";
-import {
   resolveCapabilityAwareRendererEffectPlan,
   resolveRendererEnvironmentPolicy,
   resolvePostProcessingEffectPlan,
   shouldEnablePostProcessingConfig,
 } from "./game-renderer-policy";
-import type { RendererBackendV2, RendererPostProcessController, RendererPostProcessPlan } from "./renderer-backend-v2";
+import type { RendererBackend, RendererPostProcessController, RendererPostProcessPlan } from "./renderer-backend";
 import type { RendererSurfaceLike } from "./renderer-backend";
 import type { RenderVisualProfile } from "./render-profile";
 import { resolveWebgpuPostprocessPolicy } from "./webgpu-postprocess-policy";
@@ -44,7 +39,7 @@ interface RendererEffectsScenes {
 }
 
 interface CreateRendererEffectsRuntimeInput {
-  backend: RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
+  backend: RendererBackend & { renderer: RendererSurfaceLike };
   createFolder: (name: string) => TrackableFolderLike;
   isGraphicsDevEnabled: boolean;
   resolvePixelRatio?: (pixelRatio: number) => number;
@@ -68,7 +63,7 @@ type WeatherPostProcessingValues = {
 };
 
 export interface RendererEffectsRuntime {
-  applyEnvironment(): Promise<void>;
+  reportEnvironmentSupport(): void;
   applyRenderVisualProfile(features: RenderVisualProfile): void;
   hasPostProcessing(): boolean;
   resolveRendererToneMappingMode(mode: RendererToneMappingMode): RendererPostProcessPlan["toneMapping"]["mode"];
@@ -111,22 +106,13 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
     return Boolean(this.postProcessingConfig);
   }
 
-  public async applyEnvironment(): Promise<void> {
+  public reportEnvironmentSupport(): void {
     const environmentPolicy = resolveRendererEnvironmentPolicy({
       capabilities: this.input.backend.capabilities,
       intensity: DEFAULT_ENVIRONMENT_INTENSITY,
     });
 
     replaceRendererDiagnosticDegradations(["environmentIbl"], environmentPolicy.degradations);
-    if (!environmentPolicy.shouldApplyEnvironment) {
-      return;
-    }
-
-    await applyRendererBackendEnvironment(this.input.backend, {
-      hexceptionScene: this.input.scenes.hexceptionScene as never,
-      intensity: environmentPolicy.intensity,
-      worldmapScene: this.input.scenes.worldmapScene as never,
-    });
   }
 
   public applyRenderVisualProfile(features: RenderVisualProfile): void {
@@ -135,7 +121,7 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
       Math.min(devicePixelRatio, features.pixelRatio),
     );
 
-    applyRendererBackendVisuals(this.input.backend, {
+    this.input.backend.applyRenderVisuals({
       height: window.innerHeight,
       pixelRatio: resolvedPixelRatio,
       shadows: features.shadows,
@@ -357,7 +343,7 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
       },
     });
 
-    this.postProcessController = applyRendererBackendPostProcessPlan(this.input.backend, rendererPlan.plan);
+    this.postProcessController = this.input.backend.applyPostProcessPlan(rendererPlan.plan);
     replaceRendererDiagnosticDegradations(
       ["colorGrade", "bloom", "vignette", "chromaticAberration"],
       rendererPlan.degradations,

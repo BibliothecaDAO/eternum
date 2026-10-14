@@ -1,4 +1,4 @@
-import type { RendererBackendCapabilities, RendererCapabilityFeature, RendererActiveMode } from "./renderer-backend-v2";
+import type { RendererBackendCapabilities, RendererCapabilityFeature, RendererActiveMode } from "./renderer-backend";
 
 export interface WebgpuPostprocessPolicy {
   bloomRouting: "deferred" | "mrt-emissive" | "none";

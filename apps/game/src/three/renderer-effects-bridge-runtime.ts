@@ -13,7 +13,7 @@ interface CreateRendererEffectsBridgeRuntimeInput {
 }
 
 export interface RendererEffectsBridgeRuntime {
-  applyEnvironment(): void;
+  reportEnvironmentSupport(): void;
   applyRenderVisualProfile(features: RenderVisualProfile): void;
   dispose(): void;
   setupPostProcessingEffects(): void;
@@ -35,8 +35,8 @@ class GameRendererEffectsBridgeRuntime implements RendererEffectsBridgeRuntime {
     this.getOrCreateEffectsRuntime().setupPostProcessingEffects(this.input.resolveRenderVisualProfile());
   }
 
-  public applyEnvironment(): void {
-    void this.getOrCreateEffectsRuntime().applyEnvironment();
+  public reportEnvironmentSupport(): void {
+    this.getOrCreateEffectsRuntime().reportEnvironmentSupport();
   }
 
   public applyRenderVisualProfile(features: RenderVisualProfile): void {

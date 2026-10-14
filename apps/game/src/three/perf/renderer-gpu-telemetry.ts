@@ -1,4 +1,4 @@
-import type { RendererActiveMode } from "../renderer-backend-v2";
+import type { RendererActiveMode } from "../renderer-backend";
 
 interface RendererGpuTelemetrySnapshot {
   activeMode: RendererActiveMode | null;

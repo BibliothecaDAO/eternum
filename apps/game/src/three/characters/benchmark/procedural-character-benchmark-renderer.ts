@@ -285,7 +285,7 @@ class ProceduralCharacterBenchmarkRuntime {
       } else {
         worldGymEnvironment?.dispose();
         unitRuntime.dispose();
-        rendererRuntime.backend.dispose?.();
+        rendererRuntime.backend.dispose();
       }
       throw error;
     }
@@ -696,7 +696,7 @@ class ProceduralCharacterBenchmarkRuntime {
   }
 
   private renderFrame(): void {
-    this.backend.renderFrame?.({
+    this.backend.renderFrame({
       mainCamera: this.camera,
       mainScene: this.scene,
       sceneName:
@@ -915,7 +915,7 @@ class ProceduralCharacterBenchmarkRuntime {
   }
 
   private applyRenderVisuals(width = this.viewportWidth, height = this.viewportHeight): void {
-    this.backend.applyRenderVisuals?.({
+    this.backend.applyRenderVisuals({
       height: Math.max(1, height),
       pixelRatio: Math.min(window.devicePixelRatio || 1, this.config.pixelRatio),
       shadows: this.config.shadows,
@@ -938,7 +938,7 @@ class ProceduralCharacterBenchmarkRuntime {
     this.gpuTimer.dispose();
     this.worldGymEnvironment?.dispose();
     disposeBenchmarkStage(this.stage);
-    this.backend.dispose?.();
+    this.backend.dispose();
     this.renderer.domElement.remove();
   }
 }

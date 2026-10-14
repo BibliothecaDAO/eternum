@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createWebGPUPostProcessRuntime } from "./webgpu-postprocess-runtime";
 import { createRenderableOverlayScene } from "./renderer-overlay-passes.test-fixture";
-import type { RendererPostProcessPlan } from "./renderer-backend-v2";
+import type { RendererPostProcessPlan } from "./renderer-backend";
 
 function createPlan(overrides: Partial<RendererPostProcessPlan> = {}): RendererPostProcessPlan {
   return {

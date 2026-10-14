@@ -1,6 +1,5 @@
-import { disposeRendererBackend } from "./renderer-backend-compat";
 import type { RendererSurfaceLike } from "./renderer-backend";
-import type { RendererBackendV2 } from "./renderer-backend-v2";
+import type { RendererBackend } from "./renderer-backend";
 import type { RendererInteractionRuntime } from "./renderer-interaction-runtime";
 import type { RendererLabelRuntime } from "./renderer-label-runtime";
 import type { RendererMonitoringRuntime } from "./renderer-monitoring-runtime";
@@ -15,7 +14,7 @@ type Destroyable = {
 };
 
 interface DestroyRendererRuntimeInput {
-  backend?: RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
+  backend?: RendererBackend & { renderer: RendererSurfaceLike };
   cleanupIntervals: NodeJS.Timeout[];
   controls?: { dispose(): void };
   effectsBridgeRuntime?: Pick<RendererEffectsBridgeRuntime, "dispose">;
@@ -60,14 +59,12 @@ function detachRendererSurface(renderer?: RendererSurfaceLike): void {
   }
 }
 
-function disposeRendererResources(
-  backend?: RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void },
-): void {
+function disposeRendererResources(backend?: RendererBackend & { renderer: RendererSurfaceLike }): void {
   if (!backend) {
     return;
   }
 
-  disposeRendererBackend(backend);
+  backend.dispose();
 }
 
 function destroyRendererScenes(scenes: DestroyRendererRuntimeInput["scenes"]): void {

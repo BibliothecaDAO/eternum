@@ -2,7 +2,7 @@ import * as Sentry from "@sentry/react";
 import { formatReadableErrorForConsole } from "@/utils/error-message";
 import { appendConsoleFields } from "@/utils/console-message";
 
-import type { RendererActiveMode, RendererDeviceLostEvent } from "./renderer-backend-v2";
+import type { RendererActiveMode, RendererDeviceLostEvent } from "./renderer-backend";
 import { RENDERER_FRAME_FAILURE_REPORT_INTERVAL } from "./renderer-animation-runtime";
 
 interface RendererFailureContext {

@@ -285,7 +285,7 @@ class ProceduralCharacterGymRuntime {
       return new ProceduralCharacterGymRuntime(input, rendererRuntime, unitRuntime);
     } catch (error) {
       unitRuntime.dispose();
-      rendererRuntime.backend.dispose?.();
+      rendererRuntime.backend.dispose();
       throw error;
     }
   }
@@ -837,7 +837,7 @@ class ProceduralCharacterGymRuntime {
     const rect = container.getBoundingClientRect();
     const width = Math.max(1, Math.floor(rect.width));
     const height = Math.max(1, Math.floor(rect.height));
-    this.backend.applyRenderVisuals?.({
+    this.backend.applyRenderVisuals({
       height,
       pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
       shadows: true,
@@ -865,7 +865,7 @@ class ProceduralCharacterGymRuntime {
     this.movementEffects.dispose();
     this.unitRuntime.dispose();
     disposeStage(this.stage);
-    this.backend.dispose?.();
+    this.backend.dispose();
     this.renderer.domElement.remove();
   }
 
@@ -883,7 +883,7 @@ class ProceduralCharacterGymRuntime {
   }
 
   private renderFrame(): void {
-    this.backend.renderFrame?.({
+    this.backend.renderFrame({
       mainCamera: this.camera,
       mainScene: this.scene,
       sceneName: "procedural-character-gym",
