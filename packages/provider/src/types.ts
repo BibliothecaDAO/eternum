@@ -1,12 +1,3 @@
-/**
- * Details about a single transaction type within a batch.
- * Used to display breakdown of batched transactions in the UI.
- */
-export interface BatchedTransactionDetail {
-  type: TransactionType;
-  count: number;
-}
-
 export type TransactionFailureStage = "submit" | "confirmation" | "revert" | "background_confirmation";
 
 /** not_sent: this submission was explicitly refused at admission; an unknown hash never establishes this. */
@@ -21,7 +12,6 @@ export interface TransactionLifecycleMeta {
   transactionHash?: string;
   signerAddress?: string;
   transactionCount?: number;
-  batchDetails?: BatchedTransactionDetail[];
   entrypoints?: string[];
   contractAddresses?: string[];
 }
