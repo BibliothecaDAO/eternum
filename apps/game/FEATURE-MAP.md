@@ -18,18 +18,18 @@ On a desktop, keys `1`–`4` open the four places and `Esc` goes back (`shell/fr
 page's step button (the one marked as its step) when it is enabled, nothing has focus that answers Enter itself, and no
 dialog is open. On a phone the places are a tab bar at the foot.
 
-| Feature                                        | Route                                                                        | How to reach it                                        |
-| ---------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------ |
-| Play: what to do now, then each mode's games   | `/`                                                                          | Rail **Play**, key `1` (see Play below)                |
-| Season standings and Blitz ratings             | `/season`                                                                    | Rail **Season**, key `2`                               |
-| Guides and news                                | `/learn`, `/scroll/:post`                                                    | Rail **Learn**, key `3`                                |
-| Account, payout wallet, notifications, devices | `/profile`, `/profile/account`, `/profile/notifications`, `/profile/devices` | Rail **Profile**, key `4`                              |
-| Sign in (Discord or an emailed code)           | `/sign-in`                                                                   | Rail **Sign in**; Play free; a lobby's **Sign in**     |
-| A player's history                             | `/p/:address`                                                                | Click a name in the standings                          |
-| Blitz lobby: entry, payment, countdown, chat   | `/blitz/:slot`, `/blitz/game-:chain-:game`                                   | Play, **Join** on a slot, **Lobby** on a seat          |
-| Enter or watch a running Blitz                 | `/g/:chain/:game/...`                                                        | Play, **Enter** (seated) or **Watch**                  |
-| A finished game's results and review           | `/results/:chainId-:gameId`                                                  | Play, **Results**; or Season or Profile, a played game |
-| Install the app (PWA)                          | —                                                                            | The banner, **Install**                                |
+| Feature                                        | Route                                                                        | How to reach it                                                                                                                                                   |
+| ---------------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Play: what to do now, then each mode's games   | `/`                                                                          | Rail **Play**, key `1` (see Play below)                                                                                                                           |
+| Season standings and Blitz ratings             | `/season`                                                                    | Rail **Season**, key `2`                                                                                                                                          |
+| Guides and news                                | `/learn`, `/scroll/:post`                                                    | Rail **Learn**, key `3`                                                                                                                                           |
+| Account, payout wallet, notifications, devices | `/profile`, `/profile/account`, `/profile/notifications`, `/profile/devices` | Rail **Profile**, key `4`                                                                                                                                         |
+| Sign in (Discord or an emailed code)           | `/sign-in`                                                                   | Rail **Sign in**; Play free; a lobby's **Sign in**                                                                                                                |
+| A player's history                             | `/p/:address`                                                                | Click a name in the standings                                                                                                                                     |
+| Blitz lobby: entry, payment, countdown, chat   | `/blitz/:slot`, `/blitz/game-:chain-:game`                                   | Play, **Join** on a slot, **Lobby** on a seat                                                                                                                     |
+| Enter or watch a running Blitz                 | `/g/:chain/:game/...`                                                        | Play, **Enter** (seated) or **Watch**                                                                                                                             |
+| A finished game's results and review           | `/results/:chainId-:gameId`                                                  | Play, **Results**; or Season or Profile, a played game; in the game, **Game finished** → **See the results**; an ended game's doorway or map address, **Results** |
+| Install the app (PWA)                          | —                                                                            | The banner, **Install**                                                                                                                                           |
 
 ### Play
 
@@ -47,6 +47,62 @@ dialog is open. On a phone the places are a tab bar at the foot.
   Play. Sign-in from Profile or Account returns to the page it was asked from.
 - Play's former addresses, shared publicly (`/blitz`, `/frontier`, `/eternum`, `/dominion`), lead to Play: a permanent
   redirect on a full load (`public/_redirects`), and Play in the app (`RETIRED_PLAY_PATHS` in `src/app.tsx`).
+
+## Blitz and Eternum in a match (`/g/:chain/:game/map` or `/hex`)
+
+A match opens from the lobby (**Your game**) or from home (**Enter**). Add `?spectate=true` to watch a running game.
+Both modes show War room (`src/ui/features/world/war-room/war-room-hud.tsx`). Below 1024 px wide the same cards stack:
+Next up and the selected realm above one tab bar (Realm, Map, Events, Chat, Details), one sheet at a time.
+
+| Feature                                                                                  | Where                                             | How to reach it                                                                                                                                                                                        |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| World map ↔ your realm's tiles                                                           | Header, **Local / World**                         | Key `V` toggles                                                                                                                                                                                        |
+| Back out one step                                                                        | —                                                 | `Esc` on the map: a pending order, an open view, then the selection                                                                                                                                    |
+| Cycle armies                                                                             | —                                                 | `Tab` on the map (cycles realms instead while Military is open)                                                                                                                                        |
+| Cycle structures                                                                         | —                                                 | `Shift+Tab` on the map; `Tab` in the realm view                                                                                                                                                        |
+| Clock, day phase, game end                                                               | Header centre                                     | Always visible; at the end it becomes **Game finished**                                                                                                                                                |
+| Leaderboard (phone: rank, name and points; what they did under the name)                 | Header, your name chip                            | Click the chip (a spectator gets a sign-in prompt)                                                                                                                                                     |
+| Settings: audio, graphics, alerts, shortcuts, leave                                      | Header, round button at the right                 | Click                                                                                                                                                                                                  |
+| Your structures, filter by kind                                                          | Left column, top (phone: **Realm** tab)           | Click a row to fly to it and open its card                                                                                                                                                             |
+| Level up or provision the selected realm, and its costs                                  | Realm card, under the name                        | Click **Provision** or **Level up to …**                                                                                                                                                               |
+| Build, Production, Military, Transfer (Eternum: Trade)                                   | Realm card, the orders                            | Click one; each opens a workspace over the map                                                                                                                                                         |
+| Automatic production (Smart, Custom, Idle)                                               | Realm card, **Automatic production**              | Pick from the list                                                                                                                                                                                     |
+| The selected realm's stocks and rates, all resources                                     | Realm card, **Stocks**                            | **All resources** shows every stock held                                                                                                                                                               |
+| Relics: use one                                                                          | Realm card, under the stocks                      | Click a relic                                                                                                                                                                                          |
+| Pin a realm to the top, rename it                                                        | Realm card, star and pencil beside the name       | Click                                                                                                                                                                                                  |
+| What to do next: level up any of your realms, attacks, arrivals, suggestions             | Right column, **Next up** (phone: above the tabs) | Click its button; **1 of N ›** shows the next one                                                                                                                                                      |
+| The three latest events: battles, your realms' news, your caravans, this session's sends | Right column, **Events**                          | Click a row to fly to it                                                                                                                                                                               |
+| Every event and battle (All / Mine / Combat)                                             | Right column, **Events**, **All** (phone: tab)    | Click **All**                                                                                                                                                                                          |
+| Selected tile: owner, armies, building                                                   | Right column, under Events (phone: **Details**)   | Click a hex                                                                                                                                                                                            |
+| Minimap                                                                                  | Bottom left (phone: **Map** tab)                  | Drag it to move the camera                                                                                                                                                                             |
+| Chat                                                                                     | Right column, bottom strip (phone: **Chat** tab)  | Click it or press `Enter`                                                                                                                                                                              |
+| Orders on your own structure                                                             | —                                                 | Right-click it on the world map, with no army order pending                                                                                                                                            |
+| Army orders: move, explore                                                               | —                                                 | Select an army (click it or `Tab`), right-click a reachable hex: the order goes at once. A left click on the hex only previews the path and its cost; on a touch screen, hold the hex (the map's hint) |
+| Army order: attack                                                                       | —                                                 | Select an army, right-click an enemy on a reachable hex: nothing is sent yet; the attack forecast opens (for an expedition site, its tile card), and its **Attack** button sends it                    |
+| Standings (spectator)                                                                    | Left column (phone: **Standings** tab)            | `?spectate=true`                                                                                                                                                                                       |
+
+## Frontier in a match
+
+Frontier has its own HUD (`src/ui/features/frontier/frontier-hud.tsx`): a strip at the top, a place bar at the foot, and
+one sheet at a time.
+
+| Feature                                                     | Where                                       | How to reach it                                                                                    |
+| ----------------------------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| The realm's stores, the day's clock and what tomorrow lasts | Strip, top                                  | Always visible; tap the stores for **Production**                                                  |
+| The map, your realm, research                               | Place bar, **Map**, **Realm**, **Research** | Tap; Realm shows a dot while a store is full or fills within the hour; a spectator has no Research |
+| Chat                                                        | Place bar, **Chat**                         | Tap, or `Enter` on a desktop (docks beside the map)                                                |
+| Today, Season, Production, Realms, Guide, Settings, Exit    | Place bar, **Menu**                         | Tap, then a row                                                                                    |
+| LORDS purse: withdraw, your realms                          | Under the strip                             | Tap the purse                                                                                      |
+| An army's orders                                            | Dock, an army token                         | Tap the token; its orders show in the action bar                                                   |
+| Build on a plot                                             | Realm view, an open plot                    | Tap the plot; the build sheet also links Research                                                  |
+| Visit another realm                                         | Menu, **Season**                            | Tap a player, **Visit**; **Leave** returns home                                                    |
+
+## Behaviour that differs from its label
+
+These are current defects, listed so nobody maps them as intended navigation.
+
+- `Esc` in the realm view is listed in Settings as "Return to world view from local view". It closes an open navigation
+  view or clears building mode; `V` is what returns to the world (`three/scenes/hexception.tsx`).
 
 ## In a match: world map
 
