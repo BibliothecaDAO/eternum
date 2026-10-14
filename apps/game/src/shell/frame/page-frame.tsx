@@ -20,7 +20,7 @@ type PageFrameProps = {
   back?: To;
   /** The page's title: beside Back on the phone, in the title row on desktop. A tab page shows the lockup instead. */
   title?: string;
-  /** One notice, directly above the foot row (phone) or at the top right over the page (desktop). */
+  /** One notice, directly above the foot row (phone) or in its own band at the top right (desktop), covering nothing. */
   notice?: ReactNode;
   /** The foot row: the page's buttons (one primary) or its stepper. */
   foot?: ReactNode;
@@ -38,8 +38,8 @@ type PageFrameProps = {
 /**
  * The composer: the only code that places a page's parts. Each part sits in its band, tagged so a test can hold every
  * control to its place: Back top left and nothing else there, nothing to tap in a phone's top right, one foot row,
- * notices directly above it on a phone and at the desktop's top right, the tabs at the phone's foot or in the desktop
- * rail, with the desktop's keys (1–4 the places, Esc Back).
+ * notices directly above it on a phone and in their own band at the desktop's top right (covering nothing), the tabs
+ * at the phone's foot or in the desktop rail, with the desktop's keys (1–4 the places, Esc Back).
  */
 export const PageFrame = (props: PageFrameProps) => {
   const layout = useLayout();
@@ -97,6 +97,11 @@ const DesktopFrame = ({
       <Rail places={tabs} />
       <div className="relative flex min-w-0 flex-1 flex-col">
         {painting && <Backdrop painting={painting} stage={stage} />}
+        {notice ? (
+          <div data-band="notice" className="flex justify-end px-8 pt-6 min-[1800px]:px-12">
+            <div className="w-[26rem]">{notice}</div>
+          </div>
+        ) : null}
         {back !== undefined || title ? (
           <div data-band="title" className="flex items-center gap-3 px-8 pt-7 min-[1800px]:px-12">
             <DesktopTitle back={back} title={title} />
@@ -116,11 +121,6 @@ const DesktopFrame = ({
           </div>
         )}
       </div>
-      {notice ? (
-        <div data-band="notice" className="fixed right-6 top-6 z-40 w-[26rem]">
-          {notice}
-        </div>
-      ) : null}
     </div>
   );
 };
