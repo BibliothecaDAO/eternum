@@ -1,3 +1,4 @@
+import { extractErrorMessage } from "@bibliothecadao/provider";
 import { buildableRadius } from "../utils/castle-reach";
 import {
   type GameplayAccount,
@@ -27,18 +28,13 @@ const BUILDING_SLOT_COORDINATES = [
 ];
 const OCCUPIED_SPACE_REASON = "space is occupied";
 
-const extractErrorMessage = (error: unknown): string => {
-  if (typeof error === "string") return error;
-  if (error instanceof Error) return error.message;
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return String(error);
+export class OccupiedSpaceError extends Error {
+  readonly _tag = "OccupiedSpaceError";
+  constructor() {
+    super(OCCUPIED_SPACE_REASON);
+    this.name = "OccupiedSpaceError";
   }
-};
-
-const isOccupiedSpaceError = (error: unknown): boolean =>
-  extractErrorMessage(error).toLowerCase().includes(OCCUPIED_SPACE_REASON);
+}
 
 export class TileManager {
   private constructor(
@@ -119,7 +115,7 @@ export class TileManager {
   ) => {
     const { col, row } = hexCoords;
     if (this.isHexOccupied({ col, row })) {
-      throw new Error(OCCUPIED_SPACE_REASON);
+      throw new OccupiedSpaceError();
     }
 
     const startingPosition: [number, number] = [BUILDINGS_CENTER[0], BUILDINGS_CENTER[1]];
@@ -135,8 +131,8 @@ export class TileManager {
       });
     } catch (error) {
       console.error(error);
-      if (isOccupiedSpaceError(error)) {
-        throw new Error(OCCUPIED_SPACE_REASON);
+      if (extractErrorMessage(error).toLowerCase().includes(OCCUPIED_SPACE_REASON)) {
+        throw new OccupiedSpaceError();
       }
       throw error;
     }

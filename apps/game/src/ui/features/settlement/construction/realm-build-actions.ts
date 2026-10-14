@@ -1,6 +1,8 @@
+import * as Effect from "effect/Effect";
+import * as Semaphore from "effect/Semaphore";
 import { generateBuildablePositions } from "@bibliothecadao/eternum/automation";
 import { BUILDINGS_CENTER, BuildingType, ResourcesIds } from "@bibliothecadao/types";
-import { buildableRadius, type BuildingTiles } from "@bibliothecadao/eternum";
+import { buildableRadius, OccupiedSpaceError, type BuildingTiles } from "@bibliothecadao/eternum";
 import { toast } from "@/ui/features/event-feed/notify";
 import { getScopedGameId } from "@bibliothecadao/eternum/game-client";
 import { requireActiveGameClient } from "@/sync/active-game-client";
@@ -37,6 +39,7 @@ type RealmBuildActionOptions = {
   mode?: ConstructionBuildabilityInput["mode"];
   target: RealmBuildTarget;
   useSimpleCost: boolean;
+  signal?: AbortSignal;
   onBuildSuccess?: (selection: BuildSelection) => void;
 };
 
@@ -45,41 +48,44 @@ type RealmAvailableTileOptions = {
   realmPosition?: RealmPosition | null;
 };
 
-const realmBuildLocks = new Map<string, Promise<void>>();
-const OCCUPIED_SPACE_REASON = "space is occupied";
+const realmBuildLocks = new Map<string, { semaphore: Semaphore.Semaphore; users: number }>();
 
-const runWithRealmBuildLock = async <Result>(entityId: number, task: () => Promise<Result>): Promise<Result> => {
-  const lockKey = `${getScopedGameId()}:${entityId}`;
-  const previous = realmBuildLocks.get(lockKey) ?? Promise.resolve();
-  let release!: () => void;
-  const turn = new Promise<void>((resolve) => {
-    release = resolve;
+const runWithRealmBuildLock = <Result>(
+  entityId: number,
+  task: () => Promise<Result>,
+  signal?: AbortSignal,
+): Promise<Result> => {
+  const gameId = getScopedGameId();
+  const key = `${gameId}:${entityId}`;
+  const acquire = Effect.sync(() => {
+    const lock = realmBuildLocks.get(key) ?? { semaphore: Semaphore.makeUnsafe(1), users: 0 };
+    lock.users++;
+    realmBuildLocks.set(key, lock);
+    return lock;
   });
-  const tail = previous.catch(() => undefined).then(() => turn);
-  realmBuildLocks.set(lockKey, tail);
-
-  await previous.catch(() => undefined);
-  try {
-    return await task();
-  } finally {
-    release();
-    if (realmBuildLocks.get(lockKey) === tail) realmBuildLocks.delete(lockKey);
-  }
+  return Effect.runPromise(
+    Effect.acquireUseRelease(
+      acquire,
+      (lock) =>
+        lock.semaphore.withPermit(
+          Effect.uninterruptible(
+            Effect.tryPromise({
+              try: () => {
+                if (getScopedGameId() !== gameId) throw new Error("The active game changed before building.");
+                return task();
+              },
+              catch: (error) => error,
+            }),
+          ),
+        ),
+      (lock) =>
+        Effect.sync(() => {
+          if (--lock.users === 0) realmBuildLocks.delete(key);
+        }),
+    ),
+    { signal },
+  );
 };
-
-const extractErrorMessage = (error: unknown): string => {
-  if (typeof error === "string") return error;
-  if (error instanceof Error) return error.message;
-
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return String(error);
-  }
-};
-
-const isOccupiedSpaceError = (error: unknown): boolean =>
-  extractErrorMessage(error).toLowerCase().includes(OCCUPIED_SPACE_REASON);
 
 const isCenterBuildSpot = (spot: BuildSpot) => spot.col === BUILDINGS_CENTER[0] && spot.row === BUILDINGS_CENTER[1];
 
@@ -119,6 +125,7 @@ const submitRealmBuilding = async ({
   target,
   useSimpleCost,
   onBuildSuccess,
+  signal,
 }: RealmBuildActionOptions) => {
   const { setup, actions } = requireActiveGameClient();
   const baseBuildability = resolveConstructionBuildability({
@@ -149,6 +156,7 @@ const submitRealmBuilding = async ({
 
   try {
     for (const availableSpot of availableSpots) {
+      if (signal?.aborted) return false;
       const spotBuildability = resolveConstructionBuildability({
         entityId,
         buildingType: target.type,
@@ -172,14 +180,15 @@ const submitRealmBuilding = async ({
           useSimpleCost,
         });
 
-        onBuildSuccess?.({
-          structureId: entityId,
-          innerCol: availableSpot.col,
-          innerRow: availableSpot.row,
-        });
+        if (!signal?.aborted)
+          onBuildSuccess?.({
+            structureId: entityId,
+            innerCol: availableSpot.col,
+            innerRow: availableSpot.row,
+          });
         return true;
       } catch (error) {
-        if (isOccupiedSpaceError(error)) {
+        if (error instanceof OccupiedSpaceError) {
           occupiedTileFailures += 1;
           continue;
         }
@@ -196,8 +205,9 @@ const submitRealmBuilding = async ({
     toast.error("No empty building tiles available.");
     return false;
   } catch (error) {
+    if (signal?.aborted) return false;
     console.error("Failed to auto-build", error);
-    if (isOccupiedSpaceError(error)) {
+    if (error instanceof OccupiedSpaceError) {
       toast.error("This tile is occupied. Please try again.");
     } else {
       toast.error("Building failed. Please try again.");
@@ -212,5 +222,5 @@ export const buildRealmBuilding = async (options: RealmBuildActionOptions) => {
     return false;
   }
 
-  return runWithRealmBuildLock(options.entityId, () => submitRealmBuilding(options));
+  return runWithRealmBuildLock(options.entityId, () => submitRealmBuilding(options), options.signal);
 };
