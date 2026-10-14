@@ -98,6 +98,8 @@ export const BLITZ_WORDS = {
   drawnAtClose: (seats: number) => `No cap. Games of up to ${seats} are drawn when entry closes.`,
   /** A slot taking players: its lobby holds the paid entry. */
   join: "Join",
+  /** A seated game still being prepared: its lobby shows the roster and Preparing until it opens. */
+  lobby: "Lobby",
   /** Above the lobby's countdown. */
   startsIn: "Starts in",
   endsIn: "Ends in",

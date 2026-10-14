@@ -107,6 +107,12 @@ describe("the lead: the one gold verb, first match wins", () => {
     expect(leadOf(input)).toBe(lead);
   });
 
+  it("opens a seated game still being prepared on its lobby, and offers Enter once it is ready", () => {
+    const preparing = facts({ games: [frontier], blitz: [gameRow(10, "registered", 3_000)] });
+    expect(leadOf(preparing)).toBe("blitz lobby");
+    expect(leadOf(facts({ games: [frontier], blitz: [gameRow(10, "enter")] }))).toBe("blitz enter");
+  });
+
   it("does not resume a season that has not started its days", () => {
     expect(leadOf(facts({ games: [withRealm({ ...frontier, status: "Registration" })] }))).toBe("frontier play");
   });
@@ -129,7 +135,7 @@ describe("everything else, each game once", () => {
 
   it("puts each mode's next and finished games behind its switch, the player's own marked", () => {
     expect(keys(board.later.blitz)).toEqual(["slot:next", "game:0xa:10", gameKey(finishedBlitz)]);
-    expect(board.later.blitz.map((item) => item.verb)).toEqual(["join", null, "results"]);
+    expect(board.later.blitz.map((item) => item.verb)).toEqual(["join", "lobby", "results"]);
     expect(keys(board.later.eternum)).toEqual(["0xa:5"]);
     expect(board.later.frontier).toEqual([]);
     expect(board.marked).toEqual(["blitz"]);

@@ -9,7 +9,8 @@ export const PLAY_MODES = ["blitz", "frontier", "eternum"] as const;
 export type PlayMode = (typeof PLAY_MODES)[number];
 
 /** What a game offers the player, at most one verb each. */
-export type PlayVerb = "enter" | "resume" | "play" | "watch" | "join" | "refund" | "results";
+/** `lobby` opens a seated game still being prepared: its roster and its Preparing state, never Enter before it opens. */
+export type PlayVerb = "enter" | "resume" | "play" | "watch" | "join" | "refund" | "results" | "lobby";
 
 /**
  * One game on Play, read once: its mode, when it is (under way now, still to come, or finished and not yet opened on
@@ -54,13 +55,14 @@ export const gameKey = (game: Pick<DirectoryGame, "chainId" | "game_id">) => `${
 
 /**
  * The lead, first match wins: a Blitz seat to enter; a Frontier day under way; a result of the player's not yet opened
- * (any mode); Frontier's season to play (free when signed out); a Blitz to join, else one to watch; Eternum, open or
- * opening. With none of these, nothing is running and there is no lead.
+ * (any mode); a Blitz seat still being prepared (its lobby); Frontier's season to play (free when signed out); a Blitz
+ * to join, else one to watch; Eternum, open or opening. With none of these, nothing is running and there is no lead.
  */
 const LEAD_ORDER: readonly ((item: PlayItem) => boolean)[] = [
   (item) => item.mode === "blitz" && item.verb === "enter",
   (item) => item.verb === "resume",
   (item) => item.verb === "results",
+  (item) => item.verb === "lobby",
   (item) => item.mode === "frontier" && item.verb === "play",
   (item) => item.mode === "blitz" && item.verb === "join",
   (item) => item.mode === "blitz" && item.verb === "watch",
@@ -118,7 +120,7 @@ const blitzItems = (rows: readonly BlitzRow[]): PlayItem[] =>
       case "spectate":
         return rowItem(row, row.startsAt === null ? "now" : "next", "watch", false);
       case "registered":
-        return rowItem(row, "next", null, true);
+        return rowItem(row, "next", row.kind === "game" ? "lobby" : null, true);
       case "open":
         return rowItem(row, "next", "join", false);
       case "refund":

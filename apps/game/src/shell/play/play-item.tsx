@@ -59,6 +59,8 @@ const verbOf = (item: PlayItem, signedIn: boolean): ItemVerb | null => {
       return { word: BLITZ_WORDS.join, icon: "Pl", to: lobbyHref(item) };
     case "refund":
       return { word: ENTRY_WORDS.takeRefund, icon: "Sp", to: lobbyHref(item) };
+    case "lobby":
+      return { word: BLITZ_WORDS.lobby, icon: "Pp", to: lobbyHref(item) };
     case "results":
       return game ? { word: WORDS.results, icon: "Tp", to: resultsHref(game, false) } : null;
     case null:

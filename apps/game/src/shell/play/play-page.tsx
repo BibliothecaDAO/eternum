@@ -10,6 +10,9 @@ import { ageOf } from "./ages";
 import { type PlayBoard, PLAY_MODES, type PlayMode } from "./play-board";
 import { type PlayFacts, usePlayFacts } from "./play-facts";
 import { ItemRows, LeadCard, SectionLabel } from "./play-item";
+import { Loading } from "../loading";
+import { ServiceFailure } from "../service-failure";
+import type { SourceGap } from "./play-facts";
 import { FailureCard, StateCard } from "./state-card";
 
 /**
@@ -50,6 +53,7 @@ const NowSection = ({ facts }: { facts: PlayFacts }) => (
   <section className="flex flex-col gap-3">
     <SectionLabel>{PLAY_WORDS.now}</SectionLabel>
     <LeadOrState facts={facts} />
+    {facts.board && <SourceGaps gaps={facts.gaps} />}
     {facts.board && facts.board.now.length > 0 && (
       <ItemRows items={facts.board.now} now={facts.now} signedIn={facts.signedIn} />
     )}
@@ -67,6 +71,8 @@ const LeadOrState = ({ facts }: { facts: PlayFacts }) => {
         <Button role="primary" word={WORDS.play} icon="Pl" disabled />
       </StateCard>
     );
+  // With no lead, the quiet card speaks only once every source answered: a read still out or failed is not "nothing".
+  if (!facts.board.lead && facts.gaps.length > 0) return null;
   if (!facts.board.lead)
     return (
       <StateCard painting="brooding-plains">
@@ -75,6 +81,23 @@ const LeadOrState = ({ facts }: { facts: PlayFacts }) => {
     );
   return <LeadCard item={facts.board.lead} now={facts.now} signedIn={facts.signedIn} />;
 };
+
+/**
+ * The reads Play has not had in full, each in its own words with Try again: Blitz's slots, the player's results. The
+ * games that did answer stay usable above and below.
+ */
+const SourceGaps = ({ gaps }: { gaps: readonly SourceGap[] }) =>
+  gaps.length === 0 ? null : (
+    <div className="flex flex-col gap-2">
+      {gaps.map((gap) =>
+        gap.kind === "failed" ? (
+          <ServiceFailure key={gap.service} service={gap.service} error={gap.error} retry={gap.retry} />
+        ) : (
+          <Loading key={gap.service} />
+        ),
+      )}
+    </div>
+  );
 
 /** Each mode's next and finished games, one mode at a time; absent when no mode has any. */
 const LaterSection = ({ facts, board }: { facts: PlayFacts; board: PlayBoard }) => {

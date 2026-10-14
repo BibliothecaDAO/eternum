@@ -116,6 +116,19 @@ const liveBlitz = (member: boolean) =>
     player_state: member ? owned : null,
     slotId: LAB_SLOT_KEY.slotId,
   });
+/** A seat on a Blitz roster whose game is still being prepared: it opens in two hours, the player's realm not ready yet. */
+const preparingBlitz = game({
+  game_id: 8,
+  name: "blitz-1900-1",
+  mode: "blitz",
+  status: "Registration",
+  ready: false,
+  clock: { start_settling_at: NOW + 3600, start_main_at: NOW + 7200, end_at: NOW + 14_400, end_grace_seconds: 0 },
+  player_count: 18,
+  roster_count: 24,
+  player_state: { registered: true, settled: false, roster_wallet: LAB_WALLET, structures: [] },
+  slotId: LAB_SLOT_KEY.slotId,
+});
 const eternum = game({
   game_id: 9,
   name: "eternum-1",
@@ -137,6 +150,8 @@ export const LAB_SCREENS = {
   "no-realm": { signedIn: true, games: [frontier(false), liveBlitz(false), eternum] },
   "blitz-seat": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "season-over": { signedIn: true, games: [endedFrontier, liveBlitz(false), eternum] },
+  // A seat in a game still being prepared: Play leads with its lobby, never Enter before the game opens.
+  "blitz-preparing": { signedIn: true, games: [frontier(false), preparingBlitz, liveBlitz(false), eternum] },
   "wallet-none": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "wallet-ready": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "entry-choose": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
