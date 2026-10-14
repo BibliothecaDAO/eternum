@@ -1,3 +1,9 @@
+import { startAutomationScope } from "@/ui/features/infrastructure/automation/model/automation-scope";
+import {
+  runAutomationTransaction,
+  AutomationSignerUnavailable,
+  AutomationPending,
+} from "@/ui/features/infrastructure/automation/model/automation-runner";
 import { structureMapPosition } from "@bibliothecadao/eternum";
 import { resolveResourceArrivalIndicators } from "@/ui/utils/resource-arrival-indicators";
 
@@ -11,12 +17,11 @@ import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView, readFactView, resourceArrivalsView, seasonClockView } from "@/sync/fact-views";
 import { toast } from "@/ui/features/event-feed/notify";
 import {
-  createRealmProvisionRunner,
+  startRealmProvisionRunner,
   type RealmProvisionCandidate,
   type RealmProvisionRetry,
 } from "@/ui/realm-provision-runner";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import { extractReadableErrorMessage } from "@/utils/error-message";
 import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
 
 import {
@@ -52,20 +57,11 @@ const ResourceArrivalAutoClaim = () => {
   const autoClaimedArrivals = useRef<Set<string>>(new Set());
   const lastFailureRef = useRef<Map<string, number>>(new Map());
   const isAutoClaimingRef = useRef(false);
-  const autoClaimTimeoutIdRef = useRef<number | null>(null);
-  const processAutoClaimRef = useRef<() => Promise<void>>(async () => {});
+  const processAutoClaimRef = useRef<(signal: AbortSignal) => Promise<void | false>>(async () => {});
   const playerResourceArrivals = useMemo(() => {
     const playerStructureIds = new Set(playerStructures.map((structure) => structure.entityId));
     return resourceArrivals.filter((arrival) => playerStructureIds.has(arrival.structureEntityId));
   }, [playerStructures, resourceArrivals]);
-
-  const stopAutoClaim = useCallback(() => {
-    if (autoClaimTimeoutIdRef.current !== null) {
-      window.clearTimeout(autoClaimTimeoutIdRef.current);
-      autoClaimTimeoutIdRef.current = null;
-    }
-    isAutoClaimingRef.current = false;
-  }, []);
 
   const updateArrivalIndicators = useCallback(
     (arrivals: ResourceArrivalInfo[], nowOverride?: number) => {
@@ -76,37 +72,17 @@ const ResourceArrivalAutoClaim = () => {
     [getChainNowSeconds, setArrivalIndicators],
   );
 
-  const scheduleNextAutoClaim = useCallback(() => {
-    if (configManager.isGameOver()) {
-      stopAutoClaim();
-      return;
-    }
-    if (autoClaimTimeoutIdRef.current !== null) {
-      window.clearTimeout(autoClaimTimeoutIdRef.current);
-    }
-
-    const now = Date.now();
-    const nextBlockMs = (Math.floor(now / 1000) + 1) * 1000;
-    const delay = Math.max(250, nextBlockMs - now);
-
-    autoClaimTimeoutIdRef.current = window.setTimeout(() => {
-      void processAutoClaimRef.current();
-    }, delay);
-  }, [stopAutoClaim]);
-
   useEffect(() => {
     updateArrivalIndicators(playerResourceArrivals, Math.floor(chainNowMs / 1000));
   }, [chainNowMs, playerResourceArrivals, updateArrivalIndicators]);
 
   useEffect(() => {
-    processAutoClaimRef.current = async () => {
+    processAutoClaimRef.current = async (signal) => {
       const seasonNow = getChainNowSeconds();
       if (configManager.isGameOver()) {
-        stopAutoClaim();
-        return;
+        return false;
       }
       if (isAutoClaimingRef.current) {
-        scheduleNextAutoClaim();
         return;
       }
 
@@ -115,7 +91,6 @@ const ResourceArrivalAutoClaim = () => {
         autoClaimedArrivals.current.clear();
         lastFailureRef.current.clear();
         updateArrivalIndicators([]);
-        scheduleNextAutoClaim();
         return;
       }
 
@@ -135,7 +110,6 @@ const ResourceArrivalAutoClaim = () => {
         .filter((arrival) => now >= Number(arrival.arrivesAt) + RESOURCE_ARRIVAL_READY_BUFFER_SECONDS);
 
       if (readyArrivals.length === 0) {
-        scheduleNextAutoClaim();
         return;
       }
 
@@ -145,6 +119,7 @@ const ResourceArrivalAutoClaim = () => {
         const sortedReadyArrivals = readyArrivals.toSorted((a, b) => Number(a.arrivesAt) - Number(b.arrivesAt));
 
         for (const arrival of sortedReadyArrivals) {
+          if (signal.aborted) return;
           const arrivalKey = getArrivalKey(arrival);
           if (autoClaimedArrivals.current.has(arrivalKey)) continue;
 
@@ -153,28 +128,30 @@ const ResourceArrivalAutoClaim = () => {
 
           try {
             const resourceArrivalManager = new ResourceArrivalManager(systemCalls, arrival);
-            await resourceArrivalManager.offload(account, arrival.resources.length);
-            autoClaimedArrivals.current.add(arrivalKey);
-            lastFailureRef.current.delete(arrivalKey);
+            await runAutomationTransaction({
+              signer: account.address,
+              operation: `claim:${arrivalKey}`,
+              signal,
+              submit: () => resourceArrivalManager.offload(account, arrival.resources.length),
+              onConfirmed: () => {
+                autoClaimedArrivals.current.add(arrivalKey);
+                lastFailureRef.current.delete(arrivalKey);
+              },
+            });
           } catch (error) {
+            if (signal.aborted) return;
+            if (error instanceof AutomationSignerUnavailable || error instanceof AutomationPending) {
+              toast.warning(`Automatic arrival claims paused: ${error.message}`, { id: "arrival-claim-pending" });
+              return;
+            }
             console.error("Auto-claim arrival failed", { arrival, error });
             lastFailureRef.current.set(arrivalKey, now);
           }
         }
       } finally {
         isAutoClaimingRef.current = false;
-        updateArrivalIndicators(arrivals, now);
-        scheduleNextAutoClaim();
+        if (!signal.aborted) updateArrivalIndicators(arrivals, now);
       }
-    };
-
-    scheduleNextAutoClaim();
-
-    return () => {
-      if (autoClaimTimeoutIdRef.current !== null) {
-        window.clearTimeout(autoClaimTimeoutIdRef.current);
-      }
-      isAutoClaimingRef.current = false;
     };
   }, [
     account,
@@ -182,11 +159,15 @@ const ResourceArrivalAutoClaim = () => {
     getChainNowSeconds,
     playerResourceArrivals,
     playerStructures,
-    scheduleNextAutoClaim,
-    stopAutoClaim,
     systemCalls,
     updateArrivalIndicators,
   ]);
+
+  useEffect(() => {
+    autoClaimedArrivals.current.clear();
+    lastFailureRef.current.clear();
+    return startAutomationScope((signal) => processAutoClaimRef.current(signal));
+  }, [account, store]);
 
   return null;
 };
@@ -214,7 +195,7 @@ const AutoProvisionRealms = () => {
           const location = structureMapPosition(store, structure.structure);
           if (!buildings || !location) return [];
           const packedCounts = [buildings.packed_counts_1, buildings.packed_counts_2, buildings.packed_counts_3].map(
-            (count) => BigInt(count ?? 0),
+            (count) => BigInt(count),
           );
           return [
             {
@@ -226,7 +207,7 @@ const AutoProvisionRealms = () => {
           ];
         });
 
-    const runner = createRealmProvisionRunner({
+    return startRealmProvisionRunner({
       readRealms,
       readPhase: () => {
         const { gameStartMainAt, devModeOn } = readFactView(store, seasonClockView);
@@ -234,9 +215,18 @@ const AutoProvisionRealms = () => {
       },
       nowSeconds: () => useChainTimeStore.getState().getNowSeconds(),
       hasSigner: () => Boolean(useAccountStore.getState().account) && canIssueOrders(),
-      submit: async (realmIds) => {
-        for (const realm_entity_id of realmIds) await systemCalls.provision_realm({ signer: account, realm_entity_id });
-      },
+      subscribeHeads: (head) =>
+        useConnectionStore.subscribe((state, previous) => {
+          if (state.lastConfirmedBlock !== previous.lastConfirmedBlock) head();
+        }),
+      submit: (realm_entity_id, onConfirmed, signal) =>
+        runAutomationTransaction({
+          signer: account.address,
+          operation: `provision:${realm_entity_id}`,
+          signal,
+          onConfirmed,
+          submit: () => systemCalls.provision_realm({ signer: account, realm_entity_id }),
+        }),
       report: {
         provisioned: (realms) => {
           toast.dismiss(provisionBatchNoticeId(realms));
@@ -244,15 +234,13 @@ const AutoProvisionRealms = () => {
             toast.success(`Provisioned ${realm.name}`, { location: (realm as ProvisionableRealm).location }),
           );
         },
-        // One row per batch: a repeat failure replaces it, a success dismisses it.
         failed: (realms, error, retry) =>
-          toast.error(describeProvisionFailure(realms, error, retry), { id: provisionBatchNoticeId(realms) }),
+          realms.forEach((realm) =>
+            toast.error(describeProvisionFailure([realm], error, retry), {
+              id: provisionBatchNoticeId([realm]),
+            }),
+          ),
       },
-    });
-
-    void runner.onConfirmedHead();
-    return useConnectionStore.subscribe((state, previous) => {
-      if (state.lastConfirmedBlock !== previous.lastConfirmedBlock) void runner.onConfirmedHead();
     });
   }, [account, store, systemCalls, isBlitzWorld]);
 
@@ -268,7 +256,8 @@ const describeProvisionFailure = (
   retry: RealmProvisionRetry,
 ): string => {
   const names = realms.map((realm) => realm.name).join(", ");
-  const reason = extractReadableErrorMessage(error, "transaction rejected");
+  const reason = error instanceof Error ? error.message : "transaction rejected";
+  if (error instanceof AutomationPending) return `Provisioning ${names}: ${reason} · automatic retries paused`;
   const next =
     retry.nextAttemptInHeads === null
       ? "giving up until reload"
