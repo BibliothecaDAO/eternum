@@ -49,6 +49,13 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-10-14",
+    title: "Leaderboard fits a phone",
+    description:
+      "On a narrow screen the leaderboard shows rank, name and points in full, with what each player did written under their name.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-14",
     title: "Play shows what you can do now",
     description:
       "Play leads with your next step and one button, lists everything under way with its own (resume your day, watch a match), and keeps each mode's next and finished games behind a switch. Results of any game you have not opened appear there, and signing in or linking a wallet from a Blitz lobby brings you back to it.",
@@ -58,7 +65,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-14",
     title: "War room",
     description:
-      "Your realms and the selected one's card sit on the left, with its level-up step, its orders and its stocks by name. Next up on the right says what to do now in one button, and the last events stay until newer ones arrive. On a phone the same cards stack above worded tabs.",
+      "Your realms and the selected one's card sit on the left, with its level-up step, its orders and its stocks by name. Next up on the right says what to do now in one button, for any of your realms. Events keep the latest battles and your realms' news, and bring them back after a reload. On a phone the same cards stack above worded tabs.",
     type: "feature",
   },
   {
