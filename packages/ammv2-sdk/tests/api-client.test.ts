@@ -1,3 +1,4 @@
+import * as Effect from "effect/Effect";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AmmV2ApiClient } from "../src/api/client";
 
@@ -78,7 +79,7 @@ describe("AmmV2ApiClient", () => {
     );
 
     const client = new AmmV2ApiClient("https://ammv2.example/api/v1");
-    const pair = await client.lookupPair("0x2", "0x1");
+    const pair = await Effect.runPromise(client.lookupPair("0x2", "0x1"));
 
     expect(fetchMock).toHaveBeenCalledWith("https://ammv2.example/api/v1/pairs/lookup?tokenA=0x2&tokenB=0x1");
     expect(pair?.pairAddress).toBe("0xpair");
@@ -228,5 +229,39 @@ describe("AmmV2ApiClient", () => {
       pairAddress: "0xpair",
       lpHolderCount: 5,
     });
+  });
+});
+
+describe.each(["getPair", "lookupPair"] as const)("%s failures", (method) => {
+  afterEach(() => vi.unstubAllGlobals());
+  const run = () => {
+    const client = new AmmV2ApiClient("https://amm.test");
+    return Effect.runPromise(
+      Effect.result(method === "getPair" ? client.getPair("0x1") : client.lookupPair("0x1", "0x2")),
+    );
+  };
+  it("reports only 404 as not found", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 404 })));
+    expect(await run()).toMatchObject({ _tag: "Failure", failure: { _tag: "PairNotFound" } });
+  });
+  it.each([401, 429, 500, 503])("keeps HTTP %s as failure", async (status) => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status })));
+    expect(await run()).toMatchObject({ _tag: "Failure", failure: { _tag: "AmmApiFailure", kind: "http", status } });
+  });
+  it("keeps transport failures", async () => {
+    const cause = new TypeError("offline");
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(cause));
+    expect(await run()).toMatchObject({
+      _tag: "Failure",
+      failure: { _tag: "AmmApiFailure", kind: "transport", cause },
+    });
+  });
+  it.each([null, {}, { data: null }, { reserve0: "invalid" }])("rejects malformed pair data", async (body) => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(body)));
+    expect(await run()).toMatchObject({ _tag: "Failure", failure: { _tag: "AmmApiFailure", kind: "decode" } });
+  });
+  it("keeps malformed JSON as decode failure", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("not json")));
+    expect(await run()).toMatchObject({ _tag: "Failure", failure: { kind: "decode" } });
   });
 });

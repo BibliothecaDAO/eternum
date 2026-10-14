@@ -1233,6 +1233,9 @@ importers:
 
   packages/ammv2-sdk:
     dependencies:
+      effect:
+        specifier: 4.0.4
+        version: 4.0.4
       starknet:
         specifier: catalog:game
         version: 8.9.2

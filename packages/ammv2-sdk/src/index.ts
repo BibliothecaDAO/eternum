@@ -36,7 +36,7 @@ export class AmmV2Client {
   }
 }
 
-export { AmmV2ApiClient } from "./api/client";
+export { AmmV2ApiClient, AmmApiFailure, PairNotFound } from "./api/client";
 export type { PaginatedResponse } from "./api/client";
 export { DEFAULT_DEADLINE_OFFSET, DEFAULT_SLIPPAGE_BPS, MINIMUM_LIQUIDITY } from "./constants";
 export { LiquidityTransactions } from "./transactions/liquidity";

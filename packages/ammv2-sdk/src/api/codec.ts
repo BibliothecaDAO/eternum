@@ -1,3 +1,4 @@
+import * as Schema from "effect/Schema";
 import type {
   PairLiquidityEvent,
   PairStats,
@@ -9,18 +10,19 @@ import type {
 
 type ApiEnvelope<T> = { data: T };
 
-export type RawPairSummary = {
-  pairAddress: string;
-  factoryAddress: string;
-  token0Address: string;
-  token1Address: string;
-  lpTokenAddress: string;
-  reserve0: string | number;
-  reserve1: string | number;
-  totalLpSupply: string | number;
-  feeAmount: string | number;
-  feeTo: string;
-};
+const pairSummarySchema = Schema.Struct({
+  pairAddress: Schema.String,
+  factoryAddress: Schema.String,
+  token0Address: Schema.String,
+  token1Address: Schema.String,
+  lpTokenAddress: Schema.String,
+  reserve0: Schema.Union([Schema.String, Schema.Int]),
+  reserve1: Schema.Union([Schema.String, Schema.Int]),
+  totalLpSupply: Schema.Union([Schema.String, Schema.Int]),
+  feeAmount: Schema.Union([Schema.String, Schema.Int]),
+  feeTo: Schema.String,
+});
+export type RawPairSummary = typeof pairSummarySchema.Type;
 
 export type RawPairSwapEvent = {
   pairAddress: string;
@@ -110,7 +112,8 @@ export function unwrapApiData<T>(payload: T | ApiEnvelope<T>): T {
   return payload as T;
 }
 
-export function decodePairSummary(raw: RawPairSummary): PairSummary {
+export function decodePairSummary(value: unknown): PairSummary {
+  const raw = Schema.decodeUnknownSync(pairSummarySchema)(value);
   return {
     pairAddress: raw.pairAddress,
     factoryAddress: raw.factoryAddress,
