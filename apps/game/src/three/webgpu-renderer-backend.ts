@@ -90,7 +90,7 @@ async function createDefaultWebGPURenderer(input: {
   const { threeWebGPUModule } = await loadWebGpuRendererModules(input.signal);
   recordRendererStartupTiming("webgpu-module-import", performance.now() - moduleImportStartedAt);
 
-  const { HalfFloatType, PCFShadowMap, PCFSoftShadowMap, UnsignedByteType, WebGPURenderer } =
+  const { HalfFloatType, PCFShadowMap, UnsignedByteType, WebGPURenderer } =
     threeWebGPUModule as typeof import("three/webgpu");
 
   throwIfAborted(input.signal);
@@ -103,7 +103,7 @@ async function createDefaultWebGPURenderer(input: {
 
   renderer.autoClear = false;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = input.isMobileDevice ? PCFShadowMap : PCFSoftShadowMap;
+  renderer.shadowMap.type = PCFShadowMap;
   configureRendererColorOutput(renderer);
   renderer.info.autoReset = false;
 

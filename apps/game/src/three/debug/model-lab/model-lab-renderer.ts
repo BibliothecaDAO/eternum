@@ -8,7 +8,7 @@ import {
   Group,
   Mesh,
   Object3D,
-  PCFSoftShadowMap,
+  PCFShadowMap,
   Texture,
   PerspectiveCamera,
   Scene,
@@ -135,7 +135,7 @@ class ModelReviewScene implements ModelLabRenderer {
     this.renderer = initialized.rendererRuntime.renderer as LoopRenderer;
     configureRendererColorOutput(this.renderer);
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = PCFSoftShadowMap;
+    this.renderer.shadowMap.type = PCFShadowMap;
     this.scene.background = new Color(0x819997);
     this.scene.add(this.stage, this.footprints);
     this.environment = new ModelLabEnvironment(this.scene);

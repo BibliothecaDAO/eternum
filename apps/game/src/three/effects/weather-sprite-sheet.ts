@@ -1,5 +1,6 @@
 import { ClampToEdgeWrapping, DataTexture, LinearFilter, SRGBColorSpace } from "three";
 import { texture } from "three/tsl";
+import type TextureNode from "three/src/nodes/accessors/TextureNode.js";
 import { loadKtx2Texture } from "../utils/utils";
 
 export const WEATHER_SPRITE_SHEETS = {
@@ -27,10 +28,10 @@ export function spriteSheetOffset(sheet: SpriteSheet, frame: number): { x: numbe
   return { x: (frame % sheet.columns) / sheet.columns, y: 1 - (Math.floor(frame / sheet.columns) + 1) / sheet.rows };
 }
 
-const loadedSheets = new Map<string, ReturnType<typeof texture>>();
+const loadedSheets = new Map<string, TextureNode>();
 
 /** Every scene and lab shares one GPU copy per sheet for the life of the page; nobody disposes them. */
-export function loadWeatherSpriteSheet(sheet: SpriteSheet): ReturnType<typeof texture> {
+export function loadWeatherSpriteSheet(sheet: SpriteSheet): TextureNode {
   const loaded = loadedSheets.get(sheet.url);
   if (loaded) return loaded;
   // Keep effects transparent while the shared worker transcodes the GPU-compressed sheet.

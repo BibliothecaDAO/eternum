@@ -1,8 +1,6 @@
-diff --git a/src/nodes/core/NodeBuilder.js b/src/nodes/core/NodeBuilder.js
-index be00b81ef36e1af83b0066603e616f8f1f81a115..d1014b9a10dab770ec9aa222e7bcd9b881ea9e62 100644
 --- a/src/nodes/core/NodeBuilder.js
 +++ b/src/nodes/core/NodeBuilder.js
-@@ -3218,65 +3218,17 @@ class NodeBuilder {
+@@ -3235,68 +3235,17 @@
  	}
  
  	/**
@@ -66,33 +64,31 @@ index be00b81ef36e1af83b0066603e616f8f1f81a115..d1014b9a10dab770ec9aa222e7bcd9b8
 -		this.buildUpdateNodes();
 -
 -		return this;
-+		// Yield before touching shared nodes. Rendering can synchronously build a
-+		// material while we yield, so setup/analyze/generate must stay atomic.
+-
+-	}
+-
 +		await yieldToMain();
 +		return this.build();
- 
- 	}
- 
-diff --git a/src/renderers/common/Renderer.js b/src/renderers/common/Renderer.js
-index 8dfc2ae055ad7b9d4c00e91f7d52a39e747caebe..2ec2f4f30ab165de54bfd9a8b84bdc74f2d2eb06 100644
++
++	}
+ 	/**
+ 	 * Returns shared data object for the given node.
+ 	 *
 --- a/src/renderers/common/Renderer.js
 +++ b/src/renderers/common/Renderer.js
-@@ -1031,8 +1031,10 @@ class Renderer {
+@@ -1052,8 +1052,7 @@
  		this._handleObjectFunction = previousHandleObjectFunction;
  		this._compilationPromises = previousCompilationPromises;
  
 -		// Process compilation work items sequentially to avoid freezing
 -		// Yields between objects to keep animation smooth
-+		// Build shaders cooperatively, but submit GPU pipelines without waiting
-+		// for the previous object. compileAsync still waits for every pipeline.
-+
 +		const pendingCompilations = [];
  
- 		for ( const item of compilationPromises ) {
- 
-@@ -1048,22 +1050,20 @@ class Renderer {
- 			this._nodes.updateForRender( renderObject );
+ 		const total = compilationPromises.length;
+ 		let loaded = 0;
+@@ -1074,31 +1073,31 @@
  			this._bindings.updateForRender( renderObject );
+ 			this._isPreCompiling = false;
  
 -			// Wait for pipeline creation
  			const pipelinePromises = [];
@@ -103,9 +99,31 @@ index 8dfc2ae055ad7b9d4c00e91f7d52a39e747caebe..2ec2f4f30ab165de54bfd9a8b84bdc74
 -
 -			}
 -
+-			this._isPreCompiling = true;
 -			this._nodes.updateAfter( renderObject );
-+			const completion = Promise.all( pipelinePromises ).then( () => this._nodes.updateAfter( renderObject ) );
-+			// Observe early rejection while later shaders yield; the final await propagates it.
+-			this._isPreCompiling = false;
+-
+-			loaded ++;
+-
+-			if ( onProgress !== null ) {
+-
+-				onProgress( new ProgressEvent( 'progress', { lengthComputable: true, loaded, total } ) );
+-
+-			}
++			const completion = Promise.all( pipelinePromises ).then( () => {
++
++				this._isPreCompiling = true;
++				this._nodes.updateAfter( renderObject );
++				this._isPreCompiling = false;
++				loaded ++;
++
++				if ( onProgress !== null ) {
++
++					onProgress( new ProgressEvent( 'progress', { lengthComputable: true, loaded, total } ) );
++
++				}
++
++			} );
 +			completion.catch( () => {} );
 +			pendingCompilations.push( completion );
  
@@ -113,28 +131,26 @@ index 8dfc2ae055ad7b9d4c00e91f7d52a39e747caebe..2ec2f4f30ab165de54bfd9a8b84bdc74
  			await yieldToMain();
  
  		}
- 
-+		await Promise.all( pendingCompilations );
 +
++		await Promise.all( pendingCompilations );
+ 
  	}
  
- 	/**
-@@ -3103,7 +3103,7 @@ class Renderer {
+@@ -3265,7 +3264,7 @@
  
  				const frustum = camera.isArrayCamera ? _frustumArray : _frustum;
  
--				if ( ! object.frustumCulled || frustum.intersectsSprite( object ) ) {
-+				if ( this._handleObjectFunction === this._createObjectPipeline || ! object.frustumCulled || frustum.intersectsSprite( object ) ) {
+-				if ( ! object.frustumCulled || object.intersectsFrustum( frustum ) ) {
++				if ( this._handleObjectFunction === this._createObjectPipeline || ! object.frustumCulled || object.intersectsFrustum( frustum ) ) {
  
  					if ( this.sortObjects === true ) {
  
-@@ -3129,7 +3129,8 @@ class Renderer {
+@@ -3291,7 +3290,7 @@
  
  				const frustum = camera.isArrayCamera ? _frustumArray : _frustum;
  
--				if ( ! object.frustumCulled || frustum.intersectsObject( object ) ) {
-+				// Precompilation precedes instance placement; camera culling would skip their pipelines.
-+				if ( this._handleObjectFunction === this._createObjectPipeline || ! object.frustumCulled || frustum.intersectsObject( object ) ) {
+-				if ( ! object.frustumCulled || object.intersectsFrustum( frustum ) ) {
++				if ( this._handleObjectFunction === this._createObjectPipeline || ! object.frustumCulled || object.intersectsFrustum( frustum ) ) {
  
  					const { geometry, material } = object;
  
