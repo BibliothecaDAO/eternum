@@ -7,6 +7,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useNotificationPreferences } from "@/hooks/use-notification-preferences";
 import { Button } from "@/ui/design-system/kit/button";
 import { forgetDeviceKey } from "@bibliothecadao/eternum";
+import { ACCOUNT_PATH } from "./account-route";
 
 import { setAppMusic, useAppMusic } from "../app-music";
 import { COMMUNITY } from "../community";
@@ -28,7 +29,7 @@ import { Switch } from "./switch";
 type ProfileRow = "account" | "notifications" | "devices";
 
 const ROW_PATH: Record<ProfileRow, string> = {
-  account: "/profile/account",
+  account: ACCOUNT_PATH,
   notifications: "/profile/notifications",
   devices: "/profile/devices",
 };
@@ -111,7 +112,7 @@ const SignInCard = ({ line }: { line: string | null }) => {
       forgetDeviceKey(localStorage);
       await signOutIdentitySession();
     }
-    requestSignIn("/profile");
+    requestSignIn();
   };
   return (
     <section className="flex flex-col gap-3 plate p-3.5">

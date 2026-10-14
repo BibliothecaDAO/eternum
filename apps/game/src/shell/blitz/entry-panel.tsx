@@ -1,5 +1,5 @@
 import { lazy, type ReactNode, Suspense, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { formatExact } from "@/ui/design-system/kit/amount";
@@ -21,7 +21,9 @@ import {
   TEST_TOKEN_MINT,
 } from "../value/ledger";
 import { gameRowKey } from "../blitz-rows";
-import { ENTRY_WORDS, mintTestTokenWord, WALLET_WORDS } from "../words";
+import { linkWalletHref } from "../profile/account-route";
+import { returnPathOf, useRequestSignIn } from "../sign-in/sign-in-route";
+import { DOORWAY_WORDS, ENTRY_WORDS, mintTestTokenWord, PROFILE_WORDS, WORDS } from "../words";
 import {
   entryCalls,
   entryCost,
@@ -252,18 +254,40 @@ const SplitBar = ({ shares }: { shares: ReturnType<typeof entryShares> }) => {
   );
 };
 
+/** No payout wallet yet: Account links one, then returns the player to this lobby. */
 const NoWallet = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   return (
     <Plate icon="Lo" title={ENTRY_WORDS.entry}>
-      <p className="flex min-h-16 items-center gap-3 rounded-[14px] border border-dashed border-kit-line2 px-3.5 font-body text-[15px] text-kit-muted">
-        <KitIcon code="Wt" size={36} />
-        {ENTRY_WORDS.paidFromWallet}
-      </p>
-      <Button role="outline" word={WALLET_WORDS.payoutWallet} icon="Wt" onClick={() => navigate("/profile/account")} />
+      <EntryLine icon="Wt" line={ENTRY_WORDS.paidFromWallet} />
+      <Button
+        role="primary"
+        word={PROFILE_WORDS.linkWallet}
+        icon="Wt"
+        onClick={() => navigate(linkWalletHref(returnPathOf(location)))}
+      />
     </Plate>
   );
 };
+
+/** Signed out: the entry is the player's own, so the lobby asks them to sign in and brings them back to it. */
+export const SignInToJoin = () => {
+  const requestSignIn = useRequestSignIn();
+  return (
+    <Plate icon="Lo" title={ENTRY_WORDS.entry}>
+      <EntryLine icon="Pf" line={DOORWAY_WORDS.signInToPlay} />
+      <Button role="primary" word={WORDS.signIn} icon="Pf" onClick={() => requestSignIn()} />
+    </Plate>
+  );
+};
+
+const EntryLine = ({ icon, line }: { icon: IconCode; line: string }) => (
+  <p className="flex min-h-16 items-center gap-3 rounded-[14px] border border-dashed border-kit-line2 px-3.5 font-body text-[15px] text-kit-muted">
+    <KitIcon code={icon} size={36} />
+    {line}
+  </p>
+);
 
 /** Paid, waiting for the close to draw the games, or past the close while they are being drawn. */
 const Registered = ({ terms, closed }: { terms: EntryTerms; closed: boolean }) => (

@@ -27,7 +27,7 @@ import { FailureLine } from "../sign-in/failure-line";
 import { type EnvironmentLedger, environmentLedger } from "../value/ledger";
 import { BLITZ_WORDS, ENTRY_WORDS, WORDS } from "../words";
 import { chatMembershipOf, useEntryTerms } from "./entry";
-import { PaidEntry } from "./entry-panel";
+import { PaidEntry, SignInToJoin } from "./entry-panel";
 import { GameRow, SeatsChip } from "./game-row";
 import { type LobbyStep, lobbyId, lobbyRowOf, lobbyStep, lobbyTitle, seatsOf } from "./lobby";
 import { LobbyChatPanel } from "./lobby-chat-panel";
@@ -159,6 +159,7 @@ export const BlitzLobbyPage = () => {
       <SlotEntry
         key={row.slot.name}
         slot={row.slot}
+        signedIn={session !== null}
         wallet={wallet}
         owed={facts.refunds.get(row.slot.name)}
         games={facts.games}
@@ -339,11 +340,13 @@ const RegistrantChat = ({
  */
 const SlotEntry = ({
   slot,
+  signedIn,
   wallet,
   owed,
   games,
 }: {
   slot: PlaytestSlot;
+  signedIn: boolean;
   /** The payout wallet's address; null when the player has linked none. */
   wallet: string | null;
   owed: string | undefined;
@@ -355,6 +358,7 @@ const SlotEntry = ({
   if (owed && owed !== refundWallet) setRefundWallet(owed);
   const ledger = environmentLedger();
   if (!ledger) return <FailureLine line={ENTRY_WORDS.unreadable} />;
+  if (!signedIn) return <SignInToJoin />;
   const key = slotKeyOf(slot);
   const owner = refundWallet ?? wallet;
   const game = owner ? seatedGameOf(games, key, owner) : undefined;

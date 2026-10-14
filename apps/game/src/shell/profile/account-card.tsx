@@ -1,5 +1,6 @@
 import { nameRuleViolation, type Session } from "@realms-world/identity";
 import { type ReactNode, useEffect, useState, type FormEvent } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import {
   identityClient,
@@ -20,6 +21,7 @@ import { NameField, PortraitGrid } from "../sign-in/fields";
 import { PROFILE_WORDS, SIGN_IN_WORDS, WALLET_WORDS } from "../words";
 import { Confirm } from "./confirm";
 import { payoutAddressOf } from "@/hooks/context/payout-wallet";
+import { walletReturnOf } from "./account-route";
 import { PayoutWalletPanel } from "./payout-wallet-panel";
 import { SettingRow, SettingRows } from "./setting-row";
 
@@ -27,12 +29,16 @@ type Open = "name" | "portrait" | "payout" | "sign-out" | null;
 
 /**
  * Account (spec 11): the name, the portrait, how the player signs in and the payout wallet, each a row that opens its
- * sheet; Sign out last, outline, asking first. The payout wallet opens beside the rows on desktop.
+ * sheet; Sign out last, outline, asking first. The payout wallet opens beside the rows on desktop. Sent here from a page
+ * that needs a wallet (`?next=`), it opens on the payout wallet and returns there once one is linked.
  */
 export const AccountCard = ({ session }: { session: Session }) => {
   const refresh = useIdentitySessionStore((state) => state.refresh);
   const account = useAccountStore((state) => state.account?.address);
-  const [open, setOpen] = useState<Open>(null);
+  const payout = payoutAddressOf(session.user);
+  const returnTo = walletReturnOf(useLocation().search);
+  useReturnOnceLinked(returnTo, payout);
+  const [open, setOpen] = useState<Open>(returnTo && !payout ? "payout" : null);
   const close = () => setOpen(null);
   // A row opens its setting, and the same row closes it again.
   const toggle = (row: Exclude<Open, null>) => setOpen(open === row ? null : row);
@@ -40,7 +46,6 @@ export const AccountCard = ({ session }: { session: Session }) => {
     close();
     void refresh();
   };
-  const payout = payoutAddressOf(session.user);
   return (
     <div className="flex flex-col gap-4">
       <SettingRows>
@@ -86,6 +91,15 @@ export const AccountCard = ({ session }: { session: Session }) => {
       )}
     </div>
   );
+};
+
+/** Back to the page that sent the player here once a wallet is linked; a wallet already linked on arrival stays put. */
+const useReturnOnceLinked = (returnTo: string | null, payout: string | null) => {
+  const navigate = useNavigate();
+  const [linkedOnArrival] = useState(payout !== null);
+  useEffect(() => {
+    if (returnTo && payout && !linkedOnArrival) navigate(returnTo, { replace: true });
+  }, [linkedOnArrival, navigate, payout, returnTo]);
 };
 
 /**
