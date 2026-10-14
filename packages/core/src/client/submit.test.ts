@@ -368,6 +368,17 @@ describe("gameplay account submits", () => {
     );
   });
 
+  it("a configured account's first send needs no nonce read after the player acts", async () => {
+    const shard = fakeShard("0x9009", (invoke) => shard.land(invoke));
+    const configured = configureGameplayAccountSubmits(shard.account as unknown as AccountInterface, SHARD);
+    await endOfMacrotask();
+    shard.nonceReadable = false;
+
+    const sent = await configured.execute(CALL);
+    expect(sent.transaction_hash).toBe(shard.hashAt(0));
+    expect(shard.sentNonces()).toEqual(["0x7"]);
+  });
+
   it("rejects reusing a configured account on another chain", () => {
     const shard = fakeShard("0x456", (invoke) => shard.land(invoke));
     configureGameplayAccountSubmits(shard.account as unknown as AccountInterface, SHARD);
