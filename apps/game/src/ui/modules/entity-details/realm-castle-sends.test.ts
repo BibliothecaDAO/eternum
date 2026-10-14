@@ -63,7 +63,9 @@ const match = () => {
   };
   const sentRealms = () => calls.provision_realm.mock.calls.map(([props]) => props.realm_entity_id);
   const provisionedReports = () =>
-    report.provisioned.mock.calls.flatMap(([realms]) => realms.map((realm) => realm.entityId));
+    report.provisioned.mock.calls.flatMap((call) =>
+      (call[0] as RealmProvisionCandidate[]).map((realm) => realm.entityId),
+    );
   return { calls, report, start, apply, sentRealms, provisionedReports };
 };
 
