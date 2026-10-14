@@ -11,7 +11,6 @@ import {
   Users,
 } from "@/ui/design-system/atoms/game-icons";
 import { useCallback, useEffect, useRef, useState, type MutableRefObject, type ReactNode, type RefObject } from "react";
-import { Link } from "react-router-dom";
 
 import {
   listOfferedProceduralCharacterAppearances,
@@ -33,7 +32,6 @@ import {
 } from "@/three/characters/benchmark/procedural-character-benchmark-renderer";
 import { ProceduralCharacterPerformanceEvaluator } from "@/three/characters/benchmark/procedural-character-performance-evaluation";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
 const INITIAL_STATS: ProceduralCharacterBenchmarkStats = {
   actorCount: 0,
@@ -121,7 +119,6 @@ export const ProceduralWorldGymView = () => <ProceduralCharacterBenchmarkExperie
 
 const ProceduralCharacterBenchmarkExperience = ({ mode }: { mode: BenchmarkExperienceMode }) => {
   const worldGym = mode === "world";
-  useBootDocumentState("app-ready", worldGym ? "procedural_world_gym_ready" : "procedural_character_benchmark_ready");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<ProceduralCharacterBenchmarkRendererHandle | null>(null);
   const [config, setConfig] = useState(
@@ -204,7 +201,7 @@ const ProceduralCharacterBenchmarkExperience = ({ mode }: { mode: BenchmarkExper
 
   return (
     <section
-      className="flex min-h-screen flex-col overflow-hidden bg-[#070b12] text-slate-100 lg:h-screen"
+      className="flex min-h-[var(--lab-viewport-height)] flex-col overflow-hidden bg-[#070b12] text-slate-100 lg:h-[var(--lab-viewport-height)]"
       data-actor-count={stats.actorCount}
       data-collision-body-count={stats.collisionBodyCount}
       data-benchmark-ready={ready && !stats.loadingActors ? "true" : "false"}
@@ -383,24 +380,6 @@ const BenchmarkHeader = ({
       />
       <BenchmarkAction icon={<StepForward />} label="Step" onClick={onStep} disabled={!ready || !paused} />
       <BenchmarkAction icon={<RotateCcw />} label="Reset" onClick={onReset} disabled={!ready} />
-      <Link
-        to={worldGym ? "/debug/procedural-character-benchmark" : "/debug/procedural-world-gym"}
-        className="grid h-9 place-items-center border border-white/10 px-3 text-xs font-semibold uppercase tracking-wider text-slate-300 transition hover:border-white/25 hover:bg-white/[0.06] hover:text-white"
-      >
-        {worldGym ? "Hex lab" : "World gym"}
-      </Link>
-      <Link
-        to="/debug/procedural-characters"
-        className="grid h-9 place-items-center border border-white/10 px-3 text-xs font-semibold uppercase tracking-wider text-slate-300 transition hover:border-white/25 hover:bg-white/[0.06] hover:text-white"
-      >
-        Animation
-      </Link>
-      <Link
-        to="/"
-        className="grid h-9 place-items-center border border-white/10 px-3 text-xs font-semibold uppercase tracking-wider text-slate-300 transition hover:border-white/25 hover:bg-white/[0.06] hover:text-white"
-      >
-        Exit
-      </Link>
     </div>
   </header>
 );

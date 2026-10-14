@@ -13,7 +13,7 @@ const REPOSITORY_ROOT = fileURLToPath(new URL("../../../../", import.meta.url));
 
 export function buildProceduralWorldGymSmokeUrl({ baseUrl, rendererMode }) {
   const url = new URL(baseUrl);
-  url.pathname = "/debug/procedural-world-gym";
+  url.pathname = "/lab/world";
   url.search = "";
   if (rendererMode) url.searchParams.set("rendererMode", rendererMode);
   return url.toString();

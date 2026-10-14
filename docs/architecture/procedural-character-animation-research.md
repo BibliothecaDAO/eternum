@@ -63,8 +63,8 @@ preview is useful for scale and lighting validation before those gates.
 
 ### Implemented proof in this branch
 
-The runnable proof is available at `/debug/procedural-characters`. The gym and an opt-in worldmap preview now consume
-the same production-facing actor runtime, while the default instanced army renderer remains unchanged. It includes:
+The runnable proof is available at `/lab/characters`. The gym and an opt-in worldmap preview now consume the same
+production-facing actor runtime, while the default instanced army renderer remains unchanged. It includes:
 
 - three zero-clip, 65-bone Quaternius CC0 character GLBs: Universal Base, Peasant, and Ranger, mapped to upgrade tiers;
 - one decoded asset library whose actors share geometry and textures but own independent skeletons and materials;
@@ -78,8 +78,8 @@ the same production-facing actor runtime, while the default instanced army rende
   non-finite pose/body/render transforms, missing render work, browser exceptions, and layout overflow;
 - a repeatable `pnpm --dir apps/game smoke:character-gym` promotion gate with structured JSON output.
 
-The crowd proof is available at `/debug/procedural-character-benchmark`. It uses the same actor runtime on a fully
-framed 10×10 instanced hex arena and adds:
+The crowd proof is available at `/lab/character-benchmark`. It uses the same actor runtime on a fully framed 10×10
+instanced hex arena and adds:
 
 - deterministic fixed-step neighbor movement for 25, 50, 75, or 100 articulated actors;
 - automatic and manual death bursts, a separately tunable Jolt-concurrency cap, corpse lifetime, and deterministic
@@ -160,14 +160,13 @@ only their input adapters and cameras differ.
 - Worldmap profiles use a 38° FOV at approximately 10/20/40 camera distance, army scale `0.3`, and close-view-only
   shadows. This strongly favors aggressive representation LOD: most units do not need hero articulation most of the
   time.
-- The [`/debug/three-chunks` route pattern](../../apps/game/src/app.tsx) is the right lazy-loading precedent. Its
+- The [`/lab/chunks` route pattern](../../apps/game/src/app.tsx) is the right lazy-loading precedent. Its
   [renderer](../../apps/game/src/three/debug/three-chunk-debug-renderer.ts) is a standalone `WebGLRenderer`; the
   character gym must instead call the
   [production renderer-backend runtime](../../apps/game/src/three/renderer-backend-runtime.ts) so the same scene can be
   exercised in native WebGPU and forced WebGL2 fallback.
 - `apps/game/package.json` now declares exact `jolt-physics@1.1.0`. The separate WASM import lives behind the lazy
-  `/debug/procedural-characters` route, so normal game boot does not initialize the 128 MiB Jolt heap measured by the
-  browser smoke.
+  `/lab/characters` route, so normal game boot does not initialize the 128 MiB Jolt heap measured by the browser smoke.
 
 ### Inference from the baseline
 
@@ -758,9 +757,9 @@ registry, rig builder, TSL materials, pose pipeline, Jolt adapter, representatio
 renderer backend, and telemetry that the game will use. Only its character facts and terrain/impact inputs are
 synthetic.
 
-Follow the lazy `/debug/three-chunks` route shape but add `/debug/procedural-characters`. Unlike the existing
-three-chunk fixture, initialize through `initializeRendererBackendRuntime` so the route reports and exercises native
-WebGPU or the same `webgpu-force-webgl` backend as the game.
+Follow the lazy `/lab/chunks` route shape but add `/lab/characters`. Unlike the existing three-chunk fixture, initialize
+through `initializeRendererBackendRuntime` so the route reports and exercises native WebGPU or the same
+`webgpu-force-webgl` backend as the game.
 
 ### Stage layout
 
@@ -1012,8 +1011,8 @@ tradeoff, not a parallel adapter. [JoltPhysics.js API and memory ownership](http
 
 #### Phase 1 — lazy gym and Knight rig/recipe/TSL greybox
 
-- Add the lazy `/debug/procedural-characters` route through the production renderer backend, structured
-  scenarios/results, camera presets, turntable/upgrade/locomotion/impact/stress zones, and all rig/physics overlays.
+- Add the lazy `/lab/characters` route through the production renderer backend, structured scenarios/results, camera
+  presets, turntable/upgrade/locomotion/impact/stress zones, and all rig/physics overlays.
 - Freeze canonical humanoid rig, socket, part, recipe, and gym-scenario schema version 1.
 - Build the deterministic recipe compiler, validators, caches, one neutral Knight body, T1–T3 greybox topology
   signatures, and one fixed TSL PBR graph.

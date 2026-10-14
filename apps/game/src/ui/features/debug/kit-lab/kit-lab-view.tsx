@@ -11,7 +11,6 @@ import { TierChip } from "@/ui/design-system/kit/tier-chip";
 import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
 import { OFFLINE, TRY_AGAIN, YOU } from "@/ui/design-system/kit/words";
 import { useFrontierType } from "@/ui/features/frontier/use-frontier-type";
-import { useBootDocumentState } from "@/ui/modules/boot-loader/boot-loader-state";
 import { type ReactNode, useState } from "react";
 import { Route, Routes } from "react-router-dom";
 
@@ -27,7 +26,6 @@ const ENDS_AT = new Date(2026, 9, 7, 21, 40).getTime() / 1000;
  */
 export const KitLabView = () => {
   useFrontierType();
-  useBootDocumentState("app-ready");
   return (
     <Routes>
       <Route path="hud/:state" element={<HudLab />} />

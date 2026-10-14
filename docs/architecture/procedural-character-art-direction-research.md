@@ -4,7 +4,7 @@
 
 **Repository baseline:** Three.js `0.185.1`, `WebGPURenderer` with native WebGPU and forced WebGL2 backends
 
-**Related implementation:** `/debug/procedural-characters` and
+**Related implementation:** `/lab/characters` and
 [`procedural-character-animation-research.md`](./procedural-character-animation-research.md)
 
 **Evidence policy:** technical claims use official documentation, project source, first-party developer material, or
@@ -734,9 +734,9 @@ Purpose: make evolution a repeatable authored transition rather than a collectio
 
 Purpose: determine what may be promoted to the real world.
 
-The first implemented grid lives at `/debug/procedural-character-benchmark`: a complete 10×10 arena with 25/50/75/100
-actor presets, deterministic movement, bounded Jolt death/respawn churn, backend parity, live cost controls, and
-structured smoke output. It intentionally measures the current all-hero ceiling before representation LOD lands.
+The first implemented grid lives at `/lab/character-benchmark`: a complete 10×10 arena with 25/50/75/100 actor presets,
+deterministic movement, bounded Jolt death/respawn churn, backend parity, live cost controls, and structured smoke
+output. It intentionally measures the current all-hero ceiling before representation LOD lands.
 
 - 1, 3, 12, 50, 200, and representative maximum unit presets;
 - hero/near/mid/far representation distribution;

@@ -1,6 +1,6 @@
 import { Flame, Pause, Play, RefreshCw, Sparkles } from "@/ui/design-system/atoms/game-icons";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 import {
   mountWorldFxGymRenderer,
@@ -13,7 +13,6 @@ import {
   resolveWorldFxGymSeed,
 } from "@/three/debug/world-fx-gym-fixture";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
 const EMPTY_STATS: WorldFxGymStats = {
   activeAdditiveParticles: 0,
@@ -51,7 +50,6 @@ export const WorldFxGymView = () => {
   const [error, setError] = useState<string | null>(null);
   const [paused, setPaused] = useState(false);
   const [ready, setReady] = useState(false);
-  useBootDocumentState(ready ? "app-ready" : "app-loading", ready ? "world_fx_gym_ready" : undefined);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -116,7 +114,7 @@ export const WorldFxGymView = () => {
   return (
     <section
       className={cn(
-        "min-h-screen bg-[#0d0908] text-stone-100",
+        "min-h-[var(--lab-viewport-height)] bg-[#0d0908] text-stone-100",
         capture ? "block" : "flex flex-col gap-4 p-4 xl:grid xl:grid-cols-[340px_1fr]",
       )}
       data-debug-route="world-fx"
@@ -134,12 +132,6 @@ export const WorldFxGymView = () => {
                 Deterministic pooled effects running through the production World FX interface.
               </p>
             </div>
-            <Link
-              to="/"
-              className="border border-white/15 px-3 py-2 text-xs font-semibold uppercase text-stone-200 transition-colors hover:bg-white/10"
-            >
-              Exit
-            </Link>
           </div>
 
           <DebugSelect label="Composition" value={scenario} onChange={(value) => setOption("scene", value)}>

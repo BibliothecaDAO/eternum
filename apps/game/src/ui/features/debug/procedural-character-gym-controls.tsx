@@ -387,13 +387,13 @@ export const CharacterGymControls = (props: CharacterGymControlsProps) => (
       )}
       <DebugControls {...props} />
       <Link
-        to="/debug/procedural-character-benchmark"
+        to="/lab/character-benchmark"
         className="flex items-center justify-between border border-cyan-300/20 bg-cyan-300/[0.04] px-3 py-2 text-xs uppercase tracking-wider text-cyan-200 transition hover:bg-cyan-300/[0.09] hover:text-white"
       >
         Crowd benchmark <ChevronRight className="h-4 w-4" />
       </Link>
       <Link
-        to="/debug/three-chunks"
+        to="/lab/chunks"
         className="flex items-center justify-between border border-white/10 bg-white/[0.025] px-3 py-2 text-xs uppercase tracking-wider text-slate-400 transition hover:bg-white/[0.06] hover:text-white"
       >
         Three.js chunk lab <ChevronRight className="h-4 w-4" />

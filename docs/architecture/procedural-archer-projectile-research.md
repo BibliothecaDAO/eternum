@@ -911,7 +911,7 @@ Change:
 - `apps/game/src/three/characters/benchmark/procedural-character-benchmark-config.ts`
 - `apps/game/src/three/characters/benchmark/procedural-character-benchmark-simulation.ts`
 - `apps/game/src/three/characters/benchmark/procedural-character-benchmark-renderer.ts`
-- `apps/game/src/ui/features/debug/procedural-character-benchmark-view.tsx`
+- `apps/game/src/ui/features/lab/character-benchmark-view.tsx`
 - browser smoke scripts
 
 Add workload presets: `archer-volley`, `ranged-mix`, `512-arrows`, and `impact-ragdolls`. Record baseline and candidate

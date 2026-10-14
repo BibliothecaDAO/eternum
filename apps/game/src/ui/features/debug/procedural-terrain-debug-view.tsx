@@ -22,7 +22,6 @@ import {
   type TerrainVerificationSceneId,
 } from "@/three/terrain/verification/terrain-verification-fixtures";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
 import { DEFAULT_TERRAIN_LAB_PREVIEW, type TerrainLabPreview } from "@/three/debug/terrain-lab-preview";
 import { MODEL_TYPE_TO_FILE } from "@/three/constants/army-constants";
@@ -121,10 +120,6 @@ export const ProceduralTerrainDebugView = () => {
   const [buildingCount, setBuildingCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
-  useBootDocumentState(
-    ready || error ? "app-ready" : "app-loading",
-    ready ? "procedural_terrain_debug_ready" : undefined,
-  );
 
   useEffect(() => {
     const canvas = canvasRef.current;

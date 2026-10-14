@@ -48,14 +48,14 @@ const snapshot = (stats = PASSING_STATS) => ({
 describe("character benchmark smoke contract", () => {
   it("builds the standalone benchmark URL and validates renderer modes", () => {
     expect(buildCharacterBenchmarkSmokeUrl({ baseUrl: "https://127.0.0.1:4173" })).toBe(
-      "https://127.0.0.1:4173/debug/procedural-character-benchmark",
+      "https://127.0.0.1:4173/lab/character-benchmark",
     );
     expect(
       buildCharacterBenchmarkSmokeUrl({
         baseUrl: "https://127.0.0.1:4173",
         rendererMode: "webgpu-force-webgl",
       }),
-    ).toBe("https://127.0.0.1:4173/debug/procedural-character-benchmark?rendererMode=webgpu-force-webgl");
+    ).toBe("https://127.0.0.1:4173/lab/character-benchmark?rendererMode=webgpu-force-webgl");
     expect(normalizeRequestedBenchmarkRendererMode("webgpu-auto")).toBe("webgpu-auto");
     expect(() => normalizeRequestedBenchmarkRendererMode("legacy-webgl")).toThrow("Unsupported renderer mode");
   });

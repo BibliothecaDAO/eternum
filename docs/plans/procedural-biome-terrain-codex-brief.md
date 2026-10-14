@@ -641,8 +641,7 @@ presentation, and renderer backend.
 
 The companion [self-verification brief](./procedural-biome-terrain-verification.md) defines:
 
-- an auth-free `/debug/procedural-terrain` route with fixed fixtures, cameras, lights, time, viewport, and renderer
-  mode;
+- an auth-free `/lab` route with fixed fixtures, cameras, lights, time, viewport, and renderer mode;
 - coastline, forest, arid, alpine, frontier, occupied-pad, negative-page-seam, and prop-stress scenarios;
 - beauty, normal, height, biome-blend, and exploration-ownership evidence passes;
 - structural checks for deterministic fingerprints, page seams, hidden props, pads, coverage, backend parity, and

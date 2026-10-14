@@ -23,10 +23,3 @@
 /g/:chain/:game/* / 200
 /lab / 200
 /lab/* / 200
-/debug/three-chunks / 200
-/debug/procedural-characters / 200
-/debug/procedural-character-benchmark / 200
-/debug/procedural-world-gym / 200
-/debug/terrain-props / 200
-/debug/procedural-terrain-benchmark / 200
-/debug/world-fx / 200

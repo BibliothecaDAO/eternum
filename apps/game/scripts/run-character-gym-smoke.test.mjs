@@ -75,7 +75,7 @@ const PASSING_RAGDOLL_APPEARANCE_SWAPS = PASSING_APPEARANCE_SWAPS.slice(0, 2).ma
 describe("buildCharacterGymSmokeUrl", () => {
   it("builds the auth-free procedural character route", () => {
     expect(buildCharacterGymSmokeUrl({ baseUrl: "https://127.0.0.1:4173" })).toBe(
-      "https://127.0.0.1:4173/debug/procedural-characters",
+      "https://127.0.0.1:4173/lab/characters",
     );
   });
 
@@ -85,7 +85,7 @@ describe("buildCharacterGymSmokeUrl", () => {
         baseUrl: "https://127.0.0.1:4173",
         rendererMode: "webgpu-force-webgl",
       }),
-    ).toBe("https://127.0.0.1:4173/debug/procedural-characters?rendererMode=webgpu-force-webgl");
+    ).toBe("https://127.0.0.1:4173/lab/characters?rendererMode=webgpu-force-webgl");
   });
 });
 

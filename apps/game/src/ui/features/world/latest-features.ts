@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-14",
+    title: "One lab for every tool",
+    description:
+      "Art, character, renderer and interface tools share one lab selector. Model review and terrain captures keep their existing addresses.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-14",
     title: "Neutral tone mapping control",
     description:
       "Graphics debug controls expose Neutral tone mapping alongside the existing renderer modes and exposure slider.",

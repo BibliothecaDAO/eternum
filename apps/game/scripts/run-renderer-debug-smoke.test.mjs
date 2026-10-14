@@ -13,13 +13,11 @@ import {
 
 describe("buildRendererDebugSmokeUrl", () => {
   it("builds the auth-free Three.js chunk debug route", () => {
-    expect(buildRendererDebugSmokeUrl({ baseUrl: "https://127.0.0.1:4173" })).toBe(
-      "https://127.0.0.1:4173/debug/three-chunks",
-    );
+    expect(buildRendererDebugSmokeUrl({ baseUrl: "https://127.0.0.1:4173" })).toBe("https://127.0.0.1:4173/lab/chunks");
   });
   it("preserves an explicit backend override", () => {
     expect(buildRendererDebugSmokeUrl({ baseUrl: "https://127.0.0.1:4179/?rendererMode=webgpu-force-webgl" })).toBe(
-      "https://127.0.0.1:4179/debug/three-chunks?rendererMode=webgpu-force-webgl",
+      "https://127.0.0.1:4179/lab/chunks?rendererMode=webgpu-force-webgl",
     );
   });
 });

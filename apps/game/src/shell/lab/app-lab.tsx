@@ -5,7 +5,6 @@ import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { IdentityRequestError } from "@realms-world/identity";
 import { useFrontierType } from "@/ui/features/frontier/use-frontier-type";
-import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
 import { BlitzListPage, BlitzLobbyPage } from "../blitz/blitz-pages";
 import { entryTermsKey, refundOwedKey, registeredSlotsKey, slotRegisteredKey } from "../blitz/entry";
@@ -59,27 +58,42 @@ const isLabScreen = (screen: string | undefined): screen is LabScreen =>
   screen !== undefined && Object.hasOwn(LAB_SCREENS, screen);
 
 const LabScreenView = ({ screen }: { screen: LabScreen }) => {
-  useBootDocumentState("app-ready");
   useFrontierType();
-  const [client] = useState(() => createLabClient(screen));
-  useLabSession(screen);
+  const [client, setClient] = useState<QueryClient | null>(null);
+  useEffect(() => {
+    const restore = installLabFixtures(screen);
+    const client = createLabClient(screen);
+    setClient(client);
+    return () => {
+      client.clear();
+      restore();
+    };
+  }, [screen]);
+  if (!client) return <p role="status">Loading app fixtures…</p>;
   return (
     <QueryClientProvider client={client}>
-      <Routes>
-        <Route index element={<PlayPage />} />
-        <Route path="frontier" element={<FrontierPage />} />
-        <Route path="eternum" element={<EternumPage />} />
-        <Route path="dominion" element={<DominionPage />} />
-        <Route path="blitz" element={<BlitzListPage />} />
-        <Route path="blitz/:id" element={<BlitzLobbyPage />} />
-        <Route path="season" element={<SeasonPage />} />
-        <Route path="results/:id" element={<ResultsPage />} />
-        <Route path="profile" element={<ProfilePage />} />
-        <Route path="profile/account" element={<ProfileRowPage row="account" />} />
-        <Route path="p/:address" element={<PlayerPage />} />
-        <Route path="learn" element={<LearnPage />} />
-      </Routes>
+      <LabPages screen={screen} />
     </QueryClientProvider>
+  );
+};
+
+const LabPages = ({ screen }: { screen: LabScreen }) => {
+  useLabSession(screen);
+  return (
+    <Routes>
+      <Route index element={<PlayPage />} />
+      <Route path="frontier" element={<FrontierPage />} />
+      <Route path="eternum" element={<EternumPage />} />
+      <Route path="dominion" element={<DominionPage />} />
+      <Route path="blitz" element={<BlitzListPage />} />
+      <Route path="blitz/:id" element={<BlitzLobbyPage />} />
+      <Route path="season" element={<SeasonPage />} />
+      <Route path="results/:id" element={<ResultsPage />} />
+      <Route path="profile" element={<ProfilePage />} />
+      <Route path="profile/account" element={<ProfileRowPage row="account" />} />
+      <Route path="p/:address" element={<PlayerPage />} />
+      <Route path="learn" element={<LearnPage />} />
+    </Routes>
   );
 };
 
@@ -96,9 +110,6 @@ const useLabSession = (screen: LabScreen) => {
 
 /** The lab's own query client: the app's /api answered from the fixtures, the shard boards seeded by game. */
 const createLabClient = (screen: LabScreen) => {
-  answerAppReads(screen);
-  answerLobbyChat(screen);
-  answerIdentity();
   const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } });
   for (const gameId of [1, 3]) client.setQueryData(["shell", "leaderboard", LAB_CHAIN, gameId], LAB_FRONTIER_BOARD);
   client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 7], LAB_BLITZ_BOARD);
@@ -117,6 +128,34 @@ const createLabClient = (screen: LabScreen) => {
   if (prize) client.setQueryData(seasonPrizeKey([{ slot: LAB_SLOT_KEY, wallet: LAB_WALLET }]), prize);
   return client;
 };
+
+function installLabFixtures(screen: LabScreen): () => void {
+  const previousFetch = window.fetch;
+  const previousWebSocket = window.WebSocket;
+  const previousSession = useIdentitySessionStore.getState().session;
+  const identityMethods = [
+    "listSignInProviders",
+    "availableSignInProviders",
+    "sendSignInCode",
+    "unlinkWallet",
+    "linkWallet",
+  ];
+  const descriptors = identityMethods.map(
+    (name) => [name, Object.getOwnPropertyDescriptor(identityClient, name)] as const,
+  );
+  answerAppReads(screen);
+  answerLobbyChat(screen);
+  answerIdentity();
+  return () => {
+    window.fetch = previousFetch;
+    window.WebSocket = previousWebSocket;
+    for (const [name, descriptor] of descriptors) {
+      if (descriptor) Object.defineProperty(identityClient, name, descriptor);
+      else Reflect.deleteProperty(identityClient, name);
+    }
+    useIdentitySessionStore.getState().applySession(previousSession);
+  };
+}
 
 const json = (body: unknown) =>
   new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } });

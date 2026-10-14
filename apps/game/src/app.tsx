@@ -22,46 +22,8 @@ import { SignInPage } from "./shell/sign-in/sign-in-page";
 import { FirstFrame } from "./shell/first-frame";
 import { SIGN_IN_PATH } from "./shell/sign-in/sign-in-route";
 
-const MotionLabView = lazy(() =>
-  import("./ui/features/debug/motion-lab/motion-lab-view").then((module) => ({ default: module.MotionLabView })),
-);
-const KitLabView = lazy(() =>
-  import("./ui/features/debug/kit-lab/kit-lab-view").then((module) => ({ default: module.KitLabView })),
-);
-const DebugThreeChunkView = lazy(() =>
-  import("./ui/features/debug/three-chunk-debug-view").then((module) => ({ default: module.ThreeChunkDebugView })),
-);
-const DebugProceduralCharacterGymView = lazy(() =>
-  import("./ui/features/debug/procedural-character-gym-view").then((module) => ({
-    default: module.ProceduralCharacterGymView,
-  })),
-);
-const DebugProceduralCharacterBenchmarkView = lazy(() =>
-  import("./ui/features/debug/procedural-character-benchmark-view").then((module) => ({
-    default: module.ProceduralCharacterBenchmarkView,
-  })),
-);
-const DebugProceduralWorldGymView = lazy(() =>
-  import("./ui/features/debug/procedural-character-benchmark-view").then((module) => ({
-    default: module.ProceduralWorldGymView,
-  })),
-);
-const DebugTerrainPropView = lazy(() =>
-  import("./ui/features/debug/terrain-prop-debug-view").then((module) => ({ default: module.TerrainPropDebugView })),
-);
-const DebugProceduralTerrainBenchmarkView = lazy(() =>
-  import("./ui/features/debug/procedural-terrain-benchmark-view").then((module) => ({
-    default: module.ProceduralTerrainBenchmarkView,
-  })),
-);
-const DebugWorldFxGymView = lazy(() =>
-  import("./ui/features/debug/world-fx-gym-view").then((module) => ({ default: module.WorldFxGymView })),
-);
-const GraphicsLabView = lazy(() =>
-  import("./ui/features/debug/graphics-lab-view").then((module) => ({ default: module.GraphicsLabView })),
-);
+const LabApp = lazy(() => import("./lab/lab-app").then((module) => ({ default: module.LabApp })));
 // Reading matter loads on demand, so the cold path carries no post or legal text.
-const AppLabView = lazy(() => import("./shell/lab/app-lab").then((module) => ({ default: module.AppLabView })));
 const TermsPage = lazy(() => import("./shell/legal").then((module) => ({ default: module.TermsPage })));
 const PrivacyPage = lazy(() => import("./shell/legal").then((module) => ({ default: module.PrivacyPage })));
 const CreditsPage = lazy(() => import("./shell/legal").then((module) => ({ default: module.CreditsPage })));
@@ -129,98 +91,15 @@ export const appRoutes = (
         </SceneRoute>
       }
     />
-    {/* The labs and debug scenes exist only in the dev environment's build. */}
     {IS_DEV_ENVIRONMENT && (
-      <>
-        <Route
-          path="/lab/motion"
-          element={
-            <LazyRoute>
-              <MotionLabView />
-            </LazyRoute>
-          }
-        />
-        <Route
-          path="/lab/kit/*"
-          element={
-            <LazyRoute>
-              <KitLabView />
-            </LazyRoute>
-          }
-        />
-        <Route
-          path="/lab/app/:screen/*"
-          element={
-            <LazyRoute>
-              <AppLabView />
-            </LazyRoute>
-          }
-        />
-        <Route
-          path="/lab/*"
-          element={
-            <SceneRoute fallback={<AppFallback />}>
-              <GraphicsLabView />
-            </SceneRoute>
-          }
-        />
-        <Route
-          path="/debug/three-chunks"
-          element={
-            <SceneRoute fallback={<AppFallback />}>
-              <DebugThreeChunkView />
-            </SceneRoute>
-          }
-        />
-        <Route
-          path="/debug/procedural-characters"
-          element={
-            <SceneRoute fallback={<AppFallback />}>
-              <DebugProceduralCharacterGymView />
-            </SceneRoute>
-          }
-        />
-        <Route
-          path="/debug/procedural-character-benchmark"
-          element={
-            <SceneRoute fallback={<AppFallback />}>
-              <DebugProceduralCharacterBenchmarkView />
-            </SceneRoute>
-          }
-        />
-        <Route
-          path="/debug/procedural-world-gym"
-          element={
-            <SceneRoute fallback={<AppFallback />}>
-              <DebugProceduralWorldGymView />
-            </SceneRoute>
-          }
-        />
-        <Route
-          path="/debug/terrain-props"
-          element={
-            <SceneRoute fallback={<AppFallback />}>
-              <DebugTerrainPropView />
-            </SceneRoute>
-          }
-        />
-        <Route
-          path="/debug/procedural-terrain-benchmark"
-          element={
-            <SceneRoute fallback={<AppFallback />}>
-              <DebugProceduralTerrainBenchmarkView />
-            </SceneRoute>
-          }
-        />
-        <Route
-          path="/debug/world-fx"
-          element={
-            <SceneRoute fallback={<AppFallback />}>
-              <DebugWorldFxGymView />
-            </SceneRoute>
-          }
-        />
-      </>
+      <Route
+        path="/lab/*"
+        element={
+          <LazyRoute>
+            <LabApp />
+          </LazyRoute>
+        }
+      />
     )}
   </>
 );

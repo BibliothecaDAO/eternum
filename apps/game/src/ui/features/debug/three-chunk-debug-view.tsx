@@ -1,6 +1,5 @@
 import { RefreshCw } from "@/ui/design-system/atoms/game-icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 
 import {
   debugChunkScenarios,
@@ -15,7 +14,6 @@ import {
   type ThreeChunkDebugRendererHandle,
 } from "@/three/debug/three-chunk-debug-renderer";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
 const INITIAL_FRAME_STATS: ThreeChunkDebugFrameStats = {
   fps: 0,
@@ -28,8 +26,6 @@ const INITIAL_FRAME_STATS: ThreeChunkDebugFrameStats = {
 const integerFormatter = new Intl.NumberFormat("en-US");
 
 export const ThreeChunkDebugView = () => {
-  useBootDocumentState("app-ready", "three_chunk_debug_ready");
-
   const containerRef = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<ThreeChunkDebugRendererHandle | null>(null);
   const [scenarioId, setScenarioId] = useState<DebugChunkScenarioId>("baseline");
@@ -87,7 +83,7 @@ export const ThreeChunkDebugView = () => {
 
   return (
     <section
-      className="flex min-h-screen flex-col gap-4 bg-slate-950 p-4 text-slate-100 lg:grid lg:grid-cols-[minmax(260px,320px)_1fr]"
+      className="flex min-h-[var(--lab-viewport-height)] flex-col gap-4 bg-slate-950 p-4 text-slate-100 lg:grid lg:grid-cols-[minmax(260px,320px)_1fr]"
       data-debug-route="three-chunks"
     >
       <aside className="flex flex-col gap-4 border border-white/10 bg-black/55 p-4 backdrop-blur-md">
@@ -96,12 +92,6 @@ export const ThreeChunkDebugView = () => {
             <p className="text-xs font-semibold uppercase text-sky-200/70">Renderer Debug</p>
             <h1 className="mt-1 text-2xl font-semibold text-white">Three.js Chunks</h1>
           </div>
-          <Link
-            to="/"
-            className="border border-white/15 px-3 py-2 text-xs font-semibold uppercase text-slate-200 transition-colors hover:bg-white/10"
-          >
-            Exit
-          </Link>
         </div>
 
         <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-slate-300">

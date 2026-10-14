@@ -1,0 +1,52 @@
+.lab-app {
+  --lab-viewport-height: calc(100dvh - 60px);
+  height: 100dvh;
+  background: #10191f;
+  color: #dce3df;
+  color-scheme: dark;
+}
+.lab-app[data-capture="true"] {
+  --lab-viewport-height: 100dvh;
+}
+.lab-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: 60px;
+  padding: 0 20px;
+  border-bottom: 1px solid #a8bbc020;
+  font:
+    13px/1.4 system-ui,
+    sans-serif;
+}
+.lab-header a {
+  color: #d4b986;
+  white-space: nowrap;
+}
+.lab-header label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.lab-header select {
+  min-width: 0;
+  max-width: 100%;
+  padding: 8px;
+  background: #18252e;
+  color: #dce3df;
+}
+.lab-tool {
+  height: var(--lab-viewport-height);
+  overflow: auto;
+}
+.lab-loading {
+  min-height: var(--lab-viewport-height);
+  display: grid;
+  place-content: center;
+}
+.lab-header a:focus-visible,
+.lab-header select:focus-visible {
+  outline: 2px solid #d4b986;
+  outline-offset: 3px;
+}

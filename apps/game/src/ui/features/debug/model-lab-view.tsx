@@ -31,7 +31,6 @@ import {
   writeModelLabSettings,
   type ModelLabSettings,
 } from "@/three/debug/model-lab/model-lab-settings";
-import { useBootDocumentState } from "@/ui/modules/boot-loader";
 import "./model-lab.css";
 
 const CLASSES = ["knight", "crossbowman", "paladin"] as const;
@@ -69,7 +68,6 @@ export function ModelLabView() {
   const updateVersion = useRef(0);
   const isStudy = settings.family === "ships" && settings.source === "study";
   const title = settings.family === "ships" ? `${settings.army} fleet` : `${settings.family} roster`;
-  useBootDocumentState(ready || error ? "app-ready" : "app-loading", ready ? "model_lab_ready" : undefined);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -334,7 +332,7 @@ export function ModelLabView() {
               : "Existing game assets. Use this baseline to decide what to keep, replace or rebuild."}
           </p>
         </div>
-        <Link className="ml-advanced" to="/debug/procedural-characters">
+        <Link className="ml-advanced" to="/lab/characters">
           Advanced animation gym <ArrowRight size={12} />
         </Link>
       </aside>

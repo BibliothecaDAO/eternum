@@ -39,8 +39,8 @@ approved visual baseline remains a user decision.
 
 The repository already has most of the operational vocabulary:
 
-- `/debug/three-chunks` proves that an unauthenticated, lazy debug route can boot independently of wallet, chain, RECS,
-  and the normal play shell.
+- `/lab/chunks` proves that an unauthenticated, lazy debug route can boot independently of wallet, chain, RECS, and the
+  normal play shell.
 - `run-renderer-debug-smoke.mjs` demonstrates browser orchestration, route readiness, nonblank canvas checks, runtime
   error collection, and JSON output.
 - `run-renderer-scene-smoke.mjs` demonstrates production-scene checks, renderer parity diagnostics, retries, and failure
@@ -67,7 +67,7 @@ production code
              |
              v
 debug route
-  /debug/procedural-terrain?scenario=coast&view=medium&capture=1
+  /lab?scenario=coast&view=medium&capture=1
              |
              v
 browser runner
@@ -128,8 +128,8 @@ Keep policy in the evaluator, not scattered between the debug view, shell script
 
 ### Route contract
 
-Add `/debug/procedural-terrain` beside `/debug/three-chunks`. It must not initialize a wallet, connect to Torii, inspect
-local storage, or depend on a live game. It accepts only validated query parameters:
+Add `/lab` beside `/lab/chunks`. It must not initialize a wallet, connect to Torii, inspect local storage, or depend on
+a live game. It accepts only validated query parameters:
 
 | Parameter      | Values                                               | Purpose                                                             |
 | -------------- | ---------------------------------------------------- | ------------------------------------------------------------------- |

@@ -21,7 +21,6 @@ import {
   resolveKnightReviewSequence,
 } from "@/three/characters/gym/knight-animation-review";
 import { useCallback, useEffect, useRef, useState, type MutableRefObject, type ReactNode, type RefObject } from "react";
-import { Link } from "react-router-dom";
 
 import {
   applyProceduralUnitConfigPatch,
@@ -53,7 +52,6 @@ import {
   type ProceduralCollisionGymConfig,
 } from "@/three/characters/gym/procedural-collision-gym-config";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
 import { CharacterGymControls } from "./procedural-character-gym-controls";
 import { ProceduralAnimationInspector } from "./procedural-animation-inspector";
@@ -159,7 +157,6 @@ declare global {
 }
 
 export const ProceduralCharacterGymView = () => {
-  useBootDocumentState("app-ready", "procedural_character_gym_ready");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<ProceduralCharacterGymRendererHandle | null>(null);
   const [config, setConfig] = useState(createInitialGymConfig);
@@ -405,7 +402,7 @@ export const ProceduralCharacterGymView = () => {
 
   return (
     <section
-      className="flex min-h-screen flex-col overflow-hidden bg-[#070b13] text-slate-100 lg:h-screen"
+      className="flex min-h-[var(--lab-viewport-height)] flex-col overflow-hidden bg-[#070b13] text-slate-100 lg:h-[var(--lab-viewport-height)]"
       data-debug-route="procedural-characters"
       data-gym-ready={ready ? "true" : "false"}
       data-smoke-phase={stats.smokePhase}
@@ -735,12 +732,6 @@ const CharacterGymHeader = ({
       />
       <ActionButton icon={<StepForward />} label="Step" onClick={onStep} disabled={!ready || !paused} />
       <ActionButton icon={<RotateCcw />} label="Reset" onClick={onReset} disabled={!ready} />
-      <Link
-        to="/"
-        className="grid h-9 place-items-center border border-white/10 px-3 text-xs font-semibold uppercase tracking-wider text-slate-300 transition hover:border-white/25 hover:bg-white/[0.06] hover:text-white"
-      >
-        Exit
-      </Link>
     </div>
   </header>
 );

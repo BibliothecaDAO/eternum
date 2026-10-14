@@ -101,8 +101,8 @@ single root and disposes it on teardown. Use `?dev=0` to disable the persisted d
 
 ## Chunk lab
 
-`/debug/three-chunks` exercises the shared renderer without authentication. Select Baseline, Dense, or Stress and use
-Reset Camera to return to the fixture's initial view. The route supports the same `rendererMode` query as the game.
+`/lab/chunks` exercises the shared renderer without authentication. Select Baseline, Dense, or Stress and use Reset
+Camera to return to the fixture's initial view. The route supports the same `rendererMode` query as the game.
 
 With the client running, verify both backends with the maintained smoke command:
 
@@ -113,3 +113,5 @@ pnpm --dir apps/game exec node scripts/run-renderer-debug-smoke.mjs --base-url '
 
 The check reads rendered pixels through a canvas copy, verifies fixture metrics, and checks backend health and browser
 errors. `readRendererDebugSnapshot` and `evaluateRendererDebugSmokeResult` also support browser-tool runs of this gate.
+
+All development tools share the [lab entry and feature map](../lab/README.md).

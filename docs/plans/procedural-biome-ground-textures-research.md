@@ -430,8 +430,8 @@ No new renderer, scene-local material registry, React state, or terrain truth st
 
 ## Verification contract
 
-Ground texture work is not complete when the maps merely load. Extend `/debug/procedural-terrain` so the existing large
-field can switch between flat diagnostic color and final textured shading and expose the following fixed camera passes.
+Ground texture work is not complete when the maps merely load. Extend `/lab` so the existing large field can switch
+between flat diagnostic color and final textured shading and expose the following fixed camera passes.
 
 ### Required visual fixtures
 

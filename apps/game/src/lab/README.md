@@ -1,0 +1,60 @@
+# Lab tools
+
+Open `/lab` in the dev environment. The Tool selector groups 13 tools by their users' work. Switching tools unmounts the
+previous view and remembers its full URL for the next visit. The Eternum Lab link exits to the game home page.
+`capture=1` keeps the tool's full viewport and removes the shared header.
+
+`lab-app.tsx` owns the lab's route table, lazy imports, boot state and viewport. Tool views own their controls and
+renderer lifecycles. This replaces the independent app routes, repeated boot setup and graphics-only navigation. App
+fixtures restore their network and identity overrides when you leave them.
+
+## Feature map
+
+The users and routes below were inventoried before the tools were moved. Terrain and model review keep their URLs; the
+former `/debug` tools now live under `/lab`. Their runners and links use the new routes.
+
+| Tool                | Route                      | Users and workflow                                                                 |
+| ------------------- | -------------------------- | ---------------------------------------------------------------------------------- |
+| Terrain & buildings | `/lab`                     | Art: terrain gallery, material/biome inspection, gallery verification and captures |
+| Models & motion     | `/lab/models`              | Art: model review, animation inspection and captures                               |
+| Rewards             | `/lab/rewards`             | Art: reward and chest review with capture controls                                 |
+| Terrain props       | `/lab/terrain-props`       | Art: biome prop and material review                                                |
+| World FX            | `/lab/world-fx`            | Art: world effects and capture controls                                            |
+| Character review    | `/lab/characters`          | Character art and animation: frame inspector, smoke checks and animation captures  |
+| Character benchmark | `/lab/character-benchmark` | Performance: character benchmark smoke and performance runners                     |
+| World integration   | `/lab/world`               | Performance and character integration: world gym smoke runner                      |
+| Chunk fixtures      | `/lab/chunks`              | Renderer: baseline, dense and stress fixtures, renderer smoke runner               |
+| Terrain benchmark   | `/lab/terrain-benchmark`   | Performance: terrain benchmark runner                                              |
+| Motion primitives   | `/lab/motion`              | UI: motion intensity, reduced motion and site-clear demo                           |
+| UI kit & HUD        | `/lab/kit/*`               | UI: component states and `/lab/kit/hud/:state` fixtures                            |
+| App fixtures        | `/lab/app/:screen/*`       | UI: game, lobby, profile and account states                                        |
+
+The in-game battle calculator stays in the player interface. Physics behavior is unchanged.
+
+## Run and verify
+
+From the repository root, start the real client:
+
+```sh
+pnpm --dir apps/game dev --host 127.0.0.1 --port 4179
+```
+
+The existing runners drive controls and write evidence. For example:
+
+```sh
+pnpm --dir apps/game smoke:renderer-debug --base-url https://127.0.0.1:4179 --scenarios baseline,dense,stress
+pnpm --dir apps/game smoke:character-gym --base-url https://127.0.0.1:4179
+pnpm --dir apps/game smoke:character-benchmark --base-url https://127.0.0.1:4179
+pnpm --dir apps/game smoke:procedural-world-gym --base-url https://127.0.0.1:4179
+```
+
+Art keeps `verify:terrain:gallery` and `capture:character-animation`. Performance keeps `benchmark:terrain` and
+`benchmark:procedural-characters`. The runner sources document their capture, output and scenario options. Use one
+rendering page at a time and close it after collecting evidence.
+
+The route and cleanup tests cover every tool URL, nested fixture routes, query restoration, capture layout and
+restoration of real network/identity behavior:
+
+```sh
+pnpm --dir apps/game test src/lab/lab-app.test.tsx src/shell/lab/app-lab.test.tsx
+```

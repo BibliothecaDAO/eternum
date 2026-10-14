@@ -1,6 +1,6 @@
 import { Gauge, Play, RefreshCw } from "@/ui/design-system/atoms/game-icons";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 import {
   mountProceduralTerrainBenchmarkRenderer,
@@ -27,7 +27,6 @@ import {
 } from "@/three/terrain/verification/terrain-benchmark-fixture";
 import { PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER } from "@/three/terrain/terrain-props";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
 const EMPTY_FRAME_STATS = {
   above16Ms: 0,
@@ -60,7 +59,6 @@ export const ProceduralTerrainBenchmarkView = () => {
   );
   const [error, setError] = useState<string | null>(configError);
   const [mounted, setMounted] = useState(false);
-  useBootDocumentState(mounted ? "app-ready" : "app-loading", mounted ? "terrain_benchmark_ready" : undefined);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -125,7 +123,7 @@ export const ProceduralTerrainBenchmarkView = () => {
   return (
     <section
       className={cn(
-        "min-h-screen bg-stone-950 text-stone-100",
+        "min-h-[var(--lab-viewport-height)] bg-stone-950 text-stone-100",
         capture ? "block" : "flex flex-col gap-4 p-4 xl:grid xl:grid-cols-[380px_1fr]",
       )}
       data-debug-route="procedural-terrain-benchmark"
@@ -145,9 +143,6 @@ export const ProceduralTerrainBenchmarkView = () => {
                 boundaries and records frame, coverage, and lifecycle evidence.
               </p>
             </div>
-            <Link to="/" className="border border-white/15 px-3 py-2 text-xs font-semibold uppercase text-stone-200">
-              Exit
-            </Link>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

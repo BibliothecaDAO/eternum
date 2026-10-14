@@ -2,7 +2,6 @@ import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-stor
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { useFrontierType } from "@/ui/features/frontier/use-frontier-type";
-import { useBootDocumentState } from "@/ui/modules/boot-loader/boot-loader-state";
 import { Hold } from "@/ui/motion/hold";
 import { flySprites, MotionLayer } from "@/ui/motion/motion-layer";
 import { INTENSITY, INTENSITY_LABEL, type Intensity } from "@/ui/motion/motion-scale";
@@ -19,7 +18,6 @@ const COIN_ICON = "/images/resources/37.png";
 
 /** Dev only: each motion primitive at intensity 0–3, at full and repeat speed, and with reduced motion. */
 export const MotionLabView = () => {
-  useBootDocumentState("app-ready");
   useFrontierType();
   const [intensity, setIntensity] = useState<Intensity>(0);
   const [speed, setSpeed] = useState(1);

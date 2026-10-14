@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 
 import { parseAgentBrowserJson, runAgentBrowser } from "./run-renderer-debug-smoke.mjs";
 
-const CHARACTER_GYM_PATH = "/debug/procedural-characters";
+const CHARACTER_GYM_PATH = "/lab/characters";
 const DEFAULT_BASE_URL = "https://127.0.0.1:4173";
 const DEFAULT_TIMEOUT_MS = 120_000;
 const POLL_INTERVAL_MS = 250;

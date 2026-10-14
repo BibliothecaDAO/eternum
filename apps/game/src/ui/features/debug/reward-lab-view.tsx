@@ -7,7 +7,6 @@ import {
   type RewardLabSettings,
   type RewardLabStats,
 } from "@/three/debug/reward-lab";
-import { useBootDocumentState } from "@/ui/modules/boot-loader";
 import { CHEST_PALETTES, type ChestPalette } from "@/three/debug/reward-lab-presentation";
 import "./reward-lab.css";
 import { ChestModelPath, RiftModelPath } from "@/three/constants/scene-constants";
@@ -31,7 +30,6 @@ export function RewardLabView() {
     lighting: "day",
   });
   const [stats, setStats] = useState<RewardLabStats>({ seconds: 0, fps: 0, calls: 0, triangles: 0, instances: 0 });
-  useBootDocumentState(ready || error ? "app-ready" : "app-loading", ready ? "reward_lab_ready" : undefined);
 
   useEffect(() => {
     if (!container.current) return;

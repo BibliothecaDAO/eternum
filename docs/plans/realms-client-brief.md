@@ -499,11 +499,11 @@ per cycle: 5 at 459 s, 6 at 649 s); on a GPU the same frame is milliseconds. Tes
 the new pool-slot, fog sub-rect, surface and cell-key tests), scenes 193/194 (the known `worldmap-initial-refresh`
 drift), structure manager 45/45, zoom modules, runtimes, stores and UI 12 files / 50 pass; `apps/game` typecheck clean;
 knip adds nothing new (the two `dist` d.ts files pre-date the branch). Owed to the owner's machine: steady p95 ≤ 16.7
-ms, the 60 s long-task hold under churn, and `benchmark:terrain:quick` — it drives `/debug/procedural-terrain-benchmark`
-through `npx agent-browser` against an https dev server; run here against the session's server on 5174 it spent the
-whole 10-minute budget installing and starting the browser and was killed without a result (exit 143), so its
-draws/triangle bars are unverified in this lane. The pure terrain suite that the benchmark's evaluator shares its
-thresholds with is green.
+ms, the 60 s long-task hold under churn, and `benchmark:terrain:quick` — it drives `/lab/terrain-benchmark` through
+`npx agent-browser` against an https dev server; run here against the session's server on 5174 it spent the whole
+10-minute budget installing and starting the browser and was killed without a result (exit 143), so its draws/triangle
+bars are unverified in this lane. The pure terrain suite that the benchmark's evaluator shares its thresholds with is
+green.
 
 L5 review (reviewer, 2026-09-02): code, tests and counters all reproduce — 219 terrain/structure tests, typecheck, and
 on a live 96-bot game (17, `lab-mtjzah2p`) the upload counters held under real churn: `propPoolFullRewrites` 0,

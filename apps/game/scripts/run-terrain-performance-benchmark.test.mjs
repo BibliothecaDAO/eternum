@@ -16,7 +16,7 @@ describe("terrain performance benchmark", () => {
         variant: "production",
       }),
     ).toBe(
-      "https://localhost:4173/debug/procedural-terrain-benchmark?capture=1&autorun=1&runMode=quick&variant=production&density=1.75&rendererMode=webgpu-force-webgl&explorationMode=explored",
+      "https://localhost:4173/lab/terrain-benchmark?capture=1&autorun=1&runMode=quick&variant=production&density=1.75&rendererMode=webgpu-force-webgl&explorationMode=explored",
     );
   });
 

@@ -1,6 +1,6 @@
 import { RefreshCw } from "@/ui/design-system/atoms/game-icons";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 import {
   mountTerrainPropDebugRenderer,
@@ -9,7 +9,6 @@ import {
 } from "@/three/debug/terrain-prop-debug-renderer";
 import type { TerrainPropLod } from "@/three/terrain/terrain-prop-catalog";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
 const EMPTY_STATS: TerrainPropDebugStats = {
   activeMode: "webgpu",
@@ -28,7 +27,6 @@ export const TerrainPropDebugView = () => {
   const [stats, setStats] = useState<TerrainPropDebugStats>(EMPTY_STATS);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
-  useBootDocumentState(ready ? "app-ready" : "app-loading", ready ? "terrain_prop_debug_ready" : undefined);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -79,7 +77,7 @@ export const TerrainPropDebugView = () => {
   return (
     <section
       className={cn(
-        "min-h-screen bg-stone-950 text-stone-100",
+        "min-h-[var(--lab-viewport-height)] bg-stone-950 text-stone-100",
         capture ? "block" : "flex flex-col gap-4 p-4 lg:grid lg:grid-cols-[minmax(260px,320px)_1fr]",
       )}
       data-debug-route="terrain-props"
@@ -92,9 +90,6 @@ export const TerrainPropDebugView = () => {
               <p className="text-xs font-semibold uppercase text-emerald-200/70">Terrain Assets</p>
               <h1 className="mt-1 text-2xl font-semibold text-white">BIOME / 16</h1>
             </div>
-            <Link to="/" className="border border-white/15 px-3 py-2 text-xs font-semibold uppercase text-stone-200">
-              Exit
-            </Link>
           </div>
 
           <DebugSelect label="LOD" value={lod} onChange={(value) => setOption("lod", value)}>

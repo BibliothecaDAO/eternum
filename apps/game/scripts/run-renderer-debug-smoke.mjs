@@ -7,7 +7,7 @@ const DEFAULT_BASE_URL = "https://127.0.0.1:4173";
 const DEFAULT_READY_TIMEOUT_MS = 15_000;
 const DEFAULT_SCENARIOS = ["baseline", "stress"];
 const DEFAULT_WAIT_MS = 1500;
-const DEBUG_ROUTE_PATH = "/debug/three-chunks";
+const DEBUG_ROUTE_PATH = "/lab/chunks";
 const DEBUG_ROUTE_POLL_MS = 250;
 const VALID_SCENARIOS = new Set(["baseline", "dense", "stress"]);
 

@@ -22,7 +22,7 @@ describe("character animation capture script", () => {
         baseUrl: "https://127.0.0.1:4173",
         rendererMode: "webgpu-force-webgl",
       }),
-    ).toBe("https://127.0.0.1:4173/debug/procedural-characters?rendererMode=webgpu-force-webgl");
+    ).toBe("https://127.0.0.1:4173/lab/characters?rendererMode=webgpu-force-webgl");
   });
 
   it("validates supported capture inputs", () => {
