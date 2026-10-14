@@ -35,6 +35,8 @@ function createCompilation() {
   });
   const renderer = {
     _initialized: true,
+    shadowMap: { type: 1 },
+    xr: { isPresenting: false },
     _createObjectPipeline: vi.fn(),
     _handleObjectFunction: vi.fn(),
     _renderTarget: null,

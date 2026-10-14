@@ -14,7 +14,7 @@ import {
   DirectionalLight,
   HemisphereLight,
   Fog,
-  PCFSoftShadowMap,
+  PCFShadowMap,
   InstancedMesh,
   Matrix4,
   PerspectiveCamera,
@@ -276,7 +276,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   renderer.setPixelRatio(1);
   renderer.setClearColor(background, 1);
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = PCFSoftShadowMap;
+  renderer.shadowMap.type = PCFShadowMap;
   await renderer.init();
   configureGltfTextureSupport(renderer as Parameters<typeof configureGltfTextureSupport>[0]);
 

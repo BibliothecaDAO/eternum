@@ -1,4 +1,4 @@
-import { ACESFilmicToneMapping, CineonToneMapping, NeutralToneMapping, ReinhardToneMapping } from "three";
+import { ACESFilmicToneMapping, CineonToneMapping, NeutralToneMapping, PCFShadowMap, ReinhardToneMapping } from "three";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   resetRendererDiagnostics,
@@ -18,7 +18,6 @@ vi.mock("three/webgpu", () => ({
   ACESFilmicToneMapping: 4,
   HalfFloatType: 1016,
   PCFShadowMap: 1,
-  PCFSoftShadowMap: 2,
   UnsignedByteType: 1009,
   WebGPURenderer: class {
     constructor(parameters: { forceWebGL: boolean }) {
@@ -271,10 +270,10 @@ describe("createWebGPURendererBackend", () => {
     vi.useRealTimers();
   });
 
-  it("tries the real WebGPU renderer on a fresh automatic boot", async () => {
+  it.each([false, true])("boots WebGPU with supported PCF shadows (mobile: %s)", async (isMobileDevice) => {
     const backend = createWebGPURendererBackend(
       {
-        isMobileDevice: false,
+        isMobileDevice,
         pixelRatio: 1,
         requestedMode: "webgpu-auto",
       },
@@ -287,6 +286,7 @@ describe("createWebGPURendererBackend", () => {
 
     expect(threeWebGpuMock.rendererParameters).toEqual([{ forceWebGL: false }]);
     expect(diagnostics).toEqual(expect.objectContaining({ activeMode: "webgpu", fallbackReason: null }));
+    expect(backend.renderer?.shadowMap).toEqual({ enabled: true, type: PCFShadowMap });
   });
 
   it("falls back when WebGPU renderer creation never resolves", async () => {
