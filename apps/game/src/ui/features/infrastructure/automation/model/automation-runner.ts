@@ -1,200 +1,115 @@
-import type { RealmAutomationConfig } from "@/hooks/store/use-automation-store";
-import type { ExecuteRealmProductionPlanProps } from "@bibliothecadao/types";
-import type { RealmProductionPlan } from "@bibliothecadao/eternum/automation";
+import { extractErrorMessage } from "@bibliothecadao/provider";
+import { getScopedGameId } from "@bibliothecadao/eternum/game-client";
+import * as Data from "effect/Data";
+import * as Effect from "effect/Effect";
 
-const REALM_EXECUTION_TIMEOUT_MS = 30_000;
+export class AutomationSignerUnavailable extends Data.TaggedError("AutomationSignerUnavailable")<{
+  message: string;
+  cause?: unknown;
+}> {}
 
-export class AutomationTimeoutError extends Error {
-  constructor(timeoutMs: number) {
-    super(`Realm execution timed out after ${Math.round(timeoutMs / 1000)}s`);
-    this.name = "AutomationTimeoutError";
+export class AutomationPending extends Data.TaggedError("AutomationPending")<{
+  message: string;
+  cause?: unknown;
+}> {}
+
+export class AutomationRejected extends Data.TaggedError("AutomationRejected")<{
+  message: string;
+  cause: unknown;
+}> {}
+
+const classifySubmissionError = (cause: unknown) => {
+  const message = extractErrorMessage(cause);
+  if (cause instanceof Error && cause.name === "TransactionNoAnswerError") {
+    return new AutomationPending({ message, cause });
   }
-}
-
-export class AutomationCancelledError extends Error {
-  readonly scope: "pass" | "realm";
-  constructor(reason: string, scope: "pass" | "realm" = "realm") {
-    super(reason);
-    this.name = "AutomationCancelledError";
-    this.scope = scope;
+  if (
+    /nonce|account validation failed|account balance|duplicate transaction|insufficient (?:max )?fee/i.test(message)
+  ) {
+    return new AutomationSignerUnavailable({ message, cause });
   }
-}
-
-export class AutomationSignerSkippedError extends Error {
-  constructor(reason: string) {
-    super(reason);
-    this.name = "AutomationSignerSkipped";
-  }
-}
-
-const SIGNER_TRANSIENT_PATTERN =
-  /nonce|invalid transaction nonce|account validation failed|account balance|duplicate transaction|insufficient (?:max )?fee/i;
-
-export const isSignerTransientError = (error: unknown): boolean => {
-  if (!error) return false;
-  if (error instanceof AutomationTimeoutError) return false;
-  if (error instanceof AutomationCancelledError) return false;
-  if (error instanceof AutomationSignerSkippedError) return false;
-
-  const visited = new Set<unknown>();
-  const stack: unknown[] = [error];
-  while (stack.length) {
-    const current = stack.pop();
-    if (!current || visited.has(current)) continue;
-    visited.add(current);
-
-    if (typeof current === "string") {
-      if (SIGNER_TRANSIENT_PATTERN.test(current)) return true;
-      continue;
-    }
-    if (typeof current !== "object") continue;
-
-    const record = current as Record<string, unknown>;
-    const candidateFields = ["message", "reason", "data", "revert_error"];
-    for (const field of candidateFields) {
-      const value = record[field];
-      if (typeof value === "string" && SIGNER_TRANSIENT_PATTERN.test(value)) return true;
-      if (value && (typeof value === "object" || typeof value === "string")) stack.push(value);
-    }
-    if (record.cause) stack.push(record.cause);
-  }
-
-  return false;
+  return new AutomationRejected({ message, cause });
 };
 
-type AutomationCancellation = { cancelled: false } | { cancelled: true; reason: string; scope?: "pass" | "realm" };
-
-export interface ExecutableProductionPlan {
-  plan: RealmProductionPlan;
-  realmConfig: RealmAutomationConfig;
-  realmLabel: string;
-  planLogPayload: Record<string, unknown>;
-}
-
-type ExecuteRealmProductionPlan = (args: ExecuteRealmProductionPlanProps) => Promise<unknown>;
-
-type ProductionPlanExecutionResult =
-  | { status: "fulfilled"; value: ExecutableProductionPlan }
-  | {
-      status: "rejected";
-      reason: {
-        error: unknown;
-        realmConfig: RealmAutomationConfig;
-        realmLabel: string;
-      };
-    };
-
-const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<T>((_, reject) => {
-        timer = setTimeout(() => reject(new AutomationTimeoutError(timeoutMs)), timeoutMs);
-      }),
-    ]);
-  } finally {
-    if (timer !== undefined) clearTimeout(timer);
-  }
+type Submission = {
+  signer: string;
+  unresolved: boolean;
+  result: Promise<unknown>;
+  observing: boolean;
 };
 
-export const executeProductionPlansSequentially = async ({
-  executablePlans,
+const submissions = new Map<string, Submission>();
+
+/** A stopped observer leaves its receipt for the next pass; it never cancels a signed transaction. */
+export const runAutomationTransaction = async ({
   signer,
-  executeRealmProductionPlan,
-  onBeforeExecute,
-  timeoutMs = REALM_EXECUTION_TIMEOUT_MS,
-  isCancelled,
+  operation,
+  submit,
+  onConfirmed,
+  signal,
 }: {
-  executablePlans: ExecutableProductionPlan[];
-  signer: ExecuteRealmProductionPlanProps["signer"];
-  executeRealmProductionPlan: ExecuteRealmProductionPlan;
-  onBeforeExecute?: (executablePlan: ExecutableProductionPlan) => void;
-  timeoutMs?: number;
-  isCancelled?: (executablePlan: ExecutableProductionPlan) => AutomationCancellation;
-}): Promise<ProductionPlanExecutionResult[]> => {
-  const results: ProductionPlanExecutionResult[] = [];
-  let passAborted: { reason: string } | null = null;
-  let signerAborted: { reason: string } | null = null;
-
-  for (const executablePlan of executablePlans) {
-    const { plan, realmConfig, realmLabel } = executablePlan;
-
-    if (signerAborted) {
-      results.push({
-        status: "rejected",
-        reason: {
-          error: new AutomationSignerSkippedError(signerAborted.reason),
-          realmConfig,
-          realmLabel,
-        },
-      });
-      continue;
-    }
-
-    if (passAborted) {
-      results.push({
-        status: "rejected",
-        reason: {
-          error: new AutomationCancelledError(passAborted.reason, "pass"),
-          realmConfig,
-          realmLabel,
-        },
-      });
-      continue;
-    }
-
-    const cancellation = isCancelled?.(executablePlan);
-    if (cancellation?.cancelled) {
-      const scope = cancellation.scope ?? "realm";
-      if (scope === "pass") passAborted = { reason: cancellation.reason };
-      results.push({
-        status: "rejected",
-        reason: {
-          error: new AutomationCancelledError(cancellation.reason, scope),
-          realmConfig,
-          realmLabel,
-        },
-      });
-      continue;
-    }
-
-    try {
-      onBeforeExecute?.(executablePlan);
-      const callset = plan.callset;
-      await withTimeout(
-        executeRealmProductionPlan({
-          signer,
-          realm_entity_id: plan.realmId,
-          skipQueue: true,
-          resource_to_resource: callset.resourceToResource.map((item) => ({
-            resource_id: item.resourceId,
-            cycles: item.cycles,
-          })),
-          labor_to_resource: callset.laborToResource.map((item) => ({
-            resource_id: item.resourceId,
-            cycles: item.cycles,
-          })),
-        }),
-        timeoutMs,
-      );
-      results.push({ status: "fulfilled", value: executablePlan });
-    } catch (error) {
-      results.push({
-        status: "rejected",
-        reason: {
-          error,
-          realmConfig,
-          realmLabel,
-        },
-      });
-      if (isSignerTransientError(error)) {
-        signerAborted = {
-          reason: "Skipped: signer error earlier in pass — next tick will retry",
-        };
-      }
-    }
+  signer: string;
+  operation: string;
+  submit: () => Promise<unknown>;
+  onConfirmed: () => void;
+  signal: AbortSignal;
+}): Promise<void> => {
+  signal.throwIfAborted();
+  const signerKey = `${getScopedGameId()}:${signer.toLowerCase()}`;
+  const key = `${signerKey}:${operation}`;
+  let submission = submissions.get(key);
+  if (
+    submission?.observing ||
+    [...submissions.values()].some((other) => other !== submission && other.signer === signerKey && other.unresolved)
+  ) {
+    throw new AutomationSignerUnavailable({ message: "Automation is waiting for the signer's previous action." });
   }
-
-  return results;
+  if (!submission) {
+    submission = {
+      signer: signerKey,
+      unresolved: true,
+      observing: false,
+      result: Effect.runPromise(Effect.tryPromise({ try: submit, catch: classifySubmissionError })),
+    };
+    const started = submission;
+    started.result = started.result.then(
+      (value) => {
+        started.unresolved = false;
+        return value;
+      },
+      (error) => {
+        started.unresolved = error instanceof AutomationPending;
+        throw error;
+      },
+    );
+    submissions.set(key, started);
+  }
+  const current = submission;
+  current.observing = true;
+  try {
+    try {
+      await Effect.runPromise(
+        Effect.tryPromise({ try: () => current.result, catch: (error) => error }).pipe(
+          Effect.timeoutOrElse({
+            duration: 30_000,
+            orElse: () =>
+              Effect.fail(
+                new AutomationPending({
+                  message: "No answer yet. Automation is waiting for the submitted action.",
+                }),
+              ),
+          }),
+        ),
+        { signal },
+      );
+    } catch (error) {
+      if (!signal.aborted && !(error instanceof AutomationPending)) submissions.delete(key);
+      throw error;
+    }
+    signal.throwIfAborted();
+    onConfirmed();
+    submissions.delete(key);
+  } finally {
+    current.observing = false;
+  }
 };

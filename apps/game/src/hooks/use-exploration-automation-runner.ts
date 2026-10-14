@@ -1,3 +1,9 @@
+import { startAutomationScope } from "@/ui/features/infrastructure/automation/model/automation-scope";
+import {
+  runAutomationTransaction,
+  AutomationSignerUnavailable,
+  AutomationPending,
+} from "@/ui/features/infrastructure/automation/model/automation-runner";
 import {
   ActionPaths,
   configManager,
@@ -52,8 +58,7 @@ export const useExplorationAutomationRunner = () => {
   const pruneForGame = useExplorationAutomationStore((s) => s.pruneForGame);
 
   const processingRef = useRef(false);
-  const processRef = useRef<() => Promise<void>>(async () => {});
-  const timeoutIdRef = useRef<number | null>(null);
+  const processRef = useRef<(signal: AbortSignal) => Promise<void | false>>(async () => {});
   const snapshotCacheRef = useRef<Map<string, SnapshotCache>>(new Map());
   const subscribedProjectionRef = useRef<WorldSpatialProjection | null>(null);
   const unsubscribeProjectionRef = useRef<(() => void) | null>(null);
@@ -72,13 +77,6 @@ export const useExplorationAutomationRunner = () => {
     [store],
   );
 
-  const stopAutomation = useCallback(() => {
-    if (timeoutIdRef.current !== null) {
-      window.clearTimeout(timeoutIdRef.current);
-      timeoutIdRef.current = null;
-    }
-  }, []);
-
   useEffect(() => {
     if (!store) {
       return;
@@ -90,37 +88,16 @@ export const useExplorationAutomationRunner = () => {
     snapshotCacheRef.current.clear();
   }, [store, pruneForGame]);
 
-  const scheduleNextCheck = useCallback(() => {
-    if (configManager.isGameOver()) {
-      stopAutomation();
-      return;
-    }
-    if (timeoutIdRef.current !== null) {
-      window.clearTimeout(timeoutIdRef.current);
-    }
-
-    const now = Date.now();
-    const nextBlockMs = (Math.floor(now / 1000) + 1) * 1000;
-    const delay = Math.max(250, nextBlockMs - now);
-
-    timeoutIdRef.current = window.setTimeout(() => {
-      void processRef.current();
-    }, delay);
-  }, [stopAutomation]);
-
   useEffect(() => {
-    processRef.current = async () => {
+    processRef.current = async (signal) => {
       if (configManager.isGameOver()) {
-        stopAutomation();
-        return;
+        return false;
       }
       if (processingRef.current) {
-        scheduleNextCheck();
         return;
       }
       const worldSpatialProjection = getActiveGameSyncRuntime()?.getWorldSpatialProjection();
       if (!store || !worldSpatialProjection) {
-        scheduleNextCheck();
         return;
       }
       if (subscribedProjectionRef.current !== worldSpatialProjection) {
@@ -132,14 +109,12 @@ export const useExplorationAutomationRunner = () => {
         });
       }
       if (!account || accountAddress() === null) {
-        scheduleNextCheck();
         return;
       }
 
       const { currentBlockTimestamp, currentDefaultTick } = getBlockTimestamp();
       if (configManager.isGameOver()) {
-        stopAutomation();
-        return;
+        return false;
       }
 
       // Use wall clock time for scheduling (matches store and UI expectations)
@@ -147,7 +122,6 @@ export const useExplorationAutomationRunner = () => {
       const due = selectDueEntries(activeEntriesRef.current, nowMs);
 
       if (!due.length) {
-        scheduleNextCheck();
         return;
       }
 
@@ -155,6 +129,7 @@ export const useExplorationAutomationRunner = () => {
 
       try {
         for (const entry of due) {
+          if (signal.aborted) return;
           try {
             const explorerId = safeInteger(entry.explorerId);
             if (!Number.isFinite(explorerId) || explorerId <= 0) {
@@ -200,6 +175,7 @@ export const useExplorationAutomationRunner = () => {
                     worldSpatialProjection,
                   });
 
+            if (signal.aborted) return;
             if (!snapshot) {
               update(entry.id, { blockedReason: "no-snapshot", lastError: null });
               scheduleNext(entry.id, nowMs);
@@ -242,6 +218,7 @@ export const useExplorationAutomationRunner = () => {
                   scopeRadius: entry.scopeRadius ?? DEFAULT_SCOPE_RADIUS,
                   worldSpatialProjection,
                 });
+                if (signal.aborted) return;
                 if (!refreshed) {
                   update(entry.id, { blockedReason: "no-snapshot", lastError: null });
                   scheduleNext(entry.id, nowMs);
@@ -273,36 +250,47 @@ export const useExplorationAutomationRunner = () => {
             }
 
             const actionType = ActionPaths.getActionType(selection.path);
-            await actions.moveArmy({ explorerId, path: selection.path });
+            await runAutomationTransaction({
+              signer: account.address,
+              operation: `explore:${entry.id}:${entry.nextRunAt}`,
+              signal,
+              submit: () => actions.moveArmy({ explorerId, path: selection.path }),
+              onConfirmed: () => {
+                const effectiveCost = computeEffectiveStaminaCost(selection.path, actionType, exploreStaminaCost);
+                const remainingStamina = Math.max(0, Number(currentStamina.amount) - effectiveCost);
+                const shouldRepeat = shouldRepeatExplore(actionType, remainingStamina, exploreStaminaCost);
+                const repeatAt = nowMs + REPEAT_EXPLORE_DELAY_MS;
 
-            const effectiveCost = computeEffectiveStaminaCost(selection.path, actionType, exploreStaminaCost);
-            const remainingStamina = Math.max(0, Number(currentStamina.amount) - effectiveCost);
-            const shouldRepeat = shouldRepeatExplore(actionType, remainingStamina, exploreStaminaCost);
-            const repeatAt = nowMs + REPEAT_EXPLORE_DELAY_MS;
-
-            if (shouldRepeat) {
-              const endHex = selection.path[selection.path.length - 1]?.hex;
-              if (endHex) {
-                const normalized = Position.fromContract({ x: endHex.col, y: endHex.row }).getNormalized();
-                const cache = snapshotCacheRef.current.get(entry.id);
-                if (cache) {
-                  cache.recentlyExplored.add(`${normalized.x},${normalized.y}`);
-                  cache.reusableUntilProjectionChange = true;
+                if (shouldRepeat) {
+                  const endHex = selection.path[selection.path.length - 1]?.hex;
+                  if (endHex) {
+                    const normalized = Position.fromContract({ x: endHex.col, y: endHex.row }).getNormalized();
+                    const cache = snapshotCacheRef.current.get(entry.id);
+                    if (cache) {
+                      cache.recentlyExplored.add(`${normalized.x},${normalized.y}`);
+                      cache.reusableUntilProjectionChange = true;
+                    }
+                  }
                 }
-              }
-            }
 
-            update(entry.id, {
-              lastRunAt: nowMs,
-              lastAction: selection.reason,
-              blockedReason: null,
-              lastError: null,
-              ...(shouldRepeat ? { nextRunAt: repeatAt } : {}),
+                update(entry.id, {
+                  lastRunAt: nowMs,
+                  lastAction: selection.reason,
+                  blockedReason: null,
+                  lastError: null,
+                  ...(shouldRepeat ? { nextRunAt: repeatAt } : {}),
+                });
+                if (!shouldRepeat) {
+                  scheduleNext(entry.id, nowMs);
+                }
+              },
             });
-            if (!shouldRepeat) {
-              scheduleNext(entry.id, nowMs);
-            }
           } catch (error) {
+            if (signal.aborted) return;
+            if (error instanceof AutomationSignerUnavailable || error instanceof AutomationPending) {
+              update(entry.id, { blockedReason: "error", lastError: error.message });
+              return;
+            }
             const message = error instanceof Error ? error.message : String(error);
             update(entry.id, {
               lastError: message,
@@ -314,20 +302,18 @@ export const useExplorationAutomationRunner = () => {
         }
       } finally {
         processingRef.current = false;
-        scheduleNextCheck();
       }
     };
-  }, [account, store, scheduleNext, scheduleNextCheck, stopAutomation, remove, resolveExplorerEntity, update]);
+  }, [account, store, scheduleNext, remove, resolveExplorerEntity, update]);
 
   useEffect(() => {
-    scheduleNextCheck();
+    const stop = startAutomationScope((signal) => processRef.current(signal));
     return () => {
-      if (timeoutIdRef.current !== null) {
-        window.clearTimeout(timeoutIdRef.current);
-      }
+      stop();
       unsubscribeProjectionRef.current?.();
       unsubscribeProjectionRef.current = null;
       subscribedProjectionRef.current = null;
+      snapshotCacheRef.current.clear();
     };
-  }, [scheduleNextCheck]);
+  }, [account, store]);
 };

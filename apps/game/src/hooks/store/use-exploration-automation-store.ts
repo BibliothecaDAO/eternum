@@ -1,4 +1,4 @@
-import { configManager } from "@bibliothecadao/eternum";
+import { requireAutomationGameId } from "@/ui/features/infrastructure/automation/model/automation-readiness";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type { ExplorationStrategyId } from "@/automation/exploration/types";
@@ -6,15 +6,6 @@ import type { ExplorationStrategyId } from "@/automation/exploration/types";
 export const EXPLORATION_AUTOMATION_INTERVAL_MS = 120_000;
 export const DEFAULT_SCOPE_RADIUS = 24;
 export const DEFAULT_STRATEGY_ID: ExplorationStrategyId = "basic-frontier";
-
-const resolveCurrentGameId = (): string => {
-  try {
-    const season = configManager.getSeasonConfig();
-    return `${season.startSettlingAt}-${season.startMainAt}-${season.endAt}`;
-  } catch {
-    return "unknown";
-  }
-};
 
 const getNowMs = (): number => Date.now();
 
@@ -80,7 +71,7 @@ export const useExplorationAutomationStore = create<ExplorationAutomationState>(
         const id = generateId();
         const now = getNowMs();
         const active = raw.active ?? true;
-        const gameId = raw.gameId ?? resolveCurrentGameId();
+        const gameId = raw.gameId ?? requireAutomationGameId();
         const scopeRadius = normalizeScopeRadius(raw.scopeRadius);
         const entry: ExplorationAutomationEntry = {
           id,
@@ -205,7 +196,7 @@ export const useExplorationAutomationStore = create<ExplorationAutomationState>(
     }),
     {
       name: "eternum-exploration-automation",
-      version: 1,
+      version: 2,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ entries: state.entries }),
       migrate: (persisted: unknown) => {
@@ -216,12 +207,13 @@ export const useExplorationAutomationStore = create<ExplorationAutomationState>(
         Object.entries(rawEntries as Record<string, unknown>).forEach(([id, value]) => {
           if (!value || typeof value !== "object") return;
           const entry = value as Partial<ExplorationAutomationEntry>;
+          if (typeof entry.gameId !== "string" || !entry.gameId || entry.gameId === "unknown") return;
           entries[id] = {
             id,
             explorerId: String(entry.explorerId ?? ""),
             active: Boolean(entry.active),
             createdAt: normalizeTimestamp(entry.createdAt, Date.now()) ?? Date.now(),
-            gameId: typeof entry.gameId === "string" ? entry.gameId : resolveCurrentGameId(),
+            gameId: entry.gameId,
             scopeRadius: normalizeScopeRadius(entry.scopeRadius),
             strategyId: (entry.strategyId ?? DEFAULT_STRATEGY_ID) as ExplorationStrategyId,
             lastRunAt: normalizeTimestamp(entry.lastRunAt, null) ?? undefined,

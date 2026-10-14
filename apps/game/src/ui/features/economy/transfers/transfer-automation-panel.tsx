@@ -1,3 +1,5 @@
+import { readTransferResources } from "@/ui/features/infrastructure/automation/model/automation-readiness";
+import * as Result from "effect/Result";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
@@ -14,7 +16,6 @@ import { CATEGORY_FILTER_OPTIONS } from "@/ui/features/world/containers/structur
 import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
 import {
   calculateDonkeysNeeded,
-  configManager,
   getTotalResourceWeightKg,
   isMilitaryResource,
   ResourceManager,
@@ -24,7 +25,7 @@ import { byStructureCategory } from "@/lib/structure-category-table";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { CapacityConfig, RESOURCE_PRECISION, ResourcesIds, Structure, StructureType } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, ResourcesIds, Structure, StructureType } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { Castle, Crown, Pickaxe, Hyperstructure, Star, Tent } from "@/ui/design-system/atoms/game-icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -434,42 +435,13 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
     });
   }, [selectedResources]);
 
-  // Compute current source balances (human units) for flat slider maxes
-  const sourceBalances = useMemo(() => {
-    const map = new Map<number, number>();
-    if (!store || !selectedSourceId) return map;
-    try {
-      const rm = new ResourceManager(store, selectedSourceId);
-      for (const rid of selectedResources) {
-        // An unknown balance is left out, so the resource offers nothing to send.
-        const bal = rm.balanceWithProduction(currentDefaultTick, rid)?.balance;
-        if (bal !== undefined) map.set(rid, Math.max(0, Math.floor(bal / RESOURCE_PRECISION)));
-      }
-    } catch {
-      // ignore balance fetch errors
-    }
-    return map;
+  const resourceReadiness = useMemo(() => {
+    if (!store || !selectedSourceId) return null;
+    return readTransferResources(new ResourceManager(store, selectedSourceId), currentDefaultTick, selectedResources);
   }, [store, revision, selectedSourceId, selectedResources, currentDefaultTick]);
-
-  // Donkey availability separate to avoid re-computation on slider changes
-  const donkeyAvailable = useMemo(() => {
-    if (!store || !selectedSourceId) return 0;
-    try {
-      const rm = new ResourceManager(store, selectedSourceId);
-      const raw = rm.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey)?.balance;
-      return raw === undefined ? 0 : Math.max(0, Math.floor(raw / RESOURCE_PRECISION));
-    } catch {
-      return 0;
-    }
-  }, [store, revision, selectedSourceId, currentDefaultTick]);
-
-  const donkeyCapacityKgPerUnit = useMemo(() => {
-    try {
-      return configManager.getCapacityConfigKg(CapacityConfig.Donkey);
-    } catch {
-      return 0;
-    }
-  }, []);
+  const transferResources = resourceReadiness && Result.isSuccess(resourceReadiness) ? resourceReadiness.success : null;
+  const resourceError =
+    resourceReadiness && Result.isFailure(resourceReadiness) ? resourceReadiness.failure.message : null;
 
   const visibleResourceIds = useMemo(() => {
     return Array.from(availableResources)
@@ -491,7 +463,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
 
   // Computed preview for absolute amounts and donkey capacity (fast path)
   const transferPreview = useMemo(() => {
-    if (!selectedSourceId || selectedResources.length === 0)
+    if (!transferResources || !selectedSourceId || selectedResources.length === 0)
       return null as null | {
         perResource: { id: ResourcesIds; humanAmount: number }[];
         totalKg: number;
@@ -499,7 +471,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       };
     const perResource = selectedResources
       .map((rid) => {
-        const available = sourceBalances.get(rid) ?? 0;
+        const available = transferResources.balances.get(rid)!;
         const cfg = resourceConfigs[rid] ?? { amount: 0 };
         const amt = Math.max(0, Math.min(available, Math.floor(cfg.amount)));
         return { id: rid, humanAmount: amt };
@@ -507,8 +479,8 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       .filter((x) => x.humanAmount > 0);
     const totalKg = getTotalResourceWeightKg(perResource.map((p) => ({ resourceId: p.id, amount: p.humanAmount })));
     const need = calculateDonkeysNeeded(totalKg);
-    return { perResource, totalKg, donkeys: { have: donkeyAvailable, need } };
-  }, [selectedSourceId, selectedResources, resourceConfigs, sourceBalances, donkeyAvailable]);
+    return { perResource, totalKg, donkeys: { have: transferResources.donkeys, need } };
+  }, [selectedSourceId, selectedResources, resourceConfigs, transferResources]);
 
   const perTransferDonkeyNeed = transferPreview?.donkeys.need ?? 0;
   const aggregatedDonkeyNeed =
@@ -522,21 +494,19 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
   );
 
   useEffect(() => {
-    if (selectedResources.length === 0) return;
+    if (!transferResources || selectedResources.length === 0) return;
     setResourceConfigs((prev) => {
       let mutated = false;
       const next = { ...prev };
       for (const rid of selectedResources) {
         const existing = prev[rid];
         if (!existing) continue;
-        let available = sourceBalances.get(rid) ?? 0;
+        let available = transferResources.balances.get(rid)!;
         if (rid === ResourcesIds.Donkey) {
           available = Math.max(0, available - aggregatedDonkeyNeed);
         }
-        // A resource whose weight rule is unknown cannot be loaded onto donkeys.
-        const weightPerUnit = configManager.getResourceWeightKg(rid as ResourcesIds);
-        if (weightPerUnit === undefined) available = 0;
-        const totalCarryKg = donkeyCapacityKgPerUnit * donkeyAvailable;
+        const weightPerUnit = transferResources.weights.get(rid)!;
+        const totalCarryKg = transferResources.capacity * transferResources.donkeys;
         const donkeyLimited = weightPerUnit ? Math.floor(totalCarryKg / weightPerUnit) : available;
         const perDestinationResourceCap = Math.floor(available / destinationCountForLimits);
         const perDestinationDonkeyCap = Math.floor(donkeyLimited / destinationCountForLimits);
@@ -550,14 +520,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       }
       return mutated ? next : prev;
     });
-  }, [
-    selectedResources,
-    sourceBalances,
-    donkeyAvailable,
-    donkeyCapacityKgPerUnit,
-    destinationCountForLimits,
-    aggregatedDonkeyNeed,
-  ]);
+  }, [selectedResources, transferResources, destinationCountForLimits, aggregatedDonkeyNeed]);
 
   const addScheduled = useTransferAutomationStore((s) => s.add);
 
@@ -904,19 +867,17 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
         </section>
       )}
 
-      {selectedResources.length > 0 && selectedSourceId && (
+      {transferResources && selectedResources.length > 0 && selectedSourceId && (
         <section className="space-y-2">
           <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-2">
             {selectedResources.map((rid) => {
               const cfg = resourceConfigs[rid] ?? { amount: 0 };
-              let available = sourceBalances.get(rid) ?? 0;
+              let available = transferResources.balances.get(rid)!;
               if (rid === ResourcesIds.Donkey) {
                 available = Math.max(0, available - aggregatedDonkeyNeed);
               }
-              // A resource whose weight rule is unknown cannot be loaded onto donkeys.
-              const weightPerUnit = configManager.getResourceWeightKg(rid as ResourcesIds);
-              if (weightPerUnit === undefined) available = 0;
-              const totalCarryKg = donkeyCapacityKgPerUnit * donkeyAvailable;
+              const weightPerUnit = transferResources.weights.get(rid)!;
+              const totalCarryKg = transferResources.capacity * transferResources.donkeys;
               const donkeyLimited = weightPerUnit ? Math.floor(totalCarryKg / weightPerUnit) : available;
               const perDestinationResourceCap = Math.floor(available / destinationCountForLimits);
               const perDestinationDonkeyCap = Math.floor(donkeyLimited / destinationCountForLimits);
@@ -1074,14 +1035,15 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                   selectedResources.length === 0 ||
                   !selectedSourceId ||
                   actualDestinationCount === 0 ||
-                  donkeyShortage
+                  donkeyShortage ||
+                  !transferResources
                 }
               >
                 {repeat ? "Schedule" : "Transfer"}
               </Button>
-              {statusMessage && (
+              {(resourceError || statusMessage) && (
                 <span role="status" className="text-sm text-gold/70">
-                  {statusMessage}
+                  {resourceError || statusMessage}
                 </span>
               )}
             </>

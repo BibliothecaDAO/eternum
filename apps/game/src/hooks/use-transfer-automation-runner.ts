@@ -1,9 +1,16 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { readAutomationBalance } from "@/ui/features/infrastructure/automation/model/automation-readiness";
+import { startAutomationScope } from "@/ui/features/infrastructure/automation/model/automation-scope";
+import {
+  runAutomationTransaction,
+  AutomationSignerUnavailable,
+  AutomationPending,
+} from "@/ui/features/infrastructure/automation/model/automation-runner";
+import { useEffect, useMemo, useRef } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useGame } from "@/hooks/context/game-context";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { configManager, getBlockTimestamp, isMilitaryResource, ResourceManager } from "@bibliothecadao/eternum";
-import { ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { ResourcesIds } from "@bibliothecadao/types";
 import { canTransferMilitaryInventoryBetweenStructureIds } from "@/ui/lib/structure-capabilities";
 import { isEntityOwnedByAccount } from "@/utils/entity-ownership";
 import { useTransferAutomationStore } from "./store/use-transfer-automation-store";
@@ -22,7 +29,7 @@ const availableBalance = (
   resourceId: ResourcesIds,
   plannedDebits: PlannedDebits,
 ) => {
-  const balance = Number(resourceManager.balanceWithProduction(tick, resourceId)?.balance ?? 0n) / RESOURCE_PRECISION;
+  const balance = readAutomationBalance(resourceManager, tick, resourceId);
   return Math.max(0, balance - (plannedDebits.get(plannedDebitKey(sourceId, resourceId)) ?? 0));
 };
 
@@ -50,8 +57,7 @@ export const useTransferAutomationRunner = () => {
   const pruneForGame = useTransferAutomationStore((s) => s.pruneForGame);
 
   const processingRef = useRef(false);
-  const processRef = useRef<() => Promise<void>>(async () => {});
-  const timeoutIdRef = useRef<number | null>(null);
+  const processRef = useRef<(signal: AbortSignal) => Promise<void | false>>(async () => {});
 
   const activeEntries = useMemo(() => Object.values(entries).filter((e) => e.active), [entries]);
   const activeEntriesRef = useRef(activeEntries);
@@ -59,13 +65,6 @@ export const useTransferAutomationRunner = () => {
   useEffect(() => {
     activeEntriesRef.current = activeEntries;
   }, [activeEntries]);
-
-  const stopTransferAutomation = useCallback(() => {
-    if (timeoutIdRef.current !== null) {
-      window.clearTimeout(timeoutIdRef.current);
-      timeoutIdRef.current = null;
-    }
-  }, []);
 
   useEffect(() => {
     if (!store) {
@@ -76,54 +75,30 @@ export const useTransferAutomationRunner = () => {
     pruneForGame(gameId);
   }, [store, pruneForGame]);
 
-  const scheduleNextCheck = useCallback(() => {
-    if (configManager.isGameOver()) {
-      stopTransferAutomation();
-      return;
-    }
-    if (timeoutIdRef.current !== null) {
-      window.clearTimeout(timeoutIdRef.current);
-    }
-
-    const now = Date.now();
-    const nextBlockMs = (Math.floor(now / 1000) + 1) * 1000;
-    const delay = Math.max(250, nextBlockMs - now);
-
-    timeoutIdRef.current = window.setTimeout(() => {
-      void processRef.current();
-    }, delay);
-  }, [stopTransferAutomation]);
-
   useEffect(() => {
-    processRef.current = async () => {
+    processRef.current = async (signal) => {
       if (configManager.isGameOver()) {
-        stopTransferAutomation();
-        return;
+        return false;
       }
       if (processingRef.current) {
-        scheduleNextCheck();
         return;
       }
       if (!store) {
-        scheduleNextCheck();
         return;
       }
       if (!account || accountAddress() === null) {
-        scheduleNextCheck();
         return;
       }
 
       const { currentBlockTimestamp, currentDefaultTick } = getBlockTimestamp();
       if (configManager.isGameOver()) {
-        stopTransferAutomation();
-        return;
+        return false;
       }
       const nowMs = currentBlockTimestamp * 1000;
       const due = activeEntriesRef.current.filter(
         (e) => typeof e.nextRunAt === "number" && (e.nextRunAt as number) <= nowMs,
       );
       if (!due.length) {
-        scheduleNextCheck();
         return;
       }
 
@@ -132,6 +107,7 @@ export const useTransferAutomationRunner = () => {
 
       try {
         for (const entry of due) {
+          if (signal.aborted) return;
           try {
             const sourceId = safeInteger(entry.sourceEntityId);
             const destId = safeInteger(entry.destinationEntityId);
@@ -198,43 +174,53 @@ export const useTransferAutomationRunner = () => {
             }
 
             const resources = buildSendResourcesArgs(transferList);
-            await systemCalls.send_resources_multiple({
-              signer: account,
-              calls: [
-                {
-                  sender_entity_id: BigInt(sourceId),
-                  recipient_entity_id: BigInt(destId),
-                  resources,
-                },
-              ],
-            });
-            recordPlannedDebits(sourceId, transferList, plannedDebits);
+            await runAutomationTransaction({
+              signer: account.address,
+              operation: `transfer:${entry.id}:${entry.nextRunAt}`,
+              signal,
+              submit: () =>
+                systemCalls.send_resources_multiple({
+                  signer: account,
+                  calls: [
+                    {
+                      sender_entity_id: BigInt(sourceId),
+                      recipient_entity_id: BigInt(destId),
+                      resources,
+                    },
+                  ],
+                }),
+              onConfirmed: () => {
+                recordPlannedDebits(sourceId, transferList, plannedDebits);
 
-            update(entry.id, { lastRunAt: nowMs });
-            scheduleNext(entry.id, nowMs);
-            const summary = transferList
-              .map((t) => `${t.humanAmount.toLocaleString()} ${ResourcesIds[t.resourceId]}`)
-              .join(", ");
-            toast.success(`Transfer scheduled: ${summary}`);
+                update(entry.id, { lastRunAt: nowMs });
+                scheduleNext(entry.id, nowMs);
+                const summary = transferList
+                  .map((t) => `${t.humanAmount.toLocaleString()} ${ResourcesIds[t.resourceId]}`)
+                  .join(", ");
+                toast.success(`Transfer scheduled: ${summary}`);
+              },
+            });
           } catch (err) {
+            if (signal.aborted) return;
+            if (err instanceof AutomationSignerUnavailable || err instanceof AutomationPending) {
+              toast.warning(err.message, { id: "transfer-automation-pending" });
+              return;
+            }
             console.error("Transfer automation: execution failed", err);
             scheduleNext(entry.id, nowMs);
-            toast.error("Scheduled transfer failed. Check console for details.");
+            toast.error(err instanceof Error ? err.message : "Scheduled transfer failed.");
           }
         }
       } finally {
         processingRef.current = false;
-        scheduleNextCheck();
       }
     };
-  }, [store, account, mode.id, scheduleNext, stopTransferAutomation, update, systemCalls, scheduleNextCheck]);
+  }, [store, account, mode.id, scheduleNext, update, systemCalls]);
 
   useEffect(() => {
-    scheduleNextCheck();
+    const stop = startAutomationScope((signal) => processRef.current(signal));
     return () => {
-      if (timeoutIdRef.current !== null) {
-        window.clearTimeout(timeoutIdRef.current);
-      }
+      stop();
     };
-  }, [scheduleNextCheck]);
+  }, [account, store]);
 };

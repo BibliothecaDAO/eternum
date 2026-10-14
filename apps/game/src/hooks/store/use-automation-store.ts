@@ -25,19 +25,11 @@ export type {
   RealmAutomationConfig,
 } from "@bibliothecadao/eternum/automation";
 import type { RealmPresetId } from "@bibliothecadao/eternum/automation";
-import { configManager } from "@bibliothecadao/eternum";
+import { readAutomationGameId } from "@/ui/features/infrastructure/automation/model/automation-readiness";
+import * as Result from "effect/Result";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-
-const resolveCurrentGameId = (): string => {
-  try {
-    const season = configManager.getSeasonConfig();
-    return `${season.startSettlingAt}-${season.startMainAt}-${season.endAt}`;
-  } catch (_error) {
-    return "unknown";
-  }
-};
 
 enum ProductionType {
   ResourceToResource = "resource-to-resource",
@@ -54,7 +46,7 @@ interface ProductionAutomationState {
   realms: Record<string, RealmAutomationConfig>;
   nextRunTimestamp: number | null;
   hydrated: boolean;
-  gameId: string;
+  gameId: string | null;
   upsertRealm: (realmId: string, data?: RealmAutomationInput) => void;
   setRealmPreset: (realmId: string, presetId: RealmPresetId) => void;
   setRealmMetadata: (
@@ -139,7 +131,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
       realms: {},
       nextRunTimestamp: null,
       hydrated: typeof window === "undefined",
-      gameId: resolveCurrentGameId(),
+      gameId: null,
       upsertRealm: (realmId, data) =>
         set((state) => {
           const existing = state.realms[realmId];
@@ -349,14 +341,15 @@ export const useAutomationStore = create<ProductionAutomationState>()(
     {
       name: "eternum-production-automation",
       storage: createJSONStorage(() => localStorage),
-      version: 9,
+      version: 10,
       partialize: (state) => ({
         realms: state.realms,
         nextRunTimestamp: state.nextRunTimestamp,
         gameId: state.gameId,
       }),
       migrate: (persistedState: any) => {
-        const currentGameId = resolveCurrentGameId();
+        const game = readAutomationGameId();
+        const currentGameId = Result.isSuccess(game) ? game.success : null;
         const fallback = { realms: {}, nextRunTimestamp: null, gameId: currentGameId };
         if (!persistedState || typeof persistedState !== "object") {
           return fallback;
@@ -364,7 +357,11 @@ export const useAutomationStore = create<ProductionAutomationState>()(
 
         const persistedGameId =
           typeof (persistedState as any).gameId === "string" ? (persistedState as any).gameId : null;
-        if (!persistedGameId || persistedGameId !== currentGameId) {
+        if (
+          !persistedGameId ||
+          persistedGameId === "unknown" ||
+          (currentGameId !== null && persistedGameId !== currentGameId)
+        ) {
           return fallback;
         }
 
