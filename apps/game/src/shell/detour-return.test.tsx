@@ -1,6 +1,6 @@
 import type { Session } from "@realms-world/identity";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, type ReactNode } from "react";
+import { act, type ReactNode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
@@ -35,7 +35,9 @@ const linked = { ...unlinked, user: { ...unlinked.user, address: "0x04a1d2c3e4f5
 let where = "";
 const Where = () => {
   const location = useLocation();
-  where = `${location.pathname}${location.search}`;
+  useEffect(() => {
+    where = `${location.pathname}${location.search}`;
+  }, [location]);
   return null;
 };
 
