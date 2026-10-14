@@ -9,11 +9,8 @@
 /season / 200
 /results/:id / 200
 /profile / 200
-/profile/account / 200
-/profile/notifications / 200
-/profile/devices / 200
+/profile/settings / 200
 /sign-in / 200
-/learn / 200
 /scroll / 200
 /scroll/:post / 200
 /terms / 200

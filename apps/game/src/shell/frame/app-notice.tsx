@@ -47,10 +47,11 @@ const putInstallOff = () => {
 
 /**
  * The app's one notice (spec 14), first that applies: Offline (the last values stay, Try again reads them anew), an
- * update ready, or Install (Later puts it off a week). PageFrame places it above the foot row on a phone and bottom centre on desktop; a game
- * never shows it, so an update waits until Exit.
+ * update ready, or Install (Later puts it off a week), which only Play offers: every other page keeps its room. PageFrame
+ * places it above the foot row on a phone and in its own band at the top right on desktop; a game never shows it, so
+ * an update waits until Exit.
  */
-export const useAppNotice = () => {
+export const useAppNotice = ({ offersInstall }: { offersInstall: boolean }) => {
   const online = useOnline();
   const { session } = useIdentitySession();
   const update = usePwaUpdate();
@@ -77,7 +78,7 @@ export const useAppNotice = () => {
       />
     );
   // Install is offered once the player has an account, never to a first visit.
-  if (session && !install.installed && !installLater)
+  if (offersInstall && session && !install.installed && !installLater)
     return (
       <Notice
         icon="In"

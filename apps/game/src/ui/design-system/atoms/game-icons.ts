@@ -11,7 +11,6 @@ export const ArrowRight = createGameIcon("/image-icons/ui-arrow-right.png");
 export const ArrowRightLeft = createGameIcon("/image-icons/ui-swap.png");
 export const ArrowUp = createGameIcon("/image-icons/ui-arrow-right.png", -90);
 export const ArrowUpCircle = createGameIcon("/image-icons/ui-arrow-right.png", -90);
-export const BookOpen = createGameIcon("/image-icons/ui-book.png");
 export const Bot = createGameIcon("/image-icons/robot.png");
 export const Box = createGameIcon("/image-icons/resources.png");
 export const Building2 = createGameIcon("/image-icons/building.png");

@@ -10,11 +10,11 @@ import type { ScrollPost } from "../generated/scroll-posts";
 import { NothingHere } from "../not-found";
 import { paintingSources } from "../paintings";
 import { Panel } from "../panel";
-import { LEARN_WORDS } from "../words";
-import { postHref, postKind, postPainting, publishedPosts, SCROLL_PATH } from "./posts";
+import { NEWS_WORDS } from "../words";
+import { postHref, postKind, postPainting, publishedPosts, WHATS_NEW_PATH } from "./posts";
 
 /**
- * A post (spec 13), read inside Learn: Back to the Scroll, its title, date and reading time, the body in a 68-character
+ * A post (spec 13), read inside What's new: Back to What's new, its title, date and reading time, the body in a 68-character
  * reading column, and Newer and Older as one stepper at the foot. The desktop heads it with its cover and keeps the
  * Scroll's other posts beside it.
  */
@@ -25,14 +25,14 @@ export const PostPage = () => {
   const post = publishedPosts[index];
   if (!post)
     return (
-      <PageFrame back={SCROLL_PATH}>
+      <PageFrame back={WHATS_NEW_PATH}>
         <NothingHere />
       </PageFrame>
     );
   return (
     <PageFrame
-      back={SCROLL_PATH}
-      title={layout === "desktop" ? LEARN_WORDS.scroll : undefined}
+      back={WHATS_NEW_PATH}
+      title={layout === "desktop" ? NEWS_WORDS.scroll : undefined}
       foot={<Stepper newer={publishedPosts[index - 1]} older={publishedPosts[index + 1]} />}
       footer
     >
@@ -48,7 +48,7 @@ const Stepper = ({ newer, older }: { newer: ScrollPost | undefined; older: Scrol
       {newer && (
         <Button
           role="outline"
-          word={LEARN_WORDS.newer}
+          word={NEWS_WORDS.newer}
           icon="Ar"
           className="flex-1"
           onClick={() => navigate(postHref(newer))}
@@ -57,7 +57,7 @@ const Stepper = ({ newer, older }: { newer: ScrollPost | undefined; older: Scrol
       {older && (
         <Button
           role="outline"
-          word={LEARN_WORDS.older}
+          word={NEWS_WORDS.older}
           icon="Ar"
           className="flex-1"
           onClick={() => navigate(postHref(older))}
@@ -93,7 +93,7 @@ const DesktopPost = ({ post }: { post: ScrollPost }) => (
     <div className="grid grid-cols-[minmax(0,760px)_20rem] justify-center gap-10">
       <PostBody post={post} />
       <aside>
-        <Panel icon="Pc" title={LEARN_WORDS.scroll}>
+        <Panel icon="Pc" title={NEWS_WORDS.scroll}>
           {publishedPosts
             .filter((other) => other.slug !== post.slug)
             .map((other) => (
@@ -114,7 +114,7 @@ const DesktopPost = ({ post }: { post: ScrollPost }) => (
 const PostDate = ({ post }: { post: ScrollPost }) => (
   <p className="flex items-center gap-2 text-sm text-kit-muted">
     <KitIcon code="Cl" size={18} />
-    {formatContentDay(post.date)} · {LEARN_WORDS.minutes(post.readingTimeMinutes)}
+    {formatContentDay(post.date)} · {NEWS_WORDS.minutes(post.readingTimeMinutes)}
   </p>
 );
 

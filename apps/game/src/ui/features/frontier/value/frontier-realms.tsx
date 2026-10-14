@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { SETTINGS_PATH } from "@/shell/profile/settings-route";
 import { REALM_NOT_CLAIMED } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
@@ -64,7 +65,7 @@ export const FrontierRealms = ({
       onClaim={() => void claimAll()}
       onAdd={(realmId) => void add(realmId)}
       onRealm={onRealm}
-      onLinkWallet={() => navigate("/profile/account")}
+      onLinkWallet={() => navigate(SETTINGS_PATH)}
       onClose={onClose}
     />
   );

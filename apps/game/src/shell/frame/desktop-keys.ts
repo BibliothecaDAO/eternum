@@ -16,7 +16,7 @@ const isFocusedControl = (target: EventTarget | null): boolean =>
 const stepButton = () => document.querySelector<HTMLButtonElement>("[data-role=step] button:enabled");
 
 /**
- * The desktop's keys: 1–4 open the four places, Esc leads Back, Enter takes the screen's step. An open sheet takes Esc
+ * The desktop's keys: 1–3 open the three places, Esc leads Back, Enter takes the screen's step. An open sheet takes Esc
  * and Enter first, so the page answers only when nothing is open over it.
  */
 export const useDesktopKeys = ({ places, back }: { places: readonly string[]; back: To | undefined }) => {

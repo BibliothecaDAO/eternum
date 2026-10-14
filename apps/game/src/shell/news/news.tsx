@@ -5,15 +5,31 @@ import { Sheet } from "@/ui/design-system/kit/sheet";
 import { latestFeatures } from "@/ui/features/world/latest-features";
 
 import { formatContentDay } from "../clock-chip";
-import { SettingRow } from "../profile/setting-row";
+import { PageFrame } from "../frame/page-frame";
+import { SettingRow, SettingRows } from "../profile/setting-row";
+import { PROFILE_WORDS } from "../words";
 import { postHref, publishedPosts } from "./posts";
 
-/** News: the Scroll's posts and the latest changes in one list, newest first; a post opens its page. */
+/**
+ * What's new (spec 13), a row under You and the Scroll's address: the Scroll's posts and the latest changes in one list,
+ * newest first. It ends on the footer, which holds the community and the legal pages.
+ */
+export const WhatsNewPage = () => (
+  <PageFrame back="/profile" title={PROFILE_WORDS.whatsNew} footer>
+    <div className="max-w-[48rem]">
+      <SettingRows>
+        <NewsRows items={newsItems()} />
+      </SettingRows>
+    </div>
+  </PageFrame>
+);
+
+/** One entry of What's new: a post, or a change from the latest-features list. */
 type NewsItem =
   | { kind: "post"; key: string; title: string; date: string; slug: string }
   | { kind: "change"; key: string; title: string; date: string; description: string };
 
-export const newsItems = (): NewsItem[] =>
+const newsItems = (): NewsItem[] =>
   [
     ...publishedPosts.map(
       (post): NewsItem => ({ kind: "post", key: post.slug, title: post.title, date: post.date, slug: post.slug }),
@@ -29,8 +45,8 @@ export const newsItems = (): NewsItem[] =>
     ),
   ].toSorted((a, b) => b.date.localeCompare(a.date));
 
-/** News's rows for the caller's plate; a post opens its page, a change its sheet. */
-export const NewsRows = ({ items }: { items: readonly NewsItem[] }) => {
+/** What's new's rows; a post opens its page, a change its sheet. */
+const NewsRows = ({ items }: { items: readonly NewsItem[] }) => {
   const navigate = useNavigate();
   const [change, setChange] = useState<Extract<NewsItem, { kind: "change" }> | null>(null);
   return (

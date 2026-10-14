@@ -24,13 +24,15 @@ type PageFrameProps = {
   notice?: ReactNode;
   /** The foot row: the page's buttons (one primary) or its stepper. */
   foot?: ReactNode;
-  /** The four tabs; a full-screen step (sign-in, entering a match) has none. */
+  /** The three places; a full-screen step (sign-in, entering a match) has none. */
   tabs?: boolean;
+  /** Play, the one page that offers to install the app. */
+  offersInstall?: boolean;
   /** A painting across the desktop window behind the page, faded into the ground in its lower third. */
   painting?: Painting;
   /** The painting fills the desktop's first screen: a stage, as the first visit is drawn. */
   stage?: boolean;
-  /** A page that scrolls ends on the desktop's footer. */
+  /** A page that scrolls ends on the footer: What's new, a post, the legal pages. */
   footer?: boolean;
   children: ReactNode;
 };
@@ -39,12 +41,12 @@ type PageFrameProps = {
  * The composer: the only code that places a page's parts. Each part sits in its band, tagged so a test can hold every
  * control to its place: Back top left and nothing else there, nothing to tap in a phone's top right, one foot row,
  * notices directly above it on a phone and in their own band at the desktop's top right (covering nothing), the tabs
- * at the phone's foot or in the desktop rail, with the desktop's keys (1–4 the places, Esc Back).
+ * at the phone's foot or in the desktop rail, with the desktop's keys (1–3 the places, Esc Back).
  */
 export const PageFrame = (props: PageFrameProps) => {
   const layout = useLayout();
-  // The page's own notice first (a refusal it caused); else the app's (offline, an update, install).
-  const appNotice = useAppNotice();
+  // The page's own notice first (a refusal it caused); else the app's (offline, an update, install on Play).
+  const appNotice = useAppNotice({ offersInstall: props.offersInstall ?? false });
   const framed = { ...props, notice: props.notice ?? appNotice };
   return (
     <div data-layout={layout} className="bg-kit-ground font-body text-kit-cream">
@@ -54,13 +56,14 @@ export const PageFrame = (props: PageFrameProps) => {
   );
 };
 
-const PhoneFrame = ({ back, title, notice, foot, tabs = true, children }: PageFrameProps) => (
+const PhoneFrame = ({ back, title, notice, foot, tabs = true, footer = false, children }: PageFrameProps) => (
   <div className="flex h-dvh flex-col">
     <header data-band="top" className="flex min-h-12 shrink-0 items-center gap-1 px-4 pt-[env(safe-area-inset-top)]">
       {back === undefined ? <Lockup /> : <PhoneTitle back={back} title={title} />}
     </header>
     <main data-band="body" className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
       {children}
+      {footer && <AppFooter />}
     </main>
     {notice ? (
       <div data-band="notice" className="shrink-0 px-4 pb-2">

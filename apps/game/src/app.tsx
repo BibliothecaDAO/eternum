@@ -8,13 +8,13 @@ import { SceneRoute } from "./scene-route";
 import { PwaInstallRuntime } from "./pwa/pwa-install-control";
 import { appQueryClient } from "./runtime/query-client";
 import { AppShell } from "./shell/app-shell";
-import { LearnPage, ScrollPage } from "./shell/learn/learn-page";
-import { PostPage } from "./shell/learn/post-page";
+import { WhatsNewPage } from "./shell/news/news";
+import { PostPage } from "./shell/news/post-page";
 import { IS_DEV_ENVIRONMENT } from "./shell/frame/environment";
 import { NotFoundPage } from "./shell/not-found";
 import { BlitzLobbyPage } from "./shell/blitz/blitz-pages";
 import { PlayPage } from "./shell/play/play-page";
-import { PlayerPage, ProfilePage, ProfileRowPage } from "./shell/profile/profile-pages";
+import { PlayerPage, ProfilePage, SettingsPage } from "./shell/profile/profile-pages";
 import { ResultsPage } from "./shell/season-tab/results-page";
 import { SeasonPage } from "./shell/season-tab/season-page";
 import { SignInPage } from "./shell/sign-in/sign-in-page";
@@ -54,12 +54,9 @@ export const appRoutes = (
       <Route path="season" element={<SeasonPage />} />
       <Route path="results/:id" element={<ResultsPage />} />
       <Route path="profile" element={<ProfilePage />} />
-      <Route path="profile/account" element={<ProfileRowPage row="account" />} />
-      <Route path="profile/notifications" element={<ProfileRowPage row="notifications" />} />
-      <Route path="profile/devices" element={<ProfileRowPage row="devices" />} />
+      <Route path="profile/settings" element={<SettingsPage />} />
       <Route path="p/:address" element={<PlayerPage />} />
-      <Route path="learn" element={<LearnPage />} />
-      <Route path="scroll" element={<ScrollPage />} />
+      <Route path="scroll" element={<WhatsNewPage />} />
       <Route path="scroll/:post" element={<PostPage />} />
       <Route
         path="terms"

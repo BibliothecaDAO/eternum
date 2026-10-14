@@ -1,6 +1,6 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-/** A key mark: the desktop's keyboard answer for the control beside it (1–4 the places, Esc Back). */
+/** A key mark: the desktop's keyboard answer for the control beside it (1–3 the places, Esc Back). */
 export const Kbd = ({ keyName, className }: { keyName: string; className?: string }) => (
   <kbd
     aria-hidden

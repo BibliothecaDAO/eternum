@@ -29,12 +29,12 @@ const COLUMNS: readonly { title: string; links: readonly FooterLink[] }[] = [
 ];
 
 /**
- * The desktop's footer at the end of a page that scrolls: what the rail does not already hold. The community, Realms'
- * own sites and the legal pages live here and nowhere else on the page.
+ * The footer at the end of What's new and the pages read from it: what the places do not hold. The community, Realms'
+ * own sites and the legal pages live here and nowhere else; a phone stacks its columns.
  */
 export const AppFooter = () => (
-  <footer data-band="footer" className="mt-16 border-t border-kit-line pt-10">
-    <div className="grid grid-cols-3 gap-8">
+  <footer data-band="footer" className="mt-10 border-t border-kit-line pt-8 lg:mt-16 lg:pt-10">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
       {COLUMNS.map((column) => (
         <nav key={column.title} aria-label={column.title} className="flex flex-col gap-2">
           <b className="mb-1 font-body text-sm text-kit-gold">{column.title}</b>
@@ -50,7 +50,7 @@ export const AppFooter = () => (
 
 /** The app's own pages open in place; other sites in a new tab. */
 const FooterAnchor = ({ link }: { link: FooterLink }) => {
-  const className = "text-sm text-kit-cream hover:text-kit-gold2";
+  const className = "flex min-h-8 items-center text-sm text-kit-cream hover:text-kit-gold2";
   return link.to.startsWith("/") ? (
     <Link to={link.to} className={className}>
       {link.word}

@@ -4,37 +4,31 @@ import { useIdentitySession } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
-import { BookOpen, Play, Trophy, User } from "@/ui/design-system/atoms/game-icons";
+import { Play, Trophy, User } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 
-import { setAppMusic, useAppMusic } from "../app-music";
-import { IdentityChip } from "../identity-chip";
-import { PROFILE_WORDS, WORDS } from "../words";
+import { WORDS } from "../words";
 import { EnvChip } from "./env-mark";
 import { Kbd } from "./kbd";
 
-/** The app's four places, one list for both layouts: the phone's tab bar and the desktop rail. */
+/**
+ * The app's three places, one list for both layouts: the phone's tab bar and the desktop rail. Play holds what to do
+ * now, Season where the player stands, You the player, their finished games and everything about the account.
+ */
 const TABS: readonly { to: string; word: string; icon: GameIcon; matches: readonly string[] }[] = [
+  { to: "/", word: WORDS.play, icon: Play, matches: ["/", "/blitz"] },
+  { to: "/season", word: WORDS.season, icon: Trophy, matches: ["/season", "/p/"] },
   {
-    to: "/",
-    word: WORDS.play,
-    icon: Play,
-    matches: ["/", "/blitz"],
+    to: "/profile",
+    word: WORDS.you,
+    icon: User,
+    matches: ["/profile", "/results", "/scroll", "/terms", "/privacy", "/credits"],
   },
-  { to: "/season", word: WORDS.season, icon: Trophy, matches: ["/season", "/results"] },
-  {
-    to: "/learn",
-    word: WORDS.learn,
-    icon: BookOpen,
-    matches: ["/learn", "/scroll", "/terms", "/privacy", "/credits"],
-  },
-  { to: "/profile", word: WORDS.profile, icon: User, matches: ["/profile", "/p/"] },
 ];
 
-const PROFILE_TAB = TABS[3];
+const YOU_TAB = TABS[2];
 
-/** The places' addresses in order: the desktop's keys 1–4 open them. */
+/** The places' addresses in order: the desktop's keys 1–3 open them. */
 export const PLACES = TABS.map((tab) => tab.to);
 
 const matchesPath = (pathname: string, match: string) =>
@@ -45,17 +39,32 @@ const useActiveTab = (): string | undefined => {
   return TABS.find((tab) => tab.matches.some((match) => matchesPath(pathname, match)))?.to;
 };
 
-/** Profile's icon is the player's portrait once signed in. */
+/** You's icon is the player's portrait once signed in. */
 const useSignedInPortrait = (): string | undefined => {
   const { session } = useIdentitySession();
   const address = useAccountStore((state) => state.account?.address);
   return session ? playerPortraitUrl(address, session.user.image) : undefined;
 };
 
-/** The phone's foot: four tabs in thumb reach. */
+/** A place's mark: its icon, or on You the signed-in player's portrait. */
+const TabIcon = ({ tab, current, size }: { tab: (typeof TABS)[number]; current: boolean; size: number }) => {
+  const portrait = useSignedInPortrait();
+  if (tab === YOU_TAB && portrait)
+    return (
+      <img
+        src={portrait}
+        alt=""
+        style={{ width: size, height: size }}
+        className={cn("rounded-full border-2 object-cover", current ? "border-kit-peach" : "border-kit-line2")}
+      />
+    );
+  const Icon = tab.icon;
+  return <Icon size={size} className={current ? undefined : "brightness-[.8] grayscale-[.6]"} />;
+};
+
+/** The phone's foot: the three places in thumb reach. */
 export const TabBar = () => {
   const active = useActiveTab();
-  const portrait = useSignedInPortrait();
   return (
     <nav
       aria-label="Tabs"
@@ -63,7 +72,6 @@ export const TabBar = () => {
     >
       {TABS.map((tab) => {
         const current = active === tab.to;
-        const Icon = tab.icon;
         return (
           <NavLink
             key={tab.to}
@@ -75,18 +83,7 @@ export const TabBar = () => {
               current ? "text-kit-peach" : "text-kit-muted",
             )}
           >
-            {tab === PROFILE_TAB && portrait ? (
-              <img
-                src={portrait}
-                alt=""
-                className={cn(
-                  "size-7 rounded-full border-2 object-cover",
-                  current ? "border-kit-peach" : "border-kit-line2",
-                )}
-              />
-            ) : (
-              <Icon size={28} className={current ? undefined : "brightness-[.8] grayscale-[.6]"} />
-            )}
+            <TabIcon tab={tab} current={current} size={28} />
             {tab.word}
           </NavLink>
         );
@@ -96,8 +93,8 @@ export const TabBar = () => {
 };
 
 /**
- * The desktop's rail, the full height of the window: the lockup, the four places with their keys, and the player (or
- * Sign in) at its foot; a full-screen step keeps the lockup alone.
+ * The desktop's rail, the full height of the window: the lockup as the app's mark (Play, the first place, sits right
+ * under it), then the three places with their keys; a full-screen step keeps the lockup alone.
  */
 export const Rail = ({ places }: { places: boolean }) => {
   const active = useActiveTab();
@@ -106,63 +103,35 @@ export const Rail = ({ places }: { places: boolean }) => {
       data-band="rail"
       className="sticky top-0 z-30 flex h-screen w-24 shrink-0 flex-col items-center gap-1 leather border-r pb-5 pt-5 min-[1800px]:w-28"
     >
-      <NavLink to="/" data-role="lockup" aria-label={WORDS.play} className="mb-6 flex flex-col items-center gap-2">
+      <div data-role="lockup" className="mb-6 flex flex-col items-center gap-2">
         <img src="/images/logos/realms-lockup-stacked.svg" alt="Realms" className="block w-16" />
         <EnvChip />
-      </NavLink>
+      </div>
       {places && (
-        <>
-          <nav aria-label="Tabs" className="flex w-full flex-col gap-1">
-            {TABS.map((tab, index) => {
-              const current = active === tab.to;
-              const Icon = tab.icon;
-              return (
-                <NavLink
-                  key={tab.to}
-                  to={tab.to}
-                  data-role="tab"
-                  aria-current={current ? "page" : undefined}
-                  className={cn(
-                    "relative flex w-full flex-col items-center gap-1.5 py-3.5 font-body text-sm transition-colors",
-                    current
-                      ? "bg-gradient-to-r from-kit-gold/[.18] to-transparent text-kit-cream before:absolute before:inset-y-2.5 before:left-0 before:w-1 before:rounded-r before:bg-kit-gold"
-                      : "text-kit-muted hover:bg-kit-gold/[.05] hover:text-kit-cream",
-                  )}
-                >
-                  <Icon size={30} className={current ? undefined : "brightness-[.8] grayscale-[.6]"} />
-                  {tab.word}
-                  <Kbd keyName={String(index + 1)} className="absolute right-2 top-2" />
-                </NavLink>
-              );
-            })}
-          </nav>
-          <div className="mt-auto flex w-full flex-col items-center gap-3">
-            <MusicSwitch />
-            <div className="flex w-full justify-center" data-role="player">
-              <IdentityChip />
-            </div>
-          </div>
-        </>
+        <nav aria-label="Tabs" className="flex w-full flex-col gap-1">
+          {TABS.map((tab, index) => {
+            const current = active === tab.to;
+            return (
+              <NavLink
+                key={tab.to}
+                to={tab.to}
+                data-role="tab"
+                aria-current={current ? "page" : undefined}
+                className={cn(
+                  "relative flex w-full flex-col items-center gap-1.5 py-3.5 font-body text-sm transition-colors",
+                  current
+                    ? "bg-gradient-to-r from-kit-gold/[.18] to-transparent text-kit-cream before:absolute before:inset-y-2.5 before:left-0 before:w-1 before:rounded-r before:bg-kit-gold"
+                    : "text-kit-muted hover:bg-kit-gold/[.05] hover:text-kit-cream",
+                )}
+              >
+                <TabIcon tab={tab} current={current} size={30} />
+                {tab.word}
+                <Kbd keyName={String(index + 1)} className="absolute right-2 top-2" />
+              </NavLink>
+            );
+          })}
+        </nav>
       )}
     </header>
-  );
-};
-
-/** The rail's sound switch: music outside a match, off until the player turns it on. */
-const MusicSwitch = () => {
-  const on = useAppMusic();
-  return (
-    <button
-      type="button"
-      role="switch"
-      data-role="sound"
-      aria-checked={on}
-      aria-label={PROFILE_WORDS.music}
-      title={PROFILE_WORDS.music}
-      onClick={() => setAppMusic(!on)}
-      className="flex size-11 items-center justify-center rounded-full border border-kit-line2 hover:border-kit-gold"
-    >
-      <KitIcon code={on ? "Mu" : "Mt"} size={22} className={on ? undefined : "opacity-60"} />
-    </button>
   );
 };

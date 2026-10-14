@@ -7,13 +7,13 @@ vi.mock("@/hooks/context/identity-session", () => ({ useIdentitySession: () => (
 
 import { useAppNotice } from "./app-notice";
 
-const Host = (): ReactNode => useAppNotice();
+const Host = ({ offersInstall }: { offersInstall: boolean }): ReactNode => useAppNotice({ offersInstall });
 
-const render = async () => {
+const render = async (offersInstall = true) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const container = document.createElement("div");
   const root = createRoot(container);
-  await act(async () => root.render(<Host />));
+  await act(async () => root.render(<Host offersInstall={offersInstall} />));
   return { container, unmount: () => act(async () => root.unmount()) };
 };
 
@@ -44,6 +44,16 @@ it("offers Install to a player with an account, never to a first visit, and Late
     expect(ui.container.textContent).toBe("Realms on your home screenLaterInstall");
     const later = [...ui.container.querySelectorAll("button")].find((button) => button.textContent === "Later")!;
     await act(async () => later.click());
+    expect(ui.container.textContent).toBe("");
+  } finally {
+    await ui.unmount();
+  }
+});
+
+it("offers Install on Play only: another page keeps its room", async () => {
+  session.current = { user: {} };
+  const ui = await render(false);
+  try {
     expect(ui.container.textContent).toBe("");
   } finally {
     await ui.unmount();

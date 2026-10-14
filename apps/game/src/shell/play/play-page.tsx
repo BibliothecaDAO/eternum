@@ -27,7 +27,11 @@ export const PlayPage = () => {
   const firstVisit = !facts.signedIn && facts.board?.lead?.verb === "play";
   const lead = facts.board?.lead;
   return (
-    <PageFrame painting={firstVisit ? "dark-plains" : ageOf(lead?.mode ?? "frontier").painting} stage={firstVisit}>
+    <PageFrame
+      painting={firstVisit ? "dark-plains" : ageOf(lead?.mode ?? "frontier").painting}
+      stage={firstVisit}
+      offersInstall
+    >
       {firstVisit && <LoreLine />}
       <div
         className={

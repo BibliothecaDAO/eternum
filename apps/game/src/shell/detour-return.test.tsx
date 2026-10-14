@@ -22,7 +22,7 @@ import { identityClient } from "@/hooks/context/identity-session";
 
 import { PaidEntry, SignInToJoin } from "./blitz/entry-panel";
 import { AccountCard } from "./profile/account-card";
-import { ProfileRowPage } from "./profile/profile-pages";
+import { SettingsPage } from "./profile/profile-pages";
 import { environmentLedger } from "./value/ledger";
 
 const LOBBY = "/blitz/slot-blitz-1";
@@ -92,31 +92,31 @@ it("sends a player with no payout wallet to link one, carrying the lobby to retu
     <PaidEntry ledger={environmentLedger()!} slot={{ shard: "0x52", slotId: 1 }} owner={null} game={undefined} />
   ));
   await press("Link wallet");
-  expect(where).toBe(`/profile/account?next=${encodeURIComponent(LOBBY)}`);
+  expect(where).toBe(`/profile/settings?next=${encodeURIComponent(LOBBY)}`);
 });
 
-it("opens Account on the payout wallet when sent to link one, and returns to the lobby once it is linked", async () => {
+it("opens Settings on the payout wallet when sent to link one, and returns to the lobby once it is linked", async () => {
   identity.session = unlinked;
-  const render = await mount(`/profile/account?next=${encodeURIComponent(LOBBY)}`, () => (
+  const render = await mount(`/profile/settings?next=${encodeURIComponent(LOBBY)}`, () => (
     <AccountCard session={identity.session!} />
   ));
   expect(document.body.textContent).toContain("I have a wallet");
-  expect(where).toContain("/profile/account");
+  expect(where).toContain("/profile/settings");
 
   identity.session = linked;
   await render();
   expect(where).toBe(LOBBY);
 });
 
-it("keeps a player on Account when their wallet was already linked as they arrived", async () => {
+it("keeps a player on Settings when their wallet was already linked as they arrived", async () => {
   identity.session = linked;
-  await mount(`/profile/account?next=${encodeURIComponent(LOBBY)}`, () => <AccountCard session={identity.session!} />);
-  expect(where).toBe(`/profile/account?next=${encodeURIComponent(LOBBY)}`);
+  await mount(`/profile/settings?next=${encodeURIComponent(LOBBY)}`, () => <AccountCard session={identity.session!} />);
+  expect(where).toBe(`/profile/settings?next=${encodeURIComponent(LOBBY)}`);
 });
 
-it("returns a player who signs in from Account to Account, with where it was sending them", async () => {
-  const account = `/profile/account?next=${encodeURIComponent(LOBBY)}`;
-  await mount(account, () => <ProfileRowPage row="account" />);
+it("returns a player who signs in from Settings to Settings, with where it was sending them", async () => {
+  const settings = `/profile/settings?next=${encodeURIComponent(LOBBY)}`;
+  await mount(settings, () => <SettingsPage />);
   await press("Sign in");
-  expect(where).toBe(`/sign-in?next=${encodeURIComponent(account)}`);
+  expect(where).toBe(`/sign-in?next=${encodeURIComponent(settings)}`);
 });

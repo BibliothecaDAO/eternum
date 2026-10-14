@@ -6,8 +6,9 @@ import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { communityPlace } from "./community";
 import { useLayout } from "./frame/layout";
 import { PageFrame } from "./frame/page-frame";
+import { WHATS_NEW_PATH } from "./news/posts";
 import { Panel } from "./panel";
-import { FOOTER_WORDS, LEARN_WORDS } from "./words";
+import { FOOTER_WORDS, NEWS_WORDS } from "./words";
 
 /** The terms, the privacy policy and the credits: static text, so the shell serves it with no game module. */
 
@@ -55,7 +56,7 @@ const LegalPage = ({ title, updated, sections }: { title: string; updated: strin
     <article className="flex max-w-[760px] flex-col gap-5">
       <p className="flex items-center gap-2 text-sm text-kit-muted">
         <KitIcon code="Cl" size={18} />
-        {LEARN_WORDS.updated} {updated}
+        {NEWS_WORDS.updated} {updated}
         {desktop && <OtherLegalPages title={title} />}
       </p>
       {sections.map((section, index) => (
@@ -71,7 +72,7 @@ const LegalPage = ({ title, updated, sections }: { title: string; updated: strin
     </article>
   );
   return (
-    <PageFrame back="/learn" title={title} footer>
+    <PageFrame back={WHATS_NEW_PATH} title={title} footer>
       {desktop ? (
         <div className="grid grid-cols-[20rem_minmax(0,760px)] justify-center gap-10">
           <Contents title={title} sections={sections} />

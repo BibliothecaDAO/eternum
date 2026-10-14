@@ -24,11 +24,11 @@ vi.mock("../blitz/blitz-pages", () => ({ BlitzLobbyPage: () => null }));
 vi.mock("../profile/profile-pages", () => ({
   PlayerPage: () => null,
   ProfilePage: () => null,
-  ProfileRowPage: () => null,
+  SettingsPage: () => null,
 }));
 vi.mock("../season-tab/results-page", () => ({ ResultsPage: () => null }));
 vi.mock("../season-tab/season-page", () => ({ SeasonPage: () => null }));
-vi.mock("../learn/learn-page", () => ({ LearnPage: () => null }));
+vi.mock("../news/news", () => ({ WhatsNewPage: () => null }));
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 let root: Root | undefined;
 let container: HTMLDivElement;

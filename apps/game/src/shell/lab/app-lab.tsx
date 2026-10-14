@@ -9,9 +9,9 @@ import { BlitzLobbyPage } from "../blitz/blitz-pages";
 import { entryTermsKey, refundOwedKey, registeredSlotsKey, slotRegisteredKey } from "../blitz/entry";
 import { seasonPrizeKey } from "../season-tab/blitz-season";
 import { rewardKey } from "../season-tab/reward";
-import { LearnPage } from "../learn/learn-page";
+import { WhatsNewPage } from "../news/news";
 import { PlayPage } from "../play/play-page";
-import { PlayerPage, ProfilePage, ProfileRowPage } from "../profile/profile-pages";
+import { PlayerPage, ProfilePage, SettingsPage } from "../profile/profile-pages";
 import { ResultsPage } from "../season-tab/results-page";
 import { SeasonPage } from "../season-tab/season-page";
 import {
@@ -83,9 +83,9 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
       <Route path="season" element={<SeasonPage />} />
       <Route path="results/:id" element={<ResultsPage />} />
       <Route path="profile" element={<ProfilePage />} />
-      <Route path="profile/account" element={<ProfileRowPage row="account" />} />
+      <Route path="profile/settings" element={<SettingsPage />} />
       <Route path="p/:address" element={<PlayerPage />} />
-      <Route path="learn" element={<LearnPage />} />
+      <Route path="scroll" element={<WhatsNewPage />} />
     </Routes>
   );
 };

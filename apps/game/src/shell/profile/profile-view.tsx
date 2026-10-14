@@ -91,12 +91,8 @@ export const PlayerCard = ({ account, own }: { account: string; own: boolean }) 
   );
 };
 
-/** The desktop's finished games, in a titled plate. */
-export const RecentGames = ({ account }: { account: string }) => (
-  <Panel icon="Tp" title={PROFILE_WORDS.recentGames}>
-    <History account={account} framed={false} />
-  </Panel>
-);
+/** The desktop's finished games, in a titled plate; none, no plate. */
+export const RecentGames = ({ account }: { account: string }) => <History account={account} titled />;
 
 /** The player's banner: until their best age is a recorded fact, Frontier's painting stands for it. */
 const ProfileBanner = ({ account, own }: { account: string; own: boolean }) => {
@@ -145,19 +141,22 @@ const SeasonFigure = ({ account }: { account: string }) => {
   );
 };
 
-/** Their finished games, newest first; absent when they have none. */
-const History = ({ account, framed = true }: { account: string; framed?: boolean }) => {
+/** Their finished games, newest first, on a plate (titled on desktop); absent when they have none. */
+const History = ({ account, titled = false }: { account: string; titled?: boolean }) => {
   const history = useRecentResults(HISTORY, account);
   const now = useNowSeconds();
   if (history.isError)
     return <ServiceFailure service="results" error={history.error} retry={() => void history.refetch()} />;
   if (history.isPending) return <Loading />;
   if (history.data.games.length === 0) return null;
-  return (
-    <ul className={cn(framed && "plate px-2")}>
-      {history.data.games.map((game) => (
-        <HistoryRow key={`${game.chainId}:${game.game_id}`} game={game} player={account} now={now} />
-      ))}
-    </ul>
+  const rows = history.data.games.map((game) => (
+    <HistoryRow key={`${game.chainId}:${game.game_id}`} game={game} player={account} now={now} />
+  ));
+  return titled ? (
+    <Panel icon="Tp" title={PROFILE_WORDS.recentGames}>
+      <ul>{rows}</ul>
+    </Panel>
+  ) : (
+    <ul className="plate px-2">{rows}</ul>
   );
 };

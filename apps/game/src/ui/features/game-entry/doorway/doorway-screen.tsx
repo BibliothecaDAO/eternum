@@ -5,6 +5,7 @@ import { useLayout } from "@/shell/frame/layout";
 import { PageFrame } from "@/shell/frame/page-frame";
 import { StepVerb } from "@/shell/frame/step-verb";
 import type { Painting } from "@/shell/paintings";
+import { SETTINGS_PATH } from "@/shell/profile/settings-route";
 import { DOORWAY_WORDS, WORDS } from "@/shell/words";
 import { Button } from "@/ui/design-system/kit/button";
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
@@ -156,7 +157,7 @@ const Hold = ({
     case "devices":
       return plate(
         DOORWAY_WORDS.deviceLimit,
-        <Button role="primary" word={DOORWAY_WORDS.devices} icon="Dv" onClick={() => navigate("/profile")} />,
+        <Button role="primary" word={DOORWAY_WORDS.devices} icon="Dv" onClick={() => navigate(SETTINGS_PATH)} />,
       );
   }
   if (view.spectating === "watch" && onSpectate)

@@ -19,7 +19,7 @@ import { type ThisDeviceState, useThisDevice } from "./this-device";
  */
 type Level = keyof typeof LEVEL_WORDS;
 const LEVELS: Level[] = ["off", "important", "all"];
-export const shownLevel = (saved: NotificationLevel | undefined): Level | undefined =>
+const shownLevel = (saved: NotificationLevel | undefined): Level | undefined =>
   saved === "standard" ? undefined : saved;
 
 /**

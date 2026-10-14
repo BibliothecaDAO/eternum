@@ -7,8 +7,8 @@ import { MAP, REALM, RESUME, SEASON, SIGN_IN } from "@/ui/design-system/kit/word
 export const WORDS = {
   play: "Play",
   season: SEASON,
-  learn: "Learn",
-  profile: "Profile",
+  /** The player's own place: their card, their finished games, Settings. */
+  you: "You",
   signIn: SIGN_IN,
   dev: "Dev",
   /** Start Frontier on a first visit; entry is free. */
@@ -134,7 +134,7 @@ export const DOORWAY_WORDS = {
   openRealm: "Open realm",
 } as const;
 
-/** The Season tab and a game's Results. */
+/** Season and a game's Results. */
 export const SEASON_WORDS = {
   /** The view switch's name, for assistive technology. */
   views: "Season views",
@@ -154,8 +154,12 @@ export const RATING_WORDS = {
   unlinked: "Link a wallet in Account to carry a rating.",
 } as const;
 
-/** Profile and its pages: Account, Devices and Notifications, their rows, sheets and confirms. */
+/** You and Settings: their rows and groups, Settings' sheets and confirms. */
 export const PROFILE_WORDS = {
+  settings: "Settings",
+  /** The docs site, opened in a new tab. */
+  howToPlay: "How to play",
+  whatsNew: "What's new",
   account: "Account",
   notifications: "Notifications",
   devices: "Devices",
@@ -341,31 +345,17 @@ export const LEVEL_WORDS = {
   all: { word: "All", line: "Plus every clear, fight and build" },
 } as const;
 
-/** Learn: its two views, the guides, a post's stepper and the legal links. */
-export const LEARN_WORDS = {
-  guides: "Guides",
-  news: "News",
-  howFrontier: "How Frontier plays",
-  howBlitz: "How Blitz plays",
-  howEternum: "How Eternum plays",
-  byPlayers: "Guides by players",
+/** What's new under You: a post's stepper and reading time, and the legal pages' date. */
+export const NEWS_WORDS = {
   newer: "Newer",
   older: "Older",
-  terms: "Terms",
-  privacy: "Privacy",
   updated: "Updated",
   /** A post's reading time: "4min". */
   minutes: (count: number) => `${count}min`,
-  /** The Scroll, the posts read inside Learn. */
+  /** The Scroll, the posts read inside What's new. */
   scroll: "The Scroll",
   thoughtPiece: "Thought piece",
   update: "Update",
-  /** Below the Scroll's newest posts: everything else in News, on Learn. */
-  /** The four ages as the lore site tells them, on Learn. */
-  chronicle: "The chronicle",
-  lostAges: "The Lost Ages",
-  /** Under Guides by players: "6 guides". */
-  guidesCount: (count: number) => `${count} guides`,
 } as const;
 
 /** The app's own states: install, update, offline, a page that does not exist. */
