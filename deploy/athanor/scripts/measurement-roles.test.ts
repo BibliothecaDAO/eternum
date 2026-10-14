@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { shortString } from "starknet";
-import { isOfficialChain } from "./measurement-launcher";
+import { isOfficialChain } from "./measurement-roles";
 
 test("only a chain named after a deployment environment counts as an official shard", () => {
   const named = (name: string) => shortString.encodeShortString(name);

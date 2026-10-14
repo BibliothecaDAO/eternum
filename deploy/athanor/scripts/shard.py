@@ -381,7 +381,7 @@ def start_shard(config, directory):
     try:
         start_runner_stack(config, directory, command)
         readiness = record_runner_readiness(config, compose, directory, command)
-        grant_measurement_launcher(directory, command)
+        grant_measurement_roles(directory, command)
         return readiness
     except BaseException:
         stop_shard(directory)
@@ -399,11 +399,12 @@ def record_runner_readiness(config, compose, directory, command):
     return result
 
 
-def grant_measurement_launcher(directory, command):
+def grant_measurement_roles(directory, command):
     """A measurement shard's harness creates its own games, so the runner, never an official deployment, makes the
-    harness's operator the launcher. It runs after the readiness probe, which checks the launcher the deploy set."""
+    harness's operator the launcher and ledger operator. It runs after the readiness probe, which checks the roles the
+    deploy set."""
     run([*command, "run", "--rm", "--no-deps", "--entrypoint", "python3", "harness",
-         "/app/deploy/shard/init.py", "measurement-launcher"], directory, "measurement-launcher")
+         "/app/deploy/shard/init.py", "measurement-roles"], directory, "measurement-roles")
 
 
 def start_runner_stack(config, directory, command):

@@ -120,7 +120,7 @@ class ShardTest(unittest.TestCase):
                 self.assertTrue((directory / "compose.json").exists())
                 self.assertTrue((directory / "directory-registration-ack.json").exists())
 
-    def test_a_runner_shard_makes_its_harness_the_launcher_only_after_the_readiness_probe(self):
+    def test_a_runner_shard_gives_its_harness_the_game_roles_only_after_the_readiness_probe(self):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary) / "trial"
             read_text = Path.read_text
@@ -136,7 +136,7 @@ class ShardTest(unittest.TestCase):
                 patch.object(shard, "run", side_effect=lambda command, _, name, *__: steps.append((name, command[-1]))),
             ):
                 shard.start_shard(configuration(), directory)
-        self.assertEqual(steps, ["stack", "readiness", ("measurement-launcher", "measurement-launcher")])
+        self.assertEqual(steps, ["stack", "readiness", ("measurement-roles", "measurement-roles")])
 
     def test_stopping_a_registered_runner_retires_after_stop_without_activation(self):
         events = []

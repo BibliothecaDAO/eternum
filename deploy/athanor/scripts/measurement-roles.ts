@@ -18,33 +18,40 @@ export const isOfficialChain = (chainId: string): boolean => {
   return Object.values(environments).some(({ environment }) => name.startsWith(`${environment.toUpperCase()}_`));
 };
 
+/** The two roles a harness-created game needs: the launcher creates it, the ledger operator registers Eternum homes. */
+const MEASUREMENT_ROLES = [
+  { role: "launcher", setter: "set_launcher" },
+  { role: "ledger_operator", setter: "set_ledger_operator" },
+] as const;
+
 /**
  * Measurement shards only: the harness creates its own games there, so the runner makes the shard's operator (the
- * Games authority the harness signs as) its launcher. An official shard is refused by its chain name.
- * Usage: bun measurement-launcher.ts RUN_DIRECTORY, with RPC_URL (the private node) and DEPLOYER_PRIVATE_KEY.
+ * Games authority the harness signs as) its launcher and ledger operator. An official shard is refused by its chain
+ * name. Usage: bun measurement-roles.ts RUN_DIRECTORY, with RPC_URL (the private node) and DEPLOYER_PRIVATE_KEY.
  */
-async function grantMeasurementLauncher(directory: string): Promise<void> {
-  const rpcUrl = required("RPC_URL");
-  const provider = new RpcProvider({ nodeUrl: rpcUrl });
+async function grantMeasurementRoles(directory: string): Promise<void> {
+  const provider = new RpcProvider({ nodeUrl: required("RPC_URL") });
   const manifest = readShardManifest<NativeWorldManifest>(resolve(directory, "native-world.json"));
   await assertProviderChain(provider, manifest, "RPC_URL");
-  if (isOfficialChain(manifest.shard.chainId)) throw new Error("An official shard keeps the launch Worker as launcher");
+  if (isOfficialChain(manifest.shard.chainId)) throw new Error("An official shard keeps its launch and ledger Workers");
   const { operatorAccountAddress: operator } = JSON.parse(
     readFileSync(resolve(directory, "gameplay-contracts.json"), "utf8"),
   ) as { operatorAccountAddress: string };
   const games = manifest.world.address;
-  const launcher = async () =>
-    (await provider.callContract({ contractAddress: games, entrypoint: "launcher", calldata: [] }, "latest"))[0]!;
-  if (BigInt(await launcher()) !== BigInt(operator)) {
-    const authority = createOperatorAccount(provider, operator, required("DEPLOYER_PRIVATE_KEY"));
-    const sent = await authority.execute(
-      { contractAddress: games, entrypoint: "set_launcher", calldata: [operator] },
-      await resolveRegistrarExecutionDetails(authority, games),
-    );
-    await confirmedTransactionReceipt(provider, sent.transaction_hash);
+  const holder = async (role: string) =>
+    (await provider.callContract({ contractAddress: games, entrypoint: role, calldata: [] }, "latest"))[0]!;
+  const authority = createOperatorAccount(provider, operator, required("DEPLOYER_PRIVATE_KEY"));
+  for (const { role, setter } of MEASUREMENT_ROLES) {
+    if (BigInt(await holder(role)) !== BigInt(operator)) {
+      const sent = await authority.execute(
+        { contractAddress: games, entrypoint: setter, calldata: [operator] },
+        await resolveRegistrarExecutionDetails(authority, games),
+      );
+      await confirmedTransactionReceipt(provider, sent.transaction_hash);
+    }
+    if (BigInt(await holder(role)) !== BigInt(operator)) throw new Error(`The measurement ${role} was not recorded`);
   }
-  if (BigInt(await launcher()) !== BigInt(operator)) throw new Error("The measurement launcher was not recorded");
-  console.log(JSON.stringify({ event: "measurement_launcher", games, launcher: operator }));
+  console.log(JSON.stringify({ event: "measurement_roles", games, launcher: operator, ledgerOperator: operator }));
 }
 
 function required(name: string): string {
@@ -55,6 +62,6 @@ function required(name: string): string {
 
 if (import.meta.main) {
   const [directory] = process.argv.slice(2);
-  if (!directory) throw new Error("Usage: bun measurement-launcher.ts RUN_DIRECTORY");
-  await grantMeasurementLauncher(directory);
+  if (!directory) throw new Error("Usage: bun measurement-roles.ts RUN_DIRECTORY");
+  await grantMeasurementRoles(directory);
 }
