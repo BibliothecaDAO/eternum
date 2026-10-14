@@ -1,6 +1,6 @@
 // Registered by run-client-playtest.mjs as an init script, so it runs before any page code. It only observes: frame
-// times, long animation frames, input-to-paint latency, draw calls, heap, and each Herald socket message's arrival and
-// handler cost. The runner reads it with `window.__playtest.read()` and reduces it per playtest step.
+// times, long animation frames, input-to-paint latency, every input's time, draw calls, heap, and each Herald socket
+// message's arrival and handler cost. The runner reads it with `window.__playtest.read()` and reduces it per step.
 (() => {
   if (window.__playtest) return;
 
@@ -11,6 +11,7 @@
     events: [],
     frames: [],
     heap: [],
+    inputs: [],
     loafs: [],
     messages: [],
     steps: [],
@@ -92,6 +93,15 @@
     }),
   );
 
+  // Event Timing only reports inputs slower than 16 ms; every press and tap is kept here with its own time.
+  for (const type of ["pointerdown", "keydown"]) {
+    addEventListener(
+      type,
+      (event) => push(state.inputs, { type, key: event.key ?? null, t: event.timeStamp, trusted: event.isTrusted }),
+      { capture: true },
+    );
+  }
+
   // Herald assigns `socket.onmessage`; wrapping the setter times each message without touching the transport.
   const onmessage = Object.getOwnPropertyDescriptor(WebSocket.prototype, "onmessage");
   Object.defineProperty(WebSocket.prototype, "onmessage", {
@@ -161,9 +171,9 @@
     async pan(keys, msPerKey) {
       for (const code of keys) await holdKey(code, msPerKey);
     },
-    async zoom(notches) {
-      await wheel(100, notches);
-      await wheel(-100, notches);
+    /** Positive deltaY zooms out, as a mouse wheel turned toward the player does. */
+    async wheel(deltaY, notches) {
+      await wheel(deltaY, notches);
     },
     /** Everything recorded since `since` (page time), with the page's time origin so a reload shows as a new one. */
     read(since = 0) {
@@ -175,6 +185,7 @@
         events: after(state.events, (entry) => entry.start),
         frames: state.frames.slice(fromFrame),
         heap: after(state.heap, ([t]) => t),
+        inputs: after(state.inputs, (entry) => entry.t),
         loafs: after(state.loafs, (entry) => entry.start),
         messages: after(state.messages, (entry) => entry.arrived),
         now: performance.now(),

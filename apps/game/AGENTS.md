@@ -84,46 +84,73 @@ Resolve conflicts in YOUR files only If conflict is in a file you didn't modify,
 
 ## Playtest: the one command that proves client work
 
-`pnpm --dir apps/game playtest` starts a browser on the machine's GPU (Vulkan; headless Chrome would otherwise render on
-SwiftShader) and plays the newest live game from the environment's directory the way a player does, leaving the
-evidence. Run it against a running client and reuse it; extend its steps rather than writing another runner.
+`pnpm --dir apps/game playtest --port <your port>` builds the client as players get it (`vite build` into its own
+`.context/playtest-builds/<run>` directory), serves it with `vite preview` on that port, plays the newest live Frontier
+game in a browser on the machine's GPU (Vulkan; headless Chrome would otherwise render on SwiftShader), and releases
+everything it started. Run it from a stopped client and reuse it; extend its steps in
+`scripts/client-playtest/steps.mjs` rather than writing another runner. The build needs `VITE_PUBLIC_L2_RPC_URL` in
+`apps/game/.env.local`, as the dev server does.
 
-- As a spectator (default): realm view, open the map, pan (WASD), zoom, select (Tab), the menu, back to the realm and
-  the map, then a minute of watching.
-- As a player (`--player <browser profile dir>`): from the home page's Resume or Play free, realm view, open the map,
-  select Army 1, explore twice (tap a tile beside the army, Enter), then five orders at a spamming player's pace. Sign
-  the profile in once by hand
-  (`npx -y agent-browser --session login --profile <dir> open https://127.0.0.1:4174/sign-in --ignore-https-errors`); it
-  stays signed in. Orders use the map's default zoom and need the army's stamina.
+- **What it owns.** One owner holds the build, the preview, each browser with its DevTools connection and temporary
+  profile, and releases them last-acquired first, each awaited, on every exit. A port already in use fails the start
+  before anything is built; the server holding it is never driven or stopped. The client counts as served only once its
+  own preview announced the port, still runs, and answers. A preview that dies cancels the run.
+- **Cancelling.** SIGINT or SIGTERM cancels at the next checkpoint and unwinds through the same path as a normal end:
+  the current step is kept with what it attempted and the error, the run's transcript and `summary.json` are written,
+  and everything is released.
+- **As a spectator** (default), from a fresh browser profile (cold cache): realm view, open the map, map idle, pan
+  (WASD), zoom out and in, the menu, back to the realm and the map, then a minute of watching.
+- **As a player** (`--player <browser profile dir>`), entering through the Frontier card's Resume or Play free on the
+  home page: realm view, open the map, select the army with the most stamina, open and close production, explore twice
+  (tap a tile beside the army, Enter), then five taps with Enter at the pace taps reach the page. Sign the profile in
+  once by hand
+  (`npx -y agent-browser --session login --profile <dir> open https://127.0.0.1:<port>/sign-in --ignore-https-errors`);
+  it stays signed in. Orders use the map's default zoom.
+- **The game.** The newest live Frontier game, or `--chain-id`/`--game-id` (refused if it is not a listed Frontier
+  game). Before the first step the run asserts the route is in that game, and refuses to send any order elsewhere.
+
+Every step checks what a player would then see and is judged completed, blocked (the game refused, for a reason a player
+meets too: a short cost, no army) or failed:
+
+- scenes: the route's scene and the lit place (a reloaded page must stay on the scene, else the control is pressed
+  again);
+- pan: the view changed past the animated floor that map-idle records;
+- zoom: the camera distance grew from where it was, then shrank;
+- sheets: Menu or Production opened, then closed;
+- army: the readiest army's button is pressed;
+- explore: Explore was offered and pressed, the client's record has a hash, an applied outcome and its rendered marker,
+  and the explored tile visibly changed between a screenshot before Enter and one after;
+- burst: every offered order was sent with a hash and confirmed, or seen refused; a silent drop fails.
 
 ```bash
-# The client must be served first. Measure what players run: a production build behind `vite preview`
-# (`vite preview` keeps the dev server's /api proxy). The dev server works too but its numbers are slower.
-pnpm --dir apps/game exec vite build --outDir ../../.context/playtest-dist
-pnpm --dir apps/game exec vite preview --outDir ../../.context/playtest-dist --host 127.0.0.1 --port 4174
-
-pnpm --dir apps/game playtest --base-url https://127.0.0.1:4174 --iterations 3 --out .context/playtest/run
-pnpm --dir apps/game playtest --base-url https://127.0.0.1:4174 --player .context/playtest-profiles/<account>
+pnpm --dir apps/game playtest --port 4174 --iterations 3
+pnpm --dir apps/game playtest --port 4174 --player .context/playtest-profiles/<account>
+pnpm --dir apps/game playtest --base-url https://127.0.0.1:4174 --iterations 1   # a client you already serve
 ```
 
 Options: `--renderer-modes webgpu-auto,webgpu-force-webgl` (default both), `--iterations` (default 3),
-`--cpu-throttle 4` (Chrome's CPU slowdown, so this machine stands in for a laptop), `--chain-id` and `--game-id`
-(default: the directory's newest live game), `--trace` (a Chrome trace per run), `--compare <summary.json>` (fails when
+`--cpu-throttle 4` (Chrome's CPU slowdown of this machine; not a measured laptop), `--chain-id` and `--game-id`,
+`--out <root>` (default `.context/playtest`), `--trace` (a Chrome trace per run), `--compare <summary.json>` (fails when
 boot regresses), `--headed`. Paths are taken from where the command is run.
 
-It leaves, in `--out` (default `.context/playtest/<timestamp>`):
+Each invocation writes to a new directory, `<root>/<time>-<role>`, and never into an existing one:
 
-- `summary.json`: boot metrics and every step metric per renderer mode, as run count, median, min and max.
-- `<role>-<mode>-<run>-transcript.json`: the run's boot timeline, per-step summaries (frame time, long animation frames
-  with their scripts, input-to-paint latency, draw calls, retained heap, each Herald message to the frame after it), the
-  client's own action timelines (click to rendered), every JSON-RPC POST with whether its connection was reused,
-  reloads, the machine's load average, and the raw probe data.
-- `<role>-<mode>-<run>-NN-<step>.png` after every step, and `<role>-<mode>-<run>-console.log`.
+- `summary.json`: the source it was built from (commit, branch, changed files), the client it served, the game, the
+  gate, boot metrics from clean boots and completed steps' metrics from runs on a quiet machine (run count, median, min,
+  max) with each step's verdict counts, and every record left out of those populations with its reasons. A failed start
+  or a cancel writes it too, with the stage and the reason.
+- `<role>-<mode>-<run>-transcript.json`: the game entered, the boot's milestones and every request with its span, the
+  cache state, each step's numbers (frame intervals, long animation frames with their scripts, input-to-paint latency,
+  every press with its time, draw calls, retained heap, each Herald message to the frame after it), what it saw and its
+  verdict, the client's own action timelines, every JSON-RPC POST with whether its connection was reused, the machine's
+  load average sampled every 5 s, and the raw probe data.
+- `<role>-<mode>-<run>-NN-<step>.png` after every step (plus `-before.png` where a step compares views),
+  `<role>-<mode>-<run>-console.log`, and `client.log` (the build and the preview).
 
-The probe (`scripts/client-playtest-probe.js`) is an init script that only observes; no app code is changed for it. The
-boot gate fails the run (exit 1) on entry or world-interactive over 30 s, browser errors, or a WebGPU fallback without a
-reason, or on a one-minute load average over 12 at any step (the machine is shared: such a run is not evidence); a page
-reload during a step is a warning with its cost. Stop the preview server when done.
+The gate fails (exit 1) on no run played, a failed start or a cancel, a run that did not boot cleanly or threw, a step
+not played or failed, entry or world-interactive over 30 s, browser errors, a WebGPU fallback without a reason, or a
+maximum sampled load average over 12 (the machine is shared: such a run is not evidence). A blocked step and a page
+reload during a step are warnings, the reload with its cost.
 
 ## Browser Testing with `agent-browser` Skill
 
