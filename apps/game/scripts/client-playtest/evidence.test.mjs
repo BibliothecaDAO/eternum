@@ -511,7 +511,23 @@ describe("describeBurst", () => {
         { kind: "explore", afterPressMs: 2, hash: "0x1", confirmedAfterMs: 188 },
         { kind: "move", afterPressMs: 3, hash: "0x2", confirmedAfterMs: null },
       ],
+      next: { queued: 0, run: 0, dropped: {}, unresolved: 0 },
     });
+  });
+
+  it("counts each next order queued behind an order in flight by how it left", () => {
+    const armyTrace = [
+      { phase: "move_requested", entityId: 7, wallTimeMs: 1001 },
+      { phase: "next_order_queued", entityId: 7, wallTimeMs: 1120 },
+      { phase: "next_order_dropped", entityId: 7, wallTimeMs: 1240, details: { reason: "replaced" } },
+      { phase: "next_order_queued", entityId: 7, wallTimeMs: 1240 },
+      { phase: "next_order_run", entityId: 7, wallTimeMs: 1300 },
+      { phase: "move_requested", entityId: 7, wallTimeMs: 1300 },
+      { phase: "next_order_queued", entityId: 7, wallTimeMs: 1360 },
+    ];
+    const burst = describeBurst({ presses: [], taps: [], armyTrace, from: 900, to: 2500 });
+    expect(burst.next).toEqual({ queued: 3, run: 1, dropped: { replaced: 1 }, unresolved: 1 });
+    expect(burst.commands).toHaveLength(2);
   });
 });
 
@@ -521,7 +537,8 @@ describe("judgeBurst", () => {
   it("fails an offered order that was never sent: a silent drop is not a refusal", () => {
     expect(judgeBurst({ taps: [{ verb: "Move" }, { verb: null }], commands: [] })).toEqual({
       status: "failed",
-      reason: "1 orders offered, 0 seen refused, only 0 sent and confirmed: the rest were dropped silently",
+      reason:
+        "1 orders offered, 0 seen refused, only 0 sent and confirmed and 0 queued and dropped: the rest were dropped silently",
     });
   });
 
@@ -538,7 +555,32 @@ describe("judgeBurst", () => {
         taps: [{ verb: "Move" }, { verb: "Move", seen: "refused" }, { verb: null }],
         commands: [confirmedMove],
       }),
-    ).toEqual({ status: "completed", offered: 2, seenRefused: 1, confirmed: 1 });
+    ).toEqual({
+      status: "completed",
+      offered: 2,
+      seenRefused: 1,
+      confirmed: 1,
+      next: { queued: 0, run: 0, dropped: {}, unresolved: 0 },
+    });
+  });
+
+  it("accounts for taps queued behind an order in flight: replaced ones by their trace, the last one by its command", () => {
+    const next = { queued: 4, run: 1, dropped: { replaced: 3 }, unresolved: 0 };
+    const taps = Array.from({ length: 5 }, () => ({ verb: "Move" }));
+    expect(judgeBurst({ taps, commands: [confirmedMove, confirmedMove], next })).toMatchObject({
+      status: "completed",
+      offered: 5,
+      confirmed: 2,
+    });
+    // The queued order that should have run never went out: one tap is unaccounted for.
+    expect(judgeBurst({ taps, commands: [confirmedMove], next }).status).toBe("failed");
+  });
+
+  it("fails a next order that was queued and never ran nor was dropped", () => {
+    const next = { queued: 1, run: 0, dropped: {}, unresolved: 1 };
+    expect(judgeBurst({ taps: [{ verb: "Move" }, { verb: "Move" }], commands: [confirmedMove], next }).reason).toBe(
+      "1 next orders were queued and neither ran nor were dropped",
+    );
   });
 
   it("is blocked when no tap offered an order", () => {

@@ -13,6 +13,7 @@ export function resetWorldmapEntityActions(): void {
       hoveredHex: null,
       actionPaths: new Map(),
       selectedEntityId: null,
+      nextOrder: null,
     },
   }));
 }

@@ -11,8 +11,8 @@ export interface ThreeStore {
   hoveredHex: HexPosition | null;
   setHoveredHex: (hex: HexPosition | null) => void;
   entityActions: EntityActions;
-  setEntityActions: (entityActions: EntityActions) => void;
   updateEntityActionHoveredHex: (hoveredHex: HexPosition | null) => void;
+  updateEntityActionNextOrder: (nextOrder: NextOrder | null) => void;
   updateEntityActionActionPaths: (actionPaths: Map<string, ActionPath[]>) => void;
   updateEntityActionSelectedEntityId: (selectedEntityId: ID | null) => void;
   selectedHex: HexPosition | null;
@@ -33,10 +33,17 @@ export interface SelectedBuildingHex {
   innerRow: number;
 }
 
+/** The tile a player tapped for an army whose last order is still in flight: that army's next order. */
+export interface NextOrder {
+  entityId: ID;
+  hex: HexPosition;
+}
+
 interface EntityActions {
   hoveredHex: HexPosition | null;
   actionPaths: Map<string, ActionPath[]>;
   selectedEntityId: ID | null;
+  nextOrder: NextOrder | null;
 }
 
 const CAMERA_DISTANCE_EPSILON = 0.5;
@@ -113,21 +120,14 @@ export const createThreeStoreSlice = (
     hoveredHex: null,
     actionPaths: new Map(),
     selectedEntityId: null,
-  },
-  setEntityActions: (entityActions: EntityActions) => {
-    const currentActions = get().entityActions;
-    if (
-      areHexesEqual(currentActions.hoveredHex, entityActions.hoveredHex) &&
-      currentActions.actionPaths === entityActions.actionPaths &&
-      currentActions.selectedEntityId === entityActions.selectedEntityId
-    ) {
-      return;
-    }
-    set({ entityActions });
+    nextOrder: null,
   },
   updateEntityActionHoveredHex: (hoveredHex: HexPosition | null) => {
     if (areHexesEqual(get().entityActions.hoveredHex, hoveredHex)) return;
     set((state) => ({ entityActions: { ...state.entityActions, hoveredHex } }));
+  },
+  updateEntityActionNextOrder: (nextOrder: NextOrder | null) => {
+    set((state) => ({ entityActions: { ...state.entityActions, nextOrder } }));
   },
   updateEntityActionActionPaths: (actionPaths: Map<string, ActionPath[]>) => {
     if (get().entityActions.actionPaths === actionPaths) return;

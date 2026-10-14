@@ -1,5 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useRealmVisit } from "@/sync/active-game-client";
+import { dropNextOrder } from "@/three/scenes/worldmap-next-order";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { SETTINGS } from "@/ui/design-system/kit/words";
@@ -38,7 +39,7 @@ import { useRealmLabor } from "./value/use-realm-labor";
 import { useRealmLords } from "./value/use-realm-lords";
 import { OfflineNotice } from "./hud/offline-notice";
 import { SceneFailureNotice } from "./hud/scene-failure-notice";
-import { OrderBar } from "./hud/order-bar";
+import { NextOrderBar, OrderBar } from "./hud/order-bar";
 import { FrontierToday } from "./log/frontier-today";
 import { FrontierProduction } from "./production/frontier-production";
 import { FrontierResearch } from "./research/frontier-research";
@@ -203,8 +204,11 @@ const ArmyAction = ({
   const armies = useDockArmies(realm);
   const order = useArmyOrder();
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
+  const nextOrder = useUIStore((state) => state.entityActions.nextOrder);
   const selected = armies.find((army) => army.explorerId === selectedId);
   if (order && selected) return <PendingOrder rules={rules} realm={realm} order={order} army={selected} />;
+  if (selected && nextOrder?.entityId === selected.explorerId)
+    return <NextOrderBar onCancel={() => dropNextOrder("cancelled", selected.explorerId)} />;
   return (
     <>
       <RealmBuildingsRow realm={realm} />

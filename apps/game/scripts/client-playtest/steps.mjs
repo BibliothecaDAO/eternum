@@ -258,7 +258,8 @@ function tileRegion([dx, dy]) {
 /**
  * Spams orders the way a player hammering the map does: the army's neighbours are scanned for up to two tiles that offer
  * an order, then five taps with Enter alternate between them BURST_PACE_MS apart, in one batch so nothing slows them.
- * Each tap is taken as offering what its tile offered when scanned; what was sent shows in the army trace.
+ * Each tap is taken as offering what its tile offered when scanned; what was sent, and each tap queued as the army's
+ * next order while one was in flight, shows in the army trace.
  */
 async function orderBurst({ browser }) {
   const army = await focusTheReadiestArmy(browser);
@@ -294,7 +295,7 @@ function burstPlayed({ played, probe, window, actionLatency }) {
     armyTrace: actionLatency.armyMovement,
     ...window,
   });
-  return { ...judgeBurst({ taps: played.taps, commands: burst.commands }), burst };
+  return { ...judgeBurst({ taps: played.taps, commands: burst.commands, next: burst.next }), burst };
 }
 
 /** What the order bar offers after a tap: its verb, "short" when it shows a cost not covered (the verb is hidden), or null. */

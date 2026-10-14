@@ -255,6 +255,7 @@ import {
 } from "./worldmap-terrain-commit-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
 import { ARMY_SELECT_REQUEST_EVENT, readArmySelectRequest } from "./worldmap-army-select-request";
+import { dropNextOrder, queueNextOrder, takeNextOrder } from "./worldmap-next-order";
 import { ORDER_REQUEST_EVENT, orderOnTap, readOrderRequest, stepBackOnEscape } from "./worldmap-order-request";
 import { hudFor } from "@/ui/layouts/hud-for";
 import { type OrderTip, orderTip } from "@/ui/features/frontier/hud/order-tip";
@@ -1920,14 +1921,21 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private backOutOneStep(): void {
+    const { hoveredHex, nextOrder } = getLiveWorldmapEntityActions();
     const step = stepBackOnEscape({
       hudCarriesOrderVerb: this.hudCarriesOrderVerb(),
-      orderPinned: getLiveWorldmapEntityActions().hoveredHex !== null,
+      orderPinned: hoveredHex !== null || nextOrder !== null,
       navigationViewOpen: this.isNavigationViewOpen(),
     });
-    if (step === "cancel-order") this.state.updateEntityActionHoveredHex(null);
+    if (step === "cancel-order") this.cancelPinnedOrders();
     else if (step === "close-view") this.closeNavigationViews();
     else this.clearSelection();
+  }
+
+  /** Escape's first step back: the pinned order and the next one queued behind an order in flight both go. */
+  private cancelPinnedOrders(): void {
+    this.state.updateEntityActionHoveredHex(null);
+    dropNextOrder("cancelled");
   }
 
   private setupCameraZoomHandler() {
@@ -2779,6 +2787,7 @@ export default class WorldmapScene extends WarpTravel {
     if (!canIssueOrders()) return false;
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
     if (selectedEntityId === null || selectedEntityId === undefined) return false;
+    if (this.queuesNextOrder(selectedEntityId, hexCoords)) return true;
     const path = actionPaths.get(ActionPaths.posKey(hexCoords, true));
     const { structure } = this.getHexagonEntity(hexCoords);
     const order = orderOnTap({
@@ -2807,6 +2816,7 @@ export default class WorldmapScene extends WarpTravel {
   private actAtHex(hexCoords: HexPosition) {
     const account = useAccountStore.getState().account;
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
+    if (selectedEntityId != null && this.queuesNextOrder(selectedEntityId, hexCoords)) return;
     const clickedHexKey = ActionPaths.posKey(hexCoords, true);
     if (selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0 && hexCoords) {
       const actionPathLookup = resolveEntityActionPathLookup({
@@ -2873,6 +2883,43 @@ export default class WorldmapScene extends WarpTravel {
         ...this.getInteractionDebugSnapshot(),
       });
     }
+  }
+
+  /**
+   * A tap for an army whose last order is still in flight becomes its next order (worldmap-next-order), where the HUD's
+   * order bar can show it, except on a tile holding the player's own army or structure, whose tap still selects it.
+   */
+  private queuesNextOrder(entityId: ID, hexCoords: HexPosition): boolean {
+    if (!this.hudCarriesOrderVerb() || !this.hasOrderInFlight(entityId) || this.holdsOwnSelectable(hexCoords)) {
+      return false;
+    }
+    queueNextOrder(entityId, hexCoords);
+    return true;
+  }
+
+  private holdsOwnSelectable(hexCoords: HexPosition): boolean {
+    const { army, structure } = this.getHexagonEntity(hexCoords);
+    return [army?.owner, structure?.owner].some((owner) => owner !== undefined && isAddressEqualToAccount(owner));
+  }
+
+  /**
+   * At an order's applied outcome, the order queued behind it runs from where the army now stands, as if confirmed at
+   * its tile. It runs only for the army still selected and only where that army now has an order.
+   */
+  private runNextOrder(entityId: ID): void {
+    const { selectedEntityId, nextOrder, actionPaths } = getLiveWorldmapEntityActions();
+    if (nextOrder?.entityId !== entityId) return;
+    if (selectedEntityId !== entityId) {
+      dropNextOrder("not-selected", entityId);
+      return;
+    }
+    if (!actionPaths.has(ActionPaths.posKey(nextOrder.hex, true))) {
+      dropNextOrder("out-of-reach", entityId);
+      toast.info("This army's next order is out of its reach now");
+      return;
+    }
+    const hex = takeNextOrder(entityId);
+    if (hex) this.actAtHex(hex);
   }
 
   private onArmyMovement(actionPath: ActionPath[], selectedEntityId: ID) {
@@ -3060,16 +3107,21 @@ export default class WorldmapScene extends WarpTravel {
         order: actionType === ActionType.Explore ? "explore" : "move",
         to: sceneHexOf(targetHex),
       } as const;
-      sendOnce("army", selectedEntityId, order, sendMovement).catch((error) => {
-        if (exploreLatencyActionId) recordClientActionFailed(exploreLatencyActionId, error);
-        this.pendingExploreLatencyActions.delete(selectedEntityId);
-        this.handlePendingArmyMovementFailure(selectedEntityId, cleanup);
-        console.error("Army movement failed:", error);
-        toast.error(extractReadableErrorMessage(error, "The order was not sent."));
-      });
+      sendOnce("army", selectedEntityId, order, sendMovement).then(
+        () => this.runNextOrder(selectedEntityId),
+        (error) => {
+          dropNextOrder("refused", selectedEntityId);
+          if (exploreLatencyActionId) recordClientActionFailed(exploreLatencyActionId, error);
+          this.pendingExploreLatencyActions.delete(selectedEntityId);
+          this.handlePendingArmyMovementFailure(selectedEntityId, cleanup);
+          console.error("Army movement failed:", error);
+          toast.error(extractReadableErrorMessage(error, "The order was not sent."));
+        },
+      );
 
       this.state.updateEntityActionHoveredHex(null);
-      this.keepMovementDestinationSelected(targetHex);
+      // Where the order bar can show a queued next order, the army stays selected so a tap queues one.
+      if (!this.hudCarriesOrderVerb()) this.keepMovementDestinationSelected(targetHex);
       return;
     }
 

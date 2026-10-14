@@ -11,7 +11,10 @@ export type ArmyMovementLatencyPhase =
   | "tx_response_received"
   | "tx_confirmed"
   | "movement_started"
-  | "movement_completed";
+  | "movement_completed"
+  | "next_order_queued"
+  | "next_order_run"
+  | "next_order_dropped";
 
 export type ArmyMovementLatencySource = "worldmap";
 

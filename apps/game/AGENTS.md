@@ -120,7 +120,8 @@ meets too: a short cost, no army) or failed:
 - army: the readiest army's button is pressed;
 - explore: Explore was offered and pressed, the client's record has a hash, an applied outcome and its rendered marker,
   and the explored tile visibly changed between a screenshot before Enter and one after;
-- burst: every offered order was sent with a hash and confirmed, or seen refused; a silent drop fails.
+- burst: every offered order was sent with a hash and confirmed, seen refused, or queued as the army's next order (a tap
+  while its order is in flight) and then run or dropped for a traced reason; a silent drop fails.
 
 ```bash
 pnpm --dir apps/game playtest --port 4174 --iterations 3

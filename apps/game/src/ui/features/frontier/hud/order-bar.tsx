@@ -3,7 +3,19 @@ import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
 import type { IconCode } from "@/ui/design-system/kit/kit-icon";
 import { formatDuration } from "@/ui/design-system/kit/time";
-import { CANCEL, ESSENCE, EXPLORE, LABOR, LEFT, MOVE, STAMINA, WHEAT, XP } from "@/ui/design-system/kit/words";
+import {
+  CANCEL,
+  ESSENCE,
+  EXPLORE,
+  LABOR,
+  LEFT,
+  MOVE,
+  NEXT_ORDER,
+  QUEUED,
+  STAMINA,
+  WHEAT,
+  XP,
+} from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 import { type Cost, isCovered } from "./army-order";
@@ -70,6 +82,19 @@ export const OrderBar = ({
     </>
   );
 };
+
+/**
+ * The action bar while the selected army's order is in flight and a tile was tapped for it: that tile is the army's
+ * next order, which leaves when the order in flight applies. Cancel drops it; another tap replaces it.
+ */
+export const NextOrderBar = ({ onCancel }: { onCancel: () => void }) => (
+  <div className="pointer-events-auto flex gap-2">
+    <div className="frontier-card flex min-h-11 flex-1 items-center justify-center gap-1.5 !rounded-xl px-1 py-1.5">
+      <Chip icons={["Hg"]} label={NEXT_ORDER} value={QUEUED} />
+    </div>
+    <Button role="outline" word={CANCEL} onClick={onCancel} className="!h-14 w-[104px]" />
+  </div>
+);
 
 /** A cost on the bar: what it leaves when covered, or held against needed in ember with its exact wait. */
 const CostChip = ({

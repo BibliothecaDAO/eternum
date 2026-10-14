@@ -207,10 +207,11 @@ export function judgeExplore(played, clientActions) {
 }
 
 /**
- * A burst is evidence only if every order a tap offered was sent with a hash and confirmed, or was seen refused: an
- * offered order that simply never went out is a silent drop, and fails.
+ * A burst is evidence only if every order a tap offered is accounted for: sent with a hash and confirmed, seen refused,
+ * or queued as the army's next order (a tap while its order is in flight) and then run or dropped for a traced reason.
+ * An offered order that simply never went out, or a next order left unresolved, is a silent drop, and fails.
  */
-export function judgeBurst({ taps, commands }) {
+export function judgeBurst({ taps, commands, next = NO_NEXT_ORDERS }) {
   const offered = taps.filter((tap) => tap.verb === "Explore" || tap.verb === "Move");
   if (offered.length === 0) {
     return blocked(
@@ -221,15 +222,20 @@ export function judgeBurst({ taps, commands }) {
   }
   const unsent = commands.filter((command) => !command.hash);
   if (unsent.length > 0) return failed(`${unsent.length} commands were requested but never sent (no hash)`);
+  if (next.unresolved > 0) return failed(`${next.unresolved} next orders were queued and neither ran nor were dropped`);
   const seenRefused = offered.filter((tap) => tap.seen === "refused").length;
   const confirmed = commands.filter((command) => command.confirmedAfterMs !== null).length;
-  if (confirmed < offered.length - seenRefused) {
+  // A next order that ran is one of the commands; one that was replaced or dropped accounts for its own tap.
+  const queuedNotRun = next.queued - next.run;
+  if (confirmed + queuedNotRun < offered.length - seenRefused) {
     return failed(
-      `${offered.length} orders offered, ${seenRefused} seen refused, only ${confirmed} sent and confirmed: the rest were dropped silently`,
+      `${offered.length} orders offered, ${seenRefused} seen refused, only ${confirmed} sent and confirmed and ${queuedNotRun} queued and dropped: the rest were dropped silently`,
     );
   }
-  return completed({ offered: offered.length, seenRefused, confirmed });
+  return completed({ offered: offered.length, seenRefused, confirmed, next });
 }
+
+const NO_NEXT_ORDERS = { queued: 0, run: 0, dropped: {}, unresolved: 0 };
 
 /** The game a route is in, from `/g/<chain>/<game>/…`; null outside a game. */
 export function gameOfPath(path) {
@@ -250,12 +256,18 @@ export function assertInTargetGame(path, target) {
 
 /**
  * A burst's presses against what the army actually did: each command the army trace records (explore or move), its
- * hash, and whether Herald confirmed it, with the press it followed. Presses with no command were refused or ignored.
+ * hash, and whether Herald confirmed it, with the press it followed; and each next order queued behind an order in
+ * flight, with how it left: run, or dropped and why. Presses with neither were refused or ignored.
  */
 export function describeBurst({ presses, taps, armyTrace, from, to }) {
   const enters = presses.filter((press) => press.type === "keydown" && press.key === "Enter");
   const commands = [];
+  const next = { queued: 0, run: 0, dropped: {}, unresolved: 0 };
   for (const entry of armyTrace.filter((trace) => trace.wallTimeMs >= from && trace.wallTimeMs < to)) {
+    if (entry.phase.startsWith("next_order_")) {
+      countNextOrder(next, entry);
+      continue;
+    }
     if (entry.phase === "move_requested") {
       commands.push({
         entityId: entry.entityId,
@@ -282,7 +294,19 @@ export function describeBurst({ presses, taps, armyTrace, from, to }) {
       hash: command.hash,
       confirmedAfterMs: command.confirmedAt === null ? null : round(command.confirmedAt - command.requestedAt),
     })),
+    next,
   };
+}
+
+function countNextOrder(next, { phase, details }) {
+  if (phase === "next_order_queued") {
+    next.queued += 1;
+    next.unresolved += 1;
+    return;
+  }
+  next.unresolved -= 1;
+  if (phase === "next_order_run") next.run += 1;
+  else next.dropped[details.reason] = (next.dropped[details.reason] ?? 0) + 1;
 }
 
 /**

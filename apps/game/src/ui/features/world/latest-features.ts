@@ -126,6 +126,13 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-10-14",
+    title: "Queue an army's next order",
+    description:
+      "An army stays selected after you order it. Tap a tile while its order is on its way and that tile becomes its next order, shown in the order bar: it leaves as soon as the first one lands. A later tap replaces it, and Cancel or Escape drops it.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-14",
     title: "Play shows what you can do now",
     description:
       "Play leads with your next step and one button, lists everything under way with its own (resume your day, watch a match), and keeps each mode's next and finished games behind a switch. Results of any game you have not opened appear there, and signing in or linking a wallet from a Blitz lobby brings you back to it.",

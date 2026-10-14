@@ -26,13 +26,15 @@ describe("worldmap interaction state", () => {
       hoveredHex: { col: 5, row: 9 },
       actionPaths: new Map([["1,1", []]]),
       selectedEntityId: 77,
+      nextOrder: null,
     });
   });
 
-  it("resets hovered hex, selected entity, and action paths together", () => {
+  it("resets hovered hex, selected entity, action paths and the next order together", () => {
     useUIStore.getState().updateEntityActionSelectedEntityId(77);
     useUIStore.getState().updateEntityActionHoveredHex({ col: 5, row: 9 });
     useUIStore.getState().updateEntityActionActionPaths(new Map([["1,1", []]]));
+    useUIStore.getState().updateEntityActionNextOrder({ entityId: 77, hex: { col: 6, row: 9 } });
 
     resetWorldmapEntityActions();
 
@@ -40,6 +42,7 @@ describe("worldmap interaction state", () => {
       hoveredHex: null,
       actionPaths: new Map(),
       selectedEntityId: null,
+      nextOrder: null,
     });
   });
 });

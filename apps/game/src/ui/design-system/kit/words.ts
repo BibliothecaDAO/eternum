@@ -130,6 +130,9 @@ export const ATTACK = "Attack";
 export const ATTACKING = "Attacking…";
 /** On an army's step while the order it was given before is still in flight. */
 export const ON_ITS_WAY = "On its way…";
+/** The order bar while an army's order is in flight and a tile is tapped for it: that tile is its next order. */
+export const NEXT_ORDER = "Next order";
+export const QUEUED = "Queued";
 /** How an attack ended, the one word on its result: the guard gone, the army gone, or both still standing. */
 export const VICTORY = "Victory";
 export const ARMY_LOST = "Army lost";
