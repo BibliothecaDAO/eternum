@@ -112,3 +112,28 @@ it("leaves routine production in Activity but keeps failed and still-checking pr
   expect(selectImportantFeedRows([], feed, "all", "0x1").map((row) => row.id)).toEqual(["checking", "failed"]);
   expect(feed.recent).toHaveLength(2);
 });
+
+const levelUp = (id: string, at: number, owner: string, tx = `0x${id}`) =>
+  ({
+    ...battle(id, at, owner),
+    story: "StructureLevelUpStory",
+    owner,
+    tx_hash: tx,
+    storyPayload: {},
+  }) as ProcessedStoryEvent;
+
+it("holds the news of the player's own realms from history, never another player's, and not under Combat", () => {
+  const stories = [levelUp("mine", 30, "0x1"), levelUp("theirs", 20, "0x2")];
+  expect(selectImportantFeedRows(stories, empty, "all", "0x01").map((row) => row.id)).toEqual(["story:mine"]);
+  expect(selectImportantFeedRows(stories, empty, "mine", "0x01").map((row) => row.id)).toEqual(["story:mine"]);
+  expect(selectImportantFeedRows(stories, empty, "combat", "0x01")).toEqual([]);
+});
+
+it("shows a completed send once its history story arrives as that story, which a reload brings back", () => {
+  const send = (hash: string) => ({ kind: "transaction", id: hash, at: 25, transaction: { hash, status: "success" } });
+  const feed = { ...empty, recent: [send("0xup"), send("0xother")] } as unknown as FeedRows;
+  const story = levelUp("up", 30, "0x1", "0xup");
+  expect(selectImportantFeedRows([story], feed, "all", "0x1").map((row) => row.id)).toEqual(["story:up", "0xother"]);
+  // After a reload the session's sends are gone; the story is not.
+  expect(selectImportantFeedRows([story], empty, "all", "0x1").map((row) => row.id)).toEqual(["story:up"]);
+});

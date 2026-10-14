@@ -100,7 +100,7 @@ function summarizeFeedRow(row: ImportantFeedRow): { icon: ReactNode; text: React
   if (row.kind === "headline") {
     return { icon: <HeadlineIcon type={row.headline.type} />, text: row.headline.description };
   }
-  if (row.kind === "story") return { icon: <Swords className="h-4 w-4 shrink-0" />, text: summarizeStory(row) };
+  if (row.kind === "story") return { icon: <StoryIcon story={row.event.story} />, text: summarizeStory(row) };
   if (row.kind === "arrival") {
     return {
       icon: <Package className="h-4 w-4 shrink-0" />,
@@ -124,6 +124,17 @@ function summarizeFeedRow(row: ImportantFeedRow): { icon: ReactNode; text: React
         : Info;
   return { icon: <Icon className="h-4 w-4 shrink-0" />, text: row.notice.title };
 }
+
+/** A fight's swords; a delivery's package; any other news of the player's realms, their castle. */
+const StoryIcon = ({ story }: { story: string }) => {
+  const Icon =
+    story === "BattleEvent" || story === "RaidEvent"
+      ? Swords
+      : story === "ResourceReceiveArrivalStory"
+        ? Package
+        : Castle;
+  return <Icon className="h-4 w-4 shrink-0" />;
+};
 
 function summarizeStory(row: Extract<ImportantFeedRow, { kind: "story" }>): string {
   const { event } = row;

@@ -31,7 +31,12 @@ function isImportantPersonalRow(row: FeedRow): boolean {
   return needsThePlayersEye.has(row.transaction.status) || !routineProductionTypes.has(row.transaction.type);
 }
 
-/** Battles include structure captures. Routine moves and point accrual remain in the full log. */
+/**
+ * What Events holds: battles and raids (anyone's, or only the player's under Mine), the news of the player's own
+ * realms (level-ups, buildings, deliveries received), their caravans, and this session's sends and notices. Every
+ * story comes from the game's history, so it is back after a reload; a send the history has a story for shows as
+ * that story. Routine moves and point accrual remain in the world history.
+ */
 export function selectImportantFeedRows(
   stories: ProcessedStoryEvent[],
   feed: FeedRows,
@@ -40,26 +45,43 @@ export function selectImportantFeedRows(
   headlines: Headline[] = [],
 ): ImportantFeedRow[] {
   const battles = new Set<string>();
-  const rows: ImportantFeedRow[] = stories
-    .filter(
-      (event) =>
-        includesStoryNotification("important", event.story) && (filter !== "mine" || involvesPlayer(event, address)),
-    )
+  const shown = stories
+    .filter((event) => isEventsStory(event, filter, address))
     .filter((event) => {
       const identity = battleIdentity(event);
       if (battles.has(identity)) return false;
       battles.add(identity);
       return true;
-    })
-    .map((event) => ({ kind: "story", id: `story:${event.id}`, at: event.timestampMs, event }));
+    });
+  const rows: ImportantFeedRow[] = shown.map((event) => ({
+    kind: "story",
+    id: `story:${event.id}`,
+    at: event.timestampMs,
+    event,
+  }));
   if (filter !== "combat") {
-    rows.push(...[...feed.arrived, ...feed.inFlight, ...feed.recent].filter(isImportantPersonalRow));
+    const told = new Set(shown.map((event) => event.tx_hash));
+    rows.push(
+      ...[...feed.arrived, ...feed.inFlight, ...feed.recent].filter(
+        (row) => isImportantPersonalRow(row) && !isToldByStory(row, told),
+      ),
+    );
   }
   rows.push(
     ...headlines.map((headline) => ({ kind: "headline" as const, id: headline.id, at: headline.timestamp, headline })),
   );
-  return rows.sort((left, right) => right.at - left.at);
+  return rows.toSorted((left, right) => right.at - left.at);
 }
+
+/** A completed send whose story history holds: the story shows instead. */
+const isToldByStory = (row: FeedRow, told: Set<string>): boolean =>
+  row.kind === "transaction" && row.transaction.status === "success" && told.has(row.transaction.hash);
+
+/** A battle or raid, anyone's unless the filter asks for the player's; a realm's news only when it is the player's. */
+const isEventsStory = (event: ProcessedStoryEvent, filter: ImportantFeedFilter, address: string | null): boolean => {
+  if (includesStoryNotification("important", event.story)) return filter !== "mine" || involvesPlayer(event, address);
+  return filter !== "combat" && includesStoryNotification("standard", event.story) && involvesPlayer(event, address);
+};
 
 /** Every feed row shows the wall-clock time it happened. */
 export const formatFeedTime = (atMs: number): string =>

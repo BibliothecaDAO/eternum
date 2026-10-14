@@ -21,11 +21,12 @@ const LATEST_ROWS = 3;
 const CONNECTION_NOTICE_ID = "connection";
 
 /**
- * The right column's events: the offline row and pinned headlines, then the three latest important events, which
- * stay until newer ones replace them. "All" opens the log, with what arrived since it was last read.
+ * The right column's events: the offline row and pinned headlines, then the three latest of what Events holds
+ * (selectImportantFeedRows: battles, the player's realm news, caravans and this session's sends), which stay until
+ * newer ones replace them. "All" opens the log, with what arrived since it was last read.
  */
 export const EventsCard = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogToggle: () => void }) => {
-  const { nowMs, rows, pinned } = useImportantFeed();
+  const { nowMs, rows, pinned, history } = useImportantFeed();
   const unread = useUnreadFeedCount(rows, logOpen);
   const button = useRef<HTMLButtonElement>(null);
   const latest = selectLatestFeedRows(rows, nowMs, LATEST_ROWS);
@@ -55,9 +56,7 @@ export const EventsCard = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogTo
       {latest.map((row) => (
         <FeedRowLine key={row.id} row={row} />
       ))}
-      {latest.length === 0 && pinned.length === 0 && (
-        <p className="text-sm text-kit-muted">Nothing has happened yet.</p>
-      )}
+      {latest.length === 0 && pinned.length === 0 && <EmptyEvents history={history} />}
       {logOpen && (
         <EventLogPanel
           onDismiss={onLogToggle}
@@ -75,11 +74,32 @@ export function useImportantFeed() {
   const address = useAccountStore((state) => state.account?.address ?? null);
   const headlines = useHeadlineFeedStore((state) => state.headlines);
   const headlineFeed = orderHeadlineFeed(headlines, nowMs, tickSeconds);
-  const { data: stories } = useStoryEvents(350, "BattleEvent");
+  const { data: stories, isPending, isError, refetch } = useStoryEvents(350);
   const feed = useFeedRows();
   const rows = selectImportantFeedRows(stories, feed, "all", address, headlineFeed.recent);
-  return { nowMs, rows, pinned: headlineFeed.pinned };
+  const history: HistoryState = isError
+    ? { state: "failed", retry: () => void refetch() }
+    : { state: isPending ? "loading" : "ready" };
+  return { nowMs, rows, pinned: headlineFeed.pinned, history };
 }
+
+/** Where the game's history, which brings Events' stories back after a reload, stands. */
+type HistoryState = { state: "loading" | "ready" } | { state: "failed"; retry: () => void };
+
+/** An empty card says why: history still loading, history that could not load, or nothing of its kind yet. */
+const EmptyEvents = ({ history }: { history: HistoryState }) => {
+  if (history.state === "loading") return <p className="text-sm text-kit-muted">Loading events…</p>;
+  if (history.state === "failed")
+    return (
+      <p className="text-sm text-danger">
+        Events could not load.{" "}
+        <button type="button" className="text-sm underline" onClick={history.retry}>
+          Retry
+        </button>
+      </p>
+    );
+  return <p className="text-sm text-kit-muted">No battles or news from your realms yet.</p>;
+};
 
 /** Rows that arrived since the log was last open; zero while it is open. */
 export function useUnreadFeedCount(rows: ImportantFeedRow[], logOpen: boolean): number {
