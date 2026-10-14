@@ -23,7 +23,7 @@ export const GameFinishedPill = () => {
   const navigate = useNavigate();
   const goToResults = useCallback(() => {
     const game = requireActiveGame();
-    navigate(resultsHref({ chainId: game.chainId, game_id: game.gameId }, false));
+    navigate(resultsHref({ chainId: game.chainId, game_id: game.gameId }));
   }, [navigate]);
 
   return (

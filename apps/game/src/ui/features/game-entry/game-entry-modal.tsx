@@ -594,7 +594,7 @@ export const GameEntryModal = ({
       onRetry={settleStage === "error" ? () => void handleSettle() : handleRetry}
       onSignIn={() => requestSignIn()}
       onSpectate={handleSpectate}
-      results={resultsHref({ chainId: game.chainId, game_id: game.gameId }, false)}
+      results={resultsHref({ chainId: game.chainId, game_id: game.gameId })}
     >
       {phase === "settlement-waiting" && <ClockChip prefix="starts" at={seasonStartAt ?? undefined} now={nowSeconds} />}
       {phase === "settlement" && isBlitzMode && worldMeta && (

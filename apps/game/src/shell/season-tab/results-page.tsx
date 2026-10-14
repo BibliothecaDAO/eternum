@@ -19,6 +19,7 @@ import { entryHref } from "../game-links";
 import { formatPoints, ordinal } from "../format";
 import { isSameStarknetAddress } from "@realms-world/identity";
 import { useLayout } from "../frame/layout";
+import { backFrom, isOpenedFrom, openedFrom } from "../frame/opened-from";
 import { PageFrame } from "../frame/page-frame";
 import { type DirectoryGame, useDirectory, useLeaderboard, useRealmsPlayer, useRecentResults } from "../herald";
 import { Loading } from "../loading";
@@ -34,7 +35,8 @@ import { environmentLedger } from "../value/ledger";
 import { FailureLine } from "../sign-in/failure-line";
 import { REWARD_WORDS, SEASON_WORDS, WORDS } from "../words";
 import { gameTitle } from "./history-row";
-import { gameOfResults, isFromList } from "./results-link";
+import { gameOfResults } from "./results-link";
+import { type RewardSeat, useSealedChest } from "./reward";
 import { RewardPanel } from "./reward-panel";
 
 /** The post-game score and share cards; heavy, so they load only when a player taps Share. */
@@ -57,13 +59,13 @@ const useFinishedGame = (ref: GameRef | null) => {
 /**
  * A finished game's Results (spec 08): the outcome on its painting (a Blitz place, or the season's ending), the
  * board's first rows with the player's own, and Continue; Share for Blitz, Season for Frontier. Opened from a list it
- * has Back and no Continue; after a match it has no Back. Opening it marks the result seen on this device.
+ * has Back to that list and no Continue; after a match (or from Play) it has no Back. A sealed chest's Open is the
+ * page's one gold step, and Continue stands beside it in outline. Opening it marks the result seen on this device.
  */
 export const ResultsPage = () => {
   const { id } = useParams();
-  const { search } = useLocation();
+  const fromList = isOpenedFrom(useLocation());
   const ref = gameOfResults(id);
-  const fromList = isFromList(search);
   useEffect(() => {
     if (ref) markResultsSeen(gameKey({ chainId: ref.chainId, game_id: ref.gameId }));
   }, [ref?.chainId, ref?.gameId]);
@@ -76,7 +78,7 @@ export const ResultsPage = () => {
   );
 };
 
-/** Back to the list when opened from one; after a match, none. The painting is the page's ground on desktop. */
+/** Back to the list that opened it; after a match, none. The painting is the page's ground on desktop. */
 const ResultsFrame = ({
   fromList,
   painting,
@@ -87,11 +89,14 @@ const ResultsFrame = ({
   painting?: Painting;
   foot?: ReactNode;
   children: ReactNode;
-}) => (
-  <PageFrame back={fromList ? "/season" : undefined} title={WORDS.results} painting={painting} foot={foot}>
-    {children}
-  </PageFrame>
-);
+}) => {
+  const back = backFrom(useLocation(), "/profile");
+  return (
+    <PageFrame back={fromList ? back : undefined} title={WORDS.results} painting={painting} foot={foot}>
+      {children}
+    </PageFrame>
+  );
+};
 
 const Result = ({ gameRef, fromList }: { gameRef: GameRef; fromList: boolean }) => {
   const board = useLeaderboard(gameRef);
@@ -172,12 +177,27 @@ const Placed = ({ lead, place, field }: { lead?: string; place: string; field: n
   </p>
 );
 
-const Buttons = ({ fromList, children }: { fromList: boolean; children: ReactNode }) => {
+/** Continue to Play after a match: the gold step, unless a sealed chest's Open is the page's. */
+const Buttons = ({
+  fromList,
+  chestToOpen = false,
+  children,
+}: {
+  fromList: boolean;
+  chestToOpen?: boolean;
+  children: ReactNode;
+}) => {
   const navigate = useNavigate();
   return (
     <div className="flex gap-2">
       {!fromList && (
-        <Button role="primary" word={CONTINUE} icon="Pl" className="flex-1" onClick={() => navigate("/")} />
+        <Button
+          role={chestToOpen ? "secondary" : "primary"}
+          word={CONTINUE}
+          icon="Pl"
+          className="flex-1"
+          onClick={() => navigate("/")}
+        />
       )}
       {children}
     </div>
@@ -203,6 +223,7 @@ const BlitzResult = ({
   const desktop = layout === "desktop";
   const own = player ? entries.find((entry) => isSameStarknetAddress(entry.address, player)) : undefined;
   const wallet = game ? rosterWalletOf(game) : null;
+  const chestToOpen = useSealedChest(game ? rewardSeatOf(game) : null);
   const top = entries.slice(0, ROWS[layout]);
   const rows = own && !top.includes(own) ? [...top, own] : top;
   return (
@@ -243,7 +264,7 @@ const BlitzResult = ({
         </div>
       }
       buttons={
-        <Buttons fromList={fromList}>
+        <Buttons fromList={fromList} chestToOpen={chestToOpen}>
           <Button
             role="secondary"
             word={SEASON_WORDS.share}
@@ -279,6 +300,7 @@ const FrontierResult = ({
   fromList: boolean;
 }) => {
   const navigate = useNavigate();
+  const here = useLocation();
   const own = findOwnEntry(entries, player);
   const rows = boardRows(entries, player, ROWS[useLayout()]);
   return (
@@ -312,7 +334,7 @@ const FrontierResult = ({
               sitesCleared={entry.sites_cleared.total}
               lords={wholeLords(entry.rewards.lords)}
               own={isOwn}
-              onOpen={() => navigate(`/p/${entry.address}`)}
+              onOpen={() => navigate(`/p/${entry.address}`, { state: openedFrom(here) })}
             />
           ))}
         </section>
@@ -348,10 +370,16 @@ const FrontierResult = ({
  * player off its roster; a ledger not deployed on this environment is said so.
  */
 const GameReward = ({ game }: { game: DirectoryGame }) => {
+  if (!gameSlotKeyOf(game) || !rosterWalletOf(game)) return null;
+  const seat = rewardSeatOf(game);
+  if (!seat) return <FailureLine line={REWARD_WORDS.unreadable} />;
+  return <RewardPanel ledger={seat.ledger} keys={seat.keys} owner={seat.owner} />;
+};
+
+/** The seat a paid Blitz rewards, on this environment's ledger; null outside a slot, off its roster, or with no ledger. */
+const rewardSeatOf = (game: DirectoryGame): RewardSeat | null => {
   const slot = gameSlotKeyOf(game);
   const owner = rosterWalletOf(game);
-  if (!slot || !owner) return null;
   const ledger = environmentLedger();
-  if (!ledger) return <FailureLine line={REWARD_WORDS.unreadable} />;
-  return <RewardPanel ledger={ledger} keys={{ game: gameKeyOf(game), slot }} owner={owner} />;
+  return slot && owner && ledger ? { ledger, keys: { game: gameKeyOf(game), slot }, owner } : null;
 };
