@@ -27,6 +27,16 @@ import { computeExploreFoodCosts, computeTravelFoodCosts } from "./utils";
 import { isViewerOwner } from "../utils/viewer";
 import { isTileOccupierMapSite } from "../utils/map/hex";
 
+/**
+ * What bounds an army's orders as chain time passes: its spendable stamina, the steps its stamina and its owner's food
+ * pay for, and whether it can explore. While these hold, the same map gives the same orders.
+ */
+export interface ArmyReach {
+  stamina: number;
+  travelSteps: number;
+  canExplore: boolean;
+}
+
 export class ArmyActionManager {
   private readonly entityId: ID;
   private readonly staminaManager: StaminaManager;
@@ -214,6 +224,15 @@ export class ArmyActionManager {
     return targets;
   }
 
+  /** The time-dependent bounds findActionPaths plans within, read at the given tick. */
+  public reach(currentDefaultTick: number): ArmyReach {
+    return {
+      stamina: Number(this.staminaManager.getStamina(currentDefaultTick)?.amount ?? 0n),
+      travelSteps: this.maxTravelSteps(currentDefaultTick),
+      canExplore: this.canExplore(currentDefaultTick),
+    };
+  }
+
   public findActionPaths(
     structureHexes: Map<number, Map<number, HexEntityInfo>>,
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
@@ -222,15 +241,12 @@ export class ArmyActionManager {
     currentDefaultTick: number,
     playerAddress: ContractAddress,
   ): ActionPaths {
-    const armyStamina = Number(this.staminaManager.getStamina(currentDefaultTick)?.amount ?? 0n);
+    const { stamina: armyStamina, travelSteps: maxHex, canExplore } = this.reach(currentDefaultTick);
 
     const troopType = this._getTroopType();
     // One truth: paths plan from the same ExplorerTroops coord the submit
     // freshness guard checks. Callers must not substitute a visual position.
     const startPos = this._getCurrentPosition();
-    // max hex based on food
-    const maxHex = this.maxTravelSteps(currentDefaultTick);
-    const canExplore = this.canExplore(currentDefaultTick);
 
     const actionPaths = new ActionPaths();
     const lowestStaminaUse = new Map<string, number>();
