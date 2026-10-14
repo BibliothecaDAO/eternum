@@ -252,6 +252,7 @@ async function moveExplorer(
 async function submitStep(context: RoundTripContext, kind: StepKind, act: () => Promise<unknown>) {
   const before = context.explorer;
   const transaction = await trackTransaction({
+    actionIndex: context.evidence.steps.length,
     botId: context.bot.botId,
     gameId: context.gameId,
     provider: context.provider,

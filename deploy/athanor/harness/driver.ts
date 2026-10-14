@@ -179,7 +179,8 @@ interface PathReservation {
 
 interface TrackTransactionOptions {
   confirmationTimeoutMs?: number;
-  actionIndex?: number;
+  /** With the stage, kind, bot and tick, it names one action: a later record under the same name is its retry. */
+  actionIndex: number;
   botId: number;
   exploreRequested?: boolean;
   gameId: number;
@@ -542,6 +543,7 @@ async function settleEternumBot({
 }): Promise<TrackedTransaction> {
   const name = `bot-${harnessAccount.botId.toString().padStart(3, "0")}`;
   return trackTransaction({
+    actionIndex: 0,
     botId: harnessAccount.botId,
     gameId: game.gameId,
     kind: "settle",
@@ -572,6 +574,7 @@ async function createBotExplorer({
   const troopType = troopTypes.get(structure.structureId);
   if (troopType === undefined) throw new Error(`No starting troop type exists for structure ${structure.structureId}`);
   return trackTransaction({
+    actionIndex: 0,
     botId: harnessAccount.botId,
     gameId: game.gameId,
     kind: "create-explorer",

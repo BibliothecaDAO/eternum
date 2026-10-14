@@ -44,6 +44,7 @@ export async function closeHarnessSeason(options: {
   const transaction = await completeNativeBatches(async () => {
     let applied: Promise<BatchTransactionReceipt> | undefined;
     const tracked = await trackTransaction({
+      actionIndex: 0,
       botId: leader.account.botId,
       gameId: game_id,
       provider: options.provider,
