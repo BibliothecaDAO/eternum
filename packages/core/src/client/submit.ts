@@ -66,6 +66,7 @@ interface AccountSubmission {
 const accountSubmissions = new Map<string, AccountSubmission>();
 const submissionKey = (chainId: string, address: string) => `${BigInt(chainId)}:${BigInt(address)}`;
 const STATUS_POLL_MS = 250;
+const ACCOUNT_NONCE = BlockTag.PRE_CONFIRMED;
 const IN_BLOCK = new Set<string>([
   TransactionFinalityStatus.PRE_CONFIRMED,
   TransactionFinalityStatus.ACCEPTED_ON_L2,
@@ -90,7 +91,29 @@ export function configureGameplayAccountSubmits<TAccount extends AccountInterfac
   configuredGameplaySubmits.set(account, { shard, execute: account.execute.bind(account), stopped });
   account.execute = ((calls: AllowArray<Call>, details?: UniversalDetails) =>
     executeGameplayAccountTransaction({ account, calls, shard, details })) as AccountInterface["execute"];
+  readNonceAhead(account, shard);
   return account;
+}
+
+/** The first action of a session leaves without a nonce round trip: the read happens before the player acts. */
+function readNonceAhead(account: GameplaySubmitAccount, shard: GameplayShard): void {
+  const submission = submissionOf(shard.chainId, account.address);
+  submission.pending = submission.pending
+    .then(async () => {
+      if (submission.nextNonce === undefined) submission.nextNonce = BigInt(await account.getNonce(ACCOUNT_NONCE));
+    })
+    // An unread nonce is read again by the first send.
+    .catch(() => undefined);
+}
+
+function submissionOf(chainId: string, address: string): AccountSubmission {
+  const key = submissionKey(chainId, address);
+  let submission = accountSubmissions.get(key);
+  if (!submission) {
+    submission = { pending: Promise.resolve() };
+    accountSubmissions.set(key, submission);
+  }
+  return submission;
 }
 
 /**
@@ -112,13 +135,7 @@ export function executeGameplayAccountTransaction({
   // The manifest already identifies the signing chain; the SDK must not discover it again before an invoke.
   account.getChainId = async () => shard.chainId as Awaited<ReturnType<AccountInterface["getChainId"]>>;
 
-  const key = submissionKey(shard.chainId, account.address);
-  let submission = accountSubmissions.get(key);
-  if (!submission) {
-    submission = { pending: Promise.resolve() };
-    accountSubmissions.set(key, submission);
-  }
-  const state = submission;
+  const state = submissionOf(shard.chainId, account.address);
   const sending = state.pending.then(() => {
     owner?.throwIfAborted();
     return sendAndReconcile(account, execute, calls, shard, details, owner, state, waitForTransaction);
@@ -153,7 +170,7 @@ async function sendAndReconcile(
 ): Promise<SentGameplayTransaction> {
   const nonce =
     submission.nextNonce === undefined
-      ? await account.getNonce(BlockTag.PRE_CONFIRMED)
+      ? await account.getNonce(ACCOUNT_NONCE)
       : `0x${submission.nextNonce.toString(16)}`;
   const frame = playFrame(nonce, shard, details);
   submission.nextNonce = BigInt(nonce);

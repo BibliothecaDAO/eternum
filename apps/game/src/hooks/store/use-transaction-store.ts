@@ -1,4 +1,4 @@
-import type { BatchedTransactionDetail, TransactionFailedPayload, TransactionType } from "@bibliothecadao/provider";
+import type { TransactionFailedPayload, TransactionType } from "@bibliothecadao/provider";
 import { create } from "zustand";
 
 /**
@@ -43,8 +43,6 @@ export interface Transaction {
   description: string;
   transactionCount?: number;
   errorMessage?: string;
-  /** Details about batched transactions - shows breakdown by type */
-  batchDetails?: BatchedTransactionDetail[];
 }
 
 const MAX_TRANSACTIONS = 50;

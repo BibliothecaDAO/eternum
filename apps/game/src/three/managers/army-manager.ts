@@ -442,12 +442,15 @@ export class ArmyManager {
       .catch(() => undefined)
       .then(() => this.preloadMissingProjectedArmyModelsForEntity(entityId))
       .then(() =>
-        scheduleFrameBudgetWork(
-          this.chunkWorkScheduler,
-          "visible",
-          () => this.synchronizeArmyProjectionEntity(entityId),
-          "manager:army-projection",
-        ),
+        // The player's own army answers its order as its facts land; queued behind ambient work it waited 2-4 frames.
+        this.armyPresentations.get(entityId)?.isMine
+          ? this.synchronizeArmyProjectionEntity(entityId)
+          : scheduleFrameBudgetWork(
+              this.chunkWorkScheduler,
+              "visible",
+              () => this.synchronizeArmyProjectionEntity(entityId),
+              "manager:army-projection",
+            ),
       )
       .catch((error) => {
         console.error(`[ArmyManager] Failed to synchronize projected army ${entityId}`, error);

@@ -58,7 +58,6 @@ export const useTransactionListener = () => {
           transactionType: payload.type,
           transactionHash: payload.transactionHash,
           transactionCount: payload.transactionCount,
-          batchDetails: payload.batchDetails,
           entrypoints: payload.entrypoints,
           contractAddresses: payload.contractAddresses,
         },
@@ -69,7 +68,6 @@ export const useTransactionListener = () => {
         status: "pending",
         description: getTxMessage(payload.type),
         transactionCount: payload.transactionCount,
-        batchDetails: payload.batchDetails,
       });
     };
 
@@ -86,7 +84,6 @@ export const useTransactionListener = () => {
           transactionType: payload.type,
           transactionHash: payload.transactionHash,
           transactionCount: payload.transactionCount,
-          batchDetails: payload.batchDetails,
           entrypoints: payload.entrypoints,
           contractAddresses: payload.contractAddresses,
         },
@@ -99,7 +96,6 @@ export const useTransactionListener = () => {
           status: "pending",
           description: getTxMessage(payload.type),
           transactionCount: payload.transactionCount,
-          batchDetails: payload.batchDetails,
         });
       }
     };
@@ -117,7 +113,6 @@ export const useTransactionListener = () => {
           transactionType: payload.type,
           transactionHash: hash,
           transactionCount: payload.transactionCount,
-          batchDetails: payload.batchDetails,
           entrypoints: payload.entrypoints,
           contractAddresses: payload.contractAddresses,
         },
@@ -140,7 +135,6 @@ export const useTransactionListener = () => {
           status: "success",
           description: getTxMessage(payload.type),
           transactionCount: payload.transactionCount,
-          batchDetails: payload.batchDetails,
           confirmedAt: Date.now(),
         });
       }
@@ -161,7 +155,6 @@ export const useTransactionListener = () => {
           transactionType: payload.type,
           transactionHash: payload.transactionHash,
           transactionCount: payload.transactionCount,
-          batchDetails: payload.batchDetails,
           entrypoints: payload.entrypoints,
           contractAddresses: payload.contractAddresses,
           failureKind: payload.failureKind,
@@ -190,7 +183,6 @@ export const useTransactionListener = () => {
             status,
             description: getTxMessage(payload.type),
             transactionCount: payload.transactionCount,
-            batchDetails: payload.batchDetails,
             confirmedAt: Date.now(),
             errorMessage: message,
           });

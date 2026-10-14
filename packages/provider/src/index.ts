@@ -29,10 +29,7 @@ import {
 } from "starknet";
 import { extractErrorMessage } from "./classify-transaction-error";
 import { ACTION_CHECKING_AFTER_MS, TransactionNotSentError } from "./transaction-not-sent";
-import { PromiseQueue } from "./promise-queue";
-import { ExecutionOptions } from "./transaction-executor";
 import {
-  BatchedTransactionDetail,
   TransactionFailedPayload,
   TransactionFailureStage,
   TransactionLifecycleMeta,
@@ -55,22 +52,11 @@ type SubmittedTransaction = {
   inBlock?: Promise<void>;
 };
 
-export {
-  CATEGORY_BATCH_LIMITS,
-  getTransactionCategory,
-  TransactionCostCategory,
-  getDelayForTransaction,
-} from "./batch-config";
-export type { BatchDelayConfig } from "./batch-config";
 export { classifyTransactionError, extractErrorMessage, formatErrorForConsole } from "./classify-transaction-error";
 export type { ClassifiedTransactionError } from "./classify-transaction-error";
 export { ACTION_CHECKING_AFTER_MS, TransactionNotSentError } from "./transaction-not-sent";
-export { PromiseQueue } from "./promise-queue";
-export type { QueueableTransaction } from "./promise-queue";
-export type { TransactionExecutor, ExecutionOptions } from "./transaction-executor";
 export { TransactionType } from "./types";
 export type {
-  BatchedTransactionDetail,
   TransactionFailedPayload,
   TransactionFailureStage,
   TransactionLifecycleMeta,
@@ -172,7 +158,6 @@ export interface ProviderContracts {
 export class EternumProvider extends EventEmitter {
   readonly contracts: ProviderContracts;
   readonly provider: RpcProvider;
-  promiseQueue: PromiseQueue;
   private pendingActorExecutionLocks = new Map<string, ActorExecutionLock>();
   private nativeSubmission?: NativeSubmission;
   private commandAbi?: Abi;
@@ -203,14 +188,6 @@ export class EternumProvider extends EventEmitter {
     this.provider = new RpcProvider({ nodeUrl: url });
     this.gameId = scope?.gameId ?? 0;
     this.transactionStreamWaiter = scope?.transactionStreamWaiter;
-
-    // No timed batching: appchain txs land in <1s, so waiting to merge actions only adds
-    // latency (and a merged multicall makes one revert fail unrelated actions). The queue
-    // stays for per-signer serialization; a backlog still coalesces naturally.
-    this.promiseQueue = new PromiseQueue(
-      { executeAndCheckTransaction: (...args) => this.executeAndCheckTransaction(...args) },
-      { batchDelayMs: 0, batchCalls: false },
-    );
   }
 
   public setNativeSubmission(submit: NativeSubmission, abi: Abi, ownedStructure: (actor: string) => number): void {
@@ -226,15 +203,16 @@ export class EternumProvider extends EventEmitter {
     startedAt?: number,
   ): Promise<GetTransactionReceiptResponse> {
     if (!this.commandAbi) throw new Error("Native command ABI is not configured");
-    return this.promiseQueue.enqueue({
+    // Signed and sent in the caller's task: a timer here would let a whole render frame run before the send.
+    return this.executeAndCheckTransaction(
       signer,
-      transactionType,
-      calls: {
+      {
         contractAddress: this.contracts.world,
         entrypoint: command.kind,
         calldata: [String(this.gameId), ...encodeNativeCommand(this.commandAbi, command)],
       },
-    });
+      transactionType,
+    );
   }
   private ownedStructure(actor: string): number {
     if (!this.resolveOwnedStructure) throw new Error("Native player facts are not configured");
@@ -362,10 +340,7 @@ export class EternumProvider extends EventEmitter {
 
   private buildTransactionLifecycleMeta(
     transactionDetails: AllowArray<Call>,
-    meta: Pick<
-      TransactionLifecycleMeta,
-      "type" | "transactionHash" | "signerAddress" | "transactionCount" | "batchDetails"
-    >,
+    meta: Pick<TransactionLifecycleMeta, "type" | "transactionHash" | "signerAddress" | "transactionCount">,
   ): TransactionLifecycleMeta {
     const entrypoints = this.getTransactionEntrypoints(transactionDetails);
     const contractAddresses = this.getTransactionContractAddresses(transactionDetails);
@@ -397,19 +372,14 @@ export class EternumProvider extends EventEmitter {
   }
 
   /**
-   * Execute a transaction and check its result
-   *
-   * @param signer - Account that will sign the transaction
-   * @param transactionDetails - Transaction call data
-   * @param batchDetails - Optional details about batched transactions (from PromiseQueue)
-   * @returns Transaction receipt
+   * Sends a command and resolves with its hash once the send returns; its outcome arrives as transactionComplete or
+   * transactionFailed.
    */
   private async executeAndCheckTransaction(
     signer: Account | AccountInterface,
     rawTransactionDetails: AllowArray<Call>,
-    batchDetails?: BatchedTransactionDetail[],
-    options?: ExecutionOptions & { transactionType?: TransactionType },
-  ) {
+    transactionType?: TransactionType,
+  ): Promise<GetTransactionReceiptResponse> {
     const transactionDetails = rawTransactionDetails;
 
     const isMultipleTransactions = Array.isArray(transactionDetails);
@@ -423,13 +393,12 @@ export class EternumProvider extends EventEmitter {
     } else {
       txType = TransactionType[transactionDetails.entrypoint.toUpperCase() as keyof typeof TransactionType];
     }
-    txType = options?.transactionType ?? txType;
+    txType = transactionType ?? txType;
 
     const transactionMeta = this.buildTransactionLifecycleMeta(transactionDetails, {
       type: txType,
       signerAddress: this.getSignerAddress(signer),
       ...(isMultipleTransactions ? { transactionCount: transactionDetails.length } : {}),
-      ...(batchDetails && batchDetails.length > 0 ? { batchDetails } : {}),
     });
     await this.runTransactionSubmitGuard(signer, transactionMeta);
     if (txType === TransactionType.EXPLORE) {
@@ -486,7 +455,6 @@ export class EternumProvider extends EventEmitter {
     // Emit immediately so UI can show pending state
     this.emitTransactionSubmitted(tx.transaction_hash, transactionMeta);
 
-    const waitForConfirmation = options?.waitForConfirmation ?? true;
     const transactionMetaWithHash = {
       ...transactionMeta,
       transactionHash: tx.transaction_hash,
@@ -522,52 +490,29 @@ export class EternumProvider extends EventEmitter {
         })
       : streamReceipt;
 
-    if (!waitForConfirmation) {
-      this.emitTransactionPending(tx.transaction_hash, transactionMeta);
-      void waitPromise
-        .then((receipt) => {
-          this.emit("transactionComplete", {
-            details: receipt,
-            admissionToVisibleMs: Date.now() - submitStartedAt,
-            ...transactionMeta,
-          });
-        })
-        .catch((error) => {
-          console.error(`Error waiting for transaction ${tx.transaction_hash}`, error);
-          this.emitTransactionFailure({
-            ...transactionMetaWithHash,
-            message: extractErrorMessage(error),
-            stage: resolveTransactionFailureStage(error, "background_confirmation"),
-            ...buildFailureDiagnostics(error),
-          });
+    this.emitTransactionPending(tx.transaction_hash, transactionMeta);
+    void waitPromise
+      .then((receipt) => {
+        this.emit("transactionComplete", {
+          details: receipt,
+          admissionToVisibleMs: Date.now() - submitStartedAt,
+          ...transactionMeta,
         });
-
-      return {
-        statusReceipt: "PENDING",
-        transaction_hash: tx.transaction_hash,
-      } as any;
-    }
-
-    let receipt: GetTransactionReceiptResponse;
-    try {
-      receipt = await waitPromise;
-    } catch (error) {
-      this.emitTransactionFailure({
-        ...transactionMetaWithHash,
-        message: extractErrorMessage(error),
-        stage: resolveTransactionFailureStage(error, "confirmation"),
-        ...buildFailureDiagnostics(error),
+      })
+      .catch((error) => {
+        console.error(`Error waiting for transaction ${tx.transaction_hash}`, error);
+        this.emitTransactionFailure({
+          ...transactionMetaWithHash,
+          message: extractErrorMessage(error),
+          stage: resolveTransactionFailureStage(error, "background_confirmation"),
+          ...buildFailureDiagnostics(error),
+        });
       });
-      throw error;
-    }
 
-    this.emit("transactionComplete", {
-      details: receipt,
-      admissionToVisibleMs: Date.now() - submitStartedAt,
-      ...transactionMeta,
-    });
-
-    return receipt;
+    return {
+      statusReceipt: "PENDING",
+      transaction_hash: tx.transaction_hash,
+    } as unknown as GetTransactionReceiptResponse;
   }
 
   private async waitForTransactionWithCheckInternal(

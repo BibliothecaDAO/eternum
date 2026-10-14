@@ -1,6 +1,5 @@
 import * as Sentry from "@sentry/react";
 import {
-  type BatchedTransactionDetail,
   type TransactionFailureStage,
   type TransactionProviderState,
   type TransactionRetrySafety,
@@ -36,7 +35,6 @@ interface ClientTransactionFailureContext {
   transactionType?: TransactionType;
   transactionHash?: string;
   transactionCount?: number;
-  batchDetails?: BatchedTransactionDetail[];
   entrypoints?: string[];
   contractAddresses?: string[];
   walletAddress?: string | null;
@@ -240,7 +238,6 @@ const buildBreadcrumbData = (context: Partial<Omit<ClientTransactionFailureConte
     type: context.transactionType,
     transactionHash: context.transactionHash,
     transactionCount: context.transactionCount,
-    batchDetails: context.batchDetails,
     entrypoints: context.entrypoints,
     contractAddresses: context.contractAddresses,
     chain: context.chain ?? defaultContext.chain,
@@ -380,10 +377,6 @@ export const reportClientTransactionFailure = async ({
     contractAddresses: failureContext.contractAddresses,
     rpcHost: failureContext.rpcHost,
   });
-  const batchContext =
-    failureContext.batchDetails && failureContext.batchDetails.length > 0
-      ? sanitizeValue({ details: failureContext.batchDetails })
-      : undefined;
   const worldContext =
     failureContext.chain || failureContext.worldName || failureContext.worldAddress
       ? sanitizeValue({
@@ -407,7 +400,6 @@ export const reportClientTransactionFailure = async ({
       transaction: transactionContext as Record<string, unknown>,
       ...(walletContext ? { wallet: walletContext as Record<string, unknown> } : {}),
       ...(worldContext ? { world: worldContext as Record<string, unknown> } : {}),
-      ...(batchContext ? { batch: batchContext as Record<string, unknown> } : {}),
     },
     extra: sanitizeValue({
       normalizedReason,

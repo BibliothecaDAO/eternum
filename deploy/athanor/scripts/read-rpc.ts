@@ -61,10 +61,13 @@ function untilAborted<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
   });
 }
 
+// A browser preflights every JSON POST; without a max age it keeps the answer 5 s, so nearly every player action would
+// wait one extra round trip for it. Chromium honours at most two hours.
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "7200",
 };
 // Starknet RPC 0.10 transaction/contract errors; internal and unknown errors stay unavailable.
 const ESTIMATE_REFUSALS = new Set([-32602, 21, 40, 41, 52, 53, 54, 55, 58, 61, 64, 65, 69]);

@@ -1,4 +1,4 @@
-import type { Abi, AccountInterface, Call } from "starknet";
+import type { Abi, AccountInterface } from "starknet";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { EternumProvider, TransactionNotSentError } from "./index";
@@ -16,11 +16,25 @@ describe("provider submission boundary", () => {
   it("refuses a command before the shard's play submission is configured", async () => {
     const execute = vi.fn();
     const signer = { address: "0x111", execute } as unknown as AccountInterface;
-    const calls: Call = { contractAddress: "0x77", entrypoint: "settle", calldata: [] };
-    await expect(makeProvider().promiseQueue.enqueue({ signer, calls })).rejects.toThrow(
-      "Native submission is not configured",
-    );
+    await expect(makeProvider().claim_wonder_points({ signer, value: 1 })).rejects.toThrow("is not configured");
     expect(execute).not.toHaveBeenCalled();
+  });
+
+  it("sends a command in the caller's task, before any timer or frame can run", async () => {
+    vi.useFakeTimers();
+    const provider = makeProvider();
+    const submit = vi.fn(async () => ({ transaction_hash: "0x1" }));
+    provider.setNativeSubmission(submit, bindings.commandAbi as Abi, () => 9);
+    provider.setTransactionStreamWaiter(() => new Promise(() => {}));
+    const sent = provider.explorer_travel({
+      signer: { address: "0x111" } as AccountInterface,
+      explorer_id: 5,
+      directions: [1],
+    });
+    for (let microtask = 0; microtask < 20; microtask += 1) await Promise.resolve();
+    expect(submit).toHaveBeenCalledOnce();
+    expect(submit.mock.calls[0][1]).toMatchObject({ contractAddress: "0x77", entrypoint: "Move" });
+    await expect(sent).resolves.toMatchObject({ transaction_hash: "0x1" });
   });
 
   it("holds one player's next command until its outcome, and a reverted one fails with its reason", async () => {
