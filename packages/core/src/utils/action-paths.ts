@@ -20,6 +20,13 @@ export enum ActionType {
   CreateArmy = "create_army",
 }
 
+const sameStep = (left: ActionPath, right: ActionPath): boolean =>
+  left.hex.col === right.hex.col &&
+  left.hex.row === right.hex.row &&
+  left.actionType === right.actionType &&
+  left.biomeType === right.biomeType &&
+  left.staminaCost === right.staminaCost;
+
 export class ActionPaths {
   private readonly paths: Map<string, ActionPath[]>;
   private readonly FELT_CENTER: number;
@@ -71,6 +78,17 @@ export class ActionPaths {
     const col = normalized ? pos.col + FELT_CENTER() : pos.col;
     const row = normalized ? pos.row + FELT_CENTER() : pos.row;
     return `${col},${row}`;
+  }
+
+  /** Whether two sets of paths offer the same orders, step for step. */
+  static samePaths(left: ReadonlyMap<string, ActionPath[]>, right: ReadonlyMap<string, ActionPath[]>): boolean {
+    if (left.size !== right.size) return false;
+    for (const [key, path] of left) {
+      const other = right.get(key);
+      if (!other || other.length !== path.length) return false;
+      if (!path.every((step, index) => sameStep(step, other[index]))) return false;
+    }
+    return true;
   }
 
   static getActionType(path: ActionPath[]): ActionType | undefined {

@@ -2,6 +2,7 @@ import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { isWithinWorldOriginReach, setWorldOrigin } from "../world-origin";
 import { followArmyLayerChange } from "./worldmap-layer-follow";
+import { SelectedArmyOrders } from "./worldmap-selected-army-orders";
 import { TileOccupier } from "@bibliothecadao/types";
 import { SpireManager, type RuleSpires } from "../managers/spire-manager";
 import { MapSiteManager } from "../managers/map-site-manager";
@@ -107,6 +108,7 @@ import {
   BattleEventSystemUpdate,
   ExplorerRewardSystemUpdate,
   getBlockTimestamp,
+  findArmyReach,
   getTileAt,
   recordArmyMovementLatencyPhase,
   SelectableArmy,
@@ -976,6 +978,14 @@ export default class WorldmapScene extends WarpTravel {
     recoveryTransitionToken: number;
   } | null = null;
   private actionPathsTransitionToken: number | null = null;
+  private readonly selectedArmyOrders = new SelectedArmyOrders({
+    reach: (entityId) =>
+      findArmyReach(requireActiveGameClient(), {
+        explorerId: entityId,
+        currentDefaultTick: getBlockTimestamp().currentDefaultTick,
+      }),
+    offerOrders: (entityId, playerAddress) => this.offerSelectedArmyOrders(entityId, playerAddress),
+  });
   private isApplyingLocalActionPathUpdate = false;
   private isSceneExitInteractionResetInProgress = false;
   private chunkDiagnostics: WorldmapChunkDiagnostics = createWorldmapChunkDiagnostics();
@@ -1390,7 +1400,11 @@ export default class WorldmapScene extends WarpTravel {
       this.syncArmyMarkers(changes);
     });
     const unsubscribeChests = this.worldSpatialProjection.subscribeChests(() => this.refreshTerrainPropOccupancy());
+    const unsubscribeSelectedArmyMap = this.worldSpatialProjection.subscribe((published) => {
+      if (projectionChangesForLayer(published, activeMapLayer()).length > 0) this.refreshSelectedArmyOrders();
+    });
     this.unsubscribeWorldSpatialProjection = () => {
+      unsubscribeSelectedArmyMap();
       unsubscribeTiles();
       unsubscribeStructures();
       unsubscribeTerrainEcology();
@@ -3557,7 +3571,27 @@ export default class WorldmapScene extends WarpTravel {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
     const viewer = accountAddress();
     if (viewer === null || getLiveWorldmapEntityActions().selectedEntityId !== entityId) return;
-    this.offerSelectedArmyOrders(entityId, viewer);
+    this.selectedArmyOrders.offer(entityId, viewer);
+  }
+
+  /** The selected army, while this scene shows it orders: none when switched off, mid chunk switch or spectating. */
+  private selectedOrderableArmyId(): ID | null {
+    if (this.isSwitchedOff || this.isChunkTransitioning || useUIStore.getState().isSpectating) return null;
+    const { selectedEntityId } = getLiveWorldmapEntityActions();
+    if (selectedEntityId == null || !this.armyManager.hasArmy(selectedEntityId)) return null;
+    return selectedEntityId;
+  }
+
+  /** The map under the selected army changed (tiles, occupancy, its own tile): its orders are planned again. */
+  private refreshSelectedArmyOrders(): void {
+    const entityId = this.selectedOrderableArmyId();
+    if (entityId !== null) this.selectedArmyOrders.offer(entityId, this.getArmyOwnerAddress(entityId));
+  }
+
+  /** Chain time moved: the selected army's orders are planned again once its stamina or food pays for others. */
+  private followSelectedArmyReach(): void {
+    const entityId = this.selectedOrderableArmyId();
+    if (entityId !== null) this.selectedArmyOrders.followConfirmedHead(entityId, this.getArmyOwnerAddress(entityId));
   }
 
   private hasEligibleArmyForTabCycle(): boolean {
@@ -3629,7 +3663,7 @@ export default class WorldmapScene extends WarpTravel {
 
     this.state.updateEntityActionSelectedEntityId(selectedEntityId);
     playUnitCommandSound("select");
-    this.offerSelectedArmyOrders(selectedEntityId, playerAddress);
+    this.selectedArmyOrders.offer(selectedEntityId, playerAddress);
     return true;
   }
 
@@ -3840,6 +3874,7 @@ export default class WorldmapScene extends WarpTravel {
     // Stamp token before publishing store updates to avoid transient null-token
     // windows inside synchronous subscribers.
     this.actionPathsTransitionToken = actionPaths.size > 0 ? this.chunkTransitionToken : null;
+    if (ActionPaths.samePaths(getLiveWorldmapEntityActions().actionPaths, actionPaths)) return;
     this.isApplyingLocalActionPathUpdate = true;
     try {
       this.state.updateEntityActionActionPaths(actionPaths);
@@ -8560,16 +8595,7 @@ export default class WorldmapScene extends WarpTravel {
     });
     this.storeSubscriptions.push(
       useChainTimeStore.subscribe((next, previous) => {
-        if (
-          next.executionFloorMs === previous.executionFloorMs ||
-          this.isSwitchedOff ||
-          this.isChunkTransitioning ||
-          useUIStore.getState().isSpectating
-        )
-          return;
-        const { selectedEntityId } = getLiveWorldmapEntityActions();
-        if (selectedEntityId == null || !this.armyManager.hasArmy(selectedEntityId)) return;
-        this.offerSelectedArmyOrders(selectedEntityId, this.getArmyOwnerAddress(selectedEntityId));
+        if (next.executionFloorMs !== previous.executionFloorMs) this.followSelectedArmyReach();
       }),
     );
     this.storeSubscriptions.push(

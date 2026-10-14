@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-10-14",
+    title: "Army highlights hold still",
+    description:
+      "Fixed the hexes around a selected army flashing out and back in every few seconds. They now stay put while nothing changes, and when a tile becomes reachable, such as once stamina refills, only that tile appears.",
+    type: "fix",
+  },
+  {
     date: "2026-10-13",
     title: "Armies answer right after an order",
     description:
