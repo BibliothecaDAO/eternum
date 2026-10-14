@@ -1,6 +1,7 @@
+import { requireActiveGameClient } from "@/sync/active-game-client";
 import { startAutomationScope } from "@/ui/features/infrastructure/automation/model/automation-scope";
 import {
-  runAutomationTransaction,
+  createAutomationTask,
   AutomationSignerUnavailable,
   AutomationPending,
 } from "@/ui/features/infrastructure/automation/model/automation-runner";
@@ -44,7 +45,11 @@ const getArrivalKey = (arrival: ResourceArrivalInfo) =>
  * Claims the player's ready arrivals on the chain clock and keeps the arrived/pending counters current. Arrivals
  * are read from the native store; this runner owns only the claim timer and its retry memory.
  */
+const runArrivalClaims = createAutomationTask<ResourceArrivalInfo>();
+const runRealmProvision = createAutomationTask<RealmProvisionCandidate>();
+
 const ResourceArrivalAutoClaim = () => {
+  const client = requireActiveGameClient();
   const setArrivalIndicators = useUIStore((state) => state.setArrivalIndicators);
   const playerStructures = useFactView(playerStructuresView);
   const chainNowMs = useNowMs();
@@ -87,7 +92,7 @@ const ResourceArrivalAutoClaim = () => {
       }
 
       const arrivals = playerResourceArrivals;
-      if (!account || accountAddress() === null || playerStructures.length === 0 || arrivals.length === 0) {
+      if (!account || accountAddress() === null) {
         autoClaimedArrivals.current.clear();
         lastFailureRef.current.clear();
         updateArrivalIndicators([]);
@@ -109,51 +114,59 @@ const ResourceArrivalAutoClaim = () => {
         .filter((arrival) => arrival.resources.length > 0)
         .filter((arrival) => now >= Number(arrival.arrivesAt) + RESOURCE_ARRIVAL_READY_BUFFER_SECONDS);
 
-      if (readyArrivals.length === 0) {
-        return;
-      }
-
       isAutoClaimingRef.current = true;
 
       try {
-        const sortedReadyArrivals = readyArrivals.toSorted((a, b) => Number(a.arrivesAt) - Number(b.arrivesAt));
+        await runArrivalClaims(
+          {
+            client,
+            signer: account.address,
+            signal,
+            onConfirmed: (arrival) => {
+              const arrivalKey = getArrivalKey(arrival);
+              autoClaimedArrivals.current.add(arrivalKey);
+              lastFailureRef.current.delete(arrivalKey);
+            },
+          },
+          async (submit) => {
+            const sortedReadyArrivals = readyArrivals.toSorted((a, b) => Number(a.arrivesAt) - Number(b.arrivesAt));
 
-        for (const arrival of sortedReadyArrivals) {
-          if (signal.aborted) return;
-          const arrivalKey = getArrivalKey(arrival);
-          if (autoClaimedArrivals.current.has(arrivalKey)) continue;
+            for (const arrival of sortedReadyArrivals) {
+              if (signal.aborted) return;
+              const arrivalKey = getArrivalKey(arrival);
+              if (autoClaimedArrivals.current.has(arrivalKey)) continue;
 
-          const lastFailure = lastFailureRef.current.get(arrivalKey);
-          if (lastFailure && now - lastFailure < retryDelaySeconds) continue;
+              const lastFailure = lastFailureRef.current.get(arrivalKey);
+              if (lastFailure && now - lastFailure < retryDelaySeconds) continue;
 
-          try {
-            const resourceArrivalManager = new ResourceArrivalManager(systemCalls, arrival);
-            await runAutomationTransaction({
-              signer: account.address,
-              operation: `claim:${arrivalKey}`,
-              signal,
-              submit: () => resourceArrivalManager.offload(account, arrival.resources.length),
-              onConfirmed: () => {
-                autoClaimedArrivals.current.add(arrivalKey);
-                lastFailureRef.current.delete(arrivalKey);
-              },
-            });
-          } catch (error) {
-            if (signal.aborted) return;
-            if (error instanceof AutomationSignerUnavailable || error instanceof AutomationPending) {
-              toast.warning(`Automatic arrival claims paused: ${error.message}`, { id: "arrival-claim-pending" });
-              return;
+              try {
+                await submit(arrival, (submitted) =>
+                  new ResourceArrivalManager(systemCalls, submitted).offload(account, submitted.resources.length),
+                );
+              } catch (error) {
+                if (signal.aborted) return;
+                if (error instanceof AutomationSignerUnavailable || error instanceof AutomationPending) {
+                  toast.warning(`Automatic arrival claims paused: ${error.message}`, { id: "arrival-claim-pending" });
+                  return;
+                }
+                console.error("Auto-claim arrival failed", { arrival, error });
+                lastFailureRef.current.set(arrivalKey, now);
+              }
             }
-            console.error("Auto-claim arrival failed", { arrival, error });
-            lastFailureRef.current.set(arrivalKey, now);
-          }
-        }
+          },
+        );
+      } catch (error) {
+        if (!signal.aborted)
+          toast.warning(error instanceof Error ? error.message : "Arrival claims are unavailable.", {
+            id: "arrival-claim-pending",
+          });
       } finally {
         isAutoClaimingRef.current = false;
         if (!signal.aborted) updateArrivalIndicators(arrivals, now);
       }
     };
   }, [
+    client,
     account,
     store,
     getChainNowSeconds,
@@ -167,7 +180,7 @@ const ResourceArrivalAutoClaim = () => {
     autoClaimedArrivals.current.clear();
     lastFailureRef.current.clear();
     return startAutomationScope((signal) => processAutoClaimRef.current(signal));
-  }, [account, store]);
+  }, [client, account, store]);
 
   return null;
 };
@@ -175,6 +188,7 @@ const ResourceArrivalAutoClaim = () => {
 type ProvisionableRealm = RealmProvisionCandidate & { location: { x: number; y: number } };
 
 const AutoProvisionRealms = () => {
+  const client = requireActiveGameClient();
   const {
     account: { account },
     setup: { store, systemCalls },
@@ -219,14 +233,12 @@ const AutoProvisionRealms = () => {
         useConnectionStore.subscribe((state, previous) => {
           if (state.lastConfirmedBlock !== previous.lastConfirmedBlock) head();
         }),
-      submit: (realm_entity_id, onConfirmed, signal) =>
-        runAutomationTransaction({
-          signer: account.address,
-          operation: `provision:${realm_entity_id}`,
-          signal,
-          onConfirmed,
-          submit: () => systemCalls.provision_realm({ signer: account, realm_entity_id }),
-        }),
+      submit: (realm, onConfirmed, signal) =>
+        runRealmProvision({ client, signer: account.address, signal, onConfirmed }, async (submit) =>
+          submit(realm, (submitted) =>
+            systemCalls.provision_realm({ signer: account, realm_entity_id: submitted.entityId }),
+          ),
+        ),
       report: {
         provisioned: (realms) => {
           toast.dismiss(provisionBatchNoticeId(realms));
@@ -242,7 +254,7 @@ const AutoProvisionRealms = () => {
           ),
       },
     });
-  }, [account, store, systemCalls, isBlitzWorld]);
+  }, [client, account, store, systemCalls, isBlitzWorld]);
 
   return null;
 };

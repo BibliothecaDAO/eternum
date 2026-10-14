@@ -1,6 +1,6 @@
 import { startAutomationScope } from "@/ui/features/infrastructure/automation/model/automation-scope";
 import {
-  runAutomationTransaction,
+  createAutomationTask,
   AutomationSignerUnavailable,
   AutomationPending,
 } from "@/ui/features/infrastructure/automation/model/automation-runner";
@@ -21,7 +21,7 @@ import { toast } from "@/ui/features/event-feed/notify";
 
 import { getExplorationStrategy } from "@/automation/exploration";
 import { buildExplorationSnapshot } from "@/automation/exploration/map-cache";
-import type { ExplorationMapSnapshot } from "@/automation/exploration/types";
+import type { ExplorationMapSnapshot, ExplorationStrategySelection } from "@/automation/exploration/types";
 import {
   DEFAULT_SCOPE_RADIUS,
   DEFAULT_STRATEGY_ID,
@@ -45,7 +45,17 @@ type SnapshotCache = {
   recentlyExplored: Set<string>;
 };
 
+const runExplorationPass = createAutomationTask<{
+  entryId: string;
+  explorerId: number;
+  selection: ExplorationStrategySelection;
+  stamina: number;
+  exploreStaminaCost: number;
+  submittedAt: number;
+}>();
+
 export const useExplorationAutomationRunner = () => {
+  const client = requireActiveGameClient();
   const {
     setup: { store },
     account: { account },
@@ -121,190 +131,206 @@ export const useExplorationAutomationRunner = () => {
       const nowMs = Date.now();
       const due = selectDueEntries(activeEntriesRef.current, nowMs);
 
-      if (!due.length) {
-        return;
-      }
-
       processingRef.current = true;
 
       try {
-        for (const entry of due) {
-          if (signal.aborted) return;
-          try {
-            const explorerId = safeInteger(entry.explorerId);
-            if (!Number.isFinite(explorerId) || explorerId <= 0) {
-              update(entry.id, { blockedReason: "invalid-explorer", lastError: null });
-              scheduleNext(entry.id, nowMs);
-              continue;
-            }
+        await runExplorationPass(
+          {
+            client,
+            signer: account.address,
+            signal,
+            onConfirmed: ({ entryId, selection, stamina, exploreStaminaCost, submittedAt }) => {
+              const actionType = ActionPaths.getActionType(selection.path);
+              const effectiveCost = computeEffectiveStaminaCost(selection.path, actionType, exploreStaminaCost);
+              const remainingStamina = Math.max(0, stamina - effectiveCost);
+              const shouldRepeat = shouldRepeatExplore(actionType, remainingStamina, exploreStaminaCost);
+              const repeatAt = nowMs + REPEAT_EXPLORE_DELAY_MS;
 
-            const { explorer } = resolveExplorerEntity(explorerId);
-            if (!explorer) {
-              // Explorer died or no longer exists - remove automation
-              remove(entry.id);
-              snapshotCacheRef.current.delete(entry.id);
-              continue;
-            }
+              if (shouldRepeat) {
+                const endHex = selection.path[selection.path.length - 1]?.hex;
+                if (endHex) {
+                  const normalized = Position.fromContract({ x: endHex.col, y: endHex.row }).getNormalized();
+                  const cache = snapshotCacheRef.current.get(entryId);
+                  if (cache) {
+                    cache.recentlyExplored.add(`${normalized.x},${normalized.y}`);
+                    cache.reusableUntilProjectionChange = true;
+                  }
+                }
+              }
 
-            if (getExplorerOwner(store, explorer) !== ContractAddress(account.address)) {
-              // Explorer owned by someone else - remove automation
-              remove(entry.id);
-              snapshotCacheRef.current.delete(entry.id);
-              continue;
-            }
-
-            // Check stamina before doing anything - wait for regen if too low
-            const staminaManager = new StaminaManager(store, explorerId);
-            const currentStamina = staminaManager.getStamina(currentDefaultTick);
-            const exploreStaminaCost = configManager.getExploreStaminaCost();
-            if (!currentStamina || Number(currentStamina.amount) < exploreStaminaCost) {
-              update(entry.id, { blockedReason: "low-stamina", lastError: null });
-              scheduleNext(entry.id, nowMs);
-              continue;
-            }
-
-            const cached = snapshotCacheRef.current.get(entry.id);
-            const useFastCache = cached?.reusableUntilProjectionChange === true;
-            let snapshot =
-              useFastCache && cached?.snapshot
-                ? cached.snapshot
-                : await buildExplorationSnapshot({
-                    store,
-                    explorerId,
-                    scopeRadius: entry.scopeRadius ?? DEFAULT_SCOPE_RADIUS,
-                    worldSpatialProjection,
-                  });
-
-            if (signal.aborted) return;
-            if (!snapshot) {
-              update(entry.id, { blockedReason: "no-snapshot", lastError: null });
-              scheduleNext(entry.id, nowMs);
-              continue;
-            }
-
-            if (!cached || !useFastCache) {
-              snapshotCacheRef.current.set(entry.id, {
-                snapshot,
-                reusableUntilProjectionChange: false,
-                recentlyExplored: new Set(),
+              update(entryId, {
+                lastRunAt: submittedAt,
+                lastAction: selection.reason,
+                blockedReason: null,
+                lastError: null,
+                ...(shouldRepeat ? { nextRunAt: repeatAt } : {}),
               });
-            }
+              if (!shouldRepeat) {
+                scheduleNext(entryId, nowMs);
+              }
+            },
+          },
+          async (submit) => {
+            for (const entry of due) {
+              if (signal.aborted) return;
+              try {
+                const explorerId = safeInteger(entry.explorerId);
+                if (!Number.isFinite(explorerId) || explorerId <= 0) {
+                  update(entry.id, { blockedReason: "invalid-explorer", lastError: null });
+                  scheduleNext(entry.id, nowMs);
+                  continue;
+                }
 
-            const { actions } = requireActiveGameClient();
-            const planPaths = (map: ExplorationMapSnapshot) =>
-              actions
-                .armyPaths({
-                  explorerId,
-                  structureHexes: map.structureHexes,
-                  armyHexes: map.armyHexes,
-                  exploredHexes: map.exploredTiles,
-                  chestHexes: map.chestHexes,
-                  currentDefaultTick,
-                  playerAddress: ContractAddress(account.address),
-                })
-                .getPaths();
-            let actionPathMap = planPaths(snapshot);
+                const { explorer } = resolveExplorerEntity(explorerId);
+                if (!explorer) {
+                  // Explorer died or no longer exists - remove automation
+                  remove(entry.id);
+                  snapshotCacheRef.current.delete(entry.id);
+                  continue;
+                }
 
-            if (useFastCache && cached) {
-              const filtered = filterFreshExplorationPaths(actionPathMap, cached.recentlyExplored, (hex) => {
-                const normalized = Position.fromContract({ x: hex.col, y: hex.row }).getNormalized();
-                return { x: normalized.x, y: normalized.y };
-              });
+                if (getExplorerOwner(store, explorer) !== ContractAddress(account.address)) {
+                  // Explorer owned by someone else - remove automation
+                  remove(entry.id);
+                  snapshotCacheRef.current.delete(entry.id);
+                  continue;
+                }
 
-              if (filtered.size === 0) {
-                const refreshed = await buildExplorationSnapshot({
-                  store,
-                  explorerId,
-                  scopeRadius: entry.scopeRadius ?? DEFAULT_SCOPE_RADIUS,
-                  worldSpatialProjection,
-                });
+                // Check stamina before doing anything - wait for regen if too low
+                const staminaManager = new StaminaManager(store, explorerId);
+                const currentStamina = staminaManager.getStamina(currentDefaultTick);
+                const exploreStaminaCost = configManager.getExploreStaminaCost();
+                if (!currentStamina || Number(currentStamina.amount) < exploreStaminaCost) {
+                  update(entry.id, { blockedReason: "low-stamina", lastError: null });
+                  scheduleNext(entry.id, nowMs);
+                  continue;
+                }
+
+                const cached = snapshotCacheRef.current.get(entry.id);
+                const useFastCache = cached?.reusableUntilProjectionChange === true;
+                let snapshot =
+                  useFastCache && cached?.snapshot
+                    ? cached.snapshot
+                    : await buildExplorationSnapshot({
+                        store,
+                        explorerId,
+                        scopeRadius: entry.scopeRadius ?? DEFAULT_SCOPE_RADIUS,
+                        worldSpatialProjection,
+                      });
+
                 if (signal.aborted) return;
-                if (!refreshed) {
+                if (!snapshot) {
                   update(entry.id, { blockedReason: "no-snapshot", lastError: null });
                   scheduleNext(entry.id, nowMs);
                   continue;
                 }
-                snapshot = refreshed;
-                snapshotCacheRef.current.set(entry.id, {
-                  snapshot,
-                  reusableUntilProjectionChange: false,
-                  recentlyExplored: new Set(),
-                });
-                actionPathMap = planPaths(snapshot);
-              } else {
-                actionPathMap = filtered;
-              }
-            }
 
-            const strategy = getExplorationStrategy(entry.strategyId ?? DEFAULT_STRATEGY_ID);
-            const selection = strategy.selectNextAction({
-              ...snapshot,
-              explorerId,
-              actionPaths: actionPathMap,
-            });
+                if (!cached || !useFastCache) {
+                  snapshotCacheRef.current.set(entry.id, {
+                    snapshot,
+                    reusableUntilProjectionChange: false,
+                    recentlyExplored: new Set(),
+                  });
+                }
 
-            if (!selection) {
-              update(entry.id, { blockedReason: "no-paths", lastError: null });
-              scheduleNext(entry.id, nowMs);
-              continue;
-            }
+                const { actions } = client;
+                const planPaths = (map: ExplorationMapSnapshot) =>
+                  actions
+                    .armyPaths({
+                      explorerId,
+                      structureHexes: map.structureHexes,
+                      armyHexes: map.armyHexes,
+                      exploredHexes: map.exploredTiles,
+                      chestHexes: map.chestHexes,
+                      currentDefaultTick,
+                      playerAddress: ContractAddress(account.address),
+                    })
+                    .getPaths();
+                let actionPathMap = planPaths(snapshot);
 
-            const actionType = ActionPaths.getActionType(selection.path);
-            await runAutomationTransaction({
-              signer: account.address,
-              operation: `explore:${entry.id}:${entry.nextRunAt}`,
-              signal,
-              submit: () => actions.moveArmy({ explorerId, path: selection.path }),
-              onConfirmed: () => {
-                const effectiveCost = computeEffectiveStaminaCost(selection.path, actionType, exploreStaminaCost);
-                const remainingStamina = Math.max(0, Number(currentStamina.amount) - effectiveCost);
-                const shouldRepeat = shouldRepeatExplore(actionType, remainingStamina, exploreStaminaCost);
-                const repeatAt = nowMs + REPEAT_EXPLORE_DELAY_MS;
+                if (useFastCache && cached) {
+                  const filtered = filterFreshExplorationPaths(actionPathMap, cached.recentlyExplored, (hex) => {
+                    const normalized = Position.fromContract({ x: hex.col, y: hex.row }).getNormalized();
+                    return { x: normalized.x, y: normalized.y };
+                  });
 
-                if (shouldRepeat) {
-                  const endHex = selection.path[selection.path.length - 1]?.hex;
-                  if (endHex) {
-                    const normalized = Position.fromContract({ x: endHex.col, y: endHex.row }).getNormalized();
-                    const cache = snapshotCacheRef.current.get(entry.id);
-                    if (cache) {
-                      cache.recentlyExplored.add(`${normalized.x},${normalized.y}`);
-                      cache.reusableUntilProjectionChange = true;
+                  if (filtered.size === 0) {
+                    const refreshed = await buildExplorationSnapshot({
+                      store,
+                      explorerId,
+                      scopeRadius: entry.scopeRadius ?? DEFAULT_SCOPE_RADIUS,
+                      worldSpatialProjection,
+                    });
+                    if (signal.aborted) return;
+                    if (!refreshed) {
+                      update(entry.id, { blockedReason: "no-snapshot", lastError: null });
+                      scheduleNext(entry.id, nowMs);
+                      continue;
                     }
+                    snapshot = refreshed;
+                    snapshotCacheRef.current.set(entry.id, {
+                      snapshot,
+                      reusableUntilProjectionChange: false,
+                      recentlyExplored: new Set(),
+                    });
+                    actionPathMap = planPaths(snapshot);
+                  } else {
+                    actionPathMap = filtered;
                   }
                 }
 
-                update(entry.id, {
-                  lastRunAt: nowMs,
-                  lastAction: selection.reason,
-                  blockedReason: null,
-                  lastError: null,
-                  ...(shouldRepeat ? { nextRunAt: repeatAt } : {}),
+                const strategy = getExplorationStrategy(entry.strategyId ?? DEFAULT_STRATEGY_ID);
+                const selection = strategy.selectNextAction({
+                  ...snapshot,
+                  explorerId,
+                  actionPaths: actionPathMap,
                 });
-                if (!shouldRepeat) {
+
+                if (!selection) {
+                  update(entry.id, { blockedReason: "no-paths", lastError: null });
                   scheduleNext(entry.id, nowMs);
+                  continue;
                 }
-              },
-            });
-          } catch (error) {
-            if (signal.aborted) return;
-            if (error instanceof AutomationSignerUnavailable || error instanceof AutomationPending) {
-              update(entry.id, { blockedReason: "error", lastError: error.message });
-              return;
+
+                await submit(
+                  {
+                    entryId: entry.id,
+                    explorerId,
+                    selection,
+                    stamina: Number(currentStamina.amount),
+                    exploreStaminaCost,
+                    submittedAt: nowMs,
+                  },
+                  (submitted) =>
+                    client.actions.moveArmy({ explorerId: submitted.explorerId, path: submitted.selection.path }),
+                );
+              } catch (error) {
+                if (signal.aborted) return;
+                if (error instanceof AutomationSignerUnavailable || error instanceof AutomationPending) {
+                  update(entry.id, { blockedReason: "error", lastError: error.message });
+                  return;
+                }
+                const message = error instanceof Error ? error.message : String(error);
+                update(entry.id, {
+                  lastError: message,
+                  blockedReason: "error",
+                });
+                toast.error("Exploration automation failed.");
+                scheduleNext(entry.id, nowMs);
+              }
             }
-            const message = error instanceof Error ? error.message : String(error);
-            update(entry.id, {
-              lastError: message,
-              blockedReason: "error",
-            });
-            toast.error("Exploration automation failed.");
-            scheduleNext(entry.id, nowMs);
-          }
-        }
+          },
+        );
+      } catch (error) {
+        if (!signal.aborted)
+          toast.warning(error instanceof Error ? error.message : "Exploration automation is unavailable.", {
+            id: "exploration-automation-pending",
+          });
       } finally {
         processingRef.current = false;
       }
     };
-  }, [account, store, scheduleNext, remove, resolveExplorerEntity, update]);
+  }, [client, account, store, scheduleNext, remove, resolveExplorerEntity, update]);
 
   useEffect(() => {
     const stop = startAutomationScope((signal) => processRef.current(signal));
@@ -315,5 +341,5 @@ export const useExplorationAutomationRunner = () => {
       subscribedProjectionRef.current = null;
       snapshotCacheRef.current.clear();
     };
-  }, [account, store]);
+  }, [client, account, store]);
 };

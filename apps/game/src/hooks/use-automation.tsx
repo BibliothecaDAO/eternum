@@ -1,3 +1,4 @@
+import { requireActiveGameClient } from "@/sync/active-game-client";
 import {
   buildAutomationPlanSkipMessage,
   buildExecutionSummary,
@@ -10,7 +11,7 @@ import {
 } from "@bibliothecadao/eternum/automation";
 import { startAutomationScope } from "@/ui/features/infrastructure/automation/model/automation-scope";
 import {
-  runAutomationTransaction,
+  createAutomationTask,
   AutomationSignerUnavailable,
   AutomationPending,
 } from "@/ui/features/infrastructure/automation/model/automation-runner";
@@ -99,7 +100,10 @@ const formatCustomPercentagesLog = (percentages: Record<number, ResourceAutomati
 
 type ProcessRealmsResult = { ran: boolean; anyExecuted: boolean };
 
+const runProductionPass = createAutomationTask<{ plan: RealmProductionPlan; runStatusNote?: string }>();
+
 export const useAutomation = () => {
+  const client = requireActiveGameClient();
   const {
     setup: {
       systemCalls: { execute_realm_production_plan },
@@ -213,9 +217,6 @@ export const useAutomation = () => {
       const realmList = Object.values(useAutomationStore.getState().realms).filter(
         (realm) => realm.entityType === "realm" || realm.entityType === "village",
       );
-      if (realmList.length === 0) {
-        return { ran: false, anyExecuted: false };
-      }
 
       const recordRealmSkippedStatus = ({
         realmId,
@@ -239,306 +240,327 @@ export const useAutomation = () => {
       let anyExecuted = false;
 
       try {
-        let skipRemainingRealmsMessage: string | null = null;
-        let signerFaultSurfacedForTick = false;
+        await runProductionPass(
+          {
+            client,
+            signer: starknetSignerAccount.address,
+            signal,
+            onConfirmed: ({ plan, runStatusNote }) => {
+              const summary = buildExecutionSummary(plan, Date.now());
+              recordExecution(plan.realmKey, summary);
+              recordStatus(plan.realmKey, {
+                status: "success",
+                message: typeof runStatusNote === "string" ? runStatusNote : undefined,
+                attemptedAt: Date.now(),
+                consecutiveFailures: 0,
+              });
+              verboseLog("[Automation] Automation execution complete", {
+                realmId: plan.realmId,
+                realmName: plan.realmName,
+                outputs: labelResourceRecord(plan.outputsByResource),
+                consumption: labelResourceRecord(plan.consumptionByResource),
+                resourceExecutions: labelExecutionEntries(plan.resourceExecutions),
+                laborExecutions: labelExecutionEntries(plan.laborExecutions),
+                skipped: plan.skipped,
+              });
+              anyExecuted = true;
+            },
+          },
+          async (submit) => {
+            let skipRemainingRealmsMessage: string | null = null;
+            let signerFaultSurfacedForTick = false;
 
-        verboseLog(`[Automation] Starting just-in-time planning for ${realmList.length} realms`);
-        for (const realmConfig of realmList) {
-          if (signal.aborted) break;
-          const realmLabel = realmConfig.realmName ?? `Realm ${realmConfig.realmId}`;
+            verboseLog(`[Automation] Starting just-in-time planning for ${realmList.length} realms`);
+            for (const realmConfig of realmList) {
+              if (signal.aborted) break;
+              const realmLabel = realmConfig.realmName ?? `Realm ${realmConfig.realmId}`;
 
-          if (skipRemainingRealmsMessage) {
-            recordRealmSkippedStatus({
-              realmId: realmConfig.realmId,
-              message: skipRemainingRealmsMessage,
-            });
-            continue;
-          }
+              if (skipRemainingRealmsMessage) {
+                recordRealmSkippedStatus({
+                  realmId: realmConfig.realmId,
+                  message: skipRemainingRealmsMessage,
+                });
+                continue;
+              }
 
-          if (configManager.isGameOver()) {
-            skipRemainingRealmsMessage = "Game has ended";
-            recordRealmSkippedStatus({
-              realmId: realmConfig.realmId,
-              message: skipRemainingRealmsMessage,
-            });
-            continue;
-          }
+              if (configManager.isGameOver()) {
+                skipRemainingRealmsMessage = "Game has ended";
+                recordRealmSkippedStatus({
+                  realmId: realmConfig.realmId,
+                  message: skipRemainingRealmsMessage,
+                });
+                continue;
+              }
 
-          const signerAddress = starknetSignerAccount?.address;
-          if (!signerAddress || accountAddress() === null) {
-            skipRemainingRealmsMessage = "Signer unavailable";
-            recordRealmSkippedStatus({
-              realmId: realmConfig.realmId,
-              message: skipRemainingRealmsMessage,
-            });
-            continue;
-          }
+              const signerAddress = starknetSignerAccount?.address;
+              if (!signerAddress || accountAddress() === null) {
+                skipRemainingRealmsMessage = "Signer unavailable";
+                recordRealmSkippedStatus({
+                  realmId: realmConfig.realmId,
+                  message: skipRemainingRealmsMessage,
+                });
+                continue;
+              }
 
-          let activeRealmConfig = realmConfig;
-          let runStatusNote: string | undefined;
-          const realmIdNum = safeInteger(activeRealmConfig.realmId);
-          if (
-            Number.isFinite(realmIdNum) &&
-            realmIdNum > 0 &&
-            !isEntityOwnedByAccount(store, realmIdNum, signerAddress)
-          ) {
-            recordRealmSkippedStatus({
-              realmId: activeRealmConfig.realmId,
-              message: "Realm no longer owned",
-            });
-            continue;
-          }
+              let activeRealmConfig = realmConfig;
+              let runStatusNote: string | undefined;
+              const realmIdNum = safeInteger(activeRealmConfig.realmId);
+              if (
+                Number.isFinite(realmIdNum) &&
+                realmIdNum > 0 &&
+                !isEntityOwnedByAccount(store, realmIdNum, signerAddress)
+              ) {
+                recordRealmSkippedStatus({
+                  realmId: activeRealmConfig.realmId,
+                  message: "Realm no longer owned",
+                });
+                continue;
+              }
 
-          // Rebuild the floor projection immediately before each realm submission so
-          // projected balances reflect the freshest local state available at submit time.
-          const { currentDefaultTick } = getBlockTimestamp();
-          const rawSnapshot: RealmResourceSnapshot =
-            Number.isFinite(realmIdNum) && realmIdNum > 0
-              ? buildRealmResourceSnapshot({
-                  store,
-                  realmId: realmIdNum,
-                  currentTick: currentDefaultTick,
-                })
-              : new Map();
-          const snapshot = rawSnapshot;
+              // Rebuild the floor projection immediately before each realm submission so
+              // projected balances reflect the freshest local state available at submit time.
+              const { currentDefaultTick } = getBlockTimestamp();
+              const rawSnapshot: RealmResourceSnapshot =
+                Number.isFinite(realmIdNum) && realmIdNum > 0
+                  ? buildRealmResourceSnapshot({
+                      store,
+                      realmId: realmIdNum,
+                      currentTick: currentDefaultTick,
+                    })
+                  : new Map();
+              const snapshot = rawSnapshot;
 
-          verboseLog("[Automation] Prepared realm snapshot", {
-            realmId: activeRealmConfig.realmId,
-            realmName: realmLabel,
-            blockTick: currentDefaultTick,
-            balances: formatSnapshotLog(snapshot, activeRealmConfig.customPercentages),
-          });
-
-          const producedResourceIds: ResourcesIds[] = [];
-          snapshot.forEach((entry) => {
-            if (entry.hasActiveProduction) {
-              producedResourceIds.push(entry.resourceId);
-            }
-          });
-
-          if (activeRealmConfig.presetId === "idle") {
-            verboseLog("[Automation] Skipping automation run due to idle preset", {
-              realmId: activeRealmConfig.realmId,
-              realmName: realmLabel,
-            });
-            recordRealmSkippedStatus({
-              realmId: activeRealmConfig.realmId,
-              message: "Idle preset",
-              resetConsecutiveFailures: true,
-            });
-            continue;
-          }
-
-          if (activeRealmConfig.presetId === "custom" && activeRealmConfig.autoBalance) {
-            try {
-              const resourceIdsForCheck = Array.from(
-                new Set<ResourcesIds>([
-                  ...producedResourceIds,
-                  ...Object.keys(activeRealmConfig.customPercentages ?? {}).map((key) => Number(key) as ResourcesIds),
-                ]),
-              );
-
-              const effectivePercentages: Record<number, ResourceAutomationPercentages> = {};
-              const smartDefaults = calculatePresetAllocations(
-                resourceIdsForCheck,
-                "smart",
-                activeRealmConfig.entityType,
-              );
-              resourceIdsForCheck.forEach((resourceId) => {
-                const stored = activeRealmConfig.customPercentages?.[resourceId];
-                const smartDefault = smartDefaults.get(resourceId);
-                const baseline =
-                  resourceId === ResourcesIds.Donkey
-                    ? { resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT, laborToResource: 0 }
-                    : { ...DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES };
-                effectivePercentages[resourceId] = stored ?? smartDefault ?? baseline;
+              verboseLog("[Automation] Prepared realm snapshot", {
+                realmId: activeRealmConfig.realmId,
+                realmName: realmLabel,
+                blockTick: currentDefaultTick,
+                balances: formatSnapshotLog(snapshot, activeRealmConfig.customPercentages),
               });
 
-              const { resourceOver, laborOver } = getAutomationOverallocation(
-                effectivePercentages,
-                activeRealmConfig.entityType,
-              );
+              const producedResourceIds: ResourcesIds[] = [];
+              snapshot.forEach((entry) => {
+                if (entry.hasActiveProduction) {
+                  producedResourceIds.push(entry.resourceId);
+                }
+              });
 
-              if (resourceOver || laborOver) {
-                runStatusNote = "Custom allocation over budget; used Smart for this run";
-                verboseLog("[Automation] Using smart preset for this run due to over-allocation", {
+              if (activeRealmConfig.presetId === "idle") {
+                verboseLog("[Automation] Skipping automation run due to idle preset", {
                   realmId: activeRealmConfig.realmId,
                   realmName: realmLabel,
-                  producedResourceIds,
-                  resourceOver,
-                  laborOver,
                 });
-
-                activeRealmConfig = {
-                  ...activeRealmConfig,
-                  presetId: "smart",
-                  customPercentages: {},
-                };
+                recordRealmSkippedStatus({
+                  realmId: activeRealmConfig.realmId,
+                  message: "Idle preset",
+                  resetConsecutiveFailures: true,
+                });
+                continue;
               }
-            } catch (error) {
-              console.error("[Automation] Failed to auto-balance custom allocations", activeRealmConfig.realmId, error);
-            }
-          }
 
-          const plan = buildRealmProductionPlan({
-            realmConfig: activeRealmConfig,
-            snapshot,
-          });
+              if (activeRealmConfig.presetId === "custom" && activeRealmConfig.autoBalance) {
+                try {
+                  const resourceIdsForCheck = Array.from(
+                    new Set<ResourcesIds>([
+                      ...producedResourceIds,
+                      ...Object.keys(activeRealmConfig.customPercentages ?? {}).map(
+                        (key) => Number(key) as ResourcesIds,
+                      ),
+                    ]),
+                  );
 
-          const planLogPayload = {
-            realmId: plan.realmId,
-            realmName: realmLabel,
-            presetId: activeRealmConfig.presetId,
-            autoBalance: activeRealmConfig.autoBalance,
-            evaluatedResources: plan.evaluatedResourceIds.map((resourceId) => ({
-              resourceId,
-              resource: resolveResourceLabel(resourceId),
-            })),
-            configuredResources: formatCustomPercentagesLog(activeRealmConfig.customPercentages),
-            snapshot: formatSnapshotLog(snapshot, activeRealmConfig.customPercentages),
-            callset: labelPlanCallset(plan),
-            consumption: labelResourceRecord(plan.consumptionByResource),
-            outputs: labelResourceRecord(plan.outputsByResource),
-            skipped: plan.skipped.map((entry) => ({
-              ...entry,
-              resource: resolveResourceLabel(entry.resourceId),
-            })),
-          };
+                  const effectivePercentages: Record<number, ResourceAutomationPercentages> = {};
+                  const smartDefaults = calculatePresetAllocations(
+                    resourceIdsForCheck,
+                    "smart",
+                    activeRealmConfig.entityType,
+                  );
+                  resourceIdsForCheck.forEach((resourceId) => {
+                    const stored = activeRealmConfig.customPercentages?.[resourceId];
+                    const smartDefault = smartDefaults.get(resourceId);
+                    const baseline =
+                      resourceId === ResourcesIds.Donkey
+                        ? { resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT, laborToResource: 0 }
+                        : { ...DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES };
+                    effectivePercentages[resourceId] = stored ?? smartDefault ?? baseline;
+                  });
 
-          verboseLog("[Automation] Planned production run", planLogPayload);
+                  const { resourceOver, laborOver } = getAutomationOverallocation(
+                    effectivePercentages,
+                    activeRealmConfig.entityType,
+                  );
 
-          if (!planHasExecutableCalls(plan)) {
-            verboseLog("[Automation] No executable automation calls detected", planLogPayload);
-            recordExecution(activeRealmConfig.realmId, buildExecutionSummary(plan, Date.now()));
-            recordRealmSkippedStatus({
-              realmId: activeRealmConfig.realmId,
-              message: [runStatusNote, buildAutomationPlanSkipMessage(plan)].filter(Boolean).join("; "),
-              resetConsecutiveFailures: true,
-            });
-            continue;
-          }
+                  if (resourceOver || laborOver) {
+                    runStatusNote = "Custom allocation over budget; used Smart for this run";
+                    verboseLog("[Automation] Using smart preset for this run due to over-allocation", {
+                      realmId: activeRealmConfig.realmId,
+                      realmName: realmLabel,
+                      producedResourceIds,
+                      resourceOver,
+                      laborOver,
+                    });
 
-          if (configManager.isGameOver()) {
-            skipRemainingRealmsMessage = "Game has ended";
-            recordRealmSkippedStatus({
-              realmId: activeRealmConfig.realmId,
-              message: skipRemainingRealmsMessage,
-            });
-            continue;
-          }
-          if (
-            Number.isFinite(realmIdNum) &&
-            realmIdNum > 0 &&
-            !isEntityOwnedByAccount(store, realmIdNum, signerAddress)
-          ) {
-            recordRealmSkippedStatus({
-              realmId: activeRealmConfig.realmId,
-              message: "Realm no longer owned",
-            });
-            continue;
-          }
-
-          const planLogPayloadWithStatus = {
-            ...planLogPayload,
-            runStatusNote,
-          };
-
-          verboseLog("[Automation] Executing production plan", planLogPayloadWithStatus);
-
-          try {
-            await runAutomationTransaction({
-              signer: starknetSignerAccount.address,
-              operation: `production:${realmConfig.realmId}`,
-              signal,
-              submit: () =>
-                execute_realm_production_plan({
-                  signer: starknetSignerAccount,
-                  realm_entity_id: plan.realmId,
-                  skipQueue: true,
-                  resource_to_resource: plan.callset.resourceToResource.map((item) => ({
-                    resource_id: item.resourceId,
-                    cycles: item.cycles,
-                  })),
-                  labor_to_resource: plan.callset.laborToResource.map((item) => ({
-                    resource_id: item.resourceId,
-                    cycles: item.cycles,
-                  })),
-                }),
-              onConfirmed: () => {
-                const summary = buildExecutionSummary(plan, Date.now());
-                recordExecution(activeRealmConfig.realmId, summary);
-                recordStatus(activeRealmConfig.realmId, {
-                  status: "success",
-                  message:
-                    typeof planLogPayloadWithStatus.runStatusNote === "string"
-                      ? planLogPayloadWithStatus.runStatusNote
-                      : undefined,
-                  attemptedAt: Date.now(),
-                  consecutiveFailures: 0,
-                });
-                verboseLog("[Automation] Automation execution complete", {
-                  realmId: plan.realmId,
-                  realmName: realmLabel,
-                  outputs: planLogPayload.outputs,
-                  consumption: planLogPayload.consumption,
-                  resourceExecutions: labelExecutionEntries(plan.resourceExecutions),
-                  laborExecutions: labelExecutionEntries(plan.laborExecutions),
-                  skipped: planLogPayload.skipped,
-                });
-                anyExecuted = true;
-              },
-            });
-          } catch (rawError) {
-            if (signal.aborted) break;
-            const errorMessage = rawError instanceof Error ? rawError.message : "Automation transaction failed";
-            const isSignerFault =
-              rawError instanceof AutomationSignerUnavailable || rawError instanceof AutomationPending;
-
-            console.error(`Automation: Failed to execute plan for ${realmLabel}`, {
-              error: rawError,
-              message: errorMessage,
-            });
-
-            const prev = getRealmConfig(activeRealmConfig.realmId);
-            recordStatus(activeRealmConfig.realmId, {
-              status: isSignerFault ? "skipped" : "failed",
-              message: errorMessage,
-              attemptedAt: Date.now(),
-              consecutiveFailures: isSignerFault
-                ? (prev?.lastStatus?.consecutiveFailures ?? 0)
-                : (prev?.lastStatus?.consecutiveFailures ?? 0) + 1,
-            });
-
-            if (isSignerFault) {
-              skipRemainingRealmsMessage = errorMessage;
-              if (!signerFaultSurfacedForTick) {
-                signerFaultSurfacedForTick = true;
-                toast.warning(`Automation paused: ${errorMessage}`, { id: "production-automation-pending" });
+                    activeRealmConfig = {
+                      ...activeRealmConfig,
+                      presetId: "smart",
+                      customPercentages: {},
+                    };
+                  }
+                } catch (error) {
+                  console.error(
+                    "[Automation] Failed to auto-balance custom allocations",
+                    activeRealmConfig.realmId,
+                    error,
+                  );
+                }
               }
-            } else {
-              toast.error(`Automation failed for ${realmLabel}: ${errorMessage}`);
-              if (isInsufficientResourceBalanceRevert(errorMessage)) {
-                console.warn(
-                  `[Automation] Insufficient-balance revert for ${realmLabel}; the next Herald Resource diff will reconcile the projection.`,
-                  labelResourceRecord(plan.consumptionByResource),
+
+              const plan = buildRealmProductionPlan({
+                realmConfig: activeRealmConfig,
+                snapshot,
+              });
+
+              const planLogPayload = {
+                realmId: plan.realmId,
+                realmName: realmLabel,
+                presetId: activeRealmConfig.presetId,
+                autoBalance: activeRealmConfig.autoBalance,
+                evaluatedResources: plan.evaluatedResourceIds.map((resourceId) => ({
+                  resourceId,
+                  resource: resolveResourceLabel(resourceId),
+                })),
+                configuredResources: formatCustomPercentagesLog(activeRealmConfig.customPercentages),
+                snapshot: formatSnapshotLog(snapshot, activeRealmConfig.customPercentages),
+                callset: labelPlanCallset(plan),
+                consumption: labelResourceRecord(plan.consumptionByResource),
+                outputs: labelResourceRecord(plan.outputsByResource),
+                skipped: plan.skipped.map((entry) => ({
+                  ...entry,
+                  resource: resolveResourceLabel(entry.resourceId),
+                })),
+              };
+
+              verboseLog("[Automation] Planned production run", planLogPayload);
+
+              if (!planHasExecutableCalls(plan)) {
+                verboseLog("[Automation] No executable automation calls detected", planLogPayload);
+                recordExecution(activeRealmConfig.realmId, buildExecutionSummary(plan, Date.now()));
+                recordRealmSkippedStatus({
+                  realmId: activeRealmConfig.realmId,
+                  message: [runStatusNote, buildAutomationPlanSkipMessage(plan)].filter(Boolean).join("; "),
+                  resetConsecutiveFailures: true,
+                });
+                continue;
+              }
+
+              if (configManager.isGameOver()) {
+                skipRemainingRealmsMessage = "Game has ended";
+                recordRealmSkippedStatus({
+                  realmId: activeRealmConfig.realmId,
+                  message: skipRemainingRealmsMessage,
+                });
+                continue;
+              }
+              if (
+                Number.isFinite(realmIdNum) &&
+                realmIdNum > 0 &&
+                !isEntityOwnedByAccount(store, realmIdNum, signerAddress)
+              ) {
+                recordRealmSkippedStatus({
+                  realmId: activeRealmConfig.realmId,
+                  message: "Realm no longer owned",
+                });
+                continue;
+              }
+
+              const planLogPayloadWithStatus = {
+                ...planLogPayload,
+                runStatusNote,
+              };
+
+              verboseLog("[Automation] Executing production plan", planLogPayloadWithStatus);
+
+              try {
+                await submit({ plan, runStatusNote }, ({ plan: submitted }) =>
+                  execute_realm_production_plan({
+                    signer: starknetSignerAccount,
+                    realm_entity_id: submitted.realmId,
+                    skipQueue: true,
+                    resource_to_resource: submitted.callset.resourceToResource.map((item) => ({
+                      resource_id: item.resourceId,
+                      cycles: item.cycles,
+                    })),
+                    labor_to_resource: submitted.callset.laborToResource.map((item) => ({
+                      resource_id: item.resourceId,
+                      cycles: item.cycles,
+                    })),
+                  }),
                 );
+              } catch (rawError) {
+                if (signal.aborted) break;
+                const errorMessage = rawError instanceof Error ? rawError.message : "Automation transaction failed";
+                const isSignerFault =
+                  rawError instanceof AutomationSignerUnavailable || rawError instanceof AutomationPending;
+
+                console.error(`Automation: Failed to execute plan for ${realmLabel}`, {
+                  error: rawError,
+                  message: errorMessage,
+                });
+
+                const prev = getRealmConfig(activeRealmConfig.realmId);
+                recordStatus(activeRealmConfig.realmId, {
+                  status: isSignerFault ? "skipped" : "failed",
+                  message: errorMessage,
+                  attemptedAt: Date.now(),
+                  consecutiveFailures: isSignerFault
+                    ? (prev?.lastStatus?.consecutiveFailures ?? 0)
+                    : (prev?.lastStatus?.consecutiveFailures ?? 0) + 1,
+                });
+
+                if (isSignerFault) {
+                  skipRemainingRealmsMessage = errorMessage;
+                  if (!signerFaultSurfacedForTick) {
+                    signerFaultSurfacedForTick = true;
+                    toast.warning(`Automation paused: ${errorMessage}`, { id: "production-automation-pending" });
+                  }
+                } else {
+                  toast.error(`Automation failed for ${realmLabel}: ${errorMessage}`);
+                  if (isInsufficientResourceBalanceRevert(errorMessage)) {
+                    console.warn(
+                      `[Automation] Insufficient-balance revert for ${realmLabel}; the next Herald Resource diff will reconcile the projection.`,
+                      labelResourceRecord(plan.consumptionByResource),
+                    );
+                  }
+                }
               }
             }
-          }
-        }
 
-        if (skipRemainingRealmsMessage) {
-          verboseLog("[Automation] Pass ended early", {
-            reason: skipRemainingRealmsMessage,
+            if (skipRemainingRealmsMessage) {
+              verboseLog("[Automation] Pass ended early", {
+                reason: skipRemainingRealmsMessage,
+              });
+            }
+          },
+        );
+      } catch (error) {
+        if (!signal.aborted)
+          toast.warning(error instanceof Error ? error.message : "Production automation is unavailable.", {
+            id: "production-automation-pending",
           });
-        }
       } finally {
         processingRef.current = false;
       }
 
       return { ran: true, anyExecuted };
     },
-    [store, execute_realm_production_plan, recordExecution, recordStatus, starknetSignerAccount, getRealmConfig],
+    [
+      client,
+      store,
+      execute_realm_production_plan,
+      recordExecution,
+      recordStatus,
+      starknetSignerAccount,
+      getRealmConfig,
+    ],
   );
 
   useEffect(() => {
@@ -587,5 +609,5 @@ export const useAutomation = () => {
       stop();
       setNextRunTimestampRef.current(null);
     };
-  }, [store, starknetSignerAccount]);
+  }, [client, store, starknetSignerAccount]);
 };

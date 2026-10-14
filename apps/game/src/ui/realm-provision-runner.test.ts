@@ -44,9 +44,9 @@ const harness = (
       notify = head;
       return unsubscribe;
     },
-    submit: async (id, confirmed, signal) => {
-      await submit(id, signal);
-      if (!signal.aborted) confirmed();
+    submit: async (realm, confirmed, signal) => {
+      await submit(realm.entityId, signal);
+      if (!signal.aborted) confirmed(realm);
     },
     report,
   });

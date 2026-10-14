@@ -28,7 +28,11 @@ interface RealmProvisionRunnerDeps {
   nowSeconds(): number;
   hasSigner(): boolean;
   subscribeHeads(head: () => void): () => void;
-  submit(realmId: number, confirmed: () => void, signal: AbortSignal): Promise<void>;
+  submit(
+    realm: RealmProvisionCandidate,
+    confirmed: (submitted: RealmProvisionCandidate) => void,
+    signal: AbortSignal,
+  ): Promise<void>;
   report: {
     provisioned(realms: RealmProvisionCandidate[]): void;
     failed(realms: RealmProvisionCandidate[], error: unknown, retry: RealmProvisionRetry): void;
@@ -73,10 +77,10 @@ export const startRealmProvisionRunner = (deps: RealmProvisionRunnerDeps): (() =
             yield* Effect.tryPromise({
               try: (signal) =>
                 deps.submit(
-                  realm.entityId,
-                  () => {
-                    confirmed.add(realm.entityId);
-                    deps.report.provisioned([realm]);
+                  realm,
+                  (submitted) => {
+                    confirmed.add(submitted.entityId);
+                    deps.report.provisioned([submitted]);
                   },
                   signal,
                 ),

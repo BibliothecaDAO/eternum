@@ -17,6 +17,8 @@ const state = vi.hoisted(() => ({
   over: false,
   toast: { error: vi.fn(), warning: vi.fn(), success: vi.fn() },
 }));
+const identity = vi.hoisted(() => ({ gameId: 1, shard: { chainId: "0x1", worldAddress: "0xabc" } }));
+vi.mock("@/sync/active-game-client", () => ({ requireActiveGameClient: () => identity }));
 vi.mock("@/hooks/context/game-context", () => ({
   useGame: () => ({
     setup: { store: state.store, systemCalls: state.systemCalls },
@@ -122,6 +124,7 @@ it("keeps a canceled submission for the remounted runner without late updates or
   await tick();
   await act(async () => first.unmount());
   roots.splice(roots.indexOf(first), 1);
+  state.entries.one.resourceConfigs = [{ resourceId: ResourcesIds.Wood, amount: 99 }];
   resolve();
   await tick();
   expect(state.update).not.toHaveBeenCalled();
@@ -131,6 +134,11 @@ it("keeps a canceled submission for the remounted runner without late updates or
   expect(state.systemCalls.send_resources_multiple).toHaveBeenCalledTimes(1);
   expect(state.update).toHaveBeenCalledTimes(1);
   expect(state.update).toHaveBeenCalledWith("one", { lastRunAt: 100_000 });
+  expect(state.toast.success).toHaveBeenCalledWith("Transfer scheduled: 10 Wood");
+  expect(state.systemCalls.send_resources_multiple.mock.calls[0][0].calls[0].resources).toEqual([
+    ResourcesIds.Wood,
+    BigInt(10 * RESOURCE_PRECISION),
+  ]);
 });
 it("blocks a missing balance rather than sending from a fabricated zero", async () => {
   vi.spyOn(console, "error").mockImplementation(() => {});
