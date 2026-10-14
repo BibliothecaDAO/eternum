@@ -1,4 +1,4 @@
-import { extractErrorMessage } from "@bibliothecadao/provider";
+import { classifyTransactionError, extractErrorMessage } from "@bibliothecadao/provider";
 import { gameTaskScope } from "./game-task-scope";
 import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
@@ -20,19 +20,10 @@ export class AutomationRejected extends Data.TaggedError("AutomationRejected")<{
 
 const classifySubmissionError = (cause: unknown) => {
   const message = extractErrorMessage(cause);
-  if (
-    cause instanceof Error &&
-    (cause.name === "TransactionNoAnswerError" ||
-      cause.name === "AbortError" ||
-      cause.message === "Game client disposed")
-  ) {
-    return new AutomationPending({ message, cause });
-  }
-  if (
-    /nonce|account validation failed|account balance|duplicate transaction|insufficient (?:max )?fee/i.test(message)
-  ) {
+  const { kind } = classifyTransactionError(cause);
+  if (kind === "no_answer" || kind === "interrupted") return new AutomationPending({ message, cause });
+  if (kind === "signer_unavailable" || kind === "resource_bounds")
     return new AutomationSignerUnavailable({ message, cause });
-  }
   return new AutomationRejected({ message, cause });
 };
 

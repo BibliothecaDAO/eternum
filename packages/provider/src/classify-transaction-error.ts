@@ -1,3 +1,5 @@
+import * as Data from "effect/Data";
+
 /**
  * Single home for making sense of unknown transaction errors.
  *
@@ -235,6 +237,10 @@ export const extractErrorMessage = (error: unknown, fallback = "Unknown error"):
 
   while (queue.length > 0) {
     const current = queue.shift();
+    if (current && typeof current === "object") {
+      if (visited.has(current)) continue;
+      visited.add(current);
+    }
     const directMessage = getSpecificMessage(current);
     if (directMessage) {
       return directMessage;
@@ -252,8 +258,6 @@ export const extractErrorMessage = (error: unknown, fallback = "Unknown error"):
     }
 
     if (current && typeof current === "object") {
-      if (visited.has(current)) continue;
-      visited.add(current);
       const record = current as Record<string, unknown>;
 
       const directCandidates = [
@@ -312,7 +316,16 @@ export const formatErrorForConsole = (error: unknown, fallback = "Unknown error"
   extractErrorMessage(error, fallback).replace(/\s+/g, " ").trim();
 
 /** @public */
-export type TransactionErrorKind = "resource_bounds" | "user_cancelled" | "reverted" | "submit_failed" | "unknown";
+export type TransactionErrorKind =
+  | "resource_bounds"
+  | "user_cancelled"
+  | "reverted"
+  | "submit_failed"
+  | "no_answer"
+  | "interrupted"
+  | "signer_unavailable"
+  | "connection_destroyed"
+  | "unknown";
 
 /** @public */
 export interface ClassifiedTransactionError {
@@ -320,10 +333,9 @@ export interface ClassifiedTransactionError {
   reason?: string;
 }
 
-// String-shaped wallet cancels (mirrors the Sentry-side patterns in
-// client observability/transaction-failure-reporting.ts).
+// Wallet adapters expose both structured codes and string-shaped cancellations.
 const WALLET_REJECTION_PATTERNS = [
-  /4001/,
+  /\b4001\b/,
   /action[_ ]?rejected/i,
   /cancelled by user/i,
   /denied by user/i,
@@ -359,38 +371,71 @@ const asClassifiedReason = (error: unknown): string | undefined => {
   return reason || undefined;
 };
 
-const buildSearchableErrorText = (error: unknown): string => {
+const inspectTransactionError = (error: unknown) => {
   const parts: string[] = [];
-  if (typeof error === "string") parts.push(error);
-  if (error instanceof Error) parts.push(error.message);
-  if (error && typeof error === "object") {
-    const message = (error as { message?: unknown }).message;
-    if (typeof message === "string") parts.push(message);
-    try {
-      parts.push(JSON.stringify(error));
-    } catch {
-      // Cyclic provider errors still contribute their direct message.
+  const names = new Set<string>();
+  const queue = [error];
+  const seen = new Set<object>();
+  while (queue.length) {
+    const value = queue.shift();
+    if (typeof value === "string" || typeof value === "number") {
+      parts.push(String(value));
+    } else if (value && typeof value === "object" && !seen.has(value)) {
+      seen.add(value);
+      const record = value as Record<string, unknown>;
+      if (value instanceof Error) names.add(value.name);
+      queue.push(
+        ...(Array.isArray(value)
+          ? value
+          : [
+              record.message,
+              record.code,
+              record.reason,
+              record.data,
+              record.error,
+              record.cause,
+              record.details,
+              record.execution_error,
+              record.executionError,
+              record.revert_reason,
+              record.revertReason,
+              record.shortMessage,
+            ]),
+      );
     }
   }
-  const readable = extractErrorMessage(error, "");
-  if (readable) parts.push(readable);
-  return parts.join("\n");
+  return { text: parts.join("\n"), names };
 };
+
+/** A provider boundary records the decision once; consumers use it without reparsing the wrapper. */
+export class TransactionFailure extends Data.TaggedError("TransactionFailure")<{
+  classification: ClassifiedTransactionError;
+  message: string;
+  cause: unknown;
+}> {}
 
 /**
  * Decide what a transaction failure means for the player.
  *
- * Decision order: resource-bound failures → wallet-rejection string markers →
- * revert string markers → submit-failure string markers → unknown.
+ * Lifecycle failures retain uncertainty. External provider messages are classified
+ * here once; resource bounds take precedence over generic wallet/revert markers.
  */
 export const classifyTransactionError = (error: unknown): ClassifiedTransactionError => {
-  const searchableText = buildSearchableErrorText(error);
+  if (error instanceof TransactionFailure) return error.classification;
+  const { text: searchableText, names } = inspectTransactionError(error);
+  if (names.has("TransactionNoAnswerError")) return { kind: "no_answer", reason: asClassifiedReason(error) };
+  if (names.has("AbortError") || searchableText.includes("Game client disposed"))
+    return { kind: "interrupted", reason: asClassifiedReason(error) };
+  if (/destroyed connection|connection destroyed/i.test(searchableText))
+    return { kind: "connection_destroyed", reason: asClassifiedReason(error) };
   if (RESOURCE_BOUNDS_PATTERNS.some((pattern) => pattern.test(searchableText))) {
     return { kind: "resource_bounds", reason: asClassifiedReason(error) };
   }
   if (WALLET_REJECTION_PATTERNS.some((pattern) => pattern.test(searchableText))) {
     return { kind: "user_cancelled" };
   }
+  if (/nonce|account validation failed|account balance|duplicate transaction/i.test(searchableText))
+    return { kind: "signer_unavailable", reason: asClassifiedReason(error) };
   if (REVERT_MARKER_PATTERNS.some((pattern) => pattern.test(searchableText))) {
     return { kind: "reverted", reason: asClassifiedReason(error) };
   }

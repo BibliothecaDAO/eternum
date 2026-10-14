@@ -27,7 +27,7 @@ import {
   uint256,
   shortString,
 } from "starknet";
-import { extractErrorMessage } from "./classify-transaction-error";
+import { classifyTransactionError, TransactionFailure, extractErrorMessage } from "./classify-transaction-error";
 import { ACTION_CHECKING_AFTER_MS, TransactionNotSentError } from "./transaction-not-sent";
 import {
   TransactionFailedPayload,
@@ -52,7 +52,12 @@ type SubmittedTransaction = {
   inBlock?: Promise<void>;
 };
 
-export { classifyTransactionError, extractErrorMessage, formatErrorForConsole } from "./classify-transaction-error";
+export {
+  classifyTransactionError,
+  TransactionFailure,
+  extractErrorMessage,
+  formatErrorForConsole,
+} from "./classify-transaction-error";
 export type { ClassifiedTransactionError } from "./classify-transaction-error";
 export { ACTION_CHECKING_AFTER_MS, TransactionNotSentError } from "./transaction-not-sent";
 export { TransactionType } from "./types";
@@ -68,11 +73,6 @@ export type {
   TransactionStreamWaiter,
 } from "./types";
 
-const matchesDestroyedConnectionError = (error: unknown): boolean => {
-  const message = extractErrorMessage(error, "").toLowerCase();
-  return message.includes("destroyed connection") || message.includes("connection destroyed");
-};
-
 const classifySubmitFailure = (
   error: unknown,
 ): {
@@ -81,7 +81,7 @@ const classifySubmitFailure = (
   hasTxHash: boolean;
   retrySafety: TransactionRetrySafety;
 } => {
-  if (matchesDestroyedConnectionError(error)) {
+  if (classifyTransactionError(error).kind === "connection_destroyed") {
     return {
       failureKind: "provider_connection_destroyed",
       providerState: "destroyed",
@@ -133,9 +133,15 @@ const attachTransactionFailureStage = (
   fallbackMessage = "Unknown error",
 ): TransactionFailureError => {
   const stagedError: TransactionFailureError =
-    error instanceof Error
-      ? (error as TransactionFailureError)
-      : (new Error(extractErrorMessage(error, fallbackMessage)) as TransactionFailureError);
+    error instanceof TransactionNotSentError || error instanceof TransactionFailure
+      ? error
+      : new TransactionFailure({
+          classification: classifyTransactionError(error),
+          message: extractErrorMessage(error, fallbackMessage),
+          cause: error,
+        });
+  if (error instanceof Error && (error as TransactionFailureError).rawRevertReason !== undefined)
+    stagedError.rawRevertReason = (error as TransactionFailureError).rawRevertReason;
   stagedError.transactionFailureStage = stage;
   return stagedError;
 };
@@ -437,7 +443,8 @@ export class EternumProvider extends EventEmitter {
       }
       submitStartedAt = Date.now();
       tx = await this.submitTransaction(signer, transactionDetails);
-    } catch (error) {
+    } catch (cause) {
+      const error = attachTransactionFailureStage(cause, "submit");
       const message = extractErrorMessage(error);
       const submitFailure = classifySubmitFailure(error);
       releaseActorExecutionLock?.();

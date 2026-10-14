@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { classifyTransactionError, extractErrorMessage, formatErrorForConsole } from "./classify-transaction-error";
+import {
+  TransactionFailure,
+  classifyTransactionError,
+  extractErrorMessage,
+  formatErrorForConsole,
+} from "./classify-transaction-error";
 
 describe("classifyTransactionError", () => {
   describe("resource bounds", () => {
@@ -102,4 +107,39 @@ describe("formatErrorForConsole", () => {
       "unrecognized provider error",
     );
   });
+});
+
+it("classifies nested causes and terminates on cyclic Errors and arrays", () => {
+  const cause = new Error("User rejected the transaction");
+  const wrapped = new Error("wrapper", { cause });
+  expect(classifyTransactionError(wrapped)).toEqual({ kind: "user_cancelled" });
+  const cyclic = new Error("Unknown error");
+  cyclic.cause = cyclic;
+  expect(extractErrorMessage(cyclic, "fallback")).toBe("fallback");
+  expect(classifyTransactionError(cyclic).kind).toBe("unknown");
+  const array: unknown[] = [];
+  array.push(array);
+  expect(extractErrorMessage(array, "fallback")).toBe("fallback");
+});
+
+it("uses structured cancellation codes without interpreting addresses as codes", () => {
+  expect(classifyTransactionError({ code: 4001 }).kind).toBe("user_cancelled");
+  expect(classifyTransactionError({ message: "rpc failed at 0x4001abc" }).kind).toBe("unknown");
+});
+
+it.each([
+  [Object.assign(new Error("No answer"), { name: "TransactionNoAnswerError" }), "no_answer"],
+  [Object.assign(new Error("stopped"), { name: "AbortError" }), "interrupted"],
+  [new Error("Game client disposed"), "interrupted"],
+  [new Error("Connection destroyed"), "connection_destroyed"],
+  [new Error("Invalid nonce"), "signer_unavailable"],
+] as const)("keeps lifecycle failures distinct", (error, kind) => {
+  expect(classifyTransactionError(error).kind).toBe(kind);
+});
+
+it("retains an existing typed classification without reparsing its presentation message", () => {
+  const classification = { kind: "no_answer" as const, reason: "Still unknown" };
+  const error = new TransactionFailure({ classification, message: "Transaction failed", cause: new Error("wrapped") });
+  expect(classifyTransactionError(error)).toBe(classification);
+  expect(classifyTransactionError(new Error("a diagnostic mentions TransactionNoAnswerError")).kind).toBe("unknown");
 });

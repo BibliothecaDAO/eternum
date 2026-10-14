@@ -1397,6 +1397,9 @@ importers:
 
   packages/provider:
     dependencies:
+      effect:
+        specifier: 4.0.4
+        version: 4.0.4
       '@bibliothecadao/types':
         specifier: workspace:*
         version: link:../types

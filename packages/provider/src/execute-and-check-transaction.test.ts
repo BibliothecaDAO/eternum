@@ -214,3 +214,30 @@ describe("provider submission boundary", () => {
     expect(completed.mock.calls[0][0].admissionToVisibleMs).toBe(70_000);
   });
 });
+
+it("records the submit classification once and keeps the original cause", async () => {
+  const provider = makeProvider();
+  const cause = Object.assign(new Error("wallet refused"), { code: 4001 });
+  provider.setNativeSubmission(
+    async () => {
+      throw cause;
+    },
+    bindings.commandAbi as Abi,
+    () => 9,
+  );
+  const failed = vi.fn();
+  provider.on("transactionFailed", failed);
+  await expect(
+    provider.claim_wonder_points({ signer: { address: "0x111" } as AccountInterface, value: 1 }),
+  ).rejects.toMatchObject({
+    _tag: "TransactionFailure",
+    cause,
+    classification: { kind: "user_cancelled" },
+    transactionFailureStage: "submit",
+  });
+  expect(failed).toHaveBeenCalledTimes(1);
+  expect(failed.mock.calls[0][0]).toMatchObject({
+    stage: "submit",
+    error: { _tag: "TransactionFailure", classification: { kind: "user_cancelled" } },
+  });
+});
