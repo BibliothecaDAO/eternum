@@ -1,5 +1,5 @@
 import { snapshotRendererDiagnostics } from "./renderer-diagnostics";
-import type { RendererActiveMode } from "./renderer-backend-v2";
+import type { RendererActiveMode } from "./renderer-backend";
 
 export interface RendererFxCapabilities {
   activeMode: RendererActiveMode | null;

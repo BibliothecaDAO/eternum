@@ -21,7 +21,6 @@ import {
   resizeRendererDisplay,
 } from "./renderer-display-runtime";
 import { type RendererBackendFactory, type RendererSurfaceLike } from "./renderer-backend";
-import { disposeRendererBackend } from "./renderer-backend-compat";
 import { initializeRendererBackendRuntime } from "./renderer-backend-runtime";
 import { reloadWithWebGLRenderer } from "./renderer-device-loss-recovery";
 import { createRendererFoundationRuntime } from "./renderer-foundation-runtime";
@@ -36,7 +35,7 @@ import { bootstrapRendererStartupRuntime } from "./renderer-startup-runtime";
 import { resolveRendererRouteSceneFromHref } from "./renderer-route-runtime";
 import type { RendererSessionRuntime } from "./renderer-session-runtime";
 import type { RendererSupportRuntimeRegistry } from "./renderer-support-runtime-registry";
-import type { RendererBackendV2, RendererDeviceLostEvent } from "./renderer-backend-v2";
+import type { RendererBackend, RendererDeviceLostEvent } from "./renderer-backend";
 import { createGameRendererRuntimeAssembly, type GameRendererRuntimeState } from "./game-renderer-runtime-assembly";
 import { getRendererDiagnosticActiveMode } from "./renderer-diagnostics";
 import {
@@ -54,7 +53,7 @@ import { createPipelineCompiler } from "@/three/pipeline-compiler";
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const GRAPHICS_DEV_ENABLED = DEV_MODE_ENABLED;
 
-type RendererBackendRuntime = RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
+type RendererBackendRuntime = RendererBackend & { renderer: RendererSurfaceLike };
 export default class GameRenderer {
   private labelRuntime!: RendererLabelRuntime;
   private readonly sessionRuntime: RendererSessionRuntime<HUDScene>;
@@ -159,10 +158,10 @@ export default class GameRenderer {
       search: window.location.search,
     });
     if (this.isDestroyed) {
-      disposeRendererBackend(backend as RendererBackendRuntime);
+      backend.dispose();
       return;
     }
-    this.backend = backend as RendererBackendRuntime;
+    this.backend = backend;
     this.renderer = renderer;
     configureGltfTextureSupport(renderer as Parameters<typeof configureGltfTextureSupport>[0]);
   }

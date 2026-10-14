@@ -10,7 +10,7 @@
     "src/three/characters/**/*.ts",
     "src/three/renderer-backend.ts",
     "src/three/renderer-backend-runtime.ts",
-    "src/three/renderer-backend-v2.ts",
+    "src/three/renderer-backend.ts",
     "src/three/renderer-diagnostics.ts",
     "src/three/webgpu-renderer-backend.ts",
     "src/ui/features/debug/procedural-character-benchmark-view.tsx",

@@ -6,7 +6,7 @@ import {
   syncRendererBackendDiagnostics,
 } from "./renderer-diagnostics";
 import type { RendererBackendFactory, RendererSurfaceLike } from "./renderer-backend";
-import type { RendererBackendV2, RendererDeviceLostEvent, RendererInitDiagnostics } from "./renderer-backend-v2";
+import type { RendererBackend, RendererDeviceLostEvent, RendererInitDiagnostics } from "./renderer-backend";
 import {
   removeRetiredRendererModePreference,
   resolveRendererBuildModeFromSearch,
@@ -15,7 +15,7 @@ import {
 } from "./renderer-build-mode";
 import { createWebGPURendererBackend } from "./webgpu-renderer-backend";
 
-type RendererBackendRuntimeState = RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
+type RendererBackendRuntimeState = RendererBackend & { renderer: RendererSurfaceLike };
 
 interface InitializeRendererBackendRuntimeInput {
   backendFactory?: RendererBackendFactory;
@@ -62,7 +62,7 @@ export async function initializeRendererBackendRuntime(input: InitializeRenderer
 }
 
 function completeRendererBackendInitialization(
-  backend: RendererBackendV2,
+  backend: RendererBackend,
   diagnostics: RendererInitDiagnostics,
 ): { backend: RendererBackendRuntimeState; renderer: RendererSurfaceLike } {
   if (!backend.renderer) {

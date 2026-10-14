@@ -17,14 +17,14 @@ import {
   RendererInitTimeoutError,
   type RendererAdapterInfo,
   type RendererActiveMode,
-  type RendererBackendV2,
+  type RendererBackend,
   type RendererDeviceLostEvent,
   type RendererFramePipeline,
   type RendererFallbackReason,
   type RendererPostProcessController,
   type RendererPostProcessRuntime,
   type RendererPostProcessPlan,
-} from "./renderer-backend-v2";
+} from "./renderer-backend";
 import type { RendererBuildMode } from "./renderer-build-mode";
 import { recordRendererStartupTiming } from "./perf/renderer-startup-telemetry";
 import { renderRendererOverlayPasses } from "./renderer-overlay-passes";
@@ -397,7 +397,7 @@ export function createWebGPURendererBackend(
     requestedMode: RendererBuildMode;
   },
   dependencies: Partial<WebGPURendererBackendDependencies> = defaultDependencies,
-): RendererBackendV2 {
+): RendererBackend {
   const resolvedDependencies = {
     ...defaultDependencies,
     ...dependencies,

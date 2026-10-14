@@ -1,4 +1,4 @@
-import type { RendererActiveMode } from "../renderer-backend-v2";
+import type { RendererActiveMode } from "../renderer-backend";
 import type { TerrainPresentationCoverage, TerrainPresentationEvent } from "../terrain/worldmap-procedural-terrain";
 
 const WORLDMAP_TERRAIN_PRESENTATION_METRICS_CONTRACT_VERSION = 2;

@@ -5,7 +5,7 @@ import {
   snapshotRendererDiagnostics,
   syncRendererBackendDiagnostics,
 } from "./renderer-diagnostics";
-import { RendererInitTimeoutError } from "./renderer-backend-v2";
+import { RendererInitTimeoutError } from "./renderer-backend";
 import { resetRendererStartupTimings, snapshotRendererStartupTimings } from "./perf/renderer-startup-telemetry";
 import { createWebGPURendererBackend } from "./webgpu-renderer-backend";
 import { createRenderableOverlayScene } from "./renderer-overlay-passes.test-fixture";
@@ -557,7 +557,7 @@ describe("createWebGPURendererBackend", () => {
 
     await backend.initialize();
 
-    backend.applyPostProcessPlan?.({
+    backend.applyPostProcessPlan({
       antiAlias: "none",
       bloom: { enabled: true, intensity: 0.4 },
       chromaticAberration: { enabled: true },
@@ -582,7 +582,7 @@ describe("createWebGPURendererBackend", () => {
     expect(renderer.toneMapping).toBe(CineonToneMapping);
     expect(renderer.toneMappingExposure).toBe(1.25);
 
-    backend.applyPostProcessPlan?.({
+    backend.applyPostProcessPlan({
       antiAlias: "none",
       bloom: { enabled: false, intensity: 0 },
       chromaticAberration: { enabled: false },
@@ -607,7 +607,7 @@ describe("createWebGPURendererBackend", () => {
     expect(renderer.toneMapping).toBe(NeutralToneMapping);
     expect(renderer.toneMappingExposure).toBe(0.9);
 
-    backend.applyPostProcessPlan?.({
+    backend.applyPostProcessPlan({
       antiAlias: "none",
       bloom: { enabled: false, intensity: 0 },
       chromaticAberration: { enabled: false },
@@ -656,15 +656,15 @@ describe("createWebGPURendererBackend", () => {
 
     await backend.initialize();
 
-    backend.applyRenderVisuals?.({
+    backend.applyRenderVisuals({
       pixelRatio: 1.5,
       shadows: true,
       width: 640,
       height: 360,
     });
-    backend.resize?.(800, 450);
+    backend.resize(800, 450);
     const overlayScene = createRenderableOverlayScene("overlay-scene");
-    backend.renderFrame?.({
+    backend.renderFrame({
       mainCamera: { id: "main-camera" } as never,
       mainScene: { id: "main-scene" } as never,
       overlayPasses: [
@@ -674,7 +674,7 @@ describe("createWebGPURendererBackend", () => {
         },
       ],
     });
-    backend.dispose?.();
+    backend.dispose();
 
     expect(renderer.setPixelRatio).toHaveBeenCalledWith(1.5);
     expect(renderer.shadowMap.enabled).toBe(true);
@@ -720,7 +720,7 @@ describe("createWebGPURendererBackend", () => {
     await backend.initialize();
 
     expect(() =>
-      backend.renderFrame?.({
+      backend.renderFrame({
         mainCamera: { id: "main-camera" } as never,
         mainScene: { id: "main-scene" } as never,
       }),
@@ -754,7 +754,7 @@ describe("createWebGPURendererBackend", () => {
       );
       await backend.initialize();
 
-      expect(() => backend.renderFrame?.({ mainCamera: {} as never, mainScene: {} as never })).toThrow(failure);
+      expect(() => backend.renderFrame({ mainCamera: {} as never, mainScene: {} as never })).toThrow(failure);
       expect(renderer.autoClear).toBe(false);
       expect(renderer.clear).not.toHaveBeenCalled();
     },
@@ -781,7 +781,7 @@ describe("createWebGPURendererBackend", () => {
 
     await backend.initialize();
 
-    backend.applyPostProcessPlan?.({
+    backend.applyPostProcessPlan({
       antiAlias: "none",
       bloom: { enabled: false, intensity: 0 },
       chromaticAberration: { enabled: false },
@@ -793,7 +793,7 @@ describe("createWebGPURendererBackend", () => {
     expect(renderer.toneMapping).toBe(NeutralToneMapping);
     expect(renderer.toneMapping).not.toBe(ACESFilmicToneMapping);
 
-    backend.applyPostProcessPlan?.({
+    backend.applyPostProcessPlan({
       antiAlias: "none",
       bloom: { enabled: false, intensity: 0 },
       chromaticAberration: { enabled: false },

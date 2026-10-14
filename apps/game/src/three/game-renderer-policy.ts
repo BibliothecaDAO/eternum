@@ -2,7 +2,7 @@ import type {
   RendererBackendCapabilities,
   RendererFeatureDegradation,
   RendererPostProcessPlan,
-} from "./renderer-backend-v2";
+} from "./renderer-backend";
 
 type LabelRenderView = "close" | "medium" | "far" | undefined;
 

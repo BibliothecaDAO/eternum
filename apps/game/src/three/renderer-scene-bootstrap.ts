@@ -64,7 +64,7 @@ interface CreateRendererSceneRegistryInput<
 interface BootstrapRendererSceneRuntimeInput<
   TSceneManager extends Pick<SceneManagerLike<unknown>, "moveCameraForScene">,
   TEffectsBridgeRuntime extends {
-    applyEnvironment(): void;
+    reportEnvironmentSupport(): void;
     applyRenderVisualProfile(features: TRenderVisualProfile): void;
     setupPostProcessingEffects(): void;
   },
@@ -157,13 +157,13 @@ export function createGameRendererSceneRegistry(input: {
 export function bootstrapRendererSceneRuntime<
   TSceneManager extends Pick<SceneManagerLike<unknown>, "moveCameraForScene">,
   TEffectsBridgeRuntime extends {
-    applyEnvironment(): void;
+    reportEnvironmentSupport(): void;
     applyRenderVisualProfile(features: TRenderVisualProfile): void;
     setupPostProcessingEffects(): void;
   },
   TRenderVisualProfile,
 >(input: BootstrapRendererSceneRuntimeInput<TSceneManager, TEffectsBridgeRuntime, TRenderVisualProfile>): void {
-  input.effectsBridgeRuntime.applyEnvironment();
+  input.effectsBridgeRuntime.reportEnvironmentSupport();
   input.effectsBridgeRuntime.setupPostProcessingEffects();
   input.sceneManager.moveCameraForScene();
   input.effectsBridgeRuntime.applyRenderVisualProfile(input.renderVisuals);
