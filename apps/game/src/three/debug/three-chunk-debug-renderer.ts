@@ -1,3 +1,7 @@
+import { env } from "../../../env";
+import { isCoarsePointer } from "../../utils/pointer";
+import { initializeRendererBackendRuntime } from "../renderer-backend-runtime";
+import type { RendererBackend, RendererSurfaceLike } from "../renderer-backend";
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import * as THREE from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
@@ -23,14 +27,16 @@ export interface ThreeChunkDebugRendererHandle {
 }
 
 interface MountThreeChunkDebugRendererInput {
-  canvas: HTMLCanvasElement;
+  container: HTMLElement;
+  signal: AbortSignal;
   scenario: DebugChunkScenario;
   onFrame?: (stats: ThreeChunkDebugFrameStats) => void;
 }
 
 interface DebugRuntime {
   fixture: DebugChunkFixture;
-  renderer: THREE.WebGLRenderer;
+  backend: RendererBackend;
+  renderer: RendererSurfaceLike;
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
   controls: MapControls;
@@ -43,19 +49,39 @@ interface AnimationHandle {
 
 const FRAME_STATS_INTERVAL_MS = 250;
 
-export const mountThreeChunkDebugRenderer = (
+export const mountThreeChunkDebugRenderer = async (
   input: MountThreeChunkDebugRendererInput,
-): ThreeChunkDebugRendererHandle => {
+): Promise<ThreeChunkDebugRendererHandle> => {
+  const { backend, renderer } = await initializeRendererBackendRuntime({
+    envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
+    isMobileDevice: isCoarsePointer(),
+    pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+    search: window.location.search,
+  });
+  if (input.signal.aborted) {
+    backend.dispose();
+    input.signal.throwIfAborted();
+  }
+
   const fixture = buildDebugChunkFixture(input.scenario);
-  const runtime = createDebugRuntime(input.canvas, input.scenario, fixture);
-  const resizeObserver = observeDebugCanvas(input.canvas, runtime);
+  const runtime = createDebugRuntime(backend, renderer, input.scenario, fixture);
+  const canvas = renderer.domElement;
+  canvas.id = "three-chunk-debug-canvas";
+  canvas.className = "block touch-none";
+  canvas.setAttribute("aria-label", "Three.js chunk debug canvas");
+  input.container.append(canvas);
+  const resizeObserver = observeDebugContainer(input.container, runtime);
   const animation = startDebugAnimation(runtime, input.onFrame);
+  let disposed = false;
 
   return {
     dispose: () => {
+      if (disposed) return;
+      disposed = true;
       animation.stop();
       resizeObserver.disconnect();
       destroyDebugRuntime(runtime);
+      canvas.remove();
     },
     resetCamera: () => {
       positionDebugCamera(runtime.camera, runtime.controls, runtime.fixture);
@@ -64,14 +90,16 @@ export const mountThreeChunkDebugRenderer = (
 };
 
 const createDebugRuntime = (
-  canvas: HTMLCanvasElement,
+  backend: RendererBackend,
+  renderer: RendererSurfaceLike,
   scenario: DebugChunkScenario,
   fixture: DebugChunkFixture,
 ): DebugRuntime => {
-  const renderer = createDebugRenderer(canvas);
+  renderer.toneMapping = THREE.NoToneMapping;
+  renderer.toneMappingExposure = 1;
   const scene = createDebugScene();
   const camera = createDebugCamera();
-  const controls = createDebugControls(camera, canvas);
+  const controls = createDebugControls(camera, renderer.domElement);
   const hotLight = createHotChunkLight();
 
   positionDebugCamera(camera, controls, fixture);
@@ -83,6 +111,7 @@ const createDebugRuntime = (
 
   return {
     fixture,
+    backend,
     renderer,
     scene,
     camera,
@@ -91,25 +120,9 @@ const createDebugRuntime = (
   };
 };
 
-const createDebugRenderer = (canvas: HTMLCanvasElement): THREE.WebGLRenderer => {
-  const renderer = new THREE.WebGLRenderer({
-    canvas,
-    antialias: true,
-    alpha: true,
-    powerPreference: "high-performance",
-    // Required for CI readPixels smoke checks. Keep this out of the production renderer.
-    preserveDrawingBuffer: true,
-  });
-
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.setClearColor(0x05070b, 1);
-
-  return renderer;
-};
-
 const createDebugScene = (): THREE.Scene => {
   const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x05070b);
   scene.fog = new THREE.Fog(0x05070b, 120, 260);
   return scene;
 };
@@ -202,23 +215,23 @@ const createHotChunkLight = (): THREE.PointLight => {
   return light;
 };
 
-const observeDebugCanvas = (canvas: HTMLCanvasElement, runtime: DebugRuntime): ResizeObserver => {
+const observeDebugContainer = (container: HTMLElement, runtime: DebugRuntime): ResizeObserver => {
   const resizeObserver = new ResizeObserver(() => {
-    resizeDebugRenderer(canvas, runtime);
+    resizeDebugRenderer(container, runtime);
   });
 
-  resizeObserver.observe(canvas);
-  resizeDebugRenderer(canvas, runtime);
+  resizeObserver.observe(container);
+  resizeDebugRenderer(container, runtime);
 
   return resizeObserver;
 };
 
-const resizeDebugRenderer = (canvas: HTMLCanvasElement, runtime: DebugRuntime): void => {
-  const rect = canvas.getBoundingClientRect();
+const resizeDebugRenderer = (container: HTMLElement, runtime: DebugRuntime): void => {
+  const rect = container.getBoundingClientRect();
   const width = Math.max(1, Math.floor(rect.width));
   const height = Math.max(1, Math.floor(rect.height));
 
-  runtime.renderer.setSize(width, height, false);
+  runtime.backend.resize(width, height);
   runtime.camera.aspect = width / height;
   runtime.camera.updateProjectionMatrix();
 };
@@ -240,7 +253,7 @@ const startDebugAnimation = (
 
     animateDebugScene(runtime, time);
     runtime.controls.update();
-    runtime.renderer.render(runtime.scene, runtime.camera);
+    runtime.backend.renderFrame({ mainScene: runtime.scene, mainCamera: runtime.camera, sceneName: "three-chunks" });
     publishFrameStats(runtime, time, frameMs, lastStatsTime, onFrame);
 
     if (time - lastStatsTime >= FRAME_STATS_INTERVAL_MS) {
@@ -280,7 +293,7 @@ const publishFrameStats = (
     fps: Math.round(1000 / Math.max(frameMs, 1)),
     frameMs: Number(frameMs.toFixed(1)),
     renderedChunks: runtime.fixture.chunks.length,
-    drawCalls: runtime.renderer.info.render.calls,
+    drawCalls: runtime.renderer.info.render.drawCalls ?? runtime.renderer.info.render.calls,
     triangles: runtime.renderer.info.render.triangles,
   });
 };
@@ -303,7 +316,7 @@ const positionDebugCamera = (
 const destroyDebugRuntime = (runtime: DebugRuntime): void => {
   runtime.controls.dispose();
   runtime.scene.traverse(disposeDebugObject);
-  runtime.renderer.dispose();
+  runtime.backend.dispose();
 };
 
 const disposeDebugObject = (object: THREE.Object3D): void => {

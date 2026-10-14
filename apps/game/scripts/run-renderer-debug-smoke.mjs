@@ -32,7 +32,7 @@ const EXPECTED_SCENARIO_METRICS = {
 export function buildRendererDebugSmokeUrl({ baseUrl }) {
   const url = new URL(baseUrl);
   url.pathname = DEBUG_ROUTE_PATH;
-  url.search = "";
+
   return url.toString();
 }
 
@@ -65,7 +65,7 @@ export function evaluateRendererDebugSmokeResult({
   metrics,
   nonBlankCanvas,
   routeMounted,
-  webglContextLost,
+  deviceLost,
 }) {
   const reasons = [];
 
@@ -81,8 +81,8 @@ export function evaluateRendererDebugSmokeResult({
     reasons.push("debug canvas was blank");
   }
 
-  if (webglContextLost) {
-    reasons.push("WebGL context was lost");
+  if (deviceLost) {
+    reasons.push("renderer device was lost");
   }
 
   if (horizontalOverflow) {
@@ -196,52 +196,43 @@ function selectDebugScenario(session, scenario, headed) {
   );
 }
 
+export async function readRendererDebugSnapshot() {
+  const canvas = document.getElementById("three-chunk-debug-canvas");
+  const diagnostics = window.__rendererDiagnostics;
+  const copy = document.createElement("canvas");
+  copy.width = canvas?.width ?? 1;
+  copy.height = canvas?.height ?? 1;
+  const context = copy.getContext("2d");
+  let pixel = [];
+  if (canvas && context) {
+    await new Promise(requestAnimationFrame);
+    context.drawImage(canvas, 0, 0);
+    pixel = Array.from(context.getImageData(Math.floor(copy.width / 2), Math.floor(copy.height / 2), 1, 1).data);
+  }
+
+  return {
+    bootShellPresent: Boolean(document.getElementById("boot-shell")),
+    canvas: canvas ? { height: canvas.height, width: canvas.width } : null,
+    horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth,
+    metrics: Object.fromEntries(
+      Array.from(document.querySelectorAll("dt")).map((label) => [
+        label.textContent,
+        label.nextElementSibling?.textContent,
+      ]),
+    ),
+    nonBlankCanvas: pixel.slice(0, 3).some((value) => value !== 0),
+    pixel,
+    routeMounted: Boolean(document.querySelector('[data-debug-route="three-chunks"]')),
+    activeMode: diagnostics?.activeMode ?? null,
+    deviceLost:
+      diagnostics?.activeMode === "webgl2-fallback"
+        ? (canvas?.getContext("webgl2")?.isContextLost() ?? true)
+        : diagnostics?.gpuTelemetry?.deviceStatus !== "ready",
+  };
+}
+
 function readDebugSnapshot(session, headed) {
-  const rawSnapshot = runAgentBrowser(
-    session,
-    [
-      "eval",
-      `JSON.stringify((() => {
-        const canvas = document.getElementById("three-chunk-debug-canvas");
-        const gl = canvas?.getContext("webgl2") || canvas?.getContext("webgl");
-        const pixel = new Uint8Array(4);
-
-        if (gl) {
-          gl.readPixels(
-            Math.floor(gl.drawingBufferWidth / 2),
-            Math.floor(gl.drawingBufferHeight / 2),
-            1,
-            1,
-            gl.RGBA,
-            gl.UNSIGNED_BYTE,
-            pixel,
-          );
-        }
-
-        return {
-          bootShellPresent: Boolean(document.getElementById("boot-shell")),
-          canvas: canvas
-            ? {
-                height: canvas.height,
-                width: canvas.width,
-              }
-            : null,
-          horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth,
-          metrics: Object.fromEntries(
-            Array.from(document.querySelectorAll("dt")).map((label) => [
-              label.textContent,
-              label.nextElementSibling?.textContent,
-            ]),
-          ),
-          nonBlankCanvas: Array.from(pixel).some((value) => value !== 0),
-          routeMounted: Boolean(document.querySelector('[data-debug-route="three-chunks"]')),
-          webglContextLost: gl ? gl.isContextLost() : true,
-        };
-      })())`,
-    ],
-    { headed },
-  );
-
+  const rawSnapshot = runAgentBrowser(session, ["eval", `(${readRendererDebugSnapshot.toString()})()`], { headed });
   return parseAgentBrowserJson(rawSnapshot);
 }
 

@@ -30,7 +30,7 @@ const integerFormatter = new Intl.NumberFormat("en-US");
 export const ThreeChunkDebugView = () => {
   useBootDocumentState("app-ready", "three_chunk_debug_ready");
 
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<ThreeChunkDebugRendererHandle | null>(null);
   const [scenarioId, setScenarioId] = useState<DebugChunkScenarioId>("baseline");
   const [frameStats, setFrameStats] = useState<ThreeChunkDebugFrameStats>(INITIAL_FRAME_STATS);
@@ -40,24 +40,34 @@ export const ThreeChunkDebugView = () => {
   const metrics = useMemo(() => resolveDebugChunkMetrics(scenario), [scenario]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!container) return;
+    const controller = new AbortController();
+    let handle: ThreeChunkDebugRendererHandle | undefined;
 
-    try {
-      setRendererError(null);
-      rendererRef.current = mountThreeChunkDebugRenderer({
-        canvas,
-        scenario,
-        onFrame: setFrameStats,
+    setRendererError(null);
+    void mountThreeChunkDebugRenderer({
+      container,
+      signal: controller.signal,
+      scenario,
+      onFrame: setFrameStats,
+    })
+      .then((mounted) => {
+        if (controller.signal.aborted) {
+          mounted.dispose();
+          return;
+        }
+        handle = mounted;
+        rendererRef.current = mounted;
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) setRendererError(resolveRendererErrorMessage(error));
       });
-    } catch (error) {
-      rendererRef.current = null;
-      setRendererError(resolveRendererErrorMessage(error));
-    }
 
     return () => {
-      rendererRef.current?.dispose();
-      rendererRef.current = null;
+      controller.abort();
+      handle?.dispose();
+      if (rendererRef.current === handle) rendererRef.current = null;
     };
   }, [scenario]);
 
@@ -138,12 +148,7 @@ export const ThreeChunkDebugView = () => {
       </aside>
 
       <div className="relative min-h-[520px] overflow-hidden border border-white/10 bg-slate-950 shadow-[0_20px_80px_rgba(0,0,0,0.45)]">
-        <canvas
-          ref={canvasRef}
-          id="three-chunk-debug-canvas"
-          className="h-full min-h-[520px] w-full touch-none"
-          aria-label="Three.js chunk debug canvas"
-        />
+        <div ref={containerRef} className="absolute inset-0" />
         {rendererError && (
           <div className="absolute inset-x-4 bottom-4 border border-red-300/40 bg-red-950/80 p-3 text-sm text-red-100 backdrop-blur">
             {rendererError}

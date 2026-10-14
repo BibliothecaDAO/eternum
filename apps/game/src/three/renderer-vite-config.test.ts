@@ -3,7 +3,7 @@ import { build } from "vite";
 import { resolveRendererViteAliases } from "./renderer-vite-config";
 
 describe("renderer module identity", () => {
-  it("shares core classes and color management across WebGPU, legacy WebGL and direct source imports", async () => {
+  it("shares core classes and color management across WebGPU and direct source imports without legacy WebGL", async () => {
     const fixture = await loadRendererIdentityFixture();
 
     expect(fixture.appColor).toBe(fixture.gpuColor);
@@ -12,7 +12,8 @@ describe("renderer module identity", () => {
     expect(fixture.appColorManagement).toBe(fixture.sourceColorManagement);
     expect(fixture.uniform).toBe(fixture.TSL.uniform);
     expect(fixture.WebGPURenderer).toBeTypeOf("function");
-    expect(fixture.WebGLRenderer).toBeTypeOf("function");
+    expect(fixture.appRenderer.WebGPURenderer).toBe(fixture.WebGPURenderer);
+    expect(fixture.appRenderer.WebGLRenderer).toBeUndefined();
   }, 30_000);
 });
 
@@ -29,7 +30,8 @@ async function loadRendererIdentityFixture() {
         load: (id) =>
           id === entry
             ? `
-        export { Color as appColor, ColorManagement as appColorManagement, WebGLRenderer } from "three";
+        export { Color as appColor, ColorManagement as appColorManagement } from "three";
+        export * as appRenderer from "three";
         export { Color as gpuColor, ColorManagement as gpuColorManagement, WebGPURenderer, TSL } from "three/webgpu";
         export { Color as sourceColor } from "three/src/math/Color.js";
         export { ColorManagement as sourceColorManagement } from "three/src/math/ColorManagement.js";

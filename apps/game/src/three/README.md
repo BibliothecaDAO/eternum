@@ -30,6 +30,7 @@ must be identical between them.
 
 - `game-renderer.ts`: renderer bootstrap, controls, frame loop, and top-level runtime ownership.
 - `renderer-backend-runtime.ts`: initializes the WebGPU/WebGL2-fallback backend and handles device-loss recovery.
+- `renderer-backend.ts`: the required backend contract shared by the game and renderer labs.
 - `renderer-effects-runtime.ts`: owns the shared post-process plan.
 - `scene-manager.ts`: switches scenes and owns transition ordering and input-surface handoff.
 - `scenes/hexagon-scene.ts`: shared camera, lighting, fog, shadow refresh, input, and visibility behavior.
@@ -94,3 +95,21 @@ Do not dispose cosmetic- or FX-cache-owned geometry or textures from a scene man
 
 Keep DEV instrumentation out of production paths and preserve the forced-WebGL smoke whenever renderer ownership or
 effects code changes.
+
+The normal player entry does not load the graphics GUI. Use `?dev=1` to load debug controls; `GameRenderer` owns their
+single root and disposes it on teardown. Use `?dev=0` to disable the persisted debug preference.
+
+## Chunk lab
+
+`/debug/three-chunks` exercises the shared renderer without authentication. Select Baseline, Dense, or Stress and use
+Reset Camera to return to the fixture's initial view. The route supports the same `rendererMode` query as the game.
+
+With the client running, verify both backends with the maintained smoke command:
+
+```sh
+pnpm --dir apps/game exec node scripts/run-renderer-debug-smoke.mjs --base-url https://127.0.0.1:4179 --scenarios baseline,dense,stress --output /tmp/chunk-native.json
+pnpm --dir apps/game exec node scripts/run-renderer-debug-smoke.mjs --base-url 'https://127.0.0.1:4179/?rendererMode=webgpu-force-webgl' --scenarios baseline,dense,stress --output /tmp/chunk-fallback.json
+```
+
+The check reads rendered pixels through a canvas copy, verifies fixture metrics, and checks backend health and browser
+errors. `readRendererDebugSnapshot` and `evaluateRendererDebugSmokeResult` also support browser-tool runs of this gate.

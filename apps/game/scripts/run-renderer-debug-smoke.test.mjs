@@ -17,6 +17,11 @@ describe("buildRendererDebugSmokeUrl", () => {
       "https://127.0.0.1:4173/debug/three-chunks",
     );
   });
+  it("preserves an explicit backend override", () => {
+    expect(buildRendererDebugSmokeUrl({ baseUrl: "https://127.0.0.1:4179/?rendererMode=webgpu-force-webgl" })).toBe(
+      "https://127.0.0.1:4179/debug/three-chunks?rendererMode=webgpu-force-webgl",
+    );
+  });
 });
 
 describe("normalizeDebugScenarios", () => {
@@ -30,7 +35,7 @@ describe("normalizeDebugScenarios", () => {
 });
 
 describe("evaluateRendererDebugSmokeResult", () => {
-  it("accepts a mounted debug route with nonblank WebGL pixels and expected metrics", () => {
+  it("accepts a mounted debug route with nonblank renderer pixels and expected metrics", () => {
     expect(
       evaluateRendererDebugSmokeResult({
         bootShellPresent: false,
@@ -48,7 +53,7 @@ describe("evaluateRendererDebugSmokeResult", () => {
         },
         nonBlankCanvas: true,
         routeMounted: true,
-        webglContextLost: false,
+        deviceLost: false,
       }),
     ).toEqual({
       ok: true,
@@ -74,7 +79,7 @@ describe("evaluateRendererDebugSmokeResult", () => {
         },
         nonBlankCanvas: false,
         routeMounted: false,
-        webglContextLost: true,
+        deviceLost: true,
       }),
     ).toEqual({
       ok: false,
@@ -82,7 +87,7 @@ describe("evaluateRendererDebugSmokeResult", () => {
         "debug route was not mounted",
         "boot shell was still visible",
         "debug canvas was blank",
-        "WebGL context was lost",
+        "renderer device was lost",
         "debug route had horizontal overflow",
         "browser reported 1 runtime error(s): Error creating WebGL context",
         "Chunks metric was 25, expected 81",
