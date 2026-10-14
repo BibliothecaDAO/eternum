@@ -140,7 +140,7 @@ pnpm install --frozen-lockfile
 2. Ensure workspace packages consumed by `apps/game` are built:
 
 ```bash
-pnpm -r --filter "@bibliothecadao/*" --if-present build
+pnpm run build:packages
 ```
 
 3. Start game client on a fixed port:
