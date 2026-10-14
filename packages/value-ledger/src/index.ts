@@ -24,6 +24,7 @@ export { resolveBlitzRoster, splitPlaytestRoster } from "./blitz-roster";
 export type { RegistrationIdentity, SlotCohort, LaunchCohorts } from "./blitz-roster";
 
 export { activeShards, requireActiveChain, readRegisteredShard } from "./official-shards";
+export { isDevShardChain } from "./dev-shard";
 export type { ShardDirectory, RegisteredShard } from "./official-shards";
 
 export { computeSeasonTop } from "./season-top";

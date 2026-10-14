@@ -7,6 +7,8 @@ import type { LaunchRun, LaunchSummary } from "./model";
 import { LaunchShard } from "./shard-client";
 import { closedSlotGroups, type BlitzValuePort } from "./paid-blitz";
 import { finalizeGame } from "./results";
+import type { CreateGameRequest } from "./schemas";
+import { testBlitzRoster } from "./test-blitz";
 
 interface LaunchTarget {
   directory: ShardDirectory & import("@realms-world/value-ledger").RegistrationIdentity;
@@ -63,10 +65,7 @@ const executeRun = async (
   if (run.kind !== "game" || "gameId" in run.request) throw new Error("stored_launch_kind_differs");
   const request = run.request;
   if (request.environment === "madara.blitz") {
-    if (!run.slotId || !Number.isInteger(request.groupIndex)) throw new Error("Blitz games require a closed paid slot");
-    const { groups } = await closedSlotGroups({ chainId: run.chainId, slotId: run.slotId }, value, target.directory);
-    const players = groups[request.groupIndex!];
-    if (!players?.length) throw new Error("closed_slot_group_missing");
+    const players = await blitzRosterOf(run, request, target, value);
     const created = await native.create(request, Date.parse(run.createdAt), undefined, players);
     const settlementTransactions = await native.seat(created.gameId!);
     const game = await native.game(created.gameId!);
@@ -81,4 +80,19 @@ const executeRun = async (
     });
   }
   return store.saveGame(await native.create(request, Date.parse(run.createdAt)));
+};
+
+/** A paid game's players are its slot group, re-resolved from the ledger on every retry; a test game names its own. */
+const blitzRosterOf = async (
+  run: LaunchRun,
+  request: CreateGameRequest,
+  target: LaunchTarget,
+  value: BlitzValuePort,
+) => {
+  if (run.slotId === null) return testBlitzRoster(request, run.chainId);
+  if (!Number.isInteger(request.groupIndex)) throw new Error("Blitz games require a closed paid slot");
+  const { groups } = await closedSlotGroups({ chainId: run.chainId, slotId: run.slotId }, value, target.directory);
+  const players = groups[request.groupIndex!];
+  if (!players?.length) throw new Error("closed_slot_group_missing");
+  return players;
 };

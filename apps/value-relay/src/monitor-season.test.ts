@@ -6,7 +6,7 @@ import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
 import { ValueMonitor } from "./monitor-worker";
 
-const calls = vi.hoisted(() => ({ pause: vi.fn(), season: vi.fn(), cohorts: vi.fn() }));
+const calls = vi.hoisted(() => ({ pause: vi.fn(), season: vi.fn(), cohorts: vi.fn(), directory: vi.fn() }));
 vi.mock("cloudflare:workers", () => ({
   WorkerEntrypoint: class {},
   DurableObject: class {
@@ -45,7 +45,7 @@ const monitor = () => {
     {
       L2_RPC_URL: "https://ledger.test",
       ENVIRONMENT: "staging",
-      LAUNCH: { rosterCohorts: calls.cohorts },
+      LAUNCH: { rosterCohorts: calls.cohorts, directoryGames: calls.directory },
       IDENTITY: { shards: async () => [] },
       RELAY_REPORT: { held: async () => [] },
     } as never,
@@ -86,5 +86,26 @@ it("reports pending season checks as red health without pausing value", async ()
   calls.season.mockReturnValue(Effect.succeed(null));
   await worker.tick();
   expect((await worker.health()).success).toBe(true);
+  expect(calls.pause).not.toHaveBeenCalled();
+});
+
+/** Shard chains as the shard deploy names them, `<ENVIRONMENT>_<time>` in ASCII. */
+const chainNamed = (name: string) => `0x${Buffer.from(name).toString("hex")}`;
+const DEV_CHAIN = chainNamed("DEV_18de3131a6e90bc7");
+const PRODUCTION_CHAIN = chainNamed("PRODUCTION_18de3131a6e90bc7");
+it("answers no slot for a dev-shard result the launch directory declares outside any slot, without pausing value", async () => {
+  calls.cohorts.mockResolvedValue([]);
+  calls.directory.mockResolvedValue([{ chainId: DEV_CHAIN, games: [{ gameId: 9, slotId: null }] }]);
+  expect(await monitor().verifyRoster(DEV_CHAIN, 9)).toBeNull();
+  expect(calls.pause).not.toHaveBeenCalled();
+});
+it.each([
+  ["a paid game whose slot cohort is missing", DEV_CHAIN, [{ gameId: 9, slotId: 4 }]],
+  ["a game the directory does not list", DEV_CHAIN, [{ gameId: 8, slotId: null }]],
+  ["a production game, even declared outside any slot", PRODUCTION_CHAIN, [{ gameId: 9, slotId: null }]],
+])("refuses to clear the result of %s", async (_case, chainId, games) => {
+  calls.cohorts.mockResolvedValue([]);
+  calls.directory.mockResolvedValue([{ chainId, games }]);
+  await expect(monitor().verifyRoster(chainId, 9)).rejects.toThrow();
   expect(calls.pause).not.toHaveBeenCalled();
 });
