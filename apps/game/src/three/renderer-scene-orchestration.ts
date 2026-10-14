@@ -20,10 +20,7 @@ interface PrepareGameRendererScenesInput {
   applySceneRegistry: (registry: GameRendererSceneRegistry) => void;
   controls: MapControls;
   game: SetupResult;
-  effectsBridgeRuntime: Pick<
-    RendererEffectsBridgeRuntime,
-    "reportEnvironmentSupport" | "applyRenderVisualProfile" | "setupPostProcessingEffects"
-  >;
+  effectsBridgeRuntime: Pick<RendererEffectsBridgeRuntime, "reportEnvironmentSupport" | "applyRenderVisualProfile">;
   inputSurface: HTMLElement;
   compilePipelines?: PipelineCompiler;
   markLabelsDirty?: () => void;

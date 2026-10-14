@@ -31,7 +31,7 @@ must be identical between them.
 - `game-renderer.ts`: renderer bootstrap, controls, frame loop, and top-level runtime ownership.
 - `renderer-backend-runtime.ts`: initializes the WebGPU/WebGL2-fallback backend and handles device-loss recovery.
 - `renderer-backend.ts`: the required backend contract shared by the game and renderer labs.
-- `renderer-effects-runtime.ts`: owns the shared post-process plan.
+- `renderer-effects-runtime.ts`: applies the shared visual profile and reports environment support.
 - `scene-manager.ts`: switches scenes and owns transition ordering and input-surface handoff.
 - `scenes/hexagon-scene.ts`: shared camera, lighting, fog, shadow refresh, input, and visibility behavior.
 - `scenes/worldmap.tsx`: chunked world traversal rendered from the session spatial projection.
@@ -45,7 +45,7 @@ The top-level frame reads like this:
 1. Apply Quality/Battery pacing at the single animation-loop boundary.
 2. Update controls and the active scene.
 3. Drain the shared frame-budget queue for terrain and entity presentation work.
-4. Render the active scene through the backend's post-process path.
+4. Render the active scene through the shared backend.
 5. Render HUD and label overlays.
 
 Input immediately leaves Battery idle pacing. Camera movement selects already-synchronized projection data and may

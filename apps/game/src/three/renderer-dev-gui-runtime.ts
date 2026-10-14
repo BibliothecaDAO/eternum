@@ -1,4 +1,11 @@
-import { ACESFilmicToneMapping, CineonToneMapping, LinearToneMapping, NoToneMapping, ReinhardToneMapping } from "three";
+import {
+  ACESFilmicToneMapping,
+  CineonToneMapping,
+  LinearToneMapping,
+  NeutralToneMapping,
+  NoToneMapping,
+  ReinhardToneMapping,
+} from "three";
 import { SceneName } from "./types";
 
 type GuiFolderLike = {
@@ -72,6 +79,7 @@ function setupRendererFolder(input: SetupRendererDevGuiInput): void {
       "Linear Tone Mapping": LinearToneMapping,
       "Reinhard Tone Mapping": ReinhardToneMapping,
       "Cineon Tone Mapping": CineonToneMapping,
+      "Neutral Tone Mapping": NeutralToneMapping,
       "ACESFilmic Tone Mapping": ACESFilmicToneMapping,
     })
     .name("Tone Mapping");

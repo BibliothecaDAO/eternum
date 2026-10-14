@@ -147,8 +147,9 @@ client brief's "WebGPU parked" record to this brief's record.
 
 ## Non-goals
 
-The native WebGPU post-process runtime stays off (`ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME = false`); no WebGPU-only
-visuals; no mobile lane work; no Brave flag advice in the product.
+The permanently disabled native post-processing runtime and policy are deleted by the owner decision of 2026-10-14. Keep
+renderer tone mapping and the supported graphics settings; no WebGPU-only visuals, mobile lane work, or Brave flag
+advice in the product.
 
 ## Risks and open decisions
 

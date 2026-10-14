@@ -4,15 +4,10 @@ export type RenderMode = "uncapped" | "capped";
 export interface RenderVisualProfile {
   animationCullDistance: number;
   animationFps: number;
-  bloom: boolean;
-  bloomIntensity: number;
-  chromaticAberration: boolean;
-  fxaa: boolean;
   labelRenderDistance: number;
   pixelRatio: number;
   shadowMapSize: number;
   shadows: boolean;
-  vignette: boolean;
 }
 
 interface RenderProfile {
@@ -34,15 +29,10 @@ const LEGACY_DEVICE_CHECK_STORAGE_KEY = "INITIAL_LAPTOP_CHECK";
 const QUALITY_VISUALS: RenderVisualProfile = {
   animationCullDistance: 120,
   animationFps: 24,
-  bloom: false,
-  bloomIntensity: 0,
-  chromaticAberration: false,
-  fxaa: false,
   labelRenderDistance: 160,
   pixelRatio: RENDERER_PIXEL_RATIO_CAP,
   shadowMapSize: 1024,
   shadows: true,
-  vignette: false,
 };
 
 export function readRenderMode(storage: Pick<Storage, "getItem" | "removeItem" | "setItem"> | null): RenderMode {

@@ -66,7 +66,6 @@ interface BootstrapRendererSceneRuntimeInput<
   TEffectsBridgeRuntime extends {
     reportEnvironmentSupport(): void;
     applyRenderVisualProfile(features: TRenderVisualProfile): void;
-    setupPostProcessingEffects(): void;
   },
   TRenderVisualProfile,
 > {
@@ -159,12 +158,10 @@ export function bootstrapRendererSceneRuntime<
   TEffectsBridgeRuntime extends {
     reportEnvironmentSupport(): void;
     applyRenderVisualProfile(features: TRenderVisualProfile): void;
-    setupPostProcessingEffects(): void;
   },
   TRenderVisualProfile,
 >(input: BootstrapRendererSceneRuntimeInput<TSceneManager, TEffectsBridgeRuntime, TRenderVisualProfile>): void {
   input.effectsBridgeRuntime.reportEnvironmentSupport();
-  input.effectsBridgeRuntime.setupPostProcessingEffects();
   input.sceneManager.moveCameraForScene();
   input.effectsBridgeRuntime.applyRenderVisualProfile(input.renderVisuals);
 }

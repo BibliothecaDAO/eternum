@@ -1,23 +1,14 @@
 import type { RendererEffectsRuntime } from "./renderer-effects-runtime";
 import type { RenderVisualProfile } from "./render-profile";
 
-type RendererWeatherPostProcessingState = {
-  intensity: number;
-  stormIntensity: number;
-};
-
 interface CreateRendererEffectsBridgeRuntimeInput {
   createEffectsRuntime: () => RendererEffectsRuntime;
-  resolveRenderVisualProfile: () => RenderVisualProfile;
-  resolveWeatherState: () => RendererWeatherPostProcessingState | undefined;
 }
 
 export interface RendererEffectsBridgeRuntime {
   reportEnvironmentSupport(): void;
   applyRenderVisualProfile(features: RenderVisualProfile): void;
   dispose(): void;
-  setupPostProcessingEffects(): void;
-  updateWeatherPostProcessing(weatherState?: RendererWeatherPostProcessingState): void;
 }
 
 export function createRendererEffectsBridgeRuntime(
@@ -31,24 +22,12 @@ class GameRendererEffectsBridgeRuntime implements RendererEffectsBridgeRuntime {
 
   constructor(private readonly input: CreateRendererEffectsBridgeRuntimeInput) {}
 
-  public setupPostProcessingEffects(): void {
-    this.getOrCreateEffectsRuntime().setupPostProcessingEffects(this.input.resolveRenderVisualProfile());
-  }
-
   public reportEnvironmentSupport(): void {
     this.getOrCreateEffectsRuntime().reportEnvironmentSupport();
   }
 
   public applyRenderVisualProfile(features: RenderVisualProfile): void {
     this.getOrCreateEffectsRuntime().applyRenderVisualProfile(features);
-  }
-
-  public updateWeatherPostProcessing(weatherState = this.input.resolveWeatherState()): void {
-    if (!weatherState || !this.effectsRuntime) {
-      return;
-    }
-
-    this.effectsRuntime.updateWeatherPostProcessing(weatherState);
   }
 
   public dispose(): void {

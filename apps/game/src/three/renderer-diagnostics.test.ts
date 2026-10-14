@@ -4,8 +4,6 @@ import {
   resetRendererDiagnostics,
   setRendererDiagnosticCapabilities,
   setRendererDiagnosticDegradations,
-  setRendererDiagnosticEffectPlan,
-  setRendererDiagnosticPostprocessPolicy,
   setRendererDiagnosticSceneName,
   snapshotRendererDiagnostics,
   syncRendererBackendDiagnostics,
@@ -17,7 +15,7 @@ describe("renderer-diagnostics", () => {
     resetRendererDiagnostics();
   });
 
-  it("tracks backend mode, fallback reason, effect plan, scene name, and error counters", () => {
+  it("tracks backend mode, fallback reason, scene name, and error counters", () => {
     syncRendererBackendDiagnostics({
       activeMode: "webgl2-fallback",
       buildMode: "webgpu-auto",
@@ -45,32 +43,6 @@ describe("renderer-diagnostics", () => {
         reason: "disabled-by-profile",
       },
     ]);
-    setRendererDiagnosticEffectPlan({
-      antiAlias: "fxaa",
-      bloom: { enabled: true, intensity: 0.35 },
-      chromaticAberration: { enabled: false },
-      colorGrade: {
-        brightness: 0,
-        contrast: 0.1,
-        hue: 0,
-        saturation: 0.2,
-      },
-      toneMapping: {
-        exposure: 0.7,
-        mode: "cineon",
-        whitePoint: 1.1,
-      },
-      vignette: {
-        darkness: 0.6,
-        enabled: true,
-        offset: 0.25,
-      },
-    });
-    setRendererDiagnosticPostprocessPolicy({
-      bloomRouting: "deferred",
-      mode: "native-webgpu-minimal",
-      unsupportedFeatures: ["environmentIbl", "toneMappingControl"],
-    });
     setRendererDiagnosticSceneName("worldmap");
     incrementRendererDiagnosticError("fallbacks");
     incrementRendererDiagnosticError("initErrors", 2);
@@ -99,27 +71,6 @@ describe("renderer-diagnostics", () => {
           reason: "disabled-by-profile",
         },
       ],
-      effectPlan: {
-        antiAlias: "fxaa",
-        bloom: { enabled: true, intensity: 0.35 },
-        chromaticAberration: { enabled: false },
-        colorGrade: {
-          brightness: 0,
-          contrast: 0.1,
-          hue: 0,
-          saturation: 0.2,
-        },
-        toneMapping: {
-          exposure: 0.7,
-          mode: "cineon",
-          whitePoint: 1.1,
-        },
-        vignette: {
-          darkness: 0.6,
-          enabled: true,
-          offset: 0.25,
-        },
-      },
       fallbackReason: "webgpu-device-lost",
       gpuTelemetry: {
         activeMode: "webgl2-fallback",
@@ -136,11 +87,6 @@ describe("renderer-diagnostics", () => {
       initErrors: 2,
       initTimeMs: 42,
       fallbacks: 1,
-      postprocessPolicy: {
-        bloomRouting: "deferred",
-        mode: "native-webgpu-minimal",
-        unsupportedFeatures: ["environmentIbl", "toneMappingControl"],
-      },
       requestedMode: "webgpu-auto",
       sceneName: "worldmap",
       startupTimings: {},
@@ -179,7 +125,6 @@ describe("renderer-diagnostics", () => {
         supportsWideLines: false,
       },
       degradations: [],
-      effectPlan: null,
       fallbackReason: "webgpu-device-lost",
       fallbacks: 0,
       gpuTelemetry: {
@@ -196,7 +141,6 @@ describe("renderer-diagnostics", () => {
       },
       initErrors: 0,
       initTimeMs: 12,
-      postprocessPolicy: null,
       requestedMode: "webgpu-force-webgl",
       sceneName: null,
       startupTimings: {},

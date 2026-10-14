@@ -60,7 +60,6 @@ export interface RendererDeviceLostEvent {
 export interface RendererBackend {
   readonly capabilities: RendererBackendCapabilities;
   readonly renderer?: RendererSurfaceLike;
-  applyPostProcessPlan(plan: RendererPostProcessPlan): RendererPostProcessController;
   applyRenderVisuals(input: { pixelRatio: number; shadows: boolean; width: number; height: number }): void;
   dispose(): void;
   initialize(): Promise<RendererInitDiagnostics>;
@@ -79,45 +78,6 @@ export interface RendererFramePipeline {
   mainScene: Scene;
   overlayPasses?: RendererOverlayPass[];
   sceneName?: string;
-}
-
-export interface RendererPostProcessPlan {
-  antiAlias: "fxaa" | "none";
-  bloom: {
-    enabled: boolean;
-    intensity: number;
-  };
-  chromaticAberration: {
-    enabled: boolean;
-  };
-  colorGrade: {
-    brightness: number;
-    contrast: number;
-    hue: number;
-    saturation: number;
-  };
-  toneMapping: {
-    exposure: number;
-    mode: "aces-filmic" | "cineon" | "linear" | "neutral" | "reinhard";
-    whitePoint: number;
-  };
-  vignette: {
-    darkness: number;
-    enabled: boolean;
-    offset: number;
-  };
-}
-
-export interface RendererPostProcessController {
-  setColorGrade(input: Partial<RendererPostProcessPlan["colorGrade"]>): void;
-  setVignette(input: Partial<Omit<RendererPostProcessPlan["vignette"], "enabled">>): void;
-}
-
-export interface RendererPostProcessRuntime {
-  dispose(): void;
-  renderFrame(pipeline: RendererFramePipeline): void;
-  setPlan(plan: RendererPostProcessPlan): RendererPostProcessController;
-  setSize(width: number, height: number): void;
 }
 
 export type RendererBackendFactory = (options: { isMobileDevice: boolean; pixelRatio: number }) => RendererBackend;

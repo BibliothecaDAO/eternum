@@ -390,7 +390,6 @@ export default class GameRenderer {
           hexceptionScene: this.hexceptionScene,
           hudScene: this.hudScene,
           labelRuntime: this.labelRuntime,
-          effectsBridgeRuntime: this.supportRuntimeRegistry.getEffectsBridge(),
           worldmapScene: this.worldmapScene,
         });
 

@@ -50,10 +50,6 @@ interface RunRendererFrameInput {
   cycleProgress: number;
   deltaTime: number;
   animationsPaused?: boolean;
-  effectsBridgeRuntime?: Pick<
-    { updateWeatherPostProcessing(weatherState?: RendererWeatherState): void },
-    "updateWeatherPostProcessing"
-  >;
   hexceptionScene: RendererFrameSceneController;
   hudScene: RendererFrameHudController;
   labelRuntime: Pick<RendererLabelRuntime, "render" | "shouldRender">;
@@ -96,7 +92,6 @@ export function runRendererFrame(input: RunRendererFrameInput): boolean {
     shouldRenderLabels,
   });
   resolvedFrame.sceneController.onFrameRendered?.(input.now?.() ?? performance.now());
-  input.effectsBridgeRuntime?.updateWeatherPostProcessing(weatherState);
   input.captureStatsSample();
 
   return true;

@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-14",
+    title: "Neutral tone mapping control",
+    description:
+      "Graphics debug controls expose Neutral tone mapping alongside the existing renderer modes and exposure slider.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-14",
     title: "Army highlights hold still",
     description:
       "Fixed the hexes around a selected army flashing out and back in every few seconds. They now stay put while nothing changes, and when a tile becomes reachable, such as once stamina refills, only that tile appears.",

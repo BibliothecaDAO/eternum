@@ -10,7 +10,6 @@ import { createRendererRuntimeAssembly } from "./renderer-runtime-assembly";
 import type { RendererBackend } from "./renderer-backend";
 import type { RendererSessionRuntime } from "./renderer-session-runtime";
 import type { RendererSupportRuntimeRegistry } from "./renderer-support-runtime-registry";
-import { renderProfile } from "./render-profile";
 import { getContactShadowResources } from "./utils/contact-shadow";
 import type { TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
 import type { SceneManager } from "@/three/scene-manager";
@@ -96,8 +95,6 @@ function createGameRendererEffectsBridgeRuntime(input: CreateGameRendererRuntime
 
       return createRendererEffectsRuntime({
         backend: runtimeState.backend as RendererBackendRuntime,
-        createFolder: input.createFolder,
-        isGraphicsDevEnabled: input.isGraphicsDevEnabled,
         resolvePixelRatio: input.resolvePixelRatio,
         scenes: {
           hexceptionScene: runtimeState.hexceptionScene as HexceptionScene,
@@ -105,8 +102,6 @@ function createGameRendererEffectsBridgeRuntime(input: CreateGameRendererRuntime
         },
       });
     },
-    resolveRenderVisualProfile: () => renderProfile.visuals,
-    resolveWeatherState: () => input.resolveRuntimeState().hudScene?.getWeatherManager?.()?.getState(),
   });
 }
 
