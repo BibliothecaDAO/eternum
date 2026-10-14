@@ -45,8 +45,8 @@ The repository already has most of the operational vocabulary:
   error collection, and JSON output.
 - `run-renderer-scene-smoke.mjs` demonstrates production-scene checks, renderer parity diagnostics, retries, and failure
   artifacts.
-- `run-renderer-load-benchmark.mjs` establishes iteration summaries, p50/p95 reporting, baseline comparison, and a
-  failing process exit code.
+- `run-client-playtest.mjs` establishes iteration summaries, p50/p95 reporting, baseline comparison, and a failing
+  process exit code.
 - `worldmap-render-diagnostics.ts`, chunk diagnostics, renderer GPU telemetry, startup telemetry, and memory monitoring
   already expose the expensive phases and resource owners.
 - the root already depends on `sharp`, so contact sheets, image signatures, and image comparisons do not require a new

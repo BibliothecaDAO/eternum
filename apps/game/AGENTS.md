@@ -82,6 +82,49 @@ git pull --rebase && git push
 
 Resolve conflicts in YOUR files only If conflict is in a file you didn't modify, abort and ask the user NEVER force push
 
+## Playtest: the one command that proves client work
+
+`pnpm --dir apps/game playtest` starts a browser on the machine's GPU (Vulkan; headless Chrome would otherwise render on
+SwiftShader) and plays the newest live game from the environment's directory the way a player does, leaving the
+evidence. Run it against a running client and reuse it; extend its steps rather than writing another runner.
+
+- As a spectator (default): realm view, open the map, pan (WASD), zoom, select (Tab), the menu, back to the realm and
+  the map, then a minute of watching.
+- As a player (`--player <browser profile dir>`): from the home page's Resume or Play free, realm view, open the map,
+  select Army 1, explore twice (tap a tile beside the army, Enter), then five orders at a spamming player's pace. Sign
+  the profile in once by hand
+  (`npx -y agent-browser --session login --profile <dir> open https://127.0.0.1:4174/sign-in --ignore-https-errors`); it
+  stays signed in. Orders use the map's default zoom and need the army's stamina.
+
+```bash
+# The client must be served first. Measure what players run: a production build behind `vite preview`
+# (`vite preview` keeps the dev server's /api proxy). The dev server works too but its numbers are slower.
+pnpm --dir apps/game exec vite build --outDir ../../.context/playtest-dist
+pnpm --dir apps/game exec vite preview --outDir ../../.context/playtest-dist --host 127.0.0.1 --port 4174
+
+pnpm --dir apps/game playtest --base-url https://127.0.0.1:4174 --iterations 3 --out .context/playtest/run
+pnpm --dir apps/game playtest --base-url https://127.0.0.1:4174 --player .context/playtest-profiles/<account>
+```
+
+Options: `--renderer-modes webgpu-auto,webgpu-force-webgl` (default both), `--iterations` (default 3),
+`--cpu-throttle 4` (Chrome's CPU slowdown, so this machine stands in for a laptop), `--chain-id` and `--game-id`
+(default: the directory's newest live game), `--trace` (a Chrome trace per run), `--compare <summary.json>` (fails when
+boot regresses), `--headed`. Paths are taken from where the command is run.
+
+It leaves, in `--out` (default `.context/playtest/<timestamp>`):
+
+- `summary.json`: boot metrics and every step metric per renderer mode, as run count, median, min and max.
+- `<role>-<mode>-<run>-transcript.json`: the run's boot timeline, per-step summaries (frame time, long animation frames
+  with their scripts, input-to-paint latency, draw calls, retained heap, each Herald message to the frame after it), the
+  client's own action timelines (click to rendered), every JSON-RPC POST with whether its connection was reused,
+  reloads, the machine's load average, and the raw probe data.
+- `<role>-<mode>-<run>-NN-<step>.png` after every step, and `<role>-<mode>-<run>-console.log`.
+
+The probe (`scripts/client-playtest-probe.js`) is an init script that only observes; no app code is changed for it. The
+boot gate fails the run (exit 1) on entry or world-interactive over 30 s, browser errors, or a WebGPU fallback without a
+reason, or on a one-minute load average over 12 at any step (the machine is shared: such a run is not evidence); a page
+reload during a step is a warning with its cost. Stop the preview server when done.
+
 ## Browser Testing with `agent-browser` Skill
 
 Use this runbook when validating spectator/game flow in a real browser session.

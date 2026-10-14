@@ -126,8 +126,8 @@ in production (`:68-71`; `jolt-ragdoll-world.ts` only reachable via the dynamic 
 `procedural-army-character-layer.ts:389`); post-processing fully disabled (`:135`); two mobile branches already threaded
 through the backend factory (`PCFShadowMap`, `UnsignedByteType` output, 1.5× label cadence —
 `webgpu-renderer-backend.ts:102-107`, `game-renderer-policy.ts:250-268`); disposal discipline in
-`army-model.ts:2583-2648`; `StatsRecorder` and `frame-work-owner.ts` spike attribution; a real boot benchmark driving
-real spectate URLs (`scripts/run-renderer-load-benchmark.mjs`).
+`army-model.ts:2583-2648`; `StatsRecorder` and `frame-work-owner.ts` spike attribution; a real playtest driving real
+spectate URLs (`scripts/run-client-playtest.mjs`).
 
 **No mobile measurement of any kind exists in this repo.** That is the first thing to fix.
 
@@ -261,8 +261,8 @@ afternoon.
 - Replace the device-loss **page reload** with in-place renderer recreation; remove `setSize` from the frame-error path.
 - Add a Save-Data / `connection.effectiveType` guard to `prefetch-play-assets.ts`, and `snapshotModels` subsetting for
   the mobile lane (drop models the phone HUD never reads).
-- Extend `run-renderer-load-benchmark.mjs` with a device-lab target (a phone over WebDriver / Playwright on device) so
-  the numbers are repeatable, not anecdotal.
+- Extend `run-client-playtest.mjs` with a device-lab target (a phone over WebDriver / Playwright on device) so the
+  numbers are repeatable, not anecdotal.
 
 **Gate:** on the iPhone 13-class and mid-range Android devices, spectate a live 96-player game for 10 minutes across all
 three zoom bands with **zero WebContent or GPU-process terminations**, entry-ready ≤ 20 s on Wi-Fi, close-band p95 frame

@@ -8,7 +8,6 @@
   "scripts": {
     "build": "NODE_OPTIONS=\"--max-old-space-size=8192\" tsc && NODE_OPTIONS=\"--max-old-space-size=8192\" vite build",
     "build:webgpu": "VITE_PUBLIC_RENDERER_BUILD_MODE=webgpu-auto NODE_OPTIONS=\"--max-old-space-size=8192\" tsc && VITE_PUBLIC_RENDERER_BUILD_MODE=webgpu-auto NODE_OPTIONS=\"--max-old-space-size=8192\" vite build",
-    "benchmark:renderer-load": "node ./scripts/run-renderer-load-benchmark.mjs",
     "benchmark:procedural-characters": "node ./scripts/run-procedural-character-performance-benchmark.mjs",
     "capture:character-animation": "node ./scripts/run-character-animation-capture.mjs",
     "build:terrain-props": "node ./scripts/terrain-props/build-biome-kit-catalog.mjs",
@@ -55,6 +54,7 @@
     "lab:frontier": "bun scripts/frontier-lab-facts.ts .lab/frontier-rules.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "playtest": "node ./scripts/run-client-playtest.mjs",
     "preview": "vite preview",
     "smoke:character-gym": "node ./scripts/run-character-gym-smoke.mjs",
     "smoke:character-benchmark": "node ./scripts/run-character-benchmark-smoke.mjs",
