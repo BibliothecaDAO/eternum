@@ -102,7 +102,7 @@ operator token from its protected `/opt/athanor/operator-token` mount; host comm
 
 The node and Herald URLs are required (`--rpc-url`/`RPC_URL`, `--herald-url`/`HERALD_URL`) and have no default; the
 `harness` service takes them from `harness.env`. Player invokes use the public stamping RPC. Setup and administrative
-calls use HARNESS_ADMIN_RPC_URL on the private node inside the Compose network.
+calls, bot accounts joining included, use HARNESS_ADMIN_RPC_URL on the private node inside the Compose network.
 
 A roster run drives every player as a worker thread of one process and asserts its gates once, over the whole run, in
 `rosters-<time>/summary.json`. A run fails only on correctness: the action threshold (3,500 for the frozen 96-player
@@ -147,5 +147,13 @@ python3 deploy/athanor/scripts/operator-command.py measure /opt/athanor/runs/sta
 It takes the isolated-stack lock, runs the package's `harness` service with the options after `--` and writes
 `data/measure/NAME/result.json` beside the harness's reports in `data/measure/NAME/workload`. Report latency separately
 from gas and execution resources. Admission-to-visible includes queue wait and the Herald barrier.
+
+A measurement shard (the runner, `operator-command.py runner CONFIGURATION DIRECTORY --matrix`) has no directory-listed
+game: it stays PENDING. After its readiness probe the runner makes the harness's operator the Games launcher
+(`scripts/measurement-launcher.ts`, refused on any chain named after a deployment environment), so the harness creates
+its own games there. Eternum runs create theirs as always; a Frontier run or the 2,000-player wave takes
+`--create-game`. Matrix workloads name the shard's own endpoints, `"rpc_url": "http://rpc:8080/rpc/v0_10_2"` and
+`"herald_url": "http://herald:3003"`, with `public_rpc_url` set to the same RPC URL. Retire a stopped runner shard's
+containers and volumes with `docker compose -f DIRECTORY/SHARD/compose.json down --volumes`.
 
 Preserve the baseline image and chain data until final acceptance and the approved cutover.

@@ -266,5 +266,9 @@ if __name__ == "__main__":
         prepare(config)
     elif action == "deploy":
         deploy(config, presets)
+    elif action == "measurement-launcher":
+        # The runner's call only; the script refuses a chain named after a deployment environment.
+        shard.run(["bun", "deploy/athanor/scripts/measurement-launcher.ts", str(DATA)], DATA, "measurement-launcher",
+                  environment(config))
     else:
-        raise ValueError("Expected prepare or deploy")
+        raise ValueError("Expected prepare, deploy or measurement-launcher")

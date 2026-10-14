@@ -218,6 +218,14 @@ describe("Madara harness workload", () => {
     expect(bots[0].explorers.map(({ explorerId }) => explorerId)).toEqual(resumed ? [11, 21] : [11]);
   });
 
+  it("plays the directory's game unless told to create it as a measurement shard's launcher", () => {
+    expect(parseHarnessArgs(["--game-type", "frontier"]).createGame).toBe(false);
+    expect(parseHarnessArgs(["--game-type", "frontier", "--create-game", "--bots", "4"])).toMatchObject({
+      createGame: true,
+      bots: 4,
+    });
+  });
+
   it("selects Eternum and rejects deferred ledger options", () => {
     expect(parseHarnessArgs([]).gameType).toBe("frontier");
     expect(parseHarnessArgs(["--game-type", "eternum"]).gameType).toBe("eternum");

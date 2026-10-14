@@ -380,7 +380,9 @@ def start_shard(config, directory):
     command = [*DOCKER, "compose", "-f", str(directory / "compose.json")]
     try:
         start_runner_stack(config, directory, command)
-        return record_runner_readiness(config, compose, directory, command)
+        readiness = record_runner_readiness(config, compose, directory, command)
+        grant_measurement_launcher(directory, command)
+        return readiness
     except BaseException:
         stop_shard(directory)
         raise
@@ -395,6 +397,13 @@ def record_runner_readiness(config, compose, directory, command):
     result = deployment_manifest(config, compose, directory, manifest, rpc_rtt, herald_rtt)
     write_json(directory / "manifest.json", result)
     return result
+
+
+def grant_measurement_launcher(directory, command):
+    """A measurement shard's harness creates its own games, so the runner, never an official deployment, makes the
+    harness's operator the launcher. It runs after the readiness probe, which checks the launcher the deploy set."""
+    run([*command, "run", "--rm", "--no-deps", "--entrypoint", "python3", "harness",
+         "/app/deploy/shard/init.py", "measurement-launcher"], directory, "measurement-launcher")
 
 
 def start_runner_stack(config, directory, command):

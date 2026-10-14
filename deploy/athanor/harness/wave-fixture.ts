@@ -1,6 +1,5 @@
-import { Account, shortString } from "starknet";
-import { DeviceSigner, deviceKeyOf } from "@bibliothecadao/eternum";
-import { configureGameplayAccountSubmits, openShard } from "@bibliothecadao/eternum/game-client";
+import { shortString } from "starknet";
+import { openShard } from "@bibliothecadao/eternum/game-client";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import type { NativeWorldManifest } from "../../../config/deployer/clean/world/native/types";
 import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
@@ -9,7 +8,7 @@ import { createHarnessAccounts } from "./account-factory";
 import { connectActorClients, actorKey } from "./game-client";
 import { connectHarnessGameClient } from "./game-client";
 import { createHarnessGame } from "./harness-game";
-import { createHarnessAdminProvider } from "./game-setup";
+import { createHarnessAdminProvider, launchHarnessGame } from "./game-setup";
 import { listedFrontierGame } from "./directory-game";
 import { readPlayBounds } from "./player-invoke";
 import { HarnessProvider } from "./provider";
@@ -23,7 +22,7 @@ const required = (name: string) => {
 
 /** Fresh real-contract fixtures: 2,000 open-season settlements. */
 const fixture: WaveFixturePort = {
-  async createGame(players) {
+  async createGame(players, create) {
     if (players !== 2000) throw new Error("Wave fixture requires 2000 players");
     const manifest = readShardManifest<NativeWorldManifest>(required("NATIVE_WORLD_MANIFEST"));
     const bounds = readPlayBounds(manifest);
@@ -41,29 +40,19 @@ const fixture: WaveFixturePort = {
     };
     try {
       await assertProviderChain(provider, manifest, "public wave RPC");
-      const game = await listedFrontierGame(required("IDENTITY_URL"), shard, required("HERALD_URL"), 5);
-      const approved = await createHarnessAccounts({
+      const game = create
+        ? await launchHarnessGame({ gameName: `wave-${Date.now().toString(36)}`, minutes: 60, presetId: 5, owners: [] })
+        : await listedFrontierGame(required("IDENTITY_URL"), shard, required("HERALD_URL"), 5);
+      const accounts = await createHarnessAccounts({
         count: players,
         concurrency: 6,
         gameId: 0,
         identity: { url: required("IDENTITY_URL"), operatorToken: required("OPERATOR_TOKEN") },
-        provider: privateProvider,
+        setupProvider: privateProvider,
+        playProvider: provider,
         shard,
         stopped: run.signal,
       });
-      const accounts = approved.map((player) => ({
-        ...player,
-        account: configureGameplayAccountSubmits(
-          new Account({
-            provider,
-            address: player.address,
-            signer: new DeviceSigner(deviceKeyOf(player.privateKey)),
-            cairoVersion: "1",
-          }),
-          shard,
-          run.signal,
-        ),
-      }));
       clients = await connectActorClients(
         accounts.map(({ address }) => address),
         6,

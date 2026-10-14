@@ -1,7 +1,12 @@
-import { setTimeout as delay } from "node:timers/promises";
 import { serviceFailure } from "../../../packages/value-ledger/src/service-error";
-import { stark, type Account, type RpcProvider } from "starknet";
-import { deviceKeyOf, joinBotAccount, type OperatorIdentity, type RealmsAccountShard } from "@bibliothecadao/eternum";
+import { Account, stark, type RpcProvider } from "starknet";
+import {
+  DeviceSigner,
+  deviceKeyOf,
+  joinBotAccount,
+  type OperatorIdentity,
+  type RealmsAccountShard,
+} from "@bibliothecadao/eternum";
 import { configureGameplayAccountSubmits, type GameplayShard } from "@bibliothecadao/eternum/game-client";
 
 export interface HarnessAccount {
@@ -20,7 +25,10 @@ interface CreateHarnessAccountsOptions {
   count: number;
   gameId: number;
   identity: OperatorIdentity;
-  provider: RpcProvider;
+  /** The private node: bots join there, like every setup and administrative call. */
+  setupProvider: RpcProvider;
+  /** The public stamping RPC: the joined accounts play through it, as players do. */
+  playProvider: RpcProvider;
   shard: RealmsAccountShard & GameplayShard;
   /** The run the bots play for: their sends stop being reconciled when it ends. */
   stopped?: AbortSignal;
@@ -34,7 +42,8 @@ export async function createHarnessAccounts({
   count,
   gameId,
   identity,
-  provider,
+  setupProvider,
+  playProvider,
   shard,
   stopped,
 }: CreateHarnessAccountsOptions): Promise<HarnessAccount[]> {
@@ -45,9 +54,21 @@ export async function createHarnessAccounts({
     const startedAt = performance.now();
 
     try {
+      const joined = await joinBotAccount({
+        provider: setupProvider,
+        shard,
+        label: stark.randomAddress(),
+        device,
+        identity,
+      });
       // Every send a bot makes, raw or through the client's provider, takes the client's nonce and fee path.
       const account = configureGameplayAccountSubmits(
-        await joinRateLimitedBot({ provider, shard, label: stark.randomAddress(), device, identity }, stopped),
+        new Account({
+          provider: playProvider,
+          address: joined.address,
+          signer: new DeviceSigner(device),
+          cairoVersion: "1",
+        }),
         shard,
         stopped,
       );
@@ -67,25 +88,6 @@ export async function createHarnessAccounts({
       throw new Error(`Bot ${botId} sign-in failed: ${failure.type}: ${failure.message}`, { cause: error });
     }
   });
-}
-
-/** The public proxy allows 30 account operations per minute; a refused join retries the same account and device for at most two windows. */
-async function joinRateLimitedBot(
-  input: Parameters<typeof joinBotAccount>[0],
-  stopped?: AbortSignal,
-): Promise<Account> {
-  for (let attempt = 0; ; attempt++) {
-    try {
-      return await joinBotAccount(input);
-    } catch (error) {
-      let cause = error;
-      while (cause instanceof Error && cause.cause) cause = cause.cause;
-      if (attempt === 2 || !cause || typeof cause !== "object" || !("code" in cause) || cause.code !== -32005)
-        throw error;
-      console.log("Bot sign-in reached the public account-operation limit; waiting for its one-minute window.");
-      await delay(60_000, undefined, { signal: stopped });
-    }
-  }
 }
 
 export async function mapWithConcurrency<T, R>(

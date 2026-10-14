@@ -120,6 +120,24 @@ class ShardTest(unittest.TestCase):
                 self.assertTrue((directory / "compose.json").exists())
                 self.assertTrue((directory / "directory-registration-ack.json").exists())
 
+    def test_a_runner_shard_makes_its_harness_the_launcher_only_after_the_readiness_probe(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary) / "trial"
+            read_text = Path.read_text
+            def read(path, *args, **kwargs):
+                if str(path) == "/sys/fs/cgroup/athanor.slice/cpuset.cpus.effective": return "8-11,20-23"
+                return read_text(path, *args, **kwargs)
+            steps = []
+            with (
+                patch.object(Path, "read_text", read), patch.object(shard, "ensure_fresh_project"),
+                patch.object(shard, "compose_configuration", return_value={"services": {"madara": {"image": NODE_IMAGE}}}),
+                patch.object(shard, "start_runner_stack", side_effect=lambda *_: steps.append("stack")),
+                patch.object(shard, "record_runner_readiness", side_effect=lambda *_: steps.append("readiness") or {}),
+                patch.object(shard, "run", side_effect=lambda command, _, name, *__: steps.append((name, command[-1]))),
+            ):
+                shard.start_shard(configuration(), directory)
+        self.assertEqual(steps, ["stack", "readiness", ("measurement-launcher", "measurement-launcher")])
+
     def test_stopping_a_registered_runner_retires_after_stop_without_activation(self):
         events = []
         with tempfile.TemporaryDirectory() as temporary:
