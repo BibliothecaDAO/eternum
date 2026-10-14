@@ -5,6 +5,7 @@ import unittest
 from unittest.mock import patch
 
 import measures
+import stack_lock
 
 
 def snapshot_export(count):
@@ -119,6 +120,19 @@ class MeasuresTests(unittest.TestCase):
         command = run.call_args.args[0]
         self.assertEqual(command, ["docker", "compose", "run", "--rm", "-e",
                                    "HARNESS_OUTPUT_DIRECTORY=/data/measure/soak/workload", "harness", "--bots", "1"])
+
+    def test_a_refused_lock_leaves_no_run_directory_so_the_same_name_reruns(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary) / "run"
+            directory.mkdir()
+            (directory / "release.json").write_text(json.dumps({"commit": "abc"}))
+            lock = Path(temporary) / "isolated-stack.lock"
+            lock.write_text("deploy dev 2026-10-14T15:00:00Z\n")
+            for _ in range(2):
+                with patch.object(measures, "isolated_stack_lock", lambda holder: stack_lock.isolated_stack_lock(holder, lock)), \
+                        self.assertRaisesRegex(RuntimeError, "is held: deploy dev"):
+                    measures.measure_package(directory, "check", [], ["docker"])
+                self.assertFalse((directory / "data" / "measure").exists())
 
 
 if __name__ == "__main__":

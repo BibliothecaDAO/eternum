@@ -205,11 +205,12 @@ def measure_package(directory, name, options, docker):
     """Measures a workload against a running package shard and writes its one result."""
     data = directory / "data"
     output = data / "measure" / name
-    output.mkdir(parents=True)
     compose = [*docker, "compose", "--project-directory", str(directory)]
     result = {"name": name, "commit": json.loads((directory / "release.json").read_text())["commit"],
               "harnessOptions": options, "passed": False}
+    # A refused lock leaves nothing behind; an existing run's evidence is never overwritten.
     with isolated_stack_lock(f"measure {name}"):
+        output.mkdir(parents=True)
         node = subprocess.check_output([*compose, "ps", "-q", "madara"], text=True).strip()
         try:
             result.update(measure_workload(
