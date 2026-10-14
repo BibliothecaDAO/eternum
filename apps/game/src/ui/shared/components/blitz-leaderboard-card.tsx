@@ -1,3 +1,4 @@
+import { FONTS } from "@/tokens";
 import { forwardRef, type Ref, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -6,7 +7,7 @@ import { useProfiles } from "@/shell/profiles";
 import { displayPlayerName } from "@bibliothecadao/eternum";
 import { BLITZ_CARD_DIMENSIONS, truncateText } from "../lib/blitz-highlight";
 import {
-  BLITZ_CARD_FONT_IMPORT,
+  BLITZ_CARD_FONT_FACES,
   BLITZ_CARD_BASE_STYLES,
   BLITZ_CARD_GOLD_THEME,
   formatBlitzValue as formatValue,
@@ -15,7 +16,7 @@ import {
 import { APP_HOST } from "@/config/app-address";
 
 const LEADERBOARD_CARD_STYLES = `
-  ${BLITZ_CARD_FONT_IMPORT}
+  ${BLITZ_CARD_FONT_FACES}
   ${BLITZ_CARD_BASE_STYLES}
   ${BLITZ_CARD_GOLD_THEME}
 
@@ -62,7 +63,7 @@ const LEADERBOARD_CARD_STYLES = `
   }
 
   .blitz-card-root .podium-rank-number {
-    font-family: "Montserrat", sans-serif;
+    font-family: ${FONTS.body};
     font-weight: 800;
     line-height: 1;
     display: inline-block;
@@ -74,7 +75,7 @@ const LEADERBOARD_CARD_STYLES = `
   }
 
   .blitz-card-root .podium-rank-suffix {
-    font-family: "Montserrat", sans-serif;
+    font-family: ${FONTS.body};
     font-weight: 800;
     line-height: 1;
     display: inline-block;
@@ -110,7 +111,7 @@ const LEADERBOARD_CARD_STYLES = `
   }
 
   .blitz-card-root .podium-name {
-    font-family: "Montserrat", sans-serif;
+    font-family: ${FONTS.body};
     font-weight: 700;
     color: #ffffff;
     margin-top: 4px;
@@ -135,7 +136,7 @@ const LEADERBOARD_CARD_STYLES = `
 
 
   .blitz-card-root .podium-points {
-    font-family: "Montserrat", sans-serif;
+    font-family: ${FONTS.body};
     font-weight: 800;
     margin-top: 6px;
   }
@@ -166,8 +167,7 @@ const LEADERBOARD_CARD_STYLES = `
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    font-family: "IM Fell English", serif;
-    font-style: italic;
+    font-family: ${FONTS.body};
     font-size: 24px;
     color: #ffffff;
     opacity: 0.5;

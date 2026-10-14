@@ -60,7 +60,7 @@ export function MessageComposer({
   if (isRecipientOffline) {
     return (
       <div className="p-1.5 flex-shrink-0">
-        <div className="flex items-center justify-center p-2 bg-black/20 rounded text-gold/50 text-sm">
+        <div className="flex items-center justify-center p-2 bg-black/20 rounded text-kit-muted text-sm">
           <AlertTriangle className="h-4 w-4 mr-2" />
           {recipientName || "User"} is offline. You will be able to send messages when they come back online.
         </div>

@@ -30,7 +30,7 @@ export const RefillButton = ({
     >
       <KitIcon code="Lo" size={18} />
       <span className="flex min-w-14 flex-col gap-[3px]">
-        <span className="whitespace-nowrap text-[14px] tabular-nums text-kit-cream">
+        <span className="whitespace-nowrap text-sm tabular-nums text-kit-cream">
           {formatExact(held)} / {formatExact(price)}
         </span>
         <StoreBar amount={held} limit={price} tone="calm" />
@@ -69,7 +69,7 @@ export const RefillConfirm = ({
     <Sheet label={REFILL} onClose={onCancel}>
       <header className="flex items-center gap-2.5">
         <KitIcon code="St" size={30} />
-        <h2 className="frontier-title flex-1 !text-[20px]">{REFILL}</h2>
+        <h2 className="frontier-title flex-1 !text-xl">{REFILL}</h2>
       </header>
       <div className="flex items-center justify-center gap-2">
         <Chip icons={["St"]} label={STAMINA} value={`${formatExact(stamina.current)} → ${formatExact(stamina.max)}`} />

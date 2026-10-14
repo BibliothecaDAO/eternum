@@ -89,18 +89,18 @@ export const ThreeChunkDebugView = () => {
       <aside className="flex flex-col gap-4 border border-white/10 bg-black/55 p-4 backdrop-blur-md">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase text-sky-200/70">Renderer Debug</p>
+            <p className="text-sm font-semibold text-sky-200/70">Renderer Debug</p>
             <h1 className="mt-1 text-2xl font-semibold text-white">Three.js Chunks</h1>
           </div>
         </div>
 
-        <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-slate-300">
+        <label className="flex flex-col gap-2 text-sm font-semibold text-slate-300">
           Scenario
           <select
             value={scenarioId}
             onChange={handleScenarioChange}
             className={cn(
-              "h-10 border border-white/15 bg-slate-950/90 px-3 text-sm font-medium normal-case tracking-normal text-white",
+              "h-10 border border-white/15 bg-slate-950/90 px-3 text-sm font-medium text-white",
               "outline-none transition-colors focus:border-sky-300",
             )}
             aria-label="Debug scenario"
@@ -151,7 +151,7 @@ export const ThreeChunkDebugView = () => {
 
 const DebugMetric = ({ label, value }: { label: string; value: string }) => (
   <div className="border border-white/10 bg-white/[0.04] px-3 py-2">
-    <dt className="text-[0.65rem] font-semibold uppercase text-slate-400">{label}</dt>
+    <dt className="text-sm font-semibold text-slate-400">{label}</dt>
     <dd className="mt-1 font-mono text-base text-white">{value}</dd>
   </div>
 );

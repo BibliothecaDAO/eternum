@@ -10,14 +10,14 @@ const AVNU_SWAP = "https://app.avnu.fi/en";
  * and the client sends no fee for anyone.
  */
 export const NoStrkLine = () => (
-  <p className="flex flex-wrap items-center gap-2.5 rounded-xl border border-dashed border-kit-amber px-3 py-2 font-body text-[15px] font-semibold text-kit-gold2">
+  <p className="flex flex-wrap items-center gap-2.5 rounded-xl border border-dashed border-kit-amber px-3 py-2 font-body text-base font-semibold text-kit-gold2">
     <KitIcon code="Lo" size={22} />
     {VALUE_WORDS.noStrk}
     <a
       href={AVNU_SWAP}
       target="_blank"
       rel="noopener noreferrer"
-      className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-full border border-kit-gold bg-kit-ink pl-2 pr-3 text-[14px] font-bold text-kit-cream"
+      className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-full border border-kit-gold bg-kit-ink pl-2 pr-3 text-sm font-bold text-kit-cream"
     >
       <KitIcon code="Ar" size={20} />
       {VALUE_WORDS.swapOnAvnu}

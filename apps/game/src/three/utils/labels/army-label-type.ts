@@ -108,7 +108,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
         textContainer.appendChild(staminaBar);
       } else if (data.currentStamina === undefined || cameraView !== CameraView.Medium) {
         const staminaInfo = document.createElement("div");
-        staminaInfo.classList.add("flex", "items-center", "text-xxs", "gap-1");
+        staminaInfo.classList.add("flex", "items-center", "text-sm", "gap-1");
 
         const staminaIcon = document.createElement("span");
         staminaIcon.textContent = "⚡";
@@ -249,7 +249,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
           contentContainer.appendChild(staminaBar);
         } else if (data.currentStamina === undefined || cameraView !== CameraView.Medium) {
           const staminaInfo = document.createElement("div");
-          staminaInfo.classList.add("flex", "items-center", "text-xxs", "gap-1");
+          staminaInfo.classList.add("flex", "items-center", "text-sm", "gap-1");
 
           const staminaIcon = document.createElement("span");
           staminaIcon.textContent = "⚡";

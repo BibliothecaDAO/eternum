@@ -83,7 +83,7 @@ const LevelTable = () => {
                         className="object-contain"
                       />
                     ) : (
-                      <span className="text-gold/40">No preview available</span>
+                      <span className="text-kit-muted">No preview available</span>
                     )}
                   </div>
                   <div className="space-y-2 text-center">

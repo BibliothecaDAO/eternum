@@ -69,7 +69,7 @@ const Stepper = ({ newer, older }: { newer: ScrollPost | undefined; older: Scrol
 
 const PhonePost = ({ post }: { post: ScrollPost }) => (
   <article className="mx-auto flex max-w-[760px] flex-col gap-3">
-    <h1 className="font-ui text-[26px] font-bold leading-tight text-kit-cream">{post.title}</h1>
+    <h1 className="font-body text-[26px] font-bold leading-tight text-kit-cream">{post.title}</h1>
     <PostDate post={post} />
     <PostBody post={post} />
   </article>
@@ -86,7 +86,7 @@ const DesktopPost = ({ post }: { post: ScrollPost }) => (
         className="absolute inset-0 -z-10 size-full object-cover"
       />
       <span className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-kit-ground/40 to-kit-ground/95" />
-      <span className="font-ui text-[15px] text-kit-gold">{postKind(post)}</span>
+      <span className="font-body text-base text-kit-gold">{postKind(post)}</span>
       <h1 className="max-w-[60rem] font-display text-[44px] leading-[1.05] text-kit-cream">{post.title}</h1>
       <PostDate post={post} />
     </header>
@@ -100,7 +100,7 @@ const DesktopPost = ({ post }: { post: ScrollPost }) => (
               <Link
                 key={other.slug}
                 to={postHref(other)}
-                className="flex min-h-12 items-center border-b border-kit-line px-1 py-2 font-ui text-[15px] text-kit-cream last:border-b-0 hover:text-kit-gold2"
+                className="flex min-h-12 items-center border-b border-kit-line px-1 py-2 font-body text-base text-kit-cream last:border-b-0 hover:text-kit-gold2"
               >
                 {other.title}
               </Link>
@@ -112,7 +112,7 @@ const DesktopPost = ({ post }: { post: ScrollPost }) => (
 );
 
 const PostDate = ({ post }: { post: ScrollPost }) => (
-  <p className="flex items-center gap-2 text-[13px] text-kit-muted">
+  <p className="flex items-center gap-2 text-sm text-kit-muted">
     <KitIcon code="Cl" size={18} />
     {formatContentDay(post.date)} · {LEARN_WORDS.minutes(post.readingTimeMinutes)}
   </p>
@@ -120,7 +120,7 @@ const PostDate = ({ post }: { post: ScrollPost }) => (
 
 const PostBody = ({ post }: { post: ScrollPost }) => (
   <div
-    className="prose prose-invert max-w-[68ch] text-[17px] leading-[26px] prose-headings:font-ui prose-headings:text-kit-cream prose-p:text-kit-cream prose-a:text-kit-peach prose-strong:text-kit-cream prose-li:text-kit-cream prose-blockquote:border-kit-line2 prose-blockquote:text-kit-muted"
+    className="prose prose-invert max-w-[68ch] text-base leading-[26px] prose-headings:font-body prose-headings:text-kit-cream prose-p:text-kit-cream prose-a:text-kit-peach prose-strong:text-kit-cream prose-li:text-kit-cream prose-blockquote:border-kit-line2 prose-blockquote:text-kit-muted"
     dangerouslySetInnerHTML={{ __html: post.html }}
   />
 );

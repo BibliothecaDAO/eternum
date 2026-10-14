@@ -30,7 +30,7 @@ export const ViewSwitch = <Id extends string>({
         aria-checked={view.id === lit}
         onClick={() => view.id !== lit && onChange(view.id)}
         className={cn(
-          "flex min-w-0 flex-1 items-center justify-center gap-1.5 text-[15px] font-semibold transition-colors",
+          "flex min-w-0 flex-1 items-center justify-center gap-1.5 text-base font-semibold transition-colors",
           view.id === lit ? "bg-kit-line2 text-kit-gold2" : "text-kit-muted hover:text-kit-cream",
         )}
       >

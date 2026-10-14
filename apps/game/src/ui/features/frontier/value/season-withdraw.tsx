@@ -43,8 +43,8 @@ export const SeasonWithdrawRow = ({
     <div className="frontier-card flex w-full items-center gap-2.5 !rounded-xl px-3 py-2">
       <KitIcon code="Lo" size={30} />
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="text-[18px] tabular-nums text-kit-cream">{formatExact(lords)}</span>
-        <span className="text-[13px] text-kit-muted">
+        <span className="text-lg tabular-nums text-kit-cream">{formatExact(lords)}</span>
+        <span className="text-sm text-kit-muted">
           {closed ? WITHDRAWALS_CLOSED : withdrawUntil(formatMoment(closesAt, now))}
         </span>
       </span>

@@ -41,7 +41,7 @@ export const DayDial = ({
           className={TONE_STROKE[tone]}
         />
       </svg>
-      <span aria-hidden className="relative text-[14px] tabular-nums">
+      <span aria-hidden className="relative text-sm tabular-nums">
         {day ?? "—"}
       </span>
     </span>

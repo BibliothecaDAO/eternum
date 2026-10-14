@@ -109,7 +109,7 @@ export const ResourceBar = memo(
           />
 
           {!disableInput && (
-            <div className="flex text-xs mt-1.5 items-center text-gold/50">
+            <div className="flex text-sm mt-1.5 items-center text-kit-muted">
               <MaxButton
                 max={finalResourceBalance ?? 0}
                 onChange={(value) => handleAmountChange(parseFloat(value))}

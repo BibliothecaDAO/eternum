@@ -124,11 +124,9 @@ export const WorldFxGymView = () => {
         <aside className="flex max-h-[calc(100vh-2rem)] flex-col gap-4 overflow-y-auto border border-orange-200/10 bg-black/55 p-4 backdrop-blur-md">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange-200/65">
-                Renderer Laboratory
-              </p>
+              <p className="text-sm font-semibold text-orange-200/65">Renderer Laboratory</p>
               <h1 className="mt-1 text-2xl font-semibold text-white">Procedural FX Gym</h1>
-              <p className="mt-2 text-xs leading-relaxed text-stone-400">
+              <p className="mt-2 text-sm leading-relaxed text-stone-400">
                 Deterministic pooled effects running through the production World FX interface.
               </p>
             </div>
@@ -160,7 +158,7 @@ export const WorldFxGymView = () => {
             <option value="webgpu-force-webgl">WebGL2 fallback</option>
           </DebugSelect>
 
-          <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
+          <label className="flex flex-col gap-2 text-sm font-semibold text-stone-300">
             Seed
             <input
               key={seed}
@@ -170,7 +168,7 @@ export const WorldFxGymView = () => {
               onKeyDown={(event) => {
                 if (event.key === "Enter") setOption("seed", event.currentTarget.value);
               }}
-              className="h-10 border border-white/15 bg-stone-950 px-3 font-mono text-sm font-medium normal-case text-white outline-none focus:border-orange-300"
+              className="h-10 border border-white/15 bg-stone-950 px-3 font-mono text-sm font-medium text-white outline-none focus:border-orange-300"
             />
           </label>
 
@@ -188,8 +186,8 @@ export const WorldFxGymView = () => {
           </dl>
 
           <div className="border border-white/10 bg-white/[0.035] p-3">
-            <p className="text-[0.65rem] font-semibold uppercase text-stone-500">Deterministic fingerprint</p>
-            <p className="mt-1 font-mono text-sm tracking-[0.18em] text-orange-200">{stats.fingerprint}</p>
+            <p className="text-sm font-semibold text-stone-500">Deterministic fingerprint</p>
+            <p className="mt-1 font-mono text-sm text-orange-200">{stats.fingerprint}</p>
           </div>
 
           <div className="mt-auto grid grid-cols-2 gap-2">
@@ -230,7 +228,7 @@ export const WorldFxGymView = () => {
           aria-label="Procedural gameplay FX gym"
         />
         {!capture && (
-          <div className="pointer-events-none absolute left-4 top-4 flex items-center gap-2 border border-orange-200/10 bg-black/45 px-3 py-2 text-xs uppercase tracking-[0.16em] text-orange-100/70 backdrop-blur">
+          <div className="pointer-events-none absolute left-4 top-4 flex items-center gap-2 border border-orange-200/10 bg-black/45 px-3 py-2 text-sm text-orange-100/70 backdrop-blur">
             <Flame className="h-4 w-4 text-orange-300" />
             {scenario} · {count}
           </div>
@@ -256,12 +254,12 @@ const DebugSelect = ({
   onChange(value: string): void;
   value: string;
 }) => (
-  <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
+  <label className="flex flex-col gap-2 text-sm font-semibold text-stone-300">
     {label}
     <select
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium normal-case text-white outline-none transition-colors focus:border-orange-300"
+      className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium text-white outline-none transition-colors focus:border-orange-300"
     >
       {children}
     </select>
@@ -270,7 +268,7 @@ const DebugSelect = ({
 
 const DebugMetric = ({ label, value, alert = false }: { label: string; value: string; alert?: boolean }) => (
   <div className={cn("border bg-white/[0.035] px-3 py-2", alert ? "border-red-300/40" : "border-white/10")}>
-    <dt className="text-[0.65rem] font-semibold uppercase text-stone-500">{label}</dt>
+    <dt className="text-sm font-semibold text-stone-500">{label}</dt>
     <dd className={cn("mt-1 font-mono text-sm", alert ? "text-red-200" : "text-white")}>{value}</dd>
   </div>
 );

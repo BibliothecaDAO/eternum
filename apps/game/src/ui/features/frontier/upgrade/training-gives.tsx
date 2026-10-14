@@ -38,7 +38,7 @@ export const TrainingGives = ({
     {kinds ?? (
       <div className="flex items-center gap-2">
         <NextArmy art={armyArt} mark={mark} tier={tier} />
-        <span aria-hidden className="text-[18px] text-kit-muted">
+        <span aria-hidden className="text-lg text-kit-muted">
           →
         </span>
         <NextArmy art={armyArt} mark={mark} tier={(tier + 1) as Tier} lit />

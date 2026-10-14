@@ -28,8 +28,8 @@ export const LordsPurse = ({
   const body = (
     <>
       <KitIcon code="Lo" size={26} />
-      <span className="text-[17px] tabular-nums text-kit-cream">{formatExact(lords)}</span>
-      {gain !== undefined && <span className="text-[15px] tabular-nums text-[#b9e58a]">+{formatExact(gain)}</span>}
+      <span className="text-base tabular-nums text-kit-cream">{formatExact(lords)}</span>
+      {gain !== undefined && <span className="text-base tabular-nums text-[#b9e58a]">+{formatExact(gain)}</span>}
     </>
   );
   const look = cn(
@@ -57,6 +57,6 @@ export const RealmsChip = ({ labor, onOpen }: { labor: number; onOpen: () => voi
   >
     <KitIcon code="Cs" size={24} />
     <KitIcon code="La" size={22} />
-    <span className="text-[17px] tabular-nums text-kit-cream">+{formatAmount(labor)}</span>
+    <span className="text-base tabular-nums text-kit-cream">+{formatAmount(labor)}</span>
   </button>
 );

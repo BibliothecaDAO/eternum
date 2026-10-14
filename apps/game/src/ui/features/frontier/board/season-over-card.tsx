@@ -68,14 +68,14 @@ export const SeasonOverCard = ({
   >
     <header className="flex flex-col items-center gap-1">
       <h2 className="frontier-title !text-[26px]">{SEASON_OVER}</h2>
-      <p className="text-[15px] font-semibold">{SEASON_ENDINGS[ending]}</p>
-      {place !== undefined && <p className="text-[13px] text-kit-muted">{YOU_PLACED}</p>}
+      <p className="text-base font-semibold">{SEASON_ENDINGS[ending]}</p>
+      {place !== undefined && <p className="text-sm text-kit-muted">{YOU_PLACED}</p>}
     </header>
     {place !== undefined && (
       <p className="flex items-center gap-2.5 tabular-nums">
         <KitIcon code="Tp" size={34} />
         <span className="text-[44px] font-bold leading-none">#{formatAmount(place)}</span>
-        <span className="text-[16px] text-kit-muted">/ {formatAmount(field)}</span>
+        <span className="text-base text-kit-muted">/ {formatAmount(field)}</span>
       </p>
     )}
     <Podium podium={podium} />
@@ -115,9 +115,9 @@ const Podium = ({ podium }: { podium: readonly PodiumPlace[] }) => (
             key={place.key}
             className={cn("flex min-w-0 flex-1 flex-col items-center gap-1", place.rank === 1 && "pb-3")}
           >
-            <span className="text-[16px] tabular-nums">{place.rank}</span>
-            <span className="max-w-full text-[13px]">{place.name}</span>
-            <span className="flex items-center gap-1 text-[14px] tabular-nums">
+            <span className="text-base tabular-nums">{place.rank}</span>
+            <span className="max-w-full text-sm">{place.name}</span>
+            <span className="flex items-center gap-1 text-sm tabular-nums">
               <KitIcon code="Fl" size={16} />
               {formatAmount(place.sitesCleared)}
             </span>

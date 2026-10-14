@@ -81,7 +81,7 @@ export function NativeBridgePanel({ structureId }: { structureId: number }) {
     }
   };
   return (
-    <section className="space-y-2 text-xs">
+    <section className="space-y-2 text-sm">
       <h4>Resource bridge</h4>
       <select aria-label="Bridge resource" value={resource} onChange={(event) => setResource(event.target.value)}>
         <option value="">Choose resource</option>
@@ -104,7 +104,7 @@ export function NativeBridgePanel({ structureId }: { structureId: number }) {
         value={recipient}
         onChange={(event) => setRecipient(event.target.value)}
       />
-      <p className="text-gold/60">The game’s bridge retention and fees apply to deposits and withdrawals.</p>
+      <p className="text-kit-muted">The game’s bridge retention and fees apply to deposits and withdrawals.</p>
       <div className="flex gap-2">
         <Button disabled={!token || pending} isLoading={pending} onClick={() => void bridge(true)}>
           Deposit

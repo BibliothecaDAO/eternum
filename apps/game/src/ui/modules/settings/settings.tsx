@@ -88,7 +88,7 @@ function ProfileHeader() {
             <button
               type="button"
               aria-label="Copy address"
-              className="shrink-0 font-mono text-[11px] text-gold/60 max-lg:min-h-11"
+              className="shrink-0 font-mono text-sm text-kit-muted max-lg:min-h-11"
               onClick={() => navigator.clipboard.writeText(address).catch(() => setError("Could not copy address"))}
             >
               {shortAddress(address)} ⧉
@@ -97,7 +97,7 @@ function ProfileHeader() {
         </div>
         {facts.length > 0 && <p className={cn("truncate", HUD_BODY)}>{facts.join(" · ")}</p>}
         {error && (
-          <p role="alert" className="text-xs text-danger">
+          <p role="alert" className="text-sm text-danger">
             {error}
           </p>
         )}
@@ -142,13 +142,10 @@ function UsernameEditor({ name }: { name: string | null }) {
         type="button"
         aria-label="Change username"
         onClick={startEditing}
-        className={cn(
-          "flex min-w-0 items-center gap-1.5 font-sans normal-case tracking-normal max-lg:min-h-11",
-          HUD_HEADLINE,
-        )}
+        className={cn("flex min-w-0 items-center gap-1.5 font-sans max-lg:min-h-11", HUD_HEADLINE)}
       >
         <span className="truncate">{name ?? "Choose a username"}</span>
-        <Pencil className="h-3 w-3 shrink-0 text-gold/60" />
+        <Pencil className="h-3 w-3 shrink-0 text-kit-muted" />
       </button>
     );
   }
@@ -177,7 +174,7 @@ function UsernameEditor({ name }: { name: string | null }) {
         {pending ? "Saving…" : "Save"}
       </button>
       {error && (
-        <p role="alert" className="basis-full text-xs text-danger">
+        <p role="alert" className="basis-full text-sm text-danger">
           {error}
         </p>
       )}
@@ -345,7 +342,7 @@ function ShortcutsSection() {
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
         {[...bindings].map(([key, meanings]) => (
           <div key={key} className="contents">
-            <dt className="rounded border border-gold/30 px-1.5 text-center font-mono text-[11px] text-gold">{key}</dt>
+            <dt className="rounded border border-gold/30 px-1.5 text-center font-mono text-sm text-gold">{key}</dt>
             <dd className={cn("truncate", HUD_BODY)}>{meanings.join(" · ")}</dd>
           </div>
         ))}
@@ -381,7 +378,7 @@ function SessionActions() {
         Leave game
       </button>
       {error && (
-        <p role="alert" className="text-xs text-danger">
+        <p role="alert" className="text-sm text-danger">
           {error}
         </p>
       )}

@@ -92,7 +92,7 @@ export const MarketTradingHistory = memo(() => {
             type="button"
             aria-pressed={showOnlyYourSwaps}
             onClick={() => setShowOnlyYourSwaps((prev) => !prev)}
-            className={cn(HUD_PILL_BUTTON, showOnlyYourSwaps ? "border-gold/60 bg-gold/15" : "text-gold/65")}
+            className={cn(HUD_PILL_BUTTON, showOnlyYourSwaps ? "border-gold/60 bg-gold/15" : "text-kit-muted")}
           >
             Only mine
           </button>

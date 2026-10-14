@@ -112,10 +112,10 @@ const RealmVillageDetails = () => {
             </div>
             <HintModalButton section={HintSection.Realm} />
           </div>
-          <div className="flex justify-between items-center text-xs space-x-4 py-0.5 rounded-lg px-3 h6">
-            <div className="uppercase font-medium">{structure.ownerName}</div>
+          <div className="flex justify-between items-center text-sm space-x-4 py-0.5 rounded-lg px-3 h6">
+            <div className="font-medium">{structure.ownerName}</div>
             <span
-              className="uppercase hover:text-white cursor-pointer transition-colors"
+              className="hover:text-white cursor-pointer transition-colors"
               onClick={() => copyPlayerAddressToClipboard(structure.owner, structure.ownerName || "")}
             >
               {address ? displayAddress(address) : "Loading owner"}
@@ -167,7 +167,7 @@ const LaborRateRow = ({ structureId }: { structureId: ID }) => {
 
 /** What a castle level gives, from the game's rules. */
 const LevelGains = ({ level }: { level: number }) => (
-  <p className="text-[11px] leading-relaxed text-gold/80">{describeCastleLevel(level)}</p>
+  <p className="text-sm leading-relaxed text-gold/80">{describeCastleLevel(level)}</p>
 );
 
 export const RealmUpgradeCompact = () => {
@@ -183,9 +183,7 @@ export const RealmUpgradeCompact = () => {
         <SectionRow label="Settlement level">
           <span className={CHIP_BASE}>{upgradeInfo.currentLevelName}</span>
         </SectionRow>
-        <p className="text-[11px] leading-relaxed text-gold/70">
-          Select a building to inspect this settlement’s economy.
-        </p>
+        <p className="text-sm leading-relaxed text-gold/70">Select a building to inspect this settlement’s economy.</p>
       </div>
     );
   }
@@ -236,10 +234,10 @@ export const RealmUpgradeCompact = () => {
             onClick={onUpgrade}
             disabled={!canUpgrade || upgradeInfo.isUpgradeLocked}
             className={cn(
-              "inline-flex h-7 items-center gap-1 rounded-md border px-3 text-[10px] font-semibold uppercase tracking-[0.16em] shadow transition",
+              "inline-flex h-7 items-center gap-1 rounded-md border px-3 text-sm font-semibold shadow transition",
               canUpgrade
                 ? "border-amber-500/80 bg-amber-400/90 text-black hover:bg-amber-300"
-                : "border-gold/20 bg-black/40 text-gold/40 cursor-not-allowed",
+                : "border-gold/20 bg-black/40 text-kit-muted cursor-not-allowed",
             )}
             title={canUpgrade ? "Upgrade castle" : upgradeBlockedReason}
             aria-label={canUpgrade ? "Upgrade castle" : upgradeBlockedReason}

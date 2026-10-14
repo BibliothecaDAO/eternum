@@ -54,12 +54,12 @@ export const SeasonDetailSheet = ({
   <Sheet label={label} onClose={onClose}>
     <header className="flex h-11 items-center gap-2.5">
       <OrderEmblem order={detail.order} size={34} />
-      <span className="min-w-0 flex-1 truncate text-[20px] text-kit-cream">{detail.name}</span>
+      <span className="min-w-0 flex-1 truncate text-xl text-kit-cream">{detail.name}</span>
       <Chip icons={["Tp"]} label={SEASON} value={`#${detail.rank}`} />
     </header>
     <div className="flex flex-wrap items-center justify-center gap-1.5">
       <Chip icons={["Fl"]} label={CLEARED} value={formatAmount(detail.sites.total)} />
-      <span aria-hidden className="text-[16px] text-kit-muted">
+      <span aria-hidden className="text-base text-kit-muted">
         =
       </span>
       <Chip icons={["Cp"]} label={CAMP} value={formatAmount(detail.sites.camps)} />

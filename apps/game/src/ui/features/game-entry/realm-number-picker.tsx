@@ -49,7 +49,7 @@ export function RealmNumberPicker({
           </>
         ) : null}
       </div>
-      <p className="mt-2 text-xs text-gold/60">
+      <p className="mt-2 text-sm text-kit-muted">
         Dev mode: settle additional realms. Each realm number can be used once per game.
       </p>
     </div>

@@ -50,13 +50,13 @@ export const TodaySheet = ({
   const title = `${DAY} ${formatAmount(day)}`;
   return (
     <Sheet label={TODAY} onClose={onClose}>
-      <h2 className="frontier-title !text-[20px]">{title}</h2>
+      <h2 className="frontier-title !text-xl">{title}</h2>
       <DayTotalsGrid totals={totals} />
       {armiesToUpgrade !== undefined && armiesToUpgrade > 0 && (
         <button
           type="button"
           onClick={onArmies}
-          className="frontier-card flex h-12 items-center gap-2 !rounded-xl px-2.5 text-[15px] tabular-nums text-kit-cream"
+          className="frontier-card flex h-12 items-center gap-2 !rounded-xl px-2.5 text-base tabular-nums text-kit-cream"
         >
           <CardFanGlyph className="size-[22px]" />
           {formatAmount(armiesToUpgrade)}
@@ -73,15 +73,15 @@ export const TodaySheet = ({
         <ol className="flex max-h-[40vh] flex-col overflow-y-auto">
           {lines.map((line) => (
             <li key={line.id} className="flex h-[30px] shrink-0 items-center gap-2 border-b border-kit-line">
-              <span className="text-[14px] tabular-nums text-kit-muted">{formatClockTime(line.at)}</span>
-              <span className="min-w-0 flex-1 truncate text-[13px] text-kit-cream">{line.text}</span>
+              <span className="text-sm tabular-nums text-kit-muted">{formatClockTime(line.at)}</span>
+              <span className="min-w-0 flex-1 truncate text-sm text-kit-cream">{line.text}</span>
             </li>
           ))}
         </ol>
       )}
       <nav className="flex h-12 items-center gap-2">
         <StepArrow back label={`${DAY} ${formatAmount(day && day - 1)}`} onClick={onEarlier} />
-        <span className="flex-1 text-center text-[14px] font-semibold text-kit-cream">{today ? TODAY : title}</span>
+        <span className="flex-1 text-center text-sm font-semibold text-kit-cream">{today ? TODAY : title}</span>
         <StepArrow label={`${DAY} ${formatAmount(day && day + 1)}`} onClick={onLater} />
       </nav>
     </Sheet>

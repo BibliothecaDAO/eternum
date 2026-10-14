@@ -351,7 +351,7 @@ const MELEE_TARGET_FIELDS: readonly MeleeNumericField[] = [
 export const CharacterGymControls = (props: CharacterGymControlsProps) => (
   <aside className="order-2 max-h-[48vh] overflow-y-auto border-t border-white/10 bg-[#0b111b] lg:order-1 lg:max-h-none lg:border-t-0 lg:border-r">
     <div className="space-y-3 p-4">
-      <div className="border border-violet-300/15 bg-violet-300/[0.045] p-3 text-xs leading-relaxed text-slate-300">
+      <div className="border border-violet-300/15 bg-violet-300/[0.045] p-3 text-sm leading-relaxed text-slate-300">
         Tune archers, melee knights, mounts, Sky Dragons, or the naval ship. Projectile releases, fire breath, weapon
         contacts, flight, water motion, sinking, cosmetics, and the exact production handoff share one runtime.
       </div>
@@ -388,13 +388,13 @@ export const CharacterGymControls = (props: CharacterGymControlsProps) => (
       <DebugControls {...props} />
       <Link
         to="/lab/character-benchmark"
-        className="flex items-center justify-between border border-cyan-300/20 bg-cyan-300/[0.04] px-3 py-2 text-xs uppercase tracking-wider text-cyan-200 transition hover:bg-cyan-300/[0.09] hover:text-white"
+        className="flex items-center justify-between border border-cyan-300/20 bg-cyan-300/[0.04] px-3 py-2 text-sm text-cyan-200 transition hover:bg-cyan-300/[0.09] hover:text-white"
       >
         Crowd benchmark <ChevronRight className="h-4 w-4" />
       </Link>
       <Link
         to="/lab/chunks"
-        className="flex items-center justify-between border border-white/10 bg-white/[0.025] px-3 py-2 text-xs uppercase tracking-wider text-slate-400 transition hover:bg-white/[0.06] hover:text-white"
+        className="flex items-center justify-between border border-white/10 bg-white/[0.025] px-3 py-2 text-sm text-slate-400 transition hover:bg-white/[0.06] hover:text-white"
       >
         Three.js chunk lab <ChevronRight className="h-4 w-4" />
       </Link>
@@ -1094,7 +1094,7 @@ const ControlSection = ({
   defaultOpen?: boolean;
 }) => (
   <details open={defaultOpen} className="group border border-white/10 bg-black/20">
-    <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300 transition hover:bg-white/[0.035]">
+    <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-sm font-semibold text-slate-300 transition hover:bg-white/[0.035]">
       <span className="flex items-center gap-2 [&_img]:h-3.5 [&_img]:w-3.5 [&_img]:text-violet-300">
         {icon}
         {title}
@@ -1116,7 +1116,7 @@ interface NumericControlProps {
 
 const RangeControl = ({ label, value, min, max, step, onChange }: NumericControlProps) => (
   <label className="block">
-    <span className="mb-1.5 flex items-center justify-between gap-3 text-[0.68rem] font-medium uppercase tracking-wider text-slate-400">
+    <span className="mb-1.5 flex items-center justify-between gap-3 text-sm font-medium text-slate-400">
       {label}
       <input
         type="number"
@@ -1125,7 +1125,7 @@ const RangeControl = ({ label, value, min, max, step, onChange }: NumericControl
         max={max}
         step={step}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="h-7 w-20 border border-white/10 bg-[#080d15] px-2 text-right font-mono text-xs text-slate-200 outline-none focus:border-violet-300/60"
+        className="h-7 w-20 border border-white/10 bg-[#080d15] px-2 text-right font-mono text-sm text-slate-200 outline-none focus:border-violet-300/60"
       />
     </span>
     <input
@@ -1142,7 +1142,7 @@ const RangeControl = ({ label, value, min, max, step, onChange }: NumericControl
 
 const NumberControl = ({ label, value, min, max, step, onChange }: NumericControlProps) => (
   <label className="block">
-    <span className="mb-1.5 block text-[0.68rem] font-medium uppercase tracking-wider text-slate-400">{label}</span>
+    <span className="mb-1.5 block text-sm font-medium text-slate-400">{label}</span>
     <input
       type="number"
       value={value}
@@ -1150,7 +1150,7 @@ const NumberControl = ({ label, value, min, max, step, onChange }: NumericContro
       max={max}
       step={step}
       onChange={(event) => onChange(Number(event.target.value))}
-      className="h-9 w-full border border-white/10 bg-[#080d15] px-2 font-mono text-xs text-slate-200 outline-none focus:border-violet-300/60"
+      className="h-9 w-full border border-white/10 bg-[#080d15] px-2 font-mono text-sm text-slate-200 outline-none focus:border-violet-300/60"
     />
   </label>
 );
@@ -1167,11 +1167,11 @@ const SelectControl = ({
   onChange(value: string): void;
 }) => (
   <label className="block">
-    <span className="mb-1.5 block text-[0.68rem] font-medium uppercase tracking-wider text-slate-400">{label}</span>
+    <span className="mb-1.5 block text-sm font-medium text-slate-400">{label}</span>
     <select
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="h-9 w-full border border-white/10 bg-[#080d15] px-2 text-xs text-slate-200 outline-none focus:border-violet-300/60"
+      className="h-9 w-full border border-white/10 bg-[#080d15] px-2 text-sm text-slate-200 outline-none focus:border-violet-300/60"
     >
       {options.map((option) => (
         <option key={option.value} value={option.value} disabled={option.disabled}>
@@ -1194,7 +1194,7 @@ const SegmentedControl = ({
   onChange(value: string): void;
 }) => (
   <fieldset>
-    <legend className="mb-1.5 text-[0.68rem] font-medium uppercase tracking-wider text-slate-400">{label}</legend>
+    <legend className="mb-1.5 text-sm font-medium text-slate-400">{label}</legend>
     <div className="grid grid-flow-col auto-cols-fr gap-1">
       {options.map((option) => (
         <button
@@ -1202,7 +1202,7 @@ const SegmentedControl = ({
           type="button"
           onClick={() => onChange(option.value)}
           className={cn(
-            "h-8 border text-xs font-semibold transition",
+            "h-8 border text-sm font-semibold transition",
             value === option.value
               ? "border-violet-300/60 bg-violet-400/15 text-violet-100"
               : "border-white/10 bg-white/[0.025] text-slate-400 hover:bg-white/[0.06] hover:text-white",
@@ -1217,9 +1217,9 @@ const SegmentedControl = ({
 
 const ColorControl = ({ label, value, onChange }: { label: string; value: string; onChange(value: string): void }) => (
   <label className="flex items-center justify-between gap-3">
-    <span className="text-[0.68rem] font-medium uppercase tracking-wider text-slate-400">{label}</span>
+    <span className="text-sm font-medium text-slate-400">{label}</span>
     <span className="flex items-center gap-2">
-      <span className="font-mono text-xs text-slate-400">{value}</span>
+      <span className="font-mono text-sm text-slate-400">{value}</span>
       <input
         type="color"
         value={value}
@@ -1240,7 +1240,7 @@ const ToggleControl = ({
   onChange(value: boolean): void;
 }) => (
   <label className="flex cursor-pointer items-center justify-between gap-3 py-0.5">
-    <span className="text-[0.68rem] font-medium uppercase tracking-wider text-slate-400">{label}</span>
+    <span className="text-sm font-medium text-slate-400">{label}</span>
     <input
       type="checkbox"
       checked={checked}
@@ -1254,7 +1254,7 @@ const ControlButton = ({ icon, label, onClick }: { icon: ReactNode; label: strin
   <button
     type="button"
     onClick={onClick}
-    className="flex h-9 w-full items-center justify-center gap-2 border border-white/10 bg-white/[0.035] text-xs font-semibold uppercase tracking-wider text-slate-300 transition hover:bg-white/[0.08] hover:text-white [&_img]:h-3.5 [&_img]:w-3.5"
+    className="flex h-9 w-full items-center justify-center gap-2 border border-white/10 bg-white/[0.035] text-sm font-semibold text-slate-300 transition hover:bg-white/[0.08] hover:text-white [&_img]:h-3.5 [&_img]:w-3.5"
   >
     {icon}
     {label}

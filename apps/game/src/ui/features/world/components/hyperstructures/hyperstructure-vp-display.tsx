@@ -23,13 +23,13 @@ export const HyperstructureVPDisplay = ({
     } ${className}`}
     title={`${realmCount} realm${realmCount === 1 ? "" : "s"} in range`}
   >
-    <span className={`text-xs ${isOwned ? "text-order-brilliance" : ""}`}>{isOwned ? "⚡" : "💤"}</span>
-    <span className={`text-xs font-bold ${isOwned ? "text-order-brilliance text-shadow-glow-brilliance-xs" : ""}`}>
+    <span className={`text-sm ${isOwned ? "text-order-brilliance" : ""}`}>{isOwned ? "⚡" : "💤"}</span>
+    <span className={`text-sm font-bold ${isOwned ? "text-order-brilliance text-shadow-glow-brilliance-xs" : ""}`}>
       {formatPointsPerSecond(pointsPerSecond)}
     </span>
-    <span className={`text-xxs font-normal ${isOwned ? "text-order-brilliance/80" : ""}`}>
+    <span className={`text-sm font-normal ${isOwned ? "text-order-brilliance/80" : ""}`}>
       {isOwned ? "VP/s" : "VP/s (unclaimed)"}
     </span>
-    <span className="ml-auto text-xxs text-gold/50">{realmCount} realms</span>
+    <span className="ml-auto text-sm text-kit-muted">{realmCount} realms</span>
   </div>
 );

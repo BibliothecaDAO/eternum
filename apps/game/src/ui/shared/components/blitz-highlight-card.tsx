@@ -1,3 +1,4 @@
+import { FONTS } from "@/tokens";
 import { forwardRef, type Ref, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -9,7 +10,7 @@ import {
   truncateText,
 } from "../lib/blitz-highlight";
 import {
-  BLITZ_CARD_FONT_IMPORT,
+  BLITZ_CARD_FONT_FACES,
   BLITZ_CARD_BASE_STYLES,
   BLITZ_CARD_GOLD_THEME,
   BLITZ_CARD_SILVER_THEME,
@@ -29,7 +30,7 @@ const compactFormatter = new Intl.NumberFormat("en-US", {
 });
 
 const HIGHLIGHT_CARD_STYLES = `
-  ${BLITZ_CARD_FONT_IMPORT}
+  ${BLITZ_CARD_FONT_FACES}
   ${BLITZ_CARD_BASE_STYLES}
   ${BLITZ_CARD_GOLD_THEME}
   ${BLITZ_CARD_SILVER_THEME}
@@ -52,8 +53,7 @@ const HIGHLIGHT_CARD_STYLES = `
     left: 0;
     top: 0;
     width: 127px;
-    font-family: "IM Fell English", serif;
-    font-style: italic;
+    font-family: ${FONTS.body};
     font-size: 24px;
     line-height: 30px;
     text-align: right;
@@ -65,7 +65,7 @@ const HIGHLIGHT_CARD_STYLES = `
     left: 0;
     top: 34px;
     width: 237px;
-    font-family: "Montserrat", sans-serif;
+    font-family: ${FONTS.body};
     font-weight: 800;
     font-size: 64px;
     line-height: 78px;
@@ -111,7 +111,7 @@ const HIGHLIGHT_CARD_STYLES = `
   }
 
   .blitz-card-root .rank-number {
-    font-family: "Montserrat", sans-serif;
+    font-family: ${FONTS.body};
     font-weight: 800;
     font-size: 312px;
     line-height: 1;
@@ -124,7 +124,7 @@ const HIGHLIGHT_CARD_STYLES = `
   }
 
   .blitz-card-root .rank-suffix {
-    font-family: "Montserrat", sans-serif;
+    font-family: ${FONTS.body};
     font-weight: 800;
     font-size: 120px;
     line-height: 1;

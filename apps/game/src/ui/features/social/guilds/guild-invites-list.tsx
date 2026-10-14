@@ -34,7 +34,7 @@ export const GuildInviteList = ({
             userIsGuildMaster={userIsGuildMaster}
           />
         ))}
-        {!invitedPlayers.length && <p className="py-4 text-center italic text-gold/70">No Tribe Invites Sent</p>}
+        {!invitedPlayers.length && <p className="py-4 text-center text-gold/70">No Tribe Invites Sent</p>}
       </div>
     </div>
   );

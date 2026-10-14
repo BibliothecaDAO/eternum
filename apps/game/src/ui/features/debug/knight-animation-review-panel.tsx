@@ -30,7 +30,7 @@ interface Props {
   onCaptureFinished(): void;
 }
 
-const buttonClass = "rounded border border-white/20 px-3 py-1.5 text-xs hover:bg-white/10 disabled:opacity-40";
+const buttonClass = "rounded border border-white/20 px-3 py-1.5 text-sm hover:bg-white/10 disabled:opacity-40";
 
 export function KnightAnimationReviewPanel({
   config,
@@ -183,7 +183,7 @@ export function KnightAnimationReviewPanel({
       <div className="flex flex-wrap items-center gap-2">
         <strong className="mr-2 text-sm">Knight animation review</strong>
         <select
-          className="rounded bg-slate-800 px-2 py-1.5 text-xs"
+          className="rounded bg-slate-800 px-2 py-1.5 text-sm"
           aria-label="Knight review animation"
           value={animationId}
           disabled={!ready || busy}
@@ -235,7 +235,7 @@ export function KnightAnimationReviewPanel({
           Compare
         </button>
       </div>
-      <p className="mt-1 text-xs text-slate-400" role="status">
+      <p className="mt-1 text-sm text-slate-400" role="status">
         {message}
       </p>
       <input
@@ -325,10 +325,10 @@ function Comparison({
             ? "Matched capture conditions"
             : `Incompatible: ${comparison.incompatible}. Recapture under matched conditions.`}
         </p>
-        <p className="text-xs text-slate-400">
+        <p className="text-sm text-slate-400">
           {comparison.changedParameters.join(" · ") || "No configuration changes"}
         </p>
-        <p className="my-2 text-xs">
+        <p className="my-2 text-sm">
           {comparison.failures[0] ??
             "Candidate objective gates pass; assess weight, timing and readability before promotion."}{" "}
           {comparison.timingChanged

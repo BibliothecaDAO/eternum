@@ -78,10 +78,10 @@ export const SelectBiome: React.FC<SelectBiomeProps> = ({
                       <span
                         className={
                           bonus > 1
-                            ? "text-order-brilliance text-xs"
+                            ? "text-order-brilliance text-sm"
                             : bonus < 1
-                              ? "text-order-giants text-xs"
-                              : "text-gold/50 text-xs"
+                              ? "text-order-giants text-sm"
+                              : "text-kit-muted text-sm"
                         }
                       >
                         {formatBonus(bonus)}
@@ -111,7 +111,7 @@ export const SelectBiome: React.FC<SelectBiomeProps> = ({
                             ? "text-order-brilliance text-sm font-medium"
                             : bonus < 1
                               ? "text-order-giants text-sm font-medium"
-                              : "text-gold/50 text-sm"
+                              : "text-kit-muted text-sm"
                         }
                       >
                         {formatBonus(bonus)}

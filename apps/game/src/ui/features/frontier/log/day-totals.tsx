@@ -50,6 +50,6 @@ const Total = ({ cell }: { cell: TotalCell }) => (
     className="flex h-[34px] items-center justify-center gap-1.5"
   >
     <KitIcon code={cell.icon} size={22} />
-    <span className="text-[17px] tabular-nums">{cell.value}</span>
+    <span className="text-base tabular-nums">{cell.value}</span>
   </span>
 );

@@ -7,7 +7,7 @@ import { IS_DEV_ENVIRONMENT } from "./environment";
  */
 export const EnvChip = () =>
   IS_DEV_ENVIRONMENT ? (
-    <span className="rounded-md border-[1.5px] border-dashed border-kit-muted px-[7px] py-1 font-ui text-xs font-semibold leading-none text-kit-cream">
+    <span className="rounded-md border-[1.5px] border-dashed border-kit-muted px-[7px] py-1 font-body text-sm font-semibold leading-none text-kit-cream">
       {WORDS.dev}
     </span>
   ) : null;

@@ -39,8 +39,8 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose
         <button
           type="button"
           onClick={() => setSelectedCategory("all")}
-          className={`px-2 py-0.5 text-xs rounded transition-colors ${
-            selectedCategory === "all" ? "bg-gold/20 text-gold" : "text-gold/50 hover:text-gold/70"
+          className={`px-2 py-0.5 text-sm rounded transition-colors ${
+            selectedCategory === "all" ? "bg-gold/20 text-gold" : "text-kit-muted hover:text-gold/70"
           }`}
         >
           All
@@ -50,8 +50,8 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose
             key={cat}
             type="button"
             onClick={() => setSelectedCategory(cat)}
-            className={`px-2 py-0.5 text-xs rounded transition-colors ${
-              selectedCategory === cat ? "bg-gold/20 text-gold" : "text-gold/50 hover:text-gold/70"
+            className={`px-2 py-0.5 text-sm rounded transition-colors ${
+              selectedCategory === cat ? "bg-gold/20 text-gold" : "text-kit-muted hover:text-gold/70"
             }`}
           >
             {cat}

@@ -15,7 +15,7 @@ export const Panel = ({
   children: ReactNode;
 }) => (
   <section className="plate flex flex-col gap-1 p-3">
-    <h2 className="plate-title flex items-center gap-2 px-1 font-ui text-[15px] font-bold text-kit-cream">
+    <h2 className="plate-title flex items-center gap-2 px-1 font-body text-base font-bold text-kit-cream">
       <KitIcon code={icon} size={22} />
       {title}
       {aside && <span className="ml-auto">{aside}</span>}

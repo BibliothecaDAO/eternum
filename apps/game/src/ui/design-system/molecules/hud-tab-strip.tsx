@@ -28,7 +28,7 @@ export const HudTabStrip = <Key extends string>({
           role="tab"
           aria-selected={isSelected}
           onClick={() => onSelect(tab.key)}
-          className={cn(HUD_PILL_BUTTON, isSelected ? "border-gold/60 bg-gold/15 text-gold" : "text-gold/65")}
+          className={cn(HUD_PILL_BUTTON, isSelected ? "border-gold/60 bg-gold/15 text-gold" : "text-kit-muted")}
         >
           {tab.label}
         </button>

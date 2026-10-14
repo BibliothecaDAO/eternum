@@ -79,7 +79,7 @@ export const TypeUpgradeSheet = ({
     <Sheet label={name} onClose={onClose}>
       <header className="flex items-center gap-2.5">
         <KitIcon code={icon} size={30} />
-        <h2 className="frontier-title flex-1 !text-[20px]">{name}</h2>
+        <h2 className="frontier-title flex-1 !text-xl">{name}</h2>
         {onResearch && (
           <Button role="outline" icon="Rs" word={RESEARCH} className="!h-10 !px-3 lg:mr-10" onClick={onResearch} />
         )}
@@ -89,7 +89,7 @@ export const TypeUpgradeSheet = ({
         <TierChip tier={tier} showWord />
         {!top && (
           <>
-            <span aria-hidden className="text-[18px] text-kit-muted">
+            <span aria-hidden className="text-lg text-kit-muted">
               →
             </span>
             <TierChip tier={(tier + 1) as Tier} showWord />
@@ -141,7 +141,7 @@ const SideCard = ({ side, lifted, onLift }: { side: Side; lifted: boolean; onLif
     <span className="flex size-[52px] items-center justify-center rounded-xl bg-kit-ground">
       <KitIcon code={side.icon} size={30} />
     </span>
-    <span className="text-[14px] font-semibold text-kit-cream">{side.name}</span>
+    <span className="text-sm font-semibold text-kit-cream">{side.name}</span>
     <Chip icons={[side.gain.icon]} label={side.gain.label} value={side.gain.value} />
   </button>
 );

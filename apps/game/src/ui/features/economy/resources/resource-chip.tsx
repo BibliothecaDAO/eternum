@@ -176,7 +176,7 @@ export const ResourceChip = ({
       />
       {relicEffectActivated && (
         <span
-          className="inline-flex items-center gap-1 text-[10px] font-semibold text-relic2"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-relic2"
           onMouseEnter={(e) => {
             e.stopPropagation();
             setTooltip({
@@ -194,11 +194,9 @@ export const ResourceChip = ({
           {formatTime(relicTimeRemaining)}
         </span>
       )}
-      {ratePerHour && <span className="text-[10px] font-semibold tabular-nums text-emerald-300">{ratePerHour}</span>}
-      {hasReachedMaxCap && amountProduced > 0n && (
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-300">Max</span>
-      )}
-      {timeLeft && <span className={cn(HUD_CUE, "tracking-normal")}>{timeLeft}</span>}
+      {ratePerHour && <span className="text-sm font-semibold tabular-nums text-emerald-300">{ratePerHour}</span>}
+      {hasReachedMaxCap && amountProduced > 0n && <span className="text-sm font-semibold text-amber-300">Max</span>}
+      {timeLeft && <span className={cn(HUD_CUE, "")}>{timeLeft}</span>}
       <span className="ml-auto" />
       {canShowProductionShortcut && (
         <button

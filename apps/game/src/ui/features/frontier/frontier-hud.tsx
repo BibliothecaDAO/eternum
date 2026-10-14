@@ -43,7 +43,6 @@ import { FrontierToday } from "./log/frontier-today";
 import { FrontierProduction } from "./production/frontier-production";
 import { FrontierResearch } from "./research/frontier-research";
 import { ClearedRuinChest } from "./chest/cleared-ruin-chest";
-import { useFrontierType } from "./use-frontier-type";
 import { dayClock } from "./hud/day-clock";
 import { BuildingsInFlight } from "./build/build-sheet";
 import { DayDone } from "./rollover/day-done";
@@ -59,7 +58,6 @@ type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
  * the season's top five and chat docked open. Everything else opens from these as a sheet.
  */
 export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
-  useFrontierType();
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const realm = useFrontierRealm();
   // On a visit the dock shows the visited realm's armies; no order renders for a realm the player does not own.

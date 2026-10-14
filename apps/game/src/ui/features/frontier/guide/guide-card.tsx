@@ -40,7 +40,7 @@ export const GuideCard = forwardRef<
       className="frontier-card pointer-events-auto flow-root !rounded-xl p-2.5"
     >
       <span aria-hidden className="float-left h-12 w-[100px] lg:h-16 lg:w-[146px]" />
-      <p className="text-[15px] leading-snug text-kit-cream">{line}</p>
+      <p className="text-base leading-snug text-kit-cream">{line}</p>
       <div className="clear-both flex gap-2 pt-2">
         {onShowMe && <Button role="primary" word={SHOW_ME} onClick={onShowMe} className="flex-1" />}
         <Button role={onShowMe ? "secondary" : "primary"} word={NEXT} onClick={onNext} className="flex-1" />

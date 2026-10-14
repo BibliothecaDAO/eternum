@@ -114,7 +114,7 @@ const StorePlate = ({ store }: { store: StoreReading }) => {
           <span data-fly-target={store.flyTarget} className="inline-flex">
             <KitIcon code={icon} size={18} />
           </span>
-          <span className={cn("text-[15px] leading-none tabular-nums", TONE_TEXT[store.tone])}>
+          <span className={cn("text-base leading-none tabular-nums", TONE_TEXT[store.tone])}>
             {shown === undefined ? "—" : <TickNumber value={shown} format={formatAmount} />}
           </span>
         </span>

@@ -21,12 +21,12 @@ export const GuideLinesSheet = ({
   <Sheet label={GUIDE} onClose={onClose}>
     <header className="flex h-12 shrink-0 items-center gap-2 lg:pr-10">
       <KitIcon code="Gd" size={22} />
-      <h2 className="frontier-title flex-1 !text-[20px]">{GUIDE}</h2>
+      <h2 className="frontier-title flex-1 !text-xl">{GUIDE}</h2>
       <Switch on={on} label={GUIDE} onToggle={onToggle} />
     </header>
     <ol className="flex flex-col">
       {lines.map(({ id, line }) => (
-        <li key={id} className="border-t border-kit-line px-1 py-2.5 text-[15px] leading-snug text-kit-cream">
+        <li key={id} className="border-t border-kit-line px-1 py-2.5 text-base leading-snug text-kit-cream">
           {line}
         </li>
       ))}

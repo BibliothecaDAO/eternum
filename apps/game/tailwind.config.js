@@ -159,10 +159,6 @@ export default {
         "dark-wood": "linear-gradient(rgba(12, 10, 8, 0.7), rgba(12, 10, 8, 0.7))", // Modern: solid dark-brown/70 instead of texture
       },
       fontFamily: FONTS,
-      fontSize: {
-        xs: ".975rem",
-        xxs: ".825rem",
-      },
       cursor: {
         fancy: "url(/images/icons/cursor.png), pointer",
         pointer: "url(/images/icons/cursor.png), pointer",
@@ -333,7 +329,6 @@ export default {
     "h-2",
     "w-16",
     "rounded-full",
-    "text-[10px]",
   ],
   plugins: [
     require("@tailwindcss/typography"),

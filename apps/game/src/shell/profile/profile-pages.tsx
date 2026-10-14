@@ -52,7 +52,7 @@ export const ProfilePage = () => {
 /** Where the realm talks, as rows: the desktop's footer holds these, and a phone has them here, once. */
 const CommunityRows = () => (
   <nav aria-label={FOOTER_WORDS.community} className="mt-6 flex flex-col gap-2">
-    <h2 className="px-2 font-ui text-[14px] tracking-[.06em] text-kit-gold">{FOOTER_WORDS.community}</h2>
+    <h2 className="px-2 font-body text-sm text-kit-gold">{FOOTER_WORDS.community}</h2>
     <SettingRows>
       {COMMUNITY.map((place) => (
         <SettingRow
@@ -122,7 +122,7 @@ const SignInCard = ({ line }: { line: string | null }) => {
         alt=""
         className="h-44 w-full rounded-xl object-cover"
       />
-      {line && <p className="font-ui text-[17px] font-bold text-kit-cream">{line}</p>}
+      {line && <p className="font-body text-base font-bold text-kit-cream">{line}</p>}
       <Button role="primary" word={WORDS.signIn} icon="Pf" onClick={() => void signIn()} />
     </section>
   );

@@ -150,12 +150,12 @@ const Matchup = ({
       <span data-tone="lit" className="frontier-chip h-8 !py-0 !pl-1">
         <span className="contents">
           <img src={army.art} alt="" className="size-[22px] rounded-full object-cover" />
-          <span className="frontier-chip-number tabular-nums !text-[15px]">{formatExact(army.troops)}</span>
+          <span className="frontier-chip-number tabular-nums !text-base">{formatExact(army.troops)}</span>
         </span>
       </span>
     )}
     <KitIcon code="At" size={22} />
-    {beast && <span className="text-[13px] font-semibold text-kit-cream">{beast}</span>}
+    {beast && <span className="text-sm font-semibold text-kit-cream">{beast}</span>}
     {guard !== null && <Chip icons={["Tr"]} label={TROOPS} value={formatExact(guard)} />}
   </div>
 );
@@ -172,7 +172,7 @@ const Choices = ({ choices }: { choices: readonly SiteChoice[] }) => (
         className="frontier-card flex h-14 w-full items-center gap-2 !rounded-xl px-2.5"
       >
         <img src={choice.art} alt="" className="size-8 rounded-full object-cover" />
-        <span className="text-[15px] tabular-nums text-kit-cream">{formatExact(choice.troops)}</span>
+        <span className="text-base tabular-nums text-kit-cream">{formatExact(choice.troops)}</span>
         <span className="flex flex-1 items-center justify-end gap-3">
           <Forecast fight={choice.fight} size="row" />
         </span>
@@ -225,7 +225,7 @@ const Forecast = ({ fight, size }: { fight: SiteFight | undefined; size: "plate"
             ))}
           </span>
         ) : (
-          <span className="text-[18px] tabular-nums text-kit-cream">—</span>
+          <span className="text-lg tabular-nums text-kit-cream">—</span>
         )}
       </span>
       <Line icon="Sk" value={known ? `−${formatExact(known.troopsLost)}` : "—"} />
@@ -238,9 +238,7 @@ const Forecast = ({ fight, size }: { fight: SiteFight | undefined; size: "plate"
 const Line = ({ icon, value, hot = false, name }: { icon: IconCode; value: string; hot?: boolean; name?: string }) => (
   <span className="flex items-center gap-1.5" data-tip={name}>
     <KitIcon code={icon} size={22} />
-    <span className={cn("text-[20px] leading-none tabular-nums", hot ? "text-kit-hot" : "text-kit-cream")}>
-      {value}
-    </span>
+    <span className={cn("text-xl leading-none tabular-nums", hot ? "text-kit-hot" : "text-kit-cream")}>{value}</span>
   </span>
 );
 
@@ -257,7 +255,7 @@ const Pay = ({ pay }: { pay: { icon: IconCode; amount: number; fits?: number } }
       </span>
       {short && (
         <span className="flex w-4/5 items-center gap-1.5">
-          <span className="text-[14px] tabular-nums text-kit-muted">{formatExact(pay.amount)}</span>
+          <span className="text-sm tabular-nums text-kit-muted">{formatExact(pay.amount)}</span>
           <StoreBar amount={1} limit={1} tone="ember" />
         </span>
       )}
@@ -350,7 +348,7 @@ const verbReason = (verb: SiteVerb, site: string): string | undefined => {
 
 const VerbLine = ({ line, warns }: { line: string | undefined; warns: boolean }) =>
   line === undefined ? null : (
-    <p role="status" className={cn("text-center text-[14px]", warns ? "text-kit-red" : "text-kit-cream")}>
+    <p role="status" className={cn("text-center text-sm", warns ? "text-kit-red" : "text-kit-cream")}>
       {line}
     </p>
   );

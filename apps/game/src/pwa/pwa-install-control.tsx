@@ -84,9 +84,9 @@ const InstallSheet = ({ onClose }: { onClose: () => void }) => {
             key={word}
             className="flex min-h-14 items-center gap-3 rounded-xl border border-kit-line bg-kit-plate px-3"
           >
-            <span className="font-ui text-[20px] font-extrabold text-kit-peach">{index + 1}</span>
+            <span className="font-body text-xl font-extrabold text-kit-peach">{index + 1}</span>
             <KitIcon code={icon} size={28} />
-            <span className="font-ui text-[17px] font-semibold text-kit-cream">{word}</span>
+            <span className="font-body text-base font-semibold text-kit-cream">{word}</span>
           </li>
         ))}
       </ol>

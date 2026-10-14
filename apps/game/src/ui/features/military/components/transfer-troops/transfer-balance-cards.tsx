@@ -26,11 +26,11 @@ export const TransferBalanceCards = ({ cards }: TransferBalanceCardsProps) => {
   return (
     <div className="grid gap-3 sm:grid-rows-2">
       {cards.map(({ label, before, after, tone, changeLabel, troop }) => {
-        const toneClass = tone === "positive" ? "text-gold" : tone === "negative" ? "text-danger" : "text-gold/60";
+        const toneClass = tone === "positive" ? "text-gold" : tone === "negative" ? "text-danger" : "text-kit-muted";
 
         return (
           <div key={label} className="rounded-lg border border-gold/50 bg-dark-brown/80 p-4 shadow-sm">
-            <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-gold/70">
+            <div className="flex items-center justify-between text-sm font-semibold text-gold/70">
               <span>{label}</span>
               <span className={toneClass}>{changeLabel}</span>
             </div>

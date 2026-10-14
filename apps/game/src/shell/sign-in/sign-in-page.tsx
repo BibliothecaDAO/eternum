@@ -9,7 +9,6 @@ import {
   useIdentitySessionStore,
 } from "@/hooks/context/identity-session";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { useFrontierType } from "@/ui/features/frontier/use-frontier-type";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
 import { failureSentence, type IdentityAction } from "@/ui/modules/identity/identity-failures";
 
@@ -31,7 +30,6 @@ const PAINTING = "brooding-plains";
  */
 export const SignInPage = () => {
   useBootDocumentState("app-ready");
-  useFrontierType();
   const { search } = useLocation();
   const next = nextOf(search);
   const { status, session } = useIdentitySession();
@@ -181,7 +179,7 @@ const PhoneHero = () => (
       className="absolute inset-0 -z-10 size-full object-cover"
     />
     <span className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-transparent to-kit-ground" />
-    <p className="font-display text-[26px] leading-[1.15] text-kit-cream">{LORE_LINE}</p>
+    <p className="font-body text-xl leading-snug text-kit-cream">{LORE_LINE}</p>
   </section>
 );
 

@@ -80,16 +80,16 @@ export const StructureArrivals = memo(({ structure, now: nowOverride }: { struct
     <div className="rounded-md border border-gold/10 bg-gold/[0.03] overflow-hidden">
       {/* Structure header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-gold/10 bg-gold/[0.04]">
-        <h6 className="text-sm text-gold font-semibold tracking-wide">{structureName}</h6>
+        <h6 className="text-sm text-gold font-semibold">{structureName}</h6>
         <div className="flex items-center gap-2">
           {readyCount > 0 && (
-            <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-emerald-400/80">
+            <span className="flex items-center gap-1 text-sm text-emerald-400/80">
               <Check size={10} />
               {readyCount} ready
             </span>
           )}
           {pendingCount > 0 && (
-            <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-gold/50">
+            <span className="flex items-center gap-1 text-sm text-kit-muted">
               <Clock3 size={10} />
               {pendingCount} pending
             </span>
@@ -102,7 +102,7 @@ export const StructureArrivals = memo(({ structure, now: nowOverride }: { struct
         {arrivalSummaries.map((summary) => (
           <div key={summary.id} className="flex items-center gap-3 px-3 py-2 bg-brown/40">
             {/* Status badge */}
-            <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide whitespace-nowrap min-w-[100px]">
+            <div className="flex items-center gap-1.5 text-sm whitespace-nowrap min-w-[100px]">
               {summary.isReady ? (
                 <>
                   <Loader2 size={12} className="animate-spin text-emerald-400" />
@@ -110,7 +110,7 @@ export const StructureArrivals = memo(({ structure, now: nowOverride }: { struct
                 </>
               ) : (
                 <>
-                  <Clock3 size={12} className="text-gold/60" />
+                  <Clock3 size={12} className="text-kit-muted" />
                   <span className="text-gold/70 tabular-nums">{formatTime(summary.secondsUntilArrival)}</span>
                 </>
               )}

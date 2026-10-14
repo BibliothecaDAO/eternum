@@ -31,9 +31,7 @@ export const VisitFoot = ({
   >
     <KitIcon code="Ey" size={24} />
     {order !== undefined && <OrderEmblem order={order} />}
-    <span className={cn("min-w-0 flex-1 truncate text-[16px] text-kit-cream", arriving && "animate-pulse")}>
-      {name}
-    </span>
+    <span className={cn("min-w-0 flex-1 truncate text-base text-kit-cream", arriving && "animate-pulse")}>{name}</span>
     {onLeave && <Button role="primary" icon="Bk" word={LEAVE} onClick={onLeave} className="w-[130px]" />}
   </div>
 );

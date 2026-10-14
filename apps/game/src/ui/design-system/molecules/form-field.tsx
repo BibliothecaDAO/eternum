@@ -41,13 +41,13 @@ const FormField = ({
   return (
     <div className={clsx("flex flex-col", spacingClassMap[spacing], className)}>
       {label && (
-        <label htmlFor={htmlFor} className="text-sm font-medium text-gold/90 tracking-wide uppercase">
+        <label htmlFor={htmlFor} className="text-sm font-medium text-gold/90 ">
           {labelContent}
         </label>
       )}
-      {description && <p className="text-xs text-gold/60">{description}</p>}
+      {description && <p className="text-sm text-kit-muted">{description}</p>}
       {children}
-      {error && <p className="text-xs text-red/80">{error}</p>}
+      {error && <p className="text-sm text-red/80">{error}</p>}
     </div>
   );
 };

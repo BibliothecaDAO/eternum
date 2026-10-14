@@ -19,7 +19,7 @@ export const ViewToggle = React.memo(
           isCompact
             ? showAnimation && "animate-pulse"
             : clsx(
-                "rounded-full border px-3 py-1 text-[11px]",
+                "rounded-full border px-3 py-1 text-sm",
                 showAnimation
                   ? "border-gold/60 bg-gradient-to-r from-gold/20 to-gold/10 animate-pulse shadow-lg shadow-gold/20"
                   : "border-gold/20 bg-gold/5 text-gold/70",
@@ -37,8 +37,8 @@ export const ViewToggle = React.memo(
         <span
           className={clsx(
             "relative",
-            isCompact ? "text-xxs" : "",
-            !useNewVersion && (isCompact ? "text-gold/50" : "text-gold/50"),
+            isCompact ? "text-sm" : "",
+            !useNewVersion && (isCompact ? "text-kit-muted" : "text-kit-muted"),
             showAnimation && "font-semibold text-gold",
             isCompact && `mr-2`,
           )}
@@ -71,9 +71,9 @@ export const ViewToggle = React.memo(
         <span
           className={clsx(
             "relative",
-            isCompact ? "text-xxs ml-2" : "",
+            isCompact ? "text-sm ml-2" : "",
             useNewVersion && "text-gold",
-            !useNewVersion && !isCompact && "text-gold/50",
+            !useNewVersion && !isCompact && "text-kit-muted",
             showAnimation && "font-semibold text-gold",
           )}
         >

@@ -90,15 +90,15 @@ const OwnerSend = ({ owner, calls, onLanded }: { owner: string; calls: Call[]; o
   return (
     <div className="flex w-full flex-col gap-2.5">
       {outcome?.kind === "no-strk" && <NoStrkLine />}
-      {outcome?.kind === "refused" && <span className="font-body text-[14px] text-kit-red">{outcome.reason}</span>}
+      {outcome?.kind === "refused" && <span className="font-body text-sm text-kit-red">{outcome.reason}</span>}
       {holder === null && !confirming ? (
         <>
-          <span className="font-body text-[14px] text-kit-muted">{WALLET_WORDS.whichHolds(shortAddress(owner))}</span>
+          <span className="font-body text-sm text-kit-muted">{WALLET_WORDS.whichHolds(shortAddress(owner))}</span>
           <WalletRows wallet={wallet} />
         </>
       ) : (
         <>
-          {wallet.error && <span className="font-body text-[14px] text-kit-red">{wallet.error}</span>}
+          {wallet.error && <span className="font-body text-sm text-kit-red">{wallet.error}</span>}
           <Button
             role="outline"
             word={WALLET_WORDS.tryAgain}
@@ -175,15 +175,15 @@ const WalletRows = ({
           className="flex h-[62px] items-center gap-3 rounded-[14px] border-2 border-kit-line bg-kit-ground/60 px-3.5 text-left disabled:opacity-60"
         >
           <KitIcon code="Wt" size={34} />
-          <span className="font-ui text-[21px] text-kit-cream">{choice.name}</span>
-          {choice.note && <span className="font-body text-[13px] font-semibold text-kit-muted">{choice.note}</span>}
-          <span className="ml-auto font-body text-[13px] text-kit-muted">
+          <span className="font-body text-xl text-kit-cream">{choice.name}</span>
+          {choice.note && <span className="font-body text-sm font-semibold text-kit-muted">{choice.note}</span>}
+          <span className="ml-auto font-body text-sm text-kit-muted">
             {wallet.pending === choice.id ? WALLET_WORDS.opening : <KitIcon code="Ar" size={22} />}
           </span>
         </button>
       ))}
-      {rows.length === 0 && <span className="font-body text-[15px] text-kit-muted">{WALLET_WORDS.noneHere}</span>}
-      {wallet.error && <span className="font-body text-[14px] text-kit-red">{wallet.error}</span>}
+      {rows.length === 0 && <span className="font-body text-base text-kit-muted">{WALLET_WORDS.noneHere}</span>}
+      {wallet.error && <span className="font-body text-sm text-kit-red">{wallet.error}</span>}
     </div>
   );
 };

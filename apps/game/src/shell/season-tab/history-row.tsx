@@ -46,16 +46,16 @@ export const HistoryRow = ({ game, player, now }: { game: DirectoryGame; player:
           className="size-10 shrink-0 rounded-lg object-cover"
         />
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate font-ui text-[15px] font-bold text-kit-cream">{gameTitle(game)}</span>
-          <span className="text-[13px] text-kit-muted">{clockLine(null, game.clock.end_at, now)}</span>
+          <span className="truncate font-body text-base font-bold text-kit-cream">{gameTitle(game)}</span>
+          <span className="text-sm text-kit-muted">{clockLine(null, game.clock.end_at, now)}</span>
         </span>
         {lords !== undefined && (
-          <span className="flex items-center gap-1 font-ui text-[15px] font-bold tabular-nums text-kit-gold">
+          <span className="flex items-center gap-1 font-body text-base font-bold tabular-nums text-kit-gold">
             <KitIcon code="Lo" size={18} />
             {formatAmount(lords)}
           </span>
         )}
-        <span className="w-12 text-right font-ui text-[15px] font-extrabold tabular-nums text-kit-cream">
+        <span className="w-12 text-right font-body text-base font-extrabold tabular-nums text-kit-cream">
           {rank === undefined ? "—" : ordinal(rank)}
         </span>
       </Link>

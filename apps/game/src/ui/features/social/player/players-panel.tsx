@@ -225,29 +225,29 @@ export const PlayersPanel = ({
             </button>
             {showPointsBreakdown && (
               <div className="border-t border-gold/15 px-3 pb-3 pt-2">
-                <div className="flex flex-col gap-1 text-xs">
+                <div className="flex flex-col gap-1 text-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-gold/50">Explore a tile</span>
+                    <span className="text-kit-muted">Explore a tile</span>
                     <span className="text-gold font-semibold">{VICTORY_POINT_VALUES.exploreTile} VP</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gold/50">Claim an Essence Rift or Camp from {BANDITS_NAME}</span>
+                    <span className="text-kit-muted">Claim an Essence Rift or Camp from {BANDITS_NAME}</span>
                     <span className="text-gold font-semibold">
                       {VICTORY_POINT_VALUES.claimWorldStructureFromBandits} VP
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gold/50">Claim a Hyperstructure from {BANDITS_NAME}</span>
+                    <span className="text-kit-muted">Claim a Hyperstructure from {BANDITS_NAME}</span>
                     <span className="text-gold font-semibold">
                       {VICTORY_POINT_VALUES.claimHyperstructureFromBandits} VP
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gold/50">Open a Relic Crest</span>
+                    <span className="text-kit-muted">Open a Relic Crest</span>
                     <span className="text-gold font-semibold">{VICTORY_POINT_VALUES.openRelicChest} VP</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gold/50">
+                    <span className="text-kit-muted">
                       Control a Hyperstructure (1 point per realm settled in 8 tile radius)
                     </span>
                     <span className="text-gold font-semibold">{formatHyperstructureControlVpRange()}</span>

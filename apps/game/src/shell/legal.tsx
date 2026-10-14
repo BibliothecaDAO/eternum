@@ -53,17 +53,17 @@ const LegalPage = ({ title, updated, sections }: { title: string; updated: strin
   const desktop = useLayout() === "desktop";
   const reading = (
     <article className="flex max-w-[760px] flex-col gap-5">
-      <p className="flex items-center gap-2 text-[13px] text-kit-muted">
+      <p className="flex items-center gap-2 text-sm text-kit-muted">
         <KitIcon code="Cl" size={18} />
         {LEARN_WORDS.updated} {updated}
         {desktop && <OtherLegalPages title={title} />}
       </p>
       {sections.map((section, index) => (
         <section key={section.title} id={sectionId(index)} className="scroll-mt-6">
-          <h2 className="mb-2 font-ui text-[17px] font-bold text-kit-cream">
+          <h2 className="mb-2 font-body text-base font-bold text-kit-cream">
             {index + 1}. {section.title}
           </h2>
-          <div className="space-y-3 text-[17px] leading-[26px] text-kit-cream [&_li]:mb-1 [&_ul]:list-disc [&_ul]:pl-5">
+          <div className="space-y-3 text-base leading-[26px] text-kit-cream [&_li]:mb-1 [&_ul]:list-disc [&_ul]:pl-5">
             {section.body}
           </div>
         </section>
@@ -94,7 +94,7 @@ const Contents = ({ title, sections }: { title: string; sections: LegalSection[]
         <a
           key={section.title}
           href={`#${sectionId(index)}`}
-          className="flex min-h-10 items-center gap-3 rounded-lg px-1 text-[15px] text-kit-cream hover:bg-kit-gold/[.06]"
+          className="flex min-h-10 items-center gap-3 rounded-lg px-1 text-base text-kit-cream hover:bg-kit-gold/[.06]"
         >
           <span className="w-6 text-right font-bold tabular-nums text-kit-muted">{index + 1}</span>
           {section.title}
@@ -107,7 +107,7 @@ const Contents = ({ title, sections }: { title: string; sections: LegalSection[]
 const OtherLegalPages = ({ title }: { title: string }) => (
   <span className="ml-auto flex gap-4">
     {LEGAL_PAGES.filter((page) => page.word !== title).map((page) => (
-      <Link key={page.to} to={page.to} className="font-ui text-[14px] text-kit-peach hover:text-kit-gold2">
+      <Link key={page.to} to={page.to} className="font-body text-sm text-kit-peach hover:text-kit-gold2">
         {page.word}
       </Link>
     ))}

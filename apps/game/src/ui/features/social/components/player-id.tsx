@@ -137,24 +137,24 @@ export const PlayerId = ({
           <div className="grid grid-cols-2 gap-2 my-2">
             <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
               <span className="text-xl font-bold text-gold">{structureCounts.realms}</span>
-              <span className="text-xs text-gold/80 h6">{mode.labels.realms}</span>
+              <span className="text-sm text-gold/80 h6">{mode.labels.realms}</span>
             </div>
             <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
               <span className="text-xl font-bold text-gold">{structureCounts.villages}</span>
-              <span className="text-xs text-gold/80 h6">{mode.labels.villages}</span>
+              <span className="text-sm text-gold/80 h6">{mode.labels.villages}</span>
             </div>
             <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
               <span className="text-xl font-bold text-gold">{structureCounts.hyperstructures}</span>
-              <span className="text-xs text-gold/80 h6">Hyperstructures</span>
+              <span className="text-sm text-gold/80 h6">Hyperstructures</span>
             </div>
             <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
               <span className="text-xl font-bold text-gold">{structureCounts.mines}</span>
-              <span className="text-xs text-gold/80 h6">Mines</span>
+              <span className="text-sm text-gold/80 h6">Mines</span>
             </div>
             {structureCounts.banks > 0 && (
               <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
                 <span className="text-xl font-bold text-gold">{structureCounts.banks}</span>
-                <span className="text-xs text-gold/80 h6">Banks</span>
+                <span className="text-sm text-gold/80 h6">Banks</span>
               </div>
             )}
           </div>
@@ -173,10 +173,10 @@ export const PlayerId = ({
                     className="bg-gradient-to-r from-blue-500/10 to-transparent p-3 rounded-lg border border-blue-400/30 shadow-sm hover:shadow-md transition-all duration-300"
                   >
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs font-medium text-blue-300/90">
+                      <span className="text-sm font-medium text-blue-300/90">
                         Hyperstructure #{breakdown.hyperstructureId}
                       </span>
-                      <span className="text-xs text-blue-300/80"></span>
+                      <span className="text-sm text-blue-300/80"></span>
                     </div>
                     <p className="text-sm  flex items-center">
                       <span role="img" aria-label="sparkle" className="mr-1.5 text-base">
@@ -219,7 +219,7 @@ export const PlayerId = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1 text-xs text-gold/70 mb-2">
+                  <div className="flex items-center gap-1 text-sm text-gold/70 mb-2">
                     <MapPin size={12} />
                     <span>
                       Position: {position.getNormalized().x}, {position.getNormalized().y}
@@ -230,7 +230,7 @@ export const PlayerId = ({
             })}
 
             {playerStructures.length === 0 && (
-              <div className="col-span-2 text-center p-4 text-gold/50 italic">No properties found for this player</div>
+              <div className="col-span-2 text-center p-4 text-kit-muted">No properties found for this player</div>
             )}
           </div>
         </div>

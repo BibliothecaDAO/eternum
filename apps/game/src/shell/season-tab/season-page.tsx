@@ -96,14 +96,14 @@ const DesktopSeason = () => {
 const NoSeason = () => (
   <section className="plate flex flex-col gap-4 p-4">
     <img {...paintingSources("brooding-plains")} sizes="50vw" alt="" className="h-40 w-full rounded-xl object-cover" />
-    <p className="font-display text-[34px] leading-none text-kit-cream">{WORDS.noSeason}</p>
+    <p className="font-body text-xl font-bold text-kit-cream">{WORDS.noSeason}</p>
   </section>
 );
 
 const SeasonDay = ({ season }: { season: DirectoryGame }) => {
   const now = useNowSeconds();
   return (
-    <span className="flex items-center gap-1 text-[15px] font-normal text-kit-muted">
+    <span className="flex items-center gap-1 text-base font-normal text-kit-muted">
       <KitIcon code="Hg" size={20} />
       {`${DAY} ${directoryDay(season, now).day ?? "—"}`}
     </span>
@@ -122,11 +122,11 @@ const SeasonHeader = () => {
   const now = useNowSeconds();
   const day = season && directoryDay(season, now).day;
   return (
-    <h1 className="flex items-center gap-2 font-ui text-[22px] font-bold text-kit-cream">
+    <h1 className="flex items-center gap-2 font-body text-xl font-bold text-kit-cream">
       <KitIcon code="Tp" size={26} />
       {season ? seasonTitle(season) : WORDS.season}
       {season && (
-        <span className="ml-auto flex items-center gap-1 text-[15px] text-kit-muted">
+        <span className="ml-auto flex items-center gap-1 text-base text-kit-muted">
           <KitIcon code="Hg" size={20} />
           {`${DAY} ${day ?? "—"}`}
         </span>

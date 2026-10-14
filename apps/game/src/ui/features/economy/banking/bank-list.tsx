@@ -27,7 +27,7 @@ export const BankPanel = ({ structureEntityId, selectedResource }: BankListProps
       ) : (
         <AddLiquidity entityId={structureEntityId} listResourceId={selectedResource} />
       )}
-      <div className="mt-3 flex-1 overflow-y-auto border-t border-gold/15 pt-3 text-xs">
+      <div className="mt-3 flex-1 overflow-y-auto border-t border-gold/15 pt-3 text-sm">
         <LiquidityTable entity_id={structureEntityId} />
       </div>
     </div>

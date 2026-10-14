@@ -123,14 +123,14 @@ export const BiomeInfoPanel = ({ biome, collapsed = false }: BiomeInfoPanelProps
         className="flex w-full items-center justify-between gap-3 rounded-t-xl px-3 py-1.5 text-left transition-colors hover:bg-gold/5"
       >
         <div className="flex items-center gap-2">
-          <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Biome</span>
+          <span className="text-sm text-kit-muted">Biome</span>
           <span className="text-sm font-semibold text-gold">{formatBiomeLabel(biome)}</span>
         </div>
         <div className="flex items-center gap-2">
           {troopBonuses.map(({ troopType, config, bonus, summaryTextClass }) => (
             <div key={troopType} className="flex items-center gap-1 rounded-md bg-dark/60 px-1.5 py-0.5">
               <ResourceIcon resource={config.resourceName} size="xs" withTooltip={false} />
-              <span className={`text-[11px] font-semibold leading-none ${summaryTextClass}`}>
+              <span className={`text-sm font-semibold leading-none ${summaryTextClass}`}>
                 {formatBiomeBonus(bonus)}
               </span>
             </div>
@@ -156,7 +156,7 @@ export const BiomeInfoPanel = ({ biome, collapsed = false }: BiomeInfoPanelProps
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-bold text-gold">{formatBiomeLabel(biome)}</h2>
               <div className="group relative">
-                <Info className="h-4 w-4 text-gold/60 transition-colors group-hover:text-gold" />
+                <Info className="h-4 w-4 text-kit-muted transition-colors group-hover:text-gold" />
                 <div className="absolute left-6 top-0 hidden whitespace-nowrap rounded-lg border border-gold/30 bg-brown-900/95 p-3 text-sm text-gold/90 shadow-xl group-hover:block">
                   Terrain affects combat effectiveness
                 </div>

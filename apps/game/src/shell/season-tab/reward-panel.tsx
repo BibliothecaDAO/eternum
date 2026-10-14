@@ -77,7 +77,7 @@ const RatingChange = ({ reward }: { reward: Reward }) => {
           {formatExact(Math.abs(mmrAfter - mmrBefore))}
         </span>
         {flag && (
-          <span className="inline-flex items-center gap-1 font-body text-[18px] text-kit-gold2">
+          <span className="inline-flex items-center gap-1 font-body text-lg text-kit-gold2">
             <KitIcon code={flag.icon} size={26} />
             {flag.word}
           </span>
@@ -124,7 +124,7 @@ const ChestPlate = ({
       <Plate icon="Ch" title={REWARD_WORDS.chest}>
         <Stage>
           <img src={chestArt(band, true)} alt="" className="relative size-48 animate-pulse object-contain" />
-          <span className="relative font-ui text-[20px] text-kit-gold2">{REWARD_WORDS.opening}</span>
+          <span className="relative font-body text-xl text-kit-gold2">{REWARD_WORDS.opening}</span>
         </Stage>
       </Plate>
     );
@@ -179,10 +179,12 @@ const Prize = ({ content, entryFee }: { content: ChestContent; entryFee: bigint 
     return (
       <Card>
         {item && <img src={item.imagePath} alt="" className="size-40 rounded-xl object-cover" />}
-        <span className="rounded-full border border-kit-line2 px-3 py-1 font-body text-[14px] font-bold capitalize text-kit-gold2">
+        <span className="rounded-full border border-kit-line2 px-3 py-1 font-body text-sm font-bold capitalize text-kit-gold2">
           {item?.rarity ?? REWARD_WORDS.cosmetic}
         </span>
-        <b className="font-display text-[30px] leading-tight text-kit-cream">{item?.name ?? REWARD_WORDS.cosmetic}</b>
+        <b className="font-body text-[30px] font-bold leading-tight text-kit-cream">
+          {item?.name ?? REWARD_WORDS.cosmetic}
+        </b>
         <Chip icon="Ok" word={REWARD_WORDS.inCollection} tone="text-kit-sage" />
       </Card>
     );
@@ -191,7 +193,7 @@ const Prize = ({ content, entryFee }: { content: ChestContent; entryFee: bigint 
   return (
     <Card>
       <KitIcon code={content.kind === "sword" ? "At" : "Sd"} size={96} />
-      <b className="font-display text-[30px] leading-tight text-kit-cream">
+      <b className="font-body text-[30px] font-bold leading-tight text-kit-cream">
         {content.kind === "sword" ? REWARD_WORDS.swordCredit : REWARD_WORDS.shieldCredit}
       </b>
       <Chip icon="Lo" word={REWARD_WORDS.nextEntry} tone="text-kit-muted" />
@@ -209,8 +211,10 @@ const TokenPrize = ({ amount, entryFee }: { amount: bigint; entryFee: bigint }) 
   return (
     <Card>
       <KitIcon code="Lo" size={96} />
-      <b className="font-display text-[60px] leading-none text-kit-gold2">{multiple === null ? sum : `${multiple}×`}</b>
-      <span className="font-ui text-[22px] text-kit-muted">
+      <b className="font-body text-[60px] font-bold leading-none tabular-nums text-kit-gold2">
+        {multiple === null ? sum : `${multiple}×`}
+      </b>
+      <span className="font-body text-xl text-kit-muted">
         {multiple === null ? REWARD_WORDS.lords : REWARD_WORDS.theEntry}
       </span>
       {multiple !== null && <Chip icon="Lo" word={`${sum} ${REWARD_WORDS.lords}`} tone="text-kit-gold2" />}
@@ -251,7 +255,7 @@ const Card = ({ children }: { children: ReactNode }) => (
 
 const Plate = ({ icon, title, children }: { icon: IconCode; title: string; children: ReactNode }) => (
   <section className="plate flex flex-col gap-4 p-5">
-    <h2 className="flex items-center gap-2.5 border-b border-kit-line pb-3 font-ui text-[19px] text-kit-cream">
+    <h2 className="flex items-center gap-2.5 border-b border-kit-line pb-3 font-body text-lg text-kit-cream">
       <KitIcon code={icon} size={26} />
       {title}
     </h2>
@@ -260,7 +264,7 @@ const Plate = ({ icon, title, children }: { icon: IconCode; title: string; child
 );
 
 const Line = ({ icon, children }: { icon: IconCode; children: ReactNode }) => (
-  <p className="flex items-center gap-2.5 font-body text-[16px] text-kit-muted">
+  <p className="flex items-center gap-2.5 font-body text-base text-kit-muted">
     <KitIcon code={icon} size={24} />
     {children}
   </p>
@@ -279,7 +283,7 @@ const Chip = ({
 }) => (
   <span
     className={cn(
-      "inline-flex h-9 items-center gap-1.5 rounded-full border border-kit-line2 bg-kit-ink pl-2 pr-3 font-body text-[15px] font-bold",
+      "inline-flex h-9 items-center gap-1.5 rounded-full border border-kit-line2 bg-kit-ink pl-2 pr-3 font-body text-base font-bold",
       tone,
     )}
   >

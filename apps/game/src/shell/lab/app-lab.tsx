@@ -4,7 +4,6 @@ import { Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { IdentityRequestError } from "@realms-world/identity";
-import { useFrontierType } from "@/ui/features/frontier/use-frontier-type";
 
 import { BlitzLobbyPage } from "../blitz/blitz-pages";
 import { entryTermsKey, refundOwedKey, registeredSlotsKey, slotRegisteredKey } from "../blitz/entry";
@@ -57,7 +56,6 @@ const isLabScreen = (screen: string | undefined): screen is LabScreen =>
   screen !== undefined && Object.hasOwn(LAB_SCREENS, screen);
 
 const LabScreenView = ({ screen }: { screen: LabScreen }) => {
-  useFrontierType();
   const [client, setClient] = useState<QueryClient | null>(null);
   useEffect(() => {
     const restore = installLabFixtures(screen);

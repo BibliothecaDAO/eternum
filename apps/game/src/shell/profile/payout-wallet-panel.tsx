@@ -107,7 +107,7 @@ const Linking = ({
           <Suspense fallback={<Loading />}>
             <WalletPicker only={["argentX"]} onProof={pick} />
           </Suspense>
-          <p className="font-body text-[15px] text-kit-muted">{WALLET_WORDS.backFromReady}</p>
+          <p className="font-body text-base text-kit-muted">{WALLET_WORDS.backFromReady}</p>
           <Chip icon="Sp" word={WALLET_WORDS.anotherWallet} onClick={() => onStep({ kind: "pick" })} />
         </>
       );
@@ -184,9 +184,9 @@ const ReadyByEmail = ({ onProof }: { onProof: (proof: SignInOptions) => void }) 
       ).map(([icon, word], index) => (
         <li
           key={word}
-          className="relative flex flex-col items-center gap-2 rounded-[14px] border border-kit-line2 bg-kit-ground/50 px-1.5 pb-2.5 pt-4 text-center font-ui text-[14px] text-kit-cream"
+          className="relative flex flex-col items-center gap-2 rounded-[14px] border border-kit-line2 bg-kit-ground/50 px-1.5 pb-2.5 pt-4 text-center font-body text-sm text-kit-cream"
         >
-          <span className="absolute -left-1.5 -top-2.5 flex size-[26px] items-center justify-center rounded-full border border-kit-gold bg-kit-ink font-body text-[13px] font-extrabold text-kit-gold2">
+          <span className="absolute -left-1.5 -top-2.5 flex size-[26px] items-center justify-center rounded-full border border-kit-gold bg-kit-ink font-body text-sm font-extrabold text-kit-gold2">
             {index + 1}
           </span>
           <KitIcon code={icon} size={36} />
@@ -263,7 +263,7 @@ const CodeStep = ({ change, email, onDone }: { change: Change; email: string; on
       <CodeBoxes code={code} refused={error !== null} disabled={!sent || busy} onType={type} />
       {busy && change.kind === "link" && <Line icon="Wt">{WALLET_WORDS.confirmInWallet}</Line>}
       {change.kind === "unlink" && <Line icon="St">{WALLET_WORDS.nothingPaysOut}</Line>}
-      {error && <p className="font-body text-[15px] text-kit-red">{error}</p>}
+      {error && <p className="font-body text-base text-kit-red">{error}</p>}
       <Chip
         icon="Sp"
         word={WALLET_WORDS.newCode}
@@ -301,7 +301,7 @@ const Track = ({ at }: { at: number }) => (
       <li key={word} className="flex flex-1 items-start last:flex-none">
         <span
           className={cn(
-            "flex w-[84px] flex-col items-center gap-1.5 font-ui text-[14px]",
+            "flex w-[84px] flex-col items-center gap-1.5 font-body text-sm",
             index <= at ? "text-kit-cream" : "text-kit-muted",
           )}
         >
@@ -340,9 +340,9 @@ const Track = ({ at }: { at: number }) => (
 const WalletCard = ({ address, chip }: { address: string; chip: { icon: IconCode; word: string } | null }) => (
   <div className="flex min-h-[64px] items-center gap-3 rounded-[14px] border border-kit-line2 bg-kit-ground/60 px-3.5">
     <KitIcon code="Wt" size={38} />
-    <span className="whitespace-nowrap font-body text-[18px] font-bold text-kit-cream">{shortAddress(address)}</span>
+    <span className="whitespace-nowrap font-body text-lg font-bold text-kit-cream">{shortAddress(address)}</span>
     {chip && (
-      <span className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-full border border-kit-sage bg-kit-ink pl-2 pr-3 font-body text-[15px] font-bold text-kit-sage">
+      <span className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-full border border-kit-sage bg-kit-ink pl-2 pr-3 font-body text-base font-bold text-kit-sage">
         <KitIcon code={chip.icon} size={20} />
         {chip.word}
       </span>
@@ -372,20 +372,20 @@ const ChoiceTile = ({
     )}
   >
     <KitIcon code={icon} size={52} />
-    <span className="font-ui text-[19px] text-kit-cream">{word}</span>
-    <span className="font-body text-[13px] font-semibold text-kit-muted">{line}</span>
+    <span className="font-body text-lg text-kit-cream">{word}</span>
+    <span className="font-body text-sm font-semibold text-kit-muted">{line}</span>
   </button>
 );
 
 const ReadyName = ({ line }: { line: string }) => (
   <p className="flex items-baseline gap-2.5">
-    <span className="font-display text-[34px] text-kit-cream">{WALLET_WORDS.ready}</span>
-    <span className="font-ui text-[15px] text-kit-muted">{line}</span>
+    <span className="font-body text-[30px] font-bold text-kit-cream">{WALLET_WORDS.ready}</span>
+    <span className="font-body text-base text-kit-muted">{line}</span>
   </p>
 );
 
 const PrizesGoHere = () => (
-  <p className="flex items-center gap-2 font-ui text-[19px] text-kit-muted">
+  <p className="flex items-center gap-2 font-body text-lg text-kit-muted">
     <KitIcon code="Lo" size={26} />
     <KitIcon code="Ch" size={26} />
     <KitIcon code="Tp" size={26} />
@@ -396,14 +396,14 @@ const PrizesGoHere = () => (
 const KeysStay = () => <Line icon="Lk">{WALLET_WORDS.keysStay}</Line>;
 
 const Title = ({ icon, children }: { icon: IconCode; children: string }) => (
-  <h2 className="flex items-center gap-2.5 border-b border-kit-line pb-3 font-ui text-[19px] text-kit-cream">
+  <h2 className="flex items-center gap-2.5 border-b border-kit-line pb-3 font-body text-lg text-kit-cream">
     <KitIcon code={icon} size={26} />
     {children}
   </h2>
 );
 
 const Line = ({ icon, children }: { icon: IconCode; children: ReactNode }) => (
-  <p className="flex items-center gap-2.5 font-body text-[16px] text-kit-cream">
+  <p className="flex items-center gap-2.5 font-body text-base text-kit-cream">
     <KitIcon code={icon} size={24} />
     <span>{children}</span>
   </p>
@@ -413,7 +413,7 @@ const Chip = ({ icon, word, onClick }: { icon: IconCode; word: string; onClick: 
   <button
     type="button"
     onClick={onClick}
-    className="inline-flex h-9 w-fit items-center gap-1.5 rounded-full border border-kit-line2 bg-kit-ink pl-2 pr-3 font-body text-[15px] font-bold text-kit-muted"
+    className="inline-flex h-9 w-fit items-center gap-1.5 rounded-full border border-kit-line2 bg-kit-ink pl-2 pr-3 font-body text-base font-bold text-kit-muted"
   >
     <KitIcon code={icon} size={20} />
     {word}

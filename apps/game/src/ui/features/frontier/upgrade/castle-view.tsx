@@ -49,14 +49,14 @@ export const CastleView = ({
   <Sheet label={CASTLE} onClose={onClose}>
     <header className="flex items-center gap-2.5">
       <KitIcon code="Cs" size={30} />
-      <h2 className="frontier-title flex-1 !text-[20px]">{CASTLE}</h2>
+      <h2 className="frontier-title flex-1 !text-xl">{CASTLE}</h2>
     </header>
     {makes.length > 0 && <Figures figures={makes} />}
     <div className="flex items-center gap-2">
       <Side side={now} />
       {next && (
         <>
-          <span aria-hidden className="text-[22px] text-kit-hot">
+          <span aria-hidden className="text-xl text-kit-hot">
             →
           </span>
           <Side side={next} lit />
@@ -86,7 +86,7 @@ const Side = ({ side, lit = false }: { side: CastleSide; lit?: boolean }) => (
     )}
   >
     <img src={side.art} alt="" className="h-[52px] w-14 object-contain" />
-    <span className="text-[13px] font-semibold text-kit-cream">{REALM_LEVELS[side.level]}</span>
+    <span className="text-sm font-semibold text-kit-cream">{REALM_LEVELS[side.level]}</span>
     <Chip icons={["Hx"]} label="plots" value={formatAmount(side.plots)} />
     <Chip icons={["Sl"]} label="army slots" value={formatAmount(side.slots)} />
     {side.limit !== undefined && <Chip icons={["Sg"]} label="limit" value={formatAmount(side.limit)} />}

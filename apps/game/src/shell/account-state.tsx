@@ -8,7 +8,7 @@ import { forgetDeviceKey } from "@bibliothecadao/eternum";
 import { useRequestSignIn } from "./sign-in/sign-in-route";
 
 const buttonClass =
-  "rounded-lg border border-gold/40 px-3 py-2 font-ui text-[12px] uppercase tracking-[0.1em] text-gold hover:bg-gold/10 disabled:opacity-50";
+  "rounded-lg border border-gold/40 px-3 py-2 font-body text-sm text-gold hover:bg-gold/10 disabled:opacity-50";
 
 /** A device removed from the account signs in again, as a new device with a fresh key. */
 export const AccountStatePrompt = () => {
@@ -38,12 +38,12 @@ export const AccountStatePrompt = () => {
     });
 
   return (
-    <div className="flex flex-col gap-1.5 rounded-lg border border-gold/40 p-3 text-[13px] text-gold/80">
+    <div className="flex flex-col gap-1.5 rounded-lg border border-gold/40 p-3 text-sm text-gold/80">
       <span>This device was removed from your account. Sign in again to add it as a new device.</span>
       <button type="button" disabled={pending} onClick={() => void signInAgain()} className={buttonClass}>
         {pending ? "Signing out…" : "Sign in again"}
       </button>
-      {error ? <span className="text-xs text-danger">{error}</span> : null}
+      {error ? <span className="text-sm text-danger">{error}</span> : null}
     </div>
   );
 };

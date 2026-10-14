@@ -1,7 +1,6 @@
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
-import { useFrontierType } from "@/ui/features/frontier/use-frontier-type";
 import { Hold } from "@/ui/motion/hold";
 import { flySprites, MotionLayer } from "@/ui/motion/motion-layer";
 import { INTENSITY, INTENSITY_LABEL, type Intensity } from "@/ui/motion/motion-scale";
@@ -18,7 +17,6 @@ const COIN_ICON = "/images/resources/37.png";
 
 /** Dev only: each motion primitive at intensity 0–3, at full and repeat speed, and with reduced motion. */
 export const MotionLabView = () => {
-  useFrontierType();
   const [intensity, setIntensity] = useState<Intensity>(0);
   const [speed, setSpeed] = useState(1);
   const [run, setRun] = useState(0);
@@ -147,7 +145,7 @@ const FlyDemo = ({ intensity, speed, run }: { intensity: Intensity; speed: numbe
 
 const Panel = ({ title, children }: { title: string; children: ReactNode }) => (
   <section className={cn(OVERLAY_SURFACE_BASE, "flex min-h-32 flex-col gap-3 rounded-xl p-3")}>
-    <h2 className="text-xs font-semibold text-gold/70">{title}</h2>
+    <h2 className="text-sm font-semibold text-gold/70">{title}</h2>
     <div className="flex flex-1 items-center justify-center">{children}</div>
   </section>
 );

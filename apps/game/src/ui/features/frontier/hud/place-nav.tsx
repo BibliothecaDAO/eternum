@@ -54,7 +54,7 @@ export const PlaceNav = ({
         "chat",
         "Ct",
         CHAT,
-        unread > 0 && <span className="text-[13px] leading-none tabular-nums">{formatAmount(unread)}</span>,
+        unread > 0 && <span className="text-sm leading-none tabular-nums">{formatAmount(unread)}</span>,
       )}
       {slot("menu", "Mn", MENU)}
     </nav>
@@ -82,7 +82,7 @@ const Slot = ({
     {...(to === "realm" ? guideTarget("realm-tab") : {})}
     onClick={onClick}
     className={cn(
-      "flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold",
+      "flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl text-sm font-semibold",
       lit ? "bg-kit-line text-kit-gold2 shadow-[inset_0_-3px_0_theme(colors.kit.gold)]" : "text-kit-muted",
     )}
   >

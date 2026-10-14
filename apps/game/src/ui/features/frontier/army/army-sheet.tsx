@@ -75,16 +75,16 @@ export const ArmySheet = ({
   <Sheet label={name} onClose={onClose}>
     <header className="flex h-11 items-center gap-2">
       <img src={art} alt="" className="size-10 rounded-full border border-kit-line2 object-cover" />
-      <span className="truncate text-[16px] text-kit-cream">{name}</span>
+      <span className="truncate text-base text-kit-cream">{name}</span>
       <Chip icons={["Tr"]} label={TROOPS} value={formatExact(troops)} />
       <span className="flex-1" />
       <span className="text-[24px] leading-none tabular-nums text-kit-gold2">{formatExact(xp)}</span>
-      <span className="text-[14px] font-semibold text-kit-cream">{XP}</span>
+      <span className="text-sm font-semibold text-kit-cream">{XP}</span>
     </header>
     <div className="flex h-12 items-center gap-2">
       <KitIcon code="St" size={22} />
       <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="text-[15px] tabular-nums text-kit-cream">
+        <span className="text-base tabular-nums text-kit-cream">
           {formatExact(stamina.current)} / {formatExact(stamina.max)}
         </span>
         <StoreBar amount={stamina.current} limit={stamina.max} tone="calm" />
@@ -152,7 +152,7 @@ const AttributeRow = ({
     )}
   >
     <KitIcon code={mark} size={26} />
-    <span className="text-[13px] font-semibold text-kit-cream">{word}</span>
+    <span className="text-sm font-semibold text-kit-cream">{word}</span>
     <span className="flex gap-0.5">
       {state.kinds?.map((kind, index) => (
         <KitIcon key={index} code={KIND_ICONS[kind]} size={16} />
@@ -165,14 +165,14 @@ const AttributeRow = ({
     ) : affordable ? (
       <span data-tone="price" className="frontier-chip h-7 !py-0 !pl-2.5">
         <span className="contents">
-          <span className="frontier-chip-number tabular-nums !text-[15px]">{formatExact(price)}</span>
-          <span className="text-[13px] font-semibold text-kit-ink">{XP}</span>
+          <span className="frontier-chip-number tabular-nums !text-base">{formatExact(price)}</span>
+          <span className="text-sm font-semibold text-kit-ink">{XP}</span>
         </span>
       </span>
     ) : (
       <span className="flex items-center gap-1 text-light-red">
-        <span className="text-[15px] tabular-nums">{formatExact(price)}</span>
-        <span className="text-[13px] font-semibold">{XP}</span>
+        <span className="text-base tabular-nums">{formatExact(price)}</span>
+        <span className="text-sm font-semibold">{XP}</span>
       </span>
     )}
   </button>
@@ -222,7 +222,7 @@ const ChosenTier = ({
       ) : (
         <div className="flex items-center justify-center gap-2">
           <TierChip tier={state.tier} showWord />
-          <span aria-hidden className="text-[18px] text-kit-muted">
+          <span aria-hidden className="text-lg text-kit-muted">
             →
           </span>
           <TierChip tier={next} showWord />
@@ -260,7 +260,7 @@ const RefillFits = ({ refills, of }: { refills: number; of: number }) =>
   ) : (
     <span className="flex items-center gap-1.5">
       <Chip icons={["St"]} label={STAMINA} value={`+${formatExact(refills)}`} />
-      <span className="text-[14px] tabular-nums text-light-red">{formatExact(of)}</span>
+      <span className="text-sm tabular-nums text-light-red">{formatExact(of)}</span>
       <span className="w-10">
         <StoreBar amount={1} limit={1} tone="ember" />
       </span>
@@ -293,9 +293,9 @@ export const KindChoice = ({
       >
         <KitIcon code={KIND_ICONS[kind]} size={28} />
         <span className="flex items-baseline gap-[3px] tabular-nums text-kit-cream">
-          <span className="text-[14px]">{rates[kind][0]}</span>
-          <span className="text-[14px]">→</span>
-          <span className="text-[15px] text-kit-gold2">{rates[kind][1]}</span>
+          <span className="text-sm">{rates[kind][0]}</span>
+          <span className="text-sm">→</span>
+          <span className="text-base text-kit-gold2">{rates[kind][1]}</span>
         </span>
       </button>
     ))}

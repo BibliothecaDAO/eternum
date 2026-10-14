@@ -55,21 +55,21 @@ export const EventLogPanel = ({
               key={value}
               aria-pressed={filter === value}
               onClick={() => setFilter(value)}
-              className={cn("font-sans capitalize", HUD_LABEL, filter === value ? "text-gold" : "text-gold/45")}
+              className={cn("font-sans capitalize", HUD_LABEL, filter === value ? "text-gold" : "text-kit-muted")}
             >
               {value}
             </button>
           ))}
         </div>
         {isError && (
-          <p className="px-3 py-2 text-xs text-danger">
+          <p className="px-3 py-2 text-sm text-danger">
             Event history could not load.{" "}
-            <button type="button" className="font-sans text-xs underline" onClick={() => void refetch()}>
+            <button type="button" className="font-sans text-sm underline" onClick={() => void refetch()}>
               Retry
             </button>
           </p>
         )}
-        {!isError && rows.length === 0 && <p className="px-3 py-4 text-xs text-gold/50">No important events yet.</p>}
+        {!isError && rows.length === 0 && <p className="px-3 py-4 text-sm text-kit-muted">No important events yet.</p>}
         <div className="flex flex-col gap-1 px-2 py-2">
           {rows.map((row) => (
             <FeedRowLine key={row.id} row={row} />

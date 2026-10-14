@@ -38,7 +38,7 @@ export const formatContentDay = (day: string): string => {
 export const ClockChip = ({ prefix, at, now }: { prefix: ClockPrefix | null; at: number | undefined; now: number }) => {
   const Icon = prefix !== null && at !== undefined && isWithinADay(at, now) ? Hourglass : CalendarDays;
   return (
-    <span className="frontier-chip h-8 shrink-0 whitespace-nowrap !py-0 !pl-1.5 !pr-3 font-ui text-[14px] font-bold text-kit-cream">
+    <span className="frontier-chip h-8 shrink-0 whitespace-nowrap !py-0 !pl-1.5 !pr-3 font-body text-sm font-bold text-kit-cream">
       <Icon size={20} />
       {clockLine(prefix, at, now)}
     </span>

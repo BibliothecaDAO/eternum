@@ -171,7 +171,6 @@ export const ScoreCardContent = ({
             onClick={handleCopyImage}
             variant="gold"
             className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
-            forceUppercase={false}
             isLoading={isCopyingImage}
             disabled={isCopyingImage || !highlightPlayer}
           >
@@ -182,7 +181,6 @@ export const ScoreCardContent = ({
             onClick={handleShareOnX}
             variant="outline"
             className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
-            forceUppercase={false}
             disabled={!highlightPlayer}
           >
             <Share2 className="h-4 w-4" />
@@ -192,7 +190,6 @@ export const ScoreCardContent = ({
             onClick={handleCopyMessage}
             variant="secondary"
             className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
-            forceUppercase={false}
           >
             <Copy className="h-4 w-4" />
             <span>Copy message</span>

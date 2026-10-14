@@ -31,7 +31,7 @@ export const StartStep = ({
       {onDiscord && (
         <>
           <Button role="primary" word={SIGN_IN_WORDS.discord} icon="Dc" onClick={onDiscord} disabled={sending} />
-          <div className="flex items-center gap-3 text-[13px] text-kit-muted">
+          <div className="flex items-center gap-3 text-sm text-kit-muted">
             <span className="h-px flex-1 bg-kit-line" />
             {SIGN_IN_WORDS.or}
             <span className="h-px flex-1 bg-kit-line" />
@@ -50,7 +50,7 @@ export const StartStep = ({
             onChange={(event) => setEmail(event.target.value)}
             placeholder="you@mail.com"
             aria-label={SIGN_IN_WORDS.email}
-            className="min-w-0 flex-1 bg-transparent text-[17px] text-kit-cream outline-none placeholder:text-kit-muted"
+            className="min-w-0 flex-1 bg-transparent text-base text-kit-cream outline-none placeholder:text-kit-muted"
           />
         </label>
         <Button

@@ -6,7 +6,7 @@ import { Timer } from "@/ui/design-system/atoms/game-icons";
 export const GuardCooldownBadge = ({ seconds, className }: { seconds: number; className?: string }) => (
   <span
     className={cn(
-      "inline-flex items-center gap-1 rounded border border-danger/60 bg-danger/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-danger",
+      "inline-flex items-center gap-1 rounded border border-danger/60 bg-danger/15 px-1.5 py-0.5 text-sm font-semibold text-danger",
       className,
     )}
     title="This slot was wiped out and is still rebuilding"

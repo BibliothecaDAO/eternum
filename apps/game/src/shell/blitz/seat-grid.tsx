@@ -73,7 +73,7 @@ const PreparedMark = ({ prepared }: { prepared: boolean | undefined }) => {
   return (
     <span
       aria-hidden
-      className="absolute -bottom-0.5 -right-0.5 flex size-5 items-center justify-center rounded-full border border-kit-line2 bg-kit-ground text-[12px] text-kit-muted"
+      className="absolute -bottom-0.5 -right-0.5 flex size-5 items-center justify-center rounded-full border border-kit-line2 bg-kit-ground text-sm text-kit-muted"
     >
       {prepared ? <KitIcon code="Ok" size={16} /> : "—"}
     </span>
@@ -111,14 +111,10 @@ export const RosterGrid = ({
             </span>
             {seat && (
               <>
-                <span className="max-w-full font-ui text-[13px] text-kit-cream">
+                <span className="max-w-full font-body text-sm text-kit-cream">
                   {seat.account ? <PlayerName account={seat.account} you={seat.own} /> : "—"}
                 </span>
-                {answer ? (
-                  <RatingFigure rating={answer.rating} />
-                ) : (
-                  <span className="text-[13px] text-kit-muted">—</span>
-                )}
+                {answer ? <RatingFigure rating={answer.rating} /> : <span className="text-sm text-kit-muted">—</span>}
               </>
             )}
           </li>
@@ -139,12 +135,17 @@ export const RegisteredCount = ({ slot, large, closed }: { slot: PlaytestSlot; l
       <KitIcon code="Pp" size={large ? 56 : 40} />
       <span className="flex flex-col gap-1">
         <span className="flex items-baseline gap-2">
-          <b className={cn("font-display leading-none text-kit-cream", large ? "text-[64px]" : "text-[40px]")}>
+          <b
+            className={cn(
+              "font-body font-bold leading-none tabular-nums text-kit-cream",
+              large ? "text-[64px]" : "text-[40px]",
+            )}
+          >
             {registered === undefined ? "—" : formatAmount(registered)}
           </b>
-          <span className="font-ui text-[17px] text-kit-muted">{BLITZ_WORDS.registeredUnit}</span>
+          <span className="font-body text-base text-kit-muted">{BLITZ_WORDS.registeredUnit}</span>
         </span>
-        {!closed && <span className="text-[14px] text-kit-muted">{BLITZ_WORDS.drawnAtClose(BLITZ_SEATS)}</span>}
+        {!closed && <span className="text-sm text-kit-muted">{BLITZ_WORDS.drawnAtClose(BLITZ_SEATS)}</span>}
       </span>
     </div>
   );

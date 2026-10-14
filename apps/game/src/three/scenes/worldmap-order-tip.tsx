@@ -25,7 +25,7 @@ export function showOrderTip(tip: (OrderTip & { at: { x: number; y: number } }) 
       <>
         <TipLine line={tip.line} />
         {tip.gestures && (
-          <span className="block text-center font-sans text-[11px] leading-snug text-kit-muted">{tip.gestures}</span>
+          <span className="block text-center font-sans text-sm leading-snug text-kit-muted">{tip.gestures}</span>
         )}
       </>
     ),

@@ -14,7 +14,7 @@ export const createLabelBase = (isMine: boolean, inputView: CameraView): HTMLEle
     "rounded-md",
     "p-0.5",
     "-translate-x-1/2",
-    "text-xxs",
+    "text-sm",
     "inline-flex",
     "items-center",
     "group",
@@ -24,7 +24,7 @@ export const createLabelBase = (isMine: boolean, inputView: CameraView): HTMLEle
 
   if (cameraView === CameraView.Medium) {
     labelDiv.classList.remove("p-0.5");
-    labelDiv.classList.add("px-1", "py-0.5", "gap-1", "text-[11px]");
+    labelDiv.classList.add("px-1", "py-0.5", "gap-1", "text-sm");
   } else if (cameraView === CameraView.Close) {
     labelDiv.classList.add("px-1", "py-1", "gap-1");
   }
@@ -75,7 +75,7 @@ export const attachDirectionIndicators = (
   }
 
   const offsetClass = cameraView === CameraView.Close ? "mt-1.5" : "mt-1";
-  const textSizeClass = cameraView === CameraView.Close ? "text-[11px]" : "text-[10px]";
+  const textSizeClass = cameraView === CameraView.Close ? "text-sm" : "text-sm";
 
   directionIndicators.classList.remove("ml-2", "w-full", "mt-1", "px-2");
   directionIndicators.classList.add(

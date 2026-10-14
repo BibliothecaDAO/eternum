@@ -18,7 +18,7 @@
 }
 
 .boot-loader-surface {
-  font-family: var(--font-ui);
+  font-family: var(--font-body);
 }
 
 .boot-loader-grid {
@@ -403,79 +403,32 @@ html.scene-viewport body {
   -webkit-touch-callout: none;
   user-select: none;
 }
-/* The HUD's display choices, one class each (hud-typography.ts), so a mode restyles them in one place. */
-.hud-caps {
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-}
-.hud-caps-tight {
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-}
-.hud-muted {
-  font-style: italic;
-}
-.hud-caps-button {
-  text-transform: uppercase;
-}
-
-/* The overlay surface's gradient: every mode's panels and sheets share it; Frontier warms it (below). */
-:root {
-  --overlay-surface-from: #192930;
-  --overlay-surface-to: #101c23;
-}
-
-/* The player app's type: the token file's faces everywhere (Type 2: Bokor titles, IM FELL English SC labels and
-   buttons with Atkinson figures, Atkinson text); under this class also sentence case, no italics, no monospace and larger sizes. The
-   shell (every page outside a game) and FrontierHud set the class on <html>, so popovers and sheets rendered outside
-   them follow too. Blitz and Eternum in-game surfaces keep their caps and sizes until they are next touched. */
-html.frontier-type body,
-html.frontier-type button,
-html.frontier-type .font-sans,
-html.frontier-type :is(.font-mono, code, kbd, samp) {
+/* One readable type for every surface (decisions-1, 14 October 2026): Atkinson Hyperlegible Next for everything read,
+   upright, sentence case and untracked; Bokor only where a component asks for font-display. Semantic italics read
+   upright too. Numbers set bold and tabular, so a rolling count never jitters and a number and its unit read in one
+   face ("7h 14m", "18.3K"). */
+body,
+button,
+.font-sans,
+:is(.font-mono, code, kbd, samp) {
   font-family: var(--font-body);
 }
-html.frontier-type .hud-caps-button {
-  text-transform: none;
-}
-/* The dyslexia rule holds on every surface Frontier reaches, including components that set caps or italics directly. */
-html.frontier-type .uppercase {
-  text-transform: none;
-}
-html.frontier-type :is(.italic, em, i, cite) {
+:is(em, i, cite) {
   font-style: normal;
 }
-html.frontier-type [class*="tracking-"] {
-  letter-spacing: normal;
-}
-html.frontier-type :is(.hud-caps, .hud-caps-tight) {
-  text-transform: none;
-  letter-spacing: normal;
-  font-size: 0.8125rem;
-}
-html.frontier-type .hud-muted {
-  font-style: normal;
-}
-html.frontier-type .hud-body {
-  font-size: 1rem;
-}
-html.frontier-type .hud-value {
-  font-size: 0.9375rem;
-}
-/* Frontier's visual direction (design §3.12): warm ink surfaces and numbers in the text face (Atkinson 700, tabular so a
-   rolling count never jitters), so a number and its unit ("7h 14m", "18.3K") read in one face. The palette is the one
-   token file's (src/tokens.ts). Scoped here so every Frontier sheet gets them and no other mode changes. */
-html.frontier-type {
-  --overlay-surface-from: rgba(38, 29, 17, 0.98);
-  --overlay-surface-to: rgba(16, 12, 8, 0.99);
-}
-html.frontier-type :is(.tabular-nums, .hud-value) {
+.tabular-nums {
   font-family: var(--font-body);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.01em;
 }
-html.frontier-type .frontier-sheet {
+
+/* The overlay surface's gradient, the one warm ink every mode's panels and sheets share. The palette is the token
+   file's (src/tokens.ts). */
+:root {
+  --overlay-surface-from: rgba(38, 29, 17, 0.98);
+  --overlay-surface-to: rgba(16, 12, 8, 0.99);
+}
+.frontier-sheet {
   /* An opaque base under the translucent gradient: nothing beneath a sheet shows through it. */
   background: linear-gradient(180deg, var(--overlay-surface-from), var(--overlay-surface-to)), var(--ground);
   border: 0;
@@ -484,36 +437,36 @@ html.frontier-type .frontier-sheet {
   box-shadow: 0 -14px 40px rgba(0, 0, 0, 0.7);
 }
 @media (orientation: landscape) {
-  html.frontier-type .frontier-sheet {
+  .frontier-sheet {
     border: 1px solid var(--line2);
     border-radius: 24px;
   }
 }
 /* From the desktop width up the sheet is a docked panel in the leaderboard's place: the peek's card edge and corners. */
 @media (min-width: 1024px) {
-  html.frontier-type .frontier-sheet {
+  .frontier-sheet {
     border: 1px solid var(--line);
     border-radius: 12px;
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
   }
 }
-html.frontier-type .frontier-handle {
+.frontier-handle {
   width: 44px;
   height: 5px;
   border-radius: 3px;
   background: #5a4a30;
 }
-html.frontier-type .frontier-card {
+.frontier-card {
   background: linear-gradient(180deg, #2a2013, #15100a);
   border: 1px solid var(--line);
   border-radius: 18px;
 }
-html.frontier-type .frontier-card[aria-pressed="true"] {
+.frontier-card[aria-pressed="true"] {
   border: 2px solid var(--hot);
   box-shadow: 0 0 18px rgba(246, 172, 29, 0.45);
   transform: translateY(-8px);
 }
-html.frontier-type .frontier-chip {
+.frontier-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -522,76 +475,76 @@ html.frontier-type .frontier-chip {
   border-radius: 999px;
   padding: 3px 11px 3px 4px;
 }
-html.frontier-type .frontier-chip > :first-child {
+.frontier-chip > :first-child {
   width: 28px;
   height: 28px;
   flex-shrink: 0;
 }
 /* A chip is one line: an amount, a gain or a "from -> to" never wraps inside it; the card around it makes the room. */
-html.frontier-type .frontier-chip-number {
+.frontier-chip-number {
   font-size: 17px;
   color: var(--cream);
   white-space: nowrap;
 }
 /* A number that is good or bad news (mockup 2's wheat), the one an upgrade reaches, and the price it pays. */
-html.frontier-type .frontier-chip[data-tone="gain"] {
+.frontier-chip[data-tone="gain"] {
   border-color: var(--sage);
 }
-html.frontier-type .frontier-chip[data-tone="gain"] .frontier-chip-number {
+.frontier-chip[data-tone="gain"] .frontier-chip-number {
   color: #b9e58a;
 }
-html.frontier-type .frontier-chip[data-tone="loss"] {
+.frontier-chip[data-tone="loss"] {
   border-color: #e0533f;
 }
-html.frontier-type .frontier-chip[data-tone="loss"] .frontier-chip-number {
+.frontier-chip[data-tone="loss"] .frontier-chip-number {
   color: #ff8a73;
 }
-html.frontier-type .frontier-chip[data-tone="lit"] {
+.frontier-chip[data-tone="lit"] {
   border-color: var(--hot);
   box-shadow: 0 0 12px rgba(246, 172, 29, 0.35);
 }
 /* A price is a dark well with an amber rim wherever it sits, on a gold button too: the kit's gilded icons read on ink,
    never on gold. */
-html.frontier-type .frontier-chip[data-tone="price"] {
+.frontier-chip[data-tone="price"] {
   background: rgba(27, 18, 7, 0.9);
   border-color: #b76f00;
 }
-html.frontier-type .frontier-chip[data-tone="price"] .frontier-chip-number {
+.frontier-chip[data-tone="price"] .frontier-chip-number {
   color: var(--cream);
 }
 /* A tier's banner: a small silver plate with the numeral, gold at III; larger under a building's medallion. */
-html.frontier-type .frontier-tier {
+.frontier-tier {
   border-radius: 5px;
   border: 1px solid #6e6148;
   background: linear-gradient(180deg, #ece6d8, #a8a194);
   color: var(--ink);
-  font-family: var(--font-ui);
+  font-family: var(--font-body);
   font-weight: 800;
-  font-size: 11px;
+  font-size: 14px;
   line-height: 1;
   padding: 3px 5px;
 }
-html.frontier-type .frontier-tier[data-tier="3"] {
+.frontier-tier[data-tier="3"] {
   border-color: #b76f00;
   background: linear-gradient(180deg, #ffd98a, #e39001);
 }
-html.frontier-type .frontier-tier.frontier-tier-lg {
-  font-size: 14px;
+.frontier-tier.frontier-tier-lg {
+  font-size: 16px;
   padding: 4px 8px;
 }
 /* The dock's smaller chip (mockup 7): the same token at card scale. */
-html.frontier-type .frontier-chip.frontier-chip-sm {
+.frontier-chip.frontier-chip-sm {
   gap: 4px;
   padding: 2px 9px 2px 3px;
 }
-html.frontier-type .frontier-chip.frontier-chip-sm > :first-child {
+.frontier-chip.frontier-chip-sm > :first-child {
   width: 20px;
   height: 20px;
 }
-html.frontier-type .frontier-chip-sm .frontier-chip-number {
+.frontier-chip-sm .frontier-chip-number {
   font-size: 14px;
 }
-html.frontier-type .frontier-primary {
+.frontier-primary {
   height: 60px;
   border-radius: 18px;
   background: linear-gradient(180deg, #ffc24a, #e39001 62%, #b76f00);
@@ -599,40 +552,40 @@ html.frontier-type .frontier-primary {
   box-shadow:
     0 5px 0 #6d4300,
     0 10px 22px rgba(227, 144, 1, 0.35);
-  font-family: var(--font-ui);
+  font-family: var(--font-body);
   font-weight: 800;
   font-size: 22px;
   color: var(--ink);
 }
 /* The primary's own icon draws in ink, like its word: a gilded icon on the amber would vanish. */
-html.frontier-type .frontier-primary > img {
+.frontier-primary > img {
   filter: brightness(0);
   opacity: 0.85;
 }
-html.frontier-type .frontier-primary[data-warns] {
+.frontier-primary[data-warns] {
   background: linear-gradient(180deg, #ff7a66, #e0392d 62%, #a81f17);
   border-color: #ffb3a6;
   box-shadow:
     0 5px 0 #5e100b,
     0 10px 22px rgba(224, 57, 45, 0.35);
 }
-html.frontier-type .frontier-primary:disabled {
+.frontier-primary:disabled {
   opacity: 0.45;
   box-shadow: 0 5px 0 #6d4300;
 }
-html.frontier-type .frontier-title {
-  font-family: var(--font-ui);
+.frontier-title {
+  font-family: var(--font-body);
   font-weight: 800;
   font-size: 22px;
   color: var(--cream);
 }
-html.frontier-type .frontier-hero {
+.frontier-hero {
   font-size: 34px;
   color: var(--cream);
   text-shadow: 0 2px 0 var(--ink);
 }
-html.frontier-type .frontier-scale-end {
-  font-size: 13px;
+.frontier-scale-end {
+  font-size: 14px;
   color: var(--muted);
 }
 
@@ -648,7 +601,7 @@ h6,
 .h4,
 .h5,
 .h6 {
-  font-family: var(--font-ui);
+  font-family: var(--font-body);
 }
 @keyframes dotAnimation {
   0%,
@@ -749,7 +702,7 @@ h5 {
   @apply text-base sm:text-lg md:text-xl;
 }
 h6 {
-  @apply text-sm sm:text-base md:text-lg uppercase;
+  @apply text-sm sm:text-base md:text-lg;
 }
 .fade-in {
   animation: fadeIn 1s;
@@ -866,7 +819,7 @@ canvas {
 }
 
 button {
-  font-family: var(--font-ui);
+  font-family: var(--font-body);
 }
 
 .button-gold {

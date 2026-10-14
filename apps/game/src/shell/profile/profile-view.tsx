@@ -79,9 +79,9 @@ export const PlayerCard = ({ account, own }: { account: string; own: boolean }) 
       <h2 className="max-w-full px-4 font-display text-[30px] leading-none text-kit-cream">
         <PlayerName account={account} />
       </h2>
-      <p className="flex items-center gap-2 text-[14px] text-kit-muted">
+      <p className="flex items-center gap-2 text-sm text-kit-muted">
         {standing && <OrderEmblem order={standing.order} size={20} />}
-        <b className="font-ui text-kit-gold">{standing ? `#${standing.rank}` : "—"}</b>
+        <b className="font-body text-kit-gold">{standing ? `#${standing.rank}` : "—"}</b>
         {SEASON_WORDS.of} {formatAmount(field)} ·
         <AgeLabel numeral={frontier.numeral} />
         <span className="text-kit-cream">{frontier.name}</span>
@@ -116,7 +116,7 @@ const ProfileBanner = ({ account, own }: { account: string; own: boolean }) => {
         alt=""
         className={cn("size-20 rounded-full border-[3px] object-cover", own ? "border-kit-peach" : "border-kit-line2")}
       />
-      <div className="flex min-w-0 items-center gap-2 pb-2 font-ui text-[22px] font-bold text-kit-cream">
+      <div className="flex min-w-0 items-center gap-2 pb-2 font-body text-xl font-bold text-kit-cream">
         {standing && <OrderEmblem order={standing.order} size={26} />}
         <PlayerName account={account} />
       </div>
@@ -131,15 +131,15 @@ const SeasonFigure = ({ account }: { account: string }) => {
   return (
     <section className="flex items-center gap-3 plate p-3">
       <KitIcon code="Tp" size={30} />
-      <span className="font-ui text-[28px] font-extrabold tabular-nums text-kit-gold">
+      <span className="font-body text-[28px] font-extrabold tabular-nums text-kit-gold">
         {own ? `#${own.rank}` : "—"}
       </span>
-      <span className="text-[15px] text-kit-muted">
+      <span className="text-base text-kit-muted">
         {SEASON_WORDS.of} {formatAmount(field)}
       </span>
       <span className="ml-auto flex items-center gap-2">
         <AgeLabel numeral={frontier.numeral} />
-        <span className="font-ui text-[15px] font-bold text-kit-cream">{frontier.name}</span>
+        <span className="font-body text-base font-bold text-kit-cream">{frontier.name}</span>
       </span>
     </section>
   );

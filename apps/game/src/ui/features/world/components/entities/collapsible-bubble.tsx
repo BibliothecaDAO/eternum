@@ -84,7 +84,10 @@ export const InfoBubble = ({
         <span className={cn("flex min-w-0 items-center gap-2", HUD_LABEL)}>
           {collapsible && (
             <ChevronDown
-              className={cn("h-3.5 w-3.5 flex-shrink-0 text-gold/60 transition-transform", isCollapsed && "-rotate-90")}
+              className={cn(
+                "h-3.5 w-3.5 flex-shrink-0 text-kit-muted transition-transform",
+                isCollapsed && "-rotate-90",
+              )}
             />
           )}
           {Icon && <Icon className="h-3.5 w-3.5 flex-shrink-0 text-gold/70" />}

@@ -31,7 +31,7 @@ export const TierChip = ({ tier, showWord }: { tier: Tier; showWord: boolean }) 
   >
     <Pips tier={tier} />
     {showWord && (
-      <span aria-hidden className="text-[12px] font-semibold text-kit-cream">
+      <span aria-hidden className="text-sm font-semibold text-kit-cream">
         {TIER_WORDS[tier - 1]}
       </span>
     )}

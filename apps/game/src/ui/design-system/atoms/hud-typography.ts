@@ -1,37 +1,21 @@
 /**
- * Unified typography for every floating HUD surface (top pills, right-side
- * info bubbles, view-switcher icons, minimap, picker popover, etc).
+ * The HUD's type roles, one per job, on the app's one scale (decisions-1): 14 for labels, 16 for text and numbers,
+ * 20 for headlines; sentence case, upright, untracked. Text that must be read is cream or the muted token; gold marks
+ * what can be pressed or what was earned.
  *
- * One small system, used everywhere, so the four zones stop looking like
- * four different products:
- *
- *   - LABEL   — small caps section/header text. Used for "STRUCTURE TILE",
- *               "GUARDS", "BIOME", pill captions like "Local · World".
- *   - LABEL_BRIGHT — same shape, higher-contrast color. Used for active
- *                    pill text where the label IS the primary content
- *                    (e.g. rank pill "#3 · 110 PTS", identity badge).
- *   - CUE     — small caps modifier that sits next to a LABEL ("1/1",
- *               "0%"). Same metrics, lower opacity so it reads as
- *               secondary.
- *   - BODY    — readable mid-sized prose / data ("No production
- *               buildings", "1m ago · next in 23s").
- *   - BODY_MUTED — italic + low opacity for empty states.
- *   - VALUE   — semibold numeric / status value ("1500", "+30%", "1.5K").
- *   - HEADLINE — larger semibold headline ("djizus", "Tropical Seasonal
- *                Forest", structure names inside bubbles).
- *
- * The caps, italic and size choices are classes (hud-caps, hud-muted, hud-body, hud-value, index.css) so a mode can
- * restyle them in one place: Frontier reads in sentence case, never italic, at dyslexia-friendly sizes.
- *
- * All HUD surfaces drop font-[Cinzel] — that was making some elements
- * read as a different family from the rest of the chrome. The default
- * sans-serif renders smaller sizes more legibly and unifies the look.
+ *   - LABEL        — names a section or a value ("Guards", "Biome", "Local").
+ *   - LABEL_BRIGHT — a label that is itself the content of a pill (the player's name and rank).
+ *   - CUE          — a quiet modifier beside a label ("1/1", "0%").
+ *   - BODY         — readable prose or data ("No production buildings", "1m ago · next in 23s").
+ *   - BODY_MUTED   — an empty state or an aside.
+ *   - VALUE        — a number or a status value ("1,500", "+30%").
+ *   - HEADLINE     — a panel's subject ("djizus", "Tropical Seasonal Forest").
  */
 
-export const HUD_LABEL = "hud-caps text-[10px] font-semibold text-gold/70";
-export const HUD_LABEL_BRIGHT = "hud-caps-tight text-[11px] font-semibold text-gold";
-export const HUD_CUE = "hud-caps text-[10px] font-semibold text-gold/55";
-export const HUD_BODY = "hud-body text-[11px] text-gold/85";
-export const HUD_BODY_MUTED = "hud-body hud-muted text-[11px] text-gold/55";
-export const HUD_VALUE = "hud-value text-[12px] font-semibold text-gold";
-export const HUD_HEADLINE = "text-[14px] font-semibold text-gold";
+export const HUD_LABEL = "text-sm font-semibold text-kit-muted";
+export const HUD_LABEL_BRIGHT = "text-sm font-semibold text-kit-cream";
+export const HUD_CUE = "text-sm text-kit-muted";
+export const HUD_BODY = "text-base text-kit-cream";
+export const HUD_BODY_MUTED = "text-base text-kit-muted";
+export const HUD_VALUE = "text-base font-semibold tabular-nums text-kit-cream";
+export const HUD_HEADLINE = "text-xl font-semibold text-kit-cream";

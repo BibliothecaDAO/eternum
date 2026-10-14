@@ -53,7 +53,7 @@ export function ArmyMovementLatencyOverlay(): JSX.Element | null {
 
   return (
     <div
-      className="fixed bottom-4 left-4 z-[9999] pointer-events-auto bg-black/80 text-white text-xs font-mono rounded-md shadow-xl border border-gold/40 p-3 max-w-[640px] max-h-[60vh] overflow-auto"
+      className="fixed bottom-4 left-4 z-[9999] pointer-events-auto bg-black/80 text-white text-sm font-mono rounded-md shadow-xl border border-gold/40 p-3 max-w-[640px] max-h-[60vh] overflow-auto"
       data-testid="army-movement-latency-overlay"
     >
       <div className="flex items-center justify-between mb-2 pb-1 border-b border-gold/30">

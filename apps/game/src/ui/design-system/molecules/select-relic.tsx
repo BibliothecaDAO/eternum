@@ -182,12 +182,12 @@ export const SelectRelic: React.FC<SelectRelicProps> = ({
                           <ResourceIcon resource={ResourcesIds[relic.id]} size="sm" />
                           <div className="flex flex-col">
                             <span className="font-medium">{relic.name}</span>
-                            <span className={clsx("text-xs", getRelicTypeColor(relic.type))}>{relic.effect}</span>
+                            <span className={clsx("text-sm", getRelicTypeColor(relic.type))}>{relic.effect}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <span
-                            className={clsx("px-2 py-1 rounded text-xs", getRecipientTypeColor(relic.recipientType))}
+                            className={clsx("px-2 py-1 rounded text-sm", getRecipientTypeColor(relic.recipientType))}
                           >
                             {relic.recipientType}
                           </span>
@@ -213,7 +213,7 @@ export const SelectRelic: React.FC<SelectRelicProps> = ({
             >
               <ResourceIcon resource={ResourcesIds[relic.id]} size="xs" />
               <span>{relic.name}</span>
-              <span className={clsx("text-xs", getRelicTypeColor(relic.type))}>
+              <span className={clsx("text-sm", getRelicTypeColor(relic.type))}>
                 (
                 {relic.bonus > 1
                   ? `+${Math.round((relic.bonus - 1) * 100)}%`

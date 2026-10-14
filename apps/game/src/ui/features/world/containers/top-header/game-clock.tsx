@@ -54,22 +54,14 @@ export const GameClock = memo(({ compact = false }: { compact?: boolean }) => {
     >
       <span className="flex items-center gap-1.5" aria-label={compact ? clock.label : undefined}>
         <Clock className="h-3.5 w-3.5 shrink-0" />
-        <span
-          className={cn(HUD_LABEL_BRIGHT, "whitespace-nowrap tabular-nums", compact && "text-[11px] tracking-normal")}
-        >
+        <span className={cn(HUD_LABEL_BRIGHT, "whitespace-nowrap tabular-nums", compact && "text-sm")}>
           {compact ? clock.compactLabel : clock.label}
         </span>
       </span>
       {!compact && <span aria-hidden className="h-4 w-px bg-gold/25" />}
       <span className="flex items-center gap-1.5">
         <PhaseIcon className="h-3.5 w-3.5 shrink-0" aria-label={dayPhase.name} />
-        <span
-          className={cn(
-            HUD_LABEL_BRIGHT,
-            "whitespace-nowrap tabular-nums",
-            compact && "text-[10px] tracking-normal text-gold/75",
-          )}
-        >
+        <span className={cn(HUD_LABEL_BRIGHT, "whitespace-nowrap tabular-nums", compact && "text-sm text-gold/75")}>
           {formatGameClockDuration(daySecondsLeft)}
         </span>
       </span>

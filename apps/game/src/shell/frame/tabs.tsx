@@ -71,7 +71,7 @@ export const TabBar = () => {
             data-role="tab"
             aria-current={current ? "page" : undefined}
             className={cn(
-              "flex min-h-12 flex-1 flex-col items-center justify-center gap-[3px] font-ui text-[11px] font-semibold",
+              "flex min-h-12 flex-1 flex-col items-center justify-center gap-[3px] font-body text-sm font-semibold",
               current ? "text-kit-peach" : "text-kit-muted",
             )}
           >
@@ -123,7 +123,7 @@ export const Rail = ({ places }: { places: boolean }) => {
                   data-role="tab"
                   aria-current={current ? "page" : undefined}
                   className={cn(
-                    "relative flex w-full flex-col items-center gap-1.5 py-3.5 font-ui text-[13px] transition-colors",
+                    "relative flex w-full flex-col items-center gap-1.5 py-3.5 font-body text-sm transition-colors",
                     current
                       ? "bg-gradient-to-r from-kit-gold/[.18] to-transparent text-kit-cream before:absolute before:inset-y-2.5 before:left-0 before:w-1 before:rounded-r before:bg-kit-gold"
                       : "text-kit-muted hover:bg-kit-gold/[.05] hover:text-kit-cream",

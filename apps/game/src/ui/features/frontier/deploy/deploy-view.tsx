@@ -74,7 +74,7 @@ export const DeployView = ({
   return (
     <Sheet label={DEPLOY} onClose={onClose}>
       <header className="flex items-center justify-between">
-        <h2 className="frontier-title !text-[20px]">{DEPLOY}</h2>
+        <h2 className="frontier-title !text-xl">{DEPLOY}</h2>
         {slots && <SlotMarks used={slots.used} allowed={slots.allowed} />}
       </header>
       <Hero art={art} count={count} />
@@ -140,7 +140,7 @@ const Equation = ({
       label={DEPLOY_FIGURES.wheatToDeploy}
       value={`−${formatExact(equation?.wheatCost)}`}
     />
-    <span aria-hidden className="text-[16px] text-kit-muted">
+    <span aria-hidden className="text-base text-kit-muted">
       →
     </span>
     <Chip

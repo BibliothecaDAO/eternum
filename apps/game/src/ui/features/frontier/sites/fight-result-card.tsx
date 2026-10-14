@@ -55,7 +55,7 @@ export const FightResultCard = ({ result, onClose }: { result: FightResult; onCl
         </span>
         <span className="flex min-w-0 flex-col">
           <span className={cn("frontier-title", VERDICT_TONES[result.verdict])}>{verdict}</span>
-          <span className="text-[14px] text-kit-muted">{word}</span>
+          <span className="text-sm text-kit-muted">{word}</span>
         </span>
       </span>
       <span className="flex gap-2">
@@ -95,9 +95,9 @@ const Side = ({ label, mark, troops }: { label: string; mark: ReactNode; troops:
   >
     {mark}
     <span aria-hidden className="flex items-baseline gap-1.5 tabular-nums">
-      <span className="text-[15px] text-kit-muted">{formatExact(troops.before)}</span>
-      <span className="text-[13px] text-kit-muted">→</span>
-      <span className={cn("text-[20px] leading-none", troops.after === 0 ? "text-kit-red" : "text-kit-cream")}>
+      <span className="text-base text-kit-muted">{formatExact(troops.before)}</span>
+      <span className="text-sm text-kit-muted">→</span>
+      <span className={cn("text-xl leading-none", troops.after === 0 ? "text-kit-red" : "text-kit-cream")}>
         {formatExact(troops.after)}
       </span>
     </span>

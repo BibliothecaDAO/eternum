@@ -274,7 +274,7 @@ const SelectedStructureActionPanel = ({
 }) => {
   const { isLoadingStructure } = useStructureEntityDetail({ structureEntityId });
   if (isLoadingStructure) {
-    return <div className="flex h-full items-center justify-center text-xxs text-gold/70">Loading structure...</div>;
+    return <div className="flex h-full items-center justify-center text-sm text-gold/70">Loading structure...</div>;
   }
 
   return <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={onSimulateBattle} />;

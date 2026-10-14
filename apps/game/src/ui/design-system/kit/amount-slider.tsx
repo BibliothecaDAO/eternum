@@ -79,7 +79,7 @@ const End = ({
     onClick={() => onTake(amount)}
     className="flex h-12 shrink-0 items-center"
   >
-    <span className="frontier-chip h-8 !gap-1 !px-2.5 !py-0 text-[15px] tabular-nums text-kit-cream">
+    <span className="frontier-chip h-8 !gap-1 !px-2.5 !py-0 text-base tabular-nums text-kit-cream">
       <span className="contents">
         {children}
         {formatExact(amount)}

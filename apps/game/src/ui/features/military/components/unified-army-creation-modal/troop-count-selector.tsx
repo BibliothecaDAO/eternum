@@ -60,7 +60,7 @@ export const TroopCountSelector = ({
             variant="outline"
             onClick={() => handleIncrement(100)}
             disabled={unavailableReason !== null}
-            className="flex-1 px-2 py-1.5 text-xs font-bold hover:bg-gold/10"
+            className="flex-1 px-2 py-1.5 text-sm font-bold hover:bg-gold/10"
           >
             +100
           </Button>
@@ -68,7 +68,7 @@ export const TroopCountSelector = ({
             variant="outline"
             onClick={() => handleIncrement(500)}
             disabled={unavailableReason !== null}
-            className="flex-1 px-2 py-1.5 text-xs font-bold hover:bg-gold/10"
+            className="flex-1 px-2 py-1.5 text-sm font-bold hover:bg-gold/10"
           >
             +500
           </Button>
@@ -76,13 +76,13 @@ export const TroopCountSelector = ({
             variant="gold"
             onClick={() => onChange(maxAffordable)}
             disabled={unavailableReason !== null}
-            className="flex-1 px-2 py-1.5 text-xs font-extrabold"
+            className="flex-1 px-2 py-1.5 text-sm font-extrabold"
           >
             {compact ? "Max" : "MAX"}
           </Button>
         </div>
         {unavailableReason && (
-          <p className="px-1 text-xs text-gold/70" role="status">
+          <p className="px-1 text-sm text-gold/70" role="status">
             {unavailableReason}
           </p>
         )}
@@ -100,12 +100,12 @@ export const TroopCountSelector = ({
         </label>
 
         {!embedded && (
-          <div className="flex justify-between items-center text-xs">
-            <span className="text-gold/60">
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-kit-muted">
               Available troops: <span className="text-gold font-bold">{maxAffordable.toLocaleString()}</span>
             </span>
             {shouldShowCapacityInfo && capacityLimitDisplay !== null && (
-              <span className="text-gold/60">
+              <span className="text-kit-muted">
                 Cap remaining:{" "}
                 <span className="text-gold/80 font-semibold">{capacityLimitDisplay.toLocaleString()}</span>
               </span>
@@ -114,7 +114,7 @@ export const TroopCountSelector = ({
         )}
 
         {isAtCapacity && maxCapacity !== null && (
-          <div className="bg-danger/10 border-l-2 border-danger rounded px-2 py-1 text-xxs text-danger font-semibold">
+          <div className="bg-danger/10 border-l-2 border-danger rounded px-2 py-1 text-sm text-danger font-semibold">
             Deployment cap reached: {maxCapacity.toLocaleString()} troops
           </div>
         )}
@@ -122,7 +122,7 @@ export const TroopCountSelector = ({
         {troopCount > maxAffordable && (
           <div className="bg-danger/10 border-l-2 border-danger rounded px-2 py-1 flex items-center gap-1.5">
             <AlertTriangle className="w-4 h-4 text-danger flex-shrink-0" />
-            <span className="text-xxs text-danger font-semibold">
+            <span className="text-sm text-danger font-semibold">
               Need {troopCount.toLocaleString()} but only {maxAffordable.toLocaleString()} available
             </span>
           </div>

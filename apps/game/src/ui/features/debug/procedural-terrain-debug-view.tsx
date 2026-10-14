@@ -204,7 +204,7 @@ export const ProceduralTerrainDebugView = () => {
       {!capture && (
         <aside className="flex max-h-[calc(var(--lab-viewport-height)-2rem)] flex-col gap-4 overflow-y-auto border border-white/10 bg-black/60 p-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-200/70">Terrain & buildings</p>
+            <p className="text-sm font-semibold text-emerald-200/70">Terrain & buildings</p>
             <h1 className="mt-1 text-2xl font-semibold text-white">
               {localMode ? "Settlement Workshop" : "Living Biomes"}
             </h1>
@@ -245,10 +245,10 @@ export const ProceduralTerrainDebugView = () => {
               </select>
             </label>
           )}
-          {localMode && <p className="text-xs text-stone-400">Water biomes use sand in the settlement view.</p>}
+          {localMode && <p className="text-sm text-stone-400">Water biomes use sand in the settlement view.</p>}
           <fieldset className="flex flex-col gap-3 border border-white/15 p-3">
             <legend className="px-1 text-sm text-emerald-200">Interaction preview</legend>
-            <p className="text-xs text-stone-400">
+            <p className="text-sm text-stone-400">
               Click a tile to select it and place the army. Drag to move the camera.
             </p>
             <label className="flex flex-col gap-1 text-sm">
@@ -275,7 +275,7 @@ export const ProceduralTerrainDebugView = () => {
               </select>
             </label>
             {preview.biome === "ethereal" && (
-              <p className="text-xs text-stone-400">
+              <p className="text-sm text-stone-400">
                 Ethereal / Underground — dark basalt slabs with flowing neon along gameplay hex borders.
               </p>
             )}
@@ -424,7 +424,7 @@ export const ProceduralTerrainDebugView = () => {
                     onChange={(event) => setConstructionProgress(Number(event.target.value))}
                   />
                 </label>
-                <p className="text-xs text-stone-400">
+                <p className="text-sm text-stone-400">
                   Place again on the selected tile to apply progress. Set 0%, place, then set 100% and place again to
                   preview the build and activation.
                 </p>
@@ -478,7 +478,7 @@ export const ProceduralTerrainDebugView = () => {
                 onChange={(event) => setBuildingYaw(Number(event.target.value))}
               />
             </label>
-            <p className="text-xs text-stone-400">
+            <p className="text-sm text-stone-400">
               Select a tile, then place a model. Placed buildings stay when you select another tile.
             </p>
             <button
@@ -529,7 +529,7 @@ export const ProceduralTerrainDebugView = () => {
               />
               Freeze map
             </label>
-            <p className="text-xs text-stone-400">
+            <p className="text-sm text-stone-400">
               Frost covers the terrain and animations stop. Pan, zoom and select tiles as usual. Uncheck to resume.
             </p>
           </fieldset>
@@ -543,7 +543,7 @@ export const ProceduralTerrainDebugView = () => {
             onPhase={setCycleProgress}
             onMoon={(enabled) => rendererRef.current?.setMoonEnabled(enabled)}
           />
-          <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
+          <label className="flex flex-col gap-2 text-sm font-semibold text-stone-300">
             {preview.biome === "ethereal" ? "Fixed moonlit night" : `Game day cycle: ${cycleProgress}%`}
             <input
               type="range"
@@ -554,7 +554,7 @@ export const ProceduralTerrainDebugView = () => {
               disabled={preview.biome === "ethereal"}
               onChange={(event) => setCycleProgress(Number(event.target.value))}
             />
-            <span className="font-normal normal-case text-stone-400">
+            <span className="font-normal text-stone-400">
               {preview.biome === "ethereal"
                 ? "This layer keeps its cool moonlight glow throughout the game day."
                 : "Uses game lighting and tone mapping. Match the in-game cycle percentage to compare biomes."}
@@ -571,21 +571,19 @@ export const ProceduralTerrainDebugView = () => {
                       className="block h-5 w-full border border-white/10"
                       style={{ background: `linear-gradient(135deg, ${descriptor.primary}, ${descriptor.secondary})` }}
                     />
-                    <span className="mt-2 block text-[0.64rem] font-medium leading-3 text-stone-300">
-                      {descriptor.label}
-                    </span>
+                    <span className="mt-2 block text-sm font-medium leading-3 text-stone-300">{descriptor.label}</span>
                   </div>
                 );
               })}
             </div>
           )}
 
-          <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
+          <label className="flex flex-col gap-2 text-sm font-semibold text-stone-300">
             Terrain quality
             <select
               value={qualityTier}
               onChange={(event) => changeSceneSetting("quality", event.target.value)}
-              className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium normal-case text-white"
+              className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium text-white"
             >
               {TERRAIN_QUALITY_TIERS.map((value) => (
                 <option key={value} value={value}>
@@ -596,12 +594,12 @@ export const ProceduralTerrainDebugView = () => {
           </label>
 
           {!localMode && sceneId === "fog-reveal" && (
-            <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
+            <label className="flex flex-col gap-2 text-sm font-semibold text-stone-300">
               Exploration
               <select
                 value={String(revealProgress)}
                 onChange={(event) => changeSceneSetting("reveal", event.target.value)}
-                className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium normal-case text-white"
+                className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium text-white"
               >
                 <option value="0">Covered</option>
                 <option value="0.25">25%</option>
@@ -613,13 +611,13 @@ export const ProceduralTerrainDebugView = () => {
           )}
 
           {!localMode && (
-            <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
+            <label className="flex flex-col gap-2 text-sm font-semibold text-stone-300">
               Scene
               <select
                 aria-label="Terrain scene"
                 value={sceneId}
                 onChange={(event) => changeSceneSetting("scene", event.target.value)}
-                className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium normal-case text-white"
+                className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium text-white"
               >
                 {TERRAIN_VERIFICATION_SCENE_IDS.map((value) => (
                   <option key={value} value={value}>
@@ -630,24 +628,24 @@ export const ProceduralTerrainDebugView = () => {
             </label>
           )}
 
-          <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
+          <label className="flex flex-col gap-2 text-sm font-semibold text-stone-300">
             Renderer
             <select
               value={forceWebGL ? "webgpu-force-webgl" : "webgpu-auto"}
               onChange={(event) => changeSceneSetting("rendererMode", event.target.value)}
-              className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium normal-case text-white"
+              className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium text-white"
             >
               <option value="webgpu-auto">WebGPU auto</option>
               <option value="webgpu-force-webgl">WebGL2 fallback</option>
             </select>
           </label>
 
-          <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
+          <label className="flex flex-col gap-2 text-sm font-semibold text-stone-300">
             Ground shading
             <select
               value={texturedGround ? "textured" : "flat"}
               onChange={(event) => changeSceneSetting("groundMode", event.target.value)}
-              className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium normal-case text-white"
+              className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium text-white"
             >
               <option value="textured">Textured PBR</option>
               <option value="flat">Flat diagnostic</option>
@@ -778,7 +776,7 @@ function TerrainLabMetrics({
         <DebugMetric label="First render" value={`${stats.firstRenderMs.toFixed(1)} ms`} />
       </dl>
 
-      <div className="flex items-center justify-between gap-3 text-[0.68rem] text-stone-500">
+      <div className="flex items-center justify-between gap-3 text-sm text-stone-500">
         <span>Fingerprint</span>
         <code>{stats.fingerprint}</code>
       </div>
@@ -788,8 +786,8 @@ function TerrainLabMetrics({
 
 const DebugMetric = ({ label, value }: { label: string; value: string }) => (
   <div className="border border-white/10 bg-white/[0.04] px-2 py-2">
-    <dt className="text-[0.6rem] font-semibold uppercase text-stone-500">{label}</dt>
-    <dd className="mt-1 truncate font-mono text-xs text-white">{value}</dd>
+    <dt className="text-sm font-semibold text-stone-500">{label}</dt>
+    <dd className="mt-1 truncate font-mono text-sm text-white">{value}</dd>
   </div>
 );
 

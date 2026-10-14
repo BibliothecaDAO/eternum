@@ -95,7 +95,7 @@ export const BitcoinMiningActionPanel = ({ structureEntityId }: { structureEntit
   };
 
   return (
-    <section className="space-y-2 rounded border border-gold/20 p-3 text-xs text-gold">
+    <section className="space-y-2 rounded border border-gold/20 p-3 text-sm text-gold">
       <h4>Bitcoin mining · phase {phase.toString()}</h4>
       {owned && (
         <>

@@ -211,7 +211,7 @@ export const PlayerList = ({
             );
           })
         ) : (
-          <div className="flex flex-col items-center justify-center h-32 text-gold/60">
+          <div className="flex flex-col items-center justify-center h-32 text-kit-muted">
             <User className="w-8 h-8 mb-2 opacity-50" />
             <p className="text-sm">No players found</p>
           </div>
@@ -263,13 +263,7 @@ const PlayerListHeader = ({
       )}
     >
       {columns.map(({ label, align }) => (
-        <div
-          key={label}
-          className={clsx(
-            "flex w-full items-center text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-gold/70",
-            align,
-          )}
-        >
+        <div key={label} className={clsx("flex w-full items-center text-sm font-semibold text-gold/70", align)}>
           {label}
         </div>
       ))}
@@ -339,7 +333,7 @@ const PlayerRow = ({
       )}
       <div
         className={clsx(
-          "grid w-full cursor-pointer items-center gap-x-4 px-4 py-2 text-xs transition-colors",
+          "grid w-full cursor-pointer items-center gap-x-4 px-4 py-2 text-sm transition-colors",
           gridTemplateClass,
         )}
         onClick={onSelect}
@@ -348,7 +342,7 @@ const PlayerRow = ({
           <span
             className={clsx(
               "font-medium transition-colors",
-              !isUnranked && "italic",
+              !isUnranked && "",
               isUnranked ? "text-red-400" : isSelected ? "text-lightest" : "text-gold/90",
             )}
           >
@@ -375,18 +369,18 @@ const PlayerRow = ({
             {player.isUser && (
               <span
                 title={`0x${BigInt(player.address).toString(16)}`}
-                className="block truncate font-mono text-[10px] text-gold/60"
+                className="block truncate font-mono text-sm text-kit-muted"
               >{`0x${BigInt(player.address).toString(16)}`}</span>
             )}
           </div>
         </div>
         {showTribeDetails ? (
           <div
-            className={clsx("min-w-0 truncate text-xs transition-colors", {
+            className={clsx("min-w-0 truncate text-sm transition-colors", {
               "text-emerald-300/90": player.guild && !isSelected,
               "text-emerald-200": player.guild && isSelected,
-              "text-gold/50 italic": !player.guild && !isSelected,
-              "text-gold/70 italic": !player.guild && isSelected,
+              "text-kit-muted": !player.guild && !isSelected,
+              "text-gold/70": !player.guild && isSelected,
             })}
           >
             {player.guild ? player.guild.name : "No Tribe"}
@@ -442,7 +436,7 @@ const PlayerRow = ({
           <span>{player.points === null ? "—" : currencyIntlFormat(player.points)}</span>
           {hasShareholderPoints && (
             <span
-              className="text-order-brilliance text-xs"
+              className="text-order-brilliance text-sm"
               onMouseEnter={() =>
                 setTooltip({
                   content: <div className="text-gold">Includes real-time hyperstructure shareholder points</div>,

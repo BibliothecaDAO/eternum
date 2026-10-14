@@ -100,7 +100,7 @@ export const MapSiteCard = ({
           <span data-tone="lit" className="frontier-chip h-8 !py-0 !pl-1">
             <span className="contents">
               <img src={armyArt(user.army.troops)} alt="" className="size-[22px] rounded-full object-cover" />
-              <span className="frontier-chip-number tabular-nums !text-[15px]">
+              <span className="frontier-chip-number tabular-nums !text-base">
                 {formatExact(Number(user.army.troops.count / BigInt(RESOURCE_PRECISION)))}
               </span>
             </span>

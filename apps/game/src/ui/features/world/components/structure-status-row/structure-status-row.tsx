@@ -83,8 +83,8 @@ const STATUS_TONE_TEXT: Record<"green" | "amber" | "red", string> = {
 };
 
 const InlineStat = ({ icon: Icon, label, title }: { icon: GameIcon; label: string; title?: string }) => (
-  <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold tabular-nums text-gold/75" title={title}>
-    <Icon className="h-3 w-3 text-gold/55" />
+  <span className="inline-flex items-center gap-0.5 text-sm font-semibold tabular-nums text-gold/75" title={title}>
+    <Icon className="h-3 w-3 text-kit-muted" />
     <span>{label}</span>
   </span>
 );
@@ -181,7 +181,7 @@ export const StructureStatusRow = memo(
       [handleCardClick],
     );
 
-    const starTone = statusTone ? STATUS_TONE_TEXT[statusTone.tone] : "text-gold/60";
+    const starTone = statusTone ? STATUS_TONE_TEXT[statusTone.tone] : "text-kit-muted";
     const starTitle = statusTone?.title ?? (isFavorite ? "Remove from favorites" : "Favorite structure");
 
     return (
@@ -269,7 +269,7 @@ export const StructureStatusRow = memo(
           <div className="flex items-center gap-1.5 px-2.5 pt-1 pb-2">
             {levelBadge && (
               <span
-                className="flex-shrink-0 rounded-sm border border-gold/25 bg-black/30 px-1.5 text-[10px] font-semibold tabular-nums text-gold/80"
+                className="flex-shrink-0 rounded-sm border border-gold/25 bg-black/30 px-1.5 text-sm font-semibold tabular-nums text-gold/80"
                 title="Realm level"
               >
                 {levelBadge}

@@ -67,7 +67,7 @@ export const TreePage = ({
     className="frontier-card pointer-events-auto flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto !rounded-xl p-2"
   >
     <header className="flex h-12 shrink-0 items-center gap-2">
-      <h2 className="frontier-title flex-1 !text-[20px]">{RESEARCH}</h2>
+      <h2 className="frontier-title flex-1 !text-xl">{RESEARCH}</h2>
       <Chip icons={["Es"]} label={ESSENCE} value={formatAmount(essence)} />
       <Chip icons={["La"]} label={LABOR} value={formatAmount(labor)} />
     </header>
@@ -100,7 +100,7 @@ const Row = ({ row, chosen, onOpen }: { row: TreeRow; chosen: boolean; onOpen: (
   >
     <KitIcon code={row.icon} size={26} />
     <span className="flex w-24 shrink-0 flex-col gap-0.5">
-      <span className="text-[12px] font-semibold text-kit-cream">{row.name}</span>
+      <span className="text-sm font-semibold text-kit-cream">{row.name}</span>
       <span className="flex gap-0.5">
         {row.sides.map((side, index) => (
           <KitIcon key={index} code={side} size={18} />
@@ -113,7 +113,7 @@ const Row = ({ row, chosen, onOpen }: { row: TreeRow; chosen: boolean; onOpen: (
       {row.researching ? (
         <InFlightWord word={UPGRADING} />
       ) : row.next ? (
-        <span className="flex items-center gap-1 text-[14px] tabular-nums text-kit-cream">
+        <span className="flex items-center gap-1 text-sm tabular-nums text-kit-cream">
           {row.choice && <KitIcon code="Fx" size={16} />}
           <KitIcon code="Es" size={14} />
           {formatAmount(row.next.essence)}
@@ -142,11 +142,11 @@ const Node = ({ node, onOpen }: { node: CastleNode; onOpen: () => void }) => (
         <KitIcon code={node.state === "learned" ? "Ok" : "Lk"} size={16} className="absolute -right-1 -top-1" />
       )}
     </span>
-    <span className="text-[12px] font-semibold text-kit-cream">{node.label}</span>
+    <span className="text-sm font-semibold text-kit-cream">{node.label}</span>
     {node.researching ? (
       <InFlightWord word={RESEARCHING} />
     ) : (
-      <span className="flex items-center gap-0.5 text-[14px] tabular-nums text-kit-cream">
+      <span className="flex items-center gap-0.5 text-sm tabular-nums text-kit-cream">
         <KitIcon code="Es" size={14} />
         {formatAmount(node.essence)}
       </span>
@@ -156,7 +156,7 @@ const Node = ({ node, onOpen }: { node: CastleNode; onOpen: () => void }) => (
 
 /** In the price's place on a row whose research is in flight: the word of what is under way, pulsing. */
 const InFlightWord = ({ word }: { word: string }) => (
-  <span role="status" className="animate-pulse text-[13px] font-semibold text-kit-gold2">
+  <span role="status" className="animate-pulse text-sm font-semibold text-kit-gold2">
     {word}
   </span>
 );
@@ -184,7 +184,7 @@ export const CastleNodeSheet = ({
   <Sheet label={node.label} onClose={onClose}>
     <header className="flex items-center gap-2.5">
       <KitIcon code={node.icon} size={30} />
-      <h2 className="frontier-title flex-1 !text-[20px]">{node.label}</h2>
+      <h2 className="frontier-title flex-1 !text-xl">{node.label}</h2>
     </header>
     <div className="flex items-center justify-center gap-2">{gives}</div>
     {node.state === "learned" ? (

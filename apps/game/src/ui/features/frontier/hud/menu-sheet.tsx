@@ -33,13 +33,13 @@ export const MenuSheet = ({
   onClose: () => void;
 }) => (
   <Sheet label={MENU} onClose={onClose}>
-    <h2 className="frontier-title !text-[20px]">{MENU}</h2>
+    <h2 className="frontier-title !text-xl">{MENU}</h2>
     <nav className="flex flex-col">
       <MenuRow icon="Cl" word={TODAY} onClick={onToday} />
       <MenuRow
         icon="Tp"
         word={SEASON}
-        badge={<span className="text-[15px] tabular-nums">{rank}</span>}
+        badge={<span className="text-base tabular-nums">{rank}</span>}
         onClick={onSeason}
       />
       {onProduction && <MenuRow icon="Wh" word={PRODUCTION} onClick={onProduction} />}
@@ -77,7 +77,7 @@ const MenuRow = ({
   <button
     type="button"
     onClick={onClick}
-    className="flex h-12 items-center gap-2 border-b border-kit-line px-1 text-left text-[15px] text-kit-cream"
+    className="flex h-12 items-center gap-2 border-b border-kit-line px-1 text-left text-base text-kit-cream"
   >
     <KitIcon code={icon} size={22} />
     <span className="flex-1 font-semibold">{word}</span>

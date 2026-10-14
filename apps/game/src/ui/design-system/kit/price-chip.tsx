@@ -30,8 +30,8 @@ export const PriceChip = ({ of, amount }: { of: PriceKind; amount: number | unde
       {/* `contents` takes the chip token's fixed-size first child, so an XP price with no icon keeps its width. */}
       <span className="contents">
         {icon && <KitIcon code={icon} size={22} />}
-        <span className="frontier-chip-number tabular-nums !text-[15px]">{shown}</span>
-        {!icon && <span className="text-[13px] font-semibold text-kit-cream">{word}</span>}
+        <span className="frontier-chip-number tabular-nums !text-base">{shown}</span>
+        {!icon && <span className="text-sm font-semibold text-kit-cream">{word}</span>}
       </span>
     </span>
   );

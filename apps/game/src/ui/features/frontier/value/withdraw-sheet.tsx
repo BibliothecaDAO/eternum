@@ -56,7 +56,7 @@ export const WithdrawSheet = ({
   onClose: () => void;
 }) => (
   <Sheet label={WITHDRAW} onClose={onClose}>
-    <h2 className="frontier-title flex items-center gap-2.5 !text-[20px]">
+    <h2 className="frontier-title flex items-center gap-2.5 !text-xl">
       <KitIcon code={step.kind === "paid" ? "Ok" : "Lo"} size={28} />
       {WITHDRAW}
     </h2>
@@ -177,7 +177,7 @@ const Paid = ({
         href={step.transactionUrl}
         target="_blank"
         rel="noreferrer"
-        className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl border-2 border-kit-line2 px-4 font-ui text-[17px] font-semibold text-kit-cream hover:border-kit-gold"
+        className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl border-2 border-kit-line2 px-4 font-body text-base font-semibold text-kit-cream hover:border-kit-gold"
       >
         <KitIcon code="Xs" size={22} />
         {TRANSACTION}
@@ -191,7 +191,7 @@ const Paid = ({
 const Leaving = ({ held, wallet }: { held: number | undefined; wallet: string | null }) => (
   <div className="flex items-center justify-center gap-1.5">
     <Chip icons={["Lo"]} label={LORDS} value={formatExact(held)} />
-    <span aria-hidden className="text-[16px] text-kit-muted">
+    <span aria-hidden className="text-base text-kit-muted">
       →
     </span>
     {wallet !== null && <WalletChip address={wallet} />}
@@ -210,7 +210,7 @@ const Flow = ({
   <div className="flex flex-col items-center gap-1.5">
     <Chip icons={["Lo"]} label={LORDS} value={`${formatExact(before)} → ${formatExact(after)}`} />
     <span className="flex items-center gap-1.5">
-      <span aria-hidden className="text-[16px] text-kit-muted">
+      <span aria-hidden className="text-base text-kit-muted">
         ↓
       </span>
       <WalletChip address={address} />
@@ -222,7 +222,7 @@ const WalletChip = ({ address, paid = false }: { address: string; paid?: boolean
   <span data-tone={paid ? "gain" : undefined} className="frontier-chip h-7 shrink-0 !py-0">
     <span className="contents">
       <KitIcon code="Wt" size={18} />
-      <span className="frontier-chip-number tabular-nums !text-[15px]">{shortAddress(address)}</span>
+      <span className="frontier-chip-number tabular-nums !text-base">{shortAddress(address)}</span>
       {paid && <KitIcon code="Ok" size={18} />}
     </span>
   </span>

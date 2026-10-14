@@ -53,7 +53,7 @@ const ACTION_STATE_LABELS: Record<ActionType, string> = {
 
 const TooltipTitle = ({ children }: { children: ReactNode }) => {
   return (
-    <div className="mt-0.5 flex items-center gap-2 text-[10px] uppercase tracking-[0.35em] text-gold/90">
+    <div className="mt-0.5 flex items-center gap-2 text-sm text-gold/90">
       <span className="h-px flex-1 bg-gold/30" />
       <span className="px-1">{children}</span>
       <span className="h-px flex-1 bg-gold/30" />
@@ -98,7 +98,7 @@ export const TooltipContent = memo(
           <div className="mt-1 flex items-center gap-2">
             <InfoLabel variant="default" className="flex-1 items-center justify-between gap-2">
               <img src={`/images/resources/${ResourcesIds.Wheat}.png`} alt="Wheat" className="h-5 w-5 object-contain" />
-              <span className={clsx("text-xs font-semibold", wheatStatusColor)}>{displayWheatCost}</span>
+              <span className={clsx("text-sm font-semibold", wheatStatusColor)}>{displayWheatCost}</span>
             </InfoLabel>
             <InfoLabel variant="mine" className="flex-1 items-center justify-between gap-2">
               <span className="text-base leading-none">⚡</span>
@@ -114,11 +114,8 @@ export const TooltipContent = memo(
         ) : (
           <AttackInfo selectedEntityId={selectedEntityId} path={actionPath} />
         )}
-        <InfoLabel
-          variant="default"
-          className="mt-2 w-full items-center justify-center text-center uppercase tracking-[0.25em] animate-pulse"
-        >
-          <span className="text-[10px]">Right-click to confirm</span>
+        <InfoLabel variant="default" className="mt-2 w-full items-center justify-center text-center animate-pulse">
+          <span className="text-sm">Right-click to confirm</span>
         </InfoLabel>
       </>
     );

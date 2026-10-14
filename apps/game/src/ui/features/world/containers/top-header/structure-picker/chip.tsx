@@ -65,10 +65,10 @@ export type StructureWithMetadata = Structure & {
 
 const StructureInfoStat = ({ icon: Icon, label, title }: { icon: GameIcon; label: string; title: string }) => (
   <span
-    className="inline-flex items-center gap-1 rounded border border-gold/15 bg-black/25 px-1.5 py-0.5 text-xxs text-gold/75"
+    className="inline-flex items-center gap-1 rounded border border-gold/15 bg-black/25 px-1.5 py-0.5 text-sm text-gold/75"
     title={title}
   >
-    <Icon className="h-3 w-3 text-gold/60" />
+    <Icon className="h-3 w-3 text-kit-muted" />
     <span>{label}</span>
   </span>
 );
@@ -116,17 +116,17 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
   // Inline requirements memo — recomputed on each render of this component, fine for tooltip content.
   const requirementsContent = (() => {
     if (upgradeInfo.isMaxLevel) {
-      return <div className="text-xs text-gold/80">Castle fully upgraded.</div>;
+      return <div className="text-sm text-gold/80">Castle fully upgraded.</div>;
     }
     if (!upgradeInfo.requirements?.length) {
-      return <div className="text-xs text-gold/80">No upgrade requirements found.</div>;
+      return <div className="text-sm text-gold/80">No upgrade requirements found.</div>;
     }
 
     return (
       <div className="min-w-[220px] space-y-2 text-gold">
         <div className="flex items-center justify-between">
-          <span className="text-xxs uppercase tracking-[0.25em] text-gold/60">Upgrade</span>
-          {upgradeInfo.nextLevelName && <span className="text-xxs text-gold/80">to {upgradeInfo.nextLevelName}</span>}
+          <span className="text-sm text-kit-muted">Upgrade</span>
+          {upgradeInfo.nextLevelName && <span className="text-sm text-gold/80">to {upgradeInfo.nextLevelName}</span>}
         </div>
         <div className="space-y-1">
           {upgradeInfo.requirements.map((req) => {
@@ -141,14 +141,14 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
               >
                 <div className="flex items-center gap-2">
                   <ResourceIcon resource={ResourcesIds[req.resource]} size="xs" withTooltip={false} />
-                  <span className="flex-1 text-xs text-gold/80">{ResourcesIds[req.resource]}</span>
-                  <span className={clsx("text-xs font-semibold", isMet ? "text-gold" : "text-red-300")}>
+                  <span className="flex-1 text-sm text-gold/80">{ResourcesIds[req.resource]}</span>
+                  <span className={clsx("text-sm font-semibold", isMet ? "text-gold" : "text-red-300")}>
                     {req.current === undefined ? "—" : Math.floor(req.current).toLocaleString()} /{" "}
                     {req.amount.toLocaleString()}
                   </span>
                 </div>
                 {req.incoming && (
-                  <div className="pl-6 text-xxs text-emerald-300/90">
+                  <div className="pl-6 text-sm text-emerald-300/90">
                     +{Math.floor(req.incoming.amount).toLocaleString()} in transit,{" "}
                     {formatIncomingEta(req.incoming.etaSeconds)}
                   </div>
@@ -229,10 +229,10 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
           onClick={handleBootstrap}
           disabled={isBootstrapDisabled}
           className={clsx(
-            "inline-flex items-center justify-center rounded-md border px-2 py-1 text-xxs font-semibold uppercase tracking-wide transition",
+            "inline-flex items-center justify-center rounded-md border px-2 py-1 text-sm font-semibold transition",
             shouldGlowBootstrap
               ? "border-gold/60 bg-gold/10 text-gold hover:bg-gold/25 shadow-[0_0_12px_rgba(255,204,102,0.55)] animate-pulse"
-              : "border-gold/20 bg-black/30 text-gold/50 cursor-not-allowed",
+              : "border-gold/20 bg-black/30 text-kit-muted cursor-not-allowed",
           )}
           aria-label="Provision realm"
           title="Provision realm"
@@ -245,10 +245,10 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
           onClick={handleUpgrade}
           disabled={isDisabled}
           className={clsx(
-            "inline-flex items-center justify-center rounded-md border px-2 py-1 text-xxs font-semibold uppercase tracking-wide transition",
+            "inline-flex items-center justify-center rounded-md border px-2 py-1 text-sm font-semibold transition",
             shouldGlow
               ? "border-gold/60 bg-gold/10 text-gold hover:bg-gold/25 shadow-[0_0_12px_rgba(255,204,102,0.55)] animate-pulse"
-              : "border-gold/20 bg-black/30 text-gold/50 cursor-not-allowed",
+              : "border-gold/20 bg-black/30 text-kit-muted cursor-not-allowed",
           )}
           aria-label="Level up realm"
         >
@@ -315,7 +315,7 @@ const StructureChip = memo(({ structure, isSelected, onSelectStructure, onToggle
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       className={clsx(
-        "group flex w-full items-center gap-1.5 rounded-md border px-2 py-2 text-left text-xs transition cursor-pointer",
+        "group flex w-full items-center gap-1.5 rounded-md border px-2 py-2 text-left text-sm transition cursor-pointer",
         isSelected
           ? "border-gold bg-gold/15 text-gold"
           : "border-gold/25 bg-black/30 text-gold/75 hover:border-gold/50 hover:bg-black/50",
@@ -329,7 +329,7 @@ const StructureChip = memo(({ structure, isSelected, onSelectStructure, onToggle
           event.stopPropagation();
           onToggleFavorite(structure.entityId);
         }}
-        className="shrink-0 rounded p-0.5 text-gold/60 hover:text-gold"
+        className="shrink-0 rounded p-0.5 text-kit-muted hover:text-gold"
         title={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
         aria-label={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
       >
@@ -352,9 +352,7 @@ const StructureChip = memo(({ structure, isSelected, onSelectStructure, onToggle
         {structure.displayName}
       </span>
       {levelAbbrev && (
-        <span className="shrink-0 rounded-sm bg-black/30 px-1 text-[9px] uppercase tracking-wide text-gold/60">
-          {levelAbbrev}
-        </span>
+        <span className="shrink-0 rounded-sm bg-black/30 px-1 text-sm text-kit-muted">{levelAbbrev}</span>
       )}
       {populationStatusLabel && (
         <StructureStatusStats populationLabel={populationStatusLabel} buildingTilesLabel={buildingTilesStatusLabel} />

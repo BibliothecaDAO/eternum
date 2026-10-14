@@ -27,7 +27,7 @@ export const VARIANTS = {
   },
   small: {
     tab: {
-      base: "relative flex w-full items-center justify-center px-2 py-2 tracking-widest transition-all duration-200 focus-visible:ring-yellow-700 text-yellow-100",
+      base: "relative flex w-full items-center justify-center px-2 py-2 transition-all duration-200 focus-visible:ring-yellow-700 text-yellow-100",
       active: "bg-yellow-900/20 text-yellow-100",
       inactive: "hover:bg-yellow-900/10 text-gray-200",
     },
@@ -52,7 +52,7 @@ export const VARIANTS = {
   },
   selection: {
     tab: {
-      base: "flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-gold/30 bg-black/30 px-2 py-2 text-gold/60 transition duration-150 !outline-none",
+      base: "flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-gold/30 bg-black/30 px-2 py-2 text-kit-muted transition duration-150 !outline-none",
       active: "border-gold/50 bg-gold/20 text-gold font-semibold shadow-[inset_0_1px_0_rgba(223,170,84,0.15)]",
       inactive: "hover:border-gold/50 hover:text-gold/90",
     },
@@ -85,7 +85,7 @@ export const Tabs = ({
         <HeadlessTab.Group
           as="div"
           className={clsx("flex flex-col", className, {
-            "text-xs": size === "small",
+            "text-sm": size === "small",
             "text-base": size === "medium",
             "text-xl": size === "large",
           })}

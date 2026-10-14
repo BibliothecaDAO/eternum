@@ -64,7 +64,7 @@ export const CodeStep = ({
       <button
         type="button"
         onClick={onChangeEmail}
-        className="flex min-h-12 max-w-full items-center gap-2 font-ui text-[17px] font-bold text-kit-cream"
+        className="flex min-h-12 max-w-full items-center gap-2 font-body text-base font-bold text-kit-cream"
       >
         <KitIcon code="Em" size={22} />
         <span className="truncate">{email}</span>
@@ -74,7 +74,7 @@ export const CodeStep = ({
       {expired ? (
         newCode
       ) : checking ? (
-        <p className="font-ui text-[15px] font-bold text-kit-muted">{SIGN_IN_WORDS.checking}</p>
+        <p className="font-body text-base font-bold text-kit-muted">{SIGN_IN_WORDS.checking}</p>
       ) : (
         <ClockChip prefix="expires" at={expiresAt} now={now} />
       )}

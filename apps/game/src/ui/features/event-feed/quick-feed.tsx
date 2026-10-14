@@ -130,7 +130,7 @@ export function useUnreadFeedCount(rows: ImportantFeedRow[], logOpen: boolean): 
 
 export const UnreadFeedBadge = ({ count }: { count: number }) =>
   count > 0 ? (
-    <span aria-label="Unread events" className="rounded-full bg-gold px-1.5 text-[10px] text-dark-brown">
+    <span aria-label="Unread events" className="rounded-full bg-gold px-1.5 text-sm text-dark-brown">
       {count}
     </span>
   ) : null;
@@ -176,7 +176,7 @@ function OfflineRow() {
         type="button"
         disabled={reconnecting}
         onClick={() => void triggerConnectionForceReconnect()}
-        className="inline-flex items-center gap-1 font-sans text-xs normal-case tracking-normal text-danger hover:underline disabled:cursor-wait"
+        className="inline-flex items-center gap-1 font-sans text-sm text-danger hover:underline disabled:cursor-wait"
       >
         <RefreshCw className={cn("h-3 w-3", reconnecting && "animate-spin")} />
         Retry

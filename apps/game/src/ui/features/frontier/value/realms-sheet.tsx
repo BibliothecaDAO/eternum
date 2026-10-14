@@ -74,7 +74,7 @@ export const RealmsSheet = ({
   <Sheet label={REALMS} onClose={onClose}>
     <header className="flex items-center gap-2.5">
       <KitIcon code="Cs" size={28} />
-      <h2 className="frontier-title flex-1 !text-[20px]">{REALMS}</h2>
+      <h2 className="frontier-title flex-1 !text-xl">{REALMS}</h2>
       {wallet !== null && <Chip icons={["Wt"]} label={REALMS} value={shortAddress(wallet)} />}
     </header>
     {wallet === null ? (
@@ -93,7 +93,7 @@ export const RealmsSheet = ({
           <ReasonPlate reason={{ kind: "failed", line: realmsADay(cap) }} />
         )}
         {plan.canAdd && <AddRealm adding={adding} onAdd={onAdd} />}
-        {plan.rows.length === 0 && <p className="text-center text-[15px] text-kit-cream">{REALMS_ELSEWHERE}</p>}
+        {plan.rows.length === 0 && <p className="text-center text-base text-kit-cream">{REALMS_ELSEWHERE}</p>}
         {plan.rows.length > 0 && (
           <ClaimStep
             plan={plan}
@@ -185,11 +185,11 @@ const RealmRow = ({
     )}
   >
     <OrderEmblem order={order} size={28} />
-    <span className="min-w-0 flex-1 truncate text-[16px] text-kit-cream">
-      {name} <span className="text-[13px] tabular-nums text-kit-muted">#{formatExact(id)}</span>
+    <span className="min-w-0 flex-1 truncate text-base text-kit-cream">
+      {name} <span className="text-sm tabular-nums text-kit-muted">#{formatExact(id)}</span>
     </span>
     {state === "claimed" && <KitIcon code="Ok" size={24} />}
-    {state === "absent" && <span className="shrink-0 text-[13px] text-kit-muted">{REALM_NOT_IN_WALLET}</span>}
+    {state === "absent" && <span className="shrink-0 text-sm text-kit-muted">{REALM_NOT_IN_WALLET}</span>}
     {state === "locked" && <KitIcon code="Lk" size={22} />}
     {children}
   </div>
@@ -199,7 +199,7 @@ const LaborChip = ({ amount }: { amount: number }) => (
   <span data-tone="lit" className="frontier-chip h-8 shrink-0 !py-0">
     <span className="contents">
       <KitIcon code="La" size={22} />
-      <span className="frontier-chip-number tabular-nums !text-[15px]">+{formatAmount(amount)}</span>
+      <span className="frontier-chip-number tabular-nums !text-base">+{formatAmount(amount)}</span>
     </span>
   </span>
 );
@@ -229,7 +229,7 @@ const AddRealm = ({ adding, onAdd }: { adding: boolean; onAdd: (realmId: number)
         placeholder={`${ADD_REALM} #`}
         value={number}
         onChange={(event) => setNumber(event.target.value.replace(/\D/g, ""))}
-        className="min-w-0 flex-1 bg-transparent text-[16px] tabular-nums text-kit-cream placeholder:text-kit-muted focus:outline-none"
+        className="min-w-0 flex-1 bg-transparent text-base tabular-nums text-kit-cream placeholder:text-kit-muted focus:outline-none"
       />
       <Button
         type="submit"

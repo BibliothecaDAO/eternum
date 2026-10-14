@@ -123,14 +123,14 @@ const viewButtonClasses = (active: boolean, compact: boolean) =>
   cn(
     HUD_LABEL_BRIGHT,
     "min-h-11 min-w-11 rounded-md px-3 font-sans transition-[color,background-color,transform] duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:scale-[0.97] lg:min-h-7",
-    compact && "px-2 tracking-normal",
-    active ? "bg-gold/20 text-gold" : "text-gold/65",
+    compact && "px-2",
+    active ? "bg-gold/20 text-gold" : "text-kit-muted",
   );
 
 const layerButtonClasses = (active: boolean, compact = false) =>
   cn(
     HUD_LABEL_BRIGHT,
     "inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-md px-3 font-sans transition-[color,background-color,transform] duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:scale-[0.97] lg:min-h-7",
-    compact && "px-2 tracking-normal",
-    active ? "bg-cyan-400/15 text-cyan-100" : "text-gold/65",
+    compact && "px-2",
+    active ? "bg-cyan-400/15 text-cyan-100" : "text-kit-muted",
   );

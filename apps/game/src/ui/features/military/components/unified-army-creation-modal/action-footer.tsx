@@ -49,7 +49,7 @@ export const ActionFooter = ({
     <>
       {button}
       {isDisabled && blockedReason && (
-        <p className="mt-1 px-1 text-xs text-gold/70" role="status">
+        <p className="mt-1 px-1 text-sm text-gold/70" role="status">
           {blockedReason}
         </p>
       )}

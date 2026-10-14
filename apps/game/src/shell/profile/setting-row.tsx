@@ -26,8 +26,8 @@ export const SettingRow = ({
   const face = (
     <>
       <KitIcon code={icon} size={24} />
-      <span className="min-w-0 text-left font-ui text-[16px] font-semibold text-kit-cream">{name}</span>
-      <span className="ml-auto max-w-[50%] shrink-0 truncate text-right text-[15px] text-kit-muted">{value}</span>
+      <span className="min-w-0 text-left font-body text-base font-semibold text-kit-cream">{name}</span>
+      <span className="ml-auto max-w-[50%] shrink-0 truncate text-right text-base text-kit-muted">{value}</span>
       {end ?? ((onOpen || href) && <KitIcon code="Cv" size={18} />)}
     </>
   );

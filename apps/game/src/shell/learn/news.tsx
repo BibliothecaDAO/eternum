@@ -46,9 +46,9 @@ export const NewsRows = ({ items }: { items: readonly NewsItem[] }) => {
       ))}
       {change && (
         <Sheet label={change.title} onClose={() => setChange(null)} placement="page">
-          <h2 className="pt-1 font-ui text-[19px] font-bold text-kit-cream">{change.title}</h2>
-          <p className="text-[13px] text-kit-muted">{formatContentDay(change.date)}</p>
-          <p className="pb-2 text-[17px] leading-[26px] text-kit-cream">{change.description}</p>
+          <h2 className="pt-1 font-body text-lg font-bold text-kit-cream">{change.title}</h2>
+          <p className="text-sm text-kit-muted">{formatContentDay(change.date)}</p>
+          <p className="pb-2 text-base leading-[26px] text-kit-cream">{change.description}</p>
         </Sheet>
       )}
     </>

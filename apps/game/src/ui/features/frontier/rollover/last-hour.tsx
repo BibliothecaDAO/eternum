@@ -57,8 +57,8 @@ const Bubble = ({
       <span
         className={
           hot
-            ? "frontier-chip-number tabular-nums !text-[15px] !text-kit-hot"
-            : "frontier-chip-number tabular-nums !text-[15px]"
+            ? "frontier-chip-number tabular-nums !text-base !text-kit-hot"
+            : "frontier-chip-number tabular-nums !text-base"
         }
       >
         {value}

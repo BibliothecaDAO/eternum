@@ -163,7 +163,7 @@ const ResultLayout = ({
 
 /** The place, large in gold: "You placed #12 of 1,240", or a Blitz's "3rd of 24". */
 const Placed = ({ lead, place, field }: { lead?: string; place: string; field: number }) => (
-  <p className="flex items-baseline gap-2 font-ui text-[17px] font-semibold text-kit-cream">
+  <p className="flex items-baseline gap-2 font-body text-base font-semibold text-kit-cream">
     {lead}
     <b className="text-[64px] font-extrabold leading-none text-kit-gold">{place}</b>
     <span className="text-kit-muted">
@@ -212,7 +212,7 @@ const BlitzResult = ({
       outcome={
         <>
           {own && <Placed place={ordinal(own.rank)} field={entries.length} />}
-          <p className="text-[15px] text-kit-muted">
+          <p className="text-base text-kit-muted">
             {game ? `${gameTitle(game)} · ${clockLine(null, game.clock.end_at, now)}` : "—"}
           </p>
           {desktop && wallet && <RatingLine wallet={wallet} />}
@@ -228,11 +228,11 @@ const BlitzResult = ({
                   key={entry.address}
                   className="flex h-[52px] items-center gap-2 border-b border-kit-line px-1 last:border-b-0"
                 >
-                  <span className="w-[34px] text-center text-[15px] tabular-nums">{entry.rank}</span>
-                  <span className="min-w-0 flex-1 text-[15px]">
+                  <span className="w-[34px] text-center text-base tabular-nums">{entry.rank}</span>
+                  <span className="min-w-0 flex-1 text-base">
                     <PlayerName account={entry.address} you={isOwn} portrait />
                   </span>
-                  <span className="text-[15px] font-bold tabular-nums">
+                  <span className="text-base font-bold tabular-nums">
                     {formatPoints(entry.totalPoints)} {SEASON_WORDS.vp}
                   </span>
                 </li>
@@ -289,7 +289,7 @@ const FrontierResult = ({
       outcome={
         <>
           <p className="font-display text-[44px] leading-tight text-kit-cream lg:text-[56px]">{SEASON_OVER}</p>
-          <p className="font-ui text-[17px] font-bold text-kit-gold2">{SEASON_ENDINGS.lifted}</p>
+          <p className="font-body text-base font-bold text-kit-gold2">{SEASON_ENDINGS.lifted}</p>
           {own && <Placed lead={YOU_PLACED} place={`#${own.rank}`} field={entries.length} />}
           {own && (
             <div className="flex flex-wrap gap-2 pt-1">

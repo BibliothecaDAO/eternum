@@ -34,7 +34,7 @@ export function SuggestionsPanel({ selectedId }: { selectedId: string }) {
           />
         </div>
       ))}
-      {suggestions.length === 0 && <p className="text-xs">No suggested actions right now.</p>}
+      {suggestions.length === 0 && <p className="text-sm">No suggested actions right now.</p>}
     </section>
   );
 }

@@ -34,7 +34,7 @@ export const Notice = ({
     )}
   >
     <KitIcon code={icon} size={22} />
-    <span className="min-w-0 flex-1 text-[15px] text-kit-cream">{line}</span>
+    <span className="min-w-0 flex-1 text-base text-kit-cream">{line}</span>
     {onLater && <Button role="outline" word={LATER} onClick={onLater} className="!px-3" />}
     <Button role="outline" word={verb} loading={loading} onClick={onVerb} className="!px-3" />
   </div>

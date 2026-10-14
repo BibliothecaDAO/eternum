@@ -259,13 +259,13 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
               className="shrink-0"
             />
             <div className="flex flex-col">
-              <span className="text-xxs uppercase tracking-wide text-gold/60">Available</span>
+              <span className="text-sm text-kit-muted">Available</span>
               <span className="text-2xl font-semibold leading-tight text-gold">{currencyFormat(balance, 2)}</span>
-              <span className="text-xs uppercase text-gold/60">{resourceLabel}</span>
+              <span className="text-sm text-kit-muted">{resourceLabel}</span>
             </div>
           </div>
           <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
-            <div className="flex items-center gap-2 rounded-full border border-gold/40 bg-brown/40 px-2 py-1 text-xxs font-semibold uppercase tracking-widest">
+            <div className="flex items-center gap-2 rounded-full border border-gold/40 bg-brown/40 px-2 py-1 text-sm font-semibold ">
               <button
                 type="button"
                 onClick={() => setType("send")}
@@ -288,7 +288,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
               </button>
             </div>
             {isMilitaryResource(resource) && (
-              <span className="inline-flex items-center justify-center rounded-full border border-light-red/40 bg-light-red/10 px-2 py-1 text-xxs font-semibold uppercase tracking-widest text-light-red/80">
+              <span className="inline-flex items-center justify-center rounded-full border border-light-red/40 bg-light-red/10 px-2 py-1 text-sm font-semibold text-light-red/80">
                 Troop rules apply
               </span>
             )}
@@ -316,7 +316,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
               onChange={handleBurnAmountChange}
               className="w-full accent-gold"
             />
-            <div className="flex items-center justify-between text-xs uppercase text-gold/60">
+            <div className="flex items-center justify-between text-sm text-kit-muted">
               <span>Burn amount</span>
               <span className="font-semibold text-gold">
                 {burnAmount.toLocaleString()} {resourceLabel}
@@ -335,7 +335,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
             title="Transfer Rules"
             hint="troops only"
           >
-            <div className="space-y-2 text-xs text-gold/80">
+            <div className="space-y-2 text-sm text-gold/80">
               <div className="flex items-start gap-2">
                 <span className="text-green">✓</span>
                 <span>
@@ -369,12 +369,12 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
                   onChange={(e) => setSortByDistance(e.target.checked)}
                   className="accent-gold"
                 />
-                <label htmlFor="sortByDistance" className="text-xs text-gold cursor-pointer">
+                <label htmlFor="sortByDistance" className="text-sm text-gold cursor-pointer">
                   Order structures by distance
                 </label>
               </div>
               <div className="relative">
-                <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gold/60" />
+                <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-kit-muted" />
                 <input
                   type="text"
                   placeholder="Search structures..."
@@ -387,19 +387,19 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
                   <button
                     type="button"
                     onClick={() => setSearchTerm("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gold/60 transition hover:text-gold"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-kit-muted transition hover:text-gold"
                   >
                     <X className="h-3 w-3" />
                   </button>
                 )}
               </div>
-              <p className="text-xxs uppercase text-gold/50">
+              <p className="text-sm text-kit-muted">
                 {sortByDistance ? "Structures are sorted by proximity" : "Structures are sorted alphabetically"}
               </p>
             </div>
             <div className="flex-1 overflow-y-auto px-3 pb-4 md:px-4">
               {noValidMilitaryDestinations ? (
-                <div className="py-8 text-center text-sm text-gold/60">
+                <div className="py-8 text-center text-sm text-kit-muted">
                   <div className="mb-2 text-lg">No valid destinations</div>
                   <p>
                     {mode.structure.getName(selectedStructure).name} cannot transfer troops to the currently available
@@ -407,7 +407,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
                   </p>
                 </div>
               ) : structuresForTransfer.length === 0 ? (
-                <div className="py-8 text-center text-sm text-gold/60">No structures match the current filters.</div>
+                <div className="py-8 text-center text-sm text-kit-muted">No structures match the current filters.</div>
               ) : (
                 structuresForTransfer.map((structure) => (
                   <RealmTransferBalance
@@ -427,9 +427,9 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
 
         {hasQueue && (
           <div className="rounded-lg border border-gold/20 bg-black/30 p-3 md:p-4">
-            <div className="flex flex-wrap items-center gap-2 text-sm font-semibold uppercase tracking-wide text-gold">
+            <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-gold">
               Transfers Queue ({calls.length})
-              <span className="inline-flex items-center gap-2 rounded-full bg-brown/40 px-2 py-1 text-xs font-normal normal-case text-gold/80">
+              <span className="inline-flex items-center gap-2 rounded-full bg-brown/40 px-2 py-1 text-sm font-normal text-gold/80">
                 <ResourceIcon
                   resource={donkeyTrait || (findResourceById(ResourcesIds.Donkey)?.trait as string)}
                   size="sm"
@@ -444,7 +444,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
                   className="flex flex-row items-center justify-between gap-2 rounded-md border-2 border-gold/20 bg-gold/10 p-2"
                   key={index}
                 >
-                  <div className="text-sm font-bold uppercase">{call.realmName}</div>
+                  <div className="text-sm font-bold">{call.realmName}</div>
                   <div className="text-sm">{call.resources[1].toLocaleString()}</div>
                   <Button size="xs" onClick={() => setCalls((prev) => prev.filter((c) => c !== call))}>
                     Remove
@@ -452,7 +452,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
                 </div>
               ))}
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-y-1 text-xs text-gold/70 md:text-sm">
+            <div className="mt-3 grid grid-cols-2 gap-y-1 text-sm text-gold/70 md:text-sm">
               <span>Resource:</span>
               <span>{resourceLabel}</span>
               <span>Total to {type === "send" ? "Send" : "Receive"}:</span>
@@ -462,7 +462,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
               <span>Donkeys needed:</span>
               <span>{totalNeededDonkeys}</span>
             </div>
-            <p className="mt-3 text-xxs uppercase text-gold/50">
+            <p className="mt-3 text-sm text-kit-muted">
               {type === "send"
                 ? "Resources will leave this location when you confirm."
                 : "Resources will arrive at this location when you confirm."}
@@ -506,12 +506,12 @@ const InfoPanel = ({
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gold transition hover:bg-black/40"
+        className="flex w-full items-center justify-between px-3 py-2 text-sm font-semibold text-gold transition hover:bg-black/40"
       >
         <span className="flex items-center gap-2">
           <span className="shrink-0">{icon}</span>
           <span>{title}</span>
-          {hint && <span className="text-xxs uppercase text-gold/60">{hint}</span>}
+          {hint && <span className="text-sm text-kit-muted">{hint}</span>}
         </span>
         <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
       </button>
@@ -620,7 +620,7 @@ const RealmTransferBalance = memo(
       <div className="flex flex-col gap-2 border-b-2 mt-2 pb-2 border-gold/20">
         <div className="flex flex-row gap-4 items-start">
           <div className="self-center w-full">
-            <div className="uppercase font-bold h4 truncate">{mode.structure.getName(structure.structure).name}</div>
+            <div className="font-bold h4 truncate">{mode.structure.getName(structure.structure).name}</div>
           </div>
         </div>
         <div className="w-full">
@@ -630,7 +630,7 @@ const RealmTransferBalance = memo(
               {currencyFormat(getSourceBalance() ? Number(getSourceBalance()) : 0, 0)}
             </div>
             <div
-              className={`whitespace-nowrap text-right text-xs flex-shrink-0 ${
+              className={`whitespace-nowrap text-right text-sm flex-shrink-0 ${
                 !canCarry || relevantDonkeyBalance === 0 ? "text-red" : "text-green"
               }`}
             >

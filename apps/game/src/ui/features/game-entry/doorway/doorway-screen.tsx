@@ -9,7 +9,6 @@ import { DOORWAY_WORDS, WORDS } from "@/shell/words";
 import { Button } from "@/ui/design-system/kit/button";
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { TRY_AGAIN } from "@/ui/design-system/kit/words";
-import { useFrontierType } from "@/ui/features/frontier/use-frontier-type";
 
 import type { DoorwayView } from "./doorway-view";
 import { StepTrack } from "./step-track";
@@ -51,7 +50,6 @@ export const DoorwayScreen = ({
   /** A mode's own control at the realm step, kept inside the doorway's frame. */
   children?: ReactNode;
 }) => {
-  useFrontierType();
   const desktop = useLayout() === "desktop";
   const hold = (
     <Hold view={view} onRetry={onRetry} onOpenRealm={onOpenRealm} onSignIn={onSignIn} onSpectate={onSpectate} />
@@ -85,7 +83,7 @@ export const DoorwayScreen = ({
 const RealmRising = ({ realm }: { realm: DoorwayRealm }) => (
   <div className="flex flex-col items-center gap-3">
     {realm.emblem && <img src={realm.emblem.art} alt={realm.emblem.name} className="size-12 object-contain" />}
-    <h2 className="text-center font-ui text-[26px] font-extrabold text-kit-cream">{realm.name}</h2>
+    <h2 className="text-center font-body text-[26px] font-extrabold text-kit-cream">{realm.name}</h2>
   </div>
 );
 

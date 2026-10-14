@@ -13,7 +13,7 @@ export const NothingHere = () =>
   useLayout() === "phone" ? (
     <section className="flex flex-col gap-3 plate p-3.5">
       <img {...paintingSources("stormy")} sizes="100vw" alt="" className="h-44 w-full rounded-xl object-cover" />
-      <p className="font-ui text-[19px] font-bold text-kit-cream">{APP_STATE_WORDS.nothingHere}</p>
+      <p className="font-body text-lg font-bold text-kit-cream">{APP_STATE_WORDS.nothingHere}</p>
       <GoButton role="primary" word={WORDS.play} icon="Pl" to="/" />
     </section>
   ) : (

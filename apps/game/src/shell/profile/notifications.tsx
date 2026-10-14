@@ -47,7 +47,7 @@ export const NotificationsCard = () => {
           onChange={(next) => void preferences.save(next)}
         />
       </div>
-      <p className="min-h-6 text-center text-[15px] text-kit-muted">{level ? LEVEL_WORDS[level].line : "—"}</p>
+      <p className="min-h-6 text-center text-base text-kit-muted">{level ? LEVEL_WORDS[level].line : "—"}</p>
       <SettingRows>
         <SettingRow
           icon="Dv"
@@ -56,7 +56,7 @@ export const NotificationsCard = () => {
         />
       </SettingRows>
       {device.state === "blocked" && (
-        <p className="text-center text-[15px] text-kit-amber">{PROFILE_WORDS.blockedLine}</p>
+        <p className="text-center text-base text-kit-amber">{PROFILE_WORDS.blockedLine}</p>
       )}
       {preferences.status === "error" && (
         <ServiceFailure service="notifications" error={preferences.error} retry={() => void preferences.reload()} />

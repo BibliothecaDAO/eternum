@@ -59,9 +59,9 @@ const ArmyDeploymentForm = (target: ArmyDeploymentTarget) => {
         embedded
         compact
       />
-      {form.troopTrainingLine && <p className="px-1 text-xs text-gold/70">{form.troopTrainingLine}</p>}
-      {form.raiseCostLine && <p className="px-1 text-xs text-gold/70">{form.raiseCostLine}</p>}
-      <p className="px-1 text-xs">
+      {form.troopTrainingLine && <p className="px-1 text-sm text-gold/70">{form.troopTrainingLine}</p>}
+      {form.raiseCostLine && <p className="px-1 text-sm text-gold/70">{form.raiseCostLine}</p>}
+      <p className="px-1 text-sm">
         Uses {form.troopCount.toLocaleString()} of {form.selectedAvailable.toLocaleString()}{" "}
         {form.selectedTroopCombo.tier} {form.selectedTroopCombo.type}
       </p>

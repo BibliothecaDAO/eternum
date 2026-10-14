@@ -19,7 +19,7 @@ it("lists a guide per mode, the players' guides, then News newest first, with th
   );
   try {
     const body = () => container.querySelector('[data-band="body"]')!;
-    expect([...body().querySelectorAll("button span.font-ui")].map((name) => name.textContent)).toEqual([
+    expect([...body().querySelectorAll("button span.font-body")].map((name) => name.textContent)).toEqual([
       "How Frontier plays",
       "How Blitz plays",
       "How Eternum plays",

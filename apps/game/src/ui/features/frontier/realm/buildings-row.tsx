@@ -32,7 +32,7 @@ export const BuildingsRow = ({
   onOpen: (category: BuildingType) => void;
 }) => (
   <nav aria-label={BUILDINGS} className="pointer-events-auto flex items-center justify-center gap-1.5">
-    <span className="text-[12px] font-semibold text-kit-cream">{BUILDINGS}</span>
+    <span className="text-sm font-semibold text-kit-cream">{BUILDINGS}</span>
     {TYPES.map(({ category, icon, word }) => (
       <button
         key={category}
@@ -44,7 +44,7 @@ export const BuildingsRow = ({
       >
         <span className="contents">
           <KitIcon code={icon} size={22} />
-          <span className="frontier-chip-number tabular-nums !text-[15px]">{formatAmount(counts[category])}</span>
+          <span className="frontier-chip-number tabular-nums !text-base">{formatAmount(counts[category])}</span>
         </span>
       </button>
     ))}

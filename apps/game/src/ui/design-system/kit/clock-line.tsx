@@ -24,7 +24,7 @@ export const ClockLine = ({
 }) => (
   <p
     role="timer"
-    className={cn("flex flex-wrap items-baseline justify-center gap-x-1 text-[12px] font-semibold", TONE_TEXT[tone])}
+    className={cn("flex flex-wrap items-baseline justify-center gap-x-1 text-sm font-semibold", TONE_TEXT[tone])}
   >
     <span>{DAY_ENDS}</span>
     <Numeral>{formatClockTime(endsAt)}</Numeral>
@@ -52,7 +52,7 @@ export const DayEnds = ({
   secondsLeft: number | undefined;
   tone: Tone;
 }) => (
-  <p className={cn("flex items-center justify-center gap-x-1 text-[13px] font-semibold", TONE_TEXT[tone])}>
+  <p className={cn("flex items-center justify-center gap-x-1 text-sm font-semibold", TONE_TEXT[tone])}>
     <KitIcon code="Cl" size={18} />
     <span>{DAY_ENDS}</span>
     <Numeral>{formatClockTime(endsAt)}</Numeral>
@@ -62,4 +62,4 @@ export const DayEnds = ({
   </p>
 );
 
-const Numeral = ({ children }: { children: string }) => <b className="text-[14px] tabular-nums">{children}</b>;
+const Numeral = ({ children }: { children: string }) => <b className="text-sm tabular-nums">{children}</b>;

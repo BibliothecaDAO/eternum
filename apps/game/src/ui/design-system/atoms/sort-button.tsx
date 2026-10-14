@@ -49,7 +49,7 @@ export const SortButton = ({
     <button
       className={clsx(
         isActive && sort !== "none" ? activeClassName : inactiveClassName,
-        "flex items-center cursor-pointer text-xxs",
+        "flex items-center cursor-pointer text-sm",
         className,
       )}
       {...props}

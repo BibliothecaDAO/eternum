@@ -10,7 +10,6 @@ import { StoreBar } from "@/ui/design-system/kit/store-bar";
 import { TierChip } from "@/ui/design-system/kit/tier-chip";
 import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
 import { OFFLINE, TRY_AGAIN, YOU } from "@/ui/design-system/kit/words";
-import { useFrontierType } from "@/ui/features/frontier/use-frontier-type";
 import { type ReactNode, useState } from "react";
 import { Route, Routes } from "react-router-dom";
 
@@ -25,7 +24,6 @@ const ENDS_AT = new Date(2026, 9, 7, 21, 40).getTime() / 1000;
  * built on them at /lab/kit/hud/<state>. Nothing here reads a game; every value is the handoff's fiction.
  */
 export const KitLabView = () => {
-  useFrontierType();
   return (
     <Routes>
       <Route path="hud/:state" element={<HudLab />} />
@@ -53,7 +51,7 @@ const Components = () => {
 
 const Section = ({ title, children }: { title: string; children: ReactNode }) => (
   <section data-kit-section={title} className="flex w-full flex-col gap-3 lg:w-[390px]">
-    <h2 data-lab-chrome className="text-[13px] text-kit-muted">
+    <h2 data-lab-chrome className="text-sm text-kit-muted">
       {title}
     </h2>
     {children}

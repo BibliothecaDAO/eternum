@@ -108,13 +108,13 @@ const DesktopLearn = ({ opensOnNews }: { opensOnNews: boolean }) => {
           className="plate flex flex-col items-start justify-end gap-1 p-5 text-left hover:border-kit-gold"
         >
           <KitIcon code="Pp" size={36} />
-          <b className="font-ui text-[19px] text-kit-cream">{LEARN_WORDS.byPlayers}</b>
-          <span className="text-[14px] text-kit-muted">{LEARN_WORDS.guidesCount(PLAYER_GUIDES.length)}</span>
+          <b className="font-body text-lg text-kit-cream">{LEARN_WORDS.byPlayers}</b>
+          <span className="text-sm text-kit-muted">{LEARN_WORDS.guidesCount(PLAYER_GUIDES.length)}</span>
         </button>
       </div>
       <Band
         title={LEARN_WORDS.chronicle}
-        aside={<span className="text-[15px] text-kit-muted">{LEARN_WORDS.lostAges}</span>}
+        aside={<span className="text-base text-kit-muted">{LEARN_WORDS.lostAges}</span>}
       >
         <div className="grid grid-cols-2 gap-5">
           {AGES.map((age) => (
@@ -150,7 +150,7 @@ const GuideCard = ({ guide }: { guide: (typeof MODE_GUIDES)[number] }) => {
       />
       <span className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-kit-ground/30 to-kit-ground/95" />
       <AgeLabel numeral={age.numeral} />
-      <b className="font-ui text-[19px] text-kit-cream">{guide.title}</b>
+      <b className="font-body text-lg text-kit-cream">{guide.title}</b>
     </a>
   );
 };
@@ -171,8 +171,8 @@ const ChronicleEntry = ({ age }: { age: (typeof AGES)[number] }) => (
     <div className="flex min-w-0 flex-col gap-1.5">
       <AgeLabel numeral={age.numeral} />
       <h3 className="font-display text-[34px] leading-none text-kit-cream">{age.name}</h3>
-      <p className="font-ui text-[14px] tracking-[.06em] text-kit-gold">{age.era}</p>
-      <p className="text-[15px] leading-snug text-kit-cream">{age.chronicle}</p>
+      <p className="font-body text-sm text-kit-gold">{age.era}</p>
+      <p className="text-base leading-snug text-kit-cream">{age.chronicle}</p>
     </div>
   </article>
 );
@@ -185,7 +185,7 @@ const News = () => (
 
 /** The legal pages, at Learn's foot. */
 const LegalLinks = () => (
-  <nav className="flex items-center justify-center gap-3 text-[15px] text-kit-muted">
+  <nav className="flex items-center justify-center gap-3 text-base text-kit-muted">
     <Link to="/terms" className="flex min-h-12 items-center px-2">
       <KitIcon code="Dk" size={18} className="mr-1.5" />
       {LEARN_WORDS.terms}

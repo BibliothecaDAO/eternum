@@ -10,7 +10,6 @@ import {
 import { CHEST_PALETTES, type ChestPalette } from "@/three/debug/reward-lab-presentation";
 import "./reward-lab.css";
 import { ChestModelPath, RiftModelPath } from "@/three/constants/scene-constants";
-import { useFrontierType } from "@/ui/features/frontier/use-frontier-type";
 import { MotionLayer } from "@/ui/motion/motion-layer";
 import { INTENSITY_LABEL, type Intensity } from "@/ui/motion/motion-scale";
 

@@ -141,7 +141,7 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
         <div className={cn("flex min-h-0 flex-col justify-end", layout.panels)}>
           <div className="flex flex-col items-end gap-1 px-2 pb-1">
             {open === null && ordersAllowed && (
-              <p className="pointer-events-none self-center rounded-full bg-[#101c23] px-3 py-1.5 font-sans text-xs text-gold/85">
+              <p className="pointer-events-none self-center rounded-full bg-[#101c23] px-3 py-1.5 font-sans text-sm text-gold/85">
                 Tap to select · Hold to move
               </p>
             )}

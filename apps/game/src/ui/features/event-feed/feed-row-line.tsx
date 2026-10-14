@@ -34,7 +34,7 @@ import { resolveStoryEventPosition } from "./story-feed-row";
 /** One feed row in the Log button's translucent black, not the panels' surface: a fixed icon column, one line of
  *  text, the time flush right. */
 export const FEED_ROW_CLASS =
-  "pointer-events-auto flex h-8 w-full items-center gap-2 rounded-md bg-black/50 px-2.5 text-xs text-gold backdrop-blur-[2px]";
+  "pointer-events-auto flex h-8 w-full items-center gap-2 rounded-md bg-black/50 px-2.5 text-sm text-gold backdrop-blur-[2px]";
 const FEED_ROW_ICON_COLUMN_CLASS = "flex w-4 shrink-0 items-center justify-center";
 
 const HEADLINE_ICONS: Record<HeadlineType, GameIcon> = {
@@ -61,7 +61,7 @@ export const FeedRowLine = ({ row, style }: { row: ImportantFeedRow; style?: CSS
     <>
       <span className={FEED_ROW_ICON_COLUMN_CLASS}>{icon}</span>
       <span className="min-w-0 flex-1 truncate text-left">{text}</span>
-      <span className="ml-auto shrink-0 text-right tabular-nums text-gold/50">{formatFeedTime(row.at)}</span>
+      <span className="ml-auto shrink-0 text-right tabular-nums text-kit-muted">{formatFeedTime(row.at)}</span>
     </>
   );
   if (!target) {
@@ -75,7 +75,7 @@ export const FeedRowLine = ({ row, style }: { row: ImportantFeedRow; style?: CSS
     <button
       type="button"
       onClick={() => navigate(target)}
-      className={cn(FEED_ROW_CLASS, "font-sans normal-case tracking-normal hover:bg-black/70")}
+      className={cn(FEED_ROW_CLASS, "font-sans hover:bg-black/70")}
       style={style}
     >
       {content}

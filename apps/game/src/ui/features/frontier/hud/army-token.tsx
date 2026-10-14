@@ -78,13 +78,13 @@ export const ArmyToken = ({
             aria-label={`${XP} ${formatAmount(xp)}`}
             data-tip={xpLine(xp, xpGoal)}
             {...(guided ? guideTarget("army-xp") : {})}
-            className="absolute -bottom-1 -right-2.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border border-kit-line2 bg-kit-ink px-1 text-[12px] leading-none text-kit-gold2 tabular-nums"
+            className="absolute -bottom-1 -right-2.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border border-kit-line2 bg-kit-ink px-1 text-sm leading-none text-kit-gold2 tabular-nums"
           >
             {formatAmount(xp)}
           </span>
         )}
         {number !== undefined && (
-          <span className="absolute -left-2.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border border-kit-gold2 bg-kit-ink px-1 text-[12px] font-semibold leading-none text-kit-cream tabular-nums">
+          <span className="absolute -left-2.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border border-kit-gold2 bg-kit-ink px-1 text-sm font-semibold leading-none text-kit-cream tabular-nums">
             {number}
           </span>
         )}
@@ -98,7 +98,7 @@ export const ArmyToken = ({
       <span
         role="img"
         aria-label={`${TROOPS} ${formatAmount(troops)}`}
-        className="text-[14px] leading-none text-kit-cream tabular-nums"
+        className="text-sm leading-none text-kit-cream tabular-nums"
       >
         {formatAmount(troops)}
       </span>
@@ -154,13 +154,13 @@ export const OpenSlot = ({
   >
     <span
       className={cn(
-        "flex size-10 items-center justify-center rounded-full border-2 border-dashed border-kit-line2 text-[18px] text-kit-gold",
+        "flex size-10 items-center justify-center rounded-full border-2 border-dashed border-kit-line2 text-lg text-kit-gold",
         (pulse || filling !== undefined) && "animate-pulse border-kit-hot",
       )}
     >
       {filling === undefined ? "+" : "…"}
     </span>
-    {wide && <span className="text-[14px] font-semibold text-kit-cream">{filling ?? label}</span>}
+    {wide && <span className="text-sm font-semibold text-kit-cream">{filling ?? label}</span>}
   </button>
 );
 
@@ -216,8 +216,8 @@ const XpRow = ({
       {...(guided ? guideTarget("army-xp") : {})}
       className="flex min-w-0 flex-1 items-center gap-1.5"
     >
-      <span className="whitespace-nowrap text-[13px] leading-none tabular-nums text-kit-gold2">
-        {formatAmount(xp)} <span className="text-[11px] font-semibold text-kit-cream">{XP}</span>
+      <span className="whitespace-nowrap text-sm leading-none tabular-nums text-kit-gold2">
+        {formatAmount(xp)} <span className="text-sm font-semibold text-kit-cream">{XP}</span>
       </span>
       {goal && (
         <i aria-hidden className="h-[3px] min-w-0 flex-1 overflow-hidden rounded-sm bg-kit-line">

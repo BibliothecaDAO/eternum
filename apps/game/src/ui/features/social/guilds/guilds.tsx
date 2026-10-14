@@ -368,10 +368,10 @@ export const Guilds = ({
               <GuildRow key={guild.entityId} guild={guild} onClick={() => viewGuildMembers(guild.entityId)} />
             ))}
             {!filteredGuilds.length && guildsViewGuildInvites && (
-              <p className="text-center italic text-gold/70 py-4">No Tribe Invites Received</p>
+              <p className="text-center text-gold/70 py-4">No Tribe Invites Received</p>
             )}
             {!filteredGuilds.length && !guildsViewGuildInvites && guildsGuildSearchTerm && (
-              <p className="text-center italic text-gold/70 py-4">No Tribes Found</p>
+              <p className="text-center text-gold/70 py-4">No Tribes Found</p>
             )}
           </div>
         </div>

@@ -50,7 +50,7 @@ const Prize = ({ prize, paused, onClaimed }: { prize: SeasonPrize; paused: boole
   const shares = placeShares(season.pool, season.participants, prize.curve);
   return (
     <section className="plate flex flex-col gap-4 p-5">
-      <h2 className="flex items-center gap-2.5 border-b border-kit-line pb-3 font-ui text-[19px] text-kit-cream">
+      <h2 className="flex items-center gap-2.5 border-b border-kit-line pb-3 font-body text-lg text-kit-cream">
         <KitIcon code="Pl" size={26} />
         {SEASON_PRIZE_WORDS.title}
         <span className="ml-auto">
@@ -63,7 +63,7 @@ const Prize = ({ prize, paused, onClaimed }: { prize: SeasonPrize; paused: boole
       <div className="flex items-center gap-3.5">
         <KitIcon code="Lo" size={52} />
         <span className="flex flex-col">
-          <span className="font-ui text-[15px] text-kit-muted">{SEASON_PRIZE_WORDS.pool}</span>
+          <span className="font-body text-base text-kit-muted">{SEASON_PRIZE_WORDS.pool}</span>
           <b className="font-body text-[38px] font-extrabold leading-none tabular-nums text-kit-gold2">
             {formatExact(lordsOf(season.pool))}
           </b>
@@ -99,12 +99,12 @@ const Prize = ({ prize, paused, onClaimed }: { prize: SeasonPrize; paused: boole
 
 /** What the first places and the last paid one would take if the season ended now. */
 const Places = ({ shares }: { shares: bigint[] }) => {
-  if (shares.length === 0) return <p className="font-body text-[15px] text-kit-muted">{SEASON_PRIZE_WORDS.noPlaces}</p>;
+  if (shares.length === 0) return <p className="font-body text-base text-kit-muted">{SEASON_PRIZE_WORDS.noPlaces}</p>;
   const shown = shares.slice(0, PLACES_SHOWN).map((share, index) => ({ place: index + 1, share }));
   if (shares.length > PLACES_SHOWN) shown.push({ place: shares.length, share: shares[shares.length - 1] });
   return (
     <div className="flex flex-col">
-      <p className="flex justify-between px-1 pb-1 font-ui text-[13px] text-kit-muted">
+      <p className="flex justify-between px-1 pb-1 font-body text-sm text-kit-muted">
         <span>{SEASON_PRIZE_WORDS.paysToday}</span>
         <span>{SEASON_PRIZE_WORDS.placesPaid(shares.length)}</span>
       </p>
@@ -112,7 +112,7 @@ const Places = ({ shares }: { shares: bigint[] }) => {
         <p
           key={place}
           className={cn(
-            "flex h-11 items-center border-b border-kit-line px-1 font-body text-[16px] last:border-b-0",
+            "flex h-11 items-center border-b border-kit-line px-1 font-body text-base last:border-b-0",
             index === PLACES_SHOWN && "border-t border-dashed border-t-kit-line2",
           )}
         >
@@ -142,7 +142,7 @@ const Share = ({ prize, state, now }: { prize: SeasonPrize; state: ReturnType<ty
   };
   return (
     <div className="flex flex-col gap-2 rounded-[14px] border border-kit-gold bg-kit-gold/5 px-4 py-3">
-      <span className="font-ui text-[15px] text-kit-muted">{SEASON_PRIZE_WORDS.yourShare}</span>
+      <span className="font-body text-base text-kit-muted">{SEASON_PRIZE_WORDS.yourShare}</span>
       {prize.share !== null && (
         <b className="inline-flex items-center gap-2 font-body text-[32px] font-extrabold tabular-nums text-kit-cream">
           <KitIcon code="Lo" size={30} />
@@ -177,14 +177,14 @@ const SeasonRing = ({ share }: { share: number }) => {
 };
 
 const Line = ({ icon, children }: { icon: IconCode; children: ReactNode }) => (
-  <p className="flex items-center gap-2.5 font-body text-[16px] text-kit-cream">
+  <p className="flex items-center gap-2.5 font-body text-base text-kit-cream">
     <KitIcon code={icon} size={22} />
     <span>{children}</span>
   </p>
 );
 
 const Chip = ({ icon, word }: { icon: IconCode; word: string }) => (
-  <span className="inline-flex h-8 items-center gap-1.5 rounded-full border border-kit-line2 bg-kit-ink pl-1.5 pr-3 font-body text-[14px] font-bold text-kit-muted">
+  <span className="inline-flex h-8 items-center gap-1.5 rounded-full border border-kit-line2 bg-kit-ink pl-1.5 pr-3 font-body text-sm font-bold text-kit-muted">
     <KitIcon code={icon} size={18} />
     {word}
   </span>

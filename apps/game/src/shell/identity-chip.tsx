@@ -29,7 +29,7 @@ const RailButton = ({ word, onClick }: { word: string; onClick: () => void }) =>
   <button
     type="button"
     onClick={onClick}
-    className="flex w-[76%] flex-col items-center gap-1.5 rounded-2xl border-2 border-kit-line2 px-1 py-2.5 font-ui text-[13px] text-kit-cream hover:border-kit-gold"
+    className="flex w-[76%] flex-col items-center gap-1.5 rounded-2xl border-2 border-kit-line2 px-1 py-2.5 font-body text-sm text-kit-cream hover:border-kit-gold"
   >
     <KitIcon code="Pf" size={26} />
     {word}
@@ -39,10 +39,7 @@ const RailButton = ({ word, onClick }: { word: string; onClick: () => void }) =>
 const PlayerChip = ({ account }: { account: string }) => {
   const profile = usePlayerProfile(account);
   return (
-    <NavLink
-      to="/profile"
-      className="flex w-full flex-col items-center gap-1.5 px-1 font-ui text-[13px] text-kit-cream"
-    >
+    <NavLink to="/profile" className="flex w-full flex-col items-center gap-1.5 px-1 font-body text-sm text-kit-cream">
       <img
         src={playerPortraitUrl(account, profile.portrait)}
         alt=""

@@ -65,7 +65,7 @@ export const BuildView = ({
 }) => (
   <Sheet label={BUILD} onClose={onClose}>
     <header className="flex items-center justify-between gap-2">
-      <h2 className="frontier-title !text-[20px]">{BUILD}</h2>
+      <h2 className="frontier-title !text-xl">{BUILD}</h2>
       <Chip
         icons={["Pp"]}
         label={POPULATION}
@@ -110,7 +110,7 @@ const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boole
       )}
     >
       <KitIcon code={tile.icon} size={26} />
-      <span className="text-[11px] font-semibold text-kit-cream">{tile.name}</span>
+      <span className="text-sm font-semibold text-kit-cream">{tile.name}</span>
       <Foot foot={tile.foot} />
     </button>
   );
@@ -129,11 +129,11 @@ const Foot = ({ foot }: { foot: BuildTile["foot"] }) => {
   return (
     <span className="flex items-center gap-[3px]">
       <KitIcon code="La" size={14} />
-      <span className={cn("text-[14px] tabular-nums", foot.short ? "text-light-red" : "text-kit-cream")}>
+      <span className={cn("text-sm tabular-nums", foot.short ? "text-light-red" : "text-kit-cream")}>
         {formatExact(foot.labor)}
       </span>
       {foot.raised && (
-        <span role="img" aria-label={PRICE_UP} data-tip={foot.raised} className="text-[13px] leading-none text-kit-hot">
+        <span role="img" aria-label={PRICE_UP} data-tip={foot.raised} className="text-sm leading-none text-kit-hot">
           ↑
         </span>
       )}

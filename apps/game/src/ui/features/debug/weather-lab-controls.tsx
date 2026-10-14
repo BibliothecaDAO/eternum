@@ -16,7 +16,7 @@ export function WeatherLabControls({
   return (
     <fieldset
       aria-label="Weather debug controls"
-      className="space-y-3 border border-white/15 p-3 text-xs text-stone-300"
+      className="space-y-3 border border-white/15 p-3 text-sm text-stone-300"
     >
       <legend>Weather sprite sheets</legend>
       <label className="flex justify-between">

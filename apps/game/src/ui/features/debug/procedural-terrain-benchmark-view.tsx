@@ -134,7 +134,7 @@ export const ProceduralTerrainBenchmarkView = () => {
         <aside className="flex max-h-[calc(100vh-2rem)] flex-col gap-4 overflow-y-auto border border-white/10 bg-black/60 p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-200/70">
+              <p className="flex items-center gap-2 text-sm font-semibold text-emerald-200/70">
                 <Gauge className="h-4 w-4" /> Terrain Benchmark
               </p>
               <h1 className="mt-1 text-2xl font-semibold text-white">Full-Screen Biome Load</h1>
@@ -271,12 +271,12 @@ const BenchmarkSelect = ({
   options: Array<[string, string]>;
   value: string;
 }) => (
-  <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
+  <label className="flex flex-col gap-2 text-sm font-semibold text-stone-300">
     {label}
     <select
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium normal-case text-white"
+      className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium text-white"
     >
       {options.map(([optionValue, optionLabel]) => (
         <option key={optionValue} value={optionValue}>
@@ -289,8 +289,8 @@ const BenchmarkSelect = ({
 
 const BenchmarkMetric = ({ label, value }: { label: string; value: string }) => (
   <div className="border border-white/10 bg-white/[0.04] px-2 py-2">
-    <dt className="text-[0.6rem] font-semibold uppercase text-stone-500">{label}</dt>
-    <dd className="mt-1 truncate font-mono text-xs text-white">{value}</dd>
+    <dt className="text-sm font-semibold text-stone-500">{label}</dt>
+    <dd className="mt-1 truncate font-mono text-sm text-white">{value}</dd>
   </div>
 );
 

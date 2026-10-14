@@ -78,7 +78,7 @@ export const SeasonList = ({
       >
         <KitIcon code="Bk" size={26} />
       </button>
-      <h2 className="frontier-title flex-1 !text-[20px]">{SEASON}</h2>
+      <h2 className="frontier-title flex-1 !text-xl">{SEASON}</h2>
       {chest ? (
         <ChestChip tier={chest.tier} lords={chest.lords} rank={rank} />
       ) : (
@@ -123,12 +123,12 @@ export type SeasonPoolFigures = {
  */
 const PoolLine = ({ pool }: { pool: SeasonPoolFigures | null }) =>
   pool === null ? (
-    <p className="flex h-9 shrink-0 items-center gap-2 px-1 text-[14px] text-kit-muted">
+    <p className="flex h-9 shrink-0 items-center gap-2 px-1 text-sm text-kit-muted">
       <KitIcon code="Hg" size={18} />
       {POOL_NOT_PUBLISHED}
     </p>
   ) : (
-    <dl className="grid shrink-0 grid-cols-[auto_auto] justify-start gap-x-5 gap-y-1.5 whitespace-nowrap px-1 py-1.5 text-[14px]">
+    <dl className="grid shrink-0 grid-cols-[auto_auto] justify-start gap-x-5 gap-y-1.5 whitespace-nowrap px-1 py-1.5 text-sm">
       <PoolFigure word={SEASON_POOL} value={formatExact(pool.lords)} />
       {pool.today !== undefined && <PoolFigure word={TODAY} value={`+${formatExact(pool.today)}`} />}
       {pool.price !== undefined && <PoolFigure word={PER_SHARE} value={formatExact(pool.price)} />}
@@ -191,12 +191,12 @@ const ChestChip = ({ tier, lords, rank }: { tier: Tier; lords: number; rank: num
       <KitIcon code="Ch" size={18} />
       <TierChip tier={tier} showWord={false} />
       <KitIcon code="Lo" size={18} />
-      <span className="frontier-chip-number tabular-nums !text-[15px]">{formatAmount(lords)}</span>
+      <span className="frontier-chip-number tabular-nums !text-base">{formatAmount(lords)}</span>
       {rank !== null && (
         <>
           <span aria-hidden className="mx-0.5 h-4 w-px bg-kit-line2" />
           <KitIcon code="Tp" size={18} />
-          <span className="frontier-chip-number tabular-nums !text-[15px]">{rankShown(rank)}</span>
+          <span className="frontier-chip-number tabular-nums !text-base">{rankShown(rank)}</span>
         </>
       )}
     </span>
@@ -207,7 +207,7 @@ const ChestChip = ({ tier, lords, rank }: { tier: Tier; lords: number; rank: num
 const Failed = ({ onRetry }: { onRetry: () => void }) => (
   <div role="alert" className="flex flex-col items-center justify-center gap-2.5 px-4 py-6">
     <KitIcon code="Tp" size={40} />
-    <p className="text-[14px] text-kit-cream">{SEASON_ERROR}</p>
+    <p className="text-sm text-kit-cream">{SEASON_ERROR}</p>
     <Button role="secondary" word={TRY_AGAIN} onClick={onRetry} className="w-[150px]" />
   </div>
 );

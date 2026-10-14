@@ -17,7 +17,7 @@ export const StepTrack = ({ steps }: { steps: DoorwayView["steps"] }) => (
         key={step}
         aria-current={state === "running" ? "step" : undefined}
         className={cn(
-          "flex w-16 flex-col items-center gap-1.5 font-ui text-[12px] font-semibold",
+          "flex w-16 flex-col items-center gap-1.5 font-body text-sm font-semibold",
           state === "waiting" ? "text-kit-muted opacity-60" : "text-kit-cream",
         )}
       >
