@@ -149,9 +149,8 @@ export const SEASON_WORDS = {
 export const RATING_WORDS = {
   rating: "Rating",
   blitzRating: "Blitz rating",
-  yourGames: "Your games",
   /** A Realms account with no linked wallet carries no rating (not 0, not 1000). */
-  unlinked: "Link a wallet in Account to carry a rating.",
+  unlinked: "Link a wallet in Settings to carry a rating.",
 } as const;
 
 /** You and Settings: their rows and groups, Settings' sheets and confirms. */
@@ -317,16 +316,14 @@ export const REWARD_WORDS = {
   noLords: "No LORDS now",
 } as const;
 
-/** The Blitz season's prize on Season. */
+/** The Blitz season's prize, on Blitz's rating board. */
 export const SEASON_PRIZE_WORDS = {
   unreadable: "The season's prize could not be read.",
-  title: "Blitz season",
   pool: "Prize pool",
   ends: (date: string) => `Ends ${date}`,
   final: "Final",
   paysToday: "If the season ended now",
   placesPaid: (count: number) => `${count} places paid`,
-  place: (place: number) => `#${place}`,
   noPlaces: "No place is paid until players are ranked.",
   yourShare: "Your share",
   review: "Claims open in",

@@ -41,9 +41,30 @@ vi.mock("../herald", () => ({
   useDirectory: () => ({ data: { games: listed.directory } }),
   usePlayerHistory: () => ({ data: listed.history }),
 }));
+// The rating's top three, the reader unrated: the prize's column rides on these rows.
+vi.mock("../ratings", async (actual) => ({
+  ...(await actual<typeof import("../ratings")>()),
+  useRatingTop: () => ({
+    isError: false,
+    isPending: false,
+    data: {
+      entries: [1, 2, 3].map((rank) => ({
+        rank,
+        player: `0xa${rank}`,
+        rating: String(2000 - rank * 100),
+        profile: { realmsId: `0x${rank}`, name: `Rider ${rank}`, portrait: null },
+      })),
+      self: null,
+    },
+  }),
+}));
+vi.mock("@/hooks/context/identity-session", () => ({ useIdentitySession: () => ({ session: null }) }));
+vi.mock("@/ui/design-system/kit/player-name", () => ({
+  PlayerName: ({ profile }: { profile?: { name: string | null } }) => <span>{profile?.name}</span>,
+}));
 
+import { BlitzBoard } from "./blitz-board";
 import { type SeasonPrize, seasonPrizeKey } from "./blitz-season";
-import { SeasonPrizePanel } from "./season-prize";
 
 const WEI = 10n ** 18n;
 /**
@@ -74,7 +95,7 @@ const mount = async (seed?: (client: QueryClient) => void) => {
   await act(async () =>
     root.render(
       <QueryClientProvider client={client}>
-        <SeasonPrizePanel />
+        <BlitzBoard />
       </QueryClientProvider>,
     ),
   );
@@ -125,12 +146,16 @@ afterEach(async () => {
   ledger.asked = [];
 });
 
-it("shows the pool and what the paid places would take if the season ended now", async () => {
+it("shows the pool, and on each paid rating place what it would take if the season ended now", async () => {
   const panel = await mountPrize(prize({}));
-  expect(panel.textContent).toContain("7,000");
+  expect(panel.querySelector("h2")!.textContent).toContain("7,000");
   expect(panel.textContent).toContain("3 places paid");
-  expect(panel.textContent).toContain("4,000");
-  expect(panel.textContent).toContain("1,000");
+  // Places 1 to 3 of the rating take 4,000, 2,000 and 1,000 of the pool: ceil(25 × 10%) places, each half the last.
+  expect([...panel.querySelectorAll("li")].map((row) => row.textContent)).toEqual([
+    "1Rider 11,9004,000",
+    "2Rider 21,8002,000",
+    "3Rider 31,7001,000",
+  ]);
 });
 
 it("waits out the review hour, then claims a winner's share from the wallet that paid", async () => {
@@ -179,9 +204,11 @@ it("shows the newest season with a share still to claim, signed by the seat's wa
   listed.history = [blitz(8, NOW - 3600, 8, "0xb22"), blitz(5, NOW - 86400, 5, W1)];
   const panel = await mount();
   await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
-  // Season 3, its share still to claim, over the newer season 4 the player has also played: one season, no list.
-  expect(panel.querySelectorAll("section")).toHaveLength(1);
+  // Season 3, its share still to claim, over the newer season 4 the player has also played: its share, and no place
+  // carries a share of season 4's pool.
+  expect(panel.textContent).toContain("Your share");
   expect(panel.textContent).toContain("2,000");
+  expect(panel.textContent).not.toContain("places paid");
   await act(async () =>
     [...panel.querySelectorAll("button")].find((button) => button.textContent === "Claim")!.click(),
   );

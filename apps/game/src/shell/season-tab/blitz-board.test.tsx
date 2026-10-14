@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
@@ -21,9 +22,11 @@ vi.mock("@/ui/design-system/kit/player-name", () => ({
     <span>{you ? "You" : (profile?.name ?? `lookup ${account}`)}</span>
   ),
 }));
+// No season prize: the player has played no paid Blitz (the prize's own test covers it).
+vi.mock("../herald", () => ({ useRealmsPlayer: () => ({ data: "0x7e" }), usePlayerHistory: () => ({ data: [] }) }));
 vi.spyOn(console, "error").mockImplementation(() => undefined);
 
-import { BlitzPanel } from "./blitz-rating";
+import { BlitzBoard } from "./blitz-board";
 
 const UNLINKED_WALLET = "0x05b1c6e9a0d3f2e4b7c8d9a1e2f3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1";
 const UNNAMED_WALLET = "0x0c22d4e6f8a0b2c4d6e8f0a2b4c6d8e0f2a4b6c8d0e2f4a6b8c0d2e4f6a877cc";
@@ -58,9 +61,11 @@ const mount = async () => {
   const root = createRoot(container);
   await act(async () =>
     root.render(
-      <MemoryRouter>
-        <BlitzPanel games={null} />
-      </MemoryRouter>,
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter>
+          <BlitzBoard />
+        </MemoryRouter>
+      </QueryClientProvider>,
     ),
   );
   unmount = () => act(async () => root.unmount());
@@ -95,7 +100,7 @@ it("tells a reader with no wallet how to carry a rating, never a rating of its o
   top.current = answered(null);
   const container = await mount();
   expect(top.askedFor).toBeNull();
-  expect(container.textContent).toContain("Link a wallet in Account to carry a rating.");
+  expect(container.textContent).toContain("Link a wallet in Settings to carry a rating.");
   expect(rows(container)).toEqual(TOP_ROWS);
 });
 

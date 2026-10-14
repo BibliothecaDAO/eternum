@@ -33,8 +33,8 @@ interface SeasonSource {
 }
 
 /**
- * The player's own paid Blitz games in their history where they held a seat, newest first: the seasons the Season
- * tab can show. The directory's upcoming games say nothing about the player, so they are never among them.
+ * The player's own paid Blitz games in their history where they held a seat, newest first: the seasons Blitz's board
+ * can show. The directory's upcoming games say nothing about the player, so they are never among them.
  */
 export const seasonSourcesOf = (history: readonly DirectoryGame[]): SeasonSource[] =>
   history
@@ -88,7 +88,7 @@ export const seasonPrizeKey = (sources: readonly SeasonSource[]) =>
   ["ledger", "season", ...sources.map(({ slot, wallet }) => `${slot.shard}:${slot.slotId}:${wallet}`)] as const;
 
 /**
- * The one season prize the Season tab shows, on the environment's ledger: the newest season of the player's own games
+ * The one season prize Blitz's board on Season shows, on the environment's ledger: the newest season of the player's own games
  * in which a share is still unclaimed, or else the newest season they played. Nothing is read without a game. It is
  * read again each minute only while it can still change: a season that is out of the paid places or claimed is final.
  */

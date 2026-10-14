@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { KitIcon } from "@/ui/design-system/kit/kit-icon";
@@ -10,8 +10,9 @@ import { DAY } from "@/ui/design-system/kit/words";
 import { boardRows, wholeLords } from "@/ui/features/frontier/board/standings";
 
 import { useLayout } from "../frame/layout";
+import { openedFrom } from "../frame/opened-from";
 import { PageFrame } from "../frame/page-frame";
-import { type DirectoryGame, useDirectory, useLeaderboard, useRealmsPlayer, useRecentResults } from "../herald";
+import { type DirectoryGame, useDirectory, useLeaderboard, useRealmsPlayer } from "../herald";
 import { Loading } from "../loading";
 import { paintingSources } from "../paintings";
 import { Panel } from "../panel";
@@ -20,21 +21,17 @@ import { chooseSeason, directoryDay, seasonTitle } from "../season";
 import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
 import { SEASON_WORDS, WORDS } from "../words";
-import { BlitzPanel } from "./blitz-rating";
-import { HistoryRow } from "./history-row";
-import { SeasonPrizePanel } from "./season-prize";
+import { BlitzBoard } from "./blitz-board";
 
 type SeasonView = "frontier" | "blitz";
 
 /** How many of the board's rows a layout shows before the player's own row is pinned under them. */
 const ROWS_SHOWN = { phone: 12, desktop: 15 } as const;
 
-/** How many of the player's finished Blitz games the Season tab lists, newest first. */
-const BLITZ_GAMES = 20;
-
 /**
- * The Season tab (spec 09): where the player stands in Frontier's season, and in Blitz: a switch above the one list
- * on a phone (Blitz there is the player's finished games); the desktop shows both side by side, Blitz with its rating.
+ * Season (spec 09): where the player stands this season, one board per mode: Frontier's season board, and Blitz's
+ * rating with the season prize each place would take. A switch above the one board on a phone; the desktop shows both
+ * side by side. The player's own finished games are on You.
  */
 export const SeasonPage = () => (useLayout() === "phone" ? <PhoneSeason /> : <DesktopSeason />);
 
@@ -53,26 +50,15 @@ const PhoneSeason = () => {
           lit={view}
           onChange={setView}
         />
-        {view === "frontier" ? (
-          <FrontierBoard rowsShown={ROWS_SHOWN.phone} />
-        ) : (
-          <>
-            <SeasonPrizePanel />
-            <BlitzGames />
-          </>
-        )}
+        {view === "frontier" ? <FrontierBoard rowsShown={ROWS_SHOWN.phone} /> : <BlitzBoard />}
       </div>
     </PageFrame>
   );
 };
 
-/**
- * The desktop's Season: the season's title above, Frontier's board on the left with its day, and Blitz on the right:
- * the rating and the reader's own Blitz games.
- */
+/** The desktop's Season: the season's title above, Frontier's board on the left with its day, Blitz's on the right. */
 const DesktopSeason = () => {
   const { season, directory } = useSeason();
-  const { data: player } = useRealmsPlayer();
   return (
     <PageFrame title={season ? seasonTitle(season) : WORDS.season}>
       <div className="grid grid-cols-[minmax(0,1fr)_34rem] items-start gap-6">
@@ -83,10 +69,7 @@ const DesktopSeason = () => {
         ) : (
           <NoSeason />
         )}
-        <div className="flex flex-col gap-6">
-          <SeasonPrizePanel />
-          <BlitzPanel games={player ? <BlitzGames framed={false} /> : null} />
-        </div>
+        <BlitzBoard />
       </div>
     </PageFrame>
   );
@@ -138,6 +121,7 @@ const SeasonHeader = () => {
 /** Frontier's board: its first rows, the player's own lit in place, or pinned under them when it ranks below. */
 const FrontierBoard = ({ rowsShown, framed = true }: { rowsShown: number; framed?: boolean }) => {
   const navigate = useNavigate();
+  const here = useLocation();
   const { season, directory } = useSeason();
   const { data: player } = useRealmsPlayer();
   const board = useLeaderboard(season ? { chainId: season.chainId, gameId: season.game_id } : null);
@@ -163,28 +147,9 @@ const FrontierBoard = ({ rowsShown, framed = true }: { rowsShown: number; framed
           sitesCleared={entry.sites_cleared.total}
           lords={wholeLords(entry.rewards.lords)}
           own={own}
-          onOpen={() => navigate(`/p/${entry.address}`)}
+          onOpen={() => navigate(`/p/${entry.address}`, { state: openedFrom(here) })}
         />
       ))}
     </section>
-  );
-};
-
-/** The player's finished Blitz games, newest first; a row opens its Results. Signed out, there are none to list. */
-const BlitzGames = ({ framed = true }: { framed?: boolean }) => {
-  const { data: player } = useRealmsPlayer();
-  const history = useRecentResults(BLITZ_GAMES, player);
-  const now = useNowSeconds();
-  if (!player) return null;
-  if (history.isError)
-    return <ServiceFailure service="results" error={history.error} retry={() => void history.refetch()} />;
-  if (history.isPending) return <Loading />;
-  const games = history.data.games.filter((game) => game.mode === "blitz");
-  return (
-    <ul className={cn(framed && "plate px-2")}>
-      {games.map((game) => (
-        <HistoryRow key={`${game.chainId}:${game.game_id}`} game={game} player={player} now={now} />
-      ))}
-    </ul>
   );
 };

@@ -7,7 +7,7 @@ import { afterEach, expect, it, vi } from "vitest";
 vi.mock("@/hooks/context/identity-session", () => ({ useIdentitySession: () => ({ session: null }) }));
 vi.spyOn(console, "error").mockImplementation(() => undefined);
 
-import { BlitzPanel } from "@/shell/season-tab/blitz-rating";
+import { BlitzBoard } from "@/shell/season-tab/blitz-board";
 
 import { API_READ_TIMEOUT_MS, fetchApi } from "./app-api";
 
@@ -36,7 +36,7 @@ it("ends a read that never answers in the screen's failure line, and leaves a wr
     root.render(
       <QueryClientProvider client={client}>
         <MemoryRouter>
-          <BlitzPanel games={null} />
+          <BlitzBoard />
         </MemoryRouter>
       </QueryClientProvider>,
     ),

@@ -1,11 +1,10 @@
-import type { ReactNode } from "react";
-
 import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatExact } from "@/ui/design-system/kit/amount";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { shortAddress } from "@/ui/design-system/kit/address";
+import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 
 import { isSameStarknetAddress } from "@realms-world/identity";
@@ -15,23 +14,34 @@ import { ageOf } from "../play/ages";
 import { RatingFigure, TierMark } from "../rating-mark";
 import { type RatingProfile, ratingPoints, tierOf, useRatingTop } from "../ratings";
 import { ServiceFailure } from "../service-failure";
+import { useNowSeconds } from "../use-now";
+import { lordsOf } from "../value/ledger";
 import { RATING_WORDS } from "../words";
+import { PrizeHead, PrizeLines, useBoardPrize } from "./season-prize";
 
 /** How many of the rating's top rows Season shows before the reader's own row. */
-const TOP_ROWS = 6;
+const TOP_ROWS = 10;
 
 type RatingTop = NonNullable<ReturnType<typeof useRatingTop>["data"]>;
 type Self = RatingTop["self"];
 
 /**
- * Blitz on the desktop's Season (spec 09, desktop design): the reader's tier and rating, the rating's top rows with the
- * reader's own row under them when it ranks below, then the reader's finished Blitz games.
+ * Blitz's board on Season (spec 09): the season's pool at its title, the reader's tier and rating, then the rating's
+ * top rows with the reader's own under them when it ranks below. The season prize is paid by rating place, so while it
+ * runs each paid row carries what it would take if the season ended now; once over, the reader's share and its claim
+ * stand above the rows.
  */
-export const BlitzPanel = ({ games }: { games: ReactNode }) => {
+export const BlitzBoard = () => {
   const { session } = useIdentitySession();
   const top = useRatingTop(TOP_ROWS, session ? payoutAddressOf(session.user) : null);
+  const now = useNowSeconds();
+  const prize = useBoardPrize(now);
   return (
-    <Panel icon="Pl" title={ageOf("blitz").name}>
+    <Panel
+      icon="Pl"
+      title={ageOf("blitz").name}
+      aside={prize.prize && <PrizeHead prize={prize.prize} state={prize.state} />}
+    >
       {top.isError ? (
         <ServiceFailure service="ratings" error={top.error} retry={() => void top.refetch()} />
       ) : top.isPending ? (
@@ -39,21 +49,13 @@ export const BlitzPanel = ({ games }: { games: ReactNode }) => {
       ) : (
         <>
           <OwnRating self={top.data.self} signedIn={session !== null} />
-          <SubHead word={RATING_WORDS.rating} />
-          <TopRows top={top.data} />
-        </>
-      )}
-      {games && (
-        <>
-          <SubHead word={RATING_WORDS.yourGames} />
-          {games}
+          <PrizeLines prize={prize} now={now} onClaimed={() => void prize.query.refetch()} />
+          <TopRows top={top.data} shares={prize.shares} />
         </>
       )}
     </Panel>
   );
 };
-
-const SubHead = ({ word }: { word: string }) => <h3 className="mt-3 px-1 font-body text-sm text-kit-muted">{word}</h3>;
 
 /** The reader's tier and rating, large; a reader with no wallet is told how to carry one. Signed out, nothing. */
 const OwnRating = ({ self, signedIn }: { self: Self; signedIn: boolean }) => {
@@ -73,20 +75,25 @@ const OwnRating = ({ self, signedIn }: { self: Self; signedIn: boolean }) => {
   );
 };
 
-/** The top rows, the reader's own lit in place, or pinned under them (its rank a dash before its first rated game). */
-const TopRows = ({ top }: { top: RatingTop }) => {
+/**
+ * The top rows, the reader's own lit in place, or pinned under them (its rank a dash before its first rated game); a
+ * paid place carries its share of the pool today.
+ */
+const TopRows = ({ top, shares }: { top: RatingTop; shares: bigint[] | null }) => {
   const self = top.self;
   const ownInTop = self !== null && top.entries.some((entry) => isSameStarknetAddress(entry.player, self.player));
+  const shareOf = (rank: number | null) => (shares && rank !== null ? shares[rank - 1] : undefined);
   return (
     <ol className="flex flex-col">
       {top.entries.map((entry) => (
         <RatingRow
           key={entry.player}
           {...entry}
+          share={shareOf(entry.rank)}
           own={self !== null && isSameStarknetAddress(entry.player, self.player)}
         />
       ))}
-      {self && !ownInTop && <RatingRow {...self} own />}
+      {self && !ownInTop && <RatingRow {...self} share={shareOf(self.rank)} own />}
     </ol>
   );
 };
@@ -96,12 +103,14 @@ const RatingRow = ({
   player,
   rating,
   profile,
+  share,
   own,
 }: {
   rank: number | null;
   player: string;
   rating: string;
   profile: RatingProfile;
+  share: bigint | undefined;
   own: boolean;
 }) => (
   <li
@@ -117,6 +126,12 @@ const RatingRow = ({
       <RatedOwner player={player} profile={profile} own={own} />
     </span>
     <RatingFigure rating={rating} />
+    {share !== undefined && (
+      <span className="inline-flex w-24 items-center justify-end gap-1 font-body text-base font-bold tabular-nums text-kit-gold2">
+        <KitIcon code="Lo" size={16} />
+        {formatExact(lordsOf(share))}
+      </span>
+    )}
   </li>
 );
 
