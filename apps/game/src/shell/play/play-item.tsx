@@ -132,13 +132,17 @@ type ItemProps = { item: PlayItem; now: number; signedIn: boolean };
 
 /**
  * The lead: its mode's painting under a grade dark enough for its words, its title, its facts and the one gold verb.
+ * Every item carries its game's key (`data-play-item`), so a press can be named by its game, not by its word.
  * A signed-out player's season says what Frontier is instead of its clock.
  */
 export const LeadCard = ({ item, now, signedIn }: ItemProps) => {
   const desktop = useLayout() === "desktop";
   const verb = <ItemVerbButton item={item} signedIn={signedIn} gold />;
   return (
-    <section className={desktop ? "painted flex min-h-[18rem] rounded-2xl" : "painted flex rounded-2xl"}>
+    <section
+      data-play-item={item.key}
+      className={desktop ? "painted flex min-h-[18rem] rounded-2xl" : "painted flex rounded-2xl"}
+    >
       <img
         {...paintingSources(ageOf(item.mode).painting)}
         sizes={desktop ? "45vw" : "100vw"}
@@ -196,7 +200,7 @@ const isText = (part: string | null): part is string => part !== null;
 
 /** Any other item: its age's painting small, its title and facts, and its verb in outline, or none. */
 const ItemRow = ({ item, now, signedIn }: ItemProps) => (
-  <li className="flex items-center gap-3 border-b border-kit-line py-3 last:border-b-0">
+  <li data-play-item={item.key} className="flex items-center gap-3 border-b border-kit-line py-3 last:border-b-0">
     <img
       {...paintingSources(ageOf(item.mode).painting)}
       sizes="48px"
