@@ -415,13 +415,13 @@ const CLEAR_STORED_ZOOM_EXPRESSION = `JSON.stringify((() => {
 
 /**
  * Marks the moment and clicks the call to action inside the home page's card for `heading`, in one task; returns the
- * mark with the button's label, or null while the card is not shown.
+ * mark with the button's label, or null while the card is not shown or its button is still disabled (loading).
  */
 const homeCardEntryExpression = (heading) => `JSON.stringify((() => {
   const title = [...document.querySelectorAll("h1, h2, h3, h4")].find((element) => element.textContent.trim() === ${JSON.stringify(heading)});
   let card = title;
   while (card && !card.querySelector("button")) card = card.parentElement;
-  const button = card && [...card.querySelectorAll("button")].find((element) => /^(Resume|Play)/.test(element.textContent.trim()));
+  const button = card && [...card.querySelectorAll("button")].find((element) => !element.disabled && /^(Resume|Play)/.test(element.textContent.trim()));
   if (!button) return null;
   const mark = JSON.parse(window.__playtest.step("enter"));
   button.click();
