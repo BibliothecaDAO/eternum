@@ -3,7 +3,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { BUILDABLE_FILTER, StructureSidebar } from "@/ui/features/world/containers/structure-sidebar";
-import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
+import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/use-structures-with-metadata";
 import { type ID } from "@bibliothecadao/types";
 import { Hammer } from "@/ui/design-system/atoms/game-icons";
 import { lazy, memo, Suspense, useCallback, useEffect, useState } from "react";

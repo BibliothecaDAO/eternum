@@ -86,8 +86,8 @@ interface UIStore {
   logisticsActiveTab: "arrivals" | "transfer" | "automation" | "balances";
   setLogisticsActiveTab: (tab: "arrivals" | "transfer" | "automation" | "balances") => void;
   // Cross-component signal: when a non-null id is set, the StructureEditPopup
-  // (mounted inside LeftCommandSidebar) opens for that structure. The picker
-  // popover writes this from the top-zone pills without needing prop-drilling.
+  // (mounted by LeftViewSurfaces) opens for that structure. The realm card's
+  // Rename writes it without prop-drilling.
   pendingRenameStructureEntityId: number | null;
   setPendingRenameStructureEntityId: (entityId: number | null) => void;
   // Force-refresh counter bumped after a rename writes to localStorage. Consumers

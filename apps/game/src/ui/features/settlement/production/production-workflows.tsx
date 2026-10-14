@@ -69,7 +69,7 @@ export const ProductionWorkflows = ({
               onChange={(event) =>
                 onSelectResource(event.target.value ? (Number(event.target.value) as ResourcesIds) : null)
               }
-              className="min-h-11 w-full rounded border border-gold/30 bg-[#101c23] px-2 text-base"
+              className="min-h-11 w-full rounded border border-gold/30 bg-kit-plate px-2 text-base"
             >
               <option value="">Select a resource</option>
               {producedResources.map((resource) => (

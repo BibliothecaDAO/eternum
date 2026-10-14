@@ -1,9 +1,8 @@
-import { ArrowLeftRight, Factory, Loader, Shield, Sparkles } from "@/ui/design-system/atoms/game-icons";
+import { Factory, Loader, Shield, Sparkles } from "@/ui/design-system/atoms/game-icons";
 import { IncomingCaravans } from "./incoming-caravans";
 import { StructureOwnershipTransfer } from "./structure-ownership-transfer";
-import { memo, useCallback } from "react";
+import { memo } from "react";
 
-import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CompactDefenseDisplay } from "@/ui/features/military";
 import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
@@ -13,19 +12,17 @@ import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstr
 import { HyperstructureConstruction } from "@/ui/features/world/components/hyperstructures/hyperstructure-construction";
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { buildVillageTimerSummary } from "@/ui/shared/lib/village-timers";
-import { ID, StructureType } from "@bibliothecadao/types";
-import { configManager, formatTime, toHexString } from "@bibliothecadao/eternum";
+import { EntityType, ID, RelicRecipientType, StructureType } from "@bibliothecadao/types";
+import { formatTime, toHexString } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { playerAvatarUrl } from "@/hooks/use-player-profile";
-import { LeftView } from "@/types";
 
 import { ActiveRelicEffects } from "../active-relic-effects";
 import { useStructureEntityDetail } from "../hooks/use-structure-entity-detail";
 import { EntityDetailLayoutVariant } from "../layout";
-import { useStructureProductionSummary } from "../structure-production-summary";
-import { MergedResourcePanel } from "@/ui/features/world/containers/left-facets/merged-resource-panel";
+import { HeldStocks } from "@/ui/features/world/war-room/realm-stocks";
+import { CompactEntityInventory } from "../compact-entity-inventory";
 import { BitcoinMiningActionPanel } from "../../actions/bitcoin-mining-action-panel";
 import { FaithDevotionActionPanel } from "../../actions/faith-devotion-action-panel";
 
@@ -97,11 +94,7 @@ const StructureBannerEntityDetailContent = memo(
     const resolvedWorldMode = useResolvedWorldGameMode();
     const isEternumMode = resolvedWorldMode === "eternum";
     const currentBlockTimestamp = useCurrentBlockTimestamp();
-    const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
-    const setLogisticsActiveTab = useUIStore((state) => state.setLogisticsActiveTab);
-    const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
 
-    const productionSummary = useStructureProductionSummary(structure, resources);
     const ownerAddress =
       structure?.owner !== undefined && structure.owner !== null && structure.owner !== 0n
         ? toHexString(structure.owner)
@@ -109,12 +102,6 @@ const StructureBannerEntityDetailContent = memo(
     const ownerAvatarUrl = ownerAddress ? playerAvatarUrl(ownerAddress) : null;
 
     const rawCategory = structure?.base?.category;
-    const handleOpenTransferPanel = useCallback(() => {
-      if (!structure?.entity_id) return;
-      setTransferPanelSourceId(safeInteger(structure.entity_id));
-      setLogisticsActiveTab("transfer");
-      setLeftNavigationView(LeftView.ResourceArrivals);
-    }, [setLeftNavigationView, setLogisticsActiveTab, setTransferPanelSourceId, structure?.entity_id]);
 
     if (isLoadingStructure) {
       return (
@@ -155,17 +142,6 @@ const StructureBannerEntityDetailContent = memo(
       isEternumMode &&
       rawCategory !== undefined &&
       [StructureType.Realm, StructureType.Village].includes(Number(rawCategory) as StructureType);
-    const canOpenTransferPanel =
-      isMine &&
-      configManager.isCommandEnabled("SendResources") &&
-      structureCategory !== undefined &&
-      [StructureType.Realm, StructureType.Village, StructureType.Camp, StructureType.Mine].includes(
-        structureCategory as StructureType,
-      ) &&
-      typeof structure.entity_id !== "undefined";
-    // The owner-bubble header transfer shortcut stays hidden to avoid
-    // duplicating the Resources bubble cue (which is the primary affordance).
-    const showTransferButton = false;
     const ownerInitial = (ownerDisplayName || "?").charAt(0).toUpperCase();
     const isHyperstructureOwned = structure.owner !== undefined && structure.owner !== null && structure.owner !== 0n;
     const showHyperstructureVP = isHyperstructure && hyperstructurePointsPerSecond !== undefined;
@@ -211,17 +187,6 @@ const StructureBannerEntityDetailContent = memo(
                   <span className={cn("block truncate", HUD_BODY)}>{structureName}</span>
                 </div>
               </div>
-              {showTransferButton && canOpenTransferPanel && (
-                <Button
-                  size="xs"
-                  variant="outline"
-                  className="border-gold/30 bg-dark/40 text-gold hover:bg-dark/60 !px-2 !py-1 min-w-0"
-                  onClick={handleOpenTransferPanel}
-                  aria-label="Open transfer panel"
-                >
-                  <ArrowLeftRight className="h-4 w-4" />
-                </Button>
-              )}
             </div>
             <StructureOwnershipTransfer key={structureEntityId} structureId={structureEntityId} />
             {showHyperstructureVP && (
@@ -284,40 +249,23 @@ const StructureBannerEntityDetailContent = memo(
           )}
         </InfoBubble>
 
-        {/* Merged production + balance — one token panel (like the Empire panel).
-            Owners get a Transfer button (this realm as recipient) and the build
-            "+" on each token. */}
-        <InfoBubble
-          variant="section"
-          title="Resources"
-          icon={Factory}
-          cue={
-            canOpenTransferPanel ? (
-              <button
-                type="button"
-                onClick={handleOpenTransferPanel}
-                className="inline-flex items-center justify-center rounded-md border border-gold/40 bg-gold/10 p-1 text-gold transition hover:border-gold hover:bg-gold/20"
-                title="Transfer resources from this structure"
-                aria-label="Transfer resources from this structure"
-              >
-                <ArrowLeftRight className="h-3.5 w-3.5" />
-              </button>
-            ) : undefined
-          }
-        >
-          {resources ? (
-            <MergedResourcePanel
-              structureEntityId={structureEntityId}
+        {/* The player's own structure shows its stocks on the War room realm card; another's shows them here. */}
+        {!isMine && (
+          <InfoBubble variant="section" title="Resources" icon={Factory}>
+            <HeldStocks resources={resources} />
+            <CompactEntityInventory
               resources={resources}
-              productionSummary={productionSummary}
-              canBuild={false}
-              isMine={isMine}
               activeRelicIds={activeRelicIds}
+              recipientType={RelicRecipientType.Structure}
+              entityId={structureEntityId}
+              entityType={EntityType.STRUCTURE}
+              variant="tight"
+              filter="relics"
+              emptyMessage=""
+              showHiddenCount={false}
             />
-          ) : (
-            <p className={HUD_BODY_MUTED}>No resources stored.</p>
-          )}
-        </InfoBubble>
+          </InfoBubble>
+        )}
 
         <BitcoinMiningActionPanel structureEntityId={structureEntityId} />
 

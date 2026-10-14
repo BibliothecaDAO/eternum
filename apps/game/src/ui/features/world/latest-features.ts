@@ -56,6 +56,20 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-10-14",
+    title: "War room",
+    description:
+      "Your realms and the selected one's card sit on the left, with its level-up step, its orders and its stocks by name. Next up on the right says what to do now in one button, and the last events stay until newer ones arrive. On a phone the same cards stack above worded tabs.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-14",
+    title: "One readable typeface",
+    description:
+      "Everything you read is set in one legible face at 14 px or larger, in sentence case, with enough contrast on every panel.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-14",
     title: "One lab for every tool",
     description:
       "Art, character, renderer and interface tools share one lab selector. Model review and terrain captures keep their existing addresses.",

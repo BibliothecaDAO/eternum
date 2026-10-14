@@ -1,14 +1,15 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { QuickFeed } from "@/ui/features/event-feed/quick-feed";
+import { EventsCard } from "@/ui/features/event-feed/events-card";
+import { NextUp } from "@/ui/features/world/war-room/next-up";
 import { type ReactNode, useCallback, useState } from "react";
 import { HUD_COLUMN_TOP } from "./hud-layout";
 import { HudChatWindow } from "./hud-chat-window";
 
 type RightColumnFocus = "none" | "chat" | "log";
 
-/** Feed at the top, tile details directly under it growing to their content, the chat strip anchored to the
- *  bottom. Open chat raises a fixed pane above the strip and the details scroll in what is left; the log takes
- *  the details' place while open. */
+/** Next up and the latest events at the top, tile details under them growing to their content, the chat strip
+ *  anchored to the bottom. Open chat raises a fixed pane above the strip and the details scroll in what is left;
+ *  the log takes the details' place while open. */
 export const RightHudColumn = ({ children }: { children?: ReactNode }) => {
   const [focus, setFocus] = useState<RightColumnFocus>("none");
   const toggleLog = useCallback(() => setFocus((current) => (current === "log" ? "none" : "log")), []);
@@ -19,10 +20,11 @@ export const RightHudColumn = ({ children }: { children?: ReactNode }) => {
       className={cn(
         "pointer-events-none fixed bottom-4 right-3 z-30 flex flex-col gap-2",
         HUD_COLUMN_TOP,
-        "w-[288px] min-[1800px]:w-[312px]",
+        "w-[300px] min-[1800px]:w-[320px]",
       )}
     >
-      <QuickFeed logOpen={focus === "log"} onLogToggle={toggleLog} />
+      <NextUp />
+      <EventsCard logOpen={focus === "log"} onLogToggle={toggleLog} />
       {focus !== "log" && (
         <div
           aria-label={children ? "Tile details" : undefined}

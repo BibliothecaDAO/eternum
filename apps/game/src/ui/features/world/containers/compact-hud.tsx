@@ -14,8 +14,12 @@ import {
   useConnectionNotices,
   useImportantFeed,
   useUnreadFeedCount,
-} from "@/ui/features/event-feed/quick-feed";
-import { MinimapPanel, useSelectedTileDetails } from "@/ui/features/world/components/bottom-right-panel";
+} from "@/ui/features/event-feed/events-card";
+import { MinimapPanel, useSelectedTileDetails } from "@/ui/features/world/components/selection-panels";
+import { NextUp } from "@/ui/features/world/war-room/next-up";
+import { RealmCard } from "@/ui/features/world/war-room/realm-card";
+import { RealmRows, useRealmList } from "@/ui/features/world/war-room/realm-rows";
+import { RealmStrip } from "@/ui/features/world/war-room/realm-strip";
 import { useRealtimeChatSelector } from "@/ui/features/social";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import {
@@ -29,20 +33,16 @@ import {
   useState,
 } from "react";
 import { HudChatWindow } from "./hud-chat-window";
-import { EmpireCockpit } from "./left-facets/empire-cockpit";
-import { ActionTile } from "./left-facets/structure-actions-panel";
-import { StructureListColumn } from "./left-facets/structure-list-column";
-import { useStructureActions } from "./left-facets/use-structure-actions";
 import { resolveLeftViewSurface } from "./left-view-policy";
 import { SpectatorStandingsBody } from "./spectator-standings";
 
-type CompactTab = "empire" | "map" | "log" | "chat" | "details";
+type CompactTab = "realm" | "map" | "log" | "chat" | "details";
 
 /** Tabs whose content is the bottom sheet; the log is its own popover and chat is the chat window. */
-const SHEET_TABS: ReadonlySet<CompactTab> = new Set(["empire", "map", "details"]);
+const SHEET_TABS: ReadonlySet<CompactTab> = new Set(["realm", "map", "details"]);
 
 const COMPACT_TAB_IMAGES = {
-  empire: BuildingThumbs.home,
+  realm: BuildingThumbs.home,
   standings: BuildingThumbs.trophy,
   map: BuildingThumbs.worldMap,
   log: BuildingThumbs.latestUpdates,
@@ -67,16 +67,13 @@ interface LaneLayout {
   sheetStyle?: CSSProperties;
   tabBar: string;
   tabBarStyle: CSSProperties;
-  actions: string;
-  actionsStyle: CSSProperties;
 }
 
 /**
- * Portrait stacks the panels over the structure actions and a tab bar at the foot of the screen. Landscape has
- * almost no height to spare, so the same panels sit in a column docked to the right edge, the tab bar becomes a
- * vertical rail beside them, the sheet fills the column instead of taking a share of the height, and the structure
- * actions become a rail of their own on the left edge, clear of the drawers that open from the right. The rails are
- * `box-content` so the notch inset adds to their width rather than eating into the tiles.
+ * Portrait stacks the panels over a tab bar at the foot of the screen. Landscape has almost no height to spare, so
+ * the same panels sit in a column docked to the right edge, the tab bar becomes a vertical rail beside them, and the
+ * sheet fills the column instead of taking a share of the height. The rail is `box-content` so the notch inset adds
+ * to its width rather than eating into the tabs.
  */
 const LANE_LAYOUT: Record<CompactLane, LaneLayout> = {
   portrait: {
@@ -86,8 +83,6 @@ const LANE_LAYOUT: Record<CompactLane, LaneLayout> = {
     sheetStyle: SAFE_SIDES,
     tabBar: "border-t pt-1",
     tabBarStyle: { ...SAFE_SIDES, paddingBottom: SAFE_BOTTOM },
-    actions: "border-t pt-1",
-    actionsStyle: SAFE_SIDES,
   },
   landscape: {
     shell: `${BELOW_HEADER} bottom-0 right-0 flex-row`,
@@ -95,15 +90,13 @@ const LANE_LAYOUT: Record<CompactLane, LaneLayout> = {
     sheet: "min-h-0 flex-1 rounded-l-xl rounded-t-none",
     tabBar: "w-16 box-content flex-col overflow-y-auto overscroll-contain border-l px-1 pt-1",
     tabBarStyle: { paddingRight: "max(env(safe-area-inset-right), 0.25rem)", paddingBottom: SAFE_BOTTOM },
-    actions: `fixed left-0 bottom-0 z-30 ${BELOW_HEADER} w-16 box-content flex-col overflow-y-auto overscroll-contain border-r px-1 pt-1`,
-    actionsStyle: { paddingLeft: "max(env(safe-area-inset-left), 0.25rem)", paddingBottom: SAFE_BOTTOM },
   },
 };
 
 /**
- * The HUD below `lg`: one tab bar and, beside it, one open panel at a time — the empire column, the minimap, the
- * log, chat, or the selected tile. The map stays tappable around whatever is open. `lane` picks the layout for the
- * phone's orientation.
+ * War room below `lg`: Next up and the selected realm at the foot, over one tab bar, and one open panel at a time —
+ * the realms and the selected one's card, the minimap, the events, chat, or the selected tile. The map stays tappable
+ * around whatever is open. `lane` picks the layout for the phone's orientation.
  */
 export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
@@ -120,12 +113,12 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
 
   const tabs: TabSpec[] = [
     {
-      id: "empire",
-      label: ordersAllowed ? "Empire" : "Standings",
-      image: ordersAllowed ? COMPACT_TAB_IMAGES.empire : COMPACT_TAB_IMAGES.standings,
+      id: "realm",
+      label: ordersAllowed ? "Realm" : "Standings",
+      image: ordersAllowed ? COMPACT_TAB_IMAGES.realm : COMPACT_TAB_IMAGES.standings,
     },
     { id: "map", label: "Map", image: COMPACT_TAB_IMAGES.map },
-    { id: "log", label: "Log", image: COMPACT_TAB_IMAGES.log, badge: unread, ref: logTab },
+    { id: "log", label: "Events", image: COMPACT_TAB_IMAGES.log, badge: unread, ref: logTab },
     { id: "chat", label: "Chat", image: COMPACT_TAB_IMAGES.chat, badge: chatUnread },
     { id: "details", label: "Details", image: COMPACT_TAB_IMAGES.details },
   ];
@@ -133,7 +126,6 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
 
   return (
     <>
-      {lane === "landscape" && <StructureActionStrip lane={lane} />}
       <div
         aria-label="Compact HUD"
         className={cn("pointer-events-none fixed flex", layout.shell, open === "chat" ? "z-[130]" : "z-30")}
@@ -141,12 +133,18 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
         <div className={cn("flex min-h-0 flex-col justify-end", layout.panels)}>
           <div className="flex flex-col items-end gap-1 px-2 pb-1">
             {open === null && ordersAllowed && (
-              <p className="pointer-events-none self-center rounded-full bg-[#101c23] px-3 py-1.5 font-sans text-sm text-gold/85">
+              <p className="pointer-events-none self-center rounded-full bg-kit-plate px-3 py-1.5 text-sm text-kit-cream">
                 Tap to select · Hold to move
               </p>
             )}
             <FeedNotices pinned={pinned} />
           </div>
+          {open === null && ordersAllowed && (
+            <div className="flex flex-col gap-2 px-2 pb-2">
+              <NextUp compact />
+              <RealmStrip onOpen={() => toggle("realm")} />
+            </div>
+          )}
           {/* The chat window stays mounted so the client keeps its connection; its strip only shows while open. */}
           <div className={open === "chat" ? "px-2 pb-1" : "hidden"}>
             <HudChatWindow open={open === "chat"} onOpenChange={setChatOpen} />
@@ -159,14 +157,12 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
               style={layout.sheetStyle}
             >
               <header className="flex shrink-0 items-center justify-between gap-2 border-b border-gold/20 pl-3 pr-1">
-                <h2 className="font-sans text-sm font-semibold text-gold">
-                  {tabs.find((tab) => tab.id === open)?.label}
-                </h2>
+                <h2 className="text-base font-semibold text-kit-cream">{tabs.find((tab) => tab.id === open)?.label}</h2>
                 <button
                   type="button"
                   aria-label="Close panel"
                   onClick={closeAndFocusTab}
-                  className="flex h-11 w-11 items-center justify-center rounded-lg text-gold/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:bg-gold/15"
+                  className="flex h-11 w-11 items-center justify-center rounded-lg text-kit-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:bg-gold/15"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -183,12 +179,11 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
             isInsideAnchor={(target) => target instanceof Node && Boolean(logTab.current?.contains(target))}
           />
         )}
-        {lane === "portrait" && <StructureActionStrip lane={lane} />}
         <nav
           ref={navigation}
           aria-label="HUD tabs"
           className={cn(
-            "pointer-events-auto flex h-auto items-stretch gap-1 border-gold/20 bg-[#101c23]",
+            "pointer-events-auto flex h-auto items-stretch gap-1 border-gold/20 bg-kit-plate",
             layout.tabBar,
           )}
           style={layout.tabBarStyle}
@@ -203,28 +198,6 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
 });
 
 CompactHud.displayName = "CompactHud";
-
-/**
- * Build · Production · Military · Transfer · Trade for the active owned structure: a row above the tab bar in
- * portrait, a rail on the left edge in landscape. Every tile opens a popover or a workspace, which
- * `useCompactPanels` already treats as replacing the sheet, so the strip needs no close logic of its own.
- */
-const StructureActionStrip = ({ lane }: { lane: CompactLane }) => {
-  const actions = useStructureActions();
-  if (!actions) return null;
-  const layout = LANE_LAYOUT[lane];
-  return (
-    <nav
-      aria-label="Structure actions"
-      className={cn("pointer-events-auto flex items-stretch gap-1 border-gold/20 bg-[#101c23]", layout.actions)}
-      style={layout.actionsStyle}
-    >
-      {actions.map((action) => (
-        <ActionTile key={action.id} variant="compact" action={action} />
-      ))}
-    </nav>
-  );
-};
 
 interface TabSpec {
   id: CompactTab;
@@ -247,16 +220,16 @@ const TabButton = ({
     <button
       ref={tab.ref}
       type="button"
-      aria-label={tab.label}
       aria-expanded={active}
       aria-controls={active && SHEET_TABS.has(tab.id) ? "compact-hud-sheet" : undefined}
       onClick={() => onToggle(tab.id)}
       className={cn(
-        "relative flex min-h-14 min-w-0 flex-1 items-center justify-center rounded-lg p-2 transition-[background-color,color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:scale-[0.97] active:bg-gold/15",
-        active ? "bg-gold/15 text-gold" : "text-gold/75",
+        "relative flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg p-1 transition-[background-color,color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:scale-[0.97] active:bg-gold/15",
+        active ? "bg-gold/15 text-gold" : "text-kit-cream",
       )}
     >
-      <img src={tab.image} alt="" aria-hidden="true" className="h-9 w-9 object-contain" />
+      <img src={tab.image} alt="" aria-hidden="true" className="h-7 w-7 object-contain" />
+      <span className="max-w-full truncate text-sm font-semibold">{tab.label}</span>
       {tab.badge !== undefined && tab.badge > 0 && (
         <span className="absolute right-1/4 top-0">
           <UnreadFeedBadge count={tab.badge} />
@@ -278,24 +251,30 @@ const SheetContent = ({
   if (tab === "map") return <MinimapPanel compact />;
   if (tab === "details" && tileDetails === null)
     return (
-      <div className="flex flex-col items-center gap-2 px-4 py-6 text-center font-sans text-sm text-gold/80">
+      <div className="flex flex-col items-center gap-2 px-4 py-6 text-center text-base text-kit-muted">
         <img src={COMPACT_TAB_IMAGES.details} alt="" aria-hidden="true" className="h-7 w-7 object-contain" />
         <p>Tap a tile on the map to inspect its army, structure, or terrain.</p>
       </div>
     );
   if (tab === "details") return tileDetails;
-  if (tab === "empire") return ordersAllowed ? <EmpireColumn /> : <SpectatorStandingsBody />;
+  if (tab === "realm") return ordersAllowed ? <RealmSheet /> : <SpectatorStandingsBody />;
   return null;
 };
 
-const EmpireColumn = () => {
+/** The player's realms, then the selected one's card: the same rows and card as the desktop column. */
+const RealmSheet = () => {
   const connectedAccount = useAccountStore((state) => state.account);
+  const list = useRealmList();
   if (!connectedAccount) return null;
   return (
-    <>
-      <StructureListColumn />
-      <EmpireCockpit />
-    </>
+    <div className="flex flex-col gap-3">
+      <RealmRows list={list} />
+      {list.selected && (
+        <div className="border-t border-gold/20 pt-3">
+          <RealmCard realm={list.selected} />
+        </div>
+      )}
+    </div>
   );
 };
 

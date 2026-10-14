@@ -8,14 +8,9 @@ import { SurfaceHost } from "../design-system/molecules/popover";
 import { Tooltip } from "../design-system/molecules/tooltip";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
 import { TransferAutomationManager } from "../features/infrastructure/automation/transfer-automation-manager";
-import { ActionInfo } from "../features/world/components/actions/action-info";
-import { BottomRightPanel } from "../features/world/components/bottom-right-panel";
 import { ContextMenu } from "../features/world/components/context-menu/context-menu";
-import { CompactHud } from "../features/world/containers/compact-hud";
-import { LeftCommandSidebar } from "../features/world/containers/left-command-sidebar";
 import { LeftViewSurfaces } from "../features/world/containers/left-view-surfaces";
-import { TopHeader } from "../features/world/containers/top-header/top-header";
-import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
+import { WarRoomHud } from "../features/world/war-room/war-room-hud";
 import { GameCycleEffects } from "../shared/components/game-cycle-effects";
 import { BlockTimestampPoller } from "../shared/components/block-timestamp-poller";
 import { ActionRunners } from "../action-runners";
@@ -106,14 +101,8 @@ const GameSystems = ({ backgroundImage }: { backgroundImage: string }) => (
 );
 
 /**
- * HUD (Heads-Up Display) - persistent UI elements positioned around the screen.
- * Desktop layout:
- * - Top: TopHeader (player info, map toggle, clock and attention)
- * - Left: LeftCommandSidebar (structure selector and empire cockpit)
- * - Bottom: BottomRightPanel (minimap, feed, tile inspector, chat)
- * Below `lg` the columns collapse into CompactHud: one tab bar and one sheet, laid out for the phone's orientation.
- * The Build / Logistics / Military surfaces and every other popover hang off their own trigger on both layouts.
- * A Frontier game has its own HUD instead of these regions.
+ * HUD (Heads-Up Display): War room for every mode that shares it (Blitz and Eternum), Frontier's own HUD for a
+ * Frontier game. The Build / Logistics / Military surfaces and every other popover hang off their own trigger.
  */
 const HUD = () => {
   const expeditionRules = useExpeditionRules();
@@ -123,34 +112,15 @@ const HUD = () => {
       {/* A Frontier game opens its own surfaces (deploy, build) from its HUD; the other modes share these. */}
       {hud === "frontier" && expeditionRules ? (
         <FrontierHud rules={expeditionRules} />
-      ) : hud === "shared" ? (
+      ) : hud === "war-room" ? (
         <>
-          <ArenaHud />
+          <WarRoomHud />
           <LeftViewSurfaces />
         </>
       ) : null}
       {/* Every mode's moments fly their sprites on this one layer. */}
       <MotionLayer />
       <ContextMenu />
-    </>
-  );
-};
-
-const ArenaHud = () => {
-  const lane = useCompactLane();
-  return (
-    <>
-      {/* The hovered order's costs; Frontier's action bar shows them in its own HUD. */}
-      <ActionInfo />
-      <TopHeader />
-      {lane ? (
-        <CompactHud lane={lane} />
-      ) : (
-        <>
-          <LeftCommandSidebar />
-          <BottomRightPanel />
-        </>
-      )}
     </>
   );
 };

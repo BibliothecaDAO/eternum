@@ -2,7 +2,7 @@ import { TransactionType } from "@bibliothecadao/provider";
 import { expect, it, vi } from "vitest";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import type { FeedRows } from "./event-feed-rows";
-import { formatFeedTime, selectImportantFeedRows, selectQuickFeedRows } from "./important-feed-rows";
+import { formatFeedTime, selectImportantFeedRows, selectLatestFeedRows } from "./important-feed-rows";
 const empty: FeedRows = { inFlight: [], arrived: [], recent: [] };
 const battle = (id: string, at: number, owner = "0x1") =>
   ({
@@ -56,15 +56,19 @@ it("formats a row time as HH:MM", () => {
   expect(formatFeedTime(new Date(2026, 8, 9, 14, 5).getTime())).toBe("14:05");
 });
 
-it("keeps only the newest rows inside the quick feed window", () => {
+it("shows the newest rows that have happened, however old", () => {
   const rows = selectImportantFeedRows(
     [battle("fresh", 100_000), battle("older", 85_000), battle("stale", 70_000), battle("future", 101_000)],
     empty,
     "all",
     null,
   );
-  expect(selectQuickFeedRows(rows, 100_500, 20_000, 5).map((row) => row.id)).toEqual(["story:fresh", "story:older"]);
-  expect(selectQuickFeedRows(rows, 100_500, 20_000, 1).map((row) => row.id)).toEqual(["story:fresh"]);
+  expect(selectLatestFeedRows(rows, 100_500, 3).map((row) => row.id)).toEqual([
+    "story:fresh",
+    "story:older",
+    "story:stale",
+  ]);
+  expect(selectLatestFeedRows(rows, 100_500, 1).map((row) => row.id)).toEqual(["story:fresh"]);
 });
 
 it("keeps pending and completed actions and travelling caravans in Events", () => {

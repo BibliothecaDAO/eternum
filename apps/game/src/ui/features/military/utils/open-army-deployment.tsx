@@ -21,7 +21,7 @@ export interface ArmyDeploymentTarget {
   maxDefenseSlots?: number;
 }
 
-/** Where on screen an order to deploy was given: the tile or the slot the shared HUD hangs its picker from. */
+/** Where on screen an order to deploy was given: the tile or the slot War room hangs its picker from. */
 interface ArmyDeploymentPlace {
   anchor: SurfaceAnchor;
   placement?: SurfacePlacement;
@@ -33,12 +33,12 @@ export const ARMY_DEPLOYMENT_SURFACE_ID = "army-deployment";
 /**
  * The one way to open "deploy an army from this structure", for every order that asks for it: a tile beside the realm
  * on the map, the realm's map menu, a guard slot, Frontier's dock. The game's HUD decides the surface here, once. The
- * shared HUD hangs its picker where the order was given, or opens its Military workspace when the order has no place
+ * War room hangs its picker where the order was given, or opens its Military workspace when the order has no place
  * on screen; a Frontier game deploys only from its own sheet, aimed at the tile the order names.
  */
 export function openArmyDeployment(target: ArmyDeploymentTarget, place?: ArmyDeploymentPlace) {
   if (!canIssueOrders()) return;
-  if (place && hudFor(getGameModeId(), true) === "shared") {
+  if (place && hudFor(getGameModeId(), true) === "war-room") {
     openArmyDeploymentPicker(target, place);
     return;
   }

@@ -206,7 +206,7 @@ export const UnifiedArmyCreationBody = ({
           </div>
         </div>
       </div>{" "}
-      <div className="sticky bottom-0 z-10 mt-2 shrink-0 bg-[#101c23] py-2">
+      <div className="sticky bottom-0 z-10 mt-2 shrink-0 bg-kit-plate py-2">
         <ActionFooter
           armyType={form.armyType}
           label={form.actionLabel}

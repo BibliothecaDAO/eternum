@@ -1094,7 +1094,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         }}
         className="construction-panel-selector h-full mt-2"
       >
-        <Tabs.List className="construction-tabs-selector sticky top-0 z-10 bg-[#101c23] [&_button]:min-h-11">
+        <Tabs.List className="construction-tabs-selector sticky top-0 z-10 bg-kit-plate [&_button]:min-h-11">
           {tabs.map((tab, index) => (
             <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
           ))}
