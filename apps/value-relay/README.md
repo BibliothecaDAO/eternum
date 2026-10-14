@@ -55,9 +55,12 @@ monitor independently computes the same list and challenges that season if a bet
 read failures are reported in health without pausing Frontier payouts. Participant history is read in bounded event
 pages; rankings are computed from the ledger at one confirmed head and are not persisted.
 
-Blitz results carry ranks only. The ledger mints tradeable rank-band chests and owns their draws. Each keeper tick reads
-one 100-event page, persists its continuation and rotates through 25 unfinished requests. It calls `open_finish` once
-the later block is readable and recognizes an already-finished retry.
+Blitz results carry ranks only. A result is posted for the slot that paid for its game, after the monitor re-verifies
+that slot's roster. A dev-shard game the launch directory declares outside any slot (a test Blitz) took no entry, so its
+result completes without a ledger write. Any other game without a verified slot (a missing paid cohort, an undeclared
+game, or any game on a non-`DEV_` chain) stays unposted and retries. The ledger mints tradeable rank-band chests and
+owns their draws. Each keeper tick reads one 100-event page, persists its continuation and rotates through 25 unfinished
+requests. It calls `open_finish` once the later block is readable and recognizes an already-finished retry.
 
 A Frontier pool is funded with `season_id = shard game id`; the relay verifies that binding against the game start and
 seed.

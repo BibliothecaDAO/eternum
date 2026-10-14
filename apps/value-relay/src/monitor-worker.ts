@@ -1,7 +1,7 @@
 import { decodeMonitorSettings, type MonitorSettings } from "./monitor-env";
 import { checkSlotRoster, slotRosterReads } from "./roster-monitor";
 import { ledgerAddress } from "./environment";
-import { activeShards, readRegisteredShard, type ShardDirectory } from "@realms-world/value-ledger";
+import { activeShards, isDevShardChain, readRegisteredShard, type ShardDirectory } from "@realms-world/value-ledger";
 import { processSeasonTops } from "./season-tops";
 import { seasonLedgerReads, challengeSeason } from "./season-ledger";
 import { onIdentityChain } from "./ledger-chain";
@@ -98,7 +98,8 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
       ),
     );
   }
-  async verifyRoster(chainId: string, gameId: number) {
+  /** The slot that paid for a game, its roster verified; null when the launch directory declares it outside any slot. */
+  async verifyRoster(chainId: string, gameId: number): Promise<number | null> {
     return Effect.runPromise(
       this.checking.withPermit(
         onIdentityChain(
@@ -110,13 +111,26 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
             const cohort = cohorts.find(
               (row) => BigInt(row.chainId) === BigInt(chainId) && row.games.some((game) => game.gameId === gameId),
             );
-            if (!cohort) throw new Error("paid_game_slot_missing");
-            await this.checkRoster(cohort);
-            return cohort.slotId;
+            if (cohort) {
+              await this.checkRoster(cohort);
+              return cohort.slotId;
+            }
+            if (await this.isDeclaredOutsideSlot(chainId, gameId)) return null;
+            throw new Error("paid_game_slot_missing");
           }),
         ),
       ),
     );
+  }
+  /**
+   * Only a dev shard runs games outside any slot, and only the directory's positive declaration of the exact game frees
+   * its result from a slot; any other game stays unposted.
+   */
+  private async isDeclaredOutsideSlot(chainId: string, gameId: number) {
+    if (!isDevShardChain(chainId)) return false;
+    const chains = await this.env.LAUNCH.directoryGames();
+    const chain = chains.find((row) => BigInt(row.chainId) === BigInt(chainId));
+    return chain?.games.some((game) => game.gameId === gameId && game.slotId === null) ?? false;
   }
   private async checkRoster(cohort: import("@realms-world/value-ledger").SlotCohort) {
     await checkSlotRoster(cohort, {

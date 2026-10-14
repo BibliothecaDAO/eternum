@@ -73,4 +73,7 @@ export class ValueLaunchDirectory extends WorkerEntrypoint<Record<string, unknow
   rosterCohorts() {
     return launchStoresOf(decodeLaunchEnv(this.env)).launches.rosterCohorts();
   }
+  directoryGames() {
+    return launchStoresOf(decodeLaunchEnv(this.env)).launches.playerDirectoryGames();
+  }
 }

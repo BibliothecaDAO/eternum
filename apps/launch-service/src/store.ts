@@ -25,6 +25,8 @@ interface LaunchRunRow {
 }
 
 export interface LaunchServiceStore extends LaunchRunStore {
+  /** The shard chain this store's runs launch on, as the directory selects it. */
+  targetChain(): Promise<string>;
   /** Queues a run; a running or complete run of the same name is handed back as it is. */
   enqueue(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun>;
   /** Creates a run once; whatever run already has that name is handed back untouched. */

@@ -24,6 +24,10 @@ const migrationStatements = (): string[] => {
 
 /** The chain a test store keys its runs under, as a shard's /manifest would name it. */
 export const TEST_CHAIN = "0x534e5f5445535f5348415244";
+/** Shard chains as the shard deploy names them, `<ENVIRONMENT>_<time>` in ASCII. */
+const chainNamed = (name: string) => `0x${Buffer.from(name).toString("hex")}`;
+export const DEV_CHAIN = chainNamed("DEV_18de3131a6e90bc7");
+export const PRODUCTION_CHAIN = chainNamed("PRODUCTION_18de3131a6e90bc7");
 export const testChain =
   (chainId = TEST_CHAIN) =>
   async () =>

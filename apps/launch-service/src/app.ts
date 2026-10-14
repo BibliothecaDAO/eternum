@@ -10,6 +10,8 @@ import type { SlotStore } from "./slots";
 import { toFactoryRunRecord, type LaunchRun } from "./model";
 import { type LaunchJobRequest, type LaunchKind } from "./schemas";
 import type { LaunchServiceStore } from "./store";
+import { isSameTestBlitz, readTestBlitz, testBlitzRequest, type TestBlitz } from "./test-blitz";
+import { isDevShardChain } from "@realms-world/value-ledger";
 
 interface LaunchAppDependencies {
   config: { operatorToken: string };
@@ -45,6 +47,21 @@ const respondWithRun = async (
   } catch (error) {
     return context.json({ error: error instanceof Error ? error.message : String(error) }, 500);
   }
+};
+
+/**
+ * The name is the request's identity: the first request creates the run, a retry with the same roster gets that run
+ * back, and another roster under the name is refused, so a lost response never starts a second game.
+ */
+const respondWithTestBlitz = async (
+  context: Context,
+  { store, registrar }: Pick<LaunchAppDependencies, "store" | "registrar">,
+  requested: TestBlitz,
+) => {
+  const run = await store.schedule("game", testBlitzRequest(requested, Date.now()));
+  if (!isSameTestBlitz(run, requested)) return context.json({ error: "That name holds another game" }, 409);
+  await registrar.armFor(Date.now());
+  return context.json(toFactoryRunRecord(run), 202);
 };
 
 const findRun = async (context: Context, store: LaunchServiceStore, kind: LaunchKind, name: string) => {
@@ -160,6 +177,14 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   app.post("/api/factory/runs/:environment/:name/actions/delete", (context) =>
     deleteRun(context, dependencies.store, "game", context.req.param("name")),
   );
+
+  // A test Blitz belongs to dev shards alone: on any other chain the route does not exist.
+  app.post("/api/factory/test-blitz", async (context) => {
+    if (!isDevShardChain(await dependencies.store.targetChain())) return context.json({ error: "Not found" }, 404);
+    const requested = readTestBlitz(await context.req.json().catch(() => null));
+    if (!requested) return context.json({ error: "Name the game test-<label> and 1 to 24 distinct accounts" }, 400);
+    return respondWithTestBlitz(context, dependencies, requested);
+  });
 
   app.post("/api/factory/results/:environment/:name/actions/continue", (context) =>
     continueRun(context, dependencies, "result", context.req.param("name")),
