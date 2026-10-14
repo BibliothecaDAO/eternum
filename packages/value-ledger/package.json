@@ -8,7 +8,8 @@
     "./shard": "./src/shard.ts",
     "./commitment": "./src/commitment.ts",
     "./codecs": "./src/codecs.ts",
-    "./blitz-slots": "./src/blitz-slots.ts"
+    "./blitz-slots": "./src/blitz-slots.ts",
+    "./dev-shard": "./src/dev-shard.ts"
   },
   "scripts": {
     "test": "vitest run",

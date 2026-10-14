@@ -603,6 +603,9 @@ importers:
       '@bibliothecadao/types':
         specifier: workspace:*
         version: link:../../packages/types
+      '@realms-world/value-ledger':
+        specifier: workspace:*
+        version: link:../../packages/value-ledger
       pg:
         specifier: ^8.18.0
         version: 8.18.0

@@ -395,3 +395,41 @@ test("read batches stop at 32 calls before any private node request", async () =
     node.stop(true);
   }
 });
+
+const chainNamed = (name: string) => `0x${Buffer.from(name, "ascii").toString("hex")}`;
+
+test("only a dev chain lets browsers read the RPC's request timings", async () => {
+  const node = Bun.serve({
+    hostname: "127.0.0.1",
+    port: 0,
+    async fetch(request) {
+      const call = await request.json();
+      return Response.json({ jsonrpc: "2.0", id: call.id, result: "0x123" });
+    },
+  });
+  try {
+    for (const [chain, allowed] of [
+      ["DEV_18de3131a6e90bc7", "*"],
+      ["PRODUCTION_18de3131a6e90bc7", null],
+      ["PROD_DEV_1", null],
+    ] as const) {
+      const identity = { ...playIdentity, chainId: chainNamed(chain) };
+      const proxy = startReadRpc(node.url.origin, 0, identity, noStamp, undefined, "127.0.0.1");
+      try {
+        const url = new URL("/rpc/v0_10_2", proxy.url);
+        const read = await fetch(url, {
+          method: "POST",
+          body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "starknet_blockNumber", params: [] }),
+        });
+        const refused = await fetch(url, { method: "GET" });
+        const preflight = await fetch(url, { method: "OPTIONS" });
+        for (const response of [read, refused, preflight])
+          expect([chain, response.headers.get("timing-allow-origin")]).toEqual([chain, allowed]);
+      } finally {
+        proxy.stop(true);
+      }
+    }
+  } finally {
+    node.stop(true);
+  }
+});

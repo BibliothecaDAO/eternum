@@ -6,6 +6,7 @@ import { startStampPool, workerCount } from "../vrf/pool";
 import { felt, gameInvoke, MAX_TRANSACTION_BYTES, type PlayIdentity } from "../vrf/transaction";
 import { permitsAccountRequest, type ShardIdentity } from "./account-rpc-policy";
 import { accountRequestLimiter, rpcClientAddress } from "./rpc-client-limit";
+import { isDevShardChain } from "../../../packages/value-ledger/src/dev-shard";
 
 const READ_METHODS = new Set([
   "starknet_specVersion",
@@ -122,14 +123,17 @@ export function startReadRpc(
   const readAccountClass = accountClassReader(node, identity);
   const allowance = accountRequestLimiter();
   const inFlightAccounts = new Set<string>();
+  // Browsers hide a cross-origin request's connect, TLS and wait timings unless the response allows it. Only a dev chain
+  // shows them: the chain identity, not a setting, decides, so no production deploy can carry it.
+  const timingAllowed = isDevShardChain(identity.chainId);
   return Bun.serve({
     hostname,
     port,
     maxRequestBodySize: MAX_TRANSACTION_BYTES,
-    fetch(request, server) {
+    async fetch(request, server) {
       const peer = server.requestIP(request)?.address;
       const client = peer ? rpcClientAddress(peer, trustedProxy, request.headers) : undefined;
-      return handlePublicRequest(
+      const response = await handlePublicRequest(
         request,
         node,
         identity,
@@ -139,6 +143,8 @@ export function startReadRpc(
         inFlightAccounts,
         readAccountClass,
       );
+      if (timingAllowed) response.headers.set("Timing-Allow-Origin", "*");
+      return response;
     },
   });
 }

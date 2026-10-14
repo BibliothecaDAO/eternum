@@ -470,3 +470,26 @@ it("hidden check games never enter the directory clock or require public directo
   expect(response.status).toBe(200);
   expect((await response.json()).games).toEqual([]);
 });
+
+it("lets browsers read request timings only on a dev chain", async () => {
+  const chainNamed = (name: string) => `0x${Buffer.from(name, "ascii").toString("hex")}`;
+  for (const [chain, allowed] of [
+    ["DEV_18de3131a6e90bc7", "*"],
+    ["PRODUCTION_18de3131a6e90bc7", null],
+    ["PROD_DEV_1", null],
+  ] as const) {
+    const served = createHeraldRequestHandler({
+      ...httpState,
+      manifest: { ...shardManifest, chainId: chainNamed(chain) },
+    });
+    for (const request of [
+      new Request("http://herald/manifest"),
+      new Request("http://herald/games"),
+      new Request("http://herald/games", { method: "OPTIONS" }),
+      new Request("http://herald/other"),
+    ]) {
+      const response = await served(request);
+      expect([chain, request.url, response.headers.get("timing-allow-origin")]).toEqual([chain, request.url, allowed]);
+    }
+  }
+});
