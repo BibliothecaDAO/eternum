@@ -7,13 +7,11 @@ import {
   BANDITS_NAME,
   Structure,
   StructureType,
-  TickIds,
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { displayPlayerName, type PlayerNameResolver } from "./entities";
 import { configManager } from "../managers";
-import { currentTickCount } from "./utils";
 import { isViewerOwner } from "./viewer";
 
 export const getStructure = (
@@ -36,30 +34,6 @@ export const getStructure = (
     ownerName: structure.owner === 0n ? BANDITS_NAME : displayPlayerName(structure.owner, playerName(structure.owner)),
     category: structure.base.category,
   };
-};
-
-export const isStructureImmune = (currentTimestamp: number): boolean => {
-  const tickCount = currentTickCount(currentTimestamp);
-  const seasonMainGameStartAt = configManager.getSeasonMainGameStartAt();
-  const allowAttackTick = currentTickCount(Number(seasonMainGameStartAt)) + configManager.getBattleGraceTickCount();
-
-  if (tickCount < allowAttackTick) {
-    return true;
-  }
-  return false;
-};
-
-export const getStructureImmunityTimer = (
-  structure: NativeRows["Structure"] | undefined,
-  currentBlockTimestamp: number,
-) => {
-  const seasonMainGameStartAt = configManager.getSeasonMainGameStartAt();
-  const immunityEndTimestamp =
-    Number(seasonMainGameStartAt) +
-    (structure ? configManager.getBattleGraceTickCount() * configManager.getTick(TickIds.Armies) : 0);
-
-  if (!currentBlockTimestamp) return 0;
-  return immunityEndTimestamp - currentBlockTimestamp!;
 };
 
 /** The mine kind a structure is drawn as; a Frontier rift has its own category and no mine kind. */

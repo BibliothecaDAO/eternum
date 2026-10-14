@@ -1,6 +1,6 @@
-import { Position, RESOURCE_PRECISION, ResourceMiningTypes, ResourcesIds, TickIds } from "@bibliothecadao/types";
+import { Position, RESOURCE_PRECISION, ResourceMiningTypes, ResourcesIds } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "../managers/game-entity-keys";
-import { ClientConfigManager, configManager } from "..";
+import { configManager } from "..";
 
 export { getEntityIdFromKeys };
 
@@ -48,12 +48,6 @@ export const ResourceIdToMiningType: Partial<Record<ResourcesIds, ResourceMining
   [ResourcesIds.AlchemicalSilver]: ResourceMiningTypes.Forge,
   [ResourcesIds.Adamantine]: ResourceMiningTypes.Forge,
   [ResourcesIds.AncientFragment]: ResourceMiningTypes.Mine,
-};
-
-export const currentTickCount = (time: number) => {
-  const configManager = ClientConfigManager.instance();
-  const tickIntervalInSeconds = configManager.getTick(TickIds.Armies) || 1;
-  return Number(time / tickIntervalInSeconds);
 };
 
 export function calculateDistance(start: Pick<Position, "x" | "y">, destination: Pick<Position, "x" | "y">): number {
