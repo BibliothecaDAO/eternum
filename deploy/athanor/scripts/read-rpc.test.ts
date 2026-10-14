@@ -52,6 +52,21 @@ test("public RPC forwards reads but never forwards writes, mixed batches, escape
   }
 });
 
+test("a browser may keep the RPC's CORS preflight for two hours", async () => {
+  const proxy = startReadRpc("http://127.0.0.1:1", 0, playIdentity, noStamp, undefined, "127.0.0.1");
+  try {
+    const preflight = await fetch(new URL("/rpc/v0_10_2", proxy.url), {
+      method: "OPTIONS",
+      headers: { origin: "https://play.example", "access-control-request-method": "POST" },
+    });
+    expect(preflight.status).toBe(204);
+    expect(preflight.headers.get("access-control-allow-headers")).toBe("Content-Type");
+    expect(preflight.headers.get("access-control-max-age")).toBe("7200");
+  } finally {
+    proxy.stop(true);
+  }
+});
+
 test("the public audit rejects a directly exposed node even when malformed writes fail", async () => {
   const node = Bun.serve({
     hostname: "127.0.0.1",
