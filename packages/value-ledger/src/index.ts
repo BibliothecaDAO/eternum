@@ -33,5 +33,5 @@ export { readBlitzRoster } from "./shard-roster";
 
 export { readFrontierFunding, type FrontierFundingTerms } from "./frontier-funding";
 
-export { serviceError, serviceFailure, serviceResponseFailure } from "./service-error";
+export { ServiceResponseFailure, serviceError, serviceFailure, serviceResponseFailure } from "./service-error";
 export { LAUNCHER_LABEL, RELAY_LABEL, launcherAccountAddress, relayAccountAddress } from "./shard-accounts";

@@ -18,7 +18,8 @@
   "dependencies": {
     "starknet": "catalog:web",
     "@bibliothecadao/eternum": "workspace:*",
-    "@bibliothecadao/provider": "workspace:*"
+    "@bibliothecadao/provider": "workspace:*",
+    "effect": "4.0.4"
   },
   "devDependencies": {
     "typescript": "catalog:web",

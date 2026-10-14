@@ -1456,6 +1456,9 @@ importers:
 
   packages/value-ledger:
     dependencies:
+      effect:
+        specifier: 4.0.4
+        version: 4.0.4
       '@bibliothecadao/eternum':
         specifier: workspace:*
         version: link:../core
