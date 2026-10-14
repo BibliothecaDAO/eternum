@@ -206,11 +206,6 @@ export interface SetAccessProps extends SystemSigner {
 }
 export interface EndGameProps extends SystemSigner {}
 
-export interface SetCoOwnersProps extends SystemSigner {
-  hyperstructure_entity_id: BigNumberish;
-  co_owners: Record<number, BigNumberish>[];
-}
-
 /**
  * Props for burning resources to produce labor
  */

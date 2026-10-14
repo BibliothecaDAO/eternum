@@ -128,7 +128,6 @@ export enum TransactionType {
 
   // Hyperstructures
   CONTRIBUTE = "contribute",
-  ALLOCATE_SHARES = "allocate_shares",
   PLEDGE_FAITH = "pledge_faith",
   REMOVE_FAITH = "remove_faith",
   UPDATE_WONDER_OWNERSHIP = "update_wonder_ownership",

@@ -147,10 +147,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.initialize(props);
   };
 
-  const allocate_shares = async (props: SystemProps.SetCoOwnersProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.allocate_shares(props);
-  };
-
   const contribute_to_construction = async (
     props: SystemProps.ContributeToConstructionProps,
   ): Promise<GetTransactionReceiptResponse> => {
@@ -389,7 +385,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     update_structure_ownership: withAuth(update_structure_ownership),
 
     initialize_hyperstructure: withAuth(initialize_hyperstructure),
-    allocate_shares: withAuth(allocate_shares),
     contribute_to_construction: withAuth(contribute_to_construction),
     set_access: withAuth(set_access),
     end_game: withAuth(end_game),

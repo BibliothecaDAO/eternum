@@ -1025,20 +1025,6 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
-  public async allocate_shares(props: SystemProps.SetCoOwnersProps) {
-    return this.submitCommand(
-      props.signer,
-      {
-        kind: "AllocateHyperstructureShares",
-        value: {
-          hyperstructure_id: props.hyperstructure_entity_id,
-          shareholders: props.co_owners.map((owner) => ({ player: owner[0], bps: owner[1] })),
-        },
-      },
-      TransactionType.ALLOCATE_SHARES,
-    );
-  }
-
   public async burn_labor_for_resource_production(props: SystemProps.BurnLaborResourcesForOtherProductionProps) {
     return this.submitCommand(
       props.signer,

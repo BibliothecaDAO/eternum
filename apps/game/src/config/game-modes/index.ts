@@ -52,7 +52,6 @@ export interface GameModeConfig {
   };
   rules: {
     isBuildingTypeAllowed: (key: string) => boolean;
-    autoAllocateHyperstructureShares: boolean;
   };
   structure: {
     getName: (structure: StructureNameInput) => ReturnType<typeof getStructureName>;
@@ -143,7 +142,6 @@ const blitzConfig: GameModeConfig = {
   },
   rules: {
     isBuildingTypeAllowed: buildBuildingRule(BLITZ_BUILDING_EXCLUSIONS),
-    autoAllocateHyperstructureShares: true,
   },
   structure: buildStructureHelpers(true),
   assets: {
@@ -184,7 +182,6 @@ const eternumConfig: GameModeConfig = {
   },
   rules: {
     isBuildingTypeAllowed: buildBuildingRule(new Set()),
-    autoAllocateHyperstructureShares: false,
   },
   structure: buildStructureHelpers(false),
   assets: {
@@ -226,7 +223,6 @@ const frontierConfig: GameModeConfig = {
         "ScoutsLodge",
         "Hearth",
       ].includes(key),
-    autoAllocateHyperstructureShares: false,
   },
 };
 const duelConfig: GameModeConfig = {

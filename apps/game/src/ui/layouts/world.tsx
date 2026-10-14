@@ -12,7 +12,6 @@ import { TransferAutomationManager } from "../features/infrastructure/automation
 import { ActionInfo } from "../features/world/components/actions/action-info";
 import { BottomRightPanel } from "../features/world/components/bottom-right-panel";
 import { ContextMenu } from "../features/world/components/context-menu/context-menu";
-import { BlitzSetHyperstructureShareholdersTo100 } from "../features/world/components/hyperstructures/blitz-hyperstructure-shareholder";
 import { CompactHud } from "../features/world/containers/compact-hud";
 import { LeftCommandSidebar } from "../features/world/containers/left-command-sidebar";
 import { LeftViewSurfaces } from "../features/world/containers/left-view-surfaces";
@@ -80,7 +79,6 @@ const BackgroundSystems = () => (
     <RelicCrateOpenings />
     <BlockTimestampPoller />
     <GameCycleEffects />
-    <BlitzSetHyperstructureShareholdersTo100 />
     <AutomationSystems />
     <ExpeditionRollover />
     <SentryUserSync />
