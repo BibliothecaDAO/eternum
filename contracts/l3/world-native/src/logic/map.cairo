@@ -1,4 +1,11 @@
 pub fn biome(key: TileKey, game_context: crate::commands::BiomeContext) -> u8 {
+    // Every reveal stores the biome derived here; deriving it again is the costliest step of a move or a battle. The
+    // byte lives in the stored tile word alone, so one read answers revealed and unrevealed tiles alike.
+    let terrain_word = crate::state::read().map.tiles.read((key.game_id, key.alt, key.col, key.row));
+    let stored = terrain_word / crate::map::BIOME_SCALE % crate::map::BYTE_RANGE;
+    if stored != 0 {
+        return stored.try_into().unwrap();
+    }
     crate::settlement::ITerrainDerivationDispatcherTrait::biome(terrain(key.game_id), key, game_context)
 }
 

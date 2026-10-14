@@ -653,6 +653,29 @@ fn automatic_blitz_settlement_holds_play_for_its_last_seat_and_never_moves_the_s
     }
     assert!(status_at(games.game(game_id), 301) == GameStatus::Live);
     let game = games.game(game_id);
+    // A roster's start never moves, so the biomes its seats stored still match the terrain the game derives.
+    let map_center = 2147483646 - games.rules(game_id).map_center_offset;
+    let mut realms = array![];
+    for batch in 0_u32..2 {
+        realms
+            .append_span(
+                crate::settlement_grid::settlement_location(
+                    crate::troops::Coord { alt: false, x: map_center, y: map_center }, SettlementMode::Triple, 6, batch,
+                ),
+            );
+    }
+    let reserved = snforge_std::interact_with_state(
+        d.games, || crate::state::read().settlement_pool.reserved_hyperstructures.read(game_id),
+    );
+    for index in 0..reserved {
+        realms
+            .append(
+                crate::settlement_grid::reservation_location(
+                    crate::troops::Coord { alt: false, x: map_center, y: map_center }, SettlementMode::Triple, 6, index,
+                ),
+            );
+    }
+    assert!(super::terrain::assert_biomes_match_terrain(d, game_id, realms.span()) != 0);
     let center = 2147483646 - games.rules(game_id).map_center_offset;
     let coord = *crate::settlement_grid::settlement_location(
         crate::troops::Coord { alt: false, x: center, y: center }, SettlementMode::Triple, 6, 0,
@@ -1316,6 +1339,10 @@ fn a_materialized_home_ring_moves_and_explores_without_a_roll() {
         );
         index += 1;
     }
+    // The home ring, the moved-to and the explored tiles keep the biome the terrain derives for them.
+    assert!(
+        super::terrain::assert_biomes_match_terrain(d, game_id, array![site, spawn, ring_tile, target].span()) != 0,
+    );
 }
 
 // A free home-ring neighbour and the direction to it.
@@ -1859,6 +1886,8 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
     let map = IMapLogicDispatcher { contract_address: d.games };
     let _tile = map.tile(crate::geometry::tile_key(game_id, coord)).unwrap();
     let camp_id = map.occupancy(crate::geometry::tile_key(game_id, coord)).unwrap().entity_id;
+    // An explore's reveal and the site placed on it keep the biome the terrain derives for them.
+    assert!(super::terrain::assert_biomes_match_terrain(d, game_id, array![army.coord, coord].span()) != 0);
     let camp = ResourceKey { game_id, entity_id: camp_id };
     assert_eq!(structures.structure(camp).unwrap().base.category, crate::taxonomy::CAMP_CATEGORY);
     assert_eq!(structures.structure(camp).unwrap().base.troop_max_explorer_count, 0);
