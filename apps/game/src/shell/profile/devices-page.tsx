@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { identityClient } from "@/hooks/context/identity-session";
 import { listOpenShards, openKnownShards } from "@/runtime/world/shards";
-import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
+import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
 import { Button } from "@/ui/design-system/kit/button";
 import {
   getOrCreateDeviceKey,
@@ -31,7 +31,7 @@ interface Device {
  */
 const readDevices = async (address: string) => {
   const unopened = await openKnownShards();
-  const shards = listOpenShards().map((shard) => ({ ...shard, provider: getCachedRpcProvider(shard.rpcUrl) }));
+  const shards = listOpenShards().map((shard) => ({ ...shard, provider: getShardRpcProvider(shard.rpcUrl) }));
   const { devices, failures } = await readAccountDevices(address, shards);
   return {
     devices: [...devices].map(([key, shards]): Device => ({ key, shards })),

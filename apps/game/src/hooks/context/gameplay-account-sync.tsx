@@ -4,7 +4,7 @@ import { identityClient, useIdentitySession } from "@/hooks/context/identity-ses
 import { parseEntryRoute, parsePlayRoute } from "@/play/navigation/play-route";
 import { requireOpenShard } from "@/runtime/world/shards";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
-import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
+import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
 import { DeviceRemovedError, getOrCreateDeviceKey, joinRealmsAccount } from "@bibliothecadao/eternum";
 import type { Shard } from "@bibliothecadao/eternum/game-client";
 import { IdentityRequestError } from "@realms-world/identity";
@@ -66,7 +66,7 @@ export function GameplayAccountSync({ children }: { children: ReactNode }) {
     let active = true;
     setGameplayAccount(null, null);
     joinRealmsAccount({
-      provider: getCachedRpcProvider(shard.rpcUrl),
+      provider: getShardRpcProvider(shard.rpcUrl),
       shard,
       realmsId,
       device: getOrCreateDeviceKey(localStorage),

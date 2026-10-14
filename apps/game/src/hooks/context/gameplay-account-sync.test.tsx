@@ -33,7 +33,7 @@ vi.mock("@/runtime/world/shards", () => ({
     guardianPublicKey: "0x9",
   }),
 }));
-vi.mock("@/utils/cached-rpc-provider", () => ({ getCachedRpcProvider: () => provider }));
+vi.mock("@/utils/shard-rpc-provider", () => ({ getShardRpcProvider: () => provider }));
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
 

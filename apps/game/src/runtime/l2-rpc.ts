@@ -1,8 +1,7 @@
 import { environmentL2, resolveEndpoint } from "@realms-world/chain";
-import { constants } from "starknet";
+import { constants, RpcProvider } from "starknet";
 
 import { valueEnvironmentOf } from "@/shell/frame/environment";
-import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
 
 import { env } from "../../env";
 
@@ -49,4 +48,6 @@ export const L2_RPC_URL = resolveEndpoint(env.VITE_PUBLIC_L2_RPC_URL, {
   browserFacing: true,
 });
 
-export const l2Provider = () => getCachedRpcProvider(L2_RPC_URL);
+let provider: RpcProvider | null = null;
+
+export const l2Provider = (): RpcProvider => (provider ??= new RpcProvider({ nodeUrl: L2_RPC_URL }));

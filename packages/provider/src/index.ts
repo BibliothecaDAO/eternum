@@ -52,6 +52,13 @@ type SubmittedTransaction = {
   inBlock?: Promise<void>;
 };
 
+/**
+ * A shard's RPC. Its node reads the JSON-RPC body whatever type the request declares, and a `text/plain` POST is a CORS
+ * simple request: the browser sends it without the preflight a JSON one waits for on each new connection.
+ */
+export const createShardRpcProvider = (nodeUrl?: string): RpcProvider =>
+  new RpcProvider({ nodeUrl, headers: { "Content-Type": "text/plain" } });
+
 export {
   classifyTransactionError,
   TransactionFailure,
@@ -191,7 +198,7 @@ export class EternumProvider extends EventEmitter {
   ) {
     super();
     this.contracts = contracts;
-    this.provider = new RpcProvider({ nodeUrl: url });
+    this.provider = createShardRpcProvider(url);
     this.gameId = scope?.gameId ?? 0;
     this.transactionStreamWaiter = scope?.transactionStreamWaiter;
   }
