@@ -138,6 +138,11 @@ async function meanViewChange(beforePath, afterPath, region = null) {
 
 async function zoomOutAndIn({ browser }) {
   const distance = () => browser.observe().worldmapDistance;
+  // The map keeps a camera distance only once the player zooms; a notch in gives a fresh profile one to start from.
+  if (distance() === null) {
+    browser.run(["eval", "void window.__playtest.wheel(-100, 1)"]);
+    await sleep(ZOOM_SETTLE_MS);
+  }
   const before = distance();
   browser.run(["eval", "void window.__playtest.wheel(100, 8)"]);
   await sleep(ZOOM_SETTLE_MS);
