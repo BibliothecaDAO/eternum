@@ -26,7 +26,6 @@ catalogs:
     "@starknet-react/core": 5.0.3
     "@types/react": ^18
     "@types/react-dom": ^18
-    bignumber.js: ^9.3.0
     react: ^18
     react-dom: ^18
     starknet: ^8.5.2
