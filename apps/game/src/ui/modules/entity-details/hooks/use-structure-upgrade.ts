@@ -3,10 +3,10 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { configManager, divideByPrecision, getBalance, getRealmInfo, isViewerOwner } from "@bibliothecadao/eternum";
 import { useArrivalsByStructure } from "@/hooks/helpers/use-resource-arrivals";
 import { useGame } from "@/hooks/context/game-context";
-import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
+import { useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { getLevelName } from "@bibliothecadao/types";
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
 import { getPlayerName } from "@/services/identity/player-profiles";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
 
@@ -34,16 +34,15 @@ interface StructureUpgradeResult {
   currentLevelName: string;
   nextLevel: number | null;
   nextLevelName: string | null;
+  /** The game defines a recipe for the next level; without one the level cannot be taken, and is never free. */
+  hasRecipe: boolean;
+  /** The authoritative readiness: a next level, its recipe, and every requirement held. */
   canUpgrade: boolean;
-  upgradeProgress: number;
   requirements: UpgradeRequirement[];
-  missingRequirements: UpgradeRequirement[];
   isOwner: boolean;
   isMaxLevel: boolean;
-  upgradeActionState: "idle" | "syncing";
-  isUpgradeLoading: boolean;
+  /** A level-up step (provision or level-up) for this realm is in flight from any surface. */
   isUpgradeLocked: boolean;
-  handleUpgrade: () => Promise<void>;
 }
 
 export const formatIncomingEta = (etaSeconds: number): string => {
@@ -53,7 +52,7 @@ export const formatIncomingEta = (etaSeconds: number): string => {
 };
 
 export const useStructureUpgrade = (structureEntityId: number | null): StructureUpgradeResult | null => {
-  const { setup, account } = useGame();
+  const { setup } = useGame();
   const viewer = useAccountAddress();
   const currentDefaultTick = useCurrentDefaultTick();
   const isUpgradeLocked = useInFlight("castle", structureEntityId) !== undefined;
@@ -135,31 +134,10 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
     structureInfo,
   ]);
 
-  const upgradeReadiness = useMemo(() => {
-    if (!structureInfo || !nextLevel || !rawCosts) {
-      return { canUpgrade: false, upgradeProgress: 0, missingRequirements: [] as UpgradeRequirement[] };
-    }
-    if (requirements.length === 0) {
-      return { canUpgrade: true, upgradeProgress: 100, missingRequirements: [] as UpgradeRequirement[] };
-    }
-    // A balance this client cannot see never meets a requirement.
-    const missingRequirements = requirements.filter(({ current, amount }) => current === undefined || current < amount);
-    return {
-      canUpgrade: missingRequirements.length === 0,
-      upgradeProgress: Math.floor(
-        requirements.reduce((sum, requirement) => sum + requirement.progress, 0) / requirements.length,
-      ),
-      missingRequirements,
-    };
-  }, [nextLevel, rawCosts, requirements, structureInfo]);
-
-  /** One upgrade of a castle at a time, in flight until its own outcome; rejects with the reason it did not apply. */
-  const handleUpgrade = useCallback(async () => {
-    if (!structureInfo || !nextLevel || !structureEntityId) return;
-    await sendOnce("castle", structureEntityId, true, () =>
-      setup.systemCalls.upgrade_realm({ signer: account.account, realm_entity_id: structureInfo.entityId }),
-    );
-  }, [account.account, nextLevel, structureEntityId, setup.systemCalls, structureInfo]);
+  // A balance this client cannot see never meets a requirement.
+  const canUpgrade =
+    Boolean(structureInfo && nextLevel && rawCosts) &&
+    requirements.every(({ current, amount }) => current !== undefined && current >= amount);
 
   if (!structureInfo) return null;
 
@@ -168,15 +146,11 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
     currentLevelName: getLevelName(structureInfo.level),
     nextLevel,
     nextLevelName: nextLevel ? getLevelName(nextLevel) : null,
-    canUpgrade: upgradeReadiness.canUpgrade,
-    upgradeProgress: upgradeReadiness.upgradeProgress,
+    hasRecipe: rawCosts !== undefined,
+    canUpgrade,
     requirements,
-    missingRequirements: upgradeReadiness.missingRequirements,
     isOwner: isViewerOwner(structureInfo.owner, viewer),
     isMaxLevel: nextLevel === null,
-    upgradeActionState: isUpgradeLocked ? "syncing" : "idle",
-    isUpgradeLoading: isUpgradeLocked,
     isUpgradeLocked,
-    handleUpgrade,
   };
 };

@@ -106,7 +106,7 @@ const IconToggle = ({
   </button>
 );
 
-/** The realm's next level as an order beside the others, with what it costs while it cannot be taken. */
+/** The realm's next level as an order beside the others, with what it costs, or why not, while it cannot be taken. */
 const LevelUpOrder = ({ realm }: { realm: StructureWithMetadata }) => {
   const levelUp = useRealmLevelUp(realm.entityId);
   const ordersAllowed = useUIStore(canIssueOrders);
@@ -122,7 +122,12 @@ const LevelUpOrder = ({ realm }: { realm: StructureWithMetadata }) => {
         onClick={levelUp.run}
         className="w-full"
       />
-      {levelUp.mode === "level-up" && !levelUp.ready && <RequirementChips requirements={levelUp.requirements} />}
+      {levelUp.refusal &&
+        (levelUp.requirements.length > 0 ? (
+          <RequirementChips requirements={levelUp.requirements} />
+        ) : (
+          <p className="text-sm text-kit-muted">{levelUp.refusal}.</p>
+        ))}
     </div>
   );
 };

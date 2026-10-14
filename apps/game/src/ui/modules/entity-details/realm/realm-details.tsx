@@ -113,7 +113,7 @@ export const RealmUpgradeCompact = () => {
           )}
         >
           <Icon className="h-3.5 w-3.5" />
-          <span>{levelUp.ready ? levelUp.word : "Need resources"}</span>
+          <span>{levelUp.refusal ?? levelUp.word}</span>
         </button>
       </div>
     </div>

@@ -1,11 +1,9 @@
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
+import { useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useGame } from "@/hooks/context/game-context";
-import { toast } from "@/ui/features/event-feed/notify";
-import { extractReadableErrorMessage } from "@/utils/error-message";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import type { PriceKind } from "@/ui/design-system/kit/price-chip";
@@ -43,29 +41,22 @@ export const useKeepSelected = (realm: NativeRows["Structure"] | null): boolean 
 export const CastleUpgrade = ({ realm, onClose }: { realm: NativeRows["Structure"]; onClose: () => void }) => {
   const { setup } = useGame();
   const tick = useCurrentDefaultTick();
-  const upgrade = useStructureUpgrade(safeInteger(realm.entity_id));
+  const levelUp = useRealmLevelUp(safeInteger(realm.entity_id));
   const goToPlace = useGoToFrontierPlace(realm);
-  if (!upgrade) return null;
+  if (!levelUp) return null;
   const held = (resource: number) => {
     const balance = knownBalance(getBalance(safeInteger(realm.entity_id), resource, tick, setup.store).balance);
     return balance === undefined ? undefined : Math.floor(balance);
   };
-  const short = upgrade.requirements.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
-  const send = async () => {
-    try {
-      await upgrade.handleUpgrade();
-    } catch (error) {
-      toast.error(extractReadableErrorMessage(error, "The castle could not be upgraded."));
-    }
-  };
+  const short = levelUp.requirements.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
   return (
     <CastleView
-      now={castleSide(setup.store, realm.game_id, upgrade.currentLevel)}
-      next={upgrade.nextLevel === null ? null : castleSide(setup.store, realm.game_id, upgrade.nextLevel)}
+      now={castleSide(setup.store, realm.game_id, levelUp.currentLevel)}
+      next={levelUp.mode === "max" ? null : castleSide(setup.store, realm.game_id, levelUp.nextLevel)}
       makes={castleFigures(setup.store, realm, held(ResourcesIds.Labor))}
-      prices={upgrade.requirements.map(({ resource, amount }) => ({ of: castlePriceKind(resource), amount }))}
+      prices={levelUp.requirements.map(({ resource, amount }) => ({ of: castlePriceKind(resource), amount }))}
       refusal={
-        short && {
+        (short && {
           reason: {
             kind: "short",
             of: castlePriceKind(short.resource),
@@ -81,10 +72,11 @@ export const CastleUpgrade = ({ realm, onClose }: { realm: NativeRows["Structure
             onClose();
             goToPlace(true);
           }),
-        }
+        }) ||
+        (levelUp.refusal ? { reason: { kind: "failed", line: `${levelUp.refusal}.` } } : undefined)
       }
-      sending={upgrade.isUpgradeLocked}
-      onUpgrade={() => void send()}
+      sending={levelUp.loading}
+      onUpgrade={levelUp.run}
       onClose={onClose}
     />
   );

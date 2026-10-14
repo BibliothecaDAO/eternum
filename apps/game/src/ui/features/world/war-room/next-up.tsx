@@ -9,24 +9,28 @@ import { playerStructuresView } from "@/sync/fact-views";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { Button } from "@/ui/design-system/kit/button";
+import { useEmpireSuggestions } from "@/ui/features/world/containers/left-facets/use-empire-suggestions";
 import {
-  type EmpireSuggestion,
-  useEmpireSuggestions,
-} from "@/ui/features/world/containers/left-facets/use-empire-suggestions";
-import { useSuggestionActions } from "@/ui/features/world/containers/left-facets/use-suggestion-actions";
-import { type RealmLevelUp, useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
+  isOrderSuggestion,
+  type OrderSuggestion,
+  useSuggestionActions,
+} from "@/ui/features/world/containers/left-facets/use-suggestion-actions";
+import { type LevelUpStep, useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { configManager, Position, structureMapPosition } from "@bibliothecadao/eternum";
-import type { Structure } from "@bibliothecadao/types";
+import type { ID, Structure } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
 import { resolveStructureAttention } from "./attention-policy";
 
-type NextStep = { key: string; line: string; verb: string; busy: boolean; run: () => void };
+/** A realm's level-up, read and sent by the realm's own hook; or any other step, with its line and its one verb. */
+type NextStep =
+  | { key: string; kind: "level-up"; realmId: ID; name: string }
+  | { key: string; kind: "order"; line: string; verb: string; busy: boolean; run: () => void };
 
 /**
- * The one thing to do next, with the others a tap away: the selected realm's level-up step when it can be taken,
- * then the structures under attack or with arrivals, then the suggested moves. Its button is the screen's one
- * primary action.
+ * The one thing to do next, with the others a tap away: the selected realm's level-up step when it can be taken (or
+ * is in flight), then the structures under attack or with arrivals, then the suggested moves, where another realm's
+ * level-up is that realm's own step. Its button is the screen's one primary action.
  */
 export const NextUp = ({ compact = false }: { compact?: boolean }) => {
   const steps = useNextSteps();
@@ -51,18 +55,64 @@ export const NextUp = ({ compact = false }: { compact?: boolean }) => {
           </button>
         )}
       </div>
-      <div className={cn("flex gap-2", compact ? "items-center" : "flex-col")}>
-        <p className={cn("text-base text-kit-cream", compact && "min-w-0 flex-1")}>{step.line}</p>
-        <Button
-          role="primary"
-          word={step.verb}
-          loading={step.busy ? "Sending…" : undefined}
-          onClick={step.run}
-          className={compact ? "shrink-0" : "w-full"}
-        />
-      </div>
+      {step.kind === "level-up" ? (
+        <LevelUpStep key={step.key} realmId={step.realmId} name={step.name} compact={compact} />
+      ) : (
+        <StepBody line={step.line} verb={step.verb} busy={step.busy} run={step.run} compact={compact} />
+      )}
     </section>
   );
+};
+
+const StepBody = ({
+  line,
+  verb,
+  busy,
+  disabled = false,
+  run,
+  compact,
+}: {
+  line: string;
+  verb: string;
+  busy: boolean;
+  disabled?: boolean;
+  run: () => void;
+  compact: boolean;
+}) => (
+  <div className={cn("flex gap-2", compact ? "items-center" : "flex-col")}>
+    <p className={cn("text-base text-kit-cream", compact && "min-w-0 flex-1")}>{line}</p>
+    <Button
+      role="primary"
+      word={verb}
+      loading={busy ? "Sending…" : undefined}
+      disabled={disabled}
+      onClick={run}
+      className={compact ? "shrink-0" : "w-full"}
+    />
+  </div>
+);
+
+/** A realm's level-up step as its hook reads it, whichever realm it is: the same readiness, send and lock as its card. */
+const LevelUpStep = ({ realmId, name, compact }: { realmId: ID; name: string; compact: boolean }) => {
+  const levelUp = useRealmLevelUp(realmId);
+  if (!levelUp) return null;
+  return (
+    <StepBody
+      line={levelUpLine(levelUp, name)}
+      verb={levelUp.word}
+      busy={levelUp.loading}
+      disabled={!levelUp.ready}
+      run={levelUp.run}
+      compact={compact}
+    />
+  );
+};
+
+const levelUpLine = (levelUp: LevelUpStep, name: string): string => {
+  if (levelUp.loading) return `${name}: sent, waiting for the game.`;
+  if (levelUp.refusal) return `${name}: ${levelUp.refusal.toLowerCase()}.`;
+  if (levelUp.mode === "max") return `${name} is fully upgraded.`;
+  return levelUp.mode === "provision" ? `${name} is ready to be provisioned.` : `${name} can level up.`;
 };
 
 function useNextSteps(): NextStep[] {
@@ -76,18 +126,19 @@ function useNextSteps(): NextStep[] {
   if (!ordersAllowed) return [];
 
   const selected = structures.find((structure) => structure.entityId === structureEntityId);
-  const levelUpStep =
-    selected && levelUp?.ready ? [toLevelUpStep(levelUp, mode.structure.getName(selected.structure).name)] : [];
+  const offersLevelUp = selected && levelUp && (levelUp.ready || levelUp.loading);
+  const levelUpStep: NextStep[] = offersLevelUp
+    ? [
+        {
+          key: `level-up:${selected.entityId}`,
+          kind: "level-up",
+          realmId: selected.entityId,
+          name: mode.structure.getName(selected.structure).name,
+        },
+      ]
+    : [];
   return [...levelUpStep, ...attention, ...suggestions];
 }
-
-const toLevelUpStep = (levelUp: RealmLevelUp, name: string): NextStep => ({
-  key: `level-up:${levelUp.mode}`,
-  line: levelUp.mode === "provision" ? `${name} is ready to be provisioned.` : `${name} can level up.`,
-  verb: levelUp.word,
-  busy: levelUp.loading,
-  run: levelUp.run,
-});
 
 /** Structures under attack or with arrivals waiting, each as a step that shows it. */
 function useAttentionSteps(): NextStep[] {
@@ -114,6 +165,7 @@ function useAttentionSteps(): NextStep[] {
     const name = mode.structure.getName(structure.structure).name;
     return {
       key: `${reason}:${structure.entityId}`,
+      kind: "order",
       line: reason === "attacked" ? `${name} is under attack.` : `Resources arrived at ${name}.`,
       verb: `Show ${name}`,
       busy: false,
@@ -122,19 +174,36 @@ function useAttentionSteps(): NextStep[] {
   });
 }
 
-/** The suggested moves, less the selected realm's level-up, which leads the list as its own step. */
+/**
+ * The suggested moves. A realm's level-up is that realm's own step, read and sent by its hook; the selected realm's
+ * leads the list on its own, so it is not repeated here.
+ */
 function useSuggestionSteps(selectedId: number): NextStep[] {
   const suggestions = useEmpireSuggestions();
-  const { handleSuggestionClick, pendingRealmId, pendingSuggestionIds } = useSuggestionActions();
+  const { handleSuggestionClick, pendingSuggestionIds } = useSuggestionActions();
   // Each suggestion's own flow words its failure.
-  const run = (suggestion: EmpireSuggestion) => void handleSuggestionClick(suggestion).catch(() => undefined);
-  return suggestions
-    .filter((suggestion) => !(suggestion.action === "upgrade" && suggestion.realmId === selectedId))
-    .map((suggestion) => ({
-      key: `suggestion:${suggestion.id}`,
-      line: `${suggestion.realmName}: ${suggestion.reason ?? suggestion.label}`,
-      verb: suggestion.label,
-      busy: pendingSuggestionIds.includes(suggestion.id) || pendingRealmId === suggestion.realmId,
-      run: () => run(suggestion),
-    }));
+  const run = (suggestion: OrderSuggestion) => void handleSuggestionClick(suggestion).catch(() => undefined);
+  return suggestions.flatMap((suggestion): NextStep[] => {
+    if (isOrderSuggestion(suggestion)) {
+      return [
+        {
+          key: `suggestion:${suggestion.id}`,
+          kind: "order",
+          line: `${suggestion.realmName}: ${suggestion.reason ?? suggestion.label}`,
+          verb: suggestion.label,
+          busy: pendingSuggestionIds.includes(suggestion.id),
+          run: () => run(suggestion),
+        },
+      ];
+    }
+    if (suggestion.realmId === selectedId) return [];
+    return [
+      {
+        key: `level-up:${suggestion.realmId}`,
+        kind: "level-up",
+        realmId: suggestion.realmId,
+        name: suggestion.realmName,
+      },
+    ];
+  });
 }

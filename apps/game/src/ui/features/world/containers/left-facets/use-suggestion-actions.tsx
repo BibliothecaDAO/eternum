@@ -8,7 +8,6 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { buildRealmBuilding } from "@/ui/features/settlement/construction/realm-build-actions";
 import { ProductionModal } from "@/ui/features/settlement";
-import { useRealmActions } from "@/ui/modules/entity-details/hooks/use-realm-actions";
 import {
   getRealmInfo,
   Position,
@@ -23,6 +22,12 @@ import { useCallback, useRef, useState } from "react";
 import type { EmpireSuggestion } from "./use-empire-suggestions";
 import { getPlayerName } from "@/services/identity/player-profiles";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
+
+/** A suggestion this hook runs: every one but a realm's level-up, which is the realm's own step (useRealmLevelUp). */
+export type OrderSuggestion = EmpireSuggestion & { action: Exclude<EmpireSuggestion["action"], "upgrade"> };
+
+export const isOrderSuggestion = (suggestion: EmpireSuggestion): suggestion is OrderSuggestion =>
+  suggestion.action !== "upgrade";
 
 /** Build orders submit against their realm without changing the current selection. */
 export const useSuggestionActions = () => {
@@ -40,8 +45,6 @@ export const useSuggestionActions = () => {
   const openSurface = usePopoverStore((state) => state.openSurface);
   const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);
   const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
-
-  const { fireUpgrade, pendingRealmId } = useRealmActions();
 
   const focusRealm = useCallback(
     async (realmId: ID, forceMap = false) => {
@@ -83,13 +86,10 @@ export const useSuggestionActions = () => {
   );
 
   const runSuggestionClick = useCallback(
-    async (suggestion: EmpireSuggestion) => {
+    async (suggestion: OrderSuggestion) => {
       if (!canIssueOrders()) return;
 
       switch (suggestion.action) {
-        case "upgrade":
-          await fireUpgrade(suggestion.realmId);
-          return;
         case "deploy-explorer":
           await focusRealm(suggestion.realmId, true);
           if (!canIssueOrders()) return;
@@ -123,7 +123,7 @@ export const useSuggestionActions = () => {
           });
       }
     },
-    [fireUpgrade, focusRealm, runAutoBuildSuggestion, setLeftNavigationView, openSurface],
+    [focusRealm, runAutoBuildSuggestion, setLeftNavigationView, openSurface],
   );
 
   const beginPendingSuggestion = useCallback((suggestionId: string) => {
@@ -146,7 +146,7 @@ export const useSuggestionActions = () => {
   }, []);
 
   const handleSuggestionClick = useCallback(
-    async (suggestion: EmpireSuggestion) => {
+    async (suggestion: OrderSuggestion) => {
       if (!beginPendingSuggestion(suggestion.id)) return;
 
       try {
@@ -158,7 +158,7 @@ export const useSuggestionActions = () => {
     [beginPendingSuggestion, completePendingSuggestion, runSuggestionClick],
   );
 
-  return { handleSuggestionClick, pendingRealmId, pendingSuggestionIds };
+  return { handleSuggestionClick, pendingSuggestionIds };
 };
 
 const resolveAutoBuildTarget = (
