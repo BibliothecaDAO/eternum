@@ -101,6 +101,7 @@ export const BLITZ_WORDS = {
   /** A seated game still being prepared: its lobby shows the roster and Preparing until it opens. */
   lobby: "Lobby",
   /** Above the lobby's countdown. */
+  closesIn: "Entry closes in",
   startsIn: "Starts in",
   endsIn: "Ends in",
 } as const;

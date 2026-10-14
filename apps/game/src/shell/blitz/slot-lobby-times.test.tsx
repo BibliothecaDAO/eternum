@@ -62,21 +62,21 @@ const lobby = async (closesIn: number, closed: boolean) => {
   return container.textContent ?? "";
 };
 
-it("shows when a slot's registration closes and when its games start, five minutes later", async () => {
+it("counts down to the close while the slot takes players, its title naming the start five minutes later", async () => {
   const open = await lobby(3_600, false);
-  expect(open).toContain(`Entry closes ${formatClockTime(listed.closes)}`);
-  expect(open).toContain(`Starts ${formatClockTime(listed.closes + 300)}`);
-  // The lobby is named by the games' start, not by the close.
+  expect(open).toContain("Entry closes in");
+  expect(open).not.toContain("Starts in");
+  // The lobby is named by the games' start, the one place the start shows while entry is open.
   expect(open).toContain(`Blitz ${formatClockTime(listed.closes + 300)}`);
 });
 
-it("keeps the start in sight through the five minutes after the close, and drops it once the games have started", async () => {
+it("counts down to the start through the five minutes after the close, and to nothing once the games have started", async () => {
   const preparing = await lobby(-120, true);
   expect(preparing).toContain("Entry closed");
-  expect(preparing).toContain(`Starts ${formatClockTime(listed.closes + 300)}`);
+  expect(preparing).toContain("Starts in");
   await unmount?.();
 
   const started = await lobby(-400, true);
   expect(started).toContain("Entry closed");
-  expect(started).not.toContain("Starts");
+  expect(started).not.toContain("Starts in");
 });

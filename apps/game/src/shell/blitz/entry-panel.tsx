@@ -21,7 +21,7 @@ import {
   TEST_TOKEN_MINT,
 } from "../value/ledger";
 import { gameRowKey } from "../blitz-rows";
-import { linkWalletHref } from "../profile/account-route";
+import { linkWalletHref } from "../profile/settings-route";
 import { returnPathOf, useRequestSignIn } from "../sign-in/sign-in-route";
 import { DOORWAY_WORDS, ENTRY_WORDS, mintTestTokenWord, PROFILE_WORDS, WORDS } from "../words";
 import {
@@ -225,32 +225,25 @@ const MintTestToken = ({ token, owner, onMinted }: { token: string; owner: strin
   );
 };
 
-/** Where this entry's LORDS go when the game settles: the season pool, the season's chests, the treasury. */
+/** Where this entry's LORDS go when the game settles, as one line: the season pool, the season's chests, the treasury. */
 const SplitBar = ({ shares }: { shares: ReturnType<typeof entryShares> }) => {
   const parts = [
-    { key: "pool", icon: "Tp" as const, amount: shares.pool, bar: "bg-kit-gold", tone: "text-kit-gold2" },
-    { key: "chests", icon: "Ch" as const, amount: shares.chests, bar: "bg-kit-line2", tone: "text-kit-cream" },
-    { key: "treasury", icon: "Fx" as const, amount: shares.treasury, bar: "bg-kit-line", tone: "text-kit-muted" },
+    { key: "pool", icon: "Tp" as const, amount: shares.pool, tone: "text-kit-gold2" },
+    { key: "chests", icon: "Ch" as const, amount: shares.chests, tone: "text-kit-cream" },
+    { key: "treasury", icon: "Fx" as const, amount: shares.treasury, tone: "text-kit-muted" },
   ].filter((part) => part.amount > 0n);
   return (
-    <div className="flex flex-col gap-2" aria-label={ENTRY_WORDS.whereItGoes}>
-      <div className="flex h-3 gap-0.5 overflow-hidden rounded-full">
-        {parts.map((part) => (
-          <span key={part.key} className={part.bar} style={{ flex: Number(part.amount / 10n ** 15n) }} />
-        ))}
-      </div>
-      <div className="flex justify-between gap-2">
-        {parts.map((part) => (
-          <span
-            key={part.key}
-            className={cn("inline-flex items-center gap-1 font-body text-[14px] font-bold", part.tone)}
-          >
-            <KitIcon code={part.icon} size={18} />
-            {formatExact(lordsOf(part.amount))}
-          </span>
-        ))}
-      </div>
-    </div>
+    <p className="flex flex-wrap items-center gap-x-4 gap-y-1" aria-label={ENTRY_WORDS.whereItGoes}>
+      {parts.map((part) => (
+        <span
+          key={part.key}
+          className={cn("inline-flex items-center gap-1 font-body text-[14px] font-bold", part.tone)}
+        >
+          <KitIcon code={part.icon} size={18} />
+          {formatExact(lordsOf(part.amount))}
+        </span>
+      ))}
+    </p>
   );
 };
 
@@ -301,7 +294,7 @@ const Registered = ({ terms, closed }: { terms: EntryTerms; closed: boolean }) =
 
 /**
  * Drawn into a game at close: what was paid, and the way to that game's lobby while the directory lists the game (a
- * settled game has left it, and its results are on the Season tab).
+ * settled game has left it, and its results are among the player's games on You).
  */
 const Seated = ({ terms, game }: { terms: EntryTerms; game: DirectoryGame | undefined }) => {
   const navigate = useNavigate();
