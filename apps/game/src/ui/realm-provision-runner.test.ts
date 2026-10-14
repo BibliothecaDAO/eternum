@@ -37,6 +37,7 @@ const harness = (
   const report = { provisioned: vi.fn(), failed: vi.fn() };
   const stop = startRealmProvisionRunner({
     readRealms: () => state.realms,
+    isHeld: () => false,
     readPhase: () => state.phase,
     nowSeconds: () => state.now,
     hasSigner: () => state.signer,

@@ -22,6 +22,8 @@ import {
   type RealmProvisionCandidate,
   type RealmProvisionRetry,
 } from "@/ui/realm-provision-runner";
+import { inFlight } from "@/hooks/store/use-actions-in-flight";
+import { sendAutomaticProvision } from "@/ui/modules/entity-details/realm-castle-sends";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
 
@@ -233,11 +235,10 @@ const AutoProvisionRealms = () => {
         useConnectionStore.subscribe((state, previous) => {
           if (state.lastConfirmedBlock !== previous.lastConfirmedBlock) head();
         }),
+      isHeld: (realmId) => inFlight("castle", realmId) !== undefined,
       submit: (realm, onConfirmed, signal) =>
         runRealmProvision({ client, signer: account.address, signal, onConfirmed }, async (submit) =>
-          submit(realm, (submitted) =>
-            systemCalls.provision_realm({ signer: account, realm_entity_id: submitted.entityId }),
-          ),
+          submit(realm, (submitted) => sendAutomaticProvision(systemCalls, account, submitted.entityId)),
         ),
       report: {
         provisioned: (realms) => {

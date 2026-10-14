@@ -1,8 +1,8 @@
 import { useGame } from "@/hooks/context/game-context";
-import { sendOnce } from "@/hooks/store/use-actions-in-flight";
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import type { ID } from "@bibliothecadao/types";
+import { sendRealmLevelUp, sendRealmProvision } from "../realm-castle-sends";
 import { resolveRealmBootstrapErrorMessage } from "./realm-bootstrap-error";
 import { useBlitzRealmProvision } from "./use-blitz-realm-provision";
 import { useStructureUpgrade } from "./use-structure-upgrade";
@@ -35,7 +35,8 @@ export type RealmLevelUp = LevelUpStep & {
 
 /**
  * The step from the game's own readiness: provision while a Blitz realm still needs it, then the plain level-up,
- * until the last level. Its in-flight lock is the castle's, which every level-up and provision send holds.
+ * until the last level. Its in-flight lock is the castle's, which every level-up and provision send holds
+ * (realm-castle-sends), the automatic provisioning's included.
  */
 const resolveLevelUpStep = (upgrade: Upgrade, provision: Provision): LevelUpStep => {
   if (upgrade.isMaxLevel) return { mode: "max", word: "Fully upgraded", ready: false, loading: false, refusal: null };
@@ -67,13 +68,13 @@ export const useRealmLevelUp = (structureEntityId: ID | null): RealmLevelUp | nu
   const step = resolveLevelUpStep(upgrade, provision);
   const signer = account.account;
   const provisionRealm = () =>
-    sendOnce("castle", entityId, true, () =>
-      setup.systemCalls.provision_realm({ signer, realm_entity_id: entityId, upgrade: upgrade.canUpgrade }),
-    ).catch((error) => toast.error(resolveRealmBootstrapErrorMessage(error)));
+    sendRealmProvision(setup.systemCalls, signer, entityId, upgrade.canUpgrade).catch((error) =>
+      toast.error(resolveRealmBootstrapErrorMessage(error)),
+    );
   const levelUp = () =>
-    sendOnce("castle", entityId, true, () =>
-      setup.systemCalls.upgrade_realm({ signer, realm_entity_id: entityId }),
-    ).catch((error) => toast.error(extractReadableErrorMessage(error, "Level up failed.")));
+    sendRealmLevelUp(setup.systemCalls, signer, entityId).catch((error) =>
+      toast.error(extractReadableErrorMessage(error, "Level up failed.")),
+    );
 
   return {
     ...step,

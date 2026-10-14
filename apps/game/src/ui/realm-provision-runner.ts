@@ -23,7 +23,10 @@ export interface RealmProvisionRetry {
 }
 
 interface RealmProvisionRunnerDeps {
+  /** The realms as the game's facts say now; read again before every send. */
   readRealms(): RealmProvisionCandidate[];
+  /** Another level-up step for the realm is in flight (the castle lock): it is left to that send. */
+  isHeld(realmId: number): boolean;
   readPhase(): RealmProvisionPhase;
   nowSeconds(): number;
   hasSigner(): boolean;
@@ -70,9 +73,15 @@ export const startRealmProvisionRunner = (deps: RealmProvisionRunnerDeps): (() =
           deps
             .readRealms()
             .filter((realm) => !realm.provisioned && !confirmed.has(realm.entityId) && !abandoned.has(realm.entityId));
+        // Each send waits for the one before it, and the player can provision a realm meanwhile: a realm is sent
+        // only if the facts read just before its send still call for it and no other step holds it.
+        const stillToSend = (realmId: number) =>
+          deps.isHeld(realmId) ? undefined : candidates().find((realm) => realm.entityId === realmId);
         const provision = Effect.gen(function* () {
-          for (const realm of candidates()) {
+          for (const { entityId } of candidates()) {
             if (!deps.hasSigner() || !isMainPhaseOpen(deps)) return;
+            const realm = stillToSend(entityId);
+            if (!realm) continue;
             submitting = true;
             yield* Effect.tryPromise({
               try: (signal) =>
