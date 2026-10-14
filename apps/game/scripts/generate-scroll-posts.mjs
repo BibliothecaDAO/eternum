@@ -9,26 +9,28 @@ import process from "node:process";
 import matter from "gray-matter";
 import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
-import { z } from "zod";
+import * as Result from "effect/Result";
+import * as Schema from "effect/Schema";
+import * as SchemaIssue from "effect/SchemaIssue";
 
 const rootDir = process.cwd();
 const contentDir = path.join(rootDir, "content", "scroll");
 const outputDir = path.join(rootDir, "src", "shell", "generated");
 const outputFile = path.join(outputDir, "scroll-posts.ts");
 
-const frontmatterSchema = z.object({
-  title: z.string().trim().min(1),
-  excerpt: z.string().trim().min(1),
-  date: z
-    .string()
-    .trim()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "date must be in YYYY-MM-DD format"),
-  type: z.enum(["update", "thought-piece"]),
-  author: z.string().trim().min(1),
-  tags: z.array(z.string().trim().min(1)),
-  published: z.boolean(),
-  coverImage: z.string().trim().min(1).optional(),
-  canonicalUrl: z.string().trim().url().optional(),
+const frontmatterSchema = Schema.Struct({
+  title: Schema.Trim.check(Schema.isMinLength(1)),
+  excerpt: Schema.Trim.check(Schema.isMinLength(1)),
+  date: Schema.Trim.check(
+    Schema.isPattern(/^\d{4}-\d{2}-\d{2}$/, { message: "date must be in YYYY-MM-DD format" }),
+    Schema.makeFilter((value) => (isValidCalendarDate(value) ? undefined : `"${value}" is not a real calendar date`)),
+  ),
+  type: Schema.Literals(["update", "thought-piece"]),
+  author: Schema.Trim.check(Schema.isMinLength(1)),
+  tags: Schema.Array(Schema.Trim.check(Schema.isMinLength(1))),
+  published: Schema.Boolean,
+  coverImage: Schema.optional(Schema.Trim.check(Schema.isMinLength(1))),
+  canonicalUrl: Schema.optional(Schema.Trim.check(Schema.makeFilter((value) => URL.canParse(value)))),
 });
 
 function isValidCalendarDate(value) {
@@ -109,18 +111,14 @@ async function generate() {
     const source = await fs.readFile(filePath, "utf8");
     const { data, content } = matter(source);
 
-    const parsed = frontmatterSchema.safeParse(data);
-    if (!parsed.success) {
+    const parsed = Schema.decodeUnknownResult(frontmatterSchema, { errors: "all" })(data);
+    if (Result.isFailure(parsed)) {
       throw new Error(
-        `Invalid frontmatter in ${path.relative(rootDir, filePath)}: ${parsed.error.issues
-          .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+        `Invalid frontmatter in ${path.relative(rootDir, filePath)}: ${SchemaIssue.makeFormatterStandardSchemaV1()(
+          parsed.failure.issue,
+        )
+          .issues.map((issue) => `${(issue.path ?? []).join(".")}: ${issue.message}`)
           .join("; ")}`,
-      );
-    }
-
-    if (!isValidCalendarDate(parsed.data.date)) {
-      throw new Error(
-        `Invalid date in ${path.relative(rootDir, filePath)}: "${parsed.data.date}" is not a real calendar date`,
       );
     }
 
@@ -135,15 +133,15 @@ async function generate() {
 
     posts.push({
       slug,
-      title: parsed.data.title,
-      excerpt: parsed.data.excerpt,
-      date: parsed.data.date,
-      type: parsed.data.type,
-      author: parsed.data.author,
-      tags: parsed.data.tags,
-      published: parsed.data.published,
-      coverImage: parsed.data.coverImage,
-      canonicalUrl: parsed.data.canonicalUrl,
+      title: parsed.success.title,
+      excerpt: parsed.success.excerpt,
+      date: parsed.success.date,
+      type: parsed.success.type,
+      author: parsed.success.author,
+      tags: parsed.success.tags,
+      published: parsed.success.published,
+      coverImage: parsed.success.coverImage,
+      canonicalUrl: parsed.success.canonicalUrl,
       readingTimeMinutes: countReadingMinutes(content),
       html: safeHtml,
     });

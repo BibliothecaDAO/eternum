@@ -1,51 +1,74 @@
-import { z } from "zod";
+import * as Schema from "effect/Schema";
+import * as Effect from "effect/Effect";
 
-import { entityIdSchema, messageContentSchema, metadataSchema, playerIdSchema, timestampSchema } from "./shared";
+import {
+  chatRecordSchema,
+  entityIdSchema,
+  messageContentSchema,
+  metadataSchema,
+  playerIdSchema,
+  timestampSchema,
+} from "./shared";
 
 const dmThreadIdSchema = entityIdSchema;
 
-const directMessageSchema = z.object({
+const directMessageSchema = Schema.Struct({
   id: entityIdSchema,
   threadId: dmThreadIdSchema,
   senderId: playerIdSchema,
   recipientId: playerIdSchema,
   content: messageContentSchema,
   createdAt: timestampSchema,
-  metadata: metadataSchema.optional(),
+  metadata: Schema.optional(metadataSchema),
 });
 
-export const directMessageCreateSchema = z.object({
-  threadId: dmThreadIdSchema.optional(),
+export const directMessageCreateSchema = Schema.Struct({
+  threadId: Schema.optional(dmThreadIdSchema),
   recipientId: playerIdSchema,
   content: messageContentSchema,
-  metadata: metadataSchema.optional(),
+  metadata: Schema.optional(metadataSchema),
 });
 
-const directMessageThreadSchema = z.object({
+const unreadCountsSchema = chatRecordSchema
+  .check(
+    Schema.makeFilter((value) =>
+      Object.keys(value).flatMap((key) =>
+        Schema.is(playerIdSchema)(key) ? [] : [{ path: [key], issue: "Invalid player id" }],
+      ),
+    ),
+  )
+  .pipe(
+    Schema.decodeTo(Schema.Record(Schema.String, Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)))),
+    Schema.withDecodingDefault(Effect.succeed({})),
+  );
+
+const directMessageThreadSchema = Schema.Struct({
   id: dmThreadIdSchema,
-  participants: z.array(playerIdSchema).length(2, "Thread must contain exactly two participants."),
+  participants: Schema.Array(playerIdSchema)
+    .pipe(Schema.mutable)
+    .check(Schema.isBetweenLength(2, 2, { message: "Thread must contain exactly two participants." })),
   createdAt: timestampSchema,
-  updatedAt: timestampSchema.optional(),
-  lastMessageId: entityIdSchema.optional(),
-  unreadCounts: z.record(playerIdSchema, z.number().int().min(0)).default({}),
-  typing: z.array(playerIdSchema).optional(),
+  updatedAt: Schema.optional(timestampSchema),
+  lastMessageId: Schema.optional(entityIdSchema),
+  unreadCounts: unreadCountsSchema,
+  typing: Schema.optional(Schema.mutable(Schema.Array(playerIdSchema))),
 });
 
-export const directMessageTypingSchema = z.object({
+export const directMessageTypingSchema = Schema.Struct({
   threadId: dmThreadIdSchema,
   playerId: playerIdSchema,
-  isTyping: z.boolean(),
+  isTyping: Schema.Boolean,
 });
 
-export const directMessageReadReceiptSchema = z.object({
+export const directMessageReadReceiptSchema = Schema.Struct({
   threadId: dmThreadIdSchema,
   messageId: entityIdSchema,
   readerId: playerIdSchema,
   readAt: timestampSchema,
 });
 
-export interface DirectMessage extends z.infer<typeof directMessageSchema> {}
-export interface DirectMessageCreatePayload extends z.infer<typeof directMessageCreateSchema> {}
-export interface DirectMessageThread extends z.infer<typeof directMessageThreadSchema> {}
-export interface DirectMessageTyping extends z.infer<typeof directMessageTypingSchema> {}
-export interface DirectMessageReadReceipt extends z.infer<typeof directMessageReadReceiptSchema> {}
+export interface DirectMessage extends Schema.Schema.Type<typeof directMessageSchema> {}
+export interface DirectMessageCreatePayload extends Schema.Schema.Type<typeof directMessageCreateSchema> {}
+export interface DirectMessageThread extends Schema.Schema.Type<typeof directMessageThreadSchema> {}
+export interface DirectMessageTyping extends Schema.Schema.Type<typeof directMessageTypingSchema> {}
+export interface DirectMessageReadReceipt extends Schema.Schema.Type<typeof directMessageReadReceiptSchema> {}

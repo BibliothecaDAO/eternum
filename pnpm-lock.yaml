@@ -45,9 +45,6 @@ catalogs:
     vite:
       specifier: ^5.4.21
       version: 5.4.21
-    zod:
-      specifier: ^3.25.76
-      version: 3.25.76
   web:
     '@types/react':
       specifier: ^19.2.14
@@ -397,9 +394,9 @@ importers:
       vite-plugin-pwa:
         specifier: ^0.20.5
         version: 0.20.5(vite@5.4.21(@types/node@20.19.33)(lightningcss@1.32.0)(terser@5.46.0))(workbox-build@7.4.0(@types/babel__core@7.20.5))(workbox-window@7.4.0)
-      zod:
-        specifier: catalog:game
-        version: 3.25.76
+      effect:
+        specifier: 4.0.4
+        version: 4.0.4
       zustand:
         specifier: ^5.0.5
         version: 5.0.11(@types/react@18.3.28)(immer@11.1.4)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))
@@ -1421,9 +1418,9 @@ importers:
       starknet:
         specifier: catalog:game
         version: 8.9.2
-      zod:
-        specifier: ^4.1.12
-        version: 4.3.6
+      effect:
+        specifier: 4.0.4
+        version: 4.0.4
     devDependencies:
       '@types/node':
         specifier: ^20.11.10

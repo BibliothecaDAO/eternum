@@ -1,3 +1,5 @@
+import * as Result from "effect/Result";
+import * as Schema from "effect/Schema";
 import { DurableObject } from "cloudflare:workers";
 import { Effect } from "effect";
 import { buildDirectMessageNotification, includesDirectMessageNotification } from "@bibliothecadao/notifications";
@@ -154,14 +156,14 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
   }
 
   private async sendFrom(socket: WebSocket, member: ChatMember, payload: unknown, clientMessageId?: string) {
-    const parsed = directMessageCreateSchema.safeParse(payload);
-    const recipientId = parsed.success ? parsed.data.recipientId : null;
+    const parsed = Schema.decodeUnknownResult(directMessageCreateSchema)(payload);
+    const recipientId = Result.isSuccess(parsed) ? parsed.success.recipientId : null;
     const threadId = recipientId ? directThreadId(member.realmsId, recipientId) : null;
     if (
-      !parsed.success ||
+      Result.isFailure(parsed) ||
       !recipientId ||
       recipientId === member.realmsId ||
-      (parsed.data.threadId ?? threadId) !== threadId
+      (parsed.success.threadId ?? threadId) !== threadId
     ) {
       sendChat(socket, { type: "error", code: "invalid_direct_payload", message: "Invalid direct message." });
       return;
@@ -171,8 +173,8 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
       threadId: threadId!,
       senderId: member.realmsId,
       recipientId,
-      content: parsed.data.content,
-      ...(parsed.data.metadata ? { metadata: parsed.data.metadata } : {}),
+      content: parsed.success.content,
+      ...(parsed.success.metadata ? { metadata: parsed.success.metadata } : {}),
       createdAt: new Date().toISOString(),
     };
     try {
@@ -192,18 +194,18 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
   }
 
   private async relayTyping(member: ChatMember, payload: unknown) {
-    const parsed = directMessageTypingSchema.safeParse(payload);
-    const peer = parsed.success ? this.peerOf(parsed.data.threadId) : null;
-    if (!parsed.success || !peer || parsed.data.playerId !== member.realmsId) return;
-    await inboxOf(this.env, peer).typing(parsed.data);
+    const parsed = Schema.decodeUnknownResult(directMessageTypingSchema)(payload);
+    const peer = Result.isSuccess(parsed) ? this.peerOf(parsed.success.threadId) : null;
+    if (Result.isFailure(parsed) || !peer || parsed.success.playerId !== member.realmsId) return;
+    await inboxOf(this.env, peer).typing(parsed.success);
   }
 
   private async relayRead(member: ChatMember, payload: unknown) {
-    const parsed = directMessageReadReceiptSchema.safeParse(payload);
-    const peer = parsed.success ? this.peerOf(parsed.data.threadId) : null;
-    if (!parsed.success || !peer || parsed.data.readerId !== member.realmsId) return;
-    this.ctx.storage.sql.exec("UPDATE threads SET unread = 0 WHERE id = ?", parsed.data.threadId);
-    await inboxOf(this.env, peer).read(parsed.data as DirectMessageReadReceipt);
+    const parsed = Schema.decodeUnknownResult(directMessageReadReceiptSchema)(payload);
+    const peer = Result.isSuccess(parsed) ? this.peerOf(parsed.success.threadId) : null;
+    if (Result.isFailure(parsed) || !peer || parsed.success.readerId !== member.realmsId) return;
+    this.ctx.storage.sql.exec("UPDATE threads SET unread = 0 WHERE id = ?", parsed.success.threadId);
+    await inboxOf(this.env, peer).read(parsed.success);
   }
 
   private hasBlocked(realmsId: string): boolean {

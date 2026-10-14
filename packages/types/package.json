@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "starknet": "catalog:game",
-    "zod": "^4.1.12"
+    "effect": "4.0.4"
   },
   "devDependencies": {
     "@types/node": "^20.11.10",
