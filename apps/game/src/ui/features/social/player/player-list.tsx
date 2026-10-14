@@ -55,6 +55,22 @@ const formatActivityValue = (count: number, points: number): string => {
   return "—";
 };
 
+/** A column only wide screens have room for; a narrow row says it under the name instead. */
+const WIDE_ONLY = "hidden md:flex";
+
+/** What a player did, in words, for the narrow row that has no columns for it: "3 tiles, 1 crate". */
+const summarizeActivity = (player: PlayerWithActivityStats): string =>
+  [
+    [player.tilesExplored, "tile", "tiles"],
+    [player.cratesOpened, "crate", "crates"],
+    [player.riftsTaken, "rift or camp", "rifts and camps"],
+    [player.hyperstructuresTaken, "hyperstructure taken", "hyperstructures taken"],
+    [player.hyperstructuresHeld, "hyperstructure held", "hyperstructures held"],
+  ]
+    .filter(([count]) => (count as number) > 0)
+    .map(([count, one, many]) => `${COUNT_FORMATTER.format(count as number)} ${count === 1 ? one : many}`)
+    .join(", ");
+
 const resolvePlayerActivityStats = (player: PlayerCustom): PlayerWithActivityStats => {
   const activity = player.activityBreakdown;
 
@@ -87,8 +103,8 @@ export const PlayerList = ({
   const leaderboardGridTemplate = useMemo(
     () =>
       showTribeDetails
-        ? "grid-cols-[68px_minmax(0,_1.25fr)_minmax(0,_1.1fr)_minmax(0,_0.8fr)_minmax(0,_0.8fr)_minmax(0,_0.85fr)_minmax(0,_0.9fr)_minmax(0,_0.95fr)_minmax(0,_1fr)]"
-        : "grid-cols-[68px_minmax(0,_1.7fr)_minmax(0,_0.9fr)_minmax(0,_0.9fr)_minmax(0,_0.95fr)_minmax(0,_0.95fr)_minmax(0,_1.05fr)_minmax(0,_1.1fr)]",
+        ? "grid-cols-[44px_minmax(0,_1fr)_auto] md:grid-cols-[68px_minmax(0,_1.25fr)_minmax(0,_1.1fr)_minmax(0,_0.8fr)_minmax(0,_0.8fr)_minmax(0,_0.85fr)_minmax(0,_0.9fr)_minmax(0,_0.95fr)_minmax(0,_1fr)]"
+        : "grid-cols-[44px_minmax(0,_1fr)_auto] md:grid-cols-[68px_minmax(0,_1.7fr)_minmax(0,_0.9fr)_minmax(0,_0.9fr)_minmax(0,_0.95fr)_minmax(0,_0.95fr)_minmax(0,_1.05fr)_minmax(0,_1.1fr)]",
     [showTribeDetails],
   );
 
@@ -238,16 +254,16 @@ const PlayerListHeader = ({
     ];
 
     if (showTribeDetails) {
-      params.push({ label: "Tribe", align: "justify-start text-left" });
+      params.push({ label: "Tribe", align: "hidden text-left md:block" });
     }
 
     params.push(
-      { label: "Tiles", align: "justify-center text-center" },
-      { label: "Crates", align: "justify-center text-center" },
-      { label: "Rifts/Camps", align: "justify-center text-center" },
-      { label: "HS Taken", align: "justify-center text-center" },
-      { label: "HS Held", align: "justify-center text-center" },
-      { label: "Points", align: "justify-center text-center" },
+      { label: "Tiles", align: `${WIDE_ONLY} justify-center text-center` },
+      { label: "Crates", align: `${WIDE_ONLY} justify-center text-center` },
+      { label: "Rifts/Camps", align: `${WIDE_ONLY} justify-center text-center` },
+      { label: "HS Taken", align: `${WIDE_ONLY} justify-center text-center` },
+      { label: "HS Held", align: `${WIDE_ONLY} justify-center text-center` },
+      { label: "Points", align: "justify-end text-right md:justify-center md:text-center" },
     );
 
     return params;
@@ -258,12 +274,12 @@ const PlayerListHeader = ({
     // bleeding through as it scrolls under it.
     <div
       className={clsx(
-        "grid gap-x-4 items-center py-3 px-4 border-b border-gold/25 sticky top-0 z-20 bg-[#1a1410]",
+        "grid gap-x-3 items-center py-3 px-3 border-b border-gold/25 sticky top-0 z-20 bg-[#1a1410] md:gap-x-4 md:px-4",
         gridTemplateClass,
       )}
     >
       {columns.map(({ label, align }) => (
-        <div key={label} className={clsx("flex w-full items-center text-sm font-semibold text-gold/70", align)}>
+        <div key={label} className={clsx("w-full items-center text-sm font-semibold text-gold/70", align)}>
           {label}
         </div>
       ))}
@@ -303,6 +319,7 @@ const PlayerRow = ({
   const hyperstructuresTakenLabel = formatActivityValue(player.hyperstructuresTaken, player.hyperstructuresTakenPoints);
   const hyperstructuresHeldLabel = formatActivityValue(player.hyperstructuresHeld, player.hyperstructuresHeldPoints);
   const hasShareholderPoints = Boolean(player.includesLiveShareholderPoints);
+  const activitySummary = summarizeActivity(player);
 
   // Determine row glow based on effect
   const hasRankUp = effect && effect.rankChange < 0;
@@ -333,7 +350,7 @@ const PlayerRow = ({
       )}
       <div
         className={clsx(
-          "grid w-full cursor-pointer items-center gap-x-4 px-4 py-2 text-sm transition-colors",
+          "grid w-full cursor-pointer items-center gap-x-3 px-3 py-2 text-sm transition-colors md:gap-x-4 md:px-4",
           gridTemplateClass,
         )}
         onClick={onSelect}
@@ -372,11 +389,12 @@ const PlayerRow = ({
                 className="block truncate font-mono text-sm text-kit-muted"
               >{`0x${BigInt(player.address).toString(16)}`}</span>
             )}
+            {activitySummary && <span className="block text-sm text-kit-muted md:hidden">{activitySummary}</span>}
           </div>
         </div>
         {showTribeDetails ? (
           <div
-            className={clsx("min-w-0 truncate text-sm transition-colors", {
+            className={clsx("hidden min-w-0 truncate text-sm transition-colors md:block", {
               "text-emerald-300/90": player.guild && !isSelected,
               "text-emerald-200": player.guild && isSelected,
               "text-kit-muted": !player.guild && !isSelected,
@@ -387,7 +405,7 @@ const PlayerRow = ({
           </div>
         ) : null}
         <div
-          className={clsx("flex justify-center text-sm font-medium transition-colors", {
+          className={clsx(WIDE_ONLY, "justify-center text-sm font-medium transition-colors", {
             "text-lightest": isSelected,
             "text-gold/90": !isSelected,
           })}
@@ -395,7 +413,7 @@ const PlayerRow = ({
           {tilesLabel}
         </div>
         <div
-          className={clsx("flex justify-center text-sm font-medium transition-colors", {
+          className={clsx(WIDE_ONLY, "justify-center text-sm font-medium transition-colors", {
             "text-lightest": isSelected,
             "text-gold/90": !isSelected,
           })}
@@ -403,7 +421,7 @@ const PlayerRow = ({
           {cratesLabel}
         </div>
         <div
-          className={clsx("flex justify-center text-sm font-medium transition-colors", {
+          className={clsx(WIDE_ONLY, "justify-center text-sm font-medium transition-colors", {
             "text-lightest": isSelected,
             "text-gold/90": !isSelected,
           })}
@@ -411,7 +429,7 @@ const PlayerRow = ({
           {riftsLabel}
         </div>
         <div
-          className={clsx("flex justify-center text-sm font-medium transition-colors", {
+          className={clsx(WIDE_ONLY, "justify-center text-sm font-medium transition-colors", {
             "text-lightest": isSelected,
             "text-gold/90": !isSelected,
           })}
@@ -419,7 +437,7 @@ const PlayerRow = ({
           {hyperstructuresTakenLabel}
         </div>
         <div
-          className={clsx("flex justify-center text-sm font-medium transition-colors", {
+          className={clsx(WIDE_ONLY, "justify-center text-sm font-medium transition-colors", {
             "text-lightest": isSelected,
             "text-gold/90": !isSelected,
           })}
@@ -427,7 +445,7 @@ const PlayerRow = ({
           {hyperstructuresHeldLabel}
         </div>
         <div
-          className={clsx("flex items-center justify-center gap-2 text-sm font-semibold", {
+          className={clsx("flex items-center justify-end gap-2 text-sm font-semibold md:justify-center", {
             "text-amber-200": player.points !== null && player.points > 1000,
             "text-lightest": isSelected && player.points !== null && player.points <= 1000,
             "text-gold/90": !isSelected && player.points !== null && player.points <= 1000,
