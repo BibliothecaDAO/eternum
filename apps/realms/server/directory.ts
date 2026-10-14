@@ -18,8 +18,8 @@ type ShardListing =
   | (ListedShard & { games: HeraldGameDirectoryEntry[] })
   | (ListedShard & { games: null; error: "unavailable" });
 
-/** How long one shard's games directory is served from the cache before it is read again. */
-const GAMES_CACHE_SECONDS = 15;
+/** How long the shared listing is served from a colo's cache before it is read again. */
+const LISTING_CACHE_SECONDS = 15;
 const SHARD_TIMEOUT_MS = 5_000;
 
 interface DirectoryDependencies {
@@ -33,6 +33,12 @@ interface LaunchDirectory {
   chains: { chainId: string; games: { gameId: number; slotId: number | null }[] }[];
 }
 
+/** What both directory routes are built from: the launch records and every listed shard's games. */
+interface DirectoryListing {
+  launchDirectory: LaunchDirectory | null;
+  listings: ShardListing[];
+}
+
 /**
  * GET /api/directory — every live or upcoming game on every listed shard, each carrying its shard's URL and chain id so
  * the app opens it on its own shard; a settled game leaves this list for the history. A shard that cannot be read is
@@ -42,8 +48,7 @@ interface LaunchDirectory {
 export const handleDirectory = async (request: Request, dependencies: DirectoryDependencies) => {
   const player = playerOf(request);
   if (player === INVALID) return json({ error: "invalid_player" }, 400);
-  const launchDirectory = await readLaunchDirectoryRecords(dependencies);
-  const listings = await listShards(dependencies, player);
+  const { launchDirectory, listings } = await readListing(request, dependencies, player);
   return json({
     shards: listings.map((listing) =>
       listing.games === null || launchDirectory === null
@@ -68,8 +73,7 @@ export const handleDirectoryHistory = async (request: Request, dependencies: Dir
   if (player === INVALID) return json({ error: "invalid_player" }, 400);
   if (!Number.isInteger(limit) || limit < 1 || limit > HISTORY_PAGE_MAX) return json({ error: "invalid_limit" }, 400);
   if (cursor !== null && !HISTORY_CURSOR.test(cursor)) return json({ error: "invalid_cursor" }, 400);
-  const launchDirectory = await readLaunchDirectoryRecords(dependencies);
-  const listings = await listShards(dependencies, player);
+  const { launchDirectory, listings } = await readListing(request, dependencies, player);
   const settled = listings
     .flatMap((listing) =>
       playerGames(listing, launchDirectory)
@@ -99,18 +103,48 @@ const playerOf = (request: Request): string | null | typeof INVALID => {
   return /^0x[0-9a-fA-F]{1,64}$/.test(player) ? player : INVALID;
 };
 
+/**
+ * A player's listing is read for that request. Everyone else shares one listing per colo, cached whole, so a hit touches
+ * neither database nor any Herald; only a complete listing is cached, so a failed read is retried by the next request.
+ */
+const readListing = async (
+  request: Request,
+  dependencies: DirectoryDependencies,
+  player: string | null,
+): Promise<DirectoryListing> => {
+  if (player) return readFreshListing(dependencies, player);
+  const key = new Request(new URL("/api/directory/shared-listing", request.url));
+  const cached = await dependencies.cache.match(key);
+  if (cached) return (await cached.json()) as DirectoryListing;
+  const listing = await readFreshListing(dependencies, null);
+  if (isComplete(listing)) {
+    const headers = { "cache-control": `max-age=${LISTING_CACHE_SECONDS}` };
+    await dependencies.cache.put(key, Response.json(listing, { headers }));
+  }
+  return listing;
+};
+
+/** The launch records and the shard registry live in two databases in two regions: they are read together. */
+const readFreshListing = async (dependencies: DirectoryDependencies, player: string | null) => {
+  const [launchDirectory, listings] = await Promise.all([
+    readLaunchDirectoryRecords(dependencies),
+    listShards(dependencies, player),
+  ]);
+  return { launchDirectory, listings };
+};
+
+const isComplete = ({ launchDirectory, listings }: DirectoryListing) =>
+  launchDirectory !== null && listings.every((listing) => listing.games !== null);
+
 /** Every listed shard's games, each shard read on its own so one that fails is named and the rest still answer. */
 const listShards = async (dependencies: DirectoryDependencies, player: string | null) => {
   const results = (await registeredShards(dependencies.db)).filter(
     (row) => row.status === "active" || row.status === "draining",
   );
+  const query = player ? `?player=${player}` : "";
   return Promise.all(
     results.map((shard) =>
-      listShard(shard, () =>
-        player
-          ? fetchShardGames(shard, `${shard.url}/games?player=${player}`, dependencies.fetchShard)
-          : readCachedShardGames(shard, dependencies.cache, dependencies.fetchShard),
-      ),
+      listShard(shard, () => fetchShardGames(shard, `${shard.url}/games${query}`, dependencies.fetchShard)),
     ),
   );
 };
@@ -194,16 +228,6 @@ const listShard = async (
     console.error("directory_shard_unavailable", shard.url, error);
     return { ...shard, games: null, error: "unavailable" };
   }
-};
-
-const readCachedShardGames = async (shard: ListedShard, cache: Cache, fetchShard: typeof fetch) => {
-  // Keyed by chain as well as URL: a URL relisted under a new chain never answers from the old chain's listing.
-  const key = new Request(`${shard.url}/games?chain=${shard.chainId}`);
-  const cached = await cache.match(key);
-  if (cached) return ((await cached.json()) as HeraldGameDirectory).games;
-  const games = await fetchShardGames(shard, `${shard.url}/games`, fetchShard);
-  await cache.put(key, Response.json({ games }, { headers: { "cache-control": `max-age=${GAMES_CACHE_SECONDS}` } }));
-  return games;
 };
 
 const fetchShardGames = async (shard: ListedShard, url: string, fetchShard: typeof fetch) => {

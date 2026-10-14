@@ -129,3 +129,89 @@ test("invalid slot metadata faults the shard", async () => {
     });
   }
 });
+
+/** A colo cache that keeps what it is given, so a test sees which reads a cached answer saves. */
+const memoryCache = () => {
+  const entries = new Map<string, Response>();
+  return {
+    match: async (key: Request) => entries.get(key.url)?.clone(),
+    put: async (key: Request, response: Response) => void entries.set(key.url, response.clone()),
+  } as unknown as Cache;
+};
+
+type DirectoryBody = { shards: { games: unknown; error?: string }[] };
+const shardsOf = async (response: Response) => ((await response.json()) as DirectoryBody).shards;
+
+const healthyLaunch = async () => ({
+  chains: shards.map(({ chainId }) => ({
+    chainId,
+    games: games.map(({ game_id }) => ({ gameId: game_id, slotId: null })),
+  })),
+});
+
+test("both routes read the launch records and the shard registry at the same time", async () => {
+  for (const route of ["/api/directory", "/api/directory/history"]) {
+    let registryRead!: () => void;
+    const registryStarted = new Promise<void>((resolve) => (registryRead = resolve));
+    const deps = {
+      ...dependencies(async () => {
+        // Resolves only once the registry read has begun: a route that waited for the launch records first never
+        // reaches the registry, and this read never finishes.
+        await registryStarted;
+        return healthyLaunch();
+      }),
+      db: {
+        prepare: () => ({
+          all: async () => {
+            registryRead();
+            return { results: shards };
+          },
+        }),
+      } as unknown as D1Database,
+    };
+    const handle = route === "/api/directory" ? handleDirectory : handleDirectoryHistory;
+    const answered = handle(new Request(`https://app.test${route}`), deps).then((response) => response.status);
+    const stalled = new Promise((resolve) => setTimeout(() => resolve("stalled"), 500));
+    expect([route, await Promise.race([answered, stalled])]).toEqual([route, 200]);
+  }
+});
+
+test("everyone without a player shares one cached listing; a player's listing is always read", async () => {
+  const deps = { ...dependencies(vi.fn(healthyLaunch)), cache: memoryCache() };
+  const registry = vi.spyOn(deps.db, "prepare");
+  const first = await (await handleDirectory(new Request("https://app.test/api/directory"), deps)).json();
+  const second = await (await handleDirectory(new Request("https://app.test/api/directory"), deps)).json();
+  const history = await handleDirectoryHistory(new Request("https://app.test/api/directory/history"), deps);
+  expect(second).toEqual(first);
+  const settled = ((await history.json()) as { games: { game_id: number }[] }).games;
+  expect(settled.map(({ game_id }) => game_id)).toEqual([4, 4, 3, 3]);
+  expect(
+    [deps.readLaunchDirectory, registry, deps.fetchShard].map((read) => vi.mocked(read).mock.calls.length),
+  ).toEqual([1, 1, shards.length]);
+
+  await handleDirectory(new Request("https://app.test/api/directory?player=0x123"), deps);
+  expect(vi.mocked(deps.readLaunchDirectory).mock.calls.length).toBe(2);
+  expect(
+    vi
+      .mocked(deps.fetchShard)
+      .mock.calls.slice(-shards.length)
+      .map(([url]) => String(url)),
+  ).toEqual(shards.map(({ url }) => `${url}/games?player=0x123`));
+});
+
+test("a listing with a failed read is not shared: the next request reads again", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => undefined);
+  let launchUp = false;
+  const readLaunch = vi.fn(async () => {
+    if (!launchUp) throw new Error("launch unavailable");
+    return healthyLaunch();
+  });
+  const deps = { ...dependencies(readLaunch), cache: memoryCache() };
+  const failed = await shardsOf(await handleDirectory(new Request("https://app.test/api/directory"), deps));
+  expect(failed.every((shard) => shard.error === "unavailable")).toBe(true);
+  launchUp = true;
+  const recovered = await shardsOf(await handleDirectory(new Request("https://app.test/api/directory"), deps));
+  await handleDirectory(new Request("https://app.test/api/directory"), deps);
+  expect(recovered.every((shard) => Array.isArray(shard.games))).toBe(true);
+  expect(readLaunch.mock.calls.length).toBe(2);
+});
