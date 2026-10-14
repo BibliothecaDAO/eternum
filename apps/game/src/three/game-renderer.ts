@@ -2,7 +2,7 @@ import { configManager } from "@bibliothecadao/eternum";
 import { updateGameEndFreeze } from "./effects/game-end-freeze";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
-import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
+import { GRAPHICS_DEV_GUI_ENABLED, createGraphicsGuiLifetime, createGuiFolder } from "@/three/utils/gui-manager";
 import { IS_MOBILE } from "@/ui/config";
 import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import { env } from "../../env";
@@ -87,6 +87,7 @@ export default class GameRenderer {
   private sceneManager!: SceneManager;
   private cleanupIntervals: NodeJS.Timeout[] = [];
   private guiFolders: TrackableGuiFolder[] = [];
+  private readonly graphicsGui = createGraphicsGuiLifetime();
   private readonly isMobileDevice = IS_MOBILE;
   private backendInitializationPromise?: Promise<void>;
   private isRecoveringFromDeviceLoss = false;
@@ -220,15 +221,16 @@ export default class GameRenderer {
     // animate kickoff) instead of being hidden inside the `renderer-init`
     // aggregate.
     const backendStart = performance.now();
-    await this.backendInitializationPromise;
+    await Promise.all([this.backendInitializationPromise, this.graphicsGui.ready]);
     recordGameEntryDuration("renderer-init-backend-await", performance.now() - backendStart);
 
     if (this.isDestroyed) {
       return;
     }
     if (GRAPHICS_DEV_GUI_ENABLED) {
-      this.supportRuntimeRegistry.getControlBridge().setupGuiControls();
+      await this.supportRuntimeRegistry.getControlBridge().setupGuiControls(() => !this.isDestroyed);
     }
+    if (this.isDestroyed) return;
     this.sessionRuntime.startListeners();
     const initialSceneName = resolveRendererRouteSceneFromHref({
       href: window.location.href,
@@ -500,5 +502,6 @@ export default class GameRenderer {
       },
       transitionManager: this.transitionManager,
     });
+    this.graphicsGui.dispose();
   }
 }

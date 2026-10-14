@@ -1,4 +1,3 @@
-import { setupRendererDevGui } from "./renderer-dev-gui-runtime";
 import { SceneName } from "./types";
 import { getContactShadowResources } from "./utils/contact-shadow";
 
@@ -25,7 +24,7 @@ interface CreateRendererControlBridgeRuntimeInput {
 export interface RendererControlBridgeRuntime {
   handleInteractionChange(): void;
   markLabelsDirty(): void;
-  setupGuiControls(): void;
+  setupGuiControls(isActive: () => boolean): Promise<void>;
 }
 
 export function createRendererControlBridgeRuntime(
@@ -40,22 +39,20 @@ export function createRendererControlBridgeRuntime(
       input.markLabelsDirty();
     },
 
-    setupGuiControls() {
-      try {
-        const { material } = getContactShadowResources();
+    async setupGuiControls(isActive) {
+      const { setupRendererDevGui } = await import("./renderer-dev-gui-runtime");
+      if (!isActive()) return;
+      const { material } = getContactShadowResources();
 
-        setupRendererDevGui({
-          contactShadowOpacity: material.opacity,
-          createFolder: input.createFolder,
-          moveCameraToColRow: input.moveCameraToColRow,
-          moveCameraToXYZ: input.moveCameraToXYZ,
-          renderer: input.getRenderer(),
-          switchScene: input.switchScene,
-          updateContactShadowOpacity: input.updateContactShadowOpacity,
-        });
-      } catch {
-        // Dev GUI failures must not block renderer startup.
-      }
+      setupRendererDevGui({
+        contactShadowOpacity: material.opacity,
+        createFolder: input.createFolder,
+        moveCameraToColRow: input.moveCameraToColRow,
+        moveCameraToXYZ: input.moveCameraToXYZ,
+        renderer: input.getRenderer(),
+        switchScene: input.switchScene,
+        updateContactShadowOpacity: input.updateContactShadowOpacity,
+      });
     },
   };
 }
