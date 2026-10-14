@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ReactNode } from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 
 import "./index.css";
@@ -30,6 +30,13 @@ const GameClientApp = lazy(() => import("./game-client-app").then((module) => ({
 
 const AppFallback = FirstFrame;
 
+/**
+ * Play's former pages, shared publicly before Play took them in: each still leads to Play. `public/_redirects` answers a
+ * full load with a permanent redirect; these routes answer the app's own navigation and the dev server, which serve
+ * the shell for every path.
+ */
+export const RETIRED_PLAY_PATHS = ["/blitz", "/frontier", "/eternum", "/dominion"] as const;
+
 const LazyRoute = ({ children }: { children: ReactNode }) => <Suspense fallback={<AppFallback />}>{children}</Suspense>;
 
 /**
@@ -40,6 +47,9 @@ export const appRoutes = (
   <>
     <Route element={<AppShell />}>
       <Route index element={<PlayPage />} />
+      {RETIRED_PLAY_PATHS.map((path) => (
+        <Route key={path} path={path.slice(1)} element={<Navigate to="/" replace />} />
+      ))}
       <Route path="blitz/:id" element={<BlitzLobbyPage />} />
       <Route path="season" element={<SeasonPage />} />
       <Route path="results/:id" element={<ResultsPage />} />

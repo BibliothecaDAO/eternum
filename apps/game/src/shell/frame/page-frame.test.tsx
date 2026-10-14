@@ -4,7 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { createRoutesFromChildren, MemoryRouter, Routes, type RouteObject } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { appRoutes } from "@/app";
+import { appRoutes, RETIRED_PLAY_PATHS } from "@/app";
 
 import { setViewportWidth } from "./test-viewport";
 
@@ -32,12 +32,16 @@ const CONTROLS = "a[href], button, input, select, textarea";
 // jsdom lays nothing out, so it has no scrolling to do (the Scroll's address scrolls Play to its band).
 Element.prototype.scrollIntoView = () => {};
 
-/** The app shell's pages (the route without a path), each with a sample for its parameters. */
+/**
+ * The app shell's pages (the route without a path), each with a sample for its parameters. Play's former addresses
+ * only lead to Play (app-hosting.test.ts holds them), so they draw no page of their own.
+ */
 const shellPaths = (): string[] => {
   const shell = createRoutesFromChildren(appRoutes).find((route) => route.path === undefined) as RouteObject;
-  return (shell.children ?? []).map((route) =>
-    route.index ? "/" : `/${route.path}`.replace("*", "nothing-here").replace(/:\w+/, "0x111"),
-  );
+  const retired: readonly string[] = RETIRED_PLAY_PATHS;
+  return (shell.children ?? [])
+    .map((route) => (route.index ? "/" : `/${route.path}`.replace("*", "nothing-here").replace(/:\w+/, "0x111")))
+    .filter((path) => !retired.includes(path));
 };
 
 let root: Root | null = null;
