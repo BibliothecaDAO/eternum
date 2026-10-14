@@ -3,11 +3,6 @@ import { ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import type { ResourceManager } from "@bibliothecadao/eternum";
 import { AutomationUnavailable, readAutomationGameId, readTransferResources } from "./automation-readiness";
 import { useTransferAutomationStore } from "@/hooks/store/use-transfer-automation-store";
-import {
-  useExplorationAutomationStore,
-  DEFAULT_STRATEGY_ID,
-  DEFAULT_SCOPE_RADIUS,
-} from "@/hooks/store/use-exploration-automation-store";
 import { useAutomationStore } from "@/hooks/store/use-automation-store";
 
 const config = vi.hoisted(() => ({
@@ -24,7 +19,6 @@ beforeEach(() => {
   config.getResourceWeightKg.mockReset().mockReturnValue(1);
   config.getCapacityConfigKg.mockReset().mockReturnValue(10);
   useTransferAutomationStore.setState({ entries: {} });
-  useExplorationAutomationStore.setState({ entries: {} });
 });
 const resources = (balance?: number) =>
   ({ balanceWithProduction: () => (balance === undefined ? undefined : { balance }) }) as unknown as ResourceManager;
@@ -60,7 +54,7 @@ describe("automation readiness", () => {
     });
     expect(readTransferResources(resources(10), 1, [ResourcesIds.Wood])._tag).toBe("Success");
   });
-  it("does not create transfers or explorations under an unknown game", () => {
+  it("does not create transfers under an unknown game", () => {
     config.getSeasonConfig.mockImplementation(() => {
       throw new Error("not synchronized");
     });
@@ -70,23 +64,15 @@ describe("automation readiness", () => {
         .getState()
         .add({ sourceEntityId: "1", destinationEntityId: "2", resourceIds: [ResourcesIds.Wood], intervalMinutes: 1 }),
     ).toThrow(AutomationUnavailable);
-    expect(() =>
-      useExplorationAutomationStore
-        .getState()
-        .add({ explorerId: "1", active: true, scopeRadius: DEFAULT_SCOPE_RADIUS, strategyId: DEFAULT_STRATEGY_ID }),
-    ).toThrow(AutomationUnavailable);
     expect(useTransferAutomationStore.getState().entries).toEqual({});
-    expect(useExplorationAutomationStore.getState().entries).toEqual({});
   });
   it("drops persisted entries with unknown or missing game identity without relabeling them", async () => {
-    for (const store of [useTransferAutomationStore, useExplorationAutomationStore]) {
-      const migrate = store.persist.getOptions().migrate!;
-      const result = await migrate(
-        { entries: { missing: {}, unknown: { gameId: "unknown" }, known: { gameId: "10-20-30" } } },
-        0,
-      );
-      expect(Object.keys((result as { entries: object }).entries)).toEqual(["known"]);
-    }
+    const migrate = useTransferAutomationStore.persist.getOptions().migrate!;
+    const result = await migrate(
+      { entries: { missing: {}, unknown: { gameId: "unknown" }, known: { gameId: "10-20-30" } } },
+      0,
+    );
+    expect(Object.keys((result as { entries: object }).entries)).toEqual(["known"]);
   });
   it("keeps production explicitly unready before config and preserves known saved identity until pruning", async () => {
     expect(useAutomationStore.getInitialState().gameId).toBeNull();

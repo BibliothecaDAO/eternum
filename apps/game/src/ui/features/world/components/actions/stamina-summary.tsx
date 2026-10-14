@@ -3,7 +3,7 @@ import { configManager } from "@bibliothecadao/eternum";
 import type { ActionPath } from "@bibliothecadao/eternum";
 import type { ID } from "@bibliothecadao/types";
 import { useStaminaManager } from "@/hooks/helpers/use-stamina";
-import { getPathStaminaCost } from "@/hooks/exploration-automation-planner";
+import { getPathStaminaCost } from "@/lib/army-stamina/path-cost";
 import clsx from "clsx";
 import { useMemo } from "react";
 

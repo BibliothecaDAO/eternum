@@ -233,10 +233,6 @@ const ArmyBannerEntityDetailContent = memo(
             />
           )}
         </div>
-
-        {/* {derivedData.isMine ? (
-          <ExplorationAutomationCompact explorerId={explorer.explorer_id ?? armyEntityId} compact={compact} />
-        ) : null} */}
       </div>
     );
   },

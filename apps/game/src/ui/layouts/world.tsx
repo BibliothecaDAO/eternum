@@ -7,7 +7,6 @@ import { DevSyncOverlay } from "../debug/dev-sync-overlay";
 import { SurfaceHost } from "../design-system/molecules/popover";
 import { Tooltip } from "../design-system/molecules/tooltip";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
-import { ExplorationAutomationManager } from "../features/infrastructure/automation/exploration-automation-manager";
 import { TransferAutomationManager } from "../features/infrastructure/automation/transfer-automation-manager";
 import { ActionInfo } from "../features/world/components/actions/action-info";
 import { BottomRightPanel } from "../features/world/components/bottom-right-panel";
@@ -92,7 +91,6 @@ const AutomationSystems = () => {
     <>
       <AutomationManager />
       <TransferAutomationManager />
-      <ExplorationAutomationManager />
     </>
   );
 };

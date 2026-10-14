@@ -3,7 +3,7 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { pinsOrder } from "@/three/scenes/worldmap-order-request";
-import { computeEffectiveStaminaCost } from "@/hooks/exploration-automation-planner";
+import { computeEffectiveStaminaCost } from "@/lib/army-stamina/path-cost";
 import {
   ActionPaths,
   ActionType,

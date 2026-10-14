@@ -1,4 +1,4 @@
-import { computeEffectiveStaminaCost } from "@/hooks/exploration-automation-planner";
+import { computeEffectiveStaminaCost } from "@/lib/army-stamina/path-cost";
 import { pinsOrder } from "@/three/scenes/worldmap-order-request";
 import { formatExact } from "@/ui/design-system/kit/amount";
 import { ARMY, ATTACK, EXPLORE, MOVE, STAMINA, TRANSFER, UNEXPLORED } from "@/ui/design-system/kit/words";
