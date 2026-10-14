@@ -421,7 +421,7 @@ const homeCardEntryExpression = (heading) => `JSON.stringify((() => {
   const title = [...document.querySelectorAll("h1, h2, h3, h4")].find((element) => element.textContent.trim() === ${JSON.stringify(heading)});
   let card = title;
   while (card && !card.querySelector("button")) card = card.parentElement;
-  const button = card && [...card.querySelectorAll("button")].find((element) => /^(Resume|Play free)/.test(element.textContent.trim()));
+  const button = card && [...card.querySelectorAll("button")].find((element) => /^(Resume|Play)/.test(element.textContent.trim()));
   if (!button) return null;
   const mark = JSON.parse(window.__playtest.step("enter"));
   button.click();

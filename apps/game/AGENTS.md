@@ -100,10 +100,10 @@ everything it started. Run it from a stopped client and reuse it; extend its ste
   and everything is released.
 - **As a spectator** (default), from a fresh browser profile (cold cache): realm view, open the map, map idle, pan
   (WASD), zoom out and in, the menu, back to the realm and the map, then a minute of watching.
-- **As a player** (`--player <browser profile dir>`), entering through the Frontier card's Resume or Play free on the
-  home page: realm view, open the map, select the army with the most stamina, open and close production, explore twice
-  (tap a tile beside the army, Enter), then five taps with Enter at the pace taps reach the page. Sign the profile in
-  once by hand
+- **As a player** (`--player <browser profile dir>`), entering through the Frontier card's Resume or Play on the home
+  page: realm view, open the map, select the army with the most stamina, open and close production, explore twice (tap a
+  tile beside the army, Enter), then five taps with Enter at the pace taps reach the page. Sign the profile in once by
+  hand
   (`npx -y agent-browser --session login --profile <dir> open https://127.0.0.1:<port>/sign-in --ignore-https-errors`);
   it stays signed in. Orders use the map's default zoom.
 - **The game.** The newest live Frontier game, or `--chain-id`/`--game-id` (refused if it is not a listed Frontier
