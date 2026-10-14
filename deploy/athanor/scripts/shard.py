@@ -447,15 +447,26 @@ def stop_shard(directory):
 
 
 # Each workload key is a harness option (underscores for dashes, true for a bare flag), so a matrix can run every shape
-# the harness runs: a Frontier burst, an Eternum game, a chosen preset. The harness refuses the rest.
+# the harness runs: a Frontier burst, an Eternum game, a chosen preset. `"wave": true` runs the 2,000-player wave
+# (burst.ts) instead. The harness refuses the rest.
 def workload_command(workload):
     if not workload:
         raise ValueError("workload must name the harness run")
+    script = "burst.ts" if workload.get("wave") is True else "run.ts"
     options = []
     for key, value in workload.items():
+        if key == "wave":
+            continue
         flag = f"--{key.replace('_', '-')}"
         options += [flag] if value is True else [flag, str(value)]
-    return ["bun", "deploy/athanor/harness/run.ts", *options]
+    return ["bun", f"deploy/athanor/harness/{script}", *options]
+
+
+def harness_container_command(compose_file, command):
+    """The workload inside the shard's harness container, its reports in data/workload."""
+    action = "wave" if command[1].endswith("burst.ts") else "harness"
+    return [*DOCKER, "compose", "-f", str(compose_file), "run", "--rm", "-e", "HARNESS_OUTPUT_DIRECTORY=/data/workload",
+            "--entrypoint", "python3", "harness", "/app/deploy/shard/init.py", action, *command[2:]]
 
 
 def run_workload(command, directory, environment):
@@ -491,8 +502,7 @@ def run_matrix(matrix, directory):
         try:
             start_shard(config, target)
             environment = dict(os.environ)
-            command = [*DOCKER, "compose", "-f", str(target / "compose.json"), "run", "--rm",
-                       "-e", "HARNESS_OUTPUT_DIRECTORY=/data/workload", "harness", *command[2:]]
+            command = harness_container_command(target / "compose.json", command)
             result.update(measures.measure_workload(
                 DOCKER, lambda: run_workload(command, target, environment), f"athanor-{config['shard']}-madara-1",
                 target / "metrics" / "metrics.jsonl", target / "chain-config.yaml", target / "workload"))

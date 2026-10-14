@@ -200,9 +200,9 @@ def chain_commitment(preset, on_chain, released):
     return on_chain
 
 
-def harness_invocation(args, environ, data=DATA, started=None):
-    """The harness command against this shard: its private settings from harness.env, its reports under
-    data/harness/<start time> unless the caller names a directory."""
+def harness_invocation(args, environ, data=DATA, started=None, script="run.ts"):
+    """The harness command against this shard (run.ts, or burst.ts for the 2,000-player wave): its private settings
+    from harness.env, its reports under data/harness/<start time> unless the caller names a directory."""
     environment = {**environ, **operator_environment(),
                    **shard.read_private_environment(data / "harness.env"), **shard.host_credentials(data)}
     operator = json.loads((data / "gameplay-contracts.json").read_text())["operatorAccountAddress"]
@@ -217,7 +217,7 @@ def harness_invocation(args, environ, data=DATA, started=None):
         environment[field] = str(data / filename)
     stamp = time.strftime("%Y%m%dT%H%M%SZ", started or time.gmtime())
     environment.setdefault("HARNESS_OUTPUT_DIRECTORY", str(data / "harness" / stamp))
-    return ["bun", "deploy/athanor/harness/run.ts", *args], environment
+    return ["bun", f"deploy/athanor/harness/{script}", *args], environment
 
 
 def probe():
@@ -256,9 +256,10 @@ if __name__ == "__main__":
         os.environ.update(operator_environment())
         probe()
         raise SystemExit(0)
-    if action == "harness":
+    if action in ("harness", "wave"):
         # The harness runs as the host user, so what it writes is already the user's: it execs before any chown.
-        argv, environment = harness_invocation(sys.argv[2:], os.environ)
+        script = "burst.ts" if action == "wave" else "run.ts"
+        argv, environment = harness_invocation(sys.argv[2:], os.environ, script=script)
         os.execvpe(argv[0], argv, environment)
     config = configuration()
     presets = requested_presets(os.environ, json.loads(RELEASE_FACTS.read_text()))

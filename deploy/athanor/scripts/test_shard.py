@@ -392,6 +392,16 @@ class ShardTest(unittest.TestCase):
                                         "--preset", "101", "--minutes", "30"])
         with self.assertRaisesRegex(ValueError, "must name the harness run"):
             shard.workload_command({})
+        wave = shard.workload_command({"wave": True, "players": 2000, "create_game": True,
+                                       "out": "/data/workload/wave.json"})
+        self.assertEqual(wave, ["bun", "deploy/athanor/harness/burst.ts", "--players", "2000", "--create-game",
+                                "--out", "/data/workload/wave.json"])
+        self.assertEqual(shard.harness_container_command("c.json", wave)[-7:],
+                         ["/app/deploy/shard/init.py", "wave", "--players", "2000", "--create-game", "--out",
+                          "/data/workload/wave.json"])
+        container = shard.harness_container_command("c.json", frontier)
+        init = container.index("/app/deploy/shard/init.py")
+        self.assertEqual(container[init + 1:], ["harness", *frontier[2:]])
 
     def test_player_capacity_stops_at_campaign_g_target(self):
         config = {"chain_id": "REALMS_TEST", "guardian_url": "https://id.test/api/guardian",
