@@ -12,7 +12,7 @@
     "@realms-world/identity": "workspace:*",
     "@realms-world/value-ledger": "workspace:*",
     "better-auth": "1.5.3",
-    "effect": "4.0.0-rc.108",
+    "effect": "4.0.4",
     "starknet": "catalog:web",
     "zod": "catalog:web",
     "@bibliothecadao/notifications": "workspace:*",

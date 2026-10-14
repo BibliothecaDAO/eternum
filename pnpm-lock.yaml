@@ -642,8 +642,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/identity
       effect:
-        specifier: 4.0.0-rc.108
-        version: 4.0.0-rc.108
+        specifier: 4.0.4
+        version: 4.0.4
       starknet:
         specifier: catalog:web
         version: 9.4.2(typescript@5.9.3)(zod@4.3.6)
@@ -795,8 +795,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/value-ledger
       effect:
-        specifier: 4.0.0-rc.108
-        version: 4.0.0-rc.108
+        specifier: 4.0.4
+        version: 4.0.4
       hono:
         specifier: ^4.9.12
         version: 4.11.10
@@ -847,8 +847,8 @@ importers:
         specifier: 1.5.3
         version: 1.5.3(8703de43f786ed6c642ab79a95292fef)
       effect:
-        specifier: 4.0.0-rc.108
-        version: 4.0.0-rc.108
+        specifier: 4.0.4
+        version: 4.0.4
       starknet:
         specifier: catalog:web
         version: 9.4.2(typescript@5.9.3)(zod@4.3.6)
@@ -890,8 +890,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/chain
       effect:
-        specifier: 4.0.0-rc.108
-        version: 4.0.0-rc.108
+        specifier: 4.0.4
+        version: 4.0.4
     devDependencies:
       '@cloudflare/workers-types':
         specifier: 5.20260922.1
@@ -927,8 +927,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/value-ledger
       effect:
-        specifier: 4.0.0-rc.108
-        version: 4.0.0-rc.108
+        specifier: 4.0.4
+        version: 4.0.4
       starknet:
         specifier: catalog:web
         version: 9.4.2(typescript@5.9.3)(zod@4.3.6)
@@ -10604,8 +10604,8 @@ packages:
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
 
-  effect@4.0.0-rc.108:
-    resolution: {integrity: sha512-KmI3DlKZWPvCL4QQ2FMaPOuxMt/7DrKMENCY/gQ+MkDR5QYw25wgU5Zmh/wVLboNjIci1gNOgNCFe4xqgxli3A==}
+  effect@4.0.4:
+    resolution: {integrity: sha512-Sr50OeVSC3M5UkoUYUhFf3EULryhGaZZUf6OzDHTvaznOw7HRlxOKdF3/4nvQXHL22StOyMG3Cvo8Bt7xUp+Ng==}
 
   ejs@3.1.10:
     resolution: {integrity: sha512-UeJmFfOrAQS8OJWPZ4qtgHyWExa088/MtK5UEyoJGFH67cDEXkZSviOiKRCZ4Xij0zxI3JECgYs3oKx+AizQBA==}
@@ -29815,13 +29815,7 @@ snapshots:
 
   ee-first@1.1.1: {}
 
-  effect@4.0.0-rc.108:
-    dependencies:
-      '@standard-schema/spec': 1.1.0
-      fast-check: 4.9.0
-      kubernetes-types: 1.30.0
-      msgpackr: 2.1.0
-      uuid: 14.0.2
+  effect@4.0.4: {}
 
   ejs@3.1.10:
     dependencies:

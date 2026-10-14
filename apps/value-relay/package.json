@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "@realms-world/identity": "workspace:*",
-    "effect": "4.0.0-rc.108",
+    "effect": "4.0.4",
     "starknet": "catalog:web",
     "@realms-world/value-ledger": "workspace:*",
     "@realms-world/chain": "workspace:*",
