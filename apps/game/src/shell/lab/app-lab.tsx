@@ -6,12 +6,11 @@ import { identityClient, useIdentitySessionStore } from "@/hooks/context/identit
 import { IdentityRequestError } from "@realms-world/identity";
 import { useFrontierType } from "@/ui/features/frontier/use-frontier-type";
 
-import { BlitzListPage, BlitzLobbyPage } from "../blitz/blitz-pages";
+import { BlitzLobbyPage } from "../blitz/blitz-pages";
 import { entryTermsKey, refundOwedKey, registeredSlotsKey, slotRegisteredKey } from "../blitz/entry";
 import { seasonPrizeKey } from "../season-tab/blitz-season";
 import { rewardKey } from "../season-tab/reward";
 import { LearnPage } from "../learn/learn-page";
-import { DominionPage, EternumPage, FrontierPage } from "../play/age-pages";
 import { PlayPage } from "../play/play-page";
 import { PlayerPage, ProfilePage, ProfileRowPage } from "../profile/profile-pages";
 import { ResultsPage } from "../season-tab/results-page";
@@ -82,10 +81,6 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
   return (
     <Routes>
       <Route index element={<PlayPage />} />
-      <Route path="frontier" element={<FrontierPage />} />
-      <Route path="eternum" element={<EternumPage />} />
-      <Route path="dominion" element={<DominionPage />} />
-      <Route path="blitz" element={<BlitzListPage />} />
       <Route path="blitz/:id" element={<BlitzLobbyPage />} />
       <Route path="season" element={<SeasonPage />} />
       <Route path="results/:id" element={<ResultsPage />} />

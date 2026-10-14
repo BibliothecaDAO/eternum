@@ -82,11 +82,15 @@ export const useDirectory = () => {
   });
 };
 
-/** The first few settled games, as a short list shows them (the latest result, a player's recent matches). */
-export const useRecentResults = (limit: number, player: string | null = null) =>
+/**
+ * The first few settled games, as a short list shows them (the latest result, a player's recent matches). `enabled`
+ * holds the read until the player it is for is known, so a list of their own never shows everyone's.
+ */
+export const useRecentResults = (limit: number, player: string | null = null, enabled = true) =>
   useQuery({
     queryKey: ["shell", "history", "recent", limit, player],
     queryFn: () => fetchDirectoryHistory({ limit, player }),
+    enabled,
     staleTime: 30_000,
     retry: 1,
   });

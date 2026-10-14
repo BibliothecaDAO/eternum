@@ -11,7 +11,7 @@ import { PageFrame } from "../frame/page-frame";
 import { SettingRow, SettingRows } from "../profile/setting-row";
 import { Band } from "../band";
 import { paintingSources } from "../paintings";
-import { AgeLabel } from "../play/age-card";
+import { AgeLabel } from "../play/age-label";
 import { AGES, ageOf, isLocked } from "../play/ages";
 import { LEARN_WORDS, WORDS } from "../words";
 import { MODE_GUIDES, PLAYER_GUIDES } from "./guides";

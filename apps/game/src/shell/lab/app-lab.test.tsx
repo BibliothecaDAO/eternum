@@ -20,7 +20,7 @@ vi.mock("@/hooks/context/identity-session", () => ({
 }));
 vi.mock("../play/play-page", () => ({ PlayPage: () => <p>Fixture home</p> }));
 vi.mock("../play/age-pages", () => ({ DominionPage: () => null, EternumPage: () => null, FrontierPage: () => null }));
-vi.mock("../blitz/blitz-pages", () => ({ BlitzListPage: () => null, BlitzLobbyPage: () => null }));
+vi.mock("../blitz/blitz-pages", () => ({ BlitzLobbyPage: () => null }));
 vi.mock("../profile/profile-pages", () => ({
   PlayerPage: () => null,
   ProfilePage: () => null,

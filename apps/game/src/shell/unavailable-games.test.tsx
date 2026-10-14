@@ -9,7 +9,8 @@ vi.mock("./herald", () => ({
 }));
 
 import type { DirectoryGame } from "./herald";
-import { PlayCard, ResumeCard } from "./play/next-step-card";
+import type { PlayItem } from "./play/play-board";
+import { LeadCard } from "./play/play-item";
 
 const season = {
   chainId: "0x1",
@@ -26,9 +27,22 @@ const season = {
   player_state: { registered: true, roster_wallet: null, structures: [{ category: 1, realm_id: 3098, level: 1 }] },
 } as unknown as DirectoryGame;
 
+const lead = (verb: "play" | "resume") => (game: DirectoryGame) => {
+  const item: PlayItem = {
+    key: "0x1:1",
+    mode: "frontier",
+    when: "now",
+    verb,
+    mine: verb === "resume",
+    source: "game",
+    game,
+  };
+  return <LeadCard item={item} now={1} signedIn />;
+};
+
 it.each([
-  ["Play", (game: DirectoryGame) => <PlayCard season={game} firstVisit={false} now={1} />],
-  ["Resume", (game: DirectoryGame) => <ResumeCard season={game} now={1} />],
+  ["Play", lead("play")],
+  ["Resume", lead("resume")],
 ] as const)("keeps an unreadable season's %s card, naming the failure in place of its verb", async (verb, card) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const container = document.createElement("div");

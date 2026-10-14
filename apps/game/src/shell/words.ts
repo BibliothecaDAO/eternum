@@ -23,7 +23,7 @@ export const WORDS = {
   results: "Results",
   /** A game under way. */
   live: "Live",
-  /** The home card when no age has a game live or scheduled; awaiting the owner's wording (a gap in spec 03's table). */
+  /** Play's lead when no mode has a game live or scheduled. */
   noSeason: "No season running",
   /** Before an age's numeral: "Age II". */
   age: "Age",
@@ -41,10 +41,16 @@ export const FOOTER_WORDS = {
   owner: "© 2026 BibliothecaDAO",
 } as const;
 
-/** Play on the desktop: its panels. */
+/** Play: what is under way now, and each mode's next and finished games behind its switch. */
 export const PLAY_WORDS = {
-  blitzGames: "Blitz games",
-  nextBlitz: "Next Blitz",
+  now: "Now",
+  later: "Next and done",
+  /** The modes' switch, named for assistive technology. */
+  modes: "Modes",
+  /** A switch's dot, named for assistive technology: the mode holds something of the player's. */
+  yours: "Something of yours",
+  ended: "Ended",
+  players: "Players",
 } as const;
 
 /** The lore's line, on the first visit's painting and on sign-in (approved 25 September). */
@@ -81,7 +87,7 @@ export const SIGN_IN_WORDS = {
   portrait: "Portrait",
 } as const;
 
-/** Blitz's list and lobby: the steps on Join, the seat's cost, and what stands where an action cannot. */
+/** Blitz's rows and lobby: the steps on Join, the seat's cost, and what stands where an action cannot. */
 export const BLITZ_WORDS = {
   preparing: "Preparing…",
   /** Shown only to assistive technology; the seats are drawn. */
@@ -90,8 +96,8 @@ export const BLITZ_WORDS = {
   registeredUnit: "registered",
   /** Under a slot's registered count: why it has no seats yet. */
   drawnAtClose: (seats: number) => `No cap. Games of up to ${seats} are drawn when entry closes.`,
-  /** A slot's row: its lobby holds the paid entry. */
-  open: "Open",
+  /** A slot taking players: its lobby holds the paid entry. */
+  join: "Join",
   /** Above the lobby's countdown. */
   startsIn: "Starts in",
   endsIn: "Ends in",

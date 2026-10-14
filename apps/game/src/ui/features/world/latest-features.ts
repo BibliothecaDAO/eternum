@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-14",
+    title: "Play shows what you can do now",
+    description:
+      "Play leads with your next step and one button, lists everything under way with its own (resume your day, watch a match), and keeps each mode's next and finished games behind a switch. Results of any game you have not opened appear there, and signing in or linking a wallet from a Blitz lobby brings you back to it.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-14",
     title: "One lab for every tool",
     description:
       "Art, character, renderer and interface tools share one lab selector. Model review and terrain captures keep their existing addresses.",

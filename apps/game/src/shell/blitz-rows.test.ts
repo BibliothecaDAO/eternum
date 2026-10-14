@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { PlaytestSlot } from "./blitz-slot";
 
-import { blitzRows, gameKeyOf, gameSlotKeyOf, leadBlitzRow, seatedGameOf, slotKeyOf } from "./blitz-rows";
+import { blitzRows, gameKeyOf, gameSlotKeyOf, seatedGameOf, slotKeyOf } from "./blitz-rows";
 import type { DirectoryGame } from "./herald";
 
 const blitz = (gameId: number, over: Partial<DirectoryGame>): DirectoryGame =>
@@ -61,19 +61,6 @@ describe("the lobby's Blitz rows", () => {
     const [row] = blitzRows([], [slot("soon", 1_042)]);
     expect(row.kind === "slot" && [row.closesAt, row.startsAt]).toEqual([1_042, 1_342]);
   });
-
-  it("leads a one-row card with the player's own game to enter, else the next slot", () => {
-    const rows = blitzRows([blitz(1, {})], [slot("soon", 1_042)]);
-    expect(leadBlitzRow(rows)?.key).toBe("slot:soon");
-    const playing = blitzRows(
-      [
-        blitz(1, {}),
-        blitz(2, { player_state: { registered: false, settled: false, roster_wallet: "0x4a1", structures: [] } }),
-      ],
-      [slot("soon", 1_042)],
-    );
-    expect(leadBlitzRow(playing)?.key).toBe("game:0xa:2");
-  });
 });
 
 it("keeps ended Blitz games available to watch until their settled result lists", () => {
@@ -83,7 +70,6 @@ it("keeps ended Blitz games available to watch until their settled result lists"
   });
   const rows = blitzRows([ended], []);
   expect(rows).toMatchObject([{ key: "game:0xa:7", action: "spectate", startsAt: null }]);
-  expect(leadBlitzRow(rows)?.key).toBe("game:0xa:7");
   expect(blitzRows([{ ...ended, status: "Settled" }], [])).toEqual([]);
 });
 
@@ -134,12 +120,6 @@ describe("a closed slot that owes the player a refund", () => {
       ["slot:closed", "refund"],
     ]);
     expect(blitzRows([], [closed, slot("open", 1_042)]).map((row) => row.key)).toEqual(["slot:open"]);
-  });
-
-  it("never leads the Blitz card ahead of a slot to open", () => {
-    const rows = blitzRows([], [closed, slot("open", 1_042)], new Map([["closed", "0x4a1"]]));
-    expect(leadBlitzRow(rows)?.key).toBe("slot:open");
-    expect(leadBlitzRow(blitzRows([], [closed], new Map([["closed", "0x4a1"]])))?.action).toBe("refund");
   });
 });
 

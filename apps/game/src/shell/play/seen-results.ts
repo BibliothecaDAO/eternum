@@ -1,6 +1,6 @@
 /**
- * The finished seasons whose results this device has opened: a convenience (spec 03), so losing it only shows the
- * season-over card again. Browser storage can be absent or refuse, so every read and write may fail quietly.
+ * The finished games whose results this device has opened, in any mode: a convenience, so losing it only offers their
+ * Results on Play again. Browser storage can be absent or refuse, so every read and write may fail quietly.
  */
 const KEY = "realms.seen-results";
 

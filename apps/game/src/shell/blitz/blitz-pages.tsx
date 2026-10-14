@@ -1,5 +1,5 @@
 import { type ReactNode, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { useIdentitySession } from "@/hooks/context/identity-session";
@@ -17,117 +17,20 @@ import { StepVerb } from "../frame/step-verb";
 import { entryHref } from "../game-links";
 import { Loading } from "../loading";
 import { NothingHere } from "../not-found";
-import { paintingSources } from "../paintings";
-import { AgeLabel } from "../play/age-card";
 import { ageOf } from "../play/ages";
-import { type PlayFacts, usePlayFacts } from "../play/play-facts";
+import { usePlayFacts } from "../play/play-facts";
 import { LiveChip, StateChip } from "../play/state-chip";
-import { ServiceFailure } from "../service-failure";
 import { FailureLine } from "../sign-in/failure-line";
 import { type EnvironmentLedger, environmentLedger } from "../value/ledger";
 import { BLITZ_WORDS, ENTRY_WORDS, WORDS } from "../words";
 import { chatMembershipOf, useEntryTerms } from "./entry";
 import { PaidEntry, SignInToJoin } from "./entry-panel";
-import { GameRow, SeatsChip } from "./game-row";
+import { SeatsChip } from "./seats-chip";
 import { type LobbyStep, lobbyId, lobbyRowOf, lobbyStep, lobbyTitle, seatsOf } from "./lobby";
 import { LobbyChatPanel } from "./lobby-chat-panel";
 import { RegisteredCount, RosterGrid, SeatGrid } from "./seat-grid";
 
 const BLITZ = ageOf("blitz");
-
-/**
- * Blitz's games (spec 05): live first, then by start, each with when, its seats and one action; a row opens its
- * lobby. The age's painting heads the list on a phone; the desktop stands the list on it, the next filling game's
- * lobby beside it.
- */
-export const BlitzListPage = () => {
-  const facts = usePlayFacts();
-  const desktop = useLayout() === "desktop";
-  const rows = (
-    <section className="plate px-3">
-      <BlitzRows facts={facts} />
-    </section>
-  );
-  return (
-    <PageFrame back="/" title={BLITZ.name} painting={BLITZ.painting} stage>
-      {desktop ? (
-        <div className="grid grid-cols-[minmax(0,1fr)_34rem] items-start gap-6">
-          {rows}
-          <NextLobby facts={facts} />
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          <AgeHeader />
-          {rows}
-        </div>
-      )}
-    </PageFrame>
-  );
-};
-
-/** Beside the desktop's rows: the next slot taking players, as its lobby shows it, with its one step. */
-const NextLobby = ({ facts }: { facts: PlayFacts }) => {
-  const row = facts.blitz.find((candidate) => candidate.kind === "slot" && candidate.action === "open");
-  if (row?.kind !== "slot") return null;
-  const step = lobbyStep(row);
-  return (
-    <section className="plate flex flex-col gap-4 p-5">
-      <Link to={`/blitz/${lobbyId(row)}`} className="painted flex h-36 items-end rounded-xl p-4">
-        <img
-          {...paintingSources(BLITZ.painting)}
-          sizes="34rem"
-          alt=""
-          className="absolute inset-0 -z-10 size-full object-cover"
-        />
-        <span className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent to-kit-ground/90" />
-        <span className="flex items-baseline gap-2">
-          <AgeLabel numeral={BLITZ.numeral} />
-          <h2 className="font-display text-[34px] leading-none text-kit-cream">{lobbyTitle(row)}</h2>
-        </span>
-      </Link>
-      <LobbyClock row={row} step={step} now={facts.now} />
-      <RegisteredCount slot={row.slot} large={false} closed={false} />
-      <LobbyAction row={row} step={step} desktop />
-    </section>
-  );
-};
-
-const AgeHeader = () => (
-  <header className="painted flex h-36 items-end rounded-2xl p-3">
-    <img
-      {...paintingSources(BLITZ.painting)}
-      sizes="100vw"
-      alt=""
-      className="absolute inset-0 -z-10 size-full object-cover"
-    />
-    <span className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-kit-ground/20 to-kit-ground/90" />
-    <div className="flex flex-col gap-1">
-      <span className="flex items-center gap-2">
-        <AgeLabel numeral={BLITZ.numeral} />
-        <h2 className="font-ui text-[20px] font-bold text-kit-cream">{BLITZ.name}</h2>
-      </span>
-      <p className="text-[13px] text-kit-muted">{BLITZ.lore}</p>
-    </div>
-  </header>
-);
-
-/** The games as rows, live first; a panel shows the first few. */
-export const BlitzRows = ({ facts, limit }: { facts: PlayFacts; limit?: number }) => {
-  if (facts.slots.isError)
-    return <ServiceFailure service="slots" error={facts.slots.error} retry={() => void facts.slots.refetch()} />;
-  if (facts.directory.isError)
-    return (
-      <ServiceFailure service="directory" error={facts.directory.error} retry={() => void facts.directory.refetch()} />
-    );
-  if (!facts.slots.isSuccess || !facts.directory.isSuccess) return <Loading />;
-  return (
-    <ul>
-      {facts.blitz.slice(0, limit).map((row) => (
-        <GameRow key={row.key} row={row} now={facts.now} />
-      ))}
-    </ul>
-  );
-};
 
 /**
  * One Blitz before it starts (spec 06): its clock and one step. A slot shows its registered count and its paid entry; a
@@ -143,7 +46,7 @@ export const BlitzLobbyPage = () => {
   const row = lobbyRowOf(facts.blitz, facts.slots.data?.slots ?? [], id);
   if (!row) {
     return (
-      <PageFrame back="/blitz" title={BLITZ.name} tabs={false}>
+      <PageFrame back="/" title={BLITZ.name} tabs={false}>
         {facts.slots.isSuccess && facts.directory.isSuccess ? <NothingHere /> : <Loading />}
       </PageFrame>
     );
@@ -167,7 +70,7 @@ export const BlitzLobbyPage = () => {
     );
   return (
     <PageFrame
-      back="/blitz"
+      back="/"
       title={lobbyTitle(row)}
       tabs={false}
       foot={desktop ? undefined : action}
@@ -284,7 +187,7 @@ const LobbyAction = ({ row, step, desktop }: { row: BlitzRow; step: LobbyStep; d
   switch (step.kind) {
     case "open":
       return verb(
-        <Button role="primary" word={BLITZ_WORDS.open} icon="Pl" onClick={() => navigate(`/blitz/${lobbyId(row)}`)} />,
+        <Button role="primary" word={BLITZ_WORDS.join} icon="Pl" onClick={() => navigate(`/blitz/${lobbyId(row)}`)} />,
       );
     case "preparing":
       return <Button role="primary" word={WORDS.enter} loading={BLITZ_WORDS.preparing} />;

@@ -1,139 +1,132 @@
+import { useState } from "react";
+
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { Button } from "@/ui/design-system/kit/button";
+
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
-import { chooseSeason } from "../season";
-import { BlitzRows } from "../blitz/blitz-pages";
-import { NewsRows, newsItems } from "../learn/news";
-import { Panel } from "../panel";
-import { LEARN_WORDS, LORE_LINE, PLAY_WORDS, WORDS } from "../words";
-import { AgeCard } from "./age-card";
-import { ageState } from "./age-state";
-import { AGES, ageOf } from "./ages";
-import { paintingSources } from "../paintings";
-import { ageOfStep, type NextStep } from "./next-step";
-import { NextStepCard } from "./next-step-card";
+import { LORE_LINE, PLAY_WORDS, WORDS } from "../words";
+import { ageOf } from "./ages";
+import { type PlayBoard, PLAY_MODES, type PlayMode } from "./play-board";
 import { type PlayFacts, usePlayFacts } from "./play-facts";
-import { SeasonTop } from "./season-top";
-import { FailureCard } from "./state-card";
+import { ItemRows, LeadCard, SectionLabel } from "./play-item";
+import { FailureCard, StateCard } from "./state-card";
 
 /**
- * The Play tab (spec 01, 03, 04): the next step in one card and the other three ages beside it; each thing is said
- * once. A first visit wears the hero painting and the lore line. The desktop sets the step on its age's painting with
- * the season and Blitz's games beside it (a first visit is a stage: the painting fills the screen).
+ * Play: what the player can do now, then each mode's next and finished games. "Now" leads and stays in view: the lead
+ * with the one gold verb, and everything else under way with its own. Below it, a switch shows one mode's next and
+ * finished games at a time, opening on the first with something to do; a dot marks a mode holding something of the
+ * player's. Every game appears once. A first visit stands on the plains painting under the lore line.
  */
 export const PlayPage = () => {
   const facts = usePlayFacts();
-  const layout = useLayout();
-  const firstVisit = isFirstVisit(facts.step);
-  const painting = firstVisit ? "dark-plains" : ageOf(ageOfStep(facts.step)).painting;
+  const desktop = useLayout() === "desktop";
+  const firstVisit = !facts.signedIn && facts.board?.lead?.verb === "play";
+  const lead = facts.board?.lead;
   return (
-    <PageFrame painting={painting} stage={firstVisit} title={firstVisit ? undefined : WORDS.play} footer>
-      {layout === "phone" ? <PhonePlay facts={facts} /> : <DesktopPlay facts={facts} />}
+    <PageFrame painting={firstVisit ? "dark-plains" : ageOf(lead?.mode ?? "frontier").painting} stage={firstVisit}>
+      {firstVisit && <LoreLine />}
+      <div
+        className={
+          desktop ? "grid grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] items-start gap-6" : "flex flex-col gap-4 pb-2"
+        }
+      >
+        <NowSection facts={facts} />
+        {facts.board && <LaterSection facts={facts} board={facts.board} />}
+      </div>
     </PageFrame>
   );
 };
 
-const isFirstVisit = (step: NextStep | undefined) => step?.kind === "play" && step.firstVisit;
-
-/** The card, or the directory's failure in its place; the tiles and the tabs keep working either way. */
-const HomeCard = ({ facts }: { facts: PlayFacts }) =>
-  facts.directory.isError ? (
-    <FailureCard service="directory" error={facts.directory.error} retry={() => void facts.directory.refetch()} />
-  ) : (
-    <NextStepCard step={facts.step} facts={facts} />
-  );
-
-/** The three ages the card does not show, in age order. */
-const otherAges = (step: NextStep | undefined) => AGES.filter((age) => age.mode !== ageOfStep(step));
-
-const PhonePlay = ({ facts }: { facts: PlayFacts }) => (
-  <div className="flex flex-col gap-3 pb-2">
-    {isFirstVisit(facts.step) && <PhoneHero />}
-    <HomeCard facts={facts} />
-    <div className="grid grid-cols-3 gap-2">
-      {otherAges(facts.step).map((age) => (
-        <AgeCard key={age.mode} age={age} {...ageState(age.mode, facts, "tile")} action={null} size="tile" />
-      ))}
-    </div>
-  </div>
+/** The first visit's line, as the page's title. */
+const LoreLine = () => (
+  <h1 className="mb-5 max-w-[16ch] font-display text-[32px] leading-[1.08] text-kit-cream [text-shadow:0_2px_0_theme(colors.kit.ink/70%),0_0_24px_theme(colors.kit.ink/60%)] lg:text-[52px]">
+    {LORE_LINE}
+  </h1>
 );
 
-/** The first visit's painting: one lit castle under the storm, the lore line where it fades into the ground. */
-const PhoneHero = () => (
-  <section className="relative isolate -mx-4 -mt-12 flex h-[250px] items-end overflow-hidden px-4 pb-2 [@media(max-height:700px)]:h-[160px]">
-    <img
-      {...paintingSources("dark-plains")}
-      sizes="100vw"
-      alt=""
-      className="absolute inset-0 -z-10 size-full object-cover object-[50%_35%]"
-    />
-    <span className="absolute inset-0 -z-10 bg-gradient-to-b from-kit-ground/50 via-transparent to-kit-ground" />
-    <p className="font-display text-[26px] leading-[1.15] text-kit-cream">{LORE_LINE}</p>
+/** The lead and everything else under way; the directory's failure, the wait, or the quiet card in the lead's place. */
+const NowSection = ({ facts }: { facts: PlayFacts }) => (
+  <section className="flex flex-col gap-3">
+    <SectionLabel>{PLAY_WORDS.now}</SectionLabel>
+    <LeadOrState facts={facts} />
+    {facts.board && facts.board.now.length > 0 && (
+      <ItemRows items={facts.board.now} now={facts.now} signedIn={facts.signedIn} />
+    )}
   </section>
 );
 
-const DesktopPlay = ({ facts }: { facts: PlayFacts }) =>
-  isFirstVisit(facts.step) ? <Stage facts={facts} /> : <Table facts={facts} />;
+const LeadOrState = ({ facts }: { facts: PlayFacts }) => {
+  if (facts.directory.isError)
+    return (
+      <FailureCard service="directory" error={facts.directory.error} retry={() => void facts.directory.refetch()} />
+    );
+  if (!facts.board)
+    return (
+      <StateCard painting="frontier-mist">
+        <Button role="primary" word={WORDS.play} icon="Pl" disabled />
+      </StateCard>
+    );
+  if (!facts.board.lead)
+    return (
+      <StateCard painting="brooding-plains">
+        <p className="font-body text-lg font-bold text-kit-cream">{WORDS.noSeason}</p>
+      </StateCard>
+    );
+  return <LeadCard item={facts.board.lead} now={facts.now} signedIn={facts.signedIn} />;
+};
 
-/** B: the step's card, the season beside it, the other three ages under the card, then Blitz's games and the news. */
-const Table = ({ facts }: { facts: PlayFacts }) => {
-  const season = chooseSeason(facts.games, facts.signedIn);
+/** Each mode's next and finished games, one mode at a time; absent when no mode has any. */
+const LaterSection = ({ facts, board }: { facts: PlayFacts; board: PlayBoard }) => {
+  const [picked, setPicked] = useState<PlayMode | null>(null);
+  const modes = PLAY_MODES.filter((mode) => board.later[mode].length > 0);
+  if (modes.length === 0) return null;
+  const shown =
+    picked !== null && modes.includes(picked) ? picked : modes.includes(board.openMode) ? board.openMode : modes[0];
   return (
-    <div className="grid grid-cols-12 items-start gap-5">
-      <div className="col-span-8">
-        <HomeCard facts={facts} />
-      </div>
-      <div className="col-span-4 row-span-3">{season ? <SeasonTop season={season} length={12} /> : <NewsPanel />}</div>
-      <div className="col-span-8 grid grid-cols-3 gap-5">
-        {otherAges(facts.step).map((age) => (
-          <AgeCard key={age.mode} age={age} {...ageState(age.mode, facts, "full")} size="landscape" />
-        ))}
-      </div>
-      <div className="col-span-8 min-[1800px]:col-span-5">
-        <BlitzPanel title={PLAY_WORDS.blitzGames} facts={facts} limit={3} />
-      </div>
-      {season && (
-        <div className="hidden min-[1800px]:col-span-3 min-[1800px]:block">
-          <NewsPanel />
-        </div>
-      )}
-    </div>
+    <section className="flex flex-col gap-3">
+      <SectionLabel>{PLAY_WORDS.later}</SectionLabel>
+      {modes.length > 1 && <ModeSwitch modes={modes} shown={shown} marked={board.marked} onPick={setPicked} />}
+      <ItemRows items={board.later[shown]} now={facts.now} signedIn={facts.signedIn} />
+    </section>
   );
 };
 
-/** A first visit: the painting fills the screen, the lore line and Play free at its foot, the season and the next Blitz games beside them, the other three ages along the bottom. */
-const Stage = ({ facts }: { facts: PlayFacts }) => {
-  const season = chooseSeason(facts.games, facts.signedIn);
-  return (
-    <div className="grid min-h-[calc(100vh-3rem)] grid-cols-12 grid-rows-[1fr_auto] gap-6">
-      <div className="col-span-5 flex flex-col justify-end gap-5">
-        <p className="font-display text-[52px] leading-[1.08] text-kit-cream [text-shadow:0_2px_0_theme(colors.kit.ink/70%),0_0_24px_theme(colors.kit.ink/60%)] min-[1800px]:text-[60px]">
-          {LORE_LINE}
-        </p>
-        <HomeCard facts={facts} />
-      </div>
-      <div className="col-span-4 col-start-9 flex flex-col gap-5">
-        {season && <SeasonTop season={season} length={6} />}
-        <BlitzPanel title={PLAY_WORDS.nextBlitz} facts={facts} limit={2} />
-      </div>
-      <div className="col-span-12 grid grid-cols-3 gap-5">
-        {otherAges(facts.step).map((age) => (
-          <AgeCard key={age.mode} age={age} {...ageState(age.mode, facts, "full")} size="landscape" />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-/** Blitz's next games; with the lists read and no game in them, no panel (an empty plate reads as broken). */
-const BlitzPanel = ({ title, facts, limit }: { title: string; facts: PlayFacts; limit: number }) =>
-  facts.slots.isSuccess && facts.directory.isSuccess && facts.blitz.length === 0 ? null : (
-    <Panel icon="Pl" title={title}>
-      <BlitzRows facts={facts} limit={limit} />
-    </Panel>
-  );
-
-const NewsPanel = () => (
-  <Panel icon="Pc" title={LEARN_WORDS.news}>
-    <NewsRows items={newsItems().slice(0, 4)} />
-  </Panel>
+const ModeSwitch = ({
+  modes,
+  shown,
+  marked,
+  onPick,
+}: {
+  modes: readonly PlayMode[];
+  shown: PlayMode;
+  marked: readonly PlayMode[];
+  onPick: (mode: PlayMode) => void;
+}) => (
+  <div role="tablist" aria-label={PLAY_WORDS.modes} className="flex gap-2">
+    {modes.map((mode) => {
+      const on = mode === shown;
+      return (
+        <button
+          key={mode}
+          type="button"
+          role="tab"
+          aria-selected={on}
+          onClick={() => onPick(mode)}
+          className={cn(
+            "relative min-h-12 flex-1 rounded-xl border px-3 font-body text-base font-bold text-kit-cream",
+            on ? "border-kit-gold bg-kit-plate2" : "border-kit-line2 bg-kit-plate hover:border-kit-gold",
+          )}
+        >
+          {ageOf(mode).name}
+          {!on && marked.includes(mode) && (
+            <span
+              aria-label={PLAY_WORDS.yours}
+              className="absolute right-2.5 top-2 size-2.5 rounded-full bg-kit-peach"
+            />
+          )}
+        </button>
+      );
+    })}
+  </div>
 );

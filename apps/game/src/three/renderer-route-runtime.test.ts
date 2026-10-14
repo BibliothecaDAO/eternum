@@ -141,8 +141,7 @@ describe("renderer route runtime", () => {
     for (const outside of [
       "/learn",
       "/",
-      "/blitz",
-      "/frontier",
+      "/blitz/slot-blitz-1",
       "/season",
       "/scroll",
       "/profile",

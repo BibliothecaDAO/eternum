@@ -1,6 +1,6 @@
 import type { Painting } from "../paintings";
 
-/** The modes as the lore's four ages (ruled), each with the lore's painting, so a player learns the ages by sight. */
+/** The modes as the lore's four ages, each with the lore's painting and words, for Play's paintings and Learn's chronicle. */
 export type AgeMode = "blitz" | "frontier" | "eternum" | "dominion";
 
 type Age = {
@@ -15,8 +15,6 @@ type Age = {
   chronicle: string;
   /** The lore site's painting of the age (public/images/landscapes/SOURCE.md). */
   painting: Painting;
-  /** Its own page, opened from its card. */
-  page: string;
 };
 
 export const AGES: readonly Age[] = [
@@ -29,7 +27,6 @@ export const AGES: readonly Age[] = [
     chronicle:
       "Thousands of kingdoms rose and fell in the struggle for the Hyperstructures. Then the Spires emerged from the land, tore at the air and bent the laws of space and time.",
     painting: "blitz-spires",
-    page: "/blitz",
   },
   {
     mode: "frontier",
@@ -40,7 +37,6 @@ export const AGES: readonly Age[] = [
     chronicle:
       "The last lights of the world shone within the Realms. Beyond them, the mist swallowed the ruins of civilisation. Aspiring Lords ventured out to reestablish the frontier.",
     painting: "frontier-mist",
-    page: "/frontier",
   },
   {
     mode: "eternum",
@@ -51,7 +47,6 @@ export const AGES: readonly Age[] = [
     chronicle:
       "The Realms came alive. Lords set out to recover the world they had lost, uncovering the foundations of ruined Hyperstructures and restoring them to their former glory.",
     painting: "eternum-restoration",
-    page: "/eternum",
   },
   {
     mode: "dominion",
@@ -62,7 +57,6 @@ export const AGES: readonly Age[] = [
     chronicle:
       "The spark shone for an eternity, and then another. Then, at last, someone stepped through. An adventurer. And he was holding Loot.",
     painting: "dominion-first-adventurer",
-    page: "/dominion",
   },
 ];
 

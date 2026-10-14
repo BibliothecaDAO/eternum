@@ -53,6 +53,6 @@ it("gives a phone, which has no footer, the community's four links as rows on Pr
   ]);
 });
 
-it("adds no such rows on the desktop, where the home page's footer holds them", async () => {
+it("adds no such rows on the desktop, where Learn's footer holds them", async () => {
   expect(communityLinks(await openProfile(1440))).toEqual([]);
 });

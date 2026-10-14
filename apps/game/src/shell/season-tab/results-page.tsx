@@ -26,7 +26,7 @@ import { NothingHere } from "../not-found";
 import { RatingLine } from "../rating-line";
 import { paintingSources, type Painting } from "../paintings";
 import { ageOf } from "../play/ages";
-import { gameKey } from "../play/next-step";
+import { gameKey } from "../play/play-board";
 import { markResultsSeen } from "../play/seen-results";
 import { FailureCard } from "../play/state-card";
 import { useNowSeconds } from "../use-now";

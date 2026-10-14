@@ -20,7 +20,7 @@ const TABS: readonly { to: string; word: string; icon: GameIcon; matches: readon
     to: "/",
     word: WORDS.play,
     icon: Play,
-    matches: ["/", "/blitz", "/frontier", "/eternum", "/dominion"],
+    matches: ["/", "/blitz"],
   },
   { to: "/season", word: WORDS.season, icon: Trophy, matches: ["/season", "/results"] },
   {

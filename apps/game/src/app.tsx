@@ -12,8 +12,7 @@ import { LearnPage, ScrollPage } from "./shell/learn/learn-page";
 import { PostPage } from "./shell/learn/post-page";
 import { IS_DEV_ENVIRONMENT } from "./shell/frame/environment";
 import { NotFoundPage } from "./shell/not-found";
-import { BlitzListPage, BlitzLobbyPage } from "./shell/blitz/blitz-pages";
-import { DominionPage, EternumPage, FrontierPage } from "./shell/play/age-pages";
+import { BlitzLobbyPage } from "./shell/blitz/blitz-pages";
 import { PlayPage } from "./shell/play/play-page";
 import { PlayerPage, ProfilePage, ProfileRowPage } from "./shell/profile/profile-pages";
 import { ResultsPage } from "./shell/season-tab/results-page";
@@ -41,11 +40,7 @@ export const appRoutes = (
   <>
     <Route element={<AppShell />}>
       <Route index element={<PlayPage />} />
-      <Route path="blitz" element={<BlitzListPage />} />
       <Route path="blitz/:id" element={<BlitzLobbyPage />} />
-      <Route path="frontier" element={<FrontierPage />} />
-      <Route path="eternum" element={<EternumPage />} />
-      <Route path="dominion" element={<DominionPage />} />
       <Route path="season" element={<SeasonPage />} />
       <Route path="results/:id" element={<ResultsPage />} />
       <Route path="profile" element={<ProfilePage />} />
