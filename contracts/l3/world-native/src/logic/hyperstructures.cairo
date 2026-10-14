@@ -105,6 +105,24 @@ pub mod HyperstructureState {
                         seed,
                     },
                 );
+            // A complete hyperstructure always holds a shares row; nobody earns until its first owner claims it.
+            if completed {
+                self.write_shares(key, ShareAllocation { start_at: 0, multiplier: 0, shareholders: array![].span() });
+            }
+        }
+        fn transfer_hyperstructure_shares(
+            ref self: ComponentState<TContractState>,
+            key: ResourceKey,
+            owner: ContractAddress,
+            context: crate::commands::ActionContext,
+        ) {
+            let context = crate::commands::load_context(key.game_id, context);
+            // Shared allocations stay with their shareholders; owner-only shares follow the structure.
+            if !crate::rules::rule_enabled(context.rules.unbox(), crate::rules::OWNER_ONLY_SHARES)
+                || self.state(key).stage != Stage::Complete {
+                return;
+            }
+            self.reallocate(key, array![Share { player: owner, bps: 10000 }].span(), context);
         }
         fn initialize_hyperstructure(
             ref self: ComponentState<TContractState>,
@@ -186,16 +204,7 @@ pub mod HyperstructureState {
                 crate::rules::rule_enabled(context.rules.unbox(), crate::rules::OWNER_ONLY_SHARES),
                 actor,
             );
-            self.checkpoint(key, context.timestamp, context);
-            self
-                .write_shares(
-                    key,
-                    ShareAllocation {
-                        start_at: context.timestamp,
-                        multiplier: self.multiplier(key, context),
-                        shareholders: command.shareholders,
-                    },
-                );
+            self.reallocate(key, command.shareholders, context);
             ()
         }
         fn set_construction_access(
@@ -446,6 +455,22 @@ pub mod HyperstructureState {
                         model: 'HyperstructureShares',
                         keys: array![key.game_id.into(), key.entity_id.into()].span(),
                         values: values.span(),
+                    },
+                );
+        }
+        /// Pays the outgoing shareholders up to now, then starts the new allocation at the current multiplier.
+        fn reallocate(
+            ref self: ComponentState<TContractState>,
+            key: ResourceKey,
+            shareholders: Span<Share>,
+            game_context: crate::commands::ExecutionContext,
+        ) {
+            self.checkpoint(key, game_context.timestamp, game_context);
+            self
+                .write_shares(
+                    key,
+                    ShareAllocation {
+                        start_at: game_context.timestamp, multiplier: self.multiplier(key, game_context), shareholders,
                     },
                 );
         }

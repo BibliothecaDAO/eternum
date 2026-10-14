@@ -1890,6 +1890,20 @@ pub mod GamesFixture {
                 completed,
             )
         }
+        fn transfer_hyperstructure_shares(
+            ref self: TContractState,
+            key: crate::resources::ResourceKey,
+            owner: starknet::ContractAddress,
+            context: crate::commands::ActionContext,
+        ) {
+            let classes = fixture_classes(key.game_id);
+            crate::hyperstructures::IHyperstructuresDispatcherTrait::transfer_hyperstructure_shares(
+                crate::hyperstructures::IHyperstructuresLibraryDispatcher { class_hash: classes.economy.read() },
+                key,
+                owner,
+                context,
+            )
+        }
         fn initialize_hyperstructure(
             ref self: TContractState,
             game_id: u32,

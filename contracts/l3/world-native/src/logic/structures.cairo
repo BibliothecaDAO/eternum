@@ -980,6 +980,16 @@ pub mod StructuresLogic {
                 );
             }
             crate::logic::structures::StructureState::transfer_owner(key, owner);
+            if record.base.category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY {
+                crate::hyperstructures::IHyperstructuresDispatcherTrait::transfer_hyperstructure_shares(
+                    crate::hyperstructures::IHyperstructuresLibraryDispatcher {
+                        class_hash: self.release.classes(key.game_id).economy.read(),
+                    },
+                    key,
+                    owner,
+                    crate::commands::action_context(game_context),
+                );
+            }
         }
 
         fn create_producer(
