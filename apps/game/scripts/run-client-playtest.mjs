@@ -276,6 +276,8 @@ async function playRun(context) {
   } catch (error) {
     record.error = error.message;
     record.cancelled = error instanceof Cancelled;
+    // What the page showed when the run stopped: a failure before the first step has no step screenshot.
+    record.failedScreenshot = readSafely(() => takeScreenshot(browser, join(runDir, `${label}-failed.png`)));
   } finally {
     clearInterval(sampler);
     record.loadSamples.push(loadavg()[0]);

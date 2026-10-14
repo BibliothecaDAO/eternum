@@ -146,17 +146,15 @@ export async function openPageDevTools(browser) {
 
 /**
  * Every JSON-RPC POST the page makes (the play POST is `starknet_addInvokeTransaction`), with whether it went out on a
- * reused connection and what a fresh one cost. The RPC host sends no Timing-Allow-Origin, so only DevTools sees this.
- * Its clock is not the page's: these are durations and connection facts, in send order, never page times.
+ * reused connection and what a fresh one cost, and every CORS preflight the browser sent before one (`rpcMethod`
+ * "preflight"). The RPC host sends no Timing-Allow-Origin, so only DevTools sees this. Its clock is not the page's:
+ * these are durations and connection facts, in send order, never page times.
  */
 export async function recordRpcSends(devTools) {
   const sends = new Map();
   devTools.onEvent(({ method, params }) => {
-    if (method === "Network.requestWillBeSent" && isRpcPost(params.request)) {
-      sends.set(params.requestId, {
-        rpcMethod: /"method"\s*:\s*"(\w+)"/.exec(params.request.postData ?? "")?.[1] ?? null,
-        startedAt: params.timestamp,
-      });
+    if (method === "Network.requestWillBeSent" && isRpcRequest(params.request)) {
+      sends.set(params.requestId, { rpcMethod: rpcMethodOf(params.request), startedAt: params.timestamp });
     }
     const send = sends.get(params?.requestId);
     if (method === "Network.responseReceived" && send) Object.assign(send, describeConnection(params.response));
@@ -166,7 +164,11 @@ export async function recordRpcSends(devTools) {
   return () => [...sends.values()].map(({ startedAt, ...send }) => send);
 }
 
-const isRpcPost = (request) => request.method === "POST" && /\/rpc\//.test(new URL(request.url).pathname);
+const isRpcRequest = (request) =>
+  (request.method === "POST" || request.method === "OPTIONS") && /\/rpc\//.test(new URL(request.url).pathname);
+
+const rpcMethodOf = (request) =>
+  request.method === "OPTIONS" ? "preflight" : (/"method"\s*:\s*"(\w+)"/.exec(request.postData ?? "")?.[1] ?? null);
 
 function describeConnection({ connectionReused, timing }) {
   const span = (from, to) => (timing && timing[from] >= 0 && timing[to] >= 0 ? round(timing[to] - timing[from]) : null);
