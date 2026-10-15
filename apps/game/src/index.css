@@ -557,8 +557,8 @@ button,
   font-size: 22px;
   color: var(--ink);
 }
-/* The primary's own icon draws in ink, like its word: a gilded icon on the amber would vanish. */
-.frontier-primary > img {
+/* Legacy monochrome button art uses ink; painted replacements retain their material colours. */
+.frontier-primary > img:not([data-painted]) {
   filter: brightness(0);
   opacity: 0.85;
 }

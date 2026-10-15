@@ -1,3 +1,5 @@
+import { createContext, useContext } from "react";
+
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { orderEmblem } from "./order-emblem";
@@ -122,6 +124,8 @@ const ICONS = {
 
 export type IconCode = keyof typeof ICONS;
 
+export const KitIconArt = createContext<Partial<Record<IconCode, string>>>({});
+
 /** Codes drawn turned: the chevron that says a row opens points right. */
 const TURNS: Partial<Record<IconCode, number>> = { Cv: -90 };
 
@@ -129,15 +133,19 @@ const TURNS: Partial<Record<IconCode, number>> = { Cv: -90 };
  * An icon by its code, in a square of its size whatever its art's shape (the page's img rule would otherwise let a
  * tall sigil grow past its row); decorative, since the control around it carries the word.
  */
-export const KitIcon = ({ code, size = 20, className }: { code: IconCode; size?: number; className?: string }) => (
-  <img
-    src={ICONS[code]}
-    alt=""
-    aria-hidden
-    width={size}
-    height={size}
-    draggable={false}
-    className={cn("inline-block aspect-square shrink-0 object-contain", className)}
-    style={TURNS[code] ? { rotate: `${TURNS[code]}deg` } : undefined}
-  />
-);
+export const KitIcon = ({ code, size = 20, className }: { code: IconCode; size?: number; className?: string }) => {
+  const art = useContext(KitIconArt);
+  return (
+    <img
+      src={art[code] ?? ICONS[code]}
+      data-painted={art[code] ? true : undefined}
+      alt=""
+      aria-hidden
+      width={size}
+      height={size}
+      draggable={false}
+      className={cn("inline-block aspect-square shrink-0 object-contain", className)}
+      style={TURNS[code] ? { rotate: `${TURNS[code]}deg` } : undefined}
+    />
+  );
+};

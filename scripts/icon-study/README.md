@@ -1,79 +1,78 @@
-# Icon direction study
+# Painted icon study
 
-Purpose: choose one icon grammar for resources, controls and the minimap before changing the game.
+Choose a painted icon family by comparing it with shipped art in real kit components. The lab view replaces the rejected
+standalone glyph picker and its geometry builder. It adds two sample families, a scoped art provider and a small
+fixture; the production icon map remains the default until a direction is picked.
 
-The picker is a standalone review surface; no live game state or account is needed.
+## Reproduce and review
 
-## Reproduce
-
-From the repository root, after `pnpm install --frozen-lockfile`:
+After workspace dependencies and packages are built:
 
 ```sh
 pnpm icons:study:prove /home/djizus/projects/eternum-lanes/evidence/icons
 ```
 
-The proof command also runs the inventory and raster checks. Inventory writes a new dated scan and updates only its
-landing link. Verification writes pixel occupancy and duplicate checks. Give verification a new output directory for
-each run. The proof command rebuilds the picker, starts it on port 4193, opens an isolated browser, exercises the real
-size, label, density, reading, download, inventory and selection controls, records screenshots and assertions in a new
-timestamped folder, then closes its browser and server. It never starts the game or WebGL. Python's Pillow package is
-required for inventory image dimensions.
+This exports the retained masters, starts the real client on port 4193 if needed, opens `/lab/kit/icons`, exercises its
+controls and saves assertions, screenshots, readings and a command transcript in a new timestamped directory. It closes
+its isolated browser and leaves the review server running. The client needs the same local environment as the game.
 
-The shared browser was occupied during this study; the proof uses the permitted browser CLI fallback. Screenshot content
-is checked as well as DOM state. A typed test reading proves the interaction only; it is not a recognition study.
-
-Open `evidence/icons/viewer/index.html` directly to review, or serve the evidence root with:
-
-```sh
-pnpm icons:study:serve /home/djizus/projects/eternum-lanes/evidence/icons
-```
-
-Then visit `http://127.0.0.1:4193/viewer/`. Stop the server after review. The generated HTML includes the catalog and
-script so it also works without a server; fonts and styles remain sibling files.
+The shared browser may be occupied; the runner uses the browser CLI fallback. It never enters a match or sends a game
+transaction. Its typed reading verifies the interaction, not human recognition. No performance timings are collected.
 
 ## Feature map
 
-- `/viewer/`: three directions side by side, each with the same catalog, HUD strip and minimap.
-- Size buttons: inspect every sample at 16, 24 or 32 actual CSS pixels.
-- Labels: hide the names, choose a sample, write a reading, then reveal the intended reading. Download the record.
-- Density: compare 20 and 220 structures plus armies on the same 320 × 240 fixture.
-- Theme radio buttons: choose a direction for review; the choice changes no game files and resets on reload.
-- Inventory link: source locations, formats, intrinsic sizes, code references, current-style contact sheet.
+- `/lab/kit/icons`: Shipped, Fieldwork and Facets switch actual PriceChip, Button and OrderBar art. The URL remembers
+  it.
+- Confirm Move or Explore: spend fixture wheat and stamina. Reset fixture restores the original values.
+- Size: compare every old/new pair at 24, 32 or 64 CSS pixels on the client's `frontier-card` surface.
+- Minimap: inspect 12/16 px emblems, ownership shapes and value badges. Switch 20-site detail to 220-site sector counts;
+  open a sector to inspect each counted entity. The fixture has six or eighteen armies respectively.
+- Hide labels, Read this icon, enter a reading, Reveal meaning, Download readings.
+- Existing source inventory remains in the external evidence directory; rerun
+  `icons:study:inventory <output-directory>`.
 
-First view has four groups: introduction, comparison controls, three theme columns, ownership legend. Each column has
-three jobs to compare: HUD, minimap, catalog. The sole decision is a theme choice; inspection controls stay secondary.
-The catalog is grouped into eight families so a long list does not become a single decision.
+First view has four groups: title, comparison controls, live component fixture and minimap. The catalogue is grouped by
+family below it. The review decision is which painted direction to continue; inspection controls are secondary.
 
-## Sources and build
+## Source and export lever
 
-Edit semantic geometry and intended readings in `catalog.mjs`, then run `pnpm icons:study:author`. This produces the 321
-review SVG masters under `apps/game/asset-sources/icon-study`. All resources come from `ResourcesIds`; a missing
-geometry stops authoring. Survey keeps open contours, Banner uses solid shapes and transparent cuts, and Signal
-quantizes the silhouette to a 16-cell vector grid. The three grammars share object metaphors for a fair comparison.
+`apps/game/asset-sources/icon-study-painted` retains 52 square transparent masters, one shared style, two direction
+blocks and one subject prompt per icon. `catalog.json` maps all 26 subjects to shipped counterparts. `verdicts.json`
+records editorial comparison at 32/64 px; the builder refuses missing verdicts or anything marked worse.
 
-`pnpm icons:study:build <output-directory>` packs the SVG masters into a namespaced sprite and generates the picker. The
-picker has one SVG-use renderer for every family. No raster imagery, external fonts or network calls are required.
-Builds are deterministic. Authored sources are retained for review; viewer/sprite outputs stay outside the repository.
+```sh
+pnpm icons:study:requests > /path/outside/repo/requests.json
+pnpm icons:study:review /path/to/new/review-directory
+pnpm icons:study:build
+```
 
-## Phase boundary and migration
+The request command assembles exact prompts and reference paths. `paint-batch.mjs` is the image-operation bridge: pass
+requests and three host callbacks (`generate`, `persist`, `preview`). Each request is one transparent painting; the
+bridge retains the returned master through `persist` and presents it through `preview`. This bridge was used to produce
+the samples. It requires a host image operation; Node alone cannot paint a new master. Keep returned originals outside
+the repo, and copy approved source pixels into `masters/<direction>/<subject>.png`.
 
-No production icons are replaced in this study. Keeping proposals separate is required until a direction is picked. The
-cost is one source catalog, three sets of SVG masters, an inventory script, a sprite/viewer builder and verification
-scripts. No runtime state, setting or dependency is added to the game.
+The export command crops alpha bounds, centres the subject in a transparent 1024 square with consistent padding, then
+writes 12/16/24/32/64/256 PNGs and a 2048×1024 atlas plus coordinates for each direction to
+`apps/game/public/lab-icons`. Metadata is removed during export. Exports rerun deterministically from retained source
+pixels. Model and seed controls are not exposed by the image operation used here; prompt reruns are new candidates, not
+identical pixel regeneration.
 
-After approval, one chosen set supplies a typed semantic `Icon` component: name, size, accessible label. Decorative
-icons take the accessible name from their enclosing control. Resource IDs map exhaustively to semantic names; callers
-cannot construct filenames. Minimap markers compose the same symbol with owner shape and level/strength value from
-confirmed game facts. Strength bands must use the agreed game measure, not these fixture numbers. The strategic 3D layer
-may bake the same SVG into its existing texture atlas; it must not acquire a second art catalog.
+`paint-review.mjs` uses the same normalization as export to produce old/new contact sheets before publication. Rejected
+candidates stay in external evidence, never in the lab's exported candidate catalogue.
 
-Migrate GameIcon, KitIcon, ResourceIcon, direct action images, emoji statuses and minimap label consumers; then delete
-old renderers, imports, builders and unreferenced files in the same change. Directional arrows become rotations within
-the typed renderer. No compatibility wrapper or persisted theme switch. Before deletion, rescan remaining references and
-exercise resource, army, build, transfer and minimap paths through the game's existing proof command. The picker proof
-does not substitute for that live-game proof.
+## Full replacement after selection
 
-Brand marks and Order sigils need the owner's decision before alteration. Their current names and semantics must not
-silently become ordinary action glyphs. The 220-site fixture shows that per-site values do not fit at every zoom; choose
-a density policy before wiring the markers. Exact fantasy resource recognition remains unproven until people try the
-label-hidden comparison.
+`kit-migration.json` covers all 85 current KitIcon codes. Every family receives painted art: stores, troops, actions,
+sites, app controls, research, progression, Orders and ratings. Remove all gilded treatments. Named Orders retain their
+identity and colours in painted materials; Discord keeps its recognizable brand mark without a gilded frame.
+
+`semantic-map.json` preserves the prior inventory's 107 meanings without its rejected geometry. This is a coverage map;
+use the painted sample's current metaphors when they supersede the old proposal. Lightning means stamina only. Victory
+uses laurel/trophy, not lightning; sites have their own subjects, not a shared crown. Owner circle/square/triangle and
+external value badges remain separate from subject art.
+
+After selection, generate missing paintings, migrate GameIcon, KitIcon, ResourceIcon, direct images, emoji statuses and
+minimap consumers to one typed semantic renderer, then delete the old renderers and unreferenced assets. The lab
+provider and direction switch are review tools, not a player preference or compatibility path. Re-run the inventory and
+exercise real resource, army, build, transfer and minimap paths before shipping the chosen set.

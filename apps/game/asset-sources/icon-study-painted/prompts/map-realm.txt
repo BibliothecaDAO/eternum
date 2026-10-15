@@ -1,0 +1,2 @@
+Subject: A compact three-tooth stone castle keep emblem, straight-on view, broad square tower and one dark gate. Painted stone with a simple upper-left lit face and shaded right face. Must remain obvious at 12 pixels. No badge frame, flag, ground or scenery.
+Old counterpart: apps/game/public/images/labels/realm.png.

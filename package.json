@@ -104,11 +104,10 @@
     "season": "bun --no-env-file deploy/first/owner-command.ts season",
     "teardown": "bun --no-env-file deploy/first/teardown.ts",
     "icons:study:inventory": "python3 scripts/icon-study/inventory.py",
-    "icons:study:author": "node scripts/icon-study/author.mjs",
-    "icons:study:build": "node scripts/icon-study/build.mjs",
+    "icons:study:build": "node scripts/icon-study/paint-build.mjs",
     "icons:study:prove": "node scripts/icon-study/prove.mjs",
-    "icons:study:serve": "node scripts/icon-study/serve.mjs",
-    "icons:study:verify": "node scripts/icon-study/verify.mjs"
+    "icons:study:requests": "node scripts/icon-study/paint-requests.mjs",
+    "icons:study:review": "node scripts/icon-study/paint-review.mjs"
   },
   "dependencies": {
     "@bibliothecadao/provider": "workspace:*",

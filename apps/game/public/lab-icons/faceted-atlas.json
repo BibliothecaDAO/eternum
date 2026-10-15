@@ -1,0 +1,158 @@
+{
+  "stone": {
+    "x": 0,
+    "y": 0,
+    "width": 256,
+    "height": 256
+  },
+  "wood": {
+    "x": 256,
+    "y": 0,
+    "width": 256,
+    "height": 256
+  },
+  "wheat": {
+    "x": 512,
+    "y": 0,
+    "width": 256,
+    "height": 256
+  },
+  "fish": {
+    "x": 768,
+    "y": 0,
+    "width": 256,
+    "height": 256
+  },
+  "labor": {
+    "x": 1024,
+    "y": 0,
+    "width": 256,
+    "height": 256
+  },
+  "essence": {
+    "x": 1280,
+    "y": 0,
+    "width": 256,
+    "height": 256
+  },
+  "ironwood": {
+    "x": 1536,
+    "y": 0,
+    "width": 256,
+    "height": 256
+  },
+  "fragment": {
+    "x": 1792,
+    "y": 0,
+    "width": 256,
+    "height": 256
+  },
+  "knight": {
+    "x": 0,
+    "y": 256,
+    "width": 256,
+    "height": 256
+  },
+  "crossbowman": {
+    "x": 256,
+    "y": 256,
+    "width": 256,
+    "height": 256
+  },
+  "paladin": {
+    "x": 512,
+    "y": 256,
+    "width": 256,
+    "height": 256
+  },
+  "realm": {
+    "x": 768,
+    "y": 256,
+    "width": 256,
+    "height": 256
+  },
+  "camp": {
+    "x": 1024,
+    "y": 256,
+    "width": 256,
+    "height": 256
+  },
+  "hyperstructure": {
+    "x": 1280,
+    "y": 256,
+    "width": 256,
+    "height": 256
+  },
+  "chest": {
+    "x": 1536,
+    "y": 256,
+    "width": 256,
+    "height": 256
+  },
+  "move": {
+    "x": 1792,
+    "y": 256,
+    "width": 256,
+    "height": 256
+  },
+  "explore": {
+    "x": 0,
+    "y": 512,
+    "width": 256,
+    "height": 256
+  },
+  "attack": {
+    "x": 256,
+    "y": 512,
+    "width": 256,
+    "height": 256
+  },
+  "build": {
+    "x": 512,
+    "y": 512,
+    "width": 256,
+    "height": 256
+  },
+  "trade": {
+    "x": 768,
+    "y": 512,
+    "width": 256,
+    "height": 256
+  },
+  "stamina": {
+    "x": 1024,
+    "y": 512,
+    "width": 256,
+    "height": 256
+  },
+  "victory": {
+    "x": 1280,
+    "y": 512,
+    "width": 256,
+    "height": 256
+  },
+  "settings": {
+    "x": 1536,
+    "y": 512,
+    "width": 256,
+    "height": 256
+  },
+  "chat": {
+    "x": 1792,
+    "y": 512,
+    "width": 256,
+    "height": 256
+  },
+  "map-army": {
+    "x": 0,
+    "y": 768,
+    "width": 256,
+    "height": 256
+  },
+  "map-realm": {
+    "x": 256,
+    "y": 768,
+    "width": 256,
+    "height": 256
+  }
+}

@@ -1,0 +1,1970 @@
+{
+  "icons": [
+    {
+      "id": "stone",
+      "label": "Stone",
+      "family": "Resources",
+      "old": "images/resources/1.png",
+      "prompt": "prompts/stone.txt"
+    },
+    {
+      "id": "wood",
+      "label": "Wood",
+      "family": "Resources",
+      "old": "images/resources/3.png",
+      "prompt": "prompts/wood.txt"
+    },
+    {
+      "id": "wheat",
+      "label": "Wheat",
+      "family": "Resources",
+      "old": "images/resources/35.png",
+      "prompt": "prompts/wheat.txt"
+    },
+    {
+      "id": "fish",
+      "label": "Fish",
+      "family": "Resources",
+      "old": "images/resources/36.png",
+      "prompt": "prompts/fish.txt"
+    },
+    {
+      "id": "labor",
+      "label": "Labor",
+      "family": "Resources",
+      "old": "images/resources/23.png",
+      "prompt": "prompts/labor.txt"
+    },
+    {
+      "id": "essence",
+      "label": "Essence",
+      "family": "Resources",
+      "old": "images/resources/38.png",
+      "prompt": "prompts/essence.txt"
+    },
+    {
+      "id": "ironwood",
+      "label": "Ironwood",
+      "family": "Resources",
+      "old": "images/resources/5.png",
+      "prompt": "prompts/ironwood.txt"
+    },
+    {
+      "id": "fragment",
+      "label": "Ancient Fragment",
+      "family": "Resources",
+      "old": "images/resources/24.png",
+      "prompt": "prompts/fragment.txt"
+    },
+    {
+      "id": "knight",
+      "label": "Knight",
+      "family": "Troops",
+      "old": "images/resources/26.png",
+      "prompt": "prompts/knight.txt"
+    },
+    {
+      "id": "crossbowman",
+      "label": "Crossbowman",
+      "family": "Troops",
+      "old": "images/resources/29.png",
+      "prompt": "prompts/crossbowman.txt"
+    },
+    {
+      "id": "paladin",
+      "label": "Paladin",
+      "family": "Troops",
+      "old": "images/resources/32.png",
+      "prompt": "prompts/paladin.txt"
+    },
+    {
+      "id": "realm",
+      "label": "Realm · level 2",
+      "family": "Structures",
+      "old": "image-icons/kit/realm-home.png",
+      "prompt": "prompts/realm.txt"
+    },
+    {
+      "id": "camp",
+      "label": "Camp",
+      "family": "Structures",
+      "old": "image-icons/kit/ui-camp.png",
+      "prompt": "prompts/camp.txt"
+    },
+    {
+      "id": "hyperstructure",
+      "label": "Hyperstructure",
+      "family": "Structures",
+      "old": "image-icons/hyperstructure.png",
+      "prompt": "prompts/hyperstructure.txt"
+    },
+    {
+      "id": "chest",
+      "label": "Chest",
+      "family": "Structures",
+      "old": "image-icons/kit/ui-chest.png",
+      "prompt": "prompts/chest.txt"
+    },
+    {
+      "id": "move",
+      "label": "Move",
+      "family": "Actions",
+      "old": "image-icons/kit/ui-footprints.png",
+      "prompt": "prompts/move.txt"
+    },
+    {
+      "id": "explore",
+      "label": "Explore",
+      "family": "Actions",
+      "old": "image-icons/kit/ui-eye.png",
+      "prompt": "prompts/explore.txt"
+    },
+    {
+      "id": "attack",
+      "label": "Attack",
+      "family": "Actions",
+      "old": "image-icons/kit/attack.png",
+      "prompt": "prompts/attack.txt"
+    },
+    {
+      "id": "build",
+      "label": "Build",
+      "family": "Actions",
+      "old": "image-icons/construction.png",
+      "prompt": "prompts/build.txt"
+    },
+    {
+      "id": "trade",
+      "label": "Trade",
+      "family": "Actions",
+      "old": "image-icons/trade.png",
+      "prompt": "prompts/trade.txt"
+    },
+    {
+      "id": "stamina",
+      "label": "Stamina",
+      "family": "Statuses",
+      "old": "image-icons/kit/ui-lightning.png",
+      "prompt": "prompts/stamina.txt"
+    },
+    {
+      "id": "victory",
+      "label": "Victory points",
+      "family": "Statuses",
+      "old": "images/buildings/thumb/trophy.png",
+      "prompt": "prompts/victory.txt"
+    },
+    {
+      "id": "settings",
+      "label": "Settings",
+      "family": "HUD",
+      "old": "image-icons/settings.png",
+      "prompt": "prompts/settings.txt"
+    },
+    {
+      "id": "chat",
+      "label": "Chat",
+      "family": "HUD",
+      "old": "image-icons/kit/ui-message.png",
+      "prompt": "prompts/chat.txt"
+    },
+    {
+      "id": "map-army",
+      "label": "Army marker",
+      "family": "Minimap",
+      "old": "images/labels/army.png",
+      "prompt": "prompts/map-army.txt"
+    },
+    {
+      "id": "map-realm",
+      "label": "Realm marker",
+      "family": "Minimap",
+      "old": "images/labels/realm.png",
+      "prompt": "prompts/map-realm.txt"
+    }
+  ],
+  "directions": [
+    {
+      "id": "grounded",
+      "name": "Fieldwork",
+      "description": "Softly modelled paint, weathered materials and natural colour."
+    },
+    {
+      "id": "faceted",
+      "name": "Facets",
+      "description": "Broad painted planes, stronger light breaks and compact silhouettes."
+    }
+  ],
+  "verdicts": {
+    "grounded/stone": {
+      "verdict": "beats shipped",
+      "reason": "Pale fractured stone reads as rock at 32 px; lit planes and grain replace the jewel-like old facets."
+    },
+    "grounded/wood": {
+      "verdict": "beats shipped",
+      "reason": "Bark, cut end and end-grain hold at 64 px; a broad warm log silhouette remains at 32 px."
+    },
+    "grounded/wheat": {
+      "verdict": "beats shipped",
+      "reason": "Fuller ears and separated highlights keep the crop legible at 32 px and add convincing grain at 64 px."
+    },
+    "grounded/fish": {
+      "verdict": "beats shipped",
+      "reason": "Silver scales and a clear tail replace the bright blue polygon fish and its ground shadow."
+    },
+    "grounded/labor": {
+      "verdict": "beats shipped",
+      "reason": "A gripping hand and working hammer fill the square better than the distant full-body worker."
+    },
+    "grounded/essence": {
+      "verdict": "equal",
+      "reason": "The bottle remains clear at both sizes. Glass and violet volume improve at 64 px; the old magenta bottle is equally distinct at 32 px."
+    },
+    "grounded/ironwood": {
+      "verdict": "equal",
+      "reason": "Dense bark and red end-grain distinguish it from ordinary wood; the old black log has comparable contrast at 32 px."
+    },
+    "grounded/fragment": {
+      "verdict": "equal",
+      "reason": "The orange-green shard retains its identity; surface light improves at 64 px but the old silhouette is already strong."
+    },
+    "grounded/knight": {
+      "verdict": "beats shipped",
+      "reason": "The steel bust has readable helmet and shoulders at 32 px; the old full-body knight loses those details."
+    },
+    "grounded/crossbowman": {
+      "verdict": "beats shipped",
+      "reason": "The weapon silhouette survives reduction better than the old tiny figure. It names the troop by equipment."
+    },
+    "grounded/paladin": {
+      "verdict": "equal",
+      "reason": "Blue and white shield reads cleanly and has stronger material depth. It trades the old mounted silhouette for a defensive emblem."
+    },
+    "grounded/realm": {
+      "verdict": "beats shipped",
+      "reason": "Stone gate and slate roofs establish a material building instead of a monochrome gold token. Level remains an external badge."
+    },
+    "grounded/camp": {
+      "verdict": "equal",
+      "reason": "Both tents read at 32 px. The new canvas has stronger folds at 64 px without adding another visual object."
+    },
+    "grounded/hyperstructure": {
+      "verdict": "beats shipped",
+      "reason": "Stone spires and the lit core give the site material depth missing from the flat old emblem."
+    },
+    "grounded/chest": {
+      "verdict": "beats shipped",
+      "reason": "Wood and iron separate clearly at both sizes, replacing the all-gold chest with a readable object."
+    },
+    "grounded/move": {
+      "verdict": "equal",
+      "reason": "Leather boots retain material detail at 64 px. The old footprints are faster as a pure sign at 32 px."
+    },
+    "grounded/explore": {
+      "verdict": "equal",
+      "reason": "The map and lens have convincing depth; the old eye is simpler at 32 px. The map distinguishes this from a watch-only spyglass."
+    },
+    "grounded/attack": {
+      "verdict": "equal",
+      "reason": "A lit blade is clean and free of the old shield frame. Its narrow silhouette is less prominent but remains legible at 32 px."
+    },
+    "grounded/build": {
+      "verdict": "equal",
+      "reason": "The mallet and block match the shipped material quality; removing the second tool makes the 32 px subject cleaner."
+    },
+    "grounded/trade": {
+      "verdict": "equal",
+      "reason": "The iron balance keeps the familiar scale silhouette with clear pans. Small chains still merge at 32 px as in the old art."
+    },
+    "grounded/stamina": {
+      "verdict": "equal",
+      "reason": "Amber depth is stronger at 64 px; the old lightning silhouette is equally clear at 32 px. This meaning is reserved for stamina."
+    },
+    "grounded/victory": {
+      "verdict": "beats shipped",
+      "reason": "Laurel, cloth and pale material carry a victory subject with painted depth instead of the flat old trophy."
+    },
+    "grounded/settings": {
+      "verdict": "beats shipped",
+      "reason": "One iron gear reads more clearly than the framed dial and key, with enough face shading to feel physical."
+    },
+    "grounded/chat": {
+      "verdict": "beats shipped",
+      "reason": "Two painted speech forms preserve the conversation meaning and remove the gold rim; ivory faces stay clear at 32 px."
+    },
+    "grounded/map-army": {
+      "verdict": "equal",
+      "reason": "An unframed helmet preserves a compact military silhouette; painted light replaces the old shield engraving."
+    },
+    "grounded/map-realm": {
+      "verdict": "equal",
+      "reason": "A broad gate and crenellations preserve the site silhouette while leaving ownership to the surrounding shape."
+    },
+    "faceted/stone": {
+      "verdict": "beats shipped",
+      "reason": "Pale fractured stone reads as rock at 32 px; lit planes and grain replace the jewel-like old facets."
+    },
+    "faceted/wood": {
+      "verdict": "beats shipped",
+      "reason": "Bark, cut end and end-grain hold at 64 px; a broad warm log silhouette remains at 32 px."
+    },
+    "faceted/wheat": {
+      "verdict": "beats shipped",
+      "reason": "Broader lit grain planes produce a stronger crop silhouette at 32 px; painted edges hold at 64 px."
+    },
+    "faceted/fish": {
+      "verdict": "beats shipped",
+      "reason": "Silver scales and a clear tail replace the bright blue polygon fish and its ground shadow."
+    },
+    "faceted/labor": {
+      "verdict": "beats shipped",
+      "reason": "A gripping hand and working hammer fill the square better than the distant full-body worker."
+    },
+    "faceted/essence": {
+      "verdict": "equal",
+      "reason": "The bottle remains clear at both sizes. Glass and violet volume improve at 64 px; the old magenta bottle is equally distinct at 32 px."
+    },
+    "faceted/ironwood": {
+      "verdict": "equal",
+      "reason": "Dense bark and red end-grain distinguish it from ordinary wood; the old black log has comparable contrast at 32 px."
+    },
+    "faceted/fragment": {
+      "verdict": "equal",
+      "reason": "The orange-green shard retains its identity; surface light improves at 64 px but the old silhouette is already strong."
+    },
+    "faceted/knight": {
+      "verdict": "beats shipped",
+      "reason": "Large steel planes make the helmet and shoulders clear at 32 px; the old full-body figure loses its equipment detail."
+    },
+    "faceted/crossbowman": {
+      "verdict": "beats shipped",
+      "reason": "The weapon silhouette survives reduction better than the old tiny figure. It names the troop by equipment."
+    },
+    "faceted/paladin": {
+      "verdict": "equal",
+      "reason": "Blue and white shield reads cleanly and has stronger material depth. It trades the old mounted silhouette for a defensive emblem."
+    },
+    "faceted/realm": {
+      "verdict": "beats shipped",
+      "reason": "Stone gate and slate roofs establish a material building instead of a monochrome gold token. Level remains an external badge."
+    },
+    "faceted/camp": {
+      "verdict": "equal",
+      "reason": "Both tents read at 32 px. The new canvas has stronger folds at 64 px without adding another visual object."
+    },
+    "faceted/hyperstructure": {
+      "verdict": "beats shipped",
+      "reason": "Stone spires and the lit core give the site material depth missing from the flat old emblem."
+    },
+    "faceted/chest": {
+      "verdict": "beats shipped",
+      "reason": "Wood and iron separate clearly at both sizes, replacing the all-gold chest with a readable object."
+    },
+    "faceted/move": {
+      "verdict": "equal",
+      "reason": "Leather boots retain material detail at 64 px. The old footprints are faster as a pure sign at 32 px."
+    },
+    "faceted/explore": {
+      "verdict": "equal",
+      "reason": "The map and lens have convincing depth; the old eye is simpler at 32 px. The map distinguishes this from a watch-only spyglass."
+    },
+    "faceted/attack": {
+      "verdict": "equal",
+      "reason": "A lit blade is clean and free of the old shield frame. Its narrow silhouette is less prominent but remains legible at 32 px."
+    },
+    "faceted/build": {
+      "verdict": "equal",
+      "reason": "The mallet and block match the shipped material quality; removing the second tool makes the 32 px subject cleaner."
+    },
+    "faceted/trade": {
+      "verdict": "equal",
+      "reason": "The iron balance keeps the familiar scale silhouette with clear pans. Small chains still merge at 32 px as in the old art."
+    },
+    "faceted/stamina": {
+      "verdict": "equal",
+      "reason": "Amber depth is stronger at 64 px; the old lightning silhouette is equally clear at 32 px. This meaning is reserved for stamina."
+    },
+    "faceted/victory": {
+      "verdict": "beats shipped",
+      "reason": "The silver trophy and green laurel have clearer volume than the flat old cup at 32 and 64 px."
+    },
+    "faceted/settings": {
+      "verdict": "beats shipped",
+      "reason": "One iron gear reads more clearly than the framed dial and key, with enough face shading to feel physical."
+    },
+    "faceted/chat": {
+      "verdict": "beats shipped",
+      "reason": "Two painted speech forms preserve the conversation meaning and remove the gold rim; ivory faces stay clear at 32 px."
+    },
+    "faceted/map-army": {
+      "verdict": "equal",
+      "reason": "An unframed helmet preserves a compact military silhouette; painted light replaces the old shield engraving."
+    },
+    "faceted/map-realm": {
+      "verdict": "equal",
+      "reason": "A broad gate and crenellations preserve the site silhouette while leaving ownership to the surrounding shape."
+    }
+  },
+  "assets": [
+    {
+      "key": "grounded/stone",
+      "size": 12,
+      "file": "new/grounded/12/stone.png"
+    },
+    {
+      "key": "grounded/stone",
+      "size": 16,
+      "file": "new/grounded/16/stone.png"
+    },
+    {
+      "key": "grounded/stone",
+      "size": 24,
+      "file": "new/grounded/24/stone.png"
+    },
+    {
+      "key": "grounded/stone",
+      "size": 32,
+      "file": "new/grounded/32/stone.png"
+    },
+    {
+      "key": "grounded/stone",
+      "size": 64,
+      "file": "new/grounded/64/stone.png"
+    },
+    {
+      "key": "grounded/stone",
+      "size": 256,
+      "file": "new/grounded/256/stone.png"
+    },
+    {
+      "key": "grounded/wood",
+      "size": 12,
+      "file": "new/grounded/12/wood.png"
+    },
+    {
+      "key": "grounded/wood",
+      "size": 16,
+      "file": "new/grounded/16/wood.png"
+    },
+    {
+      "key": "grounded/wood",
+      "size": 24,
+      "file": "new/grounded/24/wood.png"
+    },
+    {
+      "key": "grounded/wood",
+      "size": 32,
+      "file": "new/grounded/32/wood.png"
+    },
+    {
+      "key": "grounded/wood",
+      "size": 64,
+      "file": "new/grounded/64/wood.png"
+    },
+    {
+      "key": "grounded/wood",
+      "size": 256,
+      "file": "new/grounded/256/wood.png"
+    },
+    {
+      "key": "grounded/wheat",
+      "size": 12,
+      "file": "new/grounded/12/wheat.png"
+    },
+    {
+      "key": "grounded/wheat",
+      "size": 16,
+      "file": "new/grounded/16/wheat.png"
+    },
+    {
+      "key": "grounded/wheat",
+      "size": 24,
+      "file": "new/grounded/24/wheat.png"
+    },
+    {
+      "key": "grounded/wheat",
+      "size": 32,
+      "file": "new/grounded/32/wheat.png"
+    },
+    {
+      "key": "grounded/wheat",
+      "size": 64,
+      "file": "new/grounded/64/wheat.png"
+    },
+    {
+      "key": "grounded/wheat",
+      "size": 256,
+      "file": "new/grounded/256/wheat.png"
+    },
+    {
+      "key": "grounded/fish",
+      "size": 12,
+      "file": "new/grounded/12/fish.png"
+    },
+    {
+      "key": "grounded/fish",
+      "size": 16,
+      "file": "new/grounded/16/fish.png"
+    },
+    {
+      "key": "grounded/fish",
+      "size": 24,
+      "file": "new/grounded/24/fish.png"
+    },
+    {
+      "key": "grounded/fish",
+      "size": 32,
+      "file": "new/grounded/32/fish.png"
+    },
+    {
+      "key": "grounded/fish",
+      "size": 64,
+      "file": "new/grounded/64/fish.png"
+    },
+    {
+      "key": "grounded/fish",
+      "size": 256,
+      "file": "new/grounded/256/fish.png"
+    },
+    {
+      "key": "grounded/labor",
+      "size": 12,
+      "file": "new/grounded/12/labor.png"
+    },
+    {
+      "key": "grounded/labor",
+      "size": 16,
+      "file": "new/grounded/16/labor.png"
+    },
+    {
+      "key": "grounded/labor",
+      "size": 24,
+      "file": "new/grounded/24/labor.png"
+    },
+    {
+      "key": "grounded/labor",
+      "size": 32,
+      "file": "new/grounded/32/labor.png"
+    },
+    {
+      "key": "grounded/labor",
+      "size": 64,
+      "file": "new/grounded/64/labor.png"
+    },
+    {
+      "key": "grounded/labor",
+      "size": 256,
+      "file": "new/grounded/256/labor.png"
+    },
+    {
+      "key": "grounded/essence",
+      "size": 12,
+      "file": "new/grounded/12/essence.png"
+    },
+    {
+      "key": "grounded/essence",
+      "size": 16,
+      "file": "new/grounded/16/essence.png"
+    },
+    {
+      "key": "grounded/essence",
+      "size": 24,
+      "file": "new/grounded/24/essence.png"
+    },
+    {
+      "key": "grounded/essence",
+      "size": 32,
+      "file": "new/grounded/32/essence.png"
+    },
+    {
+      "key": "grounded/essence",
+      "size": 64,
+      "file": "new/grounded/64/essence.png"
+    },
+    {
+      "key": "grounded/essence",
+      "size": 256,
+      "file": "new/grounded/256/essence.png"
+    },
+    {
+      "key": "grounded/ironwood",
+      "size": 12,
+      "file": "new/grounded/12/ironwood.png"
+    },
+    {
+      "key": "grounded/ironwood",
+      "size": 16,
+      "file": "new/grounded/16/ironwood.png"
+    },
+    {
+      "key": "grounded/ironwood",
+      "size": 24,
+      "file": "new/grounded/24/ironwood.png"
+    },
+    {
+      "key": "grounded/ironwood",
+      "size": 32,
+      "file": "new/grounded/32/ironwood.png"
+    },
+    {
+      "key": "grounded/ironwood",
+      "size": 64,
+      "file": "new/grounded/64/ironwood.png"
+    },
+    {
+      "key": "grounded/ironwood",
+      "size": 256,
+      "file": "new/grounded/256/ironwood.png"
+    },
+    {
+      "key": "grounded/fragment",
+      "size": 12,
+      "file": "new/grounded/12/fragment.png"
+    },
+    {
+      "key": "grounded/fragment",
+      "size": 16,
+      "file": "new/grounded/16/fragment.png"
+    },
+    {
+      "key": "grounded/fragment",
+      "size": 24,
+      "file": "new/grounded/24/fragment.png"
+    },
+    {
+      "key": "grounded/fragment",
+      "size": 32,
+      "file": "new/grounded/32/fragment.png"
+    },
+    {
+      "key": "grounded/fragment",
+      "size": 64,
+      "file": "new/grounded/64/fragment.png"
+    },
+    {
+      "key": "grounded/fragment",
+      "size": 256,
+      "file": "new/grounded/256/fragment.png"
+    },
+    {
+      "key": "grounded/knight",
+      "size": 12,
+      "file": "new/grounded/12/knight.png"
+    },
+    {
+      "key": "grounded/knight",
+      "size": 16,
+      "file": "new/grounded/16/knight.png"
+    },
+    {
+      "key": "grounded/knight",
+      "size": 24,
+      "file": "new/grounded/24/knight.png"
+    },
+    {
+      "key": "grounded/knight",
+      "size": 32,
+      "file": "new/grounded/32/knight.png"
+    },
+    {
+      "key": "grounded/knight",
+      "size": 64,
+      "file": "new/grounded/64/knight.png"
+    },
+    {
+      "key": "grounded/knight",
+      "size": 256,
+      "file": "new/grounded/256/knight.png"
+    },
+    {
+      "key": "grounded/crossbowman",
+      "size": 12,
+      "file": "new/grounded/12/crossbowman.png"
+    },
+    {
+      "key": "grounded/crossbowman",
+      "size": 16,
+      "file": "new/grounded/16/crossbowman.png"
+    },
+    {
+      "key": "grounded/crossbowman",
+      "size": 24,
+      "file": "new/grounded/24/crossbowman.png"
+    },
+    {
+      "key": "grounded/crossbowman",
+      "size": 32,
+      "file": "new/grounded/32/crossbowman.png"
+    },
+    {
+      "key": "grounded/crossbowman",
+      "size": 64,
+      "file": "new/grounded/64/crossbowman.png"
+    },
+    {
+      "key": "grounded/crossbowman",
+      "size": 256,
+      "file": "new/grounded/256/crossbowman.png"
+    },
+    {
+      "key": "grounded/paladin",
+      "size": 12,
+      "file": "new/grounded/12/paladin.png"
+    },
+    {
+      "key": "grounded/paladin",
+      "size": 16,
+      "file": "new/grounded/16/paladin.png"
+    },
+    {
+      "key": "grounded/paladin",
+      "size": 24,
+      "file": "new/grounded/24/paladin.png"
+    },
+    {
+      "key": "grounded/paladin",
+      "size": 32,
+      "file": "new/grounded/32/paladin.png"
+    },
+    {
+      "key": "grounded/paladin",
+      "size": 64,
+      "file": "new/grounded/64/paladin.png"
+    },
+    {
+      "key": "grounded/paladin",
+      "size": 256,
+      "file": "new/grounded/256/paladin.png"
+    },
+    {
+      "key": "grounded/realm",
+      "size": 12,
+      "file": "new/grounded/12/realm.png"
+    },
+    {
+      "key": "grounded/realm",
+      "size": 16,
+      "file": "new/grounded/16/realm.png"
+    },
+    {
+      "key": "grounded/realm",
+      "size": 24,
+      "file": "new/grounded/24/realm.png"
+    },
+    {
+      "key": "grounded/realm",
+      "size": 32,
+      "file": "new/grounded/32/realm.png"
+    },
+    {
+      "key": "grounded/realm",
+      "size": 64,
+      "file": "new/grounded/64/realm.png"
+    },
+    {
+      "key": "grounded/realm",
+      "size": 256,
+      "file": "new/grounded/256/realm.png"
+    },
+    {
+      "key": "grounded/camp",
+      "size": 12,
+      "file": "new/grounded/12/camp.png"
+    },
+    {
+      "key": "grounded/camp",
+      "size": 16,
+      "file": "new/grounded/16/camp.png"
+    },
+    {
+      "key": "grounded/camp",
+      "size": 24,
+      "file": "new/grounded/24/camp.png"
+    },
+    {
+      "key": "grounded/camp",
+      "size": 32,
+      "file": "new/grounded/32/camp.png"
+    },
+    {
+      "key": "grounded/camp",
+      "size": 64,
+      "file": "new/grounded/64/camp.png"
+    },
+    {
+      "key": "grounded/camp",
+      "size": 256,
+      "file": "new/grounded/256/camp.png"
+    },
+    {
+      "key": "grounded/hyperstructure",
+      "size": 12,
+      "file": "new/grounded/12/hyperstructure.png"
+    },
+    {
+      "key": "grounded/hyperstructure",
+      "size": 16,
+      "file": "new/grounded/16/hyperstructure.png"
+    },
+    {
+      "key": "grounded/hyperstructure",
+      "size": 24,
+      "file": "new/grounded/24/hyperstructure.png"
+    },
+    {
+      "key": "grounded/hyperstructure",
+      "size": 32,
+      "file": "new/grounded/32/hyperstructure.png"
+    },
+    {
+      "key": "grounded/hyperstructure",
+      "size": 64,
+      "file": "new/grounded/64/hyperstructure.png"
+    },
+    {
+      "key": "grounded/hyperstructure",
+      "size": 256,
+      "file": "new/grounded/256/hyperstructure.png"
+    },
+    {
+      "key": "grounded/chest",
+      "size": 12,
+      "file": "new/grounded/12/chest.png"
+    },
+    {
+      "key": "grounded/chest",
+      "size": 16,
+      "file": "new/grounded/16/chest.png"
+    },
+    {
+      "key": "grounded/chest",
+      "size": 24,
+      "file": "new/grounded/24/chest.png"
+    },
+    {
+      "key": "grounded/chest",
+      "size": 32,
+      "file": "new/grounded/32/chest.png"
+    },
+    {
+      "key": "grounded/chest",
+      "size": 64,
+      "file": "new/grounded/64/chest.png"
+    },
+    {
+      "key": "grounded/chest",
+      "size": 256,
+      "file": "new/grounded/256/chest.png"
+    },
+    {
+      "key": "grounded/move",
+      "size": 12,
+      "file": "new/grounded/12/move.png"
+    },
+    {
+      "key": "grounded/move",
+      "size": 16,
+      "file": "new/grounded/16/move.png"
+    },
+    {
+      "key": "grounded/move",
+      "size": 24,
+      "file": "new/grounded/24/move.png"
+    },
+    {
+      "key": "grounded/move",
+      "size": 32,
+      "file": "new/grounded/32/move.png"
+    },
+    {
+      "key": "grounded/move",
+      "size": 64,
+      "file": "new/grounded/64/move.png"
+    },
+    {
+      "key": "grounded/move",
+      "size": 256,
+      "file": "new/grounded/256/move.png"
+    },
+    {
+      "key": "grounded/explore",
+      "size": 12,
+      "file": "new/grounded/12/explore.png"
+    },
+    {
+      "key": "grounded/explore",
+      "size": 16,
+      "file": "new/grounded/16/explore.png"
+    },
+    {
+      "key": "grounded/explore",
+      "size": 24,
+      "file": "new/grounded/24/explore.png"
+    },
+    {
+      "key": "grounded/explore",
+      "size": 32,
+      "file": "new/grounded/32/explore.png"
+    },
+    {
+      "key": "grounded/explore",
+      "size": 64,
+      "file": "new/grounded/64/explore.png"
+    },
+    {
+      "key": "grounded/explore",
+      "size": 256,
+      "file": "new/grounded/256/explore.png"
+    },
+    {
+      "key": "grounded/attack",
+      "size": 12,
+      "file": "new/grounded/12/attack.png"
+    },
+    {
+      "key": "grounded/attack",
+      "size": 16,
+      "file": "new/grounded/16/attack.png"
+    },
+    {
+      "key": "grounded/attack",
+      "size": 24,
+      "file": "new/grounded/24/attack.png"
+    },
+    {
+      "key": "grounded/attack",
+      "size": 32,
+      "file": "new/grounded/32/attack.png"
+    },
+    {
+      "key": "grounded/attack",
+      "size": 64,
+      "file": "new/grounded/64/attack.png"
+    },
+    {
+      "key": "grounded/attack",
+      "size": 256,
+      "file": "new/grounded/256/attack.png"
+    },
+    {
+      "key": "grounded/build",
+      "size": 12,
+      "file": "new/grounded/12/build.png"
+    },
+    {
+      "key": "grounded/build",
+      "size": 16,
+      "file": "new/grounded/16/build.png"
+    },
+    {
+      "key": "grounded/build",
+      "size": 24,
+      "file": "new/grounded/24/build.png"
+    },
+    {
+      "key": "grounded/build",
+      "size": 32,
+      "file": "new/grounded/32/build.png"
+    },
+    {
+      "key": "grounded/build",
+      "size": 64,
+      "file": "new/grounded/64/build.png"
+    },
+    {
+      "key": "grounded/build",
+      "size": 256,
+      "file": "new/grounded/256/build.png"
+    },
+    {
+      "key": "grounded/trade",
+      "size": 12,
+      "file": "new/grounded/12/trade.png"
+    },
+    {
+      "key": "grounded/trade",
+      "size": 16,
+      "file": "new/grounded/16/trade.png"
+    },
+    {
+      "key": "grounded/trade",
+      "size": 24,
+      "file": "new/grounded/24/trade.png"
+    },
+    {
+      "key": "grounded/trade",
+      "size": 32,
+      "file": "new/grounded/32/trade.png"
+    },
+    {
+      "key": "grounded/trade",
+      "size": 64,
+      "file": "new/grounded/64/trade.png"
+    },
+    {
+      "key": "grounded/trade",
+      "size": 256,
+      "file": "new/grounded/256/trade.png"
+    },
+    {
+      "key": "grounded/stamina",
+      "size": 12,
+      "file": "new/grounded/12/stamina.png"
+    },
+    {
+      "key": "grounded/stamina",
+      "size": 16,
+      "file": "new/grounded/16/stamina.png"
+    },
+    {
+      "key": "grounded/stamina",
+      "size": 24,
+      "file": "new/grounded/24/stamina.png"
+    },
+    {
+      "key": "grounded/stamina",
+      "size": 32,
+      "file": "new/grounded/32/stamina.png"
+    },
+    {
+      "key": "grounded/stamina",
+      "size": 64,
+      "file": "new/grounded/64/stamina.png"
+    },
+    {
+      "key": "grounded/stamina",
+      "size": 256,
+      "file": "new/grounded/256/stamina.png"
+    },
+    {
+      "key": "grounded/victory",
+      "size": 12,
+      "file": "new/grounded/12/victory.png"
+    },
+    {
+      "key": "grounded/victory",
+      "size": 16,
+      "file": "new/grounded/16/victory.png"
+    },
+    {
+      "key": "grounded/victory",
+      "size": 24,
+      "file": "new/grounded/24/victory.png"
+    },
+    {
+      "key": "grounded/victory",
+      "size": 32,
+      "file": "new/grounded/32/victory.png"
+    },
+    {
+      "key": "grounded/victory",
+      "size": 64,
+      "file": "new/grounded/64/victory.png"
+    },
+    {
+      "key": "grounded/victory",
+      "size": 256,
+      "file": "new/grounded/256/victory.png"
+    },
+    {
+      "key": "grounded/settings",
+      "size": 12,
+      "file": "new/grounded/12/settings.png"
+    },
+    {
+      "key": "grounded/settings",
+      "size": 16,
+      "file": "new/grounded/16/settings.png"
+    },
+    {
+      "key": "grounded/settings",
+      "size": 24,
+      "file": "new/grounded/24/settings.png"
+    },
+    {
+      "key": "grounded/settings",
+      "size": 32,
+      "file": "new/grounded/32/settings.png"
+    },
+    {
+      "key": "grounded/settings",
+      "size": 64,
+      "file": "new/grounded/64/settings.png"
+    },
+    {
+      "key": "grounded/settings",
+      "size": 256,
+      "file": "new/grounded/256/settings.png"
+    },
+    {
+      "key": "grounded/chat",
+      "size": 12,
+      "file": "new/grounded/12/chat.png"
+    },
+    {
+      "key": "grounded/chat",
+      "size": 16,
+      "file": "new/grounded/16/chat.png"
+    },
+    {
+      "key": "grounded/chat",
+      "size": 24,
+      "file": "new/grounded/24/chat.png"
+    },
+    {
+      "key": "grounded/chat",
+      "size": 32,
+      "file": "new/grounded/32/chat.png"
+    },
+    {
+      "key": "grounded/chat",
+      "size": 64,
+      "file": "new/grounded/64/chat.png"
+    },
+    {
+      "key": "grounded/chat",
+      "size": 256,
+      "file": "new/grounded/256/chat.png"
+    },
+    {
+      "key": "grounded/map-army",
+      "size": 12,
+      "file": "new/grounded/12/map-army.png"
+    },
+    {
+      "key": "grounded/map-army",
+      "size": 16,
+      "file": "new/grounded/16/map-army.png"
+    },
+    {
+      "key": "grounded/map-army",
+      "size": 24,
+      "file": "new/grounded/24/map-army.png"
+    },
+    {
+      "key": "grounded/map-army",
+      "size": 32,
+      "file": "new/grounded/32/map-army.png"
+    },
+    {
+      "key": "grounded/map-army",
+      "size": 64,
+      "file": "new/grounded/64/map-army.png"
+    },
+    {
+      "key": "grounded/map-army",
+      "size": 256,
+      "file": "new/grounded/256/map-army.png"
+    },
+    {
+      "key": "grounded/map-realm",
+      "size": 12,
+      "file": "new/grounded/12/map-realm.png"
+    },
+    {
+      "key": "grounded/map-realm",
+      "size": 16,
+      "file": "new/grounded/16/map-realm.png"
+    },
+    {
+      "key": "grounded/map-realm",
+      "size": 24,
+      "file": "new/grounded/24/map-realm.png"
+    },
+    {
+      "key": "grounded/map-realm",
+      "size": 32,
+      "file": "new/grounded/32/map-realm.png"
+    },
+    {
+      "key": "grounded/map-realm",
+      "size": 64,
+      "file": "new/grounded/64/map-realm.png"
+    },
+    {
+      "key": "grounded/map-realm",
+      "size": 256,
+      "file": "new/grounded/256/map-realm.png"
+    },
+    {
+      "key": "faceted/stone",
+      "size": 12,
+      "file": "new/faceted/12/stone.png"
+    },
+    {
+      "key": "faceted/stone",
+      "size": 16,
+      "file": "new/faceted/16/stone.png"
+    },
+    {
+      "key": "faceted/stone",
+      "size": 24,
+      "file": "new/faceted/24/stone.png"
+    },
+    {
+      "key": "faceted/stone",
+      "size": 32,
+      "file": "new/faceted/32/stone.png"
+    },
+    {
+      "key": "faceted/stone",
+      "size": 64,
+      "file": "new/faceted/64/stone.png"
+    },
+    {
+      "key": "faceted/stone",
+      "size": 256,
+      "file": "new/faceted/256/stone.png"
+    },
+    {
+      "key": "faceted/wood",
+      "size": 12,
+      "file": "new/faceted/12/wood.png"
+    },
+    {
+      "key": "faceted/wood",
+      "size": 16,
+      "file": "new/faceted/16/wood.png"
+    },
+    {
+      "key": "faceted/wood",
+      "size": 24,
+      "file": "new/faceted/24/wood.png"
+    },
+    {
+      "key": "faceted/wood",
+      "size": 32,
+      "file": "new/faceted/32/wood.png"
+    },
+    {
+      "key": "faceted/wood",
+      "size": 64,
+      "file": "new/faceted/64/wood.png"
+    },
+    {
+      "key": "faceted/wood",
+      "size": 256,
+      "file": "new/faceted/256/wood.png"
+    },
+    {
+      "key": "faceted/wheat",
+      "size": 12,
+      "file": "new/faceted/12/wheat.png"
+    },
+    {
+      "key": "faceted/wheat",
+      "size": 16,
+      "file": "new/faceted/16/wheat.png"
+    },
+    {
+      "key": "faceted/wheat",
+      "size": 24,
+      "file": "new/faceted/24/wheat.png"
+    },
+    {
+      "key": "faceted/wheat",
+      "size": 32,
+      "file": "new/faceted/32/wheat.png"
+    },
+    {
+      "key": "faceted/wheat",
+      "size": 64,
+      "file": "new/faceted/64/wheat.png"
+    },
+    {
+      "key": "faceted/wheat",
+      "size": 256,
+      "file": "new/faceted/256/wheat.png"
+    },
+    {
+      "key": "faceted/fish",
+      "size": 12,
+      "file": "new/faceted/12/fish.png"
+    },
+    {
+      "key": "faceted/fish",
+      "size": 16,
+      "file": "new/faceted/16/fish.png"
+    },
+    {
+      "key": "faceted/fish",
+      "size": 24,
+      "file": "new/faceted/24/fish.png"
+    },
+    {
+      "key": "faceted/fish",
+      "size": 32,
+      "file": "new/faceted/32/fish.png"
+    },
+    {
+      "key": "faceted/fish",
+      "size": 64,
+      "file": "new/faceted/64/fish.png"
+    },
+    {
+      "key": "faceted/fish",
+      "size": 256,
+      "file": "new/faceted/256/fish.png"
+    },
+    {
+      "key": "faceted/labor",
+      "size": 12,
+      "file": "new/faceted/12/labor.png"
+    },
+    {
+      "key": "faceted/labor",
+      "size": 16,
+      "file": "new/faceted/16/labor.png"
+    },
+    {
+      "key": "faceted/labor",
+      "size": 24,
+      "file": "new/faceted/24/labor.png"
+    },
+    {
+      "key": "faceted/labor",
+      "size": 32,
+      "file": "new/faceted/32/labor.png"
+    },
+    {
+      "key": "faceted/labor",
+      "size": 64,
+      "file": "new/faceted/64/labor.png"
+    },
+    {
+      "key": "faceted/labor",
+      "size": 256,
+      "file": "new/faceted/256/labor.png"
+    },
+    {
+      "key": "faceted/essence",
+      "size": 12,
+      "file": "new/faceted/12/essence.png"
+    },
+    {
+      "key": "faceted/essence",
+      "size": 16,
+      "file": "new/faceted/16/essence.png"
+    },
+    {
+      "key": "faceted/essence",
+      "size": 24,
+      "file": "new/faceted/24/essence.png"
+    },
+    {
+      "key": "faceted/essence",
+      "size": 32,
+      "file": "new/faceted/32/essence.png"
+    },
+    {
+      "key": "faceted/essence",
+      "size": 64,
+      "file": "new/faceted/64/essence.png"
+    },
+    {
+      "key": "faceted/essence",
+      "size": 256,
+      "file": "new/faceted/256/essence.png"
+    },
+    {
+      "key": "faceted/ironwood",
+      "size": 12,
+      "file": "new/faceted/12/ironwood.png"
+    },
+    {
+      "key": "faceted/ironwood",
+      "size": 16,
+      "file": "new/faceted/16/ironwood.png"
+    },
+    {
+      "key": "faceted/ironwood",
+      "size": 24,
+      "file": "new/faceted/24/ironwood.png"
+    },
+    {
+      "key": "faceted/ironwood",
+      "size": 32,
+      "file": "new/faceted/32/ironwood.png"
+    },
+    {
+      "key": "faceted/ironwood",
+      "size": 64,
+      "file": "new/faceted/64/ironwood.png"
+    },
+    {
+      "key": "faceted/ironwood",
+      "size": 256,
+      "file": "new/faceted/256/ironwood.png"
+    },
+    {
+      "key": "faceted/fragment",
+      "size": 12,
+      "file": "new/faceted/12/fragment.png"
+    },
+    {
+      "key": "faceted/fragment",
+      "size": 16,
+      "file": "new/faceted/16/fragment.png"
+    },
+    {
+      "key": "faceted/fragment",
+      "size": 24,
+      "file": "new/faceted/24/fragment.png"
+    },
+    {
+      "key": "faceted/fragment",
+      "size": 32,
+      "file": "new/faceted/32/fragment.png"
+    },
+    {
+      "key": "faceted/fragment",
+      "size": 64,
+      "file": "new/faceted/64/fragment.png"
+    },
+    {
+      "key": "faceted/fragment",
+      "size": 256,
+      "file": "new/faceted/256/fragment.png"
+    },
+    {
+      "key": "faceted/knight",
+      "size": 12,
+      "file": "new/faceted/12/knight.png"
+    },
+    {
+      "key": "faceted/knight",
+      "size": 16,
+      "file": "new/faceted/16/knight.png"
+    },
+    {
+      "key": "faceted/knight",
+      "size": 24,
+      "file": "new/faceted/24/knight.png"
+    },
+    {
+      "key": "faceted/knight",
+      "size": 32,
+      "file": "new/faceted/32/knight.png"
+    },
+    {
+      "key": "faceted/knight",
+      "size": 64,
+      "file": "new/faceted/64/knight.png"
+    },
+    {
+      "key": "faceted/knight",
+      "size": 256,
+      "file": "new/faceted/256/knight.png"
+    },
+    {
+      "key": "faceted/crossbowman",
+      "size": 12,
+      "file": "new/faceted/12/crossbowman.png"
+    },
+    {
+      "key": "faceted/crossbowman",
+      "size": 16,
+      "file": "new/faceted/16/crossbowman.png"
+    },
+    {
+      "key": "faceted/crossbowman",
+      "size": 24,
+      "file": "new/faceted/24/crossbowman.png"
+    },
+    {
+      "key": "faceted/crossbowman",
+      "size": 32,
+      "file": "new/faceted/32/crossbowman.png"
+    },
+    {
+      "key": "faceted/crossbowman",
+      "size": 64,
+      "file": "new/faceted/64/crossbowman.png"
+    },
+    {
+      "key": "faceted/crossbowman",
+      "size": 256,
+      "file": "new/faceted/256/crossbowman.png"
+    },
+    {
+      "key": "faceted/paladin",
+      "size": 12,
+      "file": "new/faceted/12/paladin.png"
+    },
+    {
+      "key": "faceted/paladin",
+      "size": 16,
+      "file": "new/faceted/16/paladin.png"
+    },
+    {
+      "key": "faceted/paladin",
+      "size": 24,
+      "file": "new/faceted/24/paladin.png"
+    },
+    {
+      "key": "faceted/paladin",
+      "size": 32,
+      "file": "new/faceted/32/paladin.png"
+    },
+    {
+      "key": "faceted/paladin",
+      "size": 64,
+      "file": "new/faceted/64/paladin.png"
+    },
+    {
+      "key": "faceted/paladin",
+      "size": 256,
+      "file": "new/faceted/256/paladin.png"
+    },
+    {
+      "key": "faceted/realm",
+      "size": 12,
+      "file": "new/faceted/12/realm.png"
+    },
+    {
+      "key": "faceted/realm",
+      "size": 16,
+      "file": "new/faceted/16/realm.png"
+    },
+    {
+      "key": "faceted/realm",
+      "size": 24,
+      "file": "new/faceted/24/realm.png"
+    },
+    {
+      "key": "faceted/realm",
+      "size": 32,
+      "file": "new/faceted/32/realm.png"
+    },
+    {
+      "key": "faceted/realm",
+      "size": 64,
+      "file": "new/faceted/64/realm.png"
+    },
+    {
+      "key": "faceted/realm",
+      "size": 256,
+      "file": "new/faceted/256/realm.png"
+    },
+    {
+      "key": "faceted/camp",
+      "size": 12,
+      "file": "new/faceted/12/camp.png"
+    },
+    {
+      "key": "faceted/camp",
+      "size": 16,
+      "file": "new/faceted/16/camp.png"
+    },
+    {
+      "key": "faceted/camp",
+      "size": 24,
+      "file": "new/faceted/24/camp.png"
+    },
+    {
+      "key": "faceted/camp",
+      "size": 32,
+      "file": "new/faceted/32/camp.png"
+    },
+    {
+      "key": "faceted/camp",
+      "size": 64,
+      "file": "new/faceted/64/camp.png"
+    },
+    {
+      "key": "faceted/camp",
+      "size": 256,
+      "file": "new/faceted/256/camp.png"
+    },
+    {
+      "key": "faceted/hyperstructure",
+      "size": 12,
+      "file": "new/faceted/12/hyperstructure.png"
+    },
+    {
+      "key": "faceted/hyperstructure",
+      "size": 16,
+      "file": "new/faceted/16/hyperstructure.png"
+    },
+    {
+      "key": "faceted/hyperstructure",
+      "size": 24,
+      "file": "new/faceted/24/hyperstructure.png"
+    },
+    {
+      "key": "faceted/hyperstructure",
+      "size": 32,
+      "file": "new/faceted/32/hyperstructure.png"
+    },
+    {
+      "key": "faceted/hyperstructure",
+      "size": 64,
+      "file": "new/faceted/64/hyperstructure.png"
+    },
+    {
+      "key": "faceted/hyperstructure",
+      "size": 256,
+      "file": "new/faceted/256/hyperstructure.png"
+    },
+    {
+      "key": "faceted/chest",
+      "size": 12,
+      "file": "new/faceted/12/chest.png"
+    },
+    {
+      "key": "faceted/chest",
+      "size": 16,
+      "file": "new/faceted/16/chest.png"
+    },
+    {
+      "key": "faceted/chest",
+      "size": 24,
+      "file": "new/faceted/24/chest.png"
+    },
+    {
+      "key": "faceted/chest",
+      "size": 32,
+      "file": "new/faceted/32/chest.png"
+    },
+    {
+      "key": "faceted/chest",
+      "size": 64,
+      "file": "new/faceted/64/chest.png"
+    },
+    {
+      "key": "faceted/chest",
+      "size": 256,
+      "file": "new/faceted/256/chest.png"
+    },
+    {
+      "key": "faceted/move",
+      "size": 12,
+      "file": "new/faceted/12/move.png"
+    },
+    {
+      "key": "faceted/move",
+      "size": 16,
+      "file": "new/faceted/16/move.png"
+    },
+    {
+      "key": "faceted/move",
+      "size": 24,
+      "file": "new/faceted/24/move.png"
+    },
+    {
+      "key": "faceted/move",
+      "size": 32,
+      "file": "new/faceted/32/move.png"
+    },
+    {
+      "key": "faceted/move",
+      "size": 64,
+      "file": "new/faceted/64/move.png"
+    },
+    {
+      "key": "faceted/move",
+      "size": 256,
+      "file": "new/faceted/256/move.png"
+    },
+    {
+      "key": "faceted/explore",
+      "size": 12,
+      "file": "new/faceted/12/explore.png"
+    },
+    {
+      "key": "faceted/explore",
+      "size": 16,
+      "file": "new/faceted/16/explore.png"
+    },
+    {
+      "key": "faceted/explore",
+      "size": 24,
+      "file": "new/faceted/24/explore.png"
+    },
+    {
+      "key": "faceted/explore",
+      "size": 32,
+      "file": "new/faceted/32/explore.png"
+    },
+    {
+      "key": "faceted/explore",
+      "size": 64,
+      "file": "new/faceted/64/explore.png"
+    },
+    {
+      "key": "faceted/explore",
+      "size": 256,
+      "file": "new/faceted/256/explore.png"
+    },
+    {
+      "key": "faceted/attack",
+      "size": 12,
+      "file": "new/faceted/12/attack.png"
+    },
+    {
+      "key": "faceted/attack",
+      "size": 16,
+      "file": "new/faceted/16/attack.png"
+    },
+    {
+      "key": "faceted/attack",
+      "size": 24,
+      "file": "new/faceted/24/attack.png"
+    },
+    {
+      "key": "faceted/attack",
+      "size": 32,
+      "file": "new/faceted/32/attack.png"
+    },
+    {
+      "key": "faceted/attack",
+      "size": 64,
+      "file": "new/faceted/64/attack.png"
+    },
+    {
+      "key": "faceted/attack",
+      "size": 256,
+      "file": "new/faceted/256/attack.png"
+    },
+    {
+      "key": "faceted/build",
+      "size": 12,
+      "file": "new/faceted/12/build.png"
+    },
+    {
+      "key": "faceted/build",
+      "size": 16,
+      "file": "new/faceted/16/build.png"
+    },
+    {
+      "key": "faceted/build",
+      "size": 24,
+      "file": "new/faceted/24/build.png"
+    },
+    {
+      "key": "faceted/build",
+      "size": 32,
+      "file": "new/faceted/32/build.png"
+    },
+    {
+      "key": "faceted/build",
+      "size": 64,
+      "file": "new/faceted/64/build.png"
+    },
+    {
+      "key": "faceted/build",
+      "size": 256,
+      "file": "new/faceted/256/build.png"
+    },
+    {
+      "key": "faceted/trade",
+      "size": 12,
+      "file": "new/faceted/12/trade.png"
+    },
+    {
+      "key": "faceted/trade",
+      "size": 16,
+      "file": "new/faceted/16/trade.png"
+    },
+    {
+      "key": "faceted/trade",
+      "size": 24,
+      "file": "new/faceted/24/trade.png"
+    },
+    {
+      "key": "faceted/trade",
+      "size": 32,
+      "file": "new/faceted/32/trade.png"
+    },
+    {
+      "key": "faceted/trade",
+      "size": 64,
+      "file": "new/faceted/64/trade.png"
+    },
+    {
+      "key": "faceted/trade",
+      "size": 256,
+      "file": "new/faceted/256/trade.png"
+    },
+    {
+      "key": "faceted/stamina",
+      "size": 12,
+      "file": "new/faceted/12/stamina.png"
+    },
+    {
+      "key": "faceted/stamina",
+      "size": 16,
+      "file": "new/faceted/16/stamina.png"
+    },
+    {
+      "key": "faceted/stamina",
+      "size": 24,
+      "file": "new/faceted/24/stamina.png"
+    },
+    {
+      "key": "faceted/stamina",
+      "size": 32,
+      "file": "new/faceted/32/stamina.png"
+    },
+    {
+      "key": "faceted/stamina",
+      "size": 64,
+      "file": "new/faceted/64/stamina.png"
+    },
+    {
+      "key": "faceted/stamina",
+      "size": 256,
+      "file": "new/faceted/256/stamina.png"
+    },
+    {
+      "key": "faceted/victory",
+      "size": 12,
+      "file": "new/faceted/12/victory.png"
+    },
+    {
+      "key": "faceted/victory",
+      "size": 16,
+      "file": "new/faceted/16/victory.png"
+    },
+    {
+      "key": "faceted/victory",
+      "size": 24,
+      "file": "new/faceted/24/victory.png"
+    },
+    {
+      "key": "faceted/victory",
+      "size": 32,
+      "file": "new/faceted/32/victory.png"
+    },
+    {
+      "key": "faceted/victory",
+      "size": 64,
+      "file": "new/faceted/64/victory.png"
+    },
+    {
+      "key": "faceted/victory",
+      "size": 256,
+      "file": "new/faceted/256/victory.png"
+    },
+    {
+      "key": "faceted/settings",
+      "size": 12,
+      "file": "new/faceted/12/settings.png"
+    },
+    {
+      "key": "faceted/settings",
+      "size": 16,
+      "file": "new/faceted/16/settings.png"
+    },
+    {
+      "key": "faceted/settings",
+      "size": 24,
+      "file": "new/faceted/24/settings.png"
+    },
+    {
+      "key": "faceted/settings",
+      "size": 32,
+      "file": "new/faceted/32/settings.png"
+    },
+    {
+      "key": "faceted/settings",
+      "size": 64,
+      "file": "new/faceted/64/settings.png"
+    },
+    {
+      "key": "faceted/settings",
+      "size": 256,
+      "file": "new/faceted/256/settings.png"
+    },
+    {
+      "key": "faceted/chat",
+      "size": 12,
+      "file": "new/faceted/12/chat.png"
+    },
+    {
+      "key": "faceted/chat",
+      "size": 16,
+      "file": "new/faceted/16/chat.png"
+    },
+    {
+      "key": "faceted/chat",
+      "size": 24,
+      "file": "new/faceted/24/chat.png"
+    },
+    {
+      "key": "faceted/chat",
+      "size": 32,
+      "file": "new/faceted/32/chat.png"
+    },
+    {
+      "key": "faceted/chat",
+      "size": 64,
+      "file": "new/faceted/64/chat.png"
+    },
+    {
+      "key": "faceted/chat",
+      "size": 256,
+      "file": "new/faceted/256/chat.png"
+    },
+    {
+      "key": "faceted/map-army",
+      "size": 12,
+      "file": "new/faceted/12/map-army.png"
+    },
+    {
+      "key": "faceted/map-army",
+      "size": 16,
+      "file": "new/faceted/16/map-army.png"
+    },
+    {
+      "key": "faceted/map-army",
+      "size": 24,
+      "file": "new/faceted/24/map-army.png"
+    },
+    {
+      "key": "faceted/map-army",
+      "size": 32,
+      "file": "new/faceted/32/map-army.png"
+    },
+    {
+      "key": "faceted/map-army",
+      "size": 64,
+      "file": "new/faceted/64/map-army.png"
+    },
+    {
+      "key": "faceted/map-army",
+      "size": 256,
+      "file": "new/faceted/256/map-army.png"
+    },
+    {
+      "key": "faceted/map-realm",
+      "size": 12,
+      "file": "new/faceted/12/map-realm.png"
+    },
+    {
+      "key": "faceted/map-realm",
+      "size": 16,
+      "file": "new/faceted/16/map-realm.png"
+    },
+    {
+      "key": "faceted/map-realm",
+      "size": 24,
+      "file": "new/faceted/24/map-realm.png"
+    },
+    {
+      "key": "faceted/map-realm",
+      "size": 32,
+      "file": "new/faceted/32/map-realm.png"
+    },
+    {
+      "key": "faceted/map-realm",
+      "size": 64,
+      "file": "new/faceted/64/map-realm.png"
+    },
+    {
+      "key": "faceted/map-realm",
+      "size": 256,
+      "file": "new/faceted/256/map-realm.png"
+    }
+  ]
+}

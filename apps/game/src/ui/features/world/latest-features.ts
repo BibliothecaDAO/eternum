@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-15",
+    title: "Painted Icon Lab",
+    description:
+      "Compare shipped and painted icons in live HUD controls, at actual sizes and on a grouped minimap in the UI kit lab.",
+    type: "improvement",
+    readMore: "/lab/kit/icons",
+  },
+  {
+    date: "2026-10-15",
     title: "The command sidebar is back",
     description:
       "Blitz and Eternum return to the left command sidebar, the structure list, the empire cockpit and the fading events, in the readable type. A realm's level-up and a suggested level-up are sent the one way the castle sheet sends them.",

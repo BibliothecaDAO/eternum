@@ -1,0 +1,210 @@
+{
+  "grounded/stone": {
+    "verdict": "beats shipped",
+    "reason": "Pale fractured stone reads as rock at 32 px; lit planes and grain replace the jewel-like old facets."
+  },
+  "grounded/wood": {
+    "verdict": "beats shipped",
+    "reason": "Bark, cut end and end-grain hold at 64 px; a broad warm log silhouette remains at 32 px."
+  },
+  "grounded/wheat": {
+    "verdict": "beats shipped",
+    "reason": "Fuller ears and separated highlights keep the crop legible at 32 px and add convincing grain at 64 px."
+  },
+  "grounded/fish": {
+    "verdict": "beats shipped",
+    "reason": "Silver scales and a clear tail replace the bright blue polygon fish and its ground shadow."
+  },
+  "grounded/labor": {
+    "verdict": "beats shipped",
+    "reason": "A gripping hand and working hammer fill the square better than the distant full-body worker."
+  },
+  "grounded/essence": {
+    "verdict": "equal",
+    "reason": "The bottle remains clear at both sizes. Glass and violet volume improve at 64 px; the old magenta bottle is equally distinct at 32 px."
+  },
+  "grounded/ironwood": {
+    "verdict": "equal",
+    "reason": "Dense bark and red end-grain distinguish it from ordinary wood; the old black log has comparable contrast at 32 px."
+  },
+  "grounded/fragment": {
+    "verdict": "equal",
+    "reason": "The orange-green shard retains its identity; surface light improves at 64 px but the old silhouette is already strong."
+  },
+  "grounded/knight": {
+    "verdict": "beats shipped",
+    "reason": "The steel bust has readable helmet and shoulders at 32 px; the old full-body knight loses those details."
+  },
+  "grounded/crossbowman": {
+    "verdict": "beats shipped",
+    "reason": "The weapon silhouette survives reduction better than the old tiny figure. It names the troop by equipment."
+  },
+  "grounded/paladin": {
+    "verdict": "equal",
+    "reason": "Blue and white shield reads cleanly and has stronger material depth. It trades the old mounted silhouette for a defensive emblem."
+  },
+  "grounded/realm": {
+    "verdict": "beats shipped",
+    "reason": "Stone gate and slate roofs establish a material building instead of a monochrome gold token. Level remains an external badge."
+  },
+  "grounded/camp": {
+    "verdict": "equal",
+    "reason": "Both tents read at 32 px. The new canvas has stronger folds at 64 px without adding another visual object."
+  },
+  "grounded/hyperstructure": {
+    "verdict": "beats shipped",
+    "reason": "Stone spires and the lit core give the site material depth missing from the flat old emblem."
+  },
+  "grounded/chest": {
+    "verdict": "beats shipped",
+    "reason": "Wood and iron separate clearly at both sizes, replacing the all-gold chest with a readable object."
+  },
+  "grounded/move": {
+    "verdict": "equal",
+    "reason": "Leather boots retain material detail at 64 px. The old footprints are faster as a pure sign at 32 px."
+  },
+  "grounded/explore": {
+    "verdict": "equal",
+    "reason": "The map and lens have convincing depth; the old eye is simpler at 32 px. The map distinguishes this from a watch-only spyglass."
+  },
+  "grounded/attack": {
+    "verdict": "equal",
+    "reason": "A lit blade is clean and free of the old shield frame. Its narrow silhouette is less prominent but remains legible at 32 px."
+  },
+  "grounded/build": {
+    "verdict": "equal",
+    "reason": "The mallet and block match the shipped material quality; removing the second tool makes the 32 px subject cleaner."
+  },
+  "grounded/trade": {
+    "verdict": "equal",
+    "reason": "The iron balance keeps the familiar scale silhouette with clear pans. Small chains still merge at 32 px as in the old art."
+  },
+  "grounded/stamina": {
+    "verdict": "equal",
+    "reason": "Amber depth is stronger at 64 px; the old lightning silhouette is equally clear at 32 px. This meaning is reserved for stamina."
+  },
+  "grounded/victory": {
+    "verdict": "beats shipped",
+    "reason": "Laurel, cloth and pale material carry a victory subject with painted depth instead of the flat old trophy."
+  },
+  "grounded/settings": {
+    "verdict": "beats shipped",
+    "reason": "One iron gear reads more clearly than the framed dial and key, with enough face shading to feel physical."
+  },
+  "grounded/chat": {
+    "verdict": "beats shipped",
+    "reason": "Two painted speech forms preserve the conversation meaning and remove the gold rim; ivory faces stay clear at 32 px."
+  },
+  "grounded/map-army": {
+    "verdict": "equal",
+    "reason": "An unframed helmet preserves a compact military silhouette; painted light replaces the old shield engraving."
+  },
+  "grounded/map-realm": {
+    "verdict": "equal",
+    "reason": "A broad gate and crenellations preserve the site silhouette while leaving ownership to the surrounding shape."
+  },
+  "faceted/stone": {
+    "verdict": "beats shipped",
+    "reason": "Pale fractured stone reads as rock at 32 px; lit planes and grain replace the jewel-like old facets."
+  },
+  "faceted/wood": {
+    "verdict": "beats shipped",
+    "reason": "Bark, cut end and end-grain hold at 64 px; a broad warm log silhouette remains at 32 px."
+  },
+  "faceted/wheat": {
+    "verdict": "beats shipped",
+    "reason": "Broader lit grain planes produce a stronger crop silhouette at 32 px; painted edges hold at 64 px."
+  },
+  "faceted/fish": {
+    "verdict": "beats shipped",
+    "reason": "Silver scales and a clear tail replace the bright blue polygon fish and its ground shadow."
+  },
+  "faceted/labor": {
+    "verdict": "beats shipped",
+    "reason": "A gripping hand and working hammer fill the square better than the distant full-body worker."
+  },
+  "faceted/essence": {
+    "verdict": "equal",
+    "reason": "The bottle remains clear at both sizes. Glass and violet volume improve at 64 px; the old magenta bottle is equally distinct at 32 px."
+  },
+  "faceted/ironwood": {
+    "verdict": "equal",
+    "reason": "Dense bark and red end-grain distinguish it from ordinary wood; the old black log has comparable contrast at 32 px."
+  },
+  "faceted/fragment": {
+    "verdict": "equal",
+    "reason": "The orange-green shard retains its identity; surface light improves at 64 px but the old silhouette is already strong."
+  },
+  "faceted/knight": {
+    "verdict": "beats shipped",
+    "reason": "Large steel planes make the helmet and shoulders clear at 32 px; the old full-body figure loses its equipment detail."
+  },
+  "faceted/crossbowman": {
+    "verdict": "beats shipped",
+    "reason": "The weapon silhouette survives reduction better than the old tiny figure. It names the troop by equipment."
+  },
+  "faceted/paladin": {
+    "verdict": "equal",
+    "reason": "Blue and white shield reads cleanly and has stronger material depth. It trades the old mounted silhouette for a defensive emblem."
+  },
+  "faceted/realm": {
+    "verdict": "beats shipped",
+    "reason": "Stone gate and slate roofs establish a material building instead of a monochrome gold token. Level remains an external badge."
+  },
+  "faceted/camp": {
+    "verdict": "equal",
+    "reason": "Both tents read at 32 px. The new canvas has stronger folds at 64 px without adding another visual object."
+  },
+  "faceted/hyperstructure": {
+    "verdict": "beats shipped",
+    "reason": "Stone spires and the lit core give the site material depth missing from the flat old emblem."
+  },
+  "faceted/chest": {
+    "verdict": "beats shipped",
+    "reason": "Wood and iron separate clearly at both sizes, replacing the all-gold chest with a readable object."
+  },
+  "faceted/move": {
+    "verdict": "equal",
+    "reason": "Leather boots retain material detail at 64 px. The old footprints are faster as a pure sign at 32 px."
+  },
+  "faceted/explore": {
+    "verdict": "equal",
+    "reason": "The map and lens have convincing depth; the old eye is simpler at 32 px. The map distinguishes this from a watch-only spyglass."
+  },
+  "faceted/attack": {
+    "verdict": "equal",
+    "reason": "A lit blade is clean and free of the old shield frame. Its narrow silhouette is less prominent but remains legible at 32 px."
+  },
+  "faceted/build": {
+    "verdict": "equal",
+    "reason": "The mallet and block match the shipped material quality; removing the second tool makes the 32 px subject cleaner."
+  },
+  "faceted/trade": {
+    "verdict": "equal",
+    "reason": "The iron balance keeps the familiar scale silhouette with clear pans. Small chains still merge at 32 px as in the old art."
+  },
+  "faceted/stamina": {
+    "verdict": "equal",
+    "reason": "Amber depth is stronger at 64 px; the old lightning silhouette is equally clear at 32 px. This meaning is reserved for stamina."
+  },
+  "faceted/victory": {
+    "verdict": "beats shipped",
+    "reason": "The silver trophy and green laurel have clearer volume than the flat old cup at 32 and 64 px."
+  },
+  "faceted/settings": {
+    "verdict": "beats shipped",
+    "reason": "One iron gear reads more clearly than the framed dial and key, with enough face shading to feel physical."
+  },
+  "faceted/chat": {
+    "verdict": "beats shipped",
+    "reason": "Two painted speech forms preserve the conversation meaning and remove the gold rim; ivory faces stay clear at 32 px."
+  },
+  "faceted/map-army": {
+    "verdict": "equal",
+    "reason": "An unframed helmet preserves a compact military silhouette; painted light replaces the old shield engraving."
+  },
+  "faceted/map-realm": {
+    "verdict": "equal",
+    "reason": "A broad gate and crenellations preserve the site silhouette while leaving ownership to the surrounding shape."
+  }
+}

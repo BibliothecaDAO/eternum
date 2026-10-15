@@ -1,0 +1,512 @@
+[
+  {
+    "code": "Es",
+    "old": "kit(\"essence\")",
+    "replacement": "Essence vial",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "La",
+    "old": "kit(\"labor\")",
+    "replacement": "Worker glove and mallet",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Wh",
+    "old": "kit(\"wheat\")",
+    "replacement": "Wheat sheaf",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Tr",
+    "old": "kit(\"troops\")",
+    "replacement": "Troop standard",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Lo",
+    "old": "kit(\"lords-coin\")",
+    "replacement": "Lords coin with its established mark",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "St",
+    "old": "kit(\"ui-lightning\")",
+    "replacement": "Amber energy shard",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Hg",
+    "old": "kit(\"hourglass\")",
+    "replacement": "Wood and glass hourglass",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Ey",
+    "old": "kit(\"ui-eye\")",
+    "replacement": "Exploration spyglass and map",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Bt",
+    "old": "kit(\"ui-footprints\")",
+    "replacement": "Travelling boots",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "At",
+    "old": "kit(\"attack\")",
+    "replacement": "Steel attack sword",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Sd",
+    "old": "kit(\"shield\")",
+    "replacement": "Iron defensive shield",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Sk",
+    "old": "kit(\"ui-skull\")",
+    "replacement": "Bone skull",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Ch",
+    "old": "kit(\"ui-chest\")",
+    "replacement": "Iron-bound oak chest",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Cp",
+    "old": "kit(\"ui-camp\")",
+    "replacement": "Canvas camp tent",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Rf",
+    "old": "kit(\"rift\")",
+    "replacement": "Fractured dark-stone rift",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Fr",
+    "old": "kit(\"fr-site-ruin\")",
+    "replacement": "Broken stone ruin",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Sh",
+    "old": "kit(\"sh-site-shrine\")",
+    "replacement": "Stone shrine",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Wl",
+    "old": "kit(\"wl-site-well\")",
+    "replacement": "Timber water well",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Fl",
+    "old": "kit(\"ui-flag\")",
+    "replacement": "Plain cloth ownership flag",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Mp",
+    "old": "kit(\"map\")",
+    "replacement": "Folded parchment map",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Cs",
+    "old": "kit(\"realm-home\")",
+    "replacement": "Fortified stone keep",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Rs",
+    "old": "kit(\"ui-flask\")",
+    "replacement": "Research book and flask",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Ct",
+    "old": "kit(\"ui-message\")",
+    "replacement": "Parchment correspondence",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Mn",
+    "old": "kit(\"ui-menu\")",
+    "replacement": "Stacked wooden menu tabs",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Fm",
+    "old": "\"/images/buildings/construction/farm.png\"",
+    "replacement": "Painted farm building",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Wk",
+    "old": "\"/images/buildings/construction/castleZero.png\"",
+    "replacement": "Painted workshop building",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Bs",
+    "old": "\"/images/buildings/construction/barracks.png\"",
+    "replacement": "Painted barracks",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Ht",
+    "old": "\"/images/buildings/construction/workers_hut.png\"",
+    "replacement": "Painted worker hut",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Hx",
+    "old": "kit(\"ui-hexagon\")",
+    "replacement": "Painted terrain hex",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Pp",
+    "old": "kit(\"ui-person\")",
+    "replacement": "Portrait silhouette in natural cloth",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Ok",
+    "old": "kit(\"ui-check\")",
+    "replacement": "Painted check mark carved in wood",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Lk",
+    "old": "kit(\"ui-lock\")",
+    "replacement": "Iron lock",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Tp",
+    "old": "kit(\"trophy\")",
+    "replacement": "Laurel victory emblem",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Hm",
+    "old": "kit(\"exit\")",
+    "replacement": "Open wooden doorway",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Ba",
+    "old": "ASPECT_SIGILS.rage",
+    "replacement": "Battle training sword with Rage identity",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Lg",
+    "old": "ASPECT_SIGILS.skill",
+    "replacement": "Pack and provisions with Skill identity",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Sc",
+    "old": "ASPECT_SIGILS.detection",
+    "replacement": "Scout spyglass with Detection identity",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Su",
+    "old": "ASPECT_SIGILS.light",
+    "replacement": "Lantern with Light identity",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Wa",
+    "old": "ASPECT_SIGILS.rage",
+    "replacement": "Battle training yard",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Sy",
+    "old": "ASPECT_SIGILS.skill",
+    "replacement": "Supply yard",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Ld",
+    "old": "ASPECT_SIGILS.detection",
+    "replacement": "Scout lodge",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "He",
+    "old": "ASPECT_SIGILS.light",
+    "replacement": "Homecoming hearth",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Fi",
+    "old": "kit(\"fields\")",
+    "replacement": "Crop field",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Gr",
+    "old": "kit(\"granary\")",
+    "replacement": "Grain granary",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "To",
+    "old": "kit(\"tools\")",
+    "replacement": "Iron tools",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "So",
+    "old": "kit(\"storehouse\")",
+    "replacement": "Timber storehouse",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Dr",
+    "old": "kit(\"drill\")",
+    "replacement": "Training target",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Ra",
+    "old": "kit(\"rations\")",
+    "replacement": "Bread and fish rations",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Fx",
+    "old": "kit(\"final-seal\")",
+    "replacement": "Wax final seal",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Sl",
+    "old": "kit(\"army-slots\")",
+    "replacement": "Three troop standards for army capacity",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Sg",
+    "old": "kit(\"store-limit\")",
+    "replacement": "Storage crates",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Cl",
+    "old": "kit(\"game-clock\")",
+    "replacement": "Match clock",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Gd",
+    "old": "ASPECT_SIGILS.skill",
+    "replacement": "Guide book with Skill identity",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Of",
+    "old": "kit(\"ui-network-off\")",
+    "replacement": "Severed connection chain",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Cv",
+    "old": "kit(\"ui-chevron-down\")",
+    "replacement": "Carved wooden disclosure chevron",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Bk",
+    "old": "kit(\"back\")",
+    "replacement": "Carved wooden back arrow",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Sp",
+    "old": "kit(\"ui-refresh\")",
+    "replacement": "Turning wooden wheel",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Pl",
+    "old": "kit(\"ui-play\")",
+    "replacement": "Painted play triangle carved in wood",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Wc",
+    "old": "kit(\"ui-telescope\")",
+    "replacement": "Spectator spyglass",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Dc",
+    "old": "\"/image-icons/discord.png\"",
+    "replacement": "Official Discord mark, no decorative frame",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Em",
+    "old": "kit(\"ui-mail\")",
+    "replacement": "Sealed parchment letter",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Ed",
+    "old": "kit(\"ui-edit\")",
+    "replacement": "Ink quill",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Pf",
+    "old": "kit(\"ui-person\")",
+    "replacement": "Cloth-clad profile portrait",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Dv",
+    "old": "kit(\"ui-monitor\")",
+    "replacement": "Display device with restrained steel casing",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Dp",
+    "old": "kit(\"ethereal-portal\")",
+    "replacement": "Stone travel portal",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "E1",
+    "old": "kit(\"depth-i-ethereal-reach\")",
+    "replacement": "One stone portal ring",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "E2",
+    "old": "kit(\"depth-ii-ethereal-reach\")",
+    "replacement": "Two stone portal rings",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "E3",
+    "old": "kit(\"depth-iii-ethereal-reach\")",
+    "replacement": "Three stone portal rings",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Xs",
+    "old": "kit(\"ui-share\")",
+    "replacement": "Forked route share emblem",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Bl",
+    "old": "kit(\"ui-bell\")",
+    "replacement": "Iron notification bell",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Wt",
+    "old": "kit(\"ui-backpack\")",
+    "replacement": "Leather backpack",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Xo",
+    "old": "kit(\"exit\")",
+    "replacement": "Open wooden doorway",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Pc",
+    "old": "kit(\"scroll\")",
+    "replacement": "Parchment scroll",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Dk",
+    "old": "kit(\"ui-book\")",
+    "replacement": "Bound guidebook",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Ar",
+    "old": "kit(\"ui-arrow-right\")",
+    "replacement": "Carved wooden direction arrow",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "In",
+    "old": "kit(\"ui-download\")",
+    "replacement": "Arrow entering a wooden tray",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Up",
+    "old": "kit(\"ui-refresh\")",
+    "replacement": "Turning wooden refresh wheel",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "R1",
+    "old": "kit(\"mmr-storm-lord\")",
+    "replacement": "Storm Lord painted storm banner",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "R2",
+    "old": "kit(\"mmr-warlord\")",
+    "replacement": "Warlord painted war banner",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "R3",
+    "old": "kit(\"mmr-conqueror\")",
+    "replacement": "Conqueror painted keep banner",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "R4",
+    "old": "kit(\"mmr-marauder\")",
+    "replacement": "Marauder painted axe banner",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "R5",
+    "old": "kit(\"mmr-raider\")",
+    "replacement": "Raider painted blade banner",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "R6",
+    "old": "kit(\"mmr-scrapper\")",
+    "replacement": "Scrapper painted tool banner",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Mu",
+    "old": "kit(\"ui-music\")",
+    "replacement": "Painted instrument for music on",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  },
+  {
+    "code": "Mt",
+    "old": "kit(\"ui-mute\")",
+    "replacement": "Muted instrument with cloth wrap",
+    "rule": "Remove gilded treatment; preserve identity where named. One semantic renderer, no kit-code compatibility layer."
+  }
+]

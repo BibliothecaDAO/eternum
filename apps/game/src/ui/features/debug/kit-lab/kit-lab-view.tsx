@@ -13,6 +13,9 @@ import { OFFLINE, TRY_AGAIN, YOU } from "@/ui/design-system/kit/words";
 import { type ReactNode, useState } from "react";
 import { Route, Routes } from "react-router-dom";
 
+import { IconLab } from "./icon-lab";
+import { Link } from "react-router-dom";
+
 import { HudLab } from "./hud-lab";
 
 const HOUR = 3600;
@@ -26,6 +29,7 @@ const ENDS_AT = new Date(2026, 9, 7, 21, 40).getTime() / 1000;
 export const KitLabView = () => {
   return (
     <Routes>
+      <Route path="icons" element={<IconLab />} />
       <Route path="hud/:state" element={<HudLab />} />
       <Route path="*" element={<Components />} />
     </Routes>
@@ -36,6 +40,7 @@ const Components = () => {
   return (
     <main className="min-h-dvh bg-kit-ground px-4 py-6 font-sans text-kit-cream">
       <div className="mx-auto flex max-w-[390px] flex-col gap-8 lg:max-w-5xl lg:flex-row lg:flex-wrap">
+        <Link to="/lab/kit/icons">Painted icon comparison</Link>
         <ClockSection />
         <StoresSection />
         <ButtonsSection />
