@@ -190,10 +190,11 @@ does not establish those live actions.
   ruin on grassland and the tropical-coast transition. The collision gate covers its four runtime beasts.
 ### Blitz rules a player meets
 
-- **Entry closes five minutes before the start.** At the close the slot splits into games of up to 24 and every seat is
-  settled within those five minutes (`BLITZ_SLOT_PREPARATION_SECONDS`, `packages/value-ledger/src/blitz-slots.ts`). A
-  game opens at its scheduled time once its whole roster is seated; until then its seats show **Lobby** (Preparing). If
-  seating overruns, the game opens when its last seat lands and ends at its scheduled end: the start and end never move.
+- **Entry closes five minutes before the start.** At the close the slot splits into games of up to 24 and the launch
+  service seats every player, aiming to finish inside those five minutes; that target is unmeasured for large slots
+  (`BLITZ_SLOT_PREPARATION_SECONDS`, `packages/value-ledger/src/blitz-slots.ts`). A game opens at its scheduled time
+  once its whole roster is seated; until then its seats show **Lobby** (Preparing). If seating overruns, the game opens
+  when its last seat lands and ends at its scheduled end: the start and end never move.
 - **Starting forces.** Each of a player's three realms starts with 1,000 T1 troops garrisoned and 1,000 in reserve, one
   realm Knights, one Crossbowmen, one Paladins, in an order drawn per player. No army stands on the map at the start;
   the player creates one from the reserve.

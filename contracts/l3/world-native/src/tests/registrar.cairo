@@ -686,6 +686,30 @@ fn automatic_blitz_settlement_holds_play_for_its_last_seat_and_never_moves_the_s
             crate::commands::resource_context(super::context(d.games, game_id)),
         );
     assert_eq!(resources.resource_balance(slot), balance + 20 * 10 - 1, "elapsed production missing");
+    // The second player's realm was provisioned when its seat landed at 301, one second into the hold: it produces from
+    // its seat, not from the scheduled start, so by 320 it trails the first player's realm by exactly that second.
+    let late_coord = *crate::settlement_grid::settlement_location(
+        crate::troops::Coord { alt: false, x: center, y: center }, SettlementMode::Triple, 6, 1,
+    )
+        .at(0);
+    let late_id = IMapLogicDispatcher { contract_address: d.games }
+        .structure_occupant(TileKey { game_id, alt: false, col: late_coord.x, row: late_coord.y })
+        .unwrap();
+    let late_slot = ResourceSlot { game_id, entity_id: late_id, resource_type: 23 };
+    let late_balance = resources.resource_balance(late_slot);
+    for (timestamp, accrued) in array![(301_u64, 0_u128), (320, 19 * 10)] {
+        resources
+            .spend_resource(
+                ResourceKey { game_id, entity_id: late_id },
+                23,
+                0,
+                timestamp,
+                crate::commands::resource_context(super::context(d.games, game_id)),
+            );
+        assert_eq!(
+            resources.resource_balance(late_slot), late_balance + accrued, "late realm produced before its seat",
+        );
+    }
     stop_cheat_caller_address(d.games);
     let progress = views.settlement_progress(game_id);
     assert!(commands.settle_blitz_roster(game_id, super::authority(), crate::commands::action_context(context)) == 0);
