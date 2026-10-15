@@ -274,16 +274,23 @@ const BlitzResult = ({
   );
 };
 
-/** The player's score card, as the game's review draws it; sharing it is the page's Share, so the card has no buttons. */
-const ScoreCard = ({ own, game }: { own: HeraldLeaderboardEntry; game: DirectoryGame | undefined }) => (
-  <Suspense fallback={<Loading />}>
-    <ScoreCardContent
-      worldName={game?.name ?? ""}
-      playerEntry={buildLandingLeaderboard([own])[0]}
-      showActions={false}
-    />
-  </Suspense>
-);
+/**
+ * The player's score card, as the game's review draws it, stacked for a portrait phone; sharing it is the page's Share
+ * (the review's landscape image), so the card has no buttons.
+ */
+const ScoreCard = ({ own, game }: { own: HeraldLeaderboardEntry; game: DirectoryGame | undefined }) => {
+  const layout = useLayout() === "phone" ? "portrait" : "landscape";
+  return (
+    <Suspense fallback={<Loading />}>
+      <ScoreCardContent
+        worldName={game?.name ?? ""}
+        playerEntry={buildLandingLeaderboard([own])[0]}
+        showActions={false}
+        layout={layout}
+      />
+    </Suspense>
+  );
+};
 
 /** A reader who did not play it: which game, and when it ended. */
 const GameLine = ({ game }: { game: DirectoryGame | undefined }) => {

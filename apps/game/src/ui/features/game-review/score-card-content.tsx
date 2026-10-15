@@ -3,7 +3,7 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { Copy, Loader2, Share2 } from "@/ui/design-system/atoms/game-icons";
 
 import { Button } from "@/ui/design-system/atoms";
-import { BlitzHighlightCardWithSelector } from "@/ui/shared/components/blitz-highlight-card";
+import { type BlitzCardLayout, BlitzHighlightCardWithSelector } from "@/ui/shared/components/blitz-highlight-card";
 import {
   BLITZ_CARD_DIMENSIONS,
   BLITZ_DEFAULT_SHARE_ORIGIN,
@@ -21,6 +21,8 @@ interface ScoreCardContentProps {
   isLoading?: boolean;
   error?: string | null;
   showActions?: boolean;
+  /** Portrait on a phone's page; the image it copies and shares is always the landscape card. */
+  layout?: BlitzCardLayout;
 }
 
 const toHighlightPlayer = (entry: LandingLeaderboardEntry, name: string): BlitzHighlightPlayer => ({
@@ -48,6 +50,7 @@ export const ScoreCardContent = ({
   isLoading = false,
   error = null,
   showActions = true,
+  layout = "landscape",
 }: ScoreCardContentProps) => {
   const [isCopyingImage, setIsCopyingImage] = useState(false);
   const cardRef = useRef<HTMLDivElement | null>(null);
@@ -162,7 +165,12 @@ export const ScoreCardContent = ({
   return (
     <>
       <div className="flex justify-center" ref={cardRef}>
-        <BlitzHighlightCardWithSelector title="Realms Blitz" subtitle="Blitz Leaderboard" highlight={highlightPlayer} />
+        <BlitzHighlightCardWithSelector
+          title="Realms Blitz"
+          subtitle="Blitz Leaderboard"
+          highlight={highlightPlayer}
+          layout={layout}
+        />
       </div>
 
       {showActions && (

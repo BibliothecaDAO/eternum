@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 
 import {
   BLITZ_CARD_DIMENSIONS,
+  BLITZ_CARD_PORTRAIT_DIMENSIONS,
   BlitzHighlightPlayer,
   formatOrdinal,
   getSecondaryLabel,
@@ -155,6 +156,161 @@ const HIGHLIGHT_CARD_STYLES = `
     width: 389px;
     left: 466px;
   }
+
+  /* Portrait: the same parts stacked in a 340 px column, every word at 15 px or more. After the themes, so it wins. */
+  .blitz-card-root.layout-portrait {
+    width: ${BLITZ_CARD_PORTRAIT_DIMENSIONS.width}px;
+    height: ${BLITZ_CARD_PORTRAIT_DIMENSIONS.height}px;
+  }
+
+  .blitz-card-root.layout-portrait .corner-mark {
+    left: 20px;
+    top: 20px;
+    width: 46px;
+    height: 40px;
+  }
+
+  .blitz-card-root.layout-portrait .title-stack {
+    left: 76px;
+    top: 18px;
+  }
+
+  .blitz-card-root.layout-portrait .title-stack .eyebrow {
+    font-size: 15px;
+    line-height: 18px;
+  }
+
+  .blitz-card-root.layout-portrait .title-stack .title {
+    font-size: 24px;
+    line-height: 30px;
+  }
+
+  .blitz-card-root.layout-portrait .realms-logo {
+    left: 256px;
+    top: 22px;
+    width: 64px;
+    height: 36px;
+  }
+
+  .blitz-card-root.layout-portrait .rank-main {
+    left: 0;
+    top: 76px;
+    width: 100%;
+    height: 150px;
+  }
+
+  .blitz-card-root.layout-portrait .rank-number {
+    font-size: 150px;
+  }
+
+  .blitz-card-root.layout-portrait .rank-suffix {
+    font-size: 60px;
+  }
+
+  .blitz-card-root.layout-portrait .points {
+    left: 20px;
+    top: 236px;
+    transform: none;
+    width: 300px;
+    height: 262px;
+  }
+
+  .blitz-card-root.layout-portrait .points-label {
+    width: 300px;
+    font-size: 18px;
+    line-height: 22px;
+  }
+
+  .blitz-card-root.layout-portrait .points-value {
+    top: 24px;
+    font-size: 48px;
+    line-height: 56px;
+  }
+
+  .blitz-card-root.layout-portrait .stat-label {
+    font-size: 15px;
+    line-height: 19px;
+  }
+
+  .blitz-card-root.layout-portrait .stat-value {
+    font-size: 18px;
+    line-height: 22px;
+  }
+
+  .blitz-card-root.layout-portrait .stat-tiles {
+    left: 0;
+    top: 96px;
+  }
+
+  .blitz-card-root.layout-portrait .stat-crates {
+    left: 160px;
+    top: 96px;
+  }
+
+  .blitz-card-root.layout-portrait .stat-rifts {
+    left: 0;
+    top: 156px;
+  }
+
+  .blitz-card-root.layout-portrait .stat-hs-taken {
+    left: 160px;
+    top: 156px;
+  }
+
+  .blitz-card-root.layout-portrait .stat-hs-held {
+    left: 0;
+    top: 216px;
+  }
+
+  .blitz-card-root.layout-portrait .player {
+    left: 20px;
+    top: 516px;
+    width: 150px;
+    height: 54px;
+  }
+
+  .blitz-card-root.layout-portrait .player .name {
+    font-size: 24px;
+    line-height: 30px;
+    margin-top: 0;
+  }
+
+  .blitz-card-root.layout-portrait .player .address,
+  .blitz-card-root.layout-portrait .cta-subtitle,
+  .blitz-card-root.layout-portrait .powered .copy {
+    font-size: 15px;
+    line-height: 19px;
+  }
+
+  .blitz-card-root.layout-portrait .cta {
+    left: 180px;
+    top: 516px;
+    width: 140px;
+    height: 54px;
+    justify-content: flex-start;
+  }
+
+  .blitz-card-root.layout-portrait .cta-title {
+    font-size: 24px;
+    line-height: 30px;
+    margin-top: 0;
+  }
+
+  .blitz-card-root.layout-portrait .powered,
+  .blitz-card-root.layout-portrait.no-player .powered {
+    left: 20px;
+    top: 584px;
+    width: 300px;
+    height: 26px;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .blitz-card-root.layout-portrait .powered img {
+    width: 100px;
+    height: 24px;
+  }
 `;
 
 const resolveCardTheme = (rank: number | null | undefined): BlitzCardTheme => {
@@ -212,151 +368,161 @@ const formatStatLine = (count: number | null | undefined, points: number | null 
   return "--";
 };
 
+/** The card's two arrangements of the same parts: landscape (shared as an image), and portrait for a phone's page. */
+export type BlitzCardLayout = "landscape" | "portrait";
+
 interface BlitzHighlightCardProps {
   title: string;
   subtitle: string;
   winnerLine?: string | null;
   highlight?: BlitzHighlightPlayer | null;
+  layout?: BlitzCardLayout;
 }
 
-const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardProps>(({ title, subtitle, highlight }, ref) => {
-  const [portalTarget, setPortalTarget] = useState<SVGGElement | null>(null);
-  const theme = resolveCardTheme(highlight?.rank);
-  const { value: rankValue, suffix: rankSuffix } = formatBlitzRankParts(highlight?.rank ?? null);
-  const highlightPointsValue = formatPointsValue(highlight?.points ?? null);
-  const highlightName = highlight ? truncateText(highlight.name, 30) : "player";
-  const highlightSecondary = highlight ? truncateText(getSecondaryLabel(highlight), 32) : "0x----";
-  const statBreakdown = [
-    {
-      label: "Tiles Explored",
-      count: highlight?.exploredTiles,
-      points: highlight?.exploredTilePoints,
-    },
-    {
-      label: "Crates Opened",
-      count: highlight?.relicCratesOpened,
-      points: highlight?.relicCratePoints,
-    },
-    {
-      label: "Rifts & Camps",
-      count: highlight?.riftsTaken,
-      points: highlight?.riftPoints,
-    },
-    {
-      label: "HS Taken",
-      count: highlight?.hyperstructuresConquered,
-      points: highlight?.hyperstructurePoints,
-    },
-    {
-      label: "HS Held",
-      count: highlight?.hyperstructuresHeld,
-      points: highlight?.hyperstructuresHeldPoints,
-    },
-  ].map((stat) => ({
-    label: stat.label,
-    combinedValue: formatStatLine(stat.count ?? null, stat.points ?? null),
-  }));
+const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardProps>(
+  ({ title, subtitle, highlight, layout = "landscape" }, ref) => {
+    const dimensions = layout === "portrait" ? BLITZ_CARD_PORTRAIT_DIMENSIONS : BLITZ_CARD_DIMENSIONS;
+    const [portalTarget, setPortalTarget] = useState<SVGGElement | null>(null);
+    const theme = resolveCardTheme(highlight?.rank);
+    const { value: rankValue, suffix: rankSuffix } = formatBlitzRankParts(highlight?.rank ?? null);
+    const highlightPointsValue = formatPointsValue(highlight?.points ?? null);
+    const highlightName = highlight ? truncateText(highlight.name, 30) : "player";
+    const highlightSecondary = highlight ? truncateText(getSecondaryLabel(highlight), 32) : "0x----";
+    const statBreakdown = [
+      {
+        label: "Tiles Explored",
+        count: highlight?.exploredTiles,
+        points: highlight?.exploredTilePoints,
+      },
+      {
+        label: "Crates Opened",
+        count: highlight?.relicCratesOpened,
+        points: highlight?.relicCratePoints,
+      },
+      {
+        label: "Rifts & Camps",
+        count: highlight?.riftsTaken,
+        points: highlight?.riftPoints,
+      },
+      {
+        label: "HS Taken",
+        count: highlight?.hyperstructuresConquered,
+        points: highlight?.hyperstructurePoints,
+      },
+      {
+        label: "HS Held",
+        count: highlight?.hyperstructuresHeld,
+        points: highlight?.hyperstructuresHeldPoints,
+      },
+    ].map((stat) => ({
+      label: stat.label,
+      combinedValue: formatStatLine(stat.count ?? null, stat.points ?? null),
+    }));
 
-  const cardMarkup = (
-    <foreignObject width="100%" height="100%">
-      <div className={`blitz-card-root card-${theme}`} aria-label={`${title} ${subtitle} card`}>
-        <style dangerouslySetInnerHTML={{ __html: HIGHLIGHT_CARD_STYLES }} />
+    const cardMarkup = (
+      <foreignObject width="100%" height="100%">
+        <div
+          className={`blitz-card-root card-${theme}${layout === "portrait" ? " layout-portrait" : ""}`}
+          aria-label={`${title} ${subtitle} card`}
+        >
+          <style dangerouslySetInnerHTML={{ __html: HIGHLIGHT_CARD_STYLES }} />
 
-        <div className="bg-mark" />
-        <div className="bg-smoke" />
-        <div className="bg-texture" />
-        <div className="bg-layer gradient-overlay" />
-        <div className="bg-layer dark-overlay" />
+          <div className="bg-mark" />
+          <div className="bg-smoke" />
+          <div className="bg-texture" />
+          <div className="bg-layer gradient-overlay" />
+          <div className="bg-layer dark-overlay" />
 
-        <div className="rank-main" aria-label={highlight ? `${rankValue}${rankSuffix} place` : "Unranked"}>
-          <span className="rank-number">{rankValue}</span>
-          {rankSuffix ? <span className="rank-suffix">{rankSuffix}</span> : null}
-        </div>
-
-        <img className="corner-mark" src="/images/logos/Eternum-Mark-Black.png" alt="Eternum mark" />
-
-        <div className="title-stack">
-          <span className="eyebrow">{title}</span>
-          <span className="title">{subtitle}</span>
-        </div>
-
-        <div className="points">
-          <div className="points-label">Points Secured</div>
-          <div className="points-value">{highlightPointsValue}</div>
-
-          <div className="stat stat-tiles">
-            <div className="stat-label">Tiles Explored</div>
-            <div className="stat-value">{statBreakdown[0].combinedValue}</div>
+          <div className="rank-main" aria-label={highlight ? `${rankValue}${rankSuffix} place` : "Unranked"}>
+            <span className="rank-number">{rankValue}</span>
+            {rankSuffix ? <span className="rank-suffix">{rankSuffix}</span> : null}
           </div>
 
-          <div className="stat stat-crates">
-            <div className="stat-label">Crates Opened</div>
-            <div className="stat-value">{statBreakdown[1].combinedValue}</div>
+          <img className="corner-mark" src="/images/logos/Eternum-Mark-Black.png" alt="Eternum mark" />
+
+          <div className="title-stack">
+            <span className="eyebrow">{title}</span>
+            <span className="title">{subtitle}</span>
           </div>
 
-          <div className="stat stat-rifts">
-            <div className="stat-label">Rifts & Camps</div>
-            <div className="stat-value">{statBreakdown[2].combinedValue}</div>
+          <div className="points">
+            <div className="points-label">Points Secured</div>
+            <div className="points-value">{highlightPointsValue}</div>
+
+            <div className="stat stat-tiles">
+              <div className="stat-label">Tiles Explored</div>
+              <div className="stat-value">{statBreakdown[0].combinedValue}</div>
+            </div>
+
+            <div className="stat stat-crates">
+              <div className="stat-label">Crates Opened</div>
+              <div className="stat-value">{statBreakdown[1].combinedValue}</div>
+            </div>
+
+            <div className="stat stat-rifts">
+              <div className="stat-label">Rifts & Camps</div>
+              <div className="stat-value">{statBreakdown[2].combinedValue}</div>
+            </div>
+
+            <div className="stat stat-hs-taken">
+              <div className="stat-label">HS Taken</div>
+              <div className="stat-value">{statBreakdown[3].combinedValue}</div>
+            </div>
+
+            <div className="stat stat-hs-held">
+              <div className="stat-label">HS Held</div>
+              <div className="stat-value">{statBreakdown[4].combinedValue}</div>
+            </div>
           </div>
 
-          <div className="stat stat-hs-taken">
-            <div className="stat-label">HS Taken</div>
-            <div className="stat-value">{statBreakdown[3].combinedValue}</div>
+          <div className="cta">
+            <div className="cta-title">Play Now</div>
+            <div className="cta-subtitle">{APP_HOST}</div>
           </div>
 
-          <div className="stat stat-hs-held">
-            <div className="stat-label">HS Held</div>
-            <div className="stat-value">{statBreakdown[4].combinedValue}</div>
+          <div className="player">
+            <div className="name">{highlightName}</div>
+            <div className="address">{highlightSecondary}</div>
           </div>
+
+          <div className="powered">
+            <img src="/images/logos/Starknet.png" alt="Starknet logo" />
+            <div className="copy">Powered by Starknet</div>
+          </div>
+
+          <img className="realms-logo" src="/images/logos/realms-world-white.svg" alt="Realms World logo" />
+
+          <div className="bg-layer border-frame" />
         </div>
+      </foreignObject>
+    );
 
-        <div className="cta">
-          <div className="cta-title">Play Now</div>
-          <div className="cta-subtitle">{APP_HOST}</div>
-        </div>
-
-        <div className="player">
-          <div className="name">{highlightName}</div>
-          <div className="address">{highlightSecondary}</div>
-        </div>
-
-        <div className="powered">
-          <img src="/images/logos/Starknet.png" alt="Starknet logo" />
-          <div className="copy">Powered by Starknet</div>
-        </div>
-
-        <img className="realms-logo" src="/images/logos/realms-world-white.svg" alt="Realms World logo" />
-
-        <div className="bg-layer border-frame" />
-      </div>
-    </foreignObject>
-  );
-
-  return (
-    <>
-      <svg
-        ref={ref}
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox={`0 0 ${BLITZ_CARD_DIMENSIONS.width} ${BLITZ_CARD_DIMENSIONS.height}`}
-        width={BLITZ_CARD_DIMENSIONS.width}
-        height={BLITZ_CARD_DIMENSIONS.height}
-        className="h-auto w-full max-w-[960px]"
-        role="img"
-        aria-label={
-          highlight
-            ? `${subtitle} highlight card for ${highlightName} at ${formatOrdinal(highlight.rank)} place`
-            : `${subtitle} highlight card`
-        }
-        style={{
-          filter: "drop-shadow(0 32px 70px rgba(1, 11, 18, 0.64))",
-        }}
-      >
-        <g ref={setPortalTarget} />
-      </svg>
-      {portalTarget ? createPortal(cardMarkup, portalTarget) : null}
-    </>
-  );
-});
+    return (
+      <>
+        <svg
+          ref={ref}
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
+          width={dimensions.width}
+          height={dimensions.height}
+          className={layout === "portrait" ? "h-auto w-full" : "h-auto w-full max-w-[960px]"}
+          role="img"
+          aria-label={
+            highlight
+              ? `${subtitle} highlight card for ${highlightName} at ${formatOrdinal(highlight.rank)} place`
+              : `${subtitle} highlight card`
+          }
+          style={{
+            filter: "drop-shadow(0 32px 70px rgba(1, 11, 18, 0.64))",
+          }}
+        >
+          <g ref={setPortalTarget} />
+        </svg>
+        {portalTarget ? createPortal(cardMarkup, portalTarget) : null}
+      </>
+    );
+  },
+);
 
 BlitzHighlightCard.displayName = "BlitzHighlightCard";
 

@@ -93,3 +93,14 @@ it.each([390, 1440])(
     ]);
   },
 );
+
+it.each([
+  [390, "0 0 340 630", "portrait"],
+  [1440, "0 0 960 540", "landscape"],
+])("draws the card at %i px with viewBox %s, its %s arrangement", async (width, viewBox) => {
+  const card = (await open(width)).querySelector("svg[role=img]")!;
+  expect(card.getAttribute("viewBox")).toBe(viewBox);
+  // The same parts either way: the place, the points and the five ways they were scored.
+  for (const label of ["Points Secured", "Tiles Explored", "Crates Opened", "Rifts & Camps", "HS Taken", "HS Held"])
+    expect(card.textContent).toContain(label);
+});

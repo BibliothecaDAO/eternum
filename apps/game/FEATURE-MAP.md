@@ -62,8 +62,9 @@ and on a phone just above the foot.
 - **You** lists your last 8 finished games in every mode; a row opens its Results, whose **Back** returns to the list
   (Results reached from Play or after a match have **Continue** instead).
 - **Results** of a Blitz opens on your score card, the one the game's review shares (your place, points and what they
-  came from); **Share** opens the review to share it. A sealed chest's **Open** is the page's gold button; **Continue**
-  stands beside it in outline. A reader who did not play sees the game and the board.
+  came from), stacked on a phone so every word reads at full size; **Share** opens the review to share it. A sealed
+  chest's **Open** is the page's gold button; **Continue** stands beside it in outline. A reader who did not play sees
+  the game and the board.
 - **Settings** opens the payout wallet directly when a page sent you to link one (`/profile/settings?next=…`) and
   returns you there once it is linked.
 - **The Blitz lobby** counts down to one moment: entry closing while the slot takes players, then the games' start (the

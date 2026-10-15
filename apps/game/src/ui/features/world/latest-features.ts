@@ -44,7 +44,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-15",
     title: "Places across the top",
     description:
-      "On a desktop, Play, Season and You now sit in a bar across the top, keys 1 to 3 as before, and every page starts its content right under it. A Blitz result opens on your score card, the one you share after a game.",
+      "On a desktop, Play, Season and You now sit in a bar across the top, keys 1 to 3 as before, and every page starts its content right under it. A Blitz result opens on your score card, the one you share after a game, stacked on a phone so every word reads at full size.",
     type: "improvement",
   },
   {
