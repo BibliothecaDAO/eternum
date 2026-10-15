@@ -34,6 +34,7 @@ async function fixture(
         await holdClass?.();
         return Response.json(classReply, { status: classStatus });
       }
+      await hold?.(call.params[0]);
       forwarded.push(call);
       return Response.json({
         jsonrpc: "2.0",
@@ -45,9 +46,8 @@ async function fixture(
     },
   });
   const stamper = {
-    async stamp(tx: PlayInvoke) {
+    stamp(tx: PlayInvoke) {
       stamped.push(tx);
-      await hold?.(tx);
       return { transactionHash: "0x777", suffix: [STAMP_TAG, "0x1", "0x2", "0x3", "0x4", "0x5"] };
     },
   };
@@ -410,7 +410,7 @@ test("the class cache requires an explicit positive shard player capacity", () =
           0,
           { ...identity, playerCapacity: playerCapacity as number },
           {
-            async stamp() {
+            stamp() {
               throw new Error("Unexpected stamp");
             },
           },

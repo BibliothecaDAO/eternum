@@ -59,7 +59,7 @@ class DeployTest(unittest.TestCase):
         inputs = {"shard_name": "realms-staging-d", "chain_id": "REALMS_STAGING_D", "player_capacity": 96,
                   "guardian_url": "https://staging.test/api/guardian", "presets": [2, 5],
                   "public_rpc_url": "https://rpc.staging.test/rpc/v0_10_2",
-                  "public_herald_url": "https://herald.staging.test", "vrf_workers": 8, "l2_gas_bound": "0x47868c00"}
+                  "public_herald_url": "https://herald.staging.test", "l2_gas_bound": "0x47868c00"}
         rendered = deploy.render_environment(inputs, "SHARD_INIT_IMAGE=ghcr.io/x@sha256:1\n")
         self.assertIn("SHARD_INIT_IMAGE=ghcr.io/x@sha256:1\n", rendered)
         self.assertIn("BLOCK_TIME=2s\n", rendered)

@@ -15,7 +15,6 @@ async function fixture(
     admissionFails?: boolean;
     forwardWait?: Promise<void>;
     accountClass?: string;
-    stampWait?: Promise<void>;
     admissionWait?: Promise<void>;
     stampStarted?: () => void;
   } = {},
@@ -41,9 +40,8 @@ async function fixture(
     },
   });
   const stamper = {
-    async stamp(_transaction: PlayInvoke) {
+    stamp(_transaction: PlayInvoke) {
       options.stampStarted?.();
-      await options.stampWait;
       if (options.stampFails) throw new Error("internal stamping diagnostic");
       return { transactionHash: "0x777", suffix: [STAMP_TAG, "0x1", "0x2", "0x3", "0x4", "0x5"] };
     },
@@ -403,7 +401,7 @@ test("forwarded account management is unknown, and a failed estimate is only a r
   }
 });
 
-for (const phase of ["admission", "preflight", "stamp"] as const) {
+for (const phase of ["admission", "preflight"] as const) {
   test(`the preparation deadline bounds ${phase} and discards a late completion`, async () => {
     let release!: () => void;
     const waiting = new Promise<void>((resolve) => {
@@ -411,7 +409,7 @@ for (const phase of ["admission", "preflight", "stamp"] as const) {
     });
     const timeout = AbortSignal.timeout.bind(AbortSignal);
     const timed = spyOn(AbortSignal, "timeout").mockImplementation((ms) => timeout(ms === 2000 ? 30 : ms));
-    const f = await fixture(phase === "stamp" ? { stampWait: waiting } : { admissionWait: waiting });
+    const f = await fixture({ admissionWait: waiting });
     try {
       const transaction =
         phase !== "admission"
@@ -444,37 +442,6 @@ for (const phase of ["admission", "preflight", "stamp"] as const) {
     }
   });
 }
-
-test("disconnecting while a stamp is queued never forwards its late result", async () => {
-  let release!: () => void;
-  let started!: () => void;
-  const waiting = new Promise<void>((resolve) => {
-    release = resolve;
-  });
-  const stamping = new Promise<void>((resolve) => {
-    started = resolve;
-  });
-  const f = await fixture({ stampWait: waiting, stampStarted: started });
-  const controller = new AbortController();
-  try {
-    const sent = originalFetch(f.proxy.url, {
-      method: "POST",
-      signal: controller.signal,
-      body: JSON.stringify({ jsonrpc: "2.0", id: 42, method: "starknet_addInvokeTransaction", params: [invoke()] }),
-    }).catch(() => undefined);
-    await stamping;
-    controller.abort();
-    await sent;
-    await Bun.sleep(30);
-    release();
-    await Bun.sleep(30);
-    expect(f.writes).toHaveLength(0);
-    expect((await f.call("starknet_addInvokeTransaction", [invoke()])).result).toEqual({ transaction_hash: "0x777" });
-  } finally {
-    release();
-    f.close();
-  }
-});
 
 for (const method of ["starknet_estimateFee", "starknet_estimateMessageFee"]) {
   test(`${method} distinguishes deterministic refusal without leaking diagnostics`, async () => {

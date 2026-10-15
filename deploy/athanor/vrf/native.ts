@@ -2,7 +2,7 @@ import { ec } from "starknet";
 import { dlopen, FFIType, ptr } from "bun:ffi";
 import { readPrivateJson } from "../scripts/private-file";
 import { fileURLToPath } from "node:url";
-import { felt, STAMP_TAG, type PlayInvoke } from "./transaction";
+import { felt, MAX_TRANSACTION_BYTES, STAMP_TAG, type PlayInvoke } from "./transaction";
 
 const ORDER = ec.starkCurve.CURVE.n;
 function bytes(value: string): Uint8Array {
@@ -21,8 +21,8 @@ function privateKey(path: string): Uint8Array {
   return bytes(data.privateKey);
 }
 
-// Every worker owns its native handle and key bytes; no key travels over its message channel.
-export function openProver(keyFile: string, chainId: string) {
+// The RPC process owns the one native handle and the key bytes; a stamp is one synchronous call on its event loop.
+export function openProver(keyFile: string, chainId: string): StampProvider & { publicKey: Point; close(): void } {
   if (felt(chainId) === undefined) throw new Error("Invalid chain identity");
   const key = privateKey(keyFile),
     chain = bytes(chainId);
@@ -39,8 +39,9 @@ export function openProver(keyFile: string, chainId: string) {
   }
   return {
     publicKey: { x: hex(point.subarray(0, 32)), y: hex(point.subarray(32)) },
-    stamp(raw: Uint8Array) {
-      if (closed) throw new Error("Transaction refused");
+    stamp(transaction: PlayInvoke) {
+      const raw = new TextEncoder().encode(JSON.stringify(transaction));
+      if (closed || raw.length > MAX_TRANSACTION_BYTES) throw new Error("Transaction refused");
       const output = new Uint8Array(192);
       if (library.symbols.realms_vrf_stamp(ptr(raw), raw.length, ptr(key), ptr(chain), ptr(output)) !== 0)
         throw new Error("Transaction refused");
@@ -55,10 +56,15 @@ export function openProver(keyFile: string, chainId: string) {
     },
   };
 }
+export interface Point {
+  x: string;
+  y: string;
+}
 export interface Stamp {
   transactionHash: string;
   suffix: string[];
 }
+/** Stamps one admitted play, or throws "Transaction refused"; a native panic is caught there and refuses too. */
 export interface StampProvider {
-  stamp(transaction: PlayInvoke): Promise<Stamp>;
+  stamp(transaction: PlayInvoke): Stamp;
 }

@@ -34,7 +34,7 @@ def configuration():
         "chain_config": "/tmp/chain-config.yaml",
         "guardian_url": "https://identity.test/api/guardian",
         "public_rpc_url": "https://rpc.test/rpc/v0_10_2",
-        "public_herald_url": "https://herald.test", "vrf_workers": 8, "l2_gas_bound": "0x47868c00",
+        "public_herald_url": "https://herald.test", "l2_gas_bound": "0x47868c00",
         "node_flags": ["--enable-native-execution=true", "--native-compilation-mode=async"],
         "presets": [2],
     }
@@ -156,7 +156,7 @@ class ShardTest(unittest.TestCase):
         for key, value in (
             ("chain_id", ""), ("chain_id", "a" * 32), ("chain_id", "a\nb"),
             ("port_base", 5050), ("cpuset", "0-23"), ("player_capacity", 0),
-            ("madara_image", NODE_IMAGE), ("vrf_workers", 0), ("block_time", 1), ("block_time", "0s"), ("shard", "../live"),
+            ("madara_image", NODE_IMAGE), ("block_time", 1), ("block_time", "0s"), ("shard", "../live"),
             ("trusted_proxy", "cloudflared"), ("presets", []), ("presets", ["2"]),
             ("guardian_url", "https://identity.test/api"),
             ("node_flags", ["--base-path=/live"]),
@@ -446,10 +446,9 @@ class ShardTest(unittest.TestCase):
         package = load_package_script("init")
         environment = {"CHAIN_ID": "CHECK", "GUARDIAN_URL": "https://id.test/api/guardian",
                        "PUBLIC_RPC_URL": "https://rpc.test", "PUBLIC_HERALD_URL": "https://herald.test",
-                       "PLAYER_CAPACITY": "24", "VRF_WORKERS": "8", "L2_GAS_BOUND": "0x47868c00"}
-        for invalid in ({"VRF_WORKERS": "0"}, {"VRF_WORKERS": "65"}, {"L2_GAS_BOUND": "0x0"}):
-            with patch.dict(shard.os.environ, {**environment, **invalid}), self.assertRaises(ValueError):
-                package.configuration()
+                       "PLAYER_CAPACITY": "24", "L2_GAS_BOUND": "0x47868c00"}
+        with patch.dict(shard.os.environ, {**environment, "L2_GAS_BOUND": "0x0"}), self.assertRaises(ValueError):
+            package.configuration()
 
     def test_harness_key_loading_refuses_a_group_readable_file(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -459,9 +458,9 @@ class ShardTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "owner-only mode 0600"):
                 shard.host_credentials(data)
 
-    def test_worker_count_and_fixed_bound_are_required(self):
+    def test_the_fixed_play_gas_bound_is_required(self):
         config = configuration()
-        for changes in ({"vrf_workers": 0}, {"vrf_workers": 65}, {"l2_gas_bound": "0x0"}, {"l2_gas_bound": "0x10000000000000000"}):
+        for changes in ({"l2_gas_bound": "0x0"}, {"l2_gas_bound": "0x10000000000000000"}):
             with self.assertRaises(ValueError): shard.validate_configuration({**config, **changes}, set(range(8, 12))|set(range(20, 24)))
 
     def test_the_package_runs_its_collector_and_the_node_exports_to_it(self):
@@ -705,7 +704,7 @@ class PackageStartTest(unittest.TestCase):
         self.environ = {
             **operator_fixture(self.data, self),
             "CHAIN_ID": "RESTORED_SHARD", "GUARDIAN_URL": "https://identity.test/api/guardian",
-            "PUBLIC_RPC_URL": "https://rpc.test/rpc/v0_10_2", "PUBLIC_HERALD_URL": "https://herald.test", "VRF_WORKERS": "8", "L2_GAS_BOUND": "0x47868c00",
+            "PUBLIC_RPC_URL": "https://rpc.test/rpc/v0_10_2", "PUBLIC_HERALD_URL": "https://herald.test", "L2_GAS_BOUND": "0x47868c00",
             "PLAYER_CAPACITY": "16",
             "TRUSTED_PROXY": "172.18.0.1",
         }

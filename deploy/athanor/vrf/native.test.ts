@@ -6,7 +6,6 @@ import { join } from "node:path";
 import { hash } from "starknet";
 import { startReadRpc } from "../scripts/read-rpc";
 import { openProver } from "./native";
-import { startStampPool, workerCount } from "./pool";
 import { identity, invoke } from "./fixtures";
 import { STAMP_TAG, type PlayInvoke } from "./transaction";
 
@@ -49,7 +48,7 @@ test("native transaction hashing matches SDK and the signature cannot choose the
   const key = keyFile(),
     prover = openProver(key.file, identity.chainId);
   try {
-    const stamp = (tx: PlayInvoke) => prover.stamp(new TextEncoder().encode(JSON.stringify(tx)));
+    const stamp = (tx: PlayInvoke) => prover.stamp(tx);
     for (const patch of [
       {},
       { nonce: "0x987" },
@@ -67,52 +66,21 @@ test("native transaction hashing matches SDK and the signature cannot choose the
     expect(stamp(invoke()).suffix).toHaveLength(6);
   } finally {
     prover.close();
-    expect(() => prover.stamp(new Uint8Array([1]))).toThrow("Transaction refused");
+    expect(() => prover.stamp(invoke())).toThrow("Transaction refused");
     key.close();
   }
 });
-test("workers independently load the protected key, agree on its point and recover no missing setting", async () => {
+test("a refused or oversized play leaves the prover stamping, and a readable key file is refused", () => {
   const key = keyFile(),
     prover = openProver(key.file, identity.chainId);
   try {
-    const expected = prover.stamp(new TextEncoder().encode(JSON.stringify(invoke())));
-    const pool = await startStampPool(key.file, { ...identity, vrfPublicKey: prover.publicKey }, 2);
-    try {
-      expect(await Promise.all(Array.from({ length: 24 }, () => pool.stamp(invoke())))).toEqual(
-        Array(24).fill(expected),
-      );
-    } finally {
-      pool.close();
-    }
-    await expect(pool.stamp(invoke())).rejects.toThrow("Transaction refused");
-    await expect(startStampPool(key.file, identity, 1)).rejects.toThrow("VRF worker initialization failed");
+    const expected = prover.stamp(invoke());
+    expect(() => prover.stamp({ ...invoke(), version: "0x2" })).toThrow("Transaction refused");
+    expect(() => prover.stamp({ ...invoke(), calldata: Array(200000).fill("0x1") })).toThrow("Transaction refused");
+    expect(prover.stamp(invoke())).toEqual(expected);
     chmodSync(key.file, 0o644);
     expect(() => openProver(key.file, identity.chainId)).toThrow("mode 0600");
-    for (const value of [undefined, "0", "1.5", "65", "04"]) expect(() => workerCount(value)).toThrow();
-    expect(workerCount("4")).toBe(4);
   } finally {
-    prover.close();
-    expect(() => prover.stamp(new Uint8Array([1]))).toThrow("Transaction refused");
-    key.close();
-  }
-});
-
-test("a native job refusal and an oversized serialized job leave the pool stamping", async () => {
-  const key = keyFile(),
-    prover = openProver(key.file, identity.chainId);
-  const pool = await startStampPool(key.file, { ...identity, vrfPublicKey: prover.publicKey }, 2);
-  try {
-    // Await worker delivery before entering the error matcher.
-    const refusal = await pool.stamp({ ...invoke(), version: "0x2" }).catch((error: unknown) => error);
-    expect(refusal).toBeInstanceOf(Error);
-    expect(refusal).toMatchObject({ message: "Transaction refused" });
-    await expect(pool.stamp({ ...invoke(), calldata: Array(200000).fill("0x1") })).rejects.toThrow(
-      "Transaction refused",
-    );
-    const expected = prover.stamp(new TextEncoder().encode(JSON.stringify(invoke())));
-    expect(await Promise.all(Array.from({ length: 24 }, () => pool.stamp(invoke())))).toEqual(Array(24).fill(expected));
-  } finally {
-    pool.close();
     prover.close();
     key.close();
   }
@@ -121,7 +89,6 @@ test("a native job refusal and an oversized serialized job leave the pool stampi
 test("the exact expanding-body attack cannot disable the real stamping endpoint", async () => {
   const key = keyFile(),
     prover = openProver(key.file, identity.chainId);
-  const pool = await startStampPool(key.file, { ...identity, vrfPublicKey: prover.publicKey }, 2);
   let forwards = 0;
   const node = Bun.serve({
     hostname: "127.0.0.1",
@@ -133,7 +100,7 @@ test("the exact expanding-body attack cannot disable the real stamping endpoint"
           ? "0x0"
           : call.method === "starknet_getClassHashAt"
             ? identity.accountClassHash
-            : { transaction_hash: prover.stamp(new TextEncoder().encode(JSON.stringify(invoke()))).transactionHash };
+            : { transaction_hash: prover.stamp(invoke()).transactionHash };
       if (call.method === "starknet_addInvokeTransaction") forwards++;
       return Response.json({ jsonrpc: "2.0", id: call.id, result });
     },
@@ -142,7 +109,7 @@ test("the exact expanding-body attack cannot disable the real stamping endpoint"
     node.url.origin,
     0,
     { ...identity, vrfPublicKey: prover.publicKey },
-    pool,
+    prover,
     undefined,
     "127.0.0.1",
   );
@@ -167,7 +134,6 @@ test("the exact expanding-body attack cannot disable the real stamping endpoint"
   } finally {
     proxy.stop(true);
     node.stop(true);
-    pool.close();
     prover.close();
     key.close();
   }

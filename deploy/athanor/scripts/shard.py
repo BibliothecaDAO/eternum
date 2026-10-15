@@ -85,8 +85,6 @@ def validate_runtime_configuration(config):
     block_time = config.get("block_time", "2s")
     if not isinstance(block_time, str) or not re.fullmatch(r"[1-9][0-9]*s", block_time):
         raise ValueError("block_time must be a positive whole number of seconds")
-    if type(config.get("vrf_workers")) is not int or not 1 <= config["vrf_workers"] <= 64:
-        raise ValueError("vrf_workers must be explicit 1..64")
     bound = config.get("l2_gas_bound")
     if not isinstance(bound, str) or not re.fullmatch(r"0x[0-9a-fA-F]{1,16}", bound) or int(bound, 16) == 0:
         raise ValueError("l2_gas_bound must be nonzero hex u64")
@@ -145,7 +143,7 @@ def compose_configuration(config, directory):
         "SHARD_HERALD_IMAGE": config["herald_image"],
         "GUARDIAN_URL": config["guardian_url"], "PUBLIC_RPC_URL": config["public_rpc_url"],
         "PUBLIC_HERALD_URL": config["public_herald_url"], "PLAYER_CAPACITY": str(config["player_capacity"]),
-        "VRF_WORKERS": str(config["vrf_workers"]), "L2_GAS_BOUND": config["l2_gas_bound"],
+        "L2_GAS_BOUND": config["l2_gas_bound"],
         "TRUSTED_PROXY": config.get("trusted_proxy", ""),
         "HOST_UID": str(os.getuid()), "HOST_GID": str(os.getgid()), "BIND_ADDRESS": "127.0.0.1",
         "RPC_PORT": str(config["port_base"] + 5), "HERALD_PORT": str(config["port_base"] + 1),
@@ -235,7 +233,6 @@ def deployment_environment(config, directory):
         "HERALD_URL": "http://herald:3003",
         "HERALD_PUBLIC_RPC_URL": config["public_rpc_url"],
         "PUBLIC_HERALD_URL": config["public_herald_url"],
-        "VRF_WORKERS": str(config["vrf_workers"]),
         "L2_GAS_BOUND": config["l2_gas_bound"],
         "VRF_KEY_FILE": str(directory / "vrf-key.json"),
         "COMPOSE_PROJECT_NAME": f"athanor-{config['shard']}",

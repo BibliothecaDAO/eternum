@@ -22,7 +22,6 @@ PUBLIC_RPC_URL=https://rpc.example.org/rpc/v0_10_2
 PUBLIC_HERALD_URL=https://herald.example.org
 PLAYER_CAPACITY=2000
 PRESETS=2,5,101
-VRF_WORKERS=8
 L2_GAS_BOUND=0x47868c00
 HOST_UID=1000
 HOST_GID=1000
@@ -31,7 +30,7 @@ HOST_GID=1000
 Use image digests from the same release. The pinned node image and chain template are shared by package and runner. The
 host must have the athanor slice and enough memory for node, Herald, database, metrics and the stamping runtime. The
 node defaults to 24 GiB and Herald to 6 GiB. The RPC container has a 2 GiB RAM limit, with no additional swap, for its
-eight Bun worker isolates, native prover and bounded request queue. Measure its high-water RSS in the 2,000-player run;
+one process, which stamps each play inline with the native prover. Measure its high-water RSS in the 2,000-player run;
 this is capacity provisioning, not a claim that RSS was measured on the node.
 
 Deployment runs `docker compose run --rm --no-deps prepare` before creating the stack, so the RPC file bind exists and

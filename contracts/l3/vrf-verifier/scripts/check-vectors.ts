@@ -19,7 +19,7 @@ if (process.argv.includes("--generate")) {
   try {
     const rows = Array.from({ length: 64 }, (_, index) => {
       const tx = { ...invoke(), nonce: `0x${index.toString(16)}` };
-      const stamp = prover.stamp(new TextEncoder().encode(JSON.stringify(tx)));
+      const stamp = prover.stamp(tx);
       const proof = stamp.suffix.slice(1);
       const root = hash.computePoseidonHashOnElements([3, proof[0]!, proof[1]!, 0]);
       return [prover.publicKey.x, prover.publicKey.y, stamp.transactionHash, ...proof, root].map(

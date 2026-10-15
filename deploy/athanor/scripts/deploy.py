@@ -25,7 +25,7 @@ from service_requests import identity_service_base, service_json
 
 ENVIRONMENTS = shard.ROOT / "deploy/release"
 INPUTS = ("shard_name", "public_rpc_url", "public_herald_url",
-          "player_capacity", "presets", "vrf_workers", "l2_gas_bound")
+          "player_capacity", "presets", "l2_gas_bound")
 
 
 def ignore_stage(_stage):
@@ -236,7 +236,7 @@ def render_environment(inputs, images):
         "SHARD_NAME": inputs["shard_name"], "CHAIN_ID": inputs["chain_id"], "GUARDIAN_URL": inputs["guardian_url"],
         "PUBLIC_RPC_URL": inputs["public_rpc_url"], "PUBLIC_HERALD_URL": inputs["public_herald_url"],
         "BLOCK_TIME": inputs.get("block_time", "2s"),
-        "VRF_WORKERS": inputs["vrf_workers"], "L2_GAS_BOUND": inputs["l2_gas_bound"],
+        "L2_GAS_BOUND": inputs["l2_gas_bound"],
         "PLAYER_CAPACITY": inputs["player_capacity"], "PRESETS": ",".join(str(preset) for preset in inputs["presets"]),
         # Each environment sizes its shard: a small staging playtest, a large perf or production shard.
         "HOST_UID": os.getuid(), "HOST_GID": os.getgid(),

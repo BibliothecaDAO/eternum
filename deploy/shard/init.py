@@ -35,7 +35,7 @@ def configuration():
         "shard": chain_id.lower().replace("_", "-"), "chain_id": chain_id, "port_base": 0,
         "guardian_url": os.environ["GUARDIAN_URL"], "public_rpc_url": os.environ["PUBLIC_RPC_URL"],
         "public_herald_url": os.environ["PUBLIC_HERALD_URL"],
-        "vrf_workers": int(os.environ["VRF_WORKERS"]), "l2_gas_bound": os.environ["L2_GAS_BOUND"],
+        "l2_gas_bound": os.environ["L2_GAS_BOUND"],
         "player_capacity": int(os.environ["PLAYER_CAPACITY"]),
         "block_time": os.environ.get("BLOCK_TIME", "2s"),
         "chain_config": os.environ.get("CHAIN_CONFIG", str(ROOT / "deploy/athanor/chain-config.yaml")),

@@ -1,8 +1,7 @@
 import { readFileSync } from "node:fs";
 import { isIP } from "node:net";
 import { hash } from "starknet";
-import type { StampProvider } from "../vrf/native";
-import { startStampPool, workerCount } from "../vrf/pool";
+import { openProver, type StampProvider } from "../vrf/native";
 import { felt, gameInvoke, MAX_TRANSACTION_BYTES, type PlayIdentity } from "../vrf/transaction";
 import { permitsAccountRequest, type ShardIdentity } from "./account-rpc-policy";
 import { accountRequestLimiter, rpcClientAddress } from "./rpc-client-limit";
@@ -31,7 +30,6 @@ const READ_METHODS = new Set([
   "starknet_getStorageProof",
   "starknet_getCompiledCasm",
 ]);
-// CPU-only 2,000-stamp waves took 381–395 ms; bound queued work and private reads too.
 const MAX_BATCH_CALLS = 32;
 const PREPARATION_TIMEOUT_MS = 2000;
 const FORWARD_TIMEOUT_MS = 5000;
@@ -229,7 +227,7 @@ async function handlePublicRequest(
   }
   let admitted: (Admitted | undefined)[];
   try {
-    // Validate the entire batch before producing any proof. Independent accounts then stamp concurrently.
+    // Validate the entire batch before producing any proof.
     admitted = await untilAborted(
       Promise.all(calls.map((call) => admitRequest(call, identity, preparation.signal, readAccountClass))),
       preparation.signal,
@@ -416,7 +414,7 @@ async function forwardRequest(
       )
         return transactionRefused(call.id);
       assertBeforeForward(preparation);
-      const stamp = await untilAborted(stamper.stamp(play), preparation.signal);
+      const stamp = stamper.stamp(play);
       const hash = felt(stamp.transactionHash);
       if (hash === undefined) return transactionRefused(call.id);
       expectedHash = `0x${hash.toString(16)}`;
@@ -491,8 +489,7 @@ async function startConfiguredProxy() {
     keyFile = process.env.VRF_KEY_FILE;
   if (!upstream || !manifestPath || !keyFile)
     throw new Error("NODE_RPC_URL, NATIVE_WORLD_MANIFEST and VRF_KEY_FILE are required");
-  const port = Number(process.env.PORT),
-    count = workerCount(process.env.VRF_WORKERS);
+  const port = Number(process.env.PORT);
   if (!Number.isSafeInteger(port) || port < 1 || port > 65535) throw new Error("Invalid PORT");
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   const identity: ProxyIdentity = {
@@ -510,16 +507,32 @@ async function startConfiguredProxy() {
     throw new Error("Invalid shard VRF manifest");
   const node = privateNode(upstream);
   await assertChainIdentity(node, identity, limit);
-  const pool = await startStampPool(keyFile, identity, count).catch(() => {
-    throw new Error("VRF prover initialization failed");
-  });
+  const prover = openVerifiedProver(keyFile, identity);
   try {
-    startReadRpc(upstream, port, identity, pool, process.env.RPC_TRUSTED_PROXY);
-    console.log(JSON.stringify({ event: "public_rpc_ready", workers: count }));
+    startReadRpc(upstream, port, identity, prover, process.env.RPC_TRUSTED_PROXY);
+    console.log(JSON.stringify({ event: "public_rpc_ready" }));
   } catch {
-    pool.close();
+    prover.close();
     throw new Error("Public RPC startup failed");
   }
+}
+
+/** The prover for the shard's protected key, refused unless its point is the one Games verifies against. */
+function openVerifiedProver(keyFile: string, identity: PlayIdentity) {
+  let prover: ReturnType<typeof openProver>;
+  try {
+    prover = openProver(keyFile, identity.chainId);
+  } catch {
+    throw new Error("VRF prover initialization failed");
+  }
+  if (
+    felt(prover.publicKey.x) !== felt(identity.vrfPublicKey.x) ||
+    felt(prover.publicKey.y) !== felt(identity.vrfPublicKey.y)
+  ) {
+    prover.close();
+    throw new Error("VRF prover initialization failed");
+  }
+  return prover;
 }
 if (import.meta.main)
   startConfiguredProxy().catch((error: unknown) => {

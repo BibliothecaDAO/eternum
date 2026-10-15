@@ -6,7 +6,7 @@ import { hash } from "starknet";
 import { rpcClientAddress } from "./rpc-client-limit";
 
 const noStamp = {
-  async stamp() {
+  stamp() {
     throw new Error("Unexpected stamp");
   },
 };
@@ -286,7 +286,6 @@ test("configured proxy names an absent private node without printing credentials
         NODE_RPC_URL: "http://127.0.0.1:9",
         NATIVE_WORLD_MANIFEST: manifest,
         VRF_KEY_FILE: join(directory, "vrf-key.json"),
-        VRF_WORKERS: "8",
         PLAYER_CAPACITY: "2000",
         PORT: "8080",
       },
