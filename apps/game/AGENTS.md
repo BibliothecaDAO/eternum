@@ -85,9 +85,9 @@ Resolve conflicts in YOUR files only If conflict is in a file you didn't modify,
 ## Playtest: the one command that proves client work
 
 `pnpm --dir apps/game playtest --port <your port>` builds the client as players get it (`vite build` into its own
-`.context/playtest-builds/<run>` directory), serves it with `vite preview` on that port, plays the newest live Frontier
-game in a browser on the machine's GPU (Vulkan; headless Chrome would otherwise render on SwiftShader), and releases
-everything it started. Run it from a stopped client and reuse it; extend its steps in
+`.context/playtest-builds/<run>` directory), serves it with `vite preview` on that port, plays the newest live game of
+its steps' mode (Frontier by default) in a browser on the machine's GPU (Vulkan; headless Chrome would otherwise render
+on SwiftShader), and releases everything it started. Run it from a stopped client and reuse it; extend its steps in
 `scripts/client-playtest/steps.mjs` rather than writing another runner. The build needs `VITE_PUBLIC_L2_RPC_URL` in
 `apps/game/.env.local`, as the dev server does.
 
@@ -115,8 +115,9 @@ everything it started. Run it from a stopped client and reuse it; extend its ste
   the node refusing the transaction, a JSON-RPC validation failure, without it reaching the node): a tile tapped beside
   the first runs once the first applies (run), a second tap replaces it (replaced), Cancel and Escape drop it, a refused
   first order drops it (refused), and leaving the map drops it (deselect).
-- **The game.** The newest live Frontier game, or `--chain-id`/`--game-id` (refused if it is not a listed Frontier
-  game). Before the first step the run asserts the route is in that game, and refuses to send any order elsewhere.
+- **The game.** Each step list names its game's mode (Frontier, or Blitz for `--steps blitz-orders`): the newest live
+  game of that mode, or `--chain-id`/`--game-id` (refused if it is not a listed game of that mode). Before the first
+  step the run asserts the route is in that game, and refuses to send any order elsewhere.
 
 Every step checks what a player would then see and is judged completed, blocked (the game refused, for a reason a player
 meets too: a short cost, no army) or failed:
@@ -143,9 +144,14 @@ Options: `--renderer-modes webgpu-auto,webgpu-force-webgl` (default both), `--it
 `--cpu-throttle 4` (Chrome's CPU slowdown of this machine; not a measured laptop), `--chain-id` and `--game-id`,
 `--steps ownership-rings` (the map unselected, the player's realm selected with its owner's holdings ringed, held and
 panned, then cleared: the rings' frame cost; each phase checks the selection and ring count the page reports in
-`window.__eternumMapSelection`, and fails on a build that does not report them), `--out <root>` (default
-`.context/playtest`), `--trace` (a Chrome trace per run), `--compare <summary.json>` (fails when boot regresses),
-`--headed`. Paths are taken from where the command is run.
+`window.__eternumMapSelection`, and fails on a build that does not report them), `--steps blitz-orders` (a seated player
+in a Blitz game, entered by its card's **Enter**: the world map, Tab to select the readiest army, then orders by
+right-click on a tile whose hover tooltip offers Move or Explore, each held at the network while the selection is read:
+the army stays selected through an order's confirmation and is offered orders from its new tile, a second order goes
+without selecting it again, a refused one leaves it selected where it stood, and one deselected with Escape while its
+order is in flight is not selected again; the army's id, hex and order count come from the same report), `--out <root>`
+(default `.context/playtest`), `--trace` (a Chrome trace per run), `--compare <summary.json>` (fails when boot
+regresses), `--headed`. Paths are taken from where the command is run.
 
 Each invocation writes to a new directory, `<root>/<time>-<role>`, and never into an existing one:
 

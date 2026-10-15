@@ -26,6 +26,11 @@ const ARMY_FLIGHT_MS = 1_500;
 const ZOOM_SETTLE_MS = 2_500;
 const TAP_PASSES = 2;
 const ORDER_SEND_WAIT_MS = 10_000;
+// An order's outcome, from its send to the army offered orders again.
+const ORDER_OUTCOME_WAIT_MS = 30_000;
+const HOVER_SETTLE_MS = 400;
+// Escape steps back one thing at a time: a pinned order, an open view, then the selection.
+const ESCAPES_TO_DESELECT = 3;
 // A refusal comes back with the node's answer; the client has logged it well within this.
 const REFUSAL_LOG_MS = 3_000;
 // A pan moves the whole map under the camera; the same view, animated, changes far less (map-idle records that floor).
@@ -41,8 +46,13 @@ const NEIGHBOUR_RING = [
   [-67, -95],
 ];
 
-/** The game these steps read (Frontier's place bar, army dock and order bar), and its card on the home page. */
-export const STEPS_GAME = { mode: "frontier", homeCard: "Frontier" };
+/**
+ * The games the step lists are written for: the directory's mode, and the card on the home page a player enters it by,
+ * with its call to action. Frontier's card has its title; a Blitz card is found by the game it names, and only a player
+ * seated in it can Enter.
+ */
+const FRONTIER = { mode: "frontier", card: { heading: "Frontier", enter: "^(Resume|Play)" } };
+const BLITZ = { mode: "blitz", card: { heading: null, enter: "^Enter$" } };
 
 /** What a spectator does: look at the realm, open the map, move the camera, read the menu, switch scenes, watch. */
 export const SPECTATOR_STEPS = [
@@ -293,11 +303,207 @@ const OWNERSHIP_RING_STEPS = [
   { name: "cleared-idle", play: clearTheSelection, settleMs: 10_000, verify: nothingSelected },
 ];
 
-/** The step lists a run can play, by name; a run plays its role's list unless it names another. */
+/**
+ * A seated Blitz player's orders and the army's selection through them. On the map Tab selects the readiest army, and a
+ * right-click on a tile it can reach sends its move or explore at once. Each order is held at the network while the
+ * step reads the selection, then let go. The army stays selected through the order's confirmation and is offered its
+ * next orders from where it then stands, so a second order goes without selecting it again. A refused order leaves it
+ * selected where it stood; one deselected while its order is in flight is not selected again at the outcome.
+ */
+const BLITZ_ORDER_STEPS = [
+  { name: "open-world", play: toTheWorldMap, settleMs: 3_000, verify: drawn("map") },
+  { name: "select-army", play: selectTheArmyByTab, settleMs: 2_000, verify: armyOfferedOrders },
+  { name: "order-kept", play: orderThroughItsOutcome, settleMs: 2_000, verify: keptThroughItsOutcome },
+  { name: "second-order", play: orderThroughItsOutcome, settleMs: 2_000, verify: keptThroughItsOutcome },
+  { name: "order-refused", play: refuseAnOrder, settleMs: 2_000, verify: keptWhereItStood },
+  // Long enough for the order let go after the Escape to be confirmed.
+  { name: "deselect-in-flight", play: deselectWhileInFlight, settleMs: 20_000, verify: notSelectedAgain },
+];
+
+/** Blitz switches between the world map and the realm's tiles with V (the header's Local / World). */
+async function toTheWorldMap({ browser }) {
+  const onMap = (seen) => seen.playable && seen.scene === "map" && seen.rendered === "map";
+  for (let presses = 0; presses <= PLACE_PRESSES; presses += 1) {
+    if (await waitFor(browser, onMap, SCENE_WAIT_MS)) return { presses };
+    browser.press("v");
+  }
+  return { presses: PLACE_PRESSES };
+}
+
+/** The route's scene and the scene the renderer last drew agree: Blitz has no place bar to light. */
+function drawn(scene) {
+  return ({ seen }) =>
+    seen.scene === scene && seen.rendered === scene
+      ? completed({ scene })
+      : failed(
+          `expected the ${scene} scene, saw the route on ${seen.scene ?? "no scene"}, ${seen.rendered ?? "no scene"} drawn`,
+        );
+}
+
+/** Tab selects (and centres) the next army that can act; its orders are planned once it is selected. */
+async function selectTheArmyByTab({ browser }) {
+  browser.press("Tab");
+  await waitFor(browser, (seen) => seen.selection?.army?.orders > 0, ORDER_OUTCOME_WAIT_MS);
+  return { army: browser.observe().selection?.army ?? null };
+}
+
+function armyOfferedOrders({ seen, played }) {
+  if (!seen.selection) return failed(NO_SELECTION_REPORT);
+  if (!played.army) return blocked("Tab selected no army: none can act");
+  if (!(played.army.orders > 0)) return blocked("the selected army is offered no order", { army: played.army });
+  return completed({ army: played.army });
+}
+
+/**
+ * Right-clicks a tile the selected army can reach, with no selection of its own: the army must still be selected from
+ * the step before. The order is held at the network while the selection is read, let go, and its outcome awaited: the
+ * army offered orders again, or no longer selected.
+ */
+async function orderThroughItsOutcome({ browser, devTools }) {
+  return orderTheSelectedArmy({ browser, devTools }, async (gate) => {
+    await gate.release();
+    return {};
+  });
+}
+
+/** As an order, but answered as the node refusing it; the client's log of that refusal is the step's own. */
+async function refuseAnOrder({ browser, devTools }) {
+  return orderTheSelectedArmy({ browser, devTools }, async (gate) => ({
+    provokedErrors: refusalErrors(await linesLoggedDuring(browser, () => gate.refuse())),
+  }));
+}
+
+/** Escape while the order is held clears the selection (a step back at a time); the order is then let go. */
+async function deselectWhileInFlight({ browser, devTools }) {
+  return orderTheSelectedArmy({ browser, devTools, awaitsOutcome: false }, async (gate) => {
+    let escapes = 0;
+    while (browser.observe().selection?.army && escapes < ESCAPES_TO_DESELECT) {
+      browser.press("Escape");
+      escapes += 1;
+    }
+    const deselected = browser.observe().selection?.army === null;
+    await gate.release();
+    return { escapes, deselected };
+  });
+}
+
+async function orderTheSelectedArmy({ browser, devTools, awaitsOutcome = true }, whileHeld) {
+  const before = browser.observe().selection?.army ?? null;
+  if (!before) return { before };
+  const { target, scanned } = await findOrderTile(browser);
+  if (!target) return { before, scanned };
+  const gate = await openOrderSendGate(devTools);
+  try {
+    browser.rightClick(target.offset);
+    const sent = await waitUntil(() => gate.held() > 0, ORDER_SEND_WAIT_MS);
+    if (!sent) return { before, scanned, target, sent };
+    const inFlight = browser.observe().selection?.army ?? null;
+    const held = await whileHeld(gate);
+    if (!awaitsOutcome) return { before, scanned, target, sent, inFlight, ...held };
+    const settled = (seen) => !seen.selection?.army || seen.selection.army.orders > 0;
+    await waitFor(browser, settled, ORDER_OUTCOME_WAIT_MS);
+    return { before, scanned, target, sent, inFlight, after: browser.observe().selection?.army ?? null, ...held };
+  } finally {
+    await gate.close();
+  }
+}
+
+/** Hovers tiles around the army until one's tooltip offers it a move or an explore, as a player reads it. */
+async function findOrderTile(browser) {
+  const scanned = [];
+  for (const offset of ORDER_TILE_CANDIDATES) {
+    browser.hover(offset);
+    await sleep(HOVER_SETTLE_MS);
+    const verb = browser.read(ORDER_TOOLTIP_TITLE);
+    scanned.push({ offset, verb });
+    if (verb === "Move" || verb === "Explore") return { target: { offset, verb }, scanned };
+  }
+  return { target: null, scanned };
+}
+
+// The army's ring, then the ring past it: a moved army may stand a tile off the centre.
+const ORDER_TILE_CANDIDATES = [...NEIGHBOUR_RING, ...NEIGHBOUR_RING.map(([dx, dy]) => [dx * 2, dy * 2])];
+
+// The hover tooltip's title (Move, Explore, Attack…), shown over a tile the selected army has an order on.
+const ORDER_TOOLTIP_TITLE = `JSON.stringify((() => {
+  const hint = [...document.querySelectorAll("span")].find((span) => span.textContent.trim() === "Right-click to confirm");
+  let tooltip = hint;
+  while (tooltip && !tooltip.querySelector("span.px-1")) tooltip = tooltip.parentElement;
+  return tooltip?.querySelector("span.px-1")?.textContent.trim() ?? null;
+})())`;
+
+/**
+ * The army kept selected through an order's confirmation: selected when the step began (no click or Tab in between),
+ * while the order was in flight, and after it, offered orders from the tile the order took it to; the order sent and
+ * confirmed.
+ */
+function keptThroughItsOutcome({ played, actionLatency, window }) {
+  const sent = judgeSentOrder(played);
+  if (sent) return sent;
+  const orders = describeOrders({ armyTrace: actionLatency.armyMovement, ...window });
+  const confirmed = orders.commands.filter((command) => command.hash && command.confirmed).length;
+  if (confirmed !== 1) return failed(`${confirmed} orders were sent and confirmed, not 1`, { orders });
+  const { before, after } = played;
+  if (after?.id !== before.id) return failed("the army was not selected after its order's outcome", { before, after });
+  if (sameHex(after.hex, before.hex)) {
+    return failed("the army is not offered orders from the tile its order took it to", { before, after });
+  }
+  if (!(after.orders > 0)) return failed("the army was offered no orders after its outcome", { before, after });
+  return completed({ before, inFlight: played.inFlight, after, target: played.target, orders });
+}
+
+/** A refused order leaves the army selected where it stood, offered its orders again, and nothing confirmed. */
+function keptWhereItStood({ played, actionLatency, window }) {
+  const sent = judgeSentOrder(played);
+  if (sent) return sent;
+  const orders = describeOrders({ armyTrace: actionLatency.armyMovement, ...window });
+  if (orders.commands.some((command) => command.confirmed))
+    return failed("the refused order was confirmed", { orders });
+  const { before, after } = played;
+  if (after?.id !== before.id)
+    return failed("the army was not selected after its order was refused", { before, after });
+  if (!sameHex(after.hex, before.hex)) return failed("the army moved on a refused order", { before, after });
+  if (!(after.orders > 0)) return failed("the army was offered no orders after the refusal", { before, after });
+  return completed({ before, after, orders });
+}
+
+/** An army deselected while its order was in flight stays unselected once that order is confirmed. */
+function notSelectedAgain({ seen, played, actionLatency, window }) {
+  const sent = judgeSentOrder(played);
+  if (sent) return sent;
+  if (!played.deselected)
+    return failed(`${played.escapes} Escapes left the army selected while its order was in flight`);
+  const orders = describeOrders({ armyTrace: actionLatency.armyMovement, ...window });
+  const confirmed = orders.commands.filter((command) => command.hash && command.confirmed).length;
+  if (confirmed !== 1) return failed(`${confirmed} orders were sent and confirmed, not 1`, { orders });
+  if (seen.selection?.army)
+    return failed("the army was selected again at its order's outcome", { army: seen.selection.army });
+  return completed({ escapes: played.escapes, orders });
+}
+
+/** Why an order step has no order to judge: no army selected, no tile offering one, or nothing sent. */
+function judgeSentOrder(played) {
+  if (!played.before) return failed("no army was selected when the step began: the order before did not keep it");
+  if (!played.target) {
+    return blocked(
+      `no tile around the army offered a move or an explore (${played.scanned.map(({ verb }) => verb ?? "nothing").join(", ")})`,
+    );
+  }
+  if (!played.sent) return failed("the right-click sent no order");
+  if (played.inFlight?.id !== played.before.id) {
+    return failed("the army was not selected while its order was in flight", { inFlight: played.inFlight });
+  }
+  return null;
+}
+
+const sameHex = (left, right) => left?.col === right?.col && left?.row === right?.row;
+
+/** The step lists a run can play, by name, each with its game; a run plays its role's list unless it names another. */
 export const STEP_SETS = {
-  spectator: SPECTATOR_STEPS,
-  player: PLAYER_STEPS,
-  "ownership-rings": OWNERSHIP_RING_STEPS,
+  spectator: { game: FRONTIER, steps: SPECTATOR_STEPS },
+  player: { game: FRONTIER, steps: PLAYER_STEPS },
+  "ownership-rings": { game: FRONTIER, steps: OWNERSHIP_RING_STEPS },
+  "blitz-orders": { game: BLITZ, steps: BLITZ_ORDER_STEPS },
 };
 
 /**

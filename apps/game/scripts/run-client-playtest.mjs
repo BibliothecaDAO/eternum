@@ -36,7 +36,7 @@ import {
   signInIfSignedOut,
 } from "./client-playtest/player-entry.mjs";
 import { Cancelled, createRunOwner } from "./client-playtest/run-owner.mjs";
-import { STEP_SETS, STEPS_GAME } from "./client-playtest/steps.mjs";
+import { STEP_SETS } from "./client-playtest/steps.mjs";
 
 /**
  * The client playtest: builds and serves the client as players get it, plays it in a browser on the machine's GPU as a
@@ -83,12 +83,12 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
   if (rendererModes.length === 0 || unknownModes.length > 0) {
     throw new Error(`--renderer-modes takes ${RENDERER_MODES.join(" and/or ")}, not "${unknownModes.join(",")}"`);
   }
-  const stepSet = option("--steps", null);
-  if (stepSet !== null && !STEP_SETS[stepSet]) {
-    throw new Error(`--steps takes ${Object.keys(STEP_SETS).join(", ")}, not "${stepSet}"`);
-  }
   const player = option("--player", null);
   if (player !== null && !/^[^@\s]+@[^@\s]+$/.test(player)) throw new Error(`--player takes an email, not "${player}"`);
+  const stepSet = option("--steps", player ? "player" : "spectator");
+  if (!STEP_SETS[stepSet]) {
+    throw new Error(`--steps takes ${Object.keys(STEP_SETS).join(", ")}, not "${stepSet}"`);
+  }
 
   return {
     baseUrl: option("--base-url", null),
@@ -133,7 +133,11 @@ async function main(argv) {
       : await startClient({ owner, port: options.port, runDir });
     output.client = client;
     output.stage = "finding the game";
-    output.game = await resolvePlaytestGame({ ...options, baseUrl: client.baseUrl });
+    output.game = await resolvePlaytestGame({
+      ...options,
+      baseUrl: client.baseUrl,
+      mode: STEP_SETS[options.stepSet].game.mode,
+    });
     output.stage = "playing";
     for (const rendererMode of options.rendererModes) {
       for (let iteration = 1; iteration <= options.iterations; iteration += 1) {
@@ -211,11 +215,11 @@ function judgeRuns(results, options) {
 }
 
 /** The steps' game: the newest live one of their mode, or the one asked for, refused if it is of another mode. */
-async function resolvePlaytestGame({ baseUrl, chainId, gameId }) {
+async function resolvePlaytestGame({ baseUrl, chainId, gameId, mode }) {
   const directory = await readLocalJson(new URL("/api/directory", baseUrl));
   if (!(chainId && gameId)) {
-    const newest = selectPlaytestGame(directory, STEPS_GAME.mode);
-    if (!newest) throw new Error(`No live ${STEPS_GAME.mode} game in the directory: pass --chain-id and --game-id.`);
+    const newest = selectPlaytestGame(directory, mode);
+    if (!newest) throw new Error(`No live ${mode} game in the directory: pass --chain-id and --game-id.`);
     return newest;
   }
   const listed = (directory?.shards ?? [])
@@ -223,8 +227,8 @@ async function resolvePlaytestGame({ baseUrl, chainId, gameId }) {
     .flatMap((shard) => shard.games ?? [])
     .find((game) => Number(game.game_id) === gameId);
   if (!listed) throw new Error(`game ${gameId} on ${chainId} is not in the directory`);
-  if (listed.mode !== STEPS_GAME.mode) {
-    throw new Error(`game ${gameId} is ${listed.mode}; the playtest's steps are written for ${STEPS_GAME.mode}`);
+  if (listed.mode !== mode) {
+    throw new Error(`game ${gameId} is ${listed.mode}; the playtest's steps are written for ${mode}`);
   }
   return { chainId, gameId, mode: listed.mode };
 }
@@ -236,7 +240,7 @@ async function resolvePlaytestGame({ baseUrl, chainId, gameId }) {
 async function playRun(context) {
   const { cpuThrottle, game, iteration, owner, player, rendererMode, runDir, timeoutMs } = context;
   const label = `${player ? "player" : "spectator"}-${rendererMode}-${iteration}`;
-  const steps = STEP_SETS[context.stepSet ?? (player ? "player" : "spectator")];
+  const { game: stepsGame, steps } = STEP_SETS[context.stepSet];
   const record = { iteration, rendererMode, label, steps: [], expectedSteps: steps.map((step) => step.name) };
   record.loadSamples = [loadavg()[0]];
   const sampler = setInterval(() => record.loadSamples.push(loadavg()[0]), LOAD_SAMPLE_MS);
@@ -271,7 +275,7 @@ async function playRun(context) {
       : buildPlaytestUrl({ baseUrl: context.baseUrl, chainId: game.chainId, gameId: game.gameId, rendererMode });
     browser.run(["open", record.url]);
     if (player) record.signIn = await signInAsPlayer({ ...context, browser, url: record.url });
-    const entered = player ? await enterAsPlayer(browser, owner, timeoutMs) : null;
+    const entered = player ? await enterAsPlayer(browser, owner, timeoutMs, { card: stepsGame.card, game }) : null;
     record.boot = { ...(await waitForEntrySnapshot(browser, owner, timeoutMs)), entered };
     browser.screenshot(join(runDir, `${label}-00-boot.png`));
     if (player) record.daySummary = await continuePastTheDaySummary(browser, owner);

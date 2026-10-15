@@ -53,6 +53,8 @@ export function createBrowserSession(session, { headed, profile }) {
     click: (name) => run(["find", "role", "button", "click", "--name", name, "--exact"]),
     press: (key) => run(["press", key]),
     tap: (offset) => run(["batch", ...tapCommands(offset)]),
+    hover: (offset) => run(["mouse", "move", ...screenPoint(offset).map(String)]),
+    rightClick: (offset) => run(["batch", ...rightClickCommands(offset)]),
     screenshot: (path) => run(["screenshot", path]),
     observe: () => read(OBSERVE_EXPRESSION),
     buttonTexts: () => read(BUTTON_TEXTS_EXPRESSION),
@@ -69,11 +71,17 @@ const withoutNpmNoise = (output) =>
     .join("\n")
     .trim();
 
-/** A tap at an offset from the screen's centre, where selecting an army puts it. */
-function tapCommands([dx, dy]) {
-  const x = VIEWPORT.width / 2 + dx;
-  const y = VIEWPORT.height / 2 + dy;
+/** A point at an offset from the screen's centre, where selecting an army puts it. */
+const screenPoint = ([dx, dy]) => [VIEWPORT.width / 2 + dx, VIEWPORT.height / 2 + dy];
+
+function tapCommands(offset) {
+  const [x, y] = screenPoint(offset);
   return [`mouse move ${x} ${y}`, "mouse down", "mouse up"];
+}
+
+function rightClickCommands(offset) {
+  const [x, y] = screenPoint(offset);
+  return [`mouse move ${x} ${y}`, "mouse down right", "mouse up right"];
 }
 
 /**

@@ -1,7 +1,5 @@
 import { existsSync, readFileSync, rmSync } from "node:fs";
 
-import { STEPS_GAME } from "./steps.mjs";
-
 /**
  * How a player gets into the steps' game: signed in through the sign-in page as a player is (their email, Send code,
  * the code from the mail), then through the home page's card, with the browser's own click on its call to action.
@@ -77,16 +75,18 @@ async function waitForSignInCode(owner, email, codeFile) {
 
 /**
  * Enters the steps' game from its card on the home page, closing what opens over the page first: the card's call to
- * action (Resume or Play free) once it is enabled, clicked by the browser as a player's pointer is. Boot is measured
- * from that click as the page received it.
+ * action (Frontier's Resume or Play free, a seated Blitz's Enter) once it is enabled, clicked by the browser as a
+ * player's pointer is. Boot is measured from that click as the page received it.
  */
-export async function enterAsPlayer(browser, owner, timeoutMs) {
+export async function enterAsPlayer(browser, owner, timeoutMs, { card, game }) {
   // Orders tap tiles at the default zoom's offsets; a zoom an earlier session left in this profile is cleared first.
   const clearedZoom = browser.read(CLEAR_STORED_ZOOM_EXPRESSION);
   const startedAt = Date.now();
   let entry = null;
-  while (!(entry = browser.read(markHomeCardEntryExpression(STEPS_GAME.homeCard)))) {
-    if (Date.now() - startedAt > timeoutMs) throw new Error(`No ${STEPS_GAME.homeCard} card to enter on the home page`);
+  while (!(entry = browser.read(markHomeCardEntryExpression(card, game)))) {
+    if (Date.now() - startedAt > timeoutMs) {
+      throw new Error(`No card for ${card.heading ?? `game ${game.gameId}`} to enter on the home page`);
+    }
     browser.press("Escape");
     await owner.sleep(POLL_MS);
   }
@@ -119,14 +119,27 @@ const CLEAR_STORED_ZOOM_EXPRESSION = `JSON.stringify((() => {
 })())`;
 
 /**
- * Marks the enter step and tags the call to action inside the home page's card for `heading` for the browser's click;
- * returns the mark with the button's label, or null while the card is not shown or its button is still disabled.
+ * Marks the enter step and tags the card's call to action for the browser's click: the card titled `card.heading`, or
+ * else the play item naming the game (`data-play-item` ends in its chain and game). Returns the mark with the button's
+ * label, or null while the card is not shown or its button is still disabled.
  */
-const markHomeCardEntryExpression = (heading) => `JSON.stringify((() => {
-  const title = [...document.querySelectorAll("h1, h2, h3, h4")].find((element) => element.textContent.trim() === ${JSON.stringify(heading)});
-  let card = title;
-  while (card && !card.querySelector("button")) card = card.parentElement;
-  const button = card && [...card.querySelectorAll("button")].find((element) => !element.disabled && /^(Resume|Play)/.test(element.textContent.trim()));
+const markHomeCardEntryExpression = (card, game) => `JSON.stringify((() => {
+  const heading = ${JSON.stringify(card.heading)};
+  const namesGame = (element) => {
+    const [chainId, gameId] = (element.dataset.playItem ?? "").split(":").slice(-2);
+    try {
+      return BigInt(chainId) === BigInt(${JSON.stringify(String(game.chainId))}) && Number(gameId) === ${Number(game.gameId)};
+    } catch {
+      return false;
+    }
+  };
+  const title = heading === null
+    ? [...document.querySelectorAll("[data-play-item]")].find(namesGame)
+    : [...document.querySelectorAll("h1, h2, h3, h4")].find((element) => element.textContent.trim() === heading);
+  let found = title;
+  while (found && !found.querySelector("button")) found = found.parentElement;
+  const enter = new RegExp(${JSON.stringify(card.enter)});
+  const button = found && [...found.querySelectorAll("button")].find((element) => !element.disabled && enter.test(element.textContent.trim()));
   if (!button) return null;
   document.querySelectorAll("${ENTRY_BUTTON}").forEach((element) => delete element.dataset.playtestEntry);
   button.dataset.playtestEntry = "";
