@@ -50,7 +50,7 @@ export const GAME_TASKS = {
       { name: "the next army", key: "Tab" },
       { name: "an unexplored tile, right-clicked", tile: "Explore", button: "right" },
     ],
-    reading: `[...document.querySelectorAll("canvas")].length && document.body.innerText.match(/Explor\\w+/g)?.join(",")`,
+    reading: `document.body.innerText.includes("Scouts sent")`,
     done: "true",
   },
   "blitz-standings": {
