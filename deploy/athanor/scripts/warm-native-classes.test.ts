@@ -43,7 +43,13 @@ async function warm(directory: string, url: string, cache: string) {
     new Response(child.stderr).text(),
   ]);
   if (code !== 0) throw new Error(error);
-  return JSON.parse(output.trim()) as { passed: boolean; classes: number; compiled: number; requests: object };
+  return JSON.parse(output.trim()) as {
+    passed: boolean;
+    classes: number;
+    compiled: number;
+    requests: object;
+    ms: number;
+  };
 }
 
 it("asks the private node for every class the cache lacks, and only reads the cache on the next start", async () => {

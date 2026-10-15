@@ -47,7 +47,7 @@ async function main(): Promise<void> {
 export async function warmClasses(
   classes: string[],
   compiler: Compiler,
-  { budgetMs = WARM_BUDGET_MS, roundMs = ROUND_MS, now = Date.now, sleep = Bun.sleep } = {},
+  { budgetMs = WARM_BUDGET_MS, roundMs = ROUND_MS, now = Date.now, sleep = (ms: number) => Bun.sleep(ms) } = {},
 ): Promise<{ compiled: number; requests: Record<string, number> }> {
   const deadline = now() + budgetMs;
   const remaining = () => deadline - now();
