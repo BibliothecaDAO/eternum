@@ -34,6 +34,7 @@ export const DoorwayScreen = ({
   onOpenRealm,
   onSignIn,
   onSpectate,
+  results,
   children,
 }: {
   view: DoorwayView;
@@ -47,12 +48,21 @@ export const DoorwayScreen = ({
   onOpenRealm?: () => void;
   onSignIn: () => void;
   onSpectate?: () => void;
+  /** The finished game's Results page, where an ended game's doorway leads. */
+  results?: string;
   /** A mode's own control at the realm step, kept inside the doorway's frame. */
   children?: ReactNode;
 }) => {
   const desktop = useLayout() === "desktop";
   const hold = (
-    <Hold view={view} onRetry={onRetry} onOpenRealm={onOpenRealm} onSignIn={onSignIn} onSpectate={onSpectate} />
+    <Hold
+      view={view}
+      onRetry={onRetry}
+      onOpenRealm={onOpenRealm}
+      onSignIn={onSignIn}
+      onSpectate={onSpectate}
+      results={results}
+    />
   );
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-kit-ground">
@@ -94,12 +104,14 @@ const Hold = ({
   onOpenRealm,
   onSignIn,
   onSpectate,
+  results,
 }: {
   view: DoorwayView;
   onRetry: () => void;
   onOpenRealm?: () => void;
   onSignIn: () => void;
   onSpectate?: () => void;
+  results?: string;
 }) => {
   const navigate = useNavigate();
   const desktop = useLayout() === "desktop";
@@ -147,8 +159,15 @@ const Hold = ({
         <Button role="primary" word={DOORWAY_WORDS.devices} icon="Dv" onClick={() => navigate("/profile")} />,
       );
   }
-  if (!view.spectating || !onSpectate) return null;
-  return view.spectating === "watch"
-    ? plate(DOORWAY_WORDS.notOnThisGame, <Button role="secondary" word={WORDS.watch} icon="Wc" onClick={onSpectate} />)
-    : plate(DOORWAY_WORDS.ended, <Button role="secondary" word={WORDS.results} icon="Tp" onClick={onSpectate} />);
+  if (view.spectating === "watch" && onSpectate)
+    return plate(
+      DOORWAY_WORDS.notOnThisGame,
+      <Button role="secondary" word={WORDS.watch} icon="Wc" onClick={onSpectate} />,
+    );
+  if (view.spectating === "results" && results)
+    return plate(
+      DOORWAY_WORDS.ended,
+      <Button role="secondary" word={WORDS.results} icon="Tp" onClick={() => navigate(results)} />,
+    );
+  return null;
 };

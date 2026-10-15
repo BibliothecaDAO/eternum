@@ -1,6 +1,10 @@
+import { act } from "react";
+import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
-import { MemoryRouter } from "react-router-dom";
-import { expect, it } from "vitest";
+import { MemoryRouter, Route, Routes, useParams } from "react-router-dom";
+import { expect, it, vi } from "vitest";
+
+vi.mock("@/hooks/context/identity-session", () => ({ useIdentitySession: () => ({ status: "anonymous" }) }));
 
 import { DoorwayScreen } from "./doorway-screen";
 import { doorwayView } from "./doorway-view";
@@ -17,7 +21,14 @@ it.each([
     expect(view.steps[0]).toEqual({ step: "account", state: "done" });
     const markup = renderToStaticMarkup(
       <MemoryRouter>
-        <DoorwayScreen view={view} realm={null} onRetry={() => {}} onSignIn={() => {}} onSpectate={() => {}} />
+        <DoorwayScreen
+          view={view}
+          realm={null}
+          onRetry={() => {}}
+          onSignIn={() => {}}
+          onSpectate={() => {}}
+          results="/results/0xa-5"
+        />
       </MemoryRouter>,
     );
     expect(text(markup)).toContain(line);
@@ -50,4 +61,49 @@ it("says the map could not be drawn and offers the realm beside Try again, in pl
   expect(withRealm).not.toContain("did not answer");
   // With no realm to open there is nothing to offer but the retry.
   expect(render(false)).not.toContain("Open realm");
+});
+
+it("leads an ended game's Results to its Results page, not to watching its map", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const view = doorwayView({
+    source: "entry",
+    phase: "spectate",
+    audience: "player",
+    signedIn: true,
+    blitzEntry: "review",
+  });
+  const watched: string[] = [];
+  const ResultsProbe = () => <p data-testid="results">{useParams().id}</p>;
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  await act(async () =>
+    root.render(
+      <MemoryRouter initialEntries={["/g/0xa/5"]}>
+        <Routes>
+          <Route
+            path="/g/:chain/:game"
+            element={
+              <DoorwayScreen
+                view={view}
+                realm={null}
+                onRetry={() => {}}
+                onSignIn={() => {}}
+                onSpectate={() => watched.push("map")}
+                results="/results/0xa-5"
+              />
+            }
+          />
+          <Route path="/results/:id" element={<ResultsProbe />} />
+        </Routes>
+      </MemoryRouter>,
+    ),
+  );
+  try {
+    const results = [...container.querySelectorAll("button")].find((button) => button.textContent === "Results");
+    await act(async () => results?.click());
+    expect(container.querySelector('[data-testid="results"]')?.textContent).toBe("0xa-5");
+    expect(watched).toEqual([]);
+  } finally {
+    await act(async () => root.unmount());
+  }
 });

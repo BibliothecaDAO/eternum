@@ -113,7 +113,12 @@ const runBootstrap = async ({
     throw error;
   }
 };
-export const resetBootstrap = () => {
+
+/**
+ * Only entering another game resets the boot, from its doorway. The game's screens read the active client while they
+ * are mounted, so nothing in them may take it away; leaving a game keeps it booted for a return.
+ */
+const resetBootstrap = () => {
   verboseLog("[BOOTSTRAP] Resetting bootstrap state");
   attachedGameClient = null;
   cancelActiveBootstrapSubscriptions();

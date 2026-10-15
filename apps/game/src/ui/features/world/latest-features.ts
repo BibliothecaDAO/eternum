@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-15",
+    title: "Results after the end",
+    description:
+      "When a game ends, Game finished and the game's doorway both lead to its Results page: your place, the standings and your rewards.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-15",
     title: "Distinct outposts and discoveries",
     description:
       "Spot camps, palisaded villages and stranded companies by their silhouettes, with new shrines and wells on the world map.",

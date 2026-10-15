@@ -8,7 +8,6 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { usePlayers } from "@/hooks/use-player-profile";
 import { gameStructuresView } from "@/sync/fact-views";
-import { resetBootstrap } from "@/init/bootstrap";
 import { buildEntryHref } from "@/play/navigation/play-route";
 import { getActiveGame } from "@/runtime/world";
 import { BuildingThumbs } from "@/ui/config";
@@ -267,14 +266,13 @@ const SpectatingPanel = ({ state }: { state: Extract<IdentityChipState, { kind: 
   );
 };
 
-/** Re-enters the active game in play intent: a fresh bootstrap without the spectate flag. */
+/** Re-enters the active game in play intent: its entry takes the booted game over without the spectate flag. */
 const useEnterActiveGameAsPlayer = () => {
   const navigate = useNavigate();
 
   return useCallback(() => {
     const world = getActiveGame();
     if (!world) return;
-    resetBootstrap();
     navigate(buildEntryHref({ chainId: world.chainId, gameId: world.gameId, intent: "play", autoSettle: false }));
   }, [navigate]);
 };

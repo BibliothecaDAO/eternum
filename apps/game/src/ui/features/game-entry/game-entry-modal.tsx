@@ -22,6 +22,7 @@ import { fetchSettlementSnapshot, type SettlementSnapshot } from "@/runtime/worl
 import { isGameOver, isMember } from "@/runtime/world/directory";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { gamePainting, modeLabel } from "@/shell/game-links";
+import { resultsHref } from "@/shell/season-tab/results-link";
 import { StateChip } from "@/shell/play/state-chip";
 import { BLITZ_WORDS } from "@/shell/words";
 import { ClockChip } from "@/shell/clock-chip";
@@ -593,6 +594,7 @@ export const GameEntryModal = ({
       onRetry={settleStage === "error" ? () => void handleSettle() : handleRetry}
       onSignIn={() => requestSignIn()}
       onSpectate={handleSpectate}
+      results={resultsHref({ chainId: game.chainId, game_id: game.gameId }, false)}
     >
       {phase === "settlement-waiting" && <ClockChip prefix="starts" at={seasonStartAt ?? undefined} now={nowSeconds} />}
       {phase === "settlement" && isBlitzMode && worldMeta && (
