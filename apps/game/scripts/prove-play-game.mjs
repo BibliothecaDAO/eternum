@@ -326,7 +326,7 @@ const waitForOutcome = async (b, task, before) => {
  * Why a task's readings do not show its order, or null when they do: a task that changes the game has a reading on
  * both sides of its last press, changed as the task expects (one more farm, one more army, an army on another tile).
  */
-export const taskProblem = (task, before, after) => {
+const taskProblem = (task, before, after) => {
   if (!task.reading) return null;
   if (before === null || before === undefined || after === null || after === undefined)
     return "the task's reading was unavailable";
