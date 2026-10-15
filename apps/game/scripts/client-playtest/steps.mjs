@@ -313,6 +313,8 @@ function withOrderInFlight(whileInFlight, { refuse }) {
     const scanned = scanTheRing(browser);
     const targets = threeInARow(scanned);
     if (!targets) return { army, scanned };
+    // A tile of the scan may hold the player's realm, whose tap selects it: the army is picked again.
+    await focusTheReadiestArmy(browser);
     const gate = await openOrderSendGate(devTools);
     try {
       browser.tap(targets.first);

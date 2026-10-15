@@ -394,48 +394,42 @@ describe("collectFrameSpikes", () => {
 });
 
 describe("summarizeRpcSends", () => {
-  it("counts each JSON-RPC method's sends, those refused, those on a fresh connection, and their durations", () => {
-    const answered = { status: 200, rpcError: null };
+  it("counts each node's JSON-RPC methods: sends, refused, on a fresh connection, and their durations", () => {
+    const shard = { host: "rpc.shard.test", status: 200, rpcError: null };
     expect(
       summarizeRpcSends([
-        {
-          rpcMethod: "starknet_addInvokeTransaction",
-          connectionReused: false,
-          connectMs: 40,
-          totalMs: 160,
-          ...answered,
-        },
-        {
-          rpcMethod: "starknet_addInvokeTransaction",
-          connectionReused: true,
-          connectMs: null,
-          totalMs: 110,
-          ...answered,
-        },
-        { rpcMethod: "starknet_getNonce", connectionReused: true, connectMs: null, totalMs: 105, ...answered },
-        {
-          rpcMethod: "starknet_getNonce",
-          connectionReused: true,
-          totalMs: 90,
-          status: 200,
-          rpcError: "Invalid params",
-        },
-        { rpcMethod: "starknet_getNonce", connectionReused: true, totalMs: 80, status: 403, rpcError: null },
+        { ...shard, rpcMethod: "starknet_addInvokeTransaction", connectionReused: false, connectMs: 40, totalMs: 160 },
+        { ...shard, rpcMethod: "starknet_addInvokeTransaction", connectionReused: true, connectMs: null, totalMs: 110 },
+        { ...shard, rpcMethod: "starknet_getNonce", connectionReused: true, totalMs: 105 },
+        { ...shard, rpcMethod: "starknet_getNonce", connectionReused: true, totalMs: 90, rpcError: "Invalid params" },
+        { ...shard, rpcMethod: "starknet_getNonce", connectionReused: true, totalMs: 80, status: 403 },
+        { host: "l2.test", rpcMethod: "preflight", connectionReused: false, connectMs: 30, totalMs: 60, status: 204 },
       ]),
     ).toEqual({
-      starknet_addInvokeTransaction: {
-        count: 2,
-        refused: 0,
-        freshConnections: 1,
-        totalMs: { n: 2, p50: 110, p95: 160, p99: 160, max: 160 },
-        freshConnectMs: { n: 1, p50: 40, p95: 40, p99: 40, max: 40 },
+      "rpc.shard.test": {
+        starknet_addInvokeTransaction: {
+          count: 2,
+          refused: 0,
+          freshConnections: 1,
+          totalMs: { n: 2, p50: 110, p95: 160, p99: 160, max: 160 },
+          freshConnectMs: { n: 1, p50: 40, p95: 40, p99: 40, max: 40 },
+        },
+        starknet_getNonce: {
+          count: 3,
+          refused: 2,
+          freshConnections: 0,
+          totalMs: { n: 3, p50: 90, p95: 105, p99: 105, max: 105 },
+          freshConnectMs: null,
+        },
       },
-      starknet_getNonce: {
-        count: 3,
-        refused: 2,
-        freshConnections: 0,
-        totalMs: { n: 3, p50: 90, p95: 105, p99: 105, max: 105 },
-        freshConnectMs: null,
+      "l2.test": {
+        preflight: {
+          count: 1,
+          refused: 0,
+          freshConnections: 1,
+          totalMs: { n: 1, p50: 60, p95: 60, p99: 60, max: 60 },
+          freshConnectMs: { n: 1, p50: 30, p95: 30, p99: 30, max: 30 },
+        },
       },
     });
   });

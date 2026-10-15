@@ -157,7 +157,8 @@ export async function openPageDevTools(browser) {
 }
 
 /**
- * Every JSON-RPC POST the page makes (the play POST is `starknet_addInvokeTransaction`), with whether it went out on a
+ * Every JSON-RPC POST the page makes to a node (the shard's, the L2's), by host (the play POST is
+ * `starknet_addInvokeTransaction`), with whether it went out on a
  * reused connection and what a fresh one cost, how it was answered (the HTTP status, and the JSON-RPC error if the node
  * refused it), and every CORS preflight the browser sent before one (`rpcMethod` "preflight"). The RPC host sends no
  * Timing-Allow-Origin, so only DevTools sees this. Its clock is not the page's: these are durations and connection
@@ -167,7 +168,11 @@ export async function recordRpcSends(devTools) {
   const sends = new Map();
   devTools.onEvent(({ method, params }) => {
     if (method === "Network.requestWillBeSent" && isRpcRequest(params.request)) {
-      sends.set(params.requestId, { rpcMethod: rpcMethodOf(params.request), startedAt: params.timestamp });
+      sends.set(params.requestId, {
+        host: new URL(params.request.url).host,
+        rpcMethod: rpcMethodOf(params.request),
+        startedAt: params.timestamp,
+      });
     }
     const send = sends.get(params?.requestId);
     if (method === "Network.responseReceived" && send) {

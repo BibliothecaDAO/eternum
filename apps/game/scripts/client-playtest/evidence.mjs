@@ -465,14 +465,14 @@ export function collectFrameSpikes(consoleOutput) {
   return { digestedSpikeFrames, reportedOwners: owners };
 }
 
-/** Per JSON-RPC method: how many sends, how many on a fresh connection, and their durations. */
+/** Per node host, then per JSON-RPC method: how many sends, refused, on a fresh connection, and their durations. */
 export function summarizeRpcSends(sends) {
-  const byMethod = {};
-  for (const send of sends) {
-    const method = send.rpcMethod ?? "unknown";
-    byMethod[method] ??= [];
-    byMethod[method].push(send);
-  }
+  const byHost = Object.groupBy(sends, (send) => send.host ?? "unknown");
+  return Object.fromEntries(Object.entries(byHost).map(([host, hostSends]) => [host, summarizeRpcMethods(hostSends)]));
+}
+
+function summarizeRpcMethods(sends) {
+  const byMethod = Object.groupBy(sends, (send) => send.rpcMethod ?? "unknown");
   return Object.fromEntries(
     Object.entries(byMethod).map(([method, methodSends]) => [
       method,
