@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useSyncStore } from "@/hooks/store/use-sync-store";
-import { SupersededGameSyncStartError } from "@bibliothecadao/eternum/game-sync";
+import { GameFinalizedError, SupersededGameSyncStartError } from "@bibliothecadao/eternum/game-sync";
 import {
   bootstrapGameForEntryContext,
   getCachedBootstrappedEntrySession,
@@ -182,8 +182,11 @@ export const useGameEntryBootstrapController = ({
         }
 
         // Surface the failure: this rejection otherwise only lives in React
-        // state and the recovery screen gives the player no diagnostic.
-        console.error("[bootstrap] game entry bootstrap failed", incomingError);
+        // state and the recovery screen gives the player no diagnostic. A
+        // finalized game is no failure: its doorway leads to its Results.
+        if (!(incomingError instanceof GameFinalizedError)) {
+          console.error("[bootstrap] game entry bootstrap failed", incomingError);
+        }
         const normalizedError = incomingError instanceof Error ? incomingError : new Error("Unknown bootstrap error");
         setError(normalizedError);
         setStatus("error");

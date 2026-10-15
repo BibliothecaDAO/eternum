@@ -15,6 +15,7 @@ vi.mock("@/init/bootstrap", () => ({
 }));
 vi.mock("@/ui/layouts/game-entry-timeline", () => ({ markGameEntryMilestone: () => {} }));
 
+import { GameFinalizedError } from "@bibliothecadao/eternum/game-sync";
 import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useGameEntryBootstrapController } from "./bootstrap-controller";
 import type { ResolvedEntryContext } from "./context";
@@ -85,5 +86,16 @@ it("marks the stage the boot failed in, and starts over on a retry", async () =>
   expect(controller.seen.state!.status).toBe("loading");
   expect(controller.statuses()).toBe("world:pending manifest:pending game:pending sync:pending renderer:pending");
   failed.mockRestore();
+  await controller.unmount();
+});
+
+it("ends a finalized game's boot without logging it as a failure", async () => {
+  const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+  const controller = await mountController();
+  await act(async () => boot.settle.reject(new GameFinalizedError("wss://herald/games/7")));
+  expect(controller.seen.state!.status).toBe("error");
+  expect(controller.seen.state!.error).toBeInstanceOf(GameFinalizedError);
+  expect(logged).not.toHaveBeenCalled();
+  logged.mockRestore();
   await controller.unmount();
 });

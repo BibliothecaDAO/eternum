@@ -4,7 +4,7 @@ import { formatReadableErrorForConsole } from "@/utils/error-message";
 import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import { createBrowserGameClient } from "@/services/game-client";
 import type { GameClient } from "@bibliothecadao/eternum";
-import { SupersededGameSyncStartError } from "@bibliothecadao/eternum/game-sync";
+import { GameFinalizedError, SupersededGameSyncStartError } from "@bibliothecadao/eternum/game-sync";
 import { type SystemCallAuthHandler } from "@bibliothecadao/types";
 
 import { resolveEntryContextCacheKey, type ResolvedEntryContext } from "@/game-entry/context";
@@ -157,10 +157,13 @@ export const bootstrapGameForEntryContext = async (
     }
 
     bootstrapSession.clearFailure();
-    Sentry.captureException(error, {
-      tags: { feature: "bootstrap", error_type: "game_setup", setup_phase: "bootstrap" },
-      extra: { context: "Unhandled error during game bootstrap" },
-    });
+    // A finalized game is the end of a match, not a fault to report.
+    if (!(error instanceof GameFinalizedError)) {
+      Sentry.captureException(error, {
+        tags: { feature: "bootstrap", error_type: "game_setup", setup_phase: "bootstrap" },
+        extra: { context: "Unhandled error during game bootstrap" },
+      });
+    }
     throw error;
   }
 };
