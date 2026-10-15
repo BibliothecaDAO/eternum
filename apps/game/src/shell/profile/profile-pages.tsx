@@ -151,7 +151,10 @@ const SignedInOnly = ({
   return account ? children(account) : <Loading />;
 };
 
-/** Winter Fortress, one line or none, and the step. A removed device signs out first, as a new device with a fresh key. */
+/**
+ * One line or none and the step, from the top, over Winter Fortress. A removed device signs out first, as a new device
+ * with a fresh key.
+ */
 const SignInCard = ({ line, verb }: { line: string | null; verb: string }) => {
   const requestSignIn = useRequestSignIn();
   const signIn = async () => {
@@ -162,13 +165,14 @@ const SignInCard = ({ line, verb }: { line: string | null; verb: string }) => {
     requestSignIn();
   };
   return (
-    <section className="flex flex-col gap-3 plate p-3.5">
+    <section className="painted flex min-h-44 flex-col gap-3 rounded-2xl p-3.5">
       <img
         {...paintingSources("winter-fortress")}
         sizes="(min-width: 1024px) 34rem, 100vw"
         alt=""
-        className="h-44 w-full rounded-xl object-cover"
+        className="absolute inset-0 -z-10 size-full object-cover"
       />
+      <span className="absolute inset-0 -z-10 bg-gradient-to-b from-kit-ground/85 to-transparent" />
       {line && <p className="font-body text-base font-bold text-kit-cream">{line}</p>}
       <Button role="primary" word={verb} icon="Pf" onClick={() => void signIn()} />
     </section>

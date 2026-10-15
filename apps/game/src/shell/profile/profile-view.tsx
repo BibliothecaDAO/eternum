@@ -94,25 +94,28 @@ export const PlayerCard = ({ account, own }: { account: string; own: boolean }) 
 /** The desktop's finished games, in a titled plate; none, no plate. */
 export const RecentGames = ({ account }: { account: string }) => <History account={account} titled />;
 
-/** The player's banner: until their best age is a recorded fact, Frontier's painting stands for it. */
+/**
+ * The player's banner, their portrait and name at its top: until their best age is a recorded fact, Frontier's painting
+ * stands for it, behind them.
+ */
 const ProfileBanner = ({ account, own }: { account: string; own: boolean }) => {
   const profile = usePlayerProfile(account);
   const { own: standing } = useSeasonStanding(account);
   return (
-    <section className="painted flex h-40 items-end gap-3 rounded-2xl p-3">
+    <section className="painted flex h-40 items-start gap-3 rounded-2xl p-3">
       <img
         {...paintingSources(ageOf("frontier").painting)}
         sizes="(min-width: 1024px) 50vw, 100vw"
         alt=""
         className="absolute inset-0 -z-10 size-full object-cover"
       />
-      <span className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent to-kit-ground/90" />
+      <span className="absolute inset-0 -z-10 bg-gradient-to-b from-kit-ground/90 to-transparent" />
       <img
         src={playerPortraitUrl(account, profile.portrait)}
         alt=""
         className={cn("size-20 rounded-full border-[3px] object-cover", own ? "border-kit-peach" : "border-kit-line2")}
       />
-      <div className="flex min-w-0 items-center gap-2 pb-2 font-body text-xl font-bold text-kit-cream">
+      <div className="flex min-h-20 min-w-0 items-center gap-2 font-body text-xl font-bold text-kit-cream">
         {standing && <OrderEmblem order={standing.order} size={26} />}
         <PlayerName account={account} />
       </div>

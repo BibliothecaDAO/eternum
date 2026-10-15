@@ -160,8 +160,8 @@ const SignInFrame = ({
   useLayout() === "phone" ? (
     <PageFrame back={next} title={title} tabs={false}>
       <div className="flex flex-col gap-5">
-        {hero && <PhoneHero />}
         {children}
+        {hero && <PhoneHero />}
       </div>
     </PageFrame>
   ) : (
@@ -171,14 +171,14 @@ const SignInFrame = ({
   );
 
 const PhoneHero = () => (
-  <section className="relative isolate -mx-4 flex h-[38dvh] items-end overflow-hidden px-4 pb-3">
+  <section className="relative isolate -mx-4 flex h-[38dvh] items-start overflow-hidden px-4 pt-3">
     <img
       {...paintingSources(PAINTING)}
       sizes="100vw"
       alt=""
       className="absolute inset-0 -z-10 size-full object-cover"
     />
-    <span className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-transparent to-kit-ground" />
+    <span className="absolute inset-0 -z-10 bg-gradient-to-b from-kit-ground via-transparent to-transparent" />
     <p className="font-body text-xl leading-snug text-kit-cream">{LORE_LINE}</p>
   </section>
 );
