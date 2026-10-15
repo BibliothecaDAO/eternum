@@ -161,10 +161,10 @@ Each invocation writes to a new directory, `<root>/<time>-<role>`, and never int
   and the preview).
 
 The gate fails (exit 1) on no run played, a failed start or a cancel, a run that did not boot cleanly or threw, a step
-not played or failed, entry or world-interactive over 30 s, browser errors (what the client logs for a refusal a step
-provoked is kept apart, as `provokedErrors`), a WebGPU fallback without a reason, or a maximum sampled load average over
-12 (the machine is shared: such a run is not evidence). A blocked step and a page reload during a step are warnings, the
-reload with its cost.
+not played or failed, entry or world-interactive over 30 s, browser errors (only the lines naming the one transaction a
+step had refused are kept apart, as `provokedErrors`), a WebGPU fallback without a reason, or a maximum sampled load
+average over 12 (the machine is shared: such a run is not evidence). A blocked step and a page reload during a step are
+warnings, the reload with its cost.
 
 ## Browser Testing with `agent-browser` Skill
 

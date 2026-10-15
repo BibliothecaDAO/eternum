@@ -450,6 +450,20 @@ export function collectBrowserErrors(browserErrors, consoleOutput, provoked = []
   return [...new Set([...parseLines(browserErrors), ...consoleFailures])].filter((line) => !provokedLines.has(line));
 }
 
+/**
+ * The client's log of a refusal a step provoked: the error lines naming the one transaction it reported "not sent
+ * (refused)" among `lines`. Any other error stays a browser error, whenever it was logged; with two refused
+ * transactions among them the step cannot tell its own, and none is its.
+ */
+export function refusalErrors(lines) {
+  const refused = new Set(lines.flatMap((line) => REFUSED_TRANSACTION.exec(line)?.[1] ?? []));
+  if (refused.size !== 1) return [];
+  const [hash] = refused;
+  return lines.filter((line) => line.startsWith("[error]") && line.includes(hash));
+}
+
+const REFUSED_TRANSACTION = /Transaction (0x[0-9a-fA-F]+) not sent \(refused\)/;
+
 /** The client's own frame-spike reports (`[FramePerf]`): spike frames counted and the work that owned each. */
 export function collectFrameSpikes(consoleOutput) {
   const owners = {};

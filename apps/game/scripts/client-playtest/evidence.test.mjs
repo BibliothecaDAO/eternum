@@ -4,6 +4,7 @@ import {
   buildPlaytestUrl,
   collectBrowserErrors,
   collectFrameSpikes,
+  refusalErrors,
   comparePlaytestSummary,
   deriveBootMetrics,
   evaluatePlaytestSummary,
@@ -374,6 +375,26 @@ describe("collectBrowserErrors", () => {
   it("leaves out what the client logged for a failure a step provoked, and only that", () => {
     const refused = "[error] Transaction 0x79 not sent (refused)";
     expect(collectBrowserErrors("", `${refused}\n[error] shader failed`, [refused])).toEqual(["[error] shader failed"]);
+  });
+});
+
+describe("refusalErrors", () => {
+  const refusal = [
+    "[error] Transaction failed: Transaction 0x79f not sent (refused)",
+    "[error] System call error: Transaction 0x79f not sent (refused)",
+    '[error] Army movement failed: {transactionHash: "0x79f", name: "TransactionNotSentError"}',
+  ];
+
+  it("exempts only the lines of the refused transaction; an unrelated error in the same window still fails", () => {
+    const window = [...refusal, "[error] Unrelated renderer failure", "[log] ready"];
+    const provoked = refusalErrors(window);
+    expect(provoked).toEqual(refusal);
+    expect(collectBrowserErrors("", window.join("\n"), provoked)).toEqual(["[error] Unrelated renderer failure"]);
+  });
+
+  it("exempts nothing when two transactions were refused, or none was", () => {
+    expect(refusalErrors([...refusal, "[error] Transaction failed: Transaction 0x5ee not sent (refused)"])).toEqual([]);
+    expect(refusalErrors(["[error] Unrelated renderer failure"])).toEqual([]);
   });
 });
 
