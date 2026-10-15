@@ -82,7 +82,7 @@ const states = (baseUrl) => [
 /** Measured in the page: what a first-time viewer meets on Play, read from the page's own bands. */
 const MEASURE = `(() => {
   const root = document.querySelector("[data-layout]");
-  if (!root) return JSON.stringify({ missing: "page" });
+  if (!root) return { missing: "page" };
   const visible = (el) => { const b = el.getBoundingClientRect(); const s = getComputedStyle(el); return b.width > 2 && b.height > 2 && s.visibility !== "hidden" && s.opacity !== "0"; };
   const inView = (el) => {
     const b = el.getBoundingClientRect();
@@ -100,7 +100,7 @@ const MEASURE = `(() => {
     const button = item.querySelector("button");
     return button && visible(button) ? [{ item: item.dataset.playItem, word: word(button), inView: inView(button) }] : [];
   });
-  return JSON.stringify({
+  return {
     controls: controls.length,
     controlsInView: controls.filter(inView).length,
     gold: controls.filter((el) => el.tagName === "BUTTON" && /primary/.test(el.className)).map(word),
@@ -111,7 +111,7 @@ const MEASURE = `(() => {
     fits: (!body || body.scrollHeight <= body.clientHeight + 2) && document.documentElement.scrollHeight <= innerHeight + 2,
     failures: root.innerText.split("\\n").filter((line) => line.includes("did not answer")),
     quiet: root.innerText.includes("No season running"),
-  });
+  };
 })()`;
 
 const READY = `document.documentElement.dataset.bootState === "app-ready" && document.body.innerText.includes("Now")`;

@@ -13,21 +13,18 @@ import { runAgentBrowser } from "./run-renderer-scene-smoke.mjs";
 
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** A session's commands. An evaluated expression comes back parsed; a page that returns JSON text is read once more. */
-const browser = (session) => {
-  const run = (...args) => runAgentBrowser(session, args);
-  const evaluate = (js) => {
-    const value = JSON.parse(run("eval", js));
-    if (typeof value !== "string" || !/^[[{]/.test(value)) return value;
-    try {
-      return JSON.parse(value);
-    } catch {
-      return value;
-    }
-  };
-  const url = () => run("get", "url").split("\n").pop().trim();
-  return { run, evaluate, url };
-};
+/**
+ * A session's commands over `run`, one agent-browser command for the session. A page script returns a plain value (an
+ * object, a string, null) and agent-browser prints it as JSON, read here once: a string stays a string, and nothing in
+ * a page's answer is read a second time.
+ */
+export const commandsOf = (run) => ({
+  run,
+  evaluate: (js) => JSON.parse(run("eval", js)),
+  url: () => run("get", "url").split("\n").pop().trim(),
+});
+
+const browser = (session) => commandsOf((...args) => runAgentBrowser(session, args));
 
 /** Polls `js` in the page until it holds or the time runs out; whether it held. */
 export const waitFor = async (b, js, timeoutMs) => {

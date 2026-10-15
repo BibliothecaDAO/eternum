@@ -67,12 +67,15 @@ const END = {
   lobbySignIn: `location.pathname === "/sign-in" && (new URLSearchParams(location.search).get("next") ?? "").startsWith("/blitz/")`,
 };
 
+/** Season's rating board, as it says its service did not answer (shell/service-failure.tsx). */
+const RATINGS_DOWN = "Ratings did not answer.";
+
 /** The flows, as the shell viewer's direction Q draws them; Blitz's board is a switch away on a phone. */
 const flows = (layout, persona) => {
   const blitz = layout === "phone" ? [tab("Season"), view("Blitz")] : [tab("Season")];
   const shared = {
     standing: { steps: [tab("Season")], end: END.frontierBoard },
-    blitzboard: { steps: blitz, end: END.blitzBoard },
+    blitzboard: { steps: blitz, end: END.blitzBoard, outage: RATINGS_DOWN },
     rival: { steps: [tab("Season"), firstRow()], end: END.player },
     guide: { steps: [tab("You"), link("How to play")], end: END.docs },
     news: { steps: [tab("You"), press("What's new"), press("first")], end: END.news },
@@ -115,7 +118,7 @@ const LAB_PAGES = [
 /** Measured in the page: what a first-time viewer meets, read from the page's own bands. */
 const MEASURE = `(() => {
   const root = document.querySelector("[data-layout]");
-  if (!root) return JSON.stringify({ path: location.pathname, missing: "page" });
+  if (!root) return { path: location.pathname, missing: "page" };
   const visible = (el) => { const b = el.getBoundingClientRect(); const s = getComputedStyle(el); return b.width > 2 && b.height > 2 && s.visibility !== "hidden" && s.opacity !== "0"; };
   const inView = (el) => {
     const b = el.getBoundingClientRect();
@@ -141,7 +144,7 @@ const MEASURE = `(() => {
   // space, not content), and its left edge in the window (a column left for a rail would be a gutter).
   const shown = body ? [...body.querySelectorAll("*")].filter((el) => visible(el) && ([...el.childNodes].some((node) => node.nodeType === 3 && node.textContent.trim()) || el.matches("a[href], button"))) : [];
   const bodyBox = body?.getBoundingClientRect();
-  return JSON.stringify({
+  return {
     path: location.pathname + location.search,
     controls: page.length,
     controlsInView: page.filter(inView).length,
@@ -152,7 +155,7 @@ const MEASURE = `(() => {
     fits: (!body || body.scrollHeight <= body.clientHeight + 2) && document.documentElement.scrollHeight <= innerHeight + 2,
     contentTop: shown.length ? Math.round(Math.min(...shown.map((el) => el.getBoundingClientRect().top)) - bodyBox.top) : null,
     contentLeft: body ? Math.round(Math.min(...[...body.children].filter(visible).map((el) => el.getBoundingClientRect().left))) : null,
-  });
+  };
 })()`;
 
 /** Content starts within this far of the body's top edge, and on desktop this near the window's left edge. */
@@ -200,33 +203,42 @@ const FIND = (step, mark) => `(() => {
     found = games[1] ?? games[0];
   }
   if (step.kind === "link") found = [...document.querySelectorAll("a[href]")].find((el) => text(el) === step.word);
-  if (!found) return JSON.stringify(null);
-  if (step.kind === "link" && found.target === "_blank") return JSON.stringify({ word: step.word, href: found.href, target: found.target, followed: false });
+  if (!found) return null;
+  if (step.kind === "link" && found.target === "_blank") return { word: step.word, link: found.href, target: found.target, followed: false };
   found.setAttribute("data-proof-press", ${JSON.stringify(mark)});
-  return JSON.stringify({ word: text(found) || found.getAttribute("aria-label"), selector: '[data-proof-press="' + ${JSON.stringify(mark)} + '"]' });
+  return { word: text(found) || found.getAttribute("aria-label"), selector: '[data-proof-press="' + ${JSON.stringify(mark)} + '"]' };
 })()`;
 
 /** The lines in which the page names a service that did not answer. */
 const FAILURE_LINES = `[...document.querySelectorAll("[data-layout]")].flatMap((root) => root.innerText.split("\\n")).filter((line) => line.includes("did not answer"))`;
 
 /**
- * A step's verdict when the press did not reach what it was for: unavailable when the page names a service that did
- * not answer or the step needs a row the live data does not hold, else failed.
+ * A step whose control is not on the page: a row the live data may not hold is unavailable; any other control (a place,
+ * a button, a link every page of its kind has) failed.
  */
-export const stopVerdict = (step, failures, reason) => {
-  if (failures.length > 0) return { status: "unavailable", reason: failures.join(" ") };
-  if (step.live) return { status: "unavailable", reason: `no ${step.kind} on the page` };
-  return { status: "failed", reason };
-};
+export const missingVerdict = (step) =>
+  step.live
+    ? { status: "unavailable", reason: `no ${step.kind} on the page` }
+    : { status: "failed", reason: "not on the page" };
+
+/**
+ * A flow whose last press landed but whose end did not come: unavailable only when the service the end reads (the
+ * flow's `outage`) names its own failure on the page; any other line on the page explains nothing, and the flow failed.
+ */
+export const endVerdict = (flow, failures) =>
+  flow.outage && failures.includes(flow.outage)
+    ? { status: "unavailable", reason: flow.outage }
+    : { status: "failed", reason: "end not reached", failures };
 
 let marks = 0;
 
 /** Presses one step as a player would; the step with its status and the address it led to. */
-const pressStep = async (b, step) => {
+export const pressStep = async (b, step) => {
   const mark = `p${(marks += 1)}`;
   const found = b.evaluate(FIND(step, mark));
-  if (!found) return { step, ...stopVerdict(step, b.evaluate(FAILURE_LINES), "not on the page") };
-  if (!found.selector) return { step, status: "led", ...found };
+  if (found === null) return { step, ...missingVerdict(step), failures: b.evaluate(FAILURE_LINES) };
+  // A link that leaves the app is read where it was found, never followed: the only step that leads without a click.
+  if (found.link) return { step, status: "led", ...found };
   const missed = clickAsPlayer(b, found.selector);
   if (missed) return { step, word: found.word, status: "failed", reason: missed };
   await sleep(SETTLE_MS);
@@ -239,8 +251,7 @@ const pressLast = async (b, step, flow, record) => {
   record.presses.push(last);
   if (last.status !== "led") return;
   record.pages.push(b.evaluate(MEASURE));
-  if (!(await waitFor(b, flow.end, END_TIMEOUT_MS)))
-    Object.assign(last, stopVerdict(step, b.evaluate(FAILURE_LINES), "end not reached"));
+  if (!(await waitFor(b, flow.end, END_TIMEOUT_MS))) Object.assign(last, endVerdict(flow, b.evaluate(FAILURE_LINES)));
 };
 
 /** The alert level lit on Settings, and the music switch. */
@@ -343,8 +354,8 @@ const runFlow = async (b, baseUrl, name, flow, layout, out) => {
   return record;
 };
 
-/** The presses before the last; whether each led. */
-const pressLead = async (b, steps, record) => {
+/** The presses before the last, stopping at the first that did not lead; whether each led. */
+export const pressLead = async (b, steps, record) => {
   for (const step of steps) {
     const pressed = await pressStep(b, step);
     record.presses.push(pressed);
