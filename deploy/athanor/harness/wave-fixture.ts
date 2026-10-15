@@ -1,4 +1,5 @@
 import { shortString } from "starknet";
+import { StructureType } from "@bibliothecadao/types";
 import { openShard } from "@bibliothecadao/eternum/game-client";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import type { NativeWorldManifest } from "../../../config/deployer/clean/world/native/types";
@@ -73,8 +74,10 @@ const fixture: WaveFixturePort = {
             },
           }),
           verify: (store) => {
-            if ([...store.structuresOwnedBy(game.gameId, BigInt(player.address))].length !== 1)
-              throw new Error("Settlement did not create the player's one home");
+            const homes = [...store.structuresOwnedBy(game.gameId, BigInt(player.address))].filter(
+              (row) => row.base.category === StructureType.Realm,
+            );
+            if (homes.length !== 1) throw new Error("Settlement did not create the player's one home");
           },
         };
       });
