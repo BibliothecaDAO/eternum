@@ -1,3 +1,4 @@
+import type { GameModeId } from "@/config/game-modes";
 import { TerrainWildlife } from "./terrain-wildlife";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import {
@@ -109,13 +110,14 @@ export class ProceduralTerrain {
   private propPoolsPromise: Promise<TerrainPropPools> | null = null;
   private propPoolFullRewrites = 0;
   private pageWorker: TerrainPageWorkerClient | null = null;
-  private readonly fogField = new TerrainFogField();
+  private readonly fogField: TerrainFogField;
   private readonly movementEffects: TerrainMovementEffects;
   private disposed = false;
   private isPropTileOccupied: (col: number, row: number) => boolean = () => false;
   private readonly releaseAppearance: () => void;
 
-  constructor({ streaming = false }: { streaming?: boolean } = {}) {
+  constructor({ streaming = false, gameMode = "blitz" }: { streaming?: boolean; gameMode?: GameModeId } = {}) {
+    this.fogField = new TerrainFogField(gameMode);
     if (streaming) this.fogField.enableStreaming();
     this.object3d.name = "procedural-terrain";
     this.presentationGroup.name = "procedural-terrain-pages";

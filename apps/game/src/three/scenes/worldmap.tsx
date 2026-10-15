@@ -1106,7 +1106,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private initializeWorldmapSceneServices(gameContext: SetupResult): void {
     this.fxManager = new FXManager(this.scene, 1);
-    this.proceduralTerrain = new WorldmapProceduralTerrain();
+    this.proceduralTerrain = new WorldmapProceduralTerrain(getGameModeId());
     this.refreshTerrainPropOccupancy();
     this.scene.add(this.proceduralTerrain.object3d);
     this.strategicMarkers = new StrategicMarkerLayer();

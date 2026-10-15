@@ -1,3 +1,4 @@
+import type { GameModeId } from "@/config/game-modes";
 import { BASALT_BLOCK_RADIUS } from "./terrain-basalt";
 import { mapAnimationTime as time } from "../effects/game-end-freeze";
 import {
@@ -44,12 +45,7 @@ import {
   type TerrainFogMaskBounds,
   type TerrainFogMaskLayout,
 } from "./terrain-fog-mask";
-import {
-  TERRAIN_DEEP_FOG_COLOR,
-  TERRAIN_DEEP_FOG_OPACITY,
-  TERRAIN_FOG_GROUND_HEIGHT,
-  type TerrainFogStyle,
-} from "./terrain-fog-style";
+import { TERRAIN_DEEP_FOG_OPACITY, TERRAIN_FOG_GROUND_HEIGHT, type TerrainFogStyle } from "./terrain-fog-style";
 import type { TerrainShroudInstance } from "./terrain-types";
 
 export const TERRAIN_FOG_CELL_CAPACITY = 12_288;
@@ -101,9 +97,9 @@ export class TerrainFogField {
   private maskTexture = createFogMaskTexture(this.textureData, 1, 1);
   private maskTextureHeight = 1;
   private maskTextureWidth = 1;
-  private readonly materials = createFogMaterial(this.maskTexture);
+  private readonly materials: FogMaterialSet;
   private streaming = false;
-  private readonly fogMesh = createFogMesh(this.materials.material);
+  private readonly fogMesh: ReturnType<typeof createFogMesh>;
   private readonly pages = new Map<string, readonly TerrainShroudInstance[]>();
   private readonly renderedInstances = new Map<string, TerrainShroudInstance>();
   private readonly reveal = new TerrainFogReveal();
@@ -113,7 +109,9 @@ export class TerrainFogField {
   private mask: TerrainFogMask | null = null;
   private frontierInstances = 0;
 
-  constructor() {
+  constructor(gameMode: GameModeId = "blitz") {
+    this.materials = createFogMaterial(this.maskTexture, gameMode);
+    this.fogMesh = createFogMesh(this.materials.material);
     this.object3d.name = "terrain-exploration-fog-field";
     this.object3d.add(this.fogMesh);
   }
@@ -335,7 +333,7 @@ function createFogBounds() {
   return uniform(new Vector4(0, 0, 1, 1));
 }
 
-function createFogMaterial(maskTexture: DataTexture): FogMaterialSet {
+function createFogMaterial(maskTexture: DataTexture, gameMode: GameModeId): FogMaterialSet {
   const bounds = createFogBounds();
   const streaming = uniform(0, "float");
   const clarity = uniform(1, "float");
@@ -382,7 +380,8 @@ function createFogMaterial(maskTexture: DataTexture): FogMaterialSet {
   const cloudVeil = smoothstep(0.18, 0.86, mistNoise).mul(mistStrength);
   const mistLight = cloudVeil.mul(edgeBand.mul(0.24).add(0.12));
   const etherealHint = createEtherealEnergy(fogGround.xz, drift, mistNoise).mul(0.045);
-  const fogColor = mix(color(TERRAIN_DEEP_FOG_COLOR), color("#85877f"), mistLight).add(etherealHint);
+  const veilLight = cloudVeil.mul(gameMode === "frontier" ? 0.68 * 0.68 : 0.68);
+  const fogColor = mix(color("#161923"), color("#b29b89"), veilLight).add(etherealHint);
   // Motion changes the mist's color, never the exploration boundary or coverage.
   const coverage = smoothstep(mix(0.04, 0.28, clarity), mix(0.96, 0.8, clarity), mask);
   const frontierOpacity = coverage.clamp(0, TERRAIN_DEEP_FOG_OPACITY);

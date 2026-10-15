@@ -1,3 +1,4 @@
+import type { GameModeId } from "@/config/game-modes";
 import { NEUTRAL_BIOME_CLIMATE, type BiomeClimateConfig } from "@bibliothecadao/eternum";
 import { BiomeType, getNeighborHexes } from "@bibliothecadao/types";
 import type { Group } from "three";
@@ -221,7 +222,7 @@ class SupersededPresentationError extends Error {
 
 export class WorldmapProceduralTerrain {
   readonly object3d: Group;
-  private readonly terrain = new ProceduralTerrain({ streaming: true });
+  private readonly terrain: ProceduralTerrain;
   private readonly preparedBySignature = new Map<string, PreparedTerrainPage>();
   private readonly pendingBySignature = new Map<string, Promise<PreparedTerrainPage>>();
   private readonly presentMetrics: TerrainPresentMetrics = {
@@ -242,7 +243,8 @@ export class WorldmapProceduralTerrain {
   private surfacePresentation: "world" | "ethereal" = "world";
   private disposed = false;
 
-  constructor() {
+  constructor(gameMode: GameModeId = "blitz") {
+    this.terrain = new ProceduralTerrain({ streaming: true, gameMode });
     this.object3d = this.terrain.object3d;
     this.object3d.name = "worldmap-procedural-terrain";
   }
