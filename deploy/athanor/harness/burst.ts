@@ -116,7 +116,9 @@ async function runWave(port: WaveFixturePort, options: WaveOptions) {
     if (options.receiptCheckpoint)
       save(options.receiptCheckpoint, { completed: evidence.completed, lastReceiptNs: evidence.lastReceiptNs });
     result = { ...result, ...evidence };
-  } catch {
+  } catch (error) {
+    // The cause goes to the harness log on the box only; the published result names the stage.
+    console.error(`Wave failed while ${stage}:`, error);
     result = {
       ...result,
       status: "failed",
