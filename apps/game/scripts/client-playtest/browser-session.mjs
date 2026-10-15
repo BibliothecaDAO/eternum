@@ -190,30 +190,49 @@ export async function recordRpcSends(devTools) {
 
 /**
  * Holds the page's order sends (`starknet_addInvokeTransaction`) at the network, so a step can act while an order is in
- * flight for as long as it needs, then lets them go or fails them, as a send the network refused. Every other RPC
- * request passes at once, and nothing is paused once the gate is closed.
+ * flight for as long as it needs, then lets them reach the node or answers them as a node refusing the transaction
+ * does (a JSON-RPC validation failure), without them ever reaching it. Every other RPC request passes at once, and
+ * nothing is paused once the gate is closed.
  */
 export async function openOrderSendGate(devTools) {
   const held = [];
   const stopListening = devTools.onEvent(({ method, params }) => {
     if (method !== "Fetch.requestPaused") return;
-    if (isOrderSend(params.request)) held.push(params.requestId);
+    if (isOrderSend(params.request)) held.push({ requestId: params.requestId, id: rpcIdOf(params.request) });
     else void devTools.send("Fetch.continueRequest", { requestId: params.requestId });
   });
   await devTools.send("Fetch.enable", { patterns: [{ urlPattern: "*/rpc/*", requestStage: "Request" }] });
-  const settleHeld = (method, params = {}) =>
-    Promise.all(held.splice(0).map((requestId) => devTools.send(method, { requestId, ...params })));
+  const release = () =>
+    Promise.all(held.splice(0).map(({ requestId }) => devTools.send("Fetch.continueRequest", { requestId })));
   return {
     held: () => held.length,
-    release: () => settleHeld("Fetch.continueRequest"),
-    fail: () => settleHeld("Fetch.failRequest", { errorReason: "Failed" }),
+    release,
+    refuse: () =>
+      Promise.all(
+        held.splice(0).map(({ requestId, id }) => devTools.send("Fetch.fulfillRequest", refusal(requestId, id))),
+      ),
     close: async () => {
-      await settleHeld("Fetch.continueRequest");
+      await release();
       await devTools.send("Fetch.disable");
       stopListening();
     },
   };
 }
+
+const rpcIdOf = (request) => JSON.parse(request.postData ?? "{}").id ?? null;
+
+/** The node's answer to a transaction its account refuses: Starknet's VALIDATION_FAILURE. */
+const refusal = (requestId, id) => ({
+  requestId,
+  responseCode: 200,
+  responseHeaders: [
+    { name: "content-type", value: "application/json" },
+    { name: "access-control-allow-origin", value: "*" },
+  ],
+  body: Buffer.from(
+    JSON.stringify({ jsonrpc: "2.0", id, error: { code: 55, message: "Account validation failed", data: "refused" } }),
+  ).toString("base64"),
+});
 
 const isOrderSend = (request) => request.method === "POST" && rpcMethodOf(request) === "starknet_addInvokeTransaction";
 

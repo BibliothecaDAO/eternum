@@ -270,8 +270,8 @@ function tileRegion([dx, dy]) {
 
 /**
  * A next order's life, one way of leaving per step, ahead of the explores so the army's stamina goes to them first.
- * Each holds the army's first order in flight at the network for as long as it acts; refused fails that send, as a
- * send the network refused; the others let it go.
+ * Each holds the army's first order in flight at the network for as long as it acts; refused answers that send as the
+ * node refusing it, without it reaching the node; the others let it go.
  */
 function nextOrderSteps() {
   return [
@@ -325,7 +325,7 @@ function withOrderInFlight(whileInFlight, { refuse, needsOther }) {
       const firstSent = await waitUntil(() => gate.held() > 0, ORDER_SEND_WAIT_MS);
       if (!firstSent) return { army, scanned, targets, firstSent };
       const played = await whileInFlight({ browser, targets, extraScreenshot });
-      await (refuse ? gate.fail() : gate.release());
+      await (refuse ? gate.refuse() : gate.release());
       return { army, scanned, targets, firstSent, ...played };
     } finally {
       await gate.close();

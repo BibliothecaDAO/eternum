@@ -111,9 +111,10 @@ everything it started. Run it from a stopped client and reuse it; extend its ste
   the sign-in mail in that file, which it deletes once read. An account that asks to claim a name is refused: a run
   never sets up an account.
 - **The next order's life**, each step with the army's first order held in flight at the network (DevTools pauses its
-  `starknet_addInvokeTransaction` send while the step acts, then lets it go or, for refused, fails it): a tile tapped
-  beside the first runs once the first applies (run), a second tap replaces it (replaced), Cancel and Escape drop it, a
-  failed send drops it (refused), and leaving the map drops it (deselect).
+  `starknet_addInvokeTransaction` send while the step acts, then lets it reach the node or, for refused, answers it as
+  the node refusing the transaction, a JSON-RPC validation failure, without it reaching the node): a tile tapped beside
+  the first runs once the first applies (run), a second tap replaces it (replaced), Cancel and Escape drop it, a refused
+  first order drops it (refused), and leaving the map drops it (deselect).
 - **The game.** The newest live Frontier game, or `--chain-id`/`--game-id` (refused if it is not a listed Frontier
   game). Before the first step the run asserts the route is in that game, and refuses to send any order elsewhere.
 
