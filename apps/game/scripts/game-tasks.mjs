@@ -16,6 +16,8 @@ const PHONE_AND_DESKTOP = ["desktop", "phone"];
 
 const oneMore = (before, after) => after === before + 1;
 const STRUCTURE_ACTIONS = 'nav[aria-label="Structure actions"]';
+/** The Build workspace, not the strip's or a card's Build button, which carry the same name. */
+const BUILD_PANEL = '[aria-label="Build"]:not(button)';
 
 /** How many order surfaces stand open: the workspaces and the popovers where an order is given. */
 const ORDER_SURFACES = `document.querySelectorAll(${JSON.stringify(
@@ -53,17 +55,17 @@ export const GAME_TASKS = {
     presses: [
       { name: "Build", within: STRUCTURE_ACTIONS, text: "^Build$" },
       { name: "Farm", layout: "desktop", word: "Farm" },
-      { name: "Farm's Build", layout: "phone", within: '[aria-label="Build"]', text: "^Build$" },
+      { name: "Farm's Build", layout: "phone", within: BUILD_PANEL, text: "^Build$" },
     ],
     // The open Build panel's count for the selected realm: a phone's "Farm N built", desktop's "N total" ("Empty realm" is 0).
     reading: `(() => {
-      const text = document.querySelector('[aria-label="Build"]')?.innerText ?? "";
+      const text = document.querySelector(${JSON.stringify(BUILD_PANEL)})?.innerText ?? "";
       const count = text.match(/Farm\\s+(\\d+) built/) ?? text.match(/(\\d+) total/);
       return count ? Number(count[1]) : text.includes("Empty realm") ? 0 : null;
     })()`,
     changes: "one more building in the realm",
     expect: oneMore,
-    done: `document.querySelector('[aria-label="Build"]') !== null`,
+    done: `document.querySelector(${JSON.stringify(BUILD_PANEL)}) !== null`,
   },
   "blitz-army": {
     goal: "Blitz: create a field army from the selected realm",

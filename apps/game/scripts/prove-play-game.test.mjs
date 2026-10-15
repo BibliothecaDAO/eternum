@@ -1,3 +1,4 @@
+import { JSDOM } from "jsdom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { gameAddresses, judgeStep, linesBetween, proveGame, spiralPoints } from "./prove-play-game.mjs";
@@ -175,10 +176,23 @@ describe("a game's proof", () => {
 });
 
 /**
- * A browser on a live map whose page text is `text()`, read again at each evaluation, and whose clicks and keys run
- * `onPress`: what a task's presses change in the game is up to each test.
+ * A page's document from its markup. jsdom lays nothing out, so an element's innerText is its text as written.
  */
-const liveMapBrowser = ({ text, onPress = () => {}, surfaces = () => 0 }) => ({
+const documentOf = (markup) => {
+  const { window } = new JSDOM(`<body>${markup}</body>`);
+  Object.defineProperty(window.HTMLElement.prototype, "innerText", {
+    get() {
+      return this.textContent;
+    },
+  });
+  return window.document;
+};
+
+/**
+ * A browser on a live map whose page is `page()`, markup read again at each evaluation and queried as the runner's
+ * selectors query it, and whose clicks and keys run `onPress`: what a task's presses change is up to each test.
+ */
+const liveMapBrowser = ({ page, onPress = () => {} }) => ({
   run: (command, ...args) => {
     if ((command === "mouse" && args[0] === "up") || ["press", "find", "click"].includes(command)) onPress(command);
     if (command === "errors") return JSON.stringify({ success: true, data: { errors: [] } });
@@ -189,15 +203,12 @@ const liveMapBrowser = ({ text, onPress = () => {}, surfaces = () => 0 }) => ({
     if (js.includes("dataset.bootState")) return true;
     // A control the task names is on the page: the runner marks it, then clicks it.
     if (js.includes("data-proof-press")) return "[data-proof-press]";
-    const page = text();
-    const document = {
-      body: { innerText: page },
-      querySelector: () => ({ innerText: page, getAttribute: () => null }),
-      querySelectorAll: () => ({ length: surfaces() }),
-    };
-    return Function("document", `return (${js})`)(document);
+    return Function("document", `return (${js})`)(documentOf(page()));
   },
 });
+
+/** The action strip as the HUD renders it: its Build button carries the Build workspace's name. */
+const STRIP = `<nav aria-label="Structure actions"><button aria-label="Build">Build</button></nav>`;
 
 const proveTask = async (browser, task) => {
   vi.useFakeTimers();
@@ -210,14 +221,20 @@ describe("a task that changes the game", () => {
   it("fails an explore when only an old success line goes away", async () => {
     let oldToast = true;
     const records = await proveTask(
-      liveMapBrowser({ text: () => `Explore ${oldToast ? "Scouts sent" : ""}`, onPress: () => (oldToast = false) }),
+      liveMapBrowser({
+        page: () => `<p>Explore</p>\n<p>${oldToast ? "Scouts sent" : ""}</p>`,
+        onPress: () => (oldToast = false),
+      }),
       "blitz-explore",
     );
     expect(records[0].problem).toBe("the task's reading was unavailable");
   });
 
   it("fails an explore whose army stays on its tile, as a refused or no-op order leaves it", async () => {
-    const records = await proveTask(liveMapBrowser({ text: () => "Army Tile · (1, 6)\nExplore" }), "blitz-explore");
+    const records = await proveTask(
+      liveMapBrowser({ page: () => "<p>Army Tile · (1, 6)</p>\n<p>Explore</p>" }),
+      "blitz-explore",
+    );
     expect(records[0].problem).toBe('expected the army on another tile, read "(1, 6)" → "(1, 6)"');
   });
 
@@ -225,7 +242,7 @@ describe("a task that changes the game", () => {
     let tile = "(1, 6)";
     const records = await proveTask(
       liveMapBrowser({
-        text: () => `Army Tile · ${tile}\nExplore`,
+        page: () => `<p>Army Tile · ${tile}</p>\n<p>Explore</p>`,
         onPress: (command) => command === "mouse" && (tile = "(2, 5)"),
       }),
       "blitz-explore",
@@ -235,7 +252,10 @@ describe("a task that changes the game", () => {
   });
 
   it("fails a farm when the Build panel only opens", async () => {
-    const records = await proveTask(liveMapBrowser({ text: () => "Build\nBuilt here\n3 total" }), "blitz-farm");
+    const records = await proveTask(
+      liveMapBrowser({ page: () => `${STRIP}<section aria-label="Build">Built here\n3 total</section>` }),
+      "blitz-farm",
+    );
     expect(records.map((record) => record.problem)).toEqual(
       Array(2).fill("expected one more building in the realm, read 3 → 3"),
     );
@@ -246,22 +266,30 @@ describe("a task that changes the game", () => {
     let built = 3;
     const records = await proveTask(
       liveMapBrowser({
-        text: () => `Build\nBuilt here\n${built} total`,
+        page: () => `${STRIP}<section aria-label="Build">Built here\n${built} total</section>`,
         // The second press of each run is the farm's order: Build, then Farm.
         onPress: () => (presses += 1) % 2 === 0 && (built += 1),
       }),
       "blitz-farm",
     );
-    expect(records.map((record) => [record.layout, record.clicks, record.problem, record.reading])).toEqual([
-      ["desktop", 2, undefined, { before: 3, after: 4 }],
-      ["phone", 2, undefined, { before: 4, after: 5 }],
+    expect(
+      records.map((record) => [
+        record.layout,
+        record.clicks,
+        record.inputs.map((input) => input.name),
+        record.problem,
+        record.reading,
+      ]),
+    ).toEqual([
+      ["desktop", 2, ["Build", "Farm"], undefined, { before: 3, after: 4 }],
+      ["phone", 2, ["Build", "Farm's Build"], undefined, { before: 4, after: 5 }],
     ]);
   });
 });
 
 describe("an action tried before play opens", () => {
   it("passes when the press opens nothing and the player is told when play opens", async () => {
-    const records = await proveTask(liveMapBrowser({ text: () => "Build\nStarts in 2m 10s" }), "gate-build");
+    const records = await proveTask(liveMapBrowser({ page: () => `${STRIP}\n<p>Starts in 2m 10s</p>` }), "gate-build");
     expect(records.map((record) => [record.layout, record.problem, record.reading])).toEqual([
       ["desktop", undefined, { before: 0, after: 0 }],
       ["phone", undefined, { before: 0, after: 0 }],
@@ -269,12 +297,12 @@ describe("an action tried before play opens", () => {
   });
 
   it("fails when an order surface opens anyway", async () => {
-    let open = 0;
+    let open = false;
     const records = await proveTask(
       liveMapBrowser({
-        text: () => "Manage production\nStarts in 2m 10s",
-        surfaces: () => open,
-        onPress: () => (open = 1),
+        page: () =>
+          `<button aria-label="Manage production"></button>\n<p>Starts in 2m 10s</p>${open ? '<section aria-label="Production"></section>' : ""}`,
+        onPress: () => (open = true),
       }),
       "gate-production",
     );

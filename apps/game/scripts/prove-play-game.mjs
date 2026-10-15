@@ -280,10 +280,11 @@ const pressStep = async (b, press, layout) => {
 /** One task from its view at rest: each press with the screenshot after it, then whether its end state shows. */
 const proveTask = async (b, base, addresses, name, layout, out) => {
   const task = GAME_TASKS[name];
-  const record = { step: `task-${name}`, layout, task: task.goal, presses: [], screenshots: [] };
+  const record = { step: `task-${name}`, layout, task: task.goal, inputs: [], screenshots: [] };
   b.run("set", "viewport", ...VIEWPORTS[layout].map(String));
   open(b, `${base}${addresses[task.view]}`);
-  if (!(await waitFor(b, MAP_READY, READY_TIMEOUT_MS))) return { ...record, problem: "map not ready" };
+  if (!(await waitFor(b, MAP_READY, READY_TIMEOUT_MS)))
+    return { ...record, screenshots: [shot(b, out, `task-${name}-${layout}-not-ready.png`)], problem: "map not ready" };
   await sleep(AT_REST_SETTLE_MS);
   const presses = task.presses.filter((each) => !each.layout || each.layout === layout);
   let before;
@@ -292,11 +293,11 @@ const proveTask = async (b, base, addresses, name, layout, out) => {
     if (index === presses.length - 1 && task.reading) before = b.evaluate(task.reading);
     const pressed = await pressStep(b, press, layout);
     await sleep(1500);
-    record.presses.push({ ...press, pressed });
-    record.screenshots.push(shot(b, out, `task-${name}-${layout}-${record.presses.length}.png`));
+    record.inputs.push({ ...press, pressed });
+    record.screenshots.push(shot(b, out, `task-${name}-${layout}-${record.inputs.length}.png`));
     if (!pressed) return { ...record, problem: `nothing to press for ${press.name}` };
   }
-  record.clicks = record.presses.length;
+  record.clicks = record.inputs.length;
   const outcome = await waitForOutcome(b, task, before);
   record.done = outcome.problem === null;
   if (task.reading) record.reading = { before, after: outcome.after };
