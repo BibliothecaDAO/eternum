@@ -47,3 +47,12 @@ dialog is open. On a phone the places are a tab bar at the foot.
   Play. Sign-in from Profile or Account returns to the page it was asked from.
 - Play's former addresses, shared publicly (`/blitz`, `/frontier`, `/eternum`, `/dominion`), lead to Play: a permanent
   redirect on a full load (`public/_redirects`), and Play in the app (`RETIRED_PLAY_PATHS` in `src/app.tsx`).
+
+## In a match: world map
+
+Watch a running Blitz from Play (**Watch**) to reach the map without signing in; a seated player uses **Enter**.
+
+- **Ownership rings**: select (click or tap) a hex holding a player's structure, theirs or yours, and the hover's pink
+  ring lights every hex where that player holds a structure or has an army out. Selecting another hex, or one with no
+  player's structure, clears them. They follow captures, new and fallen armies and moves as the facts land, and the
+  layer switch (`src/three/scenes/worldmap-ownership-rings.ts`).

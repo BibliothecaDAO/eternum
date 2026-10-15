@@ -1,6 +1,6 @@
-import { HEX_SIZE } from "@/three/constants";
 import * as THREE from "three";
 import { FLAT_TERRAIN_SURFACE, type TerrainSurface } from "@/three/terrain/terrain-surface";
+import { applyHexRingLook, createHexRingMaterials, createHexRingShapes, HEX_RING_LIFT } from "./hex-ring";
 import { type HoverVisualPalette } from "./worldmap-interaction-palette";
 
 export type HoverVisualMode = "fill" | "outline";
@@ -13,8 +13,6 @@ export interface HoverHexDebugState {
   visualMode: HoverVisualMode;
 }
 
-const HOVER_SURFACE_OFFSET = 0.03;
-
 /**
  * Manages hover effects with rim lighting on hexagons
  */
@@ -25,14 +23,11 @@ export class HoverHexManager {
   private hoverOutline: THREE.LineSegments | null = null;
   private isVisible = false;
   private visualMode: HoverVisualMode = "fill";
-  private readonly hoverMaterial: THREE.MeshBasicMaterial;
-  private readonly hoverHaloMaterial: THREE.MeshBasicMaterial;
-  private readonly hoverOutlineMaterial: THREE.LineBasicMaterial;
+  private readonly materials = createHexRingMaterials();
   private readonly baseColor = new THREE.Color(0.2, 0.6, 1.0);
   private readonly rimColor = new THREE.Color(0.4, 0.8, 1.0).multiplyScalar(2.0);
   private hoverIntensity = 0.6;
   private pulseTime = 0;
-  private readonly animatedColor = new THREE.Color();
   private currentCameraView = 2;
 
   constructor(
@@ -40,96 +35,30 @@ export class HoverHexManager {
     private readonly terrain: TerrainSurface = FLAT_TERRAIN_SURFACE,
   ) {
     this.scene = scene;
-    this.hoverMaterial = new THREE.MeshBasicMaterial({
-      color: 0xff4fd8,
-      transparent: true,
-      opacity: 0.26,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-    });
-    this.hoverMaterial.toneMapped = false;
-    this.hoverHaloMaterial = new THREE.MeshBasicMaterial({
-      color: 0xffb3f5,
-      transparent: true,
-      opacity: 0.14,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-    });
-    this.hoverHaloMaterial.toneMapped = false;
-    this.hoverOutlineMaterial = new THREE.LineBasicMaterial({
-      color: 0xffb3f5,
-      transparent: true,
-      opacity: 0.96,
-      depthWrite: false,
-    });
-    this.hoverOutlineMaterial.toneMapped = false;
     this.applyViewTuning();
     this.applyMaterialState();
     this.createHoverHex();
   }
 
-  private createRingGeometry(outerRadius: number, innerRadius: number): THREE.BufferGeometry {
-    const outer = this.getHexagonPoints(outerRadius);
-    const inner = this.getHexagonPoints(innerRadius);
-    const positions: number[] = [];
-    const indices: number[] = [];
-    for (let index = 0; index < outer.length; index++) {
-      positions.push(outer[index].x, outer[index].y, 0, inner[index].x, inner[index].y, 0);
-      const start = index * 2;
-      const next = ((index + 1) % outer.length) * 2;
-      indices.push(start, next, start + 1, next, next + 1, start + 1);
-    }
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setIndex(indices);
-    return geometry;
-  }
-
-  private getHexagonPoints(radius: number): THREE.Vector2[] {
-    const points: THREE.Vector2[] = [];
-    // Extra samples along straight hex edges follow curved shores and relief.
-    for (let edge = 0; edge < 6; edge++) {
-      const angle = (Math.PI / 3) * edge - Math.PI / 2;
-      const nextAngle = angle + Math.PI / 3;
-      const start = new THREE.Vector2(radius * Math.cos(angle), radius * Math.sin(angle));
-      const end = new THREE.Vector2(radius * Math.cos(nextAngle), radius * Math.sin(nextAngle));
-      for (let step = 0; step < 6; step++) points.push(start.clone().lerp(end, step / 6));
-    }
-    return points;
-  }
-
-  private createOutlineGeometry(): THREE.BufferGeometry {
-    const points = this.getHexagonPoints(HEX_SIZE * 0.97);
-    const positions: number[] = [];
-    for (let index = 0; index < points.length; index++) {
-      const next = points[(index + 1) % points.length];
-      positions.push(points[index].x, points[index].y, 0, next.x, next.y, 0);
-    }
-    return new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  }
-
   private createHoverHex(): void {
-    // Keep every layer inside its hex so neighboring cliffs cannot split or lift the selection.
-    const glowGeometry = this.createRingGeometry(HEX_SIZE * 0.98, HEX_SIZE * 0.9);
-    const haloGeometry = this.createRingGeometry(HEX_SIZE * 0.995, HEX_SIZE * 0.87);
-    const outlineGeometry = this.createOutlineGeometry();
+    const shapes = createHexRingShapes();
 
-    this.hoverHex = new THREE.Mesh(glowGeometry, this.hoverMaterial);
-    this.hoverHex.position.y = HOVER_SURFACE_OFFSET;
+    this.hoverHex = new THREE.Mesh(shapes.glow, this.materials.glow);
+    this.hoverHex.position.y = HEX_RING_LIFT.glow;
     this.hoverHex.rotation.x = -Math.PI / 2; // Rotate to face ground plane
     this.hoverHex.renderOrder = 50; // Lower render order to avoid interfering with labels
     this.hoverHex.raycast = () => {}; // Disable raycasting to prevent interference
     this.hoverHex.visible = false;
 
-    this.hoverHalo = new THREE.Mesh(haloGeometry, this.hoverHaloMaterial);
-    this.hoverHalo.position.y = HOVER_SURFACE_OFFSET - 0.002;
+    this.hoverHalo = new THREE.Mesh(shapes.halo, this.materials.halo);
+    this.hoverHalo.position.y = HEX_RING_LIFT.halo;
     this.hoverHalo.rotation.x = -Math.PI / 2;
     this.hoverHalo.renderOrder = 49;
     this.hoverHalo.raycast = () => {};
     this.hoverHalo.visible = false;
 
-    this.hoverOutline = new THREE.LineSegments(outlineGeometry, this.hoverOutlineMaterial);
-    this.hoverOutline.position.y = HOVER_SURFACE_OFFSET + 0.005;
+    this.hoverOutline = new THREE.LineSegments(shapes.outline, this.materials.outline);
+    this.hoverOutline.position.y = HEX_RING_LIFT.outline;
     this.hoverOutline.rotation.x = -Math.PI / 2;
     this.hoverOutline.renderOrder = 51;
     this.hoverOutline.raycast = () => {};
@@ -165,12 +94,12 @@ export class HoverHexManager {
   public showHover(x: number, z: number): void {
     if (!this.hoverHex) return;
 
-    this.hoverHex.position.set(x, HOVER_SURFACE_OFFSET, z);
+    this.hoverHex.position.set(x, HEX_RING_LIFT.glow, z);
     if (this.hoverHalo) {
-      this.hoverHalo.position.set(x, HOVER_SURFACE_OFFSET - 0.002, z);
+      this.hoverHalo.position.set(x, HEX_RING_LIFT.halo, z);
     }
     if (this.hoverOutline) {
-      this.hoverOutline.position.set(x, HOVER_SURFACE_OFFSET + 0.005, z);
+      this.hoverOutline.position.set(x, HEX_RING_LIFT.outline, z);
     }
     this.drapeOnTerrain();
     this.attachHoverFill();
@@ -248,7 +177,7 @@ export class HoverHexManager {
       centerAlpha: 0,
       fillAttached: Boolean(this.hoverHex?.parent),
       isVisible: this.isVisible,
-      materialType: this.hoverMaterial.type,
+      materialType: this.materials.glow.type,
       scanWidth: 0,
       visualMode: this.visualMode,
     };
@@ -261,7 +190,7 @@ export class HoverHexManager {
     if (this.hoverHex) {
       this.scene.remove(this.hoverHex);
       this.hoverHex.geometry.dispose();
-      this.hoverMaterial.dispose();
+      this.materials.glow.dispose();
       this.hoverHex = null;
     }
 
@@ -271,7 +200,7 @@ export class HoverHexManager {
       this.hoverHalo = null;
     }
 
-    this.hoverHaloMaterial.dispose();
+    this.materials.halo.dispose();
 
     if (this.hoverOutline) {
       this.scene.remove(this.hoverOutline);
@@ -279,7 +208,7 @@ export class HoverHexManager {
       this.hoverOutline = null;
     }
 
-    this.hoverOutlineMaterial.dispose();
+    this.materials.outline.dispose();
 
     this.isVisible = false;
   }
@@ -357,22 +286,8 @@ export class HoverHexManager {
   }
 
   private applyMaterialState(): void {
-    this.hoverMaterial.color.copy(this.rimColor);
-    this.hoverHaloMaterial.color.copy(this.rimColor);
-    this.hoverOutlineMaterial.color.copy(this.rimColor);
-
-    if (!this.isVisible) {
-      this.hoverMaterial.opacity = 0.26 + this.hoverIntensity * 0.1;
-      this.hoverHaloMaterial.opacity = 0.12 + this.hoverIntensity * 0.08;
-      this.hoverOutlineMaterial.opacity = Math.min(1, 0.9 + this.hoverIntensity * 0.08);
-      return;
-    }
-
-    const pulse = 0.94 + 0.06 * Math.sin(this.pulseTime * 2.2);
-    this.animatedColor.copy(this.rimColor);
-    this.hoverMaterial.opacity = 0.22 + this.hoverIntensity * 0.14 + pulse * 0.04;
-    this.hoverHaloMaterial.opacity = 0.1 + this.hoverIntensity * 0.12 + pulse * 0.05;
-    this.hoverOutlineMaterial.opacity = Math.min(1, 0.88 + this.hoverIntensity * 0.12 + pulse * 0.03);
+    const pulse = this.isVisible ? 0.94 + 0.06 * Math.sin(this.pulseTime * 2.2) : undefined;
+    applyHexRingLook(this.materials, this.rimColor, this.hoverIntensity, pulse);
   }
 
   private applyViewTuning(): void {}

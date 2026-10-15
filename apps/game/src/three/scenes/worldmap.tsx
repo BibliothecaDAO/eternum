@@ -46,6 +46,8 @@ import { BattleDirectionManager } from "@/three/managers/battle-direction-manage
 import { ChestManager } from "@/three/managers/chest-manager";
 import { ReservedHyperstructureManager } from "@/three/managers/reserved-hyperstructure-manager";
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
+import { OwnershipRingLayer } from "@/three/managers/ownership-ring-layer";
+import { bindOwnershipRings } from "./worldmap-ownership-rings";
 import { StructureManager } from "@/three/managers/structure-manager";
 import { FrameBudgetWorkQueue, type FrameBudgetWorkLane } from "@/three/frame-budget-work-queue";
 import { SceneManager } from "@/three/scene-manager";
@@ -854,6 +856,7 @@ export default class WorldmapScene extends WarpTravel {
   private battleDirectionManager!: BattleDirectionManager;
 
   private selectedHexManager!: SelectedHexManager;
+  private ownershipRings!: OwnershipRingLayer;
   private interactionAdapter!: ReturnType<typeof createWorldmapInteractionAdapter>;
   private updateCameraTargetHexThrottled?: ReturnType<typeof throttle>;
   private readonly handleTerrainViewportResize = () => {
@@ -1815,6 +1818,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private initializeWorldmapInteractionRuntime(): void {
     this.selectedHexManager = new SelectedHexManager(this.scene, this.getTerrainSurface());
+    this.ownershipRings = new OwnershipRingLayer(this.scene, this.getTerrainSurface());
     this.interactionAdapter = createWorldmapInteractionAdapter({
       state: this.state,
       selectedHexManager: this.selectedHexManager,
@@ -5972,6 +5976,7 @@ export default class WorldmapScene extends WarpTravel {
     this.reservedHyperstructureManager.refreshTerrainPlacement();
     this.chestManager.refreshTerrainPlacement();
     this.armyManager.refreshTerrainPlacement();
+    this.ownershipRings.refreshTerrainPlacement();
   }
 
   private recordTerrainPresentationEvent(event: TerrainPresentationEvent): void {
@@ -8219,6 +8224,7 @@ export default class WorldmapScene extends WarpTravel {
     // Dispose hover label and selected hex managers to release Three.js resources
     this.hoverLabelManager.dispose();
     this.selectedHexManager.dispose();
+    this.ownershipRings.dispose();
 
     if (this.visibilityChangeHandler) {
       document.removeEventListener("visibilitychange", this.visibilityChangeHandler);
@@ -8593,6 +8599,13 @@ export default class WorldmapScene extends WarpTravel {
         this.state.selectedHex = selectedHex;
       },
     });
+    this.storeSubscriptions.push(
+      bindOwnershipRings({
+        store: this.game.store,
+        projection: this.worldSpatialProjection,
+        rings: this.ownershipRings,
+      }),
+    );
     this.storeSubscriptions.push(
       useChainTimeStore.subscribe((next, previous) => {
         if (next.executionFloorMs !== previous.executionFloorMs) this.followSelectedArmyReach();

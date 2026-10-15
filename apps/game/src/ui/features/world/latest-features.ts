@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-10-15",
+    title: "See everything a player holds",
+    description:
+      "Selecting a realm on the world map rings every structure and army its owner holds, yours or another player's, so their reach shows at a glance. The rings follow captures and moves, and clear with the selection.",
+    type: "feature",
+  },
+  {
     date: "2026-10-14",
     title: "Play shows what you can do now",
     description:
