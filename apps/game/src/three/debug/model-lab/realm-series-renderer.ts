@@ -7,6 +7,7 @@ import { gltfLoader } from "../../utils/utils";
 import { configureRendererColorOutput } from "../../renderer-color-output";
 import { ModelLabEnvironment } from "./model-lab-environment";
 import { readModelLabSettings } from "./model-lab-settings";
+import { updateGameEndFreeze } from "../../effects/game-end-freeze";
 
 export interface RealmSeriesSettings {
   level: number;
@@ -20,6 +21,7 @@ export interface RealmSeriesSettings {
 
 /** Uses the game's instanced models and heraldry, at model scale one on the client's terrain. */
 export async function mountRealmSeries(container: HTMLElement, settings: RealmSeriesSettings, signal: AbortSignal) {
+  updateGameEndFreeze(0, false, 0);
   const initialized = await initializeProceduralCharacterRendererRuntime({ pixelRatioCap: 1.5, preloadPhysics: false });
   const renderer = initialized.rendererRuntime.renderer;
   configureRendererColorOutput(renderer);

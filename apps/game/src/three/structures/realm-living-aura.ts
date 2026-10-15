@@ -11,7 +11,8 @@ import {
   type Object3D,
 } from "three";
 import { MeshBasicNodeMaterial } from "three/webgpu";
-import { attribute, positionLocal, time, uniform, uv, vec3 } from "three/tsl";
+import { attribute, positionLocal, uniform, uv, vec3 } from "three/tsl";
+import { mapAnimationTime as time } from "../effects/game-end-freeze";
 import { createInstancedMeshWithSharedMatrices } from "../utils/create-instanced-mesh";
 
 const HUES = [0xffbb42, 0x35e4c5, 0xff713e];
