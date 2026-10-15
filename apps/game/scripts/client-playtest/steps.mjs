@@ -286,11 +286,11 @@ function tileRegion([dx, dy]) {
 const OWNERSHIP_RING_STEPS = [
   { name: "realm-idle", settleMs: 8_000, verify: inScene("hex") },
   { name: "open-map", play: goTo("Map", "map"), settleMs: 6_000, verify: inScene("map") },
-  { name: "unselected-idle", play: clearTheSelection, settleMs: 10_000, verify: inScene("map") },
-  { name: "select-realm", play: tapTheCentre, settleMs: 5_000, verify: inScene("map") },
-  { name: "selected-idle", settleMs: 10_000, verify: inScene("map") },
-  { name: "selected-pan", play: panTheMap, settleMs: 17_000, verify: pannedTheMap },
-  { name: "cleared-idle", play: clearTheSelection, settleMs: 10_000, verify: inScene("map") },
+  { name: "unselected-idle", play: clearTheSelection, settleMs: 10_000, verify: nothingSelected },
+  { name: "select-realm", play: tapTheCentre, settleMs: 5_000, verify: ownRealmSelected },
+  { name: "selected-idle", settleMs: 10_000, verify: ownRealmSelected },
+  { name: "selected-pan", play: panTheMap, settleMs: 17_000, verify: pannedWithOwnRealmSelected },
+  { name: "cleared-idle", play: clearTheSelection, settleMs: 10_000, verify: nothingSelected },
 ];
 
 /** The step lists a run can play, by name; a run plays its role's list unless it names another. */
@@ -299,6 +299,48 @@ export const STEP_SETS = {
   player: PLAYER_STEPS,
   "ownership-rings": OWNERSHIP_RING_STEPS,
 };
+
+/**
+ * The player's own realm selected on the map, and the hexes its owner holds ringed, as the page reports its selection
+ * (`window.__eternumMapSelection`); the verdict keeps that report, ring population included.
+ */
+function ownRealmSelected({ seen }) {
+  const onMap = inScene("map")({ seen });
+  if (onMap.status !== "completed") return onMap;
+  const { selection } = seen;
+  if (!selection) return failed(NO_SELECTION_REPORT);
+  if (!selection.structure)
+    return failed(`no structure is selected (hex ${JSON.stringify(selection.hex)})`, { selection });
+  if (!selection.structure.realm || !selection.structure.ownedByViewer) {
+    return failed(`structure ${selection.structure.id} is selected, not the player's own realm`, { selection });
+  }
+  if (!(selection.ringedHexes >= 1)) return failed("the selected realm's holdings are not ringed", { selection });
+  return completed({ selection });
+}
+
+async function pannedWithOwnRealmSelected(input) {
+  const panned = await pannedTheMap(input);
+  if (panned.status !== "completed") return panned;
+  const selected = ownRealmSelected(input);
+  return selected.status === "completed"
+    ? completed({ ...panned, ...selected })
+    : { ...selected, viewChange: panned.viewChange };
+}
+
+/** Nothing selected on the map and nothing ringed. */
+function nothingSelected({ seen }) {
+  const onMap = inScene("map")({ seen });
+  if (onMap.status !== "completed") return onMap;
+  const { selection } = seen;
+  if (!selection) return failed(NO_SELECTION_REPORT);
+  if (selection.hex || selection.structure || selection.ringedHexes > 0) {
+    return failed("the map still holds a selection or rings", { selection });
+  }
+  return completed({ selection });
+}
+
+const NO_SELECTION_REPORT =
+  "the page reports no map selection (window.__eternumMapSelection): this build cannot show it";
 
 /** Escape steps back: a pinned order, then the selection. */
 async function clearTheSelection({ browser }) {

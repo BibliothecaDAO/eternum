@@ -84,6 +84,7 @@ const OBSERVE_EXPRESSION = `JSON.stringify({
   path: location.pathname,
   scene: /\\/(map|hex)$/.exec(location.pathname)?.[1] ?? null,
   rendered: window.__rendererDiagnostics?.sceneName ?? null,
+  selection: window.__eternumMapSelection ?? null,
   place: document.querySelector('nav[aria-label="Places"] [aria-current="page"]')?.textContent.trim() ?? null,
   dialogs: [...document.querySelectorAll('[role="dialog"]')].map((dialog) => dialog.getAttribute("aria-label")),
   pressed: [...document.querySelectorAll('button[aria-pressed="true"]')].map((button) => button.getAttribute("aria-label")),
