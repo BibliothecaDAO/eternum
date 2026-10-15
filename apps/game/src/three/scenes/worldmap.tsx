@@ -122,7 +122,7 @@ import {
   SelectableArmy,
 } from "@bibliothecadao/eternum";
 import { requireActiveGameClient } from "@/sync/active-game-client";
-import { inFlight, onOutcome, sendOnce } from "@/hooks/store/use-actions-in-flight";
+import { inFlight } from "@/hooks/store/use-actions-in-flight";
 import { type SentCommand, sentTransactionHash } from "@/sync/action-outcome";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import {
@@ -256,6 +256,7 @@ import {
 } from "./worldmap-terrain-commit-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
 import { ARMY_SELECT_REQUEST_EVENT, readArmySelectRequest } from "./worldmap-army-select-request";
+import { offerSelectedArmyOrdersAtOutcome, sendSelectedArmyTravel } from "./worldmap-army-order-selection";
 import { dropNextOrder, queueNextOrder, takeNextOrder } from "./worldmap-next-order";
 import { whenEntryDestinationSettled } from "@/game-entry/entry-destination";
 import { ORDER_REQUEST_EVENT, orderOnTap, readOrderRequest, stepBackOnEscape } from "./worldmap-order-request";
@@ -3110,9 +3111,9 @@ export default class WorldmapScene extends WarpTravel {
         order: actionType === ActionType.Explore ? "explore" : "move",
         to: sceneHexOf(targetHex),
       } as const;
-      sendOnce("army", selectedEntityId, order, sendMovement).then(
-        () => this.runNextOrder(selectedEntityId),
-        (error) => {
+      sendSelectedArmyTravel(selectedEntityId, order, sendMovement, {
+        applied: () => this.runNextOrder(selectedEntityId),
+        refused: (error) => {
           dropNextOrder("refused", selectedEntityId);
           if (exploreLatencyActionId) recordClientActionFailed(exploreLatencyActionId, error);
           this.pendingExploreLatencyActions.delete(selectedEntityId);
@@ -3120,11 +3121,7 @@ export default class WorldmapScene extends WarpTravel {
           console.error("Army movement failed:", error);
           toast.error(extractReadableErrorMessage(error, "The order was not sent."));
         },
-      );
-
-      this.state.updateEntityActionHoveredHex(null);
-      // Where the order bar can show a queued next order, the army stays selected so a tap queues one.
-      if (!this.hudCarriesOrderVerb()) this.keepMovementDestinationSelected(targetHex);
+      });
       return;
     }
 
@@ -3630,11 +3627,11 @@ export default class WorldmapScene extends WarpTravel {
     return inFlight("army", entityId) !== undefined;
   }
 
-  /** An order's outcome frees its army: a selected one is offered its next orders from where the store now has it. */
+  /** An order's outcome frees its army: the one still selected is offered its next orders, where this scene shows. */
   private offerOrdersAtOutcome(entityId: ID): void {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
     const viewer = accountAddress();
-    if (viewer === null || getLiveWorldmapEntityActions().selectedEntityId !== entityId) return;
+    if (viewer === null) return;
     this.selectedArmyOrders.offer(entityId, viewer);
   }
 
@@ -3908,11 +3905,6 @@ export default class WorldmapScene extends WarpTravel {
     const account = useAccountStore.getState().account;
     if (!account) return;
     await openRelicCrate({ systemCalls: this.game.systemCalls, account, explorerId, hex });
-  }
-
-  private keepMovementDestinationSelected(targetHex: HexPosition): void {
-    this.clearEntitySelection();
-    this.selectContractHexWithoutFeedback(targetHex);
   }
 
   private selectContractHexWithoutFeedback(hexCoords: HexPosition): void {
@@ -8725,7 +8717,7 @@ export default class WorldmapScene extends WarpTravel {
         () => this.syncMapLayer(),
       ),
     );
-    this.storeSubscriptions.push(onOutcome("army", (entityId) => this.offerOrdersAtOutcome(Number(entityId))));
+    this.storeSubscriptions.push(offerSelectedArmyOrdersAtOutcome((entityId) => this.offerOrdersAtOutcome(entityId)));
     this.storeSubscriptions.push(onPlayRouteBootStarted(() => this.announceEntryReadinessWhileShown()));
     this.syncMapLayer();
     this.showSuggestedArmyDeployment();

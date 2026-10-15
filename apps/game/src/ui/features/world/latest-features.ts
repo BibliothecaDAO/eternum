@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-15",
+    title: "Your army stays selected",
+    description: "After you order an army to move or explore, it stays selected, ready for its next order.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-15",
     title: "Painted icons across the game",
     description:
       "Resources, soldier tiers, buildings and actions share the Facets paintings across the map and every page. Transfer shows a loaded donkey; Production shows a forge. Hex minimap badges repeat ownership with colour and shape.",
