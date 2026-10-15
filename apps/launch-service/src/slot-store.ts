@@ -7,6 +7,8 @@ import type { D1LaunchStore } from "./store";
 import { SlotConflict, SlotNotFound, type PlaytestSlot, type SlotStore, type SlotFreezeFailure } from "./slots";
 
 const SELECT_SLOTS = "SELECT * FROM playtest_slots";
+/** How long a slot whose freeze failed waits before the registrar tries it again. */
+export const FREEZE_RETRY_MS = 30_000;
 
 interface SlotRow {
   chain_id: string;
@@ -160,15 +162,20 @@ export class D1SlotStore implements SlotStore {
       .run();
   }
 
-  /** When the next slot still open closes, so the registrar can wake to freeze it at its close. */
-  async nextClose(): Promise<number | null> {
+  /**
+   * When the registrar must next try to freeze: the earliest unfrozen slot's close, or, for one whose last freeze
+   * failed, a retry after that failure. A slot already due, such as one that closed while another was freezing, is due
+   * now; every unfrozen slot counts, so no unfinished freeze is left to the cron.
+   */
+  async nextFreeze(): Promise<number | null> {
     const row = await this.db
       .prepare(
-        "SELECT MIN(closes_at) AS close FROM playtest_slots WHERE chain_id=? AND frozen_at IS NULL AND closes_at > ?",
+        `SELECT MIN(MAX(closes_at, COALESCE(json_extract(freeze_failure, '$.checkedAt') + ?, 0))) AS due
+         FROM playtest_slots WHERE chain_id=? AND frozen_at IS NULL`,
       )
-      .bind(await this.launches.targetChain(), Date.now())
-      .first<{ close: number | null }>();
-    return row?.close ?? null;
+      .bind(FREEZE_RETRY_MS, await this.launches.targetChain())
+      .first<{ due: number | null }>();
+    return row?.due ?? null;
   }
 
   async freezeDueSlots(): Promise<void> {

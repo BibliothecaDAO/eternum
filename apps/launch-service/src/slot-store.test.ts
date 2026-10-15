@@ -3,7 +3,7 @@ import { absentLedgerSlot } from "../../../packages/value-ledger/test-support/le
 import { decodeLedgerSlot } from "../../../packages/value-ledger/src/codecs";
 import { slotValueFixture, registrationIdentityFixture } from "./test-database";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { D1SlotStore } from "./slot-store";
+import { D1SlotStore, FREEZE_RETRY_MS } from "./slot-store";
 import { D1LaunchStore } from "./store";
 import { createLaunchTestDatabase, testChain, TEST_CHAIN } from "./test-database";
 let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
@@ -146,6 +146,51 @@ it("continues closing later paid slots when an earlier ledger opening is unavail
   );
   expect(await slots().freezeFailures()).toMatchObject([{ name: "first", code: "launch_schedule_failed" }]);
   expect(await slots("0x2").freezeFailures()).toEqual([]);
+});
+it("keeps a slot that closed while an empty one froze due at once, and freezes it on the next pass", async () => {
+  const now = Date.parse("2000-01-01T00:00:00Z");
+  const clock = vi.spyOn(Date, "now").mockReturnValue(now);
+  const launches = new D1LaunchStore(database.db, testChain());
+  const value = slotValueFixture();
+  const store = new D1SlotStore(database.db, launches, value, slotResolver(value, registrationIdentityFixture));
+  await store.create("empty", new Date(now + 1000).toISOString());
+  await store.create("next", new Date(now + 2000).toISOString());
+  const realFreeze = store.freeze.bind(store);
+  vi.spyOn(store, "freeze").mockImplementation(async (name) => {
+    const frozen = await realFreeze(name);
+    clock.mockReturnValue(now + 3000);
+    return frozen;
+  });
+  clock.mockReturnValue(now + 1000);
+  await store.freezeDueSlots();
+  expect((await store.get("empty")).frozenAt).not.toBeNull();
+  expect(await launches.list("madara.blitz")).toEqual([]);
+  expect((await store.get("next")).frozenAt).toBeNull();
+  expect(await store.nextFreeze()).toBe(now + 2000);
+  await store.freezeDueSlots();
+  expect((await store.get("next")).frozenAt).not.toBeNull();
+  expect(await store.nextFreeze()).toBeNull();
+});
+it("makes a failed freeze due again after its retry, before a later close, and freezes it then", async () => {
+  const now = Date.parse("2000-01-01T00:00:00Z");
+  const clock = vi.spyOn(Date, "now").mockReturnValue(now);
+  const launches = new D1LaunchStore(database.db, testChain());
+  const value = slotValueFixture(1);
+  const identity = { accountsAtRegistration: vi.fn(registrationIdentityFixture.accountsAtRegistration) };
+  const store = new D1SlotStore(database.db, launches, value, slotResolver(value, identity));
+  await store.create("failed", new Date(now + 1000).toISOString());
+  await store.create("later", new Date(now + 60_000).toISOString());
+  identity.accountsAtRegistration.mockRejectedValueOnce(new Error("identity down"));
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  clock.mockReturnValue(now + 1000);
+  await store.freezeDueSlots();
+  expect((await store.get("failed")).frozenAt).toBeNull();
+  expect(await store.nextFreeze()).toBe(now + 1000 + FREEZE_RETRY_MS);
+  clock.mockReturnValue(now + 1000 + FREEZE_RETRY_MS);
+  await store.freezeDueSlots();
+  expect((await store.get("failed")).frozenAt).not.toBeNull();
+  expect(await launches.list("madara.blitz")).toHaveLength(1);
+  expect(await store.nextFreeze()).toBe(now + 60_000);
 });
 it("marks refunds once at close and never makes a refund decision during an identity outage", async () => {
   const value = { ...slotValueFixture(26), markRefundable: vi.fn(async () => {}) };
