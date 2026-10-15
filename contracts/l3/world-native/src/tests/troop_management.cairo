@@ -206,7 +206,7 @@ fn explorer_transfer_preserves_the_worse_stamina_and_cooldown_and_deletes_an_emp
 }
 
 #[test]
-fn transfers_to_guards_and_back_preserve_counts_and_reject_foreign_homes() {
+fn transfers_to_guards_and_back_preserve_counts_and_merge_across_homes() {
     let (d, home, other_home, first, second) = setup_homes();
     let slot = GuardSlot { structure_id: home.entity_id, slot: 0 };
     assert!(execute(d, transfer(Army::Explorer(first), Army::Guard(slot), 3), 140));
@@ -224,9 +224,17 @@ fn transfers_to_guards_and_back_preserve_counts_and_reject_foreign_homes() {
     crate::tests::resource_commands::set_explorer_fixture(
         d.games, crate::troops::ExplorerKey { game_id: 3, explorer_id: second }, row,
     );
+    assert!(execute(d, transfer(Army::Explorer(first), Army::Explorer(second), 1), 140));
+    assert_eq!(troop(d, first).unwrap().troops.count, 6 * RESOURCE_PRECISION);
+    assert_eq!(troop(d, second).unwrap().troops.count, 9 * RESOURCE_PRECISION);
+    let mut paladins = troop(d, second).unwrap();
+    paladins.troops.category = TroopType::Paladin;
+    crate::tests::resource_commands::set_explorer_fixture(
+        d.games, crate::troops::ExplorerKey { game_id: 3, explorer_id: second }, paladins,
+    );
     assert_terminal_rejection(d, transfer(Army::Explorer(first), Army::Explorer(second), 1), 140);
-    assert_eq!(troop(d, first).unwrap().troops.count, 7 * RESOURCE_PRECISION);
-    assert_eq!(troop(d, second).unwrap().troops.count, 8 * RESOURCE_PRECISION);
+    assert_eq!(troop(d, first).unwrap().troops.count, 6 * RESOURCE_PRECISION);
+    assert_eq!(troop(d, second).unwrap().troops.count, 9 * RESOURCE_PRECISION);
 }
 
 #[test]

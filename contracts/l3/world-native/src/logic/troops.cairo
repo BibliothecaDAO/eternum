@@ -552,7 +552,6 @@ pub mod TroopsLogic {
             assert!(command.amount <= source.troops.count, "insufficient source troops");
             let target_is_explorer = match command.target {
                 crate::troop_management::Army::Explorer(_) => {
-                    assert!(source.home == target.home, "armies must share a home");
                     assert!(target.troops.count != 0, "target explorer is dead");
                     true
                 },

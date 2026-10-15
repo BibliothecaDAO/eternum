@@ -139,13 +139,11 @@ export const TransferTroopsContainer = ({
     if (balance === undefined) return undefined;
     return { resourceId, balance, category, tier };
   }, [currentDefaultTick, selectedResourceState, targetExplorerTroops?.troops]);
-  const sameStructureBlockReason = useMemo(
+  const transferRestriction = useMemo(
     () =>
       getTroopTransferBlockReason({
         transferDirection,
         selectedEntityId,
-        targetEntityId,
-        selectedExplorerOwner: selectedExplorerTroops?.owner ?? null,
         sourceHomeOwner: selectedExplorerConnectedStructure?.owner,
         targetOwner: targetStructure?.owner,
         targetExplorerOwner: targetExplorerTroops?.owner ?? null,
@@ -154,15 +152,12 @@ export const TransferTroopsContainer = ({
     [
       guardSlot,
       selectedEntityId,
-      selectedExplorerTroops?.owner,
       selectedExplorerConnectedStructure?.owner,
       targetStructure?.owner,
-      targetEntityId,
       targetExplorerTroops?.owner,
       transferDirection,
     ],
   );
-  const transferRestriction = sameStructureBlockReason;
   const isTransferBlocked = transferRestriction !== null;
 
   const troopCapacityLimit = useMemo(() => {
@@ -779,7 +774,6 @@ export const TransferTroopsContainer = ({
       { col: targetHex.x, row: targetHex.y },
     );
     if (direction === null) return;
-    if (sameStructureBlockReason) return;
 
     try {
       setLoading(true);
@@ -899,10 +893,6 @@ export const TransferTroopsContainer = ({
     if (troopAmount === 0) return true;
 
     if (guardSelectionRequired && guardSlot === null) {
-      return true;
-    }
-
-    if (sameStructureBlockReason) {
       return true;
     }
 
@@ -1027,10 +1017,6 @@ export const TransferTroopsContainer = ({
 
     if (guardSelectionRequired && guardSlot === null) {
       return "Please select a guard slot";
-    }
-
-    if (sameStructureBlockReason) {
-      return sameStructureBlockReason;
     }
 
     if (transferDirection === TransferDirection.ExplorerToExplorer) {
