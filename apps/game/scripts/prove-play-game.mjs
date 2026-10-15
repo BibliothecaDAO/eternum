@@ -15,11 +15,14 @@
  * - `--at-rest`, at desktop and phone: the map and the realm view as they open, nothing pressed, each with a screenshot
  *   and what a first-time viewer meets there (scripts/live-sample.mjs), so a change to the HUD is counted the same way
  *   before and after.
+ * - `--tasks <task,task>`: each task from its view at rest, pressed as a player would, one press at a time with a
+ *   screenshot after each, until its end state shows; its presses are its clicks (scripts/game-tasks.mjs).
  *
  * Every step fails on any page error or console error, which its record keeps as the browser gave them.
  */
 import { join } from "node:path";
 
+import { GAME_TASKS } from "./game-tasks.mjs";
 import { LIVE_SAMPLE, sampleTotals } from "./live-sample.mjs";
 import { pathOf, sleep, waitFor } from "./prove-run.mjs";
 
@@ -225,6 +228,72 @@ const proveAtRest = async (b, base, addresses, view, layout, out) => {
   return { ...record, url: sample.url, totals: sampleTotals(sample.items), items: sample.items };
 };
 
+/**
+ * Presses the first visible control inside `within` whose words match `text`, scrolled to and clicked as a player
+ * would; or, for `tile`, moves the pointer out from the screen's centre until the map's tooltip names that order, and
+ * clicks there. False when nothing matched.
+ */
+const pressStep = async (b, press, layout) => {
+  if (press.tile) {
+    const centre = VIEWPORTS[layout].map((side) => side / 2);
+    for (const point of spiralPoints(centre, CRATE_SEARCH)) {
+      b.run("mouse", "move", String(point[0]), String(point[1]));
+      await sleep(150);
+      if (b.evaluate(`document.body.innerText.includes(${JSON.stringify(press.tile)})`)) {
+        clickAt(b, point);
+        return true;
+      }
+    }
+    return false;
+  }
+  const selector = b.evaluate(`(() => {
+    const scope = [...document.querySelectorAll(${JSON.stringify(press.within ?? "body")})];
+    const pattern = new RegExp(${JSON.stringify(press.text)});
+    const control = scope
+      .flatMap((root) => [...root.querySelectorAll("button, a[href], [role=button], [role=tab]")])
+      .find(
+        (el) =>
+          [el.innerText.replace(/\\s+/g, " ").trim(), el.getAttribute("aria-label") ?? ""].some((words) =>
+            pattern.test(words),
+          ) && el.getBoundingClientRect().width > 0,
+      );
+    if (!control) return null;
+    document.querySelectorAll("[data-proof-press]").forEach((el) => el.removeAttribute("data-proof-press"));
+    control.setAttribute("data-proof-press", "");
+    return "[data-proof-press]";
+  })()`);
+  if (!selector) return false;
+  b.run("scrollintoview", selector);
+  b.run("click", selector);
+  return true;
+};
+
+/** One task from its view at rest: each press with the screenshot after it, then whether its end state shows. */
+const proveTask = async (b, base, addresses, name, layout, out) => {
+  const task = GAME_TASKS[name];
+  const record = { step: `task-${name}`, layout, task: task.goal, presses: [], screenshots: [] };
+  b.run("set", "viewport", ...VIEWPORTS[layout].map(String));
+  open(b, `${base}${addresses[task.view]}`);
+  if (!(await waitFor(b, MAP_READY, READY_TIMEOUT_MS))) return { ...record, problem: "map not ready" };
+  await sleep(AT_REST_SETTLE_MS);
+  const before = task.reading ? b.evaluate(task.reading) : undefined;
+  for (const press of task.presses) {
+    const pressed = await pressStep(b, press, layout);
+    await sleep(1500);
+    record.presses.push({ ...press, pressed });
+    record.screenshots.push(shot(b, out, `task-${name}-${layout}-${record.presses.length}.png`));
+    if (!pressed) return { ...record, problem: `nothing to press for ${press.name}` };
+  }
+  record.clicks = record.presses.length;
+  const changed = task.reading
+    ? `JSON.stringify(${task.reading}) !== ${JSON.stringify(JSON.stringify(before))}`
+    : "true";
+  record.done = await waitFor(b, `(${task.done}) && ${changed}`, STEP_TIMEOUT_MS);
+  if (task.reading) record.reading = { before, after: b.evaluate(task.reading) };
+  record.screenshots.push(shot(b, out, `task-${name}-${layout}-done.png`));
+  return record.done ? record : { ...record, problem: "the task's end state did not show" };
+};
+
 /** Stays on the map until the game ends, then leaves through Game finished → See the results. */
 const proveGameFinished = async (b, base, addresses, layout, untilMs, out) => {
   const record = { step: "game-finished", layout, screenshots: [] };
@@ -270,15 +339,18 @@ const proveEndedEntrance = async (b, base, addresses, entrance, layout, out) => 
 };
 
 /**
- * The game's steps in order: the views at rest, the crate while the game runs, its end, then its ended entrances at both sizes. Each step
+ * The game's steps in order: the views at rest, the tasks, the crate while the game runs, its end, then its ended entrances at both sizes. Each step
  * is judged with every error raised from its start to its end, however far it got.
  */
-export const proveGame = async (b, { baseUrl, game, crate, untilEndMinutes, ended, atRest }, out) => {
+export const proveGame = async (b, { baseUrl, game, crate, untilEndMinutes, ended, atRest, tasks = [] }, out) => {
   const addresses = gameAddresses(game);
   const steps = [];
   if (atRest)
     for (const layout of Object.keys(VIEWPORTS))
       for (const view of ["map", "realm"]) steps.push(() => proveAtRest(b, baseUrl, addresses, view, layout, out));
+  for (const name of tasks)
+    for (const layout of GAME_TASKS[name].layouts)
+      steps.push(() => proveTask(b, baseUrl, addresses, name, layout, out));
   if (crate) steps.push(() => proveCrate(b, baseUrl, addresses, crate, out));
   if (untilEndMinutes)
     steps.push(() => proveGameFinished(b, baseUrl, addresses, "phone", untilEndMinutes * 60_000, out));

@@ -28,6 +28,7 @@
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { GAME_TASKS } from "./game-tasks.mjs";
 import { proveGame } from "./prove-play-game.mjs";
 import { clickAsPlayer, pathOf, runProof, sleep, waitFor } from "./prove-run.mjs";
 
@@ -118,7 +119,7 @@ const READY = `document.documentElement.dataset.bootState === "app-ready" && doc
 
 const USAGE =
   "expected --base-url <url> --out <dir>, and for a game --game <chain>:<game> --profile <dir> " +
-  "[--at-rest] [--crate <col>,<row>] [--until-end <minutes>] [--ended]";
+  "[--at-rest] [--tasks <task,task>] [--crate <col>,<row>] [--until-end <minutes>] [--ended]";
 
 export const parseArgs = (argv) => {
   const args = { baseUrl: "https://127.0.0.1:4176", out: join(process.cwd(), "play-proof") };
@@ -132,9 +133,12 @@ export const parseArgs = (argv) => {
     else if (argv[index] === "--until-end") args.untilEndMinutes = Number(value());
     else if (argv[index] === "--ended") args.ended = true;
     else if (argv[index] === "--at-rest") args.atRest = true;
+    else if (argv[index] === "--tasks") args.tasks = value().split(",");
     else throw new Error(`Unknown argument ${argv[index]}; ${USAGE}`);
   }
   if (args.game && !args.profile) throw new Error(`--game needs --profile; ${USAGE}`);
+  const unknownTask = args.tasks?.find((task) => !GAME_TASKS[task]);
+  if (unknownTask) throw new Error(`Unknown task ${unknownTask}; tasks: ${Object.keys(GAME_TASKS).join(", ")}`);
   return args;
 };
 

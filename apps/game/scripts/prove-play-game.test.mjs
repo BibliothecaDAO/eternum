@@ -86,6 +86,16 @@ describe("a game's proof", () => {
     });
   });
 
+  it("takes a game's tasks by name and refuses one it does not know", () => {
+    expect(parseArgs(["--game", "0xa:7", "--profile", "/p", "--tasks", "production,standings"]).tasks).toEqual([
+      "production",
+      "standings",
+    ]);
+    expect(() => parseArgs(["--game", "0xa:7", "--profile", "/p", "--tasks", "production,fly"])).toThrow(
+      "Unknown task fly",
+    );
+  });
+
   it("reads an opened crate's relics off its panel", () => {
     const panel = "Crate opened\nContents\nDamage Relic II\nStamina Relic I\nStamina Relic I\nBiome\nBare";
     expect(linesBetween(panel, "Contents", "Biome")).toEqual(GAME_7_CRATE.opened);
