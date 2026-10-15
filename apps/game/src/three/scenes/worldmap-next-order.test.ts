@@ -51,4 +51,17 @@ describe("an army's next order", () => {
       { phase: "next_order_dropped", entityId: 7, details: { col: 5, row: 6, reason: "cancelled" } },
     ]);
   });
+
+  it("leaves with the selection when the map's selection is cleared, traced as not selected", () => {
+    queueNextOrder(7, { col: 3, row: 4 });
+
+    resetWorldmapEntityActions();
+
+    expect(getLiveWorldmapEntityActions().nextOrder).toBeNull();
+    expect(traced().at(-1)).toEqual({
+      phase: "next_order_dropped",
+      entityId: 7,
+      details: { col: 3, row: 4, reason: "not-selected" },
+    });
+  });
 });
