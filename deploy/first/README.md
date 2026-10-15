@@ -138,7 +138,7 @@ mainnet transaction. Run the existing harness after deployment and report its re
 
 ```sh
 python3 deploy/athanor/scripts/operator-command.py measure /opt/athanor/runs/dev check -- \
-  --game-type frontier --bots 2 --minutes 2 --interval-seconds 15 --setup-concurrency 2
+  --game-type frontier --bots 2 --minutes 2 --setup-concurrency 2
 ```
 
 When the launch Worker has created the game, add its `--game-id` to play that game. Funding, paid Blitz registration and

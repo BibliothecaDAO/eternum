@@ -86,7 +86,7 @@ shards, run it from the package directory with the protected operator credential
 
 ```bash
 sudo docker compose run --rm harness \
-  --bots 6 --minutes 6 --interval-seconds 15 --setup-concurrency 6 --game-type frontier --functional
+  --bots 6 --minutes 6 --setup-concurrency 6 --game-type frontier --functional
 ```
 
 The `harness` service runs the init image on the shard's network as the host user, with the shard's `harness.env`: the

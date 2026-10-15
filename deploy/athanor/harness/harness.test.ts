@@ -227,6 +227,9 @@ describe("Madara harness workload", () => {
   });
 
   it("selects Eternum and rejects deferred ledger options", () => {
+    expect(() => parseHarnessArgs(["--game-type", "frontier", "--interval-seconds", "30"])).toThrow(
+      "--interval-seconds paces a cadence",
+    );
     expect(parseHarnessArgs([]).gameType).toBe("frontier");
     expect(parseHarnessArgs(["--game-type", "eternum"]).gameType).toBe("eternum");
     expect(parseHarnessArgs(["--game-type", "eternum"])).toMatchObject({ presetId: 3, functional: false });

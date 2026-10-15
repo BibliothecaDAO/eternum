@@ -79,6 +79,9 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
     throw new Error("--workload must be burst, cadence or frontier");
   if ((gameType === "frontier") !== (workload === "frontier"))
     throw new Error("Frontier requires the frontier workload");
+  // A Frontier bot acts as its day allows; an offered rate on Frontier is a burst window.
+  if (workload === "frontier" && values["interval-seconds"] !== undefined)
+    throw new Error("--interval-seconds paces a cadence; Frontier paces with --frontier-burst and its window");
   const functional = values.functional === "true";
   const createGame = values["create-game"] === "true";
   const presetId =
