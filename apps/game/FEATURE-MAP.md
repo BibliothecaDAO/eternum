@@ -188,6 +188,7 @@ does not establish those live actions.
 - Ruin: Frontier Map → a discovered fallen realm; its beast still follows the same depth table. In `/lab`, choose **Ruin
   · Fallen realm** and place it on the selected tile. Add `&asset=ruin` to the runtime proof URL to capture only the
   ruin on grassland and the tropical-coast transition. The collision gate covers its four runtime beasts.
+
 ### Blitz rules a player meets
 
 - **Entry closes five minutes before the start.** At the close the slot splits into games of up to 24 and the launch
