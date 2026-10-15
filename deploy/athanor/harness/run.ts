@@ -518,38 +518,43 @@ function startGameWorker(options: HarnessCliOptions, game: PreparedGame, file: s
       ...process.env,
       HARNESS_OUTPUT_DIRECTORY: path.join(path.dirname(file), "players", workerLabel(game)),
     },
-    argv: [
-      ...(options.functional ? ["--functional"] : []),
-      "--game-type",
-      options.gameType,
-      "--bots",
-      String(game.accounts.length),
-      "--prepared-game",
-      file,
-      "--minutes",
-      String(options.minutes),
-      "--interval-seconds",
-      String(options.intervalSeconds),
-      "--setup-concurrency",
-      String(options.setupConcurrency),
-      "--workload",
-      options.workload,
-      ...(options.frontierBurst
-        ? [
-            "--frontier-burst",
-            options.frontierBurst.shape,
-            "--burst-window-seconds",
-            String(options.frontierBurst.windowSeconds),
-          ]
-        : []),
-      "--preset",
-      String(options.presetId),
-      "--rpc-url",
-      options.rpcUrl,
-      "--herald-url",
-      options.heraldUrl,
-    ],
+    argv: workerArguments(options, game.accounts.length, file),
   });
+}
+
+/** A worker plays its slice with the run's own options; it parses them as the run did. */
+export function workerArguments(options: HarnessCliOptions, bots: number, file: string): string[] {
+  return [
+    ...(options.functional ? ["--functional"] : []),
+    "--game-type",
+    options.gameType,
+    "--bots",
+    String(bots),
+    "--prepared-game",
+    file,
+    "--minutes",
+    String(options.minutes),
+    // Frontier ignores a cadence interval and refuses one.
+    ...(options.workload === "frontier" ? [] : ["--interval-seconds", String(options.intervalSeconds)]),
+    "--setup-concurrency",
+    String(options.setupConcurrency),
+    "--workload",
+    options.workload,
+    ...(options.frontierBurst
+      ? [
+          "--frontier-burst",
+          options.frontierBurst.shape,
+          "--burst-window-seconds",
+          String(options.frontierBurst.windowSeconds),
+        ]
+      : []),
+    "--preset",
+    String(options.presetId),
+    "--rpc-url",
+    options.rpcUrl,
+    "--herald-url",
+    options.heraldUrl,
+  ];
 }
 
 interface LabelledWorker {

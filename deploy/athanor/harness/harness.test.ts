@@ -41,7 +41,7 @@ import {
   summarizeRpcMetrics,
 } from "./report";
 import type { WorkerWorkloadSummary } from "./report";
-import { createHarnessProvider, parseHarnessArgs, playersOf } from "./run";
+import { createHarnessProvider, parseHarnessArgs, playersOf, workerArguments } from "./run";
 import { BlockTag } from "starknet";
 import { EventEmitter } from "node:events";
 import type { Worker } from "node:worker_threads";
@@ -1008,6 +1008,36 @@ describe("Madara harness CLI and concurrency", () => {
       ).toMatchObject({ rpcUrl: TEST_ENDPOINTS.RPC_URL, heraldUrl: TEST_ENDPOINTS.HERALD_URL });
     } finally {
       Object.assign(process.env, TEST_ENDPOINTS);
+    }
+  });
+
+  it("starts each worker with arguments its own parser accepts, keeping the run's workload", () => {
+    for (const run of [
+      ["--game-type", "frontier", "--bots", "8", "--workers", "2", "--minutes", "30"],
+      [
+        "--game-type",
+        "frontier",
+        "--bots",
+        "8",
+        "--workers",
+        "2",
+        "--frontier-burst",
+        "booth",
+        "--burst-window-seconds",
+        "15",
+      ],
+      ["--game-type", "eternum", "--bots", "8", "--interval-seconds", "5"],
+    ]) {
+      const options = parseHarnessArgs(run);
+      const worker = parseHarnessArgs(workerArguments(options, 4, "/tmp/game.json"));
+      expect(worker).toMatchObject({
+        bots: 4,
+        gameType: options.gameType,
+        workload: options.workload,
+        minutes: options.minutes,
+        intervalSeconds: options.intervalSeconds,
+        frontierBurst: options.frontierBurst,
+      });
     }
   });
 
