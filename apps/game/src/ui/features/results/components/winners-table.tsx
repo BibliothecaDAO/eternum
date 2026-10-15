@@ -1,19 +1,16 @@
 import { configManager } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { ContractAddress } from "@bibliothecadao/types";
+import { ContractAddress, POINTS_PRECISION } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { getPlayerDisplayName, usePlayerNamesRevision } from "@/hooks/use-player-profile";
-import {
-  readFinalBlitzResult,
-  REGISTERED_POINTS_PRECISION,
-} from "@/ui/features/social/player/finalized-blitz-leaderboard";
+import { readFinalBlitzResult } from "@/ui/features/social/player/finalized-blitz-leaderboard";
 
 const RESULT_FACTS = ["BlitzResult", "BlitzRoster", "PlayerPoints"] as const;
 
 const formatPoints = (value: bigint): string => {
-  const whole = value / REGISTERED_POINTS_PRECISION;
-  const remainder = value % REGISTERED_POINTS_PRECISION;
+  const whole = value / BigInt(POINTS_PRECISION);
+  const remainder = value % BigInt(POINTS_PRECISION);
   const wholeFormatted = whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   if (remainder === 0n) return wholeFormatted;
   return `${wholeFormatted}.${remainder.toString().padStart(6, "0").replace(/0+$/, "")}`;

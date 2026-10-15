@@ -20,7 +20,7 @@ import { usePlayerProfile } from "@/hooks/use-player-profile";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRowOrAbsent, useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { ContractAddress, ID, BANDITS_NAME, RelicEffect, StructureType } from "@bibliothecadao/types";
+import { ContractAddress, ID, BANDITS_NAME, RelicEffect, StructureType, wholePoints } from "@bibliothecadao/types";
 import { useCallback, useMemo } from "react";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { presentedMineKind } from "@bibliothecadao/eternum";
@@ -117,12 +117,12 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   // hyperstructure with no share allocation yet grants nothing and shows no rate.
   const hyperstructurePointsPerSecond =
     structure?.base.category === StructureType.Hyperstructure && shares
-      ? Number(
+      ? wholePoints(
           sharedPointsPerSecond(
             store.require("SliceRules", { game_id: keys.game_id }).victory_points_grant_config.hyp_points_per_second,
             shares.multiplier,
           ),
-        ) / 1_000_000
+        )
       : undefined;
 
   const ownerDisplayName = structure?.owner ? displayPlayerName(structure.owner, ownerProfile.name) : BANDITS_NAME;

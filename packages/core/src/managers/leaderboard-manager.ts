@@ -1,5 +1,5 @@
 import { safeInteger } from "../utils/safe-integer";
-import { type ContractAddress, type ID } from "@bibliothecadao/types";
+import { type ContractAddress, type ID, wholePoints } from "@bibliothecadao/types";
 import { type NativeFactStore } from "../client/native-fact-store";
 import { getBlockTimestamp } from "../utils/timestamp";
 import { hyperstructurePointsPerSecond, sharePointCutoff, unclaimedSharePoints } from "../sync/shareholder-points";
@@ -18,7 +18,7 @@ export class LeaderboardManager {
   get pointsPerPlayer(): Map<ContractAddress, number> {
     const game = configManager.getActiveGameId();
     const points = new Map(
-      [...this.store.inGame("PlayerPoints", game)].map((row) => [row.address, Number(row.points) / 1_000_000]),
+      [...this.store.inGame("PlayerPoints", game)].map((row) => [row.address, wholePoints(row.points)]),
     );
     for (const share of this.readAccruedShares()) {
       const registered = points.get(share.playerAddress) ?? this.getPlayerRegisteredPoints(share.playerAddress);
@@ -73,8 +73,8 @@ export class LeaderboardManager {
           basisPoints: BigInt(share.bps),
           hyperstructureId: safeInteger(row.entity_id),
           elapsed: Number(cutoff - row.start_at),
-          rate: Number(hyperstructurePointsPerSecond(rate, row.multiplier) * BigInt(share.bps)) / 10_000 / 1_000_000,
-          points: Number(points) / 1_000_000,
+          rate: wholePoints(hyperstructurePointsPerSecond(rate, row.multiplier) * BigInt(share.bps)) / 10_000,
+          points: wholePoints(points),
         };
       }),
     );
@@ -91,7 +91,7 @@ export class LeaderboardManager {
       game_id: configManager.getActiveGameId(),
       address: player,
     });
-    return result.known ? Number(result.known.points) / 1_000_000 : null;
+    return result.known ? wholePoints(result.known.points) : null;
   }
 
   getPlayerPoints(player: ContractAddress): number | null {

@@ -6,7 +6,6 @@ import { type PlayerLeaderboardActivityEntry } from "@/services/leaderboard/play
 import Button from "@/ui/design-system/atoms/button";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import TextInput from "@/ui/design-system/atoms/text-input";
-import { VICTORY_POINT_VALUES, formatHyperstructureControlVpRange } from "@/config/victory-points";
 import { EndSeasonButton } from "../components/end-season-button";
 import { PlayerList, type PlayerCustom } from "./player-list";
 import { normalizeLeaderboardAddress } from "./finalized-blitz-leaderboard";
@@ -47,6 +46,7 @@ export const PlayersPanel = ({
   const [inputValue, setInputValue] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showPointsBreakdown, setShowPointsBreakdown] = useState(false);
+  const grants = configManager.getVictoryPointGrants();
   const {
     data: activityEntries,
     isFetching: isActivityBreakdownFetching,
@@ -228,29 +228,23 @@ export const PlayersPanel = ({
                 <div className="flex flex-col gap-1 text-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-kit-muted">Explore a tile</span>
-                    <span className="text-gold font-semibold">{VICTORY_POINT_VALUES.exploreTile} VP</span>
+                    <span className="text-gold font-semibold">{grants.exploreTile} VP</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-kit-muted">Claim an Essence Rift or Camp from {BANDITS_NAME}</span>
-                    <span className="text-gold font-semibold">
-                      {VICTORY_POINT_VALUES.claimWorldStructureFromBandits} VP
-                    </span>
+                    <span className="text-gold font-semibold">{grants.claimCampFromBandits} VP</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-kit-muted">Claim a Hyperstructure from {BANDITS_NAME}</span>
-                    <span className="text-gold font-semibold">
-                      {VICTORY_POINT_VALUES.claimHyperstructureFromBandits} VP
-                    </span>
+                    <span className="text-gold font-semibold">{grants.claimHyperstructureFromBandits} VP</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-kit-muted">Open a Relic Crest</span>
-                    <span className="text-gold font-semibold">{VICTORY_POINT_VALUES.openRelicChest} VP</span>
+                    <span className="text-kit-muted">Open a Relic Crate</span>
+                    <span className="text-gold font-semibold">{grants.openRelicCrate} VP</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-kit-muted">
-                      Control a Hyperstructure (1 point per realm settled in 8 tile radius)
-                    </span>
-                    <span className="text-gold font-semibold">{formatHyperstructureControlVpRange()}</span>
+                    <span className="text-kit-muted">Control a Hyperstructure, per realm settled within 8 tiles</span>
+                    <span className="text-gold font-semibold">{grants.hyperstructurePerRealmPerSecond} VP/s</span>
                   </div>
                 </div>
               </div>

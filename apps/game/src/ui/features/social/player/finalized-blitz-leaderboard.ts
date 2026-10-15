@@ -1,8 +1,6 @@
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import * as Sentry from "@sentry/react";
 
-/** Registered points carry six decimals on chain. */
-export const REGISTERED_POINTS_PRECISION = 1_000_000n;
 const UNRANKED_LEADERBOARD_POSITION = Number.MAX_SAFE_INTEGER;
 
 interface FinalizedBlitzStanding {
