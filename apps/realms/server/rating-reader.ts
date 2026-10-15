@@ -17,7 +17,8 @@ const CONTRACT_NOT_FOUND = 20;
  * One RPC budget across callers; every read names a verified chain block and retains no rating value. The top list's
  * population is every wallet the token has ever updated, read from its own events and kept with the block (height and
  * hash) they were read through. A kept block the chain no longer holds discards the population, which is read again,
- * so a wallet seen only in a replaced block cannot stay ranked.
+ * so a wallet seen only in a replaced block cannot stay ranked. A range extends the population only if the chain still
+ * holds that block once the range is read, so a range from a newer branch is never added to an older branch's wallets.
  */
 export class RatingReader extends DurableObject<Env> {
   private tail: Promise<unknown> = Promise.resolve();
@@ -77,21 +78,25 @@ export class RatingReader extends DurableObject<Env> {
   }
   private async ratedPlayers(ledger: RatingLedger) {
     const token = ledger.ratingToken;
-    let through = await this.canonicalCheckpoint(ledger);
-    if (through === undefined) {
+    let kept = await this.canonicalCheckpoint(ledger);
+    if (kept === undefined) {
       this.forgetPopulation(token);
-      through = (await this.deployBlock(ledger)) - 1;
+      kept = { block: (await this.deployBlock(ledger)) - 1 };
     }
-    while (through < ledger.block) {
-      const last = Math.min(through + SCAN_BLOCKS, ledger.block);
+    while (kept.block < ledger.block) {
+      const last = Math.min(kept.block + SCAN_BLOCKS, ledger.block);
       const lastHash = await this.blockHash(last);
       if (last === ledger.block && lastHash !== ledger.blockHash) throw new Error("Rating block replaced during scan");
-      const players = await this.updatedPlayers(token, through + 1, last);
+      const players = await this.updatedPlayers(token, kept.block + 1, last);
       if ((await this.blockHash(last)) !== lastHash) throw new Error("Rating events changed branch during scan");
+      if (kept.hash !== undefined && (await this.blockHash(kept.block)) !== kept.hash) {
+        this.forgetPopulation(token);
+        throw new Error("Rating population's block replaced during scan");
+      }
       for (const player of players)
         this.ctx.storage.sql.exec("INSERT OR IGNORE INTO rated_players VALUES (?, ?)", token, player);
       this.ctx.storage.sql.exec("INSERT OR REPLACE INTO rated_checkpoint VALUES (?, ?, ?)", token, last, lastHash);
-      through = last;
+      kept = { block: last, hash: lastHash };
     }
     return this.ctx.storage.sql
       .exec<{ player: string }>("SELECT player FROM rated_players WHERE token = ?", token)
@@ -99,10 +104,10 @@ export class RatingReader extends DurableObject<Env> {
       .map(({ player }) => player);
   }
   /**
-   * The kept block's height, if the chain still holds that exact block. A kept block above the ledger's is not judged:
-   * the provider may merely lag, so the request is refused until the chain passes that height and its hash decides.
+   * The kept block, if the chain still holds that exact block. A kept block above the ledger's is not judged: the
+   * provider may merely lag, so the request is refused until the chain passes that height and its hash decides.
    */
-  private async canonicalCheckpoint(ledger: RatingLedger) {
+  private async canonicalCheckpoint(ledger: RatingLedger): Promise<{ block: number; hash?: string } | undefined> {
     const [kept] = this.ctx.storage.sql
       .exec<{
         block: number;
@@ -112,7 +117,7 @@ export class RatingReader extends DurableObject<Env> {
     if (!kept) return undefined;
     if (kept.block > ledger.block) throw new Error("Rating population is ahead of the chain's head");
     const hash = kept.block === ledger.block ? ledger.blockHash : await this.blockHash(kept.block);
-    return hash === kept.hash ? kept.block : undefined;
+    return hash === kept.hash ? { block: kept.block, hash } : undefined;
   }
   private forgetPopulation(token: string) {
     this.ctx.storage.sql.exec("DELETE FROM rated_players WHERE token = ?", token);

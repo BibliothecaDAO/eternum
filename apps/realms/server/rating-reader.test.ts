@@ -51,15 +51,19 @@ const create = () => {
     forks: [] as { at: number; branch: string }[],
     updates: players.map((player): [number, string, string] => [20, player, "a"]),
     afterEvents: (_first: number) => {},
+    afterHeader: (_block: number) => {},
   };
   const branchOf = (block: number) => [...chain.forks].reverse().find(({ at }) => at <= block)?.branch ?? "a";
   const hashAt = (block: number) => `0x${block.toString(16)}${branchOf(block)}`;
   const header = (blockId: RpcCall["params"]["block_id"]) => {
     if (blockId === "latest") return { result: { block_number: chain.head, block_hash: hashAt(chain.head) } };
-    if (blockId.block_number !== undefined)
-      return blockId.block_number <= chain.head
-        ? { result: { block_number: blockId.block_number, block_hash: hashAt(blockId.block_number) } }
-        : BLOCK_NOT_FOUND;
+    if (blockId.block_number !== undefined) {
+      const block = blockId.block_number;
+      const answer =
+        block <= chain.head ? { result: { block_number: block, block_hash: hashAt(block) } } : BLOCK_NOT_FOUND;
+      chain.afterHeader(block);
+      return answer;
+    }
     const block = BigInt(blockId.block_hash!) >> 4n;
     return block <= chain.head && hashAt(Number(block)) === blockId.block_hash
       ? { result: { block_number: Number(block), block_hash: blockId.block_hash } }
@@ -233,3 +237,39 @@ it("publishes nothing when the chain changes branch under a scan, then ranks onl
     database.close();
   }
 });
+it("discards the population when the chain changes branch below it between two ranges", async () => {
+  const { reader, chain, ranked, database } = create();
+  try {
+    chain.head = 250_000;
+    chain.updates.push([50_000, "0x99", "a"], [50_000, "0x98", "b"]);
+    forkAfterHeader(chain, 100_009, 2, 50_000);
+    await expect(reader.top()).rejects.toThrow();
+    expect(await ranked()).toEqual([...players, "0x98"]);
+  } finally {
+    vi.unstubAllGlobals();
+    database.close();
+  }
+});
+it("discards the population when the chain changes branch below it after its block was checked", async () => {
+  const { reader, chain, ranked, database } = create();
+  try {
+    chain.head = 100_009;
+    chain.updates.push([50_000, "0x99", "a"], [50_000, "0x98", "b"]);
+    expect(await ranked()).toEqual([...players, "0x99"]);
+    chain.head = 250_000;
+    forkAfterHeader(chain, 100_009, 1, 50_000);
+    await expect(reader.top()).rejects.toThrow();
+    expect(await ranked()).toEqual([...players, "0x98"]);
+  } finally {
+    vi.unstubAllGlobals();
+    database.close();
+  }
+});
+
+/** Replaces the chain from FORK onwards with branch b right after the READS-th header read of BLOCK. */
+function forkAfterHeader(chain: ReturnType<typeof create>["chain"], block: number, reads: number, fork: number) {
+  let seen = 0;
+  chain.afterHeader = (read) => {
+    if (read === block && ++seen === reads) chain.forks.push({ at: fork, branch: "b" });
+  };
+}
