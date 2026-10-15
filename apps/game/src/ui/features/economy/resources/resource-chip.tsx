@@ -201,6 +201,7 @@ export const ResourceChip = ({
       {canShowProductionShortcut && (
         <button
           data-tooltip-anchor
+          aria-label="Manage production"
           onClick={(event) => {
             event.stopPropagation();
             handleOpenProduction();

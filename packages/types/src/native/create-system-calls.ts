@@ -5,7 +5,20 @@ import * as SystemProps from "../types";
 export type SystemCallAuthHandler = {
   onNoAccount?: () => void;
   onError?: (error: Error) => void;
+  /**
+   * Why no action can be sent right now (the game has not opened to play), or null. Every system call asks it before
+   * sending, so no entrance acts early; the chain would refuse with "game not started".
+   */
+  refuseNow?: () => string | null;
 };
+
+/** A system call the client did not send, because the game does not accept actions yet; its message is the reason. */
+export class ActionRefusedError extends Error {
+  constructor(reason: string) {
+    super(reason);
+    this.name = "ActionRefusedError";
+  }
+}
 
 export type BatchTransactionReceipt = GetTransactionReceiptResponse & { remaining: bigint };
 
@@ -14,6 +27,9 @@ export type SystemCalls = ReturnType<typeof createSystemCalls>;
 export function createSystemCalls({ provider, authHandler }: { provider: any; authHandler?: SystemCallAuthHandler }) {
   const withAuth = <T extends (...args: any[]) => Promise<any>>(fn: T): T => {
     return (async (...args: Parameters<T>) => {
+      // A refusal is the game's state, not a failure: it is thrown to the caller and never reported as an error.
+      const refusal = authHandler?.refuseNow?.() ?? null;
+      if (refusal !== null) throw new ActionRefusedError(refusal);
       try {
         const props = args[0] as SystemProps.SystemSigner;
 

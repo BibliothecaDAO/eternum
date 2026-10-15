@@ -3301,7 +3301,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private openTargetActionSurface(targetHex: HexPosition, surface: { id: string; content: ReactNode }): void {
-    if (!canIssueOrders() || refusedBeforePlay()) return;
+    if (!canIssueOrders()) return;
     const normalized = Position.fromContract({ x: targetHex.col, y: targetHex.row }).getNormalized();
     const point = projectHexToScreen({ col: normalized.x, row: normalized.y }, this.camera);
     usePopoverStore.getState().openSurface({

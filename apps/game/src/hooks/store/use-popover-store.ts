@@ -1,5 +1,20 @@
 import type { ReactNode } from "react";
 import { create } from "zustand";
+import { refusedBeforePlay } from "@/utils/can-issue-orders";
+
+/**
+ * The surfaces where a player gives an order: production, the market, a deploy, and the map's attack, spire travel
+ * and help. Before play opens none of them opens, whichever entrance asks (a strip, a chip, a table, a double-click, a
+ * map click); the player is told when play opens instead.
+ */
+const ACTION_SURFACES: ReadonlySet<string> = new Set([
+  "production",
+  "market",
+  "army-deployment",
+  "quick-attack",
+  "spire-travel",
+  "help",
+]);
 
 /** A screen rect a surface hangs from — a button's rect, or a scene point as a zero-size rect. */
 export interface SurfaceAnchor {
@@ -54,7 +69,9 @@ export const usePopoverStore = create<PopoverStore>()((set) => ({
   close: (id) => set((state) => (id === undefined || state.openId === id ? { openId: null, surface: null } : state)),
   toggle: (id) =>
     set((state) => (state.openId === id ? { openId: null, surface: null } : { openId: id, surface: null })),
-  openSurface: ({ id, content, anchor = null, placement = "below", mapClick }) =>
-    set({ openId: id, surface: { id, content, anchor, placement, mapClick } }),
+  openSurface: ({ id, content, anchor = null, placement = "below", mapClick }) => {
+    if (ACTION_SURFACES.has(id) && refusedBeforePlay()) return;
+    set({ openId: id, surface: { id, content, anchor, placement, mapClick } });
+  },
   closeSurface: () => set((state) => (state.surface ? { openId: null, surface: null } : state)),
 }));

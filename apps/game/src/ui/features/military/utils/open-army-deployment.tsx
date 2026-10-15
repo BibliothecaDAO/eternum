@@ -9,7 +9,7 @@ import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { hudFor } from "@/ui/layouts/hud-for";
-import { canIssueOrders, refusedBeforePlay } from "@/utils/can-issue-orders";
+import { canIssueOrders } from "@/utils/can-issue-orders";
 import type { Direction } from "@bibliothecadao/types";
 import { ArmyDeploymentPicker } from "../components/army-deployment-picker";
 
@@ -37,7 +37,7 @@ export const ARMY_DEPLOYMENT_SURFACE_ID = "army-deployment";
  * on screen; a Frontier game deploys only from its own sheet, aimed at the tile the order names.
  */
 export function openArmyDeployment(target: ArmyDeploymentTarget, place?: ArmyDeploymentPlace) {
-  if (!canIssueOrders() || refusedBeforePlay()) return;
+  if (!canIssueOrders()) return;
   if (place && hudFor(getGameModeId(), true) === "shared") {
     openArmyDeploymentPicker(target, place);
     return;

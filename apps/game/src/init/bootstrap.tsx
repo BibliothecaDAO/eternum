@@ -1,6 +1,7 @@
 import * as Sentry from "@sentry/react";
 import { DEV_MODE_ENABLED, verboseLog } from "@/utils/dev-mode";
 import { formatReadableErrorForConsole } from "@/utils/error-message";
+import { actNowRefusal } from "@/utils/can-issue-orders";
 import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import { createBrowserGameClient } from "@/services/game-client";
 import type { GameClient } from "@bibliothecadao/eternum";
@@ -248,6 +249,8 @@ const createEntryGameClient = async (input: EntryGameClientInput): Promise<GameC
 const bootstrapAuthHandler: SystemCallAuthHandler = {
   // The identity chip derives "not signed in" from the identity session itself; nothing to open here.
   onNoAccount: () => verboseLog("[bootstrap] No gameplay account - the identity chip carries the sign-in surface"),
+  // Every action from every entrance is sent through here: before play opens none leaves the client.
+  refuseNow: () => actNowRefusal(),
   onError: (error: unknown) => {
     console.error(`System call error: ${formatReadableErrorForConsole(error)}`);
 
