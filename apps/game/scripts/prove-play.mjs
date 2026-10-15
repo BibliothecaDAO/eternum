@@ -15,6 +15,10 @@
  * (a lobby's Sign in excepted, which must return to that lobby), and leaves a game's page the moment its address is
  * recorded.
  *
+ * With `--game <chain>:<game> --profile <dir>` it proves that game's own paths instead, signed in: a crate opened and
+ * read back after a reload, Game finished → See the results, and an ended game's two Results entrances
+ * (scripts/prove-play-game.mjs).
+ *
  * Each run writes a new directory under <out>, named by its start time, so an earlier run's evidence is never replaced:
  * play-proof.json and one screenshot per state and viewport, whatever happens. The run is complete only when every page
  * became ready and every action reached its own address; otherwise the record lists the problems and the command exits
@@ -25,6 +29,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { proveGame } from "./prove-play-game.mjs";
 import { runAgentBrowser } from "./run-renderer-scene-smoke.mjs";
 
 const VIEWPORTS = { desktop: [1440, 900], phone: [390, 844] };
@@ -112,13 +117,24 @@ const MEASURE = `(() => {
 
 const READY = `document.documentElement.dataset.bootState === "app-ready" && document.body.innerText.includes("Now")`;
 
-const parseArgs = (argv) => {
+const USAGE =
+  "expected --base-url <url> --out <dir>, and for a game --game <chain>:<game> --profile <dir> " +
+  "[--crate <col>,<row>] [--until-end <minutes>] [--ended]";
+
+export const parseArgs = (argv) => {
   const args = { baseUrl: "https://127.0.0.1:4176", out: join(process.cwd(), "play-proof") };
-  for (let index = 0; index < argv.length; index += 2) {
-    if (argv[index] === "--base-url") args.baseUrl = argv[index + 1].replace(/\/$/, "");
-    else if (argv[index] === "--out") args.out = argv[index + 1];
-    else throw new Error(`Unknown argument ${argv[index]}; expected --base-url <url> --out <dir>`);
+  for (let index = 0; index < argv.length; index += 1) {
+    const value = () => argv[++index];
+    if (argv[index] === "--base-url") args.baseUrl = value().replace(/\/$/, "");
+    else if (argv[index] === "--out") args.out = value();
+    else if (argv[index] === "--game") args.game = value();
+    else if (argv[index] === "--profile") args.profile = value();
+    else if (argv[index] === "--crate") args.crate = value().split(",").map(Number);
+    else if (argv[index] === "--until-end") args.untilEndMinutes = Number(value());
+    else if (argv[index] === "--ended") args.ended = true;
+    else throw new Error(`Unknown argument ${argv[index]}; ${USAGE}`);
   }
+  if (args.game && !args.profile) throw new Error(`--game needs --profile; ${USAGE}`);
   return args;
 };
 
@@ -276,8 +292,49 @@ export const problemsOf = (records) =>
       ),
   ]);
 
+/** A game's run: its own steps (scripts/prove-play-game.mjs), signed in from the browser profile, into game-proof.json. */
+const runGame = async (args) => {
+  const started = new Date().toISOString();
+  const out = join(args.out, `game-${started.replaceAll(":", "-")}`);
+  mkdirSync(out, { recursive: true });
+  process.env.AGENT_BROWSER_PROFILE = args.profile;
+  const session = `game-proof-${Date.now()}`;
+  const b = browser(session);
+  let result = { records: [] };
+  try {
+    result = await proveGame(b, args, out);
+  } catch (error) {
+    result.records.push({ step: "run", problem: String(error.message ?? error) });
+  } finally {
+    try {
+      b.run("open", "about:blank");
+      b.run("close");
+    } catch {
+      // The session is gone already; the record below is still written.
+    }
+    const problems = result.records.filter((record) => record.problem);
+    const proof = {
+      started,
+      ran: new Date().toISOString(),
+      baseUrl: args.baseUrl,
+      game: args.game,
+      session,
+      complete: problems.length === 0,
+      problems,
+      ...result,
+    };
+    writeFileSync(join(out, "game-proof.json"), `${JSON.stringify(proof, null, 2)}\n`);
+    console.log(
+      `Wrote ${join(out, "game-proof.json")}: ${result.records.length} steps, ${proof.complete ? "complete" : `INCOMPLETE (${problems.length} problems)`}`,
+    );
+    process.exitCode = proof.complete ? 0 : 1;
+  }
+};
+
 const main = async (argv) => {
-  const { baseUrl, out: parent } = parseArgs(argv);
+  const args = parseArgs(argv);
+  if (args.game) return runGame(args);
+  const { baseUrl, out: parent } = args;
   const started = new Date().toISOString();
   const out = join(parent, `run-${started.replaceAll(":", "-")}`);
   mkdirSync(out, { recursive: true });

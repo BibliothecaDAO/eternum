@@ -9,8 +9,14 @@ Play against a running dev build. It opens each lab fixture and the live page si
 failing) at desktop and phone sizes, counts what is on the page, presses each row's verb and checks that it reached that
 row's own game, lobby or results (`scripts/prove-play.mjs`, writing `play-proof.json` and screenshots into a new
 directory per run, and exiting 1 unless every press arrived). `apps/game/AGENTS.md` documents a spectator smoke test
-(agent-browser steps that open the client, watch a running game and check the canvas). The outpost proof below drives
-the runtime lab; live actions still need an eligible player.
+(agent-browser steps that open the client, watch a running game and check the canvas). Inside a match,
+`prove:play --game <chain>:<game> --profile <dir>` drives one game signed in (a browser profile signed in once through
+the game's own sign-in, kept outside the repo): `--crate <col>,<row>` finds a crate next to the player's army by
+pointer, opens it and reads it back from the log after a reload; `--until-end <minutes>` stays on the map until the game
+ends and leaves through **Game finished** → **See the results**, checking the page logged no "No game client is active";
+`--ended` presses **Results** on the ended game's doorway and on its map address, at desktop and phone
+(`scripts/prove-play-game.mjs`, writing `game-proof.json` and screenshots into a new directory per run).
+The outpost proof below drives the runtime lab; live actions still need an eligible player.
 
 ## Shell (outside a game)
 
