@@ -141,8 +141,10 @@ pnpm --dir apps/game playtest --base-url https://127.0.0.1:4174 --iterations 1  
 
 Options: `--renderer-modes webgpu-auto,webgpu-force-webgl` (default both), `--iterations` (default 3),
 `--cpu-throttle 4` (Chrome's CPU slowdown of this machine; not a measured laptop), `--chain-id` and `--game-id`,
-`--out <root>` (default `.context/playtest`), `--trace` (a Chrome trace per run), `--compare <summary.json>` (fails when
-boot regresses), `--headed`. Paths are taken from where the command is run.
+`--steps ownership-rings` (the map unselected, the player's realm selected with its owner's holdings ringed, held and
+panned, then cleared: the rings' frame cost), `--out <root>` (default `.context/playtest`), `--trace` (a Chrome trace
+per run), `--compare <summary.json>` (fails when boot regresses), `--headed`. Paths are taken from where the command is
+run.
 
 Each invocation writes to a new directory, `<root>/<time>-<role>`, and never into an existing one:
 

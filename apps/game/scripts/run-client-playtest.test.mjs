@@ -43,6 +43,9 @@ describe("readPlaytestOptions", () => {
     expect(() => readPlaytestOptions(["--cpu-throttle", "0.5"])).toThrow(
       "--cpu-throttle must be an integer of at least 1",
     );
+    expect(() => readPlaytestOptions(["--steps", "burst"])).toThrow(
+      '--steps takes spectator, player, ownership-rings, not "burst"',
+    );
     expect(() => readPlaytestOptions(["--player", ".context/playtest-profiles/clientlane"])).toThrow(
       '--player takes an email, not ".context/playtest-profiles/clientlane"',
     );

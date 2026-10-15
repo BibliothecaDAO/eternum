@@ -279,6 +279,40 @@ function tileRegion([dx, dy]) {
 }
 
 /**
+ * What the ownership rings cost a player: the map with nothing selected, then their realm selected (every hex its owner
+ * holds ringed), held, and panned so terrain pages land under the rings, then the selection cleared. The realm is at the
+ * centre once the map opens on it.
+ */
+export const OWNERSHIP_RING_STEPS = [
+  { name: "realm-idle", settleMs: 8_000, verify: inScene("hex") },
+  { name: "open-map", play: goTo("Map", "map"), settleMs: 6_000, verify: inScene("map") },
+  { name: "unselected-idle", play: clearTheSelection, settleMs: 10_000, verify: inScene("map") },
+  { name: "select-realm", play: tapTheCentre, settleMs: 5_000, verify: inScene("map") },
+  { name: "selected-idle", settleMs: 10_000, verify: inScene("map") },
+  { name: "selected-pan", play: panTheMap, settleMs: 17_000, verify: pannedTheMap },
+  { name: "cleared-idle", play: clearTheSelection, settleMs: 10_000, verify: inScene("map") },
+];
+
+/** The step lists a run can play, by name; a run plays its role's list unless it names another. */
+export const STEP_SETS = {
+  spectator: SPECTATOR_STEPS,
+  player: PLAYER_STEPS,
+  "ownership-rings": OWNERSHIP_RING_STEPS,
+};
+
+/** Escape steps back: a pinned order, then the selection. */
+async function clearTheSelection({ browser }) {
+  browser.press("Escape");
+  browser.press("Escape");
+  return {};
+}
+
+async function tapTheCentre({ browser }) {
+  browser.tap([0, 0]);
+  return {};
+}
+
+/**
  * A next order's life, one way of leaving per step, ahead of the explores so the army's stamina goes to them first.
  * Each holds the army's first order in flight at the network for as long as it acts; refused answers that send as the
  * node refusing it, without it reaching the node; the others let it go.

@@ -36,7 +36,7 @@ import {
   signInIfSignedOut,
 } from "./client-playtest/player-entry.mjs";
 import { Cancelled, createRunOwner } from "./client-playtest/run-owner.mjs";
-import { PLAYER_STEPS, SPECTATOR_STEPS, STEPS_GAME } from "./client-playtest/steps.mjs";
+import { STEP_SETS, STEPS_GAME } from "./client-playtest/steps.mjs";
 
 /**
  * The client playtest: builds and serves the client as players get it, plays it in a browser on the machine's GPU as a
@@ -83,6 +83,10 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
   if (rendererModes.length === 0 || unknownModes.length > 0) {
     throw new Error(`--renderer-modes takes ${RENDERER_MODES.join(" and/or ")}, not "${unknownModes.join(",")}"`);
   }
+  const stepSet = option("--steps", null);
+  if (stepSet !== null && !STEP_SETS[stepSet]) {
+    throw new Error(`--steps takes ${Object.keys(STEP_SETS).join(", ")}, not "${stepSet}"`);
+  }
   const player = option("--player", null);
   if (player !== null && !/^[^@\s]+@[^@\s]+$/.test(player)) throw new Error(`--player takes an email, not "${player}"`);
 
@@ -98,6 +102,7 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
     player,
     port: integer("--port", DEFAULTS.port, 1),
     rendererModes,
+    stepSet,
     timeoutMs: integer("--timeout-ms", DEFAULTS.timeoutMs, 1),
     trace: argv.includes("--trace"),
   };
@@ -231,7 +236,7 @@ async function resolvePlaytestGame({ baseUrl, chainId, gameId }) {
 async function playRun(context) {
   const { cpuThrottle, game, iteration, owner, player, rendererMode, runDir, timeoutMs } = context;
   const label = `${player ? "player" : "spectator"}-${rendererMode}-${iteration}`;
-  const steps = player ? PLAYER_STEPS : SPECTATOR_STEPS;
+  const steps = STEP_SETS[context.stepSet ?? (player ? "player" : "spectator")];
   const record = { iteration, rendererMode, label, steps: [], expectedSteps: steps.map((step) => step.name) };
   record.loadSamples = [loadavg()[0]];
   const sampler = setInterval(() => record.loadSamples.push(loadavg()[0]), LOAD_SAMPLE_MS);
