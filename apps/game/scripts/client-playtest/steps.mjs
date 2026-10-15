@@ -61,7 +61,7 @@ export const SPECTATOR_STEPS = [
  * What a signed-in player does: realm, map, select the readiest army, read production, then a tile tapped for the army
  * while its order is in flight (its next order) in each way that order can leave, and two explores.
  */
-export const PLAYER_STEPS = [
+const PLAYER_STEPS = [
   { name: "realm-idle", settleMs: 8_000, verify: inScene("hex") },
   { name: "open-map", play: goTo("Map", "map"), settleMs: 6_000, verify: inScene("map") },
   { name: "select-army", play: selectTheReadiestArmy, settleMs: 3_000, verify: armySelected },
@@ -283,7 +283,7 @@ function tileRegion([dx, dy]) {
  * holds ringed), held, and panned so terrain pages land under the rings, then the selection cleared. The realm is at the
  * centre once the map opens on it.
  */
-export const OWNERSHIP_RING_STEPS = [
+const OWNERSHIP_RING_STEPS = [
   { name: "realm-idle", settleMs: 8_000, verify: inScene("hex") },
   { name: "open-map", play: goTo("Map", "map"), settleMs: 6_000, verify: inScene("map") },
   { name: "unselected-idle", play: clearTheSelection, settleMs: 10_000, verify: inScene("map") },
