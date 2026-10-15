@@ -216,9 +216,13 @@ async function selectTheReadiestArmy({ browser }) {
 async function focusTheReadiestArmy(browser, armies = browser.armies()) {
   const readiest = armies.toSorted((left, right) => (right.stamina || 0) - (left.stamina || 0))[0];
   if (!readiest) return null;
-  browser.click(readiest.label);
-  await sleep(ARMY_FLIGHT_MS);
+  await pickArmy(browser, readiest.label);
   return readiest.label;
+}
+
+async function pickArmy(browser, army) {
+  browser.click(army);
+  await sleep(ARMY_FLIGHT_MS);
 }
 
 function armySelected({ seen, played }) {
@@ -310,10 +314,8 @@ function withOrderInFlight(whileInFlight, { refuse }) {
   return async ({ browser, devTools, extraScreenshot }) => {
     const army = await focusTheReadiestArmy(browser);
     if (!army) return { army };
-    const { scanned, targets } = await findThreeInARow(browser);
+    const { scanned, targets } = await findThreeInARow(browser, army);
     if (!targets) return { army, scanned };
-    // A tile of the scan may hold the player's realm, whose tap selects it: the army is picked again.
-    await focusTheReadiestArmy(browser);
     const gate = await openOrderSendGate(devTools);
     try {
       browser.tap(targets.first);
@@ -333,10 +335,10 @@ function withOrderInFlight(whileInFlight, { refuse }) {
  * Three neighbouring tiles that offer the army an order. Its paths are planned once it is selected, slower than a tap
  * at 4x: a pass that finds no three in a row is tried once more.
  */
-async function findThreeInARow(browser) {
+async function findThreeInARow(browser, army) {
   let scanned = [];
   for (let pass = 1; pass <= TAP_PASSES; pass += 1) {
-    scanned = scanTheRing(browser);
+    scanned = await scanTheRing(browser, army);
     const targets = threeInARow(scanned);
     if (targets) return { scanned, targets };
     await sleep(ARMY_FLIGHT_MS);
@@ -344,12 +346,18 @@ async function findThreeInARow(browser) {
   return { scanned, targets: null };
 }
 
-/** What each tile of the ring offers the army, the pin cleared after. */
-function scanTheRing(browser) {
-  const scanned = NEIGHBOUR_RING.map((offset) => {
+/**
+ * What each tile of the ring offers the army, the pin cleared after. A tile holding the player's own realm or another
+ * of their armies selects that instead: it offers this army nothing, and the army is picked again.
+ */
+async function scanTheRing(browser, army) {
+  const scanned = [];
+  for (const offset of NEIGHBOUR_RING) {
     browser.tap(offset);
-    return { offset, verb: orderVerb(browser.buttonTexts()) };
-  });
+    const stillPicked = browser.observe().pressed.includes(army);
+    scanned.push({ offset, verb: stillPicked ? orderVerb(browser.buttonTexts()) : null });
+    if (!stillPicked) await pickArmy(browser, army);
+  }
   browser.press("Escape");
   return scanned;
 }
