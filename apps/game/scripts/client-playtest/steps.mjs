@@ -310,8 +310,7 @@ function withOrderInFlight(whileInFlight, { refuse }) {
   return async ({ browser, devTools, extraScreenshot }) => {
     const army = await focusTheReadiestArmy(browser);
     if (!army) return { army };
-    const scanned = scanTheRing(browser);
-    const targets = threeInARow(scanned);
+    const { scanned, targets } = await findThreeInARow(browser);
     if (!targets) return { army, scanned };
     // A tile of the scan may hold the player's realm, whose tap selects it: the army is picked again.
     await focusTheReadiestArmy(browser);
@@ -328,6 +327,21 @@ function withOrderInFlight(whileInFlight, { refuse }) {
       await gate.close();
     }
   };
+}
+
+/**
+ * Three neighbouring tiles that offer the army an order. Its paths are planned once it is selected, slower than a tap
+ * at 4x: a pass that finds no three in a row is tried once more.
+ */
+async function findThreeInARow(browser) {
+  let scanned = [];
+  for (let pass = 1; pass <= TAP_PASSES; pass += 1) {
+    scanned = scanTheRing(browser);
+    const targets = threeInARow(scanned);
+    if (targets) return { scanned, targets };
+    await sleep(ARMY_FLIGHT_MS);
+  }
+  return { scanned, targets: null };
 }
 
 /** What each tile of the ring offers the army, the pin cleared after. */
@@ -382,9 +396,8 @@ async function queueThenOpenTheRealm({ browser, targets, extraScreenshot }) {
   return queued;
 }
 
-/** The order bar's next order: "Next order" with "Queued". */
-const nextOrderShown = (browser) =>
-  browser.read(`document.body.textContent.includes("Next order") && document.body.textContent.includes("Queued")`);
+/** The order bar's next order, as a screen reader names its chip: "Next order Queued". */
+const nextOrderShown = (browser) => browser.read(`Boolean(document.querySelector('[aria-label="Next order Queued"]'))`);
 
 /** What the order bar offers after a tap: its verb, "short" when it shows a cost not covered (the verb is hidden), or null. */
 function orderVerb(buttonTexts) {
