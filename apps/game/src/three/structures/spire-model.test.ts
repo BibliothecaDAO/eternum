@@ -160,6 +160,23 @@ describe("authored spire animation", () => {
     expect(sourceLightDisposal).not.toHaveBeenCalled();
     expect(MaterialPool.getInstance().getStats().totalReferences).toBe(references - 2);
   });
+  it("stands a dormant spire without a portal, still in its first pose, and wakes it on a working placement", () => {
+    const { model, gltf } = fixture();
+    const placement = new Matrix4().makeTranslation(3, 0.2, 7);
+    model.placeSpire(0, placement, true);
+    model.setCount(1);
+    model.updateAnimations(1.37);
+    expect(portals(model)).toHaveLength(0);
+    const reference = gltf.scene.clone(true);
+    reference.updateMatrixWorld(true);
+    const firstPose = placement.clone().multiply(reference.getObjectByName("shard")!.matrixWorld);
+    expect(matrixAt(model, 1).elements).toEqual(firstPose.elements.map(Math.fround));
+    model.setMatrixAt(0, placement);
+    expect(portals(model)).toHaveLength(1);
+    model.placeSpire(0, placement, true);
+    expect(portals(model)).toHaveLength(0);
+    model.dispose();
+  });
   it("keeps labels and conservative bounds above every hovering pose", () => {
     const { model } = fixture();
     model.setMatrixAt(0, new Matrix4().makeTranslation(4, 2, 7));

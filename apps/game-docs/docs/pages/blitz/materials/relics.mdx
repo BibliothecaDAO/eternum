@@ -1,4 +1,4 @@
-import RelicTable from "@/components/blitz-components/RelicTable";
+import RelicTable, { RelicPackTable } from "@/components/blitz-components/RelicTable";
 
 # Relics
 
@@ -11,13 +11,15 @@ Timed relic effects last **3 Eternum Days (18 minutes)**.
 
 There are currently nine relic types, each with two levels. A level 2 relic is simply a more powerful version of the
 level 1 counterpart. Every relic type has a distinct effect, which determines whether it can be activated by a Realm or
-an army. To activate a relic and gain the desired effect, the army or Realm must pay an amount of Essence. These
-details, as well as the discovery chance of each relic in a Relic Crate, are defined in the table below:
+an army. To activate a relic and gain the desired effect, the army or Realm must pay an amount of Essence. These details
+are defined in the table below:
 
 <RelicTable />
 
-Each Relic Crate yields three relics. For every crate, the chances in the table above are rolled three separate times,
-so you may receive duplicates in a single crate.
+Each Relic Crate holds one themed pack of three relics, chosen when the crate appears, so a crate's tile names its pack
+before anyone opens it. The army that opens the crate receives all three.
+
+<RelicPackTable />
 
 _Note: Relics are still under development. Initial versions of Blitz will limit their scope to within the game instance.
 However, it is expected that relics will have a much broader presence and impact in the Realms ecosystem. Keep an eye

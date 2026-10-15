@@ -179,13 +179,14 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     expect(ActionPaths.getActionType(spireActionPath ?? [])).toBe(ActionType.SpireTravel);
   });
 
-  it("offers no move onto a shrine or well, which the contract refuses as an occupied tile", () => {
+  it("offers no move onto a shrine, a well or a dormant spire, which the contract refuses as occupied", () => {
     const { manager, components, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } =
       createTestSetup();
-    const [shrineHex, wellHex, openHex] = getNeighborHexes(oldFeltStart.col, oldFeltStart.row);
+    const [shrineHex, wellHex, openHex, dormantHex] = getNeighborHexes(oldFeltStart.col, oldFeltStart.row);
     for (const [hex, occupierType] of [
       [shrineHex, TileOccupier.Shrine],
       [wellHex, TileOccupier.Well],
+      [dormantHex, TileOccupier.DormantSpire],
     ] as const) {
       components.TileOpt.set(
         toTileEntityKey(false, hex.col, hex.row),
@@ -197,6 +198,7 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
 
     expect(actionPaths.get(ActionPaths.posKey(shrineHex))).toBeUndefined();
     expect(actionPaths.get(ActionPaths.posKey(wellHex))).toBeUndefined();
+    expect(actionPaths.get(ActionPaths.posKey(dormantHex))).toBeUndefined();
     expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(openHex)) ?? [])).toBe(ActionType.Move);
   });
 

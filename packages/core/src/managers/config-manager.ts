@@ -531,12 +531,6 @@ export class ClientConfigManager {
       hyperstructurePerRealmPerSecond: wholePoints(grants.hyp_points_per_second),
     };
   }
-  getRelicCrateReward() {
-    return {
-      relicsPerCrate: this.rules().map_config.relic_chest_relics_per_chest,
-      victoryPoints: this.getVictoryPointGrants().openRelicCrate,
-    };
-  }
   getBasePopulationCapacity() {
     return this.rules().building_config.base_population;
   }

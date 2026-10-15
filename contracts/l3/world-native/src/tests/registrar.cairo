@@ -159,7 +159,7 @@ pub(crate) fn definition(blitz: bool) -> PresetDefinition {
             },
         },
         exploration: array![
-            crate::exploration_rewards::ExplorationReward { resource_type: 1, amount: 10, amount_max: 10, weight: 1 },
+            crate::exploration_rewards::ExplorationReward { resource_type: 1, percent: 10, percent_max: 10, weight: 1 },
         ]
             .span(),
         season_win_points: 1000,
@@ -961,7 +961,8 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
         crate::taxonomy::CAMP_OCCUPIER,
     );
     assert_eq!(troops.resolved_explorer(explorer).unwrap().coord, origin);
-    assert_eq!(resources.resource_balance(home_slot), before + 10 * RESOURCE_PRECISION);
+    // The pool's one row pays 10 percent of the army's strength: one T1 troop earns a tenth of a unit.
+    assert_eq!(resources.resource_balance(home_slot), before + RESOURCE_PRECISION / 10);
     assert_eq!(resources.resource_balance(ResourceSlot { entity_id: explorer_id, ..home_slot }), 0);
 }
 
@@ -1765,7 +1766,6 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
                 },
             );
     preset.rules.map_config.camp_fail_probability = 0;
-    preset.rules.map_config.relic_chest_relics_per_chest = 1;
     let mut depths = array![];
     for index in 0_u16..4 {
         depths

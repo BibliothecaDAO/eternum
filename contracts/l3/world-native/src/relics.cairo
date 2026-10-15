@@ -33,8 +33,68 @@ pub struct OpenChest {
 pub struct ChestOpened {
     pub explorer_id: u64,
     pub coord: Coord,
+    pub chest: RelicChest,
     pub relics: Span<u8>,
     pub points: u128,
+}
+
+// A relic chest holds one themed pack of three level I relics, or all level II when its lucky roll wins. Its pack is
+// drawn when the chest appears, so the chest names it before anyone opens it.
+#[derive(Copy, Drop, Serde, Debug, PartialEq, Default, starknet::Store)]
+pub enum RelicPack {
+    #[default]
+    War,
+    Explore,
+    Produce,
+    Fortress,
+}
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct RelicChest {
+    pub pack: RelicPack,
+    pub lucky: bool,
+}
+pub const WAR_PACK_BPS: u128 = 3000;
+pub const EXPLORE_PACK_BPS: u128 = 3000;
+pub const PRODUCE_PACK_BPS: u128 = 2500;
+pub const FORTRESS_PACK_BPS: u128 = 1500;
+pub const LUCKY_CHEST_BPS: u128 = 2000;
+
+pub fn draw_chest(seed: u256) -> RelicChest {
+    let roll = crate::random::range(seed, 61, 10000);
+    let pack = if roll < WAR_PACK_BPS {
+        RelicPack::War
+    } else if roll < WAR_PACK_BPS + EXPLORE_PACK_BPS {
+        RelicPack::Explore
+    } else if roll < WAR_PACK_BPS + EXPLORE_PACK_BPS + PRODUCE_PACK_BPS {
+        RelicPack::Produce
+    } else {
+        RelicPack::Fortress
+    };
+    RelicChest { pack, lucky: crate::random::range(seed, 67, 10000) < LUCKY_CHEST_BPS }
+}
+
+/// The pack's three relics, at level II when the chest is lucky: each level II relic is its level I id plus one.
+pub fn pack_relics(chest: RelicChest) -> Span<u8> {
+    let level_one: Array<u8> = match chest.pack {
+        // Damage, Damage Reduction, Stamina.
+        RelicPack::War => array![41, 43, 39],
+        // Exploration, Exploration Reward, Stamina.
+        RelicPack::Explore => array![45, 47, 39],
+        // Production, Labor Production, Troop Production.
+        RelicPack::Produce => array![51, 53, 55],
+        // Structure Defense, Damage Reduction, Troop Production.
+        RelicPack::Fortress => array![49, 43, 55],
+    };
+    let level: u8 = if chest.lucky {
+        1
+    } else {
+        0
+    };
+    let mut relics = array![];
+    for id in level_one {
+        relics.append(id + level);
+    }
+    relics.span()
 }
 
 // Five chest tiers, common to legendary: a depth's odds in basis points, or the shares each tier pays.
@@ -167,7 +227,7 @@ pub trait IRelicMap<T> {
         timestamp: u64,
         game_context: crate::commands::ActionContext,
     );
-    fn consume_relic_chest(ref self: T, game_id: u32, coord: Coord);
+    fn consume_relic_chest(ref self: T, game_id: u32, coord: Coord) -> u64;
     fn reveal_relic_ring(
         ref self: T, game_id: u32, coord: Coord, radius: u8, game_context: crate::commands::BiomeContext,
     );
@@ -226,27 +286,22 @@ pub fn chest_destination(origin: Coord, seed: u256, distance: u8) -> Coord {
     }
     coord
 }
-pub fn draw_relics(rules: Span<RelicRule>, seed: u256, count: u8) -> Span<u8> {
+/// The artificer's craft: one relic by the preset's draw weights.
+pub fn draw_relic(rules: Span<RelicRule>, seed: u256) -> u8 {
     let mut total: u128 = 0;
     for rule in rules {
         total += *rule.draw_weight;
     }
     assert!(total != 0, "empty relic discovery pool");
-    let mut chosen = array![];
-    let mut salt: u128 = 0;
-    for _ in 0..count {
-        salt += 18;
-        let roll = crate::random::range(seed, salt, total);
-        let mut cumulative = 0;
-        for index in 0..rules.len() {
-            cumulative += *rules.at(index).draw_weight;
-            if roll < cumulative {
-                chosen.append(FIRST_RELIC + index.try_into().unwrap());
-                break;
-            }
+    let roll = crate::random::range(seed, 18, total);
+    let mut cumulative = 0;
+    for index in 0..rules.len() {
+        cumulative += *rules.at(index).draw_weight;
+        if roll < cumulative {
+            return FIRST_RELIC + index.try_into().unwrap();
         }
     }
-    chosen.span()
+    panic!("invalid relic draw")
 }
 pub fn bonus_active(end_at: u32, timestamp: u64) -> bool {
     timestamp < end_at.into()

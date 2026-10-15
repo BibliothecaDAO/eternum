@@ -62,7 +62,7 @@ fn camp_preset(blitz: bool) -> crate::presets::PresetDefinition {
         .exploration =
             array![
                 crate::exploration_rewards::ExplorationReward {
-                    resource_type: 2, amount: 10, amount_max: 10, weight: 1,
+                    resource_type: 2, percent: 10, percent_max: 10, weight: 1,
                 },
             ]
         .span();

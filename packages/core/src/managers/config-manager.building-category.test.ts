@@ -46,7 +46,6 @@ describe("native immutable configuration", () => {
       openRelicCrate: 1_000,
       hyperstructurePerRealmPerSecond: 1,
     });
-    expect(manager.getRelicCrateReward().victoryPoints).toBe(1_000);
     expect(manager.getHyperstructureConfig()).toEqual({
       timeBetweenSharesChange: 0,
       pointsPerCycle: 1,

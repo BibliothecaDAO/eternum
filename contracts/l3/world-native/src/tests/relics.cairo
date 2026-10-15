@@ -1,4 +1,5 @@
 use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
+use starknet::storage::StorageMapReadAccess;
 use crate::commands::{Command, ExecutionContext};
 use crate::exploration_rewards::{ExplorationReward, IExtractionSafeDispatcher, IExtractionSafeDispatcherTrait};
 use crate::game::IGameDispatcherTrait;
@@ -6,7 +7,7 @@ use crate::map::IMapLogicDispatcher;
 use crate::registrar::IRegistrarSafeDispatcherTrait;
 use crate::relics::{
     ApplyRelic, IRelicMapDispatcher, IRelicMapDispatcherTrait, IRelicMapSafeDispatcher, IRelicsDispatcher,
-    IRelicsSafeDispatcher, IRelicsSafeDispatcherTrait, OpenChest, Recipient, RelicRule,
+    IRelicsSafeDispatcher, IRelicsSafeDispatcherTrait, OpenChest, Recipient, RelicChest, RelicPack, RelicRule,
 };
 use crate::resources::{IResourceOperationsDispatcher, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
@@ -81,13 +82,14 @@ fn setup_with_reward(blitz: bool, resource_type: u8, amount: u128) -> (super::De
     };
     config.map_config.relic_discovery_interval_sec = 10;
     config.map_config.relic_hex_dist_from_center = 12;
-    config.map_config.relic_chest_relics_per_chest = 3;
     config.tick_config.armies_tick_in_seconds = 10;
     config.victory_points_grant_config.relic_open_points = 77;
     let mut preset = super::resource_commands::fixture_preset(config);
     preset.economy.relics = rules();
     preset.economy.chests = None;
-    preset.exploration = array![ExplorationReward { resource_type, amount, amount_max: amount, weight: 1 }].span();
+    // The fixture army is one T1 troop, so a row of `amount` hundred percent pays it `amount` whole units.
+    let percent = amount * 100;
+    preset.exploration = array![ExplorationReward { resource_type, percent, percent_max: percent, weight: 1 }].span();
     let (deployment, home, _) = super::resource_commands::setup_with_preset(preset);
     grant(deployment, home, 26, 10 * RESOURCE_PRECISION);
     grant(deployment, home, 38, 10000 * RESOURCE_PRECISION);
@@ -394,14 +396,19 @@ fn chest_discovery_is_surface_only_timed_and_skips_reserved_or_occupied_tiles() 
     assert_eq!(map_relics(deployment).relic_discovery_time(3), 50);
 }
 #[test]
-fn opening_a_chest_draws_with_replacement_once_and_replay_cannot_reopen_it() {
+fn opening_a_chest_grants_its_stored_pack_to_the_army_once_and_replay_cannot_reopen_it() {
     let (deployment, _, explorer) = setup(true);
     let coord = chest(deployment, Coord { alt: false, x: 2000200, y: 2000200 }, 321, 40);
     move_fixture(deployment, explorer, crate::geometry::neighbor(coord, 0));
     let command = Command::OpenRelicChest(OpenChest { explorer_id: explorer.entity_id, coord });
-    let mut root = super::context(deployment.games, 3).raw_root;
-    let seed = crate::random::game_root(ref root, 3);
-    let expected = crate::relics::draw_relics(rules(), seed, 3);
+    // Seed 321 draws an unlucky War pack: Damage I, Damage Reduction I and Stamina I.
+    assert_eq!(crate::relics::draw_chest(321), RelicChest { pack: RelicPack::War, lucky: false });
+    let expected = array![41_u8, 43, 39].span();
+    let chest_id = IMapLogicDispatcher { contract_address: deployment.games }
+        .occupancy(crate::geometry::tile_key(3, coord))
+        .unwrap()
+        .entity_id;
+    assert_eq!(stored_chest(deployment, chest_id), Some(RelicChest { pack: RelicPack::War, lucky: false }));
     let points = crate::game::IPointsDispatcherTrait::player_points(
         crate::game::IPointsDispatcher { contract_address: deployment.games }, 3, deployment.actor,
     );
@@ -421,12 +428,16 @@ fn opening_a_chest_draws_with_replacement_once_and_replay_cannot_reopen_it() {
         ),
         points + 77,
     );
+    assert_eq!(stored_chest(deployment, chest_id), None);
     assert_terminal_rejection(deployment, command, 51);
     assert!(
         IMapLogicDispatcher { contract_address: deployment.games }
             .occupancy(crate::geometry::tile_key(3, coord))
             .is_none(),
     );
+}
+fn stored_chest(deployment: super::Deployment, chest_id: u64) -> Option<RelicChest> {
+    snforge_std::interact_with_state(deployment.games, || crate::state::read().relics.relic_chests.read((3, chest_id)))
 }
 
 #[test]
@@ -491,23 +502,49 @@ fn relic_configuration_requires_authority_and_application_requires_owner() {
 }
 
 #[test]
-fn pinned_draw_vectors_keep_weights_fixed_salts_and_direction_retry_order() {
-    assert_eq!(crate::relics::draw_relics(rules(), 12345, 6), array![39_u8, 41, 39, 47, 48, 52].span());
+fn pinned_draw_vectors_keep_the_crafting_weights_and_direction_retry_order() {
+    assert_eq!(crate::relics::draw_relic(rules(), 12345), 39);
     assert_eq!(
         crate::relics::chest_destination(Coord { alt: false, x: 2000200, y: 2000200 }, 321, 12),
         Coord { alt: false, x: 2000199, y: 2000186 },
     );
-    let mut repeated = false;
-    for seed in 1_u64..32 {
-        let chosen = crate::relics::draw_relics(rules(), seed.into(), 3);
-        for index in 0..chosen.len() {
-            assert!(*chosen.at(index) != 53 && *chosen.at(index) != 54);
-            for previous in 0..index {
-                repeated = repeated || *chosen.at(index) == *chosen.at(previous);
-            }
+}
+
+#[test]
+fn every_pack_and_its_lucky_roll_is_reachable_by_seed() {
+    let cases = array![
+        (4_u256, RelicPack::War, false, array![41_u8, 43, 39]), (1, RelicPack::War, true, array![42, 44, 40]),
+        (2, RelicPack::Explore, false, array![45, 47, 39]), (30, RelicPack::Explore, true, array![46, 48, 40]),
+        (3, RelicPack::Produce, false, array![51, 53, 55]), (16, RelicPack::Produce, true, array![52, 54, 56]),
+        (10, RelicPack::Fortress, false, array![49, 43, 55]), (12, RelicPack::Fortress, true, array![50, 44, 56]),
+    ];
+    for (seed, pack, lucky, relics) in cases {
+        let chest = crate::relics::draw_chest(seed);
+        assert_eq!(chest, RelicChest { pack, lucky });
+        assert_eq!(crate::relics::pack_relics(chest), relics.span());
+    }
+}
+
+#[test]
+fn packs_follow_their_odds_and_one_chest_in_five_is_lucky() {
+    let (mut war, mut explore, mut produce, mut fortress, mut lucky) = (0_u32, 0_u32, 0_u32, 0_u32, 0_u32);
+    for sample in 0_u64..10000 {
+        let chest = crate::relics::draw_chest(0x5041434b + sample.into());
+        match chest.pack {
+            RelicPack::War => war += 1,
+            RelicPack::Explore => explore += 1,
+            RelicPack::Produce => produce += 1,
+            RelicPack::Fortress => fortress += 1,
+        }
+        if chest.lucky {
+            lucky += 1;
         }
     }
-    assert!(repeated);
+    // Each count sits within three standard deviations (at most 46) of its expectation.
+    assert!(war >= 2860 && war <= 3140 && explore >= 2860 && explore <= 3140, "War or Explore off 30 percent");
+    assert!(produce >= 2370 && produce <= 2630 && fortress >= 1390 && fortress <= 1610, "Produce or Fortress off");
+    assert!(lucky >= 1880 && lucky <= 2120, "lucky chests off 20 percent");
+    println!("10000 chests: War {} Explore {} Produce {} Fortress {} lucky {}", war, explore, produce, fortress, lucky);
 }
 #[feature("safe_dispatcher")]
 fn extract_reward(deployment: super::Deployment, explorer_id: u64, timestamp: u64) -> bool {
@@ -621,7 +658,7 @@ fn extraction_requires_immutable_authorized_configuration() {
     let (deployment, _, explorer) = setup(false);
     let registrar = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
     let mut preset = super::resource_commands::fixture_preset(super::play_fixture::rules());
-    let rewards = array![ExplorationReward { resource_type: 2, amount: 10, amount_max: 10, weight: 1 }].span();
+    let rewards = array![ExplorationReward { resource_type: 2, percent: 10, percent_max: 10, weight: 1 }].span();
     preset.exploration = rewards;
     start_cheat_caller_address(deployment.games, deployment.actor);
     assert!(registrar.register_preset(20000, preset).is_err());

@@ -16,6 +16,5 @@ export const eternumExplorationConfig: ConfigPatch = {
     shardsMineInitialFishBalance: 1000,
     relicDiscoveryIntervalSeconds: 0,
     relicHexDistanceFromCenter: 0,
-    relicChestRelicsPerChest: 0,
   },
 };

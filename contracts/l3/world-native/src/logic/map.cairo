@@ -426,19 +426,7 @@ pub mod MapLogic {
             context: crate::commands::ActionContext,
         ) -> () {
             let context = crate::commands::execution_context(game_id, context);
-
-            let classes = self.release.classes(game_id);
-
-            let game = context.game.unbox();
-            crate::game::assert_playing(game, context.timestamp);
-            let explorer = crate::logic::troops::authorized_explorer(
-                crate::troops::ExplorerKey { game_id, explorer_id }, actor, context.timestamp, context,
-            );
-            assert!(!explorer.coord.alt, "extraction requires surface");
-            assert!(explorer.troops.count != 0, "explorer is dead");
-            let occupied = crate::logic::map::occupancy(tile_key(game_id, explorer.coord))
-                .expect('missing army occupancy');
-            assert!(occupied.entity_id == explorer_id, "explorer does not occupy tile");
+            let explorer = self.revealing_explorer(game_id, actor, explorer_id, context);
             let rules = context.rules.unbox();
             let coord = if crate::rules::rule_enabled(rules, crate::rules::REVEAL_SUPPLIES) {
                 match revealed {
@@ -464,47 +452,56 @@ pub mod MapLogic {
                     seed,
                 )
             } else {
-                let drawn = crate::exploration_rewards::draw(self.extraction_rewards(game_id), seed);
-                crate::resources::ResourceAmount {
-                    resource_type: drawn.resource_type,
-                    amount: crate::exploration_rewards::boosted_amount(
-                        drawn.amount, explorer.troops.boosts, context.timestamp,
-                    ),
-                }
+                crate::exploration_rewards::pool_reward(
+                    self.extraction_rewards(game_id),
+                    explorer.troops,
+                    rules.troop_limit_config,
+                    context.timestamp,
+                    seed,
+                )
             };
-            let amount = reward.amount;
-            let receiver = crate::exploration_rewards::receiver(
-                crate::rules::rule_enabled(rules, crate::rules::HOME_REWARDS),
-                explorer_id,
-                explorer.owner,
-                reward.resource_type,
-            );
-            crate::exploration_rewards::IExplorationGrantDispatcherTrait::grant_exploration_reward(
-                crate::exploration_rewards::IExplorationGrantLibraryDispatcher { class_hash: classes.resources.read() },
-                crate::resources::ResourceKey { game_id, entity_id: receiver },
-                reward.resource_type,
-                amount,
-                context.timestamp,
-                crate::commands::resource_context(context),
-            );
+            let paid = self.pay_reveal(game_id, explorer_id, explorer, coord, reward, context);
             crate::logic::map::MapState::mark_reward_extracted(key);
             if rules.day_unit_seconds != 0 {
                 crate::progression::IArmyProgressionDispatcherTrait::grant_army_xp(
-                    crate::progression::IArmyProgressionLibraryDispatcher { class_hash: classes.relics.read() },
+                    crate::progression::IArmyProgressionLibraryDispatcher {
+                        class_hash: self.release.classes(game_id).relics.read(),
+                    },
                     crate::troops::ExplorerKey { game_id, explorer_id },
                     crate::progression::XpAward::Reveal,
                 );
             }
             self
-                .record_extraction(
-                    game_id,
-                    actor,
-                    context.timestamp,
-                    crate::exploration_rewards::ExtractedReward {
-                        explorer_id, receiver, coord, resource_type: reward.resource_type, amount,
-                    },
+                .record_story(
+                    game_id, actor, context.timestamp, paid, crate::ownership::Story::ExplorationReward(paid),
                 );
             ()
+        }
+        fn raise_dormant_spire(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            explorer_id: u64,
+            coord: Coord,
+            context: crate::commands::ActionContext,
+        ) {
+            let context = crate::commands::execution_context(game_id, context);
+            assert!(
+                crate::rules::rule_enabled(context.rules.unbox(), crate::rules::DISCOVER_SPIRES),
+                "spire discovery is disabled",
+            );
+            let explorer = self.revealing_explorer(game_id, actor, explorer_id, context);
+            crate::logic::map::MapState::occupy(
+                tile_key(game_id, coord),
+                crate::entity_ids::allocate_home(game_id, explorer.owner),
+                crate::taxonomy::DORMANT_SPIRE_OCCUPIER,
+                false,
+            );
+            let reward = crate::exploration_rewards::spire_reward(
+                explorer.troops, context.rules.unbox().troop_limit_config, context.timestamp,
+            );
+            let paid = self.pay_reveal(game_id, explorer_id, explorer, coord, reward, context);
+            self.record_story(game_id, actor, context.timestamp, paid, crate::ownership::Story::SpireDiscovered(paid));
         }
     }
     #[abi(embed_v0)]
@@ -547,8 +544,10 @@ pub mod MapLogic {
                             key, crate::logic::map::biome(key, crate::commands::biome_context(game_context)),
                         );
                     }
-                    crate::logic::map::MapState::occupy(
-                        key, crate::entity_ids::allocate_home(game_id, home_id), crate::taxonomy::CHEST_OCCUPIER, false,
+                    let chest_id = crate::entity_ids::allocate_home(game_id, home_id);
+                    crate::logic::map::MapState::occupy(key, chest_id, crate::taxonomy::CHEST_OCCUPIER, false);
+                    crate::logic::relic_chests::store(
+                        crate::resources::ResourceKey { game_id, entity_id: chest_id }, crate::relics::draw_chest(seed),
                     );
                     break;
                 }
@@ -565,7 +564,7 @@ pub mod MapLogic {
                     },
                 );
         }
-        fn consume_relic_chest(ref self: ContractState, game_id: u32, coord: Coord) {
+        fn consume_relic_chest(ref self: ContractState, game_id: u32, coord: Coord) -> u64 {
             let key = tile_key(game_id, coord);
             let occupied = crate::logic::map::occupancy(key).expect('missing chest tile');
             assert!(
@@ -574,6 +573,7 @@ pub mod MapLogic {
             );
             let id = occupied.entity_id;
             crate::logic::map::MapState::vacate(key, id);
+            id
         }
         fn reveal_relic_ring(
             ref self: ContractState,
@@ -600,23 +600,76 @@ pub mod MapLogic {
     }
     #[generate_trait]
     impl Internal of InternalTrait {
-        fn record_extraction(
+        /// The surface army standing on its own tile that a reveal pays.
+        fn revealing_explorer(
+            self: @ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            explorer_id: u64,
+            context: crate::commands::ExecutionContext,
+        ) -> crate::troops::ExplorerTroops {
+            crate::game::assert_playing(context.game.unbox(), context.timestamp);
+            let explorer = crate::logic::troops::authorized_explorer(
+                crate::troops::ExplorerKey { game_id, explorer_id }, actor, context.timestamp, context,
+            );
+            assert!(!explorer.coord.alt, "extraction requires surface");
+            assert!(explorer.troops.count != 0, "explorer is dead");
+            let occupied = crate::logic::map::occupancy(tile_key(game_id, explorer.coord))
+                .expect('missing army occupancy');
+            assert!(occupied.entity_id == explorer_id, "explorer does not occupy tile");
+            explorer
+        }
+
+        /// Grants a reveal's reward to the army or, under home rewards, to its realm.
+        fn pay_reveal(
+            ref self: ContractState,
+            game_id: u32,
+            explorer_id: u64,
+            explorer: crate::troops::ExplorerTroops,
+            coord: Coord,
+            reward: crate::resources::ResourceAmount,
+            context: crate::commands::ExecutionContext,
+        ) -> crate::exploration_rewards::ExtractedReward {
+            let receiver = crate::exploration_rewards::receiver(
+                crate::rules::rule_enabled(context.rules.unbox(), crate::rules::HOME_REWARDS),
+                explorer_id,
+                explorer.owner,
+                reward.resource_type,
+            );
+            crate::exploration_rewards::IExplorationGrantDispatcherTrait::grant_exploration_reward(
+                crate::exploration_rewards::IExplorationGrantLibraryDispatcher {
+                    class_hash: self.release.classes(game_id).resources.read(),
+                },
+                crate::resources::ResourceKey { game_id, entity_id: receiver },
+                reward.resource_type,
+                reward.amount,
+                context.timestamp,
+                crate::commands::resource_context(context),
+            );
+            crate::exploration_rewards::ExtractedReward {
+                explorer_id, receiver, coord, resource_type: reward.resource_type, amount: reward.amount,
+            }
+        }
+
+        /// A reveal's payout story, told once for the army that revealed it.
+        fn record_story(
             ref self: ContractState,
             game_id: u32,
             actor: ContractAddress,
             timestamp: u64,
-            reward: crate::exploration_rewards::ExtractedReward,
+            paid: crate::exploration_rewards::ExtractedReward,
+            story: crate::ownership::Story,
         ) {
             self
                 .emit(
                     crate::ownership::StoryEvent {
                         version: 2,
                         game_id,
-                        entity_id: Some(reward.explorer_id),
+                        entity_id: Some(paid.explorer_id),
                         owner: Some(actor),
                         timestamp,
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
-                        story: crate::ownership::Story::ExplorationReward(reward),
+                        story,
                     },
                 );
         }

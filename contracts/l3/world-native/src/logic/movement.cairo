@@ -140,11 +140,22 @@ pub mod MovementLogic {
             );
             crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
 
+            let extraction = crate::exploration_rewards::IExtractionLibraryDispatcher {
+                class_hash: self.release.classes(game_id).map.read(),
+            };
+            if discovery == crate::discovery::Discovery::Spire {
+                crate::exploration_rewards::IExtractionDispatcherTrait::raise_dormant_spire(
+                    extraction,
+                    game_id,
+                    actor,
+                    command.explorer_id,
+                    destination,
+                    crate::commands::action_context(context),
+                );
+            }
             if !explorer.coord.alt {
                 crate::exploration_rewards::IExtractionDispatcherTrait::extract_exploration_reward(
-                    crate::exploration_rewards::IExtractionLibraryDispatcher {
-                        class_hash: self.release.classes(game_id).map.read(),
-                    },
+                    extraction,
                     game_id,
                     actor,
                     command.explorer_id,

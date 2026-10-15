@@ -12,9 +12,9 @@ export const eternumPreset: NativePreset = {
   startingTroops: startingTroopsByBiome,
   realmResources: realmResourcePool,
   relics: relicRules,
-  supplies: eternumExplorationRewards(750).map((row) => ({
+  supplies: eternumExplorationRewards(75).map((row) => ({
     ...row,
-    amount_max: row.amount,
+    percent_max: row.percent,
   })),
   bridgeResources: [
     ...Array.from({ length: 22 }, (_, index) => index + 1),

@@ -34,7 +34,6 @@ export function buildMapConfig(config: Config) {
     hyps_fail_prob_increase_p_fnd: config.exploration.hyperstructureFailProbIncreasePerHyperstructureFound,
     relic_discovery_interval_sec: config.exploration.relicDiscoveryIntervalSeconds,
     relic_hex_dist_from_center: config.exploration.relicHexDistanceFromCenter,
-    relic_chest_relics_per_chest: config.exploration.relicChestRelicsPerChest,
   };
 }
 

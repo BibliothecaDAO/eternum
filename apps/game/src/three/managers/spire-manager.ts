@@ -19,7 +19,11 @@ export interface RuleSpires {
   subscribe(onChange: () => void): () => void;
 }
 
-type SpireHex = { col: number; row: number };
+/** A spire's hex; a dormant one, found by a Blitz reveal, stands without its portal. */
+type SpireHex = { col: number; row: number; dormant: boolean };
+
+const isSpireTile = (occupierType: number | undefined) =>
+  occupierType === TileOccupier.Spire || occupierType === TileOccupier.DormantSpire;
 
 /** Spires belong to tiles or to a rule, so they never require a Structure component. */
 export class SpireManager {
@@ -45,8 +49,7 @@ export class SpireManager {
         const relevant = projectionChangesForLayer(changes, activeMapLayer());
         if (
           relevant.some(
-            ({ previous, current }) =>
-              previous?.occupierType === TileOccupier.Spire || current?.occupierType === TileOccupier.Spire,
+            ({ previous, current }) => isSpireTile(previous?.occupierType) || isSpireTile(current?.occupierType),
           )
         )
           this.refresh();
@@ -79,7 +82,7 @@ export class SpireManager {
       if (label.position.y === labelHeight) return;
       this.dummy.position.copy(position);
       this.dummy.updateMatrix();
-      this.model!.setMatrixAt(index, this.dummy.matrix);
+      this.model!.placeSpire(index, this.dummy.matrix, hex.dormant);
       label.position.y = labelHeight;
       changed = true;
     });
@@ -104,7 +107,7 @@ export class SpireManager {
     this.model?.setCount(0);
     if (!tiles.length) return;
     if (!this.model || tiles.length > this.capacity) {
-      // No spire tiles means no asset request, including every Blitz game.
+      // No spire tiles means no asset request: a Blitz game loads it only once a reveal finds a dormant spire.
       if (!this.loading) {
         this.loading = this.loadModel(tiles.length).finally(() => {
           this.loading = null;
@@ -121,9 +124,9 @@ export class SpireManager {
     const position = this.getSpirePosition(hex);
     this.dummy.position.copy(position);
     this.dummy.updateMatrix();
-    this.model!.setMatrixAt(index, this.dummy.matrix);
+    this.model!.placeSpire(index, this.dummy.matrix, hex.dormant);
     const element = document.createElement("div");
-    element.textContent = "Spire";
+    element.textContent = hex.dormant ? "Dormant spire" : "Spire";
     element.className = "rounded-md px-2 py-1 text-sm text-gold bg-dark-brown/90 border border-gold/30";
     element.style.pointerEvents = "none";
     const label = new CSS2DObject(element);
@@ -160,10 +163,15 @@ export class SpireManager {
     const layer = activeMapLayer();
     const tileSpires = this.projection
       .getTiles(layer)
-      .filter((tile) => tile.occupierType === TileOccupier.Spire)
-      .map((tile) => ({ col: tile.hexCoords.col, row: tile.hexCoords.row }));
+      .filter((tile) => isSpireTile(tile.occupierType))
+      .map((tile) => ({
+        col: tile.hexCoords.col,
+        row: tile.hexCoords.row,
+        dormant: tile.occupierType === TileOccupier.DormantSpire,
+      }));
     // A rule spire stands on the realm's surface ring.
-    return !layer && this.ruleSpires ? [...tileSpires, ...this.ruleSpires.hexes()] : tileSpires;
+    if (layer || !this.ruleSpires) return tileSpires;
+    return [...tileSpires, ...this.ruleSpires.hexes().map((hex) => ({ ...hex, dormant: false }))];
   }
 
   private clearLabels(): void {

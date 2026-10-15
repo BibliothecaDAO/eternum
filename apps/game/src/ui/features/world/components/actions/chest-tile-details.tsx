@@ -1,8 +1,16 @@
 import { Icon } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
-import { type BiomeType, getRelicInfo, type ID, ResourcesIds } from "@bibliothecadao/types";
+import {
+  type BiomeType,
+  getRelicInfo,
+  type ID,
+  relicChestName,
+  relicChestPack,
+  relicChestRelics,
+  ResourcesIds,
+} from "@bibliothecadao/types";
 import { configManager } from "@bibliothecadao/eternum";
-
+import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
 import { HUD_PILL_BUTTON, OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
@@ -13,8 +21,8 @@ import { EntityDetailStat, EntityDetailStatList } from "../entities/layout";
 import { BiomeSummaryCard } from "./unoccupied-tile-quadrants";
 
 /**
- * The relic crate tile, in the structure tile's chrome: header, name row, contents from config with the Open
- * action, then the biome. Once the crate is opened the contents list the relics it yielded.
+ * The relic crate tile, in the structure tile's chrome: header, name row, the pack it holds with the Open action, then
+ * the biome. Once the crate is opened the contents list the relics it yielded.
  */
 export function ChestTileDetails({
   crateEntityId,
@@ -47,7 +55,7 @@ export function ChestTileDetails({
           </div>
         </InfoBubble>
         <InfoBubble variant="section" title="Contents" icon={"chest" as const}>
-          {opening ? <RelicList relics={opening.relics} /> : <CrateContents />}
+          {opening ? <RelicList relics={opening.relics} /> : <CrateContents crateEntityId={crateEntityId} />}
           {!opening && (
             <button
               type="button"
@@ -66,18 +74,31 @@ export function ChestTileDetails({
   );
 }
 
-const CrateContents = () => {
-  const reward = configManager.getRelicCrateReward();
+/** The crate's pack, as the chain stored it when the crate appeared, and the points opening it scores. */
+const CrateContents = ({ crateEntityId }: { crateEntityId: ID | null }) => {
+  const row = useNativeRow(
+    "RelicChest",
+    crateEntityId === null ? undefined : { game_id: configManager.getActiveGameId(), entity_id: crateEntityId },
+  );
+  const chest = row && relicChestPack(row);
   return (
-    <EntityDetailStatList compact columns={2}>
-      <EntityDetailStat compact label="Relics" value={reward.relicsPerCrate} emphasizeValue />
-      <EntityDetailStat compact label="Victory points" value={reward.victoryPoints.toLocaleString()} emphasizeValue />
-    </EntityDetailStatList>
+    <div className="flex flex-col gap-2">
+      {chest && <p className={cn("text-gold", HUD_BODY)}>{relicChestName(chest)}</p>}
+      {chest && <RelicList relics={relicChestRelics(chest)} />}
+      <EntityDetailStatList compact columns={1}>
+        <EntityDetailStat
+          compact
+          label="Victory points"
+          value={configManager.getVictoryPointGrants().openRelicCrate.toLocaleString()}
+          emphasizeValue
+        />
+      </EntityDetailStatList>
+    </div>
   );
 };
 
 const RelicList = ({ relics }: { relics: ResourcesIds[] }) => (
-  <ul aria-label="Relics found" className="flex flex-col gap-1">
+  <ul aria-label="Relics" className="flex flex-col gap-1">
     {relics.map((relicId, index) => (
       <li key={`${relicId}-${index}`} className={cn("flex items-center gap-2", HUD_BODY)}>
         <ResourceIcon resource={ResourcesIds[relicId]} size="sm" withTooltip={false} />

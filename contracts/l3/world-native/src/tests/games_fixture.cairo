@@ -216,6 +216,24 @@ pub mod GamesFixture {
                 context,
             )
         }
+        fn raise_dormant_spire(
+            ref self: TContractState,
+            game_id: u32,
+            actor: starknet::ContractAddress,
+            explorer_id: u64,
+            coord: crate::troops::Coord,
+            context: crate::commands::ActionContext,
+        ) {
+            let classes = fixture_classes(game_id);
+            crate::exploration_rewards::IExtractionDispatcherTrait::raise_dormant_spire(
+                crate::exploration_rewards::IExtractionLibraryDispatcher { class_hash: classes.map.read() },
+                game_id,
+                actor,
+                explorer_id,
+                coord,
+                context,
+            )
+        }
     }
     #[starknet::embeddable]
     pub impl RelicMapFixture<TContractState, +Drop<TContractState>> of crate::relics::IRelicMap<TContractState> {
@@ -247,7 +265,7 @@ pub mod GamesFixture {
                 game_context,
             )
         }
-        fn consume_relic_chest(ref self: TContractState, game_id: u32, coord: crate::troops::Coord) {
+        fn consume_relic_chest(ref self: TContractState, game_id: u32, coord: crate::troops::Coord) -> u64 {
             let classes = fixture_classes(game_id);
             crate::relics::IRelicMapDispatcherTrait::consume_relic_chest(
                 crate::relics::IRelicMapLibraryDispatcher { class_hash: classes.map.read() }, game_id, coord,

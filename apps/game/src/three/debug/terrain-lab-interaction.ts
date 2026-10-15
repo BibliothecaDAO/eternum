@@ -178,7 +178,13 @@ export class TerrainLabInteraction {
     this.pendingExploration = { prepared: revealed, source, revision, coveredFrame: false };
   }
 
-  async placeBuilding(path: string, yaw: number, hyperstructureId = 17, constructionProgress = 100): Promise<void> {
+  async placeBuilding(
+    path: string,
+    yaw: number,
+    hyperstructureId = 17,
+    constructionProgress = 100,
+    dormant = false,
+  ): Promise<void> {
     this.cancelExplorationPreview();
     const asset = TERRAIN_LAB_BUILDINGS.find((building) => building.path === path);
     if (!asset) throw new Error(`Unknown lab building: ${path}`);
@@ -191,6 +197,7 @@ export class TerrainLabInteraction {
       yaw,
       hyperstructureId,
       constructionProgress,
+      dormant,
     });
     await this.presentFixture();
   }
@@ -289,7 +296,8 @@ export class TerrainLabInteraction {
         center.z,
       );
       const index = counts.get(building.path) ?? 0;
-      model.setMatrixAt(index, this.matrix);
+      if (model instanceof SpireModel) model.placeSpire(index, this.matrix, building.dormant ?? false);
+      else model.setMatrixAt(index, this.matrix);
       if (model instanceof SettlementModel) this.applySettlementHeraldry(model, index);
       if (model instanceof HyperstructureModel)
         model.setConstructionAt(index, {

@@ -83,13 +83,15 @@ const blitzStartingResources = buildArenaStartingResources({
   [ResourcesIds.Donkey]: 500,
 });
 
+// A 1,000-troop T1 army (strength 1,000) earns what the fixed pool paid: 150, 300 or 600 Essence, 500 or 1,000 labor,
+// 500 donkeys.
 const blitzExplorationRewards = [
-  { rewardId: ResourcesIds.Essence, amount: 150, probabilityBps: 3_500 },
-  { rewardId: ResourcesIds.Essence, amount: 300, probabilityBps: 2_500 },
-  { rewardId: ResourcesIds.Essence, amount: 600, probabilityBps: 1_500 },
-  { rewardId: ResourcesIds.Labor, amount: 500, probabilityBps: 1_500 },
-  { rewardId: ResourcesIds.Labor, amount: 1_000, probabilityBps: 500 },
-  { rewardId: ResourcesIds.Donkey, amount: 500, probabilityBps: 500 },
+  { rewardId: ResourcesIds.Essence, percent: 15, probabilityBps: 3_500 },
+  { rewardId: ResourcesIds.Essence, percent: 30, probabilityBps: 2_500 },
+  { rewardId: ResourcesIds.Essence, percent: 60, probabilityBps: 1_500 },
+  { rewardId: ResourcesIds.Labor, percent: 50, probabilityBps: 1_500 },
+  { rewardId: ResourcesIds.Labor, percent: 100, probabilityBps: 500 },
+  { rewardId: ResourcesIds.Donkey, percent: 50, probabilityBps: 500 },
 ] as const;
 
 function buildBlitzResourceOutputs() {

@@ -150,7 +150,7 @@ export class ArmyActionManager {
     return tile?.occupier_type === TileOccupier.Spire;
   }
 
-  // A shrine or well holds its tile: an army uses it from beside it, so no path enters or crosses it.
+  // A shrine, well or dormant spire holds its tile: no path enters or crosses it.
   private isMapSiteHex(position: HexPosition): boolean {
     const tile = getTileAt(this.store, this._getCurrentPosition().alt, position.col, position.row);
     return tile !== undefined && isTileOccupierMapSite(tile.occupier_type);

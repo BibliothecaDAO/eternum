@@ -20,16 +20,17 @@ const duelStartingResources = buildArenaStartingResources({
   [ResourcesIds.Donkey]: 200,
 });
 
+// A 1,000-troop T1 army earns what the fixed pool paid.
 const duelExplorationRewards = [
-  { rewardId: ResourcesIds.Essence, amount: 100, probabilityBps: 3_000 },
-  { rewardId: ResourcesIds.Essence, amount: 250, probabilityBps: 2_000 },
-  { rewardId: ResourcesIds.Essence, amount: 500, probabilityBps: 1_500 },
-  { rewardId: ResourcesIds.Labor, amount: 250, probabilityBps: 1_500 },
-  { rewardId: ResourcesIds.Labor, amount: 500, probabilityBps: 800 },
-  { rewardId: ResourcesIds.Donkey, amount: 100, probabilityBps: 600 },
-  { rewardId: ResourcesIds.Knight, amount: 1_000, probabilityBps: 200 },
-  { rewardId: ResourcesIds.Crossbowman, amount: 1_000, probabilityBps: 200 },
-  { rewardId: ResourcesIds.Paladin, amount: 1_000, probabilityBps: 200 },
+  { rewardId: ResourcesIds.Essence, percent: 10, probabilityBps: 3_000 },
+  { rewardId: ResourcesIds.Essence, percent: 25, probabilityBps: 2_000 },
+  { rewardId: ResourcesIds.Essence, percent: 50, probabilityBps: 1_500 },
+  { rewardId: ResourcesIds.Labor, percent: 25, probabilityBps: 1_500 },
+  { rewardId: ResourcesIds.Labor, percent: 50, probabilityBps: 800 },
+  { rewardId: ResourcesIds.Donkey, percent: 10, probabilityBps: 600 },
+  { rewardId: ResourcesIds.Knight, percent: 100, probabilityBps: 200 },
+  { rewardId: ResourcesIds.Crossbowman, percent: 100, probabilityBps: 200 },
+  { rewardId: ResourcesIds.Paladin, percent: 100, probabilityBps: 200 },
 ] as const;
 
 export const duelBalance: ConfigPatch = {

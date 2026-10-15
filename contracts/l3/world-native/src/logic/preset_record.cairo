@@ -445,7 +445,7 @@ fn write_exploration(
     for index in 0..rewards.len() {
         let reward = *rewards.at(index);
         assert!(reward.resource_type > 0 && reward.resource_type <= 58, "invalid reward resource");
-        assert!(reward.amount <= reward.amount_max, "invalid exploration reward range");
+        assert!(reward.percent <= reward.percent_max, "invalid exploration reward range");
         total += reward.weight;
         preset.exploration_rewards.write(index, reward);
     }

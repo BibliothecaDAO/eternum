@@ -71,8 +71,9 @@ pub mod RelicState {
             );
             assert!(explorer.troops.count != 0, "explorer is dead");
             assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to chest");
-            IRelicMapLibraryDispatcher { class_hash: classes.map.read() }.consume_relic_chest(game_id, command.coord);
-            self.pay_chest(game_id, actor, command, context);
+            let chest_id = IRelicMapLibraryDispatcher { class_hash: classes.map.read() }
+                .consume_relic_chest(game_id, command.coord);
+            self.pay_chest(game_id, actor, command, chest_id, context);
             ()
         }
         fn apply_relic(
@@ -409,7 +410,7 @@ pub mod RelicState {
                 );
             let mut root = context.raw_root;
             let seed = crate::random::game_root(ref root, game_id);
-            let relic = *crate::relics::draw_relics(self.relic_rules(game_id), seed, 1).at(0);
+            let relic = crate::relics::draw_relic(self.relic_rules(game_id), seed);
             self
                 .resources(game_id)
                 .grant_resource(
@@ -484,14 +485,12 @@ pub mod RelicState {
             game_id: u32,
             actor: ContractAddress,
             command: OpenChest,
+            chest_id: u64,
             context: ExecutionContext,
         ) {
-            let mut root = context.raw_root;
-            let seed = crate::random::game_root(ref root, game_id);
             let config = context.rules.unbox();
-            let relics = crate::relics::draw_relics(
-                self.relic_rules(game_id), seed, config.map_config.relic_chest_relics_per_chest,
-            );
+            let chest = crate::logic::relic_chests::take(ResourceKey { game_id, entity_id: chest_id });
+            let relics = crate::relics::pack_relics(chest);
             let key = ResourceKey { game_id, entity_id: command.explorer_id };
             for id in relics {
                 self
@@ -507,7 +506,7 @@ pub mod RelicState {
             let points = config.victory_points_grant_config.relic_open_points.into();
             IPointsLibraryDispatcher { class_hash: get_dep_component!(@self, Life).classes(game_id).season.read() }
                 .register_relic_points(game_id, actor, crate::commands::action_context(context));
-            self.record_chest_opened(game_id, actor, command, relics, points, context.timestamp);
+            self.record_chest_opened(game_id, actor, command, chest, relics, points, context.timestamp);
         }
 
         fn record_lords_withdrawal(
@@ -570,6 +569,7 @@ pub mod RelicState {
             game_id: u32,
             actor: ContractAddress,
             command: OpenChest,
+            chest: crate::relics::RelicChest,
             relics: Span<u8>,
             points: u128,
             timestamp: u64,
@@ -585,7 +585,7 @@ pub mod RelicState {
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
                         story: crate::ownership::Story::RelicChestOpened(
                             crate::relics::ChestOpened {
-                                explorer_id: command.explorer_id, coord: command.coord, relics, points,
+                                explorer_id: command.explorer_id, coord: command.coord, chest, relics, points,
                             },
                         ),
                     },

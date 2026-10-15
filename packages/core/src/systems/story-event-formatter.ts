@@ -1,4 +1,12 @@
-import { BuildingType, BuildingTypeToString, GuardSlot, RESOURCE_PRECISION, resources } from "@bibliothecadao/types";
+import {
+  BuildingType,
+  BuildingTypeToString,
+  GuardSlot,
+  RESOURCE_PRECISION,
+  relicChestName,
+  relicChestPack,
+  resources,
+} from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { getStructureName, type PlayerNameResolver } from "../utils/entities";
 import { siteKindOf, structureMapPosition } from "../utils/expeditions";
@@ -53,8 +61,13 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     description: joinPieces([describeExplorer(payload.explorer_id, components), "Reveal"]),
     icon: "resource",
   }),
+  SpireDiscovered: (_event, payload, components) => ({
+    title: `Dormant spire found: +${formatResourceAmount(payload.amount) ?? "—"} ${getResourceName(Number(payload.resource_type))}`,
+    description: joinPieces([describeExplorer(payload.explorer_id, components), "Reveal"]),
+    icon: "prize",
+  }),
   RelicChestOpened: (_event, payload, components) => ({
-    title: "Relic crate opened",
+    title: `${relicChestName(relicChestPack(payload.chest))} opened`,
     description: joinPieces([
       describeExplorer(payload.explorer_id, components),
       Array.isArray(payload.relics)

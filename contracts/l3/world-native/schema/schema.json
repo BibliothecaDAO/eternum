@@ -33,6 +33,7 @@
     "REVEAL_SUPPLIES": 262144,
     "COMBAT_DICE": 524288,
     "COMBAT_DICE_ETHEREAL": 1048576,
+    "DISCOVER_SPIRES": 2097152,
     "SAME_OWNER_TRANSFER": 256,
     "SEASON_CLOSE": 1024,
     "RESERVED_HYPERSTRUCTURES": 2048,
@@ -3069,6 +3070,39 @@
       "valueLength": 3
     },
     {
+      "name": "RelicChest",
+      "identity": "0x52656c69634368657374",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "pack",
+          "type": "world_native::relics::RelicPack",
+          "id": "0x7061636b",
+          "feltLength": 1
+        },
+        {
+          "name": "lucky",
+          "type": "core::bool",
+          "id": "0x6c75636b79",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 2
+    },
+    {
       "name": "LordsWithdrawal",
       "identity": "0x4c6f7264735769746864726177616c",
       "scope": "game",
@@ -6079,7 +6113,7 @@
           "name": "map_config",
           "type": "world_native::rules::MapConfig",
           "id": "0x6d61705f636f6e666967",
-          "feltLength": 13
+          "feltLength": 12
         },
         {
           "name": "biome_climate_config",
@@ -6191,7 +6225,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 101,
+      "valueLength": 100,
       "derivedFrom": "preset"
     },
     {
@@ -8537,6 +8571,10 @@
         {
           "name": "Well",
           "type": "()"
+        },
+        {
+          "name": "Spire",
+          "type": "()"
         }
       ]
     },
@@ -8751,11 +8789,11 @@
           "type": "core::integer::u8"
         },
         {
-          "name": "amount",
+          "name": "percent",
           "type": "core::integer::u128"
         },
         {
-          "name": "amount_max",
+          "name": "percent_max",
           "type": "core::integer::u128"
         },
         {
@@ -10107,6 +10145,10 @@
         {
           "name": "SitePayout",
           "type": "world_native::expeditions::SitePayout"
+        },
+        {
+          "name": "SpireDiscovered",
+          "type": "world_native::exploration_rewards::ExtractedReward"
         }
       ]
     },
@@ -10763,6 +10805,10 @@
           "type": "world_native::troops::Coord"
         },
         {
+          "name": "chest",
+          "type": "world_native::relics::RelicChest"
+        },
+        {
           "name": "relics",
           "type": "core::array::Span::<core::integer::u8>"
         },
@@ -10921,6 +10967,42 @@
         {
           "name": "explorer_id",
           "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::relics::RelicChest": {
+      "type": "struct",
+      "name": "world_native::relics::RelicChest",
+      "members": [
+        {
+          "name": "pack",
+          "type": "world_native::relics::RelicPack"
+        },
+        {
+          "name": "lucky",
+          "type": "core::bool"
+        }
+      ]
+    },
+    "world_native::relics::RelicPack": {
+      "type": "enum",
+      "name": "world_native::relics::RelicPack",
+      "variants": [
+        {
+          "name": "War",
+          "type": "()"
+        },
+        {
+          "name": "Explore",
+          "type": "()"
+        },
+        {
+          "name": "Produce",
+          "type": "()"
+        },
+        {
+          "name": "Fortress",
+          "type": "()"
         }
       ]
     },
@@ -11334,10 +11416,6 @@
         },
         {
           "name": "relic_hex_dist_from_center",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "relic_chest_relics_per_chest",
           "type": "core::integer::u8"
         }
       ]
@@ -12835,5 +12913,5 @@
       ]
     }
   },
-  "identity": "80fb753a4d9c7937d2668c6f7693aeac21f7d9a19ad1cf4f3462a4ce7d5dce9d"
+  "identity": "a1253e21cef394350080d0d4e8e71785c132254f3b68ba20379ac7d6f5bab3bf"
 }

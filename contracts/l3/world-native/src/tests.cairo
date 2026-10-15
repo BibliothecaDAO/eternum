@@ -35,6 +35,7 @@ mod combat_formula;
 mod days;
 mod entity_ids;
 mod entry;
+mod explore_rewards;
 mod fact_wire;
 mod faith;
 mod fixtures;

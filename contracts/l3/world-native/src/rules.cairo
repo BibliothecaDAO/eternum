@@ -172,7 +172,6 @@ pub struct MapConfig {
     // Relic discovery
     pub relic_discovery_interval_sec: u16,
     pub relic_hex_dist_from_center: u8,
-    pub relic_chest_relics_per_chest: u8,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -267,6 +266,8 @@ pub const REVEAL_SUPPLIES: u32 = 262144;
 // Every battle rolls a d20 per side.
 pub const COMBAT_DICE: u32 = 524288;
 pub const COMBAT_DICE_ETHEREAL: u32 = 1048576;
+// One reveal in two hundred finds a dormant spire that pays its finder Essence once.
+pub const DISCOVER_SPIRES: u32 = 2097152;
 pub const SAME_OWNER_TRANSFER: u32 = 256;
 pub const SEASON_CLOSE: u32 = 1024;
 pub const RESERVED_HYPERSTRUCTURES: u32 = 2048;
@@ -549,10 +550,10 @@ pub impl MapConfigPacking of starknet::storage_access::StorePacking<MapConfig, P
                 + value.hyps_win_prob.into() * 0x1000000000000
                 + value.hyps_fail_prob.into() * 0x100000000000000000000
                 + value.hyps_fail_prob_increase_p_hex.into() * 0x10000000000000000000000000000,
+            // Bits 40-47 of the third word held a chest's relic count before chests held packs; they stay empty.
             third: value.hyps_fail_prob_increase_p_fnd.into()
                 + value.relic_discovery_interval_sec.into() * 0x10000
-                + value.relic_hex_dist_from_center.into() * 0x100000000
-                + value.relic_chest_relics_per_chest.into() * 0x10000000000,
+                + value.relic_hex_dist_from_center.into() * 0x100000000,
         }
     }
     fn unpack(value: PackedRuleWords) -> MapConfig {
@@ -569,7 +570,6 @@ pub impl MapConfigPacking of starknet::storage_access::StorePacking<MapConfig, P
             hyps_fail_prob_increase_p_fnd: (value.third % 0x10000).try_into().unwrap(),
             relic_discovery_interval_sec: (value.third / 0x10000 % 0x10000).try_into().unwrap(),
             relic_hex_dist_from_center: (value.third / 0x100000000 % 0x100).try_into().unwrap(),
-            relic_chest_relics_per_chest: (value.third / 0x10000000000 % 0x100).try_into().unwrap(),
         }
     }
 }

@@ -1,4 +1,4 @@
-import { RELICS, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { RELICS, relicChestRelics, StructureType } from "@bibliothecadao/types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
@@ -256,8 +256,15 @@ describe("every story the chain can tell", () => {
     },
     BankLiquidity: { resource_type: 23, add: true },
     HyperstructurePoints: { player: "0x123", points: 5 },
-    RelicChestOpened: { explorer_id: 7, coord, relics: [39, 40], points: 1000 },
+    RelicChestOpened: {
+      explorer_id: 7,
+      coord,
+      chest: { pack: "War", lucky: false },
+      relics: [41, 43, 39],
+      points: 1000,
+    },
     ExplorationReward: { explorer_id: 7, receiver: 5, coord, resource_type: 38, amount: "150000000000" },
+    SpireDiscovered: { explorer_id: 7, receiver: 5, coord, resource_type: 38, amount: "3000000000000" },
     SeasonEnded: { value: "0x123" },
     FaithPledged: { structure_id: 5, wonder_id: 6, owner_rate: 1, pledger_rate: 1 },
     FaithRemoved: { structure_id: 5, wonder_id: 6 },
@@ -313,19 +320,27 @@ describe("every story the chain can tell", () => {
     );
   });
 
+  it("tells a dormant spire's find by the Essence it paid", () => {
+    const found = story("SpireDiscovered", {
+      explorer_id: 7,
+      receiver: 5,
+      coord,
+      resource_type: 38,
+      amount: "3000000000000",
+    });
+    expect(buildStoryEventPresentation(found).title).toBe("Dormant spire found: +3000 Essence");
+  });
+
   it("refuses a story it has no line for, rather than printing its fields", () => {
     expect(() => buildStoryEventPresentation(story("NotAStory", {}))).toThrow("No presentation for story NotAStory");
   });
 });
 
-it("names a crate's relics as their panel does, one distinct name per relic", () => {
+it("names an opened chest by its pack and its relics as their panel does, one distinct name per relic", () => {
   expect(new Set(RELICS.map((relic) => relic.name)).size).toBe(RELICS.length);
-  // Game 6's crate: the panel listed these three; the history named the first one as the army's ward.
-  const relics = [
-    ResourcesIds.StructureDamageReductionRelic2,
-    ResourcesIds.ExplorationRewardRelic2,
-    ResourcesIds.TroopProductionRelic2,
-  ];
-  const { description } = buildStoryEventPresentation(story("RelicChestOpened", { relics }));
-  expect(description).toContain("Structure Defense Relic II, Exploration Reward Relic II, Troop Production Relic II");
+  const chest = { pack: "Explore", lucky: true } as const;
+  const relics = relicChestRelics(chest);
+  const { title, description } = buildStoryEventPresentation(story("RelicChestOpened", { chest, relics }));
+  expect(title).toBe("Explore pack · lucky opened");
+  expect(description).toContain("Exploration Relic II, Exploration Reward Relic II, Stamina Relic II");
 });

@@ -33,7 +33,8 @@ pub const BLITZ_RULES: u32 = crate::rules::HOME_REWARDS
     + crate::rules::OWNER_ONLY_SHARES
     + crate::rules::HYPERSTRUCTURE_MULTIPLIERS
     + crate::rules::PRODUCTION_START
-    + crate::rules::COMBAT_DICE_ETHEREAL;
+    + crate::rules::COMBAT_DICE_ETHEREAL
+    + crate::rules::DISCOVER_SPIRES;
 
 pub const ETERNUM_RULES: u32 = crate::rules::DISCOVER_HYPERSTRUCTURES
     + crate::rules::SPIRES

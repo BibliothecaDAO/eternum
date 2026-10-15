@@ -137,51 +137,7 @@
     "shardsMineInitialWheatBalance": 1000,
     "shardsMineInitialFishBalance": 1000,
     "relicDiscoveryIntervalSeconds": 300,
-    "relicHexDistanceFromCenter": 10,
-    "relicChestRelicsPerChest": 3
-  },
-  "blitz": {
-    "exploration": {
-      "rewards": [
-        {
-          "rewardId": 38,
-          "amount": 150,
-          "probabilityBps": 3500
-        },
-        {
-          "rewardId": 38,
-          "amount": 300,
-          "probabilityBps": 2500
-        },
-        {
-          "rewardId": 38,
-          "amount": 600,
-          "probabilityBps": 1500
-        },
-        {
-          "rewardId": 23,
-          "amount": 500,
-          "probabilityBps": 1500
-        },
-        {
-          "rewardId": 23,
-          "amount": 1000,
-          "probabilityBps": 500
-        },
-        {
-          "rewardId": 25,
-          "amount": 500,
-          "probabilityBps": 500
-        }
-      ]
-    },
-    "registration": {
-      "registration_count_max": 96,
-      "registration_delay_seconds": 10,
-      "collectible_timelock_address": "0x0",
-      "collectibles_lootchest_address": "0x0",
-      "collectibles_elitenft_address": "0x0"
-    }
+    "relicHexDistanceFromCenter": 10
   },
   "resources": {
     "resourcePrecision": 1000000000,
@@ -1437,6 +1393,49 @@
     "pointsForNonHyperstructureClaimAgainstBandits": "250000000",
     "pointsForTileExploration": "5000000",
     "pointsForRelicDiscovery": "250000000"
+  },
+  "blitz": {
+    "registration": {
+      "registration_count_max": 96,
+      "registration_delay_seconds": 10,
+      "collectible_timelock_address": "0x0",
+      "collectibles_lootchest_address": "0x0",
+      "collectibles_elitenft_address": "0x0"
+    },
+    "exploration": {
+      "rewards": [
+        {
+          "rewardId": 38,
+          "percent": 15,
+          "probabilityBps": 3500
+        },
+        {
+          "rewardId": 38,
+          "percent": 30,
+          "probabilityBps": 2500
+        },
+        {
+          "rewardId": 38,
+          "percent": 60,
+          "probabilityBps": 1500
+        },
+        {
+          "rewardId": 23,
+          "percent": 50,
+          "probabilityBps": 1500
+        },
+        {
+          "rewardId": 23,
+          "percent": 100,
+          "probabilityBps": 500
+        },
+        {
+          "rewardId": 25,
+          "percent": 50,
+          "probabilityBps": 500
+        }
+      ]
+    }
   },
   "faith": {
     "enabled": false,

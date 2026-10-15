@@ -145,8 +145,9 @@ export class WorldUpdateListener {
 
   get ExplorerReward() {
     return {
-      onExplorerRewardEventUpdate: (callback: (value: ExplorerRewardSystemUpdate) => void) =>
-        this.onStory("ExplorationReward", (payload, event) => {
+      /** Each reveal's payout, a dormant spire's grant included: both tell the tile and what it paid. */
+      onExplorerRewardEventUpdate: (callback: (value: ExplorerRewardSystemUpdate) => void) => {
+        const report = (payload: Fields, event: Fields) => {
           const explorerId = integer(payload.explorer_id);
           const explorer = this.setup.store.get("ExplorerTroops", {
             game_id: configManager.getActiveGameId(),
@@ -163,7 +164,14 @@ export class WorldUpdateListener {
             coord: { x: integer(fields(payload.coord)?.x), y: integer(fields(payload.coord)?.y) },
             timestamp: integer(event.timestamp),
           });
-        }),
+        };
+        const stopReveals = this.onStory("ExplorationReward", report);
+        const stopSpires = this.onStory("SpireDiscovered", report);
+        return () => {
+          stopReveals();
+          stopSpires();
+        };
+      },
     };
   }
 

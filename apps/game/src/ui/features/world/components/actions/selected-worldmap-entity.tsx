@@ -160,7 +160,8 @@ const SelectedWorldmapEntityContent = ({
           onSimulateBattle={handleSimulateBattle}
         />
       ) : (
-        // A shrine or well is used from Frontier's own card; here its tile reads like any other.
+        // A shrine or well is used from Frontier's own card and a dormant spire offers nothing; here its tile reads like
+        // any other.
         <UnoccupiedTileQuadrants biome={biome} coordsLabel={coordsLabel} headerAction={headerAction} />
       )}
     </div>

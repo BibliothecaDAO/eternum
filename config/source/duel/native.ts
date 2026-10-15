@@ -13,10 +13,10 @@ export const duelPreset: NativePreset = {
   startingTroops: [],
   realmResources: realmResourcePool,
   relics: relicRules,
-  supplies: duelBalance.blitz!.exploration!.rewards!.map(({ rewardId, amount, probabilityBps }) => ({
+  supplies: duelBalance.blitz!.exploration!.rewards!.map(({ rewardId, percent, probabilityBps }) => ({
     resource_type: rewardId!,
-    amount: amount!,
-    amount_max: amount!,
+    percent: percent!,
+    percent_max: percent!,
     weight: probabilityBps!,
   })),
   bridgeResources: [],

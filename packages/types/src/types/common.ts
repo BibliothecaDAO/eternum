@@ -216,9 +216,10 @@ export interface ResourceOutputs {
   [key: number]: number;
 }
 
+/** A reveal's pool row: drawn by its weight, it pays this percent of the revealing army's strength. */
 export interface BlitzExplorationReward {
   rewardId: ResourcesIds;
-  amount: number;
+  percent: number;
   probabilityBps: number;
 }
 
@@ -269,7 +270,6 @@ export interface Config {
     shardsMineInitialFishBalance: number;
     relicDiscoveryIntervalSeconds: number;
     relicHexDistanceFromCenter: number;
-    relicChestRelicsPerChest: number;
     bitcoinMineWinProbability: number;
     bitcoinMineFailProbability: number;
   };
@@ -497,7 +497,6 @@ export type FactoryMapConfigOverrides = Partial<
     | "hyperstructureFailProbIncreasePerHyperstructureFound"
     | "relicDiscoveryIntervalSeconds"
     | "relicHexDistanceFromCenter"
-    | "relicChestRelicsPerChest"
   >
 >;
 

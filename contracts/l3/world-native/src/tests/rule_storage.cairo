@@ -102,7 +102,6 @@ fn mapconfig_packing_preserves_every_field(
     hyps_fail_prob_increase_p_fnd: u16,
     relic_discovery_interval_sec: u16,
     relic_hex_dist_from_center: u8,
-    relic_chest_relics_per_chest: u8,
 ) {
     let value = MapConfig {
         shards_mines_win_probability,
@@ -117,7 +116,6 @@ fn mapconfig_packing_preserves_every_field(
         hyps_fail_prob_increase_p_fnd,
         relic_discovery_interval_sec,
         relic_hex_dist_from_center,
-        relic_chest_relics_per_chest,
     };
     assert!(MapConfigPacking::unpack(MapConfigPacking::pack(value)) == value);
     assert!(Store::<MapConfig>::size() == 3);

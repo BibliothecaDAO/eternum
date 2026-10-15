@@ -136,7 +136,6 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
     hyperstructureWinProbAtCenter: 0,
     hyperstructureFailProbAtCenter: 1,
     relicDiscoveryIntervalSeconds: 0,
-    relicChestRelicsPerChest: 1,
   },
   mines: {
     kinds: {

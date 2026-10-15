@@ -83,6 +83,20 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-10-15",
+    title: "Relic crates hold themed packs",
+    description:
+      "Each Blitz relic crate now holds one pack of three relics, named on its tile before you open it: War, Explore, Produce or Fortress. One crate in five is lucky and holds the whole pack at level II. Labor Production Relic II now adds 40%, twice level I.",
+    type: "balance",
+  },
+  {
+    date: "2026-10-15",
+    title: "Bigger armies find more",
+    description:
+      "In Blitz, what a reveal finds now grows with the army that explores: a share of its troops times their tier (1 for T1, 3 for T2, 9 for T3), so a 1,000-troop T1 army finds what every army found before. One reveal in two hundred finds a dormant spire: your realm receives three times the army's strength in Essence, and the spire stays on its hex, blocking it and doing nothing else.",
+    type: "balance",
+  },
+  {
+    date: "2026-10-15",
     title: "The map opens on your realm",
     description:
       "Entering a game, the map now opens where your realm is, or the realm you watch, instead of reloading the page the first time you open it. Watching a Frontier season, Map stays on the map instead of returning to the watched realm.",

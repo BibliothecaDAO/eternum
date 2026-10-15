@@ -137,20 +137,7 @@
     "shardsMineInitialWheatBalance": 1000,
     "shardsMineInitialFishBalance": 1000,
     "relicDiscoveryIntervalSeconds": 0,
-    "relicHexDistanceFromCenter": 10,
-    "relicChestRelicsPerChest": 1
-  },
-  "blitz": {
-    "exploration": {
-      "rewards": []
-    },
-    "registration": {
-      "registration_count_max": 0,
-      "registration_delay_seconds": 10,
-      "collectible_timelock_address": "0x0",
-      "collectibles_lootchest_address": "0x0",
-      "collectibles_elitenft_address": "0x0"
-    }
+    "relicHexDistanceFromCenter": 10
   },
   "resources": {
     "resourcePrecision": 1000000000,
@@ -873,6 +860,18 @@
     "pointsForNonHyperstructureClaimAgainstBandits": "0",
     "pointsForTileExploration": "0",
     "pointsForRelicDiscovery": "0"
+  },
+  "blitz": {
+    "registration": {
+      "registration_count_max": 0,
+      "registration_delay_seconds": 10,
+      "collectible_timelock_address": "0x0",
+      "collectibles_lootchest_address": "0x0",
+      "collectibles_elitenft_address": "0x0"
+    },
+    "exploration": {
+      "rewards": []
+    }
   },
   "faith": {
     "enabled": false,

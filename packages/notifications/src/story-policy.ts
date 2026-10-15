@@ -27,6 +27,7 @@ const STORY_RULES = {
   BattleEvent: { level: "important", recipients: "nativeBattle" },
   RaidEvent: { level: "important", recipients: "raid" },
   RealmCreatedStory: { level: "standard", recipients: "owner" },
+  SpireDiscovered: { level: "standard", recipients: "owner" },
   BuildingPlacementStory: { level: "standard", recipients: "owner" },
   StructureLevelUpStory: { level: "standard", recipients: "owner" },
   ResourceReceiveArrivalStory: { level: "standard", recipients: "owner" },

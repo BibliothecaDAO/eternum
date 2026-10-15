@@ -1,5 +1,5 @@
 import type { Resources } from "../types";
-import { relicName } from "./relics";
+import { relicEffect, relicName } from "./relics";
 import { ResourcesIds } from "./resource-ids";
 
 export const STEALABLE_RESOURCES = [
@@ -402,7 +402,7 @@ export const resources: Array<Resources> = [
     value: 39,
     colour: "#4ade80",
     id: ResourcesIds.StaminaRelic1,
-    description: "A mystical artifact that enhances stamina regeneration for armies by 50% for 3 Eternum Days.",
+    description: `${relicEffect(ResourcesIds.StaminaRelic1)}.`,
     ticker: "$STAM1",
   },
   {
@@ -410,7 +410,7 @@ export const resources: Array<Resources> = [
     value: 40,
     colour: "#22c55e",
     id: ResourcesIds.StaminaRelic2,
-    description: "A powerful artifact that doubles stamina regeneration for armies for 3 Eternum Days.",
+    description: `${relicEffect(ResourcesIds.StaminaRelic2)}.`,
     ticker: "$STAM2",
   },
   {
@@ -418,7 +418,7 @@ export const resources: Array<Resources> = [
     value: 41,
     colour: "#f87171",
     id: ResourcesIds.DamageRelic1,
-    description: "An ancient weapon enhancement that increases army damage by 20% for 3 Eternum Days.",
+    description: `${relicEffect(ResourcesIds.DamageRelic1)}.`,
     ticker: "$DMG1",
   },
   {
@@ -426,7 +426,7 @@ export const resources: Array<Resources> = [
     value: 42,
     colour: "#ef4444",
     id: ResourcesIds.DamageRelic2,
-    description: "A legendary weapon enhancement that increases army damage by 40% for 3 Eternum Days.",
+    description: `${relicEffect(ResourcesIds.DamageRelic2)}.`,
     ticker: "$DMG2",
   },
   {
@@ -434,7 +434,7 @@ export const resources: Array<Resources> = [
     value: 43,
     colour: "#60a5fa",
     id: ResourcesIds.DamageReductionRelic1,
-    description: "A protective ward that reduces damage taken by armies by 20% for 3 Eternum Days.",
+    description: `${relicEffect(ResourcesIds.DamageReductionRelic1)}.`,
     ticker: "$DEF1",
   },
   {
@@ -442,7 +442,7 @@ export const resources: Array<Resources> = [
     value: 44,
     colour: "#3b82f6",
     id: ResourcesIds.DamageReductionRelic2,
-    description: "A powerful protective ward that reduces damage taken by armies by 40% for 3 Eternum Days.",
+    description: `${relicEffect(ResourcesIds.DamageReductionRelic2)}.`,
     ticker: "$DEF2",
   },
   {
@@ -450,7 +450,7 @@ export const resources: Array<Resources> = [
     value: 45,
     colour: "#a78bfa",
     id: ResourcesIds.ExplorationRelic1,
-    description: "A mystical compass that instantly reveals terrain in a one-tile radius.",
+    description: `${relicEffect(ResourcesIds.ExplorationRelic1)}.`,
     ticker: "$EXP1",
   },
   {
@@ -458,7 +458,7 @@ export const resources: Array<Resources> = [
     value: 46,
     colour: "#8b5cf6",
     id: ResourcesIds.ExplorationRelic2,
-    description: "A powerful mystical compass that instantly reveals terrain in a two-tile radius.",
+    description: `${relicEffect(ResourcesIds.ExplorationRelic2)}.`,
     ticker: "$EXP2",
   },
   {
@@ -466,7 +466,7 @@ export const resources: Array<Resources> = [
     value: 47,
     colour: "#fbbf24",
     id: ResourcesIds.ExplorationRewardRelic1,
-    description: "A treasure hunter's charm that doubles all exploration rewards for 3 Eternum Days.",
+    description: `${relicEffect(ResourcesIds.ExplorationRewardRelic1)}.`,
     ticker: "$EXPR1",
   },
   {
@@ -474,7 +474,7 @@ export const resources: Array<Resources> = [
     value: 48,
     colour: "#f59e0b",
     id: ResourcesIds.ExplorationRewardRelic2,
-    description: "A legendary treasure hunter's charm that triples all exploration rewards for 3 Eternum Days.",
+    description: `${relicEffect(ResourcesIds.ExplorationRewardRelic2)}.`,
     ticker: "$EXPR2",
   },
 
@@ -484,7 +484,7 @@ export const resources: Array<Resources> = [
     value: 49,
     colour: "#94a3b8",
     id: ResourcesIds.StructureDamageReductionRelic1,
-    description: "A fortress ward that reduces damage taken by all guard armies by 15% for 3 Eternum Days.",
+    description: `${relicEffect(ResourcesIds.StructureDamageReductionRelic1)}.`,
     ticker: "$SDEF1",
   },
   {
@@ -492,7 +492,7 @@ export const resources: Array<Resources> = [
     value: 50,
     colour: "#64748b",
     id: ResourcesIds.StructureDamageReductionRelic2,
-    description: "A powerful fortress ward that reduces damage taken by all guard armies by 30% for 3 Eternum Days.",
+    description: `${relicEffect(ResourcesIds.StructureDamageReductionRelic2)}.`,
     ticker: "$SDEF2",
   },
   {
@@ -500,7 +500,7 @@ export const resources: Array<Resources> = [
     value: 51,
     colour: "#10b981",
     id: ResourcesIds.ProductionRelic1,
-    description: "An efficiency enhancement that increases resource production rate by 20% for 3 Eternum Days.",
+    description: `${relicEffect(ResourcesIds.ProductionRelic1)}.`,
     ticker: "$PROD1",
   },
   {
@@ -508,7 +508,7 @@ export const resources: Array<Resources> = [
     value: 52,
     colour: "#059669",
     id: ResourcesIds.ProductionRelic2,
-    description: "A powerful efficiency enhancement that increases resource production rate by 40% for 3 Eternum Days.",
+    description: `${relicEffect(ResourcesIds.ProductionRelic2)}.`,
     ticker: "$PROD2",
   },
   {
@@ -516,7 +516,7 @@ export const resources: Array<Resources> = [
     value: 53,
     colour: "#f472b6",
     id: ResourcesIds.LaborProductionRelic1,
-    description: "A workforce motivator that increases labor production rate by 20% for 3 Eternum Days.",
+    description: `${relicEffect(ResourcesIds.LaborProductionRelic1)}.`,
     ticker: "$LAB1",
   },
   {
@@ -524,7 +524,7 @@ export const resources: Array<Resources> = [
     value: 54,
     colour: "#ec4899",
     id: ResourcesIds.LaborProductionRelic2,
-    description: "A powerful workforce motivator that increases labor production rate by 20% for 3 Eternum Days.",
+    description: `${relicEffect(ResourcesIds.LaborProductionRelic2)}.`,
     ticker: "$LAB2",
   },
   {
@@ -532,7 +532,7 @@ export const resources: Array<Resources> = [
     value: 55,
     colour: "#fb923c",
     id: ResourcesIds.TroopProductionRelic1,
-    description: "A military accelerator that increases troop production rate by 15% for 3 Eternum Days.",
+    description: `${relicEffect(ResourcesIds.TroopProductionRelic1)}.`,
     ticker: "$TROOP1",
   },
   {
@@ -540,7 +540,7 @@ export const resources: Array<Resources> = [
     value: 56,
     colour: "#ea580c",
     id: ResourcesIds.TroopProductionRelic2,
-    description: "A powerful military accelerator that increases troop production rate by 30% for 3 Eternum Days.",
+    description: `${relicEffect(ResourcesIds.TroopProductionRelic2)}.`,
     ticker: "$TROOP2",
   },
 ];

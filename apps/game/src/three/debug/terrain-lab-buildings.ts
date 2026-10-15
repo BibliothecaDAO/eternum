@@ -17,6 +17,8 @@ export interface TerrainLabBuilding {
   yaw: number;
   hyperstructureId?: number;
   constructionProgress?: number;
+  /** A spire found by a Blitz reveal: no portal, still. */
+  dormant?: boolean;
 }
 
 const BUILDING_LABELS: Record<string, string> = {

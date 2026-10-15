@@ -5,12 +5,12 @@ import { formatNumberWithCommas } from "@/utils/formatting";
 
 export const ExplorationRewards = () => {
   const rewards = [
-    { material: "Essence", id: 38, quantity: 150, chance: 35 },
-    { material: "Essence", id: 38, quantity: 300, chance: 25 },
-    { material: "Essence", id: 38, quantity: 600, chance: 15 },
-    { material: "Labor", id: ResourcesIds.Labor, quantity: 500, chance: 15 },
-    { material: "Labor", id: ResourcesIds.Labor, quantity: 1000, chance: 5 },
-    { material: "Donkeys", id: ResourcesIds.Donkey, quantity: 500, chance: 5 },
+    { material: "Essence", id: ResourcesIds.Essence, percent: 15, chance: 35 },
+    { material: "Essence", id: ResourcesIds.Essence, percent: 30, chance: 25 },
+    { material: "Essence", id: ResourcesIds.Essence, percent: 60, chance: 15 },
+    { material: "Labor", id: ResourcesIds.Labor, percent: 50, chance: 15 },
+    { material: "Labor", id: ResourcesIds.Labor, percent: 100, chance: 5 },
+    { material: "Donkeys", id: ResourcesIds.Donkey, percent: 50, chance: 5 },
   ];
 
   return (
@@ -22,7 +22,8 @@ export const ExplorationRewards = () => {
           <thead style={table.tableHead}>
             <tr>
               <th style={table.headerCell}>Material</th>
-              <th style={table.headerCell}>Quantity</th>
+              <th style={table.headerCell}>Share of army strength</th>
+              <th style={table.headerCell}>1,000 T1 troops earn</th>
               <th style={table.headerCell}>Chance of Discovery</th>
             </tr>
           </thead>
@@ -35,7 +36,8 @@ export const ExplorationRewards = () => {
                     {reward.material}
                   </span>
                 </td>
-                <td style={table.cell}>{formatNumberWithCommas(reward.quantity)}</td>
+                <td style={table.cell}>{reward.percent}%</td>
+                <td style={table.cell}>{formatNumberWithCommas(reward.percent * 10)}</td>
                 <td style={table.cell}>{reward.chance}%</td>
               </tr>
             ))}

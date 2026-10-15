@@ -133,7 +133,7 @@ fn current_frontier_rejects_a_reintroduced_supply_pool() {
         .exploration =
             array![
                 crate::exploration_rewards::ExplorationReward {
-                    resource_type: crate::resources::ESSENCE, amount: 1, amount_max: 1, weight: 1,
+                    resource_type: crate::resources::ESSENCE, percent: 1, percent_max: 1, weight: 1,
                 },
             ]
         .span();

@@ -4,7 +4,7 @@ import { WeatherLabControls } from "./weather-lab-controls";
 import { AtmosphereLabControls } from "./atmosphere-lab-controls";
 import { TERRAIN_LAB_BUILDINGS } from "@/three/debug/terrain-lab-buildings";
 import { HYPERSTRUCTURE_MODEL_PATH } from "@/three/structures/hyperstructure-design";
-import { isSettlementModelPath, isRealmModelPath } from "@/three/constants/scene-constants";
+import { isSettlementModelPath, isRealmModelPath, SPIRE_MODEL_PATH } from "@/three/constants/scene-constants";
 import { SETTLEMENT_RELATIONSHIPS, type SettlementRelationship } from "@/three/structures/settlement-appearance";
 
 import { useEffect, useRef, useState, type RefObject } from "react";
@@ -113,6 +113,7 @@ export const ProceduralTerrainDebugView = () => {
   const [buildingYaw, setBuildingYaw] = useState(0);
   const [hyperstructureId, setHyperstructureId] = useState(17);
   const [constructionProgress, setConstructionProgress] = useState(100);
+  const [dormantSpire, setDormantSpire] = useState(false);
   const [cycleProgress, setCycleProgress] = useState(50);
   const [entryEdge, setEntryEdge] = useState(0);
   const [preparingBuilding, setPreparingBuilding] = useState(false);
@@ -446,6 +447,17 @@ export const ProceduralTerrainDebugView = () => {
                 </p>
               </>
             )}
+            {buildingPath === SPIRE_MODEL_PATH && (
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  aria-label="Dormant spire"
+                  type="checkbox"
+                  checked={dormantSpire}
+                  onChange={(event) => setDormantSpire(event.target.checked)}
+                />
+                Dormant · found by a Blitz reveal
+              </label>
+            )}
             {isRealmModelPath(buildingPath) && (
               <label className="flex flex-col gap-1 text-sm">
                 Realm order
@@ -508,6 +520,7 @@ export const ProceduralTerrainDebugView = () => {
                     buildingYaw,
                     hyperstructureId,
                     constructionProgress,
+                    dormantSpire,
                   );
                 } catch (reason) {
                   setError(String(reason));
