@@ -12,11 +12,11 @@ import {
   summarizePlaytestResults,
   summarizeRpcSends,
   summarizeStep,
-  describeBurst,
+  describeOrders,
   eligibilityOf,
   assertInTargetGame,
   gameOfPath,
-  judgeBurst,
+  judgeNextOrder,
   judgeExplore,
 } from "./evidence.mjs";
 
@@ -478,113 +478,80 @@ describe("judgeExplore", () => {
   });
 });
 
-describe("describeBurst", () => {
-  it("pairs each command the army trace records with its press, hash and confirmation", () => {
-    const presses = [
-      { type: "pointerdown", key: null, t: 990 },
-      { type: "keydown", key: "Enter", t: 1000 },
-      { type: "keydown", key: "Enter", t: 1400 },
-      { type: "keydown", key: "Enter", t: 1800 },
-    ];
+describe("describeOrders", () => {
+  it("lists the army's commands with hash and confirmation, and each next-order step with its tile, in the window", () => {
     const armyTrace = [
       { phase: "move_requested", entityId: 7, wallTimeMs: 1002 },
       { phase: "explore_intent_queued", entityId: 7, wallTimeMs: 1002 },
+      { phase: "next_order_queued", entityId: 7, wallTimeMs: 1050, details: { col: 3, row: 4 } },
       { phase: "tx_submitted", entityId: 7, wallTimeMs: 1120, txHash: "0x1" },
       { phase: "tx_confirmed", entityId: 7, wallTimeMs: 1190 },
-      { phase: "move_requested", entityId: 7, wallTimeMs: 1803 },
-      { phase: "tx_submitted", entityId: 7, wallTimeMs: 1920, txHash: "0x2" },
+      { phase: "next_order_run", entityId: 7, wallTimeMs: 1200, details: { col: 3, row: 4 } },
+      { phase: "move_requested", entityId: 7, wallTimeMs: 1201 },
+      { phase: "next_order_dropped", entityId: 7, wallTimeMs: 1300, details: { col: 5, row: 4, reason: "replaced" } },
       { phase: "move_requested", entityId: 7, wallTimeMs: 5000 },
     ];
-    expect(
-      describeBurst({
-        presses,
-        taps: [{ verb: "Explore" }, { verb: null }, { verb: "Move" }],
-        armyTrace,
-        from: 900,
-        to: 2500,
-      }),
-    ).toEqual({
-      presses: 3,
-      pressSpacingMs: [400, 400],
-      offered: ["Explore", null, "Move"],
+    expect(describeOrders({ armyTrace, from: 900, to: 2500 })).toEqual({
       commands: [
-        { kind: "explore", afterPressMs: 2, hash: "0x1", confirmedAfterMs: 188 },
-        { kind: "move", afterPressMs: 3, hash: "0x2", confirmedAfterMs: null },
+        { kind: "explore", hash: "0x1", confirmed: true },
+        { kind: "move", hash: null, confirmed: false },
       ],
-      next: { queued: 0, run: 0, dropped: {}, unresolved: 0 },
+      next: [
+        { step: "queued", hex: { col: 3, row: 4 } },
+        { step: "run", hex: { col: 3, row: 4 } },
+        { step: "dropped:replaced", hex: { col: 5, row: 4 } },
+      ],
     });
-  });
-
-  it("counts each next order queued behind an order in flight by how it left", () => {
-    const armyTrace = [
-      { phase: "move_requested", entityId: 7, wallTimeMs: 1001 },
-      { phase: "next_order_queued", entityId: 7, wallTimeMs: 1120 },
-      { phase: "next_order_dropped", entityId: 7, wallTimeMs: 1240, details: { reason: "replaced" } },
-      { phase: "next_order_queued", entityId: 7, wallTimeMs: 1240 },
-      { phase: "next_order_run", entityId: 7, wallTimeMs: 1300 },
-      { phase: "move_requested", entityId: 7, wallTimeMs: 1300 },
-      { phase: "next_order_queued", entityId: 7, wallTimeMs: 1360 },
-    ];
-    const burst = describeBurst({ presses: [], taps: [], armyTrace, from: 900, to: 2500 });
-    expect(burst.next).toEqual({ queued: 3, run: 1, dropped: { replaced: 1 }, unresolved: 1 });
-    expect(burst.commands).toHaveLength(2);
   });
 });
 
-describe("judgeBurst", () => {
-  const confirmedMove = { kind: "move", afterPressMs: 1, hash: "0x1", confirmedAfterMs: 150 };
+describe("judgeNextOrder", () => {
+  const played = { army: "Army 1", targets: {}, firstSent: true, queuedShown: true };
+  const confirmed = { kind: "move", hash: "0x1", confirmed: true };
+  const queued = (col) => ({ step: "queued", hex: { col, row: 4 } });
+  const ran = (col) => ({ step: "run", hex: { col, row: 4 } });
+  const runs = { next: ["queued", "run"], confirmed: 2 };
 
-  it("fails an offered order that was never sent: a silent drop is not a refusal", () => {
-    expect(judgeBurst({ taps: [{ verb: "Move" }, { verb: null }], commands: [] })).toEqual({
-      status: "failed",
-      reason:
-        "1 orders offered, 0 seen refused, only 0 sent and confirmed and 0 queued and dropped: the rest were dropped silently",
-    });
+  it("completes a next order that ran behind the order in flight, as the tile last queued", () => {
+    const orders = { commands: [confirmed, confirmed], next: [queued(3), ran(3)] };
+    expect(judgeNextOrder({ expected: runs, played, orders })).toEqual({ status: "completed", orders });
   });
 
-  it("fails a requested command that never got a hash", () => {
-    const unsent = { ...confirmedMove, hash: null };
-    expect(judgeBurst({ taps: [{ verb: "Move" }], commands: [unsent] }).reason).toBe(
-      "1 commands were requested but never sent (no hash)",
+  it("fails a next order that never left the queue, or left another way than expected", () => {
+    const stuck = { commands: [confirmed], next: [queued(3)] };
+    expect(judgeNextOrder({ expected: runs, played, orders: stuck }).reason).toBe(
+      "the next order went queued, not queued → run",
+    );
+    const dropped = { commands: [confirmed], next: [queued(3), { step: "dropped:out-of-reach", hex: {} }] };
+    expect(judgeNextOrder({ expected: runs, played, orders: dropped }).reason).toBe(
+      "the next order went queued → dropped:out-of-reach, not queued → run",
     );
   });
 
-  it("completes when every offered order was confirmed or seen refused", () => {
-    expect(
-      judgeBurst({
-        taps: [{ verb: "Move" }, { verb: "Move", seen: "refused" }, { verb: null }],
-        commands: [confirmedMove],
-      }),
-    ).toEqual({
-      status: "completed",
-      offered: 2,
-      seenRefused: 1,
-      confirmed: 1,
-      next: { queued: 0, run: 0, dropped: {}, unresolved: 0 },
-    });
-  });
-
-  it("accounts for taps queued behind an order in flight: replaced ones by their trace, the last one by its command", () => {
-    const next = { queued: 4, run: 1, dropped: { replaced: 3 }, unresolved: 0 };
-    const taps = Array.from({ length: 5 }, () => ({ verb: "Move" }));
-    expect(judgeBurst({ taps, commands: [confirmedMove, confirmedMove], next })).toMatchObject({
-      status: "completed",
-      offered: 5,
-      confirmed: 2,
-    });
-    // The queued order that should have run never went out: one tap is unaccounted for.
-    expect(judgeBurst({ taps, commands: [confirmedMove], next }).status).toBe("failed");
-  });
-
-  it("fails a next order that was queued and never ran nor was dropped", () => {
-    const next = { queued: 1, run: 0, dropped: {}, unresolved: 1 };
-    expect(judgeBurst({ taps: [{ verb: "Move" }, { verb: "Move" }], commands: [confirmedMove], next }).reason).toBe(
-      "1 next orders were queued and neither ran nor were dropped",
+  it("fails when the order that ran was not confirmed, or is not the tile queued", () => {
+    const unconfirmed = { commands: [confirmed, { ...confirmed, confirmed: false }], next: [queued(3), ran(3)] };
+    expect(judgeNextOrder({ expected: runs, played, orders: unconfirmed }).reason).toBe(
+      "1 orders were sent and confirmed, not 2",
+    );
+    const elsewhere = { commands: [confirmed, confirmed], next: [queued(3), ran(5)] };
+    expect(judgeNextOrder({ expected: runs, played, orders: elsewhere }).reason).toBe(
+      "the order that ran is not the tile last queued",
     );
   });
 
-  it("is blocked when no tap offered an order", () => {
-    expect(judgeBurst({ taps: [{ verb: "short" }, { verb: null }], commands: [] })).toEqual({
+  it("fails when nothing was in flight or the order bar never showed the queue", () => {
+    const orders = { commands: [confirmed, confirmed], next: [queued(3), ran(3)] };
+    expect(judgeNextOrder({ expected: runs, played: { ...played, firstSent: false }, orders }).status).toBe("failed");
+    expect(judgeNextOrder({ expected: runs, played: { ...played, queuedShown: false }, orders }).reason).toBe(
+      "the order bar never showed the next order queued",
+    );
+  });
+
+  it("is blocked, not failed, when the army has nothing to order", () => {
+    const orders = { commands: [], next: [] };
+    expect(judgeNextOrder({ expected: runs, played: { army: null }, orders }).status).toBe("blocked");
+    const short = { army: "Army 1", targets: null, scanned: [{ verb: "short" }, { verb: null }] };
+    expect(judgeNextOrder({ expected: runs, played: short, orders })).toEqual({
       status: "blocked",
       reason: "the army cannot pay for an order (the order bar shows a short cost)",
     });

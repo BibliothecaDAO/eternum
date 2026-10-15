@@ -100,32 +100,41 @@ everything it started. Run it from a stopped client and reuse it; extend its ste
   and everything is released.
 - **As a spectator** (default), from a fresh browser profile (cold cache): realm view, open the map, map idle, pan
   (WASD), zoom out and in, the menu, back to the realm and the map, then a minute of watching.
-- **As a player** (`--player <browser profile dir>`), entering through the Frontier card's Resume or Play on the home
-  page: realm view, open the map, select the army with the most stamina, open and close production, explore twice (tap a
-  tile beside the army, Enter), then five taps with Enter at the pace taps reach the page. Sign the profile in once by
-  hand
-  (`npx -y agent-browser --session login --profile <dir> open https://127.0.0.1:<port>/sign-in --ignore-https-errors`);
-  it stays signed in. Orders use the map's default zoom.
+- **As a player** (`--player <email>`), entering through the Frontier card's Resume or Play on the home page with the
+  browser's own click, and past a new day's summary (Continue): realm view, open the map, select the army with the most
+  stamina, open and close production, the next order's life (below), explore twice (tap a tile beside the army, Enter),
+  then the next order dropped by leaving the map. Orders use the map's default zoom; the army must be deployed.
+- **Signing in.** Each player keeps a profile under `.context/playtest-profiles/<email>`; agent-browser is handed it on
+  every command (it relaunches on a temporary profile for a command that omits it). A run whose home page shows the
+  player signed out signs in through the sign-in page as a player does: the email, Send code, then the code. The runner
+  reads no mail: it prints `{"signInCode": {"email", "writeTo"}}` on stderr and waits up to 10 minutes for the code from
+  the sign-in mail in that file, which it deletes once read. An account that asks to claim a name is refused: a run
+  never sets up an account.
+- **The next order's life**, each step with the army's first order held in flight at the network (DevTools pauses its
+  `starknet_addInvokeTransaction` send while the step acts, then lets it go or, for refused, fails it): a tile tapped
+  beside the first runs once the first applies (run), a second tap replaces it (replaced), Cancel and Escape drop it, a
+  failed send drops it (refused), and leaving the map drops it (deselect).
 - **The game.** The newest live Frontier game, or `--chain-id`/`--game-id` (refused if it is not a listed Frontier
   game). Before the first step the run asserts the route is in that game, and refuses to send any order elsewhere.
 
 Every step checks what a player would then see and is judged completed, blocked (the game refused, for a reason a player
 meets too: a short cost, no army) or failed:
 
-- scenes: the route's scene and the lit place (a reloaded page must stay on the scene, else the control is pressed
-  again);
+- scenes: the route's scene, the scene the renderer last drew and the lit place agree (a reloaded page must stay on the
+  scene, else the control is pressed again);
 - pan: the view changed past the animated floor that map-idle records;
 - zoom: the camera distance grew from where it was, then shrank;
 - sheets: Menu or Production opened, then closed;
 - army: the readiest army's button is pressed;
 - explore: Explore was offered and pressed, the client's record has a hash, an applied outcome and its rendered marker,
   and the explored tile visibly changed between a screenshot before Enter and one after;
-- burst: every offered order was sent with a hash and confirmed, seen refused, or queued as the army's next order (a tap
-  while its order is in flight) and then run or dropped for a traced reason; a silent drop fails.
+- next order: the order bar showed it queued while the first order was in flight, the army trace shows its steps in the
+  expected sequence (queued, then run or dropped for the step's reason), the expected orders were sent with a hash and
+  confirmed, and one that ran is the tile last queued; a queued tap that never left fails.
 
 ```bash
 pnpm --dir apps/game playtest --port 4174 --iterations 3
-pnpm --dir apps/game playtest --port 4174 --player .context/playtest-profiles/<account>
+pnpm --dir apps/game playtest --port 4174 --player <email>
 pnpm --dir apps/game playtest --base-url https://127.0.0.1:4174 --iterations 1   # a client you already serve
 ```
 

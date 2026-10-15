@@ -9,6 +9,8 @@ import { STEPS_GAME } from "./steps.mjs";
 
 const POLL_MS = 500;
 const PAGE_WAIT_MS = 30_000;
+// The day's summary shows as the game's HUD mounts, or not at all.
+const DAY_SUMMARY_WAIT_MS = 3_000;
 // A sign-in code stops working ten minutes after it is sent.
 const SIGN_IN_CODE_WAIT_MS = 10 * 60_000;
 const EMAIL_FIELD = 'input[type="email"]';
@@ -17,7 +19,7 @@ const ENTRY_BUTTON = "[data-playtest-entry]";
 
 /**
  * Signs the profile in when the home page shows it signed out, and keeps it as it is otherwise. The runner reads no
- * mail: it asks for the code on stdout and waits for whoever runs it to write the code to `codeFile`. Returns "kept" or
+ * mail: it asks for the code on stderr and waits for whoever runs it to write the code to `codeFile`. Returns "kept" or
  * "signed in"; the home page is to be opened again after a sign-in.
  */
 export async function signInIfSignedOut({ browser, owner, email, baseUrl, codeFile }) {
@@ -28,9 +30,21 @@ export async function signInIfSignedOut({ browser, owner, email, baseUrl, codeFi
   browser.click("Send code");
   await waitUntil(owner, () => browser.read(isShown(CODE_FIELD)), `no code field after sending a code to ${email}`);
   browser.run(["type", CODE_FIELD, await waitForSignInCode(owner, email, codeFile)]);
-  await waitUntil(owner, () => browser.read(`location.pathname !== "/sign-in"`), `the code did not sign ${email} in`);
+  let outcome = null;
+  await waitUntil(owner, () => (outcome = browser.read(SIGN_IN_OUTCOME)), `the code did not sign ${email} in`);
+  // A test account is never set up by a run: one that asks for a name is not one to play.
+  if (outcome === "claim-name")
+    throw new Error(`${email} has no name: the sign-in asks to claim one, not a test account`);
   return "signed in";
 }
+
+const SIGN_IN_OUTCOME = `JSON.stringify(
+  location.pathname !== "/sign-in"
+    ? "signed-in"
+    : [...document.querySelectorAll("button")].some((button) => button.textContent.trim() === "Claim name")
+      ? "claim-name"
+      : null,
+)`;
 
 /** The rail's foot as the home page settles: the player's portrait once signed in, Sign in otherwise. */
 export async function identityShown(browser, owner) {
@@ -49,7 +63,7 @@ const IDENTITY_EXPRESSION = `JSON.stringify(
 
 async function waitForSignInCode(owner, email, codeFile) {
   rmSync(codeFile, { force: true });
-  console.log(JSON.stringify({ signInCode: { email, writeTo: codeFile } }));
+  console.error(JSON.stringify({ signInCode: { email, writeTo: codeFile } }));
   const startedAt = Date.now();
   while (!existsSync(codeFile)) {
     if (Date.now() - startedAt > SIGN_IN_CODE_WAIT_MS) throw new Error(`no sign-in code for ${email} in 10 minutes`);
@@ -80,6 +94,22 @@ export async function enterAsPlayer(browser, owner, timeoutMs) {
   const click = browser.read(trustedPointerDownSince(entry.t));
   if (!click) throw new Error(`the click on ${entry.entry} never reached the page`);
   return { ...entry, t: click.t, clearedZoom };
+}
+
+/**
+ * A new day opens on the last one's summary card, over the whole page; a player reads it and continues. Returns whether
+ * it was shown.
+ */
+export async function continuePastTheDaySummary(browser, owner) {
+  const shown = () =>
+    browser.read(`[...document.querySelectorAll("button")].some((button) => button.textContent.trim() === "Continue")`);
+  const startedAt = Date.now();
+  while (!shown()) {
+    if (Date.now() - startedAt > DAY_SUMMARY_WAIT_MS) return false;
+    await owner.sleep(POLL_MS);
+  }
+  browser.click("Continue");
+  return true;
 }
 
 const CLEAR_STORED_ZOOM_EXPRESSION = `JSON.stringify((() => {

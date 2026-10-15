@@ -70,7 +70,7 @@ const withoutNpmNoise = (output) =>
     .trim();
 
 /** A tap at an offset from the screen's centre, where selecting an army puts it. */
-export function tapCommands([dx, dy]) {
+function tapCommands([dx, dy]) {
   const x = VIEWPORT.width / 2 + dx;
   const y = VIEWPORT.height / 2 + dy;
   return [`mouse move ${x} ${y}`, "mouse down", "mouse up"];
@@ -147,7 +147,11 @@ export async function openPageDevTools(browser) {
   const { sessionId } = await send("Target.attachToTarget", { targetId: page.targetId, flatten: true });
   return {
     send: (method, params) => send(method, params, sessionId),
-    onEvent: (listener) => listeners.push(listener),
+    /** Calls `listener` with every event the browser sends; the returned function stops it. */
+    onEvent: (listener) => {
+      listeners.push(listener);
+      return () => listeners.splice(listeners.indexOf(listener), 1);
+    },
     close: () => socket.close(),
   };
 }
@@ -171,6 +175,35 @@ export async function recordRpcSends(devTools) {
   await devTools.send("Network.enable");
   return () => [...sends.values()].map(({ startedAt, ...send }) => send);
 }
+
+/**
+ * Holds the page's order sends (`starknet_addInvokeTransaction`) at the network, so a step can act while an order is in
+ * flight for as long as it needs, then lets them go or fails them, as a send the network refused. Every other RPC
+ * request passes at once, and nothing is paused once the gate is closed.
+ */
+export async function openOrderSendGate(devTools) {
+  const held = [];
+  const stopListening = devTools.onEvent(({ method, params }) => {
+    if (method !== "Fetch.requestPaused") return;
+    if (isOrderSend(params.request)) held.push(params.requestId);
+    else void devTools.send("Fetch.continueRequest", { requestId: params.requestId });
+  });
+  await devTools.send("Fetch.enable", { patterns: [{ urlPattern: "*/rpc/*", requestStage: "Request" }] });
+  const settleHeld = (method, params = {}) =>
+    Promise.all(held.splice(0).map((requestId) => devTools.send(method, { requestId, ...params })));
+  return {
+    held: () => held.length,
+    release: () => settleHeld("Fetch.continueRequest"),
+    fail: () => settleHeld("Fetch.failRequest", { errorReason: "Failed" }),
+    close: async () => {
+      await settleHeld("Fetch.continueRequest");
+      await devTools.send("Fetch.disable");
+      stopListening();
+    },
+  };
+}
+
+const isOrderSend = (request) => request.method === "POST" && rpcMethodOf(request) === "starknet_addInvokeTransaction";
 
 const isRpcRequest = (request) =>
   (request.method === "POST" || request.method === "OPTIONS") && /\/rpc\//.test(new URL(request.url).pathname);

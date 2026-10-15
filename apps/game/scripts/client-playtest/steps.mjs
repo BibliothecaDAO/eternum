@@ -1,7 +1,7 @@
 import sharp from "sharp";
 
-import { blocked, completed, describeBurst, failed, judgeBurst, judgeExplore } from "./evidence.mjs";
-import { tapCommands, VIEWPORT } from "./browser-session.mjs";
+import { blocked, completed, describeOrders, failed, judgeExplore, judgeNextOrder } from "./evidence.mjs";
+import { openOrderSendGate, VIEWPORT } from "./browser-session.mjs";
 
 /**
  * The playtest's steps. Each plays through the controls a player uses, then checks what a player would see, and is
@@ -16,21 +16,19 @@ const PLAYABLE_WAIT_MS = 30_000;
 const POLL_MS = 500;
 const ARMY_FLIGHT_MS = 1_500;
 const ZOOM_SETTLE_MS = 2_500;
-const BURST_TAPS = 5;
-const BURST_TARGETS = 2;
-// About eight taps a second: a player hammering the map, faster than an order's outcome comes back.
-const BURST_PACE_MS = 120;
 const TAP_PASSES = 2;
+const ORDER_SEND_WAIT_MS = 10_000;
 // A pan moves the whole map under the camera; the same view, animated, changes far less (map-idle records that floor).
 const PAN_VIEW_CHANGE_MIN = 6;
-// The army's six neighbours on screen, in pixels from the centre, at the map's default zoom (a player run never zooms).
-const NEIGHBOUR_OFFSETS = [
+// The army's six neighbours on screen, in pixels from the centre, at the map's default zoom (a player run never zooms),
+// in ring order from the north-east: each is beside the next, and the last beside the first.
+const NEIGHBOUR_RING = [
   [65, -95],
-  [70, 100],
-  [-67, -95],
-  [-75, 100],
   [137, 0],
+  [70, 100],
+  [-75, 100],
   [-135, 0],
+  [-67, -95],
 ];
 
 /** The game these steps read (Frontier's place bar, army dock and order bar), and its card on the home page. */
@@ -49,15 +47,23 @@ export const SPECTATOR_STEPS = [
   { name: "steady", settleMs: 60_000, verify: inScene("map") },
 ];
 
-/** What a signed-in player does: realm, map, select the readiest army, read production, explore twice, spam orders. */
+/**
+ * What a signed-in player does: realm, map, select the readiest army, read production, then a tile tapped for the army
+ * while its order is in flight (its next order) in each way that order can leave, and two explores.
+ */
 export const PLAYER_STEPS = [
   { name: "realm-idle", settleMs: 8_000, verify: inScene("hex") },
   { name: "open-map", play: goTo("Map", "map"), settleMs: 6_000, verify: inScene("map") },
   { name: "select-army", play: selectTheReadiestArmy, settleMs: 3_000, verify: armySelected },
   { name: "production", play: openAndCloseProduction, settleMs: 1_000, verify: sheetOpenedAndClosed("Production") },
+  ...nextOrderSteps(),
   { name: "explore-1", play: exploreBesideArmy, settleMs: 6_000, verify: explored },
   { name: "explore-2", play: exploreBesideArmy, settleMs: 6_000, verify: explored },
-  { name: "order-burst", play: orderBurst, settleMs: 8_000, verify: burstPlayed },
+  // Last: it leaves the map for the realm.
+  nextOrderStep("next-order-deselect", queueThenOpenTheRealm, {
+    next: ["queued", "dropped:not-selected"],
+    confirmed: 1,
+  }),
 ];
 
 /**
@@ -229,7 +235,7 @@ async function exploreBesideArmy({ browser, extraScreenshot }) {
   const offered = [];
   // The army's paths are planned once it is selected; a pass where no tile pins anything is tried once more.
   for (let pass = 1; pass <= TAP_PASSES; pass += 1) {
-    for (const offset of NEIGHBOUR_OFFSETS) {
+    for (const offset of NEIGHBOUR_RING) {
       browser.tap(offset);
       const verb = orderVerb(browser.buttonTexts());
       offered.push(verb);
@@ -259,53 +265,139 @@ function tileRegion([dx, dy]) {
 }
 
 /**
- * Spams orders the way a player hammering the map does: the army's neighbours are scanned for up to two tiles that offer
- * an order, then five taps with Enter alternate between them BURST_PACE_MS apart, in one batch so nothing slows them.
- * Each tap is taken as offering what its tile offered when scanned; what was sent, and each tap queued as the army's
- * next order while one was in flight, shows in the army trace.
+ * A next order's life, one way of leaving per step, ahead of the explores so the army's stamina goes to them first.
+ * Each holds the army's first order in flight at the network for as long as it acts; refused fails that send, as a
+ * send the network refused; the others let it go.
  */
-async function orderBurst({ browser }) {
-  const army = await focusTheReadiestArmy(browser);
-  if (!army) return { taps: [], army };
-  const scanned = [];
-  for (const offset of NEIGHBOUR_OFFSETS) {
+function nextOrderSteps() {
+  return [
+    nextOrderStep("next-order-run", queueTheTileAfter, { next: ["queued", "run"], confirmed: 2 }),
+    nextOrderStep("next-order-replaced", queueThenReplace, {
+      next: ["queued", "dropped:replaced", "queued", "run"],
+      confirmed: 2,
+    }),
+    nextOrderStep("next-order-cancel", queueThenCancel, { next: ["queued", "dropped:cancelled"], confirmed: 1 }),
+    nextOrderStep("next-order-escape", queueThenEscape, { next: ["queued", "dropped:cancelled"], confirmed: 1 }),
+    nextOrderStep(
+      "next-order-refused",
+      queueTheTileAfter,
+      { next: ["queued", "dropped:refused"], confirmed: 0 },
+      { refuse: true },
+    ),
+  ];
+}
+
+function nextOrderStep(name, whileInFlight, expected, { refuse = false } = {}) {
+  return {
+    name,
+    play: withOrderInFlight(whileInFlight, { refuse }),
+    settleMs: 8_000,
+    verify: ({ played, actionLatency, window }) =>
+      judgeNextOrder({
+        expected,
+        played,
+        orders: describeOrders({ armyTrace: actionLatency.armyMovement, ...window }),
+      }),
+  };
+}
+
+/**
+ * Centres the army, finds three neighbouring tiles beside it that offer an order, taps and confirms the middle one (the
+ * first order) and, once its send is held at the network, acts with the other two: both stay beside the army when it
+ * stands on the first. The held send then goes, or fails.
+ */
+function withOrderInFlight(whileInFlight, { refuse }) {
+  return async ({ browser, devTools, extraScreenshot }) => {
+    const army = await focusTheReadiestArmy(browser);
+    if (!army) return { army };
+    const scanned = scanTheRing(browser);
+    const targets = threeInARow(scanned);
+    if (!targets) return { army, scanned };
+    const gate = await openOrderSendGate(devTools);
+    try {
+      browser.tap(targets.first);
+      browser.press("Enter");
+      const firstSent = await waitUntil(() => gate.held() > 0, ORDER_SEND_WAIT_MS);
+      if (!firstSent) return { army, scanned, targets, firstSent };
+      const played = await whileInFlight({ browser, targets, extraScreenshot });
+      await (refuse ? gate.fail() : gate.release());
+      return { army, scanned, targets, firstSent, ...played };
+    } finally {
+      await gate.close();
+    }
+  };
+}
+
+/** What each tile of the ring offers the army, the pin cleared after. */
+function scanTheRing(browser) {
+  const scanned = NEIGHBOUR_RING.map((offset) => {
     browser.tap(offset);
-    const verb = orderVerb(browser.buttonTexts());
-    scanned.push({ offset, verb });
-    if (scanned.filter(offersOrder).length === BURST_TARGETS) break;
-  }
+    return { offset, verb: orderVerb(browser.buttonTexts()) };
+  });
   browser.press("Escape");
-  const targets = scanned.filter(offersOrder);
-  if (targets.length === 0) return { army, scanned, taps: scanned.map(({ verb }) => ({ verb })) };
-  const taps = Array.from({ length: BURST_TAPS }, (_, index) => targets[index % targets.length]);
-  browser.run([
-    "batch",
-    ...taps.flatMap(({ offset }, index) => [
-      ...(index > 0 ? [`wait ${BURST_PACE_MS}`] : []),
-      ...tapCommands(offset),
-      "press Enter",
-    ]),
-  ]);
-  return { army, scanned, taps: taps.map(({ offset, verb }) => ({ offset, verb })) };
+  return scanned;
+}
+
+/** Three neighbouring ring tiles that each offer an order, the most Moves first: a move costs less stamina. */
+function threeInARow(scanned) {
+  const around = (index) => [-1, 0, 1].map((step) => scanned[(index + step + scanned.length) % scanned.length]);
+  const rows = scanned.map((_, index) => around(index)).filter((row) => row.every(offersOrder));
+  const moves = (row) => row.filter(({ verb }) => verb === "Move").length;
+  const [before, first, after] = rows.toSorted((left, right) => moves(right) - moves(left))[0] ?? [];
+  return first ? { before: before.offset, first: first.offset, after: after.offset } : null;
 }
 
 const offersOrder = ({ verb }) => verb === "Explore" || verb === "Move";
 
-function burstPlayed({ played, probe, window, actionLatency }) {
-  const burst = describeBurst({
-    presses: probe.inputs,
-    taps: played.taps,
-    armyTrace: actionLatency.armyMovement,
-    ...window,
-  });
-  return { ...judgeBurst({ taps: played.taps, commands: burst.commands, next: burst.next }), burst };
+async function queueTheTileAfter({ browser, targets, extraScreenshot }) {
+  browser.tap(targets.after);
+  return { queuedShown: nextOrderShown(browser), queuedScreenshot: extraScreenshot("queued") };
 }
+
+async function queueThenReplace({ browser, targets, extraScreenshot }) {
+  browser.tap(targets.before);
+  const queuedShown = nextOrderShown(browser);
+  browser.tap(targets.after);
+  return { queuedShown, replacedShown: nextOrderShown(browser), queuedScreenshot: extraScreenshot("queued") };
+}
+
+async function queueThenCancel({ browser, targets, extraScreenshot }) {
+  const queued = await queueTheTileAfter({ browser, targets, extraScreenshot });
+  browser.run(["find", "role", "button", "click", "--name", "Cancel"]);
+  return { ...queued, shownAfterCancel: nextOrderShown(browser) };
+}
+
+async function queueThenEscape({ browser, targets, extraScreenshot }) {
+  const queued = await queueTheTileAfter({ browser, targets, extraScreenshot });
+  browser.press("Escape");
+  return { ...queued, shownAfterEscape: nextOrderShown(browser) };
+}
+
+async function queueThenOpenTheRealm({ browser, targets, extraScreenshot }) {
+  const queued = await queueTheTileAfter({ browser, targets, extraScreenshot });
+  browser.click("Realm");
+  await sleep(ARMY_FLIGHT_MS);
+  return queued;
+}
+
+/** The order bar's next order: "Next order" with "Queued". */
+const nextOrderShown = (browser) =>
+  browser.read(`document.body.textContent.includes("Next order") && document.body.textContent.includes("Queued")`);
 
 /** What the order bar offers after a tap: its verb, "short" when it shows a cost not covered (the verb is hidden), or null. */
 function orderVerb(buttonTexts) {
   const verb = buttonTexts.map((text) => /^(Explore|Move)/.exec(text)?.[1]).find(Boolean);
   if (verb) return verb;
   return buttonTexts.some((text) => text.startsWith("Cancel")) ? "short" : null;
+}
+
+async function waitUntil(check, timeoutMs) {
+  const startedAt = Date.now();
+  while (!check()) {
+    if (Date.now() - startedAt > timeoutMs) return false;
+    await sleep(POLL_MS);
+  }
+  return true;
 }
 
 async function waitFor(browser, predicate, timeoutMs) {

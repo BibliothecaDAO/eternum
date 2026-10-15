@@ -207,35 +207,38 @@ export function judgeExplore(played, clientActions) {
 }
 
 /**
- * A burst is evidence only if every order a tap offered is accounted for: sent with a hash and confirmed, seen refused,
- * or queued as the army's next order (a tap while its order is in flight) and then run or dropped for a traced reason.
- * An offered order that simply never went out, or a next order left unresolved, is a silent drop, and fails.
+ * A next order's life is evidence only when it went the way its step expects while the order before it was held in
+ * flight: the order bar showed it queued, its steps (queued, run, dropped and why) came in the expected sequence, the
+ * expected number of orders were sent with a hash and confirmed, and an order that ran is the tile last queued.
  */
-export function judgeBurst({ taps, commands, next = NO_NEXT_ORDERS }) {
-  const offered = taps.filter((tap) => tap.verb === "Explore" || tap.verb === "Move");
-  if (offered.length === 0) {
+export function judgeNextOrder({ expected, played, orders }) {
+  if (!played.army) return blocked("the player has no army on the HUD");
+  if (!played.targets) {
     return blocked(
-      taps.some((tap) => tap.verb === "short")
+      played.scanned?.some(({ verb }) => verb === "short")
         ? "the army cannot pay for an order (the order bar shows a short cost)"
-        : "no tap offered an order",
+        : "no two neighbouring tiles beside the army offered an order",
     );
   }
-  const unsent = commands.filter((command) => !command.hash);
-  if (unsent.length > 0) return failed(`${unsent.length} commands were requested but never sent (no hash)`);
-  if (next.unresolved > 0) return failed(`${next.unresolved} next orders were queued and neither ran nor were dropped`);
-  const seenRefused = offered.filter((tap) => tap.seen === "refused").length;
-  const confirmed = commands.filter((command) => command.confirmedAfterMs !== null).length;
-  // A next order that ran is one of the commands; one that was replaced or dropped accounts for its own tap.
-  const queuedNotRun = next.queued - next.run;
-  if (confirmed + queuedNotRun < offered.length - seenRefused) {
-    return failed(
-      `${offered.length} orders offered, ${seenRefused} seen refused, only ${confirmed} sent and confirmed and ${queuedNotRun} queued and dropped: the rest were dropped silently`,
-    );
+  if (!played.firstSent) return failed("the first order never reached the network: nothing was in flight", { orders });
+  if (!played.queuedShown) return failed("the order bar never showed the next order queued", { orders });
+  const steps = orders.next.map(({ step }) => step);
+  if (steps.join() !== expected.next.join()) {
+    return failed(`the next order went ${steps.join(" → ") || "nowhere"}, not ${expected.next.join(" → ")}`, {
+      orders,
+    });
   }
-  return completed({ offered: offered.length, seenRefused, confirmed, next });
+  const confirmed = orders.commands.filter((command) => command.hash && command.confirmed).length;
+  if (confirmed !== expected.confirmed) {
+    return failed(`${confirmed} orders were sent and confirmed, not ${expected.confirmed}`, { orders });
+  }
+  const ran = orders.next.find(({ step }) => step === "run");
+  const lastQueued = orders.next.findLast(({ step }) => step === "queued");
+  if (ran && (ran.hex.col !== lastQueued.hex.col || ran.hex.row !== lastQueued.hex.row)) {
+    return failed("the order that ran is not the tile last queued", { orders });
+  }
+  return completed({ orders });
 }
-
-const NO_NEXT_ORDERS = { queued: 0, run: 0, dropped: {}, unresolved: 0 };
 
 /** The game a route is in, from `/g/<chain>/<game>/…`; null outside a game. */
 export function gameOfPath(path) {
@@ -255,59 +258,35 @@ export function assertInTargetGame(path, target) {
 }
 
 /**
- * A burst's presses against what the army actually did: each command the army trace records (explore or move), its
- * hash, and whether Herald confirmed it, with the press it followed; and each next order queued behind an order in
- * flight, with how it left: run, or dropped and why. Presses with neither were refused or ignored.
+ * An army's orders in a step, from the army trace, in order: each command (explore or move) with its hash and whether
+ * Herald confirmed it, and each step of a next order queued behind one in flight (queued, run, or dropped and why) with
+ * its tile.
  */
-export function describeBurst({ presses, taps, armyTrace, from, to }) {
-  const enters = presses.filter((press) => press.type === "keydown" && press.key === "Enter");
+export function describeOrders({ armyTrace, from, to }) {
   const commands = [];
-  const next = { queued: 0, run: 0, dropped: {}, unresolved: 0 };
+  const next = [];
   for (const entry of armyTrace.filter((trace) => trace.wallTimeMs >= from && trace.wallTimeMs < to)) {
     if (entry.phase.startsWith("next_order_")) {
-      countNextOrder(next, entry);
+      next.push(describeNextOrderStep(entry));
       continue;
     }
     if (entry.phase === "move_requested") {
-      commands.push({
-        entityId: entry.entityId,
-        requestedAt: entry.wallTimeMs,
-        kind: "move",
-        hash: null,
-        confirmedAt: null,
-      });
+      commands.push({ entityId: entry.entityId, kind: "move", hash: null, confirmed: false });
       continue;
     }
     const command = commands.findLast((candidate) => candidate.entityId === entry.entityId);
     if (!command) continue;
     if (entry.phase === "explore_intent_queued") command.kind = "explore";
     if (entry.txHash && !command.hash) command.hash = entry.txHash;
-    if (entry.phase === "tx_confirmed") command.confirmedAt = entry.wallTimeMs;
+    if (entry.phase === "tx_confirmed") command.confirmed = true;
   }
-  return {
-    presses: enters.length,
-    pressSpacingMs: enters.slice(1).map((press, index) => round(press.t - enters[index].t)),
-    offered: taps.map((tap) => tap.verb),
-    commands: commands.map((command) => ({
-      kind: command.kind,
-      afterPressMs: round(command.requestedAt - (enters.findLast((press) => press.t <= command.requestedAt)?.t ?? NaN)),
-      hash: command.hash,
-      confirmedAfterMs: command.confirmedAt === null ? null : round(command.confirmedAt - command.requestedAt),
-    })),
-    next,
-  };
+  return { commands: commands.map(({ entityId, ...command }) => command), next };
 }
 
-function countNextOrder(next, { phase, details }) {
-  if (phase === "next_order_queued") {
-    next.queued += 1;
-    next.unresolved += 1;
-    return;
-  }
-  next.unresolved -= 1;
-  if (phase === "next_order_run") next.run += 1;
-  else next.dropped[details.reason] = (next.dropped[details.reason] ?? 0) + 1;
-}
+const describeNextOrderStep = ({ phase, details }) => ({
+  step: phase === "next_order_dropped" ? `dropped:${details.reason}` : phase.replace("next_order_", ""),
+  hex: { col: details.col, row: details.row },
+});
 
 /**
  * Which populations a run may feed. Timing needs a run that ran to its end on a quiet machine (the maximum sampled load

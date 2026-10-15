@@ -29,7 +29,12 @@ import {
   summarizeRpcSends,
   summarizeStep,
 } from "./client-playtest/evidence.mjs";
-import { enterAsPlayer, identityShown, signInIfSignedOut } from "./client-playtest/player-entry.mjs";
+import {
+  continuePastTheDaySummary,
+  enterAsPlayer,
+  identityShown,
+  signInIfSignedOut,
+} from "./client-playtest/player-entry.mjs";
 import { Cancelled, createRunOwner } from "./client-playtest/run-owner.mjs";
 import { PLAYER_STEPS, SPECTATOR_STEPS, STEPS_GAME } from "./client-playtest/steps.mjs";
 
@@ -264,6 +269,7 @@ async function playRun(context) {
     const entered = player ? await enterAsPlayer(browser, owner, timeoutMs) : null;
     record.boot = { ...(await waitForEntrySnapshot(browser, owner, timeoutMs)), entered };
     browser.screenshot(join(runDir, `${label}-00-boot.png`));
+    if (player) record.daySummary = await continuePastTheDaySummary(browser, owner);
     // No order is sent before the run is proven to be in the game it was asked to play.
     record.game = assertInTargetGame(browser.observe().path, game);
     if (context.trace) browser.run(["trace", "start"]);
@@ -271,7 +277,7 @@ async function playRun(context) {
     for (const [index, step] of steps.entries()) {
       owner.throwIfCancelled();
       const base = join(runDir, `${label}-${String(index + 1).padStart(2, "0")}-${step.name}`);
-      const played = await playStep({ browser, owner, step, base });
+      const played = await playStep({ browser, devTools, owner, step, base });
       record.steps.push(played);
       if (played.cancelled) throw played.cancelled;
     }
@@ -299,7 +305,7 @@ async function playRun(context) {
  * Marks the step, plays it, lets it settle, and judges it by what the page then shows and what the probe saw. Any
  * failure, capture included, is kept as the step's verdict with what it attempted and whatever could still be read.
  */
-async function playStep({ browser, owner, step, base }) {
+async function playStep({ browser, devTools, owner, step, base }) {
   const screenshot = `${base}.png`;
   const attempt = { name: step.name, played: {} };
   let startedOn = null;
@@ -307,7 +313,7 @@ async function playStep({ browser, owner, step, base }) {
   try {
     startedOn = JSON.parse(browser.eval(`window.__playtest.step(${JSON.stringify(step.name)})`));
     const extraScreenshot = (suffix) => takeScreenshot(browser, `${base}-${suffix}.png`);
-    attempt.played = (await step.play?.({ browser, extraScreenshot, owner })) ?? {};
+    attempt.played = (await step.play?.({ browser, devTools, extraScreenshot, owner })) ?? {};
     await owner.sleep(step.settleMs);
     browser.screenshot(screenshot);
     browser.run(["eval", `window.__playtest.step(${JSON.stringify(`${step.name}:end`)})`]);
@@ -375,6 +381,7 @@ function writeRunEvidence({ browser, context, record }) {
     rendererMode: record.rendererMode,
     rpc: summarizeRpcSends(rpcSends),
     signIn: record.signIn ?? null,
+    daySummary: record.daySummary ?? null,
     steps: record.steps.map(({ summary }) => summary),
     url: record.url,
   };
