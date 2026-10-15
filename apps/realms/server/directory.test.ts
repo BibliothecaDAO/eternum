@@ -1,4 +1,5 @@
 import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
+import { normalizeStarknetAddress } from "@realms-world/identity";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { handleDirectory, handleDirectoryHistory, superviseNotifiers } from "./directory";
@@ -11,6 +12,21 @@ const shards = [
 const game = (game_id: number, status: HeraldGameDirectoryEntry["status"], end_at = 0) =>
   ({ game_id, status, clock: { end_at }, player_state: { registered: game_id !== 4 } }) as HeraldGameDirectoryEntry;
 const games = [game(1, "Live"), game(2, "Registration"), game(3, "Settled", 100), game(4, "Settled", 200)];
+const manifestOf = (chainId: string) => ({
+  version: 1,
+  chainId,
+  rpcUrl: "https://rpc.test",
+  contracts: { games: "0x7" },
+});
+/** The manifest as the directory lists it: as its Herald serves it, its chain id in one spelling. */
+const listedManifest = (chainId: string) => ({ ...manifestOf(chainId), chainId: normalizeStarknetAddress(chainId) });
+/** A shard's Herald: its manifest, and its games directory. */
+const herald = (chainId: string, input: RequestInfo | URL, listed = games) =>
+  String(input).endsWith("/manifest")
+    ? Response.json(manifestOf(chainId))
+    : Response.json({ chain: chainId, games: listed });
+const gamesReads = (fetchShard: { mock: { calls: Parameters<typeof fetch>[] } }) =>
+  fetchShard.mock.calls.map(([url]) => String(url)).filter((url) => !url.endsWith("/manifest"));
 
 const dependencies = (
   readLaunchDirectory: () => Promise<{
@@ -21,7 +37,7 @@ const dependencies = (
   cache: { match: async () => undefined, put: async () => undefined } as unknown as Cache,
   fetchShard: vi.fn<typeof fetch>(async (input) => {
     const shard = shards.find(({ url }) => String(input).startsWith(url))!;
-    return Response.json({ chain: shard.chainId, games });
+    return herald(shard.chainId, input);
   }),
   readLaunchDirectory,
 });
@@ -38,6 +54,7 @@ test("a failed entry read keeps both shard names visible as unavailable", async 
   expect(await response.json()).toEqual({
     shards: shards.map((shard) => ({
       ...shard,
+      manifest: null,
       games: null,
       error: "unavailable",
     })),
@@ -75,8 +92,8 @@ test("healthy launch records filter games independently on both chains", async (
   const response = await handleDirectory(new Request("https://app.test/api/directory"), deps);
   expect(await response.json()).toEqual({
     shards: [
-      { ...shards[0], games: [{ ...games[0], slotId: null }] },
-      { ...shards[1], games: [{ ...games[1], slotId: null }] },
+      { ...shards[0], manifest: listedManifest("0x1"), games: [{ ...games[0], slotId: null }] },
+      { ...shards[1], manifest: listedManifest("0x2"), games: [{ ...games[1], slotId: null }] },
     ],
   });
   const history = await handleDirectoryHistory(new Request("https://app.test/api/directory/history"), deps);
@@ -112,7 +129,7 @@ test("pending and retired shards have no player notification watcher", async () 
 
 test("publishes the launch slot number and no ledger address payload", async () => {
   const deps = dependencies(async () => ({ chains: [{ chainId: "0x1", games: [{ gameId: 1, slotId: 12 }] }] }));
-  deps.fetchShard.mockResolvedValue(Response.json({ chain: "0x1", games: [games[0]] }));
+  deps.fetchShard.mockImplementation(async (input) => herald("0x1", input, [games[0]!]));
   const response = await handleDirectory(new Request("https://app.test/api/directory"), deps);
   const game = ((await response.json()) as { shards: { games: { slotId: number }[] }[] }).shards[0]!.games[0]!;
   expect(game.slotId).toBe(12);
@@ -185,18 +202,14 @@ test("everyone without a player shares one cached listing; a player's listing is
   expect(second).toEqual(first);
   const settled = ((await history.json()) as { games: { game_id: number }[] }).games;
   expect(settled.map(({ game_id }) => game_id)).toEqual([4, 4, 3, 3]);
-  expect(
-    [deps.readLaunchDirectory, registry, deps.fetchShard].map((read) => vi.mocked(read).mock.calls.length),
-  ).toEqual([1, 1, shards.length]);
+  expect([deps.readLaunchDirectory, registry].map((read) => vi.mocked(read).mock.calls.length)).toEqual([1, 1]);
+  expect(gamesReads(deps.fetchShard)).toHaveLength(shards.length);
 
   await handleDirectory(new Request("https://app.test/api/directory?player=0x123"), deps);
   expect(vi.mocked(deps.readLaunchDirectory).mock.calls.length).toBe(2);
-  expect(
-    vi
-      .mocked(deps.fetchShard)
-      .mock.calls.slice(-shards.length)
-      .map(([url]) => String(url)),
-  ).toEqual(shards.map(({ url }) => `${url}/games?player=0x123`));
+  expect(gamesReads(deps.fetchShard).slice(-shards.length)).toEqual(
+    shards.map(({ url }) => `${url}/games?player=0x123`),
+  );
 });
 
 test("a listing with a failed read is not shared: the next request reads again", async () => {
@@ -214,4 +227,26 @@ test("a listing with a failed read is not shared: the next request reads again",
   await handleDirectory(new Request("https://app.test/api/directory"), deps);
   expect(recovered.every((shard) => Array.isArray(shard.games))).toBe(true);
   expect(readLaunch.mock.calls.length).toBe(2);
+});
+
+test("a shard whose manifest names another chain is listed as unavailable, and the other shard still answers", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => undefined);
+  const deps = dependencies(async () => ({
+    chains: [
+      { chainId: "0x1", games: [{ gameId: 1, slotId: null }] },
+      { chainId: "0x2", games: [{ gameId: 2, slotId: null }] },
+    ],
+  }));
+  deps.fetchShard.mockImplementation(async (input) =>
+    String(input).startsWith(shards[0]!.url)
+      ? herald("0x1", input)
+      : herald(String(input).endsWith("/manifest") ? "0x9" : "0x2", input),
+  );
+  const response = await handleDirectory(new Request("https://app.test/api/directory"), deps);
+  expect(await response.json()).toEqual({
+    shards: [
+      { ...shards[0], manifest: listedManifest("0x1"), games: [{ ...games[0], slotId: null }] },
+      { ...shards[1], manifest: null, games: null, error: "unavailable" },
+    ],
+  });
 });

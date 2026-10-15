@@ -14,9 +14,13 @@ interface ListedShard {
   status: ShardStatus;
 }
 
-type ShardListing =
-  | (ListedShard & { games: HeraldGameDirectoryEntry[] })
-  | (ListedShard & { games: null; error: "unavailable" });
+/** A shard's games, and the manifest the app opens the shard from, so a game's entry never waits on its Herald. */
+interface ShardRead {
+  games: HeraldGameDirectoryEntry[];
+  manifest: ShardManifest;
+}
+
+type ShardListing = (ListedShard & ShardRead) | (ListedShard & { games: null; manifest: null; error: "unavailable" });
 
 /** How long the shared listing is served from a colo's cache before it is read again. */
 const LISTING_CACHE_SECONDS = 15;
@@ -40,8 +44,8 @@ interface DirectoryListing {
 }
 
 /**
- * GET /api/directory — every live or upcoming game on every listed shard, each carrying its shard's URL and chain id so
- * the app opens it on its own shard; a settled game leaves this list for the history. A shard that cannot be read is
+ * GET /api/directory — every live or upcoming game on every listed shard, each carrying its shard's URL, chain id and
+ * manifest so the app opens it on its own shard; a settled game leaves this list for the history. A shard that cannot be read is
  * listed by name with an error; it never empties the list. With ?player=<gameplay account>, each shard answers that
  * player's standing in its games; the shared listing is cached, a player's standing never is.
  */
@@ -52,7 +56,7 @@ export const handleDirectory = async (request: Request, dependencies: DirectoryD
   return json({
     shards: listings.map((listing) =>
       listing.games === null || launchDirectory === null
-        ? { ...listing, games: null, error: "unavailable" }
+        ? { ...listing, games: null, manifest: null, error: "unavailable" }
         : {
             ...listing,
             games: playerGames(listing, launchDirectory).filter((game) => !isSettled(game)),
@@ -136,7 +140,7 @@ const readFreshListing = async (dependencies: DirectoryDependencies, player: str
 const isComplete = ({ launchDirectory, listings }: DirectoryListing) =>
   launchDirectory !== null && listings.every((listing) => listing.games !== null);
 
-/** Every listed shard's games, each shard read on its own so one that fails is named and the rest still answer. */
+/** Every listed shard's games and manifest, each shard read on its own so one that fails is named and the rest answer. */
 const listShards = async (dependencies: DirectoryDependencies, player: string | null) => {
   const results = (await registeredShards(dependencies.db)).filter(
     (row) => row.status === "active" || row.status === "draining",
@@ -144,7 +148,7 @@ const listShards = async (dependencies: DirectoryDependencies, player: string | 
   const query = player ? `?player=${player}` : "";
   return Promise.all(
     results.map((shard) =>
-      listShard(shard, () => fetchShardGames(shard, `${shard.url}/games${query}`, dependencies.fetchShard)),
+      listShard(shard, () => readShard(shard, `${shard.url}/games${query}`, dependencies.fetchShard)),
     ),
   );
 };
@@ -218,16 +222,26 @@ const positionOfCursor = (cursor: string) => {
   return historyPosition({ clock: { end_at: Number(endAt) }, chainId: chainId!, game_id: Number(gameId) });
 };
 
-const listShard = async (
-  shard: ListedShard,
-  readGames: () => Promise<HeraldGameDirectoryEntry[]>,
-): Promise<ShardListing> => {
+const listShard = async (shard: ListedShard, read: () => Promise<ShardRead>): Promise<ShardListing> => {
   try {
-    return { ...shard, games: await readGames() };
+    return { ...shard, ...(await read()) };
   } catch (error) {
     console.error("directory_shard_unavailable", shard.url, error);
-    return { ...shard, games: null, error: "unavailable" };
+    return { ...shard, games: null, manifest: null, error: "unavailable" };
   }
+};
+
+/** A shard whose manifest cannot be read is unavailable, like one whose games cannot be: no client could open it. */
+const readShard = async (shard: ListedShard, gamesUrl: string, fetchShard: typeof fetch): Promise<ShardRead> => {
+  const [games, manifest] = await Promise.all([
+    fetchShardGames(shard, gamesUrl, fetchShard),
+    readManifest(shard.url, fetchShard),
+  ]);
+  // A Herald serving another chain's manifest would open this shard's games on that chain.
+  if (!manifest || BigInt(manifest.chainId) !== BigInt(shard.chainId)) {
+    throw new Error(`manifest is not chain ${shard.chainId}`);
+  }
+  return { games, manifest: manifest as ShardManifest };
 };
 
 const fetchShardGames = async (shard: ListedShard, url: string, fetchShard: typeof fetch) => {
