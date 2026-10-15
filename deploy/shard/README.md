@@ -74,8 +74,9 @@ enrolling the operator. Pending shards are hidden from players. Init then deploy
 roles and registers the selected presets. Games is created with the bootstrap owner and the launcher and relay addresses
 derived from the guardian identity. The two service Workers join those accounts on their own alarm or cron. Last, on
 every start, init has Madara compile each of the world's classes to native code (`warm-native-classes.ts`): Madara
-compiles a class only when it first runs it, and runs that first execution on the VM, 2–4× slower. Classes already in
-Madara's cache cost one directory read.
+compiles a class only when it first runs it, and runs that first execution on the VM, 2–4× slower. Madara compiles four
+at once and refuses more, so init asks again each round for every class still missing, until all are compiled or 15
+minutes pass (then the start fails, naming them). Classes already in Madara's cache cost one directory read.
 
 After initialization, deployment compares the deployed classes, schema and selected preset commitments with the build's
 facts. It confirms the distinct on-chain roles, then activates the directory entry through Herald's real manifest. A
