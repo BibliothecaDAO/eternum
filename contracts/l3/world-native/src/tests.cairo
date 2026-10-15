@@ -611,7 +611,7 @@ fn an_identity_that_does_not_match_the_account_address_is_rejected() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn disabled_commands_revert_before_root() {
+fn disabled_commands_and_unready_rosters_revert_before_root() {
     let d = setup(true);
     let game = crate::game::IGameDispatcherTrait::game(crate::game::IGameDispatcher { contract_address: d.games }, 1);
     let rules = crate::rules::SliceRules { command_mask: 0, ..play_fixture::rules() };
@@ -619,6 +619,10 @@ fn disabled_commands_revert_before_root() {
     let (release, preset) = play_fixture::pins(d.games, 1);
     play_fixture::caller(d.games, d.actor, 100);
     assert_entry_refusal(d, 1, release, preset, play_fixture::encode(action(d, 1).command), "command disabled");
+    play_fixture::seed_game(d.games, 1, crate::game::GameRegistry { ready: false, ..game }, play_fixture::rules());
+    let (release, preset) = play_fixture::pins(d.games, 1);
+    play_fixture::caller(d.games, d.actor, 100);
+    assert_entry_refusal(d, 1, release, preset, play_fixture::encode(action(d, 1).command), "roster not ready");
 }
 
 #[test]
@@ -715,7 +719,7 @@ fn game_registry_wire_contains_only_game_configuration() {
     assert_eq!(
         encoded.span(),
         array![
-            game.name, game.preset_id.into(), 0, 1, game.start_settling_at.into(), game.start_main_at.into(),
+            game.name, game.preset_id.into(), 0, 1, 1, game.start_settling_at.into(), game.start_main_at.into(),
             game.end_at.into(), game.end_grace_seconds.into(), game.seed,
         ]
             .span(),

@@ -11,17 +11,14 @@ import {
 const DUEL_DURATION_MINUTES = 90;
 const DUEL_DURATION_SECONDS = DUEL_DURATION_MINUTES * 60;
 
-const duelStartingResources = buildArenaStartingResources(
-  {
-    [ResourcesIds.Wheat]: 1_000,
-    [ResourcesIds.Labor]: 1_200,
-    [ResourcesIds.Wood]: 180,
-    [ResourcesIds.Coal]: 120,
-    [ResourcesIds.Copper]: 60,
-    [ResourcesIds.Donkey]: 200,
-  },
-  1_500,
-);
+const duelStartingResources = buildArenaStartingResources({
+  [ResourcesIds.Wheat]: 1_000,
+  [ResourcesIds.Labor]: 1_200,
+  [ResourcesIds.Wood]: 180,
+  [ResourcesIds.Coal]: 120,
+  [ResourcesIds.Copper]: 60,
+  [ResourcesIds.Donkey]: 200,
+});
 
 const duelExplorationRewards = [
   { rewardId: ResourcesIds.Essence, amount: 100, probabilityBps: 3_000 },

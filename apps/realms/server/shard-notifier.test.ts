@@ -246,6 +246,7 @@ const snapshot = (army: ArmyState | null, neighbour: ArmyState | null, owner: st
             name: "0x1",
             preset_id: 1,
             settled: false,
+            ready: true,
             dev_mode_on: false,
             start_settling_at: SEASON_START,
             start_main_at: SEASON_START,

@@ -65,7 +65,7 @@ test("Blitz slots are scheduled only inside the Blitz window, and none outside i
   await tick(day(9, 12));
   await tick(day(11, 12));
   expect((await slots.list()).map(({ name }) => name)).toEqual([blitzSlotName(day(9, 20))]);
-  expect((await slots.list())[0]!.closesAt).toBe(day(9, 19, 59).toISOString());
+  expect((await slots.list())[0]!.closesAt).toBe(day(9, 19, 55).toISOString());
 });
 
 test("a phase moves until it starts; a started Frontier season keeps its start and its end", async () => {
@@ -171,7 +171,7 @@ test("opening both phases after their start schedules Frontier and the next Blit
     { request: { gameStartTime: enteredWindow.startsAt, durationSeconds: 160 * 3600 } },
   ]);
   expect(await slots.list()).toMatchObject([
-    { name: "blitz-20000101-2000", closesAt: "2000-01-01T19:59:00.000Z", closed: false },
+    { name: "blitz-20000101-2000", closesAt: "2000-01-01T19:55:00.000Z", closed: false },
   ]);
 });
 

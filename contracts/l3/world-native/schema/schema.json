@@ -5956,6 +5956,12 @@
           "feltLength": 1
         },
         {
+          "name": "ready",
+          "type": "core::bool",
+          "id": "0x7265616479",
+          "feltLength": 1
+        },
+        {
           "name": "dev_mode_on",
           "type": "core::bool",
           "id": "0x6465765f6d6f64655f6f6e",
@@ -5993,7 +5999,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 9
+      "valueLength": 10
     },
     {
       "name": "GameOverrides",
@@ -8946,6 +8952,10 @@
         },
         {
           "name": "settled",
+          "type": "core::bool"
+        },
+        {
+          "name": "ready",
           "type": "core::bool"
         },
         {
@@ -12757,5 +12767,5 @@
       ]
     }
   },
-  "identity": "022bc393e6399d6ea8643e2aa436e9b5b564d66738ee0e3651327333c997adc0"
+  "identity": "6882ba86f37d88bdaec284a26ac794fa0231aa96a3d2012bfea4ae666a157f02"
 }

@@ -379,6 +379,10 @@ export const factWireTypes = [
         type: "core::bool",
       },
       {
+        name: "ready",
+        type: "core::bool",
+      },
+      {
         name: "dev_mode_on",
         type: "core::bool",
       },

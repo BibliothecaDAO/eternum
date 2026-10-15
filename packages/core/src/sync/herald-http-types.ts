@@ -50,6 +50,7 @@ export interface HeraldPlayerGameState {
 }
 
 export interface HeraldGameDirectoryEntry {
+  ready: boolean;
   clock: HeraldGameClock;
   dev_mode_on: boolean;
   /** A game with days: its day unit and the seed its bags of days are drawn from (decimal). */

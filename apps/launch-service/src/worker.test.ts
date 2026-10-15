@@ -65,7 +65,7 @@ interface FixtureGame {
   seed: bigint;
   dev_mode_on: boolean;
   roster: { account: bigint; wallet: bigint }[];
-  seated: boolean;
+  ready: boolean;
 }
 let playBlitzFixture = false;
 let workerNow: number | null = null;
@@ -105,14 +105,14 @@ function blitzRpc(
     let events: unknown[] = [];
     if (selector === BigInt(hash.getSelectorFromName("create_game"))) {
       const game = creationCodec.parse("creation", args) as unknown as FixtureGame;
-      createdGames.push({ ...game, seated: false });
+      createdGames.push({ ...game, ready: false });
     } else {
       expect(selector).toBe(BigInt(hash.getSelectorFromName("play")));
       expect(args.slice(4).map(BigInt)).toEqual(
         encodeNativeCommand(bindings.commandAbi, { kind: "SettleBlitzRoster", value: undefined }).map(BigInt),
       );
       const gameId = Number(args[0]);
-      createdGames[gameId - 1]!.seated = true;
+      createdGames[gameId - 1]!.ready = true;
       events = [
         {
           from_address: "0x77",
@@ -372,7 +372,7 @@ it.each([1, 2, 25])(
       version: "workerd-test",
     });
 
-    await setWorkerClock("2000-01-01T10:59:00Z");
+    await setWorkerClock("2000-01-01T10:55:00Z");
 
     await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
     const deadline = Date.now() + 10_000;
@@ -385,7 +385,7 @@ it.each([1, 2, 25])(
     expect(classReads).toBe(1);
     const orderedGames = [...createdGames].sort((a, b) => (a.name < b.name ? -1 : 1));
     expect(orderedGames.map((game) => game.roster.length)).toEqual(sizes);
-    expect(createdGames.every((game) => game.seated)).toBe(true);
+    expect(createdGames.every((game) => game.ready)).toBe(true);
     expect(orderedGames.flatMap((game) => game.roster.map((player) => player.wallet))).toEqual(
       Array.from({ length: count }, (_, i) => BigInt(i + 1)),
     );

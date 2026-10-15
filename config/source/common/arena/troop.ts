@@ -1,5 +1,6 @@
 import { ResourcesIds } from "../../../../packages/types/src/constants";
 import type { ConfigPatch } from "../merge-config";
+import { ARENA_STARTING_TROOPS } from "./shared";
 
 const TROOP_DAMAGE_RAID_PERCENT_NUM = 1_000; //10%
 
@@ -87,7 +88,7 @@ export const arenaTroopConfig: ConfigPatch = {
       cityGuardSlots: 2,
       kingdomGuardSlots: 3,
       empireGuardSlots: 4,
-      startingGuard: 1500,
+      startingGuard: ARENA_STARTING_TROOPS,
       campArmies: 1,
 
       mercenariesTroopLowerBound: TROOP_MERCENARIES_TROOP_LOWER_BOUND,

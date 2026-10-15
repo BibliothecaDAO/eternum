@@ -317,7 +317,11 @@ pub mod SettlementLogic {
             );
             let troops = crate::settlement::deal_troop_types(seed, coords.len());
             self.create_settlement_realms(game_id, player.account, coords, troops, context);
-            ((roster.len() - Into::<u16, u32>::into(progress.registered) - 1).into())
+            let remaining: u64 = (roster.len() - Into::<u16, u32>::into(progress.registered) - 1).into();
+            if remaining == 0 {
+                crate::logic::game::mark_roster_ready(game_id);
+            }
+            (remaining)
         }
     }
     #[generate_trait]

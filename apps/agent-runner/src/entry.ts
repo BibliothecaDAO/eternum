@@ -104,6 +104,7 @@ const ensureExplorers = async (
 // Native facts
 
 const settledStructureIds = (client: GameClient, player: string): ID[] | undefined => {
+  if (!client.setup.store.get("GameRegistry", { game_id: client.gameId })?.ready) return undefined;
   const entered = [...client.setup.store.inGame("PlayerEntry", client.gameId)].some(
     (entry) => entry.player === BigInt(player),
   );

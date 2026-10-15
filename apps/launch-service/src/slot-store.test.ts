@@ -229,7 +229,7 @@ it.each(["exists", "unavailable"])(
   },
 );
 
-it("opens custody through preparation and starts every frozen group one minute after close", async () => {
+it("opens custody through preparation and starts every frozen group five minutes after close", async () => {
   const value = slotValueFixture(25);
   const open = vi.spyOn(value, "openSlot");
   const launches = new D1LaunchStore(database.db, testChain());
@@ -247,8 +247,8 @@ it("opens custody through preparation and starts every frozen group one minute a
   expect(runs).toHaveLength(2);
   for (const run of runs)
     expect(run.request).toMatchObject({
-      gameStartTime: new Date((closeTime + 60) * 1000).toISOString(),
-      durationSeconds: 300,
+      gameStartTime: new Date((closeTime + 300) * 1000).toISOString(),
+      durationSeconds: 60,
     });
 });
 

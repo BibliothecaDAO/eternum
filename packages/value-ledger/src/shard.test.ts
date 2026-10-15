@@ -75,7 +75,7 @@ it("uses the fixed ordinary v3 play frame and a native three-felt device signatu
     accountAddress: "0x20",
     privateKey: device,
   });
-  await operator.playCommand(7, "SettleBlitzRoster");
+  await operator.seatNext(await operator.pins(7));
   expect(rpc.execute).toHaveBeenCalledWith(
     {
       contractAddress: "0x10",
@@ -156,7 +156,7 @@ it("rejects a successful invoke carrying the generated GameplayRejected event", 
           actor: "0x20",
           tx_hash: "0xabc",
           status_class: shortString.encodeShortString("domain"),
-          reason: "settling not started",
+          reason: "roster not ready",
         }),
       },
     ],
@@ -168,7 +168,29 @@ it("rejects a successful invoke carrying the generated GameplayRejected event", 
     accountAddress: "0x20",
     privateKey: "0x1",
   });
-  await expect(operator.playCommand(7, "SettleBlitzRoster")).rejects.toThrow("gameplay_refused:settling not started");
+  await expect(operator.seatNext(await operator.pins(7))).rejects.toThrow("gameplay_refused:roster not ready");
+});
+
+it("sends the next seat once the last is pre-confirmed, while results still wait for a closed block", async () => {
+  const preConfirmed = { finality_status: "PRE_CONFIRMED", isReverted: () => false, events: [] };
+  const accepted = { block_number: 11, finality_status: "ACCEPTED_ON_L2", isReverted: () => false, events: [] };
+  const operator = new ShardOperator({
+    chainId: "0x1",
+    rpcUrl: "https://shard.test",
+    gamesAddress: "0x10",
+    accountAddress: "0x20",
+    privateKey: "0x1",
+  });
+  const pins = await operator.pins(7);
+  rpc.call.mockClear();
+  rpc.receipt.mockResolvedValueOnce(preConfirmed);
+  await operator.seatNext(pins);
+  expect(rpc.receipt).toHaveBeenCalledTimes(1);
+  expect(rpc.call).not.toHaveBeenCalled();
+  rpc.receipt.mockClear();
+  rpc.receipt.mockResolvedValueOnce(preConfirmed).mockResolvedValueOnce(accepted);
+  await operator.playCommand(7, "MarkGameSettled");
+  expect(rpc.receipt).toHaveBeenCalledTimes(2);
 });
 
 it("sends all held Realms in one labor mutation through the generated Games ABI", async () => {

@@ -90,6 +90,7 @@ const frontierWorld = (homeRingView?: HomeRingView, call?: MadaraRpc["call"]) =>
           preset_id: "1",
           creator: "10",
           settled: false,
+          ready: true,
           dev_mode_on: false,
           start_settling_at: String(DAY_START + 120),
           start_main_at: String(DAY_START + 120),

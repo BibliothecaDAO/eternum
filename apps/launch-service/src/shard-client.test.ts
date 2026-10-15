@@ -2,7 +2,7 @@ import { gamesAbi, gamesEvent } from "../../../packages/value-ledger/test-suppor
 import { CallData } from "starknet";
 import { expect, it, vi } from "vitest";
 import { LaunchShard } from "./shard-client";
-it("recovers creation and seats the roster at close, one minute before the common start", async () => {
+it("recovers creation and seats the roster at close, five minutes before the common start", async () => {
   const native = new LaunchShard({
     rpcUrl: "https://shard.test",
     chainId: "0x1",
@@ -25,6 +25,7 @@ it("recovers creation and seats the roster at close, one minute before the commo
       ({
         preset_id: BigInt(String(params!.preset_id)),
         seed: BigInt(String(params!.seed)),
+        ready: false,
         start_settling_at: BigInt(String(params!.start_settling_at)),
         start_main_at: BigInt(String(params!.start_main_at)),
         end_at: 460n,
@@ -40,26 +41,27 @@ it("recovers creation and seats the roster at close, one minute before the commo
     durationSeconds: 60,
   };
   await expect(native.create(request, 100000, undefined, roster)).rejects.toThrow("lost acknowledgment");
-  expect(params).toMatchObject({ roster, start_settling_at: 340, start_main_at: 400, registration_start: 100 });
+  expect(params).toMatchObject({ roster, start_settling_at: 100, start_main_at: 400, registration_start: 99 });
   expect(await native.create(request, 100000, undefined, roster)).toMatchObject({ gameId: 7 });
   expect(create).toHaveBeenCalledOnce();
   await expect(native.create(request, 100000, undefined, [{ account: "0xb", wallet: "0x1" }])).rejects.toThrow(
     "frozen_roster_differs",
   );
   expect(create).toHaveBeenCalledOnce();
-  const head = vi.spyOn(native, "head").mockResolvedValue({ block_number: 10, block_hash: "0x10", timestamp: 339 });
-  await expect(native.seat(7)).rejects.toMatchObject({ _tag: "RegistrationOpen", secondsUntilClose: 1 });
-  head.mockResolvedValue({ block_number: 11, block_hash: "0x11", timestamp: 340 });
-  let remaining = 2;
-  const seat = vi.spyOn(native, "playCommand").mockImplementation(async () => ({
-    transactionHash: "0xabc",
-    events: [
-      {
-        from_address: "0x77",
-        ...gamesEvent("BatchProgress", { game_id: 7, actor: "0x123", tx_hash: "0xabc", remaining: --remaining }),
-      },
-    ],
-  }));
-  await expect(native.seat(7)).resolves.toBe(2);
-  expect(seat).toHaveBeenCalledWith(7, "SettleBlitzRoster");
+  vi.spyOn(native, "head").mockResolvedValue({ block_number: 10, block_hash: "0x10", timestamp: 100 });
+  const pins = { gameId: 7, release: 1n, commitment: 2n, l2GasBound: 3n };
+  vi.spyOn(native, "pins").mockResolvedValue(pins);
+  const seat = vi.spyOn(native, "seatNext").mockImplementation(async () => {
+    return {
+      transactionHash: "0xabc",
+      events: [
+        {
+          from_address: "0x77",
+          ...gamesEvent("BatchProgress", { game_id: 7, actor: "0x123", tx_hash: "0xabc", remaining: 0 }),
+        },
+      ],
+    };
+  });
+  await expect(native.seat(7)).resolves.toBe(1);
+  expect(seat).toHaveBeenCalledWith(pins);
 });

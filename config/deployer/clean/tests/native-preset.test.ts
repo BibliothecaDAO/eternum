@@ -98,14 +98,18 @@ describe("native presets", () => {
     }
     for (const id of [2, 3, 4]) expect(buildNativePreset(configuration(id), id).economy.labor.isNone()).toBe(true);
   });
-  test("a Blitz realm starts with 1,000 T1 troops garrisoned and 1,000 in reserve, its type dealt rather than biome-drawn", () => {
-    const blitz = buildNativePreset(configuration(2), 2);
-    expect(blitz.settlement.realms.starting_troops).toEqual([]);
-    expect(blitz.rules.troop_limit_config.starting_guard).toBe(1_000);
-    expect(
-      blitz.settlement.realms.resources.filter(({ resource_type }) => [26, 29, 32].includes(resource_type)),
-    ).toEqual([26, 29, 32].map((resource_type) => ({ resource_type, amount: 1_000_000_000_000n })));
-    expect(buildNativePreset(configuration(4), 4).settlement.realms.starting_troops).toEqual([]);
+  test.each([2, 4])(
+    "a fixed-roster realm (preset %i) starts with 1,000 T1 troops garrisoned and 1,000 in reserve, its type dealt",
+    (id) => {
+      const preset = buildNativePreset(configuration(id), id);
+      expect(preset.settlement.realms.starting_troops).toEqual([]);
+      expect(preset.rules.troop_limit_config.starting_guard).toBe(1_000);
+      expect(
+        preset.settlement.realms.resources.filter(({ resource_type }) => [26, 29, 32].includes(resource_type)),
+      ).toEqual([26, 29, 32].map((resource_type) => ({ resource_type, amount: 1_000_000_000_000n })));
+    },
+  );
+  test("Eternum keeps its biome troop table", () => {
     expect(buildNativePreset(configuration(3), 3).settlement.realms.starting_troops).toHaveLength(17);
   });
   test("Frontier caps daily chest prices without supplying a season duration", () => {

@@ -82,13 +82,14 @@ describe("game entry phase resolution", () => {
   };
 
   it.each<[string, boolean, boolean, boolean, BlitzEntry, string]>([
-    ["a member whose realms are not seated yet waits for them", true, false, false, "preparing", "settlement"],
-    ["a seated member plays, whatever the rest of the roster", true, true, false, "play", "ready"],
+    ["a member of an unready game waits for its realms", true, false, false, "preparing", "settlement"],
+    ["a member of a ready game plays", true, true, false, "play", "ready"],
     ["a member of an ended game reviews", true, true, true, "review", "spectate"],
-    ["a non-member spectates", false, false, false, "spectate", "spectate"],
+    ["a non-member of an unready game spectates", false, false, false, "spectate", "spectate"],
+    ["a non-member of a ready game spectates", false, true, false, "spectate", "spectate"],
     ["a non-member of an ended game reviews", false, true, true, "review", "spectate"],
-  ])("%s", (_, isMember, seated, ended, entry, phase) => {
-    expect(resolveBlitzEntry({ isMember, seated, ended })).toBe(entry);
+  ])("%s", (_, isMember, ready, ended, entry, phase) => {
+    expect(resolveBlitzEntry({ isMember, ready, ended })).toBe(entry);
     expect(resolveGameEntryModalPhase({ ...blitzInput, blitzEntry: entry })).toBe(phase);
   });
 

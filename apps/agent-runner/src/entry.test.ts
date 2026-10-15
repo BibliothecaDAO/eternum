@@ -56,6 +56,18 @@ describe("settlement provisioning", () => {
     expect(signer.execute).not.toHaveBeenCalled();
     expect(game.actions.createExplorerArmy).toHaveBeenCalledOnce();
   });
+  it("waits for the whole roster before acting on an already settled realm", async () => {
+    const { game, signer } = settledGame(true, 100_000_000_000n, false);
+    const row = game.store.require("GameRegistry", { game_id: 28 });
+    writeFact(game.store, "GameRegistry", [28], { ...row, ready: false });
+    const pending = ensureSettled(game, signer as unknown as AccountInterface);
+    await Promise.resolve();
+    expect(game.actions.createExplorerArmy).not.toHaveBeenCalled();
+    writeFact(game.store, "GameRegistry", [28], { ...row, ready: true });
+    game.advanceSnapshot();
+    await pending;
+    expect(game.actions.createExplorerArmy).toHaveBeenCalledOnce();
+  });
   it("resumes a provisioned realm with an existing explorer after all T1 troops were spent", async () => {
     const { game, signer } = settledGame(true, 0n, true);
     expect(await ensureSettled(game, signer as unknown as AccountInterface)).toEqual({

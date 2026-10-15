@@ -61,6 +61,7 @@ const game = (over: Partial<DirectoryGame>): DirectoryGame => ({
   name: "frontier-1",
   mode: "frontier",
   status: "Live",
+  ready: true,
   dev_mode_on: false,
   expedition: null,
   clock: { start_settling_at: NOW - DAY, start_main_at: NOW - DAY, end_at: NOW + 7 * DAY, end_grace_seconds: 0 },
@@ -121,6 +122,7 @@ const preparingBlitz = game({
   name: "blitz-1900-1",
   mode: "blitz",
   status: "Registration",
+  ready: false,
   clock: { start_settling_at: NOW + 3600, start_main_at: NOW + 7200, end_at: NOW + 14_400, end_grace_seconds: 0 },
   player_count: 18,
   roster_count: 24,
@@ -132,6 +134,7 @@ const eternum = game({
   name: "eternum-1",
   mode: "eternum",
   status: "Registration",
+  ready: false,
   clock: {
     start_settling_at: NOW + 7 * DAY,
     start_main_at: NOW + 7 * DAY,

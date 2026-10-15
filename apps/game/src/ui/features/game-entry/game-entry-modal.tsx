@@ -234,11 +234,7 @@ export const GameEntryModal = ({
   const seasonTimingValid = isDevMode || (seasonHasStarted && seasonNotEnded);
   const blitzEntry = useMemo(() => {
     if (!isBlitzMode || !worldMeta?.player_state) return null;
-    return resolveBlitzEntry({
-      isMember: isMember(worldMeta),
-      seated: worldMeta.player_state.settled,
-      ended: isGameOver(worldMeta),
-    });
+    return resolveBlitzEntry({ isMember: isMember(worldMeta), ready: worldMeta.ready, ended: isGameOver(worldMeta) });
   }, [isBlitzMode, worldMeta]);
   // Blitz entry is decided by the roster fact; Eternum entry by the player's own settlement.
   const checksComplete = isBlitzMode ? blitzEntry != null : settlementCheckComplete;

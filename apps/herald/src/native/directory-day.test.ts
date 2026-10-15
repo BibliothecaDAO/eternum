@@ -15,6 +15,7 @@ const input = (timestamp: number): DirectoryInput => {
     ...game,
     name: "0x536561736f6e",
     creator: "0x1",
+    ready: true,
     dev_mode_on: false,
     start_settling_at: start - 100,
     start_main_at: start,

@@ -13,6 +13,7 @@ export interface ShardGame {
   name: bigint;
   preset_id: bigint;
   settled: boolean;
+  ready: boolean;
   start_settling_at: bigint;
   start_main_at: bigint;
   end_at: bigint;
@@ -81,15 +82,19 @@ export class LaunchShard extends ShardOperator {
   async roster(gameId: number) {
     return readBlitzRoster(this.provider, this.target.gamesAddress, gameId, (await this.head()).block_number);
   }
-  /** Seats the roster one player per transaction until the chain reports none left; a seated roster costs one no-op. */
+  /**
+   * Seats the roster one player per transaction, each sent as soon as the last is pre-confirmed, until the chain
+   * reports none left; the last seat opens the game. A seated roster costs one no-op transaction on retry.
+   */
   async seat(gameId: number) {
     const start = Number((await this.game(gameId)).start_settling_at);
     const now = (await this.head()).timestamp;
     if (now < start) throw new RegistrationOpen({ secondsUntilClose: start - now });
+    const pins = await this.pins(gameId);
     let transactions = 0;
     let previousRemaining: bigint | undefined;
     for (;;) {
-      const result = await this.playCommand(gameId, "SettleBlitzRoster");
+      const result = await this.seatNext(pins);
       const remaining = batchRemaining(result.events, this.target.gamesAddress, result.transactionHash, {
         gameId,
         missing: "reject",

@@ -59,6 +59,7 @@ const game = (over: Partial<DirectoryGame>): DirectoryGame =>
     name: "frontier-1",
     mode: "frontier",
     status: "Live",
+    ready: true,
     expedition: null,
     clock: { start_settling_at: 0, start_main_at: 100, end_at: 4_000_000_000, end_grace_seconds: 0 },
     player_count: 10,
@@ -77,11 +78,12 @@ const slot: PlaytestSlot = {
   frozenAt: null,
   closed: false,
 };
-/** A seat on a Blitz roster whose realms are still being settled, and the same seat once they are. */
+/** A seat on a Blitz roster whose game is still being prepared (not ready), and the same game once it opens. */
 const preparing = game({
   game_id: 8,
   mode: "blitz",
   status: "Registration",
+  ready: false,
   clock: { start_settling_at: 0, start_main_at: 4_000_000_000, end_at: 4_000_100_000, end_grace_seconds: 0 },
   roster_count: 24,
   player_count: 18,
@@ -174,8 +176,7 @@ it("opens a seated game still being prepared on its lobby from Play, and offers 
   await press(page.container, "Lobby");
   expect(where).toBe("/blitz/game-0xa-8");
 
-  const seated = { ...preparing.player_state!, settled: true };
-  reads.directory = answered({ games: [{ ...preparing, status: "Live", player_state: seated } as DirectoryGame] });
+  reads.directory = answered({ games: [{ ...preparing, status: "Live", ready: true } as DirectoryGame] });
   const ready = await mount();
   expect(ready.text()).toContain("Enter");
   expect(ready.text()).not.toContain("Lobby");

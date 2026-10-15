@@ -296,8 +296,8 @@ fn blitz_launch_initializes_domains_once_and_allocates_isolated_games() {
             super::authority(),
         );
         assert_eq!(status_at(game, 299), GameStatus::Registration);
-        assert_eq!(status_at(game, 300), GameStatus::Live, "the clock alone opens play");
-        assert_eq!(status_at(game, 400), GameStatus::Ended);
+        assert_eq!(status_at(game, 300), GameStatus::Registration);
+        assert_eq!(status_at(game, 400), GameStatus::Registration);
         assert_eq!(games.rules(expected).map_center_offset, crate::registrar::map_center_offset(expected, 42));
         let settlement = ISettlementViewsDispatcher { contract_address: d.games };
         assert_eq!(settlement.realm_grants(expected), preset.settlement.realms);
@@ -550,7 +550,7 @@ fn each_player_is_dealt_every_troop_type_in_a_recorded_order() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn automatic_blitz_settlement_resumes_its_fixed_order_and_never_moves_the_start() {
+fn automatic_blitz_settlement_holds_play_for_its_last_seat_and_never_moves_the_start() {
     let d = setup();
     let preset = definition(true);
     registry(d).register_preset(1, preset);
@@ -562,8 +562,8 @@ fn automatic_blitz_settlement_resumes_its_fixed_order_and_never_moves_the_start(
     let mut context = crate::commands::ExecutionContext {
         raw_root: 98765, timestamp: 205, ..super::context(d.games, game_id),
     };
-    assert!(status_at(games.game(game_id), 299) == GameStatus::Registration);
-    assert!(status_at(games.game(game_id), 300) == GameStatus::Live, "the clock alone opens play");
+    assert!(!games.game(game_id).ready);
+    assert!(status_at(games.game(game_id), 300) == GameStatus::Registration, "an unseated roster holds play");
     start_cheat_caller_address(d.games, d.actor);
     start_cheat_caller_address(d.games, d.games);
     assert!(
@@ -582,7 +582,7 @@ fn automatic_blitz_settlement_resumes_its_fixed_order_and_never_moves_the_start(
     let mut fixed_order = array![].span();
     for batch in 0_u32..2 {
         if batch != 0 {
-            // The second seat lands after the start.
+            // The second seat lands after the start: the game waits for it, then runs shorter.
             context.raw_root = 111 + batch.into();
             context.timestamp = 300 + batch.into();
         }
@@ -644,7 +644,9 @@ fn automatic_blitz_settlement_resumes_its_fixed_order_and_never_moves_the_start(
         }
         let game = games.game(game_id);
         assert!(game.start_main_at == 300 && game.end_at == 400, "seating moved the start");
+        assert!(game.ready == (batch == 1));
     }
+    assert!(status_at(games.game(game_id), 301) == GameStatus::Live);
     let game = games.game(game_id);
     let center = 2147483646 - games.rules(game_id).map_center_offset;
     let coord = *crate::settlement_grid::settlement_location(
@@ -691,16 +693,28 @@ fn automatic_blitz_settlement_resumes_its_fixed_order_and_never_moves_the_start(
 }
 
 #[test]
-fn launcher_roster_batches_report_transaction_progress_and_finalize() {
+fn launcher_roster_batches_block_early_play_and_report_transaction_progress() {
     let d = setup();
     let preset = definition(true);
     registry(d).register_preset(1, preset);
     let game_id = registry(d).create_game(CreateGameParams { roster: roster(2), ..params(true) });
     assert!(d.actor != super::authority());
     let command = crate::commands::Command::SettleBlitzRoster;
+    super::play_fixture::assert_preflight_rejection(
+        d.games,
+        super::play_fixture::TestAction { game_id, actor: d.actor, command: crate::commands::Command::CloseSeason },
+        205,
+    );
     let launcher = super::bind_authority(d);
     super::season_lifecycle::execute_batch_in_game(launcher, game_id, command, 205, 1);
+    assert!(!IGameDispatcher { contract_address: d.games }.game(game_id).ready);
+    super::play_fixture::assert_preflight_rejection(
+        d.games,
+        super::play_fixture::TestAction { game_id, actor: d.actor, command: crate::commands::Command::CloseSeason },
+        206,
+    );
     super::season_lifecycle::execute_batch_in_game(launcher, game_id, command, 207, 0);
+    assert!(IGameDispatcher { contract_address: d.games }.game(game_id).ready);
     super::season_lifecycle::execute_batch_in_game(launcher, game_id, command, 208, 0);
     let games = IGameDispatcher { contract_address: d.games };
     let end_at = games.game(game_id).end_at;

@@ -12,8 +12,6 @@ import {
 
 const BLITZ_DURATION_MINUTES = 60;
 const BLITZ_DURATION_SECONDS = BLITZ_DURATION_MINUTES * 60;
-/** Each realm starts with this many T1 troops garrisoned and as many in reserve, of the type it was dealt. */
-const BLITZ_STARTING_TROOPS = 1_000;
 
 const blitzComplexBuildingCosts = {
   ...COMPLEX_BUILDING_COSTS,
@@ -76,17 +74,14 @@ const blitzRealmUpgradeCosts = {
   ],
 };
 
-const blitzStartingResources = buildArenaStartingResources(
-  {
-    [ResourcesIds.Wheat]: 1_000,
-    [ResourcesIds.Labor]: 1_500,
-    [ResourcesIds.Wood]: 360,
-    [ResourcesIds.Coal]: 240,
-    [ResourcesIds.Copper]: 120,
-    [ResourcesIds.Donkey]: 500,
-  },
-  BLITZ_STARTING_TROOPS,
-);
+const blitzStartingResources = buildArenaStartingResources({
+  [ResourcesIds.Wheat]: 1_000,
+  [ResourcesIds.Labor]: 1_500,
+  [ResourcesIds.Wood]: 360,
+  [ResourcesIds.Coal]: 240,
+  [ResourcesIds.Copper]: 120,
+  [ResourcesIds.Donkey]: 500,
+});
 
 const blitzExplorationRewards = [
   { rewardId: ResourcesIds.Essence, amount: 150, probabilityBps: 3_500 },
@@ -135,7 +130,6 @@ export const blitzBalance: ConfigPatch = {
   },
   troop: {
     stamina: blitzStaminaConfig,
-    limit: { startingGuard: BLITZ_STARTING_TROOPS },
   },
   victoryPoints: blitzVictoryPointConfig,
   buildings: {

@@ -72,6 +72,15 @@ pub fn game_exists(game_id: u32) -> bool {
     crate::state::read().games.games.entry(game_id).preset_id.read() != 0
 }
 
+/// The last seat opens a fixed-roster game. Its start and end were fixed at creation: a late roster plays a shorter
+/// game.
+pub fn mark_roster_ready(game_id: u32) {
+    let mut game = game(game_id);
+    assert!(!game.ready, "roster already ready");
+    game.ready = true;
+    write_game(game_id, game);
+}
+
 /// The preset id is immutable; every game keeps the definition it launched with.
 pub fn preset_commitment(game: GameRegistry) -> felt252 {
     let commitment = crate::state::read().registrar.presets.read(game.preset_id);

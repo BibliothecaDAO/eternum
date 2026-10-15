@@ -142,6 +142,7 @@ export function directoryFact(model: string, row: Row | undefined): unknown {
 }
 
 export function directoryStatus(game: Row, timestamp: number) {
+  if (game.ready !== true) return "Registration";
   return resolveDirectoryStatus(
     game.settled ? "Settled" : "Registration",
     { start_main_at: number(game.start_main_at), end_at: number(game.end_at) },
@@ -186,6 +187,7 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     next_day_length: day ? dayOf(calendar!, day.end)!.end - day.end : null,
     expedition: dayUnitSeconds === 0 ? null : { day_unit_seconds: dayUnitSeconds, seed: integer(game.seed).toString() },
     dev_mode_on: game.dev_mode_on === true,
+    ready: game.ready === true,
     status: directoryStatus(game, input.timestamp),
     clock,
     player_count: new Set(settlements.map((row) => address(row.owner))).size,

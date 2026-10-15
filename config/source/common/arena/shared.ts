@@ -121,16 +121,20 @@ function isRealmStartingTroopResource(resource: ResourcesIds): boolean {
   return resource === ResourcesIds.Knight || resource === ResourcesIds.Crossbowman || resource === ResourcesIds.Paladin;
 }
 
-/** A realm's reserve is granted in the troop type it starts with; its garrison is the troop limit's starting guard. */
+/**
+ * A fixed-roster realm starts with this many T1 troops garrisoned and as many in reserve, of the one type it was dealt.
+ * The garrison is the troop limit's starting guard; the reserve is granted in the dealt type only.
+ */
+export const ARENA_STARTING_TROOPS = 1_000;
+
 export function buildArenaStartingResources(
   startingResourceAmounts: Partial<Record<ResourcesIds, number>>,
-  reserveTroopCount: number,
 ): ResourceCost[] {
   return STARTING_RESOURCES.map((resource) => {
     if (isRealmStartingTroopResource(resource.resource)) {
       return {
         ...resource,
-        amount: reserveTroopCount,
+        amount: ARENA_STARTING_TROOPS,
       };
     }
 

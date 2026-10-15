@@ -224,6 +224,7 @@ export const seedGameRegistry = (
     name: 0n,
     preset_id: 3,
     settled: input.status === "Ended",
+    ready: true,
     dev_mode_on: true,
     start_settling_at: 0n,
     start_main_at: BigInt(input.startMainAt),

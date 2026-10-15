@@ -47,6 +47,7 @@ it("points the player at a game they can enter now, a live Frontier season first
       game_id: 1,
       mode: "blitz",
       status: "Registration",
+      ready: false,
       clock: { start_main_at: 500 },
       ...overrides,
     }) as DirectoryGame;
@@ -55,22 +56,19 @@ it("points the player at a game they can enter now, a live Frontier season first
     game_id: 3,
     mode: "frontier",
     status: "Live",
+    ready: true,
     clock: { start_main_at: 100 },
   } as Partial<DirectoryGame>);
   // A live Blitz without the player on its roster is theirs to watch, not to enter.
   const othersBlitz = game({
     game_id: 4,
     status: "Live",
+    ready: true,
     clock: { start_main_at: 50 },
   } as Partial<DirectoryGame>);
   expect(nextOpenGame([registering, othersBlitz, season])?.game_id).toBe(3);
   expect(nextOpenGame([registering, othersBlitz])?.game_id).toBe(2);
-  // A Blitz seat is entered once the player's own realms are settled, whatever the rest of the roster.
-  const seat = (settled: boolean): DirectoryGame => ({
-    ...game({ game_id: 5, status: "Live", roster_count: 2, clock: { start_main_at: 60 } } as Partial<DirectoryGame>),
-    player_state: { registered: true, settled, roster_wallet: "0xb", structures: [] },
-  });
-  expect(nextOpenGame([seat(false), registering])?.game_id).toBe(2);
-  expect(nextOpenGame([seat(true), registering])?.game_id).toBe(5);
+  // A season still being prepared cannot be entered yet.
+  expect(nextOpenGame([{ ...season, ready: false }, registering])?.game_id).toBe(2);
   expect(nextOpenGame([othersBlitz])).toBeUndefined();
 });
