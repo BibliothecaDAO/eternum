@@ -2,7 +2,12 @@ import { environmentL2 } from "@realms-world/chain";
 import { readdirSync, readFileSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildSiwsMessage, payoutWalletStatement, type IdentityChainId } from "@realms-world/identity";
+import {
+  buildSiwsMessage,
+  normalizeStarknetAddress,
+  payoutWalletStatement,
+  type IdentityChainId,
+} from "@realms-world/identity";
 import { botRealmsId, deviceChangeHash, realmsAccountAddress } from "@realms-world/identity/account";
 import { createGuardian } from "@realms-world/guardian";
 import { byteArray, CallData, ec, hash, typedData, type TypedData } from "starknet";
@@ -813,9 +818,17 @@ describe("identity Worker", () => {
         url: "https://shard-a.test",
         chainId: "0xa",
         status: "active",
+        manifest: { ...shardManifest("0xa"), chainId: normalizeStarknetAddress("0xa") },
         games: [game(1, "calendar-season"), game(3, "blitz-slot")],
       },
-      { url: "https://shard-b.test", chainId: "0xb", status: "active", games: null, error: "unavailable" },
+      {
+        url: "https://shard-b.test",
+        chainId: "0xb",
+        status: "active",
+        games: null,
+        manifest: null,
+        error: "unavailable",
+      },
     ]);
 
     heralds.set("https://shard-b.test/games", { chain: "0xb", games: [game(1, "blitz-b")] });
@@ -828,9 +841,16 @@ describe("identity Worker", () => {
         url: "https://shard-a.test",
         chainId: "0xa",
         status: "active",
+        manifest: { ...shardManifest("0xa"), chainId: normalizeStarknetAddress("0xa") },
         games: [game(1, "calendar-season"), game(3, "blitz-slot")],
       },
-      { url: "https://shard-b.test", chainId: "0xb", status: "active", games: [game(1, "blitz-b")] },
+      {
+        url: "https://shard-b.test",
+        chainId: "0xb",
+        status: "active",
+        manifest: { ...shardManifest("0xb"), chainId: normalizeStarknetAddress("0xb") },
+        games: [game(1, "blitz-b")],
+      },
     ];
     expect(await list()).toEqual(listed);
 
@@ -852,7 +872,14 @@ describe("identity Worker", () => {
           { ...game(3, "blitz-slot"), player_state: standing },
         ],
       },
-      { url: "https://shard-b.test", chainId: "0xb", status: "active", games: null, error: "unavailable" },
+      {
+        url: "https://shard-b.test",
+        chainId: "0xb",
+        status: "active",
+        games: null,
+        manifest: null,
+        error: "unavailable",
+      },
     ]);
     expect(await list()).toEqual(listed);
     expect((await createBrowser().request("/api/directory?player=nobody")).status).toBe(400);
@@ -886,8 +913,20 @@ describe("identity Worker", () => {
     );
     expect(await list()).toEqual([
       ...listed,
-      { url: "https://shard-d.test", chainId: "0xd", status: "active", games: [live] },
-      { url: "https://shard-e.test", chainId: "0xe", status: "active", games: [] },
+      {
+        url: "https://shard-d.test",
+        chainId: "0xd",
+        status: "active",
+        manifest: { ...shardManifest("0xd"), chainId: normalizeStarknetAddress("0xd") },
+        games: [live],
+      },
+      {
+        url: "https://shard-e.test",
+        chainId: "0xe",
+        status: "active",
+        manifest: { ...shardManifest("0xe"), chainId: normalizeStarknetAddress("0xe") },
+        games: [],
+      },
     ]);
     const history = async (query: string) =>
       (await (await createBrowser().request(`/api/directory/history${query}`)).json()) as {
@@ -951,6 +990,7 @@ describe("identity Worker", () => {
       url: "https://shard-e.test",
       chainId: "0xee",
       status: "active",
+      manifest: { ...shardManifest("0xee"), chainId: normalizeStarknetAddress("0xee") },
       games: [live],
     });
   });
