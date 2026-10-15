@@ -3,7 +3,15 @@ import { describe, expect, it } from "vitest";
 import { JSDOM } from "jsdom";
 
 import { commandsOf, problemsOf } from "./prove-run.mjs";
-import { changingSetting, endVerdict, layoutChecks, missingVerdict, pressLead, pressStep } from "./prove-shell.mjs";
+import {
+  changingSetting,
+  endVerdict,
+  layoutChecks,
+  missingVerdict,
+  pressLead,
+  pressStep,
+  watchToPlayChecks,
+} from "./prove-shell.mjs";
 
 /** A setting the account keeps: what Settings shows, and a write that may fail. */
 const accountSetting = (value, { writeFails = false } = {}) => {
@@ -220,5 +228,45 @@ describe("a page's layout", () => {
     expect(
       problemsOf([{ ...flowRecord(), name: "lab home play", checks: gutter }], where).map((p) => p.problem),
     ).toEqual(["no left gutter"]);
+  });
+});
+
+describe("a spectator's way back to play", () => {
+  const ORIGIN = 1792060000000.5;
+  const played = {
+    origin: ORIGIN,
+    states: ["app-ready", "app-loading", "app-ready"],
+    path: "/g/0xa1/9/map?col=0&row=6",
+    chip: "orderslane #4 120 VP",
+  };
+  const failing = (seen) =>
+    watchToPlayChecks(ORIGIN, seen)
+      .filter((check) => !check.ok)
+      .map((check) => check.check);
+
+  it("holds when the doorway came and went on the same page, and the player plays the game", () => {
+    expect(failing(played)).toEqual([]);
+  });
+
+  it("fails a reload, which loses what the page kept from the press", () => {
+    expect(failing({ ...played, origin: ORIGIN + 9000, states: null })).toEqual([
+      "no reload",
+      "the doorway shows, then goes",
+    ]);
+  });
+
+  it("fails a doorway that never goes, as the map step hung before", () => {
+    expect(failing({ ...played, states: ["app-ready", "app-loading"] })).toEqual(["the doorway shows, then goes"]);
+  });
+
+  it("fails a boot that never left the watched game", () => {
+    expect(
+      failing({
+        ...played,
+        states: ["app-ready"],
+        path: "/g/0xa1/9/map?spectate=true",
+        chip: "Spectating · as orderslane",
+      }),
+    ).toEqual(["the doorway shows, then goes", "the game played, not watched", "the chip names the player"]);
   });
 });

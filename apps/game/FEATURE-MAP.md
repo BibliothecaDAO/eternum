@@ -19,8 +19,12 @@ starting at the window's left edge. It sets back what it changes (the alert leve
 the flow ends, and stops before anything outward (paying, leaving for the docs, signing out). It writes
 `shell-proof-<persona>.json` and screenshots into a new directory per run, marks a flow stopped by a service that did
 not answer as unavailable and any other stop as failed, and exits 1 unless every flow arrived
-(`scripts/prove-shell.mjs`; the proofs share `scripts/prove-run.mjs`). `apps/game/AGENTS.md` documents a spectator smoke
-test (agent-browser steps that open the client, watch a running game and check the canvas). Inside a match,
+(`scripts/prove-shell.mjs`; the proofs share `scripts/prove-run.mjs`). Given `--watch /g/<chain>/<game>` and the saved
+state of a player who holds realms in that live game, it drives the one path inside a match it covers instead: it
+watches the game, opens the identity chip, presses its Play, and checks at both sizes that the doorway shows and goes,
+the game is played rather than watched, the chip names the player, and the page never reloads
+(`shell-proof-watch-to-play.json`). `apps/game/AGENTS.md` documents a spectator smoke test (agent-browser steps that
+open the client, watch a running game and check the canvas). Inside a match,
 `prove:play --game <chain>:<game> --profile <dir>` drives one game signed in (a browser profile signed in once through
 the game's own sign-in, kept outside the repo): `--crate <col>,<row>` finds a crate next to the player's army by
 pointer, opens it and reads it back from the log after a reload; `--until-end <minutes>` stays on the map until the game

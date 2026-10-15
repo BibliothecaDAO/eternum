@@ -5,6 +5,7 @@
  * (`pnpm --dir apps/game dev --host 127.0.0.1 --port <port>`):
  *
  *   pnpm --dir apps/game prove:shell --base-url https://127.0.0.1:<port> --out <dir> [--state <signed-in.json>]
+ *     [--watch /g/<chain>/<game>]
  *
  * Without `--state` it is a new visitor, and the run also opens the app lab's fixture pages (below); with a saved
  * signed-in browser state (agent-browser's `state save`, which keeps the device key with the session) a returning
@@ -22,6 +23,11 @@
  * gold buttons, its smallest text, and whether it fits one screen. A flow's last press leads only when the flow's end
  * is reached; a flow stopped by a service that did not answer, or by a row the live data does not hold, is
  * unavailable, any other stop failed, and the command exits 1 unless every flow led.
+ *
+ * With `--watch` and a signed-in state that holds realms in that live game, the run is the spectator's way back to
+ * play instead, at both sizes: watch the game, open the identity chip, press its Play, and hold the boot to what a
+ * player gets. The doorway shows and then goes, the boot ends ready on the game's own scene with no spectate, the
+ * chip names the player, and the page is never reloaded (writes shell-proof-watch-to-play.json).
  */
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -344,13 +350,19 @@ const restore = async (setting, before) => {
 const BODY_TEXT = `document.querySelector('[data-band="body"]')?.innerText.replace(/\\s+/g, " ").trim().slice(0, 600) ?? null`;
 
 const parseArgs = (argv) => {
-  const args = { baseUrl: "https://127.0.0.1:4176", out: join(process.cwd(), "shell-proof"), state: null };
+  const args = { baseUrl: "https://127.0.0.1:4176", out: join(process.cwd(), "shell-proof"), state: null, watch: null };
   for (let index = 0; index < argv.length; index += 2) {
     if (argv[index] === "--base-url") args.baseUrl = argv[index + 1].replace(/\/$/, "");
     else if (argv[index] === "--out") args.out = argv[index + 1];
     else if (argv[index] === "--state") args.state = argv[index + 1];
-    else throw new Error(`Unknown argument ${argv[index]}; expected --base-url <url> --out <dir> [--state <file>]`);
+    else if (argv[index] === "--watch") args.watch = argv[index + 1].replace(/\/$/, "");
+    else
+      throw new Error(
+        `Unknown argument ${argv[index]}; expected --base-url <url> --out <dir> [--state <file>] [--watch /g/<chain>/<game>]`,
+      );
   }
+  if (args.watch && !args.state)
+    throw new Error("--watch plays the game: it needs --state, a player's signed-in state");
   return args;
 };
 
@@ -425,10 +437,120 @@ const measureLabPage = async (b, baseUrl, [screen, page], layout, out) => {
   return record;
 };
 
+/** A game's scene, watched or played, as the boot leaves it once it is ready (GameRoute: `app-ready` only then). */
+const GAME_SCENE = `/\\/(map|hex)$/.test(location.pathname) && document.documentElement.dataset.bootState === "app-ready"`;
+const WATCHING = `${GAME_SCENE} && new URLSearchParams(location.search).get("spectate") === "true"`;
+/**
+ * From the press on, the page keeps each boot state it passes through, and the document's start: a reload loses both.
+ */
+const FOLLOW_BOOT = `(() => {
+  const root = document.documentElement;
+  window.__proofBoot = { origin: performance.timeOrigin, states: [root.dataset.bootState ?? null] };
+  new MutationObserver(() => window.__proofBoot.states.push(root.dataset.bootState ?? null)).observe(root, {
+    attributes: true,
+    attributeFilter: ["data-boot-state"],
+  });
+  return performance.timeOrigin;
+})()`;
+/** The boot went through its doorway and came out ready on the game's scene, played. */
+const PLAYING = `${GAME_SCENE} && !new URLSearchParams(location.search).has("spectate") && (window.__proofBoot?.states.includes("app-loading") ?? false)`;
+const BOOT_SEEN = `({
+  origin: performance.timeOrigin,
+  states: window.__proofBoot?.states ?? null,
+  path: location.pathname + location.search,
+  chip: document.querySelector('button[aria-label="Identity"]')?.innerText.replace(/\\s+/g, " ").trim() ?? null,
+})`;
+const WATCH_TIMEOUT_MS = 120_000;
+const PLAY_TIMEOUT_MS = 120_000;
+
+/** The identity chip, and once it is open, its panel's Play: marked for the browser's click, or null. */
+const CHIP = (mark) => `(() => {
+  const chip = document.querySelector('button[aria-label="Identity"]');
+  if (!chip) return null;
+  chip.setAttribute("data-proof-press", ${JSON.stringify(mark)});
+  return { word: chip.innerText.replace(/\\s+/g, " ").trim(), selector: '[data-proof-press="${mark}"]' };
+})()`;
+const CHIP_PLAY = (mark) => `(() => {
+  const play = [...document.querySelectorAll("button")].find(
+    (button) => button.innerText.trim() === "Play" && button.parentElement?.innerText.includes("Spectating this game."),
+  );
+  if (!play) return null;
+  play.setAttribute("data-proof-press", ${JSON.stringify(mark)});
+  return { word: "Play", panel: play.parentElement.innerText.replace(/\\s+/g, " ").trim(), selector: '[data-proof-press="${mark}"]' };
+})()`;
+
+/** Presses the control `find` marks, as a player would; the press with its status. */
+const pressFound = async (b, find, kind) => {
+  const found = b.evaluate(find);
+  if (found === null) return { step: { kind }, status: "failed", reason: "not on the page" };
+  const missed = clickAsPlayer(b, found.selector);
+  if (missed) return { step: { kind }, word: found.word, status: "failed", reason: missed };
+  await sleep(SETTLE_MS);
+  return { step: { kind }, ...found, status: "led", led: pathOf(b.url()) };
+};
+
+/**
+ * What a player is owed after Play, from what the page kept: the doorway shown and gone, the game's scene played and
+ * not watched, the chip naming the player, and the same document throughout.
+ */
+export const watchToPlayChecks = (origin, seen) => {
+  const states = seen.states ?? [];
+  const chip = seen.chip ?? "";
+  return [
+    { check: "no reload", ok: seen.origin === origin && seen.states !== null, origin, after: seen.origin },
+    {
+      check: "the doorway shows, then goes",
+      ok: states.includes("app-loading") && states.at(-1) === "app-ready",
+      states,
+    },
+    {
+      check: "the game played, not watched",
+      ok: /\/(map|hex)(\?|$)/.test(seen.path) && !seen.path.includes("spectate"),
+      path: seen.path,
+    },
+    {
+      check: "the chip names the player",
+      ok: chip !== "" && !/Spectating|Connecting|Choose a name|Sign in|Not signed in/.test(chip),
+      chip,
+    },
+  ];
+};
+
+/** Watches the game, opens the chip, presses its Play, and holds the boot to watchToPlayChecks. */
+const runWatchToPlay = async (b, baseUrl, game, layout, out) => {
+  const record = { name: "watch-to-play", layout, at: new Date().toISOString(), ready: false, presses: [], checks: [] };
+  try {
+    b.run("open", `${baseUrl}${game}?spectate=true`, "--ignore-https-errors");
+    record.ready = await waitFor(b, WATCHING, WATCH_TIMEOUT_MS);
+    if (!record.ready) return record;
+    await sleep(SETTLE_MS);
+    const chip = await pressFound(b, CHIP("chip"), "chip");
+    record.presses.push(chip);
+    screenshot(b, record, `watch-to-play-1-chip-${layout}.png`, out);
+    if (chip.status !== "led") return record;
+    const origin = b.evaluate(FOLLOW_BOOT);
+    const pressedAt = Date.now();
+    const play = await pressFound(b, CHIP_PLAY("chip-play"), "chip-play");
+    record.presses.push(play);
+    if (play.status !== "led") return record;
+    const played = await waitFor(b, PLAYING, PLAY_TIMEOUT_MS);
+    record.msToPlaying = played ? Date.now() - pressedAt : null;
+    // The scene settles its first frames before the picture.
+    await sleep(SETTLE_MS * 2);
+    record.seen = b.evaluate(BOOT_SEEN);
+    record.checks = watchToPlayChecks(origin, record.seen);
+    screenshot(b, record, `watch-to-play-2-playing-${layout}.png`, out);
+  } catch (error) {
+    record.error = String(error.message ?? error);
+  }
+  return record;
+};
+
 const main = async (argv) => {
-  const { baseUrl, out, state } = parseArgs(argv);
-  const persona = state ? "returning" : "new-visitor";
+  const { baseUrl, out, state, watch } = parseArgs(argv);
   const where = (record) => ({ name: record.name, layout: record.layout });
+  if (watch) return proveWatchToPlay({ baseUrl, out, state, watch, where });
+  const persona = state ? "returning" : "new-visitor";
   await runProof({ parent: out, name: `shell-proof-${persona}`, baseUrl, where }, async (b, dir, records) => {
     // A saved state carries the session and this device's key, so the run is the same device each time.
     if (state) b.run("--state", state, "open", "about:blank");
@@ -448,6 +570,23 @@ const main = async (argv) => {
     }
   });
 };
+
+/** The spectator's way back to play, at both sizes, each from a fresh watch of the game. */
+const proveWatchToPlay = ({ baseUrl, out, state, watch, where }) =>
+  runProof({ parent: out, name: "shell-proof-watch-to-play", baseUrl, where }, async (b, dir, records) => {
+    b.run("--state", state, "open", "about:blank");
+    for (const layout of Object.keys(VIEWPORTS)) {
+      const [width, height] = VIEWPORTS[layout];
+      b.run("set", "viewport", String(width), String(height));
+      const record = await runWatchToPlay(b, baseUrl, watch, layout, dir);
+      records.push(record);
+      console.log(
+        `watch-to-play ${layout}: ${record.presses.map((step) => step.status).join(" → ") || record.error || "not watching"}; ${record.checks.map((check) => `${check.check} ${check.ok ? "ok" : "FAILED"}`).join(", ")}`,
+      );
+      // A game page is closed once its picture is taken.
+      b.run("open", "about:blank");
+    }
+  });
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   await main(process.argv.slice(2));
