@@ -99,6 +99,7 @@ export function buildNativeGameParams(config: Config, input: CreateGamePayloadIn
     end_grace_seconds: common.end_grace_seconds,
     dev_mode_on: common.dev_mode_on,
     roster: [],
+    seater: "0x0",
     registration_start: common.registration_start_at,
     biome_climate: common.biome_climate_config,
     map_override: new CairoOption(

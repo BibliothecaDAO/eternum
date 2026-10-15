@@ -61,6 +61,9 @@ pub mod RegistrarState {
         fn blitz_roster(self: @ComponentState<TContractState>, game_id: u32) -> Span<RosterPlayer> {
             crate::logic::registrar::blitz_roster(game_id)
         }
+        fn game_seater(self: @ComponentState<TContractState>, game_id: u32) -> starknet::ContractAddress {
+            self.data.registrar.seaters.read(game_id)
+        }
 
         fn create_game(ref self: ComponentState<TContractState>, params: CreateGameParams) -> u32 {
             crate::logic::release::assert_launcher();
@@ -92,6 +95,7 @@ pub mod RegistrarState {
             let release_id = self.data.current_release.read();
             self.data.game_releases.write(game_id, release_id);
             self.register_roster(game_id, params.roster);
+            self.data.registrar.seaters.write(game_id, params.seater);
             let game = build_game(params, rules.entry_rule);
             let overrides = game_overrides(game_id, params);
             crate::logic::game::create(game_id, game, overrides);

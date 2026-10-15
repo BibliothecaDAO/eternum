@@ -191,6 +191,11 @@ pub fn params(blitz: bool) -> CreateGameParams {
         } else {
             array![].span()
         },
+        seater: if blitz {
+            super::authority()
+        } else {
+            0.try_into().unwrap()
+        },
         registration_start: 10,
         biome_climate: super::play_fixture::rules().biome_climate_config,
         map_override: None,
@@ -714,6 +719,51 @@ fn automatic_blitz_settlement_holds_play_for_its_last_seat_and_never_moves_the_s
     let progress = views.settlement_progress(game_id);
     assert!(commands.settle_blitz_roster(game_id, super::authority(), crate::commands::action_context(context)) == 0);
     assert!(views.settlement_progress(game_id) == progress && games.game(game_id) == game);
+}
+
+#[test]
+fn only_the_games_seater_seats_it_and_the_global_launcher_no_longer_can() {
+    let d = setup();
+    registry(d).register_preset(1, definition(true));
+    let game_id = registry(d).create_game(CreateGameParams { roster: roster(2), ..params(true) });
+    assert_eq!(IRegistrarDispatcher { contract_address: d.games }.game_seater(game_id), super::authority());
+    // The global launcher is now another approved account: it may still create games, but not seat this one.
+    super::set_launcher(d, d.actor);
+    super::play_fixture::assert_preflight_rejection(
+        d.games,
+        super::play_fixture::TestAction {
+            game_id, actor: d.actor, command: crate::commands::Command::SettleBlitzRoster,
+        },
+        205,
+    );
+    let seater = super::bind_authority(d);
+    super::season_lifecycle::execute_batch_in_game(
+        seater, game_id, crate::commands::Command::SettleBlitzRoster, 205, 1,
+    );
+    super::season_lifecycle::execute_batch_in_game(
+        seater, game_id, crate::commands::Command::SettleBlitzRoster, 206, 0,
+    );
+    assert!(IGameDispatcher { contract_address: d.games }.game(game_id).ready);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn a_fixed_roster_names_its_seater_and_an_open_game_names_none() {
+    let d = setup();
+    registry(d).register_preset(1, definition(true));
+    let unseated = CreateGameParams { seater: 0.try_into().unwrap(), ..params(true) };
+    assert!(safe(d, super::authority()).create_game(unseated).is_err());
+    assert_eq!(registry(d).next_game_id(), 1);
+    let other = setup();
+    registry(other).register_preset(1, expedition_preset());
+    let season = CreateGameParams {
+        dev_mode_on: true, end_grace_seconds: 0, duration_seconds: 2 * BAG_SECONDS, start_main_at: 360, ..params(false),
+    };
+    assert!(
+        safe(other, super::authority()).create_game(CreateGameParams { seater: super::authority(), ..season }).is_err(),
+    );
+    assert_eq!(registry(other).create_game(season), 1);
+    assert_eq!(IRegistrarDispatcher { contract_address: other.games }.game_seater(1), 0.try_into().unwrap());
 }
 
 #[test]
@@ -2823,11 +2873,13 @@ fn launcher_rotation_preserves_roster_batch_settlements() {
     let first_games = IGameDispatcher { contract_address: first_run.games };
     let helper_games = IGameDispatcher { contract_address: helper_run.games };
     let game = first_games.game(game_id);
-    super::set_launcher(first_run, first_run.actor);
-    super::set_launcher(helper_run, helper_run.actor);
     for d in array![first_run, helper_run] {
         super::resource_commands::set_fixture(
             d.games, selector!("games"), selector!("games"), array![game_id.into()].span(), game,
+        );
+        // Each run seats as its own actor: name it the game's seater.
+        super::resource_commands::set_fixture(
+            d.games, selector!("registrar"), selector!("seaters"), array![game_id.into()].span(), d.actor,
         );
     }
     assert!(helper_run.actor != first_run.actor);

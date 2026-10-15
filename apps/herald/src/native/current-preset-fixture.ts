@@ -40,6 +40,7 @@ function fixtureLaunchParams(presetId: number, definition: ReturnType<typeof bui
     end_grace_seconds: 0,
     dev_mode_on: false,
     roster: presetId === 2 ? [{ account: "0x111", wallet: "0x222" }] : [],
+    seater: presetId === 2 ? "0x333" : "0x0",
     registration_start: 1700,
     biome_climate: definition.rules.biome_climate_config,
     map_override: new CairoOption(presetId === 3 ? CairoOptionVariant.Some : CairoOptionVariant.None, {

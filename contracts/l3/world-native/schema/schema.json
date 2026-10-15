@@ -2183,6 +2183,22 @@
       },
       {
         "type": "function",
+        "name": "game_seater",
+        "inputs": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::starknet::contract_address::ContractAddress"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
         "name": "create_game",
         "inputs": [
           {
@@ -10655,6 +10671,10 @@
           "type": "core::array::Span::<world_native::registrar::RosterPlayer>"
         },
         {
+          "name": "seater",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
           "name": "registration_start",
           "type": "core::integer::u32"
         },
@@ -12767,5 +12787,5 @@
       ]
     }
   },
-  "identity": "6882ba86f37d88bdaec284a26ac794fa0231aa96a3d2012bfea4ae666a157f02"
+  "identity": "6c8dd036e1a4bbaa183f1be11178fe47c5f014fb9eee4298ad2ca0f518800110"
 }

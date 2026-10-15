@@ -273,6 +273,7 @@ fn fresh_world(ready: bool) -> Deployment {
             d.games,
             || {
                 crate::state::write().registrar.roster_sizes.write(1, 1);
+                crate::state::write().registrar.seaters.write(1, d.actor);
                 crate::state::write()
                     .presets
                     .entry(crate::logic::game::preset_commitment(crate::logic::game::game(1)))

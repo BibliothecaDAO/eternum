@@ -158,13 +158,14 @@ pub mod GamesEntry {
             assert!(game.ready || index == crate::command_routes::SETTLE_BLITZ_ROSTER, "roster not ready");
             if index == crate::command_routes::SETTLE_BLITZ_ROSTER {
                 assert!(self.data.registrar.roster_sizes.read(game_id) != 0, "roster not frozen");
+                assert!(actor == self.data.registrar.seaters.read(game_id), "only the game's seater");
             }
             if route.selector == selector!("withdraw_lords") {
                 crate::relics::assert_claim_window(
                     game, crate::logic::lords_budget::chest_rules(game_id), starknet::get_block_timestamp(),
                 );
             }
-            if route.selector == selector!("create_banks") || route.selector == selector!("settle_blitz_roster") {
+            if route.selector == selector!("create_banks") {
                 crate::logic::release::assert_launcher();
             }
             actor
@@ -287,6 +288,9 @@ pub mod GamesEntry {
         }
         fn blitz_roster(self: @ComponentState<TContractState>, game_id: u32) -> Span<RosterPlayer> {
             crate::logic::registrar::blitz_roster(game_id)
+        }
+        fn game_seater(self: @ComponentState<TContractState>, game_id: u32) -> ContractAddress {
+            self.data.registrar.seaters.read(game_id)
         }
     }
 }
