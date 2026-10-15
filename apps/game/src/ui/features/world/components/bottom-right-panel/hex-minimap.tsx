@@ -1,10 +1,8 @@
-import { HexMarker } from "@/ui/design-system/hex-marker";
-import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
-import { minimapMarkersView, type MinimapMarker } from "./minimap-markers";
 import { latticeHexAt, latticeHexBoundsForWorldRect, latticeToWorld } from "@/three/utils/hex-lattice";
 import { fromRenderHex, toRenderHex } from "@/three/world-origin";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView, selectableArmiesView } from "@/sync/fact-views";
 import { FELT_CENTER } from "@/ui/config";
 import { requireBiomeColor, resolveBiomeTypeFromId } from "@/three/managers/biome-colors";
 import {
@@ -14,8 +12,17 @@ import {
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
-import { HexPosition, StructureType, TileOccupier } from "@bibliothecadao/types";
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
+import { HexPosition, StructureType, TileOccupier, getMinePresentation } from "@bibliothecadao/types";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent,
+  type WheelEvent,
+} from "react";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 
 export interface MinimapTile {
@@ -89,6 +96,23 @@ const WORLD_CAMERA_DISTANCE_REFERENCE = 20;
 const TILE_WINDOW_STEP = HEX_SIZE * 8;
 const MINIMAP_SCALE_REFERENCE = 1.4;
 
+type TileMarker = {
+  iconSrc: string;
+  sizeMultiplier?: number;
+};
+
+const LABEL_ICONS = {
+  armyMine: "/images/labels/army.png",
+  armyEnemy: "/images/labels/enemy_army.png",
+  realmMine: "/images/labels/realm.png",
+  realmEnemy: "/images/labels/enemy_realm.png",
+  villageMine: "/images/labels/village.png",
+  villageEnemy: "/images/labels/enemy_village.png",
+  hyperstructure: "/images/labels/hyperstructure.png",
+  fragmentMine: "/images/labels/fragment_mine.png",
+  chest: "/images/labels/chest.png",
+} as const;
+
 /**
  * Minimap pixels for a normalized hex: the world map's lattice at minimap scale, drawn relative to the floating world
  * origin so SVG coordinates stay small wherever the map is looked at.
@@ -144,8 +168,7 @@ type CenteredIndex = {
   bounds: { minX: number; maxX: number; minY: number; maxY: number };
 };
 
-const buildCenteredIndex = (tiles: MinimapTile[]): CenteredIndex => {
-  const center = FELT_CENTER();
+const buildCenteredIndex = (tiles: MinimapTile[], center: number): CenteredIndex => {
   const byCol = new Map<number, CenteredTileEntry[]>();
   let minX = Infinity;
   let maxX = -Infinity;
@@ -218,13 +241,61 @@ interface HexMinimapProps {
   cameraTargetHex: HexPosition | null;
 }
 
-export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetHex }: HexMinimapProps) => {
+export const HexMinimap = (props: HexMinimapProps) => {
+  const playerStructures = useFactView(playerStructuresView);
+  const selectableArmies = useFactView(selectableArmiesView);
+  const cameraDistance = useUIStore((state) => state.cameraDistance);
+  const ownedStructureIds = useMemo(() => {
+    return new Set(
+      playerStructures
+        .map((structure) => normalizeEntityId(structure.entityId))
+        .filter((id): id is string => Boolean(id)),
+    );
+  }, [playerStructures]);
+
+  const ownedExplorerIds = useMemo(() => {
+    const ids = new Set<string>();
+
+    selectableArmies.forEach((army) => {
+      const id = normalizeEntityId(army.entityId);
+      if (id) ids.add(id);
+    });
+
+    return ids;
+  }, [selectableArmies]);
+
+  return (
+    <HexMinimapView
+      {...props}
+      mapCenter={FELT_CENTER()}
+      cameraDistance={cameraDistance}
+      ownedStructureIds={ownedStructureIds}
+      ownedExplorerIds={ownedExplorerIds}
+    />
+  );
+};
+
+/** The shipped renderer accepts facts at its boundary, so lab fixtures never replace store modules. */
+export const HexMinimapView = ({
+  tiles,
+  selectedHex,
+  navigationTarget,
+  cameraTargetHex,
+  mapCenter,
+  cameraDistance,
+  ownedStructureIds,
+  ownedExplorerIds,
+  markerArt = LABEL_ICONS,
+}: HexMinimapProps & {
+  mapCenter: number;
+  cameraDistance: number | null | undefined;
+  ownedStructureIds: ReadonlySet<string>;
+  ownedExplorerIds: ReadonlySet<string>;
+  markerArt?: Record<keyof typeof LABEL_ICONS, string>;
+}) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [viewport, setViewport] = useState<{ width: number; height: number }>({ width: 800, height: 600 });
-  const markers = useFactView(minimapMarkersView);
-  const cameraDistance = useUIStore((state) => state.cameraDistance);
-
-  const centeredIndex = useMemo(() => buildCenteredIndex(tiles), [tiles]);
+  const centeredIndex = useMemo(() => buildCenteredIndex(tiles, mapCenter), [tiles, mapCenter]);
 
   // Mount reads the camera's current state (position and distance); the store subscription carries updates.
   const initialView = useMemo(() => {
@@ -235,8 +306,8 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
 
     const targetHex = cameraTargetHex ?? navigationTarget ?? selectedHex;
     if (targetHex) {
-      const col = targetHex.col - FELT_CENTER();
-      const row = targetHex.row - FELT_CENTER();
+      const col = targetHex.col - mapCenter;
+      const row = targetHex.row - mapCenter;
       const centerPixel = offsetToPixel(col, row);
       return { x: centerPixel.x, y: centerPixel.y, scale };
     }
@@ -246,11 +317,13 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
       y: (centeredIndex.bounds.minY + centeredIndex.bounds.maxY) / 2,
       scale,
     };
-  }, [tiles.length, cameraTargetHex, cameraDistance, navigationTarget, selectedHex, centeredIndex.bounds]);
+  }, [tiles.length, cameraTargetHex, cameraDistance, navigationTarget, selectedHex, centeredIndex.bounds, mapCenter]);
 
   const [view, setView] = useState<{ x: number; y: number; scale: number }>(initialView);
   const viewRef = useRef(view);
-  viewRef.current = view;
+  useLayoutEffect(() => {
+    viewRef.current = view;
+  }, [view]);
   const isDraggingRef = useRef(false);
 
   const followTargetRef = useRef<{ x: number; y: number } | null>(null);
@@ -343,12 +416,12 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
 
   useEffect(() => {
     if (!cameraTargetHex || isDraggingRef.current) return;
-    const col = cameraTargetHex.col - FELT_CENTER();
-    const row = cameraTargetHex.row - FELT_CENTER();
+    const col = cameraTargetHex.col - mapCenter;
+    const row = cameraTargetHex.row - mapCenter;
     const centerPixel = offsetToPixel(col, row);
     followTargetRef.current = centerPixel;
     startFollowAnimation();
-  }, [cameraTargetHex, startFollowAnimation]);
+  }, [cameraTargetHex, startFollowAnimation, mapCenter]);
 
   useEffect(() => {
     const svg = svgRef.current;
@@ -377,12 +450,12 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
 
   const cameraCircle = useMemo(() => {
     if (!cameraTargetHex) return null;
-    const col = cameraTargetHex.col - FELT_CENTER();
-    const row = cameraTargetHex.row - FELT_CENTER();
+    const col = cameraTargetHex.col - mapCenter;
+    const row = cameraTargetHex.row - mapCenter;
     const centerPixel = offsetToPixel(col, row);
     const radiusPx = CAMERA_CIRCLE_SCREEN_RADIUS_PX / view.scale;
     return { centerPixel, radiusPx };
-  }, [cameraTargetHex, view.scale]);
+  }, [cameraTargetHex, view.scale, mapCenter]);
 
   // Keep the tile layer stable while the viewBox animates inside a small padded window.
   const minX = Math.floor(viewBox.minX / TILE_WINDOW_STEP) * TILE_WINDOW_STEP - HEX_SIZE;
@@ -425,17 +498,60 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
   }, [tiles.length, centeredIndex.byCol, minX, maxX, minY, maxY]);
 
   const getTileMarker = useCallback(
-    (tile: MinimapTile): MinimapMarker | null => {
-      const known = markers.get(tile.occupier_id ?? "");
-      if (known) return known;
-      const type = tile.occupier_type ?? 0;
-      if (type === TileOccupier.Chest) return { name: "chest", owner: "neutral" };
-      const structure = getStructureInfoFromTileOccupier(type);
-      if (structure) return { name: structureMeaning(structure.type), owner: "neutral" };
-      if (getExplorerInfoFromTileOccupier(type)) return { name: "map-army", owner: "neutral" };
+    (tile: MinimapTile) => {
+      const occupierType = tile.occupier_type ?? 0;
+      if (occupierType === TileOccupier.Chest) {
+        return { iconSrc: markerArt.chest } satisfies TileMarker;
+      }
+
+      const hasStructure = isTileOccupierStructure(occupierType);
+
+      if (hasStructure) {
+        const info = getStructureInfoFromTileOccupier(occupierType);
+        if (!info) return null;
+
+        switch (info.type) {
+          case StructureType.Mine:
+            return tile.mineKind === undefined
+              ? null
+              : ({ iconSrc: getMinePresentation(tile.mineKind).icon } satisfies TileMarker);
+          case StructureType.BitcoinMine:
+            return { iconSrc: markerArt.fragmentMine } satisfies TileMarker;
+          case StructureType.Village:
+          case StructureType.Camp:
+            return {
+              iconSrc: ownedStructureIds.has(normalizeEntityId(tile.occupier_id) ?? "")
+                ? markerArt.villageMine
+                : markerArt.villageEnemy,
+            } satisfies TileMarker;
+          case StructureType.Realm:
+            return {
+              iconSrc: ownedStructureIds.has(normalizeEntityId(tile.occupier_id) ?? "")
+                ? markerArt.realmMine
+                : markerArt.realmEnemy,
+            } satisfies TileMarker;
+          case StructureType.Hyperstructure:
+            return {
+              iconSrc: markerArt.hyperstructure,
+              sizeMultiplier: info.reserved ? 1.05 : 1.1,
+            } satisfies TileMarker;
+          default:
+            return null;
+        }
+      }
+
+      const explorerInfo = getExplorerInfoFromTileOccupier(occupierType);
+      if (explorerInfo) {
+        const occupierId = normalizeEntityId(tile.occupier_id);
+        return {
+          iconSrc: occupierId && ownedExplorerIds.has(occupierId) ? markerArt.armyMine : markerArt.armyEnemy,
+          sizeMultiplier: 0.9,
+        } satisfies TileMarker;
+      }
+
       return null;
     },
-    [markers],
+    [ownedStructureIds, ownedExplorerIds, markerArt],
   );
 
   const tileElements = useMemo(
@@ -444,6 +560,7 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
         const marker = getTileMarker(tile);
         const fill = getBiomeColor(tile.biome);
         const occupierColor = getOccupierColor(tile);
+        const iconSize = marker ? HEX_SIZE * 2.2 * (marker.sizeMultiplier ?? 1) : 0;
         return (
           <g key={`${tile.col}:${tile.row}`}>
             <polygon points={points} fill={fill} stroke="#1f130a" strokeWidth={0.6} fillOpacity={0.92} />
@@ -457,7 +574,18 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
                 strokeWidth={0.8}
               />
             )}
-            {marker && <HexMarker {...marker} x={pixel.x} y={pixel.y} radius={HEX_SIZE} />}
+            {marker && (
+              <image
+                data-entity-id={tile.occupier_id}
+                href={marker.iconSrc}
+                x={pixel.x - iconSize / 2}
+                y={pixel.y - iconSize / 2}
+                width={iconSize}
+                height={iconSize}
+                preserveAspectRatio="xMidYMid meet"
+                className="pointer-events-none select-none"
+              />
+            )}
           </g>
         );
       }),

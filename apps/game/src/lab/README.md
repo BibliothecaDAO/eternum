@@ -26,7 +26,7 @@ former `/debug` tools now live under `/lab`. Their runners and links use the new
 | Chunk fixtures      | `/lab/chunks`              | Renderer: baseline, dense and stress fixtures, renderer smoke runner                              |
 | Terrain benchmark   | `/lab/terrain-benchmark`   | Performance: terrain benchmark runner                                                             |
 | Motion primitives   | `/lab/motion`              | UI: motion intensity, reduced motion and site-clear demo                                          |
-| UI kit & HUD        | `/lab/kit/*`               | UI: component states, `/lab/kit/hud/:state` fixtures and `/lab/kit/icons` production icon catalog |
+| UI kit & HUD        | `/lab/kit/*`               | UI: component states, `/lab/kit/hud/:state` fixtures and `/lab/kit/icons` production icon catalog and `/lab/kit/hud/redesign` comparison |
 | App fixtures        | `/lab/app/:screen/*`       | UI: game, lobby, profile and account states                                                       |
 
 The in-game battle calculator stays in the player interface. Physics behavior is unchanged.
@@ -95,3 +95,11 @@ closed when it finishes. Live proof uses the client's existing `playtest` comman
 The Facets catalog at `/lab/kit/icons` uses production artwork and the shared renderer. It includes size, family and
 search controls, action buttons, all nine soldier portraits and interactive hex minimap badges. Run
 `pnpm icons:prove <evidence-dir> https://127.0.0.1:<port>` to exercise it alongside the HUD and shell fixtures.
+
+## HUD comparison
+
+`/lab/kit/hud/redesign` compares Current HUD and Guided rails on one live game terrain renderer. Choose 3, 25 or 220
+structures; change view names, list grouping and command placement. Drag the terrain or use the minimap to move the
+camera. The selected layout keeps the camera and lighting. `capture=1` removes review controls for full-frame evidence.
+See [the HUD feature map](../ui/features/debug/kit-lab/hud-redesign/README.md) for all controls and the retained browser
+proof (`pnpm --dir apps/game prepare:hud-proof`).

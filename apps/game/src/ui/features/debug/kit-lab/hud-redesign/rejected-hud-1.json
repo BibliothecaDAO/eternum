@@ -1,0 +1,106 @@
+{
+  "viewport": [
+    1440,
+    900
+  ],
+  "backdrop": null,
+  "kitImages": [
+    "./image-icons/kit/troops.png"
+  ],
+  "minimapHexes": 0,
+  "primary": 0,
+  "dockArt": [
+    {
+      "src": "./images/buildings/construction/farm.png",
+      "width": 26,
+      "height": 26
+    },
+    {
+      "src": "./images/buildings/construction/castleZero.png",
+      "width": 26,
+      "height": 26
+    },
+    {
+      "src": "./images/buildings/construction/barracks.png",
+      "width": 26,
+      "height": 26
+    },
+    {
+      "src": "./image-icons/kit/troops.png",
+      "width": 26,
+      "height": 26
+    }
+  ],
+  "frames": [
+    {
+      "name": "Match",
+      "x": 0,
+      "y": 0,
+      "width": 1440,
+      "height": 52
+    },
+    {
+      "name": "Map views",
+      "x": 580,
+      "y": 68,
+      "width": 280,
+      "height": 48
+    },
+    {
+      "name": "Next step",
+      "x": 16,
+      "y": 68,
+      "width": 288,
+      "height": 165
+    },
+    {
+      "name": "Events",
+      "x": 16,
+      "y": 245,
+      "width": 288,
+      "height": 130
+    },
+    {
+      "name": "Selected tile",
+      "x": 16,
+      "y": 387,
+      "width": 288,
+      "height": 117
+    },
+    {
+      "name": "Map selection",
+      "x": 633.59375,
+      "y": 432,
+      "width": 158.375,
+      "height": 35
+    },
+    {
+      "name": "Your structures · 3",
+      "x": 1104,
+      "y": 68,
+      "width": 320,
+      "height": 334.671875
+    },
+    {
+      "name": "Oakheart · Realm",
+      "x": 1104,
+      "y": 414.671875,
+      "width": 320,
+      "height": 371.328125
+    },
+    {
+      "name": "Minimap",
+      "x": 16,
+      "y": 643,
+      "width": 240,
+      "height": 239
+    },
+    {
+      "name": "Realm actions",
+      "x": 540,
+      "y": 791,
+      "width": 340.78125,
+      "height": 91
+    }
+  ]
+}
