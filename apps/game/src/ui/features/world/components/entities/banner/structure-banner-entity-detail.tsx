@@ -201,7 +201,7 @@ const StructureBannerEntityDetailContent = memo(
                       alt={`${ownerDisplayName} avatar`}
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-gold/70">
+                    <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-kit-muted">
                       {ownerInitial}
                     </div>
                   )}

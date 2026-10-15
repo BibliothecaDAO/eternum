@@ -62,7 +62,7 @@ export type StructureWithMetadata = Structure & {
 
 const StructureInfoStat = ({ icon: Icon, label, title }: { icon: GameIcon; label: string; title: string }) => (
   <span
-    className="inline-flex items-center gap-1 rounded border border-gold/15 bg-black/25 px-1.5 py-0.5 text-sm text-gold/75"
+    className="inline-flex items-center gap-1 rounded border border-gold/15 bg-black/25 px-1.5 py-0.5 text-sm text-kit-muted"
     title={title}
   >
     <Icon className="h-3 w-3 text-kit-muted" />
@@ -104,17 +104,17 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
 
   const requirementsContent = (() => {
     if (step.mode === "max") {
-      return <div className="text-sm text-gold/80">Castle fully upgraded.</div>;
+      return <div className="text-sm text-kit-muted">Castle fully upgraded.</div>;
     }
     if (!step.requirements?.length) {
-      return <div className="text-sm text-gold/80">No upgrade requirements found.</div>;
+      return <div className="text-sm text-kit-muted">No upgrade requirements found.</div>;
     }
 
     return (
       <div className="min-w-[220px] space-y-2 text-gold">
         <div className="flex items-center justify-between">
           <span className="text-sm text-kit-muted">Upgrade</span>
-          {step.nextLevelName && <span className="text-sm text-gold/80">to {step.nextLevelName}</span>}
+          {step.nextLevelName && <span className="text-sm text-kit-muted">to {step.nextLevelName}</span>}
         </div>
         <div className="space-y-1">
           {step.requirements.map((req) => {
@@ -129,7 +129,7 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
               >
                 <div className="flex items-center gap-2">
                   <ResourceIcon resource={ResourcesIds[req.resource]} size="xs" withTooltip={false} />
-                  <span className="flex-1 text-sm text-gold/80">{ResourcesIds[req.resource]}</span>
+                  <span className="flex-1 text-sm text-kit-cream">{ResourcesIds[req.resource]}</span>
                   <span className={clsx("text-sm font-semibold", isMet ? "text-gold" : "text-red-300")}>
                     {req.current === undefined ? "—" : Math.floor(req.current).toLocaleString()} /{" "}
                     {req.amount.toLocaleString()}
@@ -205,7 +205,7 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
         onFocus={showRequirementsTooltip as never}
         onBlur={hideRequirementsTooltip}
         onClick={(event) => event.stopPropagation()}
-        className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-gold/30 bg-black/40 text-gold/70 hover:text-gold focus:outline-none focus:ring-1 focus:ring-gold/40"
+        className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-gold/30 bg-black/40 text-kit-muted hover:text-gold focus:outline-none focus:ring-1 focus:ring-gold/40"
         aria-label="View upgrade requirements"
       >
         <Info className="h-3.5 w-3.5" />
@@ -261,7 +261,7 @@ const StructureChip = memo(({ structure, isSelected, onSelectStructure, onToggle
         "group flex w-full items-center gap-1.5 rounded-md border px-2 py-2 text-left text-sm transition cursor-pointer",
         isSelected
           ? "border-gold bg-gold/15 text-gold"
-          : "border-gold/25 bg-black/30 text-gold/75 hover:border-gold/50 hover:bg-black/50",
+          : "border-gold/25 bg-black/30 text-kit-cream hover:border-gold/50 hover:bg-black/50",
       )}
       title={structure.displayName}
       aria-pressed={isSelected}

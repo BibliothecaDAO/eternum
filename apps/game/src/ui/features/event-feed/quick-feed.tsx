@@ -16,6 +16,7 @@ import { FEED_ROW_CLASS, FeedRowLine, HeadlineIcon } from "./feed-row-line";
 import { type ImportantFeedRow, selectImportantFeedRows, selectQuickFeedRows } from "./important-feed-rows";
 import { toast } from "./notify";
 import { useFeedRows } from "./use-feed-rows";
+import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 
 const QUICK_FEED_WINDOW_MS = 20_000;
 const QUICK_FEED_MAX_ROWS = 5;
@@ -28,10 +29,7 @@ export const QuickFeed = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogTog
     <LogToggle
       open={logOpen}
       onToggle={onLogToggle}
-      className={cn(
-        "h-8 gap-1.5 rounded-md bg-black/50 px-2.5 font-sans backdrop-blur-[2px] hover:bg-black/70",
-        HUD_LABEL,
-      )}
+      className={cn("h-9 gap-1.5 rounded-md px-2.5 font-sans hover:border-gold/50", OVERLAY_SURFACE_BASE, HUD_LABEL)}
     >
       <ScrollText className="h-4 w-4" />
       Log
