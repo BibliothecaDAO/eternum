@@ -29,6 +29,9 @@ async (page) => {
       holdings: document.querySelector(".holdings-rail")?.getBoundingClientRect().toJSON(),
       guidance: document.querySelector(".guidance-rail")?.getBoundingClientRect().toJSON(),
       missingImages: [...document.images].filter((img) => !img.complete || !img.naturalWidth).map((img) => img.src),
+      iconSources: [...document.querySelectorAll(".hud-scene img, .hud-scene image")].map(
+        (img) => img.getAttribute("src") ?? img.getAttribute("href"),
+      ),
       primaryCount: document.querySelectorAll(".primary-suggestion button").length,
     }));
     await page.screenshot({ path: path(`${name}.png`), scale: "css" });
@@ -45,6 +48,18 @@ async (page) => {
       count: groups.reduce((sum, group) => sum + group.elements.length, 0),
     });
     check(failures.length === 0, `${name}: ${failures.join("; ")}`);
+    if (reading.layout === "rails") {
+      const shippedResources = ["/images/resources/2.png", "/images/resources/4.png"];
+      check(
+        reading.iconSources.every((src) => src.startsWith("/lab-icons/new/faceted/") || shippedResources.includes(src)),
+        `${name}: A must use Facets except the two unpainted coal/copper resources: ${reading.iconSources.join(", ")}`,
+      );
+    } else {
+      check(
+        reading.iconSources.every((src) => !src.includes("/lab-icons/")),
+        `${name}: Current must retain shipped art`,
+      );
+    }
     if (viewport.width > 700 && reading.layout === "rails") {
       check(
         reading.holdings.x === 12 && reading.holdings.right < viewport.width / 2,

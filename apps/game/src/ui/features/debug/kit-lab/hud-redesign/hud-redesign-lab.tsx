@@ -4,6 +4,8 @@ import {
   mountProceduralTerrainDebugRenderer,
   type ProceduralTerrainDebugRendererHandle,
 } from "@/three/debug/procedural-terrain-debug-renderer";
+import { KitIconArt } from "@/ui/design-system/kit/kit-icon";
+import { hudKitArt } from "./hud-art";
 import { HudScene } from "./hud-scene";
 import { viewNames } from "./fixtures";
 
@@ -142,16 +144,18 @@ export function HudRedesignLab() {
           {status !== "ready" && !error && <p role="status">{status}</p>}
           {error && <p role="alert">{error}</p>}
         </div>
-        <HudScene
-          key={count}
-          layout={variant}
-          count={count}
-          density={density}
-          placement={placement}
-          names={viewNames[nameIndex]}
-          camera={camera}
-          onReadout={setGroups}
-        />
+        <KitIconArt.Provider value={variant === "rails" ? hudKitArt : {}}>
+          <HudScene
+            key={count}
+            layout={variant}
+            count={count}
+            density={density}
+            placement={placement}
+            names={viewNames[nameIndex]}
+            camera={camera}
+            onReadout={setGroups}
+          />
+        </KitIconArt.Provider>
       </div>
     </div>
   );

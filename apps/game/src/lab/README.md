@@ -99,8 +99,10 @@ search controls, action buttons, all nine soldier portraits and interactive hex 
 ## HUD comparison
 
 `/lab/kit/hud/redesign` compares Current HUD and Guided rails on one live game terrain renderer. On desktop, A places
-holdings and the realm panel left; suggestion, events and tile information right. Phone uses Map / Holdings. Choose 3,
-25 or 220 structures; change view names, list grouping and command placement. Drag the terrain or use the minimap to
-move the camera. The selected layout keeps the camera and lighting. `capture=1` removes review controls for full-frame
-evidence. See [the HUD feature map](../ui/features/debug/kit-lab/hud-redesign/README.md) for all controls and the
-retained browser proof (`pnpm --dir apps/game prepare:hud-proof`).
+holdings and the realm panel left; suggestion, events and tile information right. A uses Facets paintings; Current keeps
+shipped art. Phone uses Map / Holdings. Choose 3, 25 or 220 structures; change view names, list grouping and command
+placement. Drag the terrain or use the minimap to move the camera. The selected layout keeps the camera and lighting.
+`capture=1` removes review controls for full-frame evidence. See
+[the HUD feature map](../ui/features/debug/kit-lab/hud-redesign/README.md) for all controls and the retained browser
+proof (`pnpm --dir apps/game prepare:hud-proof`).
+

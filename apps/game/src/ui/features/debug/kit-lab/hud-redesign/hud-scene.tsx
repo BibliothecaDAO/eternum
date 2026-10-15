@@ -1,3 +1,5 @@
+import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+import { commandArt, facets, minimapArt, resourceArt } from "./hud-art";
 import { readVisibleUnits } from "./sample.mjs";
 import { useEffect, useLayoutEffect, useState, useRef, type ReactNode } from "react";
 import { Button } from "@/ui/design-system/kit/button";
@@ -133,7 +135,7 @@ function HoldingList({
         onClick={() => onSelect(holding)}
       >
         <span className={`holding-mark ${holding.needs ? "warn" : ""}`} aria-hidden>
-          <img src="/image-icons/construction.png" alt="" />
+          <KitIcon code={holding.kind === "Camp" ? "Cp" : "Cs"} size={24} />
         </span>
         <span className="holding-name">{holding.name}</span>
         <span className={holding.needs ? "warning" : "muted"}>
@@ -233,6 +235,11 @@ function RealmPanel({
           >
             <ProductionStatusBadge
               resourceLabel={resource.name}
+              icon={
+                !current && resourceArt[resource.name] ? (
+                  <img className="resource-painting" src={resourceArt[resource.name]} alt="" />
+                ) : undefined
+              }
               tooltipText={`${resource.name}: ${resource.held} owned`}
               isProducing={preset !== "Idle" && resource.producing}
               timeRemainingSeconds={resource.seconds}
@@ -255,6 +262,7 @@ function RealmPanel({
 
 /** Marker artwork can change without changing ownership, values or selection. */
 function MapMarker({
+  current,
   kind,
   owner,
   value,
@@ -262,6 +270,7 @@ function MapMarker({
   y,
   onClick,
 }: {
+  current: boolean;
   kind: "realm" | "army";
   owner: "you" | "ally" | "enemy";
   value: number;
@@ -277,7 +286,16 @@ function MapMarker({
       aria-label={`${owner} ${kind}, ${kind === "realm" ? "level" : "strength"} ${value}`}
       onClick={onClick}
     >
-      <img src={kind === "realm" ? "/image-icons/construction.png" : "/image-icons/military.png"} alt="" />
+      <img
+        src={
+          current
+            ? kind === "realm"
+              ? "/image-icons/construction.png"
+              : "/image-icons/military.png"
+            : facets(kind === "realm" ? "map-realm" : "map-army", 32)
+        }
+        alt=""
+      />
       <b>{value}</b>
     </button>
   );
@@ -320,9 +338,11 @@ const minimapTiles = terrainFixture.cells.map((cell) => {
 function Minimap({
   onOpen,
   camera,
+  current,
 }: {
   onOpen: (name: string) => void;
   camera: { hex: { col: number; row: number }; distance: number };
+  current: boolean;
 }) {
   const field = useRef<HTMLDivElement>(null);
   const [positions, setPositions] = useState<{ x: number; y: number }[]>([]);
@@ -370,7 +390,7 @@ function Minimap({
           cameraDistance={camera.distance}
           ownedStructureIds={ownedStructureIds}
           ownedExplorerIds={ownedExplorerIds}
-          markerArt={paintedMinimapArt}
+          markerArt={current ? paintedMinimapArt : minimapArt}
           selectedHex={minimapTarget}
           navigationTarget={null}
           cameraTargetHex={camera.hex}
@@ -378,6 +398,7 @@ function Minimap({
         {positions.length === 3 && (
           <>
             <MapMarker
+              current={current}
               kind="realm"
               owner="you"
               value={2}
@@ -385,6 +406,7 @@ function Minimap({
               onClick={() => onOpen("Stolsli on the map")}
             />
             <MapMarker
+              current={current}
               kind="army"
               owner="ally"
               value={80}
@@ -392,6 +414,7 @@ function Minimap({
               onClick={() => onOpen("Allied army · strength 80")}
             />
             <MapMarker
+              current={current}
               kind="army"
               owner="enemy"
               value={120}
@@ -463,7 +486,7 @@ export function HudScene({
     >
       <header className="match-bar" data-group="Match">
         <button data-notice onClick={() => open("Standings")}>
-          uxplay#1 · <b>5 VP</b>
+          {layout === "rails" && <KitIcon code="Tp" size={18} />} uxplay#1 · <b>5 VP</b>
         </button>
         <div className="view-toggle">
           <ViewSwitch
@@ -502,10 +525,16 @@ export function HudScene({
                 setView("world");
               }}
             >
-              Scouts found grassland <span className="muted">· 1m ↗</span>
+              <KitIcon code="Ey" size={20} />
+              <span>
+                Scouts found grassland <span className="muted">· 1m ↗</span>
+              </span>
             </button>
             <button data-notice className="event-row" onClick={() => open("Transfer arrived")}>
-              Transfer reached Stolsli <span className="muted">· 3m ↗</span>
+              <KitIcon code="Bt" size={20} />
+              <span>
+                Transfer reached Stolsli <span className="muted">· 3m ↗</span>
+              </span>
             </button>
           </Panel>
           <Panel
@@ -513,6 +542,7 @@ export function HudScene({
             className="tile-panel"
           >
             <p data-notice className="muted">
+              <KitIcon code={selectedTile === "Oakheart" ? (selected.kind === "Camp" ? "Cp" : "Cs") : "Ey"} size={20} />
               Grassland · {selectedTile === "Oakheart" ? `Your ${selected.kind.toLowerCase()}` : "Unoccupied"}
             </p>
           </Panel>
@@ -534,14 +564,14 @@ export function HudScene({
         )}
         <RealmPanel selected={selected} onOpen={open} current={layout === "current"} />
       </aside>
-      <Minimap onOpen={open} camera={camera} />
+      <Minimap onOpen={open} camera={camera} current={layout === "current"} />
       <nav className="action-dock" aria-label="Realm actions" data-group="Realm actions">
         {actionChoices
           .filter((action) => isStructureActionEnabled(action.id, (command) => commands.has(command)))
           .map((action) => (
             <button data-notice key={action.word} aria-label={action.word} onClick={() => open(action.word)}>
               <span className="action-circle">
-                <img src={action.image} alt="" />
+                <img src={layout === "current" ? action.image : commandArt[action.id]} alt="" />
               </span>
               <span>{action.word}</span>
             </button>
@@ -555,6 +585,7 @@ export function HudScene({
         ))}
       </nav>
       <button className="hud-chat" data-group="Chat" data-notice onClick={() => open("Chat")}>
+        {layout === "rails" && <KitIcon code="Ct" size={18} />}
         {layout === "current" ? "djiizus: ohayo" : "Chat"}
       </button>
       <button className="hud-log" data-group="Log" data-notice onClick={() => open("Event log")}>

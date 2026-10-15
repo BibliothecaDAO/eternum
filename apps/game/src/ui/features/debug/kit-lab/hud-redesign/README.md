@@ -27,6 +27,20 @@ current HUD.
 | Inventory         | Noticed units in the lab toolbar expands the per-group inventory                                    |
 | Evidence frame    | Add `capture=1` to remove lab chrome; 1440×900 desktop or 390×844 phone                             |
 
+## Paintings
+
+A uses the chosen Facets exports through the icon lab's `iconArt` resolver and a scoped `KitIconArt` provider. Current
+keeps shipped art. The resource badge accepts an icon slot, preserving the shared ring and count behavior. `hud-art.ts`
+owns the HUD mappings; no painting is copied into a second asset tree. The dock uses build, settings (Production),
+attack (Military), move (Transfer) and trade. Realm art also stands for villages until a village painting exists. Events
+use explore/move; selected sites use realm/camp; VP and Chat use victory/chat. Minimap cells use the 16px marker exports
+and value chips use 32px exports.
+
+Coal and copper have no Facets export yet, so their existing unframed resource paintings remain explicitly allowed. The
+Knight sample and minimap emblems will be replaced by the troop figures and hex markers when their art update lands. The
+browser proof inventories every image source in A, permits only Facets plus those two resources, and rejects Facets in
+Current. All naming, grouping and command-placement controls remain available.
+
 ## Proof
 
 Start the client from the repository root:
@@ -45,9 +59,9 @@ implementation pick.
 The driver captures the current desktop fixture, six A baselines, desktop/phone searches, grouped scrolling and expert
 sheets. It checks Trade's mode mask, all terrain hexes and structures, the live canvas surviving layout switches, camera
 drag and minimap navigation. `review.mjs` rejects crop/zoom of the historical comparison, an unready or undersized live
-canvas, visible KitIcon art, a dot-grid minimap, a missing primary, command paintings below 44px and excessive map
-cover. `review.test.ts` rejects the measured first picker with all six original failures. Component tests exercise the
-shared minimap's coordinate normalization and the shipped structure row's selection/action boundary.
+canvas, gilded KitIcon art, a dot-grid minimap, a missing primary, command paintings below 44px and excessive map cover.
+`review.test.ts` rejects the measured first picker with all six original failures. Component tests exercise the shared
+minimap's coordinate normalization and the shipped structure row's selection/action boundary.
 
 ## Boundaries and measurements
 

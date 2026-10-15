@@ -816,3 +816,29 @@
     }
   }
 }
+
+@scope (.hud-redesign) {
+  .resource-painting {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+  }
+  .rails .event-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+  }
+  .rails .tile-panel p {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .rails .match-bar > button:first-child,
+  .rails .hud-chat {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+}
