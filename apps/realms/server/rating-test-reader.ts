@@ -30,7 +30,6 @@ export function testRatingReader(configuration: Partial<ConstructorParameters<ty
   };
   const reader = new RatingReader(ctx as unknown as DurableObjectState, {
     ENVIRONMENT: "production",
-    RATING_HISTORY_URL: "https://realms.world/api/ratings/population",
     L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
     ...configuration,
   });

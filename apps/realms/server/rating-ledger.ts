@@ -15,7 +15,6 @@ export async function openRatingLedger(
   env: Pick<IdentityEnv, "ENVIRONMENT" | "L2_RPC_URL">,
   blockHash?: string,
 ) {
-  const signal = AbortSignal.timeout(10_000);
   await verifyIdentityChain(provider, env);
   const block = await provider.getBlock(blockHash ?? "latest");
   const number = "block_number" in block ? block.block_number : undefined;
@@ -33,7 +32,6 @@ export async function openRatingLedger(
   if (blockHash && BigInt(canonicalHash) !== BigInt(blockHash)) throw new Error("Wrong rating block");
   return {
     provider,
-    signal,
     ratingToken: valuePlaneAddress("mmrToken", env.ENVIRONMENT),
     block: number,
     blockHash: canonicalFelt(canonicalHash),
@@ -42,14 +40,18 @@ export async function openRatingLedger(
 
 export type RatingLedger = Pick<
   Awaited<ReturnType<typeof openRatingLedger>>,
-  "provider" | "signal" | "ratingToken" | "block" | "blockHash"
+  "provider" | "ratingToken" | "block" | "blockHash"
 >;
 
-/** Both API reads use the token's effective rating, including its initial rating, with the same u256 decoder. */
+/**
+ * Both API reads use the token's effective rating, including its initial rating, with the same u256 decoder. One
+ * deadline covers every read, so a slow provider yields no list rather than one assembled over a long time.
+ */
 export async function readLedgerRatings(ledger: RatingLedger, owners: string[]): Promise<Map<string, bigint>> {
+  const deadline = AbortSignal.timeout(10_000);
   const ratings = new Map<string, bigint>();
   for (let offset = 0; offset < owners.length; offset += CONCURRENT_READS) {
-    ledger.signal.throwIfAborted();
+    deadline.throwIfAborted();
     await Promise.all(
       owners.slice(offset, offset + CONCURRENT_READS).map(async (player) => {
         const result = await ledger.provider.callContract(
@@ -60,7 +62,7 @@ export async function readLedgerRatings(ledger: RatingLedger, owners: string[]):
       }),
     );
   }
-  ledger.signal.throwIfAborted();
+  deadline.throwIfAborted();
   return ratings;
 }
 

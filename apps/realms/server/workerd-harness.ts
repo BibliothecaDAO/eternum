@@ -70,7 +70,6 @@ export const buildWorkerBundle = (aliases: Record<string, string> = {}): string 
 export const startWorker = async (options: {
   bundle: string;
   environment?: "staging" | "production";
-  ratingHistoryUrl?: string;
   storage: string;
   vapid: { publicKey: string; privateKey: string };
   outbound: (request: Request) => Response | Promise<Response>;
@@ -101,7 +100,6 @@ export const startWorker = async (options: {
       BASE_URL: ORIGIN,
       VERSION: { id: "workerd-test", tag: "", timestamp: "" },
       BETTER_AUTH_SECRET: "workerd-test-secret-workerd-test-secret",
-      ...(options.ratingHistoryUrl ? { RATING_HISTORY_URL: options.ratingHistoryUrl } : {}),
       L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
       OPERATOR_TOKEN: "unused",
       RESEND_API_KEY: "unused",

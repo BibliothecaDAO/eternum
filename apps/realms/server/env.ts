@@ -14,7 +14,6 @@ const IdentityVars = Schema.Struct({
   /** The app's origin; identity is served under its /api. */
   BASE_URL: Schema.NonEmptyString,
   BETTER_AUTH_SECRET: Schema.NonEmptyString,
-  RATING_HISTORY_URL: Schema.optional(Schema.String),
   /** Only the configured chain's HTTPS Alchemy RPC is accepted. */
   L2_RPC_URL: Schema.NonEmptyString,
   /** The environment's one operator token for all automation: listing shards and changing their status here. */

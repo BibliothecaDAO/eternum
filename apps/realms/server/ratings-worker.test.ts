@@ -1,7 +1,11 @@
 import production from "../../../contracts/common/addresses/mainnet.json";
+import { hash } from "starknet";
 import { beforeAll, expect, it } from "vitest";
 import { buildWorkerBundle, migrationStatements, newStorage, ORIGIN, startWorker, vapidKeys } from "./workerd-harness";
 
+const MMR_UPDATED = hash.getSelectorFromName("MMRUpdated");
+const tokenDeployedAt = (params: unknown) =>
+  (params as { block_id: { block_number: number } }).block_id.block_number >= 100;
 let bundle: string;
 beforeAll(() => {
   bundle = buildWorkerBundle();
@@ -16,14 +20,9 @@ it("reads wallet owners through the deployed Worker's SDK and serves new ledger 
   const worker = await startWorker({
     bundle,
     environment: "production",
-    ratingHistoryUrl: "https://realms.world/api/ratings/population",
     storage: newStorage(),
     vapid: await vapidKeys(),
     outbound: async (request) => {
-      if (request.url === "https://realms.world/api/ratings/population")
-        return request.method === "HEAD"
-          ? new Response(null, { headers: { "x-rating-hash": blockHash, "x-rating-block": String(blockNumber) } })
-          : Response.json({ block_number: blockNumber, block_hash: blockHash, players: ["0xa"] });
       const payload = await request.json();
       const requests = (Array.isArray(payload) ? payload : [payload]) as {
         id: number;
@@ -33,11 +32,15 @@ it("reads wallet owners through the deployed Worker's SDK and serves new ledger 
       if (unavailable) return new Response(null, { status: 503 });
       const answers = requests.map((rpc) => {
         calls.push(rpc);
+        if (rpc.method === "starknet_getClassHashAt" && !tokenDeployedAt(rpc.params))
+          return { jsonrpc: "2.0", id: rpc.id, error: { code: 20, message: "Contract not found" } };
         const result = {
           starknet_specVersion: "0.9.0",
           starknet_chainId: "0x534e5f4d41494e",
           starknet_getBlockWithTxHashes: { block_number: blockNumber, block_hash: blockHash },
           starknet_call: [`0x${(points * 10n ** 18n).toString(16)}`, "0x0"],
+          starknet_getClassHashAt: "0x1",
+          starknet_getEvents: { events: [{ keys: [MMR_UPDATED, "0xa"], data: [] }] },
         }[rpc.method];
         if (result === undefined) throw new Error(`Unexpected RPC method ${rpc.method}`);
         return { jsonrpc: "2.0", id: rpc.id, result };
@@ -106,6 +109,17 @@ it("reads wallet owners through the deployed Worker's SDK and serves new ledger 
     });
     expect(await (await read()).json()).toMatchObject({ ratings: { "0xa": { player: "0xa", rating: "1300" } } });
     expect(calls.filter((call) => call.method === "starknet_call").length).toBeGreaterThan(tokenCalls);
+    expect(
+      calls
+        .filter((call) => call.method === "starknet_getEvents")
+        .map((call) => (call.params as { filter: { from_block: unknown; to_block: unknown } }).filter),
+    ).toEqual([
+      expect.objectContaining({
+        address: production.mmrToken,
+        from_block: { block_number: 100 },
+        to_block: { block_number: 124 },
+      }),
+    ]);
     await worker.db.prepare('UPDATE "user" SET "address" = ? WHERE "realmsId" = ?').bind("0xa", player.realmsId).run();
     unavailable = true;
     expect((await read()).status).toBe(503);
