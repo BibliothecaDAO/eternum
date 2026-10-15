@@ -17,6 +17,8 @@
  */
 import { join } from "node:path";
 
+import { pathOf, sleep, waitFor } from "./prove-run.mjs";
+
 const VIEWPORTS = { desktop: [1440, 900], phone: [390, 844] };
 const MAP_READY = `document.documentElement.dataset.bootState === "app-ready" && document.querySelector("canvas") !== null`;
 const ENDED_LINE = "This game has ended.";
@@ -88,23 +90,7 @@ export const linesBetween = (text, from, to) => {
   return start < 0 ? [] : lines.slice(start + 1, end < 0 ? undefined : end).filter(Boolean);
 };
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const pathOf = (url) => {
-  const { pathname, search } = new URL(url);
-  return decodeURIComponent(`${pathname}${search}`);
-};
-
 const bodyText = (b) => b.evaluate("document.body.innerText");
-
-const waitFor = async (b, js, timeoutMs) => {
-  const until = Date.now() + timeoutMs;
-  while (Date.now() < until) {
-    if (b.evaluate(`Boolean(${js})`) === true) return true;
-    await sleep(500);
-  }
-  return false;
-};
 
 const waitForText = (b, text, timeoutMs = STEP_TIMEOUT_MS) =>
   waitFor(b, `document.body.innerText.includes(${JSON.stringify(text)})`, timeoutMs);

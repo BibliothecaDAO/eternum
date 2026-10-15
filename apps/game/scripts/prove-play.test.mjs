@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { destinationOf, judge, problemsOf } from "./prove-play.mjs";
+import { destinationOf, judge, playRecordWhere } from "./prove-play.mjs";
+import { problemsOf } from "./prove-run.mjs";
 
 const BASE = "https://127.0.0.1:4176";
 
@@ -75,15 +76,18 @@ describe("the run's completeness", () => {
   const record = (over) => ({ state: "live", layout: "phone", ready: true, presses: [[led]], ...over });
 
   it("is complete only when every page was ready and every press led", () => {
-    expect(problemsOf([record({})])).toEqual([]);
+    expect(problemsOf([record({})], playRecordWhere)).toEqual([]);
   });
 
   it("lists a page that never became ready, a press whose row was gone, and a press that failed", () => {
-    const problems = problemsOf([
-      record({ ready: false, presses: [] }),
-      record({ presses: [[led, { word: "Sign in", status: "unavailable" }]] }),
-      record({ presses: [[{ word: "Watch", status: "failed", reason: "no navigation" }]] }),
-    ]);
+    const problems = problemsOf(
+      [
+        record({ ready: false, presses: [] }),
+        record({ presses: [[led, { word: "Sign in", status: "unavailable" }]] }),
+        record({ presses: [[{ word: "Watch", status: "failed", reason: "no navigation" }]] }),
+      ],
+      playRecordWhere,
+    );
     expect(problems.map((problem) => problem.problem)).toEqual(["not ready", "unavailable", "failed"]);
   });
 });

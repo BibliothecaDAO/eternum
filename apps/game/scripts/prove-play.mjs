@@ -25,12 +25,11 @@
  * 1. A press whose row is gone on the fresh load is recorded as unavailable (live data moved), apart from a press that
  * failed.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { proveGame } from "./prove-play-game.mjs";
-import { runAgentBrowser } from "./run-renderer-scene-smoke.mjs";
+import { clickAsPlayer, pathOf, runProof, sleep, waitFor } from "./prove-run.mjs";
 
 const VIEWPORTS = { desktop: [1440, 900], phone: [390, 844] };
 const LAB_SCREENS = ["first-visit", "home", "no-realm", "blitz-seat", "blitz-preparing", "season-over"];
@@ -138,34 +137,6 @@ export const parseArgs = (argv) => {
   return args;
 };
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-/** One browser session for the whole run: a fresh profile, so no sign-in and no results marked seen. */
-const browser = (session) => {
-  const run = (...args) => runAgentBrowser(session, args);
-  /** The page's value: agent-browser prints it as JSON; a page that returns JSON text (MEASURE) is read once more. */
-  const evaluate = (js) => {
-    const value = JSON.parse(run("eval", js));
-    if (typeof value !== "string" || !/^[[{]/.test(value)) return value;
-    try {
-      return JSON.parse(value);
-    } catch {
-      return value;
-    }
-  };
-  const url = () => run("get", "url").split("\n").pop().trim();
-  return { run, evaluate, url };
-};
-
-const waitFor = async (b, js, timeoutMs) => {
-  const until = Date.now() + timeoutMs;
-  while (Date.now() < until) {
-    if (b.evaluate(`Boolean(${js})`) === true) return true;
-    await sleep(300);
-  }
-  return false;
-};
-
 /**
  * Opens a state as a first look would: the results this device has seen are forgotten first, since pressing Results in
  * an earlier record marks them seen and would change what the next record finds.
@@ -182,18 +153,6 @@ const openState = async (b, state) => {
   return ready;
 };
 
-const pathOf = (url) => {
-  const { pathname, search } = new URL(url);
-  return decodeURIComponent(`${pathname}${search}`);
-};
-
-/** What the browser said when a command failed, without npm's own warnings about the shell it ran in. */
-const browserError = (error) =>
-  error.message
-    .split("\n")
-    .filter((line) => line.trim() && !line.startsWith("npm warn"))
-    .join(" ");
-
 /**
  * Presses one control as a player would, scrolling to it and then clicking, and returns where it led: `led` when it
  * reached the address expected of it, `unavailable` when the control is not on the page, `failed` when the click did
@@ -206,12 +165,8 @@ const press = async (b, { selector, word, expected }) => {
   })()`);
   if (present !== true) return { word, status: "unavailable" };
   const before = b.url();
-  try {
-    b.run("scrollintoview", selector);
-    b.run("click", selector);
-  } catch (error) {
-    return { word, status: "failed", reason: `click: ${browserError(error)}` };
-  }
+  const missed = clickAsPlayer(b, selector);
+  if (missed) return { word, status: "failed", reason: missed };
   const until = Date.now() + PRESS_TIMEOUT_MS;
   let after = b.url();
   while (after === before && Date.now() < until) {
@@ -280,72 +235,34 @@ const proveState = async (b, state, layout, out) => {
   };
 };
 
-/** Every reason the run is not complete: a page that never became ready, and each step that did not lead where it should. */
-export const problemsOf = (records) =>
-  records.flatMap((record) => [
-    ...(record.ready ? [] : [{ state: record.state, layout: record.layout, problem: "not ready" }]),
-    ...(record.error ? [{ state: record.state, layout: record.layout, problem: record.error }] : []),
-    ...record.presses
-      .flat()
-      .flatMap((step) =>
-        step.status === "led" ? [] : [{ state: record.state, layout: record.layout, problem: step.status, step }],
-      ),
-  ]);
+/** A Play record in the run's problems: its state and viewport. */
+export const playRecordWhere = (record) => ({ state: record.state, layout: record.layout });
 
-/** A game's run: its own steps (scripts/prove-play-game.mjs), signed in from the browser profile, into game-proof.json. */
-const runGame = async (args) => {
-  const started = new Date().toISOString();
-  const out = join(args.out, `game-${started.replaceAll(":", "-")}`);
-  mkdirSync(out, { recursive: true });
-  process.env.AGENT_BROWSER_PROFILE = args.profile;
-  const session = `game-proof-${Date.now()}`;
-  const b = browser(session);
-  let result = { records: [] };
-  try {
-    result = await proveGame(b, args, out);
-  } catch (error) {
-    result.records.push({ step: "run", problem: String(error.message ?? error) });
-  } finally {
-    try {
-      b.run("open", "about:blank");
-      b.run("close");
-    } catch {
-      // The session is gone already; the record below is still written.
-    }
-    const problems = result.records.filter((record) => record.problem);
-    const proof = {
-      started,
-      ran: new Date().toISOString(),
-      baseUrl: args.baseUrl,
-      game: args.game,
-      session,
-      complete: problems.length === 0,
-      problems,
-      ...result,
-    };
-    writeFileSync(join(out, "game-proof.json"), `${JSON.stringify(proof, null, 2)}\n`);
-    console.log(
-      `Wrote ${join(out, "game-proof.json")}: ${result.records.length} steps, ${proof.complete ? "complete" : `INCOMPLETE (${problems.length} problems)`}`,
-    );
-    process.exitCode = proof.complete ? 0 : 1;
-  }
+/**
+ * A game's run: its own steps (scripts/prove-play-game.mjs), signed in from the browser profile, into game-proof.json.
+ * A step is judged whole (judgeStep), its readiness included: its problem, if any, is the run's.
+ */
+const runGame = ({ baseUrl, out, profile, ...game }) => {
+  process.env.AGENT_BROWSER_PROFILE = profile;
+  return runProof({ parent: out, name: "game-proof", baseUrl, where: gameStepWhere }, async (b, dir, records) => {
+    const { records: steps } = await proveGame(b, { baseUrl, ...game }, dir);
+    records.push(...steps.map((step) => ({ ...step, ready: true, presses: [] })));
+  });
 };
+
+/** A game's step in the run's problems: which step, and its viewport where it has one. */
+const gameStepWhere = (record) => ({ step: record.step, layout: record.layout });
 
 const main = async (argv) => {
   const args = parseArgs(argv);
   if (args.game) return runGame(args);
-  const { baseUrl, out: parent } = args;
-  const started = new Date().toISOString();
-  const out = join(parent, `run-${started.replaceAll(":", "-")}`);
-  mkdirSync(out, { recursive: true });
-  const session = `play-proof-${Date.now()}`;
-  const b = browser(session);
-  const records = [];
-  try {
+  const { baseUrl, out } = args;
+  // One browser session for the whole run: a fresh profile, so no sign-in and no results marked seen.
+  await runProof({ parent: out, name: "play-proof", baseUrl, where: playRecordWhere }, async (b, dir, records) => {
     for (const state of states(baseUrl)) {
       for (const layout of Object.keys(VIEWPORTS)) {
         try {
-          const record = await proveState(b, state, layout, out);
+          const record = await proveState(b, state, layout, dir);
           records.push(record);
           console.log(
             `${record.state} ${layout}: ${JSON.stringify({ ...record.page, actions: record.page.actions?.length })}`,
@@ -362,29 +279,7 @@ const main = async (argv) => {
         }
       }
     }
-  } finally {
-    try {
-      b.run("open", "about:blank");
-      b.run("close");
-    } catch {
-      // The session is gone already; the record below is still written.
-    }
-    const problems = problemsOf(records);
-    const proof = {
-      started,
-      ran: new Date().toISOString(),
-      baseUrl,
-      session,
-      complete: problems.length === 0,
-      problems,
-      records,
-    };
-    writeFileSync(join(out, "play-proof.json"), `${JSON.stringify(proof, null, 2)}\n`);
-    console.log(
-      `Wrote ${join(out, "play-proof.json")}: ${records.length} pages, ${proof.complete ? "complete" : `INCOMPLETE (${problems.length} problems)`}`,
-    );
-    process.exitCode = proof.complete ? 0 : 1;
-  }
+  });
 };
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

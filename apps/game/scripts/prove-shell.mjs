@@ -6,23 +6,27 @@
  *
  *   pnpm --dir apps/game prove:shell --base-url https://127.0.0.1:<port> --out <dir> [--state <signed-in.json>]
  *
- * Without `--state` it is a new visitor, and the run also opens the app lab's fixture pages (below); with a saved signed-in browser state (agent-browser's `state save`, which keeps
- * the device key with the session) a returning player. Each flow runs at desktop (1440×900) and phone (390×844).
+ * Without `--state` it is a new visitor, and the run also opens the app lab's fixture pages (below); with a saved
+ * signed-in browser state (agent-browser's `state save`, which keeps the device key with the session) a returning
+ * player. Each flow runs at desktop (1440×900) and phone (390×844). Each press is made by the browser, scrolled to and
+ * clicked, so a control the pointer cannot reach fails (prove-run.mjs, the proofs' one meaning of a pass).
  *
  * It changes nothing it does not put back and spends nothing: it stops at a lobby (paying is the player's), records
- * How to play's link without leaving, opens Sign out's question and keeps the session, and returns the alert level and
- * the music switch to what they were.
+ * How to play's link without leaving (it opens the docs site in a new tab), opens Sign out's question and leaves it
+ * unanswered, and sets the alert level and the music switch back to the values it read before pressing them, however
+ * the flow ends, reading them again after a reload.
  *
- * Writes <out>/shell-proof-<new-visitor|returning>.json and a screenshot of each flow's end. A flow's record holds each press (what was pressed
- * and the address it led to), whether its end was reached, and each page passed through: its address, its controls
- * (all, and in view by a centre hit test, the navigation's apart), its gold buttons, its smallest text, and whether it
- * fits one screen.
+ * Writes <out>/run-<start>/shell-proof-<new-visitor|returning>.json and a screenshot of each flow's end. A flow's
+ * record holds each press (what was pressed, the address it led to, and its status), the setting it put back, and each
+ * page passed through: its address, its controls (all, and in view by a centre hit test, the navigation's apart), its
+ * gold buttons, its smallest text, and whether it fits one screen. A flow's last press leads only when the flow's end
+ * is reached; a flow stopped by a service that did not answer, or by a row the live data does not hold, is
+ * unavailable, any other stop failed, and the command exits 1 unless every flow led.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { browser, sleep, waitFor } from "./prove-browser.mjs";
+import { clickAsPlayer, pathOf, runProof, sleep, waitFor } from "./prove-run.mjs";
 
 const VIEWPORTS = { desktop: [1440, 900], phone: [390, 844] };
 const SETTLE_MS = 1500;
@@ -33,15 +37,18 @@ const READY = `document.documentElement.dataset.bootState === "app-ready" && doc
 
 /**
  * A press, by what a player sees: a place in the navigation, a row or button by its words, a switch view, a setting's
- * switch, the first board row, a finished game, or a link read without following it (it leaves the app).
+ * switch, the first board row, a finished game, or a link read without following it (it leaves the app). A board's
+ * first row and a finished game are the live data's: their absence makes a flow unavailable, not failed.
  */
 const tab = (word) => ({ kind: "tab", word });
 const press = (word) => ({ kind: "press", word });
 const view = (word) => ({ kind: "view", word });
 const toggle = (word) => ({ kind: "toggle", word });
-const firstRow = () => ({ kind: "first-row" });
-const finishedGame = () => ({ kind: "finished-game" });
+const firstRow = () => ({ kind: "first-row", live: true });
+const finishedGame = () => ({ kind: "finished-game", live: true });
 const link = (word) => ({ kind: "link", word });
+/** Play's Join, on a Blitz slot the live data may not hold. */
+const joinSlot = () => ({ kind: "press", word: "Join", live: true });
 
 /** Each flow's end, checked in the page. */
 const END = {
@@ -75,15 +82,15 @@ const flows = (layout, persona) => {
     return {
       ...shared,
       signin: { steps: [tab("You"), press("Sign in")], end: END.signIn },
-      join: { steps: [press("Join"), press("Sign in")], end: END.lobbySignIn },
+      join: { steps: [joinSlot(), press("Sign in")], end: END.lobbySignIn },
     };
   return {
     ...shared,
     older: { steps: [tab("You"), finishedGame()], end: END.results },
-    alerts: { steps: [tab("You"), press("Settings"), view("Important")], end: END.important, restore: "level" },
-    music: { steps: [tab("You"), press("Settings"), toggle("Music")], end: END.musicOn, restore: "music" },
-    signout: { steps: [tab("You"), press("Settings"), press("Sign out")], end: END.signOutAsked, restore: "keep" },
-    join: { steps: [press("Join")], end: END.lobby },
+    alerts: { steps: [tab("You"), press("Settings"), view("Important")], end: END.important, setting: "level" },
+    music: { steps: [tab("You"), press("Settings"), toggle("Music")], end: END.musicOn, setting: "music" },
+    signout: { steps: [tab("You"), press("Settings"), press("Sign out")], end: END.signOutAsked },
+    join: { steps: [joinSlot()], end: END.lobby },
   };
 };
 
@@ -140,8 +147,11 @@ const MEASURE = `(() => {
   });
 })()`;
 
-/** Finds the control a press names and presses it; a link is read, never followed. What was found, or null. */
-const PRESS = (step) => `(() => {
+/**
+ * Finds the control a step names and marks it for the browser's click; a link that leaves the app is read, never
+ * followed. What was found, or null.
+ */
+const FIND = (step, mark) => `(() => {
   const step = ${JSON.stringify(step)};
   const text = (el) => el.innerText.replace(/\\s+/g, " ").trim();
   const body = document.querySelector('[data-band="body"]');
@@ -159,16 +169,111 @@ const PRESS = (step) => `(() => {
     const games = controls(body, 'a[href^="/results/"]');
     found = games[1] ?? games[0];
   }
-  if (step.kind === "link") {
-    const anchor = [...document.querySelectorAll("a[href]")].find((el) => text(el) === step.word);
-    if (!anchor) return JSON.stringify(null);
-    if (anchor.target === "_blank") return JSON.stringify({ pressed: step.word, href: anchor.href, target: anchor.target, followed: false });
-    found = anchor;
-  }
+  if (step.kind === "link") found = [...document.querySelectorAll("a[href]")].find((el) => text(el) === step.word);
   if (!found) return JSON.stringify(null);
-  found.click();
-  return JSON.stringify({ pressed: text(found) || found.getAttribute("aria-label") });
+  if (step.kind === "link" && found.target === "_blank") return JSON.stringify({ word: step.word, href: found.href, target: found.target, followed: false });
+  found.setAttribute("data-proof-press", ${JSON.stringify(mark)});
+  return JSON.stringify({ word: text(found) || found.getAttribute("aria-label"), selector: '[data-proof-press="' + ${JSON.stringify(mark)} + '"]' });
 })()`;
+
+/** The lines in which the page names a service that did not answer. */
+const FAILURE_LINES = `[...document.querySelectorAll("[data-layout]")].flatMap((root) => root.innerText.split("\\n")).filter((line) => line.includes("did not answer"))`;
+
+/**
+ * A step's verdict when the press did not reach what it was for: unavailable when the page names a service that did
+ * not answer or the step needs a row the live data does not hold, else failed.
+ */
+export const stopVerdict = (step, failures, reason) => {
+  if (failures.length > 0) return { status: "unavailable", reason: failures.join(" ") };
+  if (step.live) return { status: "unavailable", reason: `no ${step.kind} on the page` };
+  return { status: "failed", reason };
+};
+
+let marks = 0;
+
+/** Presses one step as a player would; the step with its status and the address it led to. */
+const pressStep = async (b, step) => {
+  const mark = `p${(marks += 1)}`;
+  const found = b.evaluate(FIND(step, mark));
+  if (!found) return { step, ...stopVerdict(step, b.evaluate(FAILURE_LINES), "not on the page") };
+  if (!found.selector) return { step, status: "led", ...found };
+  const missed = clickAsPlayer(b, found.selector);
+  if (missed) return { step, word: found.word, status: "failed", reason: missed };
+  await sleep(SETTLE_MS);
+  return { step, word: found.word, status: "led", led: pathOf(b.url()) };
+};
+
+/** The flow's last press: it leads only when the flow's end is reached. */
+const pressLast = async (b, step, flow, record) => {
+  const last = await pressStep(b, step);
+  record.presses.push(last);
+  if (last.status !== "led") return;
+  record.pages.push(b.evaluate(MEASURE));
+  if (!(await waitFor(b, flow.end, END_TIMEOUT_MS)))
+    Object.assign(last, stopVerdict(step, b.evaluate(FAILURE_LINES), "end not reached"));
+};
+
+/** The alert level lit on Settings, and the music switch. */
+const SETTING_READS = {
+  level: `document.querySelector('[role="radio"][aria-checked="true"]')?.innerText.trim() ?? null`,
+  music: `document.querySelector('[role="switch"][aria-label="Music"]')?.getAttribute("aria-checked") ?? null`,
+};
+/** The press that sets a setting to `value` from another: the level's own view, or the music switch's flip. */
+const SETTING_PRESSES = { level: (value) => view(value), music: () => toggle("Music") };
+
+/**
+ * A setting on the account's Settings page: read where the player is, and set by opening Settings fresh and pressing
+ * its control, then read again after a reload, so what is checked is what the account kept.
+ */
+const settingOf = (b, baseUrl, name) => {
+  const read = async () => {
+    await waitFor(b, `(${SETTING_READS[name]}) !== null`, READY_TIMEOUT_MS);
+    return b.evaluate(SETTING_READS[name]);
+  };
+  const openSettings = async () => {
+    b.run("open", `${baseUrl}/profile/settings`, "--ignore-https-errors");
+    await waitFor(b, READY, READY_TIMEOUT_MS);
+  };
+  const write = async (value) => {
+    await openSettings();
+    if ((await read()) !== value) {
+      const pressed = await pressStep(b, SETTING_PRESSES[name](value));
+      if (pressed.status !== "led") throw new Error(`${name}: ${pressed.reason}`);
+    }
+    await openSettings();
+  };
+  return { name, read, write };
+};
+
+/**
+ * Runs `change` with the setting's value read first, and sets it back to that value however `change` ends, recording
+ * on `record.restored` what it found after. A setting it cannot read is not pressed.
+ */
+export const changingSetting = async (setting, record, change) => {
+  const before = await setting.read();
+  if (before === null) {
+    record.presses.push({ setting: setting.name, status: "failed", reason: "setting not readable before its press" });
+    return;
+  }
+  try {
+    await change();
+  } finally {
+    record.restored = await restore(setting, before);
+  }
+};
+
+const restore = async (setting, before) => {
+  try {
+    await setting.write(before);
+    const after = await setting.read();
+    return { setting: setting.name, before, after, ok: after === before };
+  } catch (error) {
+    return { setting: setting.name, before, ok: false, error: String(error.message ?? error) };
+  }
+};
+
+/** The body's words, so a record shows what a page said (a column of shares, a clock, a failure). */
+const BODY_TEXT = `document.querySelector('[data-band="body"]')?.innerText.replace(/\\s+/g, " ").trim().slice(0, 600) ?? null`;
 
 const parseArgs = (argv) => {
   const args = { baseUrl: "https://127.0.0.1:4176", out: join(process.cwd(), "shell-proof"), state: null };
@@ -188,113 +293,85 @@ const openPlay = async (b, baseUrl) => {
   return ready;
 };
 
-/** The alert level lit on Settings, and the music switch. */
-const LEVEL = `document.querySelector('[role="radio"][aria-checked="true"]')?.innerText.trim() ?? null`;
-const MUSIC = `document.querySelector('[role="switch"][aria-label="Music"]')?.getAttribute("aria-checked") ?? null`;
-
-/** What a mutating flow changed, read before it runs so it can be put back. */
-const readBefore = (b, restore) => {
-  if (restore === "level") return b.evaluate(LEVEL);
-  if (restore === "music") return b.evaluate(MUSIC);
-  return null;
-};
-
-const putBack = async (b, restore, before) => {
-  if (restore === "music") b.evaluate(PRESS(toggle("Music")));
-  if (restore === "keep") b.evaluate(PRESS(press("Keep")));
-  if (restore === "level" && before) b.evaluate(PRESS(view(before)));
-  await sleep(SETTLE_MS);
-  if (restore === "level") return b.evaluate(LEVEL);
-  if (restore === "music") return b.evaluate(MUSIC);
-  return b.evaluate(`location.pathname`);
-};
-
+/**
+ * One flow from a fresh Play: its presses up to the last, then the last (inside the setting's put-back when it changes
+ * one), and the screenshot of where it ended. Whatever stops it is kept on its record.
+ */
 const runFlow = async (b, baseUrl, name, flow, layout, out) => {
-  const ready = await openPlay(b, baseUrl);
-  const pages = [b.evaluate(MEASURE)];
-  const presses = [];
-  let before = null;
-  for (const [index, step] of flow.steps.entries()) {
-    // The setting is read on Settings, the page before its press, so it can be put back.
-    if (flow.restore && index === flow.steps.length - 1) before = readBefore(b, flow.restore);
-    const pressed = b.evaluate(PRESS(step));
-    if (!pressed) {
-      presses.push({ step, missing: true });
-      break;
-    }
-    await sleep(SETTLE_MS);
-    presses.push({ step, ...pressed, led: decodeURIComponent(new URL(b.url()).pathname + new URL(b.url()).search) });
-    pages.push(b.evaluate(MEASURE));
+  const record = { name, layout, at: new Date().toISOString(), ready: false, presses: [], pages: [] };
+  try {
+    record.ready = await openPlay(b, baseUrl);
+    record.pages.push(b.evaluate(MEASURE));
+    if (await pressLead(b, flow.steps.slice(0, -1), record)) {
+      const finish = () => finishFlow(b, flow, record, out);
+      if (flow.setting) await changingSetting(settingOf(b, baseUrl, flow.setting), record, finish);
+      else await finish();
+    } else screenshot(b, record, `${name}-${layout}.png`, out);
+  } catch (error) {
+    record.error = String(error.message ?? error);
   }
-  const reached = presses.every((each) => !each.missing) && (await waitFor(b, flow.end, END_TIMEOUT_MS));
-  const shot = `${name}-${layout}.png`;
-  b.run("screenshot", join(out, shot));
-  const restored = flow.restore ? { before, after: await putBack(b, flow.restore, before) } : undefined;
-  // A setting not put back is the account's to fix by hand: the run stops and says which.
-  if (flow.restore !== "keep" && restored && restored.before !== restored.after)
-    throw new Error(`${name}: ${flow.restore} was ${restored.before}, left ${restored.after}; set it back in Settings`);
-  return {
-    flow: name,
-    layout,
-    ready,
-    presses: presses.length,
-    steps: presses,
-    reached,
-    pages,
-    restored,
-    screenshot: shot,
-  };
+  return record;
 };
 
+/** The presses before the last; whether each led. */
+const pressLead = async (b, steps, record) => {
+  for (const step of steps) {
+    const pressed = await pressStep(b, step);
+    record.presses.push(pressed);
+    if (pressed.status !== "led") return false;
+    record.pages.push(b.evaluate(MEASURE));
+  }
+  return true;
+};
+
+const finishFlow = async (b, flow, record, out) => {
+  await pressLast(b, flow.steps.at(-1), flow, record);
+  screenshot(b, record, `${record.name}-${record.layout}.png`, out);
+};
+
+const screenshot = (b, record, shot, out) => {
+  b.run("screenshot", join(out, shot));
+  record.screenshot = shot;
+};
+
+/** A lab fixture page, measured at rest: ready, or not ready. */
 const measureLabPage = async (b, baseUrl, [screen, page], layout, out) => {
-  b.run("open", `${baseUrl}/lab/app/${screen}/${page}?capture=1`, "--ignore-https-errors");
-  const ready = await waitFor(b, READY, READY_TIMEOUT_MS);
-  await sleep(SETTLE_MS);
-  const shot = `lab-${screen}-${page.replaceAll("/", "-")}-${layout}.png`;
-  b.run("screenshot", join(out, shot));
-  return {
-    lab: screen,
-    page,
-    layout,
-    ready,
-    measured: b.evaluate(MEASURE),
-    text: b.evaluate(BODY_TEXT),
-    screenshot: shot,
-  };
+  const record = { name: `lab ${screen} ${page}`, layout, ready: false, presses: [] };
+  try {
+    b.run("open", `${baseUrl}/lab/app/${screen}/${page}?capture=1`, "--ignore-https-errors");
+    record.ready = await waitFor(b, READY, READY_TIMEOUT_MS);
+    await sleep(SETTLE_MS);
+    screenshot(b, record, `lab-${screen}-${page.replaceAll("/", "-")}-${layout}.png`, out);
+    record.measured = b.evaluate(MEASURE);
+    record.text = b.evaluate(BODY_TEXT);
+  } catch (error) {
+    record.error = String(error.message ?? error);
+  }
+  return record;
 };
-
-/** The body's words, so a record shows what a page said (a column of shares, a clock, a failure). */
-const BODY_TEXT = `document.querySelector('[data-band="body"]')?.innerText.replace(/\\s+/g, " ").trim().slice(0, 600) ?? null`;
 
 const main = async (argv) => {
   const { baseUrl, out, state } = parseArgs(argv);
-  mkdirSync(out, { recursive: true });
   const persona = state ? "returning" : "new-visitor";
-  const session = `shell-proof-${Date.now()}`;
-  const b = browser(session);
-  // A saved state carries the session and this device's key, so the run is the same device each time.
-  if (state) b.run("--state", state, "open", "about:blank");
-  const records = [];
-  try {
+  const where = (record) => ({ name: record.name, layout: record.layout });
+  await runProof({ parent: out, name: `shell-proof-${persona}`, baseUrl, where }, async (b, dir, records) => {
+    // A saved state carries the session and this device's key, so the run is the same device each time.
+    if (state) b.run("--state", state, "open", "about:blank");
     for (const layout of Object.keys(VIEWPORTS)) {
       const [width, height] = VIEWPORTS[layout];
       b.run("set", "viewport", String(width), String(height));
       for (const [name, flow] of Object.entries(flows(layout, persona))) {
-        const record = await runFlow(b, baseUrl, name, flow, layout, out);
+        const record = await runFlow(b, baseUrl, name, flow, layout, dir);
         records.push(record);
-        console.log(`${persona} ${layout} ${name}: ${record.reached ? "reached" : "NOT reached"} in ${record.presses}`);
+        console.log(
+          `${persona} ${layout} ${name}: ${record.presses.map((step) => step.status).join(" → ") || record.error}`,
+        );
         b.run("open", "about:blank");
       }
       // The lab answers as its fixtures' player, so it runs once, with the new visitor's fresh profile.
-      if (!state) for (const labPage of LAB_PAGES) records.push(await measureLabPage(b, baseUrl, labPage, layout, out));
+      if (!state) for (const labPage of LAB_PAGES) records.push(await measureLabPage(b, baseUrl, labPage, layout, dir));
     }
-  } finally {
-    b.run("open", "about:blank");
-    b.run("close");
-  }
-  const proof = { ran: new Date().toISOString(), baseUrl, persona, session, records };
-  writeFileSync(join(out, `shell-proof-${persona}.json`), `${JSON.stringify(proof, null, 2)}\n`);
-  console.log(`Wrote ${join(out, `shell-proof-${persona}.json`)} (${records.length} flows)`);
+  });
 };
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

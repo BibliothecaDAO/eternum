@@ -11,18 +11,20 @@ row's own game, lobby or results (`scripts/prove-play.mjs`, writing `play-proof.
 directory per run, and exiting 1 unless every press arrived). The places beyond Play have their own:
 `pnpm --dir apps/game prove:shell --base-url https://127.0.0.1:<port> --out <dir> [--state <file>]` presses each flow of
 Season, You, Settings and What's new from a fresh Play at both sizes, as a new visitor or, given a saved signed-in
-browser state, as a returning player, and records every press, the page it led to and that page's counts; signed out it
-also measures the lab's fixture pages (a running Blitz season, a claim, a sealed chest, a paid entry, You and Settings)
-(`scripts/prove-shell.mjs`, writing `shell-proof-<persona>.json` and screenshots). It puts back what it changes (the
-alert level, music) and stops before anything outward (paying, leaving for the docs, signing out). `apps/game/AGENTS.md`
-documents a spectator smoke test (agent-browser steps that open the client, watch a running game and check the canvas).
-Inside a match, `prove:play --game <chain>:<game> --profile <dir>` drives one game signed in (a browser profile signed
-in once through the game's own sign-in, kept outside the repo): `--crate <col>,<row>` finds a crate next to the player's
-army by pointer, opens it and reads it back from the log after a reload; `--until-end <minutes>` stays on the map until
-the game ends and leaves through **Game finished** → **See the results**, checking the page logged no "No game client is
-active"; `--ended` presses **Results** on the ended game's doorway and on its map address, at desktop and phone
-(`scripts/prove-play-game.mjs`, writing `game-proof.json` and screenshots into a new directory per run). The outpost
-proof below drives the runtime lab; live actions still need an eligible player.
+browser state, as a returning player, scrolling to and clicking each control through the browser. Signed out it also
+measures the lab's fixture pages (a running Blitz season, a claim, a sealed chest, a paid entry, You and Settings). It
+sets back what it changes (the alert level, music) to the value it read, however the flow ends, and stops before
+anything outward (paying, leaving for the docs, signing out). It writes `shell-proof-<persona>.json` and screenshots
+into a new directory per run, marks a flow stopped by a service that did not answer as unavailable and any other stop as
+failed, and exits 1 unless every flow arrived (`scripts/prove-shell.mjs`; the proofs share `scripts/prove-run.mjs`).
+`apps/game/AGENTS.md` documents a spectator smoke test (agent-browser steps that open the client, watch a running game
+and check the canvas). Inside a match, `prove:play --game <chain>:<game> --profile <dir>` drives one game signed in (a
+browser profile signed in once through the game's own sign-in, kept outside the repo): `--crate <col>,<row>` finds a
+crate next to the player's army by pointer, opens it and reads it back from the log after a reload;
+`--until-end <minutes>` stays on the map until the game ends and leaves through **Game finished** → **See the results**,
+checking the page logged no "No game client is active"; `--ended` presses **Results** on the ended game's doorway and on
+its map address, at desktop and phone (`scripts/prove-play-game.mjs`, writing `game-proof.json` and screenshots into a
+new directory per run). The outpost proof below drives the runtime lab; live actions still need an eligible player.
 
 ## Shell (outside a game)
 
