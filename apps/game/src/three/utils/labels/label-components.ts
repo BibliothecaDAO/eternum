@@ -311,7 +311,7 @@ export const createStaminaBar = (currentStamina: number, maxStamina: number, inp
 
     const percent = document.createElement("span");
     percent.textContent = formatStaminaPercent(displayedCurrent, maxStamina);
-    percent.classList.add("font-semibold", "");
+    percent.classList.add("font-semibold");
     if (recharging) {
       percent.classList.add(STAMINA_RECHARGING_TEXT_CLASS);
     }
@@ -469,7 +469,6 @@ export const createGuardArmyDisplay = (
   if (!guardArmies || guardArmies.length === 0) {
     const noGuards = document.createElement("span");
     noGuards.textContent = "No Guards";
-    noGuards.classList.add("");
     container.appendChild(noGuards);
     return container;
   }
@@ -510,7 +509,7 @@ export const createGuardArmyDisplay = (
 
     const totalLabel = document.createElement("span");
     totalLabel.textContent = "Total";
-    totalLabel.classList.add("", "", "text-sm", "text-gold/70", "font-semibold");
+    totalLabel.classList.add("text-sm", "text-gold/70", "font-semibold");
     totalContainer.appendChild(totalLabel);
 
     const totalValue = document.createElement("span");
@@ -585,7 +584,7 @@ export const createProductionDisplay = (
   if (!activeProductions || activeProductions.length === 0) {
     const noProduction = document.createElement("span");
     noProduction.textContent = "No Active Production";
-    noProduction.classList.add("text-gray-400", "");
+    noProduction.classList.add("text-gray-400");
     container.appendChild(noProduction);
     return container;
   }
