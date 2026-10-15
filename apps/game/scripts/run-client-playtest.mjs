@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import https from "node:https";
 import { availableParallelism, loadavg, tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -29,6 +29,7 @@ import {
   summarizeRpcSends,
   summarizeStep,
 } from "./client-playtest/evidence.mjs";
+import { enterAsPlayer, identityShown, signInIfSignedOut } from "./client-playtest/player-entry.mjs";
 import { Cancelled, createRunOwner } from "./client-playtest/run-owner.mjs";
 import { PLAYER_STEPS, SPECTATOR_STEPS, STEPS_GAME } from "./client-playtest/steps.mjs";
 
@@ -77,8 +78,8 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
   if (rendererModes.length === 0 || unknownModes.length > 0) {
     throw new Error(`--renderer-modes takes ${RENDERER_MODES.join(" and/or ")}, not "${unknownModes.join(",")}"`);
   }
-  const player = option("--player", null) && resolve(callerDir, option("--player"));
-  if (player && !existsSync(player)) throw new Error(`--player ${player} is not a browser profile directory`);
+  const player = option("--player", null);
+  if (player !== null && !/^[^@\s]+@[^@\s]+$/.test(player)) throw new Error(`--player takes an email, not "${player}"`);
 
   return {
     baseUrl: option("--base-url", null),
@@ -229,13 +230,16 @@ async function playRun(context) {
   const record = { iteration, rendererMode, label, steps: [], expectedSteps: steps.map((step) => step.name) };
   record.loadSamples = [loadavg()[0]];
   const sampler = setInterval(() => record.loadSamples.push(loadavg()[0]), LOAD_SAMPLE_MS);
-  const browser = createBrowserSession(`playtest-${label}-${Date.now().toString(36)}`, context.headed);
-  const releaseBrowser = owner.adopt(`browser ${label}`, () => browser.close());
   // A spectator starts with a cold cache, as a first visit does; a player keeps the profile that signed them in.
-  const profile = player ?? mkdtempSync(join(tmpdir(), "playtest-profile-"));
+  const profile = player ? playerProfile(player) : mkdtempSync(join(tmpdir(), "playtest-profile-"));
   const releaseProfile = player
     ? () => {}
     : owner.adopt(`profile ${profile}`, () => rmSync(profile, { recursive: true, force: true }));
+  const browser = createBrowserSession(`playtest-${label}-${Date.now().toString(36)}`, {
+    headed: context.headed,
+    profile,
+  });
+  const releaseBrowser = owner.adopt(`browser ${label}`, () => browser.close());
   let releaseDevTools = () => {};
   try {
     browser.run([
@@ -246,8 +250,6 @@ async function playRun(context) {
       PROBE_PATH,
       "--args",
       BROWSER_ARGS.join(","),
-      "--profile",
-      profile,
     ]);
     browser.run(["set", "viewport", String(VIEWPORT.width), String(VIEWPORT.height)]);
     const devTools = await openPageDevTools(browser);
@@ -258,6 +260,7 @@ async function playRun(context) {
       ? buildPlayerHomeUrl({ baseUrl: context.baseUrl, rendererMode })
       : buildPlaytestUrl({ baseUrl: context.baseUrl, chainId: game.chainId, gameId: game.gameId, rendererMode });
     browser.run(["open", record.url]);
+    if (player) record.signIn = await signInAsPlayer({ ...context, browser, url: record.url });
     const entered = player ? await enterAsPlayer(browser, owner, timeoutMs) : null;
     record.boot = { ...(await waitForEntrySnapshot(browser, owner, timeoutMs)), entered };
     browser.screenshot(join(runDir, `${label}-00-boot.png`));
@@ -371,6 +374,7 @@ function writeRunEvidence({ browser, context, record }) {
       .map(({ summary }) => ({ step: summary.name, ...summary.reload })),
     rendererMode: record.rendererMode,
     rpc: summarizeRpcSends(rpcSends),
+    signIn: record.signIn ?? null,
     steps: record.steps.map(({ summary }) => summary),
     url: record.url,
   };
@@ -390,43 +394,28 @@ function readSafely(read) {
   }
 }
 
-/**
- * Enters the steps' game the way a player does: its card on the home page and that card's call to action (Resume or
- * Play free), closing what opens over the page first. Boot is measured from that click.
- */
-async function enterAsPlayer(browser, owner, timeoutMs) {
-  // Orders tap tiles at the default zoom's offsets; a zoom an earlier session left in this profile is cleared first.
-  const clearedZoom = browser.read(CLEAR_STORED_ZOOM_EXPRESSION);
-  const startedAt = Date.now();
-  let entered = null;
-  while (!(entered = browser.read(homeCardEntryExpression(STEPS_GAME.homeCard)))) {
-    if (Date.now() - startedAt > timeoutMs) throw new Error(`No ${STEPS_GAME.homeCard} card to enter on the home page`);
-    browser.press("Escape");
-    await owner.sleep(POLL_INTERVAL_MS);
-  }
-  return { ...entered, clearedZoom };
+/** One profile per player, kept between runs: what signed them in stays signed in. */
+function playerProfile(email) {
+  const profile = join(REPO_ROOT, ".context/playtest-profiles", email);
+  mkdirSync(profile, { recursive: true });
+  return profile;
 }
 
-const CLEAR_STORED_ZOOM_EXPRESSION = `JSON.stringify((() => {
-  const stored = localStorage.getItem("eternum-camera-zoom");
-  localStorage.removeItem("eternum-camera-zoom");
-  return stored;
-})())`;
-
-/**
- * Marks the moment and clicks the call to action inside the home page's card for `heading`, in one task; returns the
- * mark with the button's label, or null while the card is not shown or its button is still disabled (loading).
- */
-const homeCardEntryExpression = (heading) => `JSON.stringify((() => {
-  const title = [...document.querySelectorAll("h1, h2, h3, h4")].find((element) => element.textContent.trim() === ${JSON.stringify(heading)});
-  let card = title;
-  while (card && !card.querySelector("button")) card = card.parentElement;
-  const button = card && [...card.querySelectorAll("button")].find((element) => !element.disabled && /^(Resume|Play)/.test(element.textContent.trim()));
-  if (!button) return null;
-  const mark = JSON.parse(window.__playtest.step("enter"));
-  button.click();
-  return { ...mark, entry: button.textContent.trim() };
-})())`;
+/** A profile whose session was lost signs in again, through the sign-in page, and the home page opens once more. */
+async function signInAsPlayer({ baseUrl, browser, owner, player, runDir, url }) {
+  const signIn = await signInIfSignedOut({
+    browser,
+    owner,
+    email: player,
+    baseUrl,
+    codeFile: join(runDir, "sign-in-code"),
+  });
+  if (signIn === "kept") return signIn;
+  browser.run(["open", url]);
+  if ((await identityShown(browser, owner)) !== "signed-in")
+    throw new Error(`${player} is not signed in after its code`);
+  return signIn;
+}
 
 async function waitForEntrySnapshot(browser, owner, timeoutMs) {
   const startedAt = Date.now();

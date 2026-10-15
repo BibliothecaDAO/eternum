@@ -31,6 +31,10 @@ describe("readPlaytestOptions", () => {
     });
   });
 
+  it("reads a player run as the email the player signs in with", () => {
+    expect(readPlaytestOptions(["--player", "player+lane@mail.com"]).player).toBe("player+lane@mail.com");
+  });
+
   it("refuses options that cannot describe a run", () => {
     expect(() => readPlaytestOptions(["--iterations", "0"])).toThrow("--iterations must be an integer of at least 1");
     expect(() => readPlaytestOptions(["--iterations", "two"])).toThrow("--iterations must be an integer of at least 1");
@@ -39,6 +43,8 @@ describe("readPlaytestOptions", () => {
     expect(() => readPlaytestOptions(["--cpu-throttle", "0.5"])).toThrow(
       "--cpu-throttle must be an integer of at least 1",
     );
-    expect(() => readPlaytestOptions(["--player", "/no/such/profile"])).toThrow(/is not a browser profile directory/);
+    expect(() => readPlaytestOptions(["--player", ".context/playtest-profiles/clientlane"])).toThrow(
+      '--player takes an email, not ".context/playtest-profiles/clientlane"',
+    );
   });
 });

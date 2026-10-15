@@ -11,10 +11,14 @@ const TRANSIENT_FAILURE_PATTERNS = [
 ];
 export const VIEWPORT = { width: 1920, height: 1080 };
 
-/** One agent-browser session: commands as a player gives them, and reads of what the page shows. */
-export function createBrowserSession(session, headed) {
+/**
+ * One agent-browser session on one browser profile: commands as a player gives them, and reads of what the page shows.
+ * Every command names the profile: agent-browser relaunches the browser on a temporary one for a command that does not.
+ */
+export function createBrowserSession(session, { headed, profile }) {
+  const sessionArgs = ["--session", session, "--profile", profile, ...(headed ? ["--headed"] : [])];
   const invoke = (commandArgs) =>
-    spawnSync("npx", ["-y", "agent-browser", "--session", session, ...(headed ? ["--headed"] : []), ...commandArgs], {
+    spawnSync("npx", ["-y", "agent-browser", ...sessionArgs, ...commandArgs], {
       cwd: process.env.RUNNER_TEMP || process.env.TMPDIR || tmpdir(),
       encoding: "utf8",
       maxBuffer: 256 * 1024 * 1024,
