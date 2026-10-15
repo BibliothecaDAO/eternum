@@ -158,9 +158,10 @@ export async function openPageDevTools(browser) {
 
 /**
  * Every JSON-RPC POST the page makes (the play POST is `starknet_addInvokeTransaction`), with whether it went out on a
- * reused connection and what a fresh one cost, and every CORS preflight the browser sent before one (`rpcMethod`
- * "preflight"). The RPC host sends no Timing-Allow-Origin, so only DevTools sees this. Its clock is not the page's:
- * these are durations and connection facts, in send order, never page times.
+ * reused connection and what a fresh one cost, how it was answered (the HTTP status, and the JSON-RPC error if the node
+ * refused it), and every CORS preflight the browser sent before one (`rpcMethod` "preflight"). The RPC host sends no
+ * Timing-Allow-Origin, so only DevTools sees this. Its clock is not the page's: these are durations and connection
+ * facts, in send order, never page times.
  */
 export async function recordRpcSends(devTools) {
   const sends = new Map();
@@ -169,8 +170,14 @@ export async function recordRpcSends(devTools) {
       sends.set(params.requestId, { rpcMethod: rpcMethodOf(params.request), startedAt: params.timestamp });
     }
     const send = sends.get(params?.requestId);
-    if (method === "Network.responseReceived" && send) Object.assign(send, describeConnection(params.response));
-    if (method === "Network.loadingFinished" && send) send.totalMs = round((params.timestamp - send.startedAt) * 1000);
+    if (method === "Network.responseReceived" && send) {
+      Object.assign(send, { status: params.response.status, ...describeConnection(params.response) });
+    }
+    if (method === "Network.loadingFinished" && send) {
+      send.totalMs = round((params.timestamp - send.startedAt) * 1000);
+      if (send.rpcMethod !== "preflight")
+        readRpcError(devTools, params.requestId).then((error) => (send.rpcError = error));
+    }
   });
   await devTools.send("Network.enable");
   return () => [...sends.values()].map(({ startedAt, ...send }) => send);
@@ -204,6 +211,13 @@ export async function openOrderSendGate(devTools) {
 }
 
 const isOrderSend = (request) => request.method === "POST" && rpcMethodOf(request) === "starknet_addInvokeTransaction";
+
+/** The node's JSON-RPC error for a request it answered, or null; unread bodies count as unknown, not as accepted. */
+const readRpcError = (devTools, requestId) =>
+  devTools.send("Network.getResponseBody", { requestId }).then(
+    ({ body }) => JSON.parse(body).error?.message ?? null,
+    () => "unread",
+  );
 
 const isRpcRequest = (request) =>
   (request.method === "POST" || request.method === "OPTIONS") && /\/rpc\//.test(new URL(request.url).pathname);

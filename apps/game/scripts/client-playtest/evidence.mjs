@@ -478,6 +478,7 @@ export function summarizeRpcSends(sends) {
       method,
       {
         count: methodSends.length,
+        refused: methodSends.filter((send) => !(send.status >= 200 && send.status < 300) || send.rpcError).length,
         freshConnections: methodSends.filter((send) => send.connectionReused === false).length,
         totalMs: distribution(methodSends.map((send) => send.totalMs)),
         freshConnectMs: distribution(
