@@ -83,6 +83,7 @@
     "lab:harness": "bun --tsconfig-override deploy/athanor/harness/tsconfig.json deploy/athanor/harness/run.ts",
     "lab:harness:test": "bun test --tsconfig-override deploy/athanor/harness/tsconfig.json deploy/athanor/harness",
     "lab:harness:burst": "bun --tsconfig-override deploy/athanor/harness/tsconfig.json deploy/athanor/harness/burst.ts --players 2000",
+    "lab:harness:split": "bun --tsconfig-override deploy/athanor/harness/tsconfig.json deploy/athanor/harness/blitz-split.ts --players 2000",
     "lab:harness:96:frontier": "bun --tsconfig-override deploy/athanor/harness/tsconfig.json deploy/athanor/harness/run.ts --game-type frontier --bots 96 --workers 6 --minutes 10",
     "lab:push-receiver": "bun deploy/athanor/harness/push-receiver.ts",
     "lab:probe-account": "bun deploy/athanor/scripts/probe-deploy-account.ts",

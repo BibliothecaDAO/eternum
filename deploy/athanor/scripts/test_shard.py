@@ -399,6 +399,14 @@ class ShardTest(unittest.TestCase):
         self.assertEqual(shard.harness_container_command("c.json", wave)[-7:],
                          ["/app/deploy/shard/init.py", "wave", "--players", "2000", "--create-game", "--out",
                           "/data/workload/wave.json"])
+        split = shard.workload_command({"split": True, "players": 2000, "out": "/data/workload/split.json"})
+        self.assertEqual(split, ["bun", "deploy/athanor/harness/blitz-split.ts", "--players", "2000",
+                                 "--out", "/data/workload/split.json"])
+        self.assertEqual(shard.harness_container_command("c.json", split)[-6:],
+                         ["/app/deploy/shard/init.py", "split", "--players", "2000", "--out",
+                          "/data/workload/split.json"])
+        with self.assertRaises(ValueError):
+            shard.workload_command({"split": True, "wave": True})
         container = shard.harness_container_command("c.json", frontier)
         init = container.index("/app/deploy/shard/init.py")
         self.assertEqual(container[init + 1:], ["harness", *frontier[2:]])

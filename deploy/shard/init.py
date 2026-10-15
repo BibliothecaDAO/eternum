@@ -201,8 +201,9 @@ def chain_commitment(preset, on_chain, released):
 
 
 def harness_invocation(args, environ, data=DATA, started=None, script="run.ts"):
-    """The harness command against this shard (run.ts, or burst.ts for the 2,000-player wave): its private settings
-    from harness.env, its reports under data/harness/<start time> unless the caller names a directory."""
+    """The harness command against this shard (run.ts, burst.ts for the 2,000-player wave, blitz-split.ts for a Blitz
+    roster split): its private settings from harness.env, its reports under data/harness/<start time> unless the caller
+    names a directory."""
     environment = {**environ, **operator_environment(),
                    **shard.read_private_environment(data / "harness.env"), **shard.host_credentials(data)}
     operator = json.loads((data / "gameplay-contracts.json").read_text())["operatorAccountAddress"]
@@ -256,9 +257,9 @@ if __name__ == "__main__":
         os.environ.update(operator_environment())
         probe()
         raise SystemExit(0)
-    if action in ("harness", "wave"):
+    if action in ("harness", "wave", "split"):
         # The harness runs as the host user, so what it writes is already the user's: it execs before any chown.
-        script = "burst.ts" if action == "wave" else "run.ts"
+        script = {"wave": "burst.ts", "split": "blitz-split.ts"}.get(action, "run.ts")
         argv, environment = harness_invocation(sys.argv[2:], os.environ, script=script)
         os.execvpe(argv[0], argv, environment)
     config = configuration()

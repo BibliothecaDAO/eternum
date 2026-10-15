@@ -448,14 +448,21 @@ def stop_shard(directory):
 
 # Each workload key is a harness option (underscores for dashes, true for a bare flag), so a matrix can run every shape
 # the harness runs: a Frontier burst, an Eternum game, a chosen preset. `"wave": true` runs the 2,000-player wave
-# (burst.ts) instead. The harness refuses the rest.
+# (burst.ts) and `"split": true` the launcher seating a frozen Blitz roster (blitz-split.ts) instead. The harness
+# refuses the rest.
+WORKLOAD_SCRIPTS = {"wave": "burst.ts", "split": "blitz-split.ts"}
+
+
 def workload_command(workload):
     if not workload:
         raise ValueError("workload must name the harness run")
-    script = "burst.ts" if workload.get("wave") is True else "run.ts"
+    named = [key for key in WORKLOAD_SCRIPTS if workload.get(key) is True]
+    if len(named) > 1:
+        raise ValueError("a workload runs one script")
+    script = WORKLOAD_SCRIPTS[named[0]] if named else "run.ts"
     options = []
     for key, value in workload.items():
-        if key == "wave":
+        if key in WORKLOAD_SCRIPTS:
             continue
         flag = f"--{key.replace('_', '-')}"
         options += [flag] if value is True else [flag, str(value)]
@@ -464,7 +471,7 @@ def workload_command(workload):
 
 def harness_container_command(compose_file, command):
     """The workload inside the shard's harness container, its reports in data/workload."""
-    action = "wave" if command[1].endswith("burst.ts") else "harness"
+    action = next((key for key, script in WORKLOAD_SCRIPTS.items() if command[1].endswith(f"/{script}")), "harness")
     return [*DOCKER, "compose", "-f", str(compose_file), "run", "--rm", "-e", "HARNESS_OUTPUT_DIRECTORY=/data/workload",
             "--entrypoint", "python3", "harness", "/app/deploy/shard/init.py", action, *command[2:]]
 
