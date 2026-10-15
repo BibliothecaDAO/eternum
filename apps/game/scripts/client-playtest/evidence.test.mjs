@@ -370,6 +370,11 @@ describe("collectBrowserErrors", () => {
       "[error] shader failed",
     ]);
   });
+
+  it("leaves out what the client logged for a failure a step provoked, and only that", () => {
+    const refused = "[error] Transaction 0x79 not sent (refused)";
+    expect(collectBrowserErrors("", `${refused}\n[error] shader failed`, [refused])).toEqual(["[error] shader failed"]);
+  });
 });
 
 describe("collectFrameSpikes", () => {

@@ -348,7 +348,8 @@ function takeScreenshot(browser, path) {
 function writeRunEvidence({ browser, context, record }) {
   const consoleOutput = browser.run(["console"], { allowFailure: true });
   writeFileSync(join(context.runDir, `${record.label}-console.log`), `${consoleOutput}\n`);
-  const errors = collectBrowserErrors(browser.run(["errors"], { allowFailure: true }), consoleOutput);
+  const provokedErrors = record.steps.flatMap(({ summary }) => summary.played?.provokedErrors ?? []);
+  const errors = collectBrowserErrors(browser.run(["errors"], { allowFailure: true }), consoleOutput, provokedErrors);
   const boot = record.boot ?? {};
   const rpcSends = record.rpcSends?.() ?? [];
   const bootOk = errors.length === 0 && Boolean(boot.canvasExists) && hasEntryFinished(boot);
@@ -362,6 +363,7 @@ function writeRunEvidence({ browser, context, record }) {
     cancelled: Boolean(record.cancelled),
     error: record.error ?? null,
     errors,
+    provokedErrors,
     expectedSteps: record.expectedSteps,
     frameSpikes: collectFrameSpikes(consoleOutput),
     gpu: readSafely(() => browser.eval(GPU_RENDERER_EXPRESSION)),

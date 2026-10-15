@@ -18,6 +18,8 @@ const ARMY_FLIGHT_MS = 1_500;
 const ZOOM_SETTLE_MS = 2_500;
 const TAP_PASSES = 2;
 const ORDER_SEND_WAIT_MS = 10_000;
+// A refusal comes back with the node's answer; the client has logged it well within this.
+const REFUSAL_LOG_MS = 3_000;
 // A pan moves the whole map under the camera; the same view, animated, changes far less (map-idle records that floor).
 const PAN_VIEW_CHANGE_MIN = 6;
 // The army's six neighbours on screen, in pixels from the centre, at the map's default zoom (a player run never zooms),
@@ -325,8 +327,12 @@ function withOrderInFlight(whileInFlight, { refuse, needsOther }) {
       const firstSent = await waitUntil(() => gate.held() > 0, ORDER_SEND_WAIT_MS);
       if (!firstSent) return { army, scanned, targets, firstSent };
       const played = await whileInFlight({ browser, targets, extraScreenshot });
-      await (refuse ? gate.refuse() : gate.release());
-      return { army, scanned, targets, firstSent, ...played };
+      if (!refuse) {
+        await gate.release();
+        return { army, scanned, targets, firstSent, ...played };
+      }
+      const provokedErrors = await errorsLoggedDuring(browser, () => gate.refuse());
+      return { army, scanned, targets, firstSent, ...played, provokedErrors };
     } finally {
       await gate.close();
     }
@@ -346,6 +352,18 @@ async function findOrderTiles(browser, army, needsOther) {
     await sleep(ARMY_FLIGHT_MS);
   }
   return { scanned, targets: null };
+}
+
+/** The errors the client logs while `provoke` plays out: the client's own account of a failure a step caused. */
+async function errorsLoggedDuring(browser, provoke) {
+  const logged = () => browser.run(["console"], { allowFailure: true }).split("\n");
+  const before = logged().length;
+  await provoke();
+  await sleep(REFUSAL_LOG_MS);
+  return logged()
+    .slice(before)
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith("[error]"));
 }
 
 /**

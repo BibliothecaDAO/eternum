@@ -441,11 +441,13 @@ export function comparePlaytestSummary(baseline, current) {
   return { failures, ok: failures.length === 0 };
 }
 
-export function collectBrowserErrors(browserErrors, consoleOutput) {
+export function collectBrowserErrors(browserErrors, consoleOutput, provoked = []) {
   const consoleFailures = parseLines(consoleOutput).filter((line) =>
     /\[error\]|manager.*timed? out|chunk transition hard timeout/i.test(line),
   );
-  return [...new Set([...parseLines(browserErrors), ...consoleFailures])];
+  // A step that provokes a failure (a refused order) records what the client logged for it; that is its outcome.
+  const provokedLines = new Set(provoked);
+  return [...new Set([...parseLines(browserErrors), ...consoleFailures])].filter((line) => !provokedLines.has(line));
 }
 
 /** The client's own frame-spike reports (`[FramePerf]`): spike frames counted and the work that owned each. */
