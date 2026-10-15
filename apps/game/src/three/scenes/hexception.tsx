@@ -1,5 +1,6 @@
 import { REALM_PATHS, realmModelIndex, isWonderModelPath } from "../structures/realm-design";
 import { RealmLivingAura } from "../structures/realm-living-aura";
+import { HexceptionTierModels, disposeBuildingModel } from "./hexception-tier-models";
 import { byStructureCategory } from "@/lib/structure-category-table";
 import { SettlementAnimation } from "../structures/settlement-animation";
 import { HyperstructureModel } from "../structures/hyperstructure-model";
@@ -247,9 +248,13 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   private hexceptionRadius = 4;
-  /** Tier models by path, loaded only when a building upgraded past tier I needs one. */
-  private readonly tierModels = new Map<string, { model: Group; animations: AnimationClip[] }>();
-  private readonly tierModelLoads = new Set<string>();
+  private destroyed = false;
+  private readonly tierModels = new HexceptionTierModels(
+    (path) => this.loadBuildingModel(path),
+    () => {
+      if (this.isEntered) this.reconcileAllBuildingInstances(this.tileManager.structureType());
+    },
+  );
   private buildingModels: Map<
     BUILDINGS_GROUPS,
     Map<BUILDINGS_CATEGORIES_TYPES, { model: Group; animations: AnimationClip[] }>
@@ -644,6 +649,10 @@ export default class HexceptionScene extends HexagonScene {
   private async loadBuildingModel(path: string): Promise<{ model: Group; animations: AnimationClip[] }> {
     const gltf = await loader.loadAsync(path);
     const model = gltf.scene as Group;
+    if (this.destroyed) {
+      disposeBuildingModel(model);
+      throw new Error(`Realm view was destroyed while loading ${path}`);
+    }
     model.position.set(0, 0, 0);
     model.rotation.y = Math.PI;
     const meshes: Mesh[] = [];
@@ -787,6 +796,7 @@ export default class HexceptionScene extends HexagonScene {
     this.lastRealmKey = realmKey;
     if (realmChanged) this.prepareLocalPresentation();
     await this.localPresentation;
+    if (this.isEntered && !this.destroyed) this.reconcileAllBuildingInstances(this.tileManager.structureType());
   }
 
   onSwitchOff(_nextSceneName?: SceneName) {
@@ -807,6 +817,9 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   destroy() {
+    this.destroyed = true;
+    this.isEntered = false;
+    this.tierModels.dispose();
     window.clearTimeout(this.newRingTimer);
     usePopoverStore.getState().close("plot-construction");
     this.advanceRealmGeneration();
@@ -867,20 +880,7 @@ export default class HexceptionScene extends HexagonScene {
           return;
         }
         disposedBuildingModels.add(data.model);
-        data.model.traverse((child: any) => {
-          if (child.isMesh) {
-            if (child.geometry) {
-              child.geometry.dispose();
-            }
-            if (child.material) {
-              if (Array.isArray(child.material)) {
-                child.material.forEach((m: any) => m.dispose());
-              } else {
-                child.material.dispose();
-              }
-            }
-          }
-        });
+        disposeBuildingModel(data.model);
       });
       categoryMap.clear();
     });
@@ -1486,7 +1486,7 @@ export default class HexceptionScene extends HexagonScene {
     const key = buildingKey(position);
     const selection = building ? this.resolveBuildingModelSelection(building, mainStructureType) : undefined;
     // A tier's model loads the first time a building needs it; until then the building keeps what it shows.
-    if (selection?.tierPath && !this.tierModels.has(selection.tierPath)) {
+    if (selection?.tierPath && !this.tierModels.get(selection.tierPath)) {
       this.loadTierModel(selection.tierPath);
       return "keep";
     }
@@ -1623,12 +1623,8 @@ export default class HexceptionScene extends HexagonScene {
 
   /** Loads one tier's model once, then lets every building waiting on it draw it. */
   private loadTierModel(path: string): void {
-    if (this.tierModelLoads.has(path)) return;
-    this.tierModelLoads.add(path);
-    void this.loadBuildingModel(path).then((model) => {
-      if (!this.isEntered) return;
-      this.tierModels.set(path, model);
-      this.reconcileAllBuildingInstances(this.tileManager.structureType());
+    void this.tierModels.request(path).catch((error) => {
+      if (!this.destroyed) console.warn(`[Hexception] Failed to load building model ${path}`, error);
     });
   }
 
