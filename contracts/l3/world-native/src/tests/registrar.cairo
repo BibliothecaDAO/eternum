@@ -559,7 +559,7 @@ fn automatic_blitz_settlement_holds_play_for_its_last_seat_and_never_moves_the_s
     let d = setup();
     let preset = definition(true);
     registry(d).register_preset(1, preset);
-    let game_id = registry(d).create_game(CreateGameParams { roster: roster(2), ..params(true) });
+    let game_id = registry(d).create_game(CreateGameParams { roster: roster(3), ..params(true) });
     let games = IGameDispatcher { contract_address: d.games };
     let commands = ISettlementCommandsDispatcher { contract_address: d.games };
     let safe = ISettlementCommandsSafeDispatcher { contract_address: d.games };
@@ -585,9 +585,9 @@ fn automatic_blitz_settlement_holds_play_for_its_last_seat_and_never_moves_the_s
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     let guards = IGuardsDispatcher { contract_address: d.games };
     let mut fixed_order = array![].span();
-    for batch in 0_u32..2 {
+    for batch in 0_u32..3 {
         if batch != 0 {
-            // The second seat lands after the start: the game waits for it, then runs shorter.
+            // The remaining seats land after the start: the game waits for the last, then runs shorter.
             context.raw_root = 111 + batch.into();
             context.timestamp = 300 + batch.into();
         }
@@ -596,9 +596,10 @@ fn automatic_blitz_settlement_holds_play_for_its_last_seat_and_never_moves_the_s
         } else {
             super::authority()
         };
+        let mut creation_events = snforge_std::spy_events();
         assert!(
             commands
-                .settle_blitz_roster(game_id, caller, crate::commands::action_context(context)) == (1 - batch)
+                .settle_blitz_roster(game_id, caller, crate::commands::action_context(context)) == (2 - batch)
                 .into(),
         );
         let order = views.blitz_settlement_order(game_id);
@@ -607,7 +608,7 @@ fn automatic_blitz_settlement_holds_play_for_its_last_seat_and_never_moves_the_s
         } else {
             assert!(order == fixed_order, "retry reshuffled roster");
         }
-        let player = *roster(2).at((*order.at(batch)).into());
+        let player = *roster(3).at((*order.at(batch)).into());
         assert!(views.player_has_settled(game_id, player.account));
         assert!(views.settlement_progress(game_id).registered.into() == batch + 1);
         let mut dealt: core::dict::Felt252Dict<bool> = Default::default();
@@ -623,6 +624,17 @@ fn automatic_blitz_settlement_holds_play_for_its_last_seat_and_never_moves_the_s
             let key = ResourceKey { game_id, entity_id };
             let structure = structures.structure(key).unwrap();
             assert!(structure.owner == player.account && structure.base.starting_troops_granted);
+            assert_eq!(structure.resources_packed, 0x030204050b07130916);
+            for grant in preset.settlement.realms.resources {
+                if !crate::resources::is_troop_resource(*grant.resource_type) {
+                    assert_eq!(
+                        resources
+                            .resource_balance(ResourceSlot { game_id, entity_id, resource_type: *grant.resource_type }),
+                        *grant.amount,
+                        "each realm receives every non-troop grant",
+                    );
+                }
+            }
             let production = resources.resource_production(ResourceSlot { game_id, entity_id, resource_type: 23 });
             assert!(production.building_count == 1 && production.production_rate == 10);
             let guard = guards.guard(GuardKey { game_id, structure_id: entity_id, slot: 0 });
@@ -647,16 +659,43 @@ fn automatic_blitz_settlement_holds_play_for_its_last_seat_and_never_moves_the_s
                 assert_eq!(reserve, expected, "reserve holds only the realm's own troop type");
             }
         }
+        let mut created = 0;
+        for (_, event) in creation_events.get_events().emitted_by(d.games).events {
+            if event.keys.span() != array![selector!("StructureEvent"), selector!("RowSet"), 1, 'Structure'].span() {
+                continue;
+            }
+            let mut data = event.data.span();
+            let keys: Span<felt252> = Serde::deserialize(ref data).unwrap();
+            let mut values: Span<felt252> = Serde::deserialize(ref data).unwrap();
+            assert!(data.is_empty());
+            assert_eq!(keys.len(), 2);
+            assert_eq!(*keys.at(0), game_id.into());
+            let emitted: crate::structures::Structure = Serde::deserialize(ref values).unwrap();
+            assert!(values.is_empty());
+            let stored = structures
+                .structure(ResourceKey { game_id, entity_id: (*keys.at(1)).try_into().unwrap() })
+                .unwrap();
+            assert_eq!(Into::<u16, u32>::into(emitted.metadata.realm_id), batch * 3 + created + 1);
+            assert_eq!(
+                emitted,
+                crate::structures::Structure {
+                    base: crate::structures::StructureBase { starting_troops_granted: false, ..stored.base }, ..stored,
+                },
+                "creation row precedes the starting troop grant",
+            );
+            created += 1;
+        }
+        assert_eq!(created, 3, "one complete creation row per realm");
         let game = games.game(game_id);
         assert!(game.start_main_at == 300 && game.end_at == 400, "seating moved the start");
-        assert!(game.ready == (batch == 1));
+        assert!(game.ready == (batch == 2));
     }
-    assert!(status_at(games.game(game_id), 301) == GameStatus::Live);
+    assert!(status_at(games.game(game_id), 302) == GameStatus::Live);
     let game = games.game(game_id);
     // A roster's start never moves, so the biomes its seats stored still match the terrain the game derives.
     let map_center = 2147483646 - games.rules(game_id).map_center_offset;
     let mut realms = array![];
-    for batch in 0_u32..2 {
+    for batch in 0_u32..3 {
         realms
             .append_span(
                 crate::settlement_grid::settlement_location(
@@ -740,8 +779,10 @@ fn automatic_blitz_settlement_holds_play_for_its_last_seat_and_never_moves_the_s
     }
     stop_cheat_caller_address(d.games);
     let progress = views.settlement_progress(game_id);
+    let mut completed_events = snforge_std::spy_events();
     assert!(commands.settle_blitz_roster(game_id, super::authority(), crate::commands::action_context(context)) == 0);
     assert!(views.settlement_progress(game_id) == progress && games.game(game_id) == game);
+    assert!(completed_events.get_events().emitted_by(d.games).events.is_empty(), "completed roster emitted again");
 }
 
 #[test]

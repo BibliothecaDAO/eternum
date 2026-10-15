@@ -106,7 +106,13 @@ pub mod StructureState {
         let mut keys = array![];
         key.serialize(ref keys);
         let mut values = array![];
-        crate::logic::structures::structure(key).unwrap().serialize(ref values);
+        crate::structures::Structure {
+            owner: record.owner,
+            base: record.base,
+            resources_packed: record.resources_packed,
+            metadata: record.metadata,
+        }
+            .serialize(ref values);
         emit(Event::RowSet(RowSet { version: 1, model: 'Structure', keys: keys.span(), values: values.span() }));
     }
     pub fn transfer_owner(key: ResourceKey, owner: starknet::ContractAddress) {
@@ -391,8 +397,9 @@ pub mod StructuresLogic {
 
                     if realm.activate_economy {
                         self.provision_realm_economy(key, realm.troops, context.timestamp, context);
-                    } else {
-                        self.grant_realm_troops(key, realm.troops, context.timestamp, context);
+                    } else if realm.troops != crate::settlement::StartingTroops::None {
+                        let grants = crate::logic::settlement::grants(game_id);
+                        self.grant_realm_troops(key, realm.troops, grants.resources, context.timestamp, context);
                     }
                     crate::logic::stories::emit_entity_story(
                         key,
@@ -848,8 +855,8 @@ pub mod StructuresLogic {
             let counts = self.buildings.data.buildings.structure_buildings.read((key.game_id, key.entity_id));
             const LABOR_COUNT_SCALE: u128 = 0x10000000000000000;
             assert!(counts.packed_counts_2 / LABOR_COUNT_SCALE % 256 == 0, "realm already provisioned");
-            self.grant_realm_troops(key, troops, timestamp, game_context);
             let grants = crate::logic::settlement::grants(key.game_id);
+            self.grant_realm_troops(key, troops, grants.resources, timestamp, game_context);
             self.grant_non_troop_resources(key, grants.resources, timestamp, game_context);
             let rules = game_context.rules.unbox();
             self
@@ -894,6 +901,7 @@ pub mod StructuresLogic {
             ref self: ContractState,
             key: ResourceKey,
             troops: crate::settlement::StartingTroops,
+            resources: Span<crate::resources::ResourceAmount>,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
         ) {
@@ -902,11 +910,10 @@ pub mod StructuresLogic {
                 crate::settlement::StartingTroops::Biome => self.biome_troop(key, game_context),
                 crate::settlement::StartingTroops::Dealt(category) => category,
             };
-            let grants = crate::logic::settlement::grants(key.game_id);
             let guards = game_context.rules.unbox().troop_limit_config.starting_guard;
             self
                 .grant_starting_troops(
-                    key, category, grants.resources, guards.into() * RESOURCE_PRECISION, timestamp, game_context,
+                    key, category, resources, guards.into() * RESOURCE_PRECISION, timestamp, game_context,
                 );
         }
         fn biome_troop(
