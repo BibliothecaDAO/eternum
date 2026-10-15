@@ -48,6 +48,7 @@ import { ReservedHyperstructureManager } from "@/three/managers/reserved-hyperst
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { OwnershipRingLayer } from "@/three/managers/ownership-ring-layer";
 import { bindOwnershipRings } from "./worldmap-ownership-rings";
+import { bindSelectionToMovingStructures } from "./worldmap-selection-follow";
 import { StructureManager } from "@/three/managers/structure-manager";
 import { FrameBudgetWorkQueue, type FrameBudgetWorkLane } from "@/three/frame-budget-work-queue";
 import { SceneManager } from "@/three/scene-manager";
@@ -8604,6 +8605,12 @@ export default class WorldmapScene extends WarpTravel {
         store: this.game.store,
         projection: this.worldSpatialProjection,
         rings: this.ownershipRings,
+      }),
+    );
+    this.storeSubscriptions.push(
+      bindSelectionToMovingStructures({
+        projection: this.worldSpatialProjection,
+        moveSelection: (hex) => this.selectContractHexWithoutFeedback(hex),
       }),
     );
     this.storeSubscriptions.push(

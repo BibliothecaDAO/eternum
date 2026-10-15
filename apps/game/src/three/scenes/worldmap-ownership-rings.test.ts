@@ -7,7 +7,11 @@ import { hash } from "starknet";
 import explorerFixture from "../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { createWorldmapInteractionAdapter } from "./worldmap-interaction-adapter";
 import { bindOwnershipRings } from "./worldmap-ownership-rings";
+import { bindSelectionToMovingStructures } from "./worldmap-selection-follow";
+
+vi.mock("@/audio/core/AudioManager", () => ({ AudioManager: { getInstance: () => ({ play: () => {} }) } }));
 
 const GAME = 13;
 const ALICE = 0xa11cen;
@@ -45,7 +49,7 @@ describe("ownership rings", () => {
     expect(rings.shown()).toEqual([hex(10, 10), hex(12, 10), hex(14, 11)]);
     select(20, 20);
     expect(rings.shown()).toEqual([hex(20, 20), hex(21, 21)]);
-    useUIStore.setState({ selectedHex: null });
+    useUIStore.getState().setSelectedHex(null);
     expect(rings.shown()).toEqual([]);
   });
 
@@ -84,27 +88,52 @@ describe("ownership rings", () => {
     expect(rings.shown()).toEqual([hex(10, 10), hex(17, 11)]);
   });
 
-  it("follow a selected Frontier realm to its next day's site, with its owner's other holdings", () => {
+  it("follow a selected Frontier realm to its next day's site, and clear when its vacated site is clicked", () => {
     // Four-hour units from day ten: day 0 lasts 12 hours. Realm 21 and 22 rise on their sites from seed 1.
     setBlockTimestampSource(() => DAY * 10 + 100);
     const world = createWorld({ expedition: { dayUnitSeconds: 14_400, spacing: 16, startMainAt: DAY * 10 } });
     world.realm({ id: 21, realmId: 3, level: 1, owner: ALICE });
     world.realm({ id: 22, realmId: 4, level: 0, owner: ALICE });
     world.army({ id: 101, home: 21, at: [330, 10] });
+    // The runtime publishes each applied slice; the realms stand on their day-0 sites before the day turns.
+    world.projection.flush();
     const rings = world.bindRings();
 
-    select(328, 8);
+    world.click(328, 8);
     expect(rings.shown()).toEqual([hex(328, 8), hex(330, 10), hex(344, 8)]);
 
     setBlockTimestampSource(() => DAY * 11 + 100);
     world.projection.rebuild();
-
+    expect(useUIStore.getState().selectedHex).toEqual(hex(328, 72));
     expect(rings.shown()).toEqual([hex(328, 72), hex(330, 10), hex(344, 72)]);
+
+    world.click(328, 8);
+    expect(rings.shown()).toEqual([]);
+    world.click(328, 8);
+    expect(rings.shown()).toEqual([]);
+    world.click(344, 72);
+    expect(rings.shown()).toEqual([hex(328, 72), hex(330, 10), hex(344, 72)]);
+  });
+
+  it("name whatever structure stands on the selected hex now, as the tile panel does", () => {
+    setBlockTimestampSource(() => DAY * 10 + 100);
+    const world = createWorld({ expedition: { dayUnitSeconds: 14_400, spacing: 16, startMainAt: DAY * 10 } });
+    world.realm({ id: 21, realmId: 3, level: 1, owner: ALICE });
+    world.realm({ id: 22, realmId: 4, level: 0, owner: ALICE });
+    world.projection.flush();
+    const rings = world.bindRings();
+
+    world.click(344, 72);
+    expect(rings.shown()).toEqual([]);
+
+    setBlockTimestampSource(() => DAY * 11 + 100);
+    world.projection.rebuild();
+    expect(rings.shown()).toEqual([hex(328, 72), hex(344, 72)]);
   });
 });
 
 const hex = (col: number, row: number): HexPosition => ({ col, row });
-const select = (col: number, row: number) => useUIStore.setState({ selectedHex: { col, row } });
+const select = (col: number, row: number) => useUIStore.getState().setSelectedHex({ col, row });
 
 function createWorld(options: { expedition?: { dayUnitSeconds: number; spacing: number; startMainAt: number } } = {}) {
   const facts = new NativeFactStore();
@@ -130,6 +159,15 @@ function createWorld(options: { expedition?: { dayUnitSeconds: number; spacing: 
   >;
   const projection = new WorldSpatialProjection({ store });
   projection.start();
+  const adapter = createWorldmapInteractionAdapter({
+    state: {
+      get selectedHex() {
+        return useUIStore.getState().selectedHex;
+      },
+      setSelectedHex: (hex) => useUIStore.getState().setSelectedHex(hex),
+      setStructureEntityId: () => {},
+    },
+  });
   disposers.push(() => projection.dispose());
   const key = (...parts: (number | bigint)[]) => hash.computePoseidonHashOnElements(parts);
   const tileKey = (alt: boolean, col: number, row: number) => key(GAME, alt ? 1 : 0, col, row);
@@ -209,10 +247,19 @@ function createWorld(options: { expedition?: { dayUnitSeconds: number; spacing: 
         },
         ...standOn(id, alt, at, TileOccupier.ExplorerKnightT1),
       ]),
-    /** Binds the rings as the world map does; `shown` is the last ringed set, in reading order. */
+    /** A click on a contract hex, through the map's interaction boundary. */
+    click: (col: number, row: number) =>
+      adapter.selectHex({ contractHexPosition: { x: col, y: row }, isMine: false, position: { x: 0, z: 0 } }),
+    /** Binds the rings and the selection as the world map does; `shown` is the last ringed set, in reading order. */
     bindRings: () => {
       let shown: readonly HexPosition[] = [];
       disposers.push(bindOwnershipRings({ store, projection, rings: { show: (hexes) => (shown = hexes) } }));
+      disposers.push(
+        bindSelectionToMovingStructures({
+          projection,
+          moveSelection: (hex) => useUIStore.getState().setSelectedHex(hex),
+        }),
+      );
       return {
         shown: () => [...shown].sort((left, right) => left.col - right.col || left.row - right.row),
       };

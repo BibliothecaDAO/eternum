@@ -54,5 +54,8 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
 
 - **Ownership rings**: select (click or tap) a hex holding a player's structure, theirs or yours, and the hover's pink
   ring lights every hex where that player holds a structure or has an army out. Selecting another hex, or one with no
-  player's structure, clears them. They follow captures (to the structure's new owner), new and fallen armies, moves, a
-  Frontier realm's daily site and the layer switch (`src/three/scenes/worldmap-ownership-rings.ts`).
+  player's structure, clears them. They read only the selected hex, and follow captures (to the structure's new owner),
+  new and fallen armies, moves and the layer switch (`src/three/scenes/worldmap-ownership-rings.ts`).
+- **A selected structure that moves takes the selection with it**: when a Frontier realm is raised on its next day's
+  site, the selected hex, its ring, the tile panel and the ownership rings move there together
+  (`src/three/scenes/worldmap-selection-follow.ts`).

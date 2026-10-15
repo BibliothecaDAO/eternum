@@ -21,26 +21,21 @@ interface OwnershipRingsInput {
 
 /**
  * Selecting a hex that holds a player's structure rings every hex that player holds, the viewer's own or anyone's.
- * The selection names the structure on the hex when it is made; from then on the rings follow that structure's owner
- * and holdings, so a Frontier realm whose daily site moves keeps its owner's rings, and a capture hands the rings to
- * the structure's new owner. The rings follow the layer shown and every structure or army the projection moves, adds
- * or removes, so they always match the facts the map draws.
+ * The rings read only the selected hex and the facts: every selection or clear, from any surface, moves them, and they
+ * follow the layer shown, ownership (a capture hands them to the new owner) and every structure or army the projection
+ * moves, adds or removes, so they always match the facts the map draws.
  */
 export function bindOwnershipRings({ store, projection, rings }: OwnershipRingsInput): () => void {
-  const sources = (): OwnershipSources => ({ store, projection, gameId: configManager.getActiveGameId() });
-  let selectedStructure: ID | null = null;
   const redraw = () => {
-    const held = hexesHeldByOwnerOf(sources(), selectedStructure, activeMapLayer());
-    rings.show(held.map(toSceneHex).filter(isWithinWorldOriginReach));
-  };
-  const select = () => {
+    const sources = { store, projection, gameId: configManager.getActiveGameId() };
     const selected = useUIStore.getState().selectedHex;
-    selectedStructure = selected ? structureAt(sources(), { alt: activeMapLayer(), ...selected }) : null;
-    redraw();
+    const alt = activeMapLayer();
+    const owned = selected ? structureAt(sources, { alt, ...selected }) : null;
+    rings.show(hexesHeldByOwnerOf(sources, owned, alt).map(toSceneHex).filter(isWithinWorldOriginReach));
   };
   const stops = [
-    useUIStore.subscribe((state) => state.selectedHex, select),
-    useUIStore.subscribe((state) => state.mapLayer, select),
+    useUIStore.subscribe((state) => state.selectedHex, redraw),
+    useUIStore.subscribe((state) => state.mapLayer, redraw),
     store.subscribe((changes) => {
       if (changes.some((change) => change.model === "Structure")) redraw();
     }),
@@ -48,7 +43,7 @@ export function bindOwnershipRings({ store, projection, rings }: OwnershipRingsI
       if (changes.some((change) => change.kind === "structure" || change.kind === "army")) redraw();
     }),
   ];
-  select();
+  redraw();
   return () => stops.forEach((stop) => stop());
 }
 
