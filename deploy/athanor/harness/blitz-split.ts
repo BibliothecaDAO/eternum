@@ -7,6 +7,7 @@ import { nativePresetIdFor } from "../../../config/source/native";
 import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import { splitPlaytestRoster } from "../../../packages/value-ledger/src/blitz-roster";
 import { LaunchShard } from "../../../apps/launch-service/src/shard-client";
+import { RegistrationOpen } from "../../../apps/launch-service/src/blitz-roster";
 import { now, percentile, save } from "./burst-evidence";
 
 /**
@@ -59,6 +60,7 @@ async function main(): Promise<void> {
     wholeSplitMs: milliseconds(started),
     transactions: { create: games.length, settle: launcher.settles.length },
     perGame: summary(games.map((game) => game.createMs + game.seatMs)),
+    registrationWait: summary(games.map((game) => game.registrationWaitMs)),
     perSettle: summary(launcher.settles),
     gameDetails: games,
   });
@@ -81,15 +83,26 @@ async function seatGame(launcher: TimedLaunchShard, run: string, index: number, 
   const createMs = milliseconds(createStarted);
   const gameId = created.gameId;
   if (gameId === undefined) throw new Error(`Game ${index + 1} was created without an id`);
-  const seatStarted = now();
-  const settleTransactions = await launcher.seat(gameId);
-  return {
-    gameId,
-    players: roster.length,
-    createMs,
-    seatMs: milliseconds(seatStarted),
-    settleTransactions,
-  };
+  let registrationWaitMs = 0;
+  for (;;) {
+    const seatStarted = now();
+    try {
+      const settleTransactions = await launcher.seat(gameId);
+      return {
+        gameId,
+        players: roster.length,
+        createMs,
+        registrationWaitMs,
+        seatMs: milliseconds(seatStarted),
+        settleTransactions,
+      };
+    } catch (error) {
+      // A new game's settling opens a moment after creation; the Worker's next run seats it then, and so does this.
+      if (!(error instanceof RegistrationOpen)) throw error;
+      registrationWaitMs += error.secondsUntilClose * 1_000;
+      await Bun.sleep(error.secondsUntilClose * 1_000);
+    }
+  }
 }
 
 /** Distinct, valid contract addresses that belong to nobody. */
