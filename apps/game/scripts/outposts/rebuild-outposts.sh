@@ -4,11 +4,11 @@ outpost_blender=${OUTPOST_BLENDER:-blender}
 outpost_output=${1:?Provide an external build directory}
 shift
 outpost_assets=("$@")
-if [ ${#outpost_assets[@]} -eq 0 ]; then outpost_assets=(camp village stragglers shrine well); fi
+if [ ${#outpost_assets[@]} -eq 0 ]; then outpost_assets=(camp village stragglers shrine well ruin); fi
 for asset in "${outpost_assets[@]}"; do
   case "$asset" in
-    camp|village|stragglers|shrine|well) ;;
-    *) echo "Unknown outpost: $asset. Choose camp, village, stragglers, shrine or well." >&2; exit 1 ;;
+    camp|village|stragglers|shrine|well|ruin) ;;
+    *) echo "Unknown outpost: $asset. Choose camp, village, stragglers, shrine, well or ruin." >&2; exit 1 ;;
   esac
 done
 mkdir -p "$outpost_output/models"

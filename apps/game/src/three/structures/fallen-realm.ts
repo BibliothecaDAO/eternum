@@ -7,7 +7,7 @@ import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-c
  * The beast and its size come from one depth table; each beast's scale stays under the largest it can take inside the
  * ruin, as measured against the ruin's masonry (models/frontier/SOURCE.md). Names are Loot Survivor's own beasts.
  */
-export const FALLEN_REALM_RUIN_PATH = "/models/frontier/fallen-realm-ruin.glb";
+export const FALLEN_REALM_RUIN_PATH = "/models/outposts/ruin.glb";
 
 type FallenRealmBeast = "troll" | "wyvern" | "hydra";
 

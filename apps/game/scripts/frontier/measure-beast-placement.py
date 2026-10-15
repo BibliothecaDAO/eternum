@@ -13,10 +13,39 @@ def measure_placement(data):
     vertices = [Vector(point) for point in beast["vertices"]]
     ruin = data["ruin"]
     # Painted ground is a support surface, not an obstacle for grounded feet.
-    obstacles = [face for face in ruin["triangles"] if max(ruin["vertices"][index][1] for index in face) > 0.003]
-    ruin_tree = BVHTree.FromPolygons(ruin["vertices"], obstacles, all_triangles=True, epsilon=0.001)
+    obstacles = [
+        face
+        for face in ruin["triangles"]
+        if max(ruin["vertices"][index][1] for index in face) > 0.003
+    ]
+    ruin_tree = BVHTree.FromPolygons(
+        ruin["vertices"], obstacles, all_triangles=True, epsilon=0.001
+    )
     tile_limit = measure_tile_limit(vertices)
-    collision_limit = measure_first_contact(vertices, beast["triangles"], ruin_tree, tile_limit)
+    if "scale" in data:
+        scale = data["scale"]
+        beast_tree = BVHTree.FromPolygons(
+            [point * scale for point in vertices],
+            beast["triangles"],
+            all_triangles=True,
+            epsilon=0.001,
+        )
+        contacts = ruin_tree.overlap(beast_tree)
+        return {
+            "assetId": data["assetId"],
+            "scale": scale,
+            "fitsTile": scale <= tile_limit,
+            "masonryContacts": len(contacts),
+            "contactBounds": [
+                [list(ruin["vertices"][index]) for index in obstacles[face]]
+                for face in sorted({pair[0] for pair in contacts})
+            ],
+            "passed": scale <= tile_limit and not contacts,
+            "method": "Decoded GLB triangles at runtime scale and shared ground-center origin; 0.001 BVH tolerance",
+        }
+    collision_limit = measure_first_contact(
+        vertices, beast["triangles"], ruin_tree, tile_limit
+    )
     limit = min(tile_limit, collision_limit)
     cap = math.floor((limit - 0.01) * 100) / 100
     if cap < 1:
@@ -49,7 +78,10 @@ def measure_tile_limit(vertices):
 def measure_first_contact(vertices, triangles, ruin_tree, tile_limit):
     def touches_ruin(scale):
         tree = BVHTree.FromPolygons(
-            [point * scale for point in vertices], triangles, all_triangles=True, epsilon=0.001,
+            [point * scale for point in vertices],
+            triangles,
+            all_triangles=True,
+            epsilon=0.001,
         )
         return bool(ruin_tree.overlap(tree))
 

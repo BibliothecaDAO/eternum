@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-15",
+    title: "Rifts within fallen walls",
+    description:
+      "Fallen realms show rubble in their courts and violet fissures within broken walls, around the same guarding beasts.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-15",
     title: "The clock opens with the game",
     description:
       "The game clock and the start notice follow the chain, so a Blitz no longer shows as running minutes before your orders can go through.",

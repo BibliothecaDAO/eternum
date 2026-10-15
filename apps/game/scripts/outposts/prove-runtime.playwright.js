@@ -2,13 +2,18 @@ async (page) => {
   const entry = new URL(page.url());
   const output = entry.searchParams.get("evidence");
   if (!output?.startsWith("/")) throw new Error("Provide ?evidence=/absolute/capture/directory on the lab URL");
+  const assets = entry.searchParams.get("asset")
+    ? [entry.searchParams.get("asset")]
+    : ["camp", "village", "stragglers", "shrine", "well", "ruin"];
+  if (assets.some((asset) => !["camp", "village", "stragglers", "shrine", "well", "ruin"].includes(asset)))
+    throw new Error("Unknown outpost");
   const captures = [];
   const errors = [];
   const onError = (error) => errors.push(error.message);
   page.on("pageerror", onError);
   await page.setViewportSize({ width: 1500, height: 1000 });
   try {
-    for (const asset of ["camp", "village", "stragglers", "shrine", "well"]) {
+    for (const asset of assets) {
       const owned = ["camp", "village", "stragglers"].includes(asset);
       const cases = [
         { biome: "Grassland", relationship: "enemy" },

@@ -1,7 +1,7 @@
 # Outpost sources
 
-Five Blender 5.2.1 files hold the camp, longhouse village, stragglers, shrine and well. Textures are packed into each
-source. `OUTPOST_EDITABLE` retains separate construction meshes and is hidden to prevent double rendering.
+Six Blender 5.2.1 files hold the camp, longhouse village, stragglers, shrine, well and ruin. Textures are packed into
+each source. `OUTPOST_EDITABLE` retains separate construction meshes and is hidden to prevent double rendering.
 `OUTPOST_PRODUCTION` holds the consolidated static presentation. Export reads the saved source without regenerating it.
 
 Camp uses a tensioned canvas ridge, timber stockade and supply stores, with a standard separated from the canvas. The
@@ -32,6 +32,7 @@ verifier checks decoded Draco positions with a 0.001 tolerance. Production trans
 | stragglers.blend        | stragglers.glb |      2963 |          5 |  93592 |
 | shrine.blend            | shrine.glb     |      1816 |          3 |  73524 |
 | well.blend              | well.glb       |      5068 |          3 | 103684 |
+| ruin.blend              | ruin.glb       |      3752 |          3 | 101536 |
 
 These are exact delivered asset counts, not frame measurements. The small-landmark ceiling is 6296 triangles, five
 primitives and 257144 bytes, based on the existing well/ruin family.
@@ -47,17 +48,21 @@ export OUTPOST_BUILD_DIR=/absolute/path/outside/the/checkout
 bash apps/game/scripts/outposts/rebuild-outposts.sh "$OUTPOST_BUILD_DIR"
 ```
 
-The wrapper accepts optional runtime names after the directory: `camp village stragglers shrine well`. It exports fresh
-raw geometry, compresses UASTC normals (level 2, RDO 0.5, Zstd 18), ETC1S color (quality 180) and Draco edgebreaker,
-then verifies each result. Texture workers are limited to two. Compressed files are in `$OUTPOST_BUILD_DIR/models`,
-already named for runtime. Logs, raw exports and verifier JSON remain beside them. Repeating the command rebuilds the
-same outputs from the packed sources.
+The wrapper accepts optional runtime names after the directory: `camp village stragglers shrine well ruin`. It exports
+fresh raw geometry, compresses UASTC normals (level 2, RDO 0.5, Zstd 18), ETC1S color (quality 180) and Draco
+edgebreaker, then verifies each result. Texture workers are limited to two. Compressed files are in
+`$OUTPOST_BUILD_DIR/models`, already named for runtime. Logs, raw exports and verifier JSON remain beside them.
+Repeating the command rebuilds the same outputs from the packed sources.
 
 After reviewing a rebuilt model, replace its matching file under `public/models/outposts`. Run
-`pnpm --dir apps/game verify:assets scripts/outposts/outpost-assets.test.mjs` to verify all five delivered assets.
+`pnpm --dir apps/game verify:assets scripts/outposts/outpost-assets.test.mjs` to verify all six delivered assets.
 `pnpm --dir apps/game verify:outposts /absolute/model.glb` verifies one compressed file without changing it. The
 verifier checks footprint, contact height, tint and UV attributes, transforms, animation absence, texture formats,
 triangles, primitives, payload and separate ownership cloth.
 
 The runtime lab's visible placement and ownership controls provide the model proof described in
 [FEATURE-MAP.md](../../FEATURE-MAP.md). The lab is part of the client; no separate comparison viewer is required.
+
+The ruin has broken paving and low central rubble. Jagged cracks open through the masonry, with violet cores recessed
+inside the walls. The exposed rafter faces outward. Beast meshes, their shared origin and the four runtime scales remain
+unchanged; `pnpm --dir apps/game verify:fallen-realm` verifies zero triangle contacts at each scale.
