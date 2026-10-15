@@ -195,18 +195,28 @@ describe("a missing control's verdict", () => {
 });
 
 describe("a page's layout", () => {
-  it("holds when its content starts at the top and, on desktop, at the window's left", () => {
-    expect(layoutChecks({ contentTop: 24, contentLeft: 32 }, "desktop").every((check) => check.ok)).toBe(true);
+  const holds = (measured, layout) => layoutChecks(measured, layout).map((check) => [check.check, check.ok]);
+
+  it("holds when its content starts under the frame, every word reads at 14 px, and on desktop it starts at the left", () => {
+    expect(holds({ contentTop: 24, contentLeft: 32, smallestText: 14 }, "desktop")).toEqual([
+      ["content at the top", true],
+      ["readable text", true],
+      ["no left gutter", true],
+    ]);
   });
 
-  it("fails a page pushed down under a painting, and a desktop column left for a rail", () => {
-    const pushed = layoutChecks({ contentTop: 300, contentLeft: 32 }, "phone");
-    expect(pushed.map((check) => [check.check, check.ok])).toEqual([["content at the top", false]]);
-    const gutter = layoutChecks({ contentTop: 24, contentLeft: 128 }, "desktop");
-    expect(gutter.map((check) => [check.check, check.ok])).toEqual([
-      ["content at the top", true],
-      ["no left gutter", false],
+  it("fails a page moved down under a band or a painting, words drawn smaller than 14 px, and a rail's gutter", () => {
+    // A notice band above the body moved the whole body down by 110 px: measured from the frame, it shows.
+    expect(holds({ contentTop: 134, contentLeft: 32, smallestText: 14 }, "desktop")[0]).toEqual([
+      "content at the top",
+      false,
     ]);
+    // A 960 px card drawn 358 px wide shows its 16 px words at 6 px.
+    expect(holds({ contentTop: 0, contentLeft: 16, smallestText: 6 }, "phone")).toEqual([
+      ["content at the top", true],
+      ["readable text", false],
+    ]);
+    const gutter = layoutChecks({ contentTop: 24, contentLeft: 128, smallestText: 14 }, "desktop");
     expect(
       problemsOf([{ ...flowRecord(), name: "lab home play", checks: gutter }], where).map((p) => p.problem),
     ).toEqual(["no left gutter"]);

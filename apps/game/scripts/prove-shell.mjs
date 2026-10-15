@@ -133,41 +133,68 @@ const MEASURE = `(() => {
   const all = [...document.querySelectorAll("a[href], button")].filter(visible);
   const nav = all.filter((el) => navBands.some((navBand) => navBand.contains(el)));
   const page = all.filter((el) => !nav.includes(el));
-  const sizes = [];
+  // A word's size as it displays: its CSS size, scaled with the SVG it is drawn in (a card's 960 px viewBox drawn at a
+  // phone's 358 px shows its 16 px words at 6 px).
+  const svgScale = (el) => {
+    const svg = el.closest("svg");
+    const width = svg?.viewBox?.baseVal?.width;
+    return width ? svg.getBoundingClientRect().width / width : 1;
+  };
+  const cssSizes = [];
+  const renderedSizes = [];
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     const el = node.parentElement;
-    if (el && node.textContent.trim() && visible(el)) sizes.push(parseFloat(getComputedStyle(el).fontSize));
+    if (!el || !node.textContent.trim() || !visible(el)) continue;
+    const size = parseFloat(getComputedStyle(el).fontSize);
+    cssSizes.push(size);
+    renderedSizes.push(Math.round(size * svgScale(el) * 10) / 10);
   }
   const body = band("body");
-  // Where the page's content starts: its first words or controls under the body's top edge (a painting above them is
-  // space, not content), and its left edge in the window (a column left for a rail would be a gutter).
-  const shown = body ? [...body.querySelectorAll("*")].filter((el) => visible(el) && ([...el.childNodes].some((node) => node.nodeType === 3 && node.textContent.trim()) || el.matches("a[href], button"))) : [];
-  const bodyBox = body?.getBoundingClientRect();
+  // Where the page's content starts: its first words or controls (its title row's or its body's) under the frame's
+  // edge, the desktop's bar or the phone's top row, so a painting, a spacer or a band that moves the whole body down
+  // counts as space; and the body's left edge in the window (a column left for a rail would be a gutter).
+  const frame = band("bar") ?? band("top");
+  const frameEdge = frame ? frame.getBoundingClientRect().bottom : 0;
+  const shown = [band("title"), body].filter(Boolean).flatMap((part) => [...part.querySelectorAll("*")]).filter((el) => visible(el) && ([...el.childNodes].some((node) => node.nodeType === 3 && node.textContent.trim()) || el.matches("a[href], button")));
   return {
     path: location.pathname + location.search,
     controls: page.length,
     controlsInView: page.filter(inView).length,
     nav: nav.length,
     gold: words(all.filter((el) => el.tagName === "BUTTON" && /primary/.test(el.className))),
-    smallestText: sizes.length ? Math.min(...sizes) : null,
+    smallestText: renderedSizes.length ? Math.min(...renderedSizes) : null,
+    smallestCssText: cssSizes.length ? Math.min(...cssSizes) : null,
     notice: band("notice") !== null,
     fits: (!body || body.scrollHeight <= body.clientHeight + 2) && document.documentElement.scrollHeight <= innerHeight + 2,
-    contentTop: shown.length ? Math.round(Math.min(...shown.map((el) => el.getBoundingClientRect().top)) - bodyBox.top) : null,
+    contentTop: shown.length ? Math.round(Math.min(...shown.map((el) => el.getBoundingClientRect().top)) - frameEdge) : null,
     contentLeft: body ? Math.round(Math.min(...[...body.children].filter(visible).map((el) => el.getBoundingClientRect().left))) : null,
   };
 })()`;
 
-/** Content starts within this far of the body's top edge, and on desktop this near the window's left edge. */
-const CONTENT_TOP_LIMIT = 160;
+/**
+ * Content starts within this far under the frame's edge (a title row's padding; a band or painting above the content
+ * is more), on desktop this near the window's left edge, and every word displays at least this large.
+ */
+const CONTENT_TOP_LIMIT = 64;
 const CONTENT_LEFT_LIMIT = 64;
+const SMALLEST_TEXT = 14;
 
-/** A measured page's layout checks: its content at the top, and on desktop no gutter at its left. */
+/**
+ * A measured page's layout checks: its content at the top, every word readable as displayed, and on desktop no gutter
+ * at its left. The top is the first content in any column: a column pushed down beside one that starts at the top
+ * passes, so the screenshots stay the evidence for each column.
+ */
 export const layoutChecks = (measured, layout) => [
   {
     check: "content at the top",
     value: measured.contentTop,
     ok: measured.contentTop !== null && measured.contentTop <= CONTENT_TOP_LIMIT,
+  },
+  {
+    check: "readable text",
+    value: measured.smallestText,
+    ok: measured.smallestText !== null && measured.smallestText >= SMALLEST_TEXT,
   },
   ...(layout === "desktop"
     ? [
@@ -336,7 +363,8 @@ const openPlay = async (b, baseUrl) => {
 
 /**
  * One flow from a fresh Play: its presses up to the last, then the last (inside the setting's put-back when it changes
- * one), and the screenshot of where it ended. Whatever stops it is kept on its record.
+ * one), and the screenshot of where it ended. Whatever stops it is kept on its record, and each page it passed through
+ * is held to the layout checks.
  */
 const runFlow = async (b, baseUrl, name, flow, layout, out) => {
   const record = { name, layout, at: new Date().toISOString(), ready: false, presses: [], pages: [] };
@@ -351,6 +379,9 @@ const runFlow = async (b, baseUrl, name, flow, layout, out) => {
   } catch (error) {
     record.error = String(error.message ?? error);
   }
+  record.checks = record.pages.flatMap((page) =>
+    page.missing ? [] : layoutChecks(page, layout).map((check) => ({ path: page.path, ...check })),
+  );
   return record;
 };
 
