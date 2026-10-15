@@ -25,9 +25,11 @@ interface SuggestionChipProps {
   suggestion: EmpireSuggestion;
   onClick: (suggestion: EmpireSuggestion) => void;
   isPending: boolean;
+  /** Why it cannot be taken now (before play opens), or null. */
+  refusal: string | null;
 }
 
-export const SuggestionChip = memo(({ suggestion, onClick, isPending }: SuggestionChipProps) => {
+export const SuggestionChip = memo(({ suggestion, onClick, isPending, refusal }: SuggestionChipProps) => {
   const Icon = isPending ? Loader2 : suggestion.icon;
   const isPrimary = suggestion.emphasis === "primary";
   const trimmedName = trimRealmName(suggestion.realmName, suggestion.label);
@@ -36,14 +38,16 @@ export const SuggestionChip = memo(({ suggestion, onClick, isPending }: Suggesti
     <button
       type="button"
       onClick={() => onClick(suggestion)}
-      disabled={isPending}
-      title={`${suggestion.realmName} · ${suggestion.label}${suggestion.reason ? ` — ${suggestion.reason}` : ""}`}
+      disabled={isPending || refusal !== null}
+      title={
+        refusal ?? `${suggestion.realmName} · ${suggestion.label}${suggestion.reason ? ` — ${suggestion.reason}` : ""}`
+      }
       className={cn(
         "flex w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition",
         OVERLAY_SURFACE_BASE,
         OVERLAY_SURFACE_HOVER,
         isPrimary && OVERLAY_SURFACE_ACTIVE,
-        isPending && "cursor-not-allowed opacity-60 hover:bg-transparent",
+        (isPending || refusal !== null) && "cursor-not-allowed opacity-60 hover:bg-transparent",
       )}
     >
       <Icon

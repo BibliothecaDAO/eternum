@@ -3,7 +3,11 @@ import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const REALM = 7;
-const facts = vi.hoisted(() => ({ upgrade: {} as Record<string, unknown>, provision: null as unknown }));
+const facts = vi.hoisted(() => ({
+  upgrade: {} as Record<string, unknown>,
+  provision: null as unknown,
+  closed: null as string | null,
+}));
 const calls = vi.hoisted(() => ({
   upgrade_realm: vi.fn(),
   provision_realm: vi.fn(),
@@ -22,6 +26,7 @@ vi.mock("@/hooks/context/game-context", () => ({
 }));
 vi.mock("@/ui/features/event-feed/notify", () => ({ toast: { error: calls.toastError } }));
 vi.mock("./use-blitz-realm-provision", () => ({ useBlitzRealmProvision: () => facts.provision }));
+vi.mock("@/utils/can-issue-orders", () => ({ useActNowRefusal: () => facts.closed }));
 // The real hook's readiness, as the game's facts give it, and its lock, read from the shared in-flight store.
 vi.mock("./use-structure-upgrade", async () => {
   const { useInFlight } = await import("@/hooks/store/use-actions-in-flight");
@@ -70,6 +75,7 @@ const renderSurfaces = async () => {
 
 beforeEach(() => {
   facts.provision = null;
+  facts.closed = null;
   calls.upgrade_realm.mockResolvedValue({ transaction_hash: "0xabc" });
   calls.provision_realm.mockResolvedValue({ transaction_hash: "0xdef" });
 });
@@ -125,7 +131,7 @@ describe("a realm's level-up step", () => {
 
   it("provisions a fresh Blitz realm first, with its first level in the same send when affordable", async () => {
     facts.upgrade = realm({});
-    facts.provision = { canProvision: true, needsBootstrap: true };
+    facts.provision = { needsBootstrap: true };
     calls.waitForAction.mockResolvedValue({ status: "SUCCEEDED" });
     const { seen, unmount } = await renderSurfaces();
     expect(seen.card).toMatchObject({ mode: "provision", word: "Provision", ready: true });
@@ -139,13 +145,24 @@ describe("a realm's level-up step", () => {
     await unmount();
   });
 
-  it("keeps Provision shut before the game starts", async () => {
+  it("keeps Provision shut before play opens, saying when it does", async () => {
     facts.upgrade = realm({});
-    facts.provision = { canProvision: false, needsBootstrap: true };
+    facts.provision = { needsBootstrap: true };
+    facts.closed = "Starts in 4m 00s";
     const { seen, unmount } = await renderSurfaces();
-    expect(seen.card).toMatchObject({ mode: "provision", ready: false, refusal: "Opens when the game starts" });
+    expect(seen.card).toMatchObject({ mode: "provision", ready: false, refusal: "Starts in 4m 00s" });
     await act(async () => seen.card?.run());
     expect(calls.provision_realm).not.toHaveBeenCalled();
+    await unmount();
+  });
+
+  it("keeps a level-up the realm can afford shut before play opens", async () => {
+    facts.upgrade = realm({});
+    facts.closed = "Starts in 4m 00s";
+    const { seen, unmount } = await renderSurfaces();
+    expect(seen.card).toMatchObject({ mode: "level-up", ready: false, refusal: "Starts in 4m 00s" });
+    await act(async () => seen.card?.run());
+    expect(calls.upgrade_realm).not.toHaveBeenCalled();
     await unmount();
   });
 });

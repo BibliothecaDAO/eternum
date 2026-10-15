@@ -1,5 +1,6 @@
 import { useGame } from "@/hooks/context/game-context";
 import { toast } from "@/ui/features/event-feed/notify";
+import { useActNowRefusal } from "@/utils/can-issue-orders";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import type { ID } from "@bibliothecadao/types";
 import { sendRealmLevelUp, sendRealmProvision } from "../realm-castle-sends";
@@ -35,20 +36,21 @@ export type RealmLevelUp = LevelUpStep & {
 
 /**
  * The step from the game's own readiness: provision while a Blitz realm still needs it, then the plain level-up,
- * until the last level. Its in-flight lock is the castle's, which every level-up and provision send holds
- * (realm-castle-sends), the automatic provisioning's included.
+ * until the last level. Before play opens it waits, saying when play opens (the one act-now gate). Its in-flight lock
+ * is the castle's, which every level-up and provision send holds (realm-castle-sends), the automatic provisioning's
+ * included.
  */
-const resolveLevelUpStep = (upgrade: Upgrade, provision: Provision): LevelUpStep => {
+const resolveLevelUpStep = (upgrade: Upgrade, provision: Provision, closed: string | null): LevelUpStep => {
   if (upgrade.isMaxLevel) return { mode: "max", word: "Fully upgraded", ready: false, loading: false, refusal: null };
   const loading = upgrade.isUpgradeLocked;
   if (provision?.needsBootstrap) {
-    const ready = provision.canProvision && !loading;
-    const refusal = ready || loading ? null : "Opens when the game starts";
-    return { mode: "provision", word: "Provision", ready, loading, refusal };
+    const ready = !closed && !loading;
+    return { mode: "provision", word: "Provision", ready, loading, refusal: loading ? null : closed };
   }
   const word = upgrade.nextLevelName ? `Level up to ${upgrade.nextLevelName}` : "Level up";
-  const ready = upgrade.isOwner && upgrade.canUpgrade && !loading;
-  return { mode: "level-up", word, ready, loading, refusal: ready || loading ? null : levelUpRefusal(upgrade) };
+  const ready = upgrade.isOwner && upgrade.canUpgrade && !closed && !loading;
+  const refusal = ready || loading ? null : (closed ?? levelUpRefusal(upgrade));
+  return { mode: "level-up", word, ready, loading, refusal };
 };
 
 const levelUpRefusal = (upgrade: Upgrade): string => {
@@ -63,9 +65,10 @@ export const useRealmLevelUp = (structureEntityId: ID | null): RealmLevelUp | nu
   const entityId = typeof structureEntityId === "number" ? structureEntityId : null;
   const upgrade = useStructureUpgrade(entityId);
   const provision = useBlitzRealmProvision(entityId);
+  const closed = useActNowRefusal();
   if (!upgrade || entityId === null) return null;
 
-  const step = resolveLevelUpStep(upgrade, provision);
+  const step = resolveLevelUpStep(upgrade, provision, closed);
   const signer = account.account;
   const provisionRealm = () =>
     sendRealmProvision(setup.systemCalls, signer, entityId, upgrade.canUpgrade).catch((error) =>

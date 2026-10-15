@@ -9,16 +9,24 @@ import { type StructureAction, type StructureActionBadge, useStructureActions } 
 export const StructureActionsPanel = memo(() => {
   const actions = useStructureActions();
   if (!actions) return null;
+  const refusal = actions[0]?.refusal ?? null;
 
   return (
-    <nav
-      aria-label="Structure actions"
-      className={cn(OVERLAY_SURFACE_BASE, "grid grid-flow-col auto-cols-fr divide-x divide-gold/15 rounded-xl")}
-    >
-      {actions.map((action) => (
-        <ActionTile key={action.id} variant="panel" action={action} />
-      ))}
-    </nav>
+    <div className="flex flex-col gap-1">
+      <nav
+        aria-label="Structure actions"
+        className={cn(OVERLAY_SURFACE_BASE, "grid grid-flow-col auto-cols-fr divide-x divide-gold/15 rounded-xl")}
+      >
+        {actions.map((action) => (
+          <ActionTile key={action.id} variant="panel" action={action} />
+        ))}
+      </nav>
+      {refusal && (
+        <p role="status" className="text-center text-sm font-semibold text-gold">
+          {refusal}
+        </p>
+      )}
+    </div>
   );
 });
 
@@ -48,7 +56,7 @@ const TILE_VARIANT_CLASS: Record<ActionTileVariant, { button: string; icon: stri
 
 /** One action as a tile: the icon over its word, lit while its surface is open, with its arrival badges. */
 export const ActionTile = ({ action, variant }: { action: StructureAction; variant: ActionTileVariant }) => {
-  const { image, label, active, badges = [], onClick } = action;
+  const { image, label, active, badges = [], refusal, onClick } = action;
   const classes = TILE_VARIANT_CLASS[variant];
   return (
     <button
@@ -56,9 +64,11 @@ export const ActionTile = ({ action, variant }: { action: StructureAction; varia
       data-popover-anchor={action.id === "transfer" ? "logistics" : action.id === "trade" ? "market" : action.id}
       aria-label={label}
       aria-pressed={active}
+      disabled={refusal !== null}
+      title={refusal ?? undefined}
       onClick={onClick}
       className={cn(
-        "relative flex min-w-0 flex-col items-center transition",
+        "relative flex min-w-0 flex-col items-center transition disabled:cursor-not-allowed disabled:opacity-50",
         classes.button,
         active && "bg-gold/15 shadow-[inset_0_-2px_0_rgba(223,170,84,0.9)]",
       )}

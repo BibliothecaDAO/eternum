@@ -10,6 +10,8 @@ import { BuildModeStore, createBuildModeStoreSlice } from "./use-build-mode-stor
 import { createRealmStoreSlice, RealmStore } from "./use-realm-store";
 import { createThreeStoreSlice, ThreeStore } from "./use-three-store";
 import { createWorldStoreSlice, WorldStore } from "./use-world-loading";
+import { resolveLeftViewSurface } from "@/ui/features/world/containers/left-view-policy";
+import { refusedBeforePlay } from "@/utils/can-issue-orders";
 
 type BottomPanelTabId = "tile" | "minimap";
 
@@ -205,6 +207,8 @@ export const useUIStore = create(
     leftNavigationView: LeftView.EntityView,
     setLeftNavigationView: (view: LeftView) => {
       useTooltipStore.getState().setTooltip(null);
+      // Every way into a workspace (Build, Logistics, Military) comes through here: before play opens it stays shut.
+      if (resolveLeftViewSurface(view) !== null && refusedBeforePlay()) return;
       set({ leftNavigationView: view });
     },
     leftListFilter: readLeftListFilter(),

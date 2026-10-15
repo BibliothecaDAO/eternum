@@ -14,7 +14,7 @@ import { playRevealYield } from "@/ui/motion/moments/reveal-yield";
 import { playSiteClear } from "@/ui/features/frontier/sites/site-clear-moment";
 import { type ArmyProgressFacts, xpGained } from "@/ui/features/frontier/attributes/attributes";
 import { playArmyProgress } from "@/ui/features/frontier/attributes/progress-moment";
-import { canIssueOrders } from "@/utils/can-issue-orders";
+import { canIssueOrders, refusedBeforePlay } from "@/utils/can-issue-orders";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { resolveSpawnActionPath, showArmyDeploymentTooltip } from "./worldmap-army-deployment";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
@@ -2839,6 +2839,7 @@ export default class WorldmapScene extends WarpTravel {
       }
 
       if (actionPathLookup.actionPath && account) {
+        if (refusedBeforePlay()) return;
         const actionPath = actionPathLookup.actionPath;
         const actionType = ActionPaths.getActionType(actionPath);
 
@@ -3300,7 +3301,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private openTargetActionSurface(targetHex: HexPosition, surface: { id: string; content: ReactNode }): void {
-    if (!canIssueOrders()) return;
+    if (!canIssueOrders() || refusedBeforePlay()) return;
     const normalized = Position.fromContract({ x: targetHex.col, y: targetHex.row }).getNormalized();
     const point = projectHexToScreen({ col: normalized.x, row: normalized.y }, this.camera);
     usePopoverStore.getState().openSurface({

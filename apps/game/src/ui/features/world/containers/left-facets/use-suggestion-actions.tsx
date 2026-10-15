@@ -1,4 +1,4 @@
-import { canIssueOrders } from "@/utils/can-issue-orders";
+import { actNowRefusal, canIssueOrders } from "@/utils/can-issue-orders";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -87,7 +87,7 @@ export const useSuggestionActions = () => {
 
   const runSuggestionClick = useCallback(
     async (suggestion: OrderSuggestion) => {
-      if (!canIssueOrders()) return;
+      if (!canIssueOrders() || actNowRefusal()) return;
 
       switch (suggestion.action) {
         case "deploy-explorer":

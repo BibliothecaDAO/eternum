@@ -1,6 +1,3 @@
-import { useFactView } from "@/hooks/use-fact-view";
-import { seasonClockView } from "@/sync/fact-views";
-import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useMemo } from "react";
 import { configManager, getBuildingCount, getRealmInfo } from "@bibliothecadao/eternum";
@@ -17,11 +14,9 @@ type StructureBuildingsCounts = {
 };
 
 interface StructureProvisionResult {
-  /** The realm can be provisioned now: a fresh Blitz realm of the viewer's, in the main phase. */
-  canProvision: boolean;
   /**
-   * The realm still needs provisioning, main phase or not: its level-up step is Provision even before the game starts,
-   * when the action stays disabled.
+   * The realm still needs provisioning: a fresh Blitz realm of the viewer's. Its level-up step is Provision, sent once
+   * play opens (the act-now gate, can-issue-orders).
    */
   needsBootstrap: boolean;
 }
@@ -59,13 +54,8 @@ const hasProvisionBuildingCount = (structureBuildings: unknown): boolean => {
   return getBuildingCount(BuildingType.ResourceLabor, packedCounts) > 0;
 };
 
-const hasMainStarted = (currentBlockTimestamp: number, gameStartMainAt: number | null) =>
-  typeof gameStartMainAt === "number" && currentBlockTimestamp >= gameStartMainAt;
-
 export const useBlitzRealmProvision = (structureEntityId: number | null): StructureProvisionResult | null => {
   const { setup, account } = useGame();
-  const currentBlockTimestamp = useCurrentBlockTimestamp();
-  const { gameStartMainAt, devModeOn } = useFactView(seasonClockView);
   const resolvedWorldGameMode = useResolvedWorldGameMode();
 
   const keys =
@@ -84,16 +74,12 @@ export const useBlitzRealmProvision = (structureEntityId: number | null): Struct
   const ownerAddress = account.account?.address ? ContractAddress(account.account.address) : null;
   const isOwner = Boolean(structureInfo && ownerAddress && structureInfo.owner === ownerAddress);
   const isProvisioned = hasProvisionBuildingCount(liveStructureBuildings) || hasProvisionBuilding(realmBuildings);
-  // dev_mode worlds (sandbox) bypass the chain's main-phase + season-end gates,
-  // so a freshly settled realm can provision/upgrade immediately. Mirror that.
-  const isMainPhase = devModeOn || hasMainStarted(currentBlockTimestamp, gameStartMainAt);
   const isSeasonOver = configManager.isGameOver();
-  const canProvision = Boolean(isBlitzWorld && isRealm && isOwner && isMainPhase && !isSeasonOver && !isProvisioned);
   const needsBootstrap = Boolean(isBlitzWorld && isRealm && isOwner && !isSeasonOver && !isProvisioned);
 
   if (!structureInfo) {
     return null;
   }
 
-  return { canProvision, needsBootstrap };
+  return { needsBootstrap };
 };

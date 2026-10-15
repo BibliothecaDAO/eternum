@@ -213,16 +213,24 @@ const StructureActionStrip = ({ lane }: { lane: CompactLane }) => {
   const actions = useStructureActions();
   if (!actions) return null;
   const layout = LANE_LAYOUT[lane];
+  const refusal = actions[0]?.refusal ?? null;
   return (
-    <nav
-      aria-label="Structure actions"
-      className={cn("pointer-events-auto flex items-stretch gap-1 border-gold/20 bg-[#101c23]", layout.actions)}
-      style={layout.actionsStyle}
-    >
-      {actions.map((action) => (
-        <ActionTile key={action.id} variant="compact" action={action} />
-      ))}
-    </nav>
+    <>
+      {refusal && lane === "portrait" && (
+        <p role="status" className="self-center rounded-full bg-kit-plate px-3 py-1 text-sm font-semibold text-gold">
+          {refusal}
+        </p>
+      )}
+      <nav
+        aria-label="Structure actions"
+        className={cn("pointer-events-auto flex items-stretch gap-1 border-gold/20 bg-[#101c23]", layout.actions)}
+        style={layout.actionsStyle}
+      >
+        {actions.map((action) => (
+          <ActionTile key={action.id} variant="compact" action={action} />
+        ))}
+      </nav>
+    </>
   );
 };
 

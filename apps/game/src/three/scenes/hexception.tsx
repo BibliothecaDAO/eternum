@@ -27,7 +27,7 @@ import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
-import { canIssueOrders } from "@/utils/can-issue-orders";
+import { actNowRefusal, canIssueOrders, refusedBeforePlay } from "@/utils/can-issue-orders";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { resolveStoredLocalCameraDistance, useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -910,7 +910,7 @@ export default class HexceptionScene extends HexagonScene {
     const buildingType = this.pinnedPlot ? null : this.buildingPreview?.getPreviewBuilding();
 
     const account = useAccountStore.getState().account;
-    const canConstruct = !!account && canIssueOrders();
+    const canConstruct = !!account && canIssueOrders() && actNowRefusal() === null;
     if (buildingType) {
       if (!canConstruct || !account) {
         this.clearBuildingMode();
@@ -1000,7 +1000,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   private openPlotConstruction(spot: HexPosition): boolean {
-    if (!this.isEntered || !canIssueOrders() || !this.mode.ui.showBuildMenus) return false;
+    if (!this.isEntered || !canIssueOrders() || !this.mode.ui.showBuildMenus || refusedBeforePlay()) return false;
     const entityId = useUIStore.getState().structureEntityId;
     const account = useAccountStore.getState().account;
     const realm = getRealmInfo(entityId, this.game.store, getPlayerName);
