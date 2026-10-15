@@ -217,7 +217,7 @@ export function judgeNextOrder({ expected, played, orders }) {
     return blocked(
       played.scanned?.some(({ verb }) => verb === "short")
         ? "the army cannot pay for an order (the order bar shows a short cost)"
-        : "no two neighbouring tiles beside the army offered an order",
+        : "no tiles beside the army offered the orders the step needs",
     );
   }
   if (!played.firstSent) return failed("the first order never reached the network: nothing was in flight", { orders });

@@ -276,10 +276,12 @@ function tileRegion([dx, dy]) {
 function nextOrderSteps() {
   return [
     nextOrderStep("next-order-run", queueTheTileAfter, { next: ["queued", "run"], confirmed: 2 }),
-    nextOrderStep("next-order-replaced", queueThenReplace, {
-      next: ["queued", "dropped:replaced", "queued", "run"],
-      confirmed: 2,
-    }),
+    nextOrderStep(
+      "next-order-replaced",
+      queueThenReplace,
+      { next: ["queued", "dropped:replaced", "queued", "run"], confirmed: 2 },
+      { needsOther: true },
+    ),
     nextOrderStep("next-order-cancel", queueThenCancel, { next: ["queued", "dropped:cancelled"], confirmed: 1 }),
     nextOrderStep("next-order-escape", queueThenEscape, { next: ["queued", "dropped:cancelled"], confirmed: 1 }),
     nextOrderStep(
@@ -291,10 +293,10 @@ function nextOrderSteps() {
   ];
 }
 
-function nextOrderStep(name, whileInFlight, expected, { refuse = false } = {}) {
+function nextOrderStep(name, whileInFlight, expected, { refuse = false, needsOther = false } = {}) {
   return {
     name,
-    play: withOrderInFlight(whileInFlight, { refuse }),
+    play: withOrderInFlight(whileInFlight, { refuse, needsOther }),
     settleMs: 8_000,
     verify: ({ played, actionLatency, window }) =>
       judgeNextOrder({
@@ -306,15 +308,15 @@ function nextOrderStep(name, whileInFlight, expected, { refuse = false } = {}) {
 }
 
 /**
- * Centres the army, finds three neighbouring tiles beside it that offer an order, taps and confirms the middle one (the
- * first order) and, once its send is held at the network, acts with the other two: both stay beside the army when it
- * stands on the first. The held send then goes, or fails.
+ * Centres the army, finds tiles beside it that offer an order, taps and confirms the first (the first order) and, once
+ * its send is held at the network, acts with the others: the tile after the first stays beside the army when it stands
+ * on the first, so an order queued for it can run. The held send then goes, or fails.
  */
-function withOrderInFlight(whileInFlight, { refuse }) {
+function withOrderInFlight(whileInFlight, { refuse, needsOther }) {
   return async ({ browser, devTools, extraScreenshot }) => {
     const army = await focusTheReadiestArmy(browser);
     if (!army) return { army };
-    const { scanned, targets } = await findThreeInARow(browser, army);
+    const { scanned, targets } = await findOrderTiles(browser, army, needsOther);
     if (!targets) return { army, scanned };
     const gate = await openOrderSendGate(devTools);
     try {
@@ -332,15 +334,15 @@ function withOrderInFlight(whileInFlight, { refuse }) {
 }
 
 /**
- * Three neighbouring tiles that offer the army an order. Its paths are planned once it is selected, slower than a tap
- * at 4x: a pass that finds no three in a row is tried once more.
+ * Tiles that offer the army an order: two beside each other, and another one for a step that needs it. Its paths are
+ * planned once it is selected, slower than a tap at 4x: a pass that finds none is tried once more.
  */
-async function findThreeInARow(browser, army) {
+async function findOrderTiles(browser, army, needsOther) {
   let scanned = [];
   for (let pass = 1; pass <= TAP_PASSES; pass += 1) {
     scanned = await scanTheRing(browser, army);
-    const targets = threeInARow(scanned);
-    if (targets) return { scanned, targets };
+    const targets = orderTiles(scanned);
+    if (targets && (!needsOther || targets.other)) return { scanned, targets };
     await sleep(ARMY_FLIGHT_MS);
   }
   return { scanned, targets: null };
@@ -362,13 +364,19 @@ async function scanTheRing(browser, army) {
   return scanned;
 }
 
-/** Three neighbouring ring tiles that each offer an order, the most Moves first: a move costs less stamina. */
-function threeInARow(scanned) {
-  const around = (index) => [-1, 0, 1].map((step) => scanned[(index + step + scanned.length) % scanned.length]);
-  const rows = scanned.map((_, index) => around(index)).filter((row) => row.every(offersOrder));
-  const moves = (row) => row.filter(({ verb }) => verb === "Move").length;
-  const [before, first, after] = rows.toSorted((left, right) => moves(right) - moves(left))[0] ?? [];
-  return first ? { before: before.offset, first: first.offset, after: after.offset } : null;
+/**
+ * The first tile and the one after it on the ring, both offering an order, the most Moves first (a move costs less
+ * stamina), and another ring tile that offers one, if any.
+ */
+function orderTiles(scanned) {
+  const pairs = scanned
+    .map((tile, index) => [tile, scanned[(index + 1) % scanned.length]])
+    .filter((pair) => pair.every(offersOrder));
+  const moves = (tiles) => tiles.filter(({ verb }) => verb === "Move").length;
+  const [first, after] = pairs.toSorted((left, right) => moves(right) - moves(left))[0] ?? [];
+  if (!first) return null;
+  const other = scanned.find((tile) => offersOrder(tile) && tile !== first && tile !== after);
+  return { first: first.offset, after: after.offset, other: other?.offset ?? null };
 }
 
 const offersOrder = ({ verb }) => verb === "Explore" || verb === "Move";
@@ -379,7 +387,7 @@ async function queueTheTileAfter({ browser, targets, extraScreenshot }) {
 }
 
 async function queueThenReplace({ browser, targets, extraScreenshot }) {
-  browser.tap(targets.before);
+  browser.tap(targets.other);
   const queuedShown = nextOrderShown(browser);
   browser.tap(targets.after);
   return { queuedShown, replacedShown: nextOrderShown(browser), queuedScreenshot: extraScreenshot("queued") };
