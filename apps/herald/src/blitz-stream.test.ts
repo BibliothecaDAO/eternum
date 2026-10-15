@@ -21,7 +21,6 @@ it("preserves the whole Blitz game's facts through snapshot, overlay, confirmati
           preset_id: 2n,
           creator: 10n,
           settled: false,
-          ready: true,
           dev_mode_on: false,
           start_settling_at: 120n,
           start_main_at: 120n,

@@ -16,6 +16,5 @@ it("replays a preset launch with frozen roster wallets into the shared client st
     { account: 546n, wallet: 546n },
   ]);
   const game = store.require("GameRegistry", { game_id: 1 });
-  expect(game.ready).toBe(true);
   expect(game).not.toHaveProperty("creator");
 });

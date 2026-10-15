@@ -19,8 +19,10 @@ pub fn grants(game_id: u32) -> RealmGrants {
         resources.append(preset.realm_grants.read(index));
     }
     let mut starting_troops = array![];
-    for biome in 1_u8..18 {
-        starting_troops.append(preset.starting_troops.read(biome));
+    if preset.rules.entry_rule.read() != crate::rules::ENTRY_ROSTER {
+        for biome in 1_u8..18 {
+            starting_troops.append(preset.starting_troops.read(biome));
+        }
     }
     let mut realm_resources = array![];
     for index in 0..preset.realm_resource_count.read() {
@@ -29,6 +31,12 @@ pub fn grants(game_id: u32) -> RealmGrants {
     RealmGrants {
         resources: resources.span(), starting_troops: starting_troops.span(), realm_resources: realm_resources.span(),
     }
+}
+
+pub fn biome_troop(game_id: u32, biome: u8) -> crate::troops::TroopType {
+    let preset = crate::logic::preset_record::for_game(game_id);
+    assert!(preset.rules.entry_rule.read() != crate::rules::ENTRY_ROSTER, "a fixed roster deals its troop types");
+    preset.starting_troops.read(biome)
 }
 
 pub fn entry(key: EntryKey) -> Option<PlayerEntry> {

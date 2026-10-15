@@ -21,7 +21,6 @@ fn clock() -> SeasonClock {
             name: 'frontier',
             preset_id: 5,
             settled: false,
-            ready: true,
             dev_mode_on: false,
             start_settling_at: 0,
             start_main_at: 0,

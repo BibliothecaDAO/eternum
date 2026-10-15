@@ -10,7 +10,6 @@ const blitz = (gameId: number, over: Partial<DirectoryGame>): DirectoryGame =>
     chainId: "0xa",
     game_id: gameId,
     mode: "blitz",
-    ready: true,
     status: "Live",
     player_count: 24,
     roster_count: 24,
@@ -35,13 +34,12 @@ describe("the lobby's Blitz rows", () => {
       [
         // A roster game still being prepared: the player's seat is theirs, the game not open yet.
         blitz(3, {
-          ready: false,
           status: "Registration",
           clock: { start_settling_at: 0, start_main_at: 1_600, end_at: 9_000, end_grace_seconds: 0 },
           player_state: { registered: false, settled: false, roster_wallet: "0x4a1", structures: [] },
         }),
         blitz(1, {}),
-        blitz(2, { player_state: { registered: false, settled: false, roster_wallet: "0x4a1", structures: [] } }),
+        blitz(2, { player_state: { registered: false, settled: true, roster_wallet: "0x4a1", structures: [] } }),
         blitz(4, { status: "Settled" }),
         { ...blitz(5, {}), mode: "frontier" },
       ],
@@ -51,15 +49,15 @@ describe("the lobby's Blitz rows", () => {
       ["game:0xa:1", null, "spectate"],
       ["game:0xa:2", null, "enter"],
       ["game:0xa:3", 1_600, "registered"],
-      // A slot's games start five minutes after its registration closes (1,042 and 5,000 here).
-      ["slot:soon", 1_342, "open"],
-      ["slot:late", 5_300, "open"],
+      // A slot's games start one minute after its registration closes (1,042 and 5,000 here).
+      ["slot:soon", 1_102, "open"],
+      ["slot:late", 5_060, "open"],
     ]);
   });
 
-  it("keeps a slot's two times: when its registration closes, and when its games start, 300 seconds later", () => {
+  it("keeps a slot's two times: when its registration closes, and when its games start, 60 seconds later", () => {
     const [row] = blitzRows([], [slot("soon", 1_042)]);
-    expect(row.kind === "slot" && [row.closesAt, row.startsAt]).toEqual([1_042, 1_342]);
+    expect(row.kind === "slot" && [row.closesAt, row.startsAt]).toEqual([1_042, 1_102]);
   });
 });
 

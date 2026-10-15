@@ -23,6 +23,7 @@ export interface NativePreset {
     protocolCutBps: number;
     mmrEnabled: boolean;
   };
+  /** One troop type per biome; empty for a fixed roster, which deals each player one type per realm. */
   startingTroops: readonly ("Knight" | "Paladin" | "Crossbowman")[];
   realmResources: readonly number[];
   relics: readonly { rate_bps: number; duration: number; uses: number; essence_cost: number; draw_weight: number }[];

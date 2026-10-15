@@ -188,3 +188,15 @@ does not establish those live actions.
 - Ruin: Frontier Map → a discovered fallen realm; its beast still follows the same depth table. In `/lab`, choose **Ruin
   · Fallen realm** and place it on the selected tile. Add `&asset=ruin` to the runtime proof URL to capture only the
   ruin on grassland and the tropical-coast transition. The collision gate covers its four runtime beasts.
+### Blitz rules a player meets
+
+- **Entry closes one minute before the start.** The slot's lobby counts down to the close; at the close the slot splits
+  into games of up to 24 and every seat is settled within that minute. The start never moves: a game opens at its
+  scheduled time (`BLITZ_SLOT_PREPARATION_SECONDS`, `packages/value-ledger/src/blitz-slots.ts`). A seat whose realms are
+  not settled yet keeps its **Lobby** (Preparing) and turns to **Enter** once they are; nobody waits for the rest of the
+  roster.
+- **Starting forces.** Each of a player's three realms starts with 1,000 T1 troops garrisoned and 1,000 in reserve, one
+  realm Knights, one Crossbowmen, one Paladins, in an order drawn per player. No army stands on the map at the start;
+  the player creates one from the reserve.
+- **Merging armies.** Select an army, then an adjacent army or realm of yours: the transfer panel moves troops between
+  them, across realms too. Both sides must hold the same troop type and tier.

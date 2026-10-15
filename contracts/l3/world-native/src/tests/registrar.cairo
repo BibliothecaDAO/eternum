@@ -100,7 +100,13 @@ pub(crate) fn definition(blitz: bool) -> PresetDefinition {
             },
             spacing: 6,
             depths: array![].span(),
-            realms: super::settlement::grants(),
+            realms: super::settlement::grants_for(
+                if blitz {
+                    crate::rules::ENTRY_ROSTER
+                } else {
+                    crate::rules::ENTRY_ENTITLEMENT
+                },
+            ),
             villages: super::village::village_rules(),
             spires: if blitz {
                 None
@@ -290,8 +296,8 @@ fn blitz_launch_initializes_domains_once_and_allocates_isolated_games() {
             super::authority(),
         );
         assert_eq!(status_at(game, 299), GameStatus::Registration);
-        assert_eq!(status_at(game, 300), GameStatus::Registration);
-        assert_eq!(status_at(game, 400), GameStatus::Registration);
+        assert_eq!(status_at(game, 300), GameStatus::Live, "the clock alone opens play");
+        assert_eq!(status_at(game, 400), GameStatus::Ended);
         assert_eq!(games.rules(expected).map_center_offset, crate::registrar::map_center_offset(expected, 42));
         let settlement = ISettlementViewsDispatcher { contract_address: d.games };
         assert_eq!(settlement.realm_grants(expected), preset.settlement.realms);
@@ -521,8 +527,30 @@ fn fixed_blitz_rosters_have_exact_spots_and_deterministic_unique_permutations() 
 }
 
 #[test]
+fn each_player_is_dealt_every_troop_type_in_a_recorded_order() {
+    let mut orders: core::dict::Felt252Dict<bool> = Default::default();
+    let mut distinct = 0_u32;
+    for seed in 0_u32..64 {
+        let root: u256 = seed.into();
+        let three = crate::settlement::deal_troop_types(root, 3);
+        assert!(three == crate::settlement::deal_troop_types(root, 3), "the deal is not replayable");
+        let (a, b, c): (u8, u8, u8) = ((*three.at(0)).into(), (*three.at(1)).into(), (*three.at(2)).into());
+        assert!(a != b && b != c && a != c, "three realms repeat a troop type");
+        let order: felt252 = a.into() * 9 + b.into() * 3 + c.into();
+        if !orders.get(order) {
+            orders.insert(order, true);
+            distinct += 1;
+        }
+        assert!(crate::settlement::deal_troop_types(root, 2) == three.slice(0, 2));
+        let four = crate::settlement::deal_troop_types(root, 4);
+        assert!(four.slice(0, 3) == three && *four.at(3) == *three.at(0));
+    }
+    assert_eq!(distinct, 6, "some orders are never dealt");
+}
+
+#[test]
 #[feature("safe_dispatcher")]
-fn automatic_blitz_settlement_is_open_atomic_and_resumes_its_fixed_order() {
+fn automatic_blitz_settlement_resumes_its_fixed_order_and_never_moves_the_start() {
     let d = setup();
     let preset = definition(true);
     registry(d).register_preset(1, preset);
@@ -534,8 +562,8 @@ fn automatic_blitz_settlement_is_open_atomic_and_resumes_its_fixed_order() {
     let mut context = crate::commands::ExecutionContext {
         raw_root: 98765, timestamp: 205, ..super::context(d.games, game_id),
     };
-    assert!(!games.game(game_id).ready);
-    assert!(status_at(games.game(game_id), 99999) == GameStatus::Registration);
+    assert!(status_at(games.game(game_id), 299) == GameStatus::Registration);
+    assert!(status_at(games.game(game_id), 300) == GameStatus::Live, "the clock alone opens play");
     start_cheat_caller_address(d.games, d.actor);
     start_cheat_caller_address(d.games, d.games);
     assert!(
@@ -554,8 +582,9 @@ fn automatic_blitz_settlement_is_open_atomic_and_resumes_its_fixed_order() {
     let mut fixed_order = array![].span();
     for batch in 0_u32..2 {
         if batch != 0 {
+            // The second seat lands after the start.
             context.raw_root = 111 + batch.into();
-            context.timestamp = 1000 + batch.into();
+            context.timestamp = 300 + batch.into();
         }
         let caller = if batch == 0 {
             d.actor
@@ -576,6 +605,7 @@ fn automatic_blitz_settlement_is_open_atomic_and_resumes_its_fixed_order() {
         let player = *roster(2).at((*order.at(batch)).into());
         assert!(views.player_has_settled(game_id, player.account));
         assert!(views.settlement_progress(game_id).registered.into() == batch + 1);
+        let mut dealt: core::dict::Felt252Dict<bool> = Default::default();
         for realm in 0_u32..3 {
             let center = 2147483646 - games.rules(game_id).map_center_offset;
             let coord = *crate::settlement_grid::settlement_location(
@@ -591,13 +621,31 @@ fn automatic_blitz_settlement_is_open_atomic_and_resumes_its_fixed_order() {
             let production = resources.resource_production(ResourceSlot { game_id, entity_id, resource_type: 23 });
             assert!(production.building_count == 1 && production.production_rate == 10);
             let guard = guards.guard(GuardKey { game_id, structure_id: entity_id, slot: 0 });
-            assert!(guard.troops.count == 1500 * crate::rules::RESOURCE_PRECISION);
+            assert_eq!(guard.troops.count, 1500 * crate::rules::RESOURCE_PRECISION);
+            assert!(guard.troops.tier == crate::troops::TroopTier::T1);
+            let category: u8 = guard.troops.category.into();
+            assert!(!dealt.get(category.into()), "a player was dealt one troop type twice");
+            dealt.insert(category.into(), true);
+            for other in array![
+                crate::troops::TroopType::Knight, crate::troops::TroopType::Paladin,
+                crate::troops::TroopType::Crossbowman,
+            ] {
+                let reserve = resources
+                    .resource_balance(
+                        ResourceSlot { game_id, entity_id, resource_type: crate::troops::troop_resource(other, 0) },
+                    );
+                let expected = if other == guard.troops.category {
+                    1500 * crate::rules::RESOURCE_PRECISION
+                } else {
+                    0
+                };
+                assert_eq!(reserve, expected, "reserve holds only the realm's own troop type");
+            }
         }
-        assert!(games.game(game_id).ready == (batch == 1));
+        let game = games.game(game_id);
+        assert!(game.start_main_at == 300 && game.end_at == 400, "seating moved the start");
     }
     let game = games.game(game_id);
-    assert!(game.start_main_at == 1001 && game.end_at == 1101, "late settlement lost playing time");
-    assert!(status_at(game, 1001) == GameStatus::Live);
     let center = 2147483646 - games.rules(game_id).map_center_offset;
     let coord = *crate::settlement_grid::settlement_location(
         crate::troops::Coord { alt: false, x: center, y: center }, SettlementMode::Triple, 6, 0,
@@ -614,7 +662,7 @@ fn automatic_blitz_settlement_is_open_atomic_and_resumes_its_fixed_order() {
             ResourceKey { game_id, entity_id },
             23,
             0,
-            1001,
+            300,
             crate::commands::resource_context(super::context(d.games, game_id)),
         );
     assert_eq!(resources.resource_balance(slot), balance, "early realm accrued before main play");
@@ -623,7 +671,7 @@ fn automatic_blitz_settlement_is_open_atomic_and_resumes_its_fixed_order() {
             ResourceKey { game_id, entity_id },
             23,
             1,
-            1002,
+            301,
             crate::commands::resource_context(super::context(d.games, game_id)),
         );
     assert_eq!(resources.resource_balance(slot), balance + 10 - 1, "first second of production missing");
@@ -632,10 +680,10 @@ fn automatic_blitz_settlement_is_open_atomic_and_resumes_its_fixed_order() {
             ResourceKey { game_id, entity_id },
             23,
             0,
-            1020,
+            320,
             crate::commands::resource_context(super::context(d.games, game_id)),
         );
-    assert_eq!(resources.resource_balance(slot), balance + 19 * 10 - 1, "elapsed production missing");
+    assert_eq!(resources.resource_balance(slot), balance + 20 * 10 - 1, "elapsed production missing");
     stop_cheat_caller_address(d.games);
     let progress = views.settlement_progress(game_id);
     assert!(commands.settle_blitz_roster(game_id, super::authority(), crate::commands::action_context(context)) == 0);
@@ -643,28 +691,16 @@ fn automatic_blitz_settlement_is_open_atomic_and_resumes_its_fixed_order() {
 }
 
 #[test]
-fn launcher_roster_batches_block_early_play_and_report_transaction_progress() {
+fn launcher_roster_batches_report_transaction_progress_and_finalize() {
     let d = setup();
     let preset = definition(true);
     registry(d).register_preset(1, preset);
     let game_id = registry(d).create_game(CreateGameParams { roster: roster(2), ..params(true) });
     assert!(d.actor != super::authority());
     let command = crate::commands::Command::SettleBlitzRoster;
-    super::play_fixture::assert_preflight_rejection(
-        d.games,
-        super::play_fixture::TestAction { game_id, actor: d.actor, command: crate::commands::Command::CloseSeason },
-        205,
-    );
     let launcher = super::bind_authority(d);
     super::season_lifecycle::execute_batch_in_game(launcher, game_id, command, 205, 1);
-    assert!(!IGameDispatcher { contract_address: d.games }.game(game_id).ready);
-    super::play_fixture::assert_preflight_rejection(
-        d.games,
-        super::play_fixture::TestAction { game_id, actor: d.actor, command: crate::commands::Command::CloseSeason },
-        206,
-    );
     super::season_lifecycle::execute_batch_in_game(launcher, game_id, command, 207, 0);
-    assert!(IGameDispatcher { contract_address: d.games }.game(game_id).ready);
     super::season_lifecycle::execute_batch_in_game(launcher, game_id, command, 208, 0);
     let games = IGameDispatcher { contract_address: d.games };
     let end_at = games.game(game_id).end_at;
@@ -744,7 +780,7 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
     let mut preset = definition(true);
     preset.rules.command_mask = super::play_fixture::BLITZ_COMMAND_MASK;
     preset.rules.mode_rules = HOME_REWARDS | DISCOVER_CAMPS | DISCOVER_CHESTS;
-    preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
+    open_entry(ref preset);
     preset.rules.map_config.shards_mines_win_probability = 0;
     preset.rules.map_config.shards_mines_fail_probability = 1;
     preset.rules.map_config.camp_win_probability = 1;
@@ -767,7 +803,7 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
                     RealmCreation {
                         realm_id: 1,
                         traits: crate::realms::RealmTraits { wonder: 1, order: 1, resources: array![1].span() },
-                        grant_troops: true,
+                        troops: crate::settlement::StartingTroops::Biome,
                         activate_economy: true,
                     },
                 ),
@@ -836,10 +872,16 @@ pub fn day_start(d: super::Deployment, game_id: u32, index: u64) -> u64 {
     day.start
 }
 
+/// Open entry draws starting troops from the biome table, which a fixed-roster definition leaves empty.
+fn open_entry(ref preset: PresetDefinition) {
+    preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
+    preset.settlement.realms = super::settlement::grants_for(crate::rules::ENTRY_OPEN);
+}
+
 // The expedition preset uses seeded day bags.
 fn expedition_preset() -> PresetDefinition {
     let mut preset = definition(true);
-    preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
+    open_entry(ref preset);
     preset.rules.command_mask = preset.rules.command_mask
         | (*read_txt(@FileTrait::new("tests/fixtures/frontier-command-mask.txt")).at(0)).try_into().unwrap();
     preset.rules.day_unit_seconds = DAY_UNIT;
@@ -1311,7 +1353,7 @@ fn an_expedition_cannot_move_into_yesterdays_region() {
 fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops() {
     let d = setup();
     let mut preset = definition(true);
-    preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
+    open_entry(ref preset);
     preset.rules.day_unit_seconds = FRONTIER_DAY_UNIT;
     preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
     let (_, frontier) = super::preset_projection::current_definition("frontier");
@@ -1552,7 +1594,7 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
             );
     }
     preset.resources.resources = resource_rules.span();
-    preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
+    open_entry(ref preset);
     preset.rules.day_unit_seconds = FRONTIER_DAY_UNIT;
     preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
     let (_, frontier) = super::preset_projection::current_definition("frontier");
@@ -1902,7 +1944,7 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
 fn depth_entry_requires_research_and_spends_only_the_selected_depth_stamina() {
     let d = setup();
     let mut preset = definition(true);
-    preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
+    open_entry(ref preset);
     preset.rules.day_unit_seconds = DAY_UNIT;
     preset.rules.tick_config.armies_tick_in_seconds = 60;
     preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
@@ -2187,7 +2229,7 @@ fn setup_frontier_chests_with_preset(
     let ground = *frontier.settlement.depths.at(0).chest;
     let d = setup();
     let mut preset = definition(true);
-    preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
+    open_entry(ref preset);
     preset.rules.day_unit_seconds = DAY_UNIT;
     preset.rules.tick_config.armies_tick_in_seconds = 60;
     preset

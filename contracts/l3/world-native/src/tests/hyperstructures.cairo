@@ -65,7 +65,7 @@ fn setup_mode_with_threshold(
     if let Some(mode) = mode {
         preset.settlement.mode = mode;
         preset.settlement.spacing = 6;
-        preset.settlement.realms = super::settlement::grants();
+        preset.settlement.realms = super::settlement::grants_for(preset.rules.entry_rule);
     }
     let (deployment, first, second) = super::resource_commands::setup_with_preset(preset);
     start_cheat_caller_address(deployment.games, deployment.games);
@@ -476,7 +476,7 @@ fn blitz_multiplier_counts_realms_in_the_configured_geometry_and_preserves_old_r
             crate::settlement::RealmCreation {
                 realm_id: 3,
                 traits: crate::realms::RealmTraits { wonder: 0, order: 0, resources: array![].span() },
-                grant_troops: false,
+                troops: crate::settlement::StartingTroops::None,
                 activate_economy: false,
             },
         ),

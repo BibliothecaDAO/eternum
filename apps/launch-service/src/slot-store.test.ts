@@ -70,9 +70,11 @@ it("uses one clock for creation, closure and freezing without closing another ch
   clock.mockReturnValue(now + 60000);
   await expect(one.create("late", close)).rejects.toThrow("deadline");
   expect((await one.list())[0]!.closed).toBe(true);
-  vi.spyOn(value, "registrations").mockResolvedValueOnce({ ...(await value.registrations()), secondsUntilClose: 1 });
-  await expect(one.freeze("open")).rejects.toMatchObject({ _tag: "RegistrationOpen", secondsUntilClose: 1 });
+  vi.spyOn(value, "registrations").mockResolvedValueOnce({ ...(await value.registrations()), secondsUntilClose: 60 });
+  await expect(one.freeze("open")).rejects.toMatchObject({ _tag: "RegistrationOpen", secondsUntilClose: 60 });
   expect((await one.get("open")).frozenAt).toBeNull();
+  // A ledger clock one block behind is waited out inside the tick rather than a tick later.
+  vi.spyOn(value, "registrations").mockResolvedValueOnce({ ...(await value.registrations()), secondsUntilClose: 1 });
   await one.freezeDueSlots();
   expect((await one.get("open")).frozenAt).toBe(close);
   expect((await two.get("open")).frozenAt).toBeNull();
@@ -227,7 +229,7 @@ it.each(["exists", "unavailable"])(
   },
 );
 
-it("opens custody through preparation and starts every frozen group five minutes after close", async () => {
+it("opens custody through preparation and starts every frozen group one minute after close", async () => {
   const value = slotValueFixture(25);
   const open = vi.spyOn(value, "openSlot");
   const launches = new D1LaunchStore(database.db, testChain());
@@ -245,8 +247,8 @@ it("opens custody through preparation and starts every frozen group five minutes
   expect(runs).toHaveLength(2);
   for (const run of runs)
     expect(run.request).toMatchObject({
-      gameStartTime: new Date((closeTime + 300) * 1000).toISOString(),
-      durationSeconds: 60,
+      gameStartTime: new Date((closeTime + 60) * 1000).toISOString(),
+      durationSeconds: 300,
     });
 });
 

@@ -18,7 +18,6 @@ const season = {
   name: "Unavailable season",
   mode: "frontier",
   status: "Live",
-  ready: true,
   error: "unavailable",
   expedition: null,
   clock: { start_main_at: 0, end_at: 100 },

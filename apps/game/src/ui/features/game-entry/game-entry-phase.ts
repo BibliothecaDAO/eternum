@@ -53,19 +53,19 @@ export const isGameEntryPreflightComplete = ({
   settlementCheckComplete,
 }: GameEntryPreflightInput): boolean => isSpectateMode || !hasAccount || settlementCheckComplete;
 
-/** Membership is the roster fact; readiness and the end of the game decide what a member may do. */
+/** Membership is the roster fact; the member's own seated realms and the end of the game decide what they may do. */
 export const resolveBlitzEntry = ({
   isMember,
-  ready,
+  seated,
   ended,
 }: {
   isMember: boolean;
-  ready: boolean;
+  seated: boolean;
   ended: boolean;
 }): BlitzEntry => {
   if (ended) return "review";
   if (!isMember) return "spectate";
-  return ready ? "play" : "preparing";
+  return seated ? "play" : "preparing";
 };
 
 const resolveBlitzPhase = (entry: BlitzEntry): Extract<GameEntryModalPhase, "ready" | "settlement" | "spectate"> => {

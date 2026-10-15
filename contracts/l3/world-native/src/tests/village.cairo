@@ -33,7 +33,7 @@ fn village_preset(mode: SettlementMode, game_rules: crate::rules::SliceRules) ->
     let mut preset = play_fixture::fixture_preset(game_rules);
     preset.settlement.mode = mode;
     preset.settlement.spacing = 6;
-    preset.settlement.realms = super::settlement::grants();
+    preset.settlement.realms = super::settlement::grants_for(preset.rules.entry_rule);
     preset.settlement.villages = VillageRules { troop_delay_ticks: 2, ..village_rules() };
     let data = read_txt(@FileTrait::new("tests/fixtures/current-presets/preset-3.txt"));
     let mut fields = data.span();
@@ -80,7 +80,7 @@ fn setup_preset(dev: bool, preset: crate::presets::PresetDefinition) -> (Deploym
                 crate::settlement::RealmCreation {
                     realm_id: 1,
                     traits: crate::realms::RealmTraits { wonder: 1, order: 0, resources: grants.realm_resources },
-                    grant_troops: false,
+                    troops: crate::settlement::StartingTroops::None,
                     activate_economy: false,
                 },
             ),

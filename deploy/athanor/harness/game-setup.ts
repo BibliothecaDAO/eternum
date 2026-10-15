@@ -39,21 +39,17 @@ export async function launchHarnessGame(input: {
     const config = loadNativePresetConfiguration(environment, input.presetId);
     const preset = buildNativePreset(config, input.presetId);
     const startAt = Math.floor(Date.now() / 1000) + 60;
-    const params = buildNativeGameParams(
-      config,
-      {
-        gameName: input.gameName,
-        presetId: input.presetId,
-        startMainAt: startAt,
-        chainTimestamp: startAt - 60,
-        durationSeconds: Math.ceil(input.minutes * 60) + 3600,
-        devModeOn: false,
-        singleRealmMode: config.settlement.single_realm_mode,
-        twoPlayerMode: nativePresetForId(input.presetId).settlementMode === "Duel",
-        useMapOverride: false,
-      },
-      [],
-    );
+    const params = buildNativeGameParams(config, {
+      gameName: input.gameName,
+      presetId: input.presetId,
+      startMainAt: startAt,
+      chainTimestamp: startAt - 60,
+      durationSeconds: Math.ceil(input.minutes * 60) + 3600,
+      devModeOn: false,
+      singleRealmMode: config.settlement.single_realm_mode,
+      twoPlayerMode: nativePresetForId(input.presetId).settlementMode === "Duel",
+      useMapOverride: false,
+    });
     const gameId = input.gameId ?? (await createRegistrarGame(account, params, manifest, preset)).gameId;
     if (!gameId) throw new Error("Registrar did not return a game id");
     for (const [index, owner] of input.owners.entries())

@@ -20,7 +20,7 @@ const duelStartingResources = buildArenaStartingResources(
     [ResourcesIds.Copper]: 60,
     [ResourcesIds.Donkey]: 200,
   },
-  3_000,
+  1_500,
 );
 
 const duelExplorationRewards = [

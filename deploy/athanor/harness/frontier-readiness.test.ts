@@ -14,7 +14,6 @@ function realm() {
       name: 1n,
       preset_id: 5,
       settled: false,
-      ready: true,
       dev_mode_on: false,
       start_settling_at: 0n,
       start_main_at: 200n,

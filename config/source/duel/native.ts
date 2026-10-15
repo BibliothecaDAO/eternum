@@ -1,6 +1,6 @@
 import type { NativePreset } from "../common/native-preset";
 import { nativeRuleConstants as rule } from "../../../contracts/l3/world-native/schema/client.gen";
-import { startingTroopsByBiome, realmResourcePool, relicRules } from "../common/native-data";
+import { realmResourcePool, relicRules } from "../common/native-data";
 import { arenaModeRules, arenaCommandMask } from "../common/native-commands";
 import { duelBalance } from "./balance";
 
@@ -10,7 +10,7 @@ export const duelPreset: NativePreset = {
     mmrEnabled: true,
   },
   bitcoinEnabled: false,
-  startingTroops: startingTroopsByBiome,
+  startingTroops: [],
   realmResources: realmResourcePool,
   relics: relicRules,
   supplies: duelBalance.blitz!.exploration!.rewards!.map(({ rewardId, amount, probabilityBps }) => ({

@@ -5956,12 +5956,6 @@
           "feltLength": 1
         },
         {
-          "name": "ready",
-          "type": "core::bool",
-          "id": "0x7265616479",
-          "feltLength": 1
-        },
-        {
           "name": "dev_mode_on",
           "type": "core::bool",
           "id": "0x6465765f6d6f64655f6f6e",
@@ -5999,7 +5993,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 10
+      "valueLength": 9
     },
     {
       "name": "GameOverrides",
@@ -8955,10 +8949,6 @@
           "type": "core::bool"
         },
         {
-          "name": "ready",
-          "type": "core::bool"
-        },
-        {
           "name": "dev_mode_on",
           "type": "core::bool"
         },
@@ -11735,8 +11725,8 @@
           "type": "world_native::realms::RealmTraits"
         },
         {
-          "name": "grant_troops",
-          "type": "core::bool"
+          "name": "troops",
+          "type": "world_native::settlement::StartingTroops"
         },
         {
           "name": "activate_economy",
@@ -11851,6 +11841,24 @@
         {
           "name": "spacing",
           "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::settlement::StartingTroops": {
+      "type": "enum",
+      "name": "world_native::settlement::StartingTroops",
+      "variants": [
+        {
+          "name": "None",
+          "type": "()"
+        },
+        {
+          "name": "Biome",
+          "type": "()"
+        },
+        {
+          "name": "Dealt",
+          "type": "world_native::troops::TroopType"
         }
       ]
     },
@@ -12749,5 +12757,5 @@
       ]
     }
   },
-  "identity": "e181850338febef8b5fd8a562b0e1131a438299a494322f5235ae60c6faf5ac8"
+  "identity": "022bc393e6399d6ea8643e2aa436e9b5b564d66738ee0e3651327333c997adc0"
 }

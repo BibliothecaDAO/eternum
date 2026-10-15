@@ -1668,12 +1668,6 @@ pub mod GamesFixture {
                 crate::game::IGameLibraryDispatcher { class_hash: classes.registry.read() }, game_id, game,
             )
         }
-        fn start_blitz(ref self: TContractState, game_id: u32, timestamp: u64) {
-            let classes = fixture_classes(game_id);
-            crate::game::IGameDispatcherTrait::start_blitz(
-                crate::game::IGameLibraryDispatcher { class_hash: classes.registry.read() }, game_id, timestamp,
-            )
-        }
     }
 
     #[starknet::embeddable]

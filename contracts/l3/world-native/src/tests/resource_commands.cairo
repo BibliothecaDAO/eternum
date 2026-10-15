@@ -84,7 +84,7 @@ pub fn setup_in_deployment(
                             RealmCreation {
                                 realm_id: 1,
                                 traits: crate::realms::RealmTraits { wonder: 0, order: 0, resources: array![].span() },
-                                grant_troops: false,
+                                troops: crate::settlement::StartingTroops::None,
                                 activate_economy: false,
                             },
                         ),

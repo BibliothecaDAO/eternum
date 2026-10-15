@@ -155,7 +155,6 @@ pub mod GamesEntry {
             let (index, route, _payload) = crate::commands::route_command(command).expect('INVALID_COMMAND');
             let rules = crate::logic::game::rules(game_id);
             assert!(crate::rules::command_enabled(rules.command_mask, index.into()), "command disabled");
-            assert!(game.ready || index == crate::command_routes::SETTLE_BLITZ_ROSTER, "roster not ready");
             if index == crate::command_routes::SETTLE_BLITZ_ROSTER {
                 assert!(self.data.registrar.roster_sizes.read(game_id) != 0, "roster not frozen");
             }

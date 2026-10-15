@@ -6,7 +6,7 @@ import { afterEach, expect, it, vi } from "vitest";
 
 import { formatClockTime } from "@/ui/design-system/kit/time";
 
-/** The one listed slot, closing at `closes` (Unix seconds); its games start 300 seconds later. */
+/** The one listed slot, closing at `closes` (Unix seconds); its games start 60 seconds later. */
 const listed = vi.hoisted(() => ({ closes: 0, closed: false }));
 vi.hoisted(() =>
   vi.stubGlobal("fetch", async (input: string | URL) => {
@@ -62,21 +62,21 @@ const lobby = async (closesIn: number, closed: boolean) => {
   return container.textContent ?? "";
 };
 
-it("counts down to the close while the slot takes players, its title naming the start five minutes later", async () => {
+it("counts down to the close while the slot takes players, its title naming the start minute later", async () => {
   const open = await lobby(3_600, false);
   expect(open).toContain("Entry closes in");
   expect(open).not.toContain("Starts in");
   // The lobby is named by the games' start, the one place the start shows while entry is open.
-  expect(open).toContain(`Blitz ${formatClockTime(listed.closes + 300)}`);
+  expect(open).toContain(`Blitz ${formatClockTime(listed.closes + 60)}`);
 });
 
-it("counts down to the start through the five minutes after the close, and to nothing once the games have started", async () => {
-  const preparing = await lobby(-120, true);
+it("counts down to the start through the minute after the close, and to nothing once the games have started", async () => {
+  const preparing = await lobby(-30, true);
   expect(preparing).toContain("Entry closed");
   expect(preparing).toContain("Starts in");
   await unmount?.();
 
-  const started = await lobby(-400, true);
+  const started = await lobby(-120, true);
   expect(started).toContain("Entry closed");
   expect(started).not.toContain("Starts in");
 });

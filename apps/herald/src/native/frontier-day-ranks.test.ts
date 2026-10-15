@@ -72,7 +72,6 @@ it("replays a checkpoint before closure, excluding changes at the boundary and r
     ...game,
     name: 1,
     creator: 1,
-    ready: true,
     dev_mode_on: false,
     start_settling_at: start,
     end_grace_seconds: 0,

@@ -87,7 +87,6 @@ pub(crate) fn build_game(params: CreateGameParams, entry_rule: u8) -> crate::gam
         name: params.name,
         preset_id: params.preset_id,
         settled: false,
-        ready: entry_rule != crate::rules::ENTRY_ROSTER,
         dev_mode_on: params.dev_mode_on,
         start_settling_at: params.start_settling_at,
         start_main_at: params.start_main_at,

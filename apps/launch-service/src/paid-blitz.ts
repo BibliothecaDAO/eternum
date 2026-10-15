@@ -18,10 +18,26 @@ export interface BlitzValuePort {
 }
 export class SlotCancelled extends Error {}
 
+/**
+ * The ledger closes on its last block's clock, which can trail the Worker's by a block or two. Inside this many seconds
+ * the close is waited out in place: deferring it a cron tick would spend the whole minute before the start.
+ */
+const LEDGER_CLOSE_WAIT_SECONDS = 10;
+
+const readClosedPage = async (key: LedgerSlotKey, value: BlitzValuePort) => {
+  const deadline = Date.now() + LEDGER_CLOSE_WAIT_SECONDS * 1000;
+  for (;;) {
+    const page = await value.registrations(key);
+    if (page.secondsUntilClose === 0) return page;
+    if (Date.now() + page.secondsUntilClose * 1000 > deadline)
+      throw new RegistrationOpen({ secondsUntilClose: page.secondsUntilClose });
+    await new Promise((resolve) => setTimeout(resolve, page.secondsUntilClose * 1000));
+  }
+};
+
 /** Retries derive the same groups from immutable registration order and historical links, without a roster copy. */
 export const closedSlotGroups = async (key: LedgerSlotKey, value: BlitzValuePort, identity: RegistrationIdentity) => {
-  let page = await value.registrations(key);
-  if (page.secondsUntilClose > 0) throw new RegistrationOpen({ secondsUntilClose: page.secondsUntilClose });
+  let page = await readClosedPage(key, value);
   if (page.slot.cancelled) throw new SlotCancelled("Blitz slot cancelled");
   const registrations = [...page.registrations];
   const { blockNumber, blockHash, slot } = page;

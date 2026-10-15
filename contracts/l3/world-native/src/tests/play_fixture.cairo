@@ -55,7 +55,6 @@ pub fn create_games(registry: ContractAddress) {
                 name: 'fixture',
                 preset_id: 3,
                 settled: false,
-                ready: true,
                 dev_mode_on: true,
                 start_settling_at: 0,
                 start_main_at: 0,

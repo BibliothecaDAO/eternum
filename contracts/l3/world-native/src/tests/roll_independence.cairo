@@ -251,21 +251,25 @@ fn typed_commands() -> Array<Command> {
     ]
 }
 
-fn fresh_world(ready: bool) -> Deployment {
+fn fresh_world(enabled: bool) -> Deployment {
     let d = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
     let game = crate::game::IGameDispatcherTrait::game(crate::game::IGameDispatcher { contract_address: d.games }, 1);
     let rules = crate::rules::SliceRules {
-        command_mask: 0xffffffffffffffffff, entry_rule: crate::rules::ENTRY_ENTITLEMENT, ..play_fixture::rules(),
+        command_mask: if enabled {
+            0xffffffffffffffffff
+        } else {
+            0
+        },
+        entry_rule: crate::rules::ENTRY_ENTITLEMENT,
+        ..play_fixture::rules(),
     };
     play_fixture::seed_game(
         d.games,
         1,
-        crate::game::GameRegistry {
-            ready, dev_mode_on: false, start_settling_at: 20, start_main_at: 20, end_at: 200, ..game,
-        },
+        crate::game::GameRegistry { dev_mode_on: false, start_settling_at: 20, start_main_at: 20, end_at: 200, ..game },
         rules,
     );
-    if ready {
+    if enabled {
         super::set_launcher(d, d.actor);
         // This all-routes synthetic world enables WithdrawLords too; give its pre-roll deadline a real preset value.
         let (_, frontier) = super::preset_projection::current_definition("frontier");

@@ -35,6 +35,27 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-15",
+    title: "Blitz starts on time",
+    description:
+      "Entry closes one minute before a Blitz starts, and the game always starts at its scheduled time. If your realms are still being placed, your lobby says so and Enter appears as soon as they are ready.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-15",
+    title: "One troop type per realm",
+    description:
+      "Each of your three Blitz realms starts with 1,000 T1 troops in its garrison and 1,000 in reserve: one realm Knights, one Crossbowmen, one Paladins, in an order drawn for you.",
+    type: "balance",
+  },
+  {
+    date: "2026-10-15",
+    title: "Merge armies across realms",
+    description:
+      "Your armies from different realms can now merge when they hold the same troop type and tier, in every mode.",
+    type: "balance",
+  },
+  {
+    date: "2026-10-15",
     title: "Play from a game you watch",
     description:
       "Watching a game where you hold realms now offers Play from your name chip, and pressing it brings you straight into your own realms instead of waiting on your account.",

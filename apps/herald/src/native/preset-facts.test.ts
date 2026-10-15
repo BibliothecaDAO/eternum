@@ -55,7 +55,6 @@ function launch(preset: ReturnType<typeof registration>, gameId = 1, rosterSize 
       name: "0x123",
       preset_id: String(preset.presetId),
       settled: false,
-      ready: true,
       dev_mode_on: false,
       start_settling_at: "1800",
       start_main_at: "1800",

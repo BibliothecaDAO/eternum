@@ -68,16 +68,8 @@ const executeRun = async (
     const players = await blitzRosterOf(run, request, target, value);
     const created = await native.create(request, Date.parse(run.createdAt), undefined, players);
     const settlementTransactions = await native.seat(created.gameId!);
-    const game = await native.game(created.gameId!);
-    const startTime = Number(game.start_main_at);
-    return store.saveGame({
-      ...created,
-      startTime,
-      startTimeIso: new Date(startTime * 1000).toISOString(),
-      durationSeconds: Number(game.end_at) - startTime,
-      finalizeAt: Number(game.end_at),
-      settlementTransactions,
-    });
+    const { end_at } = await native.game(created.gameId!);
+    return store.saveGame({ ...created, finalizeAt: Number(end_at), settlementTransactions });
   }
   return store.saveGame(await native.create(request, Date.parse(run.createdAt)));
 };

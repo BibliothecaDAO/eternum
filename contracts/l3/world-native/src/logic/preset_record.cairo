@@ -108,7 +108,7 @@ pub fn store_settlement(
         );
     preset.settlement_spacing.write(settlement.spacing);
     write_depths(preset, mode_rules, day_unit_seconds, settlement.depths);
-    write_realm_grants(preset, settlement.realms);
+    write_realm_grants(preset, settlement.realms, entry_rule);
     write_villages(preset, settlement.villages);
     preset.spires.write(settlement.spires);
 }
@@ -284,9 +284,13 @@ fn write_upgrades(
     }
 }
 
-fn write_realm_grants(preset: PresetWrite, grants: crate::settlement::RealmGrants) {
-    assert!(grants.starting_troops.len() == 17, "incomplete biome starting troops");
-    for index in 0_u32..17 {
+fn write_realm_grants(preset: PresetWrite, grants: crate::settlement::RealmGrants, entry_rule: u8) {
+    if entry_rule == crate::rules::ENTRY_ROSTER {
+        assert!(grants.starting_troops.is_empty(), "a fixed roster deals its troop types");
+    } else {
+        assert!(grants.starting_troops.len() == 17, "incomplete biome starting troops");
+    }
+    for index in 0..grants.starting_troops.len() {
         preset.starting_troops.write((index + 1).try_into().unwrap(), *grants.starting_troops.at(index));
     }
     assert!(grants.realm_resources.len() <= 16, "realm resources exceed packed capacity");

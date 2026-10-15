@@ -392,9 +392,9 @@ pub mod StructuresLogic {
                     }
 
                     if realm.activate_economy {
-                        self.provision_realm_economy(key, context.timestamp, context);
-                    } else if realm.grant_troops {
-                        self.grant_realm_troops(key, context.timestamp, context);
+                        self.provision_realm_economy(key, realm.troops, context.timestamp, context);
+                    } else {
+                        self.grant_realm_troops(key, realm.troops, context.timestamp, context);
                     }
                     crate::logic::stories::emit_entity_story(
                         key,
@@ -446,7 +446,11 @@ pub mod StructuresLogic {
             let interval = context.rules.unbox().tick_config.armies_tick_in_seconds;
             let claimable_at: u64 = record.base.created_at.into() / interval + grants.troop_delay_ticks.into();
             assert!(context.timestamp / interval >= claimable_at, "army grant cannot be claimed yet");
-            self.grant_starting_troops(key, grants.resources, 10 * RESOURCE_PRECISION, context.timestamp, context);
+            let category = self.biome_troop(key, context);
+            self
+                .grant_starting_troops(
+                    key, category, grants.resources, 10 * RESOURCE_PRECISION, context.timestamp, context,
+                );
             ()
         }
     }
@@ -490,7 +494,7 @@ pub mod StructuresLogic {
             let record = crate::logic::structures::record(key);
             assert!(record.owner == actor, "actor does not own structure");
             assert!(record.base.category == crate::taxonomy::REALM_CATEGORY, "not a realm");
-            self.provision_realm_economy(key, context.timestamp, context);
+            self.provision_realm_economy(key, crate::settlement::StartingTroops::Biome, context.timestamp, context);
             ()
         }
     }
@@ -836,12 +840,16 @@ pub mod StructuresLogic {
         }
 
         fn provision_realm_economy(
-            ref self: ContractState, key: ResourceKey, timestamp: u64, game_context: crate::commands::ExecutionContext,
+            ref self: ContractState,
+            key: ResourceKey,
+            troops: crate::settlement::StartingTroops,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
         ) {
             let counts = self.buildings.data.buildings.structure_buildings.read((key.game_id, key.entity_id));
             const LABOR_COUNT_SCALE: u128 = 0x10000000000000000;
             assert!(counts.packed_counts_2 / LABOR_COUNT_SCALE % 256 == 0, "realm already provisioned");
-            self.grant_realm_troops(key, timestamp, game_context);
+            self.grant_realm_troops(key, troops, timestamp, game_context);
             let grants = crate::logic::settlement::grants(key.game_id);
             self.grant_non_troop_resources(key, grants.resources, timestamp, game_context);
             let rules = game_context.rules.unbox();
@@ -884,28 +892,28 @@ pub mod StructuresLogic {
             }
         }
         fn grant_realm_troops(
-            ref self: ContractState, key: ResourceKey, timestamp: u64, game_context: crate::commands::ExecutionContext,
+            ref self: ContractState,
+            key: ResourceKey,
+            troops: crate::settlement::StartingTroops,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
         ) {
+            let category = match troops {
+                crate::settlement::StartingTroops::None => { return; },
+                crate::settlement::StartingTroops::Biome => self.biome_troop(key, game_context),
+                crate::settlement::StartingTroops::Dealt(category) => category,
+            };
             let grants = crate::logic::settlement::grants(key.game_id);
             let guards = game_context.rules.unbox().troop_limit_config.starting_guard;
             self
                 .grant_starting_troops(
-                    key, grants.resources, guards.into() * RESOURCE_PRECISION, timestamp, game_context,
+                    key, category, grants.resources, guards.into() * RESOURCE_PRECISION, timestamp, game_context,
                 );
         }
-        fn grant_starting_troops(
-            ref self: ContractState,
-            key: ResourceKey,
-            resources: Span<crate::resources::ResourceAmount>,
-            guards: u128,
-            timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
-        ) {
+        fn biome_troop(
+            self: @ContractState, key: ResourceKey, game_context: crate::commands::ExecutionContext,
+        ) -> crate::troops::TroopType {
             let record = crate::logic::structures::record(key);
-            if record.base.starting_troops_granted {
-                return;
-            }
-            crate::logic::structures::StructureState::mark_starting_troops(key);
             let coord = if game_context.rules.unbox().day_unit_seconds != 0
                 && record.base.category == crate::taxonomy::REALM_CATEGORY {
                 crate::settlement::off_map_realm_reference(record.metadata.realm_id.into())
@@ -916,8 +924,22 @@ pub mod StructuresLogic {
                 .map_dispatcher(key.game_id)
                 .biome(tile_key(key.game_id, coord), crate::commands::biome_context(game_context));
             assert!(biome > 0 && biome <= 17, "starting troops require a biome");
-            let grants = crate::logic::settlement::grants(key.game_id);
-            let category = *grants.starting_troops.at((biome - 1).into());
+            crate::logic::settlement::biome_troop(key.game_id, biome)
+        }
+        fn grant_starting_troops(
+            ref self: ContractState,
+            key: ResourceKey,
+            category: crate::troops::TroopType,
+            resources: Span<crate::resources::ResourceAmount>,
+            guards: u128,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
+        ) {
+            let record = crate::logic::structures::record(key);
+            if record.base.starting_troops_granted {
+                return;
+            }
+            crate::logic::structures::StructureState::mark_starting_troops(key);
             let resource_type = crate::troops::troop_resource(category, 0);
             for grant in resources {
                 let kind = *grant.resource_type;

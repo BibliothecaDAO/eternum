@@ -12,6 +12,8 @@ import {
 
 const BLITZ_DURATION_MINUTES = 60;
 const BLITZ_DURATION_SECONDS = BLITZ_DURATION_MINUTES * 60;
+/** Each realm starts with this many T1 troops garrisoned and as many in reserve, of the type it was dealt. */
+const BLITZ_STARTING_TROOPS = 1_000;
 
 const blitzComplexBuildingCosts = {
   ...COMPLEX_BUILDING_COSTS,
@@ -83,7 +85,7 @@ const blitzStartingResources = buildArenaStartingResources(
     [ResourcesIds.Copper]: 120,
     [ResourcesIds.Donkey]: 500,
   },
-  5_000,
+  BLITZ_STARTING_TROOPS,
 );
 
 const blitzExplorationRewards = [
@@ -133,6 +135,7 @@ export const blitzBalance: ConfigPatch = {
   },
   troop: {
     stamina: blitzStaminaConfig,
+    limit: { startingGuard: BLITZ_STARTING_TROOPS },
   },
   victoryPoints: blitzVictoryPointConfig,
   buildings: {

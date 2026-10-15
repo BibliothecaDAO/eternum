@@ -165,7 +165,10 @@ pub mod SettlementLogic {
                     coord,
                     SettlementCreation::Realm(
                         RealmCreation {
-                            realm_id: realm_id.try_into().unwrap(), traits, grant_troops: true, activate_economy: true,
+                            realm_id: realm_id.try_into().unwrap(),
+                            traits,
+                            troops: crate::settlement::StartingTroops::Biome,
+                            activate_economy: true,
                         },
                     ),
                     crate::commands::action_context(context),
@@ -296,9 +299,9 @@ pub mod SettlementLogic {
             if progress.registered.into() == roster.len() {
                 return (0);
             }
+            let mut root = context.raw_root;
+            let seed = crate::random::game_root(ref root, game_id);
             if progress.registered == 0 {
-                let mut root = context.raw_root;
-                let seed = crate::random::game_root(ref root, game_id);
                 self.settlements.initialize_blitz_order(game_id, roster.len(), seed);
             }
             let order = crate::logic::settlement::blitz_order(game_id);
@@ -312,12 +315,9 @@ pub mod SettlementLogic {
                 rules.spacing,
                 progress.registered.into(),
             );
-            self.create_settlement_realms(game_id, player.account, coords, context);
-            let remaining: u64 = (roster.len() - Into::<u16, u32>::into(progress.registered) - 1).into();
-            if remaining == 0 {
-                crate::logic::game::start_blitz(game_id, context);
-            }
-            (remaining)
+            let troops = crate::settlement::deal_troop_types(seed, coords.len());
+            self.create_settlement_realms(game_id, player.account, coords, troops, context);
+            ((roster.len() - Into::<u16, u32>::into(progress.registered) - 1).into())
         }
     }
     #[generate_trait]
@@ -347,7 +347,10 @@ pub mod SettlementLogic {
                     crate::settlement::off_map_realm_reference(realm_id),
                     SettlementCreation::Realm(
                         RealmCreation {
-                            realm_id: realm_id.try_into().unwrap(), traits, grant_troops: true, activate_economy: true,
+                            realm_id: realm_id.try_into().unwrap(),
+                            traits,
+                            troops: crate::settlement::StartingTroops::Biome,
+                            activate_economy: true,
                         },
                     ),
                     crate::commands::action_context(context),
@@ -389,6 +392,7 @@ pub mod SettlementLogic {
             game_id: u32,
             actor: ContractAddress,
             coords: Span<crate::troops::Coord>,
+            troops: Span<crate::troops::TroopType>,
             context: DomainContext,
         ) -> u64 {
             let structures = ISettlementCreationLibraryDispatcher {
@@ -396,7 +400,7 @@ pub mod SettlementLogic {
             };
             let mut progress = self.settlements.data.settlements.progress.read(game_id);
             let mut first_realm = 0;
-            for coord in coords {
+            for (coord, category) in coords.into_iter().zip(troops) {
                 progress.realm_count += 1;
                 let realm = structures
                     .create_settlement(
@@ -411,7 +415,7 @@ pub mod SettlementLogic {
                                     order: 0,
                                     resources: crate::logic::settlement::grants(game_id).realm_resources,
                                 },
-                                grant_troops: true,
+                                troops: crate::settlement::StartingTroops::Dealt(*category),
                                 activate_economy: true,
                             },
                         ),

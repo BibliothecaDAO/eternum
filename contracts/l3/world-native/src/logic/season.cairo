@@ -278,9 +278,6 @@ pub mod SeasonLogic {
             if !crate::rules::command_enabled(rules.command_mask, index.into()) {
                 return Err(rejection('COMMAND_DISABLED'));
             }
-            if !context.game.unbox().ready && index != crate::command_routes::SETTLE_BLITZ_ROSTER {
-                return Err(rejection('ROSTER_NOT_READY'));
-            }
             let result = dispatch(self.release.classes(game_id), route, game_id, actor, payload, context)
                 .map_err(|error| domain_rejection(error))?;
             if route.batch {

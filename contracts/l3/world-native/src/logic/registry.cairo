@@ -55,17 +55,5 @@ pub mod RegistryLogic {
         fn rules(self: @ContractState, game_id: u32) -> SliceRules {
             crate::logic::game::rules(game_id)
         }
-        fn start_blitz(ref self: ContractState, game_id: u32, timestamp: u64) {
-            assert!(
-                crate::logic::game::rules(game_id).entry_rule == crate::rules::ENTRY_ROSTER, "fixed roster required",
-            );
-            let mut game = crate::logic::game::game(game_id);
-            assert!(!game.ready, "roster already ready");
-            let duration = game.end_at - game.start_main_at;
-            game.start_main_at = core::cmp::max(game.start_main_at, timestamp);
-            game.end_at = game.start_main_at + duration;
-            game.ready = true;
-            crate::logic::game::write_game(game_id, game);
-        }
     }
 }

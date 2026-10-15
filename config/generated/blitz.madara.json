@@ -659,15 +659,15 @@
     },
     {
       "resource": 26,
-      "amount": 3500
+      "amount": 1000
     },
     {
       "resource": 29,
-      "amount": 3500
+      "amount": 1000
     },
     {
       "resource": 32,
-      "amount": 3500
+      "amount": 1000
     }
   ],
   "villageStartingResources": [
@@ -739,7 +739,7 @@
       "cityGuardSlots": 2,
       "kingdomGuardSlots": 3,
       "empireGuardSlots": 4,
-      "startingGuard": 1500,
+      "startingGuard": 1000,
       "campArmies": 1,
       "mercenariesTroopLowerBound": 800,
       "mercenariesTroopUpperBound": 1600,

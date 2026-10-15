@@ -12,7 +12,6 @@ function game(store: NativeFactStore, endAt = 100) {
         name: 0,
         preset_id: 2,
         settled: false,
-        ready: true,
         dev_mode_on: false,
         start_settling_at: 1,
         start_main_at: 2,

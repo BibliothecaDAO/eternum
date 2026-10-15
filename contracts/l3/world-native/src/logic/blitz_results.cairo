@@ -74,7 +74,7 @@ pub mod BlitzResultState {
                 "result finalisation is disabled",
             );
             let game = game_context.game.unbox();
-            assert!(game.ready && game.end_at != 0 && timestamp >= game.end_at, "game has not ended");
+            assert!(game.end_at != 0 && timestamp >= game.end_at, "game has not ended");
             assert!(game.settled, "final point settlement incomplete");
         }
         fn write_ranked_roster(

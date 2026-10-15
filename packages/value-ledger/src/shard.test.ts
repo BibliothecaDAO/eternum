@@ -156,7 +156,7 @@ it("rejects a successful invoke carrying the generated GameplayRejected event", 
           actor: "0x20",
           tx_hash: "0xabc",
           status_class: shortString.encodeShortString("domain"),
-          reason: "roster not ready",
+          reason: "settling not started",
         }),
       },
     ],
@@ -168,7 +168,7 @@ it("rejects a successful invoke carrying the generated GameplayRejected event", 
     accountAddress: "0x20",
     privateKey: "0x1",
   });
-  await expect(operator.playCommand(7, "SettleBlitzRoster")).rejects.toThrow("gameplay_refused:roster not ready");
+  await expect(operator.playCommand(7, "SettleBlitzRoster")).rejects.toThrow("gameplay_refused:settling not started");
 });
 
 it("sends all held Realms in one labor mutation through the generated Games ABI", async () => {

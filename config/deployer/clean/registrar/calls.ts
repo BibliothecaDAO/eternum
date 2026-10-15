@@ -1,9 +1,7 @@
-import { normalizeStarknetAddress } from "@realms-world/identity";
 import { resolveRegistrarExecutionDetails } from "./transaction-details";
 export { resolveRegistrarExecutionDetails } from "./transaction-details";
 import { presetRegistrationCall } from "./native-preset";
 import { confirmedTransactionReceipt } from "../shared/transaction";
-import { completeNativeAdminCommand } from "../world/native/command";
 import { nativeGamesAbi, nativeWorldSchema } from "../world/native/manifest";
 import type { RegistrarWorld } from "../world/native/types";
 import type { buildNativePreset } from "../config/native-preset";
@@ -182,22 +180,6 @@ export async function findRegistrarGame(
   return value === 0n ? null : { gameId: Number(value) };
 }
 
-/** Preserve the resolved wallet/account pairs in registration order. */
-export function blitzRosterOf(players: readonly { wallet: string; account: string }[]) {
-  if (players.length < 1 || players.length > 24) throw new Error("Blitz requires 1 to 24 registered players");
-  const canonical = (value: string, field: string) => {
-    if (!/^0x[0-9a-f]+$/i.test(value) || BigInt(value) === 0n) throw new Error(`Invalid roster ${field}`);
-    return normalizeStarknetAddress(value);
-  };
-  const rows = players.map(({ account, wallet }) => ({
-    account: canonical(account, "account"),
-    wallet: canonical(wallet, "wallet"),
-  }));
-  for (const field of ["account", "wallet"] as const)
-    if (new Set(rows.map((row) => row[field])).size !== rows.length) throw new Error(`Duplicate roster ${field}`);
-  return rows;
-}
-
 export function resolveRegistrarWorldAddress(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): string {
   const context = resolveRegistrarContext(target);
   requireRegistrarContract(context, "create_game");
@@ -239,37 +221,4 @@ export async function createRegistrarGame(
   });
   const result = await executeRegistrarCall(account, buildRegistrarCall("create_game", calldata, target), target);
   return { ...result, gameId: resolveCreatedGameId(result.receipt, target) };
-}
-
-export async function settleBlitzRoster(
-  provider: RpcProvider,
-  gameId: number,
-  credentials: { accountAddress: string; privateKey: string },
-  target: RegistrarTarget,
-): Promise<BlitzRosterSettlement> {
-  const { manifest } = resolveRegistrarContext(target);
-  const registry = manifest.world.address;
-  const read = async () =>
-    new CallData(nativeGamesAbi(manifest)).parse(
-      "game",
-      await provider.callContract({ contractAddress: registry, entrypoint: "game", calldata: [gameId] }, "latest"),
-    ) as { ready: boolean; end_at: bigint; end_grace_seconds: bigint };
-  let game = await read();
-  if (game.ready) return { finalizeAt: Number(game.end_at + game.end_grace_seconds), settlementTransactions: 0 };
-  const settled = await completeNativeAdminCommand({
-    provider,
-    manifest,
-    gameId,
-    ...credentials,
-    command: { kind: "SettleBlitzRoster", value: undefined },
-  });
-  game = await read();
-  if (!game.ready) throw new Error("Roster settlement did not make the game ready");
-  return { finalizeAt: Number(game.end_at + game.end_grace_seconds), settlementTransactions: settled.transactions };
-}
-
-export interface BlitzRosterSettlement {
-  finalizeAt: number;
-  /** Transactions the settlement burst took at this game start; zero when the roster was already settled. */
-  settlementTransactions: number;
 }

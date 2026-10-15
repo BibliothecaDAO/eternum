@@ -45,9 +45,13 @@ export const rosterWalletOf = (game: HeraldGameDirectoryEntry): string | null =>
 export const isGameOver = (game: HeraldGameDirectoryEntry): boolean =>
   game.status === "Ended" || game.status === "Settled";
 
-/** Whether the player can enter the game now: ready, not over, and theirs to play; a Frontier season is open to all. */
+/** Whether the player can enter the game now: not over and theirs to play; a Frontier season is open to all. */
 export const canEnterGame = (game: DirectoryEntry): boolean =>
-  !game.error && game.ready && !isGameOver(game) && (isMember(game) || game.mode === "frontier");
+  !game.error && !isGameOver(game) && (game.mode === "frontier" || (isMember(game) && isSeated(game)));
+
+/** A fixed roster's player enters once their own realms are seated; nobody waits for the rest of the roster. */
+const isSeated = (game: HeraldGameDirectoryEntry): boolean =>
+  game.roster_count === 0 || game.player_state?.settled === true;
 
 /** The shards the directory still serves: retired ones are history. */
 export const listedShards = (shards: readonly DirectoryShard[]): DirectoryShard[] =>

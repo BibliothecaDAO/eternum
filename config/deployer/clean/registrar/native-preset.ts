@@ -85,20 +85,10 @@ export async function registerNativePreset(
   return receipt.transaction_hash;
 }
 
-export function buildNativeGameParams(
-  config: Config,
-  input: CreateGamePayloadInput,
-  roster: readonly { account: string; wallet: string }[] = [],
-) {
-  const preset = nativePresetForId(input.presetId);
-  if (preset.entryRule === nativeRuleConstants.ENTRY_ROSTER) {
-    const mode = preset.settlementMode;
-    if (input.singleRealmMode || input.twoPlayerMode !== (mode === "Duel"))
-      throw new Error("Settlement layout must match the mode preset");
-    if (mode === "Duel" && roster.length !== 2) throw new Error("Duel requires two players");
-    if (input.devModeOn) throw new Error("Blitz does not use development mode");
-    if (roster.length === 0) throw new Error("Blitz requires its roster at creation");
-  } else if (roster.length) throw new Error("Open seasons do not use a fixed roster");
+/** Open-entry games only: a fixed roster is frozen and launched by the launch service when its slot closes. */
+export function buildNativeGameParams(config: Config, input: CreateGamePayloadInput) {
+  if (nativePresetForId(input.presetId).entryRule === nativeRuleConstants.ENTRY_ROSTER)
+    throw new Error("Fixed-roster games launch from a closed slot");
   const common = buildCreateGameParams(config, { ...input, startMainAt: nativeSeasonStart(config, input) });
   return {
     name: common.name,
@@ -108,7 +98,7 @@ export function buildNativeGameParams(
     duration_seconds: common.duration_seconds,
     end_grace_seconds: common.end_grace_seconds,
     dev_mode_on: common.dev_mode_on,
-    roster,
+    roster: [],
     registration_start: common.registration_start_at,
     biome_climate: common.biome_climate_config,
     map_override: new CairoOption(

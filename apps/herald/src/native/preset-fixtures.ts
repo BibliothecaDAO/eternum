@@ -47,7 +47,6 @@ export function presetLaunch(
       name: "0x706172697479",
       preset_id: preset.presetId,
       settled: false,
-      ready: true,
       dev_mode_on: false,
       start_settling_at: timestamp,
       start_main_at: timestamp,

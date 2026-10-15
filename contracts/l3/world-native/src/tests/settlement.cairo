@@ -22,6 +22,15 @@ pub fn grants() -> crate::settlement::RealmGrants {
     grants
 }
 
+/// The grants a preset with this entry rule registers: a fixed roster deals troop types instead of a biome table.
+pub fn grants_for(entry_rule: u8) -> crate::settlement::RealmGrants {
+    if entry_rule == crate::rules::ENTRY_ROSTER {
+        crate::settlement::RealmGrants { starting_troops: array![].span(), ..grants() }
+    } else {
+        grants()
+    }
+}
+
 fn rules() -> SettlementRules {
     SettlementRules { registration_start: 10, registration_limit: 96, mode: SettlementMode::Single, spacing: 6 }
 }
@@ -34,7 +43,7 @@ fn seed_settlement(deployment: Deployment, game_id: u32, rules: SettlementRules)
     }
     preset.settlement.mode = rules.mode;
     preset.settlement.spacing = rules.spacing;
-    preset.settlement.realms = grants();
+    preset.settlement.realms = grants_for(preset.rules.entry_rule);
     play_fixture::seed_game_with_preset(deployment.games, game_id, games.game(game_id), preset);
     snforge_std::interact_with_state(
         deployment.games,
@@ -65,7 +74,7 @@ fn settlement_configuration_is_immutable_and_game_scoped() {
     let views = ISettlementViewsDispatcher { contract_address: deployment.games };
     assert!(views.settlement_rules(1).mode == SettlementMode::Single);
     assert_eq!(views.realm_grants(1), grants());
-    assert_eq!(views.realm_grants(2), grants());
+    assert_eq!(views.realm_grants(2), grants_for(crate::rules::ENTRY_ROSTER));
     assert!(views.settlement_rules(2).mode == SettlementMode::Triple);
     start_cheat_caller_address(deployment.games, authority());
     let game = IGameDispatcher { contract_address: deployment.games }.game(1);

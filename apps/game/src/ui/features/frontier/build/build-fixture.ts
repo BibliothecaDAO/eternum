@@ -24,7 +24,6 @@ export const realmBoard = () => {
       start_main_at: "100",
       end_at: "1000",
       settled: false,
-      ready: true,
       dev_mode_on: false,
       end_grace_seconds: 0,
       seed: "1",

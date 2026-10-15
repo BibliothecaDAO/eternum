@@ -263,8 +263,8 @@ test("an operator queues a test Blitz on a dev shard with the named roster, star
   expect(run).toMatchObject({ chainId: DEV_CHAIN, slotId: null, name: "test-hud" });
   expect(run!.request).toMatchObject({ environment: "madara.blitz", players: ["0xabc", "0x456"] });
   const startsIn = Date.parse((run!.request as { gameStartTime: string }).gameStartTime) - requestedAt;
-  expect(startsIn).toBeGreaterThanOrEqual(300_000);
-  expect(startsIn).toBeLessThanOrEqual(301_000);
+  expect(startsIn).toBeGreaterThanOrEqual(60_000);
+  expect(startsIn).toBeLessThanOrEqual(61_000);
   expect(armFor).toHaveBeenCalledOnce();
 });
 
