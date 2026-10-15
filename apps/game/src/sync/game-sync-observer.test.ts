@@ -53,12 +53,30 @@ describe("createGameSyncObserver", () => {
       __eternumGameEntryDurations?: Record<string, number>;
       __eternumGameEntryTimeline?: Array<{ name: string }>;
     };
-    expect(entryWindow.__eternumGameEntryTimeline?.map(({ name }) => name)).toEqual([
+    const snapshotMilestones = entryWindow.__eternumGameEntryTimeline
+      ?.map(({ name }) => name)
+      .filter((name) => name.startsWith("snapshot-"));
+    expect(snapshotMilestones).toEqual([
       "snapshot-receive-started",
       "snapshot-receive-completed",
       "snapshot-apply-started",
       "snapshot-apply-completed",
     ]);
     expect(entryWindow.__eternumGameEntryDurations).toMatchObject({ "snapshot-receive": 12, "snapshot-apply": 30 });
+  });
+
+  it("marks the entry timeline once, when the first confirmed head anchors chain time", () => {
+    const entryWindow = window as typeof window & { __eternumGameEntryTimeline?: Array<{ name: string }> };
+    const anchored = () =>
+      (entryWindow.__eternumGameEntryTimeline ?? []).filter(({ name }) => name === "chain-time-anchored").length;
+    entryWindow.__eternumGameEntryTimeline = [];
+    withStoreSnapshot(() => {
+      const observer = createGameSyncObserver();
+      observer.onHead?.({ block: 20, preconfirmed: true, timestamp: 300 });
+      expect(anchored()).toBe(0);
+      observer.onHead?.({ block: 20, preconfirmed: false, timestamp: 300 });
+      observer.onHead?.({ block: 21, preconfirmed: false, timestamp: 301 });
+      expect(anchored()).toBe(1);
+    });
   });
 });

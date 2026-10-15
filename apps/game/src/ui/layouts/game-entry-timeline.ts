@@ -23,6 +23,8 @@ type GameEntryMilestone =
   | "snapshot-apply-started"
   | "snapshot-apply-completed"
   | "initial-sync-completed"
+  | "chain-time-anchored"
+  | "initial-structure-selected"
   | "renderer-init-started"
   | "renderer-init-completed"
   | "bootstrap-completed"

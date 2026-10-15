@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-15",
+    title: "The map opens on your realm",
+    description:
+      "Entering a game, the map now opens where your realm is, or the realm you watch, instead of reloading the page the first time you open it.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-15",
     title: "Blitz ends on time",
     description:
       "Every Blitz keeps its scheduled start and end. Entry closes five minutes before the start; if placing every player's realms runs late, the game opens as soon as the last realm is placed and still ends on schedule.",

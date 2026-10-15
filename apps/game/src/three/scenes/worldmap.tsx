@@ -256,6 +256,7 @@ import {
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
 import { ARMY_SELECT_REQUEST_EVENT, readArmySelectRequest } from "./worldmap-army-select-request";
 import { dropNextOrder, queueNextOrder, takeNextOrder } from "./worldmap-next-order";
+import { whenEntryDestinationSettled } from "@/game-entry/entry-destination";
 import { ORDER_REQUEST_EVENT, orderOnTap, readOrderRequest, stepBackOnEscape } from "./worldmap-order-request";
 import { hudFor } from "@/ui/layouts/hud-for";
 import { type OrderTip, orderTip } from "@/ui/features/frontier/hud/order-tip";
@@ -4139,6 +4140,22 @@ export default class WorldmapScene extends WarpTravel {
     this.refreshWarpTravelScene({ isCurrent: () => !this.isSwitchedOff }).catch((error) =>
       this.reportWarpTravelRefreshError(error, "resume"),
     );
+  }
+
+  /**
+   * The map's first setup waits for where it opens: a route without a hex opens on the realm the entry selects
+   * (entry-destination), which can arrive after the snapshot. The world origin and every chunk follow the camera from
+   * the first, so the camera stands there before anything is placed, never on the way after it.
+   */
+  public override async setup(setupContext?: SceneSetupContext): Promise<void> {
+    if (!this.hasInitialized) await this.openOnEntryDestination();
+    await super.setup(setupContext);
+  }
+
+  private async openOnEntryDestination(): Promise<void> {
+    if (resolvePlayRouteWorldPosition(window.location)) return;
+    const destination = await whenEntryDestinationSettled();
+    if (destination) this.moveCameraToColRow(destination.col, destination.row, 0);
   }
 
   /** The flight owns the camera: no chunk work (terrain pages, composites, refreshes) draws on its way out. */
