@@ -9,20 +9,30 @@ const GAME_7_CRATE = {
   panel: { contents: ["Relics", "3", "Victory points", "250"] },
   opened: ["Damage Relic II", "Stamina Relic I", "Stamina Relic I"],
   log: ["Relic crate opened", "Stolsli T1 army · Damage Relic II, Stamina Relic I, Stamina Relic I"],
-  pageErrors: { errors: "", console: [] },
+  pageErrors: { errors: [], console: [] },
 };
 
 const crateWith = (change) => judgeStep({ ...GAME_7_CRATE, ...change });
 
-/** A browser on an ended game: every entrance shows the ended plate and its Results leads to the game's Results. */
-const endedGameBrowser = (pageErrorsByAddress = {}) => {
-  let page = "";
+/**
+ * A browser on an ended game: every entrance shows the ended plate and its Results leads to the game's Results. Each
+ * open of an address raises the next of its listed errors while the page loads, before `open` returns. The session
+ * keeps them across navigations, as agent-browser does, until a `--clear`, which this browser honours.
+ */
+const endedGameBrowser = (raisedOnOpen = {}) => {
+  const session = { errors: [], console: [] };
+  const answer = (data) => JSON.stringify({ success: true, data, error: null });
   return {
     run: (command, ...args) => {
-      if (command === "open") page = new URL(args[0]).pathname;
+      if (command === "open") {
+        const raised = raisedOnOpen[new URL(args[0]).pathname]?.shift() ?? {};
+        session.errors.push(...(raised.errors ?? []).map((text) => ({ text, line: 0, column: 0, url: null })));
+        session.console.push(...(raised.console ?? []));
+      }
       if (command === "get") return "https://proof.test/results/0xa-7";
-      if ((command === "errors" || command === "console") && args[0] !== "--clear")
-        return pageErrorsByAddress[page]?.[command] ?? "";
+      if ((command === "errors" || command === "console") && args[0] === "--clear") session[command] = [];
+      if (command === "errors") return answer({ errors: session.errors });
+      if (command === "console") return answer({ messages: session.console });
       return "";
     },
     evaluate: (js) => {
@@ -32,6 +42,15 @@ const endedGameBrowser = (pageErrorsByAddress = {}) => {
     },
   };
 };
+
+const STARTUP_ERROR = { errors: ["TypeError: startup listener failed"] };
+const STARTUP_CONSOLE = {
+  console: [
+    { type: "warning", text: "GameRenderer: slow" },
+    { type: "error", text: "initial page initialization failed" },
+  ],
+};
+const WARNING_ONLY = { console: [{ type: "warning", text: "GameRenderer: slow" }] };
 
 const proveEndedGame = async (browser) => {
   vi.useFakeTimers();
@@ -101,27 +120,35 @@ describe("a game's proof", () => {
     ]);
   });
 
-  it("fails the step whose page raised an error, keeping the error as the browser gave it", async () => {
+  it("fails every step whose page raised errors while it opened, keeping each step's own", async () => {
     const records = await proveEndedGame(
       endedGameBrowser({
-        "/g/0xa/7/map": { console: "[warning] GameRenderer: slow\n[error] [bootstrap] game entry bootstrap failed" },
-        "/g/0xa/7": { errors: "TypeError: x is undefined" },
+        "/g/0xa/7": [STARTUP_ERROR, STARTUP_ERROR],
+        "/g/0xa/7/map": [STARTUP_CONSOLE, STARTUP_CONSOLE],
       }),
     );
     expect(records.map((record) => record.problem)).toEqual(Array(4).fill("the page raised errors"));
-    expect(records[0].pageErrors).toEqual({ errors: "TypeError: x is undefined", console: [] });
-    expect(records[1].pageErrors.console).toEqual([
-      "[warning] GameRenderer: slow",
-      "[error] [bootstrap] game entry bootstrap failed",
-    ]);
+    const doorway = { errors: ["TypeError: startup listener failed"], console: [] };
+    const map = { errors: [], console: ["[warning] GameRenderer: slow", "[error] initial page initialization failed"] };
+    expect(records.map((record) => record.pageErrors)).toEqual([doorway, map, doorway, map]);
   });
 
-  it("passes a step whose console holds only warnings", async () => {
-    const records = await proveEndedGame(
-      endedGameBrowser({ "/g/0xa/7/map": { console: "[warning] GameRenderer: slow" } }),
-    );
+  it("charges an error to the step that raised it, not to the steps after it", async () => {
+    const records = await proveEndedGame(endedGameBrowser({ "/g/0xa/7": [STARTUP_ERROR] }));
+    expect(records.map((record) => record.problem ?? "pass")).toEqual([
+      "the page raised errors",
+      "pass",
+      "pass",
+      "pass",
+    ]);
+    expect(records.slice(1).map((record) => record.pageErrors)).toEqual(Array(3).fill({ errors: [], console: [] }));
+  });
+
+  it("passes a step whose console holds only warnings, keeping them", async () => {
+    const records = await proveEndedGame(endedGameBrowser({ "/g/0xa/7/map": [WARNING_ONLY, WARNING_ONLY] }));
     expect(records.every((record) => !record.problem)).toBe(true);
     expect(records[1].pageErrors.console).toEqual(["[warning] GameRenderer: slow"]);
+    expect(records[3].pageErrors.console).toEqual(["[warning] GameRenderer: slow"]);
   });
 
   it("moves the pointer outward from the tile the map opens on", () => {

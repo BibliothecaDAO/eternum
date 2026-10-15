@@ -61,10 +61,7 @@ const crateProblem = ({ panel, opened, log }) => {
 };
 
 /** The page's errors and its console's error lines; warnings stay in the console but fail nothing. */
-const errorsOf = ({ errors, console }) => [
-  ...errors.split("\n").filter((line) => line.trim()),
-  ...console.filter((line) => line.startsWith("[error]")),
-];
+const errorsOf = ({ errors, console }) => [...errors, ...console.filter((line) => line.startsWith("[error]"))];
 
 /** A step's verdict: its own problem, else a crate that disagrees with itself, else any error the page raised. */
 export const judgeStep = (record) => {
@@ -146,20 +143,33 @@ const clickAt = (b, [x, y]) => {
   b.run("mouse", "up");
 };
 
-/** The page's errors and its console's errors and warnings, as the browser kept them since the last clear. */
-const pageErrors = (b) => ({
-  errors: b.run("errors"),
-  console: b
-    .run("console")
-    .split("\n")
-    .filter((line) => line.startsWith("[error]") || line.startsWith("[warning]")),
+/**
+ * Every page error and console error or warning the session has raised, in order, with its full text. The browser
+ * keeps both across navigations. They are read as JSON because the plain `errors` output drops each error's text, and
+ * never cleared because `errors --clear` does not empty them (agent-browser 0.39.1).
+ */
+const sessionErrors = (b) => ({
+  errors: JSON.parse(b.run("errors", "--json")).data.errors.map((error) => error.text),
+  console: JSON.parse(b.run("console", "--json"))
+    .data.messages.filter((message) => message.type === "error" || message.type === "warning")
+    .map((message) => `[${message.type}] ${message.text}`),
 });
 
-const open = (b, url) => {
-  b.run("open", url, "--ignore-https-errors");
-  b.run("errors", "--clear");
-  b.run("console", "--clear");
+/**
+ * Each call returns what the session raised since the previous call: a step's errors from before its first navigation
+ * until its last check, and nothing of the step before it.
+ */
+const errorsSinceLastStep = (b) => {
+  let seen = { errors: 0, console: 0 };
+  return () => {
+    const all = sessionErrors(b);
+    const step = { errors: all.errors.slice(seen.errors), console: all.console.slice(seen.console) };
+    seen = { errors: all.errors.length, console: all.console.length };
+    return step;
+  };
 };
+
+const open = (b, url) => b.run("open", url, "--ignore-https-errors");
 
 const shot = (b, out, name) => {
   b.run("screenshot", join(out, name));
@@ -256,7 +266,7 @@ const proveEndedEntrance = async (b, base, addresses, entrance, layout, out) => 
 
 /**
  * The game's steps in order: the crate while the game runs, its end, then its ended entrances at both sizes. Each step
- * is judged with the errors its page raised, however far it got.
+ * is judged with every error raised from its start to its end, however far it got.
  */
 export const proveGame = async (b, { baseUrl, game, crate, untilEndMinutes, ended }, out) => {
   const addresses = gameAddresses(game);
@@ -268,7 +278,8 @@ export const proveGame = async (b, { baseUrl, game, crate, untilEndMinutes, ende
     for (const layout of Object.keys(VIEWPORTS))
       for (const entrance of ["doorway", "map"])
         steps.push(() => proveEndedEntrance(b, baseUrl, addresses, entrance, layout, out));
+  const stepErrors = errorsSinceLastStep(b);
   const records = [];
-  for (const step of steps) records.push(judgeStep({ ...(await step()), pageErrors: pageErrors(b) }));
+  for (const step of steps) records.push(judgeStep({ ...(await step()), pageErrors: stepErrors() }));
   return { addresses, records };
 };
