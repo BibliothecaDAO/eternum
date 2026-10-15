@@ -104,10 +104,10 @@ const IdentityChipTrigger = ({
   const requestSignIn = useRequestSignIn();
 
   return (
-    <button
-      type="button"
-      aria-expanded={isOpen}
-      aria-label="Identity"
+    <IdentityChipView
+      state={state}
+      isOpen={isOpen}
+      compact={compact}
       onClick={() => {
         if (state.kind === "unnamed") {
           requestSignIn();
@@ -119,6 +119,28 @@ const IdentityChipTrigger = ({
           togglePopover(IDENTITY_POPOVER_ID);
         }
       }}
+    />
+  );
+};
+
+export function IdentityChipView({
+  state,
+  isOpen,
+  compact,
+  onClick,
+}: {
+  state: IdentityChipState;
+  isOpen: boolean;
+  compact: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-expanded={isOpen}
+      aria-label="Identity"
+      data-notice
+      onClick={onClick}
       className={cn(
         TOP_PILL,
         HUD_LABEL_BRIGHT,
@@ -130,14 +152,14 @@ const IdentityChipTrigger = ({
       {compact ? <CompactIdentityLabel state={state} /> : <IdentityChipLabel state={state} />}
     </button>
   );
-};
+}
 
 const CompactIdentityLabel = ({ state }: { state: IdentityChipState }) => {
   if (state.kind === "player") {
     return (
       <>
         <span className="min-w-0 truncate">{state.name}</span>
-        {state.standing && <span className="shrink-0 text-gold/70">#{state.standing.rank}</span>}
+        {state.standing && <span className="shrink-0 text-gold/70">{formatPoints(state.standing.points)} VP</span>}
       </>
     );
   }

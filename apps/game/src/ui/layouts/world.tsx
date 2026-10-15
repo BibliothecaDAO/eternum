@@ -1,3 +1,4 @@
+import { ArenaHud } from "../features/world/containers/arena-hud";
 import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
 import { SentryUserSync } from "@/observability/sentry-user-sync";
 import { Leva } from "leva";
@@ -9,13 +10,8 @@ import { Tooltip } from "../design-system/molecules/tooltip";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
 import { TransferAutomationManager } from "../features/infrastructure/automation/transfer-automation-manager";
 import { ActionInfo } from "../features/world/components/actions/action-info";
-import { BottomRightPanel } from "../features/world/components/bottom-right-panel";
 import { ContextMenu } from "../features/world/components/context-menu/context-menu";
-import { CompactHud } from "../features/world/containers/compact-hud";
-import { LeftCommandSidebar } from "../features/world/containers/left-command-sidebar";
 import { LeftViewSurfaces } from "../features/world/containers/left-view-surfaces";
-import { TopHeader } from "../features/world/containers/top-header/top-header";
-import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { GameCycleEffects } from "../shared/components/game-cycle-effects";
 import { BlockTimestampPoller } from "../shared/components/block-timestamp-poller";
 import { ActionRunners } from "../action-runners";
@@ -31,7 +27,7 @@ import { MotionLayer } from "@/ui/motion/motion-layer";
 import { PlayOverlayManager } from "./play-overlay-manager";
 
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
-  return (
+  const content = (
     <>
       {/* Background managers and effects (no UI) */}
       <BackgroundSystems />
@@ -66,6 +62,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
       </div>
     </>
   );
+  return content;
 };
 
 /**
@@ -105,16 +102,7 @@ const GameSystems = ({ backgroundImage }: { backgroundImage: string }) => (
   </>
 );
 
-/**
- * HUD (Heads-Up Display) - persistent UI elements positioned around the screen.
- * Desktop layout:
- * - Top: TopHeader (player info, map toggle, clock and attention)
- * - Left: LeftCommandSidebar (structure selector and empire cockpit)
- * - Bottom: BottomRightPanel (minimap, feed, tile inspector, chat)
- * Below `lg` the columns collapse into CompactHud: one tab bar and one sheet, laid out for the phone's orientation.
- * The Build / Logistics / Military surfaces and every other popover hang off their own trigger on both layouts.
- * A Frontier game has its own HUD instead of these regions.
- */
+/** Each mode selects its production HUD; the lab mounts the same arena views on fixture facts. */
 const HUD = () => {
   const expeditionRules = useExpeditionRules();
   const hud = hudFor(useGameModeConfig().id, expeditionRules !== null);
@@ -125,6 +113,7 @@ const HUD = () => {
         <FrontierHud rules={expeditionRules} />
       ) : hud === "shared" ? (
         <>
+          <ActionInfo />
           <ArenaHud />
           <LeftViewSurfaces />
         </>
@@ -132,25 +121,6 @@ const HUD = () => {
       {/* Every mode's moments fly their sprites on this one layer. */}
       <MotionLayer />
       <ContextMenu />
-    </>
-  );
-};
-
-const ArenaHud = () => {
-  const lane = useCompactLane();
-  return (
-    <>
-      {/* The hovered order's costs; Frontier's action bar shows them in its own HUD. */}
-      <ActionInfo />
-      <TopHeader />
-      {lane ? (
-        <CompactHud lane={lane} />
-      ) : (
-        <>
-          <LeftCommandSidebar />
-          <BottomRightPanel />
-        </>
-      )}
     </>
   );
 };

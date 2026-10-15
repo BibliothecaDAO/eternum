@@ -1,4 +1,9 @@
-import { StructureType } from "@bibliothecadao/types";
+import { iconUrl } from "@/ui/design-system/icon-meaning";
+import {
+  createTerrainVerificationRequest,
+  TERRAIN_SETTLEMENT_REGROWTH_SITES,
+} from "@/three/terrain/verification/terrain-verification-fixtures";
+import { BiomeTypeToId, StructureType, TileOccupier } from "@bibliothecadao/types";
 import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 export const viewNames = [
   ["Realm", "World map"],
@@ -19,8 +24,13 @@ export function makeStructures(count: number) {
             : index === 219
               ? "Lastwatch 220"
               : `${["Ashford", "Highmere", "Redwater", "Stonegate", "Westreach"][index % 5]} ${String(index + 1).padStart(3, "0")}`,
-    kind: index % 5 === 3 ? "Village" : index % 5 === 4 ? "Camp" : "Realm",
-    level: 1 + (index % 4),
+    kind:
+      index < 3
+        ? "Realm"
+        : ["Realm", "Village", "Camp", "Hyperstructure", "Mine", "Bank", "BitcoinMine", "Rift", "Ruin", "Stragglers"][
+            (index - 3) % 10
+          ],
+    level: index === 2 ? 0 : index % 4,
     needs: index % 7 === 0,
     guards: index % 7 === 0 ? 0 : 1 + (index % 3),
   }));
@@ -36,21 +46,25 @@ export const resources = [
   { name: "Knight", held: "120", buildings: 1, producing: false, seconds: 0, rate: "Idle" },
 ];
 
+export const troopFixtures = ["Knight", "Crossbowman", "Paladin"].flatMap((type, typeIndex) =>
+  [1, 2, 3].map((tier) => ({
+    resource: tier === 1 ? type : `${type}T${tier}`,
+    label: `${type} T${tier}`,
+    held: 120 - typeIndex * 20 - (tier - 1) * 10,
+    army: `${type} company ${tier}`,
+  })),
+);
+
 export const actionChoices = [
-  { id: "build", word: "Build", image: "/image-icons/construction.png" },
-  { id: "production", word: "Production", image: "/image-icons/production.png" },
-  { id: "military", word: "Military", image: "/image-icons/military.png" },
-  { id: "transfer", word: "Transfer", image: "/image-icons/transfer.png" },
-  { id: "trade", word: "Trade", image: "/image-icons/trade.png" },
+  { id: "build", word: "Build", image: iconUrl("build") },
+  { id: "production", word: "Production", image: iconUrl("production") },
+  { id: "military", word: "Military", image: iconUrl("military") },
+  { id: "transfer", word: "Transfer", image: iconUrl("transfer") },
+  { id: "trade", word: "Trade", image: iconUrl("trade") },
 ] as const;
 
 export function currentStructure(holding: Holding): StructureWithMetadata {
-  const category =
-    holding.kind === "Realm"
-      ? StructureType.Realm
-      : holding.kind === "Camp"
-        ? StructureType.Camp
-        : StructureType.Village;
+  const category = StructureType[holding.kind as keyof typeof StructureType] as StructureType;
   return {
     entityId: holding.id,
     category,
@@ -83,7 +97,7 @@ export function currentStructure(holding: Holding): StructureWithMetadata {
     displayName: holding.name,
     originalName: holding.name,
     realmLevel: holding.level,
-    realmLevelLabel: "Settlement",
+    realmLevelLabel: ["Settlement", "City", "Kingdom", "Empire"][holding.level],
     population: 5,
     populationCapacity: 6,
     guardCount: holding.guards,
@@ -92,7 +106,7 @@ export function currentStructure(holding: Holding): StructureWithMetadata {
     buildingTilesTotal: 6,
     groupColor: null,
     isFavorite: false,
-    canUpgrade: true,
+    canUpgrade: category === StructureType.Realm && holding.level < 3,
     buildingCounts: {
       wheat: 3,
       wood: 2,
@@ -116,3 +130,25 @@ export function fixtureCommands(count: number): ReadonlySet<string> {
     ...(count === 220 ? ["CreateTradeOrder"] : []),
   ]);
 }
+
+const terrainFixture = createTerrainVerificationRequest("settlement-regrowth");
+export const minimapTiles = terrainFixture.cells.map((cell) => {
+  const siteIndex = TERRAIN_SETTLEMENT_REGROWTH_SITES.findIndex(
+    (site) => site.col === cell.col && site.row === cell.row,
+  );
+  const armyId = cell.col === 7 && cell.row === 3 ? "501" : cell.col === 12 && cell.row === 2 ? "999" : null;
+  return {
+    col: cell.col,
+    row: cell.row,
+    biome: cell.biome ? BiomeTypeToId[cell.biome] : undefined,
+    ...(siteIndex >= 0
+      ? {
+          occupier_id: String(siteIndex + 1),
+          occupier_type: TileOccupier.RealmRegularLevel1 + (siteIndex === 2 ? 0 : siteIndex),
+          occupier_is_structure: true,
+        }
+      : armyId
+        ? { occupier_id: armyId, occupier_type: TileOccupier.ExplorerKnightT1, occupier_is_structure: false }
+        : {}),
+  };
+});

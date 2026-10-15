@@ -5,6 +5,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { TOP_PILL } from "./top-pill";
 
 interface MapViewControlsProps {
+  names?: readonly [string, string];
   compact: boolean;
   isLocalView: boolean;
   canOpenLocal: boolean;
@@ -16,6 +17,7 @@ interface MapViewControlsProps {
 
 /** Primary map navigation, with one space-saving layer toggle in the mobile HUD. */
 export function MapViewControls({
+  names = ["Realm", "World map"],
   compact,
   isLocalView,
   canOpenLocal,
@@ -26,7 +28,13 @@ export function MapViewControls({
 }: MapViewControlsProps) {
   return (
     <div className="flex min-w-0 items-center gap-2">
-      <MapViewSwitch compact={compact} isLocalView={isLocalView} canOpenLocal={canOpenLocal} onNavigate={onNavigate} />
+      <MapViewSwitch
+        names={names}
+        compact={compact}
+        isLocalView={isLocalView}
+        canOpenLocal={canOpenLocal}
+        onNavigate={onNavigate}
+      />
       {showLayerSwitch &&
         (compact ? (
           <CompactLayerSwitch mapLayer={mapLayer} onLayerChange={onLayerChange} />
@@ -38,11 +46,13 @@ export function MapViewControls({
 }
 
 const MapViewSwitch = ({
+  names,
   compact,
   isLocalView,
   canOpenLocal,
   onNavigate,
 }: {
+  names: readonly [string, string];
   compact: boolean;
   isLocalView: boolean;
   canOpenLocal: boolean;
@@ -51,21 +61,23 @@ const MapViewSwitch = ({
   <div role="group" aria-label="Map view" className={cn(TOP_PILL, "gap-0.5 px-1 max-lg:h-auto")}>
     <button
       type="button"
+      data-notice
       aria-pressed={isLocalView}
       disabled={!canOpenLocal}
       title={canOpenLocal ? undefined : "Select a structure to open its local view"}
       onClick={() => onNavigate(false)}
       className={cn(viewButtonClasses(isLocalView, compact), "disabled:cursor-not-allowed disabled:opacity-40")}
     >
-      Local
+      {names[0]}
     </button>
     <button
       type="button"
+      data-notice
       aria-pressed={!isLocalView}
       onClick={() => onNavigate(true)}
       className={viewButtonClasses(!isLocalView, compact)}
     >
-      World
+      {names[1]}
     </button>
   </div>
 );
@@ -85,6 +97,7 @@ const CompactLayerSwitch = ({
     <div role="group" aria-label="Map layer" className={cn(TOP_PILL, "px-1 max-lg:h-auto")}>
       <button
         type="button"
+        data-notice
         aria-label={`Map layer: ${currentLayer}. Switch to ${nextLayer}`}
         title={`Switch to ${nextLayer}`}
         onClick={() => onLayerChange(!mapLayer)}
@@ -101,6 +114,7 @@ const LayerSwitch = ({ mapLayer, onLayerChange }: { mapLayer: boolean; onLayerCh
   <div role="group" aria-label="Map layer" className={cn(TOP_PILL, "gap-0.5 px-1 max-lg:h-auto")}>
     <button
       type="button"
+      data-notice
       aria-pressed={!mapLayer}
       onClick={() => onLayerChange(false)}
       className={layerButtonClasses(!mapLayer)}
@@ -110,6 +124,7 @@ const LayerSwitch = ({ mapLayer, onLayerChange }: { mapLayer: boolean; onLayerCh
     </button>
     <button
       type="button"
+      data-notice
       aria-pressed={mapLayer}
       onClick={() => onLayerChange(true)}
       className={layerButtonClasses(mapLayer)}

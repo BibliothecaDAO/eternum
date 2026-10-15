@@ -1,5 +1,5 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-
+import { categoryPaintings } from "@/ui/design-system/painted/hud-art";
 import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
@@ -72,7 +72,7 @@ interface StructureStatusRowProps {
    * "full" → left rail (favorite star, level, pop, tiles, realm actions, pencil).
    * "compact" → modal sidebar (star + icon + name + level + attention dot).
    */
-  variant?: "full" | "compact";
+  variant?: "full" | "compact" | "guided";
   onToggleFavorite?: (entityId: ID) => void;
   onRequestRename?: (entityId: ID) => void;
   /**
@@ -169,6 +169,32 @@ export const StructureStatusRowView = memo(
     const starTone = statusTone ? STATUS_TONE_TEXT[statusTone.tone] : "text-kit-muted";
     const starTitle = statusTone?.title ?? (isFavorite ? "Remove from favorites" : "Favorite structure");
 
+    if (variant === "guided")
+      return (
+        <div
+          data-notice
+          className="holding-row"
+          role="button"
+          tabIndex={0}
+          aria-label={`Select ${structure.displayName}`}
+          aria-pressed={isActive}
+          onClick={handleCardClick}
+          onKeyDown={handleKeyDown}
+        >
+          <img className="holding-mark" src={categoryPaintings[structure.category as StructureType].art} alt="" />
+          <span className="holding-name">{structure.displayName}</span>
+          {isRealm && <span className="holding-level">Lv {structure.realmLevel}</span>}
+          {structure.canUpgrade && (
+            <span
+              className="row-upgrade"
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
+            >
+              {realmActions}
+            </span>
+          )}
+        </div>
+      );
     return (
       <div
         role="button"

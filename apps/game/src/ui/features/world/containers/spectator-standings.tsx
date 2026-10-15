@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Position, configManager, structureMapPosition } from "@bibliothecadao/eternum";
 import { StructureType } from "@bibliothecadao/types";
 import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
@@ -33,7 +33,7 @@ export function SpectatorStandings() {
 }
 
 /** The standings table without a frame, so the desktop column and the compact sheet host the same rows. */
-export function SpectatorStandingsBody() {
+function SpectatorStandingsBody() {
   return <StandingsRows key={configManager.getActiveGameId()} />;
 }
 
@@ -49,7 +49,11 @@ function StandingsRows() {
     [standingsByAddress],
   );
   const tick = useCurrentArmiesTick();
-  const [history, setHistory] = useState<StandingsTick | null>(null);
+  const [history, setHistory] = useState<{ tick: number; entries: typeof standings; snapshot: StandingsTick }>({
+    tick,
+    entries: standings,
+    snapshot: advanceStandingsTick(null, tick, standings),
+  });
   const structures = useFactView(gameStructuresView);
   const {
     setup: { store },
@@ -57,11 +61,10 @@ function StandingsRows() {
   const players = usePlayers();
   const selectedId = useUIStore((state) => state.structureEntityId);
   const navigate = useNavigateToMapView();
-  useEffect(() => {
-    setHistory((previous) => advanceStandingsTick(previous, tick, standings));
-  }, [standings, tick]);
+  if (history.tick !== tick || history.entries !== standings)
+    setHistory({ tick, entries: standings, snapshot: advanceStandingsTick(history.snapshot, tick, standings) });
   const selectedOwner = structures.find((structure) => structure.entity_id === BigInt(selectedId))?.owner;
-  const rows = selectSpectatorStandings(standings, selectedOwner, history);
+  const rows = selectSpectatorStandings(standings, selectedOwner, history.snapshot);
 
   return (
     <>

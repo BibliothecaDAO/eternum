@@ -1,4 +1,4 @@
-import { type FC, type ReactNode } from "react";
+import { type FC } from "react";
 
 import clsx from "clsx";
 
@@ -20,7 +20,6 @@ const IDLE_COLOR: [number, number, number] = [251, 191, 36]; // amber
 
 interface ProductionStatusBadgeProps {
   resourceLabel: string;
-  icon?: ReactNode;
   tooltipText: string;
   isProducing: boolean;
   timeRemainingSeconds: number | null;
@@ -45,7 +44,6 @@ interface ProductionStatusBadgeProps {
 
 export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
   resourceLabel,
-  icon,
   tooltipText,
   isProducing,
   timeRemainingSeconds,
@@ -189,14 +187,7 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
             : "0 0 8px rgba(0,0,0,0.45)",
         }}
       >
-        {icon ?? (
-          <ResourceIcon
-            resource={resourceLabel}
-            size={preset.icon}
-            tooltipText={tooltipText}
-            withTooltip={showTooltip}
-          />
-        )}
+        <ResourceIcon resource={resourceLabel} size={preset.icon} tooltipText={tooltipText} withTooltip={showTooltip} />
       </div>
       {cornerTopLeft && (
         <span className="absolute -top-1.5 -left-1.5 z-10 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-black/85 px-1.5 text-sm font-semibold text-gold/90 shadow-md border border-gold/40">

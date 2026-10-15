@@ -1,23 +1,9 @@
 import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { type IconMeaning } from "@/ui/design-system/icon";
 
-import type { LeftListFilter, LeftListSort } from "@/hooks/store/use-ui-store";
+import type { LeftListSort } from "@/hooks/store/use-ui-store";
 import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 import { type ID, StructureType } from "@bibliothecadao/types";
-
-/**
- * Returns structures matching `filter`. `"all"` keeps everything (only used
- * when the player owns nothing in the currently-selected category and the
- * rail falls back to "show what you have"); otherwise we keep entries whose
- * `category` matches the requested StructureType.
- */
-export const filterStructures = (
-  structures: StructureWithMetadata[],
-  filter: LeftListFilter,
-): StructureWithMetadata[] => {
-  if (filter === "all") return structures;
-  return structures.filter((structure) => structure.category === filter);
-};
 
 const compareNames = (a: StructureWithMetadata, b: StructureWithMetadata) => a.displayName.localeCompare(b.displayName);
 
@@ -82,11 +68,4 @@ export const CATEGORY_FILTER_OPTIONS: Array<{
     label: "Hyperstructures",
     icon: structureMeaning(StructureType.Hyperstructure),
   },
-];
-
-const SORT_OPTIONS: Array<{ value: LeftListSort; label: string }> = [
-  { value: "favorites", label: "Favorites" },
-  { value: "level", label: "Level" },
-  { value: "population", label: "Population" },
-  { value: "name", label: "Name" },
 ];

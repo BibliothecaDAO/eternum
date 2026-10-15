@@ -13,7 +13,6 @@ import { Position, configManager } from "@bibliothecadao/eternum";
 import { useUISound } from "@/audio/hooks/useUISound";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { GameClock } from "./game-clock";
-import { AttentionPill } from "./attention-pill";
 import { IdentityChip } from "./identity-chip";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
@@ -102,7 +101,7 @@ export const TopHeader = memo(() => {
         lane={lane}
         identity={<IdentityChip compact={lane !== null} />}
         clock={<GameClock compact={lane !== null} />}
-        attention={<AttentionPill />}
+        attention={null}
         settings={<SecondaryMenuItems />}
         viewControls={
           <MapViewControls

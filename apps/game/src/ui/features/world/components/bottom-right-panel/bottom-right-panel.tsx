@@ -1,17 +1,16 @@
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
+import { presentedMineKind } from "@bibliothecadao/eternum";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { knownBalance } from "@/ui/utils/utils";
 
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 import { getMinePresentation } from "@bibliothecadao/types";
-import { HUD_COLUMN_WIDTH } from "@/ui/features/world/containers/hud-layout";
-import { RightHudColumn } from "@/ui/features/world/containers/right-hud-column";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { InlineProduction } from "@/ui/features/settlement/production/inline-production";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
-import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useTileAt } from "@/hooks/helpers/use-tile-at";
 import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/lib/structure-type-utils";
@@ -43,23 +42,19 @@ import {
   BUILDINGS_CENTER,
   BuildingType,
   BuildingTypeToString,
-  ID,
   ResourcesIds,
   StructureType,
   TileOccupier,
   findResourceById,
 } from "@bibliothecadao/types";
-import { memo, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
 import { RealmUpgradeCompact } from "@/ui/modules/entity-details/realm/realm-details";
 import { resolveRealmHasAvailableBuildingTile } from "@/ui/features/settlement/construction/realm-build-actions";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 
-import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN, MINIMAP_SIZE } from "./constants";
 import { HexMinimap, readMinimapTiles, type MinimapTile } from "./hex-minimap";
-import { presentedMineKind } from "@bibliothecadao/eternum";
-import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 const compactResourceFormatter = new Intl.NumberFormat("en-US", {
   notation: "compact",
@@ -73,19 +68,6 @@ const formatResourceAmount = (value: number): string => {
   }
   return flooredValue.toLocaleString();
 };
-
-interface PanelFrameProps {
-  title: string;
-  children: ReactNode;
-  headerAction?: ReactNode;
-  className?: string;
-  /**
-   * Optional pixel height. Defaults to BOTTOM_PANEL_HEIGHT (used by the tile
-   * details panel); minimap renders at a smaller height since it's a constant
-   * reference widget rather than a content panel.
-   */
-  height?: number | string;
-}
 
 interface ResourceAmountEntry {
   resource: number;
@@ -118,23 +100,6 @@ const normalizeResourceEntries = (value: unknown): ResourceAmountEntry[] => {
     .map(toEntry)
     .filter((entry): entry is ResourceAmountEntry => Boolean(entry));
 };
-
-const PanelFrame = ({ title, children, headerAction, className, height }: PanelFrameProps) => (
-  <section
-    className={cn(
-      "pointer-events-auto flex h-full flex-col overflow-hidden rounded-xl",
-      OVERLAY_SURFACE_BASE,
-      className,
-    )}
-    style={{ height: height ?? BOTTOM_PANEL_HEIGHT }}
-  >
-    <header className="flex items-center justify-between gap-2 border-b border-gold/20 px-2 py-1 lg:px-3 lg:py-1.5">
-      <p className="min-w-0 flex-1 truncate text-sm font-semibold text-gold/70">{title}</p>
-      {headerAction ? <div className="shrink-0">{headerAction}</div> : null}
-    </header>
-    <div className="flex-1 min-h-0 overflow-hidden px-1.5 py-1 lg:px-2.5 lg:py-2">{children}</div>
-  </section>
-);
 
 const MapTilePanel = () => {
   const selectedHex = useUIStore((state) => state.selectedHex);
@@ -704,13 +669,12 @@ const LocalTilePanel = () => {
   );
 };
 
-export const MinimapPanel = ({ compact = false }: { compact?: boolean }) => {
+export const MinimapPanel = () => {
   const {
     setup: { store },
   } = useGame();
-  useNativeRevision(["Structure"]);
   const [tiles, setTiles] = useState<MinimapTile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+
   const { isMapView } = useQuery();
   const selectedHex = useUIStore((state) => state.selectedHex);
   const navigationTarget = useUIStore((state) => state.navigationTarget);
@@ -738,13 +702,11 @@ export const MinimapPanel = ({ compact = false }: { compact?: boolean }) => {
     const projection = getActiveGameSyncRuntime()?.getWorldSpatialProjection();
     if (!projection) {
       console.error("[MinimapPanel] WorldSpatialProjection is unavailable for the active game");
-      setIsLoading(false);
       return;
     }
 
     const readTiles = () => {
       setTiles(readMinimapTiles(projection, mapLayer));
-      setIsLoading(false);
     };
 
     readTiles();
@@ -757,26 +719,12 @@ export const MinimapPanel = ({ compact = false }: { compact?: boolean }) => {
   }, [mapLayer]);
 
   return (
-    <PanelFrame title="Minimap" height={compact ? "clamp(180px, 35dvh, 320px)" : MINIMAP_SIZE}>
-      <div className="relative flex h-full min-h-0 flex-col">
-        <div className="relative flex-1 min-h-0 overflow-hidden rounded-b-xl rounded-t-none border border-gold/15 bg-gradient-to-br from-black/70 via-black/60 to-amber-900/20">
-          <HexMinimap
-            tiles={tiles.map((tile) => ({
-              ...tile,
-              mineKind: mineKindOnTile(store, tile.occupier_id),
-            }))}
-            selectedHex={focusSelectedHex}
-            navigationTarget={navigationTarget}
-            cameraTargetHex={focusHex}
-          />
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-              <div className="h-10 w-10 animate-spin rounded-full border-2 border-gold/40 border-t-gold" />
-            </div>
-          )}
-        </div>
-      </div>
-    </PanelFrame>
+    <HexMinimap
+      tiles={tiles}
+      selectedHex={focusSelectedHex}
+      navigationTarget={navigationTarget}
+      cameraTargetHex={focusHex}
+    />
   );
 };
 
@@ -788,51 +736,4 @@ export const useSelectedTileDetails = (): ReactNode => {
   if (!isMapView && selectedBuildingHex) return <LocalTilePanel />;
   if (selectedHex) return <MapTilePanel />;
   return null;
-};
-
-/**
- * BottomRightPanel places the minimap at left and the feed, details and chat at right.
- * Independent widgets:
- *   - RightHudColumn: persistent feed and chat, with details when a tile is selected.
- *   - MinimapAtom: bottom-left, persistent in map view.
- * They no longer share a frame or tab strip.
- */
-export const BottomRightPanel = memo(() => {
-  const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
-  const tileDetails = useSelectedTileDetails();
-
-  if (showBlankOverlay) return null;
-  // Minimap + action row stay persistent in both map and local views — the
-  // player wants to keep an eye on activity near their realm even while they
-  // manage tiles up close.
-  const showMinimap = true;
-
-  return (
-    <>
-      {showMinimap && (
-        <>
-          <div
-            className={cn("pointer-events-auto fixed left-3 z-[25]", HUD_COLUMN_WIDTH)}
-            style={{ bottom: BOTTOM_PANEL_MARGIN }}
-            aria-label="Minimap"
-          >
-            <MinimapPanel />
-          </div>
-        </>
-      )}
-      <RightHudColumn>{tileDetails}</RightHudColumn>
-    </>
-  );
-});
-
-BottomRightPanel.displayName = "BottomRightPanel";
-
-/** The mine kind a minimap tile's occupier is drawn as, when it is a mine. */
-const mineKindOnTile = (store: NativeFactStore, occupierId: number | string | bigint | null | undefined) => {
-  if (!occupierId) return undefined;
-  const structure = store.get("Structure", {
-    game_id: configManager.getActiveGameId(),
-    entity_id: safeInteger(occupierId),
-  });
-  return structure ? presentedMineKind(structure) : undefined;
 };

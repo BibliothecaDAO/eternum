@@ -16,15 +16,8 @@ export const SecondaryMenuItems = () => {
         align="end"
         className="w-[420px] overflow-y-auto"
         trigger={
-          <CircleButton
-            variant="hud"
-            className="settings-selector"
-            tooltipLocation="bottom"
+          <SettingsButton
             active={openPopoverId === SETTINGS_POPOVER_ID}
-            image={"settings" as const}
-            label={"Settings"}
-            aria-label="Settings"
-            size="topbar"
             onClick={() => togglePopover(SETTINGS_POPOVER_ID)}
           />
         }
@@ -34,3 +27,20 @@ export const SecondaryMenuItems = () => {
     </div>
   );
 };
+
+export function SettingsButton({ active = false, onClick }: { active?: boolean; onClick: () => void }) {
+  return (
+    <CircleButton
+      variant="hud"
+      className="settings-selector"
+      tooltipLocation="bottom"
+      active={active}
+      image="settings"
+      label="Settings"
+      aria-label="Settings"
+      data-notice
+      size="topbar"
+      onClick={onClick}
+    />
+  );
+}

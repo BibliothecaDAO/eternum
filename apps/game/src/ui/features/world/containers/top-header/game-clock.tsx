@@ -38,6 +38,21 @@ export const GameClock = memo(({ compact = false }: { compact?: boolean }) => {
     return () => document.body.classList.remove(...URGENCY_CLASSES);
   }, [urgency]);
   if (clock.phase === "finished") return <GameFinishedPill />;
+  return <GameClockView clock={clock} dayPhase={dayPhase} armyTickSeconds={armyTickSeconds} compact={compact} />;
+});
+GameClock.displayName = "GameClock";
+
+export function GameClockView({
+  clock,
+  dayPhase,
+  armyTickSeconds,
+  compact = false,
+}: {
+  clock: ReturnType<typeof resolveGameClock>;
+  dayPhase: ReturnType<typeof resolveDayPhase>;
+  armyTickSeconds: number;
+  compact?: boolean;
+}) {
   const PhaseIcon = PHASE_ICONS[dayPhase.name];
   const phaseSecondsLeft = Math.round(((100 - dayPhase.progress) / 100) * armyTickSeconds);
   const daySecondsLeft = phaseSecondsLeft + (DAY_PHASES.length - 1 - dayPhase.index) * armyTickSeconds;
@@ -51,6 +66,7 @@ export const GameClock = memo(({ compact = false }: { compact?: boolean }) => {
     <div
       className={cn(TOP_PILL, "relative overflow-hidden", compact && "flex-col items-start justify-center gap-0 px-2")}
       aria-label="Game clock"
+      data-notice
       title={compact ? `${clock.label}\n${breakdown}` : breakdown}
     >
       <span className="flex items-center gap-1.5" aria-label={compact ? clock.label : undefined}>
@@ -90,5 +106,4 @@ export const GameClock = memo(({ compact = false }: { compact?: boolean }) => {
       )}
     </div>
   );
-});
-GameClock.displayName = "GameClock";
+}

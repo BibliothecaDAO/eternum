@@ -1,86 +1,74 @@
 # HUD comparison
 
-Choose a HUD while keeping the live terrain, lighting and camera fixed. Open `/lab/kit/hud/redesign`; the kit's
-component page links here. This extends UI kit & HUD. No game orders are sent.
+Open `/lab/kit/hud/redesign?variant=rails&count=3`. The tool compares the production arena HUD views against the classic
+reference on one live terrain renderer. Switching preserves the camera and lighting. `capture=1` hides lab controls for
+a 1440×900 or 390×844 evidence frame.
 
-The controls switch Current HUD / A, 3 / 25 / 220 structures, three naming pairs, two list treatments and two dock
-positions. Current reconstructs the classic layout on fixture facts with the shipped structure rows, filter chips,
-production badges and minimap. A puts holdings and the realm panel on the left, and suggestion, events and selected tile
-on the right, using the same bronze panels and primary button as the War room. Phone Map / Holdings stays unchanged.
-Current's lab callbacks preview selection, favorites and sheets; they are not a logged-in game. Historical screenshots
-remain the pixel reference. B's resource shelf, the ledger and wide minimap were rejected for obscuring more than the
-current HUD.
+The game entry is `ui/layouts/world.tsx` → `ArenaHud` → `ArenaHudView`. The fixture adapter supplies readings and
+preview callbacks to the same views. There is no separate A row, resource panel, command button or minimap renderer.
+`CurrentHudReference` retains the classic layout with origin's production components and Facets art; it is a reference
+reconstruction, not a second playable game. Historical classic and War room captures remain the pixel references.
 
-| Feature           | Reach it                                                                                            |
-| ----------------- | --------------------------------------------------------------------------------------------------- |
-| Compare layouts   | Current HUD / A · Guided rails; the renderer and camera stay mounted                                |
-| Camera            | Drag exposed terrain, wheel to zoom, Reset camera in the toolbar                                    |
-| Structures        | Scale selector; A: category filters, search, sort, select a row                                     |
-| Large list        | 220 structures; search Lastwatch, or choose Attention groups and open Running                       |
-| Resources         | Named circles and owned amounts; badge is building count, ring is supply                            |
-| Production        | Smart / Idle / Custom; Production detail opens six readings and Input rules                         |
-| Commands          | Build, Production, Military, Transfer; Trade joins the 220/Eternum fixture command mask             |
-| Suggestion/events | Level up to City opens its preview; scout event selects Northern grassland                          |
-| Minimap           | The shipped hex renderer uses the terrain fixture's cells and structures; drag pans the live camera |
-| Marker values     | Realm level and army strength stay attached to the rendered markers during navigation               |
-| Phone             | Map / Holdings at the foot; the holdings panel provides list and production controls                |
-| Inventory         | Noticed units in the lab toolbar expands the per-group inventory                                    |
-| Evidence frame    | Add `capture=1` to remove lab chrome; 1440×900 desktop or 390×844 phone                             |
+| Feature            | Reach it                                                                                                             |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| Comparison         | Current HUD / A; one canvas stays mounted                                                                            |
+| Structures         | 3, 25 or 220; painted category chips with counts; search; select a row                                               |
+| Categories         | Realm, village, camp, hyperstructure, mine, bank, bitcoin mine, rift, ruin, stragglers; only owned categories appear |
+| Upgrade            | Level beside the name; the available level-up action is separate from row selection                                  |
+| Grouping           | Rows / Upgrade groups; expand Other structures                                                                       |
+| Realm              | Automation dropdown in the name/type header; named production circles with held amounts                              |
+| Resource detail    | Hover or tap a circle; building count, supply and production details stay there                                      |
+| Commands           | Separate floating Build, Production, Military and Transfer bubbles; Trade follows the command mask                   |
+| Transfer           | Pack donkey; Move alone uses boots                                                                                   |
+| Settings           | Painted wheel in the top bar, beside VP and the clock                                                                |
+| Right column       | One next step, events, then selected tile; tap tile summary for details                                              |
+| Naming / placement | Three naming pairs and centered/right dock remain review choices                                                     |
+| Minimap            | Native terrain hexes, shared Facets hex badges, internal ownership shape and small external value                    |
+| Crowding           | The icon lab and HUD share the 4×3 sector grouping; click a sector to inspect it, Overview returns                   |
+| Phone              | Map / Holdings; search and production remain in Holdings                                                             |
+| Troop paintings    | Military preview shows the production TroopChip and resource token for all nine type/tier pairs                      |
+
+## Shared production components
+
+`ArenaHudView`, `HudHeaderLayout`, `IdentityChipView`, `GameClockView`, `MapViewControls`, `SettingsButton`,
+`StructureListColumnView`, `StructureStatusRowView`, `StructureRealmActionsView`, `EmpireCockpitView`,
+`AutomationPresetSwitchView`, `ResourceToken`, `HudChatTrigger`, `NextSuggestionView`, `HudEventsView`,
+`FeedRowLineView`, `SelectedTileSummaryView`, `StructureActionsPanelView` and `PaintedMinimapView` own the presentation.
+Production wrappers retain native facts, command guards, navigation and order handlers. `HexMinimapView` remains the
+terrain renderer. `HexMarker` and `MarkerClusters` are shared with `/lab/kit/icons`, including the value presentation.
+The production semantic icon renderer also covers game popovers and army resource icons.
+
+The production HUD and lab A therefore share rendering code. Lab facts are deterministic; the lab does not authenticate,
+model an economy or send commands. Its sheets preview callbacks. The 220 list does not imply 220 visible world models;
+the map fixture has three structures and two illustrative armies. Live game verification is separate from this proof.
 
 ## Paintings
 
-A uses the chosen Facets exports through the icon lab's `iconArt` resolver and a scoped `KitIconArt` provider. Current
-keeps shipped art. The resource badge accepts an icon slot, preserving the shared ring and count behavior. `hud-art.ts`
-owns the HUD mappings; no painting is copied into a second asset tree. The dock uses build, settings (Production),
-attack (Military), move (Transfer) and trade. Realm art also stands for villages until a village painting exists. Events
-use explore/move; selected sites use realm/camp; VP and Chat use victory/chat. Minimap cells use the 16px marker exports
-and value chips use 32px exports.
-
-Coal and copper have no Facets export yet, so their existing unframed resource paintings remain explicitly allowed. The
-Knight sample and minimap emblems will be replaced by the troop figures and hex markers when their art update lands. The
-browser proof inventories every image source in A, permits only Facets plus those two resources, and rejects Facets in
-Current. All naming, grouping and command-placement controls remain available.
+The production `Icon`, `iconUrl`, resource meanings and `HexMarker` own all artwork. Both Current and A now use the
+Facets art shipped on origin; the old gilded kit and study exports stay deleted. Current compares the classic layout,
+while the historical screenshots preserve its previous art. Coal, Copper, Production and Transfer now have dedicated
+paintings. All nine troop portraits resolve through the real resource and troop meanings. No HUD art provider or
+placeholder mapping remains. Category chips cover every structure type using the production semantic catalog.
 
 ## Proof
-
-Start the client from the repository root:
 
 ```sh
 pnpm --dir apps/game dev --host 127.0.0.1 --port 4192
 pnpm --dir apps/game prepare:hud-proof
 ```
 
-Run the emitted `evidence/hud/lab-proof-driver.js` with the Playwright browser tool's filename input. The retained
-driver opens the real lab, drives the visible controls and writes screenshots to a new timestamped directory. Save its
-returned record as `proof.json` there. It closes the rendering page to `about:blank`, including on failure. Keep the dev
-server running while this review is awaiting a choice. The game proof remains `prove:play --game …` after an
-implementation pick.
+Run the emitted `evidence/hud/lab-proof-driver.js` with the Playwright browser tool's filename input. It drives the
+visible controls, captures desktop and phone states, checks category counts/search, automation detail, Settings, nine
+troop portraits, Trade's mask, floating bubble containment, native hexes and shared badges. It compares icon-lab markers
+and grouping and leaves screenshots in a new timestamped directory. Save the returned object as `proof.json` there. It
+navigates away from each WebGL page after capture and on failure. The game proof remains `prove:play --game …` after the
+fresh-chain rollout.
 
-The driver captures the current desktop fixture, six A baselines, desktop/phone searches, grouped scrolling and expert
-sheets. It checks Trade's mode mask, all terrain hexes and structures, the live canvas surviving layout switches, camera
-drag and minimap navigation. `review.mjs` rejects crop/zoom of the historical comparison, an unready or undersized live
-canvas, gilded KitIcon art, a dot-grid minimap, a missing primary, command paintings below 44px and excessive map cover.
-`review.test.ts` rejects the measured first picker with all six original failures. Component tests exercise the shared
-minimap's coordinate normalization and the shipped structure row's selection/action boundary.
+The coverage gate uses the clipped union of visible frame rectangles over 1,296,000 pixels. Empty dock/header gaps,
+shadows and lab controls do not count; each floating command's full button rectangle does count, conservatively.
+Historical rectangles live in `review.mjs`; actual lab rectangles are measured from the DOM. Report run counts and
+ranges across fixtures, not performance timings. A noticed unit is a title, row, token, control or reading with at least
+12 vertical and 3 horizontal pixels surviving clipping. Counts describe visible readings, not usability scores.
 
-## Boundaries and measurements
-
-`HexMinimapView` is the shipped render path with facts passed in. `HexMinimap` continues to read production facts and
-pass them to that view. `StructureStatusRowView` similarly accepts the realm action; its production wrapper still
-supplies the existing action. The lab passes painted art through the minimap marker-art seam. No module substitutions or
-separate static viewer entry remain. The lab uses the existing terrain renderer's settlement-regrowth fixture, game
-lighting and models; its two army value markers are illustrative fixture readings, not moving world armies.
-
-The 3/25/220 fixtures stress the holdings list. They do not spawn 220 settlements or model an economy. Resource
-readings, VP and clock are fixed. View naming previews the chosen radio state; it does not enter a player's realm. Modal
-bodies preview layout and selection, without transactions. Integration follows the owner's choice.
-
-A noticed unit is a semantic reading: a label/value pair, row, resource token, control, title or explanation. At least
-12 vertical and 3 horizontal pixels must survive viewport/scroll clipping. Terrain, shadows and hidden panels do not
-count. Counts are inventory, not usability scores. Full frame coverage is the clipped union of HUD frame rectangles over
-1,296,000 pixels, excluding shadows and tool chrome. Historical reference frames are annotated in `review.mjs`; current
-lab captures additionally record their actual DOM frames. Neither comparison is a performance measurement.
-
-The added cost is fixture data, this lab view, a browser proof and small view boundaries in the shared components. It
-replaces the disposable standalone picker, cropped image, custom dot map, import substitutions and rejected layout
-paths.
+This change replaces the duplicate A presentation, old column/compact layout paths, attention strip, oversized marker
+chips and shared command panel. Its cost is view boundaries, fixture facts, production icon mappings and retained proof.

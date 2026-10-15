@@ -1,9 +1,9 @@
+import { MarkerClusters } from "@/ui/design-system/painted/marker-clusters";
 import { useState } from "react";
 import { latticeToWorld } from "@/three/utils/hex-lattice";
 import { HexMarker } from "@/ui/design-system/hex-marker";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 const owners = ["you", "ally", "enemy"] as const;
-const symbols = { you: "●", ally: "■", enemy: "▲" };
 const kinds = [
   { id: "map-realm", name: "Realm" },
   { id: "camp", name: "Camp" },
@@ -103,51 +103,28 @@ export function IconMinimap() {
             })}
           </svg>
         )}
-        {grouped
-          ? Array.from({ length: 12 }, (_, index) => {
-              const group = items.filter((item) => item.sector === index);
-              const sites = group.filter((item) => !item.army).length;
-              return (
-                <button
-                  className="icon-cluster"
-                  key={index}
-                  data-sector={index}
-                  data-sites={sites}
-                  data-armies={group.length - sites}
-                  onClick={() => setSector(index)}
-                >
-                  <strong>
-                    {sites}S · {group.length - sites}A
-                  </strong>
-                  <small>
-                    {owners.map((owner) => (
-                      <span key={owner} data-owner={owner}>
-                        {symbols[owner]}
-                        {group.filter((item) => item.owner === owner).length}{" "}
-                      </span>
-                    ))}
-                  </small>
-                </button>
-              );
-            })
-          : visible.map((item, index) => {
-              const { x, y } = cell(index);
-              return (
-                <span
-                  className="icon-marker-wrap"
-                  key={item.index}
-                  data-index={item.index}
-                  data-army={item.army}
-                  data-owner={item.owner}
-                  data-kind={item.kind.id}
-                  style={{ left: x - 14, top: y - 16 }}
-                  role="img"
-                  aria-label={`${item.owner} ${item.kind.name}${item.value === undefined ? "" : `, ${item.army ? "strength band" : "level"} ${item.value}`}`}
-                >
-                  <Badge kind={item.kind} owner={item.owner} size={size} value={item.value} />
-                </span>
-              );
-            })}
+        {grouped ? (
+          <MarkerClusters items={items} onSelect={setSector} />
+        ) : (
+          visible.map((item, index) => {
+            const { x, y } = cell(index);
+            return (
+              <span
+                className="icon-marker-wrap"
+                key={item.index}
+                data-index={item.index}
+                data-army={item.army}
+                data-owner={item.owner}
+                data-kind={item.kind.id}
+                style={{ left: x - 14, top: y - 16 }}
+                role="img"
+                aria-label={`${item.owner} ${item.kind.name}${item.value === undefined ? "" : `, ${item.army ? "strength band" : "level"} ${item.value}`}`}
+              >
+                <Badge kind={item.kind} owner={item.owner} size={size} value={item.value} />
+              </span>
+            );
+          })
+        )}
       </div>
       <p className="icon-map-note">
         {sector !== undefined

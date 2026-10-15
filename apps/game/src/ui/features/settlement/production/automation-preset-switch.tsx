@@ -21,24 +21,37 @@ export function AutomationPresetSwitch({ entityId, entityType }: { entityId: num
     store.setRealmPreset(realmId, presetId);
   };
   return (
-    <span
-      role="group"
+    <AutomationPresetSwitchView
+      value={inferRealmPreset(automation)}
+      disabled={!ordersAllowed || !hydrated}
+      onChange={selectPreset}
+    />
+  );
+}
+
+export function AutomationPresetSwitchView({
+  value,
+  disabled = false,
+  onChange,
+}: {
+  value: RealmPresetId;
+  disabled?: boolean;
+  onChange: (value: RealmPresetId) => void;
+}) {
+  return (
+    <select
+      data-notice
       aria-label="Production automation"
-      className="inline-flex rounded border border-gold/30"
+      value={value}
+      disabled={disabled}
       onKeyDown={(event) => event.stopPropagation()}
+      onChange={(event) => onChange(event.target.value as RealmPresetId)}
     >
       {PRESETS.map((preset) => (
-        <button
-          key={preset.id}
-          type="button"
-          aria-pressed={inferRealmPreset(automation) === preset.id}
-          disabled={!ordersAllowed || !hydrated}
-          onClick={() => selectPreset(preset.id)}
-          className="px-1.5 py-1 text-sm aria-pressed:bg-gold/20 disabled:opacity-50"
-        >
+        <option key={preset.id} value={preset.id}>
           {preset.label}
-        </button>
+        </option>
       ))}
-    </span>
+    </select>
   );
 }

@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-16",
+    title: "Guided arena HUD",
+    description:
+      "Find holdings with category filters and search, review the next step beside the map, and open commands from floating painted bubbles.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-16",
     title: "Clear device limit recovery",
     description:
       "If eight devices already use your account, game entry explains how to remove one from a signed-in device and try again.",

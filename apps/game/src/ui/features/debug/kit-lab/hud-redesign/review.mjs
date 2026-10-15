@@ -64,17 +64,30 @@ export function inspectHudReview() {
     kitImages: [...document.images]
       .filter((img) => visible(img) && img.src.includes("/image-icons/kit/"))
       .map((img) => img.getAttribute("src")),
-    minimapHexes: document.querySelectorAll(".minimap svg polygon").length,
+    minimapHexes: document.querySelectorAll(".minimap [data-terrain-hex]").length,
     primary: document.querySelectorAll(".primary-suggestion .frontier-primary").length,
     dockArt: [...document.querySelectorAll(".action-dock img")].map((img) => ({
       src: img.getAttribute("src"),
       width: img.getBoundingClientRect().width,
       height: img.getBoundingClientRect().height,
     })),
-    frames: [...document.querySelectorAll(".hud-scene [data-group]")].filter(visible).map((el) => {
-      const r = el.getBoundingClientRect();
-      return { name: el.getAttribute("data-group"), x: r.x, y: r.y, width: r.width, height: r.height };
-    }),
+    frames: [...document.querySelectorAll(".hud-scene [data-group]")]
+      .flatMap((el) =>
+        el.matches(".rails .action-dock")
+          ? [...el.querySelectorAll(":scope > button")]
+          : el.matches('header[aria-label="Game controls"]')
+            ? [
+                ...el.querySelectorAll(
+                  '.identity-chip, [aria-label="Map view"], [aria-label="Game clock"], .settings-selector',
+                ),
+              ]
+            : [el],
+      )
+      .filter(visible)
+      .map((el) => {
+        const r = el.getBoundingClientRect();
+        return { name: el.getAttribute("data-group"), x: r.x, y: r.y, width: r.width, height: r.height };
+      }),
   };
 }
 

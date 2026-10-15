@@ -1,7 +1,7 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
+import { useRealmLevelUp, type RealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
 import { formatIncomingEta } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import {
   formatPopulationStatusLabel,
@@ -86,12 +86,11 @@ type StructureRealmActionsProps = {
  */
 export const StructureRealmActions = ({ structureEntityId, className }: StructureRealmActionsProps) => {
   const step = useRealmLevelUp(typeof structureEntityId === "number" ? structureEntityId : null);
+  return step ? <StructureRealmActionsView step={step} className={className} /> : null;
+};
+
+export const StructureRealmActionsView = ({ step, className }: { step: RealmLevelUp; className?: string }) => {
   const setTooltip = useTooltipStore((state) => state.setTooltip);
-
-  if (!step) {
-    return null;
-  }
-
   const requirementsContent = (() => {
     if (step.mode === "max") {
       return <div className="text-sm text-kit-muted">Castle fully upgraded.</div>;
