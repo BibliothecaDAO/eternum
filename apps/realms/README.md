@@ -15,9 +15,10 @@ own `MMRUpdated` events, in ranges of 100,000 blocks from the block where the to
 searching for its class). It keeps only those wallets and the block (height and hash) they were read through, so each
 request reads only the blocks since then. A range whose last block changes hash while its events are read publishes
 nothing; if the kept block is later replaced, the wallets are discarded and read again, so a wallet seen only on a
-replaced block is never ranked. While the chain's head is below the kept block the list is refused, until a block at
-that height decides. It then reads every wallet's token value at one block and ranks the complete population, even when
-only a few leaders are requested. The stored wallets are never a rating value.
+replaced block is never ranked. A range is added only if the chain still holds the kept block once the range is read;
+otherwise the wallets are discarded too. While the chain's head is below the kept block the list is refused, until a
+block at that height decides. It then reads every wallet's token value at one block and ranks the complete population,
+even when only a few leaders are requested. The stored wallets are never a rating value.
 
 Displayed owners may have `profile: {realmsId, name, portrait} | null` from their current verified wallet link. Names
 and portraits are presentation metadata; they never select the rating wallet. An unlinked owner remains an address.
