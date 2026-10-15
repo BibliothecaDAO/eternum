@@ -35,6 +35,20 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-15",
+    title: "The clock opens with the game",
+    description:
+      "The game clock and the start notice follow the chain, so a Blitz no longer shows as running minutes before your orders can go through.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-15",
+    title: "Crate points and relic names",
+    description:
+      "A relic crate shows the victory points it really grants, and each relic keeps one name in the crate, your stocks and the game's history.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-15",
     title: "Results after the end",
     description:
       "When a game ends, Game finished, the game's doorway and its map's address all lead to its Results page: your place, the standings and your rewards.",
