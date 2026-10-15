@@ -77,15 +77,15 @@
     font-size: 14px;
     padding: 0 8px;
   }
-  .left-rail {
+  .guidance-rail {
     position: absolute;
-    left: 12px;
+    right: 12px;
     top: 60px;
     width: 240px;
     display: grid;
     gap: 8px;
   }
-  .left-rail [data-group] > div > div:last-child {
+  .guidance-rail [data-group] > div > div:last-child {
     padding: 8px 12px 10px;
   }
   .primary-suggestion button {
@@ -112,9 +112,9 @@
     margin: 3px 0 0;
     font-size: 14px;
   }
-  .right-rail {
+  .holdings-rail {
     position: absolute;
-    right: 12px;
+    left: 12px;
     top: 60px;
     width: 270px;
     display: flex;
@@ -445,23 +445,23 @@
     .view-toggle [role="radiogroup"] {
       height: 30px;
     }
-    .left-rail {
+    .guidance-rail {
       top: 88px;
       left: 10px;
       right: 10px;
       width: auto;
       gap: 6px;
     }
-    .left-rail [data-group] > div > div:first-child {
+    .guidance-rail [data-group] > div > div:first-child {
       padding: 5px 10px;
     }
-    .left-rail [data-group] > div > div:last-child {
+    .guidance-rail [data-group] > div > div:last-child {
       padding: 4px 10px;
     }
     .event-row {
       padding: 3px 0;
     }
-    .right-rail {
+    .holdings-rail {
       display: none;
     }
     .minimap {
@@ -514,11 +514,11 @@
       color: var(--gold2);
       box-shadow: inset 0 2px var(--gold);
     }
-    .phone-holdings .left-rail,
+    .phone-holdings .guidance-rail,
     .phone-holdings .minimap {
       display: none;
     }
-    .phone-holdings .right-rail {
+    .phone-holdings .holdings-rail {
       display: flex;
       top: 88px;
       left: 10px;
@@ -550,11 +550,11 @@
       padding-top: 4px;
       padding-bottom: 4px;
     }
-    .left-rail [data-group] > div > div:last-child {
+    .guidance-rail [data-group] > div > div:last-child {
       padding-top: 6px;
       padding-bottom: 6px;
     }
-    .left-rail p,
+    .guidance-rail p,
     .tile-panel b {
       line-height: 19px;
     }
@@ -664,7 +664,7 @@
 }
 @scope (.hud-redesign) {
   @media (min-width: 701px) {
-    .current .right-rail {
+    .current .holdings-rail {
       left: 12px;
       right: auto;
       top: 62px;

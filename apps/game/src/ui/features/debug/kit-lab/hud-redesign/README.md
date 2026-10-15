@@ -5,9 +5,11 @@ component page links here. This extends UI kit & HUD. No game orders are sent.
 
 The controls switch Current HUD / A, 3 / 25 / 220 structures, three naming pairs, two list treatments and two dock
 positions. Current reconstructs the classic layout on fixture facts with the shipped structure rows, filter chips,
-production badges and minimap. A uses the same bronze panels and primary button as the War room. Current's lab callbacks
-preview selection, favorites and sheets; they are not a logged-in game. Historical screenshots remain the pixel
-reference. B's resource shelf, the ledger and wide minimap were rejected for obscuring more than the current HUD.
+production badges and minimap. A puts holdings and the realm panel on the left, and suggestion, events and selected tile
+on the right, using the same bronze panels and primary button as the War room. Phone Map / Holdings stays unchanged.
+Current's lab callbacks preview selection, favorites and sheets; they are not a logged-in game. Historical screenshots
+remain the pixel reference. B's resource shelf, the ledger and wide minimap were rejected for obscuring more than the
+current HUD.
 
 | Feature           | Reach it                                                                                            |
 | ----------------- | --------------------------------------------------------------------------------------------------- |

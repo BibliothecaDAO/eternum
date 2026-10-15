@@ -487,7 +487,7 @@ export function HudScene({
         )}
       </header>
       {layout === "rails" && (
-        <div className="left-rail">
+        <div className="guidance-rail">
           <Panel title={`${selected.name} can level up`} className="suggestion-panel">
             <div data-notice className="primary-suggestion">
               <Button role="primary" word="Level up to City" onClick={() => open("Level up to City")} />
@@ -518,7 +518,7 @@ export function HudScene({
           </Panel>
         </div>
       )}
-      <aside className="right-rail">
+      <aside className="holdings-rail">
         {layout === "current" ? (
           <CurrentHoldings holdings={holdings} selected={selected} onSelect={setSelected} onOpen={open} />
         ) : (

@@ -26,6 +26,8 @@ async (page) => {
       height: innerHeight,
       sceneHeight: document.querySelector(".hud-scene")?.getBoundingClientRect().height,
       selected: document.querySelector(".tile-panel")?.textContent,
+      holdings: document.querySelector(".holdings-rail")?.getBoundingClientRect().toJSON(),
+      guidance: document.querySelector(".guidance-rail")?.getBoundingClientRect().toJSON(),
       missingImages: [...document.images].filter((img) => !img.complete || !img.naturalWidth).map((img) => img.src),
       primaryCount: document.querySelectorAll(".primary-suggestion button").length,
     }));
@@ -43,6 +45,16 @@ async (page) => {
       count: groups.reduce((sum, group) => sum + group.elements.length, 0),
     });
     check(failures.length === 0, `${name}: ${failures.join("; ")}`);
+    if (viewport.width > 700 && reading.layout === "rails") {
+      check(
+        reading.holdings.x === 12 && reading.holdings.right < viewport.width / 2,
+        `${name}: holdings and realm must be on the left`,
+      );
+      check(
+        reading.guidance.right === viewport.width - 12 && reading.guidance.x > viewport.width / 2,
+        `${name}: suggestion, events and tile must be on the right`,
+      );
+    }
     check(reading.bodyWidth === reading.width, `${name}: horizontal overflow`);
     check(reading.sceneHeight === reading.height, `${name}: stage does not fit`);
     check(reading.missingImages.length === 0, `${name}: missing images`);
