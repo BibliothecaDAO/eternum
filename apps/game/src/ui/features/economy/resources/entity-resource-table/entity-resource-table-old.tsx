@@ -74,7 +74,7 @@ export const EntityResourceTableOld = React.memo(
 
     return (
       <div className="flex flex-col gap-3">
-        <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 border-b border-gold/15 bg-kit-plate px-1 pb-2 pt-1 backdrop-blur">
+        <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 border-b border-gold/15 bg-[#101c23]/95 px-1 pb-2 pt-1 backdrop-blur">
           <span className={HUD_LABEL}>Resources</span>
           <div className="flex flex-wrap items-center gap-1.5">
             <FilterToggle

@@ -6,10 +6,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HUD_BODY_MUTED, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { StructureStatusRow } from "@/ui/features/world/components/structure-status-row/structure-status-row";
 import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
-import {
-  type StructureWithMetadata,
-  useStructuresWithMetadata,
-} from "@/ui/features/world/containers/top-header/structure-picker/use-structures-with-metadata";
+import { useStructuresWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/use-structures-with-metadata";
 import {
   FilterChipsRow,
   useStructureCategoryFilter,
@@ -18,6 +15,7 @@ import { sortStructures } from "@/ui/features/world/containers/structure-list-ut
 import { useGame } from "@/hooks/context/game-context";
 import { type ID, StructureType } from "@bibliothecadao/types";
 import { memo, useMemo } from "react";
+import type { StructureWithMetadata } from "./top-header/structure-picker/chip";
 
 interface StructureSidebarProps {
   selectedEntityId: ID;
@@ -139,6 +137,7 @@ export const StructureSidebar = memo(
               structure={structure}
               isActive={structure.entityId === selectedEntityId}
               onSelect={onSelectStructure}
+              variant="compact"
               hasAttention={attention?.(structure) ?? false}
               statsVariant={statsVariant}
             />

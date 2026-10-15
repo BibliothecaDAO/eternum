@@ -2,7 +2,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it } from "vitest";
 
-import { useUnreadFeedCount } from "./events-card";
+import { useUnreadFeedCount } from "./quick-feed";
 import type { ImportantFeedRow } from "./important-feed-rows";
 
 const row = (at: number) => ({ kind: "story", id: `story:${at}`, at }) as unknown as ImportantFeedRow;

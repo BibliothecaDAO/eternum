@@ -38,6 +38,8 @@ interface ProductionStatusBadgeProps {
    * (e.g. green/red for positive/negative net production rates).
    */
   cornerTopRightClassName?: string;
+  /** Changes when the caller wants one accrual sweep around the token; unchanged keys never replay it. */
+  accrualKey?: number;
 }
 
 export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
@@ -56,6 +58,7 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
   cornerTopRight,
   cornerBottomRight,
   cornerTopRightClassName,
+  accrualKey,
 }) => {
   const effectiveRemaining = timeRemainingSeconds === null ? null : Math.max(timeRemainingSeconds, 0);
   const progressPercent = !isProducing
@@ -190,6 +193,13 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
         <span className="absolute -top-1.5 -left-1.5 z-10 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-black/85 px-1.5 text-sm font-semibold text-gold/90 shadow-md border border-gold/40">
           {cornerTopLeft}
         </span>
+      )}
+      {accrualKey !== undefined && accrualKey > 0 && (
+        <span
+          key={accrualKey}
+          aria-hidden
+          className={clsx("absolute pointer-events-none rounded-full accrual-sweep", preset.progressOffset)}
+        />
       )}
       {cornerTopRight && (
         <span

@@ -1,7 +1,7 @@
 import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
 import { Castle, Crown, Pickaxe, Sparkles, Tent } from "@/ui/design-system/atoms/game-icons";
 import type { LeftListFilter, LeftListSort } from "@/hooks/store/use-ui-store";
-import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/use-structures-with-metadata";
+import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 import { type ID, StructureType } from "@bibliothecadao/types";
 
 /**

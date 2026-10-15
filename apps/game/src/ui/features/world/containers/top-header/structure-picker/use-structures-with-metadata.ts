@@ -2,10 +2,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useFactView } from "@/hooks/use-fact-view";
 import { buildingTilesView } from "@/sync/fact-views";
 import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
-import {
-  type StructureGroupColor,
-  useStructureGroups,
-} from "@/ui/features/world/containers/top-header/structure-groups";
+import { useStructureGroups } from "@/ui/features/world/containers/top-header/structure-groups";
 import {
   countOccupiedBuildingTilesByStructure,
   resolveAvailableBuildingTiles,
@@ -21,43 +18,11 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import { useMemo } from "react";
+import type { StructureWithMetadata } from "./chip";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useCoarseCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
-
-export type StructureWithMetadata = Structure & {
-  displayName: string;
-  originalName: string;
-  realmLevel: number;
-  realmLevelLabel: string | null;
-  population: number;
-  guardCount: number | undefined;
-  /** Field armies alive today; an army from an earlier expedition day is dead by rule and never counts. */
-  explorerCount: number;
-  populationCapacity: number;
-  buildingTilesOccupied: number | null;
-  buildingTilesTotal: number | null;
-  groupColor: StructureGroupColor | null;
-  isFavorite: boolean;
-  canUpgrade: boolean;
-  /**
-   * Per-building-type counts read off StructureBuildings.packed_counts_*. Used
-   * by the suggestion engine to recommend construction targets (wheat farms,
-   * resource farms, worker huts) without extra read calls.
-   */
-  buildingCounts: {
-    wheat: number;
-    wood: number;
-    coal: number;
-    copper: number;
-    crossbowmanT1: number;
-    knightT1: number;
-    market: number;
-    paladinT1: number;
-    workerHut: number;
-  };
-};
 
 const readPackedCount = (value: bigint | number | string | undefined): bigint => {
   if (value === undefined || value === null) return 0n;
@@ -75,8 +40,9 @@ interface UseStructuresWithMetadataArgs {
 }
 
 /**
- * Derives `StructureWithMetadata[]` from the raw playerStructures list, for the
- * War room realm rows, the workspace sidebars and the suggestion engine.
+ * Derives `StructureWithMetadata[]` from the raw playerStructures list. Same
+ * shape and ordering rules as the legacy in-sidebar computation — moved here
+ * so the top-zone picker pills and popover can call it independently.
  */
 export const useStructuresWithMetadata = ({
   structures,

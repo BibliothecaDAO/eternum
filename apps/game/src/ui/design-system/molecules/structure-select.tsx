@@ -19,7 +19,7 @@ export const StructureSelect = ({ value, onChange, options }: StructureSelectPro
         id={id}
         value={value}
         onChange={(event) => onChange(safeInteger(event.target.value))}
-        className="min-h-11 min-w-0 flex-1 rounded-md border border-gold/30 bg-kit-plate px-2 text-base text-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
+        className="min-h-11 min-w-0 flex-1 rounded-md border border-gold/30 bg-[#101c23] px-2 text-base text-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
       >
         {!options.some((option) => option.entityId === value) && <option value={value}>Select a structure</option>}
         {options.map((option) => (

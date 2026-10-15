@@ -19,7 +19,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { configManager, Position } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { HeadlineType } from "../news-headlines/headline-types";
 import {
   extractRoleLabel,
@@ -31,7 +31,7 @@ import { transactionStatusLine, transferRowLabel } from "./event-feed-rows";
 import { formatFeedTime, type ImportantFeedRow } from "./important-feed-rows";
 import { resolveStoryEventPosition } from "./story-feed-row";
 
-/** One feed row in a translucent black, not the panels' surface: a fixed icon column, one line of
+/** One feed row in the Log button's translucent black, not the panels' surface: a fixed icon column, one line of
  *  text, the time flush right. */
 export const FEED_ROW_CLASS =
   "pointer-events-auto flex h-8 w-full items-center gap-2 rounded-md bg-black/50 px-2.5 text-sm text-gold backdrop-blur-[2px]";
@@ -52,8 +52,8 @@ export const HeadlineIcon = ({ type }: { type: HeadlineType }) => {
   return <Icon className="h-4 w-4 shrink-0" />;
 };
 
-/** One feed row, events card or log: icon, one line of text, the time; a row with a place flies the camera. */
-export const FeedRowLine = ({ row }: { row: ImportantFeedRow }) => {
+/** One feed row, quick feed or log: icon, one line of text, the time; a row with a place flies the camera. */
+export const FeedRowLine = ({ row, style }: { row: ImportantFeedRow; style?: CSSProperties }) => {
   const target = useFeedRowTarget(row);
   const navigate = useNavigateToMapView();
   const { icon, text } = summarizeFeedRow(row);
@@ -65,10 +65,19 @@ export const FeedRowLine = ({ row }: { row: ImportantFeedRow }) => {
     </>
   );
   if (!target) {
-    return <div className={FEED_ROW_CLASS}>{content}</div>;
+    return (
+      <div className={FEED_ROW_CLASS} style={style}>
+        {content}
+      </div>
+    );
   }
   return (
-    <button type="button" onClick={() => navigate(target)} className={cn(FEED_ROW_CLASS, "hover:bg-black/70")}>
+    <button
+      type="button"
+      onClick={() => navigate(target)}
+      className={cn(FEED_ROW_CLASS, "font-sans hover:bg-black/70")}
+      style={style}
+    >
       {content}
     </button>
   );

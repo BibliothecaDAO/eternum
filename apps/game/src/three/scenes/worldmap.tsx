@@ -1837,7 +1837,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private bindWorldmapSceneUiLifecycle(): void {
-    // Legacy canvas minimap has been replaced by the React minimap (MinimapPanel/HexMinimap).
+    // Legacy canvas minimap has been replaced by the React minimap (BottomRightPanel/HexMinimap).
     // We keep only the "minimapCameraMove" event bridge + cameraTargetHex updates for the UI.
     this.updateCameraTargetHexThrottled = throttle(this.updateCameraTargetHex, this.cameraTargetHexUpdateIntervalMs);
     this.refreshVisualTerrainWindowThrottled = throttle(() => {

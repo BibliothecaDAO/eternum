@@ -32,8 +32,8 @@ import {
 import { type ReactNode, useCallback } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 
-// Layout: vertical column of bubbles. The outer parent (the right column's tile
-// details) already provides positioning + scroll, so this layout
+// Layout: vertical column of bubbles. The outer parent (TileDetails atom in
+// bottom-right-panel) already provides positioning + scroll, so this layout
 // just stacks each section with a small gap and lets each child render its
 // own rounded bubble.
 const occupiedEntityLayoutClass = "flex min-w-0 shrink-0 flex-col gap-2 pointer-events-auto";

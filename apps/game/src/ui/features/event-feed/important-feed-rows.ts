@@ -88,9 +88,14 @@ export const formatFeedTime = (atMs: number): string =>
   new Date(atMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 
 /** The quick feed shows what just happened: rows inside the window, newest first, capped. */
-export function selectLatestFeedRows(rows: ImportantFeedRow[], nowMs: number, maxRows: number): ImportantFeedRow[] {
+export function selectQuickFeedRows(
+  rows: ImportantFeedRow[],
+  nowMs: number,
+  windowMs: number,
+  maxRows: number,
+): ImportantFeedRow[] {
   return rows
-    .filter((row) => row.at <= nowMs)
-    .toSorted((left, right) => right.at - left.at)
+    .filter((row) => nowMs >= row.at && nowMs - row.at < windowMs)
+    .sort((left, right) => right.at - left.at)
     .slice(0, maxRows);
 }

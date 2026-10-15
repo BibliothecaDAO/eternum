@@ -1,0 +1,94 @@
+import { Bell } from "@/ui/design-system/atoms/game-icons";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView } from "@/sync/fact-views";
+import { configManager, structureMapPosition } from "@bibliothecadao/eternum";
+import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { memo, useMemo, useRef } from "react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { Position } from "@bibliothecadao/eternum";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
+import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
+import { useGoToStructure } from "@/hooks/helpers/use-navigate";
+import { canIssueOrders } from "@/utils/can-issue-orders";
+import { SuggestionsPanel } from "../left-facets/suggestions-panel";
+import { useEmpireSuggestions } from "../left-facets/use-empire-suggestions";
+import { TOP_PILL } from "./top-pill";
+import { nextAttentionItem, resolveStructureAttention } from "./attention-policy";
+
+export const AttentionPill = memo(() => {
+  const ordersAllowed = useUIStore(canIssueOrders);
+  return ordersAllowed ? <AttentionCycle /> : null;
+});
+AttentionPill.displayName = "AttentionPill";
+
+function AttentionCycle() {
+  const { setup } = useGame();
+  const goToStructure = useGoToStructure(setup);
+  const structures = useFactView(playerStructuresView);
+  const arrivedIds = useUIStore((state) => state.arrivedArrivalStructureIds);
+  const suggestions = useEmpireSuggestions();
+  const previousKey = useRef<string | null>(null);
+  const now = Math.floor(useNowMs() / 1000);
+  const revision = useNativeRevision(["Guard"]);
+  const { targets } = useMemo(
+    () =>
+      resolveStructureAttention(structures, arrivedIds, now, [
+        ...setup.store.inGame("Guard", configManager.getActiveGameId()),
+      ]),
+    [structures, arrivedIds, now, setup.store, revision],
+  );
+  const items = [
+    ...targets.map((target) => ({
+      key: `attention:${target.entityId}`,
+      realmId: target.entityId,
+      suggestionId: null as string | null,
+    })),
+    ...suggestions.map((suggestion) => ({
+      key: `suggestion:${suggestion.id}`,
+      realmId: suggestion.realmId,
+      suggestionId: suggestion.id,
+    })),
+  ];
+  const goToNext = () => {
+    if (!canIssueOrders()) return;
+    const next = nextAttentionItem(items, previousKey.current);
+    if (!next) return;
+    previousKey.current = next.key;
+    const target = structures.find((structure) => structure.entityId === next.realmId);
+    if (!target) return;
+    const position = structureMapPosition(setup.store, target.structure);
+    if (!position) return;
+    if (next.suggestionId) {
+      usePopoverStore.getState().openSurface({
+        id: "suggestions",
+        content: <SuggestionsPanel selectedId={next.suggestionId} />,
+        anchor: "top-center",
+        mapClick: "dismiss",
+      });
+    } else {
+      void goToStructure(target.entityId, Position.fromContract(position), true);
+      usePopoverStore.getState().close("suggestions");
+    }
+  };
+  return (
+    <button
+      type="button"
+      className={cn(TOP_PILL, "relative", items.length > 0 && "border-gold bg-none bg-gold text-dark-brown")}
+      onClick={goToNext}
+      disabled={items.length === 0}
+      aria-label={`Attention: ${items.length}. Go to next item`}
+      title={`${targets.length} locations need attention · ${suggestions.length} suggested actions`}
+    >
+      <Bell className="h-3.5 w-3.5" />
+      <span className={cn(HUD_LABEL_BRIGHT, "max-lg:hidden", items.length > 0 && "text-dark-brown")}>Attention</span>
+      {items.length > 0 && (
+        <span className="absolute -bottom-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-sm font-bold tabular-nums text-white shadow">
+          {items.length}
+        </span>
+      )}
+    </button>
+  );
+}

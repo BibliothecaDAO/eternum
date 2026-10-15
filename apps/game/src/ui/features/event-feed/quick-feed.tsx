@@ -2,68 +2,109 @@ import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
+import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { triggerConnectionForceReconnect } from "@/ui/features/world/components/network-status-retry";
 import { configManager } from "@bibliothecadao/eternum";
 import { TickIds } from "@bibliothecadao/types";
-import { RefreshCw, WifiOff } from "@/ui/design-system/atoms/game-icons";
+import { RefreshCw, ScrollText, WifiOff } from "@/ui/design-system/atoms/game-icons";
 import { useEffect, useRef, useState } from "react";
 import { orderHeadlineFeed, useHeadlineFeedStore } from "../news-headlines/headline-feed-store";
 import type { Headline } from "../news-headlines/headline-types";
 import { EventLogPanel } from "./event-log-panel";
 import { FEED_ROW_CLASS, FeedRowLine, HeadlineIcon } from "./feed-row-line";
-import { type ImportantFeedRow, selectImportantFeedRows, selectLatestFeedRows } from "./important-feed-rows";
+import { type ImportantFeedRow, selectImportantFeedRows, selectQuickFeedRows } from "./important-feed-rows";
 import { toast } from "./notify";
 import { useFeedRows } from "./use-feed-rows";
 
-const LATEST_ROWS = 3;
+const QUICK_FEED_WINDOW_MS = 20_000;
+const QUICK_FEED_MAX_ROWS = 5;
+const QUICK_FEED_FADE_MS = 3_000;
 const CONNECTION_NOTICE_ID = "connection";
 
-/**
- * The right column's events: the offline row and pinned headlines, then the three latest of what Events holds
- * (selectImportantFeedRows: battles, the player's realm news, caravans and this session's sends), which stay until
- * newer ones replace them. "All" opens the log, with what arrived since it was last read.
- */
-export const EventsCard = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogToggle: () => void }) => {
-  const { nowMs, rows, pinned, history } = useImportantFeed();
-  const unread = useUnreadFeedCount(rows, logOpen);
-  const button = useRef<HTMLButtonElement>(null);
-  const latest = selectLatestFeedRows(rows, nowMs, LATEST_ROWS);
-  useConnectionNotices();
-  return (
-    <section
-      aria-label="Events"
-      className={cn(OVERLAY_SURFACE_BASE, "pointer-events-auto flex flex-col gap-1.5 rounded-xl p-3")}
+/** Top of the right column: the Log button, then at most five one-line rows that fade after 20 s. */
+export const QuickFeed = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogToggle: () => void }) => (
+  <div aria-label="Quick feed" className="flex flex-col items-end gap-1">
+    <LogToggle
+      open={logOpen}
+      onToggle={onLogToggle}
+      className={cn(
+        "h-8 gap-1.5 rounded-md bg-black/50 px-2.5 font-sans backdrop-blur-[2px] hover:bg-black/70",
+        HUD_LABEL,
+      )}
     >
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-kit-muted">Events</h2>
-        <button
-          ref={button}
-          type="button"
-          aria-expanded={logOpen}
-          onClick={onLogToggle}
-          className={cn(
-            "inline-flex h-9 items-center gap-1.5 rounded-md px-2 text-sm font-semibold text-kit-cream hover:text-gold",
-            logOpen && "text-gold",
-          )}
-        >
-          All
-          <UnreadFeedBadge count={unread} />
-        </button>
-      </div>
-      <FeedNotices pinned={pinned} />
-      {latest.map((row) => (
-        <FeedRowLine key={row.id} row={row} />
-      ))}
-      {latest.length === 0 && pinned.length === 0 && <EmptyEvents history={history} />}
-      {logOpen && (
+      <ScrollText className="h-4 w-4" />
+      Log
+    </LogToggle>
+    <QuickFeedRows />
+  </div>
+);
+
+/**
+ * The button that opens the event log, with its unread count, and the log panel anchored to it. Each layout dresses
+ * it: the right column with its label, Frontier's strip as a glyph.
+ */
+const LogToggle = ({
+  open,
+  onToggle,
+  className,
+  children,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  className?: string;
+  children: React.ReactNode;
+}) => {
+  const { rows } = useImportantFeed();
+  const unread = useUnreadFeedCount(rows, open);
+  const button = useRef<HTMLButtonElement>(null);
+  return (
+    <>
+      <button
+        ref={button}
+        type="button"
+        aria-label="Log"
+        aria-expanded={open}
+        onClick={onToggle}
+        className={cn("pointer-events-auto inline-flex items-center", className, open && "text-gold")}
+      >
+        {children}
+        <UnreadFeedBadge count={unread} />
+      </button>
+      {open && (
         <EventLogPanel
-          onDismiss={onLogToggle}
+          onDismiss={onToggle}
           isInsideAnchor={(target) => target instanceof Node && Boolean(button.current?.contains(target))}
         />
       )}
-    </section>
+    </>
+  );
+};
+
+/** The feed's pinned notices and its latest rows, fading after 20 s. */
+const QuickFeedRows = () => {
+  const { nowMs, rows, pinned } = useImportantFeed();
+  const visible = selectQuickFeedRows(rows, nowMs, QUICK_FEED_WINDOW_MS, QUICK_FEED_MAX_ROWS);
+  useConnectionNotices();
+  return (
+    <>
+      <FeedNotices pinned={pinned} />
+      {visible.map((row) => (
+        <QuickFeedRow key={row.id} row={row} />
+      ))}
+    </>
+  );
+};
+
+/** A row fades out over its last seconds on the compositor: the delay is fixed at mount, so the once-a-second
+ *  clock that removes it never restarts or steps the fade. */
+const QuickFeedRow = ({ row }: { row: ImportantFeedRow }) => {
+  const [delayMs] = useState(() => Math.max(0, row.at + QUICK_FEED_WINDOW_MS - QUICK_FEED_FADE_MS - Date.now()));
+  return (
+    <FeedRowLine
+      row={row}
+      style={{ animation: `quickFeedFade ${QUICK_FEED_FADE_MS}ms linear ${delayMs}ms forwards` }}
+    />
   );
 };
 
@@ -74,32 +115,11 @@ export function useImportantFeed() {
   const address = useAccountStore((state) => state.account?.address ?? null);
   const headlines = useHeadlineFeedStore((state) => state.headlines);
   const headlineFeed = orderHeadlineFeed(headlines, nowMs, tickSeconds);
-  const { data: stories, isPending, isError, refetch } = useStoryEvents(350);
+  const { data: stories } = useStoryEvents(350, "BattleEvent");
   const feed = useFeedRows();
   const rows = selectImportantFeedRows(stories, feed, "all", address, headlineFeed.recent);
-  const history: HistoryState = isError
-    ? { state: "failed", retry: () => void refetch() }
-    : { state: isPending ? "loading" : "ready" };
-  return { nowMs, rows, pinned: headlineFeed.pinned, history };
+  return { nowMs, rows, pinned: headlineFeed.pinned };
 }
-
-/** Where the game's history, which brings Events' stories back after a reload, stands. */
-type HistoryState = { state: "loading" | "ready" } | { state: "failed"; retry: () => void };
-
-/** An empty card says why: history still loading, history that could not load, or nothing of its kind yet. */
-const EmptyEvents = ({ history }: { history: HistoryState }) => {
-  if (history.state === "loading") return <p className="text-sm text-kit-muted">Loading events…</p>;
-  if (history.state === "failed")
-    return (
-      <p className="text-sm text-danger">
-        Events could not load.{" "}
-        <button type="button" className="text-sm underline" onClick={history.retry}>
-          Retry
-        </button>
-      </p>
-    );
-  return <p className="text-sm text-kit-muted">No battles or news from your realms yet.</p>;
-};
 
 /** Rows that arrived since the log was last open; zero while it is open. */
 export function useUnreadFeedCount(rows: ImportantFeedRow[], logOpen: boolean): number {
@@ -157,7 +177,7 @@ function OfflineRow() {
         type="button"
         disabled={reconnecting}
         onClick={() => void triggerConnectionForceReconnect()}
-        className="inline-flex items-center gap-1 text-sm text-danger hover:underline disabled:cursor-wait"
+        className="inline-flex items-center gap-1 font-sans text-sm text-danger hover:underline disabled:cursor-wait"
       >
         <RefreshCw className={cn("h-3 w-3", reconnecting && "animate-spin")} />
         Retry

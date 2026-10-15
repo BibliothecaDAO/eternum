@@ -6,11 +6,12 @@ interface HudHeaderLayoutProps {
   identity: ReactNode;
   clock: ReactNode;
   viewControls: ReactNode;
+  attention: ReactNode;
   settings: ReactNode;
 }
 
 /** Small screens keep status and navigation in two bounded rows, never in a horizontal scroller. */
-export function HudHeaderLayout({ lane, identity, clock, viewControls, settings }: HudHeaderLayoutProps) {
+export function HudHeaderLayout({ lane, identity, clock, viewControls, attention, settings }: HudHeaderLayoutProps) {
   if (lane === null) {
     return (
       <header
@@ -20,6 +21,7 @@ export function HudHeaderLayout({ lane, identity, clock, viewControls, settings 
         {identity}
         {viewControls}
         {clock}
+        {attention}
         {settings}
       </header>
     );
@@ -44,8 +46,9 @@ export function HudHeaderLayout({ lane, identity, clock, viewControls, settings 
           <div className="shrink-0">{clock}</div>
           <div className="shrink-0">{settings}</div>
         </div>
-        <div aria-label="Map navigation" className="flex w-full min-w-0 items-center gap-1.5">
+        <div aria-label="Map navigation" className="flex w-full min-w-0 items-center justify-between gap-1.5">
           <div className="min-w-0">{viewControls}</div>
+          <div className="shrink-0">{attention}</div>
         </div>
       </header>
     );
@@ -66,7 +69,10 @@ export function HudHeaderLayout({ lane, identity, clock, viewControls, settings 
         <div className="shrink-0">{clock}</div>
         <div className="shrink-0">{settings}</div>
       </div>
-      <div className="flex shrink-0 items-center gap-1.5">{viewControls}</div>
+      <div className="flex shrink-0 items-center justify-between gap-1.5">
+        {viewControls}
+        {attention}
+      </div>
     </header>
   );
 }

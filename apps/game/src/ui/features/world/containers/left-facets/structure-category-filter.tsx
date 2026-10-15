@@ -1,7 +1,7 @@
 import { useUIStore, type LeftListFilter } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CATEGORY_FILTER_OPTIONS } from "@/ui/features/world/containers/structure-list-utils";
-import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/use-structures-with-metadata";
+import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 import { StructureType } from "@bibliothecadao/types";
 import { memo, useMemo } from "react";
 

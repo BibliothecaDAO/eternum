@@ -10,7 +10,7 @@ import {
 import { SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { StructureSidebar } from "@/ui/features/world/containers/structure-sidebar";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
-import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/use-structures-with-metadata";
+import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 import { Direction, type ID } from "@bibliothecadao/types";
 import { Swords } from "@/ui/design-system/atoms/game-icons";
 import { memo, useCallback, useEffect, useState } from "react";

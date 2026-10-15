@@ -1020,7 +1020,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
         </section>
       )}
 
-      <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-2 bg-kit-plate py-2 border-t border-gold/20">
+      <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-2 bg-[#101c23] py-2 border-t border-gold/20">
         <div className="flex w-full flex-wrap items-center gap-3">
           {selectedResources.length > 0 && selectedSourceId && (
             <>
