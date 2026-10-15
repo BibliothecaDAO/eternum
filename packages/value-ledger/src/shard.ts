@@ -21,6 +21,8 @@ export interface ShardTarget {
 export class ShardOperator {
   readonly provider: RpcProvider;
   private readonly account: Account;
+  private adminCodec?: Promise<CallData>;
+  private bound?: Promise<bigint>;
   constructor(readonly target: ShardTarget) {
     this.provider = rpcAt(target.rpcUrl);
     this.account = new Account({
@@ -52,11 +54,26 @@ export class ShardOperator {
       value && typeof value === "object" && Object.keys(value).length === 1 && "" in value ? value[""] : value
     ) as A;
   }
-  async admin(entrypoint: string, args: Record<string, unknown>, onSubmitted?: (hash: string) => Promise<void>) {
-    const codec = await this.codec((await this.head()).block_number);
-    const bound = await this.view<bigint>("l2_gas_bound", []);
-    const calldata = codec.compile(entrypoint, args as Parameters<CallData["compile"]>[1]);
-    return this.invoke(entrypoint, calldata, bound, closedBlockReceipt, onSubmitted);
+  async admin(entrypoint: string, args: Record<string, unknown>) {
+    return this.invoke(entrypoint, ...(await this.adminCall(entrypoint, args)), closedBlockReceipt);
+  }
+  /** Sends an administrative call at this nonce and returns its hash without waiting; see `awaitClosed`. */
+  async sendAdmin(entrypoint: string, args: Record<string, unknown>, nonce: bigint): Promise<string> {
+    return (await this.submit(entrypoint, ...(await this.adminCall(entrypoint, args)), nonce)).transaction_hash;
+  }
+  /** Waits until a sent transaction is in a closed block, and refuses one that reverted. */
+  async awaitClosed(transactionHash: string) {
+    await closedBlockReceipt(this.provider, transactionHash);
+  }
+  private async adminCall(entrypoint: string, args: Record<string, unknown>): Promise<[string[], bigint]> {
+    this.adminCodec ??= this.head().then(({ block_number }) => this.codec(block_number));
+    const calldata = (await this.adminCodec).compile(entrypoint, args as Parameters<CallData["compile"]>[1]);
+    return [calldata, await this.gasBound()];
+  }
+  /** The shard's per-transaction gas bound, fixed at its deployment: read once per operator. */
+  private gasBound() {
+    this.bound ??= this.view<bigint>("l2_gas_bound", []);
+    return this.bound;
   }
   /** What every play of one game repeats: its release and preset pins and the shard's fixed gas bound. */
   async pins(gameId: number): Promise<PlayPins> {
@@ -65,7 +82,7 @@ export class ShardOperator {
       gameId,
       release: await this.view<bigint>("game_release", [gameId]),
       commitment: await this.view<bigint>("preset_commitment", [game.preset_id]),
-      l2GasBound: await this.view<bigint>("l2_gas_bound", []),
+      l2GasBound: await this.gasBound(),
     };
   }
   async playCommand(gameId: number, name: "MarkGameSettled" | "RecordBlitzResults") {
@@ -112,15 +129,8 @@ export class ShardOperator {
   private async codec(head: number) {
     return new CallData(await readShardAbi(this.provider, this.target.gamesAddress, head));
   }
-  private async invoke(
-    entrypoint: string,
-    calldata: string[],
-    bound: bigint,
-    receiptOf: ReceiptWait,
-    onSubmitted?: (hash: string) => Promise<void>,
-  ) {
+  private async invoke(entrypoint: string, calldata: string[], bound: bigint, receiptOf: ReceiptWait) {
     const submitted = await this.submit(entrypoint, calldata, bound);
-    if (onSubmitted) await onSubmitted(submitted.transaction_hash);
     const receipt = await receiptOf(this.provider, submitted.transaction_hash);
     const refusal = gameplayRejection(receipt.events, this.target.gamesAddress, submitted.transaction_hash);
     if (refusal) throw new Error(`gameplay_refused:${refusal.reason}`);

@@ -7,28 +7,28 @@ import { testBlitzRequest } from "./test-blitz";
 import { createLaunchTestDatabase, DEV_CHAIN, PRODUCTION_CHAIN, TEST_CHAIN, testChain } from "./test-database";
 
 const native = vi.hoisted(() => ({
-  create: vi.fn(async (request: { gameName: string }, ..._rest: unknown[]) => ({
-    environment: "madara.blitz",
-    chain: "madara",
-    gameType: "blitz",
-    gameName: request.gameName,
-    gameId: 7,
-    startTime: 100,
-    durationSeconds: 60,
-    startTimeIso: "1970-01-01T00:01:40.000Z",
-    rpcUrl: "https://shard.test/rpc",
-    configMode: "batched",
-    configSteps: [],
-    dryRun: false,
-  })),
-  seat: vi.fn(async () => 1),
+  launchBlitz: vi.fn(async (launches: readonly { request: { gameName: string }; players: readonly unknown[] }[]) =>
+    launches.map(({ request }, index) => ({
+      environment: "madara.blitz",
+      chain: "madara",
+      gameType: "blitz",
+      gameName: request.gameName,
+      gameId: 7 + index,
+      startTime: 100,
+      durationSeconds: 60,
+      startTimeIso: "1970-01-01T00:01:40.000Z",
+      rpcUrl: "https://shard.test/rpc",
+      configMode: "batched",
+      configSteps: [],
+      dryRun: false,
+      finalizeAt: 160,
+      settlementTransactions: 1,
+    })),
+  ),
 }));
 vi.mock("./shard-client", () => ({
   LaunchShard: class {
-    create = native.create;
-    seat = native.seat;
-    roster = async () => [];
-    game = async () => ({ start_main_at: 100n, end_at: 160n });
+    launchBlitz = native.launchBlitz;
   },
 }));
 vi.mock("./results", () => ({ finalizeGame: vi.fn() }));
@@ -78,31 +78,45 @@ const executeRun = (
       return yield* executor.execute(run, store);
     }).pipe(Effect.provide(launchExecutorLayer(layerTarget, value))),
   );
-it("creates each paid game with its resolved historical cohort on every retry", async () => {
+it("launches a whole slot from whichever game run it picked, resolving the slot once and completing every game", async () => {
   const store = new D1LaunchStore(database.db, testChain());
-  const run = await store.enqueue("game", {
-    environment: "madara.blitz",
-    gameName: "blitz-roster-test",
-    slotId: 12,
-    groupIndex: 0,
-  });
-  const value = slotValueFixture(1);
-  const roster = vi.fn(value.registrations);
-  const layer = launchExecutorLayer(target, { ...value, registrations: roster });
-  const execute = () =>
-    Effect.runPromise(
-      Effect.gen(function* () {
-        const executor = yield* LaunchExecutor;
-        return yield* executor.execute(run, store);
-      }).pipe(Effect.provide(layer)),
-    );
-  await execute();
-  await execute();
-  expect(run.chainId).toBe(TEST_CHAIN);
-  expect(native.create).toHaveBeenCalledWith(run.request, Date.parse(run.createdAt), undefined, [
-    { wallet: "0x1", account: "0x456" },
+  const queue = (groupIndex: number) =>
+    store.schedule("game", {
+      environment: "madara.blitz",
+      gameName: `blitz-1100-${groupIndex + 1}`,
+      slotId: 12,
+      groupIndex,
+    });
+  const picked = await queue(0);
+  const sibling = await queue(1);
+  const value = slotValueFixture(25);
+  const registrations = vi.fn(value.registrations);
+  const distinct = {
+    ...target,
+    directory: {
+      ...target.directory,
+      accountsAtRegistration: async (page: readonly { wallet: string }[]) =>
+        page.map((_, index) => `0x${(0x300 + index).toString(16)}`),
+    },
+  };
+  const summary = await executeRun(picked, store, distinct, { ...value, registrations });
+  expect(registrations).toHaveBeenCalledOnce();
+  expect(native.launchBlitz).toHaveBeenCalledOnce();
+  const [launches] = native.launchBlitz.mock.calls[0]!;
+  expect(launches.map(({ request, players }) => [request.gameName, players.length])).toEqual([
+    ["blitz-1100-1", 13],
+    ["blitz-1100-2", 12],
   ]);
-  expect(roster).toHaveBeenCalledTimes(2);
+  expect(summary).toMatchObject({ gameName: "blitz-1100-1", gameId: 7 });
+  expect(await store.find("game", "madara.blitz", sibling.name)).toMatchObject({
+    status: "complete",
+    summary: { gameId: 8, settlementTransactions: 1 },
+  });
+  expect(await store.find("result", "madara.blitz", sibling.name)).toMatchObject({ status: "queued" });
+  // The retry of an interrupted run launches the same slot again; the completed sibling is left as it is.
+  await executeRun(picked, store, distinct, value);
+  expect(native.launchBlitz).toHaveBeenCalledTimes(2);
+  expect(await store.find("game", "madara.blitz", sibling.name)).toMatchObject({ status: "complete" });
 });
 
 const queueTestGame = (chain: string) =>
@@ -118,11 +132,16 @@ it("creates a test game on a dev shard with the named accounts as its roster, re
     ...slotValueFixture(1),
     registrations,
   });
-  expect(native.create).toHaveBeenCalledWith(run.request, Date.parse(run.createdAt), undefined, [
-    { account: "0x456", wallet: "0x456" },
-    { account: "0x789", wallet: "0x789" },
+  expect(native.launchBlitz).toHaveBeenCalledWith([
+    {
+      request: run.request,
+      createdAt: Date.parse(run.createdAt),
+      players: [
+        { account: "0x456", wallet: "0x456" },
+        { account: "0x789", wallet: "0x789" },
+      ],
+    },
   ]);
-  expect(native.seat).toHaveBeenCalledOnce();
   expect(registrations).not.toHaveBeenCalled();
 });
 it("refuses a queued test game on a Worker whose bindings select a production shard, before any shard write", async () => {
@@ -131,7 +150,7 @@ it("refuses a queued test game on a Worker whose bindings select a production sh
   await expect(executeRun(run, new D1LaunchStore(database.db, testChain(PRODUCTION_CHAIN)))).rejects.toMatchObject({
     cause: new Error("test_blitz_dev_shard_only"),
   });
-  expect(native.create).not.toHaveBeenCalled();
+  expect(native.launchBlitz).not.toHaveBeenCalled();
 });
 it("refuses a test game queued for a dev chain when the bound shard now answers as another chain", async () => {
   listedChain = DEV_CHAIN;
@@ -140,5 +159,5 @@ it("refuses a test game queued for a dev chain when the bound shard now answers 
   await expect(executeRun(run, new D1LaunchStore(database.db, testChain(DEV_CHAIN)))).rejects.toMatchObject({
     cause: new Error("directory_manifest_chain_differs"),
   });
-  expect(native.create).not.toHaveBeenCalled();
+  expect(native.launchBlitz).not.toHaveBeenCalled();
 });

@@ -1,10 +1,10 @@
 import { Context, Effect, Layer } from "effect";
 import { activeShards, requireActiveChain, readRegisteredShard, type ShardDirectory } from "@realms-world/value-ledger";
-import type { LaunchRunStore } from "../../../config/deployer/clean/launch/run-store";
 import type { LaunchEnv } from "./env";
 import { LaunchExecutionFailure } from "./errors";
 import type { LaunchRun, LaunchSummary } from "./model";
-import { LaunchShard } from "./shard-client";
+import { LaunchShard, type BlitzLaunch } from "./shard-client";
+import type { LaunchServiceStore } from "./store";
 import { closedSlotGroups, type BlitzValuePort } from "./paid-blitz";
 import { finalizeGame } from "./results";
 import type { CreateGameRequest } from "./schemas";
@@ -16,7 +16,7 @@ interface LaunchTarget {
   privateKey: string;
 }
 interface LaunchExecutorService {
-  execute(run: LaunchRun, store: LaunchRunStore): Effect.Effect<LaunchSummary, LaunchExecutionFailure>;
+  execute(run: LaunchRun, store: LaunchServiceStore): Effect.Effect<LaunchSummary, LaunchExecutionFailure>;
 }
 export class LaunchExecutor extends Context.Service<LaunchExecutor, LaunchExecutorService>()("launch/LaunchExecutor") {}
 export const launchTargetOf = (env: LaunchEnv, accountAddress: string): LaunchTarget => ({
@@ -47,7 +47,7 @@ export const launchExecutorLayer = (target: LaunchTarget, value: BlitzValuePort)
   });
 const executeRun = async (
   run: LaunchRun,
-  store: LaunchRunStore,
+  store: LaunchServiceStore,
   target: LaunchTarget,
   value: BlitzValuePort,
 ): Promise<LaunchSummary> => {
@@ -64,27 +64,49 @@ const executeRun = async (
   if (run.kind === "result" && "gameId" in run.request) return finalizeGame(run.request, native);
   if (run.kind !== "game" || "gameId" in run.request) throw new Error("stored_launch_kind_differs");
   const request = run.request;
-  if (request.environment === "madara.blitz") {
-    const players = await blitzRosterOf(run, request, target, value);
-    const created = await native.create(request, Date.parse(run.createdAt), undefined, players);
-    const settlementTransactions = await native.seat(created.gameId!);
-    const { end_at } = await native.game(created.gameId!);
-    return store.saveGame({ ...created, finalizeAt: Number(end_at), settlementTransactions });
-  }
+  if (request.environment === "madara.blitz") return launchBlitz(run, store, target, value, native);
   return store.saveGame(await native.create(request, Date.parse(run.createdAt)));
 };
 
-/** A paid game's players are its slot group, re-resolved from the ledger on every retry; a test game names its own. */
-const blitzRosterOf = async (
+/**
+ * A Blitz launches its whole slot in one run, whichever of the slot's game runs the registrar picked: the run that
+ * executes returns its own summary, and every other game of the slot completes beside it. A test Blitz is a slot of one.
+ */
+const launchBlitz = async (
   run: LaunchRun,
-  request: CreateGameRequest,
+  store: LaunchServiceStore,
   target: LaunchTarget,
   value: BlitzValuePort,
-) => {
-  if (run.slotId === null) return testBlitzRoster(request, run.chainId);
-  if (!Number.isInteger(request.groupIndex)) throw new Error("Blitz games require a closed paid slot");
+  native: LaunchShard,
+): Promise<LaunchSummary> => {
+  const games = await blitzGamesOf(run, store, target, value);
+  const summaries = await native.launchBlitz(games.map(({ launch }) => launch));
+  const others = games.flatMap(({ runId }, index) => (runId === run.id ? [] : [{ runId, summary: summaries[index]! }]));
+  await store.completeGames(others);
+  return summaries[games.findIndex(({ runId }) => runId === run.id)]!;
+};
+
+/**
+ * The games a Blitz run launches, each with its frozen roster. A paid slot's groups are re-resolved from the ledger
+ * once per run, never copied; a test game names its own roster.
+ */
+const blitzGamesOf = async (
+  run: LaunchRun,
+  store: LaunchServiceStore,
+  target: LaunchTarget,
+  value: BlitzValuePort,
+): Promise<{ runId: string; launch: BlitzLaunch }[]> => {
+  const launchOf = (game: LaunchRun, players: BlitzLaunch["players"]) => ({
+    runId: game.id,
+    launch: { request: game.request as CreateGameRequest, players, createdAt: Date.parse(game.createdAt) },
+  });
+  if (run.slotId === null) return [launchOf(run, testBlitzRoster(run.request as CreateGameRequest, run.chainId))];
   const { groups } = await closedSlotGroups({ chainId: run.chainId, slotId: run.slotId }, value, target.directory);
-  const players = groups[request.groupIndex!];
-  if (!players?.length) throw new Error("closed_slot_group_missing");
-  return players;
+  return (await store.slotGames(run.slotId)).map((game) => {
+    const groupIndex = (game.request as CreateGameRequest).groupIndex;
+    if (!Number.isInteger(groupIndex)) throw new Error("Blitz games require a closed paid slot");
+    const players = groups[groupIndex!];
+    if (!players?.length) throw new Error("closed_slot_group_missing");
+    return launchOf(game, players);
+  });
 };
