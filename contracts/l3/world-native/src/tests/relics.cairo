@@ -396,14 +396,13 @@ fn chest_discovery_is_surface_only_timed_and_skips_reserved_or_occupied_tiles() 
     assert_eq!(map_relics(deployment).relic_discovery_time(3), 50);
 }
 #[test]
-fn opening_a_chest_grants_its_stored_pack_to_the_army_once_and_replay_cannot_reopen_it() {
-    let (deployment, _, explorer) = setup(true);
+fn opening_a_chest_grants_its_stored_pack_once_and_replay_cannot_reopen_it() {
+    let (deployment, home, explorer) = setup(true);
     let coord = chest(deployment, Coord { alt: false, x: 2000200, y: 2000200 }, 321, 40);
     move_fixture(deployment, explorer, crate::geometry::neighbor(coord, 0));
     let command = Command::OpenRelicChest(OpenChest { explorer_id: explorer.entity_id, coord });
-    // Seed 321 draws an unlucky War pack: Damage I, Damage Reduction I and Stamina I.
+    // Seed 321 draws an unlucky War pack: Damage I, Damage Reduction I and Stamina I, all army relics.
     assert_eq!(crate::relics::draw_chest(321), RelicChest { pack: RelicPack::War, lucky: false });
-    let expected = array![41_u8, 43, 39].span();
     let chest_id = IMapLogicDispatcher { contract_address: deployment.games }
         .occupancy(crate::geometry::tile_key(3, coord))
         .unwrap()
@@ -413,15 +412,8 @@ fn opening_a_chest_grants_its_stored_pack_to_the_army_once_and_replay_cannot_reo
         crate::game::IPointsDispatcher { contract_address: deployment.games }, 3, deployment.actor,
     );
     assert!(execute(deployment, command, 50));
-    for id in 39_u8..57 {
-        let mut count = 0_u128;
-        for relic in expected {
-            if *relic == id {
-                count += 1;
-            }
-        }
-        assert_eq!(balance(deployment, explorer, id), (3 + count) * RESOURCE_PRECISION);
-    }
+    assert_relics_granted(deployment, explorer, array![41, 43, 39].span());
+    assert_relics_granted(deployment, home, array![].span());
     assert_eq!(
         crate::game::IPointsDispatcherTrait::player_points(
             crate::game::IPointsDispatcher { contract_address: deployment.games }, 3, deployment.actor,
@@ -430,11 +422,50 @@ fn opening_a_chest_grants_its_stored_pack_to_the_army_once_and_replay_cannot_reo
     );
     assert_eq!(stored_chest(deployment, chest_id), None);
     assert_terminal_rejection(deployment, command, 51);
+    assert_relics_granted(deployment, explorer, array![41, 43, 39].span());
     assert!(
         IMapLogicDispatcher { contract_address: deployment.games }
             .occupancy(crate::geometry::tile_key(3, coord))
             .is_none(),
     );
+}
+
+#[test]
+fn opening_pays_army_relics_to_the_army_and_structure_relics_to_its_home() {
+    // Produce: Production, Labor Production and Troop Production all boost the home.
+    assert_opening_pays(3, RelicChest { pack: RelicPack::Produce, lucky: false }, array![], array![51, 53, 55]);
+    assert_opening_pays(16, RelicChest { pack: RelicPack::Produce, lucky: true }, array![], array![52, 54, 56]);
+    // Fortress: Damage Reduction stays with the army; Structure Defense and Troop Production go home.
+    assert_opening_pays(10, RelicChest { pack: RelicPack::Fortress, lucky: false }, array![43], array![49, 55]);
+    assert_opening_pays(12, RelicChest { pack: RelicPack::Fortress, lucky: true }, array![44], array![50, 56]);
+}
+
+/// Opens the chest a seed places beside the army, then replays the opening: both times the army and its home hold
+/// exactly the relics named, on top of the fixture's three of each.
+fn assert_opening_pays(seed: u256, expected: RelicChest, army: Array<u8>, home: Array<u8>) {
+    assert_eq!(crate::relics::draw_chest(seed), expected);
+    let (deployment, realm, explorer) = setup(true);
+    let coord = chest(deployment, Coord { alt: false, x: 2000200, y: 2000200 }, seed, 40);
+    move_fixture(deployment, explorer, crate::geometry::neighbor(coord, 0));
+    let command = Command::OpenRelicChest(OpenChest { explorer_id: explorer.entity_id, coord });
+    assert!(execute(deployment, command, 50));
+    assert_relics_granted(deployment, explorer, army.span());
+    assert_relics_granted(deployment, realm, home.span());
+    assert_terminal_rejection(deployment, command, 51);
+    assert_relics_granted(deployment, explorer, army.span());
+    assert_relics_granted(deployment, realm, home.span());
+}
+
+fn assert_relics_granted(deployment: super::Deployment, key: ResourceKey, granted: Span<u8>) {
+    for id in 39_u8..57 {
+        let mut count = 0_u128;
+        for relic in granted {
+            if *relic == id {
+                count += 1;
+            }
+        }
+        assert_eq!(balance(deployment, key, id), (3 + count) * RESOURCE_PRECISION);
+    }
 }
 fn stored_chest(deployment: super::Deployment, chest_id: u64) -> Option<RelicChest> {
     snforge_std::interact_with_state(deployment.games, || crate::state::read().relics.relic_chests.read((3, chest_id)))

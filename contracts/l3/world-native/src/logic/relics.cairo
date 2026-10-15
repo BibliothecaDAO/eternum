@@ -73,7 +73,7 @@ pub mod RelicState {
             assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to chest");
             let chest_id = IRelicMapLibraryDispatcher { class_hash: classes.map.read() }
                 .consume_relic_chest(game_id, command.coord);
-            self.pay_chest(game_id, actor, command, chest_id, context);
+            self.pay_chest(game_id, actor, command, chest_id, explorer.owner, context);
             ()
         }
         fn apply_relic(
@@ -486,17 +486,24 @@ pub mod RelicState {
             actor: ContractAddress,
             command: OpenChest,
             chest_id: u64,
+            home: u64,
             context: ExecutionContext,
         ) {
             let config = context.rules.unbox();
             let chest = crate::logic::relic_chests::take(ResourceKey { game_id, entity_id: chest_id });
             let relics = crate::relics::pack_relics(chest);
-            let key = ResourceKey { game_id, entity_id: command.explorer_id };
+            let army = ResourceKey { game_id, entity_id: command.explorer_id };
+            let realm = ResourceKey { game_id, entity_id: home };
             for id in relics {
+                let holder = if crate::relics::is_army_relic(*id) {
+                    army
+                } else {
+                    realm
+                };
                 self
                     .resources(game_id)
                     .grant_resource(
-                        key,
+                        holder,
                         *id,
                         crate::rules::RESOURCE_PRECISION,
                         context.timestamp,

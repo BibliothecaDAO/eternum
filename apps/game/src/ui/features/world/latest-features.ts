@@ -85,7 +85,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-15",
     title: "Relic crates hold themed packs",
     description:
-      "Each Blitz relic crate now holds one pack of three relics, named on its tile before you open it: War, Explore, Produce or Fortress. One crate in five is lucky and holds the whole pack at level II. Labor Production Relic II now adds 40%, twice level I.",
+      "Each Blitz relic crate now holds one pack of three relics, named on its tile before you open it: War, Explore, Produce or Fortress. Army relics go to the army that opens it, realm relics to its home realm. One crate in five is lucky and holds the whole pack at level II. Labor Production Relic II now adds 40%, twice level I.",
     type: "balance",
   },
   {

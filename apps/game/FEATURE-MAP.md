@@ -27,11 +27,11 @@ the game is played rather than watched, the chip names the player, and the page 
 open the client, watch a running game and check the canvas). Inside a match,
 `prove:play --game <chain>:<game> --profile <dir>` drives one game signed in (a browser profile signed in once through
 the game's own sign-in, kept outside the repo): `--crate <col>,<row>` finds a crate next to the player's army by
-pointer, opens it and reads it back from the log after a reload; `--until-end <minutes>` stays on the map until the game
-ends and leaves through **Game finished** → **See the results**, checking the page logged no "No game client is active";
-`--ended` presses **Results** on the ended game's doorway and on its map address, at desktop and phone
-(`scripts/prove-play-game.mjs`, writing `game-proof.json` and screenshots into a new directory per run). The outpost
-proof below drives the runtime lab; live actions still need an eligible player.
+pointer, reads the pack its panel names, opens it and reads the same relics back from the log after a reload;
+`--until-end <minutes>` stays on the map until the game ends and leaves through **Game finished** → **See the results**,
+checking the page logged no "No game client is active"; `--ended` presses **Results** on the ended game's doorway and on
+its map address, at desktop and phone (`scripts/prove-play-game.mjs`, writing `game-proof.json` and screenshots into a
+new directory per run). The outpost proof below drives the runtime lab; live actions still need an eligible player.
 
 Inside a Frontier match, `pnpm --dir apps/game playtest [--player <email>]` plays it as a spectator or a signed-in
 player and judges each step by what the page shows (`apps/game/AGENTS.md`).

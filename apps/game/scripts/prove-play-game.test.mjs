@@ -4,16 +4,62 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { gameAddresses, judgeStep, linesBetween, proveGame, spiralPoints } from "./prove-play-game.mjs";
 import { parseArgs } from "./prove-play.mjs";
 
-/** Game 7's crate as the proof read it: the closed panel's count, the opened panel and the log after a reload. */
-const GAME_7_CRATE = {
+const WAR_RELICS = ["Damage Relic I", "Damage Reduction Relic I", "Stamina Relic I"];
+const LUCKY_FORTRESS_RELICS = ["Structure Defense Relic II", "Damage Reduction Relic II", "Troop Production Relic II"];
+
+/** The pages a War crate shows: the closed panel, the opened panel, and the Events log after a reload. */
+const WAR_CRATE_PAGES = {
+  panel: ["Crate #12", "Contents", "War pack", ...WAR_RELICS, "Victory points", "250", "Open", "Biome", "Bare"],
+  opened: ["Crate opened", "Contents", ...WAR_RELICS, "Biome", "Bare"],
+  log: ["Events", "War pack opened", `Stolsli T1 army · ${WAR_RELICS.join(", ")}`, "+120 Essence", "Stolsli T1 army"],
+};
+
+/** A War crate as the proof reads it: the closed panel's pack, the opened panel and the log after a reload. */
+const WAR_CRATE = {
   step: "crate",
-  panel: { contents: ["Relics", "3", "Victory points", "250"] },
-  opened: ["Damage Relic II", "Stamina Relic I", "Stamina Relic I"],
-  log: ["Relic crate opened", "Stolsli T1 army · Damage Relic II, Stamina Relic I, Stamina Relic I"],
+  panel: { contents: linesBetween(WAR_CRATE_PAGES.panel.join("\n"), "Contents", "Open") },
+  opened: WAR_RELICS,
+  log: WAR_CRATE_PAGES.log.slice(1, 3),
   pageErrors: { errors: [], console: [] },
 };
 
-const crateWith = (change) => judgeStep({ ...GAME_7_CRATE, ...change });
+const crateWith = (change) => judgeStep({ ...WAR_CRATE, ...change });
+const luckyFortress = (relics) => ({
+  panel: { contents: ["Fortress pack · lucky", ...relics, "Victory points", "250"] },
+  opened: relics,
+  log: ["Fortress pack · lucky opened", `Stolsli T1 army · ${relics.join(", ")}`],
+});
+
+/**
+ * A browser on a running game with a War crate in the middle of the map: hovering names it, a click opens its panel,
+ * **Open** opens it, and a reload shows the log the game holds.
+ */
+const crateBrowser = (pages = WAR_CRATE_PAGES) => {
+  let page = ["Relic Crate"];
+  const answer = (data) => JSON.stringify({ success: true, data, error: null });
+  return {
+    run: (command, ...args) => {
+      if (command === "mouse" && args[0] === "down") page = pages.panel;
+      if (command === "click" && args[0] === '[data-proof-step="Open"]') page = pages.opened;
+      if (command === "reload") page = pages.log;
+      if (command === "errors") return answer({ errors: [] });
+      if (command === "console") return answer({ messages: [] });
+      return "";
+    },
+    evaluate: (js) => {
+      if (js.startsWith("Boolean(")) return true;
+      if (js === "document.body.innerText") return page.join("\n");
+      return js.includes("events-all") ? '[data-proof-step="events-all"]' : '[data-proof-step="Open"]';
+    },
+  };
+};
+
+const proveCrate = async (browser) => {
+  vi.useFakeTimers();
+  const proof = proveGame(browser, { baseUrl: "https://proof.test", game: "0xa:7", crate: [3, 11] }, "/proof");
+  await vi.runAllTimersAsync();
+  return (await proof).records[0];
+};
 
 /**
  * A browser on an ended game: every entrance shows the ended plate and its Results leads to the game's Results. Each
@@ -97,34 +143,69 @@ describe("a game's proof", () => {
     );
   });
 
-  it("reads an opened crate's relics off its panel", () => {
-    const panel = "Crate opened\nContents\nDamage Relic II\nStamina Relic I\nStamina Relic I\nBiome\nBare";
-    expect(linesBetween(panel, "Contents", "Biome")).toEqual(GAME_7_CRATE.opened);
+  it("reads a closed crate's pack and an opened crate's relics off its panel", () => {
+    expect(WAR_CRATE.panel.contents).toEqual(["War pack", ...WAR_RELICS, "Victory points", "250"]);
+    expect(linesBetween(WAR_CRATE_PAGES.opened.join("\n"), "Contents", "Biome")).toEqual(WAR_RELICS);
     expect(linesBetween("Crate opened\nBiome\nBare", "Contents", "Biome")).toEqual([]);
   });
 
-  it("passes a crate whose log names exactly the relics its panel listed", () => {
-    expect(judgeStep(GAME_7_CRATE).problem).toBeUndefined();
+  it("passes a crate whose opened panel and log name exactly the pack its panel advertised", () => {
+    expect(judgeStep(WAR_CRATE).problem).toBeUndefined();
+    expect(crateWith(luckyFortress(LUCKY_FORTRESS_RELICS)).problem).toBeUndefined();
   });
 
-  it("fails a crate whose log names another tier of a relic", () => {
-    expect(crateWith({ opened: ["Damage Relic I", "Stamina Relic I", "Stamina Relic I"] }).problem).toBe(
+  it("fails a crate whose closed panel names no pack or not three relics", () => {
+    expect(crateWith({ panel: { contents: ["Relics", "3", "Victory points", "250"] } }).problem).toBe(
+      "the closed crate's panel named no pack",
+    );
+    expect(crateWith({ panel: { contents: [] } }).problem).toBe("the closed crate's panel named no pack");
+    expect(crateWith({ panel: { contents: ["War pack", ...WAR_RELICS.slice(1), "Victory points"] } }).problem).toBe(
+      "the panel advertised 2 relics in the War pack, not 3",
+    );
+  });
+
+  it("fails a pack whose relics are not all of its level", () => {
+    const mixed = ["Structure Defense Relic II", "Damage Reduction Relic I", "Troop Production Relic II"];
+    expect(crateWith(luckyFortress(mixed)).problem).toBe("the Fortress pack · lucky lists relics of the wrong level");
+    const lucky = ["Damage Relic II", "Damage Reduction Relic II", "Stamina Relic II"];
+    expect(crateWith({ panel: { contents: ["War pack", ...lucky] }, opened: lucky }).problem).toBe(
+      "the War pack lists relics of the wrong level",
+    );
+  });
+
+  it("fails a crate that opens missing, duplicated or other relics than advertised", () => {
+    const problem = "the opened crate lists other relics than the War pack advertised";
+    expect(crateWith({ opened: [] }).problem).toBe(problem);
+    expect(crateWith({ opened: WAR_RELICS.slice(1) }).problem).toBe(problem);
+    expect(crateWith({ opened: ["Damage Relic I", "Stamina Relic I", "Stamina Relic I"] }).problem).toBe(problem);
+    expect(crateWith({ opened: ["Damage Relic II", "Damage Reduction Relic I", "Stamina Relic I"] }).problem).toBe(
+      problem,
+    );
+  });
+
+  it("fails a crate the log does not hold, or names otherwise, after the reload", () => {
+    expect(crateWith({ log: [] }).problem).toBe('the log holds no "War pack opened" after the reload');
+    expect(crateWith({ log: ["Relic crate opened", WAR_CRATE.log[1]] }).problem).toBe(
+      'the log holds no "War pack opened" after the reload',
+    );
+    expect(crateWith({ log: ["War pack opened", "Stolsli T1 army · Damage Relic I, Stamina Relic I"] }).problem).toBe(
       "the log names other relics than the panel",
     );
   });
 
-  it("fails a crate whose log drops a duplicate relic", () => {
-    const log = ["Relic crate opened", "Stolsli T1 army · Damage Relic II, Stamina Relic I"];
-    expect(crateWith({ log }).problem).toBe("the log names other relics than the panel");
+  it("drives a crate from the pointer to the log after a reload, keeping the pack's lines", async () => {
+    const record = await proveCrate(crateBrowser());
+    expect(record.problem).toBeUndefined();
+    expect(record.found).toEqual([720, 450]);
+    expect(record.panel.contents).toEqual(WAR_CRATE.panel.contents);
+    expect(record.opened).toEqual(WAR_RELICS);
+    expect(record.log).toEqual(WAR_CRATE.log);
   });
 
-  it("fails a crate whose opened panel lists no contents", () => {
-    expect(crateWith({ opened: [] }).problem).toBe("the panel advertised 3 relics and listed 0");
-    expect(crateWith({ panel: { contents: [] } }).problem).toBe("the closed crate's panel advertised no relic count");
-  });
-
-  it("fails a crate the log does not hold after the reload", () => {
-    expect(crateWith({ log: [] }).problem).toBe("the log holds no crate opening after the reload");
+  it("fails a driven crate whose log, after the reload, still titles the opening the old way", async () => {
+    const log = ["Events", "Relic crate opened", `Stolsli T1 army · ${WAR_RELICS.join(", ")}`];
+    const record = await proveCrate(crateBrowser({ ...WAR_CRATE_PAGES, log }));
+    expect(record.problem).toBe('the log holds no "War pack opened" after the reload');
   });
 
   it("completes an ended game whose entrances reach its Results without errors", async () => {

@@ -4,6 +4,12 @@ use crate::troops::Coord;
 
 pub const FIRST_RELIC: u8 = 39;
 pub const LAST_RELIC: u8 = 56;
+// Relics before this id boost an army; the rest boost a structure, its guards or its production.
+pub const FIRST_STRUCTURE_RELIC: u8 = 49;
+
+pub fn is_army_relic(id: u8) -> bool {
+    id < FIRST_STRUCTURE_RELIC
+}
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct RelicRule {
     pub rate_bps: u16,
@@ -39,7 +45,8 @@ pub struct ChestOpened {
 }
 
 // A relic chest holds one themed pack of three level I relics, or all level II when its lucky roll wins. Its pack is
-// drawn when the chest appears, so the chest names it before anyone opens it.
+// drawn when the chest appears, so the chest names it before anyone opens it. Opening pays army relics to the army
+// and structure relics to its home.
 #[derive(Copy, Drop, Serde, Debug, PartialEq, Default, starknet::Store)]
 pub enum RelicPack {
     #[default]

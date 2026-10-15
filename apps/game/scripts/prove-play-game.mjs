@@ -5,9 +5,10 @@
  * page's errors:
  *
  * - `--crate <col>,<row>`: a relic crate one of the player's armies stands next to. The map opens on that tile, the
- *   pointer moves over it until the game names it ("Relic Crate"), a click opens its panel, **Open** opens it, and after
- *   a reload the newest crate opening in the game's log must name exactly the relics the opened panel lists, each as
- *   often, as many as the closed panel advertised.
+ *   pointer moves over it until the game names it ("Relic Crate"), a click opens its panel, which must name the crate's
+ *   pack and its three relics, all level II when the pack is lucky and all level I otherwise. **Open** opens it: the
+ *   opened panel must list exactly those relics, and after a reload the game's log must hold "<pack> opened" naming
+ *   them again.
  * - `--until-end`: the map stays open until the game ends; **Game finished** → **See the results** must reach the
  *   game's own Results page.
  * - `--ended` (and after `--until-end`), at desktop and phone: an ended game's doorway **Results** and its map
@@ -44,29 +45,46 @@ export const gameAddresses = (spec) => {
   return { doorway, map: `${doorway}/map`, realm: `${doorway}/hex`, results: `/results/${chain}-${game}` };
 };
 
-/** How many relics a closed crate's panel advertises: the number under "Relics", or null without one. */
-const advertisedRelicCount = (contents) => {
-  const at = contents.indexOf("Relics");
-  const count = Number(contents[at + 1]);
-  return at >= 0 && Number.isInteger(count) && count > 0 ? count : null;
+const PACK_NAME = /^\S+ pack( · lucky)?$/;
+const PACK_SIZE = 3;
+
+/**
+ * The pack a closed crate's panel advertises: its name line ("War pack · lucky"), then its relics up to "Victory
+ * points". Null without a pack name.
+ */
+const advertisedPack = (contents) => {
+  const at = contents.findIndex((line) => PACK_NAME.test(line));
+  if (at < 0) return null;
+  const end = contents.indexOf("Victory points", at + 1);
+  return {
+    name: contents[at],
+    lucky: contents[at].endsWith(" · lucky"),
+    relics: contents.slice(at + 1, end < 0 ? undefined : end),
+  };
 };
 
-/** The relics the log's newest crate opening names ("Relic crate opened", then "<army> · <relic>, <relic>"). */
-const newestLoggedCrateRelics = (logLines) => {
-  const at = logLines.indexOf("Relic crate opened");
+/** The relics the log's newest opening of this pack names ("<pack> opened", then "<army> · <relic>, <relic>"). */
+const loggedPackRelics = (logLines, name) => {
+  const at = logLines.indexOf(`${name} opened`);
   const description = logLines[at + 1];
   return at >= 0 && description ? description.split(" · ").at(-1).split(", ") : null;
 };
 
 const sameRelics = (a, b) => a.length === b.length && a.toSorted().join("\n") === b.toSorted().join("\n");
 
-/** Why a crate's readings disagree: the closed panel's count, the opened panel's relics and the log's after a reload. */
+/** A lucky pack holds only level II relics, any other only level I. */
+const matchesPackLevel = ({ lucky, relics }) => relics.every((relic) => relic.endsWith(lucky ? " II" : " I"));
+
+/** Why a crate's readings disagree: the closed panel's pack, the opened panel's relics and the log's after a reload. */
 const crateProblem = ({ panel, opened, log }) => {
-  const advertised = advertisedRelicCount(panel.contents);
-  const logged = newestLoggedCrateRelics(log);
-  if (advertised === null) return "the closed crate's panel advertised no relic count";
-  if (opened.length !== advertised) return `the panel advertised ${advertised} relics and listed ${opened.length}`;
-  if (!logged) return "the log holds no crate opening after the reload";
+  const pack = advertisedPack(panel.contents);
+  if (!pack) return "the closed crate's panel named no pack";
+  if (pack.relics.length !== PACK_SIZE)
+    return `the panel advertised ${pack.relics.length} relics in the ${pack.name}, not ${PACK_SIZE}`;
+  if (!matchesPackLevel(pack)) return `the ${pack.name} lists relics of the wrong level`;
+  if (!sameRelics(opened, pack.relics)) return `the opened crate lists other relics than the ${pack.name} advertised`;
+  const logged = loggedPackRelics(log, pack.name);
+  if (!logged) return `the log holds no "${pack.name} opened" after the reload`;
   if (!sameRelics(opened, logged)) return "the log names other relics than the panel";
   return null;
 };
@@ -194,8 +212,8 @@ const proveCrate = async (b, base, addresses, [col, row], out) => {
   clickAt(b, record.found);
   if (!(await waitFor(b, `/Crate #\\d+/.test(document.body.innerText)`, STEP_TIMEOUT_MS)))
     return { ...record, problem: "the crate's panel did not open" };
-  const panel = bodyText(b);
-  record.panel = { contents: linesBetween(panel, "Contents", "Open") };
+  record.panel = { contents: linesBetween(bodyText(b), "Contents", "Open") };
+  const pack = advertisedPack(record.panel.contents);
   record.screenshots.push(shot(b, out, "crate-2-panel.png"));
   if (!pressButton(b, "Open")) return { ...record, problem: "no Open on the crate's panel" };
   if (!(await waitForText(b, "Crate opened", 60_000))) return { ...record, problem: "the crate did not open" };
@@ -206,11 +224,11 @@ const proveCrate = async (b, base, addresses, [col, row], out) => {
   if (!(await waitFor(b, MAP_READY, READY_TIMEOUT_MS))) return { ...record, problem: "map not ready after reload" };
   await sleep(3000);
   openEventsLog(b);
-  await waitForText(b, "Relic crate opened");
+  if (pack) await waitForText(b, `${pack.name} opened`);
   record.log = bodyText(b)
     .split("\n")
     .map((line) => line.trim())
-    .filter((line) => line.includes("Relic"));
+    .filter((line) => line.endsWith(" opened") || line.includes("Relic"));
   record.screenshots.push(shot(b, out, "crate-4-log-after-reload.png"));
   return record;
 };
