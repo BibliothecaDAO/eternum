@@ -4,6 +4,7 @@ import { expect, test } from "bun:test";
 import { startReadRpc } from "../scripts/read-rpc";
 import { identity, invoke } from "./fixtures";
 import { STAMP_TAG, type PlayInvoke } from "./transaction";
+import { launcherAccountAddress } from "../../../packages/value-ledger/src/shard-accounts";
 
 async function fixture(
   result: unknown = { transaction_hash: "0x777" },
@@ -120,6 +121,34 @@ test("one current-nonce play is stamped and only its hash reaches the device", a
       message: "Transaction refused",
     });
     expect(f.stamped).toHaveLength(1);
+  } finally {
+    f.close();
+  }
+});
+test("the launcher alone may queue plays up to 48 nonces ahead; a player stamps only its current nonce", async () => {
+  const f = await fixture();
+  const launcher = launcherAccountAddress(identity);
+  const play = (sender_address: string, nonce: number) => ({
+    ...invoke(),
+    sender_address,
+    nonce: `0x${nonce.toString(16)}`,
+  });
+  try {
+    f.setNonce("0xa");
+    for (const nonce of [10, 11, 34, 58])
+      expect((await f.call("starknet_addInvokeTransaction", [play(launcher, nonce)])).result).toEqual({
+        transaction_hash: "0x777",
+      });
+    for (const nonce of [9, 59])
+      expect((await f.call("starknet_addInvokeTransaction", [play(launcher, nonce)])).error).toEqual({
+        code: -32010,
+        message: "Transaction refused",
+      });
+    expect((await f.call("starknet_addInvokeTransaction", [play("0x42", 11)])).error).toEqual({
+      code: -32010,
+      message: "Transaction refused",
+    });
+    expect(f.stamped.map((tx) => Number(tx.nonce))).toEqual([10, 11, 34, 58]);
   } finally {
     f.close();
   }
