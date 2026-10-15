@@ -139,6 +139,14 @@ const withSelection = (streamUrl: string, selection: ScopeSelection): string => 
   return url.toString();
 };
 
+/** The game is over and finalized: its stream is closed for good, and its results hold the final state. */
+export class GameFinalizedError extends Error {
+  constructor(url: string) {
+    super(`The game at ${url} is finalized; its review holds the final state`);
+    this.name = "GameFinalizedError";
+  }
+}
+
 /**
  * Herald's stream, forwarded in order: snapshots, scope replacements and diffs become store facts, event rows become
  * events. The transport keeps no copy of the rows it forwards; the native store is the one place they live.
@@ -293,7 +301,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   private endFinalized(socket: HeraldSocket): void {
     if (this.socket !== socket) return;
     this.stop();
-    const failure = new Error(`The game at ${this.options.url} is finalized; its review holds the final state`);
+    const failure = new GameFinalizedError(this.options.url);
     console.warn(`[Herald] ${failure.message}; not reconnecting`);
     if (!this.ready.settled) this.ready.reject(failure);
     else if (!this.firstSnapshotEnded) this.handlers?.onStartFailure(failure);

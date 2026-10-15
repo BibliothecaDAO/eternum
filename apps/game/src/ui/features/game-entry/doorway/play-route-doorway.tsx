@@ -8,6 +8,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGameEntry } from "@/hooks/use-game-entry";
 import { parsePlayRoute } from "@/play/navigation/play-route";
 import { gamePainting, modeLabel } from "@/shell/game-links";
+import { resultsHref } from "@/shell/season-tab/results-link";
 import { useRequestSignIn } from "@/shell/sign-in/sign-in-route";
 import { BootDebugPanel } from "@/ui/modules/boot-loader/boot-debug-panel";
 
@@ -25,6 +26,7 @@ export const PlayRouteDoorway = ({
   audience,
   setup,
   accountError,
+  ended,
   retry,
   currentTaskLabel,
 }: {
@@ -32,6 +34,8 @@ export const PlayRouteDoorway = ({
   audience: DoorwayAudience;
   setup: GameClientSetup | null;
   accountError: string | null;
+  /** The game is finalized: the doorway leads to its results. */
+  ended: boolean;
   retry: () => void;
   currentTaskLabel: string;
 }) => {
@@ -48,6 +52,7 @@ export const PlayRouteDoorway = ({
     accountError,
     failedScene,
     realmCanOpen: realm !== null,
+    ended,
   });
   return (
     <DoorwayScreen
@@ -59,6 +64,7 @@ export const PlayRouteDoorway = ({
       onRetry={phase === "error" ? retry : () => window.location.reload()}
       onOpenRealm={openRealmWithoutMap}
       onSignIn={() => requestSignIn()}
+      results={route ? resultsHref({ chainId: route.chainId, game_id: route.gameId }, false) : undefined}
     >
       {route?.verboseLogs && <BootDebugPanel currentTaskLabel={currentTaskLabel} />}
     </DoorwayScreen>

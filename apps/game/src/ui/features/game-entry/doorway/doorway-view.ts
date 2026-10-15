@@ -50,6 +50,8 @@ interface BootSide {
   failedScene?: PlayScene | null;
   /** The player's own realm is known, so its view can open without the map. */
   realmCanOpen?: boolean;
+  /** The game is over and finalized, so it leads to its results instead of booting. */
+  ended?: boolean;
 }
 
 const SPECTATOR_STEPS: DoorwayStep[] = ["map", "play"];
@@ -113,7 +115,8 @@ const entryPlace = ({ phase, signedIn, foundingFailed = false, blitzEntry }: Ent
   }
 };
 
-const bootPlace = ({ phase, accountError, failedScene, realmCanOpen = false }: BootSide): Place => {
+const bootPlace = ({ phase, accountError, failedScene, realmCanOpen = false, ended = false }: BootSide): Place => {
+  if (ended) return place("account", { done: true, spectating: "results" });
   switch (phase) {
     case "normalize_route":
     case "await_account":

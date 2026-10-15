@@ -10,6 +10,7 @@ import { useEffect } from "react";
 import { PlaySceneHandoff } from "./game-entry/play-scene-handoff";
 import { markGameEntryMilestone } from "./ui/layouts/game-entry-timeline";
 import { Navigate } from "react-router-dom";
+import { GameFinalizedError } from "@bibliothecadao/eternum/game-sync";
 import type { Account, AccountInterface } from "starknet";
 import { usePlayRouteBootController } from "./game-entry/play-route-boot";
 import { usePlayRouteReadinessStore } from "./game-entry/play-route-readiness-store";
@@ -107,6 +108,7 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
           audience={state.resolvedRequest?.entryMode === "spectator" ? "spectator" : "player"}
           setup={hasGameContext ? setupResult : null}
           accountError={reconnectError}
+          ended={state.error instanceof GameFinalizedError}
           retry={retry}
           currentTaskLabel={currentTaskLabel}
         />

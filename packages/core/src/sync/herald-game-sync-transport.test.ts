@@ -3,7 +3,8 @@ import bindings from "../../../../contracts/l3/world-native/schema/bindings.json
 import { nativeModelDefinition } from "../client/native-models";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { HeraldGameSyncTransport, type HeraldSocket } from "./herald-game-sync-transport";
+import { GameFinalizedError, HeraldGameSyncTransport, type HeraldSocket } from "./herald-game-sync-transport";
+import { HERALD_GAME_FINALIZED_CLOSE } from "./herald-http-types";
 import type {
   GameSyncEvent,
   GameSyncFact,
@@ -146,6 +147,18 @@ afterEach(() => {
 });
 
 describe("HeraldGameSyncTransport", () => {
+  it("ends a finalized game's start with GameFinalizedError, and does not reconnect", async () => {
+    vi.useFakeTimers();
+    const harness = streamHarness();
+    const subscribed = harness.transport.subscribe(harness.handlers);
+    const socket = harness.sockets.at(-1)!;
+    const finalizedClose = socket.onclose as unknown as (event: { code: number }) => void;
+    finalizedClose({ code: HERALD_GAME_FINALIZED_CLOSE });
+    await expect(subscribed).rejects.toBeInstanceOf(GameFinalizedError);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(harness.sockets).toHaveLength(1);
+  });
+
   it("uses streamed head time for absence scope and forgets it on disposal", async () => {
     const harness = streamHarness();
     const gates: GameSyncSnapshotState[] = [];

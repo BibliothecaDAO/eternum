@@ -107,3 +107,39 @@ it("leads an ended game's Results to its Results page, not to watching its map",
     await act(async () => root.unmount());
   }
 });
+
+it("leads a finalized game's boot to its Results, in place of the world not answering", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const ResultsProbe = () => <p data-testid="results">{useParams().id}</p>;
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  const doorway = (ended: boolean) => (
+    <DoorwayScreen
+      view={doorwayView({ source: "boot", phase: "error", audience: "player", ended })}
+      realm={null}
+      onRetry={() => {}}
+      onSignIn={() => {}}
+      results="/results/0xa-5"
+    />
+  );
+  expect(text(renderToStaticMarkup(<MemoryRouter>{doorway(false)}</MemoryRouter>))).toContain("did not answer");
+  await act(async () =>
+    root.render(
+      <MemoryRouter initialEntries={["/g/0xa/5/map"]}>
+        <Routes>
+          <Route path="/g/:chain/:game/map" element={doorway(true)} />
+          <Route path="/results/:id" element={<ResultsProbe />} />
+        </Routes>
+      </MemoryRouter>,
+    ),
+  );
+  try {
+    expect(container.textContent).toContain("This game has ended.");
+    expect(container.textContent).not.toContain("did not answer");
+    const results = [...container.querySelectorAll("button")].find((button) => button.textContent === "Results");
+    await act(async () => results?.click());
+    expect(container.querySelector('[data-testid="results"]')?.textContent).toBe("0xa-5");
+  } finally {
+    await act(async () => root.unmount());
+  }
+});
