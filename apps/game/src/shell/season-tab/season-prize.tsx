@@ -36,7 +36,7 @@ export const useBoardPrize = (now: number) => {
     prize && (state === "running" || state === "closing")
       ? placeShares(prize.season.pool, prize.season.participants, prize.curve)
       : null;
-  return { query, unreadable: sources.length > 0 && !ledger, prize, state, shares, paused };
+  return { history, query, unreadable: sources.length > 0 && !ledger, prize, state, shares, paused };
 };
 
 type BoardPrize = ReturnType<typeof useBoardPrize>;
@@ -56,7 +56,7 @@ export const PrizeHead = ({ prize, state }: { prize: SeasonPrize; state: BoardPr
 /**
  * What stands above the board's rows: while the season runs, how many places it pays; once it is over, the player's
  * share and where the season stands with it, then the winner's claim from the seat's wallet in that game. A prize that
- * cannot be read says so.
+ * cannot be read, from the player's games or the ledger, says so, and one on its way shows its wait.
  */
 export const PrizeLines = ({
   prize: board,
@@ -67,9 +67,12 @@ export const PrizeLines = ({
   now: number;
   onClaimed: () => void;
 }) => {
-  const { query, unreadable, prize, state, shares, paused } = board;
+  const { history, query, unreadable, prize, state, shares, paused } = board;
+  if (history.isError)
+    return <ServiceFailure service="directory" error={history.error} retry={() => void history.refetch()} />;
   if (unreadable) return <FailureLine line={SEASON_PRIZE_WORDS.unreadable} />;
   if (query.isError) return <ServiceFailure service="ledger" error={query.error} retry={() => void query.refetch()} />;
+  if (history.isLoading || query.isLoading) return <Loading />;
   if (!prize || !state) return null;
   if (shares)
     return (

@@ -29,7 +29,8 @@ type Self = RatingTop["self"];
  * Blitz's board on Season (spec 09): the season's pool at its title, the reader's tier and rating, then the rating's
  * top rows with the reader's own under them when it ranks below. The season prize is paid by rating place, so while it
  * runs each paid row carries what it would take if the season ended now; once over, the reader's share and its claim
- * stand above the rows.
+ * stand above the rows. The prize and the rating are two reads, each waiting and failing on its own: a share to claim
+ * stays claimable while the rating is down.
  */
 export const BlitzBoard = () => {
   const { session } = useIdentitySession();
@@ -42,19 +43,18 @@ export const BlitzBoard = () => {
       title={ageOf("blitz").name}
       aside={prize.prize && <PrizeHead prize={prize.prize} state={prize.state} />}
     >
-      {top.isError ? (
-        <ServiceFailure service="ratings" error={top.error} retry={() => void top.refetch()} />
-      ) : top.isPending ? (
-        <Loading />
-      ) : (
-        <>
-          <OwnRating self={top.data.self} signedIn={session !== null} />
-          <PrizeLines prize={prize} now={now} onClaimed={() => void prize.query.refetch()} />
-          <TopRows top={top.data} shares={prize.shares} />
-        </>
-      )}
+      {top.isSuccess && <OwnRating self={top.data.self} signedIn={session !== null} />}
+      <PrizeLines prize={prize} now={now} onClaimed={() => void prize.query.refetch()} />
+      <Ratings top={top} shares={prize.shares} />
     </Panel>
   );
+};
+
+/** The rating's rows, or its own wait or failure. */
+const Ratings = ({ top, shares }: { top: ReturnType<typeof useRatingTop>; shares: bigint[] | null }) => {
+  if (top.isError) return <ServiceFailure service="ratings" error={top.error} retry={() => void top.refetch()} />;
+  if (top.isPending) return <Loading />;
+  return <TopRows top={top.data} shares={shares} />;
 };
 
 /** The reader's tier and rating, large; a reader with no wallet is told how to carry one. Signed out, nothing. */

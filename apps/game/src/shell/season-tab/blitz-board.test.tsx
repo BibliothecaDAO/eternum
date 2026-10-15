@@ -35,6 +35,7 @@ const TOP_ROWS = ["1Ysabeau2,480", "20x05b1…f0a11,210", "30x0c22…77cc1,100"]
 const answered = (self: unknown) => ({
   isError: false,
   isPending: false,
+  isSuccess: true,
   data: {
     block_number: 1,
     block_hash: "0x1",

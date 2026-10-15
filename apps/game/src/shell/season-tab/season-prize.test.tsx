@@ -41,27 +41,34 @@ vi.mock("../herald", () => ({
   useDirectory: () => ({ data: { games: listed.directory } }),
   usePlayerHistory: () => ({ data: listed.history }),
 }));
-// The rating's top three, the reader unrated: the prize's column rides on these rows.
+// The rating's top three, the reader unrated: the prize's column rides on these rows. A test may make the rating fail
+// or wait instead; the prize does not wait on it.
+const RATING_TOP = {
+  isError: false,
+  isPending: false,
+  isSuccess: true,
+  data: {
+    entries: [1, 2, 3].map((rank) => ({
+      rank,
+      player: `0xa${rank}`,
+      rating: String(2000 - rank * 100),
+      profile: { realmsId: `0x${rank}`, name: `Rider ${rank}`, portrait: null },
+    })),
+    self: null,
+  },
+};
+const ratings = vi.hoisted(() => ({ current: null as object | null }));
 vi.mock("../ratings", async (actual) => ({
   ...(await actual<typeof import("../ratings")>()),
-  useRatingTop: () => ({
-    isError: false,
-    isPending: false,
-    data: {
-      entries: [1, 2, 3].map((rank) => ({
-        rank,
-        player: `0xa${rank}`,
-        rating: String(2000 - rank * 100),
-        profile: { realmsId: `0x${rank}`, name: `Rider ${rank}`, portrait: null },
-      })),
-      self: null,
-    },
-  }),
+  useRatingTop: () => ratings.current ?? RATING_TOP,
 }));
 vi.mock("@/hooks/context/identity-session", () => ({ useIdentitySession: () => ({ session: null }) }));
 vi.mock("@/ui/design-system/kit/player-name", () => ({
   PlayerName: ({ profile }: { profile?: { name: string | null } }) => <span>{profile?.name}</span>,
 }));
+
+// A failed read logs its error for the console; these tests read the line the page shows.
+vi.spyOn(console, "error").mockImplementation(() => undefined);
 
 import { BlitzBoard } from "./blitz-board";
 import { type SeasonPrize, seasonPrizeKey } from "./blitz-season";
@@ -144,6 +151,7 @@ afterEach(async () => {
   signed.owners = [];
   ledger.views = null;
   ledger.asked = [];
+  ratings.current = null;
 });
 
 it("shows the pool, and on each paid rating place what it would take if the season ended now", async () => {
@@ -298,4 +306,45 @@ it("walks a posted list once: reading the prize again asks for no winner a secon
   expect(winnersAsked()).toBe(3);
   // The slot's season is asked once too.
   expect(ledger.asked.filter((entrypoint) => entrypoint === "get_slot").length).toBe(1);
+});
+
+const RATINGS_DOWN = { isError: true, isPending: false, isSuccess: false, error: new Error("503"), refetch: vi.fn() };
+const RATINGS_WAITING = { isError: false, isPending: true, isSuccess: false };
+
+it.each([
+  ["fails", RATINGS_DOWN, "Ratings did not answer."],
+  ["is still on its way", RATINGS_WAITING, ""],
+])("keeps a share to claim claimable while the rating %s", async (_, rating, line) => {
+  ratings.current = rating;
+  const claim = await mountPrize(
+    prize({ posted: true, end: NOW - 7200, reviewUntil: NOW - 60 }, { share: 4_000n * WEI, position: 0 }),
+  );
+  expect(claim.querySelector("h2")!.textContent).toContain("7,000");
+  expect(claim.textContent).toContain("Your share4,000");
+  // The rating's rows are its own: absent, with their one wait or failure in their place.
+  expect(claim.querySelectorAll("li")).toHaveLength(0);
+  expect([...claim.querySelectorAll('[role="status"]')].map((status) => status.textContent)).toEqual([line]);
+  await act(async () =>
+    [...claim.querySelectorAll("button")].find((button) => button.textContent === "Claim")!.click(),
+  );
+  await act(async () => [...claim.querySelectorAll("button")].find((button) => button.textContent === "Sign")!.click());
+  expect(signed.calls).toEqual([[{ contractAddress: "0x1ed9e7", entrypoint: "claim_season", calldata: ["3", "0"] }]]);
+});
+
+it("shows the prize's own wait and failure while the rating's rows stand", async () => {
+  // The ledger never answers: the prize waits in its place, the rows are there.
+  listed.history = [blitz(5, NOW - 86400, 5, "0xa11")];
+  const waiting = await mount();
+  expect(waiting.querySelectorAll('[role="status"]')).toHaveLength(1);
+  expect(waiting.querySelectorAll("li")).toHaveLength(3);
+  // The ledger fails: it is named, the rows still stand.
+  ledger.views = twoSeasons({
+    get_slot: () => {
+      throw new Error("ledger down");
+    },
+  });
+  const failed = await mount();
+  await settle();
+  expect(failed.textContent).toContain("The ledger did not answer.");
+  expect(failed.querySelectorAll("li")).toHaveLength(3);
 });

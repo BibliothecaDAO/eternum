@@ -23,6 +23,11 @@ vi.mock("../herald", () => ({
   useDirectory: () => ({ data: { games: [] } }),
   useRecentResults: () => ({ data: { games: [] } }),
 }));
+// Signed out, without asking a session service: these tests read where Results leads.
+vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/hooks/context/identity-session")>()),
+  useIdentitySession: () => ({ status: "signed-out", session: null }),
+}));
 vi.mock("@/ui/design-system/kit/player-name", () => ({
   PlayerName: ({ account }: { account: string }) => <span>{account}</span>,
 }));
