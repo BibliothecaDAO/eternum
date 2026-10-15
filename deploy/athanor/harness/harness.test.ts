@@ -400,6 +400,29 @@ describe("Madara harness workload", () => {
     });
   });
 
+  it("spreads a cadence's bots evenly across the interval", async () => {
+    spyOn(configManager, "getMapCenter").mockReturnValue(0);
+    const world = fakeWorld([2, { coord: { x: 10, y: 10 }, staminaAmount: 120n, staminaSettledAt: 1 }]);
+    const first = readyHarnessBot(world);
+    const second = {
+      ...readyHarnessBot(world),
+      botId: 2,
+      address: "0x2",
+      explorers: [{ explorerId: 2, lastUsedAt: -1, outwardDirection: 0 }],
+    } as HarnessBot;
+    const workload = await runWorkload({
+      bots: [first, second],
+      game: world.game,
+      intervalSeconds: 1,
+      minutes: 0.001,
+      provider: confirmingProvider(),
+    });
+    const scheduled = workload.actions.map(
+      (action) => Date.parse(action.scheduledAt!) - Date.parse(workload.startedAt),
+    );
+    expect(scheduled).toEqual([0, 500]);
+  });
+
   it("waits for setup stamina to regenerate before measuring the workload", async () => {
     spyOn(configManager, "getMapCenter").mockReturnValue(0);
     const world = fakeWorld();
