@@ -52,11 +52,11 @@ const HIGHLIGHT_CARD_STYLES = `
     position: absolute;
     left: 0;
     top: 0;
-    width: 127px;
+    width: 237px;
     font-family: ${FONTS.body};
     font-size: 24px;
     line-height: 30px;
-    text-align: right;
+    white-space: nowrap;
     color: #ffffff;
   }
 

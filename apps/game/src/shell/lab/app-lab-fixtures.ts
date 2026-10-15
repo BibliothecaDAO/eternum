@@ -332,7 +332,10 @@ export const LAB_FRONTIER_BOARD: HeraldFrontierLeaderboard = {
   })),
 };
 
-/** A finished Blitz: the player third of 24. */
+/**
+ * A finished Blitz: the player third of five, each row with the activity its points came from, as Herald's points
+ * board answers it (the score card draws the player's).
+ */
 export const LAB_BLITZ_BOARD: HeraldLeaderboard = {
   game_id: "7",
   mode: "points",
@@ -340,8 +343,15 @@ export const LAB_BLITZ_BOARD: HeraldLeaderboard = {
     address,
     rank: index + 1,
     totalPoints: 412 - index * 30,
+    activityBreakdown: {
+      exploration: { count: 48 - index * 6, points: 96 - index * 12 },
+      openRelicChest: { count: 3, points: 30 },
+      hyperStructureBanditsDefeat: { count: 1, points: 100 },
+      otherStructureBanditsDefeat: { count: 4 - (index % 3), points: 80 - (index % 3) * 20 },
+      hyperstructureShare: { count: 1, points: 106 - index * 18 + (index % 3) * 20 },
+    },
   })),
-} as unknown as HeraldLeaderboard;
+};
 
 /** Names for the rivals the identity Worker would serve; the unnamed one reads "Lord" and its last four. */
 export const LAB_PROFILES = Object.fromEntries(

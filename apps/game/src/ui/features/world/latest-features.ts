@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-15",
+    title: "Places across the top",
+    description:
+      "On a desktop, Play, Season and You now sit in a bar across the top, keys 1 to 3 as before, and every page starts its content right under it. A Blitz result opens on your score card, the one you share after a game.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-15",
     title: "Rifts within fallen walls",
     description:
       "Fallen realms show rubble in their courts and violet fissures within broken walls, around the same guarding beasts.",
