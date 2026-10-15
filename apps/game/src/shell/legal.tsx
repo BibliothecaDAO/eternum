@@ -87,9 +87,9 @@ const LegalPage = ({ title, updated, sections }: { title: string; updated: strin
 
 const sectionId = (index: number) => `section-${index + 1}`;
 
-/** The sections as a list beside the reading column, staying in view while it scrolls. */
+/** The sections as a list beside the reading column, staying in view under the top bar (68 px) while it scrolls. */
 const Contents = ({ title, sections }: { title: string; sections: LegalSection[] }) => (
-  <nav aria-label={title} className="sticky top-6 self-start">
+  <nav aria-label={title} className="sticky top-[92px] self-start">
     <Panel icon="Dk" title={title}>
       {sections.map((section, index) => (
         <a

@@ -183,7 +183,7 @@ const PhoneHero = () => (
   </section>
 );
 
-/** The panel's width; the painting takes the rest of the window beside the rail. */
+/** The panel's width; the painting takes the rest of the window beside it, under the top bar (68 px). */
 const PANEL = "w-[34rem] min-[1800px]:w-[38rem]";
 
 const DesktopSplit = ({ title, children }: { title: string; children?: ReactNode }) => (
@@ -193,12 +193,12 @@ const DesktopSplit = ({ title, children }: { title: string; children?: ReactNode
       <img {...paintingSources(PAINTING)} sizes="70vw" alt="" className="size-full object-cover object-[35%_50%]" />
       <span className="absolute inset-0 bg-gradient-to-t from-kit-ground/80 via-transparent to-transparent" />
     </div>
-    <p className="fixed bottom-10 left-36 max-w-[36rem] font-display text-[44px] leading-[1.1] text-kit-cream [text-shadow:0_2px_0_theme(colors.kit.ink/70%)] min-[1800px]:left-40">
+    <p className="fixed bottom-10 left-8 max-w-[36rem] font-display text-[44px] leading-[1.1] text-kit-cream [text-shadow:0_2px_0_theme(colors.kit.ink/70%)] min-[1800px]:left-12">
       {LORE_LINE}
     </p>
     <section
       className={cn(
-        "leather fixed inset-y-0 right-0 z-10 flex flex-col gap-5 overflow-y-auto border-l bg-kit-plate px-10 pb-10 pt-12",
+        "leather fixed bottom-0 right-0 top-[68px] z-10 flex flex-col gap-5 overflow-y-auto border-l bg-kit-plate px-10 pb-10 pt-12",
         PANEL,
       )}
     >

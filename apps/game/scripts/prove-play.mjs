@@ -94,7 +94,7 @@ const MEASURE = `(() => {
   const word = (el) => el.innerText.replace(/\\s+/g, " ").trim();
   const band = (name) => root.querySelector('[data-band="' + name + '"]');
   const controls = [...root.querySelectorAll("a[href], button")].filter(visible);
-  const nav = [band("tabs"), band("rail")].filter(Boolean).flatMap((el) => [...el.querySelectorAll("a[href], button")].filter(visible));
+  const nav = [band("tabs"), band("bar")].filter(Boolean).flatMap((el) => [...el.querySelectorAll("a[href], button")].filter(visible));
   const body = band("body");
   const actions = [...root.querySelectorAll("[data-play-item]")].flatMap((item) => {
     const button = item.querySelector("button");

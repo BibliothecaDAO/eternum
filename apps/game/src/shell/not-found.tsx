@@ -17,7 +17,7 @@ export const NothingHere = () =>
       <GoButton role="primary" word={WORDS.play} icon="Pl" to="/" />
     </section>
   ) : (
-    <div className="flex min-h-[calc(100vh-12rem)] items-center justify-center">
+    <div className="flex justify-center">
       <section className="plate flex w-[30rem] flex-col items-stretch gap-5 p-6">
         <p className="text-center font-display text-[34px] leading-none text-kit-cream">
           {APP_STATE_WORDS.nothingHere}

@@ -23,7 +23,7 @@ const SIZES = [
  * another and carries Back.
  */
 const TAB_PATHS = new Set(["/", "/season", "/profile", "/nothing-here", "/results/0x111"]);
-/** Full-screen steps: no tabs, the desktop rail keeps the lockup alone (sign-in, a Blitz lobby). */
+/** Full-screen steps: no tabs, the desktop's top bar keeps the lockup alone (sign-in, a Blitz lobby). */
 const STEP_PATHS = ["/sign-in", "/blitz/0x111"];
 const CONTROLS = "a[href], button, input, select, textarea";
 
@@ -104,11 +104,13 @@ describe.each(SIZES)("every page at %i × %i keeps each control in its band", (w
         isStep ? 0 : 3,
       );
     } else {
-      // One rail: the lockup as a mark, then the three places and nothing else; Back sits in the title row beside it.
+      // One bar across the top: the lockup as a mark, then the three places and nothing else, above every other band;
+      // Back sits in the title row under it.
       expect(top).toBeNull();
-      const rail = band(container, "rail");
-      expect(rail!.querySelector('[data-role="lockup"]')!.matches(CONTROLS)).toBe(false);
-      const controls = controlsIn(rail);
+      const bar = band(container, "bar");
+      expect(bandOrder(container)[0]).toBe("bar");
+      expect(bar!.querySelector('[data-role="lockup"]')!.matches(CONTROLS)).toBe(false);
+      const controls = controlsIn(bar);
       expect(controls.map((control) => control.dataset.role)).toEqual(isStep ? [] : ["tab", "tab", "tab"]);
       expect(band(container, "tabs")).toBeNull();
       if (!isTabPage) expect(back[0].closest('[data-band="title"]')).not.toBeNull();

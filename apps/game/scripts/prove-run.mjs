@@ -68,7 +68,8 @@ export const clickAsPlayer = (b, selector) => {
 
 /**
  * Every reason a run is not complete: a record that never became ready, stopped on an error or was judged a problem, a
- * change it made and did not put back, and each step that did not lead. `where` names a record in its problems.
+ * check of its page that did not hold, a change it made and did not put back, and each step that did not lead. `where`
+ * names a record in its problems.
  */
 export const problemsOf = (records, where) =>
   records.flatMap((record) => [
@@ -76,6 +77,7 @@ export const problemsOf = (records, where) =>
     ...(record.error ? [{ ...where(record), problem: record.error }] : []),
     // A step judged by its own check (a game's steps, prove-play-game.mjs) carries its verdict as its problem.
     ...(record.problem ? [{ ...where(record), problem: record.problem }] : []),
+    ...(record.checks ?? []).flatMap((check) => (check.ok ? [] : [{ ...where(record), problem: check.check, check }])),
     ...(record.restored && !record.restored.ok
       ? [{ ...where(record), problem: "not put back", restored: record.restored }]
       : []),

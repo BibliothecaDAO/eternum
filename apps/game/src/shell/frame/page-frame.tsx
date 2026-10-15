@@ -13,7 +13,7 @@ import { AppFooter } from "./footer";
 import { Kbd } from "./kbd";
 import { useLayout } from "./layout";
 import { Lockup } from "./lockup";
-import { PLACES, Rail, TabBar } from "./tabs";
+import { PLACES, TabBar, TopBar } from "./tabs";
 
 type PageFrameProps = {
   /** A page opened from another names where Back leads; a tab page has none. */
@@ -41,7 +41,8 @@ type PageFrameProps = {
  * The composer: the only code that places a page's parts. Each part sits in its band, tagged so a test can hold every
  * control to its place: Back top left and nothing else there, nothing to tap in a phone's top right, one foot row,
  * notices directly above it on a phone and in their own band at the desktop's top right (covering nothing), the tabs
- * at the phone's foot or in the desktop rail, with the desktop's keys (1–3 the places, Esc Back).
+ * at the phone's foot or in the desktop's top bar, with the desktop's keys (1–3 the places, Esc Back). Every page's
+ * content starts at the top of its body: a painting is the ground behind it, never a space above it.
  */
 export const PageFrame = (props: PageFrameProps) => {
   const layout = useLayout();
@@ -96,8 +97,8 @@ const DesktopFrame = ({
 }: PageFrameProps) => {
   useDesktopKeys({ places: tabs ? PLACES : [], back });
   return (
-    <div className="relative isolate flex min-h-screen">
-      <Rail places={tabs} />
+    <div className="relative isolate flex min-h-screen flex-col">
+      <TopBar places={tabs} />
       <div className="relative flex min-w-0 flex-1 flex-col">
         {painting && <Backdrop painting={painting} stage={stage} />}
         {notice ? (

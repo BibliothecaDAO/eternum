@@ -101,6 +101,8 @@ const flows = (layout, persona) => {
  */
 const LAB_GAME = "0x5245414c4d53-7";
 const LAB_PAGES = [
+  ["first-visit", ""],
+  ["home", ""],
   ["season-running", "season"],
   ["season-claim", "season"],
   ["reward-sealed", `results/${LAB_GAME}`],
@@ -124,7 +126,7 @@ const MEASURE = `(() => {
   };
   const words = (els) => els.map((el) => el.innerText.replace(/\\s+/g, " ").trim());
   const band = (name) => root.querySelector('[data-band="' + name + '"]');
-  const navBands = [band("tabs"), band("rail")].filter(Boolean);
+  const navBands = [band("tabs"), band("bar")].filter(Boolean);
   const all = [...document.querySelectorAll("a[href], button")].filter(visible);
   const nav = all.filter((el) => navBands.some((navBand) => navBand.contains(el)));
   const page = all.filter((el) => !nav.includes(el));
@@ -135,6 +137,10 @@ const MEASURE = `(() => {
     if (el && node.textContent.trim() && visible(el)) sizes.push(parseFloat(getComputedStyle(el).fontSize));
   }
   const body = band("body");
+  // Where the page's content starts: its first words or controls under the body's top edge (a painting above them is
+  // space, not content), and its left edge in the window (a column left for a rail would be a gutter).
+  const shown = body ? [...body.querySelectorAll("*")].filter((el) => visible(el) && ([...el.childNodes].some((node) => node.nodeType === 3 && node.textContent.trim()) || el.matches("a[href], button"))) : [];
+  const bodyBox = body?.getBoundingClientRect();
   return JSON.stringify({
     path: location.pathname + location.search,
     controls: page.length,
@@ -144,8 +150,32 @@ const MEASURE = `(() => {
     smallestText: sizes.length ? Math.min(...sizes) : null,
     notice: band("notice") !== null,
     fits: (!body || body.scrollHeight <= body.clientHeight + 2) && document.documentElement.scrollHeight <= innerHeight + 2,
+    contentTop: shown.length ? Math.round(Math.min(...shown.map((el) => el.getBoundingClientRect().top)) - bodyBox.top) : null,
+    contentLeft: body ? Math.round(Math.min(...[...body.children].filter(visible).map((el) => el.getBoundingClientRect().left))) : null,
   });
 })()`;
+
+/** Content starts within this far of the body's top edge, and on desktop this near the window's left edge. */
+const CONTENT_TOP_LIMIT = 160;
+const CONTENT_LEFT_LIMIT = 64;
+
+/** A measured page's layout checks: its content at the top, and on desktop no gutter at its left. */
+export const layoutChecks = (measured, layout) => [
+  {
+    check: "content at the top",
+    value: measured.contentTop,
+    ok: measured.contentTop !== null && measured.contentTop <= CONTENT_TOP_LIMIT,
+  },
+  ...(layout === "desktop"
+    ? [
+        {
+          check: "no left gutter",
+          value: measured.contentLeft,
+          ok: measured.contentLeft !== null && measured.contentLeft <= CONTENT_LEFT_LIMIT,
+        },
+      ]
+    : []),
+];
 
 /**
  * Finds the control a step names and marks it for the browser's click; a link that leaves the app is read, never
@@ -158,7 +188,7 @@ const FIND = (step, mark) => `(() => {
   const controls = (root, css) => (root ? [...root.querySelectorAll(css)] : []);
   const pageControls = [...controls(body, "a[href], button"), ...controls(document.querySelector('[data-band="foot"]'), "a[href], button"), ...controls(document, "[data-kit-sheet] button")];
   let found;
-  // A rail place carries its key beside its word ("You 3").
+  // A desktop place carries its key beside its word ("You 3").
   if (step.kind === "tab") found = [...document.querySelectorAll('[data-role="tab"]')].find((el) => text(el).replace(/ \\d$/, "") === step.word);
   if (step.kind === "press" && step.word === "first") found = controls(body, "button").find((el) => !el.closest("[role=radiogroup]"));
   else if (step.kind === "press") found = pageControls.find((el) => text(el) === step.word);
@@ -334,15 +364,18 @@ const screenshot = (b, record, shot, out) => {
   record.screenshot = shot;
 };
 
-/** A lab fixture page, measured at rest: ready, or not ready. */
+/** A lab fixture page, measured at rest: ready, and its content at the top with no gutter at its left. */
 const measureLabPage = async (b, baseUrl, [screen, page], layout, out) => {
-  const record = { name: `lab ${screen} ${page}`, layout, ready: false, presses: [] };
+  // Play is the lab's root page.
+  const named = page || "play";
+  const record = { name: `lab ${screen} ${named}`, layout, ready: false, presses: [] };
   try {
     b.run("open", `${baseUrl}/lab/app/${screen}/${page}?capture=1`, "--ignore-https-errors");
     record.ready = await waitFor(b, READY, READY_TIMEOUT_MS);
     await sleep(SETTLE_MS);
-    screenshot(b, record, `lab-${screen}-${page.replaceAll("/", "-")}-${layout}.png`, out);
+    screenshot(b, record, `lab-${screen}-${named.replaceAll("/", "-")}-${layout}.png`, out);
     record.measured = b.evaluate(MEASURE);
+    record.checks = layoutChecks(record.measured, layout);
     record.text = b.evaluate(BODY_TEXT);
   } catch (error) {
     record.error = String(error.message ?? error);

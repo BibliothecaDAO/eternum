@@ -75,17 +75,20 @@ const PhonePost = ({ post }: { post: ScrollPost }) => (
   </article>
 );
 
-/** The cover across the page with the title on it, then the reading column with the Scroll's other posts beside it. */
+/**
+ * The cover across the page with the title on it from its top, then the reading column with the Scroll's other posts
+ * beside it.
+ */
 const DesktopPost = ({ post }: { post: ScrollPost }) => (
   <div className="flex flex-col gap-8">
-    <header className="painted flex h-[300px] flex-col justify-end gap-2 rounded-2xl p-8 min-[1800px]:h-[380px]">
+    <header className="painted flex flex-col gap-2 rounded-2xl p-8">
       <img
         {...paintingSources(postPainting(post))}
         sizes="100vw"
         alt=""
         className="absolute inset-0 -z-10 size-full object-cover"
       />
-      <span className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-kit-ground/40 to-kit-ground/95" />
+      <span className="absolute inset-0 -z-10 bg-gradient-to-r from-kit-ground/95 via-kit-ground/75 to-kit-ground/30" />
       <span className="font-body text-base text-kit-gold">{postKind(post)}</span>
       <h1 className="max-w-[60rem] font-display text-[44px] leading-[1.05] text-kit-cream">{post.title}</h1>
       <PostDate post={post} />

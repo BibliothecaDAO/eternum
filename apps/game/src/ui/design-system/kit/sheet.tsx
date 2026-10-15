@@ -8,10 +8,10 @@ import { BACK, CLOSE } from "./words";
 /** A drag on the handle this far down closes the sheet, as a tap on it does. */
 const DRAG_CLOSES_PX = 64;
 
-/** Where a desktop sheet docks: under the match's bar, or on an app page's right under its title (left of no rail). */
+/** Where a desktop sheet docks: under the match's bar, or on an app page's right under its title (under the top bar). */
 const DESKTOP_PLACEMENT = {
   bar: "lg:right-2 lg:top-[76px] lg:max-h-[calc(100dvh-84px)]",
-  page: "lg:right-8 lg:top-[100px] lg:max-h-[calc(100dvh-124px)]",
+  page: "lg:right-8 lg:top-[168px] lg:max-h-[calc(100dvh-192px)]",
 } as const;
 
 /**

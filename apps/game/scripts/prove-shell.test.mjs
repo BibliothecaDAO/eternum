@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { problemsOf } from "./prove-run.mjs";
-import { changingSetting, stopVerdict } from "./prove-shell.mjs";
+import { changingSetting, layoutChecks, stopVerdict } from "./prove-shell.mjs";
 
 /** A setting the account keeps: what Settings shows, and a write that may fail. */
 const accountSetting = (value, { writeFails = false } = {}) => {
@@ -98,5 +98,24 @@ describe("a flow that stops short", () => {
     expect(problemsOf([{ ...flowRecord(), ready: false }], where).map((problem) => problem.problem)).toEqual([
       "not ready",
     ]);
+  });
+});
+
+describe("a page's layout", () => {
+  it("holds when its content starts at the top and, on desktop, at the window's left", () => {
+    expect(layoutChecks({ contentTop: 24, contentLeft: 32 }, "desktop").every((check) => check.ok)).toBe(true);
+  });
+
+  it("fails a page pushed down under a painting, and a desktop column left for a rail", () => {
+    const pushed = layoutChecks({ contentTop: 300, contentLeft: 32 }, "phone");
+    expect(pushed.map((check) => [check.check, check.ok])).toEqual([["content at the top", false]]);
+    const gutter = layoutChecks({ contentTop: 24, contentLeft: 128 }, "desktop");
+    expect(gutter.map((check) => [check.check, check.ok])).toEqual([
+      ["content at the top", true],
+      ["no left gutter", false],
+    ]);
+    expect(
+      problemsOf([{ ...flowRecord(), name: "lab home play", checks: gutter }], where).map((p) => p.problem),
+    ).toEqual(["no left gutter"]);
   });
 });

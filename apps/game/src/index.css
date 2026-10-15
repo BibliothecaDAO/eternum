@@ -1251,7 +1251,7 @@ body.urgency-border-final::before {
       pointer-events: none;
     }
 
-    /* The rail's ground. */
+    /* The sign-in panel's ground. */
     .leather {
       border-color: theme(colors.kit.line2);
       background-color: theme(colors.kit.ground);

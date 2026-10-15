@@ -131,7 +131,8 @@ const ItemVerbButton = ({ item, signedIn, gold }: { item: PlayItem; signedIn: bo
 type ItemProps = { item: PlayItem; now: number; signedIn: boolean };
 
 /**
- * The lead: its mode's painting under a grade dark enough for its words, its title, its facts and the one gold verb.
+ * The lead: its title, its facts and the one gold verb from the card's top, on its mode's painting under a grade dark
+ * enough for its words where they stand (the painting shows through at the card's far side).
  * Every item carries its game's key (`data-play-item`), so a press can be named by its game, not by its word.
  * A signed-out player's season says what Frontier is instead of its clock.
  */
@@ -139,18 +140,15 @@ export const LeadCard = ({ item, now, signedIn }: ItemProps) => {
   const desktop = useLayout() === "desktop";
   const verb = <ItemVerbButton item={item} signedIn={signedIn} gold />;
   return (
-    <section
-      data-play-item={item.key}
-      className={desktop ? "painted flex min-h-[18rem] rounded-2xl" : "painted flex rounded-2xl"}
-    >
+    <section data-play-item={item.key} className="painted flex rounded-2xl">
       <img
         {...paintingSources(ageOf(item.mode).painting)}
         sizes={desktop ? "45vw" : "100vw"}
         alt=""
         className="absolute inset-0 -z-10 size-full object-cover"
       />
-      <span className="absolute inset-0 -z-10 bg-gradient-to-b from-kit-ground/40 via-kit-ground/85 to-kit-ground/95" />
-      <div className="flex min-w-0 flex-1 flex-col justify-end gap-3 p-4 lg:p-6">
+      <span className="absolute inset-0 -z-10 bg-gradient-to-r from-kit-ground/95 via-kit-ground/80 to-kit-ground/40" />
+      <div className="flex min-w-0 flex-1 flex-col gap-3 p-4 lg:p-6">
         <h2 className="font-display text-[32px] leading-none text-kit-cream lg:text-[40px]">{titleOf(item)}</h2>
         <div className="flex flex-wrap items-center gap-2">
           <ItemFacts item={item} now={now} firstVisit={!signedIn && item.verb === "play"} />

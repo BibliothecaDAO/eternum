@@ -8,11 +8,11 @@ import { Play, Trophy, User } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { WORDS } from "../words";
-import { EnvChip } from "./env-mark";
 import { Kbd } from "./kbd";
+import { Lockup } from "./lockup";
 
 /**
- * The app's three places, one list for both layouts: the phone's tab bar and the desktop rail. Play holds what to do
+ * The app's three places, one list for both layouts: the phone's tab bar and the desktop's top bar. Play holds what to do
  * now, Season where the player stands, You the player, their finished games and everything about the account.
  */
 const TABS: readonly { to: string; word: string; icon: GameIcon; matches: readonly string[] }[] = [
@@ -93,22 +93,22 @@ export const TabBar = () => {
 };
 
 /**
- * The desktop's rail, the full height of the window: the lockup as the app's mark (Play, the first place, sits right
- * under it), then the three places with their keys; a full-screen step keeps the lockup alone.
+ * The desktop's bar across the top of the window: the lockup as the app's mark, then Play and Season, and You at the
+ * bar's far end, each with its key. It stays quiet (no gold fill) so the page's one gold step keeps the weight; a
+ * full-screen step keeps the lockup alone.
  */
-export const Rail = ({ places }: { places: boolean }) => {
+export const TopBar = ({ places }: { places: boolean }) => {
   const active = useActiveTab();
   return (
     <header
-      data-band="rail"
-      className="sticky top-0 z-30 flex h-screen w-24 shrink-0 flex-col items-center gap-1 leather border-r pb-5 pt-5 min-[1800px]:w-28"
+      data-band="bar"
+      className="sticky top-0 z-30 flex h-[68px] shrink-0 items-center gap-7 border-b border-kit-line bg-kit-ground/95 px-8 backdrop-blur min-[1800px]:px-12"
     >
-      <div data-role="lockup" className="mb-6 flex flex-col items-center gap-2">
-        <img src="/images/logos/realms-lockup-stacked.svg" alt="Realms" className="block w-16" />
-        <EnvChip />
+      <div data-role="lockup">
+        <Lockup />
       </div>
       {places && (
-        <nav aria-label="Tabs" className="flex w-full flex-col gap-1">
+        <nav aria-label="Tabs" className="flex flex-1 gap-1.5">
           {TABS.map((tab, index) => {
             const current = active === tab.to;
             return (
@@ -118,15 +118,16 @@ export const Rail = ({ places }: { places: boolean }) => {
                 data-role="tab"
                 aria-current={current ? "page" : undefined}
                 className={cn(
-                  "relative flex w-full flex-col items-center gap-1.5 py-3.5 font-body text-sm transition-colors",
+                  "flex h-12 items-center gap-2.5 rounded-xl pl-3.5 pr-3 font-body text-base transition-colors",
+                  tab === YOU_TAB && "ml-auto",
                   current
-                    ? "bg-gradient-to-r from-kit-gold/[.18] to-transparent text-kit-cream before:absolute before:inset-y-2.5 before:left-0 before:w-1 before:rounded-r before:bg-kit-gold"
-                    : "text-kit-muted hover:bg-kit-gold/[.05] hover:text-kit-cream",
+                    ? "bg-kit-gold/[.14] text-kit-cream"
+                    : "text-kit-muted hover:bg-kit-gold/[.06] hover:text-kit-cream",
                 )}
               >
-                <TabIcon tab={tab} current={current} size={30} />
+                <TabIcon tab={tab} current={current} size={24} />
                 {tab.word}
-                <Kbd keyName={String(index + 1)} className="absolute right-2 top-2" />
+                <Kbd keyName={String(index + 1)} className="ml-2" />
               </NavLink>
             );
           })}

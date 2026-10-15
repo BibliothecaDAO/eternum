@@ -12,11 +12,12 @@ directory per run, and exiting 1 unless every press arrived). The places beyond 
 `pnpm --dir apps/game prove:shell --base-url https://127.0.0.1:<port> --out <dir> [--state <file>]` presses each flow of
 Season, You, Settings and What's new from a fresh Play at both sizes, as a new visitor or, given a saved signed-in
 browser state, as a returning player, scrolling to and clicking each control through the browser. Signed out it also
-measures the lab's fixture pages (a running Blitz season, a claim, a sealed chest, a paid entry, You and Settings). It
-sets back what it changes (the alert level, music) to the value it read, however the flow ends, and stops before
-anything outward (paying, leaving for the docs, signing out). It writes `shell-proof-<persona>.json` and screenshots
-into a new directory per run, marks a flow stopped by a service that did not answer as unavailable and any other stop as
-failed, and exits 1 unless every flow arrived (`scripts/prove-shell.mjs`; the proofs share `scripts/prove-run.mjs`).
+measures the lab's fixture pages (Play, a running Blitz season, a claim, a sealed chest, a paid entry, You, Settings and
+What's new) and checks that each page's content starts at its top and, on desktop, at the window's left edge. It sets
+back what it changes (the alert level, music) to the value it read, however the flow ends, and stops before anything
+outward (paying, leaving for the docs, signing out). It writes `shell-proof-<persona>.json` and screenshots into a new
+directory per run, marks a flow stopped by a service that did not answer as unavailable and any other stop as failed,
+and exits 1 unless every flow arrived (`scripts/prove-shell.mjs`; the proofs share `scripts/prove-run.mjs`).
 `apps/game/AGENTS.md` documents a spectator smoke test (agent-browser steps that open the client, watch a running game
 and check the canvas). Inside a match, `prove:play --game <chain>:<game> --profile <dir>` drives one game signed in (a
 browser profile signed in once through the game's own sign-in, kept outside the repo): `--crate <col>,<row>` finds a
@@ -28,17 +29,19 @@ new directory per run). The outpost proof below drives the runtime lab; live act
 
 ## Shell (outside a game)
 
-On a desktop, the left rail holds the three places, Play, Season and You, and keys `1`–`3` open them; `Esc` goes back
-(`shell/frame/desktop-keys.ts`). `Enter` presses the page's step button (the one marked as its step) when it is enabled,
+On a desktop, a bar across the top holds the lockup, Play and Season, and You at its right end; keys `1`–`3` open the
+three places and `Esc` goes back (`shell/frame/tabs.tsx`, `shell/frame/desktop-keys.ts`). A full-screen step (sign-in, a
+lobby) keeps the bar with the lockup alone. Every page's content starts at the top, under the bar; a painting is its
+ground, never space above it. `Enter` presses the page's step button (the one marked as its step) when it is enabled,
 nothing has focus that answers Enter itself, and no dialog is open. On a phone the places are a tab bar at the foot. The
 install notice shows on Play only.
 
 | Feature                                                                   | Route                                      | How to reach it                                                                                                                                                         |
 | ------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Play: what to do now, then each mode's games                              | `/`                                        | Rail **Play**, key `1` (see Play below)                                                                                                                                 |
-| Season: Frontier's board, Blitz's rating and its prize                    | `/season`                                  | Rail **Season**, key `2`; a phone switches Frontier / Blitz                                                                                                             |
+| Play: what to do now, then each mode's games                              | `/`                                        | Top bar **Play**, key `1` (see Play below)                                                                                                                              |
+| Season: Frontier's board, Blitz's rating and its prize                    | `/season`                                  | Top bar **Season**, key `2`; a phone switches Frontier / Blitz                                                                                                          |
 | A player's card and finished games                                        | `/p/:address`                              | A row of Frontier's board (Season or a result); **Back** returns to it                                                                                                  |
-| You: your card, finished games, Settings, docs, news                      | `/profile`                                 | Rail **You**, key `3` (signed out: **Sign in**)                                                                                                                         |
+| You: your card, finished games, Settings, docs, news                      | `/profile`                                 | Top bar **You**, key `3` (signed out: **Sign in**)                                                                                                                      |
 | Settings: account, payout wallet, notifications, music, devices, sign out | `/profile/settings`                        | You, **Settings**                                                                                                                                                       |
 | How to play (docs.realms.world, a new tab)                                | —                                          | You, **How to play**                                                                                                                                                    |
 | What's new: the Scroll's posts and the latest changes                     | `/scroll`, `/scroll/:post`                 | You, **What's new**; its footer holds the community and legal links                                                                                                     |
