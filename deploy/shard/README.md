@@ -72,7 +72,10 @@ Herald's existing listener first serves the real prepared identity at `/manifest
 Official deployment registers the Herald URL as pending after starting Herald and before starting initialization or
 enrolling the operator. Pending shards are hidden from players. Init then deploys Games, sets owner/launcher/ledger
 roles and registers the selected presets. Games is created with the bootstrap owner and the launcher and relay addresses
-derived from the guardian identity. The two service Workers join those accounts on their own alarm or cron.
+derived from the guardian identity. The two service Workers join those accounts on their own alarm or cron. Last, on
+every start, init has Madara compile each of the world's classes to native code (`warm-native-classes.ts`): Madara
+compiles a class only when it first runs it, and runs that first execution on the VM, 2–4× slower. Classes already in
+Madara's cache cost one directory read.
 
 After initialization, deployment compares the deployed classes, schema and selected preset commitments with the build's
 facts. It confirms the distinct on-chain roles, then activates the directory entry through Herald's real manifest. A

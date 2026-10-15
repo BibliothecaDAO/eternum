@@ -9,6 +9,7 @@ x-init: &init
     - public-config:/public
     - herald-config:/herald-config
     - postgres-config:/postgres-config
+    - chain:/madara:ro
     - type: bind
       source: /opt/athanor/operator-token
       target: /opt/athanor/operator-token

@@ -25,6 +25,8 @@ POSTGRES_CONFIG = Path("/postgres-config")
 IDENTITY = ("shard", "chain_id", "guardian_url", "l2_gas_bound")
 # The release this image deploys, baked at build by deploy/release/facts.ts.
 RELEASE_FACTS = Path("/release/release-facts.json")
+# Madara's compiled-class cache, mounted read-only from its data volume.
+MADARA_NATIVE_CACHE = Path("/madara/native_classes")
 
 
 def configuration():
@@ -159,7 +161,14 @@ def deploy(config, presets):
     publish_deployed_config(config)
     record["presets"] = register_presets(env, presets)
     shard.write_json(complete, record)
+    warm_native_classes(env)
     print(complete.read_text())
+
+
+# The first play of a class runs on the VM while Madara compiles it; every start compiles the world's classes first.
+def warm_native_classes(env):
+    shard.run(["bun", "deploy/athanor/scripts/warm-native-classes.ts", str(DATA), env["RPC_URL"], str(MADARA_NATIVE_CACHE)],
+              DATA, "native-warm", env)
 
 
 def deploy_world_once(config, env):
