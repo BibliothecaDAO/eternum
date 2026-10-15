@@ -137,6 +137,24 @@ describe("WorldAtmosphereController", () => {
     expect((fixture.scene.background as Color).getHex()).not.toBe(0x111111);
   });
 
+  it("keeps the key light's direction through the whole day, so shadows never sweep with the clock", () => {
+    const fixture = createFixture();
+    const cameraTarget = new Vector3(34, 2, -21);
+    const directionAt = (progress: number) => {
+      fixture.manager.update(progress, cameraTarget, { snap: true });
+      return fixture.directionalLight.position.clone().sub(fixture.directionalLight.target.position).toArray();
+    };
+    const noon = directionAt(50);
+    for (let progress = 0; progress <= 100; progress += 5) {
+      directionAt(progress).forEach((component, axis) => expect(component).toBeCloseTo(noon[axis], 10));
+    }
+    // The day still dims and colours the key light.
+    fixture.manager.update(0, cameraTarget, { snap: true });
+    const midnight = fixture.directionalLight.intensity;
+    fixture.manager.update(50, cameraTarget, { snap: true });
+    expect(fixture.directionalLight.intensity).toBeGreaterThan(midnight);
+  });
+
   it("bounds tower shadow length throughout the cycle using the actual light-target direction", () => {
     const fixture = createFixture();
     for (const [sunHeight, sunDistance] of [

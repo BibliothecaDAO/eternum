@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-10-16",
+    title: "Shadows hold still",
+    description:
+      "The sun now lights the map from one direction all day, so shadows no longer creep and shimmer as the day turns. Day and night still colour the world.",
+    type: "fix",
+  },
+  {
     date: "2026-10-15",
     title: "Your army stays selected",
     description: "After you order an army to move or explore, it stays selected, ready for its next order.",

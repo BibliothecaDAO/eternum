@@ -51,6 +51,10 @@ const WEATHER_LIMITS = {
 
 const KEY_LIGHT_TARGET_DEPTH_OFFSET = 5.2;
 const KEY_LIGHT_MIN_ELEVATION_RATIO = 1;
+// The key light shines from where the sun stands at this point of the day, all day: the day cycle colours and dims the
+// world, it does not swing the shadows. A sun orbiting with a clock of minutes moved every shadow on every frame, and
+// that motion was the flicker players saw (bug 26: shadows hold perfectly still once the sun is held).
+const KEY_LIGHT_DAY_PROGRESS = 50;
 const PREVIEW_SNAP_PROGRESS_THRESHOLD = 1.5;
 
 export class WorldAtmosphereController {
@@ -187,7 +191,7 @@ export class WorldAtmosphereController {
     this.lastUpdateAmbientIntensity = this.ambientLight.intensity;
 
     // Update sun position (relative to camera target if provided)
-    this.updateSunPosition(progressFrame.progress, cameraTarget, progressFrame.snapVisualState);
+    this.updateSunPosition(cameraTarget, progressFrame.snapVisualState);
     this.updateMoonLighting(progressFrame.progress, cameraTarget);
   }
 
@@ -398,22 +402,12 @@ export class WorldAtmosphereController {
   }
 
   /**
-   * Update key-light position based on cycle progress.
-   * @param progress - Cycle progress (0-100)
+   * Places the key light at its fixed point of the day (KEY_LIGHT_DAY_PROGRESS), around the camera target when given.
    * @param cameraTarget - Optional camera target to offset sun position
    */
-  private updateSunPosition(progress: number, cameraTarget?: Vector3, snapPosition: boolean = false): void {
-    // Convert progress to angle (0-360 degrees)
-    // 0 = moonlit night
-    // 25 = sunrise (eastern horizon)
-    // 50 = noon (directly above)
-    // 75 = sunset (western horizon)
-    // 100 = moonlit night
-
-    // Offset angle by π so that:
-    // - progress=0 (midnight): cos(π) = -1
-    // - progress=50 (noon): cos(0) = 1 → sun at peak
-    const angle = (progress / 100) * Math.PI * 2 + Math.PI;
+  private updateSunPosition(cameraTarget?: Vector3, snapPosition: boolean = false): void {
+    // Offset by π so that progress 50 (noon) puts the sun at its peak: cos(2π) = 1.
+    const angle = (KEY_LIGHT_DAY_PROGRESS / 100) * Math.PI * 2 + Math.PI;
 
     const offsetX = Math.sin(angle) * this.params.sunDistance;
     const offsetZ = -Math.cos(angle) * this.params.sunDistance * 0.3; // Slight depth variation
