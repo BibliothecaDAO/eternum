@@ -27,6 +27,17 @@ describe("buildPlaytestUrl", () => {
       buildPlaytestUrl({ baseUrl: "https://127.0.0.1:4173", chainId: "0xa1", gameId: 4, rendererMode: "webgpu-auto" }),
     ).toBe("https://127.0.0.1:4173/g/0xa1/4?spectate=true&rendererMode=webgpu-auto&dev=0");
   });
+
+  it("turns the dev overlays on for steps that play the dev tools", () => {
+    const url = buildPlaytestUrl({
+      baseUrl: "https://127.0.0.1:4173",
+      chainId: "0xa1",
+      gameId: 4,
+      rendererMode: "webgpu-auto",
+      devOverlays: true,
+    });
+    expect(new URL(url).searchParams.get("dev")).toBe("1");
+  });
 });
 
 describe("selectPlaytestGame", () => {

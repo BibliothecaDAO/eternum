@@ -103,6 +103,16 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
   };
 }
 
+/**
+ * The page a run opens: a player's home page, or the spectator's Watch link with the dev overlays only for step lists
+ * that play the dev tools.
+ */
+export function buildRunUrl({ baseUrl, game, player, rendererMode, stepSet }) {
+  if (player) return buildPlayerHomeUrl({ baseUrl, rendererMode });
+  const { devOverlays = false } = STEP_SETS[stepSet];
+  return buildPlaytestUrl({ baseUrl, chainId: game.chainId, gameId: game.gameId, rendererMode, devOverlays });
+}
+
 /** A new directory for this invocation's evidence; an existing one is never written into. */
 export function allocateRunDirectory(outRoot, role, now = new Date()) {
   mkdirSync(outRoot, { recursive: true });
@@ -265,9 +275,7 @@ async function playRun(context) {
     releaseDevTools = owner.adopt(`DevTools ${label}`, () => devTools.close());
     if (cpuThrottle > 1) await devTools.send("Emulation.setCPUThrottlingRate", { rate: cpuThrottle });
     record.rpcSends = await recordRpcSends(devTools);
-    record.url = player
-      ? buildPlayerHomeUrl({ baseUrl: context.baseUrl, rendererMode })
-      : buildPlaytestUrl({ baseUrl: context.baseUrl, chainId: game.chainId, gameId: game.gameId, rendererMode });
+    record.url = buildRunUrl({ baseUrl: context.baseUrl, game, player, rendererMode, stepSet: context.stepSet });
     // A player is signed in first, on the sign-in page, then opens the home page.
     if (player) record.signIn = await signInAsPlayer({ ...context, browser, url: record.url });
     else browser.run(["open", record.url]);

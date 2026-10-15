@@ -25,7 +25,7 @@ const BOOT_METRIC_NAMES = [
   "backendTotalMs",
 ];
 
-export function buildPlaytestUrl({ baseUrl, chainId, gameId, rendererMode }) {
+export function buildPlaytestUrl({ baseUrl, chainId, gameId, rendererMode, devOverlays = false }) {
   if (!chainId || !gameId) {
     throw new Error("buildPlaytestUrl requires a chainId and a gameId");
   }
@@ -34,8 +34,9 @@ export function buildPlaytestUrl({ baseUrl, chainId, gameId, rendererMode }) {
   url.pathname = `/g/${chainId}/${gameId}`;
   url.searchParams.set("spectate", "true");
   url.searchParams.set("rendererMode", rendererMode);
-  // Measure what players run: the dev overlays stay off even if this browser profile once enabled them.
-  url.searchParams.set("dev", "0");
+  // Measure what players run: the dev overlays stay off even if this browser profile once enabled them, unless the
+  // steps play the dev tools themselves.
+  url.searchParams.set("dev", devOverlays ? "1" : "0");
   return url.toString();
 }
 

@@ -78,15 +78,39 @@ export const SPECTATOR_STEPS = [
 ];
 
 /**
- * The map at its closest view with nothing pressed, recorded frame by frame: where a still view keeps changing (shadow
- * edges, water, smoke, flags), each pixel's count of changed frames, to compare two builds on the same view.
+ * The map with nothing pressed, recorded frame by frame at the default view (Medium) and at the closest (Close, where
+ * structures cast their shadows too): where a still view keeps changing (shadow edges, water, smoke, flags), each
+ * pixel's count of changed frames, to compare two builds on the same view. `opening` reaches the map in the steps'
+ * mode and `onMap` is that mode's check that it is drawn.
  */
-const STILL_MAP_STEPS = [
-  { name: "realm-idle", settleMs: 8_000, verify: inScene("hex") },
-  { name: "open-map", play: goTo("Map", "map"), settleMs: 6_000, verify: inScene("map") },
-  { name: "zoom-in", play: zoomAllTheWayIn, settleMs: 5_000, verify: zoomedAllTheWayIn },
-  { name: "still", play: recordTheStillMap, settleMs: 0, verify: recordedStill },
+const stillMapSteps = ({ opening, onMap }) => [
+  ...opening,
+  { name: "still-medium", play: recordTheStillMap, settleMs: 0, verify: recordedStill(onMap) },
+  { name: "zoom-in", play: zoomAllTheWayIn, settleMs: 5_000, verify: zoomedAllTheWayIn(onMap) },
+  { name: "still-close", play: recordTheStillMap, settleMs: 0, verify: recordedStill(onMap) },
 ];
+
+/**
+ * The same still map with the sun held where it stands (the dev tools' Time Scrubber, Override Time): whatever still
+ * changes on the map does so without the sun moving.
+ */
+const frozenSunStillMapSteps = ({ opening, onMap }) => [
+  ...opening,
+  { name: "freeze-sun", play: holdTheSun, settleMs: 3_000, verify: heldTheSun(onMap) },
+  ...stillMapSteps({ opening: [], onMap }),
+];
+
+const FRONTIER_MAP = {
+  opening: [
+    { name: "realm-idle", settleMs: 8_000, verify: inScene("hex") },
+    { name: "open-map", play: goTo("Map", "map"), settleMs: 6_000, verify: inScene("map") },
+  ],
+  onMap: inScene("map"),
+};
+const BLITZ_MAP = {
+  opening: [{ name: "open-world", play: toTheWorldMap, settleMs: 3_000, verify: drawn("map") }],
+  onMap: drawn("map"),
+};
 
 /**
  * What a signed-in player does: realm, map, select the readiest army, read production, then a tile tapped for the army
@@ -229,16 +253,18 @@ async function zoomAllTheWayIn({ browser }) {
 }
 
 /** On the map at the closest camera distance, read after the wheel: a missing or other distance is not the closest view. */
-function zoomedAllTheWayIn({ seen, played }) {
-  const scene = inScene("map")({ seen });
-  if (scene.status !== "completed") return scene;
-  const distance = played?.distance;
-  if (typeof distance !== "number" || !Number.isFinite(distance)) {
-    return failed(`no camera distance was read after zooming in (${distance})`, played);
-  }
-  return Math.abs(distance - CLOSEST_CAMERA_DISTANCE) <= CLOSEST_DISTANCE_TOLERANCE
-    ? completed(played)
-    : failed(`the camera stopped at distance ${distance}, not the closest (${CLOSEST_CAMERA_DISTANCE})`, played);
+function zoomedAllTheWayIn(onMap) {
+  return ({ seen, played }) => {
+    const scene = onMap({ seen });
+    if (scene.status !== "completed") return scene;
+    const distance = played?.distance;
+    if (typeof distance !== "number" || !Number.isFinite(distance)) {
+      return failed(`no camera distance was read after zooming in (${distance})`, played);
+    }
+    return Math.abs(distance - CLOSEST_CAMERA_DISTANCE) <= CLOSEST_DISTANCE_TOLERANCE
+      ? completed(played)
+      : failed(`the camera stopped at distance ${distance}, not the closest (${CLOSEST_CAMERA_DISTANCE})`, played);
+  };
 }
 
 async function recordTheStillMap({ base, devTools, owner }) {
@@ -246,12 +272,37 @@ async function recordTheStillMap({ base, devTools, owner }) {
   return { ...recorded, changes: await measureFrameChanges(`${base}-frames`, `${base}-changes.png`) };
 }
 
-function recordedStill({ seen, played }) {
-  const scene = inScene("map")({ seen });
-  if (scene.status !== "completed") return scene;
-  return played.frames >= STILL_FRAMES_MIN
-    ? completed(played)
-    : failed(`only ${played.frames} frames in ${STILL_FRAMES_MS} ms (< ${STILL_FRAMES_MIN})`, played);
+/** Ticks the dev tools' Override Time, which holds the day at its current progress. */
+async function holdTheSun({ browser }) {
+  return { held: browser.read(HOLD_THE_SUN_EXPRESSION) };
+}
+
+const HOLD_THE_SUN_EXPRESSION = `JSON.stringify((() => {
+  const control = [...document.querySelectorAll(".lil-gui .controller")].find(
+    (controller) => controller.querySelector(".name")?.textContent.trim() === "Override Time",
+  );
+  const box = control?.querySelector("input[type=checkbox]");
+  if (!box) return false;
+  if (!box.checked) box.click();
+  return box.checked;
+})())`;
+
+function heldTheSun(onMap) {
+  return ({ seen, played }) => {
+    const scene = onMap({ seen });
+    if (scene.status !== "completed") return scene;
+    return played.held ? completed(played) : failed("the dev tools offer no Override Time to hold the sun", played);
+  };
+}
+
+function recordedStill(onMap) {
+  return ({ seen, played }) => {
+    const scene = onMap({ seen });
+    if (scene.status !== "completed") return scene;
+    return played.frames >= STILL_FRAMES_MIN
+      ? completed(played)
+      : failed(`only ${played.frames} frames in ${STILL_FRAMES_MS} ms (< ${STILL_FRAMES_MIN})`, played);
+  };
 }
 
 async function readTheSeasonInTheMenu({ browser }) {
@@ -573,7 +624,10 @@ export const STEP_SETS = {
   "ownership-rings": { game: FRONTIER, steps: OWNERSHIP_RING_STEPS },
   "blitz-orders": { game: BLITZ, steps: BLITZ_ORDER_STEPS },
   "blitz-spectator": { game: BLITZ, steps: BLITZ_SPECTATOR_STEPS },
-  "still-map": { game: FRONTIER, steps: STILL_MAP_STEPS },
+  "still-map": { game: FRONTIER, steps: stillMapSteps(FRONTIER_MAP) },
+  "still-map-frozen-sun": { game: FRONTIER, steps: frozenSunStillMapSteps(FRONTIER_MAP), devOverlays: true },
+  "blitz-still-map": { game: BLITZ, steps: stillMapSteps(BLITZ_MAP) },
+  "blitz-still-map-frozen-sun": { game: BLITZ, steps: frozenSunStillMapSteps(BLITZ_MAP), devOverlays: true },
 };
 
 /**

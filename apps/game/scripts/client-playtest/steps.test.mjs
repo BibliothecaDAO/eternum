@@ -74,7 +74,7 @@ describe("the still map's zoom to the closest view", () => {
 });
 
 describe("the still map's frames", () => {
-  const verify = STEP_SETS["still-map"].steps.find((step) => step.name === "still").verify;
+  const verify = STEP_SETS["still-map"].steps.find((step) => step.name === "still-close").verify;
 
   it("completes with enough frames on the map", () => {
     expect(verify({ seen: onTheMap, played: { frames: 180 } }).status).toBe("completed");
@@ -85,6 +85,46 @@ describe("the still map's frames", () => {
       status: "failed",
       reason: expect.stringContaining("only 4 frames"),
     });
+  });
+});
+
+describe("the Blitz still map", () => {
+  const blitzMap = { scene: "map", rendered: "map", place: null, dialogs: [], pressed: [] };
+  const stepNames = (set) => STEP_SETS[set].steps.map((step) => step.name);
+
+  it("opens the world map and holds the closest view to the same distance check, with no place bar to light", () => {
+    const zoom = STEP_SETS["blitz-still-map"].steps.find((step) => step.name === "zoom-in").verify;
+    expect(zoom({ seen: blitzMap, played: { distance: 10 } }).status).toBe("completed");
+    expect(zoom({ seen: blitzMap, played: { distance: 20 } }).status).toBe("failed");
+    expect(stepNames("blitz-still-map")).toEqual(["open-world", "still-medium", "zoom-in", "still-close"]);
+  });
+
+  it("holds the sun before it records, with the dev tools on", () => {
+    expect(stepNames("blitz-still-map-frozen-sun")).toEqual([
+      "open-world",
+      "freeze-sun",
+      "still-medium",
+      "zoom-in",
+      "still-close",
+    ]);
+    expect(STEP_SETS["blitz-still-map-frozen-sun"].devOverlays).toBe(true);
+  });
+});
+
+describe("holding the sun", () => {
+  const verify = STEP_SETS["still-map-frozen-sun"].steps.find((step) => step.name === "freeze-sun").verify;
+
+  it("completes once Override Time is ticked, and fails a build whose dev tools do not offer it", () => {
+    expect(verify({ seen: onTheMap, played: { held: true } }).status).toBe("completed");
+    expect(verify({ seen: onTheMap, played: { held: false } })).toMatchObject({
+      status: "failed",
+      reason: "the dev tools offer no Override Time to hold the sun",
+    });
+  });
+
+  it("is a step list that opens the dev tools, unlike the still map it otherwise repeats", () => {
+    expect(STEP_SETS["still-map-frozen-sun"].devOverlays).toBe(true);
+    expect(STEP_SETS["still-map"].devOverlays).toBeUndefined();
   });
 });
 
