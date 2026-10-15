@@ -84,9 +84,7 @@ pub mod EntryAdministration {
             );
             assert!(account != 0.try_into().unwrap(), "invalid labor account");
             let timestamp = starknet::get_block_timestamp();
-            let context = crate::commands::load_context(
-                realm.game_id, crate::commands::ActionContext { raw_root: 0, timestamp },
-            );
+            let context = crate::commands::load_context(realm.game_id, 0, timestamp);
             crate::game::assert_playing(context.game.unbox(), timestamp);
             let rules = crate::logic::preset_record::for_game(realm.game_id)
                 .labor_rules

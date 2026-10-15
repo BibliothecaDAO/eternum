@@ -265,7 +265,7 @@ pub mod MapLogic {
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) -> crate::discovery::Discovery {
-            let game_context = crate::commands::load_context(key.game_id, game_context);
+            let game_context = crate::commands::execution_context(key.game_id, game_context);
 
             let rules = game_context.rules.unbox();
             let coord = Coord { alt: key.alt, x: key.col, y: key.row };
@@ -279,9 +279,7 @@ pub mod MapLogic {
                 }
                 crate::discovery::ethereal(rules.map_config, rules.bitcoin_mine_config.enabled, adjacent, seed)
             } else {
-                let center = Coord {
-                    alt: false, x: 2147483646 - rules.map_center_offset, y: 2147483646 - rules.map_center_offset,
-                };
+                let center = crate::settlement_grid::map_center(rules.map_center_offset);
                 crate::discovery::surface(
                     rules.map_config, seed, distance(coord, center), hyperstructures, rules.mode_rules,
                 )
@@ -356,7 +354,7 @@ pub mod MapLogic {
             seed: u256,
             context: crate::commands::ActionContext,
         ) -> crate::discovery::Discovery {
-            let context = crate::commands::load_context(key.game_id, context);
+            let context = crate::commands::execution_context(key.game_id, context);
             let mut rules = self.frontier_discovery_rules(key.game_id).expect('missing discovery rules');
             let explorer_key = crate::troops::ExplorerKey { game_id: key.game_id, explorer_id };
             let home = crate::state::read().troops.explorers.entry((key.game_id, explorer_id)).owner.read();
@@ -427,7 +425,7 @@ pub mod MapLogic {
             revealed: Option<Coord>,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let classes = self.release.classes(game_id);
 
@@ -525,7 +523,7 @@ pub mod MapLogic {
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) {
-            let game_context = crate::commands::load_context(game_id, game_context);
+            let game_context = crate::commands::execution_context(game_id, game_context);
             let rules = game_context.rules.unbox();
             if !crate::rules::rule_enabled(rules, crate::rules::DISCOVER_CHESTS) || coord.alt {
                 return;

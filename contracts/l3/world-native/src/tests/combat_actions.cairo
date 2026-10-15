@@ -494,9 +494,7 @@ fn frontier_disabled_dice_ignore_random_roots_on_surface_and_ethereal() {
             let context = snforge_std::interact_with_state(
                 d.games,
                 || {
-                    let execution = crate::commands::load_context(
-                        3, crate::commands::ActionContext { raw_root, timestamp: 80 },
-                    );
+                    let execution = crate::commands::load_context(3, raw_root, 80);
                     crate::logic::combat::combat_context(3, attacker, defender, execution)
                 },
             );

@@ -2,7 +2,7 @@ use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerRe
 use crate::stamina::StaminaSourceTrait;
 use crate::troops::{
     ArmySlotAction, ArmySlotAllocation, ExplorerKey, ExplorerRecord, ExplorerTroops, IArmySlotStaminaDispatcherTrait,
-    IArmySlotStaminaLibraryDispatcher, ResolvedArmySlot, Stamina, StaminaSource, Troops,
+    IArmySlotStaminaLibraryDispatcher, ResolvedArmySlot, StaminaRefill, StaminaSource, Troops,
 };
 
 fn dispatch(key: ExplorerKey, action: ArmySlotAction) -> ResolvedArmySlot {
@@ -13,9 +13,9 @@ fn dispatch(key: ExplorerKey, action: ArmySlotAction) -> ResolvedArmySlot {
         .army_slot_stamina(key, action)
 }
 
-pub fn resolve(key: ExplorerKey, mut explorer: ExplorerTroops, timestamp: Option<u64>) -> ExplorerTroops {
+pub fn resolve(key: ExplorerKey, mut explorer: ExplorerTroops, refill: Option<StaminaRefill>) -> ExplorerTroops {
     if let StaminaSource::Slot(_) = explorer.troops.stamina {
-        let slot = dispatch(key, ArmySlotAction::Resolve(timestamp));
+        let slot = dispatch(key, ArmySlotAction::Resolve(refill));
         explorer.troops.stamina = slot.stamina;
         explorer.troops.boosts.incr_damage_dealt_percent_num = slot.battle_bonus_percent;
         explorer.troops.boosts.incr_damage_dealt_end_at = 0;
@@ -23,10 +23,8 @@ pub fn resolve(key: ExplorerKey, mut explorer: ExplorerTroops, timestamp: Option
     explorer
 }
 
-pub fn allocate(
-    key: ExplorerKey, home: u64, epoch: u64, allowance: u8, initial: Stamina, category: crate::troops::TroopType,
-) -> StaminaSource {
-    dispatch(key, ArmySlotAction::Allocate(ArmySlotAllocation { home, epoch, allowance, initial, category })).stamina
+pub fn allocate(key: ExplorerKey, allocation: ArmySlotAllocation) -> StaminaSource {
+    dispatch(key, ArmySlotAction::Allocate(allocation)).stamina
 }
 
 pub fn persist(key: ExplorerKey, previous: ExplorerRecord, mut troops: Troops) -> Troops {

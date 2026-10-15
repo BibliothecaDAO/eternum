@@ -61,7 +61,7 @@ pub mod TroopFixture {
             command: CreateExplorer,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.actor.write(actor);
             self.root.write(context.raw_root);

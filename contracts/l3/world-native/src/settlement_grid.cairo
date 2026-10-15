@@ -2,6 +2,12 @@ use crate::geometry::checked_neighbor_at_distance;
 use crate::settlement::SettlementMode;
 use crate::troops::Coord;
 
+/// The tile settlement, reservation and discovery layouts are measured from.
+pub fn map_center(map_center_offset: u32) -> Coord {
+    let center = 2147483646 - map_center_offset;
+    Coord { alt: false, x: center, y: center }
+}
+
 #[derive(Copy, Drop)]
 struct Distances {
     base: u32,

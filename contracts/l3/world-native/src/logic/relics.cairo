@@ -62,7 +62,7 @@ pub mod RelicState {
             command: OpenChest,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_command(game_id, context.timestamp, context);
             let classes = self.logic_classes(game_id);
@@ -82,7 +82,7 @@ pub mod RelicState {
             command: ApplyRelic,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_command(game_id, context.timestamp, context);
             assert!(
@@ -141,7 +141,7 @@ pub mod RelicState {
             command: crate::progression::BuyTier,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
             self.assert_command(game_id, context.timestamp, context);
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
@@ -180,7 +180,7 @@ pub mod RelicState {
             command: crate::relics::InteractSite,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
             self.assert_command(game_id, context.timestamp, context);
             assert!(context.rules.unbox().day_unit_seconds != 0, "site requires expedition");
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
@@ -221,7 +221,7 @@ pub mod RelicState {
             command: crate::relics::RefillStamina,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
             self.assert_command(game_id, context.timestamp, context);
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
@@ -264,7 +264,7 @@ pub mod RelicState {
             command: crate::relics::WithdrawLords,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
             crate::relics::assert_claim_window(
                 context.game.unbox(), crate::logic::lords_budget::chest_rules(game_id), context.timestamp,
             );
@@ -301,9 +301,7 @@ pub mod RelicState {
                 let home = crate::resources::ResourceKey { game_id: key.game_id, entity_id: value.home };
                 let progress = crate::logic::progression::create(key, crate::logic::research::learned(home));
                 // A slot's first army of the day starts full at its own maximum, trained Logistics included.
-                let maximum = crate::progression::stamina_max(
-                    progress, value.category, crate::logic::game::rules(key.game_id).troop_stamina_config,
-                );
+                let maximum = crate::progression::stamina_max(progress, value.category, value.stamina_config);
                 let initial = crate::troops::Stamina { amount: maximum, ..value.initial };
                 return ResolvedArmySlot {
                     stamina: army_slot_storage::allocate(
@@ -315,12 +313,12 @@ pub mod RelicState {
             let mut explorer = crate::logic::troops::explorer(key).expect('missing slot explorer');
             let mut battle_bonus_percent = 0;
             let stamina = match action {
-                ArmySlotAction::Resolve(timestamp) => {
+                ArmySlotAction::Resolve(refill) => {
                     battle_bonus_percent =
                         crate::rules::battle_bonus_bps(crate::logic::progression::require(key).battle)
                         .try_into()
                         .unwrap();
-                    army_slot_storage::resolve(key, explorer, timestamp).troops.stamina
+                    army_slot_storage::resolve(key, explorer, refill).troops.stamina
                 },
                 ArmySlotAction::Persist(stamina) => {
                     let previous = explorer.into_record();
@@ -354,7 +352,7 @@ pub mod RelicState {
             explorer_id: u64,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(site.game_id, context);
+            let context = crate::commands::execution_context(site.game_id, context);
             let explorer_key = ExplorerKey { game_id: site.game_id, explorer_id };
             let explorer = crate::logic::troops::active_explorer(explorer_key, context.timestamp, context);
             self.refund_capture_stamina(explorer_key, explorer, context);
@@ -389,7 +387,7 @@ pub mod RelicState {
             structure_id: u64,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_command(game_id, context.timestamp, context);
             let key = ResourceKey { game_id, entity_id: structure_id };

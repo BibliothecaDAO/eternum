@@ -685,7 +685,10 @@ fn create_reserved(deployment: super::Deployment, timestamp: u64) -> ResourceKey
         || {
             library
                 .create_reserved_hyperstructure(
-                    3, deployment.actor, coord, crate::commands::ActionContext { raw_root: 42, timestamp },
+                    3,
+                    deployment.actor,
+                    coord,
+                    crate::commands::action_context(crate::commands::load_context(3, 42, timestamp)),
                 );
         },
     );

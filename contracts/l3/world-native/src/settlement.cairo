@@ -86,11 +86,9 @@ pub trait ISettlementViews<T> {
 #[starknet::interface]
 pub trait ISettlementPool<T> {
     #[cfg(test)]
-    fn settlement_pool(self: @T, game_id: u32, game_context: crate::commands::ActionContext) -> SettlementPool;
-    fn village_pool(self: @T, game_id: u32, game_context: crate::commands::ActionContext) -> SettlementPool;
-    fn claim_village(
-        ref self: T, game_id: u32, registered: u16, seed: u256, game_context: crate::commands::ActionContext,
-    ) -> Coord;
+    fn settlement_pool(self: @T, game_id: u32, center: Coord) -> SettlementPool;
+    fn village_pool(self: @T, game_id: u32, center: Coord) -> SettlementPool;
+    fn claim_village(ref self: T, game_id: u32, registered: u16, seed: u256, center: Coord) -> Coord;
     #[cfg(test)]
     fn reserved_hyperstructures(self: @T, game_id: u32) -> u32;
 }

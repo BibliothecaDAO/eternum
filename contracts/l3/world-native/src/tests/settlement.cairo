@@ -103,14 +103,7 @@ fn settlement_pool_claims_are_distinct_and_game_scoped() {
         let selected = array![
             placement
                 .claim_season_settlement(
-                    1,
-                    registered,
-                    registered.into() + 17,
-                    crate::commands::action_context(
-                        crate::commands::ExecutionContext {
-                            timestamp: 100, ..crate::tests::context(deployment.games, 1),
-                        },
-                    ),
+                    1, registered, registered.into() + 17, crate::tests::map_center(deployment.games, 1),
                 ),
         ]
             .span();
@@ -119,42 +112,10 @@ fn settlement_pool_claims_are_distinct_and_game_scoped() {
             assert!(*previous != *selected.at(0), "settlement repeated");
         }
         seen.append(*selected.at(0));
-        assert!(
-            pool
-                .settlement_pool(
-                    2,
-                    crate::commands::action_context(
-                        crate::commands::ExecutionContext {
-                            timestamp: 100, ..crate::tests::context(deployment.games, 2),
-                        },
-                    ),
-                )
-                .available
-                .is_empty(),
-        );
-        assert!(
-            pool
-                .settlement_pool(
-                    2,
-                    crate::commands::action_context(
-                        crate::commands::ExecutionContext {
-                            timestamp: 100, ..crate::tests::context(deployment.games, 2),
-                        },
-                    ),
-                )
-                .opened == 0,
-        );
+        assert!(pool.settlement_pool(2, crate::tests::map_center(deployment.games, 2)).available.is_empty());
+        assert!(pool.settlement_pool(2, crate::tests::map_center(deployment.games, 2)).opened == 0);
     }
-    assert!(
-        pool
-            .settlement_pool(
-                1,
-                crate::commands::action_context(
-                    crate::commands::ExecutionContext { timestamp: 100, ..crate::tests::context(deployment.games, 1) },
-                ),
-            )
-            .opened >= 96,
-    );
+    assert!(pool.settlement_pool(1, crate::tests::map_center(deployment.games, 1)).opened >= 96);
 }
 
 #[test]
@@ -308,14 +269,7 @@ fn village_placement_shares_reservations_with_fixed_blitz_and_eternum_entries() 
                 array![
                     pool
                         .claim_village(
-                            game_id,
-                            0,
-                            village.into() + 100,
-                            crate::commands::action_context(
-                                crate::commands::ExecutionContext {
-                                    timestamp: 100, ..crate::tests::context(deployment.games, game_id),
-                                },
-                            ),
+                            game_id, 0, village.into() + 100, crate::tests::map_center(deployment.games, game_id),
                         ),
                 ]
                     .span(),
@@ -332,11 +286,7 @@ fn village_placement_shares_reservations_with_fixed_blitz_and_eternum_entries() 
                                 game_id,
                                 registered,
                                 registered.into() + 17,
-                                crate::commands::action_context(
-                                    crate::commands::ExecutionContext {
-                                        timestamp: 100, ..crate::tests::context(deployment.games, game_id),
-                                    },
-                                ),
+                                crate::tests::map_center(deployment.games, game_id),
                             ),
                     ]
                         .span(),
@@ -349,32 +299,13 @@ fn village_placement_shares_reservations_with_fixed_blitz_and_eternum_entries() 
                 array![
                     pool
                         .claim_village(
-                            game_id,
-                            2,
-                            village.into() + 300,
-                            crate::commands::action_context(
-                                crate::commands::ExecutionContext {
-                                    timestamp: 100, ..crate::tests::context(deployment.games, game_id),
-                                },
-                            ),
+                            game_id, 2, village.into() + 300, crate::tests::map_center(deployment.games, game_id),
                         ),
                 ]
                     .span(),
             );
         }
-        assert!(
-            pool
-                .village_pool(
-                    game_id,
-                    crate::commands::action_context(
-                        crate::commands::ExecutionContext {
-                            timestamp: 100, ..crate::tests::context(deployment.games, game_id),
-                        },
-                    ),
-                )
-                .available
-                .len() == 5,
-        );
+        assert!(pool.village_pool(game_id, crate::tests::map_center(deployment.games, game_id)).available.len() == 5);
         let progress = ISettlementViewsDispatcher { contract_address: deployment.games }.settlement_progress(game_id);
         assert!(progress.registered == 0 && progress.realm_count == 0, "planner changed entry counters");
     }

@@ -42,9 +42,7 @@ pub trait ISeasonRealms<T> {
 
 #[starknet::interface]
 pub trait ISeasonPlacement<T> {
-    fn claim_season_settlement(
-        ref self: T, game_id: u32, settled_count: u16, seed: u256, game_context: crate::commands::ActionContext,
-    ) -> Coord;
+    fn claim_season_settlement(ref self: T, game_id: u32, settled_count: u16, seed: u256, center: Coord) -> Coord;
 }
 
 pub fn decode_traits(packed: u32) -> RealmTraits {

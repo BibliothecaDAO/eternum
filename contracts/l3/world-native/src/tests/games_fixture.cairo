@@ -54,11 +54,7 @@ pub mod GamesFixture {
         TContractState, +Drop<TContractState>,
     > of crate::realms::ISeasonPlacement<TContractState> {
         fn claim_season_settlement(
-            ref self: TContractState,
-            game_id: u32,
-            settled_count: u16,
-            seed: u256,
-            game_context: crate::commands::ActionContext,
+            ref self: TContractState, game_id: u32, settled_count: u16, seed: u256, center: crate::troops::Coord,
         ) -> crate::troops::Coord {
             let classes = fixture_classes(game_id);
             crate::realms::ISeasonPlacementDispatcherTrait::claim_season_settlement(
@@ -66,7 +62,7 @@ pub mod GamesFixture {
                 game_id,
                 settled_count,
                 seed,
-                game_context,
+                center,
             )
         }
     }
@@ -75,31 +71,27 @@ pub mod GamesFixture {
         TContractState, +Drop<TContractState>,
     > of crate::settlement::ISettlementPool<TContractState> {
         fn settlement_pool(
-            self: @TContractState, game_id: u32, game_context: crate::commands::ActionContext,
+            self: @TContractState, game_id: u32, center: crate::troops::Coord,
         ) -> crate::settlement::SettlementPool {
             let classes = fixture_classes(game_id);
             crate::settlement::ISettlementPoolDispatcherTrait::settlement_pool(
                 crate::settlement::ISettlementPoolLibraryDispatcher { class_hash: classes.placement.read() },
                 game_id,
-                game_context,
+                center,
             )
         }
         fn village_pool(
-            self: @TContractState, game_id: u32, game_context: crate::commands::ActionContext,
+            self: @TContractState, game_id: u32, center: crate::troops::Coord,
         ) -> crate::settlement::SettlementPool {
             let classes = fixture_classes(game_id);
             crate::settlement::ISettlementPoolDispatcherTrait::village_pool(
                 crate::settlement::ISettlementPoolLibraryDispatcher { class_hash: classes.placement.read() },
                 game_id,
-                game_context,
+                center,
             )
         }
         fn claim_village(
-            ref self: TContractState,
-            game_id: u32,
-            registered: u16,
-            seed: u256,
-            game_context: crate::commands::ActionContext,
+            ref self: TContractState, game_id: u32, registered: u16, seed: u256, center: crate::troops::Coord,
         ) -> crate::troops::Coord {
             let classes = fixture_classes(game_id);
             crate::settlement::ISettlementPoolDispatcherTrait::claim_village(
@@ -107,7 +99,7 @@ pub mod GamesFixture {
                 game_id,
                 registered,
                 seed,
-                game_context,
+                center,
             )
         }
         fn reserved_hyperstructures(self: @TContractState, game_id: u32) -> u32 {

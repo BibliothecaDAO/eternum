@@ -169,15 +169,7 @@ pub impl TroopObservation of TroopObservationTrait {
             self.contract_address,
             || {
                 crate::logic::troops::authorized_explorer(
-                    key,
-                    actor,
-                    timestamp,
-                    crate::commands::ExecutionContext {
-                        raw_root: 0,
-                        timestamp: timestamp,
-                        game: BoxTrait::new(crate::logic::game::game((key).game_id)),
-                        rules: BoxTrait::new(crate::logic::game::rules((key).game_id)),
-                    },
+                    key, actor, timestamp, crate::commands::load_context(key.game_id, 0, timestamp),
                 )
             },
         )

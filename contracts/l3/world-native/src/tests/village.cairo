@@ -120,23 +120,11 @@ fn production_pass_is_atomic_single_use_and_army_grant_uses_block_time() {
         assert!(tile.data / 0x20000000000 % 256 != 0, "realm neighbour biome missing");
     }
     let pools = ISettlementPoolDispatcher { contract_address: deployment.games };
-    let before = pools
-        .village_pool(
-            3,
-            crate::commands::action_context(
-                crate::commands::ExecutionContext { timestamp: 100, ..crate::tests::context(deployment.games, 3) },
-            ),
-        );
+    let before = pools.village_pool(3, crate::tests::map_center(deployment.games, 3));
     assert!(!run(deployment, settle(0xffffffff, 7), 100));
     assert!(ledger.village_pass(pass).unwrap().unwrap().village_id == 0);
     assert!(
-        pools
-            .village_pool(
-                3,
-                crate::commands::action_context(
-                    crate::commands::ExecutionContext { timestamp: 100, ..crate::tests::context(deployment.games, 3) },
-                ),
-            ) == before,
+        pools.village_pool(3, crate::tests::map_center(deployment.games, 3)) == before,
         "failed placement retained reservations",
     );
     assert!(run(deployment, settle(realm, 7), 100));
@@ -261,24 +249,8 @@ fn exhausted_geometry_records_rejection_and_keeps_the_pass() {
     assert!(ledger.village_pass(pass).unwrap().village_id == 0);
     let pool = ISettlementPoolDispatcher { contract_address: deployment.games };
     assert!(
-        pool
-            .village_pool(
-                3,
-                crate::commands::action_context(
-                    crate::commands::ExecutionContext { timestamp: 100, ..crate::tests::context(deployment.games, 3) },
-                ),
-            )
-            .opened == 0
-            && pool
-                .settlement_pool(
-                    3,
-                    crate::commands::action_context(
-                        crate::commands::ExecutionContext {
-                            timestamp: 100, ..crate::tests::context(deployment.games, 3),
-                        },
-                    ),
-                )
-                .opened == 0,
+        pool.village_pool(3, crate::tests::map_center(deployment.games, 3)).opened == 0
+            && pool.settlement_pool(3, crate::tests::map_center(deployment.games, 3)).opened == 0,
     );
     let result = super::play_fixture::rejection(ref rejection_spy, deployment.games);
     assert!(result.status_class == 'GAMEPLAY_REJECTED');

@@ -121,7 +121,7 @@ pub mod SettlementLogic {
             command: crate::realms::SettleSeason,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let classes = self.release.classes(game_id);
             let owner = actor;
@@ -153,7 +153,10 @@ pub mod SettlementLogic {
             let coord = if rules.day_unit_seconds == 0 {
                 ISeasonPlacementLibraryDispatcher { class_hash: classes.placement.read() }
                     .claim_season_settlement(
-                        game_id, progress.realm_count, seed, crate::commands::action_context(context),
+                        game_id,
+                        progress.realm_count,
+                        seed,
+                        crate::settlement_grid::map_center(context.rules.unbox().map_center_offset),
                     )
             } else {
                 crate::settlement::off_map_realm_reference(realm_id)
@@ -202,7 +205,7 @@ pub mod SettlementLogic {
             command: SettleVillage,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let classes = self.release.classes(game_id);
             let owner = actor;
@@ -221,7 +224,12 @@ pub mod SettlementLogic {
             let resource = crate::village::select_resource(village_rules.resource_pool, seed);
             let progress = self.settlements.data.settlements.progress.read(game_id);
             let coord = ISettlementPoolLibraryDispatcher { class_hash: classes.placement.read() }
-                .claim_village(game_id, progress.registered, seed, crate::commands::action_context(context));
+                .claim_village(
+                    game_id,
+                    progress.registered,
+                    seed,
+                    crate::settlement_grid::map_center(context.rules.unbox().map_center_offset),
+                );
             let village_id = ISettlementCreationLibraryDispatcher { class_hash: classes.structures.read() }
                 .create_settlement(
                     game_id,
@@ -273,7 +281,10 @@ pub mod SettlementLogic {
             assert!(key.game_id != 0, "game id zero is reserved");
             assert!(crate::logic::game::game_exists(key.game_id), "prepare an existing game");
             assert!(
-                crate::logic::game::rules(key.game_id).entry_rule != crate::rules::ENTRY_ROSTER,
+                crate::logic::preset_record::for_game(key.game_id)
+                    .rules
+                    .entry_rule
+                    .read() != crate::rules::ENTRY_ROSTER,
                 "Blitz uses a fixed roster",
             );
             crate::logic::entry::assert_ledger_operator();
@@ -290,7 +301,7 @@ pub mod SettlementLogic {
         fn settle_blitz_roster(
             ref self: ContractState, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
         ) -> u64 {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
             let game = context.game.unbox();
             assert!(context.rules.unbox().entry_rule == crate::rules::ENTRY_ROSTER, "not a Blitz game");
             assert!(context.timestamp >= game.start_settling_at, "settling not started");
@@ -308,9 +319,8 @@ pub mod SettlementLogic {
             let player = *roster.at((*order.at(progress.registered.into())).into());
             self.settlements.record_entry(EntryKey { game_id, owner: player.account }, player.account);
             let rules = crate::logic::settlement::rules(game_id);
-            let center = 2147483646 - context.rules.unbox().map_center_offset;
             let coords = crate::settlement_grid::settlement_location(
-                crate::troops::Coord { alt: false, x: center, y: center },
+                crate::settlement_grid::map_center(context.rules.unbox().map_center_offset),
                 rules.mode,
                 rules.spacing,
                 progress.registered.into(),

@@ -42,7 +42,7 @@ pub mod MovementLogic {
             command: Explore,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let rules = self.authorize(game_id, context);
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
@@ -164,7 +164,7 @@ pub mod MovementLogic {
         fn displace_explorer(
             ref self: ContractState, game_id: u32, explorer_id: u64, game_context: crate::commands::ActionContext,
         ) {
-            let game_context = crate::commands::load_context(game_id, game_context);
+            let game_context = crate::commands::execution_context(game_id, game_context);
 
             let key = ExplorerKey { game_id, explorer_id };
             let explorer = crate::logic::troops::explorer(key).expect('missing blocking explorer');
@@ -199,7 +199,7 @@ pub mod MovementLogic {
             command: crate::commands::EnterDepth,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let rules = self.authorize(game_id, context);
             assert!(rules.day_unit_seconds != 0, "depth entry requires expeditions");
@@ -257,7 +257,7 @@ pub mod MovementLogic {
             command: crate::commands::Move,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let rules = self.authorize(game_id, context);
             assert!(!command.directions.is_empty(), "empty movement path");
@@ -299,7 +299,7 @@ pub mod MovementLogic {
             command: crate::commands::ToggleAlternate,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.authorize(game_id, context);
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };

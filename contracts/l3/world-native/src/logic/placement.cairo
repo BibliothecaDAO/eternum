@@ -68,9 +68,7 @@ pub mod PlacementLogic {
     #[abi(embed_v0)]
     impl Spires of crate::spires::ISpires<ContractState> {
         fn initialize_spires(ref self: ContractState, game_id: u32) {
-            let game_context = crate::commands::load_context(
-                game_id, crate::commands::ActionContext { raw_root: 0, timestamp: starknet::get_block_timestamp() },
-            );
+            let game_context = crate::commands::load_context(game_id, 0, starknet::get_block_timestamp());
             assert!(
                 crate::rules::rule_enabled(game_context.rules.unbox(), crate::rules::SPIRES), "spires are disabled",
             );
@@ -88,18 +86,11 @@ pub mod PlacementLogic {
     #[abi(embed_v0)]
     impl SeasonPlacement of crate::realms::ISeasonPlacement<ContractState> {
         fn claim_season_settlement(
-            ref self: ContractState,
-            game_id: u32,
-            settled_count: u16,
-            seed: u256,
-            game_context: crate::commands::ActionContext,
+            ref self: ContractState, game_id: u32, settled_count: u16, seed: u256, center: Coord,
         ) -> Coord {
-            let game_context = crate::commands::load_context(game_id, game_context);
-
             let mut rules = crate::logic::settlement::rules(game_id);
             assert!(rules.mode == crate::settlement::SettlementMode::Single, "season settlement requires one realm");
             rules.registration_limit = 0xffff;
-            let center = self.map_center(game_id, game_context);
             for _ in 0..64_u32 {
                 let coords = self.settlements.claim(game_id, center, rules, settled_count, seed);
                 let coord = *coords.at(0);
@@ -118,42 +109,20 @@ pub mod PlacementLogic {
             self.settlements.data.settlement_pool.reserved_hyperstructures.read(game_id)
         }
         #[cfg(test)]
-        fn settlement_pool(
-            self: @ContractState, game_id: u32, game_context: crate::commands::ActionContext,
-        ) -> SettlementPool {
-            let game_context = crate::commands::load_context(game_id, game_context);
-
-            let rules = crate::logic::settlement::rules(game_id);
-            let center = self.map_center(game_id, game_context);
-            self.settlements.pool(game_id, center, rules)
+        fn settlement_pool(self: @ContractState, game_id: u32, center: Coord) -> SettlementPool {
+            self.settlements.pool(game_id, center, crate::logic::settlement::rules(game_id))
         }
-        fn village_pool(
-            self: @ContractState, game_id: u32, game_context: crate::commands::ActionContext,
-        ) -> SettlementPool {
-            let game_context = crate::commands::load_context(game_id, game_context);
-
-            let rules = crate::logic::settlement::rules(game_id);
-            self.settlements.village_pool(game_id, self.map_center(game_id, game_context), rules)
+        fn village_pool(self: @ContractState, game_id: u32, center: Coord) -> SettlementPool {
+            self.settlements.village_pool(game_id, center, crate::logic::settlement::rules(game_id))
         }
-        fn claim_village(
-            ref self: ContractState,
-            game_id: u32,
-            registered: u16,
-            seed: u256,
-            game_context: crate::commands::ActionContext,
-        ) -> Coord {
-            let game_context = crate::commands::load_context(game_id, game_context);
-
-            let rules = crate::logic::settlement::rules(game_id);
-            self.settlements.claim_village(game_id, self.map_center(game_id, game_context), rules, registered, seed)
+        fn claim_village(ref self: ContractState, game_id: u32, registered: u16, seed: u256, center: Coord) -> Coord {
+            self.settlements.claim_village(game_id, center, crate::logic::settlement::rules(game_id), registered, seed)
         }
     }
     #[abi(embed_v0)]
     impl Reservations of crate::settlement::IBlitzReservations<ContractState> {
         fn initialize_reservations(ref self: ContractState, game_id: u32) {
-            let game_context = crate::commands::load_context(
-                game_id, crate::commands::ActionContext { raw_root: 0, timestamp: starknet::get_block_timestamp() },
-            );
+            let game_context = crate::commands::load_context(game_id, 0, starknet::get_block_timestamp());
 
             if self.settlements.data.settlement_pool.reserved_hyperstructures.read(game_id) != 0 {
                 return;
@@ -248,9 +217,7 @@ pub mod PlacementLogic {
         }
 
         fn map_center(self: @ContractState, game_id: u32, game_context: crate::commands::ExecutionContext) -> Coord {
-            let rules = game_context.rules.unbox();
-            let center = 2147483646 - rules.map_center_offset;
-            Coord { alt: false, x: center, y: center }
+            crate::settlement_grid::map_center(game_context.rules.unbox().map_center_offset)
         }
     }
 }

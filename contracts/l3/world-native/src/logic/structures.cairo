@@ -221,7 +221,7 @@ pub mod StructuresLogic {
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) {
-            let game_context = crate::commands::load_context(key.game_id, game_context);
+            let game_context = crate::commands::execution_context(key.game_id, game_context);
 
             assert!(key.entity_id >= 0xfffffff9 && key.entity_id <= 0xfffffffe, "invalid regional bank id");
             assert!(!coord.alt && owner != 0.try_into().unwrap(), "invalid bank placement");
@@ -280,7 +280,7 @@ pub mod StructuresLogic {
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) -> u64 {
-            let game_context = crate::commands::load_context(game_id, game_context);
+            let game_context = crate::commands::execution_context(game_id, game_context);
 
             self.place_discovery(game_id, home_id, coord, discovery, seed, timestamp, false, game_context)
         }
@@ -289,9 +289,7 @@ pub mod StructuresLogic {
         fn provision_realm(
             ref self: ContractState, game_id: u32, actor: ContractAddress, coord: Coord, grants: Span<(u8, u128)>,
         ) -> u64 {
-            let game_context = crate::commands::load_context(
-                game_id, crate::commands::ActionContext { raw_root: 0, timestamp: starknet::get_block_timestamp() },
-            );
+            let game_context = crate::commands::load_context(game_id, 0, starknet::get_block_timestamp());
 
             self.assert_authority();
             let game = game_context.game.unbox();
@@ -323,7 +321,7 @@ pub mod StructuresLogic {
             coord: Coord,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let classes = self.release.classes(game_id);
             let game = context.game.unbox();
@@ -360,7 +358,7 @@ pub mod StructuresLogic {
             creation: crate::settlement::SettlementCreation,
             context: crate::commands::ActionContext,
         ) -> u64 {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let mut record = realm_record(actor, context.timestamp, context.rules.unbox().troop_limit_config);
             match creation {
@@ -434,7 +432,7 @@ pub mod StructuresLogic {
             village_id: u64,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             assert_playing(context.game.unbox(), context.timestamp);
             let key = ResourceKey { game_id, entity_id: village_id };
@@ -463,7 +461,7 @@ pub mod StructuresLogic {
             structure_id: u64,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             Self::activate_realm_economy(
                 ref self, game_id, actor, structure_id, crate::commands::action_context(context),
@@ -487,7 +485,7 @@ pub mod StructuresLogic {
             structure_id: u64,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             assert_playing(context.game.unbox(), context.timestamp);
             let key = ResourceKey { game_id, entity_id: structure_id };
@@ -512,7 +510,7 @@ pub mod StructuresLogic {
             command: crate::names::SetEntityName,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             assert_playing(context.game.unbox(), context.timestamp);
             let key = ResourceKey { game_id, entity_id: command.entity_id };
@@ -547,7 +545,7 @@ pub mod StructuresLogic {
             command: TransferOwnership,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let game = context.game.unbox();
             assert_playing(game, context.timestamp);
@@ -580,7 +578,7 @@ pub mod StructuresLogic {
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) -> () {
-            let game_context = crate::commands::load_context(key.game_id, game_context);
+            let game_context = crate::commands::execution_context(key.game_id, game_context);
 
             let record = crate::logic::structures::record(key);
             let owner = crate::logic::structures::record(

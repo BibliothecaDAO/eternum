@@ -116,7 +116,7 @@ pub mod HyperstructureState {
             owner: ContractAddress,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(key.game_id, context);
+            let context = crate::commands::execution_context(key.game_id, context);
             // Shared allocations stay with their shareholders; owner-only shares follow the structure.
             if !crate::rules::rule_enabled(context.rules.unbox(), crate::rules::OWNER_ONLY_SHARES)
                 || self.state(key).stage != Stage::Complete {
@@ -131,7 +131,7 @@ pub mod HyperstructureState {
             id: u64,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_command(game_id, context.timestamp, context);
             let key = ResourceKey { game_id, entity_id: id };
@@ -153,7 +153,7 @@ pub mod HyperstructureState {
             contribution: Contribution,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_command(game_id, context.timestamp, context);
             crate::resources::assert_unique_resources(contribution.resources);
@@ -193,7 +193,7 @@ pub mod HyperstructureState {
             command: AllocateShares,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_command(game_id, context.timestamp, context);
             let key = ResourceKey { game_id, entity_id: command.hyperstructure_id };
@@ -214,7 +214,7 @@ pub mod HyperstructureState {
             command: SetConstructionAccess,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_command(game_id, context.timestamp, context);
             let key = ResourceKey { game_id, entity_id: command.hyperstructure_id };
@@ -235,7 +235,7 @@ pub mod HyperstructureState {
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) -> u32 {
-            let game_context = crate::commands::load_context(game_id, game_context);
+            let game_context = crate::commands::execution_context(game_id, game_context);
 
             let (cutoff, start, count) = self
                 .data
@@ -261,7 +261,7 @@ pub mod HyperstructureState {
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) -> u32 {
-            let game_context = crate::commands::load_context(game_id, game_context);
+            let game_context = crate::commands::execution_context(game_id, game_context);
 
             let game = game_context.game.unbox();
             assert!(game.end_at != 0 && timestamp >= game.end_at, "game not ended");

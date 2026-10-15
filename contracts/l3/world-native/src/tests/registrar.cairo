@@ -2708,7 +2708,11 @@ fn frontier_finds_at_most_one_ruin_a_day_and_holds_its_chest_against_the_budget(
         let drawn = snforge_std::interact_with_state(
             d.games,
             || crate::expeditions::IFrontierDiscoveryDispatcherTrait::discover_frontier_tile(
-                map, next, key.explorer_id, seed, crate::commands::ActionContext { raw_root, timestamp },
+                map,
+                next,
+                key.explorer_id,
+                seed,
+                crate::commands::action_context(crate::commands::load_context(game_id, raw_root, timestamp)),
             ),
         );
         match drawn {
@@ -3065,7 +3069,9 @@ fn expedition_death_releases_the_slot_with_the_final_battle_bar() {
     defeated.troops.count = 0;
     defeated.troops.stamina.set_amount(2);
     let defeated = defeated;
-    let context = crate::commands::ActionContext { raw_root: 1, timestamp: 351 };
+    let context = crate::commands::action_context(
+        crate::commands::ExecutionContext { raw_root: 1, timestamp: 351, ..crate::tests::context(d.games, game_id) },
+    );
     let class_hash = super::declare_logic("TroopsLogic");
     snforge_std::interact_with_state(
         d.games,
@@ -3276,9 +3282,7 @@ fn frontier_shrine_and_well_persist_once_and_use_the_public_progress_and_slot() 
             crate::logic::map::MapState::occupy(tile, 902, crate::taxonomy::WELL_OCCUPIER, false);
             crate::logic::progression::write(key, crate::progression::ArmyProgress { logistics: 3, ..progress });
             let mut army = crate::logic::troops::active_explorer(
-                key,
-                360,
-                crate::commands::load_context(game_id, crate::commands::ActionContext { raw_root: 0, timestamp: 360 }),
+                key, 360, crate::commands::load_context(game_id, 0, 360),
             );
             army.troops.stamina.set_amount(10);
             crate::logic::troops::TroopState::save(key, army.into_record());
@@ -3295,17 +3299,12 @@ fn frontier_shrine_and_well_persist_once_and_use_the_public_progress_and_slot() 
         || {
             crate::logic::map::MapState::occupy(tile, 903, crate::taxonomy::WELL_OCCUPIER, false);
             let mut army = crate::logic::troops::active_explorer(
-                key,
-                360,
-                crate::commands::load_context(game_id, crate::commands::ActionContext { raw_root: 0, timestamp: 360 }),
+                key, 360, crate::commands::load_context(game_id, 0, 360),
             );
             let maximum = crate::progression::stamina_max(
                 crate::logic::progression::require(key),
                 army.troops.category,
-                crate::commands::load_context(game_id, crate::commands::ActionContext { raw_root: 0, timestamp: 360 })
-                    .rules
-                    .unbox()
-                    .troop_stamina_config,
+                crate::commands::load_context(game_id, 0, 360).rules.unbox().troop_stamina_config,
             );
             army.troops.stamina.set_amount(maximum - 5);
             crate::logic::troops::TroopState::save(key, army.into_record());
@@ -3356,7 +3355,11 @@ fn frontier_site_discovery_reads_home_knowledge_and_places_only_tile_occupancy()
         let seed = chosen.expect('MISSING_SITE_ROOT');
         let coord = crate::geometry::neighbor(army.coord, 0);
         let tile = crate::geometry::tile_key(game_id, coord);
-        let context = crate::commands::ActionContext { raw_root: 0, timestamp: 360 };
+        let context = crate::commands::action_context(
+            crate::commands::ExecutionContext {
+                raw_root: 0, timestamp: 360, ..crate::tests::context(d.games, game_id),
+            },
+        );
         start_cheat_caller_address(d.games, d.games);
         let locked = snforge_std::interact_with_state(
             d.games,

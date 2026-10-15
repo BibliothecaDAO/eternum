@@ -57,7 +57,7 @@ pub mod ResourcesLogic {
             home_id: u64,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(key.game_id, context);
+            let context = crate::commands::execution_context(key.game_id, context);
             let site = crate::logic::expeditions::clear_site(key);
             let category = crate::logic::structures::structure(key).expect('missing site').base.category;
             let reward = if category == crate::taxonomy::RUIN_CATEGORY {
@@ -144,7 +144,7 @@ pub mod ResourcesLogic {
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) {
-            let game_context = crate::commands::load_context(key.game_id, game_context);
+            let game_context = crate::commands::execution_context(key.game_id, game_context);
 
             self.resources.initialize(key, capacity);
             if category == crate::taxonomy::BITCOIN_MINE_CATEGORY {
@@ -318,7 +318,7 @@ pub mod ResourcesLogic {
             command: crate::resources::ResourceTransfer,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_resource_command(game_id, context.timestamp, context);
             crate::resources::assert_unique_resources(command.resources);
@@ -334,7 +334,7 @@ pub mod ResourcesLogic {
             command: crate::resources::ResourceTransfer,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_resource_command(game_id, context.timestamp, context);
             let explorer = crate::logic::troops::authorized_explorer(
@@ -371,7 +371,7 @@ pub mod ResourcesLogic {
             command: OffloadArrival,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_resource_command(game_id, context.timestamp, context);
             let entity = ResourceKey { game_id, entity_id: command.entity_id };
@@ -420,7 +420,7 @@ pub mod ResourcesLogic {
             command: crate::resources::ResourceBurn,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_resource_command(game_id, context.timestamp, context);
             let key = ResourceKey { game_id, entity_id: command.entity_id };
@@ -442,7 +442,7 @@ pub mod ResourcesLogic {
             command: crate::resources::ResourceTransfer,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_resource_command(game_id, context.timestamp, context);
             assert!(command.from_entity_id != 0 && command.to_entity_id != 0, "missing explorer id");
@@ -464,7 +464,7 @@ pub mod ResourcesLogic {
             command: crate::resources::ResourceTransfer,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_resource_command(game_id, context.timestamp, context);
             assert!(command.from_entity_id != 0 && command.to_entity_id != 0, "missing transfer entity");

@@ -89,7 +89,7 @@ pub mod GamesEntry {
             let timestamp = starknet::get_block_timestamp();
             self.assign_settlement_home_before_roll(game_id, actor, command);
             let raw_root = self.verify_stamp_before_roll();
-            self.apply_gameplay(game_id, actor, command, crate::commands::ActionContext { raw_root, timestamp });
+            self.apply_gameplay(game_id, actor, command, raw_root, timestamp);
         }
     }
 
@@ -153,8 +153,9 @@ pub mod GamesEntry {
                 command,
             );
             let (index, route, _payload) = crate::commands::route_command(command).expect('INVALID_COMMAND');
-            let rules = crate::logic::game::rules(game_id);
-            assert!(crate::rules::command_enabled(rules.command_mask, index.into()), "command disabled");
+            // The season class reads the game's rules once for the whole play; the ingress reads only its gate.
+            let command_mask = crate::logic::preset_record::for_game(game_id).rules.command_mask.read();
+            assert!(crate::rules::command_enabled(command_mask, index.into()), "command disabled");
             assert!(game.ready || index == crate::command_routes::SETTLE_BLITZ_ROSTER, "roster not ready");
             if index == crate::command_routes::SETTLE_BLITZ_ROSTER {
                 assert!(self.data.registrar.roster_sizes.read(game_id) != 0, "roster not frozen");
@@ -175,10 +176,11 @@ pub mod GamesEntry {
             self: @ComponentState<TContractState>, game_id: u32, actor: ContractAddress, command: Span<felt252>,
         ) {
             let (_, route, _) = crate::commands::route_command(command).expect('INVALID_COMMAND');
-            let rules = crate::logic::game::rules(game_id);
-            if route.selector == selector!("settle_season")
-                && rules.entry_rule == crate::rules::ENTRY_OPEN
-                && rules.day_unit_seconds != 0 {
+            if route.selector != selector!("settle_season") {
+                return;
+            }
+            let rules = crate::logic::preset_record::for_game(game_id).rules;
+            if rules.entry_rule.read() == crate::rules::ENTRY_OPEN && rules.day_unit_seconds.read() != 0 {
                 crate::commands::ICommandIngressDispatcherTrait::assign_open_home(
                     crate::commands::ICommandIngressLibraryDispatcher {
                         class_hash: get_dep_component!(self, Release).classes(game_id).placement.read(),
@@ -214,11 +216,13 @@ pub mod GamesEntry {
             game_id: u32,
             actor: ContractAddress,
             command: Span<felt252>,
-            context: crate::commands::ActionContext,
+            raw_root: u256,
+            timestamp: u64,
         ) -> bool {
             let mut calldata = array![game_id.into(), actor.into()];
             command.serialize(ref calldata);
-            context.serialize(ref calldata);
+            raw_root.serialize(ref calldata);
+            timestamp.serialize(ref calldata);
             let outcome =
                 match starknet::syscalls::library_call_syscall(
                     get_dep_component!(@self, Release).classes(game_id).season.read(),

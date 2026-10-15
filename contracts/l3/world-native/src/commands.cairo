@@ -52,6 +52,7 @@ pub use crate::command_routes::Command;
 pub struct ExecutionContext {
     pub raw_root: u256,
     pub timestamp: u64,
+    pub game_id: u32,
     pub game: Box<crate::game::GameRegistry>,
     pub rules: Box<crate::rules::SliceRules>,
 }
@@ -59,40 +60,56 @@ pub struct ExecutionContext {
 #[cfg(test)]
 impl ExecutionContextSerde of Serde<ExecutionContext> {
     fn serialize(self: @ExecutionContext, ref output: Array<felt252>) {
-        self.raw_root.serialize(ref output);
-        self.timestamp.serialize(ref output);
-        self.game.unbox().serialize(ref output);
-        self.rules.unbox().serialize(ref output);
+        action_context(*self).serialize(ref output);
     }
 
     fn deserialize(ref serialized: Span<felt252>) -> Option<ExecutionContext> {
-        Some(
-            ExecutionContext {
-                raw_root: Serde::deserialize(ref serialized)?,
-                timestamp: Serde::deserialize(ref serialized)?,
-                game: BoxTrait::new(Serde::deserialize(ref serialized)?),
-                rules: BoxTrait::new(Serde::deserialize(ref serialized)?),
-            },
-        )
+        let context: ActionContext = Serde::deserialize(ref serialized)?;
+        Some(execution_context(context.game_id, context))
     }
 }
 
+// A play reads its game and rules once, in the season class, and carries them through every library call it makes.
+// Rules never change after a game is created; the game record changes only as the last step of the play that changes
+// it (a season's close, its settlement, a full roster's readiness), so no later call in that play can see a stale copy.
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ActionContext {
     pub raw_root: u256,
     pub timestamp: u64,
+    pub game_id: u32,
+    pub game: crate::game::GameRegistry,
+    pub rules: crate::rules::SliceRules,
 }
 
 pub fn action_context(context: ExecutionContext) -> ActionContext {
-    ActionContext { raw_root: context.raw_root, timestamp: context.timestamp }
+    ActionContext {
+        raw_root: context.raw_root,
+        timestamp: context.timestamp,
+        game_id: context.game_id,
+        game: context.game.unbox(),
+        rules: context.rules.unbox(),
+    }
 }
 
-pub fn load_context(game_id: u32, context: ActionContext) -> ExecutionContext {
+/// Reads the game where a play or an operator call starts; library calls receive it instead of reading it again.
+pub fn load_context(game_id: u32, raw_root: u256, timestamp: u64) -> ExecutionContext {
+    ExecutionContext {
+        raw_root,
+        timestamp,
+        game_id,
+        game: BoxTrait::new(crate::logic::game::game(game_id)),
+        rules: BoxTrait::new(crate::logic::game::rules(game_id)),
+    }
+}
+
+pub fn execution_context(game_id: u32, context: ActionContext) -> ExecutionContext {
+    assert!(context.game_id == game_id, "context of another game");
     ExecutionContext {
         raw_root: context.raw_root,
         timestamp: context.timestamp,
-        game: BoxTrait::new(crate::logic::game::game(game_id)),
-        rules: BoxTrait::new(crate::logic::game::rules(game_id)),
+        game_id,
+        game: BoxTrait::new(context.game),
+        rules: BoxTrait::new(context.rules),
     }
 }
 

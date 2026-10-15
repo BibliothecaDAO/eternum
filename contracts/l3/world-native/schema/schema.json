@@ -7248,6 +7248,20 @@
         }
       ]
     },
+    "core::option::Option::<world_native::troops::StaminaRefill>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::troops::StaminaRefill>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::troops::StaminaRefill"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::result::Result::<core::array::Span::<core::felt252>, world_native::commands::Rejection>": {
       "type": "enum",
       "name": "core::result::Result::<core::array::Span::<core::felt252>, world_native::commands::Rejection>",
@@ -8021,6 +8035,18 @@
         {
           "name": "timestamp",
           "type": "core::integer::u64"
+        },
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "game",
+          "type": "world_native::game::GameRegistry"
+        },
+        {
+          "name": "rules",
+          "type": "world_native::rules::SliceRules"
         }
       ]
     },
@@ -12344,7 +12370,7 @@
       "variants": [
         {
           "name": "Resolve",
-          "type": "core::option::Option::<core::integer::u64>"
+          "type": "core::option::Option::<world_native::troops::StaminaRefill>"
         },
         {
           "name": "Allocate",
@@ -12383,6 +12409,10 @@
         {
           "name": "category",
           "type": "world_native::troops::TroopType"
+        },
+        {
+          "name": "stamina_config",
+          "type": "world_native::rules::TroopStaminaConfig"
         }
       ]
     },
@@ -12501,6 +12531,24 @@
         {
           "name": "remainder",
           "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::troops::StaminaRefill": {
+      "type": "struct",
+      "name": "world_native::troops::StaminaRefill",
+      "members": [
+        {
+          "name": "timestamp",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "stamina_config",
+          "type": "world_native::rules::TroopStaminaConfig"
+        },
+        {
+          "name": "armies_tick_in_seconds",
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -12787,5 +12835,5 @@
       ]
     }
   },
-  "identity": "6c8dd036e1a4bbaa183f1be11178fe47c5f014fb9eee4298ad2ca0f518800110"
+  "identity": "80fb753a4d9c7937d2668c6f7693aeac21f7d9a19ad1cf4f3462a4ce7d5dce9d"
 }

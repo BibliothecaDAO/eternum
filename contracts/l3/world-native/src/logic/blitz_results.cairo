@@ -46,7 +46,7 @@ pub mod BlitzResultState {
             actor: ContractAddress,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
             self.assert_finalizable(context);
             let roster = self.roster(game_id);
             if self.data.blitz_results.ranked_results.read((game_id, 0)).rank != 0 {

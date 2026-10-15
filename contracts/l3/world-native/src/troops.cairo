@@ -453,10 +453,18 @@ pub struct ArmySlotAllocation {
     pub allowance: u8,
     pub initial: Stamina,
     pub category: TroopType,
+    pub stamina_config: crate::rules::TroopStaminaConfig,
+}
+// A slot's bar refills to the command's time by the rules the command carries.
+#[derive(Copy, Drop, Serde)]
+pub struct StaminaRefill {
+    pub timestamp: u64,
+    pub stamina_config: crate::rules::TroopStaminaConfig,
+    pub armies_tick_in_seconds: u64,
 }
 #[derive(Copy, Drop, Serde)]
 pub enum ArmySlotAction {
-    Resolve: Option<u64>,
+    Resolve: Option<StaminaRefill>,
     Allocate: ArmySlotAllocation,
     Persist: StaminaSource,
     Release: StaminaSource,

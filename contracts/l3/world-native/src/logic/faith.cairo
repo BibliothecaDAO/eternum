@@ -38,7 +38,7 @@ pub mod FaithState {
             command: crate::faith::Pledge,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let game = self.authorize(game_id, context.timestamp, context);
             crate::game::assert_playing(game, context.timestamp);
@@ -59,7 +59,7 @@ pub mod FaithState {
             structure_id: u64,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let game = self.authorize(game_id, context.timestamp, context);
             crate::game::assert_playing(game, context.timestamp);
@@ -85,7 +85,7 @@ pub mod FaithState {
             wonder_id: u64,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let game = self.authorize(game_id, context.timestamp, context);
             crate::game::assert_playing(game, context.timestamp);
@@ -99,7 +99,7 @@ pub mod FaithState {
             structure_id: u64,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let game = self.authorize(game_id, context.timestamp, context);
             crate::game::assert_playing(game, context.timestamp);
@@ -116,7 +116,7 @@ pub mod FaithState {
             wonder_id: u64,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let game = self.authorize(game_id, context.timestamp, context);
             self.require_started(game, context.timestamp);
@@ -133,7 +133,7 @@ pub mod FaithState {
             command: crate::faith::ClaimPlayer,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let game = self.authorize(game_id, context.timestamp, context);
             self.require_started(game, context.timestamp);

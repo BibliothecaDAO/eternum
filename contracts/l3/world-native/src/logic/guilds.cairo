@@ -55,7 +55,7 @@ pub mod GuildState {
             command: CreateGuild,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.authorize(game_id, context.timestamp, context);
             assert!(command.name != 0, "guild name must be set");
@@ -84,7 +84,7 @@ pub mod GuildState {
             command: JoinGuild,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.authorize(game_id, context.timestamp, context);
             self.require_structure(game_id, actor, command.owned_structure_id);
@@ -106,7 +106,7 @@ pub mod GuildState {
             actor: ContractAddress,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.authorize(game_id, context.timestamp, context);
             assert!(self.data.guilds.members.read((game_id, actor)) != 0.try_into().unwrap(), "not a guild member");
@@ -119,7 +119,7 @@ pub mod GuildState {
             command: SetWhitelist,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.authorize(game_id, context.timestamp, context);
             self.guild(game_id, actor).expect('guild does not exist');
@@ -139,7 +139,7 @@ pub mod GuildState {
             member: ContractAddress,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.authorize(game_id, context.timestamp, context);
             assert!(self.data.guilds.members.read((game_id, member)) == actor, "not a member of this guild");

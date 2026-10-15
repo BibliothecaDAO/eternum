@@ -8,6 +8,7 @@ use starknet::storage::StorageMapReadAccess;
 use starknet::{ClassHash, ContractAddress};
 use crate::commands::{
     Command, CreateExplorer, ExecutionContext, ICreateExplorerSafeDispatcher, ICreateExplorerSafeDispatcherTrait,
+    ICreateExplorerSafeLibraryDispatcher,
 };
 use crate::game::IGameDispatcherTrait;
 use crate::games::{
@@ -194,9 +195,14 @@ fn read_context(game_id: u32) -> ExecutionContext {
     ExecutionContext {
         raw_root: 987654321,
         timestamp: 100,
+        game_id,
         game: BoxTrait::new(state.games.games.read(game_id)),
         rules: BoxTrait::new(crate::logic::game::rules(game_id)),
     }
+}
+
+fn map_center(games: ContractAddress, game_id: u32) -> crate::troops::Coord {
+    crate::settlement_grid::map_center(context(games, game_id).rules.unbox().map_center_offset)
 }
 
 fn action(deployment: Deployment, game_id: u32) -> TestAction {
@@ -393,6 +399,27 @@ fn direct_actor_root_and_block_time_reach_each_game_domain() {
 
 #[test]
 #[feature("safe_dispatcher")]
+fn a_domain_refuses_a_context_carried_for_another_game() {
+    let d = setup(true);
+    let Command::CreateExplorer(command) = action(d, 1).command else {
+        panic!("wrong command")
+    };
+    let troops = ICreateExplorerSafeLibraryDispatcher { class_hash: declare_logic("TroopFixture") };
+    let explorer = ExplorerKey { game_id: 1, explorer_id: 7 };
+    let foreign = crate::commands::action_context(ExecutionContext { raw_root: 5, ..context(d.games, 2) });
+    let refused = snforge_std::interact_with_state(
+        d.games, || troops.create_explorer(1, d.actor, command, foreign).unwrap_err(),
+    );
+    assert_eq!(crate::commands::domain_rejection(refused).reason, "context of another game");
+    assert!(GameState { contract_address: d.games }.explorer(explorer).is_none());
+    let own = crate::commands::action_context(ExecutionContext { raw_root: 5, ..context(d.games, 1) });
+    snforge_std::interact_with_state(d.games, || troops.create_explorer(1, d.actor, command, own).unwrap());
+    assert_eq!(IFixtureDispatcher { contract_address: d.games }.received_root(), 5);
+    assert!(GameState { contract_address: d.games }.explorer(explorer).is_some());
+}
+
+#[test]
+#[feature("safe_dispatcher")]
 fn indirect_or_zero_caller_is_rejected_before_root() {
     let d = setup(true);
     let (release, preset) = play_fixture::pins(d.games, 1);
@@ -486,7 +513,12 @@ fn production_play_refuses_a_missing_stamp_and_exposes_no_domain_routes() {
     };
     assert!(
         ICreateExplorerSafeDispatcher { contract_address: d.games }
-            .create_explorer(1, d.actor, command, crate::commands::ActionContext { raw_root: 1, timestamp: 100 })
+            .create_explorer(
+                1,
+                d.actor,
+                command,
+                crate::commands::action_context(ExecutionContext { raw_root: 1, ..context(d.games, 1) }),
+            )
             .is_err(),
     );
     assert!(

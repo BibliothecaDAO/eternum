@@ -69,7 +69,7 @@ pub mod ConstructionLogic {
             command: crate::buildings::CreateBuilding,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let key = ResourceKey { game_id, entity_id: command.structure_id };
             let base = self.assert_building_command(key, actor, context.timestamp, context);
@@ -121,7 +121,7 @@ pub mod ConstructionLogic {
             command: crate::buildings::ChangeBuilding,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let key = ResourceKey { game_id, entity_id: command.structure_id };
             let base = self.assert_building_command(key, actor, context.timestamp, context);
@@ -168,7 +168,7 @@ pub mod ConstructionLogic {
             command: crate::buildings::ChangeBuilding,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.set_building_paused(game_id, actor, command, true, context.timestamp, context);
             ()
@@ -180,7 +180,7 @@ pub mod ConstructionLogic {
             command: crate::buildings::ChangeBuilding,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.set_building_paused(game_id, actor, command, false, context.timestamp, context);
             ()
@@ -196,7 +196,7 @@ pub mod ConstructionLogic {
             command: crate::research::Research,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
             let key = ResourceKey { game_id, entity_id: command.structure_id };
             let base = self.assert_building_command(key, actor, context.timestamp, context);
             let board = self.buildings.board(game_id);
@@ -235,7 +235,7 @@ pub mod ConstructionLogic {
             structure_id: u64,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             assert_playing(context.game.unbox(), context.timestamp);
             let key = ResourceKey { game_id, entity_id: structure_id };
