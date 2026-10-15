@@ -74,7 +74,7 @@ export const LIVE_SAMPLE = `(() => {
     const cls = classOf(el);
     if (cls) items.push({ region: region(el), cls, kind: "text", gold: false, text: words(text) });
   }
-  return JSON.stringify({ url: location.pathname + location.search, viewport: innerWidth + "x" + innerHeight, items });
+  return { url: location.pathname + location.search, viewport: innerWidth + "x" + innerHeight, items };
 })()`;
 
 /** A sample's totals: what is visible and what scrolls, the regions holding something visible, the gold controls. */

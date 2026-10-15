@@ -132,10 +132,10 @@ const openEventsLog = (b) => {
   if (selector) b.run("click", selector);
 };
 
-const clickAt = (b, [x, y]) => {
+const clickAt = (b, [x, y], button = "left") => {
   b.run("mouse", "move", String(x), String(y));
-  b.run("mouse", "down");
-  b.run("mouse", "up");
+  b.run("mouse", "down", button);
+  b.run("mouse", "up", button);
 };
 
 /**
@@ -230,17 +230,26 @@ const proveAtRest = async (b, base, addresses, view, layout, out) => {
 
 /**
  * Presses the first visible control inside `within` whose words match `text`, scrolled to and clicked as a player
- * would; or, for `tile`, moves the pointer out from the screen's centre until the map's tooltip names that order, and
- * clicks there. False when nothing matched.
+ * would; for `tile`, moves the pointer out from the screen's centre until the map's tooltip names that order, and
+ * clicks there (with `button`, right for an order sent at once); for `key`, presses that key; for `word`, clicks
+ * the element showing that word, as agent-browser finds it. False when nothing matched.
  */
 const pressStep = async (b, press, layout) => {
+  if (press.key) {
+    b.run("press", press.key);
+    return true;
+  }
+  if (press.word) {
+    b.run("find", "text", press.word, "click");
+    return true;
+  }
   if (press.tile) {
     const centre = VIEWPORTS[layout].map((side) => side / 2);
     for (const point of spiralPoints(centre, CRATE_SEARCH)) {
       b.run("mouse", "move", String(point[0]), String(point[1]));
       await sleep(150);
       if (b.evaluate(`document.body.innerText.includes(${JSON.stringify(press.tile)})`)) {
-        clickAt(b, point);
+        clickAt(b, point, press.button);
         return true;
       }
     }
@@ -277,7 +286,7 @@ const proveTask = async (b, base, addresses, name, layout, out) => {
   if (!(await waitFor(b, MAP_READY, READY_TIMEOUT_MS))) return { ...record, problem: "map not ready" };
   await sleep(AT_REST_SETTLE_MS);
   const before = task.reading ? b.evaluate(task.reading) : undefined;
-  for (const press of task.presses) {
+  for (const press of task.presses.filter((each) => !each.layout || each.layout === layout)) {
     const pressed = await pressStep(b, press, layout);
     await sleep(1500);
     record.presses.push({ ...press, pressed });
