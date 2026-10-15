@@ -3,6 +3,7 @@ import { identityUsername, IDENTITY_POPOVER_ID, useIdentitySession } from "@/hoo
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { isAccountStatePrompt } from "@/hooks/context/gameplay-account-sync";
 import { AccountStatePrompt } from "@/shell/account-state";
+import { useRealmsPlayer } from "@/shell/herald";
 import { useRequestSignIn } from "@/shell/sign-in/sign-in-route";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useFactView } from "@/hooks/use-fact-view";
@@ -41,9 +42,12 @@ const useIdentityChipState = (): IdentityChipState => {
   const players = usePlayers();
   const structures = useFactView(gameStructuresView);
   const { standingsByAddress } = useInGameLeaderboard();
+  // The player's account is known from the session alone, before (or without) joining it on this shard: a spectator
+  // who owns realms here is counted as their owner, and offered Play.
+  const { data: player } = useRealmsPlayer();
 
   return useMemo(() => {
-    const owner = gameplayAddress ? ContractAddress(gameplayAddress) : null;
+    const owner = player ? ContractAddress(player) : null;
     return resolveIdentityChipState({
       isExplicitSpectateSession: isExplicitSpectateSession(),
       identity: { status, name: identityUsername(session) },
@@ -52,7 +56,7 @@ const useIdentityChipState = (): IdentityChipState => {
       owned: owner === null ? NO_OWNED_STRUCTURES : countOwnedStructures(structures, owner),
       standing: owner === null ? null : (standingsByAddress.get(normalizeLeaderboardAddress(owner)) ?? null),
     });
-  }, [gameplayAddress, players, provisioningError, session, standingsByAddress, status, structures]);
+  }, [gameplayAddress, player, players, provisioningError, session, standingsByAddress, status, structures]);
 };
 
 /** Player identity opens the leaderboard, a session without a name opens the sign-in flow's name step; other states keep their sign-in surface. */

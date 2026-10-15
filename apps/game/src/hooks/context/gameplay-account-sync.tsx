@@ -3,7 +3,7 @@ import { configureGameplayAccountSubmits } from "@bibliothecadao/eternum/game-cl
 import { identityClient, useIdentitySession } from "@/hooks/context/identity-session";
 import { parseEntryRoute, parsePlayRoute } from "@/play/navigation/play-route";
 import { requireOpenShard } from "@/runtime/world/shards";
-import { isExplicitSpectateSession } from "@/utils/spectator-session";
+import { useGameRouteSpectateIntent } from "@/utils/spectator-session";
 import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
 import { DeviceRemovedError, getOrCreateDeviceKey, joinRealmsAccount } from "@bibliothecadao/eternum";
 import type { Shard } from "@bibliothecadao/eternum/game-client";
@@ -14,11 +14,13 @@ import { useLocation } from "react-router-dom";
 import { DOORWAY_WORDS } from "@/shell/words";
 
 // The account is joined when a player enters a game to play: its deploy happens at game entry, not in the first click,
-// and never for a shard the player only opens or spectates.
+// and never for a shard the player only opens or spectates. This is the root of every game route, so it is where the
+// route's spectate intent is resolved for everything under it.
 const usePlayingShardChainId = (): string | null => {
   const location = useLocation();
+  const spectating = useGameRouteSpectateIntent();
   const game = parsePlayRoute(location) ?? parseEntryRoute(location);
-  return game && !isExplicitSpectateSession() ? game.chainId : null;
+  return game && !spectating ? game.chainId : null;
 };
 
 /** Keyed by chain id, so moving between the scenes of one game keeps the joined account. */

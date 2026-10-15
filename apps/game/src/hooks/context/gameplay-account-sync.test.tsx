@@ -1,7 +1,7 @@
 import { IdentityRequestError } from "@realms-world/identity";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, useNavigate } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 
 const { identity, joinRealmsAccount, approveDeviceChange, provider } = vi.hoisted(() => ({
@@ -36,6 +36,8 @@ vi.mock("@/runtime/world/shards", () => ({
 vi.mock("@/utils/shard-rpc-provider", () => ({ getShardRpcProvider: () => provider }));
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
+
+import { isExplicitSpectateSession, resolveSpectateIntent } from "@/utils/spectator-session";
 
 import { GameplayAccountSync } from "./gameplay-account-sync";
 
@@ -92,4 +94,36 @@ it.each([
   approveDeviceChange.mockRejectedValueOnce(new IdentityRequestError(403, code));
   await openAt("/g/0xa1/1");
   expect(useAccountStore.getState().provisioningError).toBe(expected);
+});
+
+it("joins the account the moment a spectator presses Play, though the spectated map latched the intent", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  window.history.pushState({}, "", "/g/0xa1/1/map?spectate=true");
+  const navigation: { to: ((path: string) => void) | null } = { to: null };
+  const Navigator = () => {
+    navigation.to = useNavigate();
+    return null;
+  };
+  const root = createRoot(document.createElement("div"));
+  await act(async () =>
+    root.render(
+      <BrowserRouter>
+        <GameplayAccountSync>
+          <Navigator />
+        </GameplayAccountSync>
+      </BrowserRouter>,
+    ),
+  );
+  // The spectated map's boot latches the intent, as it does in the game.
+  resolveSpectateIntent(window.location);
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
+  expect(joinRealmsAccount).not.toHaveBeenCalled();
+
+  // The identity chip's Play leads to the doorway's play entry, in-app: no reload clears the latch.
+  await act(async () => navigation.to!("/g/0xa1/1"));
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
+  expect(isExplicitSpectateSession()).toBe(false);
+  expect(joinRealmsAccount).toHaveBeenCalledOnce();
+  expect(joinRealmsAccount.mock.calls[0][0]).toMatchObject({ shard: { chainId: "0xa1" }, realmsId: "0xabc" });
+  await act(async () => root.unmount());
 });
