@@ -1,7 +1,6 @@
 import { createGameIcon } from "./game-icon";
 
 export const Activity = createGameIcon("/image-icons/ui-activity.png");
-export const AlertCircle = createGameIcon("/image-icons/ui-warning.png");
 export const AlertTriangle = createGameIcon("/image-icons/ui-warning.png");
 export const Anchor = createGameIcon("/image-icons/ui-anchor.png");
 export const ArrowDown = createGameIcon("/image-icons/ui-arrow-right.png", 90);
@@ -12,9 +11,7 @@ export const ArrowRight = createGameIcon("/image-icons/ui-arrow-right.png");
 export const ArrowRightLeft = createGameIcon("/image-icons/ui-swap.png");
 export const ArrowUp = createGameIcon("/image-icons/ui-arrow-right.png", -90);
 export const ArrowUpCircle = createGameIcon("/image-icons/ui-arrow-right.png", -90);
-export const ArrowUpRight = createGameIcon("/image-icons/ui-arrow-right.png", -45);
 export const Bell = createGameIcon("/image-icons/ui-bell.png");
-export const BookOpen = createGameIcon("/image-icons/ui-book.png");
 export const Bot = createGameIcon("/image-icons/robot.png");
 export const Box = createGameIcon("/image-icons/resources.png");
 export const Building2 = createGameIcon("/image-icons/building.png");

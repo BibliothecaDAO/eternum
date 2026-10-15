@@ -12,7 +12,7 @@ type Upgrade = NonNullable<ReturnType<typeof useStructureUpgrade>>;
 type Provision = ReturnType<typeof useBlitzRealmProvision>;
 
 /** A realm's level-up step: what it is, what its button says, and whether it can be taken now. */
-export type LevelUpStep = {
+type LevelUpStep = {
   /** Provision first (a fresh Blitz realm, in one transaction with the first level when affordable), then level up. */
   mode: "provision" | "level-up" | "max";
   /** The verb a button shows: "Provision", "Level up to City", "Fully upgraded". */

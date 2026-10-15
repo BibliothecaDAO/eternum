@@ -24,7 +24,7 @@ import { getPlayerName } from "@/services/identity/player-profiles";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 /** A suggestion this hook runs: every one but a realm's level-up, which is the realm's own step (useRealmLevelUp). */
-export type OrderSuggestion = EmpireSuggestion & { action: Exclude<EmpireSuggestion["action"], "upgrade"> };
+type OrderSuggestion = EmpireSuggestion & { action: Exclude<EmpireSuggestion["action"], "upgrade"> };
 
 export const isOrderSuggestion = (suggestion: EmpireSuggestion): suggestion is OrderSuggestion =>
   suggestion.action !== "upgrade";
