@@ -1,4 +1,4 @@
-import { gamesAbi, gamesEvent } from "../../../packages/value-ledger/test-support/abi";
+import { gamesAbi } from "../../../packages/value-ledger/test-support/abi";
 import { CallData } from "starknet";
 import { expect, it, vi } from "vitest";
 import { LaunchShard } from "./shard-client";
@@ -51,17 +51,10 @@ it("recovers creation and seats the roster at close, five minutes before the com
   vi.spyOn(native, "head").mockResolvedValue({ block_number: 10, block_hash: "0x10", timestamp: 100 });
   const pins = { gameId: 7, release: 1n, commitment: 2n, l2GasBound: 3n };
   vi.spyOn(native, "pins").mockResolvedValue(pins);
-  const seat = vi.spyOn(native, "seatNext").mockImplementation(async () => {
-    return {
-      transactionHash: "0xabc",
-      events: [
-        {
-          from_address: "0x77",
-          ...gamesEvent("BatchProgress", { game_id: 7, actor: "0x123", tx_hash: "0xabc", remaining: 0 }),
-        },
-      ],
-    };
-  });
+  vi.spyOn(native, "pendingNonce").mockResolvedValue(9n);
+  const send = vi.spyOn(native, "sendSeat").mockResolvedValue("0xabc");
+  const outcome = vi.spyOn(native, "seatOutcome").mockResolvedValue({ remaining: 0n });
   await expect(native.seat(7)).resolves.toBe(1);
-  expect(seat).toHaveBeenCalledWith(pins);
+  expect(send).toHaveBeenCalledWith(pins, 9n);
+  expect(outcome).toHaveBeenCalledWith(7, "0xabc");
 });

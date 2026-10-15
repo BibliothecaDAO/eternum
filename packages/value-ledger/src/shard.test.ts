@@ -1,6 +1,6 @@
 import { gamesAbi as abi, gamesEvent, response } from "../test-support/abi";
 import { beforeEach, expect, it, vi } from "vitest";
-import { shortString, ec, CallData } from "starknet";
+import { shortString, ec, CallData, RpcError } from "starknet";
 import { ShardOperator, batchRemaining } from "./shard";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { encodeNativeCommand } from "@bibliothecadao/provider";
@@ -75,7 +75,8 @@ it("uses the fixed ordinary v3 play frame and a native three-felt device signatu
     accountAddress: "0x20",
     privateKey: device,
   });
-  await operator.seatNext(await operator.pins(7));
+  expect(await operator.sendSeat(await operator.pins(7), 3n)).toBe("0xabc");
+  expect(rpc.receipt).not.toHaveBeenCalled();
   expect(rpc.execute).toHaveBeenCalledWith(
     {
       contractAddress: "0x10",
@@ -89,6 +90,7 @@ it("uses the fixed ordinary v3 play frame and a native three-felt device signatu
       ],
     },
     expect.objectContaining({
+      nonce: 3n,
       tip: 0,
       paymasterData: [],
       accountDeploymentData: [],
@@ -168,11 +170,15 @@ it("rejects a successful invoke carrying the generated GameplayRejected event", 
     accountAddress: "0x20",
     privateKey: "0x1",
   });
-  await expect(operator.seatNext(await operator.pins(7))).rejects.toThrow("gameplay_refused:roster not ready");
+  expect(await operator.seatOutcome(7, "0xabc")).toBe("spent");
 });
 
-it("sends the next seat once the last is pre-confirmed, while results still wait for a closed block", async () => {
-  const preConfirmed = { finality_status: "PRE_CONFIRMED", isReverted: () => false, events: [] };
+it("reads a seat once pre-confirmed, while results still wait for a closed block", async () => {
+  const progress = {
+    from_address: "0x10",
+    ...gamesEvent("BatchProgress", { game_id: 7, actor: "0x20", tx_hash: "0xabc", remaining: 4 }),
+  };
+  const preConfirmed = { finality_status: "PRE_CONFIRMED", isReverted: () => false, events: [progress] };
   const accepted = { block_number: 11, finality_status: "ACCEPTED_ON_L2", isReverted: () => false, events: [] };
   const operator = new ShardOperator({
     chainId: "0x1",
@@ -181,16 +187,30 @@ it("sends the next seat once the last is pre-confirmed, while results still wait
     accountAddress: "0x20",
     privateKey: "0x1",
   });
-  const pins = await operator.pins(7);
-  rpc.call.mockClear();
   rpc.receipt.mockResolvedValueOnce(preConfirmed);
-  await operator.seatNext(pins);
+  expect(await operator.seatOutcome(7, "0xabc")).toEqual({ remaining: 4n });
   expect(rpc.receipt).toHaveBeenCalledTimes(1);
-  expect(rpc.call).not.toHaveBeenCalled();
   rpc.receipt.mockClear();
   rpc.receipt.mockResolvedValueOnce(preConfirmed).mockResolvedValueOnce(accepted);
   await operator.playCommand(7, "MarkGameSettled");
   expect(rpc.receipt).toHaveBeenCalledTimes(2);
+});
+
+it("tells a seat the RPC refused from one it forwarded without a readable reply", async () => {
+  const operator = new ShardOperator({
+    chainId: "0x1",
+    rpcUrl: "https://shard.test",
+    gamesAddress: "0x10",
+    accountAddress: "0x20",
+    privateKey: "0x1",
+  });
+  const pins = await operator.pins(7);
+  const reply = (code: number, data?: unknown) =>
+    new RpcError({ code, message: "proxy", ...(data ? { data } : {}) } as never, "starknet_addInvokeTransaction", []);
+  rpc.execute.mockRejectedValueOnce(reply(-32010));
+  await expect(operator.sendSeat(pins, 4n)).rejects.toThrow("shard_seat_refused");
+  rpc.execute.mockRejectedValueOnce(reply(-32011, { transaction_hash: "0x777" }));
+  expect(await operator.sendSeat(pins, 4n)).toBe("0x777");
 });
 
 it("sends all held Realms in one labor mutation through the generated Games ABI", async () => {

@@ -1,6 +1,7 @@
 import { DeviceSigner } from "@bibliothecadao/eternum/device-signer";
-export { batchRemaining } from "@bibliothecadao/provider/batch-progress";
-import { Account, CallData, ec, type RpcProvider } from "starknet";
+import { batchRemaining } from "@bibliothecadao/provider/batch-progress";
+export { batchRemaining };
+import { Account, CallData, ec, RpcError, type RpcProvider } from "starknet";
 import { encodeNativeCommand, gameplayRejection } from "@bibliothecadao/provider";
 import { resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum/shard-fees";
 import { readConfirmedLedgerHead } from "./codecs";
@@ -70,17 +71,43 @@ export class ShardOperator {
   async playCommand(gameId: number, name: "MarkGameSettled" | "RecordBlitzResults") {
     return this.play(await this.pins(gameId), name, closedBlockReceipt);
   }
+  /** The first nonce the chain has not taken from this account, counting pre-confirmed transactions. */
+  async pendingNonce() {
+    return BigInt(await this.provider.getNonceForAddress(this.target.accountAddress, "pre_confirmed"));
+  }
   /**
-   * Seats the roster's next player and waits only until the sequencer has executed it: the stamping RPC reads the
-   * pre-confirmed nonce, so the next seat can follow at once instead of waiting for a closed block.
+   * Sends one roster seat at this nonce and returns its hash without waiting for it. The bytes are the same on every
+   * resend. A seat the RPC refused before forwarding throws `shard_seat_refused`; one whose outcome it could not
+   * confirm returns the hash it stamped, for the receipt to settle.
    */
-  async seatNext(pins: PlayPins) {
-    return this.play(pins, "SettleBlitzRoster", preConfirmedReceipt);
+  async sendSeat(pins: PlayPins, nonce: bigint): Promise<string> {
+    try {
+      return (await this.submit("play", playCalldata(pins, "SettleBlitzRoster"), pins.l2GasBound, nonce))
+        .transaction_hash;
+    } catch (error) {
+      const reply = error instanceof RpcError ? (error.baseError as { code: number; data?: unknown }) : undefined;
+      if (reply?.code === TRANSACTION_REFUSED) throw new Error("shard_seat_refused", { cause: error });
+      const stamped = (reply?.data as { transaction_hash?: unknown } | undefined)?.transaction_hash;
+      if (reply?.code === OUTCOME_UNKNOWN && typeof stamped === "string") return stamped;
+      throw error;
+    }
+  }
+  /** A seat once the sequencer executed it: the unseated count it reports, a nonce spent seating nobody, or nothing. */
+  async seatOutcome(gameId: number, transactionHash: string): Promise<{ remaining: bigint } | "spent" | "missing"> {
+    let receipt;
+    try {
+      receipt = await pollReceipt(this.provider, transactionHash, ["PRE_CONFIRMED", ...CLOSED], 50, SEAT_WAIT_MS);
+    } catch (error) {
+      if (error instanceof Error && error.message === "shard_receipt_unavailable") return "missing";
+      if (error instanceof Error && error.message === "shard_invoke_reverted") return "spent";
+      throw error;
+    }
+    if (gameplayRejection(receipt.events, this.target.gamesAddress, transactionHash)) return "spent";
+    const scope = { gameId, missing: "reject" as const };
+    return { remaining: batchRemaining(receipt.events, this.target.gamesAddress, transactionHash, scope) };
   }
   private play(pins: PlayPins, name: AdminPlay, receiptOf: ReceiptWait) {
-    const command = encodeNativeCommand(bindings.commandAbi, { kind: name, value: undefined });
-    const calldata = [String(pins.gameId), String(pins.release), String(pins.commitment), String(command.length)];
-    return this.invoke("play", [...calldata, ...command], pins.l2GasBound, receiptOf);
+    return this.invoke("play", playCalldata(pins, name), pins.l2GasBound, receiptOf);
   }
   private async codec(head: number) {
     return new CallData(await readShardAbi(this.provider, this.target.gamesAddress, head));
@@ -92,7 +119,15 @@ export class ShardOperator {
     receiptOf: ReceiptWait,
     onSubmitted?: (hash: string) => Promise<void>,
   ) {
-    const submitted = await this.account.execute(
+    const submitted = await this.submit(entrypoint, calldata, bound);
+    if (onSubmitted) await onSubmitted(submitted.transaction_hash);
+    const receipt = await receiptOf(this.provider, submitted.transaction_hash);
+    const refusal = gameplayRejection(receipt.events, this.target.gamesAddress, submitted.transaction_hash);
+    if (refusal) throw new Error(`gameplay_refused:${refusal.reason}`);
+    return { transactionHash: submitted.transaction_hash, events: receipt.events };
+  }
+  private submit(entrypoint: string, calldata: string[], bound: bigint, nonce?: bigint) {
+    return this.account.execute(
       { contractAddress: this.target.gamesAddress, entrypoint, calldata },
       {
         tip: 0,
@@ -101,15 +136,16 @@ export class ShardOperator {
         accountDeploymentData: [],
         nonceDataAvailabilityMode: "L1",
         feeDataAvailabilityMode: "L1",
+        ...(nonce === undefined ? {} : { nonce }),
       },
     );
-    if (onSubmitted) await onSubmitted(submitted.transaction_hash);
-    const receipt = await receiptOf(this.provider, submitted.transaction_hash);
-    const refusal = gameplayRejection(receipt.events, this.target.gamesAddress, submitted.transaction_hash);
-    if (refusal) throw new Error(`gameplay_refused:${refusal.reason}`);
-    return { transactionHash: submitted.transaction_hash, events: receipt.events };
   }
 }
+
+const playCalldata = (pins: PlayPins, name: AdminPlay) => {
+  const command = encodeNativeCommand(bindings.commandAbi, { kind: name, value: undefined });
+  return [String(pins.gameId), String(pins.release), String(pins.commitment), String(command.length), ...command];
+};
 
 export interface PlayPins {
   gameId: number;
@@ -120,10 +156,14 @@ export interface PlayPins {
 type AdminPlay = "SettleBlitzRoster" | "MarkGameSettled" | "RecordBlitzResults";
 type ReceiptWait = (provider: RpcProvider, transactionHash: string) => ReturnType<typeof pollReceipt>;
 
+/** The stamping RPC's codes for a write it refused before forwarding, and one forwarded without a readable reply. */
+const TRANSACTION_REFUSED = -32010;
+const OUTCOME_UNKNOWN = -32011;
+const CLOSED = ["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"] as const;
+/** A queued seat runs behind at most a window of others at ~66 ms each; past this, a seat that never showed is a gap. */
+const SEAT_WAIT_MS = 10_000;
 const closedBlockReceipt: ReceiptWait = (provider, transactionHash) =>
-  pollReceipt(provider, transactionHash, ["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"], 250);
-const preConfirmedReceipt: ReceiptWait = (provider, transactionHash) =>
-  pollReceipt(provider, transactionHash, ["PRE_CONFIRMED", "ACCEPTED_ON_L2", "ACCEPTED_ON_L1"], 50);
+  pollReceipt(provider, transactionHash, CLOSED, 250, 30_000);
 
 /** The public proxy masks missing receipts; polling transport errors is bounded and never assumes inclusion. */
 const pollReceipt = async (
@@ -131,8 +171,9 @@ const pollReceipt = async (
   transactionHash: string,
   finality: readonly string[],
   intervalMs: number,
+  waitMs: number,
 ) => {
-  for (let waited = 0; waited < 30_000; waited += intervalMs) {
+  for (let waited = 0; waited < waitMs; waited += intervalMs) {
     let receipt;
     try {
       receipt = await provider.getTransactionReceipt(transactionHash);

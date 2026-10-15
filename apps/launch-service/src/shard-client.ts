@@ -1,6 +1,7 @@
 import { BLITZ_SLOT_PREPARATION_SECONDS, readBlitzRoster } from "@realms-world/value-ledger";
 import { RegistrationOpen } from "./blitz-roster";
-import { ShardOperator, batchRemaining, type ShardTarget } from "@realms-world/value-ledger/shard";
+import { ShardOperator, type PlayPins, type ShardTarget } from "@realms-world/value-ledger/shard";
+import { SeatRefused, seatRoster, type RosterSeats } from "./seat-pipeline";
 import { CairoOption, CairoOptionVariant, shortString } from "starknet";
 import { applyDeploymentConfigOverrides } from "../../../config/deployer/clean/config/config-loader";
 import { loadNativePresetConfiguration } from "../../../config/deployer/clean/registrar/native-preset";
@@ -82,29 +83,27 @@ export class LaunchShard extends ShardOperator {
   async roster(gameId: number) {
     return readBlitzRoster(this.provider, this.target.gamesAddress, gameId, (await this.head()).block_number);
   }
-  /**
-   * Seats the roster one player per transaction, each sent as soon as the last is pre-confirmed, until the chain
-   * reports none left; the last seat opens the game. A seated roster costs one no-op transaction on retry.
-   */
+  /** Seats the roster on consecutive nonces, the last seat opening the game; see `seatRoster`. */
   async seat(gameId: number) {
     const start = Number((await this.game(gameId)).start_settling_at);
     const now = (await this.head()).timestamp;
     if (now < start) throw new RegistrationOpen({ secondsUntilClose: start - now });
-    const pins = await this.pins(gameId);
-    let transactions = 0;
-    let previousRemaining: bigint | undefined;
-    for (;;) {
-      const result = await this.seatNext(pins);
-      const remaining = batchRemaining(result.events, this.target.gamesAddress, result.transactionHash, {
-        gameId,
-        missing: "reject",
-      });
-      transactions++;
-      if (remaining === 0n) return transactions;
-      if (previousRemaining !== undefined && remaining >= previousRemaining)
-        throw new Error("roster_seating_did_not_progress");
-      previousRemaining = remaining;
-    }
+    return seatRoster(this.rosterSeats(gameId, await this.pins(gameId)));
+  }
+  private rosterSeats(gameId: number, pins: PlayPins): RosterSeats {
+    const sent = new Map<bigint, string>();
+    return {
+      nextNonce: () => this.pendingNonce(),
+      send: async (nonce) => {
+        try {
+          sent.set(nonce, await this.sendSeat(pins, nonce));
+        } catch (error) {
+          if (error instanceof Error && error.message === "shard_seat_refused") throw new SeatRefused();
+          throw error;
+        }
+      },
+      result: (nonce) => this.seatOutcome(gameId, sent.get(nonce)!),
+    };
   }
   private async creationParams(
     request: CreateGameRequest,
