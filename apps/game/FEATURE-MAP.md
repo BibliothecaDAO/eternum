@@ -178,7 +178,7 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
 | Feature                 | How to reach it                                                                                                                                                                 |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Camp                    | Map → select a discovered canvas camp. Its standard and roof edging show ownership.                                                                                             |
-| Village                 | Map → select a discovered palisaded longhouse village. The gate standard shows ownership; local views use the same model.                                                       |
+| Village                 | Map → select a discovered Canvas & Thatch village. The yard standard and tent edging show ownership; local views use the same model.                                            |
 | Stragglers              | Frontier Map → select a discovered stranded company beside its broken cart.                                                                                                     |
 | Shrine                  | Frontier Map → select a discovered sun arch. Its site card offers the attribute reward when eligible; use removes the site.                                                     |
 | Well                    | Frontier Map → select a discovered stone well. Its site card offers stamina when eligible; use removes the site.                                                                |

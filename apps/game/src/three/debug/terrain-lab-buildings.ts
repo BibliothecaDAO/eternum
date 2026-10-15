@@ -23,7 +23,7 @@ const BUILDING_LABELS: Record<string, string> = {
   city: "Realm · City",
   kingdom: "Realm · Kingdom",
   empire: "Realm · Empire",
-  village: "Village · Palisaded longhouse",
+  village: "Village · Canvas & Thatch",
   camp: "Camp · Canvas and stockade",
   stragglers: "Stragglers · Stranded company",
   archerrange: "Archery range",

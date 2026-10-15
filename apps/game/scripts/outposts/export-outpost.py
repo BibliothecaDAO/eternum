@@ -1,5 +1,6 @@
 """Export a packed outpost source to an external build directory."""
 
+import hashlib
 import math
 import sys
 from pathlib import Path
@@ -10,10 +11,20 @@ APP = Path(__file__).resolve().parents[2]
 ROOT = APP.parents[1]
 output = Path(sys.argv[sys.argv.index("--") + 1]).resolve()
 if output.is_relative_to(ROOT):
-    raise ValueError("Export raw GLBs outside the checkout before compression and verification")
+    raise ValueError(
+        "Export raw GLBs outside the checkout before compression and verification"
+    )
 source = Path(bpy.data.filepath).resolve()
 if source.parent != (APP / "asset-sources/outposts").resolve():
     raise ValueError("Open the packed outpost source before exporting")
+if source.stem.startswith("village-"):
+    painting = source.parent / bpy.context.scene.get("conceptPainting", "")
+    if not painting.is_file() or hashlib.sha256(
+        painting.read_bytes()
+    ).hexdigest() != bpy.context.scene.get("conceptSha256"):
+        raise ValueError(
+            "Retain the selected village painting as conceptPainting with its matching conceptSha256 in the packed source"
+        )
 collection = bpy.data.collections["OUTPOST_PRODUCTION"]
 objects = list(collection.objects)
 if not objects or any(obj.type != "MESH" for obj in objects):
@@ -32,7 +43,7 @@ for obj in objects:
             for i in range(6)
         ):
             raise ValueError(
-                f"{obj.name}: geometry leaves the radius-one hex or contact skirt"
+                f"{obj.name}: vertex {(x, y, z)} leaves the radius-one hex or contact skirt"
             )
 for image in bpy.data.images:
     if not image.packed_file:
@@ -48,6 +59,7 @@ bpy.ops.export_scene.gltf(
     use_selection=True,
     export_yup=True,
     export_extras=True,
+    export_attributes=True,
     export_materials="EXPORT",
     export_vertex_color="ACTIVE",
     export_all_vertex_colors=False,

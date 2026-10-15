@@ -35,6 +35,20 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-15",
+    title: "Open yards around village cottages",
+    description:
+      "Village cottages sit clear of the fence, with lower roofs, a shared hearth and room to walk around them.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-15",
+    title: "Canvas and thatch villages",
+    description:
+      "Villages combine thatched cottages, canvas shelters and a shared hearth, with your colors on their standard and tent trim.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-15",
     title: "The map opens on your realm",
     description:
       "Entering a game, the map now opens where your realm is, or the realm you watch, instead of reloading the page the first time you open it. Watching a Frontier season, Map stays on the map instead of returning to the watched realm.",
@@ -107,7 +121,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-15",
     title: "Distinct outposts and discoveries",
     description:
-      "Spot camps, palisaded villages and stranded companies by their silhouettes, with new shrines and wells on the world map.",
+      "Spot camps, villages and stranded companies by their silhouettes, with new shrines and wells on the world map.",
     type: "improvement",
   },
   {

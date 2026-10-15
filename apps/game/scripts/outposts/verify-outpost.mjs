@@ -26,7 +26,7 @@ for (const node of document.getRoot().listNodes()) {
   if (node.getWorldMatrix().some((value, index) => Math.abs(value - identity[index]) > 1e-6))
     throw new Error("Bake every production transform for structure instancing");
 }
-if (["camp.glb", "village.glb", "village-longhouse.glb", "stragglers.glb"].includes(basename(path))) {
+if (["camp.glb", "village.glb", "stragglers.glb"].includes(basename(path)) || basename(path).startsWith("village-")) {
   const cloth = document
     .getRoot()
     .listNodes()
@@ -61,6 +61,10 @@ for (const primitive of primitives) {
     });
   }
 }
+const villageYard = ["village.glb", "village-canvas-thatch.glb"].includes(basename(path))
+  ? verifyVillageYard(primitives)
+  : undefined;
+
 const textures = document.getRoot().listTextures();
 if (
   !textures.length ||
@@ -81,5 +85,27 @@ console.log(
     materials: document.getRoot().listMaterials().length,
     textures: textures.map((texture) => texture.getSize()),
     bounds,
+    ...(villageYard ? { villageYard } : {}),
   }),
 );
+
+function verifyVillageYard(primitives) {
+  let architectureVertices = 0;
+  let architectureRadius = 0;
+  for (const primitive of primitives) {
+    const marker = primitive.getAttribute("_YARD_ARCHITECTURE");
+    const positions = primitive.getAttribute("POSITION");
+    if (!marker) throw new Error("Preserve the village's _YARD_ARCHITECTURE vertex attribute through export");
+    for (let i = 0; i < positions.getCount(); i++) {
+      if (marker.getScalar(i) < 0.5) continue;
+      architectureVertices++;
+      const [x, , z] = positions.getElement(i, []);
+      architectureRadius = Math.max(architectureRadius, Math.hypot(x, z));
+    }
+  }
+  if (!architectureVertices || architectureRadius > 0.701)
+    throw new Error(
+      `Move village walls, roofs and canvas inside radius 0.70 to preserve the fence-side yard. Got ${architectureRadius.toFixed(3)}.`,
+    );
+  return { architectureVertices, architectureRadius };
+}
