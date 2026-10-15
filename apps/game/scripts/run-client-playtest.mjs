@@ -318,7 +318,7 @@ async function playStep({ browser, devTools, owner, step, base }) {
   try {
     startedOn = JSON.parse(browser.eval(`window.__playtest.step(${JSON.stringify(step.name)})`));
     const extraScreenshot = (suffix) => takeScreenshot(browser, `${base}-${suffix}.png`);
-    attempt.played = (await step.play?.({ browser, devTools, extraScreenshot, owner })) ?? {};
+    attempt.played = (await step.play?.({ base, browser, devTools, extraScreenshot, owner })) ?? {};
     await owner.sleep(step.settleMs);
     browser.screenshot(screenshot);
     browser.run(["eval", `window.__playtest.step(${JSON.stringify(`${step.name}:end`)})`]);

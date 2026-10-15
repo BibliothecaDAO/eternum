@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { SPECTATOR_STEPS, STEP_SETS } from "./steps.mjs";
+import { WORLDMAP_CAMERA_ZOOM } from "../../src/three/scenes/worldmap-camera-view-profile";
+import { CLOSEST_CAMERA_DISTANCE, SPECTATOR_STEPS, STEP_SETS } from "./steps.mjs";
 
 const onTheMap = { scene: "map", rendered: "map", place: "Map", dialogs: [], pressed: [] };
 const verifyOf = (name) => SPECTATOR_STEPS.find((step) => step.name === name).verify;
@@ -23,6 +24,67 @@ describe("the zoom step", () => {
   it("fails off the map, whatever the distances", () => {
     const onTheRealm = { ...onTheMap, scene: "hex", rendered: "hex", place: "Realm" };
     expect(verify({ seen: onTheRealm, played: { before: 20, zoomedOut: 45, zoomedIn: 11 } }).status).toBe("failed");
+  });
+});
+
+describe("the Blitz spectator's zoom", () => {
+  const verify = STEP_SETS["blitz-spectator"].steps.find((step) => step.name === "zoom").verify;
+  const blitzMap = { scene: "map", rendered: "map", place: null, dialogs: [], pressed: [] };
+
+  it("completes on the drawn world map, which lights no place", () => {
+    expect(verify({ seen: blitzMap, played: { before: 20, zoomedOut: 45, zoomedIn: 11 } }).status).toBe("completed");
+  });
+
+  it("fails with the realm's tiles drawn", () => {
+    const local = { ...blitzMap, scene: "hex", rendered: "hex" };
+    expect(verify({ seen: local, played: { before: 20, zoomedOut: 45, zoomedIn: 11 } }).status).toBe("failed");
+  });
+});
+
+describe("the still map's zoom to the closest view", () => {
+  const verify = STEP_SETS["still-map"].steps.find((step) => step.name === "zoom-in").verify;
+
+  it("is the map's own closest distance", () => {
+    expect(CLOSEST_CAMERA_DISTANCE).toBe(WORLDMAP_CAMERA_ZOOM.minDistance);
+  });
+
+  it("completes at the closest distance, including a camera that started there", () => {
+    expect(verify({ seen: onTheMap, played: { distance: 10 } }).status).toBe("completed");
+    expect(verify({ seen: onTheMap, played: { distance: 10.02 } }).status).toBe("completed");
+  });
+
+  it("fails a camera that stopped short of the closest view", () => {
+    expect(verify({ seen: onTheMap, played: { distance: 45 } })).toMatchObject({
+      status: "failed",
+      reason: "the camera stopped at distance 45, not the closest (10)",
+    });
+    expect(verify({ seen: onTheMap, played: { distance: 10.5 } }).status).toBe("failed");
+  });
+
+  it("fails when no distance was read, or it is not a number", () => {
+    for (const played of [{ distance: null }, { distance: Number.NaN }, { distance: Infinity }, {}, undefined]) {
+      expect(verify({ seen: onTheMap, played }).status).toBe("failed");
+    }
+  });
+
+  it("fails off the map, whatever the distance", () => {
+    const onTheRealm = { ...onTheMap, scene: "hex", rendered: "hex", place: "Realm" };
+    expect(verify({ seen: onTheRealm, played: { distance: 10 } }).status).toBe("failed");
+  });
+});
+
+describe("the still map's frames", () => {
+  const verify = STEP_SETS["still-map"].steps.find((step) => step.name === "still").verify;
+
+  it("completes with enough frames on the map", () => {
+    expect(verify({ seen: onTheMap, played: { frames: 180 } }).status).toBe("completed");
+  });
+
+  it("fails a recording that caught too few frames to compare", () => {
+    expect(verify({ seen: onTheMap, played: { frames: 4 } })).toMatchObject({
+      status: "failed",
+      reason: expect.stringContaining("only 4 frames"),
+    });
   });
 });
 
@@ -124,7 +186,7 @@ describe("the Blitz order steps", () => {
       "the army was not selected while its order was in flight",
     );
     expect(blitzStep("second-order")(ordered({ before: null })).reason).toBe(
-      "no army was selected when the step began: the order before did not keep it",
+      "no army was selected when the step began: the step before left none selected",
     );
   });
 

@@ -10,6 +10,7 @@ import {
   refusalErrors,
 } from "./evidence.mjs";
 import { openOrderSendGate, VIEWPORT } from "./browser-session.mjs";
+import { measureFrameChanges, recordFrames } from "./frames.mjs";
 
 /**
  * The playtest's steps. Each plays through the controls a player uses, then checks what a player would see, and is
@@ -35,6 +36,15 @@ const ESCAPES_TO_DESELECT = 3;
 const REFUSAL_LOG_MS = 3_000;
 // A pan moves the whole map under the camera; the same view, animated, changes far less (map-idle records that floor).
 const PAN_VIEW_CHANGE_MIN = 6;
+// The closest view, where structures cast their shadows too: more notches in than the map has.
+const ZOOM_IN_NOTCHES = 15;
+// The map's closest camera distance: WORLDMAP_CAMERA_ZOOM.minDistance (worldmap-camera-view-profile.ts), held equal by
+// a test. A distance within the tolerance has arrived there.
+export const CLOSEST_CAMERA_DISTANCE = 10;
+const CLOSEST_DISTANCE_TOLERANCE = 0.05;
+// A still map's frames: long enough to span several of the sun's shadow steps, few enough to keep as evidence.
+const STILL_FRAMES_MS = 6_000;
+const STILL_FRAMES_MIN = 30;
 // The army's six neighbours on screen, in pixels from the centre, at the map's default zoom (a player run never zooms),
 // in ring order from the north-east: each is beside the next, and the last beside the first.
 const NEIGHBOUR_RING = [
@@ -58,13 +68,24 @@ const BLITZ = { mode: "blitz", card: { heading: null, enter: "^Enter$" } };
 export const SPECTATOR_STEPS = [
   { name: "realm-idle", settleMs: 8_000, verify: inScene("hex") },
   { name: "open-map", play: goTo("Map", "map"), settleMs: 6_000, verify: inScene("map") },
-  { name: "map-idle", play: keepTheViewBefore, settleMs: 10_000, verify: idledOnTheMap },
-  { name: "pan", play: panTheMap, settleMs: 17_000, verify: pannedTheMap },
-  { name: "zoom", play: zoomOutAndIn, settleMs: 1_000, verify: zoomedOutAndIn },
+  { name: "map-idle", play: keepTheViewBefore, settleMs: 10_000, verify: idledOn(inScene("map")) },
+  { name: "pan", play: panTheMap, settleMs: 17_000, verify: panned(inScene("map")) },
+  { name: "zoom", play: zoomOutAndIn, settleMs: 1_000, verify: zoomedOutAndIn(inScene("map")) },
   { name: "menu", play: readTheSeasonInTheMenu, settleMs: 1_000, verify: sheetOpenedAndClosed("Menu") },
   { name: "open-realm", play: goTo("Realm", "hex"), settleMs: 8_000, verify: inScene("hex") },
   { name: "return-to-map", play: goTo("Map", "map"), settleMs: 8_000, verify: inScene("map") },
   { name: "steady", settleMs: 60_000, verify: inScene("map") },
+];
+
+/**
+ * The map at its closest view with nothing pressed, recorded frame by frame: where a still view keeps changing (shadow
+ * edges, water, smoke, flags), each pixel's count of changed frames, to compare two builds on the same view.
+ */
+const STILL_MAP_STEPS = [
+  { name: "realm-idle", settleMs: 8_000, verify: inScene("hex") },
+  { name: "open-map", play: goTo("Map", "map"), settleMs: 6_000, verify: inScene("map") },
+  { name: "zoom-in", play: zoomAllTheWayIn, settleMs: 5_000, verify: zoomedAllTheWayIn },
+  { name: "still", play: recordTheStillMap, settleMs: 0, verify: recordedStill },
 ];
 
 /**
@@ -134,15 +155,17 @@ async function panTheMap({ browser, extraScreenshot }) {
   return { before };
 }
 
-async function pannedTheMap({ seen, played, screenshot }) {
-  const viewChange = await meanViewChange(played.before, screenshot);
-  const scene = inScene("map")({ seen });
-  if (scene.status !== "completed") return { ...scene, viewChange };
-  return viewChange >= PAN_VIEW_CHANGE_MIN
-    ? completed({ viewChange })
-    : failed(`the view barely changed (${viewChange} < ${PAN_VIEW_CHANGE_MIN}): the camera did not move`, {
-        viewChange,
-      });
+function panned(onMap) {
+  return async ({ seen, played, screenshot }) => {
+    const viewChange = await meanViewChange(played.before, screenshot);
+    const scene = onMap({ seen });
+    if (scene.status !== "completed") return { ...scene, viewChange };
+    return viewChange >= PAN_VIEW_CHANGE_MIN
+      ? completed({ viewChange })
+      : failed(`the view barely changed (${viewChange} < ${PAN_VIEW_CHANGE_MIN}): the camera did not move`, {
+          viewChange,
+        });
+  };
 }
 
 /** The same view with nothing pressed: how much the map's own animation changes it, the floor a pan must clear. */
@@ -150,9 +173,11 @@ async function keepTheViewBefore({ extraScreenshot }) {
   return { before: extraScreenshot("before") };
 }
 
-async function idledOnTheMap({ seen, played, screenshot }) {
-  const viewChange = await meanViewChange(played.before, screenshot);
-  return { ...inScene("map")({ seen }), viewChange };
+function idledOn(onMap) {
+  return async ({ seen, played, screenshot }) => {
+    const viewChange = await meanViewChange(played.before, screenshot);
+    return { ...onMap({ seen }), viewChange };
+  };
 }
 
 /** Mean absolute difference of two screenshots (or of one region of them), greyscale at 96×54, in 0–255 levels. */
@@ -181,18 +206,52 @@ async function zoomOutAndIn({ browser }) {
   return { before, zoomedOut, zoomedIn: distance() };
 }
 
-function zoomedOutAndIn({ seen, played }) {
+function zoomedOutAndIn(onMap) {
+  return ({ seen, played }) => {
+    const scene = onMap({ seen });
+    if (scene.status !== "completed") return scene;
+    const { before, zoomedOut, zoomedIn } = played;
+    const isDistance = (value) => typeof value === "number";
+    return isDistance(before) &&
+      isDistance(zoomedOut) &&
+      isDistance(zoomedIn) &&
+      zoomedOut > before &&
+      zoomedIn < zoomedOut
+      ? completed(played)
+      : failed(`the camera distance did not grow from where it was, then shrink (${JSON.stringify(played)})`, played);
+  };
+}
+
+async function zoomAllTheWayIn({ browser }) {
+  browser.run(["eval", `void window.__playtest.wheel(-100, ${ZOOM_IN_NOTCHES})`]);
+  await sleep(ZOOM_SETTLE_MS);
+  return { distance: browser.observe().worldmapDistance };
+}
+
+/** On the map at the closest camera distance, read after the wheel: a missing or other distance is not the closest view. */
+function zoomedAllTheWayIn({ seen, played }) {
   const scene = inScene("map")({ seen });
   if (scene.status !== "completed") return scene;
-  const { before, zoomedOut, zoomedIn } = played;
-  const isDistance = (value) => typeof value === "number";
-  return isDistance(before) &&
-    isDistance(zoomedOut) &&
-    isDistance(zoomedIn) &&
-    zoomedOut > before &&
-    zoomedIn < zoomedOut
+  const distance = played?.distance;
+  if (typeof distance !== "number" || !Number.isFinite(distance)) {
+    return failed(`no camera distance was read after zooming in (${distance})`, played);
+  }
+  return Math.abs(distance - CLOSEST_CAMERA_DISTANCE) <= CLOSEST_DISTANCE_TOLERANCE
     ? completed(played)
-    : failed(`the camera distance did not grow from where it was, then shrink (${JSON.stringify(played)})`, played);
+    : failed(`the camera stopped at distance ${distance}, not the closest (${CLOSEST_CAMERA_DISTANCE})`, played);
+}
+
+async function recordTheStillMap({ base, devTools, owner }) {
+  const recorded = await recordFrames(devTools, owner, `${base}-frames`, STILL_FRAMES_MS);
+  return { ...recorded, changes: await measureFrameChanges(`${base}-frames`, `${base}-changes.png`) };
+}
+
+function recordedStill({ seen, played }) {
+  const scene = inScene("map")({ seen });
+  if (scene.status !== "completed") return scene;
+  return played.frames >= STILL_FRAMES_MIN
+    ? completed(played)
+    : failed(`only ${played.frames} frames in ${STILL_FRAMES_MS} ms (< ${STILL_FRAMES_MIN})`, played);
 }
 
 async function readTheSeasonInTheMenu({ browser }) {
@@ -318,6 +377,15 @@ const BLITZ_ORDER_STEPS = [
   { name: "order-refused", play: refuseAnOrder, settleMs: 2_000, verify: keptWhereItStood },
   // Long enough for the order let go after the Escape to be confirmed.
   { name: "deselect-in-flight", play: deselectWhileInFlight, settleMs: 20_000, verify: notSelectedAgain },
+];
+
+/** What a Blitz spectator does: the world map, idle, panned, zoomed out and in, then a minute of watching. */
+const BLITZ_SPECTATOR_STEPS = [
+  { name: "open-world", play: toTheWorldMap, settleMs: 3_000, verify: drawn("map") },
+  { name: "map-idle", play: keepTheViewBefore, settleMs: 10_000, verify: idledOn(drawn("map")) },
+  { name: "pan", play: panTheMap, settleMs: 17_000, verify: panned(drawn("map")) },
+  { name: "zoom", play: zoomOutAndIn, settleMs: 1_000, verify: zoomedOutAndIn(drawn("map")) },
+  { name: "steady", settleMs: 60_000, verify: drawn("map") },
 ];
 
 /** Blitz switches between the world map and the realm's tiles with V (the header's Local / World). */
@@ -483,7 +551,7 @@ function notSelectedAgain({ seen, played, actionLatency, window }) {
 
 /** Why an order step has no order to judge: no army selected, no tile offering one, or nothing sent. */
 function judgeSentOrder(played) {
-  if (!played.before) return failed("no army was selected when the step began: the order before did not keep it");
+  if (!played.before) return failed("no army was selected when the step began: the step before left none selected");
   if (!played.target) {
     return blocked(
       `no tile around the army offered a move or an explore (${played.scanned.map(({ verb }) => verb ?? "nothing").join(", ")})`,
@@ -504,6 +572,8 @@ export const STEP_SETS = {
   player: { game: FRONTIER, steps: PLAYER_STEPS },
   "ownership-rings": { game: FRONTIER, steps: OWNERSHIP_RING_STEPS },
   "blitz-orders": { game: BLITZ, steps: BLITZ_ORDER_STEPS },
+  "blitz-spectator": { game: BLITZ, steps: BLITZ_SPECTATOR_STEPS },
+  "still-map": { game: FRONTIER, steps: STILL_MAP_STEPS },
 };
 
 /**
@@ -525,12 +595,12 @@ function ownRealmSelected({ seen }) {
 }
 
 async function pannedWithOwnRealmSelected(input) {
-  const panned = await pannedTheMap(input);
-  if (panned.status !== "completed") return panned;
+  const pan = await panned(inScene("map"))(input);
+  if (pan.status !== "completed") return pan;
   const selected = ownRealmSelected(input);
   return selected.status === "completed"
-    ? completed({ ...panned, ...selected })
-    : { ...selected, viewChange: panned.viewChange };
+    ? completed({ ...pan, ...selected })
+    : { ...selected, viewChange: pan.viewChange };
 }
 
 /** Nothing selected on the map and nothing ringed. */
