@@ -34,7 +34,6 @@ export interface WaveGame {
   provider: HarnessProvider;
   games: string;
   classHash: string;
-  nodeImage: string;
   players: WavePlayer[];
   /** Verify aggregate real-contract effects, never the spike's shared probe counter. */
   verify(): Promise<void>;
@@ -143,7 +142,6 @@ function waveHeader(game: WaveGame) {
     chainId: game.bounds.chainId,
     contract: game.games,
     classHash: game.classHash,
-    nodeImage: game.nodeImage,
     writes: 1,
     hashes: 1,
     visibleDefinition:

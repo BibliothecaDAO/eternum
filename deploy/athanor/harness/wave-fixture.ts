@@ -86,7 +86,6 @@ const fixture: WaveFixturePort = {
         provider,
         games: shard.worldAddress,
         classHash: manifest.world.class_hash,
-        nodeImage: required("SHARD_NODE_IMAGE"),
         players: wavePlayers,
         verify: async () => {
           for (const player of wavePlayers) await player.verify(player.client.setup.store);
