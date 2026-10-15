@@ -40,6 +40,11 @@ const connectGameplayAccount = (client: GameClient, account: AccountInterface | 
 export interface RealmVisit {
   player: string;
   structureId: number;
+  /**
+   * The realm opens once its rows arrive: a visit the player asked for (the season board's Visit), or a spectator's
+   * watch on an address that names no place. A page loaded on a map hex stays there.
+   */
+  opensOnArrival: boolean;
 }
 
 const useRealmVisitStore = create<{ visit: RealmVisit | null }>(() => ({ visit: null }));

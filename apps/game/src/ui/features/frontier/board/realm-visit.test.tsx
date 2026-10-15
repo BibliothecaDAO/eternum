@@ -92,7 +92,7 @@ describe("a realm visit", () => {
     renderFoot();
     expect(host.textContent).toBe("");
 
-    act(() => startRealmVisit({ player: "0x222", structureId: 8 }));
+    act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOnArrival: true }));
     expect(visit).toHaveBeenLastCalledWith("0x222");
     const foot = () => host.querySelector('[role="status"]')!;
     expect(foot().getAttribute("aria-label")).toBe("Visit Rival");
@@ -112,9 +112,18 @@ describe("a realm visit", () => {
     expect(host.textContent).toBe("");
   });
 
+  it("leaves the scene to the route for a spectator's watch: its realm arriving moves nothing", () => {
+    renderFoot();
+    act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOnArrival: false }));
+    act(() => store.applyFacts([realmRow(8, "0x222")] as never));
+
+    expect(goTo).not.toHaveBeenCalled();
+    expect(host.querySelector('[role="status"]')?.getAttribute("aria-label")).toBe("Visit Rival");
+  });
+
   it("ends with the account that started it", () => {
     renderFoot();
-    act(() => startRealmVisit({ player: "0x222", structureId: 8 }));
+    act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOnArrival: true }));
     act(() => useAccountStore.setState({ account: { address: "0x333" } as never }));
     expect(host.textContent).toBe("");
   });
@@ -123,7 +132,7 @@ describe("a realm visit", () => {
 it("returns the viewing selection home when replacing the gameplay account clears a visit", () => {
   renderFoot();
   act(() => store.applyFacts([realmRow(8, "0x222")] as never));
-  act(() => startRealmVisit({ player: "0x222", structureId: 8 }));
+  act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOnArrival: true }));
   useUIStore.setState({ isSpectating: true, structureEntityId: 8 });
   goTo.mockClear();
   act(() => useAccountStore.setState({ account: { address: "0x111" } as never }));
@@ -134,7 +143,7 @@ it("returns the viewing selection home when replacing the gameplay account clear
 it("returns home when the replacement account's realm arrives after the visit clears", () => {
   renderFoot(null);
   act(() => store.applyFacts([realmRow(8, "0x222")] as never));
-  act(() => startRealmVisit({ player: "0x222", structureId: 8 }));
+  act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOnArrival: true }));
   goTo.mockClear();
   act(() => useAccountStore.setState({ account: { address: "0x111" } as never }));
   expect(goTo).not.toHaveBeenCalled();

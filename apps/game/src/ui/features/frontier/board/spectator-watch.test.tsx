@@ -34,7 +34,7 @@ describe("a spectator", () => {
 
     useAccountStore.setState({ account: null });
     mount()();
-    expect(startVisit).toHaveBeenCalledWith({ player: "0xa1", structureId: 7 });
+    expect(startVisit).toHaveBeenCalledWith({ player: "0xa1", structureId: 7, opensOnArrival: true });
   });
 
   it("leaves the map nothing to open on when the season has no leader to watch", async () => {
@@ -65,7 +65,7 @@ describe("a spectator", () => {
       enterToSpectate();
       try {
         mount()();
-        expect(startVisit).toHaveBeenCalledWith({ player: "0xa1", structureId: 7 });
+        expect(startVisit).toHaveBeenCalledWith({ player: "0xa1", structureId: 7, opensOnArrival: true });
       } finally {
         overrideSpectateIntent(false);
       }
@@ -83,5 +83,23 @@ describe("a spectator", () => {
         board.data = [leader];
       }
     });
+  });
+
+  it("opens the watched realm only when the address names no place", () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    useAccountStore.setState({ account: null });
+    startVisit.mockClear();
+    const entered = window.location.href;
+    try {
+      window.history.replaceState(null, "", "/g/0x4445/1/map?col=-1968759586&row=-2000471286&spectate=true");
+      mount()();
+      expect(startVisit).toHaveBeenCalledWith({ player: "0xa1", structureId: 7, opensOnArrival: false });
+
+      window.history.replaceState(null, "", "/g/0x4445/1/map?spectate=true");
+      mount()();
+      expect(startVisit).toHaveBeenLastCalledWith({ player: "0xa1", structureId: 7, opensOnArrival: true });
+    } finally {
+      window.history.replaceState(null, "", entered);
+    }
   });
 });

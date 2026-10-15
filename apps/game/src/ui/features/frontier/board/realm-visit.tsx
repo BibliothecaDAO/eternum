@@ -22,8 +22,8 @@ export const useVisitedRealm = (visit: RealmVisit | null): NativeRows["Structure
 };
 
 /**
- * While visiting another realm, the foot that names it, with Leave. The realm opens once its rows arrive with the
- * visit's scope, as a realm the player does not own, so every order stays off. Leaving returns to the player's own
+ * While visiting another realm, the foot that names it, with Leave. A visit that opens on arrival (see RealmVisit) opens
+ * the realm once its rows arrive with the visit's scope, as a realm the player does not own, so every order stays off. Leaving returns to the player's own
  * realm. Stays mounted between visits, so the way home runs after one ends.
  */
 export const RealmVisitFoot = ({ home }: { home: NativeRows["Structure"] | null }) => {
@@ -39,7 +39,7 @@ export const RealmVisitFoot = ({ home }: { home: NativeRows["Structure"] | null 
   };
 
   useEffect(() => {
-    if (visited) openRealm(visited, true);
+    if (visited && visit?.opensOnArrival) openRealm(visited, true);
     // Once per arrival: the realm opens when its row first reaches the store.
   }, [visited?.entity_id]);
 

@@ -37,7 +37,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-15",
     title: "The map opens on your realm",
     description:
-      "Entering a game, the map now opens where your realm is, or the realm you watch, instead of reloading the page the first time you open it.",
+      "Entering a game, the map now opens where your realm is, or the realm you watch, instead of reloading the page the first time you open it. Watching a Frontier season, Map stays on the map instead of returning to the watched realm.",
     type: "fix",
   },
   {
