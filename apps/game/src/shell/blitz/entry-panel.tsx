@@ -410,7 +410,7 @@ const Tile = ({
     )}
     <KitIcon code={icon} size={44} />
     <span className="font-ui text-[18px] text-kit-cream">{word}</span>
-    <span className="font-body text-[13px] font-bold text-kit-muted">{effect}</span>
+    <span className="font-body text-[14px] font-bold text-kit-muted">{effect}</span>
     {credit > 0 ? <CreditChip count={credit} /> : <Lords amount={price} size={18} />}
   </button>
 );
@@ -449,7 +449,7 @@ const Lords = ({ amount, size, tone = "text-kit-cream" }: { amount: bigint; size
 );
 
 const CreditChip = ({ count }: { count?: number }) => (
-  <span className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-full border border-kit-gold bg-kit-ink pl-1.5 pr-2.5 font-body text-[13px] font-bold text-kit-gold2">
+  <span className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-full border border-kit-gold bg-kit-ink pl-1.5 pr-2.5 font-body text-[14px] font-bold text-kit-gold2">
     <KitIcon code="Ch" size={18} />
     {count && count > 1 ? ENTRY_WORDS.credits(count) : ENTRY_WORDS.credit}
   </span>
