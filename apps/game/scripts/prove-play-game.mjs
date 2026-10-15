@@ -12,11 +12,15 @@
  *   game's own Results page.
  * - `--ended` (and after `--until-end`), at desktop and phone: an ended game's doorway **Results** and its map
  *   address's **Results** must each reach the game's own Results page.
+ * - `--at-rest`, at desktop and phone: the map and the realm view as they open, nothing pressed, each with a screenshot
+ *   and what a first-time viewer meets there (scripts/live-sample.mjs), so a change to the HUD is counted the same way
+ *   before and after.
  *
  * Every step fails on any page error or console error, which its record keeps as the browser gave them.
  */
 import { join } from "node:path";
 
+import { LIVE_SAMPLE, sampleTotals } from "./live-sample.mjs";
 import { pathOf, sleep, waitFor } from "./prove-run.mjs";
 
 const VIEWPORTS = { desktop: [1440, 900], phone: [390, 844] };
@@ -24,6 +28,8 @@ const MAP_READY = `document.documentElement.dataset.bootState === "app-ready" &&
 const ENDED_LINE = "This game has ended.";
 const READY_TIMEOUT_MS = 60_000;
 const STEP_TIMEOUT_MS = 20_000;
+/** How long a view settles after it is ready: the camera's opening move, the labels and the HUD's first reads. */
+const AT_REST_SETTLE_MS = 8_000;
 /** How far from the tile the map opens on the pointer looks for the crate, and how finely. */
 const CRATE_SEARCH = { radius: 240, step: 40 };
 
@@ -32,7 +38,7 @@ export const gameAddresses = (spec) => {
   const [chain, game] = spec.split(":");
   if (!chain || !/^\d+$/.test(game ?? "")) throw new Error(`--game expects <chain>:<game>, got ${spec}`);
   const doorway = `/g/${chain}/${game}`;
-  return { doorway, map: `${doorway}/map`, results: `/results/${chain}-${game}` };
+  return { doorway, map: `${doorway}/map`, realm: `${doorway}/hex`, results: `/results/${chain}-${game}` };
 };
 
 /** How many relics a closed crate's panel advertises: the number under "Relics", or null without one. */
@@ -206,6 +212,19 @@ const proveCrate = async (b, base, addresses, [col, row], out) => {
   return record;
 };
 
+/** A view as it opens, nothing pressed: its screenshot and the sampler's count of what is on it. */
+const proveAtRest = async (b, base, addresses, view, layout, out) => {
+  const record = { step: `at-rest-${view}`, layout, screenshots: [] };
+  b.run("set", "viewport", ...VIEWPORTS[layout].map(String));
+  open(b, `${base}${addresses[view]}`);
+  const ready = await waitFor(b, MAP_READY, READY_TIMEOUT_MS);
+  await sleep(AT_REST_SETTLE_MS);
+  record.screenshots.push(shot(b, out, `at-rest-${view}-${layout}.png`));
+  if (!ready) return { ...record, problem: "map not ready" };
+  const sample = b.evaluate(LIVE_SAMPLE);
+  return { ...record, url: sample.url, totals: sampleTotals(sample.items), items: sample.items };
+};
+
 /** Stays on the map until the game ends, then leaves through Game finished → See the results. */
 const proveGameFinished = async (b, base, addresses, layout, untilMs, out) => {
   const record = { step: "game-finished", layout, screenshots: [] };
@@ -251,12 +270,15 @@ const proveEndedEntrance = async (b, base, addresses, entrance, layout, out) => 
 };
 
 /**
- * The game's steps in order: the crate while the game runs, its end, then its ended entrances at both sizes. Each step
+ * The game's steps in order: the views at rest, the crate while the game runs, its end, then its ended entrances at both sizes. Each step
  * is judged with every error raised from its start to its end, however far it got.
  */
-export const proveGame = async (b, { baseUrl, game, crate, untilEndMinutes, ended }, out) => {
+export const proveGame = async (b, { baseUrl, game, crate, untilEndMinutes, ended, atRest }, out) => {
   const addresses = gameAddresses(game);
   const steps = [];
+  if (atRest)
+    for (const layout of Object.keys(VIEWPORTS))
+      for (const view of ["map", "realm"]) steps.push(() => proveAtRest(b, baseUrl, addresses, view, layout, out));
   if (crate) steps.push(() => proveCrate(b, baseUrl, addresses, crate, out));
   if (untilEndMinutes)
     steps.push(() => proveGameFinished(b, baseUrl, addresses, "phone", untilEndMinutes * 60_000, out));

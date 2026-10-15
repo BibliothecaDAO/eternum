@@ -15,9 +15,9 @@
  * (a lobby's Sign in excepted, which must return to that lobby), and leaves a game's page the moment its address is
  * recorded.
  *
- * With `--game <chain>:<game> --profile <dir>` it proves that game's own paths instead, signed in: a crate opened and
- * read back after a reload, Game finished → See the results, and an ended game's two Results entrances
- * (scripts/prove-play-game.mjs).
+ * With `--game <chain>:<game> --profile <dir>` it proves that game's own paths instead, signed in: its views counted at
+ * rest, a crate opened and read back after a reload, Game finished → See the results, and an ended game's two Results
+ * entrances (scripts/prove-play-game.mjs).
  *
  * Each run writes a new directory under <out>, named by its start time, so an earlier run's evidence is never replaced:
  * play-proof.json and one screenshot per state and viewport, whatever happens. The run is complete only when every page
@@ -118,7 +118,7 @@ const READY = `document.documentElement.dataset.bootState === "app-ready" && doc
 
 const USAGE =
   "expected --base-url <url> --out <dir>, and for a game --game <chain>:<game> --profile <dir> " +
-  "[--crate <col>,<row>] [--until-end <minutes>] [--ended]";
+  "[--at-rest] [--crate <col>,<row>] [--until-end <minutes>] [--ended]";
 
 export const parseArgs = (argv) => {
   const args = { baseUrl: "https://127.0.0.1:4176", out: join(process.cwd(), "play-proof") };
@@ -131,6 +131,7 @@ export const parseArgs = (argv) => {
     else if (argv[index] === "--crate") args.crate = value().split(",").map(Number);
     else if (argv[index] === "--until-end") args.untilEndMinutes = Number(value());
     else if (argv[index] === "--ended") args.ended = true;
+    else if (argv[index] === "--at-rest") args.atRest = true;
     else throw new Error(`Unknown argument ${argv[index]}; ${USAGE}`);
   }
   if (args.game && !args.profile) throw new Error(`--game needs --profile; ${USAGE}`);
