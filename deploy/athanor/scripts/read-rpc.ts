@@ -7,7 +7,7 @@ import { felt, gameInvoke, MAX_TRANSACTION_BYTES, type PlayIdentity } from "../v
 import { permitsAccountRequest, type ShardIdentity } from "./account-rpc-policy";
 import { accountRequestLimiter, rpcClientAddress } from "./rpc-client-limit";
 import { isDevShardChain } from "../../../packages/value-ledger/src/dev-shard";
-import { launcherAccountAddress } from "../../../packages/value-ledger/src/shard-accounts";
+import { seaterAccountAddresses } from "../../../packages/value-ledger/src/shard-accounts";
 
 const READ_METHODS = new Set([
   "starknet_specVersion",
@@ -39,11 +39,11 @@ type Preparation = { signal: AbortSignal; deadline: number };
 type ProxyIdentity = ShardIdentity & PlayIdentity & { playerCapacity: number };
 type AccountClassReader = (sender: string, signal: AbortSignal) => Promise<string>;
 /**
- * A player stamps only its current nonce, so the mempool holds at most one of its plays and no stamp is speculative. The
- * launcher, the world's one roster-seating account, may queue its seats this far ahead: seating a split then waits on
- * execution, not on a round trip per seat.
+ * A player stamps only its current nonce, so the mempool holds at most one of its plays and no stamp is speculative.
+ * A seater, one of the pool accounts that seat fixed rosters, may queue its seats this far ahead: seating a split then
+ * waits on execution, not on a round trip per seat.
  */
-const LAUNCHER_NONCE_WINDOW = 48n;
+const SEATER_NONCE_WINDOW = 48n;
 
 function assertBeforeForward(preparation: Preparation) {
   preparation.signal.throwIfAborted();
@@ -128,7 +128,7 @@ export function startReadRpc(
   }
   assertPlayerCapacity(identity.playerCapacity);
   const readAccountClass = accountClassReader(node, identity);
-  const launcher = felt(launcherAccountAddress(identity))!;
+  const seaters = new Set(seaterAccountAddresses(identity).map((address) => felt(address)!));
   const allowance = accountRequestLimiter();
   const inFlightAccounts = new Set<string>();
   // Browsers hide a cross-origin request's connect, TLS and wait timings unless the response allows it. Only a dev chain
@@ -150,7 +150,7 @@ export function startReadRpc(
         allowance,
         inFlightAccounts,
         readAccountClass,
-        launcher,
+        seaters,
       );
       if (timingAllowed) response.headers.set("Timing-Allow-Origin", "*");
       return response;
@@ -197,7 +197,7 @@ async function handlePublicRequest(
   allowance: ReturnType<typeof accountRequestLimiter>,
   inFlightAccounts: Set<string>,
   readAccountClass: AccountClassReader,
-  launcher: bigint,
+  seaters: ReadonlySet<bigint>,
 ): Promise<Response> {
   const preparation: Preparation = {
     deadline: performance.now() + PREPARATION_TIMEOUT_MS,
@@ -252,7 +252,7 @@ async function handlePublicRequest(
         preparation,
         request.signal,
         readAccountClass,
-        launcher,
+        seaters,
       ),
     ),
   );
@@ -386,7 +386,7 @@ async function forwardRequest(
   preparation: Preparation,
   clientSignal: AbortSignal,
   readAccountClass: AccountClassReader,
-  launcher: bigint,
+  seaters: ReadonlySet<bigint>,
 ): Promise<unknown> {
   const { call, game } = admitted;
   const play = game?.entrypoint.stamp ? game.transaction : undefined;
@@ -408,7 +408,7 @@ async function forwardRequest(
       );
       // Retrying the same accepted transaction uses the same root.
       if (
-        !admitsNonce(felt(play.nonce), felt(nonce), felt(play.sender_address) === launcher) ||
+        !admitsNonce(felt(play.nonce), felt(nonce), seaters.has(felt(play.sender_address)!)) ||
         felt(accountClass) !== felt(identity.accountClassHash)
       )
         return transactionRefused(call.id);
@@ -444,9 +444,9 @@ async function forwardRequest(
   }
 }
 
-function admitsNonce(sent: bigint | undefined, current: bigint | undefined, isLauncher: boolean): boolean {
+function admitsNonce(sent: bigint | undefined, current: bigint | undefined, isSeater: boolean): boolean {
   if (sent === undefined || current === undefined) return false;
-  return sent === current || (isLauncher && sent > current && sent <= current + LAUNCHER_NONCE_WINDOW);
+  return sent === current || (isSeater && sent > current && sent <= current + SEATER_NONCE_WINDOW);
 }
 
 async function assertChainIdentity(node: URL, identity: PlayIdentity, limit: bigint) {
