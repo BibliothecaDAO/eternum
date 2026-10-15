@@ -12,7 +12,7 @@ import { memo } from "react";
 
 /**
  * The column stops above the minimap panel (the map, its title row and its margin, plus a gap), so nothing in it hides
- * under the minimap; what does not fit scrolls, the action strip staying pinned at its foot.
+ * under the minimap; what does not fit scrolls (no panel shrinks to fit), the action strip pinned above it at its foot.
  */
 const SIDEBAR_MAX_HEIGHT = `calc(100vh - 60px - ${MINIMAP_SIZE}px - 28px)`;
 
@@ -31,7 +31,7 @@ export const LeftCommandSidebar = memo(() => {
   return (
     <div
       className={cn(
-        "fixed left-3 z-20 pointer-events-auto flex flex-col gap-3 overflow-y-auto scrollbar-thin",
+        "fixed left-3 z-20 pointer-events-auto flex flex-col gap-3 overflow-y-auto scrollbar-thin [&>*]:shrink-0",
         HUD_COLUMN_TOP,
         HUD_COLUMN_WIDTH,
       )}
@@ -39,7 +39,7 @@ export const LeftCommandSidebar = memo(() => {
     >
       <StructureListColumn />
       <EmpireCockpit />
-      <div className="sticky bottom-0 rounded-xl bg-kit-ground">
+      <div className="sticky bottom-0 z-10 rounded-xl bg-kit-ground">
         <StructureActionsPanel />
       </div>
     </div>
