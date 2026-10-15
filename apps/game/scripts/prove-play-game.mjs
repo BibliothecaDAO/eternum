@@ -285,8 +285,11 @@ const proveTask = async (b, base, addresses, name, layout, out) => {
   open(b, `${base}${addresses[task.view]}`);
   if (!(await waitFor(b, MAP_READY, READY_TIMEOUT_MS))) return { ...record, problem: "map not ready" };
   await sleep(AT_REST_SETTLE_MS);
-  const before = task.reading ? b.evaluate(task.reading) : undefined;
-  for (const press of task.presses.filter((each) => !each.layout || each.layout === layout)) {
+  const presses = task.presses.filter((each) => !each.layout || each.layout === layout);
+  let before;
+  for (const [index, press] of presses.entries()) {
+    // The reading is taken where the order is given, just before its last press, so opening a panel counts for nothing.
+    if (index === presses.length - 1 && task.reading) before = b.evaluate(task.reading);
     const pressed = await pressStep(b, press, layout);
     await sleep(1500);
     record.presses.push({ ...press, pressed });
@@ -294,13 +297,42 @@ const proveTask = async (b, base, addresses, name, layout, out) => {
     if (!pressed) return { ...record, problem: `nothing to press for ${press.name}` };
   }
   record.clicks = record.presses.length;
-  const changed = task.reading
-    ? `JSON.stringify(${task.reading}) !== ${JSON.stringify(JSON.stringify(before))}`
-    : "true";
-  record.done = await waitFor(b, `(${task.done}) && ${changed}`, STEP_TIMEOUT_MS);
-  if (task.reading) record.reading = { before, after: b.evaluate(task.reading) };
+  const outcome = await waitForOutcome(b, task, before);
+  record.done = outcome.problem === null;
+  if (task.reading) record.reading = { before, after: outcome.after };
   record.screenshots.push(shot(b, out, `task-${name}-${layout}-done.png`));
-  return record.done ? record : { ...record, problem: "the task's end state did not show" };
+  return outcome.problem ? { ...record, problem: outcome.problem } : record;
+};
+
+/** Waits for a task's end state and, for a task that changes the game, for its reading to change as it expects. */
+const waitForOutcome = async (b, task, before) => {
+  const until = Date.now() + STEP_TIMEOUT_MS;
+  let outcome;
+  do {
+    const after = task.reading ? b.evaluate(task.reading) : undefined;
+    outcome = {
+      after,
+      problem: b.evaluate(`Boolean(${task.done})`)
+        ? taskProblem(task, before, after)
+        : "the task's end state did not show",
+    };
+    if (outcome.problem === null) return outcome;
+    await sleep(500);
+  } while (Date.now() < until);
+  return outcome;
+};
+
+/**
+ * Why a task's readings do not show its order, or null when they do: a task that changes the game has a reading on
+ * both sides of its last press, changed as the task expects (one more farm, one more army, an army on another tile).
+ */
+export const taskProblem = (task, before, after) => {
+  if (!task.reading) return null;
+  if (before === null || before === undefined || after === null || after === undefined)
+    return "the task's reading was unavailable";
+  return task.expect(before, after)
+    ? null
+    : `expected ${task.changes}, read ${JSON.stringify(before)} → ${JSON.stringify(after)}`;
 };
 
 /** Stays on the map until the game ends, then leaves through Game finished → See the results. */

@@ -173,3 +173,111 @@ describe("a game's proof", () => {
     expect(points).toHaveLength(9);
   });
 });
+
+/**
+ * A browser on a live map whose page text is `text()`, read again at each evaluation, and whose clicks and keys run
+ * `onPress`: what a task's presses change in the game is up to each test.
+ */
+const liveMapBrowser = ({ text, onPress = () => {}, surfaces = () => 0 }) => ({
+  run: (command, ...args) => {
+    if ((command === "mouse" && args[0] === "up") || ["press", "find", "click"].includes(command)) onPress(command);
+    if (command === "errors") return JSON.stringify({ success: true, data: { errors: [] } });
+    if (command === "console") return JSON.stringify({ success: true, data: { messages: [] } });
+    return "";
+  },
+  evaluate: (js) => {
+    if (js.includes("dataset.bootState")) return true;
+    // A control the task names is on the page: the runner marks it, then clicks it.
+    if (js.includes("data-proof-press")) return "[data-proof-press]";
+    const page = text();
+    const document = {
+      body: { innerText: page },
+      querySelector: () => ({ innerText: page, getAttribute: () => null }),
+      querySelectorAll: () => ({ length: surfaces() }),
+    };
+    return Function("document", `return (${js})`)(document);
+  },
+});
+
+const proveTask = async (browser, task) => {
+  vi.useFakeTimers();
+  const proof = proveGame(browser, { baseUrl: "https://proof.test", game: "0xa:11", tasks: [task] }, "/proof");
+  await vi.runAllTimersAsync();
+  return (await proof).records;
+};
+
+describe("a task that changes the game", () => {
+  it("fails an explore when only an old success line goes away", async () => {
+    let oldToast = true;
+    const records = await proveTask(
+      liveMapBrowser({ text: () => `Explore ${oldToast ? "Scouts sent" : ""}`, onPress: () => (oldToast = false) }),
+      "blitz-explore",
+    );
+    expect(records[0].problem).toBe("the task's reading was unavailable");
+  });
+
+  it("fails an explore whose army stays on its tile, as a refused or no-op order leaves it", async () => {
+    const records = await proveTask(liveMapBrowser({ text: () => "Army Tile · (1, 6)\nExplore" }), "blitz-explore");
+    expect(records[0].problem).toBe('expected the army on another tile, read "(1, 6)" → "(1, 6)"');
+  });
+
+  it("passes an explore whose army moves onto the explored tile", async () => {
+    let tile = "(1, 6)";
+    const records = await proveTask(
+      liveMapBrowser({
+        text: () => `Army Tile · ${tile}\nExplore`,
+        onPress: (command) => command === "mouse" && (tile = "(2, 5)"),
+      }),
+      "blitz-explore",
+    );
+    expect(records[0]).toMatchObject({ done: true, reading: { before: "(1, 6)", after: "(2, 5)" } });
+    expect(records[0].problem).toBeUndefined();
+  });
+
+  it("fails a farm when the Build panel only opens", async () => {
+    const records = await proveTask(liveMapBrowser({ text: () => "Build\nBuilt here\n3 total" }), "blitz-farm");
+    expect(records.map((record) => record.problem)).toEqual(
+      Array(2).fill("expected one more building in the realm, read 3 → 3"),
+    );
+  });
+
+  it("passes a farm once the realm has one more building, at both sizes", async () => {
+    let presses = 0;
+    let built = 3;
+    const records = await proveTask(
+      liveMapBrowser({
+        text: () => `Build\nBuilt here\n${built} total`,
+        // The second press of each run is the farm's order: Build, then Farm.
+        onPress: () => (presses += 1) % 2 === 0 && (built += 1),
+      }),
+      "blitz-farm",
+    );
+    expect(records.map((record) => [record.layout, record.clicks, record.problem, record.reading])).toEqual([
+      ["desktop", 2, undefined, { before: 3, after: 4 }],
+      ["phone", 2, undefined, { before: 4, after: 5 }],
+    ]);
+  });
+});
+
+describe("an action tried before play opens", () => {
+  it("passes when the press opens nothing and the player is told when play opens", async () => {
+    const records = await proveTask(liveMapBrowser({ text: () => "Build\nStarts in 2m 10s" }), "gate-build");
+    expect(records.map((record) => [record.layout, record.problem, record.reading])).toEqual([
+      ["desktop", undefined, { before: 0, after: 0 }],
+      ["phone", undefined, { before: 0, after: 0 }],
+    ]);
+  });
+
+  it("fails when an order surface opens anyway", async () => {
+    let open = 0;
+    const records = await proveTask(
+      liveMapBrowser({
+        text: () => "Manage production\nStarts in 2m 10s",
+        surfaces: () => open,
+        onPress: () => (open = 1),
+      }),
+      "gate-production",
+    );
+    expect(records[0].problem).toBe("expected no order surface to open, read 0 → 1");
+  });
+});
