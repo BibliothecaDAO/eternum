@@ -9,6 +9,7 @@ import {
 } from "../../../config/deployer/clean/registrar/native-preset";
 import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
 import { nativePresetForId } from "../../../config/source/native";
+import { GAME_ENVIRONMENTS } from "../../../config/shared/game-environments";
 import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import type { NativeWorldManifest } from "../../../config/deployer/clean/world/native/types";
 import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
@@ -35,7 +36,7 @@ export async function launchHarnessGame(input: {
   try {
     await assertProviderChain(privateProvider, manifest, "HARNESS_ADMIN_RPC_URL");
     const account = createOperatorAccount(privateProvider, address, privateKey);
-    const environment = "madara.eternum";
+    const environment = environmentOfPreset(input.presetId);
     const config = loadNativePresetConfiguration(environment, input.presetId);
     const preset = buildNativePreset(config, input.presetId);
     const startAt = Math.floor(Date.now() / 1000) + 60;
@@ -91,4 +92,12 @@ async function registerHarnessEntitlement(
 /** Administration must bypass the public endpoint's play-only fee and tip policy. */
 export function createHarnessAdminProvider(): HarnessProvider {
   return new HarnessProvider(required("HARNESS_ADMIN_RPC_URL"));
+}
+
+/** The deployment environment whose preset definitions hold this preset (Frontier presets live in madara.frontier). */
+function environmentOfPreset(presetId: number) {
+  const gameType = nativePresetForId(presetId).environmentGameType;
+  const environment = GAME_ENVIRONMENTS.find((entry) => entry.gameType === gameType);
+  if (!environment) throw new Error(`No deployment environment for preset ${presetId}`);
+  return environment.id;
 }
