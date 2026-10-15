@@ -86,20 +86,29 @@
 }
 .icon-map {
   width: 320px;
-  height: 240px;
+  height: 250px;
+  position: relative;
   background: #18251e;
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  grid-template-rows: repeat(5, 1fr);
-  align-items: center;
-  justify-items: center;
   border: 1px solid #605c4d;
-  padding: 8px;
-  background-image: linear-gradient(150deg, transparent 40%, #213840 41%, #213840 48%, transparent 49%);
 }
-.icon-map:has(.icon-cluster) {
+.icon-hex-grid {
+  position: absolute;
+  inset: 0;
+  width: 320px;
+  height: 250px;
+}
+.icon-hex-grid polygon {
+  fill: none;
+  stroke: #415448;
+  stroke-width: 1;
+}
+.icon-map[data-grouped="true"] {
+  display: grid;
   grid-template-columns: repeat(4, 1fr);
   grid-template-rows: repeat(3, 1fr);
+  align-items: center;
+  justify-items: center;
+  padding: 8px;
 }
 .icon-cluster {
   background: #11190f;
@@ -114,11 +123,18 @@
 .icon-cluster small {
   font-size: 9px;
 }
-.icon-marker-wrap {
-  width: 25px;
-  height: 25px;
-  position: relative;
+.icon-marker-wrap,
+.icon-marker-key {
+  width: 28px;
+  height: 32px;
   --owner: #86d8df;
+}
+.icon-marker-wrap {
+  position: absolute;
+}
+.icon-marker-key {
+  position: relative;
+  display: block;
 }
 .icon-marker-wrap[data-owner="ally"] {
   --owner: #c3b6fa;
@@ -127,22 +143,43 @@
   --owner: #ffb083;
 }
 .icon-marker {
-  width: 24px;
-  height: 24px;
-  border: 1px solid var(--owner);
+  width: 28px;
+  height: 32px;
   display: grid;
   place-items: center;
-  background: #13180f;
+  position: relative;
+}
+.icon-marker svg {
+  position: absolute;
+  inset: 0;
+  width: 28px;
+  height: 32px;
+}
+.icon-marker polygon {
+  fill: #13180f;
+  stroke: var(--owner);
+  stroke-width: 1.5;
+}
+.icon-marker img {
+  position: relative;
+  margin-top: -4px;
+  object-fit: contain;
+}
+.icon-owner-cue {
+  position: absolute;
+  bottom: 4px;
+  left: 11px;
+  width: 5px;
+  height: 5px;
+  background: var(--owner);
+}
+.icon-owner-cue[data-cue="you"] {
   border-radius: 50%;
 }
-.icon-marker-wrap[data-owner="ally"] .icon-marker {
-  border-radius: 1px;
-}
-.icon-marker-wrap[data-owner="enemy"] .icon-marker {
-  border-radius: 0;
+.icon-owner-cue[data-cue="enemy"] {
   clip-path: polygon(50% 0, 100% 100%, 0 100%);
-  background: var(--owner);
-  padding-top: 3px;
+  width: 7px;
+  left: 10px;
 }
 .icon-marker-wrap b {
   position: absolute;
@@ -153,6 +190,23 @@
   font-size: 10px;
   line-height: 12px;
   padding: 0 2px;
+}
+.icon-marker-kinds {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.icon-marker-kinds > div {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+}
+.icon-marker-kinds small {
+  font-size: 11px;
+}
+[data-family="Troops"] .icon-cards {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .icon-cluster [data-owner="you"] {
   color: #86d8df;
@@ -244,7 +298,8 @@
   .icon-lab {
     padding: 16px;
   }
-  .icon-cards {
+  .icon-cards,
+  [data-family="Troops"] .icon-cards {
     grid-template-columns: 1fr;
   }
   .icon-live {
@@ -271,4 +326,27 @@
   .icon-stage {
     grid-template-columns: 1fr;
   }
+}
+
+[data-family="Troops"] .icon-card {
+  padding: 12px !important;
+}
+[data-family="Troops"] .icon-canvas {
+  height: 68px;
+}
+[data-family="Troops"] .icon-verdict {
+  margin-top: 6px;
+  padding-top: 6px;
+}
+[data-family="Troops"] .icon-reason {
+  min-height: 42px;
+  font-size: 11px;
+}
+[data-family="Troops"] .read-icon {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.icon-lab > section,
+.icon-stage {
+  scroll-margin-top: 76px;
 }

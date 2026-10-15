@@ -35,11 +35,11 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-15",
-    title: "Painted Icon Lab",
+    title: "Troop tiers and hex markers",
     description:
-      "Compare shipped and painted icons in live HUD controls, at actual sizes and on a grouped minimap in the UI kit lab.",
+      "Compare nine Facets soldier portraits across three tiers and inspect hex minimap badges with ownership and value cues in the icon lab.",
     type: "improvement",
-    readMore: "/lab/kit/icons",
+    readMore: "/lab/kit/icons?art=faceted",
   },
   {
     date: "2026-10-15",

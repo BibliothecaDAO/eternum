@@ -92,13 +92,15 @@ closed when it finishes. Live proof uses the client's existing `playtest` comman
 
 ## Painted icon comparison
 
-Open `/lab/kit/icons`. Shipped, Fieldwork and Facets switch the art in the real PriceChip, Button and OrderBar
-components. Confirming an order spends fixture wheat and stamina; Reset fixture restores them. The URL retains the
-selected art.
+Open `/lab/kit/icons?art=faceted`. Nine soldier portraits lead the review: Knight, Crossbowman and Paladin, each
+T1/T2/T3. The 24/32/64 px control applies to all nine shipped/replacement pairs. Shipped and Facets switch the art in
+the real PriceChip, Button and OrderBar components. Confirming an order spends fixture wheat and stamina; Reset fixture
+restores them. The URL retains the selected art.
 
 Compare every old/new pair at 24/32/64 px. Hide labels, select a sample, enter a reading and reveal its meaning;
 download readings. Minimap controls switch 12/16 px emblems and 20-site detail or 220-site sector grouping; click a
-sector to see all its entities.
+sector to see all its entities. Seven marker kinds sit on point-top hexes using the game lattice; colour plus an
+internal circle, square or triangle identifies ownership, with realm level and army strength in external badges.
 
 Run `pnpm icons:study:prove /home/djizus/projects/eternum-lanes/evidence/icons` from the repository root. It builds the
 samples, starts the client on port 4193 if needed, drives the controls, saves screenshots and assertions in a new dated

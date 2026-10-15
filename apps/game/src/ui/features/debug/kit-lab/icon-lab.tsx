@@ -16,12 +16,12 @@ const samples: Partial<Record<IconCode, string>> = {
   Es: "essence",
   La: "labor",
   Wh: "wheat",
-  Tr: "knight",
+  Tr: "knight-t2",
   St: "stamina",
   Ey: "explore",
   Bt: "move",
   At: "attack",
-  Sd: "paladin",
+  Sd: "paladin-t2",
   Ch: "chest",
   Cp: "camp",
   Cs: "realm",
@@ -51,11 +51,67 @@ export function IconLab() {
   const comparison = direction === "shipped" ? directions : directions.filter((item) => item.id === direction);
   const review = verdicts as Record<string, { verdict: string; reason: string }>;
   const name = direction === "shipped" ? "Shipped" : directions.find((item) => item.id === direction)!.name;
+  const renderFamily = (family: string) => (
+    <section key={family} data-family={family}>
+      <h3>{family}</h3>
+      <div className="icon-cards">
+        {comparison.flatMap((option) =>
+          icons
+            .filter((icon) => icon.family === family)
+            .map((icon) => {
+              const verdict = review[`${option.id}/${icon.id}`];
+              if (!verdict || verdict.verdict === "worse") return null;
+              return (
+                <article
+                  className="icon-card frontier-card"
+                  key={`${option.id}/${icon.id}`}
+                  data-icon={icon.id}
+                  data-direction={option.id}
+                >
+                  <h4 className="icon-meaning">{icon.label}</h4>
+                  <div className="icon-pair">
+                    {["shipped", option.id].map((variant) => (
+                      <div key={variant}>
+                        <div className="icon-canvas">
+                          <img
+                            width={size}
+                            height={size}
+                            style={{ width: size, height: size }}
+                            src={iconArt(variant, icon.id, size)}
+                            alt={
+                              hidden
+                                ? "Unlabelled icon"
+                                : `${variant === "shipped" ? "Shipped" : option.name} ${icon.label}`
+                            }
+                          />
+                        </div>
+                        <small>{variant === "shipped" ? "Shipped" : option.name}</small>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="icon-meaning icon-verdict">{verdict.verdict}</p>
+                  <p className="icon-meaning icon-reason">{verdict.reason}</p>
+                  <button
+                    className="read-icon"
+                    onClick={() => {
+                      setSelected(`${option.id}/${icon.id}`);
+                      setReading("");
+                    }}
+                  >
+                    Read this icon
+                  </button>
+                </article>
+              );
+            }),
+        )}
+      </div>
+    </section>
+  );
   return (
     <main className="icon-lab" data-art={direction} data-hidden={hidden}>
       <header>
         <h1>Painted icons</h1>
-        <p>Compare the shipped art with two unframed painted directions in the live kit.</p>
+        <p>Facets · nine soldier portraits and hex minimap badges. Compare with shipped art at actual display sizes.</p>
       </header>
       <div className="icon-controls">
         <fieldset>
@@ -83,6 +139,7 @@ export function IconLab() {
           {hidden ? "Show labels" : "Hide labels"}
         </button>
       </div>
+      {renderFamily("Troops")}
       <div className="icon-stage">
         <section className="icon-live frontier-card">
           <h2>{name} · live kit</h2>
@@ -134,62 +191,7 @@ export function IconLab() {
       </div>
       <section className="icon-catalog">
         <h2>Shipped beside each replacement</h2>
-        {families.map((family) => (
-          <section key={family} data-family={family}>
-            <h3>{family}</h3>
-            <div className="icon-cards">
-              {comparison.flatMap((option) =>
-                icons
-                  .filter((icon) => icon.family === family)
-                  .map((icon) => {
-                    const verdict = review[`${option.id}/${icon.id}`];
-                    if (!verdict || verdict.verdict === "worse") return null;
-                    return (
-                      <article
-                        className="icon-card frontier-card"
-                        key={`${option.id}/${icon.id}`}
-                        data-icon={icon.id}
-                        data-direction={option.id}
-                      >
-                        <h4 className="icon-meaning">{icon.label}</h4>
-                        <div className="icon-pair">
-                          {["shipped", option.id].map((variant) => (
-                            <div key={variant}>
-                              <div className="icon-canvas">
-                                <img
-                                  width={size}
-                                  height={size}
-                                  style={{ width: size, height: size }}
-                                  src={iconArt(variant, icon.id, size)}
-                                  alt={
-                                    hidden
-                                      ? "Unlabelled icon"
-                                      : `${variant === "shipped" ? "Shipped" : option.name} ${icon.label}`
-                                  }
-                                />
-                              </div>
-                              <small>{variant === "shipped" ? "Shipped" : option.name}</small>
-                            </div>
-                          ))}
-                        </div>
-                        <p className="icon-meaning icon-verdict">{verdict.verdict}</p>
-                        <p className="icon-meaning icon-reason">{verdict.reason}</p>
-                        <button
-                          className="read-icon"
-                          onClick={() => {
-                            setSelected(`${option.id}/${icon.id}`);
-                            setReading("");
-                          }}
-                        >
-                          Read this icon
-                        </button>
-                      </article>
-                    );
-                  }),
-              )}
-            </div>
-          </section>
-        ))}
+        {families.filter((family) => family !== "Troops").map(renderFamily)}
       </section>
       {selected && (
         <section className="icon-reading">
@@ -249,7 +251,7 @@ export function IconLab() {
         </section>
       )}
       <footer>
-        Art verdicts are editorial comparisons at 32 and 64 px. Fixture values are illustrative. The selected art
+        Art verdicts are editorial comparisons at 24, 32 and 64 px. Fixture values are illustrative. The selected art
         applies only within this lab view.
       </footer>
     </main>

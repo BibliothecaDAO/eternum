@@ -1,6 +1,69 @@
 {
   "icons": [
     {
+      "id": "knight-t1",
+      "label": "Knight · T1",
+      "family": "Troops",
+      "old": "images/resources/26.png",
+      "prompt": "prompts/knight-t1.txt"
+    },
+    {
+      "id": "knight-t2",
+      "label": "Knight · T2",
+      "family": "Troops",
+      "old": "images/resources/27.png",
+      "prompt": "prompts/knight-t2.txt"
+    },
+    {
+      "id": "knight-t3",
+      "label": "Knight · T3",
+      "family": "Troops",
+      "old": "images/resources/28.png",
+      "prompt": "prompts/knight-t3.txt"
+    },
+    {
+      "id": "crossbowman-t1",
+      "label": "Crossbowman · T1",
+      "family": "Troops",
+      "old": "images/resources/29.png",
+      "prompt": "prompts/crossbowman-t1.txt"
+    },
+    {
+      "id": "crossbowman-t2",
+      "label": "Crossbowman · T2",
+      "family": "Troops",
+      "old": "images/resources/30.png",
+      "prompt": "prompts/crossbowman-t2.txt"
+    },
+    {
+      "id": "crossbowman-t3",
+      "label": "Crossbowman · T3",
+      "family": "Troops",
+      "old": "images/resources/31.png",
+      "prompt": "prompts/crossbowman-t3.txt"
+    },
+    {
+      "id": "paladin-t1",
+      "label": "Paladin · T1",
+      "family": "Troops",
+      "old": "images/resources/32.png",
+      "prompt": "prompts/paladin-t1.txt"
+    },
+    {
+      "id": "paladin-t2",
+      "label": "Paladin · T2",
+      "family": "Troops",
+      "old": "images/resources/33.png",
+      "prompt": "prompts/paladin-t2.txt"
+    },
+    {
+      "id": "paladin-t3",
+      "label": "Paladin · T3",
+      "family": "Troops",
+      "old": "images/resources/34.png",
+      "prompt": "prompts/paladin-t3.txt"
+    },
+    {
       "id": "stone",
       "label": "Stone",
       "family": "Resources",
@@ -55,27 +118,6 @@
       "family": "Resources",
       "old": "images/resources/24.png",
       "prompt": "prompts/fragment.txt"
-    },
-    {
-      "id": "knight",
-      "label": "Knight",
-      "family": "Troops",
-      "old": "images/resources/26.png",
-      "prompt": "prompts/knight.txt"
-    },
-    {
-      "id": "crossbowman",
-      "label": "Crossbowman",
-      "family": "Troops",
-      "old": "images/resources/29.png",
-      "prompt": "prompts/crossbowman.txt"
-    },
-    {
-      "id": "paladin",
-      "label": "Paladin",
-      "family": "Troops",
-      "old": "images/resources/32.png",
-      "prompt": "prompts/paladin.txt"
     },
     {
       "id": "realm",
@@ -181,14 +223,23 @@
       "family": "Minimap",
       "old": "images/labels/realm.png",
       "prompt": "prompts/map-realm.txt"
+    },
+    {
+      "id": "map-village",
+      "label": "Village marker",
+      "family": "Minimap",
+      "old": "images/labels/village.png",
+      "prompt": "prompts/map-village.txt"
+    },
+    {
+      "id": "map-mine",
+      "label": "Mine marker",
+      "family": "Minimap",
+      "old": "images/labels/fragment_mine.png",
+      "prompt": "prompts/map-mine.txt"
     }
   ],
   "directions": [
-    {
-      "id": "grounded",
-      "name": "Fieldwork",
-      "description": "Softly modelled paint, weathered materials and natural colour."
-    },
     {
       "id": "faceted",
       "name": "Facets",
@@ -196,110 +247,6 @@
     }
   ],
   "verdicts": {
-    "grounded/stone": {
-      "verdict": "beats shipped",
-      "reason": "Pale fractured stone reads as rock at 32 px; lit planes and grain replace the jewel-like old facets."
-    },
-    "grounded/wood": {
-      "verdict": "beats shipped",
-      "reason": "Bark, cut end and end-grain hold at 64 px; a broad warm log silhouette remains at 32 px."
-    },
-    "grounded/wheat": {
-      "verdict": "beats shipped",
-      "reason": "Fuller ears and separated highlights keep the crop legible at 32 px and add convincing grain at 64 px."
-    },
-    "grounded/fish": {
-      "verdict": "beats shipped",
-      "reason": "Silver scales and a clear tail replace the bright blue polygon fish and its ground shadow."
-    },
-    "grounded/labor": {
-      "verdict": "beats shipped",
-      "reason": "A gripping hand and working hammer fill the square better than the distant full-body worker."
-    },
-    "grounded/essence": {
-      "verdict": "equal",
-      "reason": "The bottle remains clear at both sizes. Glass and violet volume improve at 64 px; the old magenta bottle is equally distinct at 32 px."
-    },
-    "grounded/ironwood": {
-      "verdict": "equal",
-      "reason": "Dense bark and red end-grain distinguish it from ordinary wood; the old black log has comparable contrast at 32 px."
-    },
-    "grounded/fragment": {
-      "verdict": "equal",
-      "reason": "The orange-green shard retains its identity; surface light improves at 64 px but the old silhouette is already strong."
-    },
-    "grounded/knight": {
-      "verdict": "beats shipped",
-      "reason": "The steel bust has readable helmet and shoulders at 32 px; the old full-body knight loses those details."
-    },
-    "grounded/crossbowman": {
-      "verdict": "beats shipped",
-      "reason": "The weapon silhouette survives reduction better than the old tiny figure. It names the troop by equipment."
-    },
-    "grounded/paladin": {
-      "verdict": "equal",
-      "reason": "Blue and white shield reads cleanly and has stronger material depth. It trades the old mounted silhouette for a defensive emblem."
-    },
-    "grounded/realm": {
-      "verdict": "beats shipped",
-      "reason": "Stone gate and slate roofs establish a material building instead of a monochrome gold token. Level remains an external badge."
-    },
-    "grounded/camp": {
-      "verdict": "equal",
-      "reason": "Both tents read at 32 px. The new canvas has stronger folds at 64 px without adding another visual object."
-    },
-    "grounded/hyperstructure": {
-      "verdict": "beats shipped",
-      "reason": "Stone spires and the lit core give the site material depth missing from the flat old emblem."
-    },
-    "grounded/chest": {
-      "verdict": "beats shipped",
-      "reason": "Wood and iron separate clearly at both sizes, replacing the all-gold chest with a readable object."
-    },
-    "grounded/move": {
-      "verdict": "equal",
-      "reason": "Leather boots retain material detail at 64 px. The old footprints are faster as a pure sign at 32 px."
-    },
-    "grounded/explore": {
-      "verdict": "equal",
-      "reason": "The map and lens have convincing depth; the old eye is simpler at 32 px. The map distinguishes this from a watch-only spyglass."
-    },
-    "grounded/attack": {
-      "verdict": "equal",
-      "reason": "A lit blade is clean and free of the old shield frame. Its narrow silhouette is less prominent but remains legible at 32 px."
-    },
-    "grounded/build": {
-      "verdict": "equal",
-      "reason": "The mallet and block match the shipped material quality; removing the second tool makes the 32 px subject cleaner."
-    },
-    "grounded/trade": {
-      "verdict": "equal",
-      "reason": "The iron balance keeps the familiar scale silhouette with clear pans. Small chains still merge at 32 px as in the old art."
-    },
-    "grounded/stamina": {
-      "verdict": "equal",
-      "reason": "Amber depth is stronger at 64 px; the old lightning silhouette is equally clear at 32 px. This meaning is reserved for stamina."
-    },
-    "grounded/victory": {
-      "verdict": "beats shipped",
-      "reason": "Laurel, cloth and pale material carry a victory subject with painted depth instead of the flat old trophy."
-    },
-    "grounded/settings": {
-      "verdict": "beats shipped",
-      "reason": "One iron gear reads more clearly than the framed dial and key, with enough face shading to feel physical."
-    },
-    "grounded/chat": {
-      "verdict": "beats shipped",
-      "reason": "Two painted speech forms preserve the conversation meaning and remove the gold rim; ivory faces stay clear at 32 px."
-    },
-    "grounded/map-army": {
-      "verdict": "equal",
-      "reason": "An unframed helmet preserves a compact military silhouette; painted light replaces the old shield engraving."
-    },
-    "grounded/map-realm": {
-      "verdict": "equal",
-      "reason": "A broad gate and crenellations preserve the site silhouette while leaving ownership to the surrounding shape."
-    },
     "faceted/stone": {
       "verdict": "beats shipped",
       "reason": "Pale fractured stone reads as rock at 32 px; lit planes and grain replace the jewel-like old facets."
@@ -331,18 +278,6 @@
     "faceted/fragment": {
       "verdict": "equal",
       "reason": "The orange-green shard retains its identity; surface light improves at 64 px but the old silhouette is already strong."
-    },
-    "faceted/knight": {
-      "verdict": "beats shipped",
-      "reason": "Large steel planes make the helmet and shoulders clear at 32 px; the old full-body figure loses its equipment detail."
-    },
-    "faceted/crossbowman": {
-      "verdict": "beats shipped",
-      "reason": "The weapon silhouette survives reduction better than the old tiny figure. It names the troop by equipment."
-    },
-    "faceted/paladin": {
-      "verdict": "equal",
-      "reason": "Blue and white shield reads cleanly and has stronger material depth. It trades the old mounted silhouette for a defensive emblem."
     },
     "faceted/realm": {
       "verdict": "beats shipped",
@@ -403,788 +338,322 @@
     "faceted/map-realm": {
       "verdict": "equal",
       "reason": "A broad gate and crenellations preserve the site silhouette while leaving ownership to the surrounding shape."
+    },
+    "faceted/knight-t1": {
+      "verdict": "beats shipped",
+      "reason": "Open face, mail and red neckcloth read at 24 px; the shipped full figure is much smaller. Plain helmet separates T1 from the closed T2 and crested T3."
+    },
+    "faceted/knight-t2": {
+      "verdict": "beats shipped",
+      "reason": "The approved armoured bust fills the square more clearly than the shipped figure. Closed steel helmet and red mantle sit between the open T1 and crested T3."
+    },
+    "faceted/knight-t3": {
+      "verdict": "beats shipped",
+      "reason": "Large red crest and layered shoulder plates survive 24 px reduction. Shipped tiers reuse the same small figure; this silhouette identifies the richest knight."
+    },
+    "faceted/crossbowman-t1": {
+      "verdict": "beats shipped",
+      "reason": "A visible face under a green hood and a held wooden crossbow replace the weapon-only study. The broad brown weapon and hood remain visible at 24 px."
+    },
+    "faceted/crossbowman-t2": {
+      "verdict": "beats shipped",
+      "reason": "Steel kettle helmet and plated shoulders separate this soldier from the hooded T1. The held crossbow remains clear; small face detail needs 32 px."
+    },
+    "faceted/crossbowman-t3": {
+      "verdict": "beats shipped",
+      "reason": "The large green crest, bright crossbow limbs and broad plate distinguish the veteran at 24 px. Shipped tiers have the same thin full-body silhouette."
+    },
+    "faceted/paladin-t1": {
+      "verdict": "equal",
+      "reason": "Ivory hood, visible face, upright sword and blue-white tabard read as a holy warrior. The shipped mounted figure remains a strong silhouette; this is a different close portrait."
+    },
+    "faceted/paladin-t2": {
+      "verdict": "equal",
+      "reason": "Winged steel helmet replaces the T1 hood while the sword and blue-white tabard preserve the type. Shipped mount is clearer as cavalry; the portrait is clearer as armour."
+    },
+    "faceted/paladin-t3": {
+      "verdict": "equal",
+      "reason": "White crest and bright layered plate enlarge the top silhouette at 24 px. Blue-white cloth and upright sword preserve the holy warrior identity without a shield."
+    },
+    "faceted/map-village": {
+      "verdict": "beats shipped",
+      "reason": "Paired red roofs distinguish village from the pale realm towers. The compact painted houses retain material at 32 px and roof colour at 12–16 px."
+    },
+    "faceted/map-mine": {
+      "verdict": "beats shipped",
+      "reason": "Dark opening and green crystal give mine a distinct colour mass. Fine pickaxe detail falls away at 12 px; the entrance and crystal carry the reading."
     }
   },
   "assets": [
     {
-      "key": "grounded/stone",
+      "key": "faceted/knight-t1",
       "size": 12,
-      "file": "new/grounded/12/stone.png"
+      "file": "new/faceted/12/knight-t1.png"
     },
     {
-      "key": "grounded/stone",
+      "key": "faceted/knight-t1",
       "size": 16,
-      "file": "new/grounded/16/stone.png"
+      "file": "new/faceted/16/knight-t1.png"
     },
     {
-      "key": "grounded/stone",
+      "key": "faceted/knight-t1",
       "size": 24,
-      "file": "new/grounded/24/stone.png"
+      "file": "new/faceted/24/knight-t1.png"
     },
     {
-      "key": "grounded/stone",
+      "key": "faceted/knight-t1",
       "size": 32,
-      "file": "new/grounded/32/stone.png"
+      "file": "new/faceted/32/knight-t1.png"
     },
     {
-      "key": "grounded/stone",
+      "key": "faceted/knight-t1",
       "size": 64,
-      "file": "new/grounded/64/stone.png"
+      "file": "new/faceted/64/knight-t1.png"
     },
     {
-      "key": "grounded/stone",
+      "key": "faceted/knight-t1",
       "size": 256,
-      "file": "new/grounded/256/stone.png"
+      "file": "new/faceted/256/knight-t1.png"
     },
     {
-      "key": "grounded/wood",
+      "key": "faceted/knight-t2",
       "size": 12,
-      "file": "new/grounded/12/wood.png"
+      "file": "new/faceted/12/knight-t2.png"
     },
     {
-      "key": "grounded/wood",
+      "key": "faceted/knight-t2",
       "size": 16,
-      "file": "new/grounded/16/wood.png"
+      "file": "new/faceted/16/knight-t2.png"
     },
     {
-      "key": "grounded/wood",
+      "key": "faceted/knight-t2",
       "size": 24,
-      "file": "new/grounded/24/wood.png"
+      "file": "new/faceted/24/knight-t2.png"
     },
     {
-      "key": "grounded/wood",
+      "key": "faceted/knight-t2",
       "size": 32,
-      "file": "new/grounded/32/wood.png"
+      "file": "new/faceted/32/knight-t2.png"
     },
     {
-      "key": "grounded/wood",
+      "key": "faceted/knight-t2",
       "size": 64,
-      "file": "new/grounded/64/wood.png"
+      "file": "new/faceted/64/knight-t2.png"
     },
     {
-      "key": "grounded/wood",
+      "key": "faceted/knight-t2",
       "size": 256,
-      "file": "new/grounded/256/wood.png"
+      "file": "new/faceted/256/knight-t2.png"
     },
     {
-      "key": "grounded/wheat",
+      "key": "faceted/knight-t3",
       "size": 12,
-      "file": "new/grounded/12/wheat.png"
+      "file": "new/faceted/12/knight-t3.png"
     },
     {
-      "key": "grounded/wheat",
+      "key": "faceted/knight-t3",
       "size": 16,
-      "file": "new/grounded/16/wheat.png"
+      "file": "new/faceted/16/knight-t3.png"
     },
     {
-      "key": "grounded/wheat",
+      "key": "faceted/knight-t3",
       "size": 24,
-      "file": "new/grounded/24/wheat.png"
+      "file": "new/faceted/24/knight-t3.png"
     },
     {
-      "key": "grounded/wheat",
+      "key": "faceted/knight-t3",
       "size": 32,
-      "file": "new/grounded/32/wheat.png"
+      "file": "new/faceted/32/knight-t3.png"
     },
     {
-      "key": "grounded/wheat",
+      "key": "faceted/knight-t3",
       "size": 64,
-      "file": "new/grounded/64/wheat.png"
+      "file": "new/faceted/64/knight-t3.png"
     },
     {
-      "key": "grounded/wheat",
+      "key": "faceted/knight-t3",
       "size": 256,
-      "file": "new/grounded/256/wheat.png"
+      "file": "new/faceted/256/knight-t3.png"
     },
     {
-      "key": "grounded/fish",
+      "key": "faceted/crossbowman-t1",
       "size": 12,
-      "file": "new/grounded/12/fish.png"
+      "file": "new/faceted/12/crossbowman-t1.png"
     },
     {
-      "key": "grounded/fish",
+      "key": "faceted/crossbowman-t1",
       "size": 16,
-      "file": "new/grounded/16/fish.png"
+      "file": "new/faceted/16/crossbowman-t1.png"
     },
     {
-      "key": "grounded/fish",
+      "key": "faceted/crossbowman-t1",
       "size": 24,
-      "file": "new/grounded/24/fish.png"
+      "file": "new/faceted/24/crossbowman-t1.png"
     },
     {
-      "key": "grounded/fish",
+      "key": "faceted/crossbowman-t1",
       "size": 32,
-      "file": "new/grounded/32/fish.png"
+      "file": "new/faceted/32/crossbowman-t1.png"
     },
     {
-      "key": "grounded/fish",
+      "key": "faceted/crossbowman-t1",
       "size": 64,
-      "file": "new/grounded/64/fish.png"
+      "file": "new/faceted/64/crossbowman-t1.png"
     },
     {
-      "key": "grounded/fish",
+      "key": "faceted/crossbowman-t1",
       "size": 256,
-      "file": "new/grounded/256/fish.png"
+      "file": "new/faceted/256/crossbowman-t1.png"
     },
     {
-      "key": "grounded/labor",
+      "key": "faceted/crossbowman-t2",
       "size": 12,
-      "file": "new/grounded/12/labor.png"
+      "file": "new/faceted/12/crossbowman-t2.png"
     },
     {
-      "key": "grounded/labor",
+      "key": "faceted/crossbowman-t2",
       "size": 16,
-      "file": "new/grounded/16/labor.png"
+      "file": "new/faceted/16/crossbowman-t2.png"
     },
     {
-      "key": "grounded/labor",
+      "key": "faceted/crossbowman-t2",
       "size": 24,
-      "file": "new/grounded/24/labor.png"
+      "file": "new/faceted/24/crossbowman-t2.png"
     },
     {
-      "key": "grounded/labor",
+      "key": "faceted/crossbowman-t2",
       "size": 32,
-      "file": "new/grounded/32/labor.png"
+      "file": "new/faceted/32/crossbowman-t2.png"
     },
     {
-      "key": "grounded/labor",
+      "key": "faceted/crossbowman-t2",
       "size": 64,
-      "file": "new/grounded/64/labor.png"
+      "file": "new/faceted/64/crossbowman-t2.png"
     },
     {
-      "key": "grounded/labor",
+      "key": "faceted/crossbowman-t2",
       "size": 256,
-      "file": "new/grounded/256/labor.png"
+      "file": "new/faceted/256/crossbowman-t2.png"
     },
     {
-      "key": "grounded/essence",
+      "key": "faceted/crossbowman-t3",
       "size": 12,
-      "file": "new/grounded/12/essence.png"
+      "file": "new/faceted/12/crossbowman-t3.png"
     },
     {
-      "key": "grounded/essence",
+      "key": "faceted/crossbowman-t3",
       "size": 16,
-      "file": "new/grounded/16/essence.png"
+      "file": "new/faceted/16/crossbowman-t3.png"
     },
     {
-      "key": "grounded/essence",
+      "key": "faceted/crossbowman-t3",
       "size": 24,
-      "file": "new/grounded/24/essence.png"
+      "file": "new/faceted/24/crossbowman-t3.png"
     },
     {
-      "key": "grounded/essence",
+      "key": "faceted/crossbowman-t3",
       "size": 32,
-      "file": "new/grounded/32/essence.png"
+      "file": "new/faceted/32/crossbowman-t3.png"
     },
     {
-      "key": "grounded/essence",
+      "key": "faceted/crossbowman-t3",
       "size": 64,
-      "file": "new/grounded/64/essence.png"
+      "file": "new/faceted/64/crossbowman-t3.png"
     },
     {
-      "key": "grounded/essence",
+      "key": "faceted/crossbowman-t3",
       "size": 256,
-      "file": "new/grounded/256/essence.png"
+      "file": "new/faceted/256/crossbowman-t3.png"
     },
     {
-      "key": "grounded/ironwood",
+      "key": "faceted/paladin-t1",
       "size": 12,
-      "file": "new/grounded/12/ironwood.png"
+      "file": "new/faceted/12/paladin-t1.png"
     },
     {
-      "key": "grounded/ironwood",
+      "key": "faceted/paladin-t1",
       "size": 16,
-      "file": "new/grounded/16/ironwood.png"
+      "file": "new/faceted/16/paladin-t1.png"
     },
     {
-      "key": "grounded/ironwood",
+      "key": "faceted/paladin-t1",
       "size": 24,
-      "file": "new/grounded/24/ironwood.png"
+      "file": "new/faceted/24/paladin-t1.png"
     },
     {
-      "key": "grounded/ironwood",
+      "key": "faceted/paladin-t1",
       "size": 32,
-      "file": "new/grounded/32/ironwood.png"
+      "file": "new/faceted/32/paladin-t1.png"
     },
     {
-      "key": "grounded/ironwood",
+      "key": "faceted/paladin-t1",
       "size": 64,
-      "file": "new/grounded/64/ironwood.png"
+      "file": "new/faceted/64/paladin-t1.png"
     },
     {
-      "key": "grounded/ironwood",
+      "key": "faceted/paladin-t1",
       "size": 256,
-      "file": "new/grounded/256/ironwood.png"
+      "file": "new/faceted/256/paladin-t1.png"
     },
     {
-      "key": "grounded/fragment",
+      "key": "faceted/paladin-t2",
       "size": 12,
-      "file": "new/grounded/12/fragment.png"
+      "file": "new/faceted/12/paladin-t2.png"
     },
     {
-      "key": "grounded/fragment",
+      "key": "faceted/paladin-t2",
       "size": 16,
-      "file": "new/grounded/16/fragment.png"
+      "file": "new/faceted/16/paladin-t2.png"
     },
     {
-      "key": "grounded/fragment",
+      "key": "faceted/paladin-t2",
       "size": 24,
-      "file": "new/grounded/24/fragment.png"
+      "file": "new/faceted/24/paladin-t2.png"
     },
     {
-      "key": "grounded/fragment",
+      "key": "faceted/paladin-t2",
       "size": 32,
-      "file": "new/grounded/32/fragment.png"
+      "file": "new/faceted/32/paladin-t2.png"
     },
     {
-      "key": "grounded/fragment",
+      "key": "faceted/paladin-t2",
       "size": 64,
-      "file": "new/grounded/64/fragment.png"
+      "file": "new/faceted/64/paladin-t2.png"
     },
     {
-      "key": "grounded/fragment",
+      "key": "faceted/paladin-t2",
       "size": 256,
-      "file": "new/grounded/256/fragment.png"
+      "file": "new/faceted/256/paladin-t2.png"
     },
     {
-      "key": "grounded/knight",
+      "key": "faceted/paladin-t3",
       "size": 12,
-      "file": "new/grounded/12/knight.png"
+      "file": "new/faceted/12/paladin-t3.png"
     },
     {
-      "key": "grounded/knight",
+      "key": "faceted/paladin-t3",
       "size": 16,
-      "file": "new/grounded/16/knight.png"
+      "file": "new/faceted/16/paladin-t3.png"
     },
     {
-      "key": "grounded/knight",
+      "key": "faceted/paladin-t3",
       "size": 24,
-      "file": "new/grounded/24/knight.png"
+      "file": "new/faceted/24/paladin-t3.png"
     },
     {
-      "key": "grounded/knight",
+      "key": "faceted/paladin-t3",
       "size": 32,
-      "file": "new/grounded/32/knight.png"
+      "file": "new/faceted/32/paladin-t3.png"
     },
     {
-      "key": "grounded/knight",
+      "key": "faceted/paladin-t3",
       "size": 64,
-      "file": "new/grounded/64/knight.png"
+      "file": "new/faceted/64/paladin-t3.png"
     },
     {
-      "key": "grounded/knight",
+      "key": "faceted/paladin-t3",
       "size": 256,
-      "file": "new/grounded/256/knight.png"
-    },
-    {
-      "key": "grounded/crossbowman",
-      "size": 12,
-      "file": "new/grounded/12/crossbowman.png"
-    },
-    {
-      "key": "grounded/crossbowman",
-      "size": 16,
-      "file": "new/grounded/16/crossbowman.png"
-    },
-    {
-      "key": "grounded/crossbowman",
-      "size": 24,
-      "file": "new/grounded/24/crossbowman.png"
-    },
-    {
-      "key": "grounded/crossbowman",
-      "size": 32,
-      "file": "new/grounded/32/crossbowman.png"
-    },
-    {
-      "key": "grounded/crossbowman",
-      "size": 64,
-      "file": "new/grounded/64/crossbowman.png"
-    },
-    {
-      "key": "grounded/crossbowman",
-      "size": 256,
-      "file": "new/grounded/256/crossbowman.png"
-    },
-    {
-      "key": "grounded/paladin",
-      "size": 12,
-      "file": "new/grounded/12/paladin.png"
-    },
-    {
-      "key": "grounded/paladin",
-      "size": 16,
-      "file": "new/grounded/16/paladin.png"
-    },
-    {
-      "key": "grounded/paladin",
-      "size": 24,
-      "file": "new/grounded/24/paladin.png"
-    },
-    {
-      "key": "grounded/paladin",
-      "size": 32,
-      "file": "new/grounded/32/paladin.png"
-    },
-    {
-      "key": "grounded/paladin",
-      "size": 64,
-      "file": "new/grounded/64/paladin.png"
-    },
-    {
-      "key": "grounded/paladin",
-      "size": 256,
-      "file": "new/grounded/256/paladin.png"
-    },
-    {
-      "key": "grounded/realm",
-      "size": 12,
-      "file": "new/grounded/12/realm.png"
-    },
-    {
-      "key": "grounded/realm",
-      "size": 16,
-      "file": "new/grounded/16/realm.png"
-    },
-    {
-      "key": "grounded/realm",
-      "size": 24,
-      "file": "new/grounded/24/realm.png"
-    },
-    {
-      "key": "grounded/realm",
-      "size": 32,
-      "file": "new/grounded/32/realm.png"
-    },
-    {
-      "key": "grounded/realm",
-      "size": 64,
-      "file": "new/grounded/64/realm.png"
-    },
-    {
-      "key": "grounded/realm",
-      "size": 256,
-      "file": "new/grounded/256/realm.png"
-    },
-    {
-      "key": "grounded/camp",
-      "size": 12,
-      "file": "new/grounded/12/camp.png"
-    },
-    {
-      "key": "grounded/camp",
-      "size": 16,
-      "file": "new/grounded/16/camp.png"
-    },
-    {
-      "key": "grounded/camp",
-      "size": 24,
-      "file": "new/grounded/24/camp.png"
-    },
-    {
-      "key": "grounded/camp",
-      "size": 32,
-      "file": "new/grounded/32/camp.png"
-    },
-    {
-      "key": "grounded/camp",
-      "size": 64,
-      "file": "new/grounded/64/camp.png"
-    },
-    {
-      "key": "grounded/camp",
-      "size": 256,
-      "file": "new/grounded/256/camp.png"
-    },
-    {
-      "key": "grounded/hyperstructure",
-      "size": 12,
-      "file": "new/grounded/12/hyperstructure.png"
-    },
-    {
-      "key": "grounded/hyperstructure",
-      "size": 16,
-      "file": "new/grounded/16/hyperstructure.png"
-    },
-    {
-      "key": "grounded/hyperstructure",
-      "size": 24,
-      "file": "new/grounded/24/hyperstructure.png"
-    },
-    {
-      "key": "grounded/hyperstructure",
-      "size": 32,
-      "file": "new/grounded/32/hyperstructure.png"
-    },
-    {
-      "key": "grounded/hyperstructure",
-      "size": 64,
-      "file": "new/grounded/64/hyperstructure.png"
-    },
-    {
-      "key": "grounded/hyperstructure",
-      "size": 256,
-      "file": "new/grounded/256/hyperstructure.png"
-    },
-    {
-      "key": "grounded/chest",
-      "size": 12,
-      "file": "new/grounded/12/chest.png"
-    },
-    {
-      "key": "grounded/chest",
-      "size": 16,
-      "file": "new/grounded/16/chest.png"
-    },
-    {
-      "key": "grounded/chest",
-      "size": 24,
-      "file": "new/grounded/24/chest.png"
-    },
-    {
-      "key": "grounded/chest",
-      "size": 32,
-      "file": "new/grounded/32/chest.png"
-    },
-    {
-      "key": "grounded/chest",
-      "size": 64,
-      "file": "new/grounded/64/chest.png"
-    },
-    {
-      "key": "grounded/chest",
-      "size": 256,
-      "file": "new/grounded/256/chest.png"
-    },
-    {
-      "key": "grounded/move",
-      "size": 12,
-      "file": "new/grounded/12/move.png"
-    },
-    {
-      "key": "grounded/move",
-      "size": 16,
-      "file": "new/grounded/16/move.png"
-    },
-    {
-      "key": "grounded/move",
-      "size": 24,
-      "file": "new/grounded/24/move.png"
-    },
-    {
-      "key": "grounded/move",
-      "size": 32,
-      "file": "new/grounded/32/move.png"
-    },
-    {
-      "key": "grounded/move",
-      "size": 64,
-      "file": "new/grounded/64/move.png"
-    },
-    {
-      "key": "grounded/move",
-      "size": 256,
-      "file": "new/grounded/256/move.png"
-    },
-    {
-      "key": "grounded/explore",
-      "size": 12,
-      "file": "new/grounded/12/explore.png"
-    },
-    {
-      "key": "grounded/explore",
-      "size": 16,
-      "file": "new/grounded/16/explore.png"
-    },
-    {
-      "key": "grounded/explore",
-      "size": 24,
-      "file": "new/grounded/24/explore.png"
-    },
-    {
-      "key": "grounded/explore",
-      "size": 32,
-      "file": "new/grounded/32/explore.png"
-    },
-    {
-      "key": "grounded/explore",
-      "size": 64,
-      "file": "new/grounded/64/explore.png"
-    },
-    {
-      "key": "grounded/explore",
-      "size": 256,
-      "file": "new/grounded/256/explore.png"
-    },
-    {
-      "key": "grounded/attack",
-      "size": 12,
-      "file": "new/grounded/12/attack.png"
-    },
-    {
-      "key": "grounded/attack",
-      "size": 16,
-      "file": "new/grounded/16/attack.png"
-    },
-    {
-      "key": "grounded/attack",
-      "size": 24,
-      "file": "new/grounded/24/attack.png"
-    },
-    {
-      "key": "grounded/attack",
-      "size": 32,
-      "file": "new/grounded/32/attack.png"
-    },
-    {
-      "key": "grounded/attack",
-      "size": 64,
-      "file": "new/grounded/64/attack.png"
-    },
-    {
-      "key": "grounded/attack",
-      "size": 256,
-      "file": "new/grounded/256/attack.png"
-    },
-    {
-      "key": "grounded/build",
-      "size": 12,
-      "file": "new/grounded/12/build.png"
-    },
-    {
-      "key": "grounded/build",
-      "size": 16,
-      "file": "new/grounded/16/build.png"
-    },
-    {
-      "key": "grounded/build",
-      "size": 24,
-      "file": "new/grounded/24/build.png"
-    },
-    {
-      "key": "grounded/build",
-      "size": 32,
-      "file": "new/grounded/32/build.png"
-    },
-    {
-      "key": "grounded/build",
-      "size": 64,
-      "file": "new/grounded/64/build.png"
-    },
-    {
-      "key": "grounded/build",
-      "size": 256,
-      "file": "new/grounded/256/build.png"
-    },
-    {
-      "key": "grounded/trade",
-      "size": 12,
-      "file": "new/grounded/12/trade.png"
-    },
-    {
-      "key": "grounded/trade",
-      "size": 16,
-      "file": "new/grounded/16/trade.png"
-    },
-    {
-      "key": "grounded/trade",
-      "size": 24,
-      "file": "new/grounded/24/trade.png"
-    },
-    {
-      "key": "grounded/trade",
-      "size": 32,
-      "file": "new/grounded/32/trade.png"
-    },
-    {
-      "key": "grounded/trade",
-      "size": 64,
-      "file": "new/grounded/64/trade.png"
-    },
-    {
-      "key": "grounded/trade",
-      "size": 256,
-      "file": "new/grounded/256/trade.png"
-    },
-    {
-      "key": "grounded/stamina",
-      "size": 12,
-      "file": "new/grounded/12/stamina.png"
-    },
-    {
-      "key": "grounded/stamina",
-      "size": 16,
-      "file": "new/grounded/16/stamina.png"
-    },
-    {
-      "key": "grounded/stamina",
-      "size": 24,
-      "file": "new/grounded/24/stamina.png"
-    },
-    {
-      "key": "grounded/stamina",
-      "size": 32,
-      "file": "new/grounded/32/stamina.png"
-    },
-    {
-      "key": "grounded/stamina",
-      "size": 64,
-      "file": "new/grounded/64/stamina.png"
-    },
-    {
-      "key": "grounded/stamina",
-      "size": 256,
-      "file": "new/grounded/256/stamina.png"
-    },
-    {
-      "key": "grounded/victory",
-      "size": 12,
-      "file": "new/grounded/12/victory.png"
-    },
-    {
-      "key": "grounded/victory",
-      "size": 16,
-      "file": "new/grounded/16/victory.png"
-    },
-    {
-      "key": "grounded/victory",
-      "size": 24,
-      "file": "new/grounded/24/victory.png"
-    },
-    {
-      "key": "grounded/victory",
-      "size": 32,
-      "file": "new/grounded/32/victory.png"
-    },
-    {
-      "key": "grounded/victory",
-      "size": 64,
-      "file": "new/grounded/64/victory.png"
-    },
-    {
-      "key": "grounded/victory",
-      "size": 256,
-      "file": "new/grounded/256/victory.png"
-    },
-    {
-      "key": "grounded/settings",
-      "size": 12,
-      "file": "new/grounded/12/settings.png"
-    },
-    {
-      "key": "grounded/settings",
-      "size": 16,
-      "file": "new/grounded/16/settings.png"
-    },
-    {
-      "key": "grounded/settings",
-      "size": 24,
-      "file": "new/grounded/24/settings.png"
-    },
-    {
-      "key": "grounded/settings",
-      "size": 32,
-      "file": "new/grounded/32/settings.png"
-    },
-    {
-      "key": "grounded/settings",
-      "size": 64,
-      "file": "new/grounded/64/settings.png"
-    },
-    {
-      "key": "grounded/settings",
-      "size": 256,
-      "file": "new/grounded/256/settings.png"
-    },
-    {
-      "key": "grounded/chat",
-      "size": 12,
-      "file": "new/grounded/12/chat.png"
-    },
-    {
-      "key": "grounded/chat",
-      "size": 16,
-      "file": "new/grounded/16/chat.png"
-    },
-    {
-      "key": "grounded/chat",
-      "size": 24,
-      "file": "new/grounded/24/chat.png"
-    },
-    {
-      "key": "grounded/chat",
-      "size": 32,
-      "file": "new/grounded/32/chat.png"
-    },
-    {
-      "key": "grounded/chat",
-      "size": 64,
-      "file": "new/grounded/64/chat.png"
-    },
-    {
-      "key": "grounded/chat",
-      "size": 256,
-      "file": "new/grounded/256/chat.png"
-    },
-    {
-      "key": "grounded/map-army",
-      "size": 12,
-      "file": "new/grounded/12/map-army.png"
-    },
-    {
-      "key": "grounded/map-army",
-      "size": 16,
-      "file": "new/grounded/16/map-army.png"
-    },
-    {
-      "key": "grounded/map-army",
-      "size": 24,
-      "file": "new/grounded/24/map-army.png"
-    },
-    {
-      "key": "grounded/map-army",
-      "size": 32,
-      "file": "new/grounded/32/map-army.png"
-    },
-    {
-      "key": "grounded/map-army",
-      "size": 64,
-      "file": "new/grounded/64/map-army.png"
-    },
-    {
-      "key": "grounded/map-army",
-      "size": 256,
-      "file": "new/grounded/256/map-army.png"
-    },
-    {
-      "key": "grounded/map-realm",
-      "size": 12,
-      "file": "new/grounded/12/map-realm.png"
-    },
-    {
-      "key": "grounded/map-realm",
-      "size": 16,
-      "file": "new/grounded/16/map-realm.png"
-    },
-    {
-      "key": "grounded/map-realm",
-      "size": 24,
-      "file": "new/grounded/24/map-realm.png"
-    },
-    {
-      "key": "grounded/map-realm",
-      "size": 32,
-      "file": "new/grounded/32/map-realm.png"
-    },
-    {
-      "key": "grounded/map-realm",
-      "size": 64,
-      "file": "new/grounded/64/map-realm.png"
-    },
-    {
-      "key": "grounded/map-realm",
-      "size": 256,
-      "file": "new/grounded/256/map-realm.png"
+      "file": "new/faceted/256/paladin-t3.png"
     },
     {
       "key": "faceted/stone",
@@ -1425,96 +894,6 @@
       "key": "faceted/fragment",
       "size": 256,
       "file": "new/faceted/256/fragment.png"
-    },
-    {
-      "key": "faceted/knight",
-      "size": 12,
-      "file": "new/faceted/12/knight.png"
-    },
-    {
-      "key": "faceted/knight",
-      "size": 16,
-      "file": "new/faceted/16/knight.png"
-    },
-    {
-      "key": "faceted/knight",
-      "size": 24,
-      "file": "new/faceted/24/knight.png"
-    },
-    {
-      "key": "faceted/knight",
-      "size": 32,
-      "file": "new/faceted/32/knight.png"
-    },
-    {
-      "key": "faceted/knight",
-      "size": 64,
-      "file": "new/faceted/64/knight.png"
-    },
-    {
-      "key": "faceted/knight",
-      "size": 256,
-      "file": "new/faceted/256/knight.png"
-    },
-    {
-      "key": "faceted/crossbowman",
-      "size": 12,
-      "file": "new/faceted/12/crossbowman.png"
-    },
-    {
-      "key": "faceted/crossbowman",
-      "size": 16,
-      "file": "new/faceted/16/crossbowman.png"
-    },
-    {
-      "key": "faceted/crossbowman",
-      "size": 24,
-      "file": "new/faceted/24/crossbowman.png"
-    },
-    {
-      "key": "faceted/crossbowman",
-      "size": 32,
-      "file": "new/faceted/32/crossbowman.png"
-    },
-    {
-      "key": "faceted/crossbowman",
-      "size": 64,
-      "file": "new/faceted/64/crossbowman.png"
-    },
-    {
-      "key": "faceted/crossbowman",
-      "size": 256,
-      "file": "new/faceted/256/crossbowman.png"
-    },
-    {
-      "key": "faceted/paladin",
-      "size": 12,
-      "file": "new/faceted/12/paladin.png"
-    },
-    {
-      "key": "faceted/paladin",
-      "size": 16,
-      "file": "new/faceted/16/paladin.png"
-    },
-    {
-      "key": "faceted/paladin",
-      "size": 24,
-      "file": "new/faceted/24/paladin.png"
-    },
-    {
-      "key": "faceted/paladin",
-      "size": 32,
-      "file": "new/faceted/32/paladin.png"
-    },
-    {
-      "key": "faceted/paladin",
-      "size": 64,
-      "file": "new/faceted/64/paladin.png"
-    },
-    {
-      "key": "faceted/paladin",
-      "size": 256,
-      "file": "new/faceted/256/paladin.png"
     },
     {
       "key": "faceted/realm",
@@ -1965,6 +1344,66 @@
       "key": "faceted/map-realm",
       "size": 256,
       "file": "new/faceted/256/map-realm.png"
+    },
+    {
+      "key": "faceted/map-village",
+      "size": 12,
+      "file": "new/faceted/12/map-village.png"
+    },
+    {
+      "key": "faceted/map-village",
+      "size": 16,
+      "file": "new/faceted/16/map-village.png"
+    },
+    {
+      "key": "faceted/map-village",
+      "size": 24,
+      "file": "new/faceted/24/map-village.png"
+    },
+    {
+      "key": "faceted/map-village",
+      "size": 32,
+      "file": "new/faceted/32/map-village.png"
+    },
+    {
+      "key": "faceted/map-village",
+      "size": 64,
+      "file": "new/faceted/64/map-village.png"
+    },
+    {
+      "key": "faceted/map-village",
+      "size": 256,
+      "file": "new/faceted/256/map-village.png"
+    },
+    {
+      "key": "faceted/map-mine",
+      "size": 12,
+      "file": "new/faceted/12/map-mine.png"
+    },
+    {
+      "key": "faceted/map-mine",
+      "size": 16,
+      "file": "new/faceted/16/map-mine.png"
+    },
+    {
+      "key": "faceted/map-mine",
+      "size": 24,
+      "file": "new/faceted/24/map-mine.png"
+    },
+    {
+      "key": "faceted/map-mine",
+      "size": 32,
+      "file": "new/faceted/32/map-mine.png"
+    },
+    {
+      "key": "faceted/map-mine",
+      "size": 64,
+      "file": "new/faceted/64/map-mine.png"
+    },
+    {
+      "key": "faceted/map-mine",
+      "size": 256,
+      "file": "new/faceted/256/map-mine.png"
     }
   ]
 }

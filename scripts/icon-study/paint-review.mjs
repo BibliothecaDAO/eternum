@@ -9,7 +9,7 @@ const output = process.argv[2];
 if (!output) throw new Error("Provide a new review evidence directory");
 await mkdir(output, { recursive: true });
 for (const direction of directions) {
-  for (const size of [32, 64]) {
+  for (const size of [24, 32, 64]) {
     const layers = [];
     for (const [index, icon] of icons.entries()) {
       const x = (index % 4) * 260,
@@ -42,7 +42,9 @@ for (const direction of directions) {
         console.log(`${direction.id}/${icon.id}: ${error.message}`);
       }
     }
-    await sharp({ create: { width: 1040, height: 812, channels: 4, background: "#21190f" } })
+    await sharp({
+      create: { width: 1040, height: Math.ceil(icons.length / 4) * 116, channels: 4, background: "#21190f" },
+    })
       .composite(layers)
       .png()
       .toFile(`${output}/${direction.id}-${size}.png`);

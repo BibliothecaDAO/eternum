@@ -43,8 +43,9 @@ try {
   await browser("set", "viewport", "1440", "1100");
   await browser("wait", ".icon-card");
   await browser("eval", "document.fonts.ready.then(() => true)");
-  await check("Shipped view compares all 52 candidates", "document.querySelectorAll('.icon-card').length===52");
-  for (const direction of ["shipped", "grounded", "faceted"]) {
+  await check("Shipped view compares all 34 candidates", "document.querySelectorAll('.icon-card').length===34");
+  for (const direction of ["shipped", "faceted"]) {
+    await browser("scrollintoview", ".icon-lab>header");
     await browser("click", `[data-art-choice='${direction}']`);
     await browser("eval", "Promise.all([...document.images].map(i=>i.decode())).then(()=>true)");
     await check(`${direction} images load`, "[...document.images].every(i=>i.complete && i.naturalWidth>0)");
@@ -60,15 +61,18 @@ try {
         "getComputedStyle(document.querySelector('.icon-order-bar .frontier-primary img')).filter === 'none'",
       );
     await browser("scrollintoview", ".icon-lab>header");
+    await browser("screenshot", `${run}/${direction}-overview.png`);
+    await browser("scrollintoview", ".icon-stage");
     await browser("screenshot", `${run}/${direction}-live.png`);
     for (const size of [24, 32, 64]) {
+      await browser("scrollintoview", ".icon-lab>header");
       await browser("click", `[data-size='${size}']`);
       await check(
         `${direction} pairs at ${size}px`,
         `[...document.querySelectorAll('.icon-pair img')].every(i=>i.getBoundingClientRect().width===${size} && i.getBoundingClientRect().height===${size})`,
       );
-      await browser("scrollintoview", "[data-family='Resources']");
-      await browser("screenshot", `${run}/${direction}-resources-${size}.png`);
+      await browser("scrollintoview", "[data-family='Troops']");
+      await browser("screenshot", `${run}/${direction}-troops-${size}.png`);
     }
     if (direction !== "shipped")
       for (const family of ["Troops", "Structures", "Actions", "Statuses", "HUD"]) {
@@ -76,6 +80,15 @@ try {
         await browser("screenshot", `${run}/${direction}-${family.toLowerCase()}-64.png`);
       }
   }
+  await check("Exactly nine troop portraits cover three types and tiers", documentExpressionTroops());
+  await check(
+    "Seven marker kinds are available",
+    "document.querySelectorAll('.icon-marker-kinds [data-kind]').length===7",
+  );
+  await check(
+    "Badges are six-corner hexes within their cells, with ownership and external values",
+    "[...document.querySelectorAll('.icon-marker-wrap')].every(e=>e.querySelector('polygon').points.numberOfItems===6 && e.offsetWidth<Math.sqrt(3)*25 && e.offsetHeight<50 && e.querySelector('.icon-owner-cue').dataset.cue===e.dataset.owner) && document.querySelectorAll('.icon-marker-wrap[data-army=true]>b').length===6 && document.querySelectorAll('.icon-marker-wrap[data-kind=map-realm]>b').length===4",
+  );
   await browser("click", ".icon-order-bar .frontier-primary");
   await check(
     "Confirming explore spends fixture supplies",
@@ -113,6 +126,7 @@ try {
     `document.querySelectorAll('.icon-marker-wrap[data-army=false]').length===${cluster.sites} && document.querySelectorAll('.icon-marker-wrap[data-army=true]').length===${cluster.armies}`,
   );
   await browser("screenshot", `${run}/minimap-sector.png`);
+  await browser("scrollintoview", ".icon-lab>header");
   await browser("click", "#labels");
   await check(
     "Hide labels removes names and verdicts",
@@ -132,6 +146,7 @@ try {
   await browser("screenshot", `${run}/reading.png`);
   await browser("click", "#close-reading");
   await check("Reading panel closes", "document.querySelector('.icon-reading') === null");
+  await browser("scrollintoview", ".icon-lab>header");
   await browser("click", "#labels");
   await browser("set", "viewport", "390", "844");
   await browser("scrollintoview", ".icon-lab>header");
@@ -181,4 +196,8 @@ async function check(message, expression) {
   const pass = output.data?.result === true;
   assertions.push({ message, pass });
   if (!pass) throw new Error(`${message}: ${JSON.stringify(output)}`);
+}
+
+function documentExpressionTroops() {
+  return `document.querySelectorAll('[data-family="Troops"] .icon-card').length===9 && ["knight","crossbowman","paladin"].every(kind=>[1,2,3].every(tier=>document.querySelector('[data-icon="'+kind+'-t'+tier+'"] .icon-pair img:last-child')!==null))`;
 }

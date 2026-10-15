@@ -9,6 +9,12 @@ const source = `${repo}/apps/game/asset-sources/icon-study-painted`;
 const output = resolve(process.argv[2] ?? `${repo}/apps/game/public/lab-icons`);
 const { icons, directions } = JSON.parse(await readFile(`${source}/catalog.json`, "utf8"));
 const verdicts = JSON.parse(await readFile(`${source}/verdicts.json`, "utf8"));
+const troopIds = ["knight", "crossbowman", "paladin"].flatMap((kind) => [1, 2, 3].map((tier) => `${kind}-t${tier}`));
+const actualTroops = icons.filter((icon) => icon.family === "Troops").map((icon) => icon.id);
+if (actualTroops.length !== 9 || troopIds.some((id) => !actualTroops.includes(id)))
+  throw new Error(
+    "Troops require a soldier portrait for every type and tier: knight, crossbowman, paladin × T1/T2/T3.",
+  );
 await mkdir(output, { recursive: true });
 const assets = await buildDirections();
 await writeFile(`${output}/catalog.json`, JSON.stringify({ icons, directions, verdicts, assets }, null, 2));
@@ -39,7 +45,9 @@ async function buildDirections() {
       atlas.push({ input: `${output}/new/${direction.id}/256/${icon.id}.png`, left, top });
       coordinates[icon.id] = { x: left, y: top, width: 256, height: 256 };
     }
-    await sharp({ create: { width: 2048, height: 1024, channels: 4, background: "#00000000" } })
+    await sharp({
+      create: { width: 2048, height: Math.ceil(icons.length / 8) * 256, channels: 4, background: "#00000000" },
+    })
       .composite(atlas)
       .png()
       .toFile(`${output}/${direction.id}-atlas.png`);

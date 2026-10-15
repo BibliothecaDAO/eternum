@@ -1,17 +1,75 @@
 {
   "directions": [
     {
-      "id": "grounded",
-      "name": "Fieldwork",
-      "description": "Softly modelled paint, weathered materials and natural colour."
-    },
-    {
       "id": "faceted",
       "name": "Facets",
       "description": "Broad painted planes, stronger light breaks and compact silhouettes."
     }
   ],
   "icons": [
+    {
+      "id": "knight-t1",
+      "label": "Knight \u00b7 T1",
+      "family": "Troops",
+      "old": "images/resources/26.png",
+      "prompt": "prompts/knight-t1.txt"
+    },
+    {
+      "id": "knight-t2",
+      "label": "Knight \u00b7 T2",
+      "family": "Troops",
+      "old": "images/resources/27.png",
+      "prompt": "prompts/knight-t2.txt"
+    },
+    {
+      "id": "knight-t3",
+      "label": "Knight \u00b7 T3",
+      "family": "Troops",
+      "old": "images/resources/28.png",
+      "prompt": "prompts/knight-t3.txt"
+    },
+    {
+      "id": "crossbowman-t1",
+      "label": "Crossbowman \u00b7 T1",
+      "family": "Troops",
+      "old": "images/resources/29.png",
+      "prompt": "prompts/crossbowman-t1.txt"
+    },
+    {
+      "id": "crossbowman-t2",
+      "label": "Crossbowman \u00b7 T2",
+      "family": "Troops",
+      "old": "images/resources/30.png",
+      "prompt": "prompts/crossbowman-t2.txt"
+    },
+    {
+      "id": "crossbowman-t3",
+      "label": "Crossbowman \u00b7 T3",
+      "family": "Troops",
+      "old": "images/resources/31.png",
+      "prompt": "prompts/crossbowman-t3.txt"
+    },
+    {
+      "id": "paladin-t1",
+      "label": "Paladin \u00b7 T1",
+      "family": "Troops",
+      "old": "images/resources/32.png",
+      "prompt": "prompts/paladin-t1.txt"
+    },
+    {
+      "id": "paladin-t2",
+      "label": "Paladin \u00b7 T2",
+      "family": "Troops",
+      "old": "images/resources/33.png",
+      "prompt": "prompts/paladin-t2.txt"
+    },
+    {
+      "id": "paladin-t3",
+      "label": "Paladin \u00b7 T3",
+      "family": "Troops",
+      "old": "images/resources/34.png",
+      "prompt": "prompts/paladin-t3.txt"
+    },
     {
       "id": "stone",
       "label": "Stone",
@@ -67,27 +125,6 @@
       "family": "Resources",
       "old": "images/resources/24.png",
       "prompt": "prompts/fragment.txt"
-    },
-    {
-      "id": "knight",
-      "label": "Knight",
-      "family": "Troops",
-      "old": "images/resources/26.png",
-      "prompt": "prompts/knight.txt"
-    },
-    {
-      "id": "crossbowman",
-      "label": "Crossbowman",
-      "family": "Troops",
-      "old": "images/resources/29.png",
-      "prompt": "prompts/crossbowman.txt"
-    },
-    {
-      "id": "paladin",
-      "label": "Paladin",
-      "family": "Troops",
-      "old": "images/resources/32.png",
-      "prompt": "prompts/paladin.txt"
     },
     {
       "id": "realm",
@@ -193,6 +230,20 @@
       "family": "Minimap",
       "old": "images/labels/realm.png",
       "prompt": "prompts/map-realm.txt"
+    },
+    {
+      "id": "map-village",
+      "label": "Village marker",
+      "family": "Minimap",
+      "old": "images/labels/village.png",
+      "prompt": "prompts/map-village.txt"
+    },
+    {
+      "id": "map-mine",
+      "label": "Mine marker",
+      "family": "Minimap",
+      "old": "images/labels/fragment_mine.png",
+      "prompt": "prompts/map-mine.txt"
     }
   ]
 }
