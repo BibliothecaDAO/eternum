@@ -19,13 +19,14 @@ interface PlayRouteReadinessState {
   mapSkipped: boolean;
   markWorldmapConverged: (token: number) => void;
   markWorldmapReady: (token: number) => void;
-  reset: (token: number) => void;
+  /** Starts a boot and returns its token: each is newer than every boot before it on this page, mounted or not. */
+  startBoot: () => number;
   sceneFailure: { scene: PlayScene; error: Error } | null;
   worldmapConverged: boolean;
   worldmapReady: boolean;
 }
 
-export const usePlayRouteReadinessStore = create<PlayRouteReadinessState>((set) => ({
+export const usePlayRouteReadinessStore = create<PlayRouteReadinessState>((set, get) => ({
   bootToken: 0,
   hexCoordinates: null,
   hexReady: false,
@@ -67,7 +68,8 @@ export const usePlayRouteReadinessStore = create<PlayRouteReadinessState>((set) 
         worldmapConverged: true,
       };
     }),
-  reset: (token) =>
+  startBoot: () => {
+    const token = get().bootToken + 1;
     set({
       bootToken: token,
       hexCoordinates: null,
@@ -76,10 +78,21 @@ export const usePlayRouteReadinessStore = create<PlayRouteReadinessState>((set) 
       sceneFailure: null,
       worldmapConverged: false,
       worldmapReady: false,
-    }),
+    });
+    return token;
+  },
   sceneFailure: null,
   worldmapConverged: false,
   worldmapReady: false,
 }));
 
 export const getCurrentPlayRouteBootToken = () => usePlayRouteReadinessStore.getState().bootToken;
+
+/**
+ * Calls back with each boot that starts from now on. A scene already set up when a boot starts (a return to the match,
+ * a spectator who presses Play) has no setup to come that would announce it, so it answers the boot from here.
+ */
+export const onPlayRouteBootStarted = (listener: () => void): (() => void) =>
+  usePlayRouteReadinessStore.subscribe((next, previous) => {
+    if (next.bootToken !== previous.bootToken) listener();
+  });

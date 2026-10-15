@@ -31,7 +31,11 @@ import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store
 import { resolveMovementStamina, type MovementStaminaResolution } from "@/lib/army-stamina/movement-affordability";
 import { resolveStoredWorldmapCameraDistance, useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
+import {
+  getCurrentPlayRouteBootToken,
+  onPlayRouteBootStarted,
+  usePlayRouteReadinessStore,
+} from "@/game-entry/play-route-readiness-store";
 import { buildPlayHref, mapRouteHex, parsePlayRoute } from "@/play/navigation/play-route";
 import { resolvePlayRouteWorldPosition } from "@/play/navigation/play-route-target";
 import {
@@ -4076,6 +4080,13 @@ export default class WorldmapScene extends WarpTravel {
       waitForAmbientConvergence: () => this.awaitInitialTerrainConvergence(),
     });
     if (setupContext.isCurrent()) this.redrawHeldSelection();
+  }
+
+  /** A boot that starts while the map is shown gets the same entry readiness a setup would have given it. */
+  private announceEntryReadinessWhileShown(): void {
+    this.refreshWarpTravelScene({ isCurrent: () => !this.isSwitchedOff }).catch((error) =>
+      this.reportWarpTravelRefreshError(error, "resume"),
+    );
   }
 
   /** The flight owns the camera: no chunk work (terrain pages, composites, refreshes) draws on its way out. */
@@ -8643,6 +8654,7 @@ export default class WorldmapScene extends WarpTravel {
       ),
     );
     this.storeSubscriptions.push(onOutcome("army", (entityId) => this.offerOrdersAtOutcome(Number(entityId))));
+    this.storeSubscriptions.push(onPlayRouteBootStarted(() => this.announceEntryReadinessWhileShown()));
     this.syncMapLayer();
     this.showSuggestedArmyDeployment();
     this.bindRouteOwnedRefreshLifecycle();
