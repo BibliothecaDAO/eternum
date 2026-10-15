@@ -13,14 +13,18 @@ import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
  * Madara compiles at most four classes at once and refuses, rather than queues, a fifth, including while it is still
  * compiling work this step did not start. A class it is already compiling is not compiled twice. So every round asks
  * again for every class still missing: a refused request is simply repeated once a slot frees, and the step never needs
- * to know which slots are whose. It fails, naming the classes, if any is still missing at the deadline.
+ * to know which slots are whose. One budget bounds every request and every wait: nothing starts after it expires, and
+ * a class that compiles only after it still fails the start, naming the classes missing.
  */
-const WARM_DEADLINE_MS = 900_000; // Five rounds of four of Madara's 300 s per-class compilation timeout, and spare.
+// On dev the 20 classes compiled in 11–15 s each, the largest well under a minute; at four at a time that is five
+// waves, about five minutes at worst. The budget is three times that.
+const WARM_BUDGET_MS = 900_000;
+const REQUEST_MS = 30_000;
 const ROUND_MS = 2_000;
 
 interface Compiler {
   isCompiled(classHash: string): boolean;
-  requestCompilation(classHash: string): Promise<void>;
+  requestCompilation(classHash: string, timeoutMs: number): Promise<void>;
 }
 
 async function main(): Promise<void> {
@@ -29,27 +33,44 @@ async function main(): Promise<void> {
     throw new Error("Usage: bun warm-native-classes.ts RUN_DIRECTORY PRIVATE_RPC_URL NATIVE_CACHE_DIRECTORY");
   const classes = worldClasses(readShardManifest<NativeWorldManifest>(resolve(directory, "native-world.json")));
   const started = Date.now();
-  const compiled = await warmClasses(classes, {
+  const warmed = await warmClasses(classes, {
     isCompiled: (classHash) => existsSync(join(cacheDirectory, `${classHash}.so`)),
-    requestCompilation: (classHash) => simulateDeployment(rpcUrl, classHash),
+    requestCompilation: (classHash, timeoutMs) => simulateDeployment(rpcUrl, classHash, timeoutMs),
   });
-  console.log(JSON.stringify({ passed: true, classes: classes.length, compiled, ms: Date.now() - started }));
+  console.log(JSON.stringify({ passed: true, classes: classes.length, ...warmed, ms: Date.now() - started }));
 }
 
-/** The number of classes that were missing when warming started; every class is compiled when it returns. */
+/**
+ * Every class compiled within the budget: how many were missing when it started, and how many requests each needed
+ * (more than one means Madara refused it or was still compiling it).
+ */
 export async function warmClasses(
   classes: string[],
   compiler: Compiler,
-  { deadlineMs = WARM_DEADLINE_MS, roundMs = ROUND_MS, now = Date.now, sleep = Bun.sleep } = {},
-): Promise<number> {
-  const deadline = now() + deadlineMs;
-  const missingAtStart = classes.filter((classHash) => !compiler.isCompiled(classHash)).length;
+  { budgetMs = WARM_BUDGET_MS, roundMs = ROUND_MS, now = Date.now, sleep = Bun.sleep } = {},
+): Promise<{ compiled: number; requests: Record<string, number> }> {
+  const deadline = now() + budgetMs;
+  const remaining = () => deadline - now();
+  const missingNow = () => classes.filter((classHash) => !compiler.isCompiled(classHash));
+  const compiled = missingNow().length;
+  const requests: Record<string, number> = {};
+  let lastFailure = "";
   for (;;) {
-    const missing = classes.filter((classHash) => !compiler.isCompiled(classHash));
-    if (!missing.length) return missingAtStart;
-    if (now() >= deadline) throw new Error(`Classes not compiled natively by the deadline: ${missing.join(", ")}`);
-    for (const classHash of missing) await compiler.requestCompilation(classHash);
-    await sleep(roundMs);
+    const missing = missingNow();
+    if (remaining() <= 0)
+      throw new Error(
+        `Classes not compiled natively within ${budgetMs / 1000} s: ${missing.join(", ") || "all, but after the budget"}` +
+          (lastFailure && `; last request failure: ${lastFailure}`),
+      );
+    if (!missing.length) return { compiled, requests };
+    for (const classHash of missing) {
+      if (remaining() <= 0) break;
+      requests[classHash] = (requests[classHash] ?? 0) + 1;
+      await compiler
+        .requestCompilation(classHash, Math.min(REQUEST_MS, remaining()))
+        .catch((error: unknown) => void (lastFailure = error instanceof Error ? error.message : String(error)));
+    }
+    if (remaining() > 0) await sleep(Math.min(roundMs, remaining()));
   }
 }
 
@@ -63,7 +84,7 @@ function worldClasses(manifest: NativeWorldManifest): string[] {
 const canonicalHash = (hash: string) => `0x${BigInt(hash).toString(16)}`;
 
 /** Its answer does not matter, only that Madara loaded the class to run it; a class with no constructor still loads. */
-async function simulateDeployment(rpcUrl: string, classHash: string): Promise<void> {
+async function simulateDeployment(rpcUrl: string, classHash: string, timeoutMs: number): Promise<void> {
   const bound = { max_amount: "0x0", max_price_per_unit: "0x0" };
   const response = await fetch(rpcUrl, {
     method: "POST",
@@ -93,7 +114,7 @@ async function simulateDeployment(rpcUrl: string, classHash: string): Promise<vo
         simulation_flags: ["SKIP_VALIDATE", "SKIP_FEE_CHARGE"],
       },
     }),
-    signal: AbortSignal.timeout(30_000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   if (!response.ok) throw new Error(`Private node answered ${response.status} while loading class ${classHash}`);
 }

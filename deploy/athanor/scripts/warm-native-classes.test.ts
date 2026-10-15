@@ -43,7 +43,7 @@ async function warm(directory: string, url: string, cache: string) {
     new Response(child.stderr).text(),
   ]);
   if (code !== 0) throw new Error(error);
-  return JSON.parse(output.trim()) as { passed: boolean; classes: number; compiled: number };
+  return JSON.parse(output.trim()) as { passed: boolean; classes: number; compiled: number; requests: object };
 }
 
 it("asks the private node for every class the cache lacks, and only reads the cache on the next start", async () => {
@@ -58,6 +58,7 @@ it("asks the private node for every class the cache lacks, and only reads the ca
       passed: true,
       classes: 12,
       compiled: 11,
+      requests: Object.fromEntries(["0xa2", "0xa3", ...LOGIC].map((classHash) => [classHash, 1])),
       ms: expect.any(Number),
     });
     expect(node.simulated.sort()).toEqual(["0xa2", "0xa3", ...LOGIC].sort());
@@ -71,13 +72,21 @@ it("asks the private node for every class the cache lacks, and only reads the ca
 
 /**
  * Madara's compiler on a virtual clock: four slots, a request beyond them refused rather than queued, a class already
- * compiling not started twice, and a class that fails to compile frees its slot without producing a library.
+ * compiling not started twice, and a class that fails to compile frees its slot without producing a library. A slow
+ * class's simulation takes `slowRequestMs` to answer, and gives up at the caller's timeout.
  */
-function madaraCompiler({ busyUntil = [] as number[], failing = new Set<string>(), compileMs = 1_500 } = {}) {
+function madaraCompiler({
+  busyUntil = [] as number[],
+  failing = new Set<string>(),
+  compileMs = 1_500,
+  slow = new Set<string>(),
+  slowRequestMs = 0,
+} = {}) {
   let clock = 0;
   const jobs = busyUntil.map((finishesAt) => ({ classHash: "foreign", finishesAt }));
   const compiled = new Set<string>();
   const refused: string[] = [];
+  const requestedAt: number[] = [];
   let mostAtOnce = 0;
   const settle = () => {
     for (const job of jobs.filter(({ finishesAt }) => finishesAt <= clock)) {
@@ -85,16 +94,23 @@ function madaraCompiler({ busyUntil = [] as number[], failing = new Set<string>(
       if (job.classHash !== "foreign" && !failing.has(job.classHash)) compiled.add(job.classHash);
     }
   };
+  const advance = (ms: number) => {
+    clock += ms;
+    settle();
+  };
   return {
     refused,
+    requestedAt,
     mostAtOnce: () => mostAtOnce,
     now: () => clock,
-    sleep: async (ms: number) => {
-      clock += ms;
-      settle();
-    },
+    sleep: async (ms: number) => advance(ms),
     isCompiled: (classHash: string) => compiled.has(classHash),
-    requestCompilation: async (classHash: string) => {
+    requestCompilation: async (classHash: string, timeoutMs: number) => {
+      requestedAt.push(clock);
+      if (slow.has(classHash)) {
+        advance(Math.min(slowRequestMs, timeoutMs));
+        if (slowRequestMs > timeoutMs) throw new Error("The operation timed out.");
+      }
       if (compiled.has(classHash) || jobs.some((job) => job.classHash === classHash)) return;
       if (jobs.length >= 4) refused.push(classHash);
       else jobs.push({ classHash, finishesAt: clock + compileMs });
@@ -103,25 +119,49 @@ function madaraCompiler({ busyUntil = [] as number[], failing = new Set<string>(
   };
 }
 
+const virtual = (compiler: ReturnType<typeof madaraCompiler>, budgetMs?: number) => ({
+  now: compiler.now,
+  sleep: compiler.sleep,
+  ...(budgetMs ? { budgetMs } : {}),
+});
+
 it("finishes every class after its first requests were refused by compilations it did not start", async () => {
   const compiler = madaraCompiler({ busyUntil: [3_000, 3_000, 5_000] });
-  const warmed = await warmClasses(LOGIC, compiler, { now: compiler.now, sleep: compiler.sleep });
-  expect(warmed).toBe(9);
+  const warmed = await warmClasses(LOGIC, compiler, virtual(compiler));
+  expect(warmed.compiled).toBe(9);
   expect(LOGIC.every((classHash) => compiler.isCompiled(classHash))).toBe(true);
   expect(compiler.refused.length).toBeGreaterThan(0);
+  expect(Math.max(...Object.values(warmed.requests))).toBeGreaterThan(1);
   expect(compiler.mostAtOnce()).toBe(4);
 });
 
 it("counts only the classes missing when it starts", async () => {
   const compiler = madaraCompiler();
-  await warmClasses(LOGIC.slice(0, 2), compiler, { now: compiler.now, sleep: compiler.sleep });
-  expect(await warmClasses(LOGIC, compiler, { now: compiler.now, sleep: compiler.sleep })).toBe(7);
+  await warmClasses(LOGIC.slice(0, 2), compiler, virtual(compiler));
+  expect((await warmClasses(LOGIC, compiler, virtual(compiler))).compiled).toBe(7);
 });
 
-it("never reports readiness while a class keeps failing to compile, and names it at the deadline", async () => {
+it("never reports readiness while a class keeps failing to compile, and stops exactly at the budget", async () => {
   const compiler = madaraCompiler({ failing: new Set([LOGIC[4]!]) });
-  await expect(
-    warmClasses(LOGIC, compiler, { deadlineMs: 60_000, now: compiler.now, sleep: compiler.sleep }),
-  ).rejects.toThrow(`Classes not compiled natively by the deadline: ${LOGIC[4]}`);
-  expect(compiler.now()).toBeGreaterThanOrEqual(60_000);
+  await expect(warmClasses(LOGIC, compiler, virtual(compiler, 60_000))).rejects.toThrow(
+    `Classes not compiled natively within 60 s: ${LOGIC[4]}`,
+  );
+  expect(compiler.now()).toBe(60_000);
+});
+
+it("fails a class that compiles only after the budget, without reporting success late", async () => {
+  const compiler = madaraCompiler({ compileMs: 61_500 });
+  await expect(warmClasses([LOGIC[0]!], compiler, virtual(compiler, 61_000))).rejects.toThrow("within 61 s");
+  expect(compiler.now()).toBe(61_000);
+  await compiler.sleep(1_000);
+  expect(compiler.isCompiled(LOGIC[0]!)).toBe(true);
+});
+
+it("bounds a slow request by the budget left and starts nothing after it", async () => {
+  const compiler = madaraCompiler({ slow: new Set([LOGIC[0]!]), slowRequestMs: 45_000 });
+  await expect(warmClasses(LOGIC, compiler, virtual(compiler, 50_000))).rejects.toThrow(
+    "last request failure: The operation timed out.",
+  );
+  expect(compiler.now()).toBe(50_000);
+  expect(compiler.requestedAt.every((at) => at < 50_000)).toBe(true);
 });
