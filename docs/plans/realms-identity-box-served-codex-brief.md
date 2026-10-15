@@ -43,9 +43,8 @@ client stays on Pages.
   build** (build/install/push are manual today). So there is no apps/web build step to "replace" — only the unit
   install. `web.service` is installed but not running.
 - Box DB `postgres://realms:realms@127.0.0.1:5432/realms` holds only `herald_*`. The drizzle schema models what identity
-  needs (`packages/db/src/schema/auth.ts` → `user`/`session`/`account`/`verification`; `schema/mmr.ts` →
-  `starknet_mmr_updates`). **Gotcha:** `packages/db/drizzle.config.ts` sets `ssl: true`, which fails against the box's
-  plain-TCP local Postgres.
+  needs (`packages/db/src/schema/auth.ts` → `user`/`session`/`account`/`verification`). **Gotcha:**
+  `packages/db/drizzle.config.ts` sets `ssl: true`, which fails against the box's plain-TCP local Postgres.
 
 ## The fix
 
@@ -116,9 +115,8 @@ REALMS_SERVER_PORT=3000
 
 Gate `packages/db/drizzle.config.ts`'s `ssl` on the env (e.g. `ssl: env.DATABASE_SSL === "false" ? false : true`) and
 set `DATABASE_SSL=false` in the box `.env`, so the push command is not silently dependent on an unstated override. Run
-`pnpm --filter @realms-world/db push`. Verify `user`/`session`/`account`/`verification`/`starknet_mmr_updates` exist and
-the case-insensitive **unique index on `lower(name)`** is present (that index — not the app pre-check — is the
-race-proof name guarantee).
+`pnpm --filter @realms-world/db push`. Verify `user`/`session`/`account`/`verification` exist and the case-insensitive
+**unique index on `lower(name)`** is present (that index — not the app pre-check — is the race-proof name guarantee).
 
 ### 6. systemd + bootstrap
 
