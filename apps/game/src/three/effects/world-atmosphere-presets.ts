@@ -11,6 +11,13 @@ export interface TimeOfDayColors {
   fogFar: number;
 }
 
+export const FRONTIER_EMBER_COLORS = {
+  skyColor: 0xa4b1cd,
+  groundColor: 0x514453,
+  sunColor: 0xffbc7f,
+  ambientColor: 0xb0a4b7,
+} as const;
+
 // The world controller and biome lab edit and read this one table.
 export const WORLD_ATMOSPHERE_PRESETS: Record<string, TimeOfDayColors> = {
   deepNight: {

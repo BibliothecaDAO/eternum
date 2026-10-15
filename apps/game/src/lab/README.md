@@ -58,3 +58,19 @@ restoration of real network/identity behavior:
 ```sh
 pnpm --dir apps/game test src/lab/lab-app.test.tsx src/shell/lab/app-lab.test.tsx
 ```
+
+## Release atmosphere comparison
+
+In Terrain & buildings (`/lab`), **World mode** compares Blitz (shipped lighting, new ordinary edge mist) with Frontier
+(Ember lighting, darker mist). Both use the production `ProceduralTerrain` and `WorldAtmosphereController`; biomes,
+props and ground textures remain shipped. The existing Time, Weather, Exploration and quality controls still apply. This
+selector belongs to the dev lab; live games select their presentation from the synced game mode.
+
+```sh
+pnpm --dir apps/game verify:terrain:gallery --base-url 'https://127.0.0.1:4194/?gameMode=blitz' --scenes all-biomes,fog-reveal --ground-modes textured --timing-policy informational --artifact-dir <fresh-blitz-directory>
+pnpm --dir apps/game verify:terrain:gallery --base-url 'https://127.0.0.1:4194/?gameMode=frontier' --scenes all-biomes,fog-reveal --ground-modes textured --timing-policy informational --artifact-dir <fresh-frontier-directory>
+```
+
+Both renderer backends are checked by default. Each capture records the requested world mode and the actual terrain
+snapshot; the gate rejects a mode mismatch. These runs verify presentation and reveal coverage; they do not establish
+performance on a live world. Live proof uses the existing `playtest` command after the dev stack is available.

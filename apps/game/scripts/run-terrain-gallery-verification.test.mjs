@@ -198,8 +198,8 @@ describe("terrain gallery verification", () => {
       }),
     ).toMatchObject({ ok: true, reasons: [] });
 
-    fog.snapshot.preparedFrontierCells = 5;
-    fog.snapshot.fogTerrainCells = 23;
+    fog.snapshot.preparedFrontierCells = 6;
+    fog.snapshot.fogTerrainCells = 24;
     fog.snapshot.shroudActiveReveals = 1;
     expect(
       evaluateTerrainGalleryResults([fog], {
@@ -209,7 +209,7 @@ describe("terrain gallery verification", () => {
       }),
     ).toMatchObject({ ok: true, reasons: [] });
 
-    fog.snapshot.preparedFrontierCells = 4;
+    fog.snapshot.preparedFrontierCells = 5;
     expect(
       evaluateTerrainGalleryResults([fog], {
         groundModes: ["textured"],
@@ -322,3 +322,20 @@ function result(rendererMode, activeMode, groundMode) {
     },
   };
 }
+
+it.each(["blitz", "frontier"])("captures the requested production world mode %s", (gameMode) => {
+  const url = new URL(
+    buildTerrainGalleryUrl(`https://localhost:4173/?gameMode=${gameMode}&look=dawn&biomes=reworked`, "webgpu-auto"),
+  );
+  expect(url.pathname).toBe("/lab");
+  expect(url.searchParams.get("gameMode")).toBe(gameMode);
+  expect(url.searchParams.has("look")).toBe(false);
+  expect(url.searchParams.has("biomes")).toBe(false);
+  const results = healthyResults();
+  for (const result of results) result.snapshot.gameMode = gameMode;
+  expect(evaluateTerrainGalleryResults(results, { gameMode }).ok).toBe(true);
+  results[0].snapshot.gameMode = "wrong";
+  expect(evaluateTerrainGalleryResults(results, { gameMode }).reasons).toContain(
+    "all-biomes/webgpu-auto/flat: world mode did not match request",
+  );
+});

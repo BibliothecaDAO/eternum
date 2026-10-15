@@ -1,8 +1,9 @@
+import type { GameModeId } from "@/config/game-modes";
 import { AmbientLight, Color, DirectionalLight, Fog, HemisphereLight, Scene, Vector3 } from "three";
 import { describe, expect, it, vi } from "vitest";
 import { WorldAtmosphereController } from "./world-atmosphere-controller";
 
-function createFixture() {
+function createFixture(gameMode?: GameModeId) {
   const scene = new Scene();
   scene.background = new Color(0x111111);
 
@@ -14,7 +15,7 @@ function createFixture() {
   const ambientLight = new AmbientLight(0xcccccc, 0.5);
   const fog = new Fog(0x222222, 5, 50);
 
-  const manager = new WorldAtmosphereController(scene, directionalLight, hemisphereLight, ambientLight, fog);
+  const manager = new WorldAtmosphereController(scene, directionalLight, hemisphereLight, ambientLight, fog, gameMode);
   manager.params.progressSmoothing = 1;
   manager.params.sunPositionEasing = 1;
   manager.params.colorTransitionSpeed = 1;
@@ -375,6 +376,7 @@ function readLighting(fixture: ReturnType<typeof createFixture>) {
   const rim = findMoonLight(fixture.scene, fixture.directionalLight)!;
   return {
     sun: fixture.directionalLight.intensity,
+    sunColor: fixture.directionalLight.color.getHex(),
     sunPosition: fixture.directionalLight.position.toArray(),
     sunTarget: fixture.directionalLight.target.position.toArray(),
     castsShadow: fixture.directionalLight.castShadow,
@@ -402,4 +404,41 @@ it("lets the biome lab disable the moon through weather updates", () => {
   fixture.manager.params.moonEnabled = true;
   fixture.manager.update(0);
   expect(moon.intensity).toBeCloseTo(0.95);
+});
+
+const cycleSamples = [0, 5, 10, 16.7, 20, 25, 30, 35, 40, 45, 50, 55, 60, 66.7, 75, 85, 95, 99.9];
+
+it.each(cycleSamples)("keeps shipped lighting outside Frontier at cycle %s", (progress) => {
+  const shipped = createFixture();
+  shipped.manager.update(progress);
+  shipped.manager.applyWeatherModulation(0.7, 0.3, 0.5, 0.1);
+  for (const mode of ["blitz", "eternum", "duel"] as const) {
+    const fixture = createFixture(mode);
+    fixture.manager.update(progress);
+    fixture.manager.applyWeatherModulation(0.7, 0.3, 0.5, 0.1);
+    expect(readLighting(fixture)).toEqual(readLighting(shipped));
+    fixture.manager.dispose();
+  }
+  shipped.manager.dispose();
+});
+
+it.each(cycleSamples)("uses Ember colours with the shipped cycle and visibility at %s", (progress) => {
+  const shipped = createFixture();
+  const frontier = createFixture("frontier");
+  shipped.manager.update(progress);
+  frontier.manager.update(progress);
+  expect(readLighting(frontier)).toEqual({
+    ...readLighting(shipped),
+    sky: 0xa4b1cd,
+    background: 0xa4b1cd,
+    ground: 0x514453,
+    sunColor: 0xffbc7f,
+    ambientColor: 0xb0a4b7,
+  });
+  // Ethereal presentation keeps the existing moonlight.
+  shipped.manager.update(progress, undefined, { environment: "ethereal" });
+  frontier.manager.update(progress, undefined, { environment: "ethereal" });
+  expect(readLighting(frontier)).toEqual(readLighting(shipped));
+  frontier.manager.dispose();
+  shipped.manager.dispose();
 });

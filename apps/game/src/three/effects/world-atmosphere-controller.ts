@@ -1,4 +1,5 @@
-import { WORLD_ATMOSPHERE_PRESETS, type TimeOfDayColors } from "./world-atmosphere-presets";
+import type { GameModeId } from "@/config/game-modes";
+import { FRONTIER_EMBER_COLORS, WORLD_ATMOSPHERE_PRESETS, type TimeOfDayColors } from "./world-atmosphere-presets";
 import { DAY_PHASE_PROGRESS, resolveDayPhase } from "@/utils/cycle-progress";
 import type GUI from "lil-gui";
 import {
@@ -117,6 +118,7 @@ export class WorldAtmosphereController {
     hemisphereLight: HemisphereLight,
     ambientLight: AmbientLight,
     fog: Fog,
+    private readonly gameMode: GameModeId = "blitz",
   ) {
     this.scene = scene;
     this.directionalLight = directionalLight;
@@ -165,6 +167,9 @@ export class WorldAtmosphereController {
     // Get target colors for current time, then grade nighttime toward cooler tones
     const interpolatedColors = this.getInterpolatedTimeColors(progressFrame.progress);
     const targetColors = this.applyNightTemperatureGrading(interpolatedColors, progressFrame.progress);
+    if (this.gameMode === "frontier" && this.environment === "world") {
+      Object.assign(targetColors, FRONTIER_EMBER_COLORS);
+    }
 
     // Smoothly transition current colors toward target colors
     this.currentColors = progressFrame.snapVisualState

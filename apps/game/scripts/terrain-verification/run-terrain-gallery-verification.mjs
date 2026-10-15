@@ -1,5 +1,5 @@
-import { spawnSync } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { createBrowserSession } from "../client-playtest/browser-session.mjs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -46,6 +46,7 @@ export function buildTerrainGalleryUrl(
   revealProgress = 0,
 ) {
   const url = new URL(baseUrl);
+  const gameMode = url.searchParams.get("gameMode");
   url.pathname = "/lab";
   url.search = "";
   url.searchParams.set("capture", "1");
@@ -54,6 +55,7 @@ export function buildTerrainGalleryUrl(
   url.searchParams.set("scene", sceneId);
   url.searchParams.set("quality", qualityTier);
   if (revealProgress > 0) url.searchParams.set("reveal", String(revealProgress));
+  if (gameMode === "blitz" || gameMode === "frontier") url.searchParams.set("gameMode", gameMode);
   return url.toString();
 }
 
@@ -81,6 +83,8 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     const label = `${result.sceneId}/${result.rendererMode}/${result.groundMode}`;
     if (!result.routeMounted) reasons.push(`${label}: route did not mount`);
     if (!result.ready) reasons.push(`${label}: route did not become ready`);
+    if (options.gameMode && result.snapshot?.gameMode !== options.gameMode)
+      reasons.push(`${label}: world mode did not match request`);
     if (result.errors.length > 0) reasons.push(`${label}: browser reported ${result.errors[0]}`);
     if (result.sceneId === "all-biomes" && result.snapshot?.biomeCount !== 16) {
       reasons.push(`${label}: expected 16 biomes`);
@@ -208,17 +212,13 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     if (result.snapshot?.fogOpacity !== 1) {
       reasons.push(`${label}: expected opaque unexplored territory`);
     }
-    if (
-      expectsFog &&
-      result.snapshot?.fogTerrainCells + result.snapshot?.shroudActiveReveals !== result.snapshot?.shroudInstances
-    ) {
+    if (expectsFog && result.snapshot?.fogTerrainCells !== result.snapshot?.shroudInstances) {
       reasons.push(`${label}: fog-covered terrain did not match the committed exploration fog cells`);
     }
     if (
       expectsFog &&
       (!(result.snapshot?.preparedFrontierCells > 0) ||
-        result.snapshot.preparedFrontierCells + result.snapshot.shroudActiveReveals !==
-          result.snapshot.shroudFrontierInstances)
+        result.snapshot.preparedFrontierCells !== result.snapshot.shroudFrontierInstances)
     ) {
       reasons.push(`${label}: prepared frontier cells did not match the committed one-ring fog frontier`);
     }
@@ -359,10 +359,21 @@ async function runGalleryScenario({
   sceneId,
 }) {
   const rendererKey = rendererMode === "webgpu-auto" ? "wg" : "gl";
-  const session = `tg-${sceneId.slice(0, 8)}-${qualityTier[0]}-${rendererKey}-${groundMode[0]}-${Date.now().toString(36)}`;
+  const browserName = `tg-${sceneId.slice(0, 8)}-${qualityTier[0]}-${rendererKey}-${groundMode[0]}-${Date.now().toString(36)}`;
+  const profile = mkdtempSync(join(tmpdir(), "terrain-gallery-"));
+  const session = createBrowserSession(browserName, { headed, profile });
   const url = buildTerrainGalleryUrl(baseUrl, rendererMode, groundMode, sceneId, qualityTier, revealProgress);
   try {
-    runAgentBrowser(session, ["open", "about:blank"], headed);
+    runAgentBrowser(
+      session,
+      [
+        "open",
+        "about:blank",
+        "--args",
+        "--ignore-gpu-blocklist,--enable-gpu,--use-angle=vulkan,--enable-features=Vulkan,--enable-unsafe-webgpu",
+      ],
+      headed,
+    );
     runAgentBrowser(session, ["set", "viewport", "1440", "900"], headed);
     runAgentBrowser(session, ["open", url, "--ignore-https-errors"], headed);
     let state = waitForReady(session, headed);
@@ -395,6 +406,7 @@ async function runGalleryScenario({
     };
   } finally {
     tryRunAgentBrowser(session, ["close"], headed);
+    rmSync(profile, { recursive: true, force: true });
   }
 }
 
@@ -441,18 +453,8 @@ function readRouteState(session, headed) {
   return parseAgentBrowserJson(raw);
 }
 
-function runAgentBrowser(session, command, headed) {
-  const args = ["-y", "agent-browser", "--session", session];
-  if (headed) args.push("--headed");
-  const result = spawnSync("npx", [...args, ...command], {
-    cwd: process.env.RUNNER_TEMP || process.env.TMPDIR || tmpdir(),
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-  if (result.status !== 0) {
-    throw new Error(result.stderr.trim() || result.stdout.trim() || `agent-browser failed for ${session}`);
-  }
-  return result.stdout.trim();
+function runAgentBrowser(session, command) {
+  return session.run(command);
 }
 
 function tryRunAgentBrowser(session, command, headed) {
@@ -532,7 +534,14 @@ async function main(args) {
       }
     }
   }
-  const evaluation = evaluateTerrainGalleryResults(results, { groundModes, rendererModes, sceneIds, timingPolicy });
+  const gameMode = new URL(baseUrl).searchParams.get("gameMode") === "frontier" ? "frontier" : "blitz";
+  const evaluation = evaluateTerrainGalleryResults(results, {
+    groundModes,
+    rendererModes,
+    sceneIds,
+    timingPolicy,
+    gameMode,
+  });
   const summary = {
     ...evaluation,
     groundModes,

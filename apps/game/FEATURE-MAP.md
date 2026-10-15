@@ -212,3 +212,13 @@ an eligible player. The lab proof does not establish those live actions.
   the player creates one from the reserve.
 - **Merging armies.** Select an army, then an adjacent army or realm of yours: the transfer panel moves troops between
   them, across realms too. Both sides must hold the same troop type and tier.
+
+## World atmosphere
+
+On the world map, unexplored ground uses moving edge mist through the existing directional reveal path. Frontier adds
+darker mist and Ember lighting; Blitz retains the shipped day/night lighting. Ground biomes, relief, textures and props
+are unchanged. The realm scene retains its shipped lighting.
+
+For an auth-free comparison, open `/lab` → **World mode** → **Blitz** or **Frontier**, then select a scene and use
+Exploration or Time. The lab calls the production terrain and atmosphere constructors. See `src/lab/README.md` for the
+gallery proof command; live game selection comes only from the game's synced mode.

@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-15",
+    title: "Mist at the frontier",
+    description:
+      "Moving mist marks the edge of explored land. Frontier takes on warm Ember light and darker mist; Blitz keeps its familiar lighting.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-15",
     title: "Open yards around village cottages",
     description:
       "Village cottages sit clear of the fence, with lower roofs, a shared hearth and room to walk around them.",
