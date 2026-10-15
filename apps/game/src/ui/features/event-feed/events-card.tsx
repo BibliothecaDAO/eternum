@@ -103,9 +103,10 @@ const EmptyEvents = ({ history }: { history: HistoryState }) => {
 
 /** Rows that arrived since the log was last open; zero while it is open. */
 export function useUnreadFeedCount(rows: ImportantFeedRow[], logOpen: boolean): number {
-  const [seenAt, setSeenAt] = useState(() => Date.now());
-  useEffect(() => setSeenAt(Date.now()), [logOpen]);
-  return logOpen ? 0 : rows.filter((row) => row.at > seenAt).length;
+  const [seen, setSeen] = useState(() => ({ logOpen, at: Date.now() }));
+  // Opening or closing the log marks every row it holds as seen.
+  if (seen.logOpen !== logOpen) setSeen({ logOpen, at: Math.max(seen.at, ...rows.map((row) => row.at)) });
+  return logOpen ? 0 : rows.filter((row) => row.at > seen.at).length;
 }
 
 export const UnreadFeedBadge = ({ count }: { count: number }) =>
