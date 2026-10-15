@@ -1,13 +1,13 @@
 # Settlement models
 
-These five authored models are shared by the world map, local realm view, and graphics lab. Villages and mercenary camps
-use `village.glb`; realm levels use `settlement.glb`, `city.glb`, `kingdom.glb`, and `empire.glb`.
+The four realm levels use `settlement.glb`, `city.glb`, `kingdom.glb`, and `empire.glb` in the world map, local realm
+view and graphics lab. Camps, villages and stragglers use the [outpost family](../outposts/SOURCE.md).
 
-Rebuild a model from the repository root (replace `village` with the desired tier):
+Rebuild a realm from the repository root (replace `settlement` with the desired tier):
 
 ```sh
-blender --background --python-exit-code 1 --python apps/game/scripts/settlements/build-village.py
-node apps/game/scripts/compress-models.mjs --only settlements/village.glb
+blender --background --python-exit-code 1 --python apps/game/scripts/settlements/build-settlement.py
+node apps/game/scripts/compress-models.mjs --only settlements/settlement.glb
 ```
 
 The checked-in Blender generators and shared geometry helpers are the editable source. Each build also writes an
@@ -15,8 +15,7 @@ editable `.blend` and asset report under `.context/graphics-lab/realm-progressio
 discarded concept renders are excluded from the shipped assets.
 
 Geometry is authored Z-up with entrances facing -Y; export bakes transforms for instancing. The GLB uses Y-up, with
-entrances facing +Z. Terrain supplies the ground. Yurt wall height is 0.39 units and roof peak is 0.56 units, with the
-approved village footprint preserved.
+entrances facing +Z. Terrain supplies the ground.
 
 Mesh extras drive presentation: `settlementMotion` selects banner, flame, gem spin, or foliage animation;
 `relationshipCloth` identifies village colors, and `orderCloth` identifies realm colors and emblems. Keep these surfaces

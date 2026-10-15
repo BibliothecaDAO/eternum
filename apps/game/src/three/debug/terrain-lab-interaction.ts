@@ -2,7 +2,7 @@ import { RewardTileModel } from "@/three/rewards/reward-tile-model";
 import {
   ChestModelPath,
   RiftModelPath,
-  VILLAGE_MODEL_PATH,
+  isRealmModelPath,
   SPIRE_MODEL_PATH,
   isSettlementModelPath,
 } from "@/three/constants/scene-constants";
@@ -364,7 +364,7 @@ export class TerrainLabInteraction {
   ): InstancedModel | RewardTileModel {
     if (path === SPIRE_MODEL_PATH) return new SpireModel(gltf, capacity);
     if (isSettlementModelPath(path))
-      return new SettlementModel(gltf, capacity, path === VILLAGE_MODEL_PATH ? "village" : "realm");
+      return new SettlementModel(gltf, capacity, isRealmModelPath(path) ? "realm" : "village");
     if (path === ChestModelPath || path === RiftModelPath) return new RewardTileModel(gltf, capacity);
     return new InstancedModel(gltf, capacity, false, name);
   }

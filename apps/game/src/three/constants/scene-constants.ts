@@ -48,7 +48,9 @@ export const RiftModelPath = "/models/reward-tiles/rift.glb";
 const BITCOIN_MINE_MODEL_PATH = "/models/ethereal/bitcoin-mine.glb";
 const RIFT_MODEL_PATH = "/models/reward-tiles/rift.glb";
 
-export const VILLAGE_MODEL_PATH = "/models/settlements/village.glb";
+export const VILLAGE_MODEL_PATH = "/models/outposts/village.glb";
+export const CAMP_MODEL_PATH = "/models/outposts/camp.glb";
+export const STRAGGLERS_MODEL_PATH = "/models/outposts/stragglers.glb";
 export const REALM_MODEL_PATHS = {
   [RealmLevelNames.Settlement]: "/models/settlements/settlement.glb",
   [RealmLevelNames.City]: "/models/settlements/city.glb",
@@ -61,7 +63,7 @@ export function isRealmModelPath(path: string): boolean {
 }
 
 export function isSettlementModelPath(path: string): boolean {
-  return path === VILLAGE_MODEL_PATH || isRealmModelPath(path);
+  return [VILLAGE_MODEL_PATH, CAMP_MODEL_PATH, STRAGGLERS_MODEL_PATH].includes(path) || isRealmModelPath(path);
 }
 
 export const SHARED_BUILDING_MODEL_PATHS = buildUniqueAssetPaths([
@@ -70,6 +72,7 @@ export const SHARED_BUILDING_MODEL_PATHS = buildUniqueAssetPaths([
   BITCOIN_MINE_MODEL_PATH,
   ...Object.values(REALM_MODEL_PATHS),
   VILLAGE_MODEL_PATH,
+  CAMP_MODEL_PATH,
   HYPERSTRUCTURE_MODEL_PATH,
 ]);
 
@@ -157,7 +160,7 @@ export const buildingModelPaths = (isBlitz: boolean) => {
     [BUILDINGS_GROUPS.REALMS]: REALM_MODEL_PATHS,
     [BUILDINGS_GROUPS.VILLAGE]: {
       [StructureType.Village]: VILLAGE_MODEL_PATH,
-      [StructureType.Camp]: VILLAGE_MODEL_PATH,
+      [StructureType.Camp]: CAMP_MODEL_PATH,
     },
     [BUILDINGS_GROUPS.HYPERSTRUCTURE]: {
       [HyperstructureTypesNames.STAGE_1]: HYPERSTRUCTURE_MODEL_PATH,
@@ -186,12 +189,11 @@ export function getStructureModelPaths(): Record<StructureType, string[]> {
     [StructureType.Bank]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Bank],
     [StructureType.Mine]: Object.values(MineKinds).map((kind) => kind.model),
     [StructureType.Village]: [VILLAGE_MODEL_PATH],
-    [StructureType.Camp]: [VILLAGE_MODEL_PATH],
+    [StructureType.Camp]: [CAMP_MODEL_PATH],
     [StructureType.BitcoinMine]: [BITCOIN_MINE_MODEL_PATH],
     [StructureType.Rift]: [RIFT_MODEL_PATH],
     [StructureType.Ruin]: FALLEN_REALM_MODEL_PATHS,
-    // Stragglers wait on their own art and stand as a camp until it lands.
-    [StructureType.Stragglers]: [VILLAGE_MODEL_PATH],
+    [StructureType.Stragglers]: [STRAGGLERS_MODEL_PATH],
   };
 }
 

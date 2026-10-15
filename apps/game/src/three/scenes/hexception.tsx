@@ -7,7 +7,7 @@ import {
   resolveSettlementRelationship,
   type SettlementRelationship,
 } from "../structures/settlement-appearance";
-import { VILLAGE_MODEL_PATH, isSettlementModelPath } from "../constants/scene-constants";
+import { isRealmModelPath, isSettlementModelPath } from "../constants/scene-constants";
 import { isAddressEqualToAccount } from "../utils/utils";
 import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
 import { buildingTierModelPath } from "../structures/building-tiers";
@@ -2045,7 +2045,7 @@ export default class HexceptionScene extends HexagonScene {
         presentation.appearance.setRelationship(relationship);
         presentation.relationship = relationship;
       }
-      if (path !== VILLAGE_MODEL_PATH && structure?.metadata.order !== presentation.orderId) {
+      if (isRealmModelPath(path) && structure?.metadata.order !== presentation.orderId) {
         presentation.orderId = structure?.metadata.order;
         void presentation.appearance.setOrder(presentation.orderId).catch((error) => {
           console.error("[Hexception] Unable to prepare realm heraldry", error);

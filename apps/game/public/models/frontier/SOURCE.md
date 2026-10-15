@@ -94,34 +94,9 @@ At scale 1, decoded bounds are approximately X [-0.35135, 0.34541], Y [0.01752, 
 footprint is 0.69676 by 0.62353. First ruin contact is at uniform scale 1.71673; the recommended maximum is **1.70**.
 The tile-only limit is 2.00147. Preserve the shared ground-center origin and +Z facing; keep the ruin at scale 1.
 
-## Shrine
+## Shrines and wells
 
-Asset ID: `shrine`. Runtime path: `/models/frontier/shrine.glb`.
-
-```sh
-blender --background --threads 2 --python-exit-code 1 --python apps/game/scripts/frontier/build-shrine.py
-node apps/game/scripts/optimize-structure-models.mjs frontier/shrine.glb
-node apps/game/scripts/optimize-structure-models.mjs --verify frontier/shrine.glb
-```
-
-The arch, sun relief and altar follow the approved Direction A. This is a static site: research unlocks discovery; using
-it grants one attribute level and removes tile occupancy. There is no spent model, opening animation, ownership cloth or
-separate gameplay state embedded in the GLB. Frontend integration owns visibility and removal.
-
-This is an asset handoff to the Frontier frontend lane; live placement and interaction validation belong to that
-integration. The existing C2 chest is reused unchanged. Ring-plot highlighting is frontend-owned and has no model.
-
-## Well
-
-Asset ID: `well`. Runtime path: `/models/frontier/well.glb`.
-
-```sh
-blender --background --threads 2 --python-exit-code 1 --python apps/game/scripts/frontier/build-well.py
-node apps/game/scripts/optimize-structure-models.mjs frontier/well.glb
-node apps/game/scripts/optimize-structure-models.mjs --verify frontier/well.glb
-```
-
-The open masonry basin, blue water, oak winch, rope and suspended bucket follow Direction A. The well uses the same
-ground-center origin, orientation, scale-one footprint and compression as the shrine. It is static, with no cloth,
-animation or spent variant. Research unlocks discovery; use grants 60 stamina and removes tile occupancy. The frontend
-owns that interaction and removal.
+The approved shrines and wells now live in the [outpost family](../outposts/SOURCE.md), with packed Blender sources and
+the shared outpost export pipeline. Their old builders and GLBs are removed. They remain static, single-use sites
+managed by tile occupancy: shrines grant an attribute level, wells restore stamina. The client owns discovery, use and
+removal.

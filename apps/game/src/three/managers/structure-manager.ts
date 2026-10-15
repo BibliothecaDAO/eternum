@@ -15,7 +15,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { resolveSettlementRotationY } from "../structures/settlement-orientation";
 import { SettlementModel } from "../structures/settlement-model";
 import { resolveSettlementRelationship } from "../structures/settlement-appearance";
-import { RiftModelPath, VILLAGE_MODEL_PATH, isSettlementModelPath } from "../constants/scene-constants";
+import { RiftModelPath, isRealmModelPath, isSettlementModelPath } from "../constants/scene-constants";
 import { arePlayersAllied } from "@/utils/entity-ownership";
 import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
@@ -1029,11 +1029,7 @@ export class StructureManager {
   private createStructureModel(gltf: GLTF, structureType: StructureType, modelPath: string): StructureModel {
     if (modelPath === RiftModelPath) return new RewardTileModel(gltf, STRUCTURE_INSTANCE_CAPACITY);
     if (isSettlementModelPath(modelPath))
-      return new SettlementModel(
-        gltf,
-        STRUCTURE_INSTANCE_CAPACITY,
-        modelPath === VILLAGE_MODEL_PATH ? "village" : "realm",
-      );
+      return new SettlementModel(gltf, STRUCTURE_INSTANCE_CAPACITY, isRealmModelPath(modelPath) ? "realm" : "village");
     return new InstancedModel(
       gltf,
       STRUCTURE_INSTANCE_CAPACITY,

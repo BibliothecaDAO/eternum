@@ -16,6 +16,8 @@ import {
   BUILDINGS_GROUPS,
   getStructureModelPaths,
   VILLAGE_MODEL_PATH,
+  CAMP_MODEL_PATH,
+  STRAGGLERS_MODEL_PATH,
   REALM_MODEL_PATHS,
 } from "../constants/scene-constants";
 import { resolveRealmBannerRow } from "./settlement-appearance";
@@ -62,11 +64,11 @@ function fixture(kind: "village" | "realm" = "village") {
 describe("gameplay villages", () => {
   it.each([false, true])("selects the approved model in world and local views (blitz=%s)", (blitz) => {
     expect(getStructureModelPaths()[StructureType.Village]).toEqual([VILLAGE_MODEL_PATH]);
-    // A camp's later models are a fallen realm's ruin and beasts (fallen-realm.test.ts); a camp draws as the village.
-    expect(getStructureModelPaths()[StructureType.Camp][0]).toBe(VILLAGE_MODEL_PATH);
-    for (const category of [StructureType.Village, StructureType.Camp] as const) {
-      expect(buildingModelPaths(blitz)[BUILDINGS_GROUPS.VILLAGE][category]).toBe(VILLAGE_MODEL_PATH);
-    }
+    expect(getStructureModelPaths()[StructureType.Camp]).toEqual([CAMP_MODEL_PATH]);
+    expect(getStructureModelPaths()[StructureType.Stragglers]).toEqual([STRAGGLERS_MODEL_PATH]);
+    expect(new Set([VILLAGE_MODEL_PATH, CAMP_MODEL_PATH, STRAGGLERS_MODEL_PATH]).size).toBe(3);
+    expect(buildingModelPaths(blitz)[BUILDINGS_GROUPS.VILLAGE][StructureType.Village]).toBe(VILLAGE_MODEL_PATH);
+    expect(buildingModelPaths(blitz)[BUILDINGS_GROUPS.VILLAGE][StructureType.Camp]).toBe(CAMP_MODEL_PATH);
   });
 
   it("keeps simultaneous ownership colors independent when instances are removed and reused", () => {

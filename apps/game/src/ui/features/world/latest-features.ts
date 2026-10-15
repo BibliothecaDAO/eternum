@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-15",
+    title: "Distinct outposts and discoveries",
+    description:
+      "Spot camps, palisaded villages and stranded companies by their silhouettes, with new shrines and wells on the world map.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-15",
     title: "See everything a player holds",
     description:
       "Selecting a realm on the world map rings every structure and army its owner holds, yours or another player's, so their reach shows at a glance. The rings follow captures and moves, and clear with the selection.",

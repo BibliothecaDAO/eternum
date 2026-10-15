@@ -3,7 +3,7 @@ import { WeatherLabControls } from "./weather-lab-controls";
 import { AtmosphereLabControls } from "./atmosphere-lab-controls";
 import { TERRAIN_LAB_BUILDINGS } from "@/three/debug/terrain-lab-buildings";
 import { HYPERSTRUCTURE_MODEL_PATH } from "@/three/structures/hyperstructure-design";
-import { VILLAGE_MODEL_PATH, isRealmModelPath } from "@/three/constants/scene-constants";
+import { isSettlementModelPath, isRealmModelPath } from "@/three/constants/scene-constants";
 import { SETTLEMENT_RELATIONSHIPS, type SettlementRelationship } from "@/three/structures/settlement-appearance";
 import { RefreshCw } from "@/ui/design-system/atoms/game-icons";
 import { useEffect, useRef, useState, type RefObject } from "react";
@@ -447,7 +447,7 @@ export const ProceduralTerrainDebugView = () => {
                 </select>
               </label>
             )}
-            {(buildingPath === VILLAGE_MODEL_PATH || isRealmModelPath(buildingPath)) && (
+            {isSettlementModelPath(buildingPath) && (
               <label className="flex flex-col gap-1 text-sm">
                 Ownership
                 <select

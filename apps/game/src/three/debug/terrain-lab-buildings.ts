@@ -1,5 +1,6 @@
 import {
   ChestModelPath,
+  STRAGGLERS_MODEL_PATH,
   SHARED_BUILDING_MODEL_PATHS,
   SPIRE_MODEL_PATH,
   getStructureModelPaths,
@@ -21,7 +22,9 @@ const BUILDING_LABELS: Record<string, string> = {
   city: "Realm · City",
   kingdom: "Realm · Kingdom",
   empire: "Realm · Empire",
-  village: "Camp / Village · Three yurts",
+  village: "Village · Palisaded longhouse",
+  camp: "Camp · Canvas and stockade",
+  stragglers: "Stragglers · Stranded company",
   archerrange: "Archery range",
   castle1: "Hall / Holy site",
   fishery: "Fishery",
@@ -31,7 +34,14 @@ const BUILDING_LABELS: Record<string, string> = {
 };
 
 export const TERRAIN_LAB_BUILDINGS = [
-  ...new Set([...SHARED_BUILDING_MODEL_PATHS, ChestModelPath, SPIRE_MODEL_PATH]),
+  ...new Set([
+    ...SHARED_BUILDING_MODEL_PATHS,
+    STRAGGLERS_MODEL_PATH,
+    "/models/outposts/shrine.glb",
+    "/models/outposts/well.glb",
+    ChestModelPath,
+    SPIRE_MODEL_PATH,
+  ]),
 ].map((path) => {
   const filename = path
     .split("/")

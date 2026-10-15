@@ -9,8 +9,8 @@ Play against a running dev build. It opens each lab fixture and the live page si
 failing) at desktop and phone sizes, counts what is on the page, presses each row's verb and checks that it reached that
 row's own game, lobby or results (`scripts/prove-play.mjs`, writing `play-proof.json` and screenshots into a new
 directory per run, and exiting 1 unless every press arrived). `apps/game/AGENTS.md` documents a spectator smoke test
-(agent-browser steps that open the client, watch a running game and check the canvas). No command drives the paths
-inside a match yet.
+(agent-browser steps that open the client, watch a running game and check the canvas). The outpost proof below drives
+the runtime lab; live actions still need an eligible player.
 
 ## Shell (outside a game)
 
@@ -59,3 +59,27 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
 - **A selected structure that moves takes the selection with it**: when a Frontier realm is raised on its next day's
   site, the selected hex, its ring, the tile panel and the ownership rings move there together
   (`src/three/scenes/worldmap-selection-follow.ts`).
+
+## Outposts
+
+| Feature                 | How to reach it                                                                                                                                                                 |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Camp                    | Map → select a discovered canvas camp. Its standard and roof edging show ownership.                                                                                             |
+| Village                 | Map → select a discovered palisaded longhouse village. The gate standard shows ownership; local views use the same model.                                                       |
+| Stragglers              | Frontier Map → select a discovered stranded company beside its broken cart.                                                                                                     |
+| Shrine                  | Frontier Map → select a discovered sun arch. Its site card offers the attribute reward when eligible; use removes the site.                                                     |
+| Well                    | Frontier Map → select a discovered stone well. Its site card offers stamina when eligible; use removes the site.                                                                |
+| Ownership and placement | `/lab` → Building model → choose an outpost → Ownership where available → Place on selected tile → Focus selected tile. Biome and Fog controls exercise terrain and visibility. |
+
+With the local client running, open `/lab?evidence=/absolute/capture/directory` and run
+`scripts/outposts/prove-runtime.playwright.js` through the browser connection with the page as its argument (remove the
+trailing statement semicolon when supplying it as an expression). The directory must exist. It drives the visible
+controls, checks delivered model responses, captures the five models on grassland and a tropical-coast transition, and
+checks red/green ownership on camp, village and stragglers. Save its returned verification JSON beside the 13 captures.
+Each capture blanks its page immediately. Stop the client afterward and retain the evidence.
+
+Asset gates: `pnpm --dir apps/game verify:assets scripts/outposts/outpost-assets.test.mjs`. For live inspection, open
+`/g/<chainId>/<gameId>?spectate=true`, press Map, then select a discovered site's tile. If a Frontier origin reload
+returns to the watched realm, press Map again. Available examples depend on the watched player's revealed tiles.
+Spectators can inspect selection and presentation; capture and single-use rewards need an eligible player. The lab proof
+does not establish those live actions.
