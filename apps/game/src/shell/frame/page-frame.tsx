@@ -20,7 +20,7 @@ type PageFrameProps = {
   back?: To;
   /** The page's title: beside Back on the phone, in the title row on desktop. A tab page shows the lockup instead. */
   title?: string;
-  /** One notice, directly above the foot row (phone) or in its own band at the top right (desktop), covering nothing. */
+  /** One notice, directly above the foot row (phone) or in the top bar (desktop): it covers nothing and pushes nothing. */
   notice?: ReactNode;
   /** The foot row: the page's buttons (one primary) or its stepper. */
   foot?: ReactNode;
@@ -40,7 +40,7 @@ type PageFrameProps = {
 /**
  * The composer: the only code that places a page's parts. Each part sits in its band, tagged so a test can hold every
  * control to its place: Back top left and nothing else there, nothing to tap in a phone's top right, one foot row,
- * notices directly above it on a phone and in their own band at the desktop's top right (covering nothing), the tabs
+ * notices directly above it on a phone and in the desktop's top bar (covering nothing, pushing nothing down), the tabs
  * at the phone's foot or in the desktop's top bar, with the desktop's keys (1–3 the places, Esc Back). Every page's
  * content starts at the top of its body: a painting is the ground behind it, never a space above it.
  */
@@ -98,14 +98,9 @@ const DesktopFrame = ({
   useDesktopKeys({ places: tabs ? PLACES : [], back });
   return (
     <div className="relative isolate flex min-h-screen flex-col">
-      <TopBar places={tabs} />
+      <TopBar places={tabs} notice={notice} />
       <div className="relative flex min-w-0 flex-1 flex-col">
         {painting && <Backdrop painting={painting} stage={stage} />}
-        {notice ? (
-          <div data-band="notice" className="flex justify-end px-8 pt-6 min-[1800px]:px-12">
-            <div className="w-[26rem]">{notice}</div>
-          </div>
-        ) : null}
         {back !== undefined || title ? (
           <div data-band="title" className="flex items-center gap-3 px-8 pt-7 min-[1800px]:px-12">
             <DesktopTitle back={back} title={title} />

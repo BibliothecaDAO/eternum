@@ -34,7 +34,8 @@ three places and `Esc` goes back (`shell/frame/tabs.tsx`, `shell/frame/desktop-k
 lobby) keeps the bar with the lockup alone. Every page's content starts at the top, under the bar; a painting is its
 ground, never space above it. `Enter` presses the page's step button (the one marked as its step) when it is enabled,
 nothing has focus that answers Enter itself, and no dialog is open. On a phone the places are a tab bar at the foot. The
-install notice shows on Play only.
+app's notice (offline, an update ready, or Install, which only Play offers) sits in the desktop's top bar before You,
+and on a phone just above the foot.
 
 | Feature                                                                   | Route                                      | How to reach it                                                                                                                                                         |
 | ------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

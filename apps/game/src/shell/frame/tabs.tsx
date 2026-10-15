@@ -1,3 +1,4 @@
+import { Fragment, type ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
@@ -93,12 +94,18 @@ export const TabBar = () => {
 };
 
 /**
- * The desktop's bar across the top of the window: the lockup as the app's mark, then Play and Season, and You at the
- * bar's far end, each with its key. It stays quiet (no gold fill) so the page's one gold step keeps the weight; a
- * full-screen step keeps the lockup alone.
+ * The desktop's bar across the top of the window: the lockup as the app's mark, then Play and Season, the page's notice
+ * if it has one (offline, an update, Install on Play), and You at the bar's far end, each place with its key. It stays
+ * quiet (no gold fill) so the page's one gold step keeps the weight, and the notice in it pushes no content down; a
+ * full-screen step keeps the lockup and the notice alone.
  */
-export const TopBar = ({ places }: { places: boolean }) => {
+export const TopBar = ({ places, notice }: { places: boolean; notice: ReactNode }) => {
   const active = useActiveTab();
+  const noticeSlot = notice ? (
+    <div data-band="notice" className="max-w-[28rem]">
+      {notice}
+    </div>
+  ) : null;
   return (
     <header
       data-band="bar"
@@ -107,11 +114,11 @@ export const TopBar = ({ places }: { places: boolean }) => {
       <div data-role="lockup">
         <Lockup />
       </div>
-      {places && (
-        <nav aria-label="Tabs" className="flex flex-1 gap-1.5">
+      {places ? (
+        <nav aria-label="Tabs" className="flex flex-1 items-center gap-1.5">
           {TABS.map((tab, index) => {
             const current = active === tab.to;
-            return (
+            const link = (
               <NavLink
                 key={tab.to}
                 to={tab.to}
@@ -119,7 +126,6 @@ export const TopBar = ({ places }: { places: boolean }) => {
                 aria-current={current ? "page" : undefined}
                 className={cn(
                   "flex h-12 items-center gap-2.5 rounded-xl pl-3.5 pr-3 font-body text-base transition-colors",
-                  tab === YOU_TAB && "ml-auto",
                   current
                     ? "bg-kit-gold/[.14] text-kit-cream"
                     : "text-kit-muted hover:bg-kit-gold/[.06] hover:text-kit-cream",
@@ -130,8 +136,23 @@ export const TopBar = ({ places }: { places: boolean }) => {
                 <Kbd keyName={String(index + 1)} className="ml-2" />
               </NavLink>
             );
+            // You closes the bar, after the space and the notice.
+            return tab === YOU_TAB ? (
+              <Fragment key={tab.to}>
+                <span className="flex-1" />
+                {noticeSlot}
+                {link}
+              </Fragment>
+            ) : (
+              link
+            );
           })}
         </nav>
+      ) : (
+        <>
+          <span className="flex-1" />
+          {noticeSlot}
+        </>
       )}
     </header>
   );
