@@ -1,3 +1,4 @@
+import { RealmLivingAura } from "./realm-living-aura";
 import { BufferGeometry, InstancedBufferAttribute, Mesh, type CanvasTexture, type MeshStandardMaterial } from "three";
 import MeshStandardNodeMaterial from "three/src/materials/nodes/MeshStandardNodeMaterial.js";
 import { attribute, texture, uv, vec2, varying } from "three/tsl";
@@ -22,6 +23,7 @@ import {
 
 /** Shared gameplay presentation with independent heraldry on each settlement instance. */
 export class SettlementModel extends InstancedModel {
+  private readonly wonderAura?: RealmLivingAura;
   private readonly settlementAnimation: SettlementAnimation;
   private readonly bannerAtlas: CanvasTexture;
   private preparation?: Promise<void>;
@@ -34,6 +36,7 @@ export class SettlementModel extends InstancedModel {
     gltf: GLTF,
     capacity: number,
     readonly kind: "village" | "realm" = "village",
+    wonder = false,
   ) {
     super(gltf, capacity, false, kind === "village" ? "Village" : "Realm");
     this.bannerAtlas = kind === "village" ? createVillageBannerAtlas() : createRealmBannerAtlas();
@@ -54,6 +57,10 @@ export class SettlementModel extends InstancedModel {
       1,
     );
     this.applyHeraldryMaterials(surfaces);
+    if (wonder) {
+      this.wonderAura = new RealmLivingAura(gltf.scene, this.instancedMeshes[0]);
+      this.group.add(this.wonderAura.mesh);
+    }
   }
 
   private applyHeraldryMaterials(surfaces: Array<{ mesh: Mesh; original: BufferGeometry; banner: boolean }>): void {
@@ -116,6 +123,15 @@ export class SettlementModel extends InstancedModel {
     this.heraldry.needsUpdate = true;
   }
 
+  setWonderEntityAt(index: number, entityId: string | number | bigint): void {
+    this.wonderAura?.setEntityAt(index, entityId);
+  }
+
+  override setCount(count: number): void {
+    super.setCount(count);
+    this.wonderAura?.syncCount();
+  }
+
   setWind(wind?: Pick<WeatherState, "windX" | "windZ">): void {
     this.wind.windX = wind?.windX ?? 0;
     this.wind.windZ = wind?.windZ ?? 0;
@@ -129,6 +145,7 @@ export class SettlementModel extends InstancedModel {
   override dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.wonderAura?.dispose();
     this.settlementAnimation.dispose();
     for (const { mesh, original } of this.clothGeometries) {
       mesh.geometry.dispose();

@@ -1,11 +1,8 @@
 """Shared Blender geometry and export for settlement assets."""
 
-import json
-from pathlib import Path
 import bpy
 from mathutils import Vector
 
-ROOT = Path(__file__).resolve().parents[4]
 
 
 def material(name, color, roughness=0.85):
@@ -77,38 +74,6 @@ def beam(name, start, end, radius, mat, sides=8):
     return obj
 
 
-def save_asset(name, concept, animation):
-    output = ROOT / f"apps/game/public/models/settlements/{name}.glb"
-    source = ROOT / f".context/graphics-lab/realm-progression/{name}"
-    source.mkdir(parents=True, exist_ok=True)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    prepare_static_heraldry()
-    bake_instance_transforms()
-    bpy.ops.wm.save_as_mainfile(filepath=str(source / f"{name}.blend"))
-    consolidate_static_materials()
-    export_glb(output, active_vertex_colors=True)
-    write_asset_report(output, source, concept, animation)
-
-
-def prepare_static_heraldry():
-    # Each hanging needs its own full emblem before static cloth is merged into one draw.
-    for obj in bpy.context.scene.objects:
-        if obj.type != "MESH" or obj.get("orderCloth") != "trim":
-            continue
-        points = [vertex.co for vertex in obj.data.vertices]
-        low = [min(point[i] for point in points) for i in range(3)]
-        size = [max(point[i] for point in points) - low[i] for i in range(3)]
-        horizontal = 0 if size[0] > size[1] else 1
-        uv = obj.data.uv_layers.active or obj.data.uv_layers.new(name="UVMap")
-        for loop in obj.data.loops:
-            point = points[loop.vertex_index]
-            uv.data[loop.index].uv = (
-                (point[horizontal] - low[horizontal]) / size[horizontal],
-                (point.z - low[2]) / size[2],
-            )
-        obj["orderCloth"] = "banner"
-
-
 def bake_instance_transforms():
     meshes = [obj for obj in bpy.context.scene.objects if obj.type == "MESH"]
     for obj in meshes:
@@ -156,27 +121,3 @@ def export_glb(output, active_vertex_colors=False):
         export_vertex_color="ACTIVE" if active_vertex_colors else "MATERIAL",
         export_all_vertex_colors=not active_vertex_colors,
     )
-
-
-def write_asset_report(output, source, concept, animation):
-    meshes = [obj for obj in bpy.context.scene.objects if obj.type == "MESH"]
-    vertices = [
-        obj.matrix_world @ vertex.co for obj in meshes for vertex in obj.data.vertices
-    ]
-    bounds = [
-        [min(v[i] for v in vertices), max(v[i] for v in vertices)] for i in range(3)
-    ]
-    triangles = sum(
-        sum(len(face.vertices) - 2 for face in obj.data.polygons) for obj in meshes
-    )
-    report = {
-        "sourceConcept": concept,
-        "sizeBlenderXYZ": [round(b - a, 4) for a, b in bounds],
-        "triangles": triangles,
-        "meshCount": len(meshes),
-        "uncompressedBytes": output.stat().st_size,
-        "groundMesh": False,
-        "animation": animation,
-    }
-    (source / "report.json").write_text(json.dumps(report, indent=2) + "\n")
-    print(json.dumps(report))

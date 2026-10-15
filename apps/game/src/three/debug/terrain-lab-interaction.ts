@@ -1,3 +1,4 @@
+import { isWonderModelPath } from "../structures/realm-design";
 import { RewardTileModel } from "@/three/rewards/reward-tile-model";
 import {
   ChestModelPath,
@@ -364,7 +365,7 @@ export class TerrainLabInteraction {
   ): InstancedModel | RewardTileModel {
     if (path === SPIRE_MODEL_PATH) return new SpireModel(gltf, capacity);
     if (isSettlementModelPath(path))
-      return new SettlementModel(gltf, capacity, isRealmModelPath(path) ? "realm" : "village");
+      return new SettlementModel(gltf, capacity, isRealmModelPath(path) ? "realm" : "village", isWonderModelPath(path));
     if (path === ChestModelPath || path === RiftModelPath) return new RewardTileModel(gltf, capacity);
     return new InstancedModel(gltf, capacity, false, name);
   }
@@ -380,6 +381,7 @@ export class TerrainLabInteraction {
 
   private applySettlementHeraldry(model: SettlementModel, index: number): void {
     model.setRelationshipAt(index, this.preview.relationship);
+    model.setWonderEntityAt(index, 1001 + index);
     if (model.kind === "realm") model.setOrderAt(index, this.preview.realmOrderId);
   }
 

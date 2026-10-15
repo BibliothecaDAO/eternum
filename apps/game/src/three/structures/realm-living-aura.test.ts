@@ -1,0 +1,33 @@
+import { InstancedMesh, BoxGeometry, Group, Matrix4, Mesh, MeshBasicMaterial } from "three";
+import { expect, it, vi } from "vitest";
+import { RealmLivingAura } from "./realm-living-aura";
+import { createInstancedMesh } from "../utils/create-instanced-mesh";
+
+it("keeps light above the entire crown and shares placement through removal and slot reuse", () => {
+  const source = new Group();
+  const crown = new Mesh(new BoxGeometry(1, 4, 1), new MeshBasicMaterial());
+  crown.position.y = 2;
+  source.add(crown);
+  const placement = createInstancedMesh(crown.geometry, crown.material, 8);
+  const aura = new RealmLivingAura(source, placement);
+  const positions = aura.mesh.geometry.getAttribute("position");
+  for (let i = 0; i < positions.count; i++) expect(positions.getY(i)).toBeGreaterThanOrEqual(4.08);
+  expect(aura.mesh.geometry.index!.count / 3).toBeLessThanOrEqual(100);
+  const mesh = aura.mesh as InstancedMesh;
+  expect(mesh.instanceMatrix).toBe(placement.instanceMatrix);
+  placement.setMatrixAt(2, new Matrix4().makeTranslation(9, 2, 5));
+  placement.count = 3;
+  aura.setEntityAt(2, 1003);
+  aura.syncCount();
+  expect(mesh.count).toBe(3);
+  const colors = aura.mesh.geometry.getAttribute("wonderTint");
+  const teal = [colors.getX(2), colors.getY(2), colors.getZ(2)];
+  aura.setEntityAt(2, 1004);
+  expect([colors.getX(2), colors.getY(2), colors.getZ(2)]).not.toEqual(teal);
+  placement.count = 0;
+  aura.syncCount();
+  expect(mesh.count).toBe(0);
+  const dispose = vi.spyOn(aura.mesh.geometry, "dispose");
+  aura.dispose();
+  expect(dispose).toHaveBeenCalledOnce();
+});

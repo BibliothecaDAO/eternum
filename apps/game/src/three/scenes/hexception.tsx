@@ -1,3 +1,5 @@
+import { REALM_PATHS, realmModelIndex, isWonderModelPath } from "../structures/realm-design";
+import { RealmLivingAura } from "../structures/realm-living-aura";
 import { byStructureCategory } from "@/lib/structure-category-table";
 import { SettlementAnimation } from "../structures/settlement-animation";
 import { HyperstructureModel } from "../structures/hyperstructure-model";
@@ -41,7 +43,6 @@ import {
   HEX_SIZE,
   LOCAL_CAMERA_ZOOM,
   MinesMaterialsParams,
-  WONDER_REALM,
   castleLevelToRealmCastle,
   hyperstructureStageToModel,
   structureTypeToBuildingType,
@@ -264,7 +265,7 @@ export default class HexceptionScene extends HexagonScene {
   >();
   private buildingInstances: Map<string, Group> = new Map();
   private pendingBuildingKeys: Set<string> = new Set();
-  private wonderInstances: Map<string, Group> = new Map();
+  private readonly wonderAuras = new Map<string, RealmLivingAura>();
   private buildingMixers: Map<string, AnimationMixer> = new Map();
   private hyperstructureModel?: HyperstructureModel;
   private buildings: HexceptionBuilding[] = [];
@@ -744,11 +745,8 @@ export default class HexceptionScene extends HexagonScene {
       });
       this.buildingInstances.clear();
 
-      // remove all previous wonder instances
-      this.wonderInstances.forEach((instance) => {
-        this.scene.remove(instance);
-      });
-      this.wonderInstances.clear();
+      this.wonderAuras.forEach((aura) => aura.dispose());
+      this.wonderAuras.clear();
 
       // clear all animation mixers
       this.buildingMixers.clear();
@@ -852,7 +850,8 @@ export default class HexceptionScene extends HexagonScene {
       }
     });
     this.buildingInstances.clear();
-    this.wonderInstances.clear();
+    this.wonderAuras.forEach((aura) => aura.dispose());
+    this.wonderAuras.clear();
 
     for (const presentation of this.settlementPresentations.values()) {
       presentation.animation.dispose();
@@ -1469,10 +1468,7 @@ export default class HexceptionScene extends HexagonScene {
 
   private reconcileAllBuildingInstances(mainStructureType: StructureType | undefined): void {
     const nextKeys = new Set(this.buildings.map((building) => buildingKey(building)));
-    const renderedKeys = new Set([
-      ...this.buildingInstances.keys(),
-      ...[...this.wonderInstances.keys()].map((key) => key.replace(/_wonder$/, "")),
-    ]);
+    const renderedKeys = new Set(this.buildingInstances.keys());
     renderedKeys.forEach((key) => {
       if (nextKeys.has(key)) return;
       const [col, row] = key.split(",").map(Number);
@@ -1496,9 +1492,7 @@ export default class HexceptionScene extends HexagonScene {
     }
     const signature = building && selection ? this.resolveBuildingRenderSignature(building, selection) : undefined;
     const currentInstance = this.buildingInstances.get(key);
-    const currentSignature =
-      currentInstance?.userData[BUILDING_RENDER_SIGNATURE] ??
-      (this.wonderInstances.has(`${key}_wonder`) ? "wonder-only" : undefined);
+    const currentSignature = currentInstance?.userData[BUILDING_RENDER_SIGNATURE];
     const action = resolveBuildingInstanceAction(currentSignature, signature);
 
     if (building && selection && signature && currentInstance && isTierChange(currentSignature, signature)) {
@@ -1556,7 +1550,11 @@ export default class HexceptionScene extends HexagonScene {
     }
 
     const tierPath =
-      group === BUILDINGS_GROUPS.BUILDINGS ? buildingTierModelPath(type as BuildingType, building.tier) : undefined;
+      group === BUILDINGS_GROUPS.REALMS && this.tileManager.getWonder(this.state.structureEntityId)
+        ? REALM_PATHS[realmModelIndex(this.structureStage, true, this.state.structureEntityId)]
+        : group === BUILDINGS_GROUPS.BUILDINGS
+          ? buildingTierModelPath(type as BuildingType, building.tier)
+          : undefined;
     return { group, type, tierPath };
   }
 
@@ -1565,6 +1563,7 @@ export default class HexceptionScene extends HexagonScene {
     return [
       selection.group,
       selection.type,
+      selection.group === BUILDINGS_GROUPS.REALMS ? (selection.tierPath ?? "base") : "base",
       building.resource ?? "none",
       building.pending ? "pending" : "ready",
       `tier${building.tier ?? 1}`,
@@ -1588,7 +1587,6 @@ export default class HexceptionScene extends HexagonScene {
       this.buildingInstances.set(key, model.group);
       return;
     }
-    this.addWonderInstance(building, key);
 
     const buildingData = selection.tierPath
       ? this.tierModels.get(selection.tierPath)
@@ -1600,6 +1598,12 @@ export default class HexceptionScene extends HexagonScene {
     if (selection.group === BUILDINGS_GROUPS.REALMS || selection.group === BUILDINGS_GROUPS.VILLAGE) {
       // Apply after the template and tile transforms so neither can turn the entrance away.
       instance.rotation.set(0, resolveSettlementRotationY(this.tileManager.structureType(), instance.rotation.y), 0);
+    }
+    if (selection.tierPath && isWonderModelPath(selection.tierPath)) {
+      const aura = new RealmLivingAura(buildingData.model);
+      aura.setEntityAt(0, this.state.structureEntityId);
+      instance.add(aura.mesh);
+      this.wonderAuras.set(key, aura);
     }
     instance.scale.set(0.01, 0.01, 0.01);
     instance.userData[BUILDING_RENDER_SIGNATURE] = signature;
@@ -1664,31 +1668,6 @@ export default class HexceptionScene extends HexagonScene {
       0,
       readHyperstructureConstruction(this.game.store, safeInteger(this.state.structureEntityId)),
     );
-  }
-
-  private addWonderInstance(building: HexceptionBuilding, key: string): void {
-    const isCenterBuilding = building.col === BUILDINGS_CENTER[0] && building.row === BUILDINGS_CENTER[1];
-    if (
-      !isCenterBuilding ||
-      building.structureType === StructureType.Hyperstructure ||
-      !this.tileManager.getWonder(this.state.structureEntityId)
-    ) {
-      return;
-    }
-
-    const wonderData = this.buildingModels
-      .get(BUILDINGS_GROUPS.WONDER)
-      ?.get(WONDER_REALM.toString() as BUILDINGS_CATEGORIES_TYPES);
-    if (!wonderData) return;
-
-    const wonderKey = `${key}_wonder`;
-    const wonderInstance = wonderData.model.clone();
-    wonderInstance.applyMatrix4(building.matrix);
-    wonderInstance.scale.set(0.01, 0.01, 0.01);
-    this.scene.add(wonderInstance);
-    this.wonderInstances.set(wonderKey, wonderInstance);
-    this.animateBuildingScale(wonderInstance);
-    this.startBuildingAnimations(wonderKey, wonderInstance, wonderData.animations);
   }
 
   private applyMiningBuildingMaterial(
@@ -1778,13 +1757,8 @@ export default class HexceptionScene extends HexagonScene {
       this.buildingInstances.delete(key);
     }
 
-    // Also remove any associated wonder instance
-    const wonderKey = `${key}_wonder`;
-    const wonderInstance = this.wonderInstances.get(wonderKey);
-    if (wonderInstance) {
-      this.scene.remove(wonderInstance);
-      this.wonderInstances.delete(wonderKey);
-    }
+    this.wonderAuras.get(key)?.dispose();
+    this.wonderAuras.delete(key);
 
     // Properly dispose of mixers before removing
     const mixer = this.buildingMixers.get(key);
@@ -1792,13 +1766,6 @@ export default class HexceptionScene extends HexagonScene {
       mixer.stopAllAction();
       mixer.uncacheRoot(mixer.getRoot());
       this.buildingMixers.delete(key);
-    }
-
-    const wonderMixer = this.buildingMixers.get(wonderKey);
-    if (wonderMixer) {
-      wonderMixer.stopAllAction();
-      wonderMixer.uncacheRoot(wonderMixer.getRoot());
-      this.buildingMixers.delete(wonderKey);
     }
   }
 
@@ -1968,13 +1935,8 @@ export default class HexceptionScene extends HexagonScene {
       this.buildingInstances.delete(key);
     }
 
-    // Also remove any associated wonder instance
-    const wonderKey = `${key}_wonder`;
-    const wonderInstance = this.wonderInstances.get(wonderKey);
-    if (wonderInstance) {
-      this.scene.remove(wonderInstance);
-      this.wonderInstances.delete(wonderKey);
-    }
+    this.wonderAuras.get(key)?.dispose();
+    this.wonderAuras.delete(key);
 
     // Properly dispose of mixers before removing
     const mixer = this.buildingMixers.get(key);
@@ -1982,13 +1944,6 @@ export default class HexceptionScene extends HexagonScene {
       mixer.stopAllAction();
       mixer.uncacheRoot(mixer.getRoot());
       this.buildingMixers.delete(key);
-    }
-
-    const wonderMixer = this.buildingMixers.get(wonderKey);
-    if (wonderMixer) {
-      wonderMixer.stopAllAction();
-      wonderMixer.uncacheRoot(wonderMixer.getRoot());
-      this.buildingMixers.delete(wonderKey);
     }
   }
 

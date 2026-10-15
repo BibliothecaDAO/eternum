@@ -1,3 +1,4 @@
+import { REALM_ASSETS } from "../structures/realm-design";
 import {
   ChestModelPath,
   STRAGGLERS_MODEL_PATH,
@@ -29,7 +30,6 @@ const BUILDING_LABELS: Record<string, string> = {
   archerrange: "Archery range",
   castle1: "Hall / Holy site",
   fishery: "Fishery",
-  wonder2: "Wonder",
   chest_model: "Chest",
   ruin: "Ruin · Fallen realm",
   spire: "Spire · Levitating portal",
@@ -55,7 +55,9 @@ export const TERRAIN_LAB_BUILDINGS = [
     label:
       path === HYPERSTRUCTURE_MODEL_PATH
         ? "Hyperstructure · Procedural tower"
-        : (BUILDING_LABELS[filename] ?? filename.replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase())),
+        : (REALM_ASSETS.find((asset) => asset.path === path)?.label ??
+          BUILDING_LABELS[filename] ??
+          filename.replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase())),
   };
 });
 

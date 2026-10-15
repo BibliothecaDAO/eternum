@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-15",
+    title: "Realms grow through the ages",
+    description:
+      "Wellstead, Terrace Forum and Twin Ward lead to the imperial citadel. Each age has its own wonders, rising magic and your Order on its banners.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-15",
     title: "Mist at the frontier",
     description:
       "Moving mist marks the edge of explored land. Frontier takes on warm Ember light and darker mist; Blitz keeps its familiar lighting.",
