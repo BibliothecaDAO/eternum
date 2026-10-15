@@ -1,3 +1,4 @@
+import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Notice } from "@/ui/design-system/kit/notice";
 import {
   BARRACKS,
@@ -158,7 +159,7 @@ const DEPLOY: LabDeploy = { count: 5_000, troopsAtHome: 6_200, troopsMax: 6_200,
 type LabSite = Omit<Parameters<typeof SiteCardView>[0], "onClose" | "onRealm">;
 type LabChest = Parameters<typeof RuinChestMoment>[0];
 
-const ARMY_CHIP = { art: "/images/armies/knightT1.png", troops: 5_000 };
+const ARMY_CHIP = { art: "knight-t1" as const, troops: 5_000 };
 const ATTACK_30 = { kind: "attack" as const, stamina: 30, onAttack: () => undefined };
 /** A fight the army wins in so many attacks; the losses and the guard left are this attack's, as its result shows. */
 const WIN = (exchanges: number, troopsLost: number, guardLeft = 0) => ({
@@ -173,7 +174,7 @@ const CAMP_CARD: LabSite = {
   army: ARMY_CHIP,
   guard: 1_100,
   fight: WIN(1, 180),
-  pay: { icon: "La", amount: 550 },
+  pay: { icon: "labor", amount: 550 },
   xp: 82,
   verb: ATTACK_30,
 };
@@ -234,40 +235,40 @@ const DAY_DONE = {
 
 /** A city's build sheet: eight buildings, the War hall and Hearth already standing, a fifth farm at 6,800 labor. */
 const BUILD_TILES: Parameters<typeof BuildView>[0]["tiles"] = [
-  { key: "farm", icon: "Fm", name: "Farm", tip: "", foot: { kind: "price", labor: 6_800, short: false } },
-  { key: "workshop", icon: "Wk", name: "Workshop", tip: "", foot: { kind: "price", labor: 10_000, short: true } },
-  { key: "barracks", icon: "Bs", name: "Barracks", tip: "", foot: { kind: "price", labor: 6_800, short: false } },
-  { key: "hut", icon: "Ht", name: "Hut", tip: "", foot: { kind: "price", labor: 5_100, short: false } },
-  { key: "war", icon: "Wa", name: TRAINING_BUILDINGS[0], tip: "", foot: { kind: "built" } },
+  { key: "farm", icon: "farm", name: "Farm", tip: "", foot: { kind: "price", labor: 6_800, short: false } },
+  { key: "workshop", icon: "workshop", name: "Workshop", tip: "", foot: { kind: "price", labor: 10_000, short: true } },
+  { key: "barracks", icon: "barracks", name: "Barracks", tip: "", foot: { kind: "price", labor: 6_800, short: false } },
+  { key: "hut", icon: "workers-hut", name: "Hut", tip: "", foot: { kind: "price", labor: 5_100, short: false } },
+  { key: "war", icon: "war-hall", name: TRAINING_BUILDINGS[0], tip: "", foot: { kind: "built" } },
   {
     key: "supply",
-    icon: "Sy",
+    icon: "supply-yard",
     name: TRAINING_BUILDINGS[1],
     tip: "",
     foot: { kind: "price", labor: 3_000, short: false },
   },
   {
     key: "lodge",
-    icon: "Ld",
+    icon: "scout-lodge",
     name: TRAINING_BUILDINGS[2],
     tip: "",
     foot: { kind: "price", labor: 3_000, short: false },
   },
-  { key: "hearth", icon: "He", name: TRAINING_BUILDINGS[3], tip: "", foot: { kind: "built" } },
+  { key: "hearth", icon: "hearth", name: TRAINING_BUILDINGS[3], tip: "", foot: { kind: "built" } },
 ];
 const EARLY_TILES: Parameters<typeof BuildView>[0]["tiles"] = [
-  { key: "farm", icon: "Fm", name: "Farm", tip: "", foot: { kind: "price", labor: 800, short: false } },
-  { key: "workshop", icon: "Wk", name: "Workshop", tip: "", foot: { kind: "price", labor: 2_000, short: false } },
-  { key: "barracks", icon: "Bs", name: "Barracks", tip: "", foot: { kind: "price", labor: 800, short: false } },
-  { key: "hut", icon: "Ht", name: "Hut", tip: "", foot: { kind: "price", labor: 300, short: false } },
-  { key: "war", icon: "Wa", name: TRAINING_BUILDINGS[0], tip: "", foot: { kind: "locked", gate: 3 } },
-  { key: "supply", icon: "Sy", name: TRAINING_BUILDINGS[1], tip: "", foot: { kind: "locked", gate: 3 } },
-  { key: "lodge", icon: "Ld", name: TRAINING_BUILDINGS[2], tip: "", foot: { kind: "locked", gate: 3 } },
-  { key: "hearth", icon: "He", name: TRAINING_BUILDINGS[3], tip: "", foot: { kind: "locked", gate: 3 } },
+  { key: "farm", icon: "farm", name: "Farm", tip: "", foot: { kind: "price", labor: 800, short: false } },
+  { key: "workshop", icon: "workshop", name: "Workshop", tip: "", foot: { kind: "price", labor: 2_000, short: false } },
+  { key: "barracks", icon: "barracks", name: "Barracks", tip: "", foot: { kind: "price", labor: 800, short: false } },
+  { key: "hut", icon: "workers-hut", name: "Hut", tip: "", foot: { kind: "price", labor: 300, short: false } },
+  { key: "war", icon: "war-hall", name: TRAINING_BUILDINGS[0], tip: "", foot: { kind: "locked", gate: 3 } },
+  { key: "supply", icon: "supply-yard", name: TRAINING_BUILDINGS[1], tip: "", foot: { kind: "locked", gate: 3 } },
+  { key: "lodge", icon: "scout-lodge", name: TRAINING_BUILDINGS[2], tip: "", foot: { kind: "locked", gate: 3 } },
+  { key: "hearth", icon: "hearth", name: TRAINING_BUILDINGS[3], tip: "", foot: { kind: "locked", gate: 3 } },
 ];
 const CASTLE_SIDE = (level: number, limit: number) => ({
   level,
-  art: `/images/buildings/construction/${["castleZero", "castleOne", "castleTwo", "castleThree"][level]}.png`,
+  art: realmMeaning(level),
   plots: [6, 18, 36, 60][level],
   slots: [3, 4, 5, 6][level],
   limit,
@@ -303,26 +304,26 @@ const line = (overrides: Partial<ProductionLine> & Pick<ProductionLine, "icon" |
   ...overrides,
 });
 const PRODUCTION_LINES: ProductionLine[] = [
-  line({ icon: "Wh", spentAt: "deploy", perHour: 1_500, sides: ["Fi"], held: 4_410, fullIn: 9 * HOUR + 4 * 60 }),
-  line({ icon: "La", spentAt: "realm", perHour: 500, held: 9_640, fullIn: 16 * HOUR + 44 * 60 }),
-  line({ icon: "Tr", spentAt: "deploy", perHour: 600, sides: ["Dr"], held: 1_200, fullIn: 28 * HOUR }),
+  line({ icon: "wheat", spentAt: "deploy", perHour: 1_500, sides: ["fields"], held: 4_410, fullIn: 9 * HOUR + 4 * 60 }),
+  line({ icon: "labor", spentAt: "realm", perHour: 500, held: 9_640, fullIn: 16 * HOUR + 44 * 60 }),
+  line({ icon: "troops", spentAt: "deploy", perHour: 600, sides: ["drill"], held: 1_200, fullIn: 28 * HOUR }),
 ];
 
 /** A city's tree: farm uncommon (Fields), workshop common, barracks rare (Drill twice), hut common, two training buildings. */
 const TREE_ROWS: TreeRow[] = [
   {
     key: "farm",
-    icon: "Fm",
+    icon: "farm",
     name: FARM,
     tier: 2,
-    sides: ["Fi"],
+    sides: ["fields"],
     next: { essence: 4_000, labor: 3_000 },
     choice: true,
     tip: "",
   },
   {
     key: "workshop",
-    icon: "Wk",
+    icon: "workshop",
     name: WORKSHOP,
     tier: 1,
     sides: [],
@@ -332,18 +333,27 @@ const TREE_ROWS: TreeRow[] = [
   },
   {
     key: "barracks",
-    icon: "Bs",
+    icon: "barracks",
     name: BARRACKS,
     tier: 3,
-    sides: ["Dr", "Dr"],
+    sides: ["drill", "drill"],
     next: { essence: 48_000, labor: 24_000 },
     choice: true,
     tip: "",
   },
-  { key: "hut", icon: "Ht", name: HUT, tier: 1, sides: [], next: { essence: 500, labor: 500 }, choice: false, tip: "" },
+  {
+    key: "hut",
+    icon: "workers-hut",
+    name: HUT,
+    tier: 1,
+    sides: [],
+    next: { essence: 500, labor: 500 },
+    choice: false,
+    tip: "",
+  },
   {
     key: "war",
-    icon: "Wa",
+    icon: "war-hall",
     name: TRAINING_BUILDINGS[0],
     tier: 2,
     sides: [],
@@ -353,7 +363,7 @@ const TREE_ROWS: TreeRow[] = [
   },
   {
     key: "hearth",
-    icon: "He",
+    icon: "hearth",
     name: TRAINING_BUILDINGS[3],
     tier: 2,
     sides: [],
@@ -363,11 +373,11 @@ const TREE_ROWS: TreeRow[] = [
   },
 ];
 const CASTLE_NODES = [
-  { key: "shrine", icon: "Sh" as const, label: "Shrine", tip: "", essence: 2_000, state: "open" as const },
-  { key: "well", icon: "Wl" as const, label: "Well", tip: "", essence: 6_000, state: "open" as const },
-  { key: "d1", icon: "E1" as const, label: "I", tip: "", essence: 160_000, state: "open" as const },
-  { key: "d2", icon: "E2" as const, label: "II", tip: "", essence: 400_000, state: "locked" as const },
-  { key: "d3", icon: "E3" as const, label: "III", tip: "", essence: 900_000, state: "locked" as const },
+  { key: "shrine", icon: "shrine" as const, label: "Shrine", tip: "", essence: 2_000, state: "open" as const },
+  { key: "well", icon: "well" as const, label: "Well", tip: "", essence: 6_000, state: "open" as const },
+  { key: "d1", icon: "depth-1" as const, label: "I", tip: "", essence: 160_000, state: "open" as const },
+  { key: "d2", icon: "depth-2" as const, label: "II", tip: "", essence: 400_000, state: "locked" as const },
+  { key: "d3", icon: "depth-3" as const, label: "III", tip: "", essence: 900_000, state: "locked" as const },
 ];
 
 const TODAY_LOG = [
@@ -505,7 +515,7 @@ const STATES = {
       store("troops", 1_200, 18_000),
     ],
     armies: ARMIES,
-    site: { ...CAMP_CARD, pay: { icon: "La", amount: 550, fits: 120 } },
+    site: { ...CAMP_CARD, pay: { icon: "labor", amount: 550, fits: 120 } },
   },
   "site-stragglers": {
     clock: CLOCK,
@@ -577,7 +587,7 @@ const STATES = {
       armyArt: ARMY_CHIP.art,
       army: { before: 1_498, after: 1_318 },
       guard: { before: 1_100, after: 0 },
-      gained: { pay: { icon: "La", amount: 550 }, xp: 22 },
+      gained: { pay: { icon: "labor", amount: 550 }, xp: 22 },
     },
   },
   "fight-goes-on": {
@@ -697,9 +707,9 @@ const STATES = {
     stores: STORES,
     armies: [],
     production: [
-      line({ icon: "Wh", spentAt: "deploy", perHour: 0, held: 4_500, limit: 6_000, noBuilding: true }),
-      line({ icon: "La", spentAt: "realm", perHour: 100, held: 2_000, limit: 6_000, fullIn: 40 * HOUR }),
-      line({ icon: "Tr", spentAt: "deploy", perHour: 0, held: 1_500, limit: 6_000, noBuilding: true }),
+      line({ icon: "wheat", spentAt: "deploy", perHour: 0, held: 4_500, limit: 6_000, noBuilding: true }),
+      line({ icon: "labor", spentAt: "realm", perHour: 100, held: 2_000, limit: 6_000, fullIn: 40 * HOUR }),
+      line({ icon: "troops", spentAt: "deploy", perHour: 0, held: 1_500, limit: 6_000, noBuilding: true }),
     ],
   },
   research: { clock: CLOCK, stores: STORES, armies: ARMIES, tree: "page" },
@@ -978,7 +988,7 @@ export const HudLab = () => {
         }
         stage={lab.lastHour && <LastHourBubble troopsOut={6_021} returned={470} tiersToBuy={2} />}
         guide={footLine && <LabGuide stepId={footLine} />}
-        notices={lab.offline && <Notice icon="Of" line={OFFLINE} verb={TRY_AGAIN} onVerb={noop} ember />}
+        notices={lab.offline && <Notice icon="network-off" line={OFFLINE} verb={TRY_AGAIN} onVerb={noop} ember />}
         action={
           <>
             {lab.realmView === "full" && (
@@ -1049,12 +1059,12 @@ export const HudLab = () => {
             gains={
               lab.realmView === "build"
                 ? [
-                    { icon: "Wh", value: "+375/h", label: "produces" },
-                    { icon: "Pp", value: "1", label: "population" },
+                    { icon: "wheat", value: "+375/h", label: "produces" },
+                    { icon: "person", value: "1", label: "population" },
                   ]
                 : [
-                    { icon: "Tr", value: "+100/h", label: "produces" },
-                    { icon: "Pp", value: "3", label: "population" },
+                    { icon: "troops", value: "+100/h", label: "produces" },
+                    { icon: "person", value: "3", label: "population" },
                   ]
             }
             prices={[{ of: "labor", amount: lab.realmView === "build" ? 6_800 : 800 }]}
@@ -1069,15 +1079,15 @@ export const HudLab = () => {
             now={CASTLE_SIDE(1, 18_000)}
             next={CASTLE_SIDE(2, 50_000)}
             makes={[
-              { icons: ["La"], label: "labor the castle makes an hour", value: "+101/h" },
-              { icons: ["La", "Sg"], label: "labor held of its store's limit", value: "9,640 / 18,000" },
+              { icons: ["labor"], label: "labor the castle makes an hour", value: "+101/h" },
+              { icons: ["labor", "resources"], label: "labor held of its store's limit", value: "9,640 / 18,000" },
             ]}
             prices={[{ of: "labor", amount: 15_000 }]}
             refusal={
               lab.realmView === "castle-short"
                 ? {
                     reason: { kind: "short", of: "labor", held: 9_640, need: 15_000, wait: 10 * HOUR + 44 * 60 },
-                    fix: { icon: "Mp", word: "Explore for labor", onFix: noop },
+                    fix: { icon: "map", word: "Explore for labor", onFix: noop },
                   }
                 : undefined
             }
@@ -1135,7 +1145,7 @@ const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
   return (
     <DeployView
       slots={{ used: deploy.troopsAtHome === 0 ? 0 : 1, allowed: 4 }}
-      art={deploy.troopsAtHome === 0 ? undefined : "/images/armies/knightT1.png"}
+      art={deploy.troopsAtHome === 0 ? undefined : ("knight-t1" as const)}
       troopsAtHome={deploy.troopsAtHome}
       count={deploy.count}
       troopsMax={deploy.troopsMax}
@@ -1173,7 +1183,7 @@ const LabArmy = ({ army }: { army: LabArmySheet }) => {
   return (
     <ArmySheet
       name="Army 1"
-      art="/images/armies/knightT1.png"
+      art="knight-t1"
       troops={army.tiers ? 60_000 : 5_000}
       xp={army.xp ?? 260}
       stamina={{ current: army.stamina ?? 90, max: army.max ?? 150, secondsToFull: 2 * HOUR }}
@@ -1209,7 +1219,7 @@ const LabTreeSheet = ({ tree }: { tree: "farm" | "barracks" | "hut" | "shrine" }
     return (
       <CastleNodeSheet
         node={CASTLE_NODES[0]}
-        gives={<Chip icons={["Sh"]} label="XP" value="+200" unit="XP" />}
+        gives={<Chip icons={["shrine"]} label="XP" value="+200" unit="XP" />}
         sending={false}
         onResearch={noop}
         onClose={noop}
@@ -1218,12 +1228,12 @@ const LabTreeSheet = ({ tree }: { tree: "farm" | "barracks" | "hut" | "shrine" }
   if (tree === "hut")
     return (
       <TypeUpgradeSheet
-        icon="Ht"
+        icon="workers-hut"
         name={HUT}
         tier={1}
         gives={
           <span className="flex justify-center">
-            <Chip icons={["Pp"]} label="population" value="30 → 36" />
+            <Chip icons={["person"]} label="population" value="30 → 36" />
           </span>
         }
         prices={[
@@ -1238,18 +1248,18 @@ const LabTreeSheet = ({ tree }: { tree: "farm" | "barracks" | "hut" | "shrine" }
   const farm = tree === "farm";
   return (
     <TypeUpgradeSheet
-      icon={farm ? "Fm" : "Bs"}
+      icon={farm ? "farm" : "barracks"}
       name={farm ? FARM : BARRACKS}
       tier={farm ? 2 : 3}
       sides={
         farm
           ? [
-              { icon: "Fi", name: "Fields", gain: { icon: "Wh", label: "wheat", value: "1,500 → 1,800/h" } },
-              { icon: "Gr", name: "Granary", gain: { icon: "Sg", label: "limit", value: "18K → 27K" } },
+              { icon: "fields", name: "Fields", gain: { icon: "wheat", label: "wheat", value: "1,500 → 1,800/h" } },
+              { icon: "granary", name: "Granary", gain: { icon: "resources", label: "limit", value: "18K → 27K" } },
             ]
           : [
-              { icon: "Dr", name: "Drill", gain: { icon: "Tr", label: "troops", value: "600 → 700/h" } },
-              { icon: "Ra", name: "Rations", gain: { icon: "Wh", label: "wheat", value: "2 → 1.75" } },
+              { icon: "drill", name: "Drill", gain: { icon: "troops", label: "troops", value: "600 → 700/h" } },
+              { icon: "rations", name: "Rations", gain: { icon: "wheat", label: "wheat", value: "2 → 1.75" } },
             ]
       }
       lifted={1}
@@ -1263,7 +1273,7 @@ const LabTreeSheet = ({ tree }: { tree: "farm" | "barracks" | "hut" | "shrine" }
           ? undefined
           : {
               reason: { kind: "short", of: "labor", counted: "limit", held: 18_000, need: 24_000 },
-              fix: { icon: "Cs", word: CASTLE, onFix: noop },
+              fix: { icon: "realm", word: CASTLE, onFix: noop },
             }
       }
       sending={false}
@@ -1279,17 +1289,17 @@ const LabTraining = ({ training }: { training: "battle" | "hearth" | "scouts" | 
   const scouts = training === "scouts";
   return (
     <TypeUpgradeSheet
-      icon={hearth ? "He" : scouts ? "Ld" : "Wa"}
+      icon={hearth ? "hearth" : scouts ? "scout-lodge" : "war-hall"}
       name={TRAINING_BUILDINGS[hearth ? 3 : scouts ? 2 : 0]}
       tier={scouts ? 1 : 2}
       gives={
         <TrainingGives
-          mark={hearth ? "Su" : scouts ? "Sc" : "Ba"}
+          mark={hearth ? "order-enlightenment" : scouts ? "order-detection" : "order-rage"}
           attribute={hearth ? "Homecoming" : scouts ? "Scouting" : "Battle"}
           effect={hearth ? "3% → 9%" : scouts ? "+10%" : "+10% → +30%"}
           xpSaved={scouts ? 100 : 300}
           tier={scouts ? 1 : 2}
-          armyArt="/images/armies/knightT1.png"
+          armyArt="knight-t1"
           kinds={
             scouts ? (
               <KindChoice
@@ -1309,7 +1319,7 @@ const LabTraining = ({ training }: { training: "battle" | "hearth" | "scouts" | 
         training === "short"
           ? {
               reason: { kind: "short", of: "essence", held: 18_250, need: 48_000 },
-              fix: { icon: "Mp", word: "Explore for Essence", onFix: noop },
+              fix: { icon: "map", word: "Explore for Essence", onFix: noop },
             }
           : undefined
       }
@@ -1351,7 +1361,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
         <ArmyToken
           key={index}
           label={`Army ${index + 1}`}
-          art={army.troops === undefined ? undefined : "/images/armies/knightT1.png"}
+          art={army.troops === undefined ? undefined : ("knight-t1" as const)}
           xp={army.xp}
           stamina={army.stamina === undefined ? undefined : { current: army.stamina, max: 150 }}
           troops={army.troops}

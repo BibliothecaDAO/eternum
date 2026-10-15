@@ -1,6 +1,6 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatTime } from "@bibliothecadao/eternum";
-import { Timer } from "@/ui/design-system/atoms/game-icons";
 
 /** The red "rebuilding" badge on a wiped guard slot: the delay left before it accepts troops again. */
 export const GuardCooldownBadge = ({ seconds, className }: { seconds: number; className?: string }) => (
@@ -11,7 +11,7 @@ export const GuardCooldownBadge = ({ seconds, className }: { seconds: number; cl
     )}
     title="This slot was wiped out and is still rebuilding"
   >
-    <Timer className="h-3 w-3" />
+    <SemanticIcon name="hourglass" className="h-3 w-3" />
     {formatTime(seconds)}
   </span>
 );

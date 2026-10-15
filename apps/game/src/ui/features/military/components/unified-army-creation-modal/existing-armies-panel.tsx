@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { LeftView } from "@/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY_MUTED, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
@@ -10,7 +11,7 @@ import { getTroopResourceId, StaminaManager } from "@bibliothecadao/eternum";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { useExplorersByStructure } from "@/hooks/helpers/use-armies";
 import { type ArmyInfo, type ID, resources, type TroopTier, type TroopType } from "@bibliothecadao/types";
-import { Check, Compass, Crosshair, Loader2, Trash2, X } from "@/ui/design-system/atoms/game-icons";
+
 import { memo, useMemo, useState } from "react";
 
 interface ExistingArmiesPanelProps {
@@ -31,7 +32,7 @@ export const ExistingArmiesPanel = memo(({ structureId, className }: ExistingArm
     <div className={cn("rounded-md border border-gold/25 bg-black/25 px-2.5 py-2", className)}>
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <span className={cn("flex items-center gap-1.5", HUD_LABEL, "text-gold/75")}>
-          <Crosshair className="h-3 w-3 text-kit-muted" />
+          <SemanticIcon name="target" className="h-3 w-3 text-kit-muted" />
           Existing armies
         </span>
         <span className={cn(HUD_LABEL, "text-kit-muted")}>{ownedArmies.length}</span>
@@ -135,19 +136,25 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
         </div>
       )}
       <div className="flex shrink-0 items-center gap-0.5">
-        {!confirming && <IconButton icon={Compass} title="Navigate to army" onClick={handleJump} tone="gold" />}
+        {!confirming && <IconButton icon={"map" as const} title="Navigate to army" onClick={handleJump} tone="gold" />}
         {!confirming ? (
-          <IconButton icon={Trash2} title="Disband army" onClick={() => setConfirming(true)} tone="rose" />
+          <IconButton icon={"trash" as const} title="Disband army" onClick={() => setConfirming(true)} tone="rose" />
         ) : (
           <>
             <IconButton
-              icon={deleting ? Loader2 : Check}
+              icon={deleting ? ("refresh" as const) : ("check" as const)}
               title="Confirm disband"
               onClick={handleConfirmDelete}
               tone="emerald"
               spinning={deleting}
             />
-            <IconButton icon={X} title="Cancel" onClick={() => setConfirming(false)} tone="rose" disabled={deleting} />
+            <IconButton
+              icon={"close" as const}
+              title="Cancel"
+              onClick={() => setConfirming(false)}
+              tone="rose"
+              disabled={deleting}
+            />
           </>
         )}
       </div>
@@ -156,7 +163,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
 };
 
 type IconButtonProps = {
-  icon: React.ComponentType<{ className?: string }>;
+  icon: IconMeaning;
   title: string;
   onClick: () => void;
   tone: "gold" | "emerald" | "rose";
@@ -183,6 +190,6 @@ const IconButton = ({ icon: Icon, title, onClick, tone, disabled, spinning }: Ic
       disabled && "opacity-50 cursor-not-allowed",
     )}
   >
-    <Icon className={cn("h-3.5 w-3.5", spinning && "animate-spin")} />
+    <SemanticIcon name={Icon} className={cn("h-3.5 w-3.5", spinning && "animate-spin")} />
   </button>
 );

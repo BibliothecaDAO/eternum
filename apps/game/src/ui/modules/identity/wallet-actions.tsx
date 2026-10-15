@@ -1,7 +1,8 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { StarknetProvider } from "@/hooks/context/starknet-provider";
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { Button } from "@/ui/design-system/kit/button";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import type { SignInOptions } from "@realms-world/identity";
 import { useConnect, useDisconnect, useProvider } from "@starknet-react/core";
 import type { Connector } from "@starknet-react/core";
@@ -102,7 +103,7 @@ const OwnerSend = ({ owner, calls, onLanded }: { owner: string; calls: Call[]; o
           <Button
             role="outline"
             word={WALLET_WORDS.tryAgain}
-            icon="Sp"
+            icon="refresh"
             loading={
               confirming ? VALUE_WORDS.confirming : wallet.pending === null ? undefined : WALLET_WORDS.confirmInWallet
             }
@@ -174,11 +175,11 @@ const WalletRows = ({
           onClick={() => void wallet.open(connector)}
           className="flex h-[62px] items-center gap-3 rounded-[14px] border-2 border-kit-line bg-kit-ground/60 px-3.5 text-left disabled:opacity-60"
         >
-          <KitIcon code="Wt" size={34} />
+          <SemanticIcon name="backpack" size={34} />
           <span className="font-body text-xl text-kit-cream">{choice.name}</span>
           {choice.note && <span className="font-body text-sm font-semibold text-kit-muted">{choice.note}</span>}
           <span className="ml-auto font-body text-sm text-kit-muted">
-            {wallet.pending === choice.id ? WALLET_WORDS.opening : <KitIcon code="Ar" size={22} />}
+            {wallet.pending === choice.id ? WALLET_WORDS.opening : <SemanticIcon name="arrow-right" size={22} />}
           </span>
         </button>
       ))}

@@ -104,7 +104,7 @@ describe("StrategicMarkerLayer", () => {
     layer.commit();
     expect(meshNamed(layer, "strategic-structure:hyperstructure").visible).toBe(true);
     expect(layer.metrics.drawCalls).toBe(1);
-    expect(loads).toContain("/images/labels/hyperstructure.png");
+    expect(loads).toContain("/icons/facets/64/hyperstructure.webp");
   });
 
   it("throws loudly when a pool overflows its fixed capacity", () => {

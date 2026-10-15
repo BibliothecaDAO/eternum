@@ -1,4 +1,5 @@
-import { Lock as LockClosed, Unlock as LockOpen } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import Button from "@/ui/design-system/atoms/button";
 import TextInput from "@/ui/design-system/atoms/text-input";
@@ -40,7 +41,8 @@ export const CreateGuildButton = ({
           onClick={() => setIsPublic(!isPublic)}
         >
           {isPublic ? (
-            <LockOpen
+            <SemanticIcon
+              name="unlock"
               className="h-4 w-4 "
               onMouseEnter={() => {
                 setTooltip({
@@ -53,7 +55,8 @@ export const CreateGuildButton = ({
               }}
             />
           ) : (
-            <LockClosed
+            <SemanticIcon
+              name="lock"
               className="h-4 w-4 opacity-60"
               onMouseEnter={() => {
                 setTooltip({

@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { structureMapPosition } from "@bibliothecadao/eternum";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -36,18 +37,7 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import clsx from "clsx";
-import {
-  ArrowDown,
-  ArrowLeftRight,
-  ArrowUp,
-  Factory,
-  FlaskConical,
-  ShoppingCart,
-  Target,
-  Trash2,
-  X,
-  Zap,
-} from "@/ui/design-system/atoms/game-icons";
+
 import React, { useCallback, useMemo, useState } from "react";
 import {
   ALWAYS_SHOW_RESOURCES,
@@ -679,7 +669,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
               className="text-blueish/60 hover:text-blueish transition-colors"
               title="Dismiss"
             >
-              <X className="h-4 w-4" />
+              <SemanticIcon name="close" className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -775,7 +765,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                 )}
                 aria-label="Open transfer cart"
               >
-                <ShoppingCart className="h-4 w-4" />
+                <SemanticIcon name="trade" className="h-4 w-4" />
                 <span>Cart</span>
                 {transferDrafts.length > 0 && (
                   <span className="ml-1 rounded-full bg-gold px-1.5 text-sm font-bold text-brown">
@@ -820,7 +810,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                     }}
                   >
                     <div className="flex items-center gap-1.5">
-                      {structure.isSelected && <Target className="h-3 w-3 text-gold" />}
+                      {structure.isSelected && <SemanticIcon name="target" className="h-3 w-3 text-gold" />}
                       <div className="flex flex-col gap-0.5">
                         <span
                           className={clsx("font-semibold leading-tight text-sm", structure.isSelected && "text-gold")}
@@ -862,7 +852,11 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                           <span>{TIER_DISPLAY_NAMES[tier] || tier}</span>
                           <span className="flex items-center gap-2 text-sm font-medium text-kit-muted">
                             {rows.length}
-                            {isCollapsed ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />}
+                            {isCollapsed ? (
+                              <SemanticIcon name="arrow-down" className="h-3 w-3" />
+                            ) : (
+                              <SemanticIcon name="arrow-up" className="h-3 w-3" />
+                            )}
                           </span>
                         </button>
                       </td>
@@ -1136,12 +1130,12 @@ const TransferCell = React.memo((props: TransferCellProps) => {
               <div className="flex items-center gap-0.5">
                 {pendingOutgoing.length > 0 && (
                   <span className="text-sm text-danger/70 flex items-center gap-0.5">
-                    <ArrowDown className="h-2.5 w-2.5" />-{totalOutgoing}
+                    <SemanticIcon name="arrow-down" className="h-2.5 w-2.5" />-{totalOutgoing}
                   </span>
                 )}
                 {pendingIncoming.length > 0 && (
                   <span className="text-sm text-green/70 flex items-center gap-0.5">
-                    <ArrowUp className="h-2.5 w-2.5" />+{totalIncoming}
+                    <SemanticIcon name="arrow-up" className="h-2.5 w-2.5" />+{totalIncoming}
                   </span>
                 )}
               </div>
@@ -1173,7 +1167,7 @@ const TransferCell = React.memo((props: TransferCellProps) => {
                 className="rounded border border-gold/20 bg-gold/10 p-0.5 text-gold transition hover:bg-gold/20"
                 title="Manage production"
               >
-                <Factory className="h-2.5 w-2.5" />
+                <SemanticIcon name="production" className="h-2.5 w-2.5" />
               </button>
             )}
             {canCraftRelic && (
@@ -1187,7 +1181,7 @@ const TransferCell = React.memo((props: TransferCellProps) => {
                 title="Craft relic from research"
                 aria-label="Craft relic from research"
               >
-                <FlaskConical className="h-2.5 w-2.5" />
+                <SemanticIcon name="research" className="h-2.5 w-2.5" />
               </button>
             )}
             {isSelectedStructure && (
@@ -1205,7 +1199,7 @@ const TransferCell = React.memo((props: TransferCellProps) => {
                       className="rounded border border-gold/20 bg-gold/10 p-0.5 text-gold transition hover:bg-gold/20 opacity-0 group-hover:opacity-100"
                       title="Transfer"
                     >
-                      <ArrowLeftRight className="h-2.5 w-2.5" />
+                      <SemanticIcon name="swap" className="h-2.5 w-2.5" />
                     </button>
                   )}
                 />
@@ -1219,7 +1213,7 @@ const TransferCell = React.memo((props: TransferCellProps) => {
                     className="rounded border border-gold/20 bg-gold/10 p-0.5 text-gold transition hover:bg-gold/20 opacity-0 group-hover:opacity-100"
                     title="Quick transfer"
                   >
-                    <Zap className="h-2.5 w-2.5" />
+                    <SemanticIcon name="stamina" className="h-2.5 w-2.5" />
                   </button>
                 )}
               </>
@@ -1255,7 +1249,7 @@ const TransferCell = React.memo((props: TransferCellProps) => {
               }}
               className="w-full flex items-center justify-center gap-1 px-2 py-1 text-sm bg-danger/20 text-danger rounded hover:bg-danger/30"
             >
-              <X className="h-2.5 w-2.5" />
+              <SemanticIcon name="close" className="h-2.5 w-2.5" />
               Cancel
             </button>
           </div>
@@ -1265,7 +1259,7 @@ const TransferCell = React.memo((props: TransferCellProps) => {
       {/* Drag Feedback */}
       {isDragTarget && (
         <div className="absolute inset-0 flex items-center justify-center bg-gold/20 rounded-md">
-          <Target className="h-6 w-6 text-gold animate-bounce" />
+          <SemanticIcon name="target" className="h-6 w-6 text-gold animate-bounce" />
         </div>
       )}
     </div>
@@ -1311,7 +1305,7 @@ const TransferCartModal = React.memo(
       >
         <SurfaceFrame
           title="Transfer Cart"
-          icon={ShoppingCart}
+          icon={"trade" as const}
           onClose={onClose}
           className="w-[720px] max-h-[calc(100vh-7rem)]"
           bodyClassName="space-y-4 p-4"
@@ -1427,7 +1421,7 @@ const TransferCartItem = React.memo(
                 className="rounded border border-danger/40 px-2 py-1 text-danger transition hover:bg-danger/20"
                 aria-label="Remove from cart"
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <SemanticIcon name="trash" className="h-3.5 w-3.5" />
               </button>
             </>
           )}

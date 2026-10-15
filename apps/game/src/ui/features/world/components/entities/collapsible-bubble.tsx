@@ -1,13 +1,13 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_CUE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
-import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
-import { ChevronDown } from "@/ui/design-system/atoms/game-icons";
+
 import { type ReactNode, useState } from "react";
 
 interface InfoBubbleProps {
   title: ReactNode;
-  icon?: GameIcon;
+  icon?: IconMeaning;
   cue?: ReactNode;
   children: ReactNode;
   className?: string;
@@ -83,14 +83,15 @@ export const InfoBubble = ({
       >
         <span className={cn("flex min-w-0 items-center gap-2", HUD_LABEL)}>
           {collapsible && (
-            <ChevronDown
+            <SemanticIcon
+              name="chevron-down"
               className={cn(
                 "h-3.5 w-3.5 flex-shrink-0 text-kit-muted transition-transform",
                 isCollapsed && "-rotate-90",
               )}
             />
           )}
-          {Icon && <Icon className="h-3.5 w-3.5 flex-shrink-0 text-gold/70" />}
+          {Icon && <SemanticIcon name={Icon} className="h-3.5 w-3.5 flex-shrink-0 text-gold/70" />}
           <span className="truncate">{title}</span>
         </span>
         {cue && <span className={cn("flex-shrink-0", HUD_CUE)}>{cue}</span>}

@@ -81,7 +81,7 @@ const ResourceTable = () => {
             return (
               <tr className="border-b border-gold/10 hover:bg-gold/5 transition-colors" key={resource.resource_type}>
                 <td className="p-4">
-                  <ResourceIcon size="xl" resource={resource.resource?.trait || ""} />
+                  <ResourceIcon size="xl" resource={resource.resource_type} />
                 </td>
                 <td className="text-xl text-center p-4">{currencyFormat(resource.amount, 2)}</td>
                 <td className="p-4">

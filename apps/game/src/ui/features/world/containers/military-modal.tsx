@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { StructureWorkspace } from "@/ui/design-system/molecules/structure-workspace";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
@@ -12,7 +13,7 @@ import { StructureSidebar } from "@/ui/features/world/containers/structure-sideb
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 import { Direction, type ID } from "@bibliothecadao/types";
-import { Swords } from "@/ui/design-system/atoms/game-icons";
+
 import { memo, useCallback, useEffect, useState } from "react";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
@@ -31,7 +32,7 @@ const MilitaryDeployHeader = ({ focusedRealmId }: { focusedRealmId: ID }) => {
   }
   return (
     <header className="flex items-center gap-2 border-b border-gold/15 px-5 py-3">
-      <Swords className="h-4 w-4 text-gold" />
+      <SemanticIcon name="military" className="h-4 w-4 text-gold" />
       <span className={cn(HUD_LABEL_BRIGHT, "text-gold")}>{detail.structureName ?? "Structure"}</span>
       <span className={cn(HUD_LABEL_BRIGHT, "text-kit-muted")}>· Level {detail.structure.base.level}</span>
     </header>
@@ -98,7 +99,7 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
   return (
     <SurfaceFrame
       title="Military"
-      icon={Swords}
+      icon={"military" as const}
       onClose={close}
       className={SURFACE_WORKSPACE_CLASS}
       bodyClassName="overflow-hidden"

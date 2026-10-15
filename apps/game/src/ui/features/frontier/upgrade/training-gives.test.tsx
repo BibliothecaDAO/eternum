@@ -6,7 +6,14 @@ import { TrainingGives } from "./training-gives";
 describe("a training building's next tier", () => {
   it("gives its attribute's effect, the XP it saves every army, and the next army's starting tier", () => {
     const markup = renderToStaticMarkup(
-      <TrainingGives mark="Ba" attribute="Battle" effect="+10% → +30%" xpSaved={300} tier={2} armyArt="/army.png" />,
+      <TrainingGives
+        mark="order-rage"
+        attribute="Battle"
+        effect="+10% → +30%"
+        xpSaved={300}
+        tier={2}
+        armyArt="knight-t1"
+      />,
     );
     expect(markup).toContain('aria-label="Battle +10% → +30%"');
     expect(markup).toContain('aria-label="XP 300"');
@@ -17,12 +24,12 @@ describe("a training building's next tier", () => {
   it("chooses the Scouts' lodge's kind instead of showing the next army", () => {
     const markup = renderToStaticMarkup(
       <TrainingGives
-        mark="Sc"
+        mark="order-detection"
         attribute="Scouting"
         effect="+10%"
         xpSaved={100}
         tier={1}
-        armyArt="/army.png"
+        armyArt="knight-t1"
         kinds={<span>kinds</span>}
       />,
     );

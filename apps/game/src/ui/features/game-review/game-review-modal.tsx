@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { type GameReviewData } from "@/services/review/game-review-service";
 import { Button } from "@/ui/design-system/atoms";
 import { BlitzAwardsOptionSixCardWithSelector } from "@/ui/shared/components/blitz-awards-variant-cards";
@@ -6,7 +7,7 @@ import { BlitzMapFingerprintCardWithSelector } from "@/ui/shared/components/blit
 import { BLITZ_CARD_DIMENSIONS } from "@/ui/shared/lib/blitz-highlight";
 import { buildGameReviewStepShareMessage } from "@/ui/shared/lib/x-share-messages";
 import { toPng } from "html-to-image";
-import { ArrowLeft, ArrowRight, Copy, Flag, Gift, Loader2, Share2, X } from "@/ui/design-system/atoms/game-icons";
+
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MutableRefObject } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 
@@ -75,7 +76,7 @@ const GameFinishedStep = ({ data }: { data: GameReviewData }) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-gold">
-        <Flag className="h-4 w-4" />
+        <SemanticIcon name="flag" className="h-4 w-4" />
         <h3 className="font-serif text-xl">Game Is Finished</h3>
       </div>
       <p className="text-sm text-kit-muted">World: {data.worldName}</p>
@@ -117,7 +118,7 @@ const ResultOutcomeStep = ({
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-gold">
-        <Gift className="h-4 w-4" />
+        <SemanticIcon name="reward" className="h-4 w-4" />
         <h3 className="font-serif text-xl">Result Outcome</h3>
       </div>
       <p className="text-sm text-kit-muted">Game: {data.worldName}</p>
@@ -412,7 +413,7 @@ export const GameReviewModal = ({ isOpen, world, nextGame, onClose }: GameReview
               className="rounded-lg p-1.5 text-white/60 transition-colors hover:bg-white/10"
               aria-label="Close"
             >
-              <X className="h-5 w-5" />
+              <SemanticIcon name="close" className="h-5 w-5" />
             </button>
           </div>
 
@@ -441,7 +442,7 @@ export const GameReviewModal = ({ isOpen, world, nextGame, onClose }: GameReview
         <div className="flex-1 overflow-y-auto p-3 sm:p-4">
           {isLoading ? (
             <div className="flex min-h-[320px] flex-col items-center justify-center">
-              <Loader2 className="h-10 w-10 animate-spin text-gold" />
+              <SemanticIcon name="refresh" className="h-10 w-10 animate-spin text-gold" />
               <p className="mt-3 text-sm text-gold/70">Loading game review...</p>
             </div>
           ) : error || !reviewData ? (
@@ -574,7 +575,7 @@ export const GameReviewModal = ({ isOpen, world, nextGame, onClose }: GameReview
                 className="gap-2 !px-3 !py-2"
                 disabled={stepIndex === 0 || isLoading || Boolean(error)}
               >
-                <ArrowLeft className="h-4 w-4" />
+                <SemanticIcon name="arrow-left" className="h-4 w-4" />
                 Back
               </Button>
               <Button
@@ -584,7 +585,7 @@ export const GameReviewModal = ({ isOpen, world, nextGame, onClose }: GameReview
                 disabled={isLoading || Boolean(error)}
               >
                 {stepIndex >= steps.length - 1 ? "Close" : "Next"}
-                <ArrowRight className="h-4 w-4" />
+                <SemanticIcon name="arrow-right" className="h-4 w-4" />
               </Button>
             </div>
 
@@ -597,7 +598,7 @@ export const GameReviewModal = ({ isOpen, world, nextGame, onClose }: GameReview
                   isLoading={isCopying}
                   disabled={isLoading || Boolean(error) || isCopying}
                 >
-                  <Copy className="h-4 w-4" />
+                  <SemanticIcon name="copy" className="h-4 w-4" />
                   {isCopying ? "Copying..." : "Copy PNG"}
                 </Button>
                 <Button
@@ -606,7 +607,7 @@ export const GameReviewModal = ({ isOpen, world, nextGame, onClose }: GameReview
                   className="gap-2 !px-3 !py-2"
                   disabled={isLoading || Boolean(error) || !shareMessage}
                 >
-                  <Share2 className="h-4 w-4" />
+                  <SemanticIcon name="share" className="h-4 w-4" />
                   Share on X
                 </Button>
               </div>

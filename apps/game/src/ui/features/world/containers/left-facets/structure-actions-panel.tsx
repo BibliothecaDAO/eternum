@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { memo } from "react";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
@@ -56,7 +57,7 @@ const TILE_VARIANT_CLASS: Record<ActionTileVariant, { button: string; icon: stri
 
 /** One action as a tile: the icon over its word, lit while its surface is open, with its arrival badges. */
 export const ActionTile = ({ action, variant }: { action: StructureAction; variant: ActionTileVariant }) => {
-  const { image, label, active, badges = [], refusal, onClick } = action;
+  const { label, active, badges = [], refusal, onClick } = action;
   const classes = TILE_VARIANT_CLASS[variant];
   return (
     <button
@@ -73,7 +74,7 @@ export const ActionTile = ({ action, variant }: { action: StructureAction; varia
         active && "bg-gold/15 shadow-[inset_0_-2px_0_rgba(223,170,84,0.9)]",
       )}
     >
-      <img src={image} alt="" className={cn("object-contain", classes.icon)} />
+      <SemanticIcon name={action.id} alt="" className={cn("object-contain", classes.icon)} />
       <span className={cn(HUD_LABEL, "max-w-full truncate", classes.label, active && "text-gold")}>
         {variant === "compact" && action.id === "production" ? "Produce" : label}
       </span>

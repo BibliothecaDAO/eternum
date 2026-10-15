@@ -1,6 +1,5 @@
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
-import { Factory } from "@/ui/design-system/atoms/game-icons";
 
 interface ProductionPopupShellProps {
   children: React.ReactNode;
@@ -15,7 +14,7 @@ export const ProductionPopupShell = ({ children, onClose }: ProductionPopupShell
   return (
     <SurfaceFrame
       title="Production"
-      icon={Factory}
+      icon={"production" as const}
       onClose={handleClose}
       className={SURFACE_WORKSPACE_CLASS}
       bodyClassName="overflow-hidden"

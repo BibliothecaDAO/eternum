@@ -1,6 +1,5 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
-
-import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
 
 /**
  * A setting as one row (spec 10-12): its icon, its name, its value (a word or data), and a chevron, or a control at its
@@ -14,7 +13,7 @@ export const SettingRow = ({
   onOpen,
   href,
 }: {
-  icon: IconCode;
+  icon: IconMeaning;
   name: string;
   value?: ReactNode;
   /** A control at the row's end in place of the chevron (a switch, a step). */
@@ -25,10 +24,10 @@ export const SettingRow = ({
 }) => {
   const face = (
     <>
-      <KitIcon code={icon} size={24} />
+      <SemanticIcon name={icon} size={24} />
       <span className="min-w-0 text-left font-body text-base font-semibold text-kit-cream">{name}</span>
       <span className="ml-auto max-w-[50%] shrink-0 truncate text-right text-base text-kit-muted">{value}</span>
-      {end ?? ((onOpen || href) && <KitIcon code="Cv" size={18} />)}
+      {end ?? ((onOpen || href) && <SemanticIcon name="chevron-right" size={18} />)}
     </>
   );
   const row = "flex min-h-14 w-full items-center gap-3 border-b border-kit-line px-2 last:border-b-0";

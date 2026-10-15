@@ -1,5 +1,6 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { FONTS } from "@/tokens";
-import { Hyperstructure, ChevronsUp } from "@/ui/design-system/atoms/game-icons";
+
 import { forwardRef, useMemo, useState, type Ref } from "react";
 import { createPortal } from "react-dom";
 
@@ -148,8 +149,8 @@ const getOptionSixMetricIconId = (awardId: AwardId): OptionSixMetricIconId | nul
 };
 
 const OptionSixMetricIcon = ({ iconId }: { iconId: OptionSixMetricIconId }) => {
-  if (iconId === "first-hyperstructure") return <Hyperstructure />;
-  return <ChevronsUp />;
+  if (iconId === "first-hyperstructure") return <SemanticIcon name="spire" />;
+  return <SemanticIcon name="chevron-up" />;
 };
 
 const resolveWinner = (

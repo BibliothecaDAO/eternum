@@ -1,4 +1,5 @@
-import { RefreshCw as Refresh } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUISound } from "@/audio";
 import { Button } from "@/ui/design-system/atoms";
@@ -304,7 +305,10 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
               size="md"
               className="rounded-full border border-gold/20 bg-brown/90 hover:bg-gold/10"
             >
-              <Refresh className={`text-gold cursor-pointer h-4 duration-150 ${isBuyResource ? "rotate-180" : ""}`} />
+              <SemanticIcon
+                name="refresh"
+                className={`text-gold cursor-pointer h-4 duration-150 ${isBuyResource ? "rotate-180" : ""}`}
+              />
             </Button>
           </div>
           {isBuyResource ? renderResourceBar(true, false) : renderResourceBar(true, true)}

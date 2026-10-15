@@ -1,4 +1,4 @@
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
 import { VALUE_WORDS } from "../words";
 
@@ -11,7 +11,7 @@ const AVNU_SWAP = "https://app.avnu.fi/en";
  */
 export const NoStrkLine = () => (
   <p className="flex flex-wrap items-center gap-2.5 rounded-xl border border-dashed border-kit-amber px-3 py-2 font-body text-base font-semibold text-kit-gold2">
-    <KitIcon code="Lo" size={22} />
+    <SemanticIcon name="lords" size={22} />
     {VALUE_WORDS.noStrk}
     <a
       href={AVNU_SWAP}
@@ -19,7 +19,7 @@ export const NoStrkLine = () => (
       rel="noopener noreferrer"
       className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-full border border-kit-gold bg-kit-ink pl-2 pr-3 text-sm font-bold text-kit-cream"
     >
-      <KitIcon code="Ar" size={20} />
+      <SemanticIcon name="arrow-right" size={20} />
       {VALUE_WORDS.swapOnAvnu}
     </a>
   </p>

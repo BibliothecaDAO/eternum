@@ -142,14 +142,14 @@ const Hold = ({
     case "sign-in":
       return plate(
         DOORWAY_WORDS.signInToPlay,
-        <Button role="primary" word={WORDS.signIn} icon="Pf" onClick={onSignIn} />,
+        <Button role="primary" word={WORDS.signIn} icon="person" onClick={onSignIn} />,
       );
     case "retry": {
-      const retry = <Button role="outline" word={TRY_AGAIN} icon="Sp" onClick={onRetry} />;
+      const retry = <Button role="outline" word={TRY_AGAIN} icon="refresh" onClick={onRetry} />;
       return view.blocker.openRealm && onOpenRealm
         ? plate(
             view.blocker.line,
-            <Button role="primary" word={DOORWAY_WORDS.openRealm} icon="Cs" onClick={onOpenRealm} />,
+            <Button role="primary" word={DOORWAY_WORDS.openRealm} icon="realm" onClick={onOpenRealm} />,
             retry,
           )
         : plate(view.blocker.line, retry);
@@ -157,18 +157,18 @@ const Hold = ({
     case "devices":
       return plate(
         DOORWAY_WORDS.deviceLimit,
-        <Button role="primary" word={DOORWAY_WORDS.devices} icon="Dv" onClick={() => navigate(SETTINGS_PATH)} />,
+        <Button role="primary" word={DOORWAY_WORDS.devices} icon="monitor" onClick={() => navigate(SETTINGS_PATH)} />,
       );
   }
   if (view.spectating === "watch" && onSpectate)
     return plate(
       DOORWAY_WORDS.notOnThisGame,
-      <Button role="secondary" word={WORDS.watch} icon="Wc" onClick={onSpectate} />,
+      <Button role="secondary" word={WORDS.watch} icon="watch" onClick={onSpectate} />,
     );
   if (view.spectating === "results" && results)
     return plate(
       DOORWAY_WORDS.ended,
-      <Button role="secondary" word={WORDS.results} icon="Tp" onClick={() => navigate(results)} />,
+      <Button role="secondary" word={WORDS.results} icon="victory" onClick={() => navigate(results)} />,
     );
   return null;
 };

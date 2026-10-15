@@ -1,8 +1,9 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 import { StructureArrivals } from "@/ui/features/economy/resources/resource-arrival";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
-import { PackageOpen } from "@/ui/design-system/atoms/game-icons";
+
 import { memo } from "react";
 
 export const AllResourceArrivals = memo(
@@ -15,7 +16,7 @@ export const AllResourceArrivals = memo(
       return (
         <div className="h-full flex items-center justify-center p-6">
           <div className="flex flex-col items-center gap-3 text-kit-muted">
-            <PackageOpen size={28} />
+            <SemanticIcon name="resources" size={28} />
             <p className="text-sm ">No incoming transfers</p>
           </div>
         </div>

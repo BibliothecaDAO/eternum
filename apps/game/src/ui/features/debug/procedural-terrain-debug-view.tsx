@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { orders } from "@bibliothecadao/types";
 import { WeatherLabControls } from "./weather-lab-controls";
 import { AtmosphereLabControls } from "./atmosphere-lab-controls";
@@ -5,7 +6,7 @@ import { TERRAIN_LAB_BUILDINGS } from "@/three/debug/terrain-lab-buildings";
 import { HYPERSTRUCTURE_MODEL_PATH } from "@/three/structures/hyperstructure-design";
 import { isSettlementModelPath, isRealmModelPath } from "@/three/constants/scene-constants";
 import { SETTLEMENT_RELATIONSHIPS, type SettlementRelationship } from "@/three/structures/settlement-appearance";
-import { RefreshCw } from "@/ui/design-system/atoms/game-icons";
+
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { useSearchParams } from "react-router-dom";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
@@ -679,7 +680,7 @@ export const ProceduralTerrainDebugView = () => {
             onClick={() => rendererRef.current?.resetCamera()}
             className="flex h-10 items-center justify-center gap-2 border border-emerald-300/35 bg-emerald-300/10 px-3 text-sm font-semibold text-emerald-100"
           >
-            <RefreshCw className="h-4 w-4" />
+            <SemanticIcon name="refresh" className="h-4 w-4" />
             Reset Camera
           </button>
         </aside>

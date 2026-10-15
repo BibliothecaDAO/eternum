@@ -1,4 +1,5 @@
-import type { IconCode } from "@/ui/design-system/kit/kit-icon";
+import { type IconMeaning } from "@/ui/design-system/icon";
+
 import { create } from "zustand";
 
 import type { FightRecord, TroopsChange } from "./fight-record";
@@ -13,7 +14,7 @@ export interface FightSent {
   targetId: number;
   site: AttackTargetKind;
   armyId: number;
-  armyArt: string;
+  armyArt: IconMeaning;
   /** The army's whole troops as the attack leaves. */
   army: number;
   /** The realm the army answers to, whose stores take what a clear pays. */
@@ -27,7 +28,7 @@ export interface FightSent {
  * when the store that received it stands at its limit, so some of it did not fit; and the clear's XP.
  */
 export interface FightGain {
-  pay: { icon: IconCode; amount: number; storeFull: boolean } | null;
+  pay: { icon: IconMeaning; amount: number; storeFull: boolean } | null;
   xp: number;
 }
 
@@ -35,7 +36,7 @@ export interface FightGain {
 export interface FightResult {
   site: AttackTargetKind;
   verdict: FightVerdict;
-  armyArt: string;
+  armyArt: IconMeaning;
   army: TroopsChange;
   /** The other side as the battle recorded it; null when no record of the battle reached this screen. */
   guard: TroopsChange | null;

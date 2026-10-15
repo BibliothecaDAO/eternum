@@ -1,4 +1,5 @@
-import { Gauge, Play, RefreshCw } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -156,7 +157,7 @@ export const ProceduralTerrainBenchmarkView = () => {
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="flex items-center gap-2 text-sm font-semibold text-emerald-200/70">
-                <Gauge className="h-4 w-4" /> Terrain Benchmark
+                <SemanticIcon name="gauge" className="h-4 w-4" /> Terrain Benchmark
               </p>
               <h1 className="mt-1 text-2xl font-semibold text-white">Full-Screen Biome Load</h1>
               <p className="mt-2 text-sm leading-5 text-stone-400">
@@ -251,14 +252,14 @@ export const ProceduralTerrainBenchmarkView = () => {
               disabled={snapshot.status === "running" || snapshot.status === "complete"}
               className="flex h-10 items-center justify-center gap-2 border border-emerald-300/35 bg-emerald-300/10 px-3 text-sm font-semibold text-emerald-100 disabled:opacity-40"
             >
-              <Play className="h-4 w-4" /> Run benchmark
+              <SemanticIcon name="play" className="h-4 w-4" /> Run benchmark
             </button>
             <button
               type="button"
               onClick={() => rendererRef.current?.resetCamera()}
               className="flex h-10 items-center justify-center gap-2 border border-white/15 px-3 text-sm font-semibold text-stone-200"
             >
-              <RefreshCw className="h-4 w-4" /> Reset camera
+              <SemanticIcon name="refresh" className="h-4 w-4" /> Reset camera
             </button>
           </div>
         </aside>

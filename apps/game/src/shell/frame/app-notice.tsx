@@ -61,12 +61,18 @@ export const useAppNotice = ({ offersInstall }: { offersInstall: boolean }) => {
 
   if (!online)
     return (
-      <Notice icon="Of" line={OFFLINE} verb={TRY_AGAIN} onVerb={() => void appQueryClient.refetchQueries()} ember />
+      <Notice
+        icon="network-off"
+        line={OFFLINE}
+        verb={TRY_AGAIN}
+        onVerb={() => void appQueryClient.refetchQueries()}
+        ember
+      />
     );
   if (update.ready)
     return (
       <Notice
-        icon="Up"
+        icon="refresh"
         line={APP_STATE_WORDS.updateReady}
         verb={APP_STATE_WORDS.update}
         loading={updating || update.waiting ? APP_STATE_WORDS.updating : undefined}
@@ -81,7 +87,7 @@ export const useAppNotice = ({ offersInstall }: { offersInstall: boolean }) => {
   if (offersInstall && session && !install.installed && !installLater)
     return (
       <Notice
-        icon="In"
+        icon="download"
         line={APP_STATE_WORDS.onHomeScreen}
         verb={APP_STATE_WORDS.install}
         onVerb={() => void install.install()}

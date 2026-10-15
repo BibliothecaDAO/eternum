@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useFactView } from "@/hooks/use-fact-view";
 import { usePlayers } from "@/hooks/use-player-profile";
@@ -10,7 +11,7 @@ import { ResultsPanel } from "@/ui/features/results";
 import { getPlayerInfo } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
-import { Shapes, Sparkles, Users } from "@/ui/design-system/atoms/game-icons";
+
 import { ReactNode, useCallback, useEffect, useMemo } from "react";
 import { FaithLeaderboardPanel } from "../faith";
 import { GuildMembers } from "../guilds/guild-members";
@@ -146,7 +147,7 @@ export const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boole
         key: "Players",
         label: (
           <div className="flex items-center gap-2">
-            <Users size={16} />
+            <SemanticIcon name="people" size={16} />
             <span>Players</span>
           </div>
         ),
@@ -162,7 +163,7 @@ export const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boole
         key: "Tribes",
         label: (
           <div className="flex items-center gap-2">
-            <Shapes size={16} />
+            <SemanticIcon name="hexagon" size={16} />
             <span>Tribes</span>
           </div>
         ),
@@ -180,7 +181,7 @@ export const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boole
         key: "Faith",
         label: (
           <div className="flex items-center gap-2">
-            <Sparkles size={16} />
+            <SemanticIcon name="relics" size={16} />
             <span>Faith</span>
           </div>
         ),

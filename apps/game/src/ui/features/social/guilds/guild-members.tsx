@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import Button from "@/ui/design-system/atoms/button";
 import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
 import { GuildInviteList } from "@/ui/features/social/guilds/guild-invites-list";
@@ -8,7 +9,7 @@ import { getGuild, getGuildFromPlayerAddress, isViewerOwner } from "@bibliotheca
 import { useGame } from "@/hooks/context/game-context";
 import { useGuildMembers, useGuildWhitelist } from "@/hooks/helpers/use-guilds";
 import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
-import { CalendarDays, Mail, Shield, UserMinus, Users } from "@/ui/design-system/atoms/game-icons";
+
 import { useCallback, useMemo, useState } from "react";
 
 import { env } from "../../../../../env";
@@ -139,10 +140,14 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <GuildMetaPill icon={Shield} label="Chief" value={guildMasterName} />
-          <GuildMetaPill icon={Users} label="Members" value={String(memberCount)} />
-          <GuildMetaPill icon={Mail} label="Invites" value={String(inviteCount)} />
-          <GuildMetaPill icon={CalendarDays} label="Status" value={selectedGuild?.isPublic ? "Open" : "Invite"} />
+          <GuildMetaPill icon={"defend" as const} label="Chief" value={guildMasterName} />
+          <GuildMetaPill icon={"people" as const} label="Members" value={String(memberCount)} />
+          <GuildMetaPill icon={"mail" as const} label="Invites" value={String(inviteCount)} />
+          <GuildMetaPill
+            icon={"calendar" as const}
+            label="Status"
+            value={selectedGuild?.isPublic ? "Open" : "Invite"}
+          />
         </div>
       </div>
 
@@ -154,7 +159,7 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
             size="xs"
             onClick={() => setViewGuildInvites(false)}
           >
-            <Users className="h-4 w-4" />
+            <SemanticIcon name="people" className="h-4 w-4" />
             <span>Members ({memberCount})</span>
           </Button>
           <Button
@@ -163,7 +168,7 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
             size="xs"
             onClick={() => setViewGuildInvites(true)}
           >
-            <Mail className="h-4 w-4" />
+            <SemanticIcon name="mail" className="h-4 w-4" />
             <span>Invites ({inviteCount})</span>
           </Button>
         </div>
@@ -197,7 +202,7 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
             variant="red"
             onClick={() => (userGuild.isOwner ? disbandGuild() : leaveGuild())}
           >
-            <UserMinus className="h-4 w-4" />
+            <SemanticIcon name="minus" className="h-4 w-4" />
             <span>{userGuild.isOwner ? "Disband Tribe" : "Leave Tribe"}</span>
           </Button>
         )}
@@ -216,10 +221,10 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
   );
 };
 
-const GuildMetaPill = ({ icon: Icon, label, value }: { icon: typeof Shield; label: string; value: string }) => (
+const GuildMetaPill = ({ icon: Icon, label, value }: { icon: IconMeaning; label: string; value: string }) => (
   <div className="rounded-md border border-gold/15 bg-black/25 px-2 py-1.5 text-sm">
     <div className="flex items-center gap-1 text-kit-muted">
-      <Icon className="h-3.5 w-3.5" />
+      <SemanticIcon name={Icon} className="h-3.5 w-3.5" />
       <span className="">{label}</span>
     </div>
     <div className="mt-1 truncate font-semibold text-gold">{value}</div>

@@ -1,7 +1,8 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { formatExact } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { formatMoment } from "@/ui/design-system/kit/time";
 import { WITHDRAW, WITHDRAWALS_CLOSED, withdrawUntil } from "@/ui/design-system/kit/words";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
@@ -41,7 +42,7 @@ export const SeasonWithdrawRow = ({
   const closed = closesAt !== undefined && now >= closesAt;
   return (
     <div className="frontier-card flex w-full items-center gap-2.5 !rounded-xl px-3 py-2">
-      <KitIcon code="Lo" size={30} />
+      <SemanticIcon name="lords" size={30} />
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="text-lg tabular-nums text-kit-cream">{formatExact(lords)}</span>
         <span className="text-sm text-kit-muted">

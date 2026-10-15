@@ -223,3 +223,17 @@ are unchanged. The realm scene retains its shipped lighting.
 For an auth-free comparison, open `/lab` → **World mode** → **Blitz** or **Frontier**, then select a scene and use
 Exploration or Time. The lab calls the production terrain and atmosphere constructors. See `src/lab/README.md` for the
 gallery proof command; live game selection comes only from the game's synced mode.
+
+## Facets icons
+
+`/lab/kit/icons` shows every production icon at 24, 32 or 64 px. Filter by family, search a meaning, hide labels, press
+Production or Transfer, and open a grouped minimap sector. The nine troop portraits distinguish type and tier; hex
+badges repeat ownership with colour and shape and retain level or strength values.
+
+`pnpm icons:prove <evidence-dir> https://127.0.0.1:<port>` drives the catalog, HUD and shell fixtures at desktop and
+phone sizes against the running client. It uses the same proof recorder as Play and Shell, saves screenshots and
+requested icon URLs, and exits nonzero on missing paintings, overflow or failed interactions. Live game proof still
+requires the shared free Blitz. `pnpm icons:check` validates all meanings, 58 resources, reviewed masters and exports;
+`pnpm icons:build` exports the paintings (optional painting IDs export only those masters).
+`pnpm icons:measure <new-dir>` records individual-image and comparison-atlas byte counts after the client build.
+`pnpm icons:review <new-dir> <baseline-evidence-dir>` makes contact sheets.

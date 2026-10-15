@@ -35,7 +35,7 @@ export const LobbyChatPanel = ({
 }) => {
   const chat = useLobbyChat(slot, membership);
   return (
-    <Panel icon="Ct" title={CHAT_WORDS.chat}>
+    <Panel icon="chat" title={CHAT_WORDS.chat}>
       {chat.hold === "signed-out" ? (
         <p className="px-1 py-2 text-base text-kit-muted">{CHAT_WORDS.signInToRead}</p>
       ) : chat.hold === "unanswered" ? (

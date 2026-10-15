@@ -1,9 +1,10 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { ResourceIcon } from "@/ui/design-system/molecules";
 import { getTierStyle } from "@/ui/utils/tier-styles";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
 import { DISPLAYED_SLOT_NUMBER_MAP, GUARD_SLOT_NAMES, resources, TroopTier } from "@bibliothecadao/types";
 import clsx from "clsx";
-import { AlertTriangle } from "@/ui/design-system/atoms/game-icons";
+
 import { useMemo } from "react";
 
 import { GuardCooldownBadge } from "../guard-cooldown-badge";
@@ -148,7 +149,7 @@ export const DefenseSlotSelection = ({
       )}
       {defenseSlotErrorMessage && (
         <div className="mt-1 bg-danger/10 border-l-2 border-danger rounded px-2 py-0.5 flex items-center gap-1.5">
-          <AlertTriangle className="w-3 h-3 text-danger flex-shrink-0" />
+          <SemanticIcon name="warning" className="w-3 h-3 text-danger flex-shrink-0" />
           <span className="text-sm text-danger font-semibold">{defenseSlotErrorMessage}</span>
         </div>
       )}

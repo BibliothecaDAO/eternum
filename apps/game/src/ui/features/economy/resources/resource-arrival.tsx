@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
@@ -6,7 +7,7 @@ import { divideByPrecision, formatTime } from "@bibliothecadao/eternum";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useArrivalsByStructure } from "@/hooks/helpers/use-resource-arrivals";
 import { ResourcesIds, Structure } from "@bibliothecadao/types";
-import { Loader2, Clock3, Check } from "@/ui/design-system/atoms/game-icons";
+
 import { memo, useMemo } from "react";
 
 type ArrivalSummaryResource = {
@@ -84,13 +85,13 @@ export const StructureArrivals = memo(({ structure, now: nowOverride }: { struct
         <div className="flex items-center gap-2">
           {readyCount > 0 && (
             <span className="flex items-center gap-1 text-sm text-emerald-400/80">
-              <Check size={10} />
+              <SemanticIcon name="check" size={10} />
               {readyCount} ready
             </span>
           )}
           {pendingCount > 0 && (
             <span className="flex items-center gap-1 text-sm text-kit-muted">
-              <Clock3 size={10} />
+              <SemanticIcon name="hourglass" size={10} />
               {pendingCount} pending
             </span>
           )}
@@ -105,12 +106,12 @@ export const StructureArrivals = memo(({ structure, now: nowOverride }: { struct
             <div className="flex items-center gap-1.5 text-sm whitespace-nowrap min-w-[100px]">
               {summary.isReady ? (
                 <>
-                  <Loader2 size={12} className="animate-spin text-emerald-400" />
+                  <SemanticIcon name="refresh" size={12} className="animate-spin text-emerald-400" />
                   <span className="text-emerald-400">Claiming</span>
                 </>
               ) : (
                 <>
-                  <Clock3 size={12} className="text-kit-muted" />
+                  <SemanticIcon name="hourglass" size={12} className="text-kit-muted" />
                   <span className="text-gold/70 tabular-nums">{formatTime(summary.secondsUntilArrival)}</span>
                 </>
               )}

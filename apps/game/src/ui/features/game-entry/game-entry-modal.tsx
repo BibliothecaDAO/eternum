@@ -599,7 +599,7 @@ export const GameEntryModal = ({
       {phase === "settlement-waiting" && <ClockChip prefix="starts" at={seasonStartAt ?? undefined} now={nowSeconds} />}
       {phase === "settlement" && isBlitzMode && worldMeta && (
         <StateChip
-          icon="Ok"
+          icon="check"
           text={`${BLITZ_WORDS.preparing} ${Math.min(worldMeta.player_count, worldMeta.roster_count)}/${worldMeta.roster_count}`}
         />
       )}

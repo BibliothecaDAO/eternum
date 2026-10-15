@@ -1,4 +1,5 @@
-import type { IconCode } from "@/ui/design-system/kit/kit-icon";
+import { type IconMeaning } from "@/ui/design-system/icon";
+
 import { ARMY, CAMP, RIFT, RUIN, STRAGGLERS } from "@/ui/design-system/kit/words";
 import type { SiteKind } from "@bibliothecadao/eternum";
 
@@ -6,10 +7,10 @@ import type { SiteKind } from "@bibliothecadao/eternum";
 export type AttackTargetKind = SiteKind | "Army";
 
 /** Each target as every card draws and titles it. */
-export const TARGET_MARKS: Record<AttackTargetKind, { word: string; icon: IconCode }> = {
-  Camp: { word: CAMP, icon: "Cp" },
-  Rift: { word: RIFT, icon: "Rf" },
-  Ruin: { word: RUIN, icon: "Fr" },
-  Stragglers: { word: STRAGGLERS, icon: "Tr" },
-  Army: { word: ARMY, icon: "At" },
+export const TARGET_MARKS: Record<AttackTargetKind, { word: string; icon: IconMeaning }> = {
+  Camp: { word: CAMP, icon: "camp" },
+  Rift: { word: RIFT, icon: "rift" },
+  Ruin: { word: RUIN, icon: "ruin" },
+  Stragglers: { word: STRAGGLERS, icon: "troops" },
+  Army: { word: ARMY, icon: "attack" },
 };

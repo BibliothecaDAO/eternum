@@ -9,28 +9,35 @@
   background: #100e0a;
   min-height: 100%;
 }
+
 .icon-lab h1,
 .icon-lab h2 {
   font-family: Bokor, serif;
   font-weight: 400;
 }
+
 .icon-lab h1 {
   font-size: 40px;
 }
+
 .icon-lab h2 {
   font-size: 28px;
   margin: 20px 0 12px;
 }
+
 .icon-lab h3 {
   font-size: 20px;
   margin: 24px 0 12px;
 }
+
 .icon-lab p {
   line-height: 1.5;
 }
+
 .icon-lab button:not(.frontier-primary) {
   cursor: pointer;
 }
+
 .icon-controls {
   display: flex;
   gap: 20px;
@@ -38,52 +45,28 @@
   align-items: end;
   margin: 20px 0;
 }
+
 .icon-controls fieldset {
   border: 0;
   padding: 0;
 }
+
 .icon-controls legend {
   font-size: 12px;
   margin-bottom: 6px;
 }
-.icon-controls button,
-.icon-lab .read-icon,
-.icon-reading button,
-.icon-live > button {
-  background: #29241b;
-  border: 1px solid #766e5c;
-  padding: 8px 12px;
-  border-radius: 4px;
-  color: #eee4cf;
-  margin-right: 4px;
-}
+
 .icon-controls button[aria-pressed="true"] {
   background: #e2d8c5;
   color: #17140e;
 }
+
 .icon-lab button:focus-visible,
 .icon-lab input:focus-visible {
   outline: 2px solid #9acfe2;
   outline-offset: 3px;
 }
-.icon-live {
-  max-width: 650px;
-  padding: 20px;
-}
-.icon-live h2 {
-  margin-top: 0;
-}
-.icon-stores,
-.icon-orders {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
-}
-.icon-order-bar {
-  display: grid;
-  gap: 8px;
-}
+
 .icon-map {
   width: 320px;
   height: 250px;
@@ -91,17 +74,20 @@
   background: #18251e;
   border: 1px solid #605c4d;
 }
+
 .icon-hex-grid {
   position: absolute;
   inset: 0;
   width: 320px;
   height: 250px;
 }
+
 .icon-hex-grid polygon {
   fill: none;
   stroke: #415448;
   stroke-width: 1;
 }
+
 .icon-map[data-grouped="true"] {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -110,243 +96,129 @@
   justify-items: center;
   padding: 8px;
 }
+
 .icon-cluster {
   background: #11190f;
   border: 1px solid #8c8b79;
   border-radius: 3px;
   padding: 6px 3px;
 }
+
 .icon-cluster strong,
 .icon-cluster small {
   display: block;
 }
+
 .icon-cluster small {
   font-size: 9px;
 }
+
 .icon-marker-wrap,
 .icon-marker-key {
   width: 28px;
   height: 32px;
-  --owner: #86d8df;
 }
+
 .icon-marker-wrap {
   position: absolute;
 }
+
 .icon-marker-key {
   position: relative;
   display: block;
 }
-.icon-marker-wrap[data-owner="ally"] {
-  --owner: #c3b6fa;
-}
-.icon-marker-wrap[data-owner="enemy"] {
-  --owner: #ffb083;
-}
-.icon-marker {
-  width: 28px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  position: relative;
-}
-.icon-marker svg {
-  position: absolute;
-  inset: 0;
-  width: 28px;
-  height: 32px;
-}
-.icon-marker polygon {
-  fill: #13180f;
-  stroke: var(--owner);
-  stroke-width: 1.5;
-}
-.icon-marker img {
-  position: relative;
-  margin-top: -4px;
-  object-fit: contain;
-}
-.icon-owner-cue {
-  position: absolute;
-  bottom: 4px;
-  left: 11px;
-  width: 5px;
-  height: 5px;
-  background: var(--owner);
-}
-.icon-owner-cue[data-cue="you"] {
-  border-radius: 50%;
-}
-.icon-owner-cue[data-cue="enemy"] {
-  clip-path: polygon(50% 0, 100% 100%, 0 100%);
-  width: 7px;
-  left: 10px;
-}
-.icon-marker-wrap b {
-  position: absolute;
-  bottom: -5px;
-  right: -6px;
-  border: 1px solid var(--owner);
-  background: #11170f;
-  font-size: 10px;
-  line-height: 12px;
-  padding: 0 2px;
-}
+
 .icon-marker-kinds {
   display: flex;
   gap: 14px;
   flex-wrap: wrap;
   margin-bottom: 16px;
 }
+
 .icon-marker-kinds > div {
   display: grid;
   justify-items: center;
   gap: 5px;
 }
+
 .icon-marker-kinds small {
   font-size: 11px;
 }
-[data-family="Troops"] .icon-cards {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-.icon-cluster [data-owner="you"] {
-  color: #86d8df;
-}
-.icon-cluster [data-owner="ally"] {
-  color: #c3b6fa;
-}
-.icon-cluster [data-owner="enemy"] {
-  color: #ffb083;
-}
+
 .icon-legend {
   font-size: 13px;
   max-width: 650px;
 }
+
 .icon-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 12px;
 }
+
 .icon-card {
   padding: 16px !important;
 }
+
 .icon-card h4 {
   font-size: 15px;
   margin: 0 0 10px;
 }
-.icon-pair {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  text-align: center;
-}
+
 .icon-canvas {
   height: 80px;
   display: grid;
   place-items: center;
 }
+
 .icon-canvas img {
   object-fit: contain;
   max-width: none;
 }
-.icon-pair small {
-  font-size: 12px;
-  color: #c0b7a6;
+
+.icon-controls {
+  gap: 12px;
 }
-.icon-verdict {
-  font-size: 13px;
-  border-top: 1px solid #504735;
-  padding-top: 10px;
-  margin-top: 14px;
-}
-.icon-reason {
-  font-size: 12px;
-  min-height: 55px;
-  color: #c5b9a5;
-}
-.icon-lab[data-hidden="true"] .icon-meaning {
-  visibility: hidden;
-}
-.icon-reading {
-  position: sticky;
-  bottom: 0;
-  background: #191810;
-  padding: 16px;
-  border: 1px solid #827961;
-  max-height: 340px;
-  overflow: auto;
-}
-.icon-reading h2 {
-  margin-top: 0;
-}
-.icon-reading form {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.icon-reading input {
-  padding: 8px;
+.icon-controls input,
+.icon-controls select {
   background: #242219;
   border: 1px solid #827961;
   color: #fff;
+  padding: 8px;
+  max-width: 100%;
 }
-.icon-lab footer {
-  margin-top: 28px;
-  padding: 20px 0;
-  border-top: 1px solid #504735;
-  font-size: 13px;
+.icon-controls label {
+  display: grid;
+  gap: 6px;
+  max-width: 100%;
+}
+.icon-controls button {
+  background: #29241b;
+  border: 1px solid #766e5c;
+  padding: 8px 12px;
+  border-radius: 4px;
+  color: #eee4cf;
+}
+.icon-card {
+  text-align: center;
+}
+.icon-marker-wrap svg {
+  overflow: visible;
+}
+.icon-cluster [data-owner="you"] {
+  color: #66ddab;
+}
+.icon-cluster [data-owner="ally"] {
+  color: #70bdff;
+}
+.icon-cluster [data-owner="enemy"] {
+  color: #ff8176;
 }
 @media (max-width: 600px) {
   .icon-lab {
     padding: 16px;
   }
-  .icon-cards,
-  [data-family="Troops"] .icon-cards {
-    grid-template-columns: 1fr;
-  }
-  .icon-live {
-    padding: 12px;
-  }
-  .icon-orders {
-    display: grid;
-  }
   .icon-controls {
     gap: 12px;
   }
-}
-
-.icon-stage {
-  display: grid;
-  grid-template-columns: minmax(0, 650px) minmax(320px, 1fr);
-  gap: 32px;
-  align-items: start;
-}
-.icon-stage > section > h2 {
-  margin-top: 0;
-}
-@media (max-width: 1000px) {
-  .icon-stage {
-    grid-template-columns: 1fr;
-  }
-}
-
-[data-family="Troops"] .icon-card {
-  padding: 12px !important;
-}
-[data-family="Troops"] .icon-canvas {
-  height: 68px;
-}
-[data-family="Troops"] .icon-verdict {
-  margin-top: 6px;
-  padding-top: 6px;
-}
-[data-family="Troops"] .icon-reason {
-  min-height: 42px;
-  font-size: 11px;
-}
-[data-family="Troops"] .read-icon {
-  padding: 4px 8px;
-  font-size: 12px;
-}
-.icon-lab > section,
-.icon-stage {
-  scroll-margin-top: 76px;
 }

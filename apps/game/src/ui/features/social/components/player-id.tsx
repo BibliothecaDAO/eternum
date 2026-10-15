@@ -1,6 +1,7 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useCoarseNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { ArrowLeft, MapPin } from "@/ui/design-system/atoms/game-icons";
+
 import { Position as PositionType, structureMapPosition } from "@bibliothecadao/eternum";
 import { playerAvatarUrl, usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { useFactView } from "@/hooks/use-fact-view";
@@ -114,7 +115,7 @@ export const PlayerId = ({
     <div className="pointer-events-auto h-full flex flex-col">
       {!!selectedGuild && (
         <Button variant={"outline"} className={"mt-2 ml-2"} onClick={back}>
-          <ArrowLeft className="w-2 mr-2" /> Back
+          <SemanticIcon name="arrow-left" className="w-2 mr-2" /> Back
         </Button>
       )}
 
@@ -220,7 +221,7 @@ export const PlayerId = ({
                   </div>
 
                   <div className="flex items-center gap-1 text-sm text-gold/70 mb-2">
-                    <MapPin size={12} />
+                    <SemanticIcon name="location" size={12} />
                     <span>
                       Position: {position.getNormalized().x}, {position.getNormalized().y}
                     </span>

@@ -1,4 +1,5 @@
-import { Check as Checkmark } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import clsx from "clsx";
 type CheckboxProps = {
   enabled: boolean;
@@ -15,7 +16,7 @@ export const Checkbox = ({ enabled, onClick, text }: CheckboxProps) => (
         enabled ? "border-grey" : "border-gold",
       )}
     >
-      {enabled && <Checkmark className="h-3 w-3" />}
+      {enabled && <SemanticIcon name="check" className="h-3 w-3" />}
     </div>
     {text && (
       <div onClick={onClick} className="text-sm  hover:text-white transition-colors duration-200">

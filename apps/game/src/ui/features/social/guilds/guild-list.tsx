@@ -1,10 +1,11 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { SortButton, SortInterface } from "@/ui/design-system/atoms/sort-button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { SortPanel } from "@/ui/design-system/molecules/sort-panel";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import { GuildInfo, ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
-import { Globe, Lock } from "@/ui/design-system/atoms/game-icons";
+
 import { ReactElement, useMemo } from "react";
 
 interface GuildCustom extends GuildInfo {
@@ -105,9 +106,9 @@ export const GuildRow = ({ guild, onClick }: { guild: GuildCustom; onClick: () =
         <p className="text-center font-medium text-gold/90">{guild.rank === null ? "—" : `#${guild.rank}`}</p>
         <div className="flex min-w-0 items-center gap-2">
           {guild.isPublic ? (
-            <Globe className="h-4 w-4 shrink-0 text-emerald-300/90" />
+            <SemanticIcon name="map" className="h-4 w-4 shrink-0 text-emerald-300/90" />
           ) : (
-            <Lock className="h-4 w-4 shrink-0 text-amber-300/90" />
+            <SemanticIcon name="lock" className="h-4 w-4 shrink-0 text-amber-300/90" />
           )}
           <p className="truncate text-sm font-semibold text-gold">{guild.name}</p>
           {guild.isMember && (

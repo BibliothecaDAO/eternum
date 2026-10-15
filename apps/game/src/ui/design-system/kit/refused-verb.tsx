@@ -1,9 +1,10 @@
+import { type IconMeaning } from "@/ui/design-system/icon";
 import { Button, type Price } from "./button";
-import type { IconCode } from "./kit-icon";
+
 import { type Reason, ReasonPlate } from "./reason-plate";
 
 /** The step that fixes a refusal: its word, its price where it has one, and its way. */
-export type Fix = { word: string; icon?: IconCode; prices?: readonly Price[]; onFix: () => void };
+export type Fix = { word: string; icon?: IconMeaning; prices?: readonly Price[]; onFix: () => void };
 
 /** Why a verb cannot run, and the fix where there is one. */
 export type Refusal = { reason: Reason; fix?: Fix };
@@ -24,7 +25,7 @@ export const RefusedVerb = ({
   refusal,
 }: {
   word: string;
-  icon?: IconCode;
+  icon?: IconMeaning;
   prices: readonly Price[];
   refusal: Refusal;
 }) => (

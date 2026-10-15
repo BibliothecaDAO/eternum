@@ -1,3 +1,4 @@
+import { iconUrl } from "@/ui/design-system/icon-meaning";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
@@ -13,7 +14,7 @@ import { type ReactNode, useRef, useState } from "react";
 import { SiteLab } from "./site-lab";
 
 const LORDS_BY_INTENSITY = [100, 400, 1_500, 6_000] as const;
-const COIN_ICON = "/images/resources/37.png";
+const COIN_ICON = iconUrl("lords");
 
 /** Dev only: each motion primitive at intensity 0–3, at full and repeat speed, and with reduced motion. */
 export const MotionLabView = () => {

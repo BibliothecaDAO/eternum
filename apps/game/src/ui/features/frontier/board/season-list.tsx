@@ -1,7 +1,8 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { SeasonRow } from "@/ui/design-system/kit/season-row";
 import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
 import {
@@ -76,13 +77,13 @@ export const SeasonList = ({
         onClick={onBack}
         className="-ml-1 flex size-12 shrink-0 items-center justify-center rounded-xl text-kit-cream"
       >
-        <KitIcon code="Bk" size={26} />
+        <SemanticIcon name="arrow-left" size={26} />
       </button>
       <h2 className="frontier-title flex-1 !text-xl">{SEASON}</h2>
       {chest ? (
         <ChestChip tier={chest.tier} lords={chest.lords} rank={rank} />
       ) : (
-        rank !== null && <Chip icons={["Tp"]} label={SEASON} value={rankShown(rank)} />
+        rank !== null && <Chip icons={["victory"]} label={SEASON} value={rankShown(rank)} />
       )}
     </header>
     {pool !== undefined && <PoolLine pool={pool} />}
@@ -124,7 +125,7 @@ export type SeasonPoolFigures = {
 const PoolLine = ({ pool }: { pool: SeasonPoolFigures | null }) =>
   pool === null ? (
     <p className="flex h-9 shrink-0 items-center gap-2 px-1 text-sm text-kit-muted">
-      <KitIcon code="Hg" size={18} />
+      <SemanticIcon name="hourglass" size={18} />
       {POOL_NOT_PUBLISHED}
     </p>
   ) : (
@@ -140,7 +141,7 @@ const PoolFigure = ({ word, value }: { word: string; value: string }) => (
   <div className="flex items-center gap-1.5">
     <dt className="text-kit-muted">{word}</dt>
     <dd className="flex items-center gap-1 font-bold tabular-nums text-kit-cream">
-      <KitIcon code="Lo" size={16} />
+      <SemanticIcon name="lords" size={16} />
       {value}
     </dd>
   </div>
@@ -166,10 +167,10 @@ const BoardHead = () => (
   <div className="flex h-6 shrink-0 items-center gap-2 px-1">
     <span className="flex-1" />
     <span role="img" aria-label={SITES_CLEARED} className="flex h-6 w-12 items-center justify-end">
-      <KitIcon code="Fl" size={18} />
+      <SemanticIcon name="flag" size={18} />
     </span>
     <span role="img" aria-label={LORDS_EARNED} className="flex h-6 w-14 items-center justify-end">
-      <KitIcon code="Lo" size={18} />
+      <SemanticIcon name="lords" size={18} />
     </span>
     <span className="w-[18px]" />
   </div>
@@ -188,14 +189,14 @@ const ChestChip = ({ tier, lords, rank }: { tier: Tier; lords: number; rank: num
     className="frontier-chip h-7 shrink-0 !gap-1 !py-0"
   >
     <span className="contents">
-      <KitIcon code="Ch" size={18} />
+      <SemanticIcon name="chest" size={18} />
       <TierChip tier={tier} showWord={false} />
-      <KitIcon code="Lo" size={18} />
+      <SemanticIcon name="lords" size={18} />
       <span className="frontier-chip-number tabular-nums !text-base">{formatAmount(lords)}</span>
       {rank !== null && (
         <>
           <span aria-hidden className="mx-0.5 h-4 w-px bg-kit-line2" />
-          <KitIcon code="Tp" size={18} />
+          <SemanticIcon name="victory" size={18} />
           <span className="frontier-chip-number tabular-nums !text-base">{rankShown(rank)}</span>
         </>
       )}
@@ -206,7 +207,7 @@ const ChestChip = ({ tier, lords, rank }: { tier: Tier; lords: number; rank: num
 /** What failed, by name, with Try again on the card itself. */
 const Failed = ({ onRetry }: { onRetry: () => void }) => (
   <div role="alert" className="flex flex-col items-center justify-center gap-2.5 px-4 py-6">
-    <KitIcon code="Tp" size={40} />
+    <SemanticIcon name="victory" size={40} />
     <p className="text-sm text-kit-cream">{SEASON_ERROR}</p>
     <Button role="secondary" word={TRY_AGAIN} onClick={onRetry} className="w-[150px]" />
   </div>

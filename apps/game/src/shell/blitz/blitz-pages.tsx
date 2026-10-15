@@ -157,9 +157,9 @@ const LobbyClock = ({ row, step, now, large }: { row: BlitzRow; step: LobbyStep;
       )}
       <div className="flex flex-wrap items-center gap-2">
         {row.startsAt === null && <LiveChip />}
-        {isClosedSlot(row, now) && <StateChip icon="Lk" text={ENTRY_WORDS.closed} />}
+        {isClosedSlot(row, now) && <StateChip icon="lock" text={ENTRY_WORDS.closed} />}
         {!large && moment && <ClockChip prefix={moment.prefix} at={moment.at} now={now} />}
-        {step.kind === "preparing" && <StateChip icon="Ok" text={WORDS.joined} />}
+        {step.kind === "preparing" && <StateChip icon="check" text={WORDS.joined} />}
         {/* A slot's lobby draws its one number large (RegisteredCount); a game's seats ride here as a chip. */}
         {step.kind !== "preparing" && row.kind === "game" && <SeatsChip row={row} />}
       </div>
@@ -175,7 +175,12 @@ const LobbyAction = ({ row, step, desktop }: { row: BlitzRow; step: LobbyStep; d
   switch (step.kind) {
     case "open":
       return verb(
-        <Button role="primary" word={BLITZ_WORDS.join} icon="Pl" onClick={() => navigate(`/blitz/${lobbyId(row)}`)} />,
+        <Button
+          role="primary"
+          word={BLITZ_WORDS.join}
+          icon="play"
+          onClick={() => navigate(`/blitz/${lobbyId(row)}`)}
+        />,
       );
     case "preparing":
       return <Button role="primary" word={WORDS.enter} loading={BLITZ_WORDS.preparing} />;
@@ -183,7 +188,12 @@ const LobbyAction = ({ row, step, desktop }: { row: BlitzRow; step: LobbyStep; d
       return (
         row.kind === "game" &&
         verb(
-          <Button role="primary" word={WORDS.enter} icon="Pl" onClick={() => navigate(entryHref(row.game, "play"))} />,
+          <Button
+            role="primary"
+            word={WORDS.enter}
+            icon="play"
+            onClick={() => navigate(entryHref(row.game, "play"))}
+          />,
         )
       );
     case "watch":
@@ -193,7 +203,7 @@ const LobbyAction = ({ row, step, desktop }: { row: BlitzRow; step: LobbyStep; d
           <Button
             role="secondary"
             word={WORDS.watch}
-            icon="Wc"
+            icon="watch"
             onClick={() => navigate(entryHref(row.game, "spectate"))}
           />,
         )

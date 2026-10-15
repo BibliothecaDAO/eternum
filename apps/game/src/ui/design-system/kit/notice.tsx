@@ -1,7 +1,8 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { Button } from "./button";
-import { type IconCode, KitIcon } from "./kit-icon";
+
 import { LATER } from "./words";
 
 /**
@@ -17,7 +18,7 @@ export const Notice = ({
   onLater,
   ember = false,
 }: {
-  icon: IconCode;
+  icon: IconMeaning;
   line: string;
   verb: string;
   onVerb: () => void;
@@ -33,7 +34,7 @@ export const Notice = ({
       ember ? "border-light-red" : "border-kit-line2",
     )}
   >
-    <KitIcon code={icon} size={22} />
+    <SemanticIcon name={icon} size={22} />
     <span className="min-w-0 flex-1 text-base text-kit-cream">{line}</span>
     {onLater && <Button role="outline" word={LATER} onClick={onLater} className="!px-3" />}
     <Button role="outline" word={verb} loading={loading} onClick={onVerb} className="!px-3" />

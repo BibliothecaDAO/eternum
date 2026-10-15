@@ -1,3 +1,4 @@
+import { iconUrl, orderMeaning } from "@/ui/design-system/icon-meaning";
 import { orders } from "@bibliothecadao/types";
 import { BoxGeometry, Group, ImageLoader, Mesh, MeshStandardMaterial } from "three";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -64,7 +65,7 @@ describe("realm order heraldry", () => {
     const latest = model.appearance.setOrder(7);
     expect(load).toHaveBeenCalledTimes(orders.length);
     for (const order of orders) {
-      expect(load).toHaveBeenCalledWith(`/images/orders/${order.orderName.toLowerCase()}.png`);
+      expect(load).toHaveBeenCalledWith(iconUrl(orderMeaning(order.orderId), 256));
     }
     for (const resolve of pending) resolve(artwork);
     await latest;

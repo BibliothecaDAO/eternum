@@ -1,3 +1,4 @@
+import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
@@ -17,10 +18,6 @@ import { exploreFix } from "../frontier-reveal-yield";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 import { type CastleSide, CastleView } from "./castle-view";
 import type { Figure } from "./type-upgrade-sheet";
-
-const CASTLE_ART = ["castleZero", "castleOne", "castleTwo", "castleThree"].map(
-  (name) => `/images/buildings/construction/${name}.png`,
-);
 
 /** Whether the player tapped their own realm's keep in the realm view. */
 export const useKeepSelected = (realm: NativeRows["Structure"] | null): boolean => {
@@ -87,7 +84,7 @@ export const CastleUpgrade = ({ realm, onClose }: { realm: NativeRows["Structure
  * Storeroom) and its deploy cap, from the preset.
  */
 const castleSide = (store: NativeFactStore, gameId: number, level: number): CastleSide => {
-  const art = CASTLE_ART[level];
+  const art = realmMeaning(level);
   if (!art) throw new Error(`No castle art for level ${level}`);
   return {
     level,
@@ -115,12 +112,12 @@ const castleFigures = (
   const limit = new ResourceManager(store, safeInteger(realm.entity_id), realm.game_id).storeLimit(ResourcesIds.Labor);
   return [
     {
-      icons: ["La"],
+      icons: ["labor"],
       label: BUILDING_FIGURES.castleMakes(LABOR),
       value: `+${formatAmount((Number(perSecond) / RESOURCE_PRECISION) * 3_600)}/h`,
     },
     {
-      icons: ["La", "Sg"],
+      icons: ["labor", "resources"],
       label: BUILDING_FIGURES.held(LABOR),
       value: `${formatExact(laborHeld)} / ${formatExact(limit === undefined ? undefined : Number(limit / BigInt(RESOURCE_PRECISION)))}`,
     },

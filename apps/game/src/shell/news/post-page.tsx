@@ -1,7 +1,7 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { Button } from "@/ui/design-system/kit/button";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 
 import { formatContentDay } from "../clock-chip";
 import { useLayout } from "../frame/layout";
@@ -49,7 +49,7 @@ const Stepper = ({ newer, older }: { newer: ScrollPost | undefined; older: Scrol
         <Button
           role="outline"
           word={NEWS_WORDS.newer}
-          icon="Ar"
+          icon="arrow-right"
           className="flex-1"
           onClick={() => navigate(postHref(newer))}
         />
@@ -58,7 +58,7 @@ const Stepper = ({ newer, older }: { newer: ScrollPost | undefined; older: Scrol
         <Button
           role="outline"
           word={NEWS_WORDS.older}
-          icon="Ar"
+          icon="arrow-right"
           className="flex-1"
           onClick={() => navigate(postHref(older))}
         />
@@ -96,7 +96,7 @@ const DesktopPost = ({ post }: { post: ScrollPost }) => (
     <div className="grid grid-cols-[minmax(0,760px)_20rem] justify-center gap-10">
       <PostBody post={post} />
       <aside>
-        <Panel icon="Pc" title={NEWS_WORDS.scroll}>
+        <Panel icon="chronicles" title={NEWS_WORDS.scroll}>
           {publishedPosts
             .filter((other) => other.slug !== post.slug)
             .map((other) => (
@@ -116,7 +116,7 @@ const DesktopPost = ({ post }: { post: ScrollPost }) => (
 
 const PostDate = ({ post }: { post: ScrollPost }) => (
   <p className="flex items-center gap-2 text-sm text-kit-muted">
-    <KitIcon code="Cl" size={18} />
+    <SemanticIcon name="clock" size={18} />
     {formatContentDay(post.date)} · {NEWS_WORDS.minutes(post.readingTimeMinutes)}
   </p>
 );

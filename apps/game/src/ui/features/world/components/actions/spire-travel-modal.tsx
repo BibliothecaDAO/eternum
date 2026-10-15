@@ -1,4 +1,5 @@
-import { ArrowRightLeft, ShieldAlert, Sparkles } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import Button from "@/ui/design-system/atoms/button";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
@@ -37,7 +38,13 @@ export const SpireTravelModal = ({
   };
 
   return (
-    <SurfaceFrame title="Spire" icon={Sparkles} onClose={closeSurface} className="w-[560px]" bodyClassName="p-5">
+    <SurfaceFrame
+      title="Spire"
+      icon={"relics" as const}
+      onClose={closeSurface}
+      className="w-[560px]"
+      bodyClassName="p-5"
+    >
       <div className="flex flex-col gap-4 text-gold/90">
         {crossing.kind === "unknown" ? (
           <p className="text-sm text-gold/70">
@@ -45,7 +52,7 @@ export const SpireTravelModal = ({
           </p>
         ) : crossing.kind === "clear" ? (
           <div className="flex items-start gap-3 rounded border border-cyan-300/25 bg-cyan-500/10 p-3">
-            <Sparkles className="mt-0.5 h-4 w-4 text-cyan-200" />
+            <SemanticIcon name="relics" className="mt-0.5 h-4 w-4 text-cyan-200" />
             <div className="flex flex-col gap-1">
               <p className="text-sm font-semibold text-cyan-100">Your hex on {sideName} is clear</p>
               <p className="text-sm text-gold/70">
@@ -56,7 +63,7 @@ export const SpireTravelModal = ({
           </div>
         ) : (
           <div className="flex items-start gap-3 rounded border border-red-400/30 bg-red-500/10 p-3">
-            <ShieldAlert className="mt-0.5 h-4 w-4 text-red-200" />
+            <SemanticIcon name="warning" className="mt-0.5 h-4 w-4 text-red-200" />
             <div className="flex flex-col gap-1">
               <p className="text-sm font-semibold text-red-100">
                 {crossing.by === "army" ? "An army holds your hex on " : "A structure holds your hex on "}
@@ -75,7 +82,7 @@ export const SpireTravelModal = ({
           onClick={handleTravel}
         >
           <span className="inline-flex items-center gap-2">
-            <ArrowRightLeft className="h-4 w-4" />
+            <SemanticIcon name="swap" className="h-4 w-4" />
             {crossing.kind === "unknown"
               ? "Cross the spire"
               : crossing.toEthereal

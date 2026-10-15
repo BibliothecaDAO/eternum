@@ -15,14 +15,14 @@ export const SeatsChip = ({ row }: { row: BlitzRow }) =>
   row.kind === "slot" ? (
     <RegisteredChip slot={row.slot} />
   ) : (
-    <Chip icons={["Pp"]} value={`${row.seats.filled}/${row.seats.total}`} label={BLITZ_WORDS.seats} />
+    <Chip icons={["person"]} value={`${row.seats.filled}/${row.seats.total}`} label={BLITZ_WORDS.seats} />
   );
 
 const RegisteredChip = ({ slot }: { slot: PlaytestSlot }) => {
   const registered = useSlotRegistered(slot);
   return (
     <Chip
-      icons={["Pp"]}
+      icons={["person"]}
       value={registered === undefined ? "—" : formatAmount(registered)}
       label={BLITZ_WORDS.registered}
       unit={BLITZ_WORDS.registeredUnit}

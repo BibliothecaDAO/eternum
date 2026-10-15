@@ -191,7 +191,7 @@ const Buttons = ({
         <Button
           role={chestToOpen ? "secondary" : "primary"}
           word={CONTINUE}
-          icon="Pl"
+          icon="play"
           className="flex-1"
           onClick={() => navigate("/")}
         />
@@ -254,7 +254,7 @@ const BlitzResult = ({
           <Button
             role="secondary"
             word={SEASON_WORDS.share}
-            icon="Xs"
+            icon="share"
             className="flex-1"
             onClick={() => setSharing(true)}
           />
@@ -329,10 +329,10 @@ const FrontierResult = ({
           {own && <Placed lead={YOU_PLACED} place={`#${own.rank}`} field={entries.length} />}
           {own && (
             <div className="flex flex-wrap gap-2 pt-1">
-              <Chip icons={["Fl"]} value={formatAmount(own.sites_cleared.total)} label="Sites cleared" />
-              <Chip icons={["Ch"]} value={formatAmount(own.chests_earned)} label="Chests" />
-              <Chip icons={["Lo"]} value={formatAmount(wholeLords(own.rewards.lords))} label="LORDS" />
-              <Chip icons={["Dp"]} value={formatAmount(own.deepest_depth)} label="Deepest" />
+              <Chip icons={["flag"]} value={formatAmount(own.sites_cleared.total)} label="Sites cleared" />
+              <Chip icons={["chest"]} value={formatAmount(own.chests_earned)} label="Chests" />
+              <Chip icons={["lords"]} value={formatAmount(wholeLords(own.rewards.lords))} label="LORDS" />
+              <Chip icons={["portal"]} value={formatAmount(own.deepest_depth)} label="Deepest" />
             </div>
           )}
         </>
@@ -358,7 +358,7 @@ const FrontierResult = ({
           <Button
             role="secondary"
             word={WORDS.season}
-            icon="Tp"
+            icon="victory"
             className="flex-1"
             onClick={() => navigate("/season")}
           />
@@ -367,7 +367,7 @@ const FrontierResult = ({
             <Button
               role="secondary"
               word={WITHDRAW}
-              icon="Lo"
+              icon="lords"
               className="flex-1"
               onClick={() => navigate(entryHref({ chainId: gameRef.chainId, game_id: gameRef.gameId }, "play"))}
             />

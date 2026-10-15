@@ -1,5 +1,6 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { Switch } from "@/shell/profile/switch";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { GUIDE } from "@/ui/design-system/kit/words";
 
@@ -20,7 +21,7 @@ export const GuideLinesSheet = ({
 }) => (
   <Sheet label={GUIDE} onClose={onClose}>
     <header className="flex h-12 shrink-0 items-center gap-2 lg:pr-10">
-      <KitIcon code="Gd" size={22} />
+      <SemanticIcon name="order-skill" size={22} />
       <h2 className="frontier-title flex-1 !text-xl">{GUIDE}</h2>
       <Switch on={on} label={GUIDE} onToggle={onToggle} />
     </header>

@@ -1,5 +1,6 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { Button } from "@/ui/design-system/kit/button";
-import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { EXIT, GUIDE, MENU, PRODUCTION, REALMS, RESUME, SEASON, SETTINGS, TODAY } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
@@ -35,29 +36,34 @@ export const MenuSheet = ({
   <Sheet label={MENU} onClose={onClose}>
     <h2 className="frontier-title !text-xl">{MENU}</h2>
     <nav className="flex flex-col">
-      <MenuRow icon="Cl" word={TODAY} onClick={onToday} />
+      <MenuRow icon="clock" word={TODAY} onClick={onToday} />
       <MenuRow
-        icon="Tp"
+        icon="victory"
         word={SEASON}
         badge={<span className="text-base tabular-nums">{rank}</span>}
         onClick={onSeason}
       />
-      {onProduction && <MenuRow icon="Wh" word={PRODUCTION} onClick={onProduction} />}
+      {onProduction && <MenuRow icon="wheat" word={PRODUCTION} onClick={onProduction} />}
       {realms && (
         <MenuRow
-          icon="Cs"
+          icon="realm"
           word={REALMS}
           badge={realms.waiting && <i aria-hidden className="size-2 rounded-full bg-kit-gold2" />}
           onClick={realms.onOpen}
         />
       )}
       {guide && (
-        <MenuRow icon="Gd" word={GUIDE} badge={guide.on && <KitIcon code="Ok" size={20} />} onClick={guide.onOpen} />
+        <MenuRow
+          icon="order-skill"
+          word={GUIDE}
+          badge={guide.on && <SemanticIcon name="check" size={20} />}
+          onClick={guide.onOpen}
+        />
       )}
-      <MenuRow icon="Mn" word={SETTINGS} onClick={onSettings} />
+      <MenuRow icon="menu" word={SETTINGS} onClick={onSettings} />
     </nav>
     <div className="flex gap-2">
-      <Button role="secondary" icon="Hm" word={EXIT} onClick={onExit} className="w-[130px]" />
+      <Button role="secondary" icon="exit" word={EXIT} onClick={onExit} className="w-[130px]" />
       <Button role="primary" word={RESUME} onClick={onClose} className="flex-1" />
     </div>
   </Sheet>
@@ -69,7 +75,7 @@ const MenuRow = ({
   badge,
   onClick,
 }: {
-  icon: IconCode;
+  icon: IconMeaning;
   word: string;
   badge?: ReactNode;
   onClick: () => void;
@@ -79,9 +85,9 @@ const MenuRow = ({
     onClick={onClick}
     className="flex h-12 items-center gap-2 border-b border-kit-line px-1 text-left text-base text-kit-cream"
   >
-    <KitIcon code={icon} size={22} />
+    <SemanticIcon name={icon} size={22} />
     <span className="flex-1 font-semibold">{word}</span>
     {badge}
-    <KitIcon code="Cv" size={20} />
+    <SemanticIcon name="chevron-right" size={20} />
   </button>
 );

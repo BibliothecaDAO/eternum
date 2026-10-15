@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { identityUsername, IDENTITY_POPOVER_ID, useIdentitySession } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -11,7 +12,6 @@ import { usePlayers } from "@/hooks/use-player-profile";
 import { gameStructuresView } from "@/sync/fact-views";
 import { buildEntryHref } from "@/play/navigation/play-route";
 import { getActiveGame } from "@/runtime/world";
-import { BuildingThumbs } from "@/ui/config";
 import Button from "@/ui/design-system/atoms/button";
 import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -20,7 +20,7 @@ import { normalizeLeaderboardAddress } from "@/ui/features/social/player/finaliz
 import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { ContractAddress } from "@bibliothecadao/types";
-import { Eye as EyeIcon, Trophy, Loader2 as LoaderIcon } from "@/ui/design-system/atoms/game-icons";
+
 import { useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -83,7 +83,7 @@ export const IdentityChip = ({ compact = false }: { compact?: boolean }) => {
 const LeaderboardSurface = () => (
   <SurfaceFrame
     title="Leaderboard"
-    icon={Trophy}
+    icon={"victory" as const}
     onClose={() => usePopoverStore.getState().close(LEADERBOARD_POPOVER_ID)}
     className={SURFACE_WORKSPACE_CLASS}
   >
@@ -141,11 +141,11 @@ const CompactIdentityLabel = ({ state }: { state: IdentityChipState }) => {
       </>
     );
   }
-  const Icon = state.kind === "connecting" ? LoaderIcon : EyeIcon;
+  const Icon = state.kind === "connecting" ? ("refresh" as const) : ("eye" as const);
   const label = compactLabel(state.kind);
   return (
     <>
-      <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
+      <SemanticIcon name={Icon} aria-hidden="true" className="h-4 w-4 shrink-0" />
       <span className="truncate">{label}</span>
     </>
   );
@@ -156,7 +156,7 @@ const IdentityChipLabel = ({ state }: { state: IdentityChipState }) => {
     case "spectating":
       return (
         <>
-          <EyeIcon className="h-3.5 w-3.5 text-gold" aria-hidden="true" />
+          <SemanticIcon name="eye" className="h-3.5 w-3.5 text-gold" aria-hidden="true" />
           <span>Spectating</span>
           {state.name && <Separator />}
           {state.name && <span className="max-w-[140px] truncate">as {state.name}</span>}
@@ -167,7 +167,7 @@ const IdentityChipLabel = ({ state }: { state: IdentityChipState }) => {
     case "signed-out":
       return (
         <>
-          <EyeIcon className="h-3.5 w-3.5 text-gold/70" aria-hidden="true" />
+          <SemanticIcon name="eye" className="h-3.5 w-3.5 text-gold/70" aria-hidden="true" />
           <span>Not signed in</span>
           <Separator />
           <span className="text-gold/70">View only</span>
@@ -176,7 +176,7 @@ const IdentityChipLabel = ({ state }: { state: IdentityChipState }) => {
     case "connecting":
       return (
         <>
-          <LoaderIcon className="h-3.5 w-3.5 animate-spin text-gold" aria-hidden="true" />
+          <SemanticIcon name="refresh" className="h-3.5 w-3.5 animate-spin text-gold" aria-hidden="true" />
           <span>Connecting</span>
           {state.name && <Separator />}
           {state.name && <span className="max-w-[140px] truncate">{state.name}</span>}
@@ -185,7 +185,7 @@ const IdentityChipLabel = ({ state }: { state: IdentityChipState }) => {
     case "player":
       return (
         <>
-          <img src={BuildingThumbs.guild} alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
+          <SemanticIcon name="guild" alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
           <span className="max-w-[140px] truncate">{state.name}</span>
           {state.standing && <Separator />}
           {state.standing && <span>#{state.standing.rank}</span>}

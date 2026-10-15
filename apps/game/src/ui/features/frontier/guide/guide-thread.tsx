@@ -1,4 +1,5 @@
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { type RefObject, useEffect, useState } from "react";
 
 import type { GuideTarget } from "./guide-script";
@@ -29,7 +30,7 @@ export const GuideThread = ({ from, target }: { from: RefObject<HTMLElement | nu
         className="pointer-events-none fixed z-30 opacity-55"
         style={{ left: ends.x2 - TARGET_MARK / 2, top: ends.y2 - TARGET_MARK / 2 }}
       >
-        <KitIcon code="Gd" size={TARGET_MARK} />
+        <SemanticIcon name="order-skill" size={TARGET_MARK} />
       </span>
     </>
   );

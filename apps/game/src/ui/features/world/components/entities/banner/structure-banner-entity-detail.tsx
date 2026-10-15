@@ -1,4 +1,5 @@
-import { ArrowLeftRight, Factory, Loader, Shield, Sparkles } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { IncomingCaravans } from "./incoming-caravans";
 import { StructureOwnershipTransfer } from "./structure-ownership-transfer";
 import { memo, useCallback } from "react";
@@ -119,7 +120,7 @@ const StructureBannerEntityDetailContent = memo(
     if (isLoadingStructure) {
       return (
         <div className="mt-2 flex h-full items-center justify-center">
-          <Loader className="animate-spin" />
+          <SemanticIcon name="refresh" className="animate-spin" />
         </div>
       );
     }
@@ -219,7 +220,7 @@ const StructureBannerEntityDetailContent = memo(
                   onClick={handleOpenTransferPanel}
                   aria-label="Open transfer panel"
                 >
-                  <ArrowLeftRight className="h-4 w-4" />
+                  <SemanticIcon name="swap" className="h-4 w-4" />
                 </Button>
               )}
             </div>
@@ -242,7 +243,7 @@ const StructureBannerEntityDetailContent = memo(
         )}
 
         {relicEffects.length > 0 && (
-          <InfoBubble variant="section" title="Active Relics" icon={Sparkles}>
+          <InfoBubble variant="section" title="Active Relics" icon={"relics" as const}>
             <ActiveRelicEffects relicEffects={relicEffects} entityId={structureEntityId} compact />
           </InfoBubble>
         )}
@@ -266,7 +267,7 @@ const StructureBannerEntityDetailContent = memo(
         )}
 
         {/* Guards — always shown for structures that can hold defenders. */}
-        <InfoBubble variant="section" title="Guards" icon={Shield} cue={guardCue}>
+        <InfoBubble variant="section" title="Guards" icon={"defend" as const} cue={guardCue}>
           {guards === undefined ? (
             <p className={HUD_BODY_MUTED}>Loading guards…</p>
           ) : guards.length > 0 ? (
@@ -290,7 +291,7 @@ const StructureBannerEntityDetailContent = memo(
         <InfoBubble
           variant="section"
           title="Resources"
-          icon={Factory}
+          icon={"production" as const}
           cue={
             canOpenTransferPanel ? (
               <button
@@ -300,7 +301,7 @@ const StructureBannerEntityDetailContent = memo(
                 title="Transfer resources from this structure"
                 aria-label="Transfer resources from this structure"
               >
-                <ArrowLeftRight className="h-3.5 w-3.5" />
+                <SemanticIcon name="swap" className="h-3.5 w-3.5" />
               </button>
             ) : undefined
           }
@@ -322,7 +323,7 @@ const StructureBannerEntityDetailContent = memo(
         <BitcoinMiningActionPanel structureEntityId={structureEntityId} />
 
         {showFaithTab && (
-          <InfoBubble variant="section" title="Faith" icon={Sparkles}>
+          <InfoBubble variant="section" title="Faith" icon={"relics" as const}>
             <FaithDevotionActionPanel structureEntityId={structureEntityId} />
           </InfoBubble>
         )}

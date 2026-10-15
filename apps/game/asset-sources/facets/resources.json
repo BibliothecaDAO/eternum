@@ -1,0 +1,234 @@
+{
+  "1": {
+    "name": "Stone",
+    "meaning": "stone"
+  },
+  "2": {
+    "name": "Coal",
+    "meaning": "coal"
+  },
+  "3": {
+    "name": "Wood",
+    "meaning": "wood"
+  },
+  "4": {
+    "name": "Copper",
+    "meaning": "copper"
+  },
+  "5": {
+    "name": "Ironwood",
+    "meaning": "ironwood"
+  },
+  "6": {
+    "name": "Obsidian",
+    "meaning": "obsidian"
+  },
+  "7": {
+    "name": "Gold",
+    "meaning": "gold"
+  },
+  "8": {
+    "name": "Silver",
+    "meaning": "silver"
+  },
+  "9": {
+    "name": "Mithral",
+    "meaning": "mithral"
+  },
+  "10": {
+    "name": "AlchemicalSilver",
+    "meaning": "alchemical-silver"
+  },
+  "11": {
+    "name": "ColdIron",
+    "meaning": "cold-iron"
+  },
+  "12": {
+    "name": "DeepCrystal",
+    "meaning": "deep-crystal"
+  },
+  "13": {
+    "name": "Ruby",
+    "meaning": "ruby"
+  },
+  "14": {
+    "name": "Diamonds",
+    "meaning": "diamonds"
+  },
+  "15": {
+    "name": "Hartwood",
+    "meaning": "hartwood"
+  },
+  "16": {
+    "name": "Ignium",
+    "meaning": "ignium"
+  },
+  "17": {
+    "name": "TwilightQuartz",
+    "meaning": "twilight-quartz"
+  },
+  "18": {
+    "name": "TrueIce",
+    "meaning": "true-ice"
+  },
+  "19": {
+    "name": "Adamantine",
+    "meaning": "adamantine"
+  },
+  "20": {
+    "name": "Sapphire",
+    "meaning": "sapphire"
+  },
+  "21": {
+    "name": "EtherealSilica",
+    "meaning": "ethereal-silica"
+  },
+  "22": {
+    "name": "Dragonhide",
+    "meaning": "dragonhide"
+  },
+  "23": {
+    "name": "Labor",
+    "meaning": "labor"
+  },
+  "24": {
+    "name": "AncientFragment",
+    "meaning": "fragment"
+  },
+  "25": {
+    "name": "Donkey",
+    "meaning": "donkey"
+  },
+  "26": {
+    "name": "Knight",
+    "meaning": "knight-t1"
+  },
+  "27": {
+    "name": "KnightT2",
+    "meaning": "knight-t2"
+  },
+  "28": {
+    "name": "KnightT3",
+    "meaning": "knight-t3"
+  },
+  "29": {
+    "name": "Crossbowman",
+    "meaning": "crossbowman-t1"
+  },
+  "30": {
+    "name": "CrossbowmanT2",
+    "meaning": "crossbowman-t2"
+  },
+  "31": {
+    "name": "CrossbowmanT3",
+    "meaning": "crossbowman-t3"
+  },
+  "32": {
+    "name": "Paladin",
+    "meaning": "paladin-t1"
+  },
+  "33": {
+    "name": "PaladinT2",
+    "meaning": "paladin-t2"
+  },
+  "34": {
+    "name": "PaladinT3",
+    "meaning": "paladin-t3"
+  },
+  "35": {
+    "name": "Wheat",
+    "meaning": "wheat"
+  },
+  "36": {
+    "name": "Fish",
+    "meaning": "fish"
+  },
+  "37": {
+    "name": "Lords",
+    "meaning": "lords"
+  },
+  "38": {
+    "name": "Essence",
+    "meaning": "essence"
+  },
+  "39": {
+    "name": "StaminaRelic1",
+    "meaning": "stamina-relic-1"
+  },
+  "40": {
+    "name": "StaminaRelic2",
+    "meaning": "stamina-relic-2"
+  },
+  "41": {
+    "name": "DamageRelic1",
+    "meaning": "damage-relic-1"
+  },
+  "42": {
+    "name": "DamageRelic2",
+    "meaning": "damage-relic-2"
+  },
+  "43": {
+    "name": "DamageReductionRelic1",
+    "meaning": "damage-reduction-relic-1"
+  },
+  "44": {
+    "name": "DamageReductionRelic2",
+    "meaning": "damage-reduction-relic-2"
+  },
+  "45": {
+    "name": "ExplorationRelic1",
+    "meaning": "exploration-relic-1"
+  },
+  "46": {
+    "name": "ExplorationRelic2",
+    "meaning": "exploration-relic-2"
+  },
+  "47": {
+    "name": "ExplorationRewardRelic1",
+    "meaning": "exploration-reward-relic-1"
+  },
+  "48": {
+    "name": "ExplorationRewardRelic2",
+    "meaning": "exploration-reward-relic-2"
+  },
+  "49": {
+    "name": "StructureDamageReductionRelic1",
+    "meaning": "structure-damage-reduction-relic-1"
+  },
+  "50": {
+    "name": "StructureDamageReductionRelic2",
+    "meaning": "structure-damage-reduction-relic-2"
+  },
+  "51": {
+    "name": "ProductionRelic1",
+    "meaning": "production-relic-1"
+  },
+  "52": {
+    "name": "ProductionRelic2",
+    "meaning": "production-relic-2"
+  },
+  "53": {
+    "name": "LaborProductionRelic1",
+    "meaning": "labor-production-relic-1"
+  },
+  "54": {
+    "name": "LaborProductionRelic2",
+    "meaning": "labor-production-relic-2"
+  },
+  "55": {
+    "name": "TroopProductionRelic1",
+    "meaning": "troop-production-relic-1"
+  },
+  "56": {
+    "name": "TroopProductionRelic2",
+    "meaning": "troop-production-relic-2"
+  },
+  "57": {
+    "name": "Research",
+    "meaning": "research"
+  },
+  "58": {
+    "name": "SAT",
+    "meaning": "s-a-t"
+  }
+}

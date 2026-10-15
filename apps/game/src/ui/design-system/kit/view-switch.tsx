@@ -1,8 +1,7 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-import { type IconCode, KitIcon } from "./kit-icon";
-
-type View<Id extends string> = { id: Id; word: string; icon?: IconCode };
+type View<Id extends string> = { id: Id; word: string; icon?: IconMeaning };
 
 /** A switch between views of one list, set directly above the list it switches; the lit view is the one shown. */
 export const ViewSwitch = <Id extends string>({
@@ -34,7 +33,7 @@ export const ViewSwitch = <Id extends string>({
           view.id === lit ? "bg-kit-line2 text-kit-gold2" : "text-kit-muted hover:text-kit-cream",
         )}
       >
-        {view.icon && <KitIcon code={view.icon} size={20} />}
+        {view.icon && <SemanticIcon name={view.icon} size={20} />}
         <span className="truncate">{view.word}</span>
       </button>
     ))}

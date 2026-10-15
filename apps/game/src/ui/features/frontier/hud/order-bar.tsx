@@ -1,7 +1,8 @@
+import { type IconMeaning } from "@/ui/design-system/icon";
 import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
-import type { IconCode } from "@/ui/design-system/kit/kit-icon";
+
 import { formatDuration } from "@/ui/design-system/kit/time";
 import {
   CANCEL,
@@ -21,7 +22,7 @@ import type { ReactNode } from "react";
 import { type Cost, isCovered } from "./army-order";
 import { useEnterConfirms } from "./enter-confirms";
 
-const VERBS = { explore: { word: EXPLORE, icon: "Ey" }, move: { word: MOVE, icon: "Bt" } } as const;
+const VERBS = { explore: { word: EXPLORE, icon: "explore" }, move: { word: MOVE, icon: "move" } } as const;
 
 /**
  * The action bar with an order pending: its costs in one row (stamina before → after, the wheat, and for a new tile
@@ -61,13 +62,13 @@ export const OrderBar = ({
   return (
     <>
       <div className="frontier-card pointer-events-auto flex min-h-11 flex-wrap items-center justify-center gap-1.5 !rounded-xl px-1 py-1.5">
-        <CostChip icon="St" label={STAMINA} cost={stamina} after={(held) => `${held} → ${held - stamina.cost}`} />
-        <CostChip icon="Wh" label={WHEAT} cost={wheat} after={() => `−${formatExact(Math.ceil(wheat.cost))}`} />
+        <CostChip icon="stamina" label={STAMINA} cost={stamina} after={(held) => `${held} → ${held - stamina.cost}`} />
+        <CostChip icon="wheat" label={WHEAT} cost={wheat} after={() => `−${formatExact(Math.ceil(wheat.cost))}`} />
         {covered && kind === "explore" && revealYield !== null && (
           <RevealYield revealYield={revealYield} laborFits={laborFits} />
         )}
         {covered && kind === "explore" && <Chip icons={[]} label={XP} value={`+${formatAmount(xp)}`} unit={XP} />}
-        {covered && kind === "move" && <Chip icons={["Bt"]} label={MOVE} value={formatAmount(tiles)} />}
+        {covered && kind === "move" && <Chip icons={["move"]} label={MOVE} value={formatAmount(tiles)} />}
       </div>
       <div className="pointer-events-auto flex gap-2">
         <Button
@@ -90,7 +91,7 @@ export const OrderBar = ({
 export const NextOrderBar = ({ onCancel }: { onCancel: () => void }) => (
   <div className="pointer-events-auto flex gap-2">
     <div className="frontier-card flex min-h-11 flex-1 items-center justify-center gap-1.5 !rounded-xl px-1 py-1.5">
-      <Chip icons={["Hg"]} label={NEXT_ORDER} value={QUEUED} />
+      <Chip icons={["hourglass"]} label={NEXT_ORDER} value={QUEUED} />
     </div>
     <Button role="outline" word={CANCEL} onClick={onCancel} className="!h-14 w-[104px]" />
   </div>
@@ -103,7 +104,7 @@ const CostChip = ({
   cost,
   after,
 }: {
-  icon: IconCode;
+  icon: IconMeaning;
   label: string;
   cost: Cost;
   after: (held: number) => string;
@@ -117,7 +118,7 @@ const CostChip = ({
         value={`${formatExact(cost.held)} / ${formatExact(Math.ceil(cost.cost))}`}
         ember
       />
-      {cost.wait !== undefined && <Chip icons={["Hg"]} label={LEFT} value={formatDuration(cost.wait)} />}
+      {cost.wait !== undefined && <Chip icons={["hourglass"]} label={LEFT} value={formatDuration(cost.wait)} />}
     </>
   );
 };
@@ -126,12 +127,12 @@ const CostChip = ({
 const RevealYield = ({ revealYield, laborFits }: { revealYield: number | undefined; laborFits: number | undefined }) =>
   revealYield !== undefined && laborFits !== undefined && laborFits < revealYield ? (
     <>
-      <Chip icons={["Es"]} label={ESSENCE} value={`+${formatAmount(revealYield)}`} />
-      <Chip icons={["La"]} label={LABOR} value={`+${formatAmount(laborFits)}`} ember />
+      <Chip icons={["essence"]} label={ESSENCE} value={`+${formatAmount(revealYield)}`} />
+      <Chip icons={["labor"]} label={LABOR} value={`+${formatAmount(laborFits)}`} ember />
     </>
   ) : (
     <Chip
-      icons={["Es", "La"]}
+      icons={["essence", "labor"]}
       label={`${ESSENCE}, ${LABOR}`}
       value={revealYield === undefined ? "—" : `+${formatAmount(revealYield)}`}
     />

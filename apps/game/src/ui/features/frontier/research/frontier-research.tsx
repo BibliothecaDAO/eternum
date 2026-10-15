@@ -1,9 +1,10 @@
+import { type IconMeaning } from "@/ui/design-system/icon";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useAllInFlight } from "@/hooks/store/use-actions-in-flight";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import { Chip } from "@/ui/design-system/kit/chip";
-import type { IconCode } from "@/ui/design-system/kit/kit-icon";
+
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import type { Refusal } from "@/ui/design-system/kit/refused-verb";
 import {
@@ -161,7 +162,7 @@ const castleNodes = (
   const reach = (depth: 1 | 2 | 3) => `${ETHEREAL} ${REACH_NUMERALS[depth - 1]}`;
   const entries: {
     view: ResearchNodeView | undefined;
-    icon: IconCode;
+    icon: IconMeaning;
     label: string;
     tip: string;
     gives: ReactNode;
@@ -169,19 +170,24 @@ const castleNodes = (
   }[] = [
     {
       view: siteNode(plan, "Shrine"),
-      icon: "Sh",
+      icon: "shrine",
       label: SHRINE,
       tip: armiesFind(SHRINE, `+${formatAmount(shrineXp)} ${XP}`),
       gives: (
-        <Chip icons={["Sh"]} label={XP} value={shrineXp === undefined ? "—" : `+${formatAmount(shrineXp)}`} unit={XP} />
+        <Chip
+          icons={["shrine"]}
+          label={XP}
+          value={shrineXp === undefined ? "—" : `+${formatAmount(shrineXp)}`}
+          unit={XP}
+        />
       ),
     },
     {
       view: siteNode(plan, "Well"),
-      icon: "Wl",
+      icon: "well",
       label: WELL,
       tip: armiesFind(WELL, `+${nativeRuleConstants.WELL_STAMINA} ${STAMINA}`),
-      gives: <Chip icons={["St"]} label={STAMINA} value={`+${nativeRuleConstants.WELL_STAMINA}`} />,
+      gives: <Chip icons={["stamina"]} label={STAMINA} value={`+${nativeRuleConstants.WELL_STAMINA}`} />,
     },
     ...([1, 2, 3] as const).map((depth) => ({
       view: depthNode(plan, depth),

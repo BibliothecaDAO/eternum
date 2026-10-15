@@ -1,6 +1,6 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
-import { Copy, Loader2, Share2 } from "@/ui/design-system/atoms/game-icons";
 
 import { Button } from "@/ui/design-system/atoms";
 import { type BlitzCardLayout, BlitzHighlightCardWithSelector } from "@/ui/shared/components/blitz-highlight-card";
@@ -140,7 +140,7 @@ export const ScoreCardContent = ({
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
-        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+        <SemanticIcon name="refresh" className="w-10 h-10 text-gold animate-spin" />
         <p className="mt-4 text-sm text-white/60">Loading your score...</p>
       </div>
     );
@@ -182,7 +182,7 @@ export const ScoreCardContent = ({
             isLoading={isCopyingImage}
             disabled={isCopyingImage || !highlightPlayer}
           >
-            <Copy className="h-4 w-4" />
+            <SemanticIcon name="copy" className="h-4 w-4" />
             <span>{isCopyingImage ? "Preparing image..." : "Copy highlight image"}</span>
           </Button>
           <Button
@@ -191,7 +191,7 @@ export const ScoreCardContent = ({
             className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
             disabled={!highlightPlayer}
           >
-            <Share2 className="h-4 w-4" />
+            <SemanticIcon name="share" className="h-4 w-4" />
             <span>Share on X</span>
           </Button>
           <Button
@@ -199,7 +199,7 @@ export const ScoreCardContent = ({
             variant="secondary"
             className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
           >
-            <Copy className="h-4 w-4" />
+            <SemanticIcon name="copy" className="h-4 w-4" />
             <span>Copy message</span>
           </Button>
         </div>

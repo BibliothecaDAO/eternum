@@ -1,15 +1,8 @@
-import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
+import { type IconMeaning } from "@/ui/design-system/icon";
+
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView, seasonClockView } from "@/sync/fact-views";
-import {
-  ArrowUpCircle,
-  Building2,
-  Compass,
-  Home as HomeIcon,
-  Shield,
-  Sparkles,
-  Wheat,
-} from "@/ui/design-system/atoms/game-icons";
+
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -26,22 +19,22 @@ import {
 } from "@bibliothecadao/eternum/automation";
 
 export interface EmpireSuggestion extends Omit<BlitzSuggestionDraft, "priority"> {
-  icon: GameIcon;
+  icon: IconMeaning;
 }
 
-const ACTION_ICONS: Record<EmpireSuggestionAction, GameIcon> = {
-  "build-copper": Building2,
-  "build-coal": Building2,
-  "build-first": Building2,
-  "build-military": Shield,
-  "build-market": Building2,
-  "build-wheat": Wheat,
-  "build-wood": Building2,
-  "build-worker-hut": HomeIcon,
-  "deploy-explorer": Compass,
-  "expand-population": Sparkles,
-  garrison: Shield,
-  upgrade: ArrowUpCircle,
+const ACTION_ICONS: Record<EmpireSuggestionAction, IconMeaning> = {
+  "build-copper": "realm" as const,
+  "build-coal": "realm" as const,
+  "build-first": "realm" as const,
+  "build-military": "defend" as const,
+  "build-market": "realm" as const,
+  "build-wheat": "wheat" as const,
+  "build-wood": "realm" as const,
+  "build-worker-hut": "home" as const,
+  "deploy-explorer": "map" as const,
+  "expand-population": "relics" as const,
+  garrison: "defend" as const,
+  upgrade: "arrow-up" as const,
 };
 
 const compareSuggestionDrafts = (left: BlitzSuggestionDraft, right: BlitzSuggestionDraft) => {

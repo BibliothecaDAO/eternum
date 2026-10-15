@@ -1,4 +1,5 @@
-import { ArrowLeft, ArrowRight } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { useUISound } from "@/audio";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useEffect, useState } from "react";
@@ -66,7 +67,7 @@ export const NumberInput = ({
             }
           }}
         >
-          <ArrowLeft className="h-3 w-3" />
+          <SemanticIcon name="arrow-left" className="h-3 w-3" />
         </button>
       )}
       <input
@@ -129,7 +130,7 @@ export const NumberInput = ({
             }
           }}
         >
-          <ArrowRight className="h-3 w-3" />
+          <SemanticIcon name="arrow-right" className="h-3 w-3" />
         </button>
       )}
     </div>

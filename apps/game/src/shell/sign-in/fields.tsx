@@ -1,8 +1,8 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { IDENTITY_PORTRAITS, SIGN_IN_CODE_LENGTH } from "@realms-world/identity";
 
 import { portraitUrl } from "@/services/identity/player-portrait";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 
 import { SIGN_IN_WORDS } from "../words";
 
@@ -77,7 +77,7 @@ export const NameField = ({
       aria-invalid={!valid}
       className="min-w-0 flex-1 bg-transparent font-body text-xl font-bold text-kit-cream outline-none"
     />
-    {valid && <KitIcon code="Ok" size={24} />}
+    {valid && <SemanticIcon name="check" size={24} />}
   </label>
 );
 

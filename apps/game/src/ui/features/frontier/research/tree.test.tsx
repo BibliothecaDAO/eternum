@@ -24,8 +24,8 @@ const buttons = () => [...host.querySelectorAll<HTMLButtonElement>("button")];
 
 describe("a research in flight on the castle's tree", () => {
   it("shows on its own row, in the price's place, where the player looks once the sheet has closed", () => {
-    const row = { icon: "Fm" as const, tier: 2 as const, sides: [], choice: false, tip: "" };
-    const node = { icon: "Sh" as const, tip: "", essence: 2_000, state: "open" as const };
+    const row = { icon: "farm" as const, tier: 2 as const, sides: [], choice: false, tip: "" };
+    const node = { icon: "shrine" as const, tip: "", essence: 2_000, state: "open" as const };
     act(() =>
       root.render(
         <TreePage
@@ -68,26 +68,35 @@ describe("the castle's tree", () => {
           rows={[
             {
               key: "farm",
-              icon: "Fm",
+              icon: "farm",
               name: "Farm",
               tier: 2,
-              sides: ["Fi"],
+              sides: ["fields"],
               next: { essence: 4_000, labor: 3_000 },
               choice: true,
               tip: "Farm: Fields wheat 1,500 → 1,800/h · Granary limit 18K → 27K",
             },
-            { key: "hut", icon: "Ht", name: "Hut", tier: 5, sides: [], next: undefined, choice: false, tip: "Hut" },
+            {
+              key: "hut",
+              icon: "workers-hut",
+              name: "Hut",
+              tier: 5,
+              sides: [],
+              next: undefined,
+              choice: false,
+              tip: "Hut",
+            },
           ]}
           castle={[
             {
               key: "shrine",
-              icon: "Sh",
+              icon: "shrine",
               label: "Shrine",
               tip: "Shrine: your armies find Shrines, +200 XP each",
               essence: 2_000,
               state: "open",
             },
-            { key: "d2", icon: "Dp", label: "II", tip: "", essence: 400_000, state: "locked" },
+            { key: "d2", icon: "portal", label: "II", tip: "", essence: 400_000, state: "locked" },
           ]}
           onRow={onRow}
           onCastle={onCastle}
@@ -101,7 +110,7 @@ describe("the castle's tree", () => {
     expect(host.querySelector('[aria-label="Shrine"]')!.getAttribute("data-tip")).toBe(
       "Shrine: your armies find Shrines, +200 XP each",
     );
-    expect(host.querySelector('[aria-label="Hut"] img[src="/image-icons/kit/ui-check.png"]')).not.toBeNull();
+    expect(host.querySelector('[aria-label="Hut"] img[src="/icons/facets/64/check.webp"]')).not.toBeNull();
     expect(host.querySelector<HTMLButtonElement>('[aria-label="II"]')!.className).toContain("opacity-50");
     act(() => farm.click());
     act(() => host.querySelector<HTMLButtonElement>('[aria-label="Shrine"]')!.click());
@@ -114,12 +123,12 @@ describe("the castle's tree", () => {
     const onUpgrade = vi.fn();
     const sheet = (tier: 2 | 5) => (
       <TypeUpgradeSheet
-        icon="Fm"
+        icon="farm"
         name="Farm"
         tier={tier}
         sides={[
-          { icon: "Fi", name: "Fields", gain: { icon: "Wh", label: "wheat", value: "1,500 → 1,800/h" } },
-          { icon: "Gr", name: "Granary", gain: { icon: "Sg", label: "limit", value: "18K → 27K" } },
+          { icon: "fields", name: "Fields", gain: { icon: "wheat", label: "wheat", value: "1,500 → 1,800/h" } },
+          { icon: "granary", name: "Granary", gain: { icon: "resources", label: "limit", value: "18K → 27K" } },
         ]}
         lifted={1}
         onLift={onLift}
@@ -136,7 +145,7 @@ describe("the castle's tree", () => {
     expect(host.querySelector('[aria-label="Granary"]')?.getAttribute("aria-checked")).toBe("true");
     act(() => host.querySelector<HTMLButtonElement>('[aria-label="Fields"]')!.click());
     expect(onLift).toHaveBeenCalledWith(0);
-    expect(host.querySelector('img[src="/image-icons/kit/final-seal.png"]')).not.toBeNull();
+    expect(host.querySelector('img[src="/icons/facets/64/final-seal.webp"]')).not.toBeNull();
     act(() =>
       buttons()
         .find((button) => button.textContent === "Upgrade4,0003,000")!
@@ -153,12 +162,12 @@ describe("the castle's tree", () => {
     act(() =>
       root.render(
         <TypeUpgradeSheet
-          icon="Bs"
+          icon="barracks"
           name="Barracks"
           tier={1}
           sides={[
-            { icon: "Dr", name: "Drill", gain: { icon: "Tr", label: "troops", value: "101 → 126/h" } },
-            { icon: "Ra", name: "Rations", gain: { icon: "Wh", label: "wheat", value: "2 → 1.75" } },
+            { icon: "drill", name: "Drill", gain: { icon: "troops", label: "troops", value: "101 → 126/h" } },
+            { icon: "rations", name: "Rations", gain: { icon: "wheat", label: "wheat", value: "2 → 1.75" } },
           ]}
           onLift={() => {}}
           prices={[
@@ -188,13 +197,13 @@ describe("the castle's tree", () => {
     act(() =>
       root.render(
         <TypeUpgradeSheet
-          icon="Bs"
+          icon="barracks"
           name="Barracks"
           now={[
-            { icons: ["Tr"], label: "troops each makes an hour", value: "+101/h" },
-            { icons: ["Bs"], label: "standing", value: "×2" },
-            { icons: ["Tr", "Sg"], label: "troops held of its store's limit", value: "2,976 / 6,000" },
-            { icons: ["Pp"], label: "population each takes", value: "3" },
+            { icons: ["troops"], label: "troops each makes an hour", value: "+101/h" },
+            { icons: ["barracks"], label: "standing", value: "×2" },
+            { icons: ["troops", "resources"], label: "troops held of its store's limit", value: "2,976 / 6,000" },
+            { icons: ["person"], label: "population each takes", value: "3" },
           ]}
           tier={1}
           prices={[]}
@@ -219,7 +228,7 @@ describe("the castle's tree", () => {
     act(() =>
       root.render(
         <CastleNodeSheet
-          node={{ key: "d2", icon: "E2", label: "II", tip: "", essence: 400_000, state: "locked" }}
+          node={{ key: "d2", icon: "depth-2", label: "II", tip: "", essence: 400_000, state: "locked" }}
           gives={null}
           refusal={{ reason: { kind: "failed", line: "Needs Ethereal I" } }}
           sending={false}
@@ -237,7 +246,7 @@ describe("the castle's tree", () => {
     act(() =>
       root.render(
         <CastleNodeSheet
-          node={{ key: "well", icon: "Wl", label: "Well", tip: "", essence: 6_000, state: "open" }}
+          node={{ key: "well", icon: "well", label: "Well", tip: "", essence: 6_000, state: "open" }}
           gives={null}
           sending={false}
           onResearch={onResearch}

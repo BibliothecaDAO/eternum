@@ -1,4 +1,5 @@
-import { X, Minus, Minimize2 as CollapseIcon, Maximize2 as ExpandIcon } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import React, { useState } from "react";
 import type { ChatTab } from "../../model/types";
 
@@ -64,7 +65,7 @@ export const TabBar: React.FC<TabBarProps> = ({
                     className="ml-1 text-kit-muted hover:text-gold transition-colors text-2xl leading-none max-lg:flex max-lg:h-11 max-lg:w-8 max-lg:items-center max-lg:justify-center"
                     title="Close tab"
                   >
-                    <X className="h-4 w-4" />
+                    <SemanticIcon name="close" className="h-4 w-4" />
                   </button>
                 )}
               </div>
@@ -88,14 +89,18 @@ export const TabBar: React.FC<TabBarProps> = ({
               className="px-2 py-1 text-sm text-gold/70 hover:text-gold hover:bg-gold/10 rounded transition-all"
               title={isExpanded ? "Collapse" : "Expand"}
             >
-              {isExpanded ? <CollapseIcon className="w-4 h-4" /> : <ExpandIcon className="w-4 h-4" />}
+              {isExpanded ? (
+                <SemanticIcon name="collapse" className="w-4 h-4" />
+              ) : (
+                <SemanticIcon name="expand" className="w-4 h-4" />
+              )}
             </button>
             <button
               onClick={onMinimize}
               className="px-2 py-1 text-sm text-gold/70 hover:text-gold hover:bg-gold/10 rounded transition-all"
               title="Minimize chat"
             >
-              <Minus className="w-4 h-4" />
+              <SemanticIcon name="minus" className="w-4 h-4" />
             </button>
           </>
         )}

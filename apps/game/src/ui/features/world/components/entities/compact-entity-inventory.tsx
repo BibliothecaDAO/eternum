@@ -1,4 +1,5 @@
-import { Sparkles } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { memo, useCallback, useMemo } from "react";
 
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -319,7 +320,7 @@ export const CompactEntityInventory = memo(
               {resourceDef.ticker ?? resourceDef.trait}
             </span>
           )}
-          {item.isRelic && item.isActive && <Sparkles className="mt-1 h-3 w-3 text-relic2" />}
+          {item.isRelic && item.isActive && <SemanticIcon name="relics" className="mt-1 h-3 w-3 text-relic2" />}
         </>
       );
 

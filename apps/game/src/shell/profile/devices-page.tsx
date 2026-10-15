@@ -124,11 +124,11 @@ const DeviceRows = ({
       return (
         <SettingRow
           key={device.key}
-          icon="Dv"
+          icon="monitor"
           name={own ? PROFILE_WORDS.thisDevice : deviceName(device.key)}
           end={
             own ? (
-              <StateChip icon="Ok" />
+              <StateChip icon="check" />
             ) : (
               <Button
                 role="outline"

@@ -1,6 +1,7 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { DISPLAYED_SLOT_NUMBER_MAP, GUARD_SLOT_NAMES, TroopTier, TroopType } from "@bibliothecadao/types";
 import clsx from "clsx";
-import { AlertTriangle } from "@/ui/design-system/atoms/game-icons";
+
 import { GuardCooldownBadge } from "../guard-cooldown-badge";
 import { GuardStaminaBar } from "../guard-stamina-bar";
 import { TransferDirection } from "./transfer-direction";
@@ -109,7 +110,7 @@ export const TransferSlotSelection = ({
             {renderTroopPill(balanceOption.troop)}
             {balanceOption.disabledReason && (
               <span className="self-start border border-danger/60 bg-danger/10 text-danger px-1.5 py-0.5 rounded text-sm font-semibold flex items-center gap-1.5">
-                <AlertTriangle className="w-3 h-3" />
+                <SemanticIcon name="warning" className="w-3 h-3" />
                 Explorer not owned by this structure
               </span>
             )}

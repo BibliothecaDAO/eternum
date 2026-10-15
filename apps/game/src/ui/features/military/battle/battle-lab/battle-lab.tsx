@@ -16,7 +16,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { ActorType, BiomeType, ContractAddress, getLayeredAttackDistance, ID } from "@bibliothecadao/types";
-import { Swords } from "@/ui/design-system/atoms/game-icons";
+
 import { useEffect, useMemo, useState } from "react";
 
 import {
@@ -325,7 +325,7 @@ export const BattleLab = ({
   return (
     <SurfaceFrame
       title="Combat"
-      icon={Swords}
+      icon={"military" as const}
       onClose={closeSurface}
       className={SURFACE_WORKSPACE_CLASS}
       bodyClassName="relative overflow-x-hidden"

@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
@@ -16,7 +17,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { displayAddress } from "@/ui/utils/utils";
 import { useGame } from "@/hooks/context/game-context";
 import { ID, StructureType } from "@bibliothecadao/types";
-import { Loader, Sparkles } from "@/ui/design-system/atoms/game-icons";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 
@@ -194,7 +195,7 @@ export const FaithDevotionActionPanel = ({ structureEntityId, className }: Faith
   if (isLoadingStructure) {
     return (
       <div className={cn("flex items-center gap-2", HUD_BODY_MUTED, className)}>
-        <Loader className="h-3.5 w-3.5 animate-spin" />
+        <SemanticIcon name="refresh" className="h-3.5 w-3.5 animate-spin" />
         Loading structure
       </div>
     );
@@ -271,7 +272,7 @@ export const FaithDevotionActionPanel = ({ structureEntityId, className }: Faith
             disabled={!canDevote}
             onClick={openDevotionModal}
           >
-            <Sparkles className="h-3.5 w-3.5" />
+            <SemanticIcon name="relics" className="h-3.5 w-3.5" />
             {devotionStatus ? "Change devotion" : "Devote to a wonder"}
           </button>
         </div>
@@ -405,7 +406,7 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
 
         {isLoadingWonders ? (
           <div className="flex items-center justify-center py-8 text-sm text-gold/70">
-            <Loader className="mr-2 h-4 w-4 animate-spin" />
+            <SemanticIcon name="refresh" className="mr-2 h-4 w-4 animate-spin" />
             Loading wonders...
           </div>
         ) : wondersError ? (

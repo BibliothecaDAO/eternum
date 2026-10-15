@@ -1,4 +1,5 @@
-import { Plus } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { memo, useCallback, useMemo, useRef } from "react";
 
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -248,7 +249,7 @@ export const MergedResourcePanel = memo(
                 title={buildEnabled ? `Build ${label}` : (buildReason ?? "Cannot build")}
                 aria-label={`Build ${label}`}
               >
-                <Plus className="h-2.5 w-2.5" />
+                <SemanticIcon name="plus" className="h-2.5 w-2.5" />
               </button>
             )}
           </div>

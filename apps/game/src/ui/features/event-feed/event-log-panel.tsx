@@ -6,7 +6,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { PopoverPanel, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { configManager } from "@bibliothecadao/eternum";
 import { TickIds } from "@bibliothecadao/types";
-import { ScrollText } from "@/ui/design-system/atoms/game-icons";
+
 import { useState } from "react";
 import { orderHeadlineFeed, useHeadlineFeedStore } from "../news-headlines/headline-feed-store";
 import { FeedRowLine } from "./feed-row-line";
@@ -47,7 +47,7 @@ export const EventLogPanel = ({
       onDismiss={onDismiss}
       isInsideAnchor={isInsideAnchor}
     >
-      <SurfaceFrame title="Log" icon={ScrollText} onClose={onDismiss} className="h-[calc(100vh-7rem)]">
+      <SurfaceFrame title="Log" icon={"chronicles" as const} onClose={onDismiss} className="h-[calc(100vh-7rem)]">
         <div className="flex gap-3 border-b border-gold/15 px-3 py-2" aria-label="Event filters">
           {FILTERS.map((value) => (
             <button

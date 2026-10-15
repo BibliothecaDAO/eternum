@@ -1,3 +1,4 @@
+import { type IconMeaning } from "@/ui/design-system/icon";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGame } from "@/hooks/context/game-context";
@@ -9,7 +10,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getPlayerName } from "@/services/identity/player-profiles";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
-import type { IconCode } from "@/ui/design-system/kit/kit-icon";
+
 import type { PriceKind } from "@/ui/design-system/kit/price-chip";
 import type { Refusal } from "@/ui/design-system/kit/refused-verb";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
@@ -222,7 +223,7 @@ export const BuildSheet = ({
           onFix: () => choose(BuildingType.ResourceKnightT1),
         },
       };
-    return { reason, fix: onResearch && { icon: "Rs", word: RESEARCH, onFix: onResearch } };
+    return { reason, fix: onResearch && { icon: "research", word: RESEARCH, onFix: onResearch } };
   };
   return (
     <BuildView
@@ -253,11 +254,11 @@ const realmPopulation = (
 };
 
 /** Each attribute's mark, as a training building's gain shows it. */
-const ATTRIBUTE_MARKS: Record<Extract<BuildOption["effect"], { kind: "trains" }>["attribute"], IconCode> = {
-  Battle: "Ba",
-  Logistics: "Lg",
-  Scouting: "Sc",
-  Homecoming: "Su",
+const ATTRIBUTE_MARKS: Record<Extract<BuildOption["effect"], { kind: "trains" }>["attribute"], IconMeaning> = {
+  Battle: "order-rage",
+  Logistics: "order-skill",
+  Scouting: "order-detection",
+  Homecoming: "order-enlightenment",
 };
 
 const PRICE_KINDS: Partial<Record<number, PriceKind>> = {
@@ -339,8 +340,8 @@ const buildGains = (option: BuildOption): BuildGain[] => {
       ? { icon: PRODUCTS[effect.resource].icon, value: `+${formatAmount(effect.perHour)}/h`, label: "produces" }
       : effect.kind === "trains"
         ? { icon: ATTRIBUTE_MARKS[effect.attribute], value: TIER_WORDS[option.tier - 1], label: "trains" }
-        : { icon: "Pp", value: `+${formatAmount(effect.amount)}`, label: "houses" };
-  return [gain, { icon: "Pp", value: formatAmount(option.populationCost), label: "population" }];
+        : { icon: "person", value: `+${formatAmount(effect.amount)}`, label: "houses" };
+  return [gain, { icon: "person", value: formatAmount(option.populationCost), label: "population" }];
 };
 
 /** A realm's plot, as the actions in flight name it. */

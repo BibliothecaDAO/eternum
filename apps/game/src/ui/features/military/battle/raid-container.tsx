@@ -693,10 +693,7 @@ export const RaidContainer = ({
                                   className="flex justify-between items-center p-2 border border-gold/10 rounded-md bg-brown-900/20"
                                 >
                                   <div className="flex items-center gap-2">
-                                    <ResourceIcon
-                                      resource={resources.find((r) => r.id === resource.resourceId)?.trait || ""}
-                                      size="md"
-                                    />
+                                    <ResourceIcon resource={resource.resourceId} size="md" />
                                     <span className="text-gold/80">
                                       {resources.find((r) => r.id === resource.resourceId)?.trait || ""}
                                     </span>

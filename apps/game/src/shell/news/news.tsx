@@ -54,7 +54,7 @@ const NewsRows = ({ items }: { items: readonly NewsItem[] }) => {
       {items.map((item) => (
         <SettingRow
           key={item.key}
-          icon="Pc"
+          icon="chronicles"
           name={item.title}
           value={formatContentDay(item.date)}
           onOpen={() => (item.kind === "post" ? navigate(postHref(item)) : setChange(item))}

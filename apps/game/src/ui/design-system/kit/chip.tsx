@@ -1,4 +1,5 @@
-import { type IconCode, KitIcon } from "./kit-icon";
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+
 import { formatDuration } from "./time";
 import { FULL_IN } from "./words";
 
@@ -14,7 +15,7 @@ export const Chip = ({
   ember = false,
   tip,
 }: {
-  icons: IconCode[];
+  icons: IconMeaning[];
   value: string;
   label: string;
   unit?: string;
@@ -33,7 +34,7 @@ export const Chip = ({
     <span className="contents">
       <span className="flex -space-x-1">
         {icons.map((icon) => (
-          <KitIcon key={icon} code={icon} size={18} />
+          <SemanticIcon key={icon} name={icon} size={18} />
         ))}
       </span>
       <span className="frontier-chip-number tabular-nums !text-base">{value}</span>

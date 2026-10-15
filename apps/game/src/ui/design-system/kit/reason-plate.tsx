@@ -1,7 +1,8 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
 
 import { formatExact } from "./amount";
-import { type IconCode, KitIcon } from "./kit-icon";
+
 import { PRICE_FACES, type PriceKind } from "./price-chip";
 import { formatDuration } from "./time";
 import { inTime, needsFree, needsHave, needsOverLimit, POPULATION } from "./words";
@@ -25,9 +26,9 @@ export type Reason =
     }
   | { kind: "failed"; line: string };
 
-const COUNTED: Record<Counted, { word: string; icon?: IconCode }> = {
+const COUNTED: Record<Counted, { word: string; icon?: IconMeaning }> = {
   ...PRICE_FACES,
-  population: { word: POPULATION, icon: "Pp" },
+  population: { word: POPULATION, icon: "person" },
 };
 
 /**
@@ -59,10 +60,10 @@ export const ReasonPlate = ({ reason, step }: { reason: Reason; step?: ReactNode
 );
 
 const Shortfall = ({ reason }: { reason: Extract<Reason, { kind: "short" }> }) => {
-  const icon = reason.counted === "limit" ? "Sg" : COUNTED[reason.of].icon;
+  const icon = reason.counted === "limit" ? "resources" : COUNTED[reason.of].icon;
   return (
     <>
-      {icon && <KitIcon code={icon} size={22} />}
+      {icon && <SemanticIcon name={icon} size={22} />}
       <span className="min-w-0 flex-1 text-base leading-snug tabular-nums">{shortfallLine(reason)}</span>
     </>
   );

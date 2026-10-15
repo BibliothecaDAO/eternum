@@ -1,6 +1,6 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import Button from "@/ui/design-system/atoms/button";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
-import { AlertTriangle } from "@/ui/design-system/atoms/game-icons";
 
 interface TroopCountSelectorProps {
   troopCount: number;
@@ -121,7 +121,7 @@ export const TroopCountSelector = ({
 
         {troopCount > maxAffordable && (
           <div className="bg-danger/10 border-l-2 border-danger rounded px-2 py-1 flex items-center gap-1.5">
-            <AlertTriangle className="w-4 h-4 text-danger flex-shrink-0" />
+            <SemanticIcon name="warning" className="w-4 h-4 text-danger flex-shrink-0" />
             <span className="text-sm text-danger font-semibold">
               Need {troopCount.toLocaleString()} but only {maxAffordable.toLocaleString()} available
             </span>

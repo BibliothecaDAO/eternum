@@ -1,3 +1,5 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { readTransferResources } from "@/ui/features/infrastructure/automation/model/automation-readiness";
 import * as Result from "effect/Result";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -20,48 +22,19 @@ import {
   isMilitaryResource,
   ResourceManager,
 } from "@bibliothecadao/eternum";
-import type { VillageIconKey } from "@/config/game-modes";
-import { byStructureCategory } from "@/lib/structure-category-table";
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { RESOURCE_PRECISION, ResourcesIds, Structure, StructureType } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
-import { Castle, Crown, Pickaxe, Hyperstructure, Star, Tent } from "@/ui/design-system/atoms/game-icons";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 import { accountAddress } from "@/hooks/store/use-account-store";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
-const VILLAGE_ICON_BY_KEY: Record<VillageIconKey, typeof Castle> = {
-  castle: Castle,
-  tent: Tent,
-};
-
 const canOpenTransferInventory = (structure: Structure) =>
   resolveStructureUiCapabilities(structure.structure).canOpenTransferInventory;
-
-/**
- * A structure's icon in the transfer lists, by category; a village takes the game mode's own. A new category fails
- * typecheck here until it has one.
- */
-const STRUCTURE_ICONS: Record<StructureType, typeof Castle | "village"> = {
-  [StructureType.Realm]: Crown,
-  [StructureType.Village]: "village",
-  [StructureType.Camp]: "village",
-  [StructureType.Mine]: Pickaxe,
-  [StructureType.Hyperstructure]: Hyperstructure,
-  [StructureType.Bank]: Castle,
-  [StructureType.BitcoinMine]: Castle,
-  [StructureType.Rift]: Castle,
-  [StructureType.Ruin]: Castle,
-  [StructureType.Stragglers]: Castle,
-};
-
-const getStructureIcon = (category: StructureType, villageIconKey: VillageIconKey) => {
-  const icon = byStructureCategory(STRUCTURE_ICONS, category, "transfer list icon", Castle);
-  return icon === "village" ? VILLAGE_ICON_BY_KEY[villageIconKey] : icon;
-};
 
 // Multi-select structure-category filter. Reuses the shared CATEGORY_FILTER_OPTIONS
 // icon/label mapping and the FilterChipsRow chip styling, but toggles a Set so a
@@ -100,7 +73,7 @@ const CategoryFilterChips = ({
             aria-label={option.label}
             title={option.label}
           >
-            <Icon className="h-3.5 w-3.5" />
+            <SemanticIcon name={Icon} className="h-3.5 w-3.5" />
           </button>
         );
       })}
@@ -114,8 +87,8 @@ interface TransferAutomationPanelProps {
 
 export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationPanelProps) => {
   const playerStructures = useFactView(playerStructuresView);
-  const currentDefaultTick = useCurrentDefaultTick();
   const mode = useGameModeConfig();
+  const currentDefaultTick = useCurrentDefaultTick();
   const { favorites } = useFavoriteStructures();
   const favoriteDestinationIds = useMemo(() => new Set(favorites), [favorites]);
 
@@ -748,7 +721,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
               const name = mode.structure.getName(ps.structure).name;
               const entityId = safeInteger(ps.entityId);
               const isSel = selectedSourceId === entityId;
-              const Icon = getStructureIcon(ps.category, mode.ui.villageIconKey);
+              const Icon = structureMeaning(ps.category);
               return (
                 <button
                   key={ps.entityId}
@@ -757,7 +730,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                   onClick={() => setSelectedSourceId(isSel ? null : entityId)}
                 >
                   <div className="flex min-w-0 items-center gap-2">
-                    <Icon className="h-4 w-4 shrink-0 text-gold" aria-hidden />
+                    <SemanticIcon name={Icon} className="h-4 w-4 shrink-0 text-gold" aria-hidden />
                     <div className="truncate text-sm font-semibold">{name}</div>
                   </div>
                 </button>
@@ -846,7 +819,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
               const name = mode.structure.getName(ps.structure).name;
               const entityId = safeInteger(ps.entityId);
               const isSel = destinationIds.includes(entityId);
-              const Icon = getStructureIcon(ps.category, mode.ui.villageIconKey);
+              const Icon = structureMeaning(ps.category);
               const isFavorite = favoriteDestinationIds.has(entityId);
               return (
                 <button
@@ -856,8 +829,8 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                   onClick={() => toggleDestinationSelection(entityId)}
                 >
                   <div className="flex min-w-0 items-center gap-2">
-                    {isFavorite && <Star className="h-4 w-4 shrink-0  text-gold" aria-hidden />}
-                    <Icon className="h-4 w-4 shrink-0 text-gold" aria-hidden />
+                    {isFavorite && <SemanticIcon name="star" className="h-4 w-4 shrink-0  text-gold" aria-hidden />}
+                    <SemanticIcon name={Icon} className="h-4 w-4 shrink-0 text-gold" aria-hidden />
                     <div className="truncate text-sm font-semibold">{name}</div>
                   </div>
                 </button>

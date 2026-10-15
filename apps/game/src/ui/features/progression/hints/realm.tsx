@@ -1,13 +1,14 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { Headline, ResourceCost } from "@/ui/design-system/molecules";
 import { configManager } from "@bibliothecadao/eternum";
 import { RealmLevelNames, RealmLevels } from "@bibliothecadao/types";
 import { describeCastleLevel } from "@/ui/modules/entity-details/realm/castle-level";
 import { useMemo } from "react";
 
-const CASTLE_IMAGES: Partial<Record<RealmLevelNames, string>> = {
-  [RealmLevelNames.City]: "/images/buildings/construction/castleOne.png",
-  [RealmLevelNames.Kingdom]: "/images/buildings/construction/castleTwo.png",
-  [RealmLevelNames.Empire]: "/images/buildings/construction/castleThree.png",
+const CASTLE_IMAGES: Partial<Record<RealmLevelNames, IconMeaning>> = {
+  [RealmLevelNames.City]: "realm-1",
+  [RealmLevelNames.Kingdom]: "realm-2",
+  [RealmLevelNames.Empire]: "realm-3",
 } as const;
 
 export const Realm = () => {
@@ -77,8 +78,9 @@ const LevelTable = () => {
                 <div className="flex flex-col items-center gap-4">
                   <div className="w-64 h-64 rounded-lg bg-gold/5 border border-gold/20 flex items-center justify-center overflow-hidden">
                     {CASTLE_IMAGES[resource.level as unknown as keyof typeof CASTLE_IMAGES] ? (
-                      <img
-                        src={CASTLE_IMAGES[resource.level as unknown as keyof typeof CASTLE_IMAGES]}
+                      <SemanticIcon
+                        size={144}
+                        name={CASTLE_IMAGES[resource.level as unknown as keyof typeof CASTLE_IMAGES]!}
                         alt={`Level ${resource.level} Castle`}
                         className="object-contain"
                       />

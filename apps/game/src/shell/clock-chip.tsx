@@ -1,4 +1,5 @@
-import { CalendarDays, Hourglass } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { formatClockTime, formatDate, formatDuration } from "@/ui/design-system/kit/time";
 import { LEFT } from "@/ui/design-system/kit/words";
 
@@ -36,10 +37,11 @@ export const formatContentDay = (day: string): string => {
 
 /** A moment as a chip: the hourglass within a day, the calendar further out or for a finished game's date. */
 export const ClockChip = ({ prefix, at, now }: { prefix: ClockPrefix | null; at: number | undefined; now: number }) => {
-  const Icon = prefix !== null && at !== undefined && isWithinADay(at, now) ? Hourglass : CalendarDays;
+  const Icon =
+    prefix !== null && at !== undefined && isWithinADay(at, now) ? ("hourglass" as const) : ("calendar" as const);
   return (
     <span className="frontier-chip h-8 shrink-0 whitespace-nowrap !py-0 !pl-1.5 !pr-3 font-body text-sm font-bold text-kit-cream">
-      <Icon size={20} />
+      <SemanticIcon name={Icon} size={20} />
       {clockLine(prefix, at, now)}
     </span>
   );

@@ -1,15 +1,5 @@
-import {
-  AlertTriangle,
-  Camera,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Hash,
-  Layers3,
-  RefreshCw,
-  X,
-} from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import type { ReactNode } from "react";
 
 import {
@@ -66,7 +56,7 @@ export const ProceduralAnimationInspector = ({
     >
       <header className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-3 py-2">
         <div className="flex items-center gap-2">
-          <Camera className="h-4 w-4 text-violet-200" />
+          <SemanticIcon name="camera" className="h-4 w-4 text-violet-200" />
           <div>
             <p className="text-sm font-semibold text-violet-200/55">Deterministic pose bench</p>
             <p className="text-sm font-semibold text-white">
@@ -79,20 +69,20 @@ export const ProceduralAnimationInspector = ({
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
           <InspectorButton
-            icon={<Layers3 />}
+            icon={<SemanticIcon name="layers" />}
             label="5-view atlas"
             disabled={busy}
             onClick={() => onCapture("phase-atlas", "diagnostic", repeatCaptureOptions)}
           />
           <InspectorButton
-            icon={<RefreshCw />}
+            icon={<SemanticIcon name="refresh" />}
             label="Every frame"
             disabled={busy}
             onClick={() => onCapture("all-frames", "clean", repeatCaptureOptions)}
           />
           <InspectorButton
             active={result.plan.overlay === "diagnostic"}
-            icon={<Hash />}
+            icon={<SemanticIcon name="hash" />}
             label={result.plan.overlay === "diagnostic" ? "Labels on" : "Labels off"}
             disabled={busy}
             onClick={() =>
@@ -103,9 +93,13 @@ export const ProceduralAnimationInspector = ({
               )
             }
           />
-          <InspectorButton icon={<Download />} label="JSON" onClick={() => downloadCaptureReport(result)} />
           <InspectorButton
-            icon={<Download />}
+            icon={<SemanticIcon name="download" />}
+            label="JSON"
+            onClick={() => downloadCaptureReport(result)}
+          />
+          <InspectorButton
+            icon={<SemanticIcon name="download" />}
             label="Contact sheet"
             disabled={busy || !result.frames.some(({ views }) => views.some(({ imageDataUrl }) => imageDataUrl))}
             onClick={() => void downloadCaptureContactSheet(result)}
@@ -116,7 +110,7 @@ export const ProceduralAnimationInspector = ({
             className="grid h-8 w-8 place-items-center border border-white/10 text-slate-400 transition hover:bg-white/10 hover:text-white"
             aria-label="Close animation inspector"
           >
-            <X className="h-3.5 w-3.5" />
+            <SemanticIcon name="close" className="h-3.5 w-3.5" />
           </button>
         </div>
       </header>
@@ -134,7 +128,7 @@ export const ProceduralAnimationInspector = ({
           onClick={() => previous && onSelectFrame(previous.frameIndex)}
           className="grid w-9 shrink-0 place-items-center border-r border-white/10 text-slate-400 transition hover:bg-white/[0.06] hover:text-white disabled:opacity-25"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <SemanticIcon name="chevron-left" className="h-4 w-4" />
         </button>
         <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto p-2" data-animation-frame-strip="true">
           {result.frames.map((frame) => (
@@ -154,7 +148,7 @@ export const ProceduralAnimationInspector = ({
           onClick={() => next && onSelectFrame(next.frameIndex)}
           className="grid w-9 shrink-0 place-items-center border-l border-white/10 text-slate-400 transition hover:bg-white/[0.06] hover:text-white disabled:opacity-25"
         >
-          <ChevronRight className="h-4 w-4" />
+          <SemanticIcon name="chevron-right" className="h-4 w-4" />
         </button>
       </div>
 
@@ -243,7 +237,7 @@ const FrameThumbnail = ({
             : "border-emerald-300/25 bg-emerald-950/80 text-emerald-200",
         )}
       >
-        {frame.issues.length || <CheckCircle2 className="h-3 w-3" />}
+        {frame.issues.length || <SemanticIcon name="check" className="h-3 w-3" />}
       </span>
     </div>
     <div className="px-2 py-1.5">
@@ -334,11 +328,11 @@ const FrameDiagnostics = ({
       <div className="col-span-2 md:col-span-9">
         {frame.issues.length > 0 ? (
           <p className="flex items-center gap-1.5 text-sm text-amber-200">
-            <AlertTriangle className="h-3.5 w-3.5 shrink-0" /> {frame.issues.join(" · ")}
+            <SemanticIcon name="warning" className="h-3.5 w-3.5 shrink-0" /> {frame.issues.join(" · ")}
           </p>
         ) : (
           <p className="flex items-center gap-1.5 text-sm text-emerald-300">
-            <CheckCircle2 className="h-3.5 w-3.5" /> No pose assertions failed in this frame
+            <SemanticIcon name="check" className="h-3.5 w-3.5" /> No pose assertions failed in this frame
           </p>
         )}
       </div>

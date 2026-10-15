@@ -1,7 +1,8 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 
@@ -75,7 +76,7 @@ const PreparedMark = ({ prepared }: { prepared: boolean | undefined }) => {
       aria-hidden
       className="absolute -bottom-0.5 -right-0.5 flex size-5 items-center justify-center rounded-full border border-kit-line2 bg-kit-ground text-sm text-kit-muted"
     >
-      {prepared ? <KitIcon code="Ok" size={16} /> : "—"}
+      {prepared ? <SemanticIcon name="check" size={16} /> : "—"}
     </span>
   );
 };
@@ -132,7 +133,7 @@ export const RegisteredCount = ({ slot, large, closed }: { slot: PlaytestSlot; l
   const registered = useSlotRegistered(slot);
   return (
     <div className="flex items-center gap-4">
-      <KitIcon code="Pp" size={large ? 56 : 40} />
+      <SemanticIcon name="person" size={large ? 56 : 40} />
       <span className="flex flex-col gap-1">
         <span className="flex items-baseline gap-2">
           <b

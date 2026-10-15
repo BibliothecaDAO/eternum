@@ -1,11 +1,11 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import { Chip, FullIn } from "@/ui/design-system/kit/chip";
-import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { ATTRIBUTES, RETURNED, STAMINA, TIER_WORDS, TROOPS, XP, xpToward } from "@/ui/design-system/kit/words";
 import { STAMINA_SEGMENTS, staminaFill } from "@/lib/army-stamina/segments";
 
-import { CardFanGlyph } from "../glyphs";
 import { guideTarget } from "../guide/guide-thread";
 
 const TOKEN = "relative flex h-[72px] w-14 shrink-0 flex-col items-center justify-center gap-[3px] rounded-xl";
@@ -47,7 +47,7 @@ export const ArmyToken = ({
   label: string;
   /** The army's number among its realm's; absent where a token stands for no numbered army. */
   number?: number;
-  art: string | undefined;
+  art: IconMeaning | undefined;
   xp: number | undefined;
   /** The attribute tier the XP buys next; none once every attribute is legendary, or while unknown. */
   xpGoal?: XpGoal;
@@ -70,7 +70,7 @@ export const ArmyToken = ({
     <>
       <span data-fly-target={flyTarget} className="relative size-10 shrink-0">
         <span className="block size-full overflow-hidden rounded-full border border-kit-line2 bg-kit-ground">
-          {art && <img src={art} alt="" className="size-full object-cover" />}
+          {art && <SemanticIcon name={art} alt="" className="size-full object-cover" />}
         </span>
         {!wide && (
           <span
@@ -90,7 +90,7 @@ export const ArmyToken = ({
         )}
         {canBuyTier && (
           <span className="absolute -right-2 -top-1.5 size-[18px]">
-            <CardFanGlyph className="size-full" />
+            <SemanticIcon name="picks" className="size-full" />
           </span>
         )}
       </span>
@@ -193,7 +193,7 @@ const StaminaSegments = ({
   );
 };
 
-const ATTRIBUTE_MARKS: readonly IconCode[] = ["Ba", "Lg", "Sc", "Su"];
+const ATTRIBUTE_MARKS: readonly IconMeaning[] = ["order-rage", "order-skill", "order-detection", "order-enlightenment"];
 
 /**
  * The wide card's XP: the balance with its word, a thin bar toward the attribute tier it buys next, and a pip for every
@@ -236,7 +236,7 @@ const XpRow = ({
           aria-label={`${ATTRIBUTES[index]} ${TIER_WORDS[tier - 1]}`}
           className="flex shrink-0 items-center gap-px"
         >
-          <KitIcon code={ATTRIBUTE_MARKS[index]} size={14} />
+          <SemanticIcon name={ATTRIBUTE_MARKS[index]} size={14} />
           {Array.from({ length: tier - 1 }, (_, pip) => (
             <i key={pip} className="size-[5px] rounded-full bg-kit-gold" />
           ))}
@@ -256,6 +256,6 @@ const WideRows = ({
 }) => (
   <span className="flex w-full flex-wrap items-center justify-center gap-1">
     {secondsToFull !== undefined && secondsToFull > 0 && <FullIn seconds={secondsToFull} />}
-    <Chip icons={["Su", "Tr"]} label={RETURNED} value={`+${formatAmount(returnsHome)}`} />
+    <Chip icons={["order-enlightenment", "troops"]} label={RETURNED} value={`+${formatAmount(returnsHome)}`} />
   </span>
 );

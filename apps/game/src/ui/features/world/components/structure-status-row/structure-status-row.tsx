@@ -1,18 +1,6 @@
-import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
-import {
-  Castle,
-  Crosshair,
-  Crown,
-  Hexagon,
-  Pencil,
-  Pickaxe,
-  Shield,
-  Sparkles,
-  Star,
-  Tent,
-  Users,
-} from "@/ui/design-system/atoms/game-icons";
-import { byStructureCategory } from "@/lib/structure-category-table";
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+
+import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { STRUCTURE_GROUP_CONFIG } from "@/ui/features/world/containers/top-header/structure-groups";
@@ -26,31 +14,18 @@ import {
 } from "@/ui/features/world/containers/structure-status";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
 import { type ID, StructureType } from "@bibliothecadao/types";
-import { createElement, memo, useCallback } from "react";
+import { memo, useCallback } from "react";
 
-// Category → icon, same lookup the picker uses elsewhere. Centralized here so
-// every consumer of StructureStatusRow gets the same iconography.
-// A new category fails typecheck here until it has an icon.
-const CATEGORY_ICONS: Record<StructureType, GameIcon> = {
-  [StructureType.Realm]: Crown,
-  [StructureType.Village]: Castle,
-  [StructureType.Camp]: Tent,
-  [StructureType.Mine]: Pickaxe,
-  [StructureType.Hyperstructure]: Sparkles,
-  [StructureType.Bank]: Crown,
-  [StructureType.BitcoinMine]: Crown,
-  [StructureType.Rift]: Crown,
-  [StructureType.Ruin]: Crown,
-  [StructureType.Stragglers]: Crown,
-};
+const getCategoryIcon = (category: StructureType | number | undefined): IconMeaning =>
+  category === undefined ? "realm" : structureMeaning(category);
 
-const getCategoryIcon = (category: StructureType | number | undefined): GameIcon => {
-  if (category === undefined) return Crown;
-  return byStructureCategory(CATEGORY_ICONS, category, "status row icon", Crown);
-};
-
-const CategoryIcon = ({ category, className }: { category: StructureType | number | undefined; className?: string }) =>
-  createElement(getCategoryIcon(category), { className });
+const CategoryIcon = ({
+  category,
+  className,
+}: {
+  category: StructureType | number | undefined;
+  className?: string;
+}) => <SemanticIcon name={getCategoryIcon(category)} className={className} />;
 
 /**
  * Status tone for the favorite star. Same tri-state we ship today:
@@ -82,9 +57,9 @@ const STATUS_TONE_TEXT: Record<"green" | "amber" | "red", string> = {
   red: "text-rose-400 drop-shadow-[0_0_4px_rgba(244,114,114,0.7)]",
 };
 
-const InlineStat = ({ icon: Icon, label, title }: { icon: GameIcon; label: string; title?: string }) => (
+const InlineStat = ({ icon: Icon, label, title }: { icon: IconMeaning; label: string; title?: string }) => (
   <span className="inline-flex items-center gap-0.5 text-sm font-semibold tabular-nums text-kit-cream" title={title}>
-    <Icon className="h-3 w-3 text-kit-muted" />
+    <SemanticIcon name={Icon} className="h-3 w-3 text-kit-muted" />
     <span>{label}</span>
   </span>
 );
@@ -221,7 +196,7 @@ export const StructureStatusRow = memo(
             title={starTitle}
             aria-label={starTitle}
           >
-            <Star className={cn("h-3.5 w-3.5", isFavorite && "fill-current")} />
+            <SemanticIcon name="star" className={cn("h-3.5 w-3.5", isFavorite && "fill-current")} />
           </button>
           {isFull && onRequestRename && (
             <button
@@ -234,7 +209,7 @@ export const StructureStatusRow = memo(
               title="Rename structure"
               aria-label="Rename structure"
             >
-              <Pencil className="h-3 w-3" />
+              <SemanticIcon name="edit" className="h-3 w-3" />
             </button>
           )}
           <CategoryIcon
@@ -275,12 +250,18 @@ export const StructureStatusRow = memo(
                 {levelBadge}
               </span>
             )}
-            {populationLabel && <InlineStat icon={Users} label={populationLabel} title="Population used / capacity" />}
-            {buildingTilesLabel && (
-              <InlineStat icon={Hexagon} label={buildingTilesLabel} title="Used / total building tiles" />
+            {populationLabel && (
+              <InlineStat icon={"people" as const} label={populationLabel} title="Population used / capacity" />
             )}
-            {explorersLabel && <InlineStat icon={Crosshair} label={explorersLabel} title="Field armies / max" />}
-            {guardsLabel && <InlineStat icon={Shield} label={guardsLabel} title="Guard slots occupied / max" />}
+            {buildingTilesLabel && (
+              <InlineStat icon={"hexagon" as const} label={buildingTilesLabel} title="Used / total building tiles" />
+            )}
+            {explorersLabel && (
+              <InlineStat icon={"target" as const} label={explorersLabel} title="Field armies / max" />
+            )}
+            {guardsLabel && (
+              <InlineStat icon={"defend" as const} label={guardsLabel} title="Guard slots occupied / max" />
+            )}
           </div>
         )}
       </div>

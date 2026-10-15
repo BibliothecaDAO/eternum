@@ -1,9 +1,10 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import type { ContextMenuAction } from "@/types/context-menu";
 import { HUD_BODY, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
-import { ChevronLeft, ChevronRight } from "@/ui/design-system/atoms/game-icons";
+
 import { useEffect, useRef } from "react";
 
 const MENU_WIDTH_PX = 240;
@@ -76,7 +77,7 @@ export const ContextMenu = () => {
         <div className="flex items-center gap-2 border-b border-gold/15 px-2 py-1.5">
           {stack.length > 0 && (
             <button type="button" aria-label="Back" onClick={pop} className="text-gold/70 hover:text-gold">
-              <ChevronLeft className="h-3.5 w-3.5" />
+              <SemanticIcon name="chevron-left" className="h-3.5 w-3.5" />
             </button>
           )}
           <span className={cn("min-w-0 flex-1 truncate", HUD_LABEL)}>{menu.title}</span>
@@ -103,7 +104,9 @@ export const ContextMenu = () => {
                 (action.icon ? <img src={action.icon} alt="" className="h-4 w-4 object-contain" /> : null)}
             </span>
             <span className="min-w-0 flex-1 truncate">{action.label}</span>
-            {action.children?.length ? <ChevronRight className="h-3.5 w-3.5 shrink-0 text-kit-muted" /> : null}
+            {action.children?.length ? (
+              <SemanticIcon name="chevron-right" className="h-3.5 w-3.5 shrink-0 text-kit-muted" />
+            ) : null}
           </button>
         ))}
       </div>

@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { AudioCategory, useAudio } from "@/audio";
 import {
   identityClient,
@@ -27,7 +28,7 @@ import { getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress } from "@bibliothecadao/types";
-import { Pencil } from "@/ui/design-system/atoms/game-icons";
+
 import { type ReactNode, useState } from "react";
 import { NotificationsCard } from "@/shell/profile/notifications";
 import { PwaInstallControl } from "@/pwa/pwa-install-control";
@@ -145,7 +146,7 @@ function UsernameEditor({ name }: { name: string | null }) {
         className={cn("flex min-w-0 items-center gap-1.5 font-sans max-lg:min-h-11", HUD_HEADLINE)}
       >
         <span className="truncate">{name ?? "Choose a username"}</span>
-        <Pencil className="h-3 w-3 shrink-0 text-kit-muted" />
+        <SemanticIcon name="edit" className="h-3 w-3 shrink-0 text-kit-muted" />
       </button>
     );
   }

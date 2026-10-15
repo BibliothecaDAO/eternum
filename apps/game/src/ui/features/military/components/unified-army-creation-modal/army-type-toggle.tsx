@@ -1,6 +1,6 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import Button from "@/ui/design-system/atoms/button";
 import clsx from "clsx";
-import { AlertTriangle, Shield, Users } from "@/ui/design-system/atoms/game-icons";
 
 interface ArmyTypeToggleProps {
   armyType: boolean;
@@ -54,7 +54,7 @@ export const ArmyTypeToggle = ({
             !canCreateAttackArmy && "opacity-40 cursor-not-allowed",
           )}
         >
-          <Users className="w-3.5 h-3.5" />
+          <SemanticIcon name="people" className="w-3.5 h-3.5" />
           <span className="text-sm font-bold">Attack</span>
           <span
             className={clsx(
@@ -77,7 +77,7 @@ export const ArmyTypeToggle = ({
             !canInteractWithDefense && "opacity-40 cursor-not-allowed",
           )}
         >
-          <Shield className="w-3.5 h-3.5" />
+          <SemanticIcon name="defend" className="w-3.5 h-3.5" />
           <span className="text-sm font-bold">Defense</span>
           <span
             className={clsx(
@@ -93,7 +93,7 @@ export const ArmyTypeToggle = ({
       {/* Warning Message */}
       {shouldShowLimitWarning && (
         <div className="bg-danger/10 border-l-2 border-danger rounded px-2 py-1 flex items-center gap-1.5">
-          <AlertTriangle className="w-3.5 h-3.5 text-danger flex-shrink-0" />
+          <SemanticIcon name="warning" className="w-3.5 h-3.5 text-danger flex-shrink-0" />
           <span className="text-sm text-danger font-semibold">{limitMessage}</span>
         </div>
       )}

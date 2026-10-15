@@ -1,7 +1,8 @@
+import { Icon } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
 import { type BiomeType, getRelicInfo, type ID, ResourcesIds } from "@bibliothecadao/types";
 import { configManager } from "@bibliothecadao/eternum";
-import { TreasureChest } from "@/ui/design-system/atoms/game-icons";
+
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
 import { HUD_PILL_BUTTON, OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
@@ -39,17 +40,13 @@ export function ChestTileDetails({
       <div className={cn("flex min-w-0 flex-col divide-y divide-gold/15 rounded-xl", OVERLAY_SURFACE_BASE)}>
         <InfoBubble variant="section" title={coordsLabel ?? "Relic tile"} cue={headerAction} bodyClassName="pt-0">
           <div className="flex items-center gap-2 text-gold">
-            <img
-              src={opening ? "/images/relic-chest/chest-opened.png" : "/images/relic-chest/chest-closed.png"}
-              alt=""
-              className="h-9 w-9 shrink-0 object-contain"
-            />
+            <Icon name="chest" alt="" className="h-9 w-9 shrink-0 object-contain" />
             <p className={cn("truncate", HUD_HEADLINE)}>
               {opening ? "Crate opened" : crateEntityId === null ? "Crate" : `Crate #${crateEntityId}`}
             </p>
           </div>
         </InfoBubble>
-        <InfoBubble variant="section" title="Contents" icon={TreasureChest}>
+        <InfoBubble variant="section" title="Contents" icon={"chest" as const}>
           {opening ? <RelicList relics={opening.relics} /> : <CrateContents />}
           {!opening && (
             <button

@@ -1,6 +1,6 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-import { KitIcon } from "./kit-icon";
 import { formatClockTime, formatDuration } from "./time";
 import { TONE_TEXT, type Tone } from "./tone";
 import { DAY_ENDS, LEFT, TOMORROW_LASTS } from "./words";
@@ -53,7 +53,7 @@ export const DayEnds = ({
   tone: Tone;
 }) => (
   <p className={cn("flex items-center justify-center gap-x-1 text-sm font-semibold", TONE_TEXT[tone])}>
-    <KitIcon code="Cl" size={18} />
+    <SemanticIcon name="clock" size={18} />
     <span>{DAY_ENDS}</span>
     <Numeral>{formatClockTime(endsAt)}</Numeral>
     <span aria-hidden>·</span>

@@ -1,4 +1,5 @@
-import { BUILDING_IMAGES_PATH } from "@/ui/config";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import { buildingMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Headline, ResourceCost } from "@/ui/design-system/molecules";
 import { configManager } from "@bibliothecadao/eternum";
 import { BuildingType, BuildingTypeToString } from "@bibliothecadao/types";
@@ -65,9 +66,9 @@ export const Buildings = () => {
                 >
                   <td className="p-4">
                     <h5 className="mb-2">{BuildingTypeToString[building.building_category]}</h5>
-                    <img
+                    <SemanticIcon
                       className="h-32 min-w-20 bg-brown/40 rounded-xl p-2"
-                      src={BUILDING_IMAGES_PATH[building.building_category as keyof typeof BUILDING_IMAGES_PATH]}
+                      name={buildingMeaning(building.building_category)}
                       alt={BuildingTypeToString[building.building_category]}
                     />
                   </td>

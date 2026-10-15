@@ -5,7 +5,6 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { configManager } from "@bibliothecadao/eternum";
 import { LeftView } from "@/types";
-import { BuildingThumbs } from "@/ui/config";
 import { MarketModal } from "@/ui/features/economy/trading";
 import { ProductionModal } from "@/ui/features/settlement";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
@@ -18,7 +17,6 @@ export interface StructureActionBadge {
 export interface StructureAction {
   id: "build" | "production" | "military" | "transfer" | "trade";
   label: string;
-  image: string;
   active: boolean;
   badges?: StructureActionBadge[];
   /** Why the action cannot be taken now (before play opens), or null. */
@@ -100,7 +98,6 @@ export function useStructureActions(): StructureAction[] | null {
     {
       id: "build",
       label: "Build",
-      image: BuildingThumbs.construction,
       active: view === LeftView.ConstructionView,
       onClick: toggleView(LeftView.ConstructionView),
       refusal,
@@ -108,7 +105,6 @@ export function useStructureActions(): StructureAction[] | null {
     {
       id: "production",
       label: "Production",
-      image: BuildingThumbs.production,
       active: openId === "production",
       onClick: openProduction,
       refusal,
@@ -116,7 +112,6 @@ export function useStructureActions(): StructureAction[] | null {
     {
       id: "military",
       label: "Military",
-      image: BuildingThumbs.military,
       active: view === LeftView.MilitaryView,
       onClick: toggleView(LeftView.MilitaryView),
       refusal,
@@ -124,7 +119,6 @@ export function useStructureActions(): StructureAction[] | null {
     {
       id: "transfer",
       label: "Transfer",
-      image: BuildingThumbs.transfer,
       active: view === LeftView.ResourceArrivals,
       onClick: openLogistics,
       refusal,
@@ -136,7 +130,6 @@ export function useStructureActions(): StructureAction[] | null {
     {
       id: "trade",
       label: "Trade",
-      image: BuildingThumbs.scale,
       active: openId === "market",
       onClick: openMarket,
       refusal,

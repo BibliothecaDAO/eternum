@@ -1,8 +1,10 @@
+import type { IconMeaning } from "@/ui/design-system/icon";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import { Button, type Price } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { type Refusal, RefusedVerb } from "@/ui/design-system/kit/refused-verb";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { CASTLE, REALM_LEVELS, TROOPS, UPGRADE, UPGRADING } from "@/ui/design-system/kit/words";
@@ -12,7 +14,7 @@ import { type Figure, Figures } from "./type-upgrade-sheet";
 /** The castle at one level: its art and level, the plots it opens, its army slots, each store's limit, the deploy cap. */
 export type CastleSide = {
   level: number;
-  art: string;
+  art: IconMeaning;
   plots: number;
   slots: number;
   /** What the castle stores of each store at this level, before the Granary and Storeroom; unknown is undefined. */
@@ -48,7 +50,7 @@ export const CastleView = ({
 }) => (
   <Sheet label={CASTLE} onClose={onClose}>
     <header className="flex items-center gap-2.5">
-      <KitIcon code="Cs" size={30} />
+      <SemanticIcon name="realm" size={30} />
       <h2 className="frontier-title flex-1 !text-xl">{CASTLE}</h2>
     </header>
     {makes.length > 0 && <Figures figures={makes} />}
@@ -85,11 +87,11 @@ const Side = ({ side, lit = false }: { side: CastleSide; lit?: boolean }) => (
       lit && "!border-2 !border-kit-hot",
     )}
   >
-    <img src={side.art} alt="" className="h-[52px] w-14 object-contain" />
+    <SemanticIcon name={side.art} alt="" className="h-[52px] w-14 object-contain" />
     <span className="text-sm font-semibold text-kit-cream">{REALM_LEVELS[side.level]}</span>
-    <Chip icons={["Hx"]} label="plots" value={formatAmount(side.plots)} />
-    <Chip icons={["Sl"]} label="army slots" value={formatAmount(side.slots)} />
-    {side.limit !== undefined && <Chip icons={["Sg"]} label="limit" value={formatAmount(side.limit)} />}
-    <Chip icons={["Tr"]} label={TROOPS} value={formatAmount(side.deployCap)} />
+    <Chip icons={["hexagon"]} label="plots" value={formatAmount(side.plots)} />
+    <Chip icons={["army-capacity"]} label="army slots" value={formatAmount(side.slots)} />
+    {side.limit !== undefined && <Chip icons={["resources"]} label="limit" value={formatAmount(side.limit)} />}
+    <Chip icons={["troops"]} label={TROOPS} value={formatAmount(side.deployCap)} />
   </div>
 );

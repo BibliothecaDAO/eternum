@@ -1,3 +1,4 @@
+import { resourceMeaning, iconUrl } from "@/ui/design-system/icon-meaning";
 import { FONTS } from "@/tokens";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import {
@@ -416,7 +417,7 @@ export const createTroopCountDisplay = (
     iconContainer.classList.add("w-6", "h-6", "flex-shrink-0", "flex", "items-center", "justify-center");
 
     const img = document.createElement("img");
-    img.src = `/images/resources/${resourceId}.png`;
+    img.src = iconUrl(resourceMeaning(resourceId));
     img.classList.add("w-full", "h-full", "object-contain");
     iconContainer.appendChild(img);
     container.appendChild(iconContainer);
@@ -539,7 +540,7 @@ export const createGuardArmyDisplay = (
       iconContainer.classList.add("w-6", "h-6", "flex-shrink-0", "flex", "items-center", "justify-center");
 
       const img = document.createElement("img");
-      img.src = `/images/resources/${resourceId}.png`;
+      img.src = iconUrl(resourceMeaning(resourceId));
       img.classList.add("w-full", "h-full", "object-contain");
       iconContainer.appendChild(img);
       guardDiv.appendChild(iconContainer);
@@ -616,13 +617,13 @@ export const createProductionDisplay = (
 
       const img = document.createElement("img");
       if (resourceName === "House") {
-        img.src = "/images/buildings/thumb/house.png";
+        img.src = iconUrl("home");
       } else if (resourceName === "Silo") {
-        img.src = "/images/buildings/thumb/silo.png";
+        img.src = iconUrl("granary");
       } else {
         const resourceId = ResourcesIds[resourceName as keyof typeof ResourcesIds];
         if (resourceId) {
-          img.src = `/images/resources/${resourceId}.png`;
+          img.src = iconUrl(resourceMeaning(resourceId));
         }
       }
 
@@ -700,7 +701,7 @@ const createIncomingTroopIcon = (resourceId: ResourcesIds): HTMLElement => {
   iconContainer.classList.add("w-5", "h-5", "flex-shrink-0", "flex", "items-center", "justify-center");
 
   const img = document.createElement("img");
-  img.src = `/images/resources/${resourceId}.png`;
+  img.src = iconUrl(resourceMeaning(resourceId));
   img.classList.add("w-full", "h-full", "object-contain");
   img.setAttribute("data-role", "incoming-troop-icon");
   iconContainer.appendChild(img);

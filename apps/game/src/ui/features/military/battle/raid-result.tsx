@@ -418,11 +418,7 @@ export const RaidResult = ({
                 {initialStolenResources.map((resource, index) => (
                   <div key={index} className="flex justify-between items-center py-1">
                     <span className="flex items-center text-gold/80">
-                      <ResourceIcon
-                        resource={resources.find((r) => r.id === resource.resourceId)?.trait || ""}
-                        size={"lg"}
-                        className="mr-2"
-                      />
+                      <ResourceIcon resource={resource.resourceId} size={"lg"} className="mr-2" />
                       Resource: {resources.find((r) => r.id === resource.resourceId)?.trait || ""}
                     </span>
                     <span className="text-order-brilliance font-medium">{resource.amount}</span>

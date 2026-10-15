@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
@@ -13,18 +14,7 @@ import {
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
 import { getLevelName, ID, RealmLevels, ResourcesIds, type Structure, StructureType } from "@bibliothecadao/types";
 import clsx from "clsx";
-import {
-  ChevronUp,
-  ChevronsUp,
-  Hexagon,
-  Info,
-  Loader2,
-  ShieldCheck,
-  Pickaxe,
-  Star,
-  Users,
-} from "@/ui/design-system/atoms/game-icons";
-import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
+
 import { memo, useCallback, type KeyboardEvent, type MouseEvent } from "react";
 
 export type StructureWithMetadata = Structure & {
@@ -60,12 +50,12 @@ export type StructureWithMetadata = Structure & {
   };
 };
 
-const StructureInfoStat = ({ icon: Icon, label, title }: { icon: GameIcon; label: string; title: string }) => (
+const StructureInfoStat = ({ icon: Icon, label, title }: { icon: IconMeaning; label: string; title: string }) => (
   <span
     className="inline-flex items-center gap-1 rounded border border-gold/15 bg-black/25 px-1.5 py-0.5 text-sm text-kit-muted"
     title={title}
   >
-    <Icon className="h-3 w-3 text-kit-muted" />
+    <SemanticIcon name={Icon} className="h-3 w-3 text-kit-muted" />
     <span>{label}</span>
   </span>
 );
@@ -78,9 +68,9 @@ const StructureStatusStats = ({
   buildingTilesLabel: string | null;
 }) => (
   <div className="flex flex-wrap items-center gap-1.5">
-    <StructureInfoStat icon={Users} label={populationLabel} title="Population used / capacity" />
+    <StructureInfoStat icon={"people" as const} label={populationLabel} title="Population used / capacity" />
     {buildingTilesLabel ? (
-      <StructureInfoStat icon={Hexagon} label={buildingTilesLabel} title="Used / total building tiles" />
+      <StructureInfoStat icon={"hexagon" as const} label={buildingTilesLabel} title="Used / total building tiles" />
     ) : null}
   </div>
 );
@@ -160,20 +150,20 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
   const hideRequirementsTooltip = () => setTooltip(null);
 
   const renderIcon = () => {
-    if (step.loading) return <Loader2 className="h-3.5 w-3.5 animate-spin" />;
-    if (step.mode === "max") return <ShieldCheck className="h-3.5 w-3.5" />;
-    if (step.mode === "provision") return <Pickaxe className="h-3.5 w-3.5" />;
+    if (step.loading) return <SemanticIcon name="refresh" className="h-3.5 w-3.5 animate-spin" />;
+    if (step.mode === "max") return <SemanticIcon name="defend" className="h-3.5 w-3.5" />;
+    if (step.mode === "provision") return <SemanticIcon name="pickaxe" className="h-3.5 w-3.5" />;
     if (step.nextLevel >= 3) {
       return (
         <span className="relative flex h-4 w-4 items-center justify-center">
-          <ChevronUp className="absolute h-3 w-3 -translate-y-[6px]" />
-          <ChevronUp className="absolute h-3 w-3" />
-          <ChevronUp className="absolute h-3 w-3 translate-y-[6px]" />
+          <SemanticIcon name="chevron-up" className="absolute h-3 w-3 -translate-y-[6px]" />
+          <SemanticIcon name="chevron-up" className="absolute h-3 w-3" />
+          <SemanticIcon name="chevron-up" className="absolute h-3 w-3 translate-y-[6px]" />
         </span>
       );
     }
-    if (step.nextLevel === 2) return <ChevronsUp className="h-3.5 w-3.5" />;
-    return <ChevronUp className="h-3.5 w-3.5" />;
+    if (step.nextLevel === 2) return <SemanticIcon name="chevron-up" className="h-3.5 w-3.5" />;
+    return <SemanticIcon name="chevron-up" className="h-3.5 w-3.5" />;
   };
 
   const takeStep = (event: MouseEvent<HTMLButtonElement>) => {
@@ -208,7 +198,7 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
         className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-gold/30 bg-black/40 text-kit-muted hover:text-gold focus:outline-none focus:ring-1 focus:ring-gold/40"
         aria-label="View upgrade requirements"
       >
-        <Info className="h-3.5 w-3.5" />
+        <SemanticIcon name="info" className="h-3.5 w-3.5" />
       </button>
     </div>
   );
@@ -276,7 +266,10 @@ const StructureChip = memo(({ structure, isSelected, onSelectStructure, onToggle
         title={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
         aria-label={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
       >
-        <Star className={clsx("h-3.5 w-3.5", structure.isFavorite ? "opacity-100" : "opacity-40 grayscale")} />
+        <SemanticIcon
+          name="star"
+          className={clsx("h-3.5 w-3.5", structure.isFavorite ? "opacity-100" : "opacity-40 grayscale")}
+        />
       </button>
       {structure.groupColor && (
         <span

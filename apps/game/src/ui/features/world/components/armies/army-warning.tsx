@@ -1,4 +1,5 @@
-import { Route, Telescope, Wheat } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import type { ReactNode } from "react";
 
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -59,17 +60,17 @@ export const ArmyWarning = ({ readiness }: ArmyWarningProps) => {
   return (
     <div aria-label={statusDescription} title={statusDescription} className="flex items-center justify-end gap-1">
       <ReadinessIcon
-        icon={<Route className="h-3.5 w-3.5" />}
+        icon={<SemanticIcon name="route" className="h-3.5 w-3.5" />}
         active={!hasTravelStaminaWarning && !hasTravelFoodWarning}
         title={travelTitle}
       />
       <ReadinessIcon
-        icon={<Telescope className="h-3.5 w-3.5" />}
+        icon={<SemanticIcon name="watch" className="h-3.5 w-3.5" />}
         active={!hasExploreStaminaWarning && !hasExploreFoodWarning}
         title={exploreTitle}
       />
       <ReadinessIcon
-        icon={<Wheat className="h-3.5 w-3.5" />}
+        icon={<SemanticIcon name="wheat" className="h-3.5 w-3.5" />}
         active={!foodWarnings.combined.hasWarning}
         title={supplyTitle}
       />

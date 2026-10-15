@@ -50,15 +50,15 @@ export const AccountCard = ({ session }: { session: Session }) => {
     <div className="flex flex-col gap-4">
       <SettingRows>
         <SettingRow
-          icon="Pf"
+          icon="person"
           name={PROFILE_WORDS.name}
           value={account ? <PlayerName account={account} /> : (identityUsername(session) ?? "—")}
           onOpen={() => toggle("name")}
         />
-        <SettingRow icon="Ed" name={PROFILE_WORDS.portrait} onOpen={() => toggle("portrait")} />
-        <SettingRow icon="Dc" name={PROFILE_WORDS.signInMethods} value={<SignInMethods session={session} />} />
+        <SettingRow icon="edit" name={PROFILE_WORDS.portrait} onOpen={() => toggle("portrait")} />
+        <SettingRow icon="discord" name={PROFILE_WORDS.signInMethods} value={<SignInMethods session={session} />} />
         <SettingRow
-          icon="Wt"
+          icon="backpack"
           name={WALLET_WORDS.payoutWallet}
           value={payout ? shortAddress(payout) : PROFILE_WORDS.linkWallet}
           onOpen={() => toggle("payout")}
@@ -88,7 +88,7 @@ export const SignOut = () => {
   const [asking, setAsking] = useState(false);
   return (
     <>
-      <Button role="outline" word={PROFILE_WORDS.signOut} icon="Xo" onClick={() => setAsking(true)} />
+      <Button role="outline" word={PROFILE_WORDS.signOut} icon="exit" onClick={() => setAsking(true)} />
       {asking && (
         <Confirm
           question={PROFILE_WORDS.signOutAsk}
@@ -183,7 +183,7 @@ const NameSheet = ({ current, onDone }: { current: string; onDone: () => void })
         role="primary"
         type="submit"
         word={SIGN_IN_WORDS.claimName}
-        icon="Ok"
+        icon="check"
         disabled={!valid}
         loading={saving ? SIGN_IN_WORDS.saving : undefined}
       />

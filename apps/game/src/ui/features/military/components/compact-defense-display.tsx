@@ -1,5 +1,6 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { ArrowLeft, Plus } from "@/ui/design-system/atoms/game-icons";
+
 import { ARMY_DEPLOYMENT_SURFACE_ID, openArmyDeployment } from "../utils/open-army-deployment";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -35,7 +36,6 @@ import { EntityDetailLayoutVariant } from "@/ui/features/world/components/entiti
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots, MAX_GUARD_SLOT_COUNT } from "../utils/defense-slot-utils";
 import { getGuardStaminaSnapshot } from "../utils/guard-stamina";
 import { GuardStaminaBar } from "./guard-stamina-bar";
-import { SLOT_ICON_MAP } from "./slot-icon-map";
 import { GuardCooldownBadge } from "./guard-cooldown-badge";
 
 type DefenseTroop = NonNullable<ReturnType<typeof getGuardsByStructure>>[number];
@@ -159,7 +159,6 @@ export const CompactDefenseDisplay = ({
     const rawSlot = defense.slot;
     const guardSlotKey = rawSlot as GuardSlot;
     const slotDisplayNumber = DISPLAYED_SLOT_NUMBER_MAP[guardSlotKey];
-    const slotIconSrc = SLOT_ICON_MAP[rawSlot] ?? SLOT_ICON_MAP[guardSlotKey];
     const slotName = GUARD_SLOT_NAMES[guardSlotKey] ?? `Slot ${slotDisplayNumber}`;
     const isEmptySlot = troopCount === 0;
     const cooldownSeconds = getGuardSlotCooldownRemaining(defense, currentBlockTimestamp);
@@ -214,7 +213,7 @@ export const CompactDefenseDisplay = ({
           <GuardCooldownBadge seconds={cooldownSeconds} />
         ) : isEmptySlot ? (
           <>
-            {isSlotInteractive && <Plus className="h-3.5 w-3.5 text-gold" />}
+            {isSlotInteractive && <SemanticIcon name="plus" className="h-3.5 w-3.5 text-gold" />}
             <span className={cn(labelTextClass, isSlotInteractive ? "text-gold" : "text-kit-muted", "font-semibold ")}>
               {isSlotInteractive ? "Add" : isBanner ? "Empty" : "Empty Slot"}
             </span>
@@ -254,14 +253,7 @@ export const CompactDefenseDisplay = ({
         {slotBadge}
         {!isBanner && (
           <div className="flex items-center gap-1">
-            {slotIconSrc && (
-              <img
-                src={slotIconSrc}
-                alt={`${slotName} icon`}
-                className={isBanner ? "h-6 w-6" : "h-8 w-8"}
-                loading="lazy"
-              />
-            )}
+            <SemanticIcon name="defend" size={32} />
             <span className={cn(labelTextClass, "font-semibold text-gold/80")}>{slotDisplayNumber}</span>
           </div>
         )}
@@ -361,7 +353,7 @@ export const CompactDefenseDisplay = ({
                 height: isBanner ? "36px" : "40px",
               }}
             >
-              <ArrowLeft className={cn(isBanner ? "w-4 h-4" : "w-5 h-5", "text-gold/80")} />
+              <SemanticIcon name="arrow-left" className={cn(isBanner ? "w-4 h-4" : "w-5 h-5", "text-gold/80")} />
             </div>
             <span className={cn(isBanner ? "text-sm" : "text-sm", "text-kit-muted")}>Enemy</span>
           </div>

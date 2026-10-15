@@ -1,9 +1,10 @@
+import { type IconMeaning } from "@/ui/design-system/icon";
 import { useGame } from "@/hooks/context/game-context";
 import { useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import { Chip } from "@/ui/design-system/kit/chip";
-import type { IconCode } from "@/ui/design-system/kit/kit-icon";
+
 import type { Reason } from "@/ui/design-system/kit/reason-plate";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import type { Fix } from "@/ui/design-system/kit/refused-verb";
@@ -53,27 +54,27 @@ import type { TypeRowView } from "./research-plan";
 import { researchKey, sendResearch } from "./send-research";
 
 /** Each choosing row's sides: their marks, names and what each adds to every building of the type. */
-const SIDE_NAMES: Partial<Record<number, readonly [[IconCode, string], [IconCode, string]]>> = {
+const SIDE_NAMES: Partial<Record<number, readonly [[IconMeaning, string], [IconMeaning, string]]>> = {
   [research.ROW_FARM]: [
-    ["Fi", "Fields"],
-    ["Gr", "Granary"],
+    ["fields", "Fields"],
+    ["granary", "Granary"],
   ],
   [research.ROW_WORKSHOP]: [
-    ["To", "Tools"],
-    ["So", "Storeroom"],
+    ["tools", "Tools"],
+    ["storehouse", "Storeroom"],
   ],
   [research.ROW_BARRACKS]: [
-    ["Dr", "Drill"],
-    ["Ra", "Rations"],
+    ["drill", "Drill"],
+    ["rations", "Rations"],
   ],
 };
 
 /** Each training row's attribute and its Aspect mark. */
-const TRAINING: Partial<Record<number, { attribute: Attribute; mark: IconCode }>> = {
-  [research.ROW_WAR_HALL]: { attribute: "Battle", mark: "Ba" },
-  [research.ROW_SUPPLY_YARD]: { attribute: "Logistics", mark: "Lg" },
-  [research.ROW_SCOUTS_LODGE]: { attribute: "Scouting", mark: "Sc" },
-  [research.ROW_HEARTH]: { attribute: "Homecoming", mark: "Su" },
+const TRAINING: Partial<Record<number, { attribute: Attribute; mark: IconMeaning }>> = {
+  [research.ROW_WAR_HALL]: { attribute: "Battle", mark: "order-rage" },
+  [research.ROW_SUPPLY_YARD]: { attribute: "Logistics", mark: "order-skill" },
+  [research.ROW_SCOUTS_LODGE]: { attribute: "Scouting", mark: "order-detection" },
+  [research.ROW_HEARTH]: { attribute: "Homecoming", mark: "order-enlightenment" },
 };
 
 type ScoutKey = "camp" | "rift" | "stragglers";
@@ -180,25 +181,25 @@ const sideCards = (store: NativeFactStore, realm: NativeRows["Structure"], view:
 /** Fields, Tools or Drill: what one building makes an hour now and with one more pick. */
 const makeGain = (store: NativeFactStore, realm: NativeRows["Structure"], category: BuildingType, makes: number) => {
   const resource =
-    category === BuildingType.ResourceKnightT1 ? "Tr" : category === BuildingType.ResourceWheat ? "Wh" : "La";
-  const label = resource === "Tr" ? TROOPS : resource === "Wh" ? WHEAT : LABOR;
+    category === BuildingType.ResourceKnightT1 ? "troops" : category === BuildingType.ResourceWheat ? "wheat" : "labor";
+  const label = resource === "troops" ? TROOPS : resource === "wheat" ? WHEAT : LABOR;
   const now = outputPerHour(store, realm, category, makes);
   const next = outputPerHour(store, realm, category, makes + 1);
-  return { icon: resource as IconCode, label, value: `${formatAmount(now)} → ${formatAmount(next)}/h` };
+  return { icon: resource as IconMeaning, label, value: `${formatAmount(now)} → ${formatAmount(next)}/h` };
 };
 
 /** Granary or Storeroom: the store's limit now and with one more pick; Rations: the wheat a troop deploys for. */
 const otherGain = (store: NativeFactStore, realm: NativeRows["Structure"], category: BuildingType, picks: number) => {
   if (category === BuildingType.ResourceKnightT1) {
     const wheat = (count: number) => rationedWheatPerTroop(store, realm.game_id, ResourcesIds.Knight, count);
-    return { icon: "Wh" as IconCode, label: WHEAT, value: `${wheat(picks)} → ${wheat(picks + 1)}` };
+    return { icon: "wheat" as IconMeaning, label: WHEAT, value: `${wheat(picks)} → ${wheat(picks + 1)}` };
   }
   const base = ResourceManager.castleStoreLimit(store, realm.game_id, realm.base.level);
   const step = store.require("BoardRules", { game_id: realm.game_id }).storage_step_bps;
   const limit = (count: number) =>
     base === undefined ? undefined : (Number(base / BigInt(RESOURCE_PRECISION)) * (10_000 + count * step)) / 10_000;
   return {
-    icon: "Sg" as IconCode,
+    icon: "resources" as IconMeaning,
     label: "limit",
     value: `${formatAmount(limit(picks))} → ${formatAmount(limit(picks + 1))}`,
   };
@@ -254,7 +255,7 @@ const hutPopulationStep = (store: NativeFactStore, realm: NativeRows["Structure"
 
 const HutGives = ({ store, realm, tier }: { store: NativeFactStore; realm: NativeRows["Structure"]; tier: number }) => (
   <span className="flex justify-center">
-    <Chip icons={["Pp"]} label={POPULATION} value={hutPopulationStep(store, realm, tier)} />
+    <Chip icons={["person"]} label={POPULATION} value={hutPopulationStep(store, realm, tier)} />
   </span>
 );
 
@@ -295,7 +296,7 @@ const standingFigures = (
   };
   const takes = store.require("BuildingRule", { game_id: realm.game_id, category: view.category }).population_cost;
   const population: Figure[] =
-    takes > 0 ? [{ icons: ["Pp"], label: BUILDING_FIGURES.eachTakes, value: formatAmount(takes) }] : [];
+    takes > 0 ? [{ icons: ["person"], label: BUILDING_FIGURES.eachTakes, value: formatAmount(takes) }] : [];
   if (effect.kind === "trains")
     return [
       {
@@ -309,10 +310,10 @@ const standingFigures = (
     const people = store.get("StructureBuildings", { game_id: realm.game_id, entity_id: realm.entity_id })?.population;
     const total = people && people.max + configManager.getBasePopulationCapacity();
     return [
-      { icons: ["Pp"], label: BUILDING_FIGURES.eachAdds, value: `+${formatAmount(effect.amount)}` },
+      { icons: ["person"], label: BUILDING_FIGURES.eachAdds, value: `+${formatAmount(effect.amount)}` },
       count,
       {
-        icons: ["Pp", "Sg"],
+        icons: ["person", "resources"],
         label: BUILDING_FIGURES.free,
         value: `${formatAmount(total === undefined ? undefined : total - people!.current)} / ${formatAmount(total)}`,
       },
@@ -324,7 +325,7 @@ const standingFigures = (
     { icons: [made.icon], label: BUILDING_FIGURES.eachMakes(made.word), value: `+${formatAmount(effect.perHour)}/h` },
     count,
     {
-      icons: [made.icon, "Sg"],
+      icons: [made.icon, "resources"],
       label: BUILDING_FIGURES.held(made.word),
       value: `${formatAmount(held?.amount)} / ${formatAmount(held?.limit)}`,
     },
@@ -338,7 +339,7 @@ const standingFigures = (
  */
 const shortfallFix = (short: Extract<Reason, { kind: "short" }>, go: (expedition: boolean) => void): Fix | undefined =>
   short.counted === "limit"
-    ? { icon: "Cs", word: CASTLE, onFix: () => go(false) }
+    ? { icon: "realm", word: CASTLE, onFix: () => go(false) }
     : exploreFix(short.of === "essence" ? ResourcesIds.Essence : ResourcesIds.Labor, () => go(true));
 
 /**

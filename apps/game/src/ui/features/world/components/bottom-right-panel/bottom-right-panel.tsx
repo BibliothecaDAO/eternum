@@ -1,5 +1,6 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { knownBalance } from "@/ui/utils/utils";
-import { Factory, Hammer, Info, Pause as PauseIcon, Pickaxe, Play, Trash2 } from "@/ui/design-system/atoms/game-icons";
+
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 import { getMinePresentation } from "@bibliothecadao/types";
@@ -490,7 +491,7 @@ const LocalTilePanel = () => {
     <>
       {/* Building bubble — merges the tile header with the type's stats. The
           name + coords + Re-sync live in the bubble's title/cue. */}
-      <InfoBubble title={panelTitle} icon={Factory}>
+      <InfoBubble title={panelTitle} icon={"production" as const}>
         <div className="flex flex-col gap-2.5 divide-y divide-gold/10 [&>*:not(:first-child)]:pt-2.5">
           {isPaused && (
             <div className="flex items-center justify-between gap-2 rounded border border-red-400/40 bg-red-900/25 px-2 py-1.5">
@@ -549,7 +550,7 @@ const LocalTilePanel = () => {
                 aria-label="Show consumers"
                 className="inline-flex h-7 w-7 items-center justify-center rounded border border-gold/20 bg-black/40 text-gold/70 hover:text-gold"
               >
-                <Info className="h-3.5 w-3.5" />
+                <SemanticIcon name="info" className="h-3.5 w-3.5" />
               </button>
             </SectionRow>
           )}
@@ -586,7 +587,7 @@ const LocalTilePanel = () => {
       </InfoBubble>
 
       {canManageBuilding && canAddProduction && producedResource !== undefined && (
-        <InfoBubble title="Production" icon={Factory}>
+        <InfoBubble title="Production" icon={"production" as const}>
           <InlineProduction entityId={structureEntityId} resource={producedResource} />
         </InfoBubble>
       )}
@@ -596,7 +597,7 @@ const LocalTilePanel = () => {
           the player knows it's a real affordance and gets a tooltip with
           why it's disabled. */}
       {canManageBuilding && (
-        <InfoBubble title="Actions" icon={Hammer}>
+        <InfoBubble title="Actions" icon={"build" as const}>
           <div className="flex flex-col gap-2.5">
             {nextBuildCost === undefined && <SectionRow label="Build cost">—</SectionRow>}
             {buildCost.length > 0 && (
@@ -655,7 +656,7 @@ const LocalTilePanel = () => {
                       aria-label={isPreviewing ? "Cancel build" : "Build another"}
                       aria-pressed={isPreviewing}
                     >
-                      <Pickaxe className="h-3.5 w-3.5" />
+                      <SemanticIcon name="pickaxe" className="h-3.5 w-3.5" />
                     </button>
                   );
                 })()}
@@ -674,7 +675,11 @@ const LocalTilePanel = () => {
                     title={isPaused ? "Resume" : "Stop"}
                     aria-label={isPaused ? "Resume" : "Stop"}
                   >
-                    {isPaused ? <Play className="h-3.5 w-3.5" /> : <PauseIcon className="h-3.5 w-3.5" />}
+                    {isPaused ? (
+                      <SemanticIcon name="play" className="h-3.5 w-3.5" />
+                    ) : (
+                      <SemanticIcon name="pause" className="h-3.5 w-3.5" />
+                    )}
                   </button>
                 )}
               <button
@@ -688,7 +693,7 @@ const LocalTilePanel = () => {
                 title={showDestroyConfirm ? "Confirm delete" : "Delete"}
                 aria-label={showDestroyConfirm ? "Confirm delete" : "Delete"}
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <SemanticIcon name="trash" className="h-3.5 w-3.5" />
                 {showDestroyConfirm && <span>OK</span>}
               </button>
             </div>

@@ -14,7 +14,7 @@ export const NothingHere = () =>
     <section className="flex flex-col gap-3 plate p-3.5">
       <img {...paintingSources("stormy")} sizes="100vw" alt="" className="h-44 w-full rounded-xl object-cover" />
       <p className="font-body text-lg font-bold text-kit-cream">{APP_STATE_WORDS.nothingHere}</p>
-      <GoButton role="primary" word={WORDS.play} icon="Pl" to="/" />
+      <GoButton role="primary" word={WORDS.play} icon="play" to="/" />
     </section>
   ) : (
     <div className="flex justify-center">
@@ -23,7 +23,7 @@ export const NothingHere = () =>
           {APP_STATE_WORDS.nothingHere}
         </p>
         <StepVerb>
-          <GoButton role="primary" word={WORDS.play} icon="Pl" to="/" />
+          <GoButton role="primary" word={WORDS.play} icon="play" to="/" />
         </StepVerb>
       </section>
     </div>

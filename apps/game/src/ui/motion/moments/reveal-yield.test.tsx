@@ -76,14 +76,13 @@ describe("the reveal yield", () => {
 
   it("keeps at most six sprites in the air", async () => {
     const { playRevealYield } = await load();
-    for (const id of [100, 101, 102, 103, 104, 105, 106, 107, 200])
-      mountCounter(bankedCounterTarget(id as ResourcesIds));
+    for (const id of [1, 2, 3, 4, 5, 6, 7, 8, 9]) mountCounter(bankedCounterTarget(id as ResourcesIds));
     for (let reveal = 0; reveal < 8; reveal += 1) {
-      playRevealYield({ own: true, amount: 150, resourceId: (100 + reveal) as ResourcesIds, from: TILE, now: reveal });
+      playRevealYield({ own: true, amount: 150, resourceId: (1 + reveal) as ResourcesIds, from: TILE, now: reveal });
     }
     expect(flights).toHaveLength(6);
     flights[0].onArrive?.(0);
-    playRevealYield({ own: true, amount: 150, resourceId: 200 as ResourcesIds, from: TILE, now: 10 });
+    playRevealYield({ own: true, amount: 150, resourceId: 9 as ResourcesIds, from: TILE, now: 10 });
     expect(flights).toHaveLength(7);
   });
 

@@ -167,12 +167,14 @@ describe("Notice", () => {
   it("runs its verb, and offers Later only when it can be put off", () => {
     const onVerb = vi.fn();
     const onLater = vi.fn();
-    act(() => root.render(<Notice icon="Of" line="Offline" verb="Try again" onVerb={onVerb} ember />));
+    act(() => root.render(<Notice icon="network-off" line="Offline" verb="Try again" onVerb={onVerb} ember />));
     expect(host.querySelectorAll("button")).toHaveLength(1);
     act(() => host.querySelector("button")!.click());
     expect(onVerb).toHaveBeenCalled();
 
-    act(() => root.render(<Notice icon="Of" line="Update ready" verb="Update" onVerb={onVerb} onLater={onLater} />));
+    act(() =>
+      root.render(<Notice icon="network-off" line="Update ready" verb="Update" onVerb={onVerb} onLater={onLater} />),
+    );
     act(() => host.querySelector("button")!.click());
     expect(onLater).toHaveBeenCalled();
   });

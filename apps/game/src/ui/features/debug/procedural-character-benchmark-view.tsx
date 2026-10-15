@@ -1,15 +1,5 @@
-import {
-  Loader2,
-  Activity,
-  Dices,
-  Gauge,
-  Pause,
-  Play,
-  RotateCcw,
-  Skull,
-  StepForward,
-  Users,
-} from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { useCallback, useEffect, useRef, useState, type MutableRefObject, type ReactNode, type RefObject } from "react";
 
 import {
@@ -344,7 +334,7 @@ const BenchmarkHeader = ({
   <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[#0a1019]/95 px-4 py-3 backdrop-blur-xl lg:px-6">
     <div className="flex min-w-0 items-center gap-3">
       <div className="grid h-10 w-10 shrink-0 place-items-center border border-cyan-300/30 bg-cyan-400/10 text-cyan-200">
-        <Gauge className="h-5 w-5" />
+        <SemanticIcon name="gauge" className="h-5 w-5" />
       </div>
       <div className="min-w-0">
         <p className="text-sm font-semibold text-cyan-200/60">
@@ -365,21 +355,21 @@ const BenchmarkHeader = ({
     </div>
     <div className="flex flex-wrap items-center gap-2">
       <BenchmarkAction
-        icon={<Skull />}
+        icon={<SemanticIcon name="skull" />}
         label="Kill burst"
         onClick={onKillBurst}
         disabled={!ready || !canKill}
         primary
       />
-      <BenchmarkAction icon={<Gauge />} label="Measure" onClick={onMeasure} disabled={!ready} />
+      <BenchmarkAction icon={<SemanticIcon name="gauge" />} label="Measure" onClick={onMeasure} disabled={!ready} />
       <BenchmarkAction
-        icon={paused ? <Play /> : <Pause />}
+        icon={paused ? <SemanticIcon name="play" /> : <SemanticIcon name="pause" />}
         label={paused ? "Resume" : "Pause"}
         onClick={onTogglePaused}
         disabled={!ready}
       />
-      <BenchmarkAction icon={<StepForward />} label="Step" onClick={onStep} disabled={!ready || !paused} />
-      <BenchmarkAction icon={<RotateCcw />} label="Reset" onClick={onReset} disabled={!ready} />
+      <BenchmarkAction icon={<SemanticIcon name="step" />} label="Step" onClick={onStep} disabled={!ready || !paused} />
+      <BenchmarkAction icon={<SemanticIcon name="refresh" />} label="Reset" onClick={onReset} disabled={!ready} />
     </div>
   </header>
 );
@@ -404,13 +394,13 @@ const BenchmarkControls = ({
           ? "The production terrain and army runtimes now share one renderer and lifecycle. One hundred mixed units walk across sixteen generated biomes while grounding, props, frame cost, collisions, and GPU resources remain observable."
           : "The production runtime now mixes Archers, Knights, Crossbowmen, horses, and mounted Paladins. One pooled arrow owner and one shared Jolt world keep volleys, gait, rider, crowd, and death costs comparable."}
       </div>
-      <ControlSection title="Population" icon={<Users />} defaultOpen>
+      <ControlSection title="Population" icon={<SemanticIcon name="people" />} defaultOpen>
         <button
           type="button"
           onClick={onApplyWalkingPerformanceProfile}
           className="flex h-9 w-full items-center justify-center gap-2 border border-emerald-300/30 bg-emerald-300/[0.08] text-sm font-semibold text-emerald-100 transition hover:bg-emerald-300/[0.14]"
         >
-          <Gauge className="h-3.5 w-3.5" /> 60 FPS walking profile
+          <SemanticIcon name="gauge" className="h-3.5 w-3.5" /> 60 FPS walking profile
         </button>
         <ToggleControl
           label="Presentation collisions"
@@ -481,10 +471,10 @@ const BenchmarkControls = ({
           onClick={() => onPatchConfig({ seed: Math.floor(Math.random() * 2_147_483_647) })}
           className="flex h-9 w-full items-center justify-center gap-2 border border-white/10 bg-white/[0.035] text-sm font-semibold text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
         >
-          <Dices className="h-3.5 w-3.5" /> New seed
+          <SemanticIcon name="dice" className="h-3.5 w-3.5" /> New seed
         </button>
       </ControlSection>
-      <ControlSection title="Motion" icon={<Activity />} defaultOpen>
+      <ControlSection title="Motion" icon={<SemanticIcon name="activity" />} defaultOpen>
         <SegmentedControl
           label="Locomotion"
           columns={2}
@@ -546,7 +536,7 @@ const BenchmarkControls = ({
           onChange={(stepHeight) => onPatchConfig({ stepHeight })}
         />
       </ControlSection>
-      <ControlSection title="Death cycle" icon={<Skull />} defaultOpen>
+      <ControlSection title="Death cycle" icon={<SemanticIcon name="skull" />} defaultOpen>
         <RangeControl
           label="Deaths / second"
           value={config.deathsPerSecond}
@@ -573,7 +563,7 @@ const BenchmarkControls = ({
           onChange={(corpseSeconds) => onPatchConfig({ corpseSeconds })}
         />
       </ControlSection>
-      <ControlSection title="Render" icon={<Gauge />}>
+      <ControlSection title="Render" icon={<SemanticIcon name="gauge" />}>
         <RangeControl
           label="Pixel ratio"
           value={config.pixelRatio}
@@ -597,7 +587,7 @@ const BenchmarkControls = ({
           onClick={onResetCamera}
           className="flex h-9 w-full items-center justify-center gap-2 border border-white/10 bg-white/[0.035] text-sm font-semibold text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
         >
-          <RotateCcw className="h-3.5 w-3.5" /> Reset camera
+          <SemanticIcon name="refresh" className="h-3.5 w-3.5" /> Reset camera
         </button>
       </ControlSection>
     </div>
@@ -624,7 +614,7 @@ const BenchmarkViewport = ({
     {(!ready || stats.loadingActors) && !rendererError && (
       <div className="pointer-events-none absolute inset-0 z-30 grid place-items-center bg-[#070b12]/88 backdrop-blur-sm">
         <div className="flex flex-col items-center gap-3 text-center">
-          <Loader2 className="h-8 w-8 animate-spin" />
+          <SemanticIcon name="refresh" className="h-8 w-8 animate-spin" />
           <div>
             <p className="text-sm font-semibold text-white">
               {worldGym ? "Growing biomes and articulated crowd" : "Building articulated crowd"}

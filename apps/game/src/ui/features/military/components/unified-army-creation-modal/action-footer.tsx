@@ -1,6 +1,6 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import Button from "@/ui/design-system/atoms/button";
 import clsx from "clsx";
-import { Shield, Users } from "@/ui/design-system/atoms/game-icons";
 
 interface ActionFooterProps {
   armyType: boolean;
@@ -39,7 +39,11 @@ export const ActionFooter = ({
       )}
     >
       <div className="flex items-center justify-center gap-2">
-        {armyType ? <Users className="w-5 h-5" /> : <Shield className="w-5 h-5" />}
+        {armyType ? (
+          <SemanticIcon name="people" className="w-5 h-5" />
+        ) : (
+          <SemanticIcon name="defend" className="w-5 h-5" />
+        )}
         <span className="drop-shadow-sm">{label}</span>
       </div>
     </Button>

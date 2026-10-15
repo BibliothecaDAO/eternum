@@ -1,5 +1,5 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { formatExact } from "@/ui/design-system/kit/amount";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 
 import { ratingPoints, tierOf } from "./ratings";
 
@@ -8,7 +8,7 @@ export const TierMark = ({ rating, size = 18 }: { rating: string; size?: number 
   const tier = tierOf(ratingPoints(rating));
   return (
     <span role="img" aria-label={tier.name} className="inline-flex shrink-0">
-      <KitIcon code={tier.mark} size={size} />
+      <SemanticIcon name={tier.mark} size={size} />
     </span>
   );
 };

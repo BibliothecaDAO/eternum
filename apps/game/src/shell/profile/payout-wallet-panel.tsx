@@ -1,10 +1,11 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { SIGN_IN_CODE_LENGTH, type SignInOptions } from "@realms-world/identity";
 import { lazy, type ReactNode, Suspense, useEffect, useState } from "react";
 
 import { identityClient } from "@/hooks/context/identity-session";
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { Button } from "@/ui/design-system/kit/button";
-import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { failureSentence } from "@/ui/modules/identity/identity-failures";
 
@@ -56,7 +57,7 @@ export const PayoutWalletPanel = ({
   };
   return (
     <div className="flex flex-col gap-4">
-      <Title icon={step.kind === "code" && step.change.kind === "unlink" ? "Lk" : "Wt"}>
+      <Title icon={step.kind === "code" && step.change.kind === "unlink" ? "lock" : "backpack"}>
         {step.kind === "code" && step.change.kind === "unlink" ? WALLET_WORDS.unlinkTitle : WALLET_WORDS.payoutWallet}
       </Title>
       {step.kind === "linked" && wallet !== null ? (
@@ -95,7 +96,7 @@ const Linking = ({
           <Suspense fallback={<Loading />}>
             <WalletPicker onProof={pick} />
           </Suspense>
-          <Chip icon="In" word={WALLET_WORDS.needOne} onClick={() => onStep({ kind: "need" })} />
+          <Chip icon="download" word={WALLET_WORDS.needOne} onClick={() => onStep({ kind: "need" })} />
         </>
       );
     case "need":
@@ -108,7 +109,7 @@ const Linking = ({
             <WalletPicker only={["argentX"]} onProof={pick} />
           </Suspense>
           <p className="font-body text-base text-kit-muted">{WALLET_WORDS.backFromReady}</p>
-          <Chip icon="Sp" word={WALLET_WORDS.anotherWallet} onClick={() => onStep({ kind: "pick" })} />
+          <Chip icon="refresh" word={WALLET_WORDS.anotherWallet} onClick={() => onStep({ kind: "pick" })} />
         </>
       );
     default:
@@ -123,14 +124,14 @@ const Choose = ({ layout, onStep }: { layout: "phone" | "desktop"; onStep: (step
     <PrizesGoHere />
     <div className="grid grid-cols-2 gap-3">
       <ChoiceTile
-        icon="Wt"
+        icon="backpack"
         word={WALLET_WORDS.haveOne}
         line={WALLET_WORDS.haveOneLine}
         lit
         onClick={() => onStep({ kind: "pick" })}
       />
       <ChoiceTile
-        icon="In"
+        icon="download"
         word={WALLET_WORDS.needOne}
         line={layout === "phone" ? WALLET_WORDS.needOneLinePhone : WALLET_WORDS.needOneLine}
         onClick={() => onStep({ kind: "need" })}
@@ -152,14 +153,14 @@ const GetReady = ({ onStep, onProof }: { onStep: (step: Step) => void; onProof: 
       <ReadyName line={WALLET_WORDS.formerlyArgent} />
       <div className="grid grid-cols-2 gap-3">
         <ChoiceTile
-          icon="In"
+          icon="download"
           word={WALLET_WORDS.inThisBrowser}
           line={WALLET_WORDS.addExtension}
           lit
           onClick={addExtension}
         />
         <ChoiceTile
-          icon="Em"
+          icon="mail"
           word={WALLET_WORDS.byEmailTitle}
           line={WALLET_WORDS.noInstallShort}
           onClick={() => setByEmail(true)}
@@ -177,9 +178,9 @@ const ReadyByEmail = ({ onProof }: { onProof: (proof: SignInOptions) => void }) 
     <ol className="grid grid-cols-3 gap-2.5">
       {(
         [
-          ["Em", WALLET_WORDS.emailStep],
-          ["Ok", WALLET_WORDS.approveStep],
-          ["Wt", WALLET_WORDS.codeStep],
+          ["mail", WALLET_WORDS.emailStep],
+          ["check", WALLET_WORDS.approveStep],
+          ["backpack", WALLET_WORDS.codeStep],
         ] as const
       ).map(([icon, word], index) => (
         <li
@@ -189,7 +190,7 @@ const ReadyByEmail = ({ onProof }: { onProof: (proof: SignInOptions) => void }) 
           <span className="absolute -left-1.5 -top-2.5 flex size-[26px] items-center justify-center rounded-full border border-kit-gold bg-kit-ink font-body text-sm font-extrabold text-kit-gold2">
             {index + 1}
           </span>
-          <KitIcon code={icon} size={36} />
+          <SemanticIcon name={icon} size={36} />
           {word}
         </li>
       ))}
@@ -251,7 +252,7 @@ const CodeStep = ({ change, email, onDone }: { change: Change; email: string; on
     <>
       {change.kind === "link" && <Track at={1} />}
       {change.kind === "link" && <WalletCard address={change.proof.address} chip={null} />}
-      <Line icon="Em">
+      <Line icon="mail">
         {sent ? (
           <>
             {WALLET_WORDS.codeSentTo} <b>{email}</b>
@@ -261,11 +262,11 @@ const CodeStep = ({ change, email, onDone }: { change: Change; email: string; on
         )}
       </Line>
       <CodeBoxes code={code} refused={error !== null} disabled={!sent || busy} onType={type} />
-      {busy && change.kind === "link" && <Line icon="Wt">{WALLET_WORDS.confirmInWallet}</Line>}
-      {change.kind === "unlink" && <Line icon="St">{WALLET_WORDS.nothingPaysOut}</Line>}
+      {busy && change.kind === "link" && <Line icon="backpack">{WALLET_WORDS.confirmInWallet}</Line>}
+      {change.kind === "unlink" && <Line icon="stamina">{WALLET_WORDS.nothingPaysOut}</Line>}
       {error && <p className="font-body text-base text-kit-red">{error}</p>}
       <Chip
-        icon="Sp"
+        icon="refresh"
         word={WALLET_WORDS.newCode}
         onClick={() => {
           setCode("");
@@ -280,18 +281,18 @@ const CodeStep = ({ change, email, onDone }: { change: Change; email: string; on
 const Linked = ({ address, onReplace, onUnlink }: { address: string; onReplace: () => void; onUnlink: () => void }) => (
   <>
     <Track at={STEPS.length} />
-    <WalletCard address={address} chip={{ icon: "Ok", word: WALLET_WORDS.canReceive }} />
+    <WalletCard address={address} chip={{ icon: "check", word: WALLET_WORDS.canReceive }} />
     <PrizesGoHere />
     <div className="grid grid-cols-2 gap-3">
-      <Button role="outline" word={WALLET_WORDS.replace} icon="Sp" onClick={onReplace} />
-      <Button role="outline" word={WALLET_WORDS.unlink} icon="Lk" onClick={onUnlink} />
+      <Button role="outline" word={WALLET_WORDS.replace} icon="refresh" onClick={onReplace} />
+      <Button role="outline" word={WALLET_WORDS.unlink} icon="lock" onClick={onUnlink} />
     </div>
   </>
 );
 
-const STEPS: { icon: IconCode; word: string }[] = [
-  { icon: "Wt", word: WALLET_WORDS.stepWallet },
-  { icon: "Em", word: WALLET_WORDS.stepCode },
+const STEPS: { icon: IconMeaning; word: string }[] = [
+  { icon: "backpack", word: WALLET_WORDS.stepWallet },
+  { icon: "mail", word: WALLET_WORDS.stepCode },
 ];
 
 /** Wallet, then email code: the step under way lit, those behind ticked, -1 for none begun, past the last for done. */
@@ -315,10 +316,10 @@ const Track = ({ at }: { at: number }) => (
                   : "border-dashed border-kit-line2 opacity-60",
             )}
           >
-            <KitIcon code={icon} size={28} />
+            <SemanticIcon name={icon} size={28} />
             {index < at && (
               <span className="absolute -bottom-1 -right-1.5 flex size-6 items-center justify-center rounded-full border border-kit-sage bg-kit-ink">
-                <KitIcon code="Ok" size={16} />
+                <SemanticIcon name="check" size={16} />
               </span>
             )}
           </span>
@@ -337,13 +338,13 @@ const Track = ({ at }: { at: number }) => (
   </ol>
 );
 
-const WalletCard = ({ address, chip }: { address: string; chip: { icon: IconCode; word: string } | null }) => (
+const WalletCard = ({ address, chip }: { address: string; chip: { icon: IconMeaning; word: string } | null }) => (
   <div className="flex min-h-[64px] items-center gap-3 rounded-[14px] border border-kit-line2 bg-kit-ground/60 px-3.5">
-    <KitIcon code="Wt" size={38} />
+    <SemanticIcon name="backpack" size={38} />
     <span className="whitespace-nowrap font-body text-lg font-bold text-kit-cream">{shortAddress(address)}</span>
     {chip && (
       <span className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-full border border-kit-sage bg-kit-ink pl-2 pr-3 font-body text-base font-bold text-kit-sage">
-        <KitIcon code={chip.icon} size={20} />
+        <SemanticIcon name={chip.icon} size={20} />
         {chip.word}
       </span>
     )}
@@ -357,7 +358,7 @@ const ChoiceTile = ({
   lit = false,
   onClick,
 }: {
-  icon: IconCode;
+  icon: IconMeaning;
   word: string;
   line: string;
   lit?: boolean;
@@ -371,7 +372,7 @@ const ChoiceTile = ({
       lit ? "border-kit-gold bg-kit-gold/10" : "border-kit-line2 bg-kit-ground/60",
     )}
   >
-    <KitIcon code={icon} size={52} />
+    <SemanticIcon name={icon} size={52} />
     <span className="font-body text-lg text-kit-cream">{word}</span>
     <span className="font-body text-sm font-semibold text-kit-muted">{line}</span>
   </button>
@@ -386,36 +387,36 @@ const ReadyName = ({ line }: { line: string }) => (
 
 const PrizesGoHere = () => (
   <p className="flex items-center gap-2 font-body text-lg text-kit-muted">
-    <KitIcon code="Lo" size={26} />
-    <KitIcon code="Ch" size={26} />
-    <KitIcon code="Tp" size={26} />
+    <SemanticIcon name="lords" size={26} />
+    <SemanticIcon name="chest" size={26} />
+    <SemanticIcon name="victory" size={26} />
     <span className="ml-1">{WALLET_WORDS.prizesGoHere}</span>
   </p>
 );
 
-const KeysStay = () => <Line icon="Lk">{WALLET_WORDS.keysStay}</Line>;
+const KeysStay = () => <Line icon="lock">{WALLET_WORDS.keysStay}</Line>;
 
-const Title = ({ icon, children }: { icon: IconCode; children: string }) => (
+const Title = ({ icon, children }: { icon: IconMeaning; children: string }) => (
   <h2 className="flex items-center gap-2.5 border-b border-kit-line pb-3 font-body text-lg text-kit-cream">
-    <KitIcon code={icon} size={26} />
+    <SemanticIcon name={icon} size={26} />
     {children}
   </h2>
 );
 
-const Line = ({ icon, children }: { icon: IconCode; children: ReactNode }) => (
+const Line = ({ icon, children }: { icon: IconMeaning; children: ReactNode }) => (
   <p className="flex items-center gap-2.5 font-body text-base text-kit-cream">
-    <KitIcon code={icon} size={24} />
+    <SemanticIcon name={icon} size={24} />
     <span>{children}</span>
   </p>
 );
 
-const Chip = ({ icon, word, onClick }: { icon: IconCode; word: string; onClick: () => void }) => (
+const Chip = ({ icon, word, onClick }: { icon: IconMeaning; word: string; onClick: () => void }) => (
   <button
     type="button"
     onClick={onClick}
     className="inline-flex h-9 w-fit items-center gap-1.5 rounded-full border border-kit-line2 bg-kit-ink pl-2 pr-3 font-body text-base font-bold text-kit-muted"
   >
-    <KitIcon code={icon} size={20} />
+    <SemanticIcon name={icon} size={20} />
     {word}
   </button>
 );

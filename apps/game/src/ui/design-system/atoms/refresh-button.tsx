@@ -1,4 +1,5 @@
-import { RefreshCw } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { ButtonHTMLAttributes } from "react";
 
 interface RefreshButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -32,7 +33,7 @@ export const RefreshButton = ({
       className={`${sizeClasses[size]} rounded-lg bg-gold/10 hover:bg-gold/20 transition-colors disabled:opacity-50 ${className}`}
       title={props.title || "Refresh data"}
     >
-      <RefreshCw className={`${iconSizes[size]} text-gold ${isLoading ? "animate-spin" : ""}`} />
+      <SemanticIcon name="refresh" className={`${iconSizes[size]} text-gold ${isLoading ? "animate-spin" : ""}`} />
     </button>
   );
 };

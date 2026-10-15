@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -9,7 +10,7 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { MOVE, SHRINE, STAMINA, USE, USING, WELL, XP } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -91,7 +92,7 @@ export const MapSiteCard = ({
     <Sheet label={word} onClose={onClose}>
       <header className="flex items-center gap-3">
         <span className="flex size-16 shrink-0 items-center justify-center rounded-xl border border-kit-line2 bg-kit-ground">
-          <KitIcon code={plan.kind === "Shrine" ? "Sh" : "Wl"} size={40} />
+          <SemanticIcon name={plan.kind === "Shrine" ? "shrine" : "well"} size={40} />
         </span>
         <h2 className="frontier-title flex-1">{word}</h2>
       </header>
@@ -99,7 +100,7 @@ export const MapSiteCard = ({
         {user && (
           <span data-tone="lit" className="frontier-chip h-8 !py-0 !pl-1">
             <span className="contents">
-              <img src={armyArt(user.army.troops)} alt="" className="size-[22px] rounded-full object-cover" />
+              <SemanticIcon name={armyArt(user.army.troops)} alt="" className="size-[22px] rounded-full object-cover" />
               <span className="frontier-chip-number tabular-nums !text-base">
                 {formatExact(Number(user.army.troops.count / BigInt(RESOURCE_PRECISION)))}
               </span>
@@ -107,7 +108,7 @@ export const MapSiteCard = ({
           </span>
         )}
         {plan.kind === "Well" ? (
-          <Chip icons={["St"]} label={STAMINA} value={wellGain(plan.gain, stamina)} />
+          <Chip icons={["stamina"]} label={STAMINA} value={wellGain(plan.gain, stamina)} />
         ) : (
           <Chip icons={[]} label={XP} value={plan.gain === undefined ? "—" : `+${formatAmount(plan.gain)}`} unit={XP} />
         )}
@@ -118,7 +119,7 @@ export const MapSiteCard = ({
         approach && (
           <Button
             role="primary"
-            icon="Bt"
+            icon="move"
             word={MOVE}
             prices={[
               { of: "stamina", amount: approach.stamina.cost },

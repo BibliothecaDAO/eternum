@@ -1,4 +1,5 @@
-import { ChevronDown, ChevronUp, Search } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { useLeaderboardActivity } from "@/hooks/use-leaderboard-activity";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -183,7 +184,7 @@ export const PlayersPanel = ({
               className="flex-1 btn-bronze"
             />
             <Button onClick={handleSearch} variant="primary" className="flex items-center gap-1 px-4">
-              <Search size={14} />
+              <SemanticIcon name="search" size={14} />
               <span>Search</span>
             </Button>
           </div>
@@ -218,9 +219,9 @@ export const PlayersPanel = ({
             >
               <span className="text-gold font-semibold text-sm">Points Breakdown</span>
               {showPointsBreakdown ? (
-                <ChevronUp size={16} className="text-gold" />
+                <SemanticIcon name="chevron-up" size={16} className="text-gold" />
               ) : (
-                <ChevronDown size={16} className="text-gold" />
+                <SemanticIcon name="chevron-down" size={16} className="text-gold" />
               )}
             </button>
             {showPointsBreakdown && (

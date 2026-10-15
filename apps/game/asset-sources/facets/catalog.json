@@ -1,0 +1,1427 @@
+{
+  "directions": [
+    {
+      "id": "faceted",
+      "name": "Facets",
+      "description": "Broad painted planes, stronger light breaks and compact silhouettes."
+    }
+  ],
+  "icons": [
+    {
+      "id": "knight-t1",
+      "label": "Knight \u00b7 T1",
+      "family": "Troops",
+      "prompt": "prompts/knight-t1.txt"
+    },
+    {
+      "id": "knight-t2",
+      "label": "Knight \u00b7 T2",
+      "family": "Troops",
+      "prompt": "prompts/knight-t2.txt"
+    },
+    {
+      "id": "knight-t3",
+      "label": "Knight \u00b7 T3",
+      "family": "Troops",
+      "prompt": "prompts/knight-t3.txt"
+    },
+    {
+      "id": "crossbowman-t1",
+      "label": "Crossbowman \u00b7 T1",
+      "family": "Troops",
+      "prompt": "prompts/crossbowman-t1.txt"
+    },
+    {
+      "id": "crossbowman-t2",
+      "label": "Crossbowman \u00b7 T2",
+      "family": "Troops",
+      "prompt": "prompts/crossbowman-t2.txt"
+    },
+    {
+      "id": "crossbowman-t3",
+      "label": "Crossbowman \u00b7 T3",
+      "family": "Troops",
+      "prompt": "prompts/crossbowman-t3.txt"
+    },
+    {
+      "id": "paladin-t1",
+      "label": "Paladin \u00b7 T1",
+      "family": "Troops",
+      "prompt": "prompts/paladin-t1.txt"
+    },
+    {
+      "id": "paladin-t2",
+      "label": "Paladin \u00b7 T2",
+      "family": "Troops",
+      "prompt": "prompts/paladin-t2.txt"
+    },
+    {
+      "id": "paladin-t3",
+      "label": "Paladin \u00b7 T3",
+      "family": "Troops",
+      "prompt": "prompts/paladin-t3.txt"
+    },
+    {
+      "id": "stone",
+      "label": "Stone",
+      "family": "Resources",
+      "prompt": "prompts/stone.txt"
+    },
+    {
+      "id": "wood",
+      "label": "Wood",
+      "family": "Resources",
+      "prompt": "prompts/wood.txt"
+    },
+    {
+      "id": "wheat",
+      "label": "Wheat",
+      "family": "Resources",
+      "prompt": "prompts/wheat.txt"
+    },
+    {
+      "id": "fish",
+      "label": "Fish",
+      "family": "Resources",
+      "prompt": "prompts/fish.txt"
+    },
+    {
+      "id": "labor",
+      "label": "Labor",
+      "family": "Resources",
+      "prompt": "prompts/labor.txt"
+    },
+    {
+      "id": "essence",
+      "label": "Essence",
+      "family": "Resources",
+      "prompt": "prompts/essence.txt"
+    },
+    {
+      "id": "ironwood",
+      "label": "Ironwood",
+      "family": "Resources",
+      "prompt": "prompts/ironwood.txt"
+    },
+    {
+      "id": "fragment",
+      "label": "Ancient Fragment",
+      "family": "Resources",
+      "prompt": "prompts/fragment.txt"
+    },
+    {
+      "id": "realm",
+      "label": "Realm \u00b7 level 2",
+      "family": "Structures",
+      "prompt": "prompts/realm.txt"
+    },
+    {
+      "id": "camp",
+      "label": "Camp",
+      "family": "Structures",
+      "prompt": "prompts/camp.txt"
+    },
+    {
+      "id": "hyperstructure",
+      "label": "Hyperstructure",
+      "family": "Structures",
+      "prompt": "prompts/hyperstructure.txt"
+    },
+    {
+      "id": "chest",
+      "label": "Chest",
+      "family": "Structures",
+      "prompt": "prompts/chest.txt"
+    },
+    {
+      "id": "move",
+      "label": "Move",
+      "family": "Actions",
+      "prompt": "prompts/move.txt"
+    },
+    {
+      "id": "explore",
+      "label": "Explore",
+      "family": "Actions",
+      "prompt": "prompts/explore.txt"
+    },
+    {
+      "id": "attack",
+      "label": "Attack",
+      "family": "Actions",
+      "prompt": "prompts/attack.txt"
+    },
+    {
+      "id": "build",
+      "label": "Build",
+      "family": "Actions",
+      "prompt": "prompts/build.txt"
+    },
+    {
+      "id": "trade",
+      "label": "Trade",
+      "family": "Actions",
+      "prompt": "prompts/trade.txt"
+    },
+    {
+      "id": "stamina",
+      "label": "Stamina",
+      "family": "Statuses",
+      "prompt": "prompts/stamina.txt"
+    },
+    {
+      "id": "victory",
+      "label": "Victory points",
+      "family": "Statuses",
+      "prompt": "prompts/victory.txt"
+    },
+    {
+      "id": "settings",
+      "label": "Settings",
+      "family": "HUD",
+      "prompt": "prompts/settings.txt"
+    },
+    {
+      "id": "chat",
+      "label": "Chat",
+      "family": "HUD",
+      "prompt": "prompts/chat.txt"
+    },
+    {
+      "id": "map-army",
+      "label": "Army marker",
+      "family": "Minimap",
+      "prompt": "prompts/map-army.txt"
+    },
+    {
+      "id": "map-realm",
+      "label": "Realm marker",
+      "family": "Minimap",
+      "prompt": "prompts/map-realm.txt"
+    },
+    {
+      "id": "map-village",
+      "label": "Village marker",
+      "family": "Minimap",
+      "prompt": "prompts/map-village.txt"
+    },
+    {
+      "id": "map-mine",
+      "label": "Mine marker",
+      "family": "Minimap",
+      "prompt": "prompts/map-mine.txt"
+    },
+    {
+      "id": "coal",
+      "label": "Coal",
+      "family": "Resources",
+      "prompt": "prompts/coal.txt"
+    },
+    {
+      "id": "copper",
+      "label": "Copper",
+      "family": "Resources",
+      "prompt": "prompts/copper.txt"
+    },
+    {
+      "id": "donkey",
+      "label": "Pack donkey / Transfer",
+      "family": "Actions",
+      "prompt": "prompts/donkey.txt"
+    },
+    {
+      "id": "production",
+      "label": "Production",
+      "family": "Actions",
+      "prompt": "prompts/production.txt"
+    },
+    {
+      "id": "obsidian",
+      "label": "Obsidian",
+      "family": "Resources",
+      "prompt": "prompts/obsidian.txt"
+    },
+    {
+      "id": "gold",
+      "label": "Gold",
+      "family": "Resources",
+      "prompt": "prompts/gold.txt"
+    },
+    {
+      "id": "silver",
+      "label": "Silver",
+      "family": "Resources",
+      "prompt": "prompts/silver.txt"
+    },
+    {
+      "id": "mithral",
+      "label": "Mithral",
+      "family": "Resources",
+      "prompt": "prompts/mithral.txt"
+    },
+    {
+      "id": "alchemical-silver",
+      "label": "Alchemical Silver",
+      "family": "Resources",
+      "prompt": "prompts/alchemical-silver.txt"
+    },
+    {
+      "id": "cold-iron",
+      "label": "Cold Iron",
+      "family": "Resources",
+      "prompt": "prompts/cold-iron.txt"
+    },
+    {
+      "id": "deep-crystal",
+      "label": "Deep Crystal",
+      "family": "Resources",
+      "prompt": "prompts/deep-crystal.txt"
+    },
+    {
+      "id": "ruby",
+      "label": "Ruby",
+      "family": "Resources",
+      "prompt": "prompts/ruby.txt"
+    },
+    {
+      "id": "diamonds",
+      "label": "Diamonds",
+      "family": "Resources",
+      "prompt": "prompts/diamonds.txt"
+    },
+    {
+      "id": "hartwood",
+      "label": "Hartwood",
+      "family": "Resources",
+      "prompt": "prompts/hartwood.txt"
+    },
+    {
+      "id": "ignium",
+      "label": "Ignium",
+      "family": "Resources",
+      "prompt": "prompts/ignium.txt"
+    },
+    {
+      "id": "twilight-quartz",
+      "label": "Twilight Quartz",
+      "family": "Resources",
+      "prompt": "prompts/twilight-quartz.txt"
+    },
+    {
+      "id": "true-ice",
+      "label": "True Ice",
+      "family": "Resources",
+      "prompt": "prompts/true-ice.txt"
+    },
+    {
+      "id": "adamantine",
+      "label": "Adamantine",
+      "family": "Resources",
+      "prompt": "prompts/adamantine.txt"
+    },
+    {
+      "id": "sapphire",
+      "label": "Sapphire",
+      "family": "Resources",
+      "prompt": "prompts/sapphire.txt"
+    },
+    {
+      "id": "ethereal-silica",
+      "label": "Ethereal Silica",
+      "family": "Resources",
+      "prompt": "prompts/ethereal-silica.txt"
+    },
+    {
+      "id": "dragonhide",
+      "label": "Dragonhide",
+      "family": "Resources",
+      "prompt": "prompts/dragonhide.txt"
+    },
+    {
+      "id": "lords",
+      "label": "Lords",
+      "family": "Resources",
+      "prompt": "prompts/lords.txt"
+    },
+    {
+      "id": "stamina-relic-1",
+      "label": "Stamina Relic1",
+      "family": "Relics",
+      "prompt": "prompts/stamina-relic-1.txt"
+    },
+    {
+      "id": "stamina-relic-2",
+      "label": "Stamina Relic2",
+      "family": "Relics",
+      "prompt": "prompts/stamina-relic-2.txt"
+    },
+    {
+      "id": "damage-relic-1",
+      "label": "Damage Relic1",
+      "family": "Relics",
+      "prompt": "prompts/damage-relic-1.txt"
+    },
+    {
+      "id": "damage-relic-2",
+      "label": "Damage Relic2",
+      "family": "Relics",
+      "prompt": "prompts/damage-relic-2.txt"
+    },
+    {
+      "id": "damage-reduction-relic-1",
+      "label": "Damage Reduction Relic1",
+      "family": "Relics",
+      "prompt": "prompts/damage-reduction-relic-1.txt"
+    },
+    {
+      "id": "damage-reduction-relic-2",
+      "label": "Damage Reduction Relic2",
+      "family": "Relics",
+      "prompt": "prompts/damage-reduction-relic-2.txt"
+    },
+    {
+      "id": "exploration-relic-1",
+      "label": "Exploration Relic1",
+      "family": "Relics",
+      "prompt": "prompts/exploration-relic-1.txt"
+    },
+    {
+      "id": "exploration-relic-2",
+      "label": "Exploration Relic2",
+      "family": "Relics",
+      "prompt": "prompts/exploration-relic-2.txt"
+    },
+    {
+      "id": "exploration-reward-relic-1",
+      "label": "Exploration Reward Relic1",
+      "family": "Relics",
+      "prompt": "prompts/exploration-reward-relic-1.txt"
+    },
+    {
+      "id": "exploration-reward-relic-2",
+      "label": "Exploration Reward Relic2",
+      "family": "Relics",
+      "prompt": "prompts/exploration-reward-relic-2.txt"
+    },
+    {
+      "id": "structure-damage-reduction-relic-1",
+      "label": "Structure Damage Reduction Relic1",
+      "family": "Relics",
+      "prompt": "prompts/structure-damage-reduction-relic-1.txt"
+    },
+    {
+      "id": "structure-damage-reduction-relic-2",
+      "label": "Structure Damage Reduction Relic2",
+      "family": "Relics",
+      "prompt": "prompts/structure-damage-reduction-relic-2.txt"
+    },
+    {
+      "id": "production-relic-1",
+      "label": "Production Relic1",
+      "family": "Relics",
+      "prompt": "prompts/production-relic-1.txt"
+    },
+    {
+      "id": "production-relic-2",
+      "label": "Production Relic2",
+      "family": "Relics",
+      "prompt": "prompts/production-relic-2.txt"
+    },
+    {
+      "id": "labor-production-relic-1",
+      "label": "Labor Production Relic1",
+      "family": "Relics",
+      "prompt": "prompts/labor-production-relic-1.txt"
+    },
+    {
+      "id": "labor-production-relic-2",
+      "label": "Labor Production Relic2",
+      "family": "Relics",
+      "prompt": "prompts/labor-production-relic-2.txt"
+    },
+    {
+      "id": "troop-production-relic-1",
+      "label": "Troop Production Relic1",
+      "family": "Relics",
+      "prompt": "prompts/troop-production-relic-1.txt"
+    },
+    {
+      "id": "troop-production-relic-2",
+      "label": "Troop Production Relic2",
+      "family": "Relics",
+      "prompt": "prompts/troop-production-relic-2.txt"
+    },
+    {
+      "id": "research",
+      "label": "Research",
+      "family": "Resources",
+      "prompt": "prompts/research.txt"
+    },
+    {
+      "id": "s-a-t",
+      "label": "S A T",
+      "family": "Resources",
+      "prompt": "prompts/s-a-t.txt"
+    },
+    {
+      "id": "military",
+      "label": "Military",
+      "family": "Controls",
+      "prompt": "prompts/military.txt"
+    },
+    {
+      "id": "automation",
+      "label": "Automation",
+      "family": "Controls",
+      "prompt": "prompts/automation.txt"
+    },
+    {
+      "id": "map",
+      "label": "World Map",
+      "family": "Controls",
+      "prompt": "prompts/map.txt"
+    },
+    {
+      "id": "guild",
+      "label": "Guild",
+      "family": "Controls",
+      "prompt": "prompts/guild.txt"
+    },
+    {
+      "id": "close",
+      "label": "Close",
+      "family": "Controls",
+      "prompt": "prompts/close.txt"
+    },
+    {
+      "id": "check",
+      "label": "Check",
+      "family": "Controls",
+      "prompt": "prompts/check.txt"
+    },
+    {
+      "id": "chevron-down",
+      "label": "Chevron Down",
+      "family": "Controls",
+      "prompt": "prompts/chevron-down.txt"
+    },
+    {
+      "id": "arrow-right",
+      "label": "Arrow Right",
+      "family": "Controls",
+      "prompt": "prompts/arrow-right.txt"
+    },
+    {
+      "id": "plus",
+      "label": "Plus",
+      "family": "Controls",
+      "prompt": "prompts/plus.txt"
+    },
+    {
+      "id": "search",
+      "label": "Search",
+      "family": "Controls",
+      "prompt": "prompts/search.txt"
+    },
+    {
+      "id": "pause",
+      "label": "Pause",
+      "family": "Controls",
+      "prompt": "prompts/pause.txt"
+    },
+    {
+      "id": "play",
+      "label": "Play",
+      "family": "Controls",
+      "prompt": "prompts/play.txt"
+    },
+    {
+      "id": "refresh",
+      "label": "Refresh",
+      "family": "Controls",
+      "prompt": "prompts/refresh.txt"
+    },
+    {
+      "id": "warning",
+      "label": "Warning",
+      "family": "Controls",
+      "prompt": "prompts/warning.txt"
+    },
+    {
+      "id": "info",
+      "label": "Info",
+      "family": "Controls",
+      "prompt": "prompts/info.txt"
+    },
+    {
+      "id": "copy",
+      "label": "Copy",
+      "family": "Controls",
+      "prompt": "prompts/copy.txt"
+    },
+    {
+      "id": "eye",
+      "label": "Eye",
+      "family": "Controls",
+      "prompt": "prompts/eye.txt"
+    },
+    {
+      "id": "lock",
+      "label": "Lock",
+      "family": "Controls",
+      "prompt": "prompts/lock.txt"
+    },
+    {
+      "id": "unlock",
+      "label": "Unlock",
+      "family": "Controls",
+      "prompt": "prompts/unlock.txt"
+    },
+    {
+      "id": "edit",
+      "label": "Edit",
+      "family": "Controls",
+      "prompt": "prompts/edit.txt"
+    },
+    {
+      "id": "trash",
+      "label": "Trash",
+      "family": "Controls",
+      "prompt": "prompts/trash.txt"
+    },
+    {
+      "id": "mail",
+      "label": "Mail",
+      "family": "Controls",
+      "prompt": "prompts/mail.txt"
+    },
+    {
+      "id": "crown",
+      "label": "Crown",
+      "family": "Controls",
+      "prompt": "prompts/crown.txt"
+    },
+    {
+      "id": "pickaxe",
+      "label": "Pickaxe",
+      "family": "Controls",
+      "prompt": "prompts/pickaxe.txt"
+    },
+    {
+      "id": "people",
+      "label": "People",
+      "family": "Controls",
+      "prompt": "prompts/people.txt"
+    },
+    {
+      "id": "person",
+      "label": "Person",
+      "family": "Controls",
+      "prompt": "prompts/person.txt"
+    },
+    {
+      "id": "skull",
+      "label": "Skull",
+      "family": "Controls",
+      "prompt": "prompts/skull.txt"
+    },
+    {
+      "id": "star",
+      "label": "Star",
+      "family": "Controls",
+      "prompt": "prompts/star.txt"
+    },
+    {
+      "id": "flame",
+      "label": "Flame",
+      "family": "Controls",
+      "prompt": "prompts/flame.txt"
+    },
+    {
+      "id": "sun",
+      "label": "Sun",
+      "family": "Controls",
+      "prompt": "prompts/sun.txt"
+    },
+    {
+      "id": "moon",
+      "label": "Moon",
+      "family": "Controls",
+      "prompt": "prompts/moon.txt"
+    },
+    {
+      "id": "location",
+      "label": "Location",
+      "family": "Controls",
+      "prompt": "prompts/location.txt"
+    },
+    {
+      "id": "target",
+      "label": "Target",
+      "family": "Controls",
+      "prompt": "prompts/target.txt"
+    },
+    {
+      "id": "calendar",
+      "label": "Calendar",
+      "family": "Controls",
+      "prompt": "prompts/calendar.txt"
+    },
+    {
+      "id": "expand",
+      "label": "Expand",
+      "family": "Controls",
+      "prompt": "prompts/expand.txt"
+    },
+    {
+      "id": "collapse",
+      "label": "Collapse",
+      "family": "Controls",
+      "prompt": "prompts/collapse.txt"
+    },
+    {
+      "id": "menu",
+      "label": "Menu",
+      "family": "Controls",
+      "prompt": "prompts/menu.txt"
+    },
+    {
+      "id": "volume",
+      "label": "Volume",
+      "family": "Controls",
+      "prompt": "prompts/volume.txt"
+    },
+    {
+      "id": "mute",
+      "label": "Mute",
+      "family": "Controls",
+      "prompt": "prompts/mute.txt"
+    },
+    {
+      "id": "music",
+      "label": "Music",
+      "family": "Controls",
+      "prompt": "prompts/music.txt"
+    },
+    {
+      "id": "camera",
+      "label": "Camera",
+      "family": "Controls",
+      "prompt": "prompts/camera.txt"
+    },
+    {
+      "id": "video",
+      "label": "Video",
+      "family": "Controls",
+      "prompt": "prompts/video.txt"
+    },
+    {
+      "id": "bug",
+      "label": "Bug",
+      "family": "Controls",
+      "prompt": "prompts/bug.txt"
+    },
+    {
+      "id": "dice",
+      "label": "Dice",
+      "family": "Controls",
+      "prompt": "prompts/dice.txt"
+    },
+    {
+      "id": "gauge",
+      "label": "Gauge",
+      "family": "Controls",
+      "prompt": "prompts/gauge.txt"
+    },
+    {
+      "id": "anchor",
+      "label": "Anchor",
+      "family": "Controls",
+      "prompt": "prompts/anchor.txt"
+    },
+    {
+      "id": "ship",
+      "label": "Ship",
+      "family": "Controls",
+      "prompt": "prompts/ship.txt"
+    },
+    {
+      "id": "waves",
+      "label": "Waves",
+      "family": "Controls",
+      "prompt": "prompts/waves.txt"
+    },
+    {
+      "id": "flag",
+      "label": "Flag",
+      "family": "Controls",
+      "prompt": "prompts/flag.txt"
+    },
+    {
+      "id": "layers",
+      "label": "Layers",
+      "family": "Controls",
+      "prompt": "prompts/layers.txt"
+    },
+    {
+      "id": "hexagon",
+      "label": "Hexagon",
+      "family": "Controls",
+      "prompt": "prompts/hexagon.txt"
+    },
+    {
+      "id": "hash",
+      "label": "Hash",
+      "family": "Controls",
+      "prompt": "prompts/hash.txt"
+    },
+    {
+      "id": "share",
+      "label": "Share",
+      "family": "Controls",
+      "prompt": "prompts/share.txt"
+    },
+    {
+      "id": "notifications",
+      "label": "Bell",
+      "family": "Controls",
+      "prompt": "prompts/notifications.txt"
+    },
+    {
+      "id": "book",
+      "label": "Book",
+      "family": "Controls",
+      "prompt": "prompts/book.txt"
+    },
+    {
+      "id": "rocket",
+      "label": "Rocket",
+      "family": "Controls",
+      "prompt": "prompts/rocket.txt"
+    },
+    {
+      "id": "wrench",
+      "label": "Wrench",
+      "family": "Controls",
+      "prompt": "prompts/wrench.txt"
+    },
+    {
+      "id": "mountain",
+      "label": "Mountain",
+      "family": "Controls",
+      "prompt": "prompts/mountain.txt"
+    },
+    {
+      "id": "trees",
+      "label": "Trees",
+      "family": "Controls",
+      "prompt": "prompts/trees.txt"
+    },
+    {
+      "id": "watch",
+      "label": "Telescope",
+      "family": "Controls",
+      "prompt": "prompts/watch.txt"
+    },
+    {
+      "id": "route",
+      "label": "Route",
+      "family": "Controls",
+      "prompt": "prompts/route.txt"
+    },
+    {
+      "id": "network-off",
+      "label": "Network Off",
+      "family": "Controls",
+      "prompt": "prompts/network-off.txt"
+    },
+    {
+      "id": "monitor",
+      "label": "Monitor",
+      "family": "Controls",
+      "prompt": "prompts/monitor.txt"
+    },
+    {
+      "id": "activity",
+      "label": "Activity",
+      "family": "Controls",
+      "prompt": "prompts/activity.txt"
+    },
+    {
+      "id": "cloud-lightning",
+      "label": "Cloud Lightning",
+      "family": "Controls",
+      "prompt": "prompts/cloud-lightning.txt"
+    },
+    {
+      "id": "download",
+      "label": "Download",
+      "family": "Controls",
+      "prompt": "prompts/download.txt"
+    },
+    {
+      "id": "external-link",
+      "label": "External Link",
+      "family": "Controls",
+      "prompt": "prompts/external-link.txt"
+    },
+    {
+      "id": "swap",
+      "label": "Swap",
+      "family": "Controls",
+      "prompt": "prompts/swap.txt"
+    },
+    {
+      "id": "skip",
+      "label": "Skip",
+      "family": "Controls",
+      "prompt": "prompts/skip.txt"
+    },
+    {
+      "id": "step",
+      "label": "Step",
+      "family": "Controls",
+      "prompt": "prompts/step.txt"
+    },
+    {
+      "id": "minus",
+      "label": "Minus",
+      "family": "Controls",
+      "prompt": "prompts/minus.txt"
+    },
+    {
+      "id": "pin",
+      "label": "Pin",
+      "family": "Controls",
+      "prompt": "prompts/pin.txt"
+    },
+    {
+      "id": "backpack",
+      "label": "Backpack",
+      "family": "Controls",
+      "prompt": "prompts/backpack.txt"
+    },
+    {
+      "id": "resources",
+      "label": "Storage crates",
+      "family": "Structures",
+      "prompt": "prompts/resources.txt"
+    },
+    {
+      "id": "defend",
+      "label": "Defend",
+      "family": "Statuses",
+      "prompt": "prompts/defend.txt"
+    },
+    {
+      "id": "home",
+      "label": "Home",
+      "family": "Shell",
+      "prompt": "prompts/home.txt"
+    },
+    {
+      "id": "exit",
+      "label": "Leave",
+      "family": "Shell",
+      "prompt": "prompts/exit.txt"
+    },
+    {
+      "id": "guide",
+      "label": "Guide",
+      "family": "Shell",
+      "prompt": "prompts/guide.txt"
+    },
+    {
+      "id": "chronicles",
+      "label": "Chronicles",
+      "family": "Shell",
+      "prompt": "prompts/chronicles.txt"
+    },
+    {
+      "id": "news",
+      "label": "News",
+      "family": "Shell",
+      "prompt": "prompts/news.txt"
+    },
+    {
+      "id": "help",
+      "label": "Help",
+      "family": "Shell",
+      "prompt": "prompts/help.txt"
+    },
+    {
+      "id": "bank",
+      "label": "Bank",
+      "family": "Structures",
+      "prompt": "prompts/bank.txt"
+    },
+    {
+      "id": "portal",
+      "label": "Portal",
+      "family": "Structures",
+      "prompt": "prompts/portal.txt"
+    },
+    {
+      "id": "relics",
+      "label": "Relics",
+      "family": "Statuses",
+      "prompt": "prompts/relics.txt"
+    },
+    {
+      "id": "health",
+      "label": "Health",
+      "family": "Statuses",
+      "prompt": "prompts/health.txt"
+    },
+    {
+      "id": "strength",
+      "label": "Strength",
+      "family": "Statuses",
+      "prompt": "prompts/strength.txt"
+    },
+    {
+      "id": "claim",
+      "label": "Claim",
+      "family": "Actions",
+      "prompt": "prompts/claim.txt"
+    },
+    {
+      "id": "raid",
+      "label": "Raid",
+      "family": "Actions",
+      "prompt": "prompts/raid.txt"
+    },
+    {
+      "id": "deploy",
+      "label": "Deploy",
+      "family": "Actions",
+      "prompt": "prompts/deploy.txt"
+    },
+    {
+      "id": "upgrade",
+      "label": "Upgrade",
+      "family": "Actions",
+      "prompt": "prompts/upgrade.txt"
+    },
+    {
+      "id": "travel",
+      "label": "Travel",
+      "family": "Actions",
+      "prompt": "prompts/travel.txt"
+    },
+    {
+      "id": "stragglers",
+      "label": "Stragglers",
+      "family": "Structures",
+      "prompt": "prompts/stragglers.txt"
+    },
+    {
+      "id": "shrine",
+      "label": "Shrine",
+      "family": "Structures",
+      "prompt": "prompts/shrine.txt"
+    },
+    {
+      "id": "well",
+      "label": "Well",
+      "family": "Structures",
+      "prompt": "prompts/well.txt"
+    },
+    {
+      "id": "ruin",
+      "label": "Ruin",
+      "family": "Structures",
+      "prompt": "prompts/ruin.txt"
+    },
+    {
+      "id": "rift",
+      "label": "Rift",
+      "family": "Structures",
+      "prompt": "prompts/rift.txt"
+    },
+    {
+      "id": "spire",
+      "label": "Spire",
+      "family": "Structures",
+      "prompt": "prompts/spire.txt"
+    },
+    {
+      "id": "bitcoin-mine",
+      "label": "Bitcoin Mine",
+      "family": "Structures",
+      "prompt": "prompts/bitcoin-mine.txt"
+    },
+    {
+      "id": "realm-0",
+      "label": "Settlement",
+      "family": "Structures",
+      "prompt": "prompts/realm-0.txt"
+    },
+    {
+      "id": "realm-1",
+      "label": "City",
+      "family": "Structures",
+      "prompt": "prompts/realm-1.txt"
+    },
+    {
+      "id": "realm-3",
+      "label": "Empire",
+      "family": "Structures",
+      "prompt": "prompts/realm-3.txt"
+    },
+    {
+      "id": "farm",
+      "label": "Farm",
+      "family": "Structures",
+      "prompt": "prompts/farm.txt"
+    },
+    {
+      "id": "workshop",
+      "label": "Workshop",
+      "family": "Structures",
+      "prompt": "prompts/workshop.txt"
+    },
+    {
+      "id": "barracks",
+      "label": "Barracks",
+      "family": "Structures",
+      "prompt": "prompts/barracks.txt"
+    },
+    {
+      "id": "workers-hut",
+      "label": "Workers hut",
+      "family": "Structures",
+      "prompt": "prompts/workers-hut.txt"
+    },
+    {
+      "id": "war-hall",
+      "label": "War hall",
+      "family": "Structures",
+      "prompt": "prompts/war-hall.txt"
+    },
+    {
+      "id": "supply-yard",
+      "label": "Supply yard",
+      "family": "Structures",
+      "prompt": "prompts/supply-yard.txt"
+    },
+    {
+      "id": "scout-lodge",
+      "label": "Scout lodge",
+      "family": "Structures",
+      "prompt": "prompts/scout-lodge.txt"
+    },
+    {
+      "id": "hearth",
+      "label": "Hearth",
+      "family": "Structures",
+      "prompt": "prompts/hearth.txt"
+    },
+    {
+      "id": "fields",
+      "label": "Fields",
+      "family": "Research",
+      "prompt": "prompts/fields.txt"
+    },
+    {
+      "id": "granary",
+      "label": "Granary",
+      "family": "Structures",
+      "prompt": "prompts/granary.txt"
+    },
+    {
+      "id": "tools",
+      "label": "Tools",
+      "family": "Research",
+      "prompt": "prompts/tools.txt"
+    },
+    {
+      "id": "storehouse",
+      "label": "Storehouse",
+      "family": "Structures",
+      "prompt": "prompts/storehouse.txt"
+    },
+    {
+      "id": "drill",
+      "label": "Drill",
+      "family": "Research",
+      "prompt": "prompts/drill.txt"
+    },
+    {
+      "id": "rations",
+      "label": "Rations",
+      "family": "Research",
+      "prompt": "prompts/rations.txt"
+    },
+    {
+      "id": "final-seal",
+      "label": "Final seal",
+      "family": "Statuses",
+      "prompt": "prompts/final-seal.txt"
+    },
+    {
+      "id": "army-capacity",
+      "label": "Army capacity",
+      "family": "Statuses",
+      "prompt": "prompts/army-capacity.txt"
+    },
+    {
+      "id": "clock",
+      "label": "Match clock",
+      "family": "Statuses",
+      "prompt": "prompts/clock.txt"
+    },
+    {
+      "id": "hourglass",
+      "label": "Time remaining",
+      "family": "Statuses",
+      "prompt": "prompts/hourglass.txt"
+    },
+    {
+      "id": "depth-1",
+      "label": "Ethereal reach I",
+      "family": "Statuses",
+      "prompt": "prompts/depth-1.txt"
+    },
+    {
+      "id": "depth-2",
+      "label": "Ethereal reach II",
+      "family": "Statuses",
+      "prompt": "prompts/depth-2.txt"
+    },
+    {
+      "id": "depth-3",
+      "label": "Ethereal reach III",
+      "family": "Statuses",
+      "prompt": "prompts/depth-3.txt"
+    },
+    {
+      "id": "reward",
+      "label": "Reward",
+      "family": "Shell",
+      "prompt": "prompts/reward.txt"
+    },
+    {
+      "id": "stable",
+      "label": "Stable",
+      "family": "Structures",
+      "prompt": "prompts/stable.txt"
+    },
+    {
+      "id": "archery",
+      "label": "Archery",
+      "family": "Structures",
+      "prompt": "prompts/archery.txt"
+    },
+    {
+      "id": "lumber-mill",
+      "label": "Lumber mill",
+      "family": "Structures",
+      "prompt": "prompts/lumber-mill.txt"
+    },
+    {
+      "id": "fishing-village",
+      "label": "Fishing village",
+      "family": "Structures",
+      "prompt": "prompts/fishing-village.txt"
+    },
+    {
+      "id": "forge",
+      "label": "Forge",
+      "family": "Structures",
+      "prompt": "prompts/forge.txt"
+    },
+    {
+      "id": "research-lab",
+      "label": "Research laboratory",
+      "family": "Structures",
+      "prompt": "prompts/research-lab.txt"
+    },
+    {
+      "id": "dragon-tannery",
+      "label": "Dragon tannery",
+      "family": "Structures",
+      "prompt": "prompts/dragon-tannery.txt"
+    },
+    {
+      "id": "rating-storm-lord",
+      "label": "Storm Lord",
+      "family": "Ratings",
+      "prompt": "prompts/rating-storm-lord.txt"
+    },
+    {
+      "id": "rating-warlord",
+      "label": "Warlord",
+      "family": "Ratings",
+      "prompt": "prompts/rating-warlord.txt"
+    },
+    {
+      "id": "rating-conqueror",
+      "label": "Conqueror",
+      "family": "Ratings",
+      "prompt": "prompts/rating-conqueror.txt"
+    },
+    {
+      "id": "rating-marauder",
+      "label": "Marauder",
+      "family": "Ratings",
+      "prompt": "prompts/rating-marauder.txt"
+    },
+    {
+      "id": "rating-raider",
+      "label": "Raider",
+      "family": "Ratings",
+      "prompt": "prompts/rating-raider.txt"
+    },
+    {
+      "id": "rating-scrapper",
+      "label": "Scrapper",
+      "family": "Ratings",
+      "prompt": "prompts/rating-scrapper.txt"
+    },
+    {
+      "id": "order-gods",
+      "label": "Order of Gods",
+      "family": "Orders",
+      "prompt": "prompts/order-gods.txt",
+      "identityReference": "images/orders/gods.png"
+    },
+    {
+      "id": "order-giants",
+      "label": "Order of Giants",
+      "family": "Orders",
+      "prompt": "prompts/order-giants.txt",
+      "identityReference": "images/orders/giants.png"
+    },
+    {
+      "id": "order-perfection",
+      "label": "Order of Perfection",
+      "family": "Orders",
+      "prompt": "prompts/order-perfection.txt",
+      "identityReference": "images/orders/perfection.png"
+    },
+    {
+      "id": "order-rage",
+      "label": "Order of Rage",
+      "family": "Orders",
+      "prompt": "prompts/order-rage.txt",
+      "identityReference": "images/orders/rage.png"
+    },
+    {
+      "id": "order-fox",
+      "label": "Order of the Fox",
+      "family": "Orders",
+      "prompt": "prompts/order-fox.txt",
+      "identityReference": "images/orders/fox.png"
+    },
+    {
+      "id": "order-twins",
+      "label": "Order of the Twins",
+      "family": "Orders",
+      "prompt": "prompts/order-twins.txt",
+      "identityReference": "images/orders/twins.png"
+    },
+    {
+      "id": "order-fury",
+      "label": "Order of Fury",
+      "family": "Orders",
+      "prompt": "prompts/order-fury.txt",
+      "identityReference": "images/orders/fury.png"
+    },
+    {
+      "id": "order-reflection",
+      "label": "Order of Reflection",
+      "family": "Orders",
+      "prompt": "prompts/order-reflection.txt",
+      "identityReference": "images/orders/reflection.png"
+    },
+    {
+      "id": "order-detection",
+      "label": "Order of Detection",
+      "family": "Orders",
+      "prompt": "prompts/order-detection.txt",
+      "identityReference": "images/orders/detection.png"
+    },
+    {
+      "id": "order-skill",
+      "label": "Order of Skill",
+      "family": "Orders",
+      "prompt": "prompts/order-skill.txt",
+      "identityReference": "images/orders/skill.png"
+    },
+    {
+      "id": "order-brilliance",
+      "label": "Order of Brilliance",
+      "family": "Orders",
+      "prompt": "prompts/order-brilliance.txt",
+      "identityReference": "images/orders/brilliance.png"
+    },
+    {
+      "id": "order-protection",
+      "label": "Order of Protection",
+      "family": "Orders",
+      "prompt": "prompts/order-protection.txt",
+      "identityReference": "images/orders/protection.png"
+    },
+    {
+      "id": "order-power",
+      "label": "Order of Power",
+      "family": "Orders",
+      "prompt": "prompts/order-power.txt",
+      "identityReference": "images/orders/power.png"
+    },
+    {
+      "id": "order-titans",
+      "label": "Order of Titans",
+      "family": "Orders",
+      "prompt": "prompts/order-titans.txt",
+      "identityReference": "images/orders/titans.png"
+    },
+    {
+      "id": "order-vitriol",
+      "label": "Order of Vitriol",
+      "family": "Orders",
+      "prompt": "prompts/order-vitriol.txt",
+      "identityReference": "images/orders/vitriol.png"
+    },
+    {
+      "id": "order-anger",
+      "label": "Order of Anger",
+      "family": "Orders",
+      "prompt": "prompts/order-anger.txt",
+      "identityReference": "images/orders/anger.png"
+    },
+    {
+      "id": "order-enlightenment",
+      "label": "Order of Enlightenment",
+      "family": "Orders",
+      "prompt": "prompts/order-enlightenment.txt",
+      "identityReference": "images/orders/enlightenment.png"
+    },
+    {
+      "id": "discord",
+      "label": "Discord",
+      "family": "Brands",
+      "prompt": "prompts/discord.txt"
+    },
+    {
+      "id": "strk",
+      "label": "STRK",
+      "family": "Brands",
+      "prompt": "prompts/strk.txt",
+      "retained": true
+    },
+    {
+      "id": "picks",
+      "label": "Choose skill",
+      "family": "HUD",
+      "prompt": "prompts/picks.txt"
+    },
+    {
+      "id": "twitter",
+      "label": "Twitter",
+      "family": "HUD",
+      "prompt": "prompts/twitter.txt"
+    }
+  ]
+}

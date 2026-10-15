@@ -5,7 +5,7 @@ import { SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecu
 import { BUILDABLE_FILTER, StructureSidebar } from "@/ui/features/world/containers/structure-sidebar";
 import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 import { type ID } from "@bibliothecadao/types";
-import { Hammer } from "@/ui/design-system/atoms/game-icons";
+
 import { lazy, memo, Suspense, useCallback, useEffect, useState } from "react";
 
 const SelectPreviewBuildingMenu = lazy(() =>
@@ -48,7 +48,7 @@ export const ConstructionModal = memo(({ structureEntityId }: ConstructionModalP
   return (
     <SurfaceFrame
       title="Build"
-      icon={Hammer}
+      icon={"build" as const}
       onClose={close}
       className={SURFACE_WORKSPACE_CLASS}
       bodyClassName="overflow-hidden"

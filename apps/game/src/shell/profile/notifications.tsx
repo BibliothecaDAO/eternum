@@ -1,7 +1,8 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { notificationOwnerOf, useIdentitySession } from "@/hooks/context/identity-session";
 import { useNotificationPreferences } from "@/hooks/use-notification-preferences";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
 import type { NotificationLevel } from "@bibliothecadao/notifications";
 
@@ -37,7 +38,7 @@ export const NotificationsCard = () => {
   return (
     <section className="flex flex-col gap-3">
       <div className="flex justify-center">
-        <KitIcon code="Bl" size={44} />
+        <SemanticIcon name="notifications" size={44} />
       </div>
       <div className={cn(waiting && "pointer-events-none opacity-50")}>
         <ViewSwitch
@@ -50,7 +51,7 @@ export const NotificationsCard = () => {
       <p className="min-h-6 text-center text-base text-kit-muted">{level ? LEVEL_WORDS[level].line : "—"}</p>
       <SettingRows>
         <SettingRow
-          icon="Dv"
+          icon="monitor"
           name={PROFILE_WORDS.thisDevice}
           end={<DeviceEnd state={device.state} onToggle={device.toggle} />}
         />
@@ -70,13 +71,13 @@ export const NotificationsCard = () => {
 const DeviceEnd = ({ state, onToggle }: { state: ThisDeviceState; onToggle: () => Promise<void> }) => {
   switch (state) {
     case "install":
-      return <StateChip icon="Dv" text={PROFILE_WORDS.install} />;
+      return <StateChip icon="monitor" text={PROFILE_WORDS.install} />;
     case "blocked":
-      return <StateChip icon="Lk" text={PROFILE_WORDS.blocked} />;
+      return <StateChip icon="lock" text={PROFILE_WORDS.blocked} />;
     case "unavailable":
-      return <StateChip icon="Lk" />;
+      return <StateChip icon="lock" />;
     case "saving":
-      return <KitIcon code="Sp" size={24} className="animate-spin" />;
+      return <SemanticIcon name="refresh" size={24} className="animate-spin" />;
     default:
       return <Switch on={state === "on"} label={PROFILE_WORDS.thisDevice} onToggle={() => void onToggle()} />;
   }

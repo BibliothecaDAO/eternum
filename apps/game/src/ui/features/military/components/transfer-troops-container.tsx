@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import Button from "@/ui/design-system/atoms/button";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
@@ -27,7 +28,7 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import { AlertTriangle, ArrowLeftRight } from "@/ui/design-system/atoms/game-icons";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots, MAX_GUARD_SLOT_COUNT } from "../utils/defense-slot-utils";
 import { getGuardStaminaSnapshot } from "../utils/guard-stamina";
@@ -1366,7 +1367,7 @@ export const TransferTroopsContainer = ({
                         disabled={!canToggleDirection}
                         className="flex items-center gap-2"
                       >
-                        <ArrowLeftRight className="h-3 w-3" />
+                        <SemanticIcon name="swap" className="h-3 w-3" />
                         Swap
                       </Button>
                     ) : null}
@@ -1376,14 +1377,14 @@ export const TransferTroopsContainer = ({
 
                 {troopMismatchMessage && (
                   <div className="flex items-start gap-2 rounded-md border border-danger/40 bg-danger/10 p-3 text-sm text-danger/80">
-                    <AlertTriangle className="mt-[2px] h-4 w-4 flex-shrink-0" />
+                    <SemanticIcon name="warning" className="mt-[2px] h-4 w-4 flex-shrink-0" />
                     <span>{troopMismatchMessage}</span>
                   </div>
                 )}
 
                 {!transferReady && disabledMessage && !troopMismatchMessage && (
                   <div className="flex items-start gap-2 rounded-md border border-danger/40 bg-danger/10 p-3 text-sm text-danger/80">
-                    <AlertTriangle className="mt-[2px] h-4 w-4 flex-shrink-0" />
+                    <SemanticIcon name="warning" className="mt-[2px] h-4 w-4 flex-shrink-0" />
                     <span>{disabledMessage}</span>
                   </div>
                 )}

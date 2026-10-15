@@ -1,4 +1,5 @@
-import { Flame, Pause, Play, RefreshCw, Sparkles } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -194,19 +195,25 @@ export const WorldFxGymView = () => {
             <DebugButton
               disabled={scenario === "flame"}
               onClick={() => rendererRef.current?.emitBurst()}
-              icon={<Sparkles className="h-4 w-4" />}
+              icon={<SemanticIcon name="relics" className="h-4 w-4" />}
             >
               Burst
             </DebugButton>
             <DebugButton
               onClick={togglePaused}
-              icon={paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+              icon={
+                paused ? (
+                  <SemanticIcon name="play" className="h-4 w-4" />
+                ) : (
+                  <SemanticIcon name="pause" className="h-4 w-4" />
+                )
+              }
             >
               {paused ? "Resume" : "Pause"}
             </DebugButton>
             <DebugButton
               onClick={() => rendererRef.current?.resetCamera()}
-              icon={<RefreshCw className="h-4 w-4" />}
+              icon={<SemanticIcon name="refresh" className="h-4 w-4" />}
               className="col-span-2"
             >
               Reset camera
@@ -229,7 +236,7 @@ export const WorldFxGymView = () => {
         />
         {!capture && (
           <div className="pointer-events-none absolute left-4 top-4 flex items-center gap-2 border border-orange-200/10 bg-black/45 px-3 py-2 text-sm text-orange-100/70 backdrop-blur">
-            <Flame className="h-4 w-4 text-orange-300" />
+            <SemanticIcon name="flame" className="h-4 w-4 text-orange-300" />
             {scenario} · {count}
           </div>
         )}

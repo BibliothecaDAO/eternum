@@ -1,6 +1,6 @@
 import { AudioManager } from "@/audio/core/AudioManager";
 import { riseSprite } from "@/ui/motion/motion-layer";
-import { XP_STAR_ICON } from "./xp-star";
+import { iconUrl } from "@/ui/design-system/icon-meaning";
 
 /**
  * Design §3.11 §2 on the world, for the player's own army when its ArmyProgress changes: an XP gain ticks and floats
@@ -16,5 +16,5 @@ export const playArmyProgress = ({
 }): void => {
   if (xp <= 0) return;
   void AudioManager.getInstance().play("xp.tick");
-  if (at) riseSprite({ at, icon: XP_STAR_ICON, label: `+${xp} XP` });
+  if (at) riseSprite({ at, icon: iconUrl("star"), label: `+${xp} XP` });
 };

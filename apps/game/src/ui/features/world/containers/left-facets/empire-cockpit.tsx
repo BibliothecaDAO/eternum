@@ -5,7 +5,7 @@ import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import { useStructureProductionSummary } from "@/ui/features/world/components/entities/structure-production-summary";
 import { MergedResourcePanel } from "@/ui/features/world/containers/left-facets/merged-resource-panel";
-import { Factory } from "@/ui/design-system/atoms/game-icons";
+
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { memo } from "react";
 
@@ -31,7 +31,7 @@ export const EmpireCockpit = memo(() => {
     // a generic "Empire" — it names exactly what the token panel is showing.
     <InfoBubble
       title={typeLabel ?? "Structure"}
-      icon={Factory}
+      icon={"production" as const}
       cue={
         showAutomation ? (
           <AutomationPresetSwitch

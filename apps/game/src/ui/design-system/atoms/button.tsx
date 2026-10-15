@@ -1,4 +1,5 @@
-import { Loader2 } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { useUISound } from "@/audio";
 import React from "react";
 
@@ -83,7 +84,7 @@ const Button: React.FC<ButtonProps> = ({
     >
       {isLoading ? (
         <div className="w-full inset-0 flex flex-col items-center justify-center h-full">
-          <Loader2 className="w-4 h-4 animate-spin" />
+          <SemanticIcon name="refresh" className="w-4 h-4 animate-spin" />
         </div>
       ) : (
         children

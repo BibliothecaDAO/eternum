@@ -1,6 +1,6 @@
-import type { IconCode } from "@/ui/design-system/kit/kit-icon";
+import { type IconMeaning } from "@/ui/design-system/icon";
 
 /** Each Ethereal reach's mark, the one picture every Frontier surface shows of it; the surface (0) has none. */
-const REACH_MARKS: readonly IconCode[] = ["E1", "E2", "E3"];
+const REACH_MARKS: readonly IconMeaning[] = ["depth-1", "depth-2", "depth-3"];
 
-export const reachMark = (depth: 1 | 2 | 3): IconCode => REACH_MARKS[depth - 1];
+export const reachMark = (depth: 1 | 2 | 3): IconMeaning => REACH_MARKS[depth - 1];

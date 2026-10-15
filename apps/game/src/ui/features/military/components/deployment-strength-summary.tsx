@@ -1,7 +1,8 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { configManager } from "@bibliothecadao/eternum";
 import { TroopTier } from "@bibliothecadao/types";
-import { ChevronDown } from "@/ui/design-system/atoms/game-icons";
+
 import { useId, useState } from "react";
 
 interface DeploymentStrengthSummaryProps {
@@ -90,7 +91,10 @@ export const DeploymentStrengthSummary = ({
           <span className="text-sm text-kit-muted">Deployment & Strength</span>
           <span className="text-sm text-kit-muted">{isExpanded ? "Hide details" : "Show details"}</span>
         </span>
-        <ChevronDown className={cn("h-4 w-4 text-gold/70 transition-transform", isExpanded && "rotate-180")} />
+        <SemanticIcon
+          name="chevron-down"
+          className={cn("h-4 w-4 text-gold/70 transition-transform", isExpanded && "rotate-180")}
+        />
       </button>
       {isExpanded ? (
         <div id={metricsId} className="border-t border-gold/15 px-2 py-2">

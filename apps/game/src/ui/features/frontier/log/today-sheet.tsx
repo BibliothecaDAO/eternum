@@ -1,13 +1,13 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { formatClockTime } from "@/ui/design-system/kit/time";
 import { DAY, TODAY, TODAY_ERROR, TRY_AGAIN } from "@/ui/design-system/kit/words";
 
-import { CardFanGlyph } from "../glyphs";
 import { type DayTotals, DayTotalsGrid } from "./day-totals";
 
 /** One line of the day's log: when (unix seconds) and what happened. */
@@ -58,10 +58,10 @@ export const TodaySheet = ({
           onClick={onArmies}
           className="frontier-card flex h-12 items-center gap-2 !rounded-xl px-2.5 text-base tabular-nums text-kit-cream"
         >
-          <CardFanGlyph className="size-[22px]" />
+          <SemanticIcon name="picks" className="size-[22px]" />
           {formatAmount(armiesToUpgrade)}
           <span className="flex-1" />
-          <KitIcon code="Cv" size={18} />
+          <SemanticIcon name="chevron-right" size={18} />
         </button>
       )}
       {failed ? (
@@ -97,6 +97,6 @@ const StepArrow = ({ back = false, label, onClick }: { back?: boolean; label: st
     onClick={onClick}
     className="flex size-12 items-center justify-center rounded-xl disabled:opacity-35"
   >
-    <KitIcon code="Ar" size={22} className={cn(back && "-scale-x-100")} />
+    <SemanticIcon name="arrow-right" size={22} className={cn(back && "-scale-x-100")} />
   </button>
 );

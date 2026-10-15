@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import {
   OVERLAY_SURFACE_BASE,
   OVERLAY_SURFACE_ACTIVE,
@@ -5,7 +6,7 @@ import {
 } from "@/ui/design-system/atoms/overlay-surface";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY, HUD_BODY_MUTED, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
-import { Loader2 } from "@/ui/design-system/atoms/game-icons";
+
 import { memo } from "react";
 import type { EmpireSuggestion } from "./use-empire-suggestions";
 
@@ -30,7 +31,7 @@ interface SuggestionChipProps {
 }
 
 export const SuggestionChip = memo(({ suggestion, onClick, isPending, refusal }: SuggestionChipProps) => {
-  const Icon = isPending ? Loader2 : suggestion.icon;
+  const Icon = isPending ? ("refresh" as const) : suggestion.icon;
   const isPrimary = suggestion.emphasis === "primary";
   const trimmedName = trimRealmName(suggestion.realmName, suggestion.label);
 
@@ -50,7 +51,8 @@ export const SuggestionChip = memo(({ suggestion, onClick, isPending, refusal }:
         (isPending || refusal !== null) && "cursor-not-allowed opacity-60 hover:bg-transparent",
       )}
     >
-      <Icon
+      <SemanticIcon
+        name={Icon}
         className={cn("h-4 w-4 flex-shrink-0", isPrimary ? "text-gold" : "text-gold/70", isPending && "animate-spin")}
       />
       <span className="min-w-0 flex-1">

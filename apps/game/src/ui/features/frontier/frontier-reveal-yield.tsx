@@ -30,5 +30,5 @@ const REVEAL_PAYS: Partial<Record<number, string>> = { [ResourcesIds.Labor]: LAB
 export const exploreFix = (resource: number, toMap: () => void): Fix | undefined => {
   const pays = REVEAL_PAYS[resource];
   if (!pays || !configManager.paysRevealSupplies()) return undefined;
-  return { icon: "Mp", word: exploreFor(pays), onFix: toMap };
+  return { icon: "map", word: exploreFor(pays), onFix: toMap };
 };

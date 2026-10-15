@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useStoredBiome } from "@/hooks/helpers/use-tile-at";
 import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { CompactBuildingCard } from "./compact-building-card";
@@ -9,7 +10,7 @@ import { AudioManager } from "@/audio/core/AudioManager";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
-import { BUILDING_IMAGES_PATH } from "@/ui/config";
+import { buildingMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { formatTimeRemaining } from "@/ui/features/economy/resources/entity-resource-table/utils";
 
 import Button from "@/ui/design-system/atoms/button";
@@ -62,7 +63,7 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import clsx from "clsx";
-import { Info as InfoIcon, Hammer, Pause, Play, Trash } from "@/ui/design-system/atoms/game-icons";
+
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 import { getPlayerName } from "@/services/identity/player-profiles";
@@ -1222,8 +1223,8 @@ const BuildingCard = ({
         name={buildingName}
         image={
           resourceId
-            ? BUILDING_IMAGES_PATH[ResourceIdToMiningType[resourceId] as ResourceMiningTypes]
-            : BUILDING_IMAGES_PATH[buildingId as keyof typeof BUILDING_IMAGES_PATH]
+            ? buildingMeaning(ResourceIdToMiningType[resourceId] as ResourceMiningTypes)
+            : buildingMeaning(buildingId)
         }
         count={count}
         status={
@@ -1269,11 +1270,11 @@ const BuildingCard = ({
         className,
       )}
     >
-      <img
-        src={
+      <SemanticIcon
+        name={
           resourceId
-            ? BUILDING_IMAGES_PATH[ResourceIdToMiningType[resourceId as ResourcesIds] as ResourceMiningTypes]
-            : BUILDING_IMAGES_PATH[buildingId as keyof typeof BUILDING_IMAGES_PATH]
+            ? buildingMeaning(ResourceIdToMiningType[resourceId as ResourcesIds] as ResourceMiningTypes)
+            : buildingMeaning(buildingId)
         }
         alt={buildingName}
         className="absolute inset-0 w-full h-full object-contain"
@@ -1299,7 +1300,11 @@ const BuildingCard = ({
             title="Build"
             aria-label="Build"
           >
-            {buildLoading ? <span className="text-sm font-bold">…</span> : <Hammer className="h-3.5 w-3.5" />}
+            {buildLoading ? (
+              <span className="text-sm font-bold">…</span>
+            ) : (
+              <SemanticIcon name="build" className="h-3.5 w-3.5" />
+            )}
           </button>
           {onPauseResumeAll && (
             <button
@@ -1324,9 +1329,9 @@ const BuildingCard = ({
               {pauseResumeAllLoading ? (
                 <span className="text-sm font-bold">…</span>
               ) : allPaused ? (
-                <Play className="h-3.5 w-3.5" />
+                <SemanticIcon name="play" className="h-3.5 w-3.5" />
               ) : (
-                <Pause className="h-3.5 w-3.5" />
+                <SemanticIcon name="pause" className="h-3.5 w-3.5" />
               )}
             </button>
           )}
@@ -1347,7 +1352,11 @@ const BuildingCard = ({
               title="Destroy building"
               aria-label="Destroy building"
             >
-              {destroyLoading ? <span className="text-sm font-bold">…</span> : <Trash className="h-3.5 w-3.5" />}
+              {destroyLoading ? (
+                <span className="text-sm font-bold">…</span>
+              ) : (
+                <SemanticIcon name="trash" className="h-3.5 w-3.5" />
+              )}
             </button>
           )}
         </div>
@@ -1385,7 +1394,8 @@ const BuildingCard = ({
                 <ResourceIcon resource={troopHint.troopResource} size="xs" withTooltip={false} />
               </span>
             )}
-            <InfoIcon
+            <SemanticIcon
+              name="info"
               onMouseEnter={() => {
                 setTooltip({
                   content: toolTip,
@@ -1459,7 +1469,7 @@ const ResourceInfo = ({
       <Headline className="pb-2 border-b border-gold/20 mb-2 ">
         <div className="flex justify-between items-center w-full gap-3">
           <div className="flex items-center gap-2">
-            <ResourceIcon className="self-center" resource={resourceById || ""} size="md" />
+            <ResourceIcon className="self-center" resource={resourceId} size="md" />
             <h6 className="">{resourceById} Production</h6>
           </div>
           {hintModal && <HintModalButton section={HintSection.Buildings} />}
@@ -1476,7 +1486,7 @@ const ResourceInfo = ({
             <h6 className="text-gold/70 text-sm mb-1">Produces</h6>
             <div className="flex items-center gap-2 mt-1">
               <h6 className="text-lg font-semibold text-green-400">+{amountProducedPerTick}</h6>
-              <ResourceIcon className="self-center" resource={resourceById || ""} size="xl" />
+              <ResourceIcon className="self-center" resource={resourceId} size="xl" />
               <h6 className="text-gold/80">{resourceById || ""}</h6>
             </div>
           </div>
@@ -1561,13 +1571,11 @@ const ResourceInfo = ({
       {consumedBy.length > 0 && (
         <>
           <h6 className="text-gold/70 text-sm pt-2 border-t border-gold/10 flex items-center gap-2">
-            <ResourceIcon className="self-center" resource={resourceById || ""} size="lg" /> Consumed By
+            <ResourceIcon className="self-center" resource={resourceId} size="lg" /> Consumed By
           </h6>
           <div className="flex flex-row space-x-2 mt-1">
             {React.Children.toArray(
-              consumedBy.map((resourceId) => (
-                <ResourceIcon key={resourceId} resource={findResourceById(resourceId || 0)?.trait || ""} size="sm" />
-              )),
+              consumedBy.map((resourceId) => <ResourceIcon key={resourceId} resource={resourceId} size="sm" />),
             )}
           </div>
         </>
@@ -1734,9 +1742,7 @@ const BuildingInfo = ({
           <h6 className="text-gold/70 text-sm pt-2 border-t border-gold/10">Consumed By</h6>
           <div className="flex flex-row space-x-2 mt-1">
             {React.Children.toArray(
-              usedIn.map((resourceId) => (
-                <ResourceIcon key={resourceId} resource={findResourceById(resourceId || 0)?.trait || ""} size="sm" />
-              )),
+              usedIn.map((resourceId) => <ResourceIcon key={resourceId} resource={resourceId} size="sm" />),
             )}
           </div>
         </>

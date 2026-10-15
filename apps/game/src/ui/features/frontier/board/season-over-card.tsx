@@ -1,7 +1,8 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import {
   CHESTS,
   ESSENCE,
@@ -73,7 +74,7 @@ export const SeasonOverCard = ({
     </header>
     {place !== undefined && (
       <p className="flex items-center gap-2.5 tabular-nums">
-        <KitIcon code="Tp" size={34} />
+        <SemanticIcon name="victory" size={34} />
         <span className="text-[44px] font-bold leading-none">#{formatAmount(place)}</span>
         <span className="text-base text-kit-muted">/ {formatAmount(field)}</span>
       </p>
@@ -83,12 +84,12 @@ export const SeasonOverCard = ({
       <div className="w-full max-w-[360px]">
         <TotalsGrid
           cells={[
-            { icon: "Fl", name: SITES_CLEARED, value: formatAmount(totals.sitesCleared) },
-            { icon: "Ch", name: CHESTS, value: formatAmount(totals.chests) },
-            { icon: "Lo", name: LORDS, value: formatAmount(totals.lords) },
-            { icon: "Dp", name: REACH, value: REACH_NUMERALS[totals.reach - 1] ?? "—" },
-            { icon: "Es", name: ESSENCE, value: formatAmount(totals.essence) },
-            { icon: "La", name: LABOR, value: formatAmount(totals.labor) },
+            { icon: "flag", name: SITES_CLEARED, value: formatAmount(totals.sitesCleared) },
+            { icon: "chest", name: CHESTS, value: formatAmount(totals.chests) },
+            { icon: "lords", name: LORDS, value: formatAmount(totals.lords) },
+            { icon: "portal", name: REACH, value: REACH_NUMERALS[totals.reach - 1] ?? "—" },
+            { icon: "essence", name: ESSENCE, value: formatAmount(totals.essence) },
+            { icon: "labor", name: LABOR, value: formatAmount(totals.labor) },
           ]}
         />
       </div>
@@ -97,8 +98,8 @@ export const SeasonOverCard = ({
     <div className="w-full max-w-[360px]">{withdraw}</div>
     <div className="w-full max-w-[360px]">{guide}</div>
     <div className="flex w-full max-w-[360px] gap-2">
-      <Button role="secondary" icon="Tp" word={SEASON} onClick={onSeason} className="w-[130px]" />
-      <Button role="primary" icon="Hm" word={EXIT} onClick={onExit} className="flex-1" />
+      <Button role="secondary" icon="victory" word={SEASON} onClick={onSeason} className="w-[130px]" />
+      <Button role="primary" icon="exit" word={EXIT} onClick={onExit} className="flex-1" />
     </div>
   </section>
 );
@@ -118,7 +119,7 @@ const Podium = ({ podium }: { podium: readonly PodiumPlace[] }) => (
             <span className="text-base tabular-nums">{place.rank}</span>
             <span className="max-w-full text-sm">{place.name}</span>
             <span className="flex items-center gap-1 text-sm tabular-nums">
-              <KitIcon code="Fl" size={16} />
+              <SemanticIcon name="flag" size={16} />
               {formatAmount(place.sitesCleared)}
             </span>
           </li>

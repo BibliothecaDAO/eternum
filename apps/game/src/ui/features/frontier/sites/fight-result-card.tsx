@@ -1,7 +1,8 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatExact } from "@/ui/design-system/kit/amount";
 import { Chip } from "@/ui/design-system/kit/chip";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import {
   ARMY,
   ARMY_LOST,
@@ -50,8 +51,10 @@ export const FightResultCard = ({ result, onClose }: { result: FightResult; onCl
     >
       <span className="flex items-center gap-3">
         <span className="relative flex size-16 shrink-0 items-center justify-center rounded-xl border border-kit-line2 bg-kit-ground">
-          <KitIcon code={icon} size={36} />
-          {result.verdict === "victory" && <KitIcon code="Fl" size={22} className="absolute bottom-0.5 right-0.5" />}
+          <SemanticIcon name={icon} size={36} />
+          {result.verdict === "victory" && (
+            <SemanticIcon name="flag" size={22} className="absolute bottom-0.5 right-0.5" />
+          )}
         </span>
         <span className="flex min-w-0 flex-col">
           <span className={cn("frontier-title", VERDICT_TONES[result.verdict])}>{verdict}</span>
@@ -61,16 +64,16 @@ export const FightResultCard = ({ result, onClose }: { result: FightResult; onCl
       <span className="flex gap-2">
         <Side
           label={ARMY}
-          mark={<img src={result.armyArt} alt="" className="size-7 rounded-full object-cover" />}
+          mark={<SemanticIcon name={result.armyArt} alt="" className="size-7 rounded-full object-cover" />}
           troops={result.army}
         />
-        {result.guard && <Side label={TROOPS} mark={<KitIcon code="Tr" size={24} />} troops={result.guard} />}
+        {result.guard && <Side label={TROOPS} mark={<SemanticIcon name="troops" size={24} />} troops={result.guard} />}
       </span>
       {result.gained && (
         <span className="frontier-card flex h-14 items-center justify-center gap-3 !rounded-xl !border-2 !border-kit-gold">
           {result.gained.pay && (
             <span className="flex items-center gap-1.5">
-              <KitIcon code={result.gained.pay.icon} size={26} />
+              <SemanticIcon name={result.gained.pay.icon} size={26} />
               <span className="text-[24px] leading-none tabular-nums text-kit-gold2">
                 +{formatExact(result.gained.pay.amount)}
               </span>

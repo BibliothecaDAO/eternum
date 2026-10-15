@@ -20,7 +20,7 @@ afterEach(() => {
   host.remove();
 });
 
-const army = { art: "/images/armies/knightT1.png", troops: 5_000 };
+const army = { art: "knight-t1" as const, troops: 5_000 };
 const buttons = () => [...document.querySelectorAll<HTMLButtonElement>("section[role=dialog] button")];
 
 describe("a guarded site's card", () => {
@@ -34,7 +34,7 @@ describe("a guarded site's card", () => {
           army={army}
           guard={1_100}
           fight={{ outcome: "wins", exchanges: 1, troopsLost: 180, guardLeft: 0 }}
-          pay={{ icon: "La", amount: 550 }}
+          pay={{ icon: "labor", amount: 550 }}
           xp={82}
           verb={{ kind: "attack", stamina: 30, onAttack }}
           onClose={() => {}}
@@ -89,7 +89,7 @@ describe("a guarded site's card", () => {
           army={army}
           guard={1_100}
           fight={{ outcome: "wins", exchanges: 1, troopsLost: 180, guardLeft: 0 }}
-          pay={{ icon: "La", amount: 550, fits: 120 }}
+          pay={{ icon: "labor", amount: 550, fits: 120 }}
           xp={82}
           verb={{ kind: "attack", stamina: 30, onAttack: () => {} }}
           onRealm={onRealm}
@@ -116,7 +116,7 @@ describe("a guarded site's card", () => {
           army={army}
           guard={1_100}
           fight={{ outcome: "wins", exchanges: 1, troopsLost: 180, guardLeft: 0 }}
-          pay={{ icon: "La", amount: 550 }}
+          pay={{ icon: "labor", amount: 550 }}
           xp={82}
           verb={{ kind: "short", stamina: { cost: 30, held: 10, wait: 40 * 60 } }}
           onClose={() => {}}
@@ -139,7 +139,7 @@ describe("a guarded site's card with no army chosen", () => {
           army={null}
           guard={1_100}
           fight={undefined}
-          pay={{ icon: "Es", amount: 3_300 }}
+          pay={{ icon: "essence", amount: 3_300 }}
           xp={82}
           verb={null}
           choices={[
@@ -186,7 +186,7 @@ describe("Enter on a guarded site's card", () => {
       army={army}
       guard={1_100}
       fight={{ outcome: fight, exchanges: 1, troopsLost: 180, guardLeft: fight === "wins" ? 0 : 900 }}
-      pay={{ icon: "La", amount: 550 }}
+      pay={{ icon: "labor", amount: 550 }}
       xp={82}
       verb={{ kind: "attack", stamina: 30, onAttack }}
       onClose={() => {}}
@@ -218,7 +218,7 @@ describe("a guarded site's card for an army out of reach", () => {
           army={army}
           guard={1_100}
           fight={undefined}
-          pay={{ icon: "Es", amount: 300 }}
+          pay={{ icon: "essence", amount: 300 }}
           xp={82}
           verb={{ kind: "far" }}
           onClose={() => {}}
@@ -239,7 +239,7 @@ describe("a guarded site's card for an army out of reach", () => {
           army={army}
           guard={1_100}
           fight={undefined}
-          pay={{ icon: "Es", amount: 300 }}
+          pay={{ icon: "essence", amount: 300 }}
           xp={82}
           verb={{ kind: "move", prices: [{ of: "stamina", amount: 20 }], onMove }}
           onClose={() => {}}

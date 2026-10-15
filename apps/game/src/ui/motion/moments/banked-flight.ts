@@ -1,3 +1,4 @@
+import { resourceMeaning, iconUrl } from "@/ui/design-system/icon-meaning";
 import type { ResourcesIds } from "@bibliothecadao/types";
 import { announceLanding, holdUntilLanding } from "../landing-hold";
 import { flySprites } from "../motion-layer";
@@ -12,7 +13,7 @@ export const bankedCounterTarget = (resourceId: ResourcesIds): string => `resour
 export const findBankedCounter = (resourceId: ResourcesIds): Element | null =>
   document.querySelector(`[data-fly-target="${bankedCounterTarget(resourceId)}"]`);
 
-export const resourceIcon = (resourceId: ResourcesIds): string => `/images/resources/${resourceId}.png`;
+export const resourceIcon = (resourceId: ResourcesIds): string => iconUrl(resourceMeaning(resourceId));
 
 /**
  * Earned resources flying home: `count` icons arc from a point into the resource's banked counter, which keeps the

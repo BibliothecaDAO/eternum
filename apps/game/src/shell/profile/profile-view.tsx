@@ -1,8 +1,9 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount } from "@/ui/design-system/kit/amount";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { findOwnEntry } from "@/ui/features/frontier/board/standings";
@@ -129,7 +130,7 @@ const SeasonFigure = ({ account }: { account: string }) => {
   const frontier = ageOf("frontier");
   return (
     <section className="flex items-center gap-3 plate p-3">
-      <KitIcon code="Tp" size={30} />
+      <SemanticIcon name="victory" size={30} />
       <span className="font-body text-[28px] font-extrabold tabular-nums text-kit-gold">
         {own ? `#${own.rank}` : "—"}
       </span>
@@ -156,7 +157,7 @@ const History = ({ account, titled = false }: { account: string; titled?: boolea
     <HistoryRow key={`${game.chainId}:${game.game_id}`} game={game} player={account} now={now} />
   ));
   return titled ? (
-    <Panel icon="Tp" title={PROFILE_WORDS.recentGames}>
+    <Panel icon="victory" title={PROFILE_WORDS.recentGames}>
       <ul>{rows}</ul>
     </Panel>
   ) : (

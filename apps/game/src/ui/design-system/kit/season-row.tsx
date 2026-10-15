@@ -1,8 +1,9 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import type { ReactNode } from "react";
 
 import { formatAmount } from "./amount";
-import { KitIcon } from "./kit-icon";
+
 import { OrderEmblem } from "./order-emblem";
 
 /**
@@ -40,6 +41,6 @@ export const SeasonRow = ({
     <span className="min-w-0 flex-1 truncate text-base">{name}</span>
     <span className="w-12 shrink-0 text-right text-base tabular-nums">{formatAmount(sitesCleared)}</span>
     <span className="w-14 shrink-0 text-right text-base tabular-nums">{formatAmount(lords)}</span>
-    <KitIcon code="Cv" size={18} />
+    <SemanticIcon name="chevron-right" size={18} />
   </button>
 );

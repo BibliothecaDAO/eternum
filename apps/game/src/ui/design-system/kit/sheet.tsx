@@ -1,7 +1,7 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { type ReactNode, type PointerEvent, useContext, useEffect, useId, useLayoutEffect, useRef } from "react";
 
-import { KitIcon } from "./kit-icon";
 import { OpenedFromPanel } from "./opened-from-panel";
 import { BACK, CLOSE } from "./words";
 
@@ -107,7 +107,7 @@ const Mark = ({ back, onClose }: { back: boolean; onClose: () => void }) => (
         "before:absolute before:h-[2.5px] before:w-3.5 before:rotate-45 before:rounded-sm before:bg-kit-gold before:content-[''] after:absolute after:h-[2.5px] after:w-3.5 after:-rotate-45 after:rounded-sm after:bg-kit-gold after:content-['']",
     )}
   >
-    {back && <KitIcon code="Bk" size={20} />}
+    {back && <SemanticIcon name="arrow-left" size={20} />}
   </button>
 );
 

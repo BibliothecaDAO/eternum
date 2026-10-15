@@ -1,3 +1,5 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import type { IconMeaning } from "@/ui/design-system/icon";
 import { useState, type ReactNode } from "react";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { RequirementChips, type ResourceRequirement } from "@/ui/design-system/molecules/requirement-chips";
@@ -10,7 +12,7 @@ interface BuildingAction {
 
 interface CompactBuildingCardProps {
   name: string;
-  image: string;
+  image: IconMeaning;
   count: number;
   status?: string;
   requirements: ResourceRequirement[] | undefined;
@@ -46,7 +48,7 @@ export const CompactBuildingCard = ({
   return (
     <article className={cn("min-w-0 rounded-lg border border-gold/20 bg-black/20 p-3", active && "border-gold")}>
       <div className="flex items-center gap-3">
-        <img src={image} alt="" className="h-14 w-14 shrink-0 object-contain" />
+        <SemanticIcon name={image} alt="" className="h-14 w-14 shrink-0 object-contain" />
         <div className="min-w-0 flex-1">
           <h3 className="text-base font-semibold leading-tight text-gold">{name}</h3>
           <p className="text-sm text-gold/75">

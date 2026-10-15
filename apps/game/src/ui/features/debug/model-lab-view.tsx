@@ -1,21 +1,8 @@
 import { RealmSeriesLab } from "./realm-series-lab";
+import { resourceMeaning } from "@/ui/design-system/icon-meaning";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 // @refresh reset
-import {
-  Anchor,
-  ArrowDownToLine,
-  ArrowRight,
-  Box,
-  Check,
-  Copy,
-  Crosshair,
-  Maximize2,
-  Pause,
-  Play,
-  RotateCcw,
-  Ship,
-  SkipForward,
-  Waves,
-} from "@/ui/design-system/atoms/game-icons";
+
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
@@ -169,14 +156,14 @@ function UnitModelLabView() {
   return (
     <main className="model-lab" data-ready={ready} data-debug-route="model-lab">
       <header className="ml-header">
-        <Box size={25} />
+        <SemanticIcon name="resources" size={25} />
         <Link to="/lab/models?family=realms">Realm ladder</Link>
         <div>
           <strong>Models & motion</strong>
           <span>FLEETS · ARMIES · BIOMES</span>
         </div>
         <button onClick={share}>
-          {copied ? <Check size={14} /> : <Copy size={14} />}
+          {copied ? <SemanticIcon name="check" size={14} /> : <SemanticIcon name="copy" size={14} />}
           {copied ? "Copied" : "Share setup"}
         </button>
       </header>
@@ -192,11 +179,11 @@ function UnitModelLabView() {
           aria-pressed={settings.family === "ships"}
           onClick={() => change({ family: "ships", source: "study", action: "idle" })}
         >
-          <Ship size={20} />
+          <SemanticIcon name="ship" size={20} />
           <span>
             Ships<small>9 fleet variants · 3 classes × 3 tiers</small>
           </span>
-          <ArrowRight size={14} />
+          <SemanticIcon name="arrow-right" size={14} />
         </button>
         {CLASSES.map((family) => (
           <button
@@ -205,12 +192,12 @@ function UnitModelLabView() {
             aria-pressed={settings.family === family}
             onClick={() => change({ family, source: "default", action: "idle" })}
           >
-            <img src={`/images/resources/${CLASS_ICONS[family]}.png`} alt="" />
+            <SemanticIcon name={resourceMeaning(CLASS_ICONS[family])} alt="" />
             <span>
               {family}
               <small>{family === "paladin" ? "Horse mounts · T3 dragon rider" : "T1 / T2 / T3"}</small>
             </span>
-            <ArrowRight size={14} />
+            <SemanticIcon name="arrow-right" size={14} />
           </button>
         ))}
         {settings.family === "ships" && (
@@ -224,7 +211,7 @@ function UnitModelLabView() {
                   aria-pressed={settings.army === army}
                   onClick={() => change({ army })}
                 >
-                  <img src={`/images/resources/${CLASS_ICONS[army]}.png`} alt="" />
+                  <SemanticIcon name={resourceMeaning(CLASS_ICONS[army])} alt="" />
                   <span>{army === "crossbowman" ? "Ranged" : army === "paladin" ? "Paladin" : "Knight"}</span>
                 </button>
               ))}
@@ -332,7 +319,7 @@ function UnitModelLabView() {
           </select>
         </label>
         <div className="ml-library-note">
-          <Anchor size={17} />
+          <SemanticIcon name="anchor" size={17} />
           <p>
             {isStudy
               ? "Nine Blender-built ships with equal hull dimensions. Compare the new designs here before they enter the live fleet."
@@ -340,7 +327,7 @@ function UnitModelLabView() {
           </p>
         </div>
         <Link className="ml-advanced" to="/lab/characters">
-          Advanced animation gym <ArrowRight size={12} />
+          Advanced animation gym <SemanticIcon name="arrow-right" size={12} />
         </Link>
       </aside>
       <section className="ml-workspace">
@@ -362,7 +349,7 @@ function UnitModelLabView() {
             ))}
           </div>
           <button onClick={() => rendererRef.current?.resetCamera()} aria-label="Reset camera">
-            <Crosshair size={16} />
+            <SemanticIcon name="target" size={16} />
           </button>
           <label>
             <input
@@ -376,7 +363,7 @@ function UnitModelLabView() {
         <div className="ml-canvas" ref={containerRef} />
         {!ready && !error && (
           <div className="ml-loading">
-            <Ship size={34} />
+            <SemanticIcon name="ship" size={34} />
             <strong>Preparing the model stage</strong>
             <span>Loading terrain textures, biome vegetation and authored game assets…</span>
           </div>
@@ -393,7 +380,7 @@ function UnitModelLabView() {
                     {isStudy ? "procedural motion" : `${asset.clips} authored clips`}
                   </small>
                 </div>
-                <Maximize2 size={13} />
+                <SemanticIcon name="expand" size={13} />
               </button>
               {isStudy && (
                 <button
@@ -402,7 +389,7 @@ function UnitModelLabView() {
                   onClick={() => exportModel(asset.tier)}
                   aria-label={`Export T${asset.tier} ship GLB`}
                 >
-                  <ArrowDownToLine size={13} />
+                  <SemanticIcon name="download" size={13} />
                   GLB
                 </button>
               )}
@@ -420,7 +407,7 @@ function UnitModelLabView() {
                   setPaused(false);
                 }}
               >
-                {action === "idle" ? <Anchor size={13} /> : <Waves size={13} />}
+                {action === "idle" ? <SemanticIcon name="anchor" size={13} /> : <SemanticIcon name="waves" size={13} />}
                 {resolveActionLabel(action, settings.family)}
               </button>
             ))}
@@ -432,10 +419,10 @@ function UnitModelLabView() {
               }}
               aria-label="Replay sequence"
             >
-              <RotateCcw size={16} />
+              <SemanticIcon name="refresh" size={16} />
             </button>
             <button onClick={() => setPaused(!paused)} aria-label={paused ? "Play animation" : "Pause animation"}>
-              {paused ? <Play size={17} /> : <Pause size={17} />}
+              {paused ? <SemanticIcon name="play" size={17} /> : <SemanticIcon name="pause" size={17} />}
             </button>
             <button
               onClick={() => {
@@ -444,7 +431,7 @@ function UnitModelLabView() {
               }}
               aria-label="Advance animation one frame"
             >
-              <SkipForward size={16} />
+              <SemanticIcon name="skip" size={16} />
             </button>
             <input
               aria-label="Transition progress"

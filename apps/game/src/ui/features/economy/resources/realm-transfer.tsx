@@ -1,5 +1,6 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { structureMapPosition } from "@bibliothecadao/eternum";
-import { ChevronDown, Flame, Search, ShieldCheck, X } from "@/ui/design-system/atoms/game-icons";
+
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -298,7 +299,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
 
       <div className="flex flex-col gap-2">
         <InfoPanel
-          icon={<Flame className="h-4 w-4 text-red/70" />}
+          icon={<SemanticIcon name="flame" className="h-4 w-4 text-red/70" />}
           isOpen={showBurnSection}
           onToggle={() => setShowBurnSection(!showBurnSection)}
           title="Burn Resources"
@@ -329,7 +330,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
         </InfoPanel>
         {isMilitaryResource(resource) && (
           <InfoPanel
-            icon={<ShieldCheck className="h-4 w-4 text-gold/70" />}
+            icon={<SemanticIcon name="defend" className="h-4 w-4 text-gold/70" />}
             isOpen={showTransferRules}
             onToggle={() => setShowTransferRules(!showTransferRules)}
             title="Transfer Rules"
@@ -374,7 +375,10 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
                 </label>
               </div>
               <div className="relative">
-                <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-kit-muted" />
+                <SemanticIcon
+                  name="search"
+                  className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-kit-muted"
+                />
                 <input
                   type="text"
                   placeholder="Search structures..."
@@ -389,7 +393,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
                     onClick={() => setSearchTerm("")}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-kit-muted transition hover:text-gold"
                   >
-                    <X className="h-3 w-3" />
+                    <SemanticIcon name="close" className="h-3 w-3" />
                   </button>
                 )}
               </div>
@@ -513,7 +517,7 @@ const InfoPanel = ({
           <span>{title}</span>
           {hint && <span className="text-sm text-kit-muted">{hint}</span>}
         </span>
-        <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
+        <SemanticIcon name="chevron-down" className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
       </button>
       {isOpen && <div className="border-t border-gold/20 px-3 py-3">{children}</div>}
     </div>

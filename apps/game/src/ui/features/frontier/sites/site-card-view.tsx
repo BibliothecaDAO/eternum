@@ -1,8 +1,9 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import { Button, type Price } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
-import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { StoreBar } from "@/ui/design-system/kit/store-bar";
 import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
@@ -53,7 +54,7 @@ export type SiteVerb =
  */
 export type SiteChoice = {
   label: string;
-  art: string;
+  art: IconMeaning;
   troops: number;
   fight: SiteFight | undefined;
   onPick: () => void;
@@ -81,11 +82,11 @@ export const SiteCardView = ({
 }: {
   site: AttackTargetKind;
   beast: string | undefined;
-  army: { art: string; troops: number } | null;
+  army: { art: IconMeaning; troops: number } | null;
   guard: number | null | undefined;
   fight: SiteFight | undefined;
   /** What a camp or rift pays: the full amount, and what fits when the store would overflow. */
-  pay: { icon: IconCode; amount: number; fits?: number } | null;
+  pay: { icon: IconMeaning; amount: number; fits?: number } | null;
   /** A ruin's chest: its tier and the exact LORDS stored with it; undefined until the facts carry them. */
   chest?: { tier: Tier; lords: number };
   xp: number | undefined;
@@ -105,10 +106,10 @@ export const SiteCardView = ({
     <Sheet label={word} onClose={onClose}>
       <header className="flex items-center gap-3">
         <span className="flex size-16 shrink-0 items-center justify-center rounded-xl border border-kit-line2 bg-kit-ground">
-          <KitIcon code={icon} size={36} />
+          <SemanticIcon name={icon} size={36} />
         </span>
         <h2 className="frontier-title flex-1">{word}</h2>
-        {picking && guard !== null && <Chip icons={["Tr"]} label={TROOPS} value={formatExact(guard)} />}
+        {picking && guard !== null && <Chip icons={["troops"]} label={TROOPS} value={formatExact(guard)} />}
       </header>
       {picking && choices ? <Choices choices={choices} /> : <Matchup army={army} beast={beast} guard={guard} />}
       <div className="flex gap-2">
@@ -141,7 +142,7 @@ const Matchup = ({
   beast,
   guard,
 }: {
-  army: { art: string; troops: number } | null;
+  army: { art: IconMeaning; troops: number } | null;
   beast: string | undefined;
   guard: number | null | undefined;
 }) => (
@@ -149,14 +150,14 @@ const Matchup = ({
     {army && (
       <span data-tone="lit" className="frontier-chip h-8 !py-0 !pl-1">
         <span className="contents">
-          <img src={army.art} alt="" className="size-[22px] rounded-full object-cover" />
+          <SemanticIcon name={army.art} alt="" className="size-[22px] rounded-full object-cover" />
           <span className="frontier-chip-number tabular-nums !text-base">{formatExact(army.troops)}</span>
         </span>
       </span>
     )}
-    <KitIcon code="At" size={22} />
+    <SemanticIcon name="attack" size={22} />
     {beast && <span className="text-sm font-semibold text-kit-cream">{beast}</span>}
-    {guard !== null && <Chip icons={["Tr"]} label={TROOPS} value={formatExact(guard)} />}
+    {guard !== null && <Chip icons={["troops"]} label={TROOPS} value={formatExact(guard)} />}
   </div>
 );
 
@@ -171,12 +172,12 @@ const Choices = ({ choices }: { choices: readonly SiteChoice[] }) => (
         onClick={choice.onPick}
         className="frontier-card flex h-14 w-full items-center gap-2 !rounded-xl px-2.5"
       >
-        <img src={choice.art} alt="" className="size-8 rounded-full object-cover" />
+        <SemanticIcon name={choice.art} alt="" className="size-8 rounded-full object-cover" />
         <span className="text-base tabular-nums text-kit-cream">{formatExact(choice.troops)}</span>
         <span className="flex flex-1 items-center justify-end gap-3">
           <Forecast fight={choice.fight} size="row" />
         </span>
-        <KitIcon code="Cv" size={16} />
+        <SemanticIcon name="chevron-right" size={16} />
       </button>
     ))}
   </div>
@@ -205,19 +206,19 @@ const Forecast = ({ fight, size }: { fight: SiteFight | undefined; size: "plate"
     return (
       <>
         <Line
-          icon="Sk"
+          icon="skull"
           value={`−${formatExact(known.troopsLost)}`}
           hot
           name={known.outcome === "loses" ? WOULD_BE_LOST : undefined}
         />
-        <Line icon="Tr" value={formatExact(known.guardLeft)} hot />
+        <Line icon="troops" value={formatExact(known.guardLeft)} hot />
       </>
     );
   }
   return (
     <>
       <span className="flex items-center gap-1.5" aria-label={known ? `${known.exchanges}` : "—"}>
-        <KitIcon code="Fl" size={22} />
+        <SemanticIcon name="flag" size={22} />
         {known ? (
           <span aria-hidden className="flex gap-[3px]">
             {Array.from({ length: known.exchanges }, (_, index) => (
@@ -228,27 +229,37 @@ const Forecast = ({ fight, size }: { fight: SiteFight | undefined; size: "plate"
           <span className="text-lg tabular-nums text-kit-cream">—</span>
         )}
       </span>
-      <Line icon="Sk" value={known ? `−${formatExact(known.troopsLost)}` : "—"} />
-      {known && known.guardLeft > 0 && <Line icon="Tr" value={formatExact(known.guardLeft)} />}
+      <Line icon="skull" value={known ? `−${formatExact(known.troopsLost)}` : "—"} />
+      {known && known.guardLeft > 0 && <Line icon="troops" value={formatExact(known.guardLeft)} />}
     </>
   );
 };
 
 /** An icon and its figure; a name puts the line on the tooltip (hover, or press-and-hold). */
-const Line = ({ icon, value, hot = false, name }: { icon: IconCode; value: string; hot?: boolean; name?: string }) => (
+const Line = ({
+  icon,
+  value,
+  hot = false,
+  name,
+}: {
+  icon: IconMeaning;
+  value: string;
+  hot?: boolean;
+  name?: string;
+}) => (
   <span className="flex items-center gap-1.5" data-tip={name}>
-    <KitIcon code={icon} size={22} />
+    <SemanticIcon name={icon} size={22} />
     <span className={cn("text-xl leading-none tabular-nums", hot ? "text-kit-hot" : "text-kit-cream")}>{value}</span>
   </span>
 );
 
 /** What a clear pays home, what fits large; the full amount small beside a full bar when it does not all fit. */
-const Pay = ({ pay }: { pay: { icon: IconCode; amount: number; fits?: number } }) => {
+const Pay = ({ pay }: { pay: { icon: IconMeaning; amount: number; fits?: number } }) => {
   const short = pay.fits !== undefined && pay.fits < pay.amount;
   return (
     <>
       <span className="flex items-center gap-1.5">
-        <KitIcon code={pay.icon} size={28} />
+        <SemanticIcon name={pay.icon} size={28} />
         <span className="text-[26px] leading-none tabular-nums text-kit-gold2">
           +{formatExact(short ? pay.fits : pay.amount)}
         </span>
@@ -267,8 +278,8 @@ const Pay = ({ pay }: { pay: { icon: IconCode; amount: number; fits?: number } }
 const ChestPay = ({ chest }: { chest: { tier: Tier; lords: number } }) => (
   <>
     <span className="flex items-center gap-1.5" aria-label={`${formatExact(chest.lords)} ${LORDS}`}>
-      <KitIcon code="Ch" size={26} />
-      <KitIcon code="Lo" size={22} />
+      <SemanticIcon name="chest" size={26} />
+      <SemanticIcon name="lords" size={22} />
       <span className="text-[24px] leading-none tabular-nums text-kit-gold2">+{formatExact(chest.lords)}</span>
     </span>
     <TierChip tier={chest.tier} showWord />
@@ -294,13 +305,20 @@ const Verb = ({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex gap-2">
-        {onRealm && <Button role="secondary" icon="Cs" word={REALM} className="w-[120px]" onClick={onRealm} />}
+        {onRealm && <Button role="secondary" icon="realm" word={REALM} className="w-[120px]" onClick={onRealm} />}
         {verb.kind === "move" ? (
-          <Button role="primary" icon="Bt" word={MOVE} prices={verb.prices} onClick={verb.onMove} className="flex-1" />
+          <Button
+            role="primary"
+            icon="move"
+            word={MOVE}
+            prices={verb.prices}
+            onClick={verb.onMove}
+            className="flex-1"
+          />
         ) : (
           <Button
             role="primary"
-            icon="At"
+            icon="attack"
             word={ATTACK}
             prices={attackPrices(verb)}
             loading={verb.kind === "attack" ? inFlightWord(verb.inFlight, "attack", ATTACKING) : undefined}

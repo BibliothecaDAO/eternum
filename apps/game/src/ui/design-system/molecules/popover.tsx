@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { useAudio } from "@/audio/hooks/useAudio";
 import { resolveCompactLane, useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import {
@@ -9,8 +10,7 @@ import {
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
-import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
-import { X } from "@/ui/design-system/atoms/game-icons";
+
 import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
@@ -268,7 +268,7 @@ export const SurfaceHost = () => {
 
 interface PopoverHeaderProps {
   title: ReactNode;
-  icon?: GameIcon;
+  icon?: IconMeaning;
   onClose: () => void;
 }
 
@@ -279,7 +279,7 @@ const PopoverHeader = ({ title, icon: Icon, onClose }: PopoverHeaderProps) => (
     className="flex shrink-0 cursor-move max-lg:cursor-default select-none touch-none items-center justify-between gap-2 border-b border-gold/15 px-4 py-2.5 max-lg:py-1"
   >
     <span className={cn("flex items-center gap-2", HUD_LABEL_BRIGHT)}>
-      {Icon && <Icon className="h-4 w-4 text-gold" />}
+      {Icon && <SemanticIcon name={Icon} className="h-4 w-4 text-gold" />}
       {title}
     </span>
     <button
@@ -289,14 +289,14 @@ const PopoverHeader = ({ title, icon: Icon, onClose }: PopoverHeaderProps) => (
       aria-label="Close"
       title="Close"
     >
-      <X className="h-4 w-4" />
+      <SemanticIcon name="close" className="h-4 w-4" />
     </button>
   </div>
 );
 
 interface SurfaceFrameProps {
   title: ReactNode;
-  icon?: GameIcon;
+  icon?: IconMeaning;
   onClose: () => void;
   footer?: ReactNode;
   /** Width and height of the surface, usually `SURFACE_WORKSPACE_CLASS`; the panel caps both to the viewport. */

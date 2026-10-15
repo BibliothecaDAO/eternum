@@ -1,4 +1,5 @@
-import { getMinePresentation } from "@bibliothecadao/types";
+import { structureMeaning, mineMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { iconUrl, resourceMeaning } from "@/ui/design-system/icon-meaning";
 import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
 import { Position } from "@bibliothecadao/eternum";
 import { BuildingType, ResourcesIds, StructureType } from "@bibliothecadao/types";
@@ -21,37 +22,10 @@ import { resolveCameraView } from "./label-view";
 import { attachDirectionIndicators, createLabelBase } from "./label-shared";
 import { applyEntityLabelViewModelMetadata, buildStructureEntityLabelViewModel } from "./entity-label-view-model";
 
-/**
- * A structure's label icon: every category has one, and a player's own realm or village-like structure wears its own.
- */
-const STRUCTURE_ICONS = (fragmentMineIcon: string) => ({
-  STRUCTURES: {
-    [StructureType.Village]: "/images/labels/enemy_village.png",
-    [StructureType.Camp]: "/images/labels/enemy_village.png",
-    [StructureType.Realm]: "/images/labels/enemy_realm.png",
-    [StructureType.Hyperstructure]: "/images/labels/hyperstructure.png",
-    [StructureType.Bank]: `/images/resources/${ResourcesIds.Lords}.png`,
-    [StructureType.Mine]: fragmentMineIcon,
-    [StructureType.BitcoinMine]: "/images/labels/fragment_mine.png",
-    [StructureType.Rift]: "/images/labels/essence_rift.png",
-    [StructureType.Ruin]: "/images/labels/enemy_realm.png",
-    [StructureType.Stragglers]: "/images/labels/enemy_village.png",
-  } satisfies Record<StructureType, string>,
-  MY_STRUCTURES: {
-    [StructureType.Village]: "/images/labels/village.png",
-    [StructureType.Camp]: "/images/labels/village.png",
-    [StructureType.Realm]: "/images/labels/realm.png",
-  } as Partial<Record<StructureType, string>>,
-});
-
-const resolveStructureIconPath = (data: StructureLabelData): string => {
-  const icons = STRUCTURE_ICONS(
-    data.structureType === StructureType.Mine
-      ? getMinePresentation(data.mineKind!).icon
-      : "/images/labels/fragment_mine.png",
+const resolveStructureIconPath = (data: StructureLabelData): string =>
+  iconUrl(
+    data.structureType === StructureType.Mine ? mineMeaning(data.mineKind!) : structureMeaning(data.structureType),
   );
-  return (data.isMine && icons.MY_STRUCTURES[data.structureType]) || icons.STRUCTURES[data.structureType];
-};
 
 interface StructureLabelData extends LabelData {
   structureType: StructureType;

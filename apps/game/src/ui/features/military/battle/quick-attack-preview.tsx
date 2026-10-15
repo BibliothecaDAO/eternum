@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useStoredBiome } from "@/hooks/helpers/use-tile-at";
 import { type MouseEvent, useEffect, useMemo, useState } from "react";
@@ -28,7 +29,6 @@ import {
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 
-import { X } from "@/ui/design-system/atoms/game-icons";
 import { buildAttackStaminaRequirementLabel, resolveAttackStaminaState } from "./attack-stamina-state";
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots } from "../utils/defense-slot-utils";
 import { formatAcross, survivalOf, type SideRange } from "./battle-range";
@@ -505,7 +505,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
             className="rounded-full border border-gold/30 bg-transparent p-1 text-gold transition hover:bg-gold/10"
             onClick={closeSurface}
           >
-            <X className="h-3 w-3" />
+            <SemanticIcon name="close" className="h-3 w-3" />
           </button>
         </div>
       </div>

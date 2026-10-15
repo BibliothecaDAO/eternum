@@ -1,4 +1,5 @@
-import { MapPin } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
 
 import { Position } from "@bibliothecadao/eternum";
@@ -82,7 +83,7 @@ const CoordinateNavButton = ({
       onClick={() => onNavigate?.(coordinates)}
     >
       <span className="text-sm">{`${coordinates.x}, ${coordinates.y}`}</span>
-      <MapPin className="w-3 h-3" />
+      <SemanticIcon name="location" className="w-3 h-3" />
     </button>
   );
 };

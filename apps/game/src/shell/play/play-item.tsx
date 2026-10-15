@@ -1,9 +1,10 @@
+import { type IconMeaning } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
 
 import { Chip } from "@/ui/design-system/kit/chip";
 import { ClockLine } from "@/ui/design-system/kit/clock-line";
 import { formatAmount } from "@/ui/design-system/kit/amount";
-import type { IconCode } from "@/ui/design-system/kit/kit-icon";
+
 import { DAY } from "@/ui/design-system/kit/words";
 
 import { lobbyId, lobbyTitle } from "../blitz/lobby";
@@ -27,7 +28,7 @@ import { GoButton } from "./go-button";
 import type { PlayItem } from "./play-board";
 import { LiveChip, StateChip } from "./state-chip";
 
-type ItemVerb = { word: string; icon: IconCode; to: string };
+type ItemVerb = { word: string; icon: IconMeaning; to: string };
 
 /** The directory game an item stands for; a slot still taking players has none. */
 const gameOf = (item: PlayItem): DirectoryGame | undefined =>
@@ -43,26 +44,26 @@ const verbOf = (item: PlayItem, signedIn: boolean): ItemVerb | null => {
   const game = gameOf(item);
   switch (item.verb) {
     case "enter":
-      return game ? { word: WORDS.enter, icon: "Pl", to: entryHref(game, "play") } : null;
+      return game ? { word: WORDS.enter, icon: "play", to: entryHref(game, "play") } : null;
     case "resume":
-      return game ? { word: WORDS.resume, icon: "Pl", to: entryHref(game, "play") } : null;
+      return game ? { word: WORDS.resume, icon: "play", to: entryHref(game, "play") } : null;
     case "play": {
       if (!game) return null;
       const entry = entryHref(game, "play");
       return signedIn
-        ? { word: WORDS.play, icon: "Pl", to: entry }
-        : { word: WORDS.playFree, icon: "Pl", to: signInHref(entry) };
+        ? { word: WORDS.play, icon: "play", to: entry }
+        : { word: WORDS.playFree, icon: "play", to: signInHref(entry) };
     }
     case "watch":
-      return game ? { word: WORDS.watch, icon: "Wc", to: entryHref(game, "spectate") } : null;
+      return game ? { word: WORDS.watch, icon: "watch", to: entryHref(game, "spectate") } : null;
     case "join":
-      return { word: BLITZ_WORDS.join, icon: "Pl", to: lobbyHref(item) };
+      return { word: BLITZ_WORDS.join, icon: "play", to: lobbyHref(item) };
     case "refund":
-      return { word: ENTRY_WORDS.takeRefund, icon: "Sp", to: lobbyHref(item) };
+      return { word: ENTRY_WORDS.takeRefund, icon: "refresh", to: lobbyHref(item) };
     case "lobby":
-      return { word: BLITZ_WORDS.lobby, icon: "Pp", to: lobbyHref(item) };
+      return { word: BLITZ_WORDS.lobby, icon: "person", to: lobbyHref(item) };
     case "results":
-      return game ? { word: WORDS.results, icon: "Tp", to: resultsHref(game) } : null;
+      return game ? { word: WORDS.results, icon: "victory", to: resultsHref(game) } : null;
     case null:
       return null;
   }
@@ -79,7 +80,7 @@ const titleOf = (item: PlayItem): string => {
 const ItemFacts = ({ item, now, firstVisit }: { item: PlayItem; now: number; firstVisit: boolean }) => {
   if (item.source === "row") {
     const { row } = item;
-    if (row.action === "refund") return <StateChip icon="Lk" text={ENTRY_WORDS.closed} />;
+    if (row.action === "refund") return <StateChip icon="lock" text={ENTRY_WORDS.closed} />;
     return (
       <>
         {row.startsAt === null ? (
@@ -92,13 +93,13 @@ const ItemFacts = ({ item, now, firstVisit }: { item: PlayItem; now: number; fir
         ) : (
           <ClockChip prefix="starts" at={row.startsAt} now={now} />
         )}
-        {row.action === "registered" ? <StateChip icon="Ok" text={WORDS.joined} /> : <SeatsChip row={row} />}
+        {row.action === "registered" ? <StateChip icon="check" text={WORDS.joined} /> : <SeatsChip row={row} />}
       </>
     );
   }
   const { game } = item;
   if (item.verb === "results")
-    return <StateChip icon="Tp" text={`${PLAY_WORDS.ended} ${clockLine(null, game.clock.end_at, now)}`} />;
+    return <StateChip icon="victory" text={`${PLAY_WORDS.ended} ${clockLine(null, game.clock.end_at, now)}`} />;
   if (item.mode === "eternum")
     return item.verb === "enter" ? <LiveChip /> : <ClockChip prefix="opens" at={game.clock.start_main_at} now={now} />;
   if (firstVisit) return <p className="font-body text-base text-kit-cream">{PITCH}</p>;
@@ -113,7 +114,7 @@ const ItemFacts = ({ item, now, firstVisit }: { item: PlayItem; now: number; fir
         tone={day.tone}
       />
       {item.verb === "play" && (
-        <Chip icons={["Pp"]} value={formatAmount(game.player_count)} label={PLAY_WORDS.players} />
+        <Chip icons={["person"]} value={formatAmount(game.player_count)} label={PLAY_WORDS.players} />
       )}
     </>
   );

@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import clsx from "clsx";
 import {
   BuildingType,
@@ -7,7 +8,7 @@ import {
   isEconomyBuilding,
   ResourcesIds,
 } from "@bibliothecadao/types";
-import { Plus } from "@/ui/design-system/atoms/game-icons";
+
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 
 // Paladins (Stable) → Knights (Barracks) → Crossbowmen (Archery). Player
@@ -176,7 +177,7 @@ export const RealmBuildingSummary = ({
                         "cursor-not-allowed opacity-40 group-hover:opacity-40",
                     )}
                   >
-                    <Plus className="h-3 w-3" />
+                    <SemanticIcon name="plus" className="h-3 w-3" />
                   </button>
                 )}
               </div>

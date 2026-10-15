@@ -1,9 +1,10 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { lazy, type ReactNode, Suspense, useState } from "react";
 
 import { formatExact } from "@/ui/design-system/kit/amount";
 import { formatDate } from "@/ui/design-system/kit/time";
 import { Button } from "@/ui/design-system/kit/button";
-import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { getChestAssetFromAttributesRaw } from "@/ui/features/cosmetics/chest-opening/utils/cosmetics";
 
@@ -64,13 +65,13 @@ const RatingChange = ({ reward }: { reward: Reward }) => {
   const { mmrBefore, mmrAfter } = reward.result;
   const gain = mmrAfter >= mmrBefore;
   const flag = gain
-    ? reward.registration.sword && { icon: "At" as const, word: "×2" }
-    : reward.registration.shield && { icon: "Sd" as const, word: "½" };
+    ? reward.registration.sword && { icon: "attack" as const, word: "×2" }
+    : reward.registration.shield && { icon: "defend" as const, word: "½" };
   return (
-    <Plate icon="R3" title={REWARD_WORDS.rating}>
+    <Plate icon="rating-conqueror" title={REWARD_WORDS.rating}>
       <p className="flex items-center gap-3 font-body text-[32px] font-extrabold tabular-nums">
         <span className="text-kit-muted">{formatExact(mmrBefore)}</span>
-        <KitIcon code="Ar" size={22} />
+        <SemanticIcon name="arrow-right" size={22} />
         <span className="text-kit-cream">{formatExact(mmrAfter)}</span>
         <span className={cn("ml-auto text-[26px]", gain ? "text-kit-sage" : "text-kit-red")}>
           {gain ? "+" : "−"}
@@ -78,7 +79,7 @@ const RatingChange = ({ reward }: { reward: Reward }) => {
         </span>
         {flag && (
           <span className="inline-flex items-center gap-1 font-body text-lg text-kit-gold2">
-            <KitIcon code={flag.icon} size={26} />
+            <SemanticIcon name={flag.icon} size={26} />
             {flag.word}
           </span>
         )}
@@ -106,14 +107,14 @@ const ChestPlate = ({
 
   if (state === "pending")
     return (
-      <Plate icon="Ch" title={REWARD_WORDS.chest}>
+      <Plate icon="chest" title={REWARD_WORDS.chest}>
         <ChestArt band={band} dim />
-        <Line icon="Hg">{REWARD_WORDS.arrives}</Line>
+        <Line icon="hourglass">{REWARD_WORDS.arrives}</Line>
       </Plate>
     );
   if (state === "opened")
     return (
-      <Plate icon="Ch" title={REWARD_WORDS.chest}>
+      <Plate icon="chest" title={REWARD_WORDS.chest}>
         <Stage>
           {reward.content ? <Prize content={reward.content} entryFee={reward.token.entryFee} /> : <Loading />}
         </Stage>
@@ -121,7 +122,7 @@ const ChestPlate = ({
     );
   if (state === "opening")
     return (
-      <Plate icon="Ch" title={REWARD_WORDS.chest}>
+      <Plate icon="chest" title={REWARD_WORDS.chest}>
         <Stage>
           <img src={chestArt(band, true)} alt="" className="relative size-48 animate-pulse object-contain" />
           <span className="relative font-body text-xl text-kit-gold2">{REWARD_WORDS.opening}</span>
@@ -130,9 +131,9 @@ const ChestPlate = ({
     );
   if (state === "traded")
     return (
-      <Plate icon="Ch" title={REWARD_WORDS.chest}>
+      <Plate icon="chest" title={REWARD_WORDS.chest}>
         <ChestArt band={band} dim />
-        <Line icon="Pc">{REWARD_WORDS.traded}</Line>
+        <Line icon="chronicles">{REWARD_WORDS.traded}</Line>
       </Plate>
     );
   const open = signing ? (
@@ -149,14 +150,14 @@ const ChestPlate = ({
     </Suspense>
   ) : null;
   return (
-    <Plate icon="Ch" title={REWARD_WORDS.chest}>
+    <Plate icon="chest" title={REWARD_WORDS.chest}>
       <ChestArt band={band} glow={state === "sealed"} />
       {reward.token.shares > 0 && (
         <p className="flex flex-wrap gap-2">
           <TokensUntil shares={reward.token.shares} seasonEnd={reward.seasonEnd} now={now} />
         </p>
       )}
-      {open ?? <Button role="primary" word={REWARD_WORDS.open} icon="Ch" onClick={() => setSigning(true)} />}
+      {open ?? <Button role="primary" word={REWARD_WORDS.open} icon="chest" onClick={() => setSigning(true)} />}
     </Plate>
   );
 };
@@ -167,9 +168,9 @@ const ChestPlate = ({
  */
 const TokensUntil = ({ shares, seasonEnd, now }: { shares: number; seasonEnd: number; now: number }) =>
   now < seasonEnd ? (
-    <Chip icon="Lo" word={REWARD_WORDS.entryUntil(shares, formatDate(seasonEnd))} tone="text-kit-gold2" />
+    <Chip icon="lords" word={REWARD_WORDS.entryUntil(shares, formatDate(seasonEnd))} tone="text-kit-gold2" />
   ) : (
-    <Chip icon="Lo" word={REWARD_WORDS.noLords} tone="text-kit-muted" struck />
+    <Chip icon="lords" word={REWARD_WORDS.noLords} tone="text-kit-muted" struck />
   );
 
 /** What the chest delivered: an item, tokens as a multiple of the slot's entry with the sum sent, or a credit. */
@@ -185,18 +186,18 @@ const Prize = ({ content, entryFee }: { content: ChestContent; entryFee: bigint 
         <b className="font-body text-[30px] font-bold leading-tight text-kit-cream">
           {item?.name ?? REWARD_WORDS.cosmetic}
         </b>
-        <Chip icon="Ok" word={REWARD_WORDS.inCollection} tone="text-kit-sage" />
+        <Chip icon="check" word={REWARD_WORDS.inCollection} tone="text-kit-sage" />
       </Card>
     );
   }
   if (content.kind === "lords") return <TokenPrize amount={content.amount} entryFee={entryFee} />;
   return (
     <Card>
-      <KitIcon code={content.kind === "sword" ? "At" : "Sd"} size={96} />
+      <SemanticIcon name={content.kind === "sword" ? "attack" : "defend"} size={96} />
       <b className="font-body text-[30px] font-bold leading-tight text-kit-cream">
         {content.kind === "sword" ? REWARD_WORDS.swordCredit : REWARD_WORDS.shieldCredit}
       </b>
-      <Chip icon="Lo" word={REWARD_WORDS.nextEntry} tone="text-kit-muted" />
+      <Chip icon="lords" word={REWARD_WORDS.nextEntry} tone="text-kit-muted" />
     </Card>
   );
 };
@@ -210,15 +211,15 @@ const TokenPrize = ({ amount, entryFee }: { amount: bigint; entryFee: bigint }) 
   const sum = formatExact(lordsOf(amount));
   return (
     <Card>
-      <KitIcon code="Lo" size={96} />
+      <SemanticIcon name="lords" size={96} />
       <b className="font-body text-[60px] font-bold leading-none tabular-nums text-kit-gold2">
         {multiple === null ? sum : `${multiple}×`}
       </b>
       <span className="font-body text-xl text-kit-muted">
         {multiple === null ? REWARD_WORDS.lords : REWARD_WORDS.theEntry}
       </span>
-      {multiple !== null && <Chip icon="Lo" word={`${sum} ${REWARD_WORDS.lords}`} tone="text-kit-gold2" />}
-      <Chip icon="Ok" word={REWARD_WORDS.lordsSent} tone="text-kit-sage" />
+      {multiple !== null && <Chip icon="lords" word={`${sum} ${REWARD_WORDS.lords}`} tone="text-kit-gold2" />}
+      <Chip icon="check" word={REWARD_WORDS.lordsSent} tone="text-kit-sage" />
     </Card>
   );
 };
@@ -232,7 +233,7 @@ const ChestArt = ({ band, dim = false, glow = false }: { band: number; dim?: boo
   >
     <img src={chestArt(band, false)} alt="" className={cn("size-44 object-contain", dim && "opacity-40 grayscale")} />
     <span className="absolute bottom-1 left-1">
-      <Chip icon="Tp" word={REWARD_WORDS.band[band] ?? REWARD_WORDS.band[0]} tone="text-kit-muted" />
+      <Chip icon="victory" word={REWARD_WORDS.band[band] ?? REWARD_WORDS.band[0]} tone="text-kit-muted" />
     </span>
   </div>
 );
@@ -253,19 +254,19 @@ const Card = ({ children }: { children: ReactNode }) => (
   </div>
 );
 
-const Plate = ({ icon, title, children }: { icon: IconCode; title: string; children: ReactNode }) => (
+const Plate = ({ icon, title, children }: { icon: IconMeaning; title: string; children: ReactNode }) => (
   <section className="plate flex flex-col gap-4 p-5">
     <h2 className="flex items-center gap-2.5 border-b border-kit-line pb-3 font-body text-lg text-kit-cream">
-      <KitIcon code={icon} size={26} />
+      <SemanticIcon name={icon} size={26} />
       {title}
     </h2>
     {children}
   </section>
 );
 
-const Line = ({ icon, children }: { icon: IconCode; children: ReactNode }) => (
+const Line = ({ icon, children }: { icon: IconMeaning; children: ReactNode }) => (
   <p className="flex items-center gap-2.5 font-body text-base text-kit-muted">
-    <KitIcon code={icon} size={24} />
+    <SemanticIcon name={icon} size={24} />
     {children}
   </p>
 );
@@ -276,7 +277,7 @@ const Chip = ({
   tone,
   struck = false,
 }: {
-  icon: IconCode;
+  icon: IconMeaning;
   word: string;
   tone: string;
   struck?: boolean;
@@ -288,7 +289,7 @@ const Chip = ({
     )}
   >
     <span className={cn("relative", struck && "opacity-60")}>
-      <KitIcon code={icon} size={20} />
+      <SemanticIcon name={icon} size={20} />
       {struck && <span aria-hidden className="absolute left-0 top-1/2 h-0.5 w-5 -rotate-45 bg-kit-red" />}
     </span>
     {word}

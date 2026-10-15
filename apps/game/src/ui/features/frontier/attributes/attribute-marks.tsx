@@ -1,9 +1,9 @@
-import type { IconCode } from "@/ui/design-system/kit/kit-icon";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import { ATTRIBUTES, TIER_WORDS } from "@/ui/design-system/kit/words";
 
-const MARKS: IconCode[] = ["Ba", "Lg", "Sc", "Su"];
+const MARKS: IconMeaning[] = ["order-rage", "order-skill", "order-detection", "order-enlightenment"];
 
 /**
  * The four attributes as their Aspect marks with each tier as pips under it, no words: where a row of four has no room
@@ -18,7 +18,7 @@ export const AttributeMarks = ({ tiers }: { tiers: readonly [Tier, Tier, Tier, T
         aria-label={`${attribute} ${TIER_WORDS[tiers[index] - 1]}`}
         className="flex flex-col items-center gap-px"
       >
-        <KitIcon code={MARKS[index]} size={22} />
+        <SemanticIcon name={MARKS[index]} size={22} />
         <span aria-hidden className="flex gap-px">
           {TIER_WORDS.map((word, pip) => (
             <i

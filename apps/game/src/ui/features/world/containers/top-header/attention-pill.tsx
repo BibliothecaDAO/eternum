@@ -1,4 +1,5 @@
-import { Bell } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 import { configManager, structureMapPosition } from "@bibliothecadao/eternum";
@@ -82,7 +83,7 @@ function AttentionCycle() {
       aria-label={`Attention: ${items.length}. Go to next item`}
       title={`${targets.length} locations need attention · ${suggestions.length} suggested actions`}
     >
-      <Bell className="h-3.5 w-3.5" />
+      <SemanticIcon name="notifications" className="h-3.5 w-3.5" />
       <span className={cn(HUD_LABEL_BRIGHT, "max-lg:hidden", items.length > 0 && "text-dark-brown")}>Attention</span>
       {items.length > 0 && (
         <span className="absolute -bottom-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-sm font-bold tabular-nums text-white shadow">

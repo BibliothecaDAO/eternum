@@ -51,7 +51,7 @@ export const ProfileStep = ({ session, onClaimed }: { session: Session; onClaime
         role="primary"
         type="submit"
         word={SIGN_IN_WORDS.claimName}
-        icon="Ok"
+        icon="check"
         disabled={!valid}
         loading={saving ? SIGN_IN_WORDS.saving : undefined}
       />

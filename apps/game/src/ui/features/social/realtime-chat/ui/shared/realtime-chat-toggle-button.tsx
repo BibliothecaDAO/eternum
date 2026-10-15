@@ -1,6 +1,7 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
-import { MessageCircle } from "@/ui/design-system/atoms/game-icons";
+
 import { useCallback, useMemo } from "react";
 import {
   useRealtimeChatActions,
@@ -62,7 +63,7 @@ export const RealtimeChatToggleButton = ({ className, variant = "inline" }: Real
         }
       >
         <div className="relative flex h-full w-full items-center justify-center">
-          <MessageCircle className="h-4 w-4 md:h-5 md:w-5" style={{ color: "#996929" }} />
+          <SemanticIcon name="chat" className="h-4 w-4 md:h-5 md:w-5" style={{ color: "#996929" }} />
           <span className={cn("absolute bottom-1 right-1 h-2 w-2 rounded-full", indicatorClass)} />
         </div>
       </CircleButton>

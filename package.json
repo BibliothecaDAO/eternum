@@ -103,11 +103,11 @@
     "deploy:cloudflare": "bun --no-env-file deploy/first/cloudflare.ts",
     "season": "bun --no-env-file deploy/first/owner-command.ts season",
     "teardown": "bun --no-env-file deploy/first/teardown.ts",
-    "icons:study:inventory": "python3 scripts/icon-study/inventory.py",
-    "icons:study:build": "node scripts/icon-study/paint-build.mjs",
-    "icons:study:prove": "node scripts/icon-study/prove.mjs",
-    "icons:study:requests": "node scripts/icon-study/paint-requests.mjs",
-    "icons:study:review": "node scripts/icon-study/paint-review.mjs"
+    "icons:build": "node scripts/icons/build.mjs",
+    "icons:check": "node --test scripts/icons/*.test.mjs && node scripts/icons/build.mjs --check",
+    "icons:review": "node scripts/icons/review.mjs",
+    "icons:prove": "node scripts/icons/prove.mjs",
+    "icons:measure": "node scripts/icons/measure.mjs"
   },
   "dependencies": {
     "@bibliothecadao/provider": "workspace:*",

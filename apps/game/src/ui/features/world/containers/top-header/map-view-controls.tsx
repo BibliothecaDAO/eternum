@@ -1,6 +1,7 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Mountain, Portal } from "@/ui/design-system/atoms/game-icons";
+
 import { TOP_PILL } from "./top-pill";
 
 interface MapViewControlsProps {
@@ -78,7 +79,7 @@ const CompactLayerSwitch = ({
 }) => {
   const currentLayer = mapLayer ? "Ethereal" : "Surface";
   const nextLayer = mapLayer ? "Surface" : "Ethereal";
-  const Icon = mapLayer ? Portal : Mountain;
+  const Icon = mapLayer ? ("travel" as const) : ("mountain" as const);
 
   return (
     <div role="group" aria-label="Map layer" className={cn(TOP_PILL, "px-1 max-lg:h-auto")}>
@@ -89,7 +90,7 @@ const CompactLayerSwitch = ({
         onClick={() => onLayerChange(!mapLayer)}
         className={layerButtonClasses(true, true)}
       >
-        <Icon className="h-3.5 w-3.5" aria-hidden />
+        <SemanticIcon name={Icon} className="h-3.5 w-3.5" aria-hidden />
         {currentLayer}
       </button>
     </div>
@@ -104,7 +105,7 @@ const LayerSwitch = ({ mapLayer, onLayerChange }: { mapLayer: boolean; onLayerCh
       onClick={() => onLayerChange(false)}
       className={layerButtonClasses(!mapLayer)}
     >
-      <Mountain className="h-3.5 w-3.5" aria-hidden />
+      <SemanticIcon name="mountain" className="h-3.5 w-3.5" aria-hidden />
       Surface
     </button>
     <button
@@ -113,7 +114,7 @@ const LayerSwitch = ({ mapLayer, onLayerChange }: { mapLayer: boolean; onLayerCh
       onClick={() => onLayerChange(true)}
       className={layerButtonClasses(mapLayer)}
     >
-      <Portal className="h-3.5 w-3.5" aria-hidden />
+      <SemanticIcon name="travel" className="h-3.5 w-3.5" aria-hidden />
       Ethereal
     </button>
   </div>

@@ -1,4 +1,5 @@
-import { Trash } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { ContractAddress, GuildMemberInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
@@ -69,7 +70,8 @@ const InviteRow = ({
       </button>
 
       {userIsGuildMaster && hasPlayerAddress ? (
-        <Trash
+        <SemanticIcon
+          name="trash"
           onClick={() => {
             removePlayerFromWhitelist(player.address);
             setTooltip(null);

@@ -1,4 +1,5 @@
-import { BUILDING_IMAGES_PATH } from "@/ui/config";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import { buildingMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Headline } from "@/ui/design-system/molecules";
 import { configManager } from "@bibliothecadao/eternum";
 import { BuildingType, CapacityConfig, ResourcesIds } from "@bibliothecadao/types";
@@ -40,7 +41,7 @@ export const Transfers = () => {
         <h4>Producing Donkeys</h4>
         <div className="space-y-4 text-gray-200">
           <div className="flex gap-3 items-center">
-            <img className="h-36 min-w-20" src={BUILDING_IMAGES_PATH[BuildingType.ResourceDonkey]} alt="" />
+            <SemanticIcon className="h-36 min-w-20" name={buildingMeaning(BuildingType.ResourceDonkey)} alt="" />
             <div className="flex flex-col">
               <p className="font-bold">Donkeys can be acquired through:</p>
               <p>

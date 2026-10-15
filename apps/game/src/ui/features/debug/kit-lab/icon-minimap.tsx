@@ -1,17 +1,18 @@
 import { useState } from "react";
 import { latticeToWorld } from "@/three/utils/hex-lattice";
-import { iconArt } from "./icon-art";
+import { HexMarker } from "@/ui/design-system/hex-marker";
+import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 const owners = ["you", "ally", "enemy"] as const;
 const symbols = { you: "●", ally: "■", enemy: "▲" };
 const kinds = [
-  { id: "map-realm", name: "Realm", old: "realm" },
-  { id: "camp", name: "Camp", old: "village" },
-  { id: "map-village", name: "Village", old: "village" },
-  { id: "hyperstructure", name: "Hyperstructure", old: "hyperstructure" },
-  { id: "chest", name: "Chest", old: "chest" },
-  { id: "map-mine", name: "Mine", old: "fragment_mine" },
-  { id: "map-army", name: "Army", old: "army" },
-];
+  { id: "map-realm", name: "Realm" },
+  { id: "camp", name: "Camp" },
+  { id: "map-village", name: "Village" },
+  { id: "hyperstructure", name: "Hyperstructure" },
+  { id: "chest", name: "Chest" },
+  { id: "map-mine", name: "Mine" },
+  { id: "map-army", name: "Army" },
+] satisfies { id: IconMeaning; name: string }[];
 function hexPoints(radius: number, x: number, y: number) {
   return Array.from({ length: 6 }, (_, index) => {
     const angle = ((60 * index - 30) * Math.PI) / 180;
@@ -23,37 +24,23 @@ function cell(index: number) {
   return { x: 45 + x * 25, y: 30 + z * 25 };
 }
 function Badge({
-  direction,
   kind,
   owner,
   size,
   value,
 }: {
-  direction: string;
   kind: (typeof kinds)[number];
   owner: (typeof owners)[number];
   size: number;
   value?: string;
 }) {
   return (
-    <>
-      <span className="icon-marker">
-        <svg viewBox="0 0 28 32" aria-hidden="true">
-          <polygon points={hexPoints(15, 14, 16)} />
-        </svg>
-        <img
-          src={direction === "shipped" ? `/images/labels/${kind.old}.png` : iconArt(direction, kind.id, size)}
-          style={{ width: size, height: size }}
-          alt=""
-        />
-        <i className="icon-owner-cue" data-cue={owner} aria-hidden="true" />
-      </span>
-      {value !== undefined && <b>{value}</b>}
-    </>
+    <svg viewBox="-15 -15 30 30" width={size + 14} height={size + 14} aria-hidden="true">
+      <HexMarker name={kind.id} owner={owner} value={value} />
+    </svg>
   );
 }
-
-export function IconMinimap({ direction }: { direction: string }) {
+export function IconMinimap() {
   const [density, setDensity] = useState(20);
   const [size, setSize] = useState(16);
   const [sector, setSector] = useState<number>();
@@ -101,7 +88,7 @@ export function IconMinimap({ direction }: { direction: string }) {
         {kinds.map((kind) => (
           <div key={kind.id} data-kind={kind.id}>
             <span className="icon-marker-key" data-owner="you">
-              <Badge direction={direction} kind={kind} owner="you" size={size} />
+              <Badge kind={kind} owner="you" size={size} />
             </span>
             <small>{kind.name}</small>
           </div>
@@ -157,7 +144,7 @@ export function IconMinimap({ direction }: { direction: string }) {
                   role="img"
                   aria-label={`${item.owner} ${item.kind.name}${item.value === undefined ? "" : `, ${item.army ? "strength band" : "level"} ${item.value}`}`}
                 >
-                  <Badge direction={direction} kind={item.kind} owner={item.owner} size={size} value={item.value} />
+                  <Badge kind={item.kind} owner={item.owner} size={size} value={item.value} />
                 </span>
               );
             })}

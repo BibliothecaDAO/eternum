@@ -1,7 +1,8 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { Link, useLocation } from "react-router-dom";
 
 import { formatAmount } from "@/ui/design-system/kit/amount";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { formatClockTime } from "@/ui/design-system/kit/time";
 import { findOwnEntry, wholeLords } from "@/ui/features/frontier/board/standings";
 
@@ -53,7 +54,7 @@ export const HistoryRow = ({ game, player, now }: { game: DirectoryGame; player:
         </span>
         {lords !== undefined && (
           <span className="flex items-center gap-1 font-body text-base font-bold tabular-nums text-kit-gold">
-            <KitIcon code="Lo" size={18} />
+            <SemanticIcon name="lords" size={18} />
             {formatAmount(lords)}
           </span>
         )}

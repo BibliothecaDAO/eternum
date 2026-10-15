@@ -288,3 +288,16 @@ Optionally collect console diagnostics:
 npx -y agent-browser --session spectator-check console
 npx -y agent-browser --session spectator-check errors
 ```
+
+## Painted icon contract
+
+Use `Icon` with an `IconMeaning`, `SvgIcon` inside SVG, and `iconUrl` only for texture or DOM APIs. Resource, troop,
+Order and building inputs resolve through the central meaning helpers. Action buttons derive their icon from the action
+ID. Do not choose an unrelated action's art: Transfer is the pack donkey, Move the boots, Production the forge, and
+Settings the wheel. Do not add icon paths or independent icon components.
+
+| Rule                                           | Enforcement                                                         |
+| ---------------------------------------------- | ------------------------------------------------------------------- |
+| Named artwork, no arbitrary image path         | `IconMeaning` and the renderer's props                              |
+| Distinct Transfer/Move and Production/Settings | `scripts/icons/validate.test.mjs` reproduces both rejected mappings |
+| Every resource and reviewed painting exists    | `pnpm icons:check`, client build and client CI                      |

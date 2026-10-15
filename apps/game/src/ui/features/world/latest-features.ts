@@ -35,11 +35,10 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-15",
-    title: "Troop tiers and hex markers",
+    title: "Painted icons across the game",
     description:
-      "Compare nine Facets soldier portraits across three tiers and inspect hex minimap badges with ownership and value cues in the icon lab.",
+      "Resources, soldier tiers, buildings and actions share the Facets paintings across the map and every page. Transfer shows a loaded donkey; Production shows a forge. Hex minimap badges repeat ownership with colour and shape.",
     type: "improvement",
-    readMore: "/lab/kit/icons?art=faceted",
   },
   {
     date: "2026-10-15",

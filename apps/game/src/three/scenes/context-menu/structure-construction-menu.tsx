@@ -1,3 +1,4 @@
+import { iconUrl, resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { LeftView } from "@/types";
 import { getGameModeConfig } from "@/config/game-modes";
 import { ContextMenuAction } from "@/types/context-menu";
@@ -191,7 +192,7 @@ export const createConstructionMenu = ({
         return null;
       }
 
-      const icon = resource.img ?? undefined;
+      const icon = iconUrl(resourceMeaning(typedResourceId));
 
       return createActionWithAvailability({
         suffix: `resource-${resourceId}`,
@@ -260,7 +261,7 @@ export const createConstructionMenu = ({
           return createActionWithAvailability({
             suffix: `military-${suffix}-${toSlug(unitLabel)}`,
             label: unitLabel,
-            icon: resourceInfo?.img ?? undefined,
+            icon: iconUrl(resourceMeaning(resource)),
             building,
             resource,
             iconResource,
@@ -274,7 +275,7 @@ export const createConstructionMenu = ({
     {
       id: `structure-${idString}-construction-resources`,
       label: "Resource Buildings",
-      icon: "/image-icons/resources.png",
+      icon: iconUrl("resources"),
       childTitle: "Resource Buildings",
       childSubtitle: `Realm ${idString}`,
       onSelect: () => {},
@@ -284,7 +285,7 @@ export const createConstructionMenu = ({
     {
       id: `structure-${idString}-construction-economic`,
       label: "Economic Buildings",
-      icon: "/image-icons/construction.png",
+      icon: iconUrl("build"),
       childTitle: "Economic Buildings",
       childSubtitle: `Realm ${idString}`,
       onSelect: () => {},
@@ -293,7 +294,7 @@ export const createConstructionMenu = ({
     {
       id: `structure-${idString}-construction-military`,
       label: "Military Buildings",
-      icon: "/image-icons/military.png",
+      icon: iconUrl("military"),
       childTitle: "Select Tier",
       childSubtitle: `Realm ${idString}`,
       onSelect: () => {},
@@ -304,7 +305,7 @@ export const createConstructionMenu = ({
   const constructionAction: ContextMenuAction = {
     id: `structure-${idString}-construction`,
     label: "Construction",
-    icon: "/image-icons/construction.png",
+    icon: iconUrl("build"),
     childTitle: "Select Building Category",
     childSubtitle: `Realm ${idString}`,
     children: constructionCategories,

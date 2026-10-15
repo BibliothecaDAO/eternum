@@ -1,4 +1,5 @@
-import { Loader, Trash2, Zap as Lightning } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { configManager } from "@bibliothecadao/eternum";
 import { memo, type ReactNode, useMemo } from "react";
 
@@ -79,7 +80,7 @@ const ArmyBannerEntityDetailContent = memo(
     if (isLoadingExplorer || (explorer?.owner && isLoadingStructure)) {
       return (
         <div className="mt-2 flex h-full items-center justify-center">
-          <Loader className="animate-spin" />
+          <SemanticIcon name="refresh" className="animate-spin" />
         </div>
       );
     }
@@ -167,7 +168,11 @@ const ArmyBannerEntityDetailContent = memo(
               className="inline-flex items-center rounded border border-red-500/40 p-1 text-red-200 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
               title={isLoadingDelete ? "Deleting" : "Delete Army"}
             >
-              {isLoadingDelete ? <Loader className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+              {isLoadingDelete ? (
+                <SemanticIcon name="refresh" className="h-3 w-3 animate-spin" />
+              ) : (
+                <SemanticIcon name="trash" className="h-3.5 w-3.5" />
+              )}
               <span className="sr-only">Delete Army</span>
             </button>
           ) : null}
@@ -304,7 +309,7 @@ const InlineStaminaBar = ({
       className="flex items-center gap-2 text-sm text-gold/80"
       title={travelBlocked ? (travelBlockedTitle ?? undefined) : undefined}
     >
-      <Lightning className={cn("h-3 w-3 ", recharging && STAMINA_RECHARGING_TEXT_CLASS)} />
+      <SemanticIcon name="stamina" className={cn("h-3 w-3 ", recharging && STAMINA_RECHARGING_TEXT_CLASS)} />
       <div
         className={cn(
           "flex-1 h-2 rounded-full border border-gray-600 overflow-hidden",

@@ -76,7 +76,7 @@ const Settings = () => {
   // Music on this device: one row, which names itself.
   const music = (
     <SettingRows>
-      <SettingRow icon="Mu" name={PROFILE_WORDS.music} end={<MusicSwitch />} />
+      <SettingRow icon="music" name={PROFILE_WORDS.music} end={<MusicSwitch />} />
     </SettingRows>
   );
   const devices = (
@@ -174,7 +174,7 @@ const SignInCard = ({ line, verb }: { line: string | null; verb: string }) => {
       />
       <span className="absolute inset-0 -z-10 bg-gradient-to-b from-kit-ground/85 to-transparent" />
       {line && <p className="font-body text-base font-bold text-kit-cream">{line}</p>}
-      <Button role="primary" word={verb} icon="Pf" onClick={() => void signIn()} />
+      <Button role="primary" word={verb} icon="person" onClick={() => void signIn()} />
     </section>
   );
 };
@@ -204,7 +204,7 @@ const Rows = () => {
   const navigate = useNavigate();
   return (
     <SettingRows>
-      <SettingRow icon="Pf" name={PROFILE_WORDS.settings} onOpen={() => navigate(SETTINGS_PATH)} />
+      <SettingRow icon="person" name={PROFILE_WORDS.settings} onOpen={() => navigate(SETTINGS_PATH)} />
       <ReadingRows />
     </SettingRows>
   );
@@ -215,8 +215,8 @@ const ReadingRows = () => {
   const navigate = useNavigate();
   return (
     <>
-      <SettingRow icon="Dk" name={PROFILE_WORDS.howToPlay} href={HOW_TO_PLAY} />
-      <SettingRow icon="Pc" name={PROFILE_WORDS.whatsNew} onOpen={() => navigate(WHATS_NEW_PATH)} />
+      <SettingRow icon="guide" name={PROFILE_WORDS.howToPlay} href={HOW_TO_PLAY} />
+      <SettingRow icon="chronicles" name={PROFILE_WORDS.whatsNew} onOpen={() => navigate(WHATS_NEW_PATH)} />
     </>
   );
 };

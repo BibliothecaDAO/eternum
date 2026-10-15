@@ -1,4 +1,5 @@
-import { RefreshCw } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -118,7 +119,7 @@ export const TerrainPropDebugView = () => {
             onClick={() => rendererRef.current?.resetCamera()}
             className="mt-auto flex h-10 items-center justify-center gap-2 border border-emerald-300/35 bg-emerald-300/10 px-3 text-sm font-semibold text-emerald-100"
           >
-            <RefreshCw className="h-4 w-4" />
+            <SemanticIcon name="refresh" className="h-4 w-4" />
             Reset Camera
           </button>
         </aside>

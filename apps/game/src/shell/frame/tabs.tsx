@@ -1,11 +1,12 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import { type IconMeaning } from "@/ui/design-system/icon";
 import { Fragment, type ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
-import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
-import { Play, Trophy, User } from "@/ui/design-system/atoms/game-icons";
+
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { WORDS } from "../words";
@@ -16,13 +17,13 @@ import { Lockup } from "./lockup";
  * The app's three places, one list for both layouts: the phone's tab bar and the desktop's top bar. Play holds what to do
  * now, Season where the player stands, You the player, their finished games and everything about the account.
  */
-const TABS: readonly { to: string; word: string; icon: GameIcon; matches: readonly string[] }[] = [
-  { to: "/", word: WORDS.play, icon: Play, matches: ["/", "/blitz"] },
-  { to: "/season", word: WORDS.season, icon: Trophy, matches: ["/season", "/p/"] },
+const TABS: readonly { to: string; word: string; icon: IconMeaning; matches: readonly string[] }[] = [
+  { to: "/", word: WORDS.play, icon: "play" as const, matches: ["/", "/blitz"] },
+  { to: "/season", word: WORDS.season, icon: "victory" as const, matches: ["/season", "/p/"] },
   {
     to: "/profile",
     word: WORDS.you,
-    icon: User,
+    icon: "person" as const,
     matches: ["/profile", "/results", "/scroll", "/terms", "/privacy", "/credits"],
   },
 ];
@@ -60,7 +61,7 @@ const TabIcon = ({ tab, current, size }: { tab: (typeof TABS)[number]; current: 
       />
     );
   const Icon = tab.icon;
-  return <Icon size={size} className={current ? undefined : "brightness-[.8] grayscale-[.6]"} />;
+  return <SemanticIcon name={Icon} size={size} className={current ? undefined : "brightness-[.8] grayscale-[.6]"} />;
 };
 
 /** The phone's foot: the three places in thumb reach. */

@@ -1,4 +1,5 @@
-import { Mail as Invite, User } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { playerAvatarUrl } from "@/hooks/use-player-profile";
@@ -228,7 +229,7 @@ export const PlayerList = ({
           })
         ) : (
           <div className="flex flex-col items-center justify-center h-32 text-kit-muted">
-            <User className="w-8 h-8 mb-2 opacity-50" />
+            <SemanticIcon name="person" className="w-8 h-8 mb-2 opacity-50" />
             <p className="text-sm">No players found</p>
           </div>
         )}
@@ -477,7 +478,8 @@ const PlayerRow = ({
       {showTribeDetails ? (
         <div className="flex items-center pr-2 min-w-[28px] justify-center">
           {!player.isUser && (
-            <Invite
+            <SemanticIcon
+              name="mail"
               onClick={() => {
                 whitelistPlayer(player.address);
                 setTooltip(null);

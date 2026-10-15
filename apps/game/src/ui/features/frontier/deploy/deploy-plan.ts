@@ -85,7 +85,7 @@ export const readDeployPlan = (
     wheat: Number(BigInt(wheat) / PRECISION),
     trainedLogistics: researchTier(learned, nativeResearchConstants.ROW_SUPPLY_YARD),
     startingTiers: startingTiers(learned),
-    rations: sidesTaken(learned, nativeResearchConstants.ROW_BARRACKS).includes("Ra"),
+    rations: sidesTaken(learned, nativeResearchConstants.ROW_BARRACKS).includes("rations"),
   };
 };
 

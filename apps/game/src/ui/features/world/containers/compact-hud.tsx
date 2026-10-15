@@ -1,10 +1,11 @@
-import { X } from "@/ui/design-system/atoms/game-icons";
+import type { IconMeaning } from "@/ui/design-system/icon";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import type { CompactLane } from "@/hooks/helpers/use-compact-hud";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
-import { BuildingThumbs } from "@/ui/config";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { EventLogPanel } from "@/ui/features/event-feed/event-log-panel";
@@ -42,12 +43,12 @@ type CompactTab = "empire" | "map" | "log" | "chat" | "details";
 const SHEET_TABS: ReadonlySet<CompactTab> = new Set(["empire", "map", "details"]);
 
 const COMPACT_TAB_IMAGES = {
-  empire: BuildingThumbs.home,
-  standings: BuildingThumbs.trophy,
-  map: BuildingThumbs.worldMap,
-  log: BuildingThumbs.latestUpdates,
-  chat: BuildingThumbs.discord,
-  details: BuildingThumbs.compass,
+  empire: "home" as const,
+  standings: "victory" as const,
+  map: "map" as const,
+  log: "news" as const,
+  chat: "discord" as const,
+  details: "explore" as const,
 } as const;
 
 /** Safe-area insets, never less than the shell's own padding so a phone without a notch keeps its gutters. */
@@ -168,7 +169,7 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
                   onClick={closeAndFocusTab}
                   className="flex h-11 w-11 items-center justify-center rounded-lg text-kit-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:bg-gold/15"
                 >
-                  <X className="h-5 w-5" />
+                  <SemanticIcon name="close" className="h-5 w-5" />
                 </button>
               </header>
               <div className="min-h-0 overflow-y-auto overscroll-contain p-2 touch-pan-y">
@@ -237,7 +238,7 @@ const StructureActionStrip = ({ lane }: { lane: CompactLane }) => {
 interface TabSpec {
   id: CompactTab;
   label: string;
-  image: string;
+  image: IconMeaning;
   badge?: number;
   ref?: RefObject<HTMLButtonElement>;
 }
@@ -263,7 +264,7 @@ const TabButton = ({
         active ? "bg-gold/15 text-gold" : "text-kit-cream",
       )}
     >
-      <img src={tab.image} alt="" aria-hidden="true" className="h-7 w-7 object-contain" />
+      <SemanticIcon name={tab.image} alt="" aria-hidden="true" className="h-7 w-7 object-contain" />
       <span className="max-w-full truncate text-sm font-semibold">{tab.label}</span>
       {tab.badge !== undefined && tab.badge > 0 && (
         <span className="absolute right-1/4 top-0">

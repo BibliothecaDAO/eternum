@@ -1,4 +1,4 @@
-import { ArrowRight } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
 import { formatNumber } from "@/ui/utils/utils";
 import { TroopTier, TroopType } from "@bibliothecadao/types";
@@ -46,7 +46,7 @@ export const TransferBalanceCards = ({ cards }: TransferBalanceCardsProps) => {
             ) : null}
             <div className="mt-3 flex items-center gap-2 text-2xl font-bold text-gold">
               <span>{formatNumber(Math.max(0, before), 0)}</span>
-              <ArrowRight className="h-5 w-5 text-gold/70" />
+              <SemanticIcon name="arrow-right" className="h-5 w-5 text-gold/70" />
               <span>{formatNumber(Math.max(0, after), 0)}</span>
             </div>
           </div>

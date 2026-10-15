@@ -1,6 +1,6 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-import { type IconCode, KitIcon } from "./kit-icon";
 import { type PriceKind, PriceChip } from "./price-chip";
 
 /**
@@ -38,7 +38,7 @@ export const Button = ({
 }: {
   role: ButtonRole;
   word: string;
-  icon?: IconCode;
+  icon?: IconMeaning;
   prices?: readonly Price[];
   /** The step's word while the action is under way; the button waits until it clears. */
   loading?: string;
@@ -64,12 +64,12 @@ export const Button = ({
   >
     {loading !== undefined ? (
       <>
-        <KitIcon code="Sp" size={22} className="animate-spin" />
+        <SemanticIcon name="refresh" size={22} className="animate-spin" />
         <span>{loading}</span>
       </>
     ) : (
       <>
-        {icon && <KitIcon code={icon} size={22} />}
+        {icon && <SemanticIcon name={icon} size={22} />}
         <span>{word}</span>
         {prices.map((price) => (
           <PriceChip key={price.of} of={price.of} amount={price.amount} />

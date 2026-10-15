@@ -1,3 +1,4 @@
+import { iconUrl } from "@/ui/design-system/icon-meaning";
 import { getGameModeConfig } from "@/config/game-modes";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { playResourceSound } from "@/three/sound/utils";
@@ -78,7 +79,7 @@ export const openStructureContextMenu = ({ event, structure, hexCoords, store }:
     {
       id: `structure-${idString}-attack`,
       label: "Create Attack Army",
-      icon: "/image-icons/military.png",
+      icon: iconUrl("military"),
       onSelect: () => {
         openArmyCreationModal(true);
       },
@@ -89,7 +90,7 @@ export const openStructureContextMenu = ({ event, structure, hexCoords, store }:
           {
             id: `structure-${idString}-defense`,
             label: "Create Defense Army",
-            icon: "/image-icons/shield.png",
+            icon: iconUrl("defend"),
             onSelect: () => {
               openArmyCreationModal(false);
             },

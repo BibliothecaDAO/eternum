@@ -1,7 +1,6 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 
 import { communityPlace } from "./community";
 import { useLayout } from "./frame/layout";
@@ -55,7 +54,7 @@ const LegalPage = ({ title, updated, sections }: { title: string; updated: strin
   const reading = (
     <article className="flex max-w-[760px] flex-col gap-5">
       <p className="flex items-center gap-2 text-sm text-kit-muted">
-        <KitIcon code="Cl" size={18} />
+        <SemanticIcon name="clock" size={18} />
         {NEWS_WORDS.updated} {updated}
         {desktop && <OtherLegalPages title={title} />}
       </p>
@@ -90,7 +89,7 @@ const sectionId = (index: number) => `section-${index + 1}`;
 /** The sections as a list beside the reading column, staying in view under the top bar (68 px) while it scrolls. */
 const Contents = ({ title, sections }: { title: string; sections: LegalSection[] }) => (
   <nav aria-label={title} className="sticky top-[92px] self-start">
-    <Panel icon="Dk" title={title}>
+    <Panel icon="guide" title={title}>
       {sections.map((section, index) => (
         <a
           key={section.title}

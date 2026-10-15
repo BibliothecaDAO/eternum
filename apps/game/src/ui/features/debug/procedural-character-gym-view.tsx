@@ -1,19 +1,5 @@
-import {
-  Loader2,
-  Camera,
-  Check,
-  FlaskConical,
-  Footprints,
-  Pause,
-  Play,
-  RotateCcw,
-  Shield,
-  StepForward,
-  Swords,
-  Target,
-  X,
-  Zap,
-} from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { KnightAnimationReviewPanel } from "./knight-animation-review-panel";
 import {
   createKnightAnimationScenario,
@@ -657,7 +643,7 @@ const CharacterGymHeader = ({
   <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[#0a0f18]/95 px-4 py-3 backdrop-blur-xl lg:px-6">
     <div className="flex min-w-0 items-center gap-3">
       <div className="grid h-10 w-10 shrink-0 place-items-center border border-violet-300/30 bg-violet-400/10 text-violet-200">
-        <FlaskConical className="h-5 w-5" />
+        <SemanticIcon name="research" className="h-5 w-5" />
       </div>
       <div className="min-w-0">
         <p className="text-sm font-semibold text-violet-200/60">Renderer laboratory</p>
@@ -677,7 +663,7 @@ const CharacterGymHeader = ({
     <div className="flex flex-wrap items-center gap-2">
       {archer && (
         <ActionButton
-          icon={<Target />}
+          icon={<SemanticIcon name="target" />}
           label={naval ? "Broadside" : dragon ? "Fire breath" : "Fire"}
           onClick={onFireArrow}
           primary
@@ -686,50 +672,70 @@ const CharacterGymHeader = ({
       )}
       {archer && (
         <ActionButton
-          icon={<X />}
+          icon={<SemanticIcon name="close" />}
           label={naval ? "Cancel guns" : dragon ? "Cancel breath" : "Cancel draw"}
           onClick={onCancelArrow}
           disabled={!ready}
         />
       )}
-      {melee && <ActionButton icon={<Swords />} label="Attack" onClick={onMeleeAttack} primary disabled={!ready} />}
-      {melee && <ActionButton icon={<X />} label="Cancel attack" onClick={onCancelMelee} disabled={!ready} />}
+      {melee && (
+        <ActionButton
+          icon={<SemanticIcon name="military" />}
+          label="Attack"
+          onClick={onMeleeAttack}
+          primary
+          disabled={!ready}
+        />
+      )}
+      {melee && (
+        <ActionButton
+          icon={<SemanticIcon name="close" />}
+          label="Cancel attack"
+          onClick={onCancelMelee}
+          disabled={!ready}
+        />
+      )}
       <ActionButton
-        icon={<Camera />}
+        icon={<SemanticIcon name="camera" />}
         label={captureBusy ? "Capturing" : "Frames"}
         onClick={onCaptureFrames}
         disabled={!ready || captureBusy || collisionEnabled || stats.mode !== "animated"}
       />
       {locomotion && (
         <ActionButton
-          icon={<Footprints />}
+          icon={<SemanticIcon name="move" />}
           label="Gait"
           onClick={onCaptureGait}
           disabled={!ready || captureBusy || stats.mode !== "animated"}
         />
       )}
       <ActionButton
-        icon={<FlaskConical />}
+        icon={<SemanticIcon name="research" />}
         label="Run smoke"
         onClick={onRunSmoke}
         primary
         disabled={!ready || collisionEnabled}
       />
       <ActionButton
-        icon={<Shield />}
+        icon={<SemanticIcon name="defend" />}
         label={naval ? "Sink" : "Drop"}
         onClick={onDrop}
         disabled={!ready || collisionEnabled || stats.mode !== "animated"}
       />
-      <ActionButton icon={<Zap />} label="Strike" onClick={onStrike} disabled={!ready || collisionEnabled} />
       <ActionButton
-        icon={paused ? <Play /> : <Pause />}
+        icon={<SemanticIcon name="stamina" />}
+        label="Strike"
+        onClick={onStrike}
+        disabled={!ready || collisionEnabled}
+      />
+      <ActionButton
+        icon={paused ? <SemanticIcon name="play" /> : <SemanticIcon name="pause" />}
         label={paused ? "Resume" : "Pause"}
         onClick={onTogglePaused}
         disabled={!ready}
       />
-      <ActionButton icon={<StepForward />} label="Step" onClick={onStep} disabled={!ready || !paused} />
-      <ActionButton icon={<RotateCcw />} label="Reset" onClick={onReset} disabled={!ready} />
+      <ActionButton icon={<SemanticIcon name="step" />} label="Step" onClick={onStep} disabled={!ready || !paused} />
+      <ActionButton icon={<SemanticIcon name="refresh" />} label="Reset" onClick={onReset} disabled={!ready} />
     </div>
   </header>
 );
@@ -821,7 +827,7 @@ const CharacterGymViewport = ({
 const CharacterGymLoadingState = () => (
   <div className="absolute inset-0 grid place-items-center bg-[#070b13]">
     <div className="flex flex-col items-center gap-3 text-center">
-      <Loader2 className="h-8 w-8 animate-spin" />
+      <SemanticIcon name="refresh" className="h-8 w-8 animate-spin" />
       <div>
         <p className="text-sm font-semibold text-white">
           Loading renderer, character assets, procedural mounts, and Jolt
@@ -958,7 +964,7 @@ const SmokeStatus = ({ stats }: { stats: ProceduralCharacterGymStats }) => {
     >
       <p className="text-sm font-semibold opacity-60">Smoke sequence</p>
       <p className="mt-1 flex items-center justify-end gap-1.5 text-sm font-semibold">
-        {passed && <Check className="h-3.5 w-3.5" />}
+        {passed && <SemanticIcon name="check" className="h-3.5 w-3.5" />}
         {stats.smokePhase}
       </p>
       {stats.smokeFailures.length > 0 && <p className="mt-1 max-w-xs text-sm">{stats.smokeFailures.join(" · ")}</p>}

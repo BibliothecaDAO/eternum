@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceChip } from "@/ui/features/economy/resources";
 import {
@@ -15,7 +16,7 @@ import { useNativeRowOrAbsent, useNativeRow, useNativeRevision } from "@/hooks/h
 import { BuildingType, getBuildingFromResource, ID, ResourcesIds } from "@bibliothecadao/types";
 import { HUD_CUE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { ChevronDown } from "@/ui/design-system/atoms/game-icons";
+
 import React, { useCallback, useMemo, useState } from "react";
 import { ALWAYS_SHOW_RESOURCES, TIER_DISPLAY_NAMES } from "./utils";
 
@@ -151,7 +152,10 @@ export const EntityResourceTableOld = React.memo(
                   <span className={HUD_LABEL}>{TIER_DISPLAY_NAMES[tier]}</span>
                   <span className={cn(HUD_CUE, "flex items-center gap-1")}>
                     {resourcesForTier.length}
-                    <ChevronDown className={cn("h-3 w-3 transition-transform", isCollapsed && "-rotate-90")} />
+                    <SemanticIcon
+                      name="chevron-down"
+                      className={cn("h-3 w-3 transition-transform", isCollapsed && "-rotate-90")}
+                    />
                   </span>
                 </button>
 

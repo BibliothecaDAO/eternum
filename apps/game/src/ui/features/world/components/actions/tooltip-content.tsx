@@ -1,3 +1,5 @@
+import { resourceMeaning } from "@/ui/design-system/icon-meaning";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import clsx from "clsx";
 import type { ReactNode } from "react";
 import { memo } from "react";
@@ -97,7 +99,7 @@ export const TooltipContent = memo(
         {isTravelAction ? (
           <div className="mt-1 flex items-center gap-2">
             <InfoLabel variant="default" className="flex-1 items-center justify-between gap-2">
-              <img src={`/images/resources/${ResourcesIds.Wheat}.png`} alt="Wheat" className="h-5 w-5 object-contain" />
+              <SemanticIcon name={resourceMeaning(ResourcesIds.Wheat)} alt="Wheat" className="h-5 w-5 object-contain" />
               <span className={clsx("text-sm font-semibold", wheatStatusColor)}>{displayWheatCost}</span>
             </InfoLabel>
             <InfoLabel variant="mine" className="flex-1 items-center justify-between gap-2">

@@ -1,7 +1,7 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
 import { Link, type To } from "react-router-dom";
 
-import { ArrowLeft } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { BACK } from "@/ui/design-system/kit/words";
 
@@ -134,7 +134,7 @@ const DesktopTitle = ({ back, title }: { back: To | undefined; title?: string })
         aria-label={BACK}
         className="-ml-2 flex h-12 shrink-0 items-center gap-1.5 rounded-xl px-2 hover:bg-kit-gold/[.06]"
       >
-        <ArrowLeft size={26} />
+        <SemanticIcon name="arrow-left" size={26} />
         <Kbd keyName="Esc" />
       </Link>
     )}
@@ -169,7 +169,7 @@ const PhoneTitle = ({ back, title }: { back: To; title?: string }) => (
       aria-label={BACK}
       className="-ml-2 flex size-12 shrink-0 items-center justify-center rounded-xl"
     >
-      <ArrowLeft size={26} />
+      <SemanticIcon name="arrow-left" size={26} />
     </Link>
     {title ? <h1 className="truncate font-display text-[24px] leading-tight">{title}</h1> : null}
   </>

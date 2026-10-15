@@ -1,4 +1,4 @@
-import { ReactComponent as TwitterIcon } from "@/assets/icons/twitter.svg";
+import { Icon } from "@/ui/design-system/icon";
 import Button from "@/ui/design-system/atoms/button";
 import React from "react";
 
@@ -36,7 +36,7 @@ const TwitterShareButton: React.FC<Props> = ({
         variant={variant}
       >
         <div className={`flex items-center justify-center mr-2 ${iconSizeClasses[buttonSize]}`}>
-          <TwitterIcon className={`${hover ? "animate-pulse" : ""} transition-all duration-300`} />
+          <Icon name="twitter" className={`${hover ? "animate-pulse" : ""} transition-all duration-300`} />
         </div>
         <span>{callToActionText ? callToActionText : "Share"}</span>
       </Button>

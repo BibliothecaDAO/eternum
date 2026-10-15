@@ -154,7 +154,6 @@ export interface Resources {
   colour: string;
   id: number;
   description: string;
-  img: string;
   ticker: string;
   rarity?: string;
 }

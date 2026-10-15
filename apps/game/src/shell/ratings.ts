@@ -1,6 +1,6 @@
+import { type IconMeaning } from "@/ui/design-system/icon";
 import { useQuery } from "@tanstack/react-query";
 
-import type { IconCode } from "@/ui/design-system/kit/kit-icon";
 import { fetchApi } from "@/runtime/app-api";
 
 /**
@@ -60,13 +60,13 @@ export const ratingPoints = (rating: string): number => Number(rating.split(".")
 
 /** The game's six tiers, highest first, each from its floor in rating points (the earlier client's mmr-tiers). */
 const TIERS = [
-  { name: "Storm Lord", floor: 2400, mark: "R1" },
-  { name: "Warlord", floor: 2000, mark: "R2" },
-  { name: "Conqueror", floor: 1600, mark: "R3" },
-  { name: "Marauder", floor: 1200, mark: "R4" },
-  { name: "Raider", floor: 600, mark: "R5" },
-  { name: "Scrapper", floor: 0, mark: "R6" },
-] as const satisfies readonly { name: string; floor: number; mark: IconCode }[];
+  { name: "Storm Lord", floor: 2400, mark: "rating-storm-lord" },
+  { name: "Warlord", floor: 2000, mark: "rating-warlord" },
+  { name: "Conqueror", floor: 1600, mark: "rating-conqueror" },
+  { name: "Marauder", floor: 1200, mark: "rating-marauder" },
+  { name: "Raider", floor: 600, mark: "rating-raider" },
+  { name: "Scrapper", floor: 0, mark: "rating-scrapper" },
+] as const satisfies readonly { name: string; floor: number; mark: IconMeaning }[];
 
 type RatingTier = (typeof TIERS)[number];
 

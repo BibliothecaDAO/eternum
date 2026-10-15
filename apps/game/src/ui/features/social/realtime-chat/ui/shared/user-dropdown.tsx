@@ -1,4 +1,5 @@
-import { Pin } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import React, { useState, useMemo } from "react";
 import type { PlayerPresence } from "../../model/types";
 import { UserAvatar } from "./user-avatar";
@@ -68,7 +69,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({
             className={`ml-2 p-1 rounded hover:bg-gold/20 transition-colors ${isPinned ? "text-gold" : "text-kit-muted"}`}
             title={isPinned ? "Unpin user" : "Pin user"}
           >
-            <Pin className={`h-3 w-3 ${isPinned ? "opacity-100" : "opacity-40"}`} />
+            <SemanticIcon name="pin" className={`h-3 w-3 ${isPinned ? "opacity-100" : "opacity-40"}`} />
           </button>
         )}
       </li>

@@ -72,7 +72,7 @@ const LeadOrState = ({ facts }: { facts: PlayFacts }) => {
   if (!facts.board)
     return (
       <StateCard painting="frontier-mist">
-        <Button role="primary" word={WORDS.play} icon="Pl" disabled />
+        <Button role="primary" word={WORDS.play} icon="play" disabled />
       </StateCard>
     );
   // With no lead, the quiet card speaks only once every source answered: a read still out or failed is not "nothing".

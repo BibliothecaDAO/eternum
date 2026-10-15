@@ -1,5 +1,6 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { Factory, FlaskConical, Sparkles } from "@/ui/design-system/atoms/game-icons";
+
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -190,7 +191,7 @@ export const ResourceChip = ({
             setTooltip(null);
           }}
         >
-          <Sparkles className="h-3 w-3 animate-pulse" />
+          <SemanticIcon name="relics" className="h-3 w-3 animate-pulse" />
           {formatTime(relicTimeRemaining)}
         </span>
       )}
@@ -217,7 +218,7 @@ export const ResourceChip = ({
           disabled={disableButtons}
           className={actionButton}
         >
-          <Factory className="h-4 w-4" />
+          <SemanticIcon name="production" className="h-4 w-4" />
         </button>
       )}
       {canOpenCraftRelic && (
@@ -246,7 +247,7 @@ export const ResourceChip = ({
           aria-label="Craft relic from research"
           className={cn(actionButton, "border border-relic/35 bg-relic/10 text-relic2 hover:bg-relic/20")}
         >
-          <FlaskConical className="h-4 w-4" />
+          <SemanticIcon name="research" className="h-4 w-4" />
         </button>
       )}
       {showTransfer && (
@@ -312,7 +313,7 @@ export const ResourceChip = ({
           onMouseLeave={() => setTooltip(null)}
           className={actionButton}
         >
-          <Sparkles className="h-4 w-4" />
+          <SemanticIcon name="relics" className="h-4 w-4" />
         </button>
       )}
     </div>

@@ -1,3 +1,4 @@
+import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { useUISound } from "@/audio";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { OVERLAY_SURFACE_ACTIVE, OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
@@ -12,7 +13,7 @@ type CircleButtonProps = {
   disabled?: boolean;
   active?: boolean;
   label?: string;
-  image?: string;
+  image?: IconMeaning;
   /**
    * "default" keeps the legacy wooden chrome (modals, in-panel uses).
    * "hud" applies the shared Etched Bronze HUD surface so view-switcher
@@ -191,18 +192,7 @@ const CircleButton = ({
         {children}
         {image && (
           <div className="w-full h-full">
-            <img
-              className={clsx(
-                "p-1.5 w-full h-full object-contain",
-                // Action buttons sit on a bright gold fill where the gold raster
-                // art washes out. Knock it to a silhouette and let ~20% of the
-                // warm gold bleed through (opacity-80) so it reads as very dark
-                // brown rather than stark black — matching the chat icon + theme.
-                variant === "action" && "brightness-0 opacity-80",
-              )}
-              src={image}
-              alt="icon"
-            />
+            <Icon name={image} className="p-1.5 w-full h-full object-contain" />
           </div>
         )}
         {disabled && <div className="absolute inset-0 bg-brown opacity-50 rounded-full"></div>}

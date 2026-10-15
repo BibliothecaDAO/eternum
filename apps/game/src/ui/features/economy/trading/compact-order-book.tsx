@@ -1,7 +1,8 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import type { CompactLane } from "@/hooks/helpers/use-compact-hud";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import type { ID, MarketInterface, ResourcesIds } from "@bibliothecadao/types";
-import { ChevronDown } from "@/ui/design-system/atoms/game-icons";
+
 import { useState } from "react";
 import { resolveBestPrice } from "./best-prices";
 import {
@@ -118,7 +119,12 @@ const OffersDisclosure = ({
           isBuy={isBuy}
           offers={offers}
           className="min-h-9"
-          trailing={<ChevronDown className={cn("h-4 w-4 text-gold/70 transition-transform", isOpen && "rotate-180")} />}
+          trailing={
+            <SemanticIcon
+              name="chevron-down"
+              className={cn("h-4 w-4 text-gold/70 transition-transform", isOpen && "rotate-180")}
+            />
+          }
         />
       </button>
       {isOpen && (

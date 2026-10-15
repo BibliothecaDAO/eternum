@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
@@ -7,7 +8,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { triggerConnectionForceReconnect } from "@/ui/features/world/components/network-status-retry";
 import { configManager } from "@bibliothecadao/eternum";
 import { TickIds } from "@bibliothecadao/types";
-import { RefreshCw, ScrollText, WifiOff } from "@/ui/design-system/atoms/game-icons";
+
 import { useEffect, useRef, useState } from "react";
 import { orderHeadlineFeed, useHeadlineFeedStore } from "../news-headlines/headline-feed-store";
 import type { Headline } from "../news-headlines/headline-types";
@@ -31,7 +32,7 @@ export const QuickFeed = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogTog
       onToggle={onLogToggle}
       className={cn("h-9 gap-1.5 rounded-md px-2.5 font-sans hover:border-gold/50", OVERLAY_SURFACE_BASE, HUD_LABEL)}
     >
-      <ScrollText className="h-4 w-4" />
+      <SemanticIcon name="chronicles" className="h-4 w-4" />
       Log
     </LogToggle>
     <QuickFeedRows />
@@ -169,7 +170,7 @@ function OfflineRow() {
   if (status !== "disconnected") return null;
   return (
     <div aria-label="Offline" className={cn(FEED_ROW_CLASS, "border border-danger/60 text-danger")}>
-      <WifiOff className="h-4 w-4 shrink-0" />
+      <SemanticIcon name="network-off" className="h-4 w-4 shrink-0" />
       <span className="min-w-0 flex-1 truncate">Offline</span>
       <button
         type="button"
@@ -177,7 +178,7 @@ function OfflineRow() {
         onClick={() => void triggerConnectionForceReconnect()}
         className="inline-flex items-center gap-1 font-sans text-sm text-danger hover:underline disabled:cursor-wait"
       >
-        <RefreshCw className={cn("h-3 w-3", reconnecting && "animate-spin")} />
+        <SemanticIcon name="refresh" className={cn("h-3 w-3", reconnecting && "animate-spin")} />
         Retry
       </button>
     </div>

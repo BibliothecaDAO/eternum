@@ -1,5 +1,6 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { ElementType, ReactNode } from "react";
+import { ReactNode } from "react";
 
 type TabCueTone = "default" | "success" | "warning" | "danger" | "muted";
 type EntityBannerRelicCueState = "empty" | "stored" | "usable";
@@ -17,7 +18,7 @@ interface EntityBannerRelicCue {
 }
 
 interface EntityBannerTabCueProps {
-  icon: ElementType<{ className?: string }>;
+  icon: IconMeaning;
   label: string;
   cue?: ReactNode;
   splitCue?: EntityBannerSplitCue;
@@ -56,7 +57,7 @@ export const resolveEntityBannerRelicCue = (usableRelics: number, totalRelics: n
 const EntityBannerTabCue = ({ icon: Icon, label, cue, splitCue, tone = "default" }: EntityBannerTabCueProps) => {
   return (
     <span className="relative flex h-8 min-w-0 items-center justify-center">
-      <Icon className="h-4 w-4 text-gold" />
+      <SemanticIcon name={Icon} className="h-4 w-4 text-gold" />
       <span className="sr-only">{label}</span>
       {splitCue ? (
         <span

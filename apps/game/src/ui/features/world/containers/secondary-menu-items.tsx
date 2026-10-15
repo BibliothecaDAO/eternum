@@ -1,5 +1,4 @@
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { Popover } from "@/ui/design-system/molecules/popover";
 import { SETTINGS_POPOVER_ID, SettingsPanel } from "@/ui/modules/settings/settings";
@@ -22,7 +21,7 @@ export const SecondaryMenuItems = () => {
             className="settings-selector"
             tooltipLocation="bottom"
             active={openPopoverId === SETTINGS_POPOVER_ID}
-            image={BuildingThumbs.settings}
+            image={"settings" as const}
             label={"Settings"}
             aria-label="Settings"
             size="topbar"

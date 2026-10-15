@@ -1,10 +1,11 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatExact } from "@/ui/design-system/kit/amount";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { shortAddress } from "@/ui/design-system/kit/address";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 
 import { isSameStarknetAddress } from "@realms-world/identity";
@@ -39,7 +40,7 @@ export const BlitzBoard = () => {
   const prize = useBoardPrize(now);
   return (
     <Panel
-      icon="Pl"
+      icon="play"
       title={ageOf("blitz").name}
       aside={prize.prize && <PrizeHead prize={prize.prize} state={prize.state} />}
     >
@@ -128,7 +129,7 @@ const RatingRow = ({
     <RatingFigure rating={rating} />
     {share !== undefined && (
       <span className="inline-flex w-24 items-center justify-end gap-1 font-body text-base font-bold tabular-nums text-kit-gold2">
-        <KitIcon code="Lo" size={16} />
+        <SemanticIcon name="lords" size={16} />
         {formatExact(lordsOf(share))}
       </span>
     )}

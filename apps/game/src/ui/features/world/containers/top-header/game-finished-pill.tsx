@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { requireActiveGame } from "@/runtime/world/store";
@@ -6,7 +7,7 @@ import Button from "@/ui/design-system/atoms/button";
 import { HUD_BODY, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Popover } from "@/ui/design-system/molecules/popover";
-import { Trophy as TrophyIcon } from "@/ui/design-system/atoms/game-icons";
+
 import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { TOP_PILL } from "./top-pill";
@@ -42,7 +43,7 @@ export const GameFinishedPill = () => {
             isOpen && "border-gold/60 bg-gold/15",
           )}
         >
-          <TrophyIcon className="h-3.5 w-3.5 text-gold" aria-hidden="true" />
+          <SemanticIcon name="victory" className="h-3.5 w-3.5 text-gold" aria-hidden="true" />
           <span>Game finished</span>
         </button>
       }

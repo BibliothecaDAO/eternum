@@ -1,8 +1,9 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { SeasonRow } from "@/ui/design-system/kit/season-row";
 import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
@@ -63,7 +64,7 @@ const DesktopSeason = () => {
     <PageFrame title={season ? seasonTitle(season) : WORDS.season}>
       <div className="grid grid-cols-[minmax(0,1fr)_34rem] items-start gap-6">
         {season || directory.isPending || directory.isError ? (
-          <Panel icon="Tp" title={ageOf("frontier").name} aside={season && <SeasonDay season={season} />}>
+          <Panel icon="victory" title={ageOf("frontier").name} aside={season && <SeasonDay season={season} />}>
             <FrontierBoard rowsShown={ROWS_SHOWN.desktop} framed={false} />
           </Panel>
         ) : (
@@ -87,7 +88,7 @@ const SeasonDay = ({ season }: { season: DirectoryGame }) => {
   const now = useNowSeconds();
   return (
     <span className="flex items-center gap-1 text-base font-normal text-kit-muted">
-      <KitIcon code="Hg" size={20} />
+      <SemanticIcon name="hourglass" size={20} />
       {`${DAY} ${directoryDay(season, now).day ?? "—"}`}
     </span>
   );
@@ -106,11 +107,11 @@ const SeasonHeader = () => {
   const day = season && directoryDay(season, now).day;
   return (
     <h1 className="flex items-center gap-2 font-body text-xl font-bold text-kit-cream">
-      <KitIcon code="Tp" size={26} />
+      <SemanticIcon name="victory" size={26} />
       {season ? seasonTitle(season) : WORDS.season}
       {season && (
         <span className="ml-auto flex items-center gap-1 text-base text-kit-muted">
-          <KitIcon code="Hg" size={20} />
+          <SemanticIcon name="hourglass" size={20} />
           {`${DAY} ${day ?? "—"}`}
         </span>
       )}

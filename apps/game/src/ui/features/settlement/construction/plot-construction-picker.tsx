@@ -1,4 +1,6 @@
-import { BUILDING_IMAGES_PATH } from "@/ui/config";
+import { resourceMeaning } from "@/ui/design-system/icon-meaning";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import { buildingMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useEffect } from "react";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -57,11 +59,7 @@ export function PlotConstructionPicker(target: PlotConstructionTarget) {
                   onMouseLeave={() => setTooltip(null)}
                   className="relative min-w-0 overflow-hidden rounded border border-gold/25 p-1 text-center text-sm"
                 >
-                  <img
-                    src={BUILDING_IMAGES_PATH[building.type as keyof typeof BUILDING_IMAGES_PATH]}
-                    alt=""
-                    className="h-16 w-full object-contain"
-                  />
+                  <SemanticIcon name={buildingMeaning(building.type)} alt="" className="h-16 w-full object-contain" />
                   <span className="block font-semibold">{building.label}</span>
                   <span className="flex flex-wrap justify-center gap-x-2 gap-y-1 py-1 text-sm tabular-nums">
                     {building.requirements === undefined && "—"}
@@ -71,8 +69,8 @@ export function PlotConstructionPicker(target: PlotConstructionTarget) {
                         className="inline-flex items-center gap-0.5"
                         title={ResourcesIds[cost.resource]}
                       >
-                        <img
-                          src={`/images/resources/${cost.resource}.png`}
+                        <SemanticIcon
+                          name={resourceMeaning(cost.resource)}
                           alt={ResourcesIds[cost.resource]}
                           className="h-4 w-4"
                         />

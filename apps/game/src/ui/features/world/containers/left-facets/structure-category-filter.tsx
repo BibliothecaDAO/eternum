@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useUIStore, type LeftListFilter } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CATEGORY_FILTER_OPTIONS } from "@/ui/features/world/containers/structure-list-utils";
@@ -82,7 +83,7 @@ export const FilterChipsRow = memo(({ availableCategories, filterValue, onFilter
             aria-label={option.label}
             title={option.label}
           >
-            <Icon className="h-4 w-4" />
+            <SemanticIcon name={Icon} className="h-4 w-4" />
           </button>
         );
       })}

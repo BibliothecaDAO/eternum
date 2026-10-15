@@ -1,4 +1,5 @@
-import { RefreshCw } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
@@ -132,7 +133,7 @@ export const ThreeChunkDebugView = () => {
             "text-sm font-semibold text-sky-100 transition-colors hover:bg-sky-300/20",
           )}
         >
-          <RefreshCw className="h-4 w-4" />
+          <SemanticIcon name="refresh" className="h-4 w-4" />
           Reset Camera
         </button>
       </aside>

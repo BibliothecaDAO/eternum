@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { REQUIREMENT_CHIP, RequirementChips } from "@/ui/design-system/molecules/requirement-chips";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -12,7 +13,6 @@ import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-struc
 import { useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
-import { ChevronsUp, Crown as CrownIcon, Pickaxe } from "@/ui/design-system/atoms/game-icons";
 
 // One chip style for every requirement / produces row — matches the
 // building-tile inspector so the castle reads with the same vocabulary.
@@ -81,7 +81,7 @@ export const RealmUpgradeCompact = () => {
         <LaborRateRow structureId={structureEntityId} />
         <SectionRow label="Upgrade">
           <span className={CHIP_BASE} title="Max level reached">
-            <CrownIcon className="h-3.5 w-3.5 text-gold" />
+            <SemanticIcon name="crown" className="h-3.5 w-3.5 text-gold" />
             <span className="text-gold">Max</span>
           </span>
         </SectionRow>
@@ -90,7 +90,7 @@ export const RealmUpgradeCompact = () => {
     );
   }
 
-  const Icon = levelUp.mode === "provision" ? Pickaxe : ChevronsUp;
+  const Icon = levelUp.mode === "provision" ? ("pickaxe" as const) : ("chevron-up" as const);
   return (
     <div className="flex flex-col gap-2.5">
       <LaborRateRow structureId={structureEntityId} />
@@ -112,7 +112,7 @@ export const RealmUpgradeCompact = () => {
               : "cursor-not-allowed border-gold/20 bg-black/40 text-kit-muted",
           )}
         >
-          <Icon className="h-3.5 w-3.5" />
+          <SemanticIcon name={Icon} className="h-3.5 w-3.5" />
           <span>{levelUp.refusal ?? levelUp.word}</span>
         </button>
       </div>

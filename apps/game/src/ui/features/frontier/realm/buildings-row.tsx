@@ -1,20 +1,21 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { formatAmount } from "@/ui/design-system/kit/amount";
-import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { BARRACKS, BUILDINGS, FARM, HUT, WORKSHOP } from "@/ui/design-system/kit/words";
 import { buildableRadius } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BuildingType } from "@bibliothecadao/types";
 
 /** The four common building types the row counts, in the wireframe's order. */
-const TYPES: { category: BuildingType; icon: IconCode; word: string }[] = [
-  { category: BuildingType.ResourceWheat, icon: "Fm", word: FARM },
-  { category: BuildingType.ResourceKnightT1, icon: "Bs", word: BARRACKS },
-  { category: BuildingType.ResourceLabor, icon: "Wk", word: WORKSHOP },
-  { category: BuildingType.WorkersHut, icon: "Ht", word: HUT },
+const TYPES: { category: BuildingType; icon: IconMeaning; word: string }[] = [
+  { category: BuildingType.ResourceWheat, icon: "farm", word: FARM },
+  { category: BuildingType.ResourceKnightT1, icon: "barracks", word: BARRACKS },
+  { category: BuildingType.ResourceLabor, icon: "workshop", word: WORKSHOP },
+  { category: BuildingType.WorkersHut, icon: "workers-hut", word: HUT },
 ];
 
 /** A realm of 36 plots or more is read whole on a phone; the row is how a type's sheet opens in one tap. */
@@ -43,7 +44,7 @@ export const BuildingsRow = ({
         className="frontier-chip h-12 w-[60px] justify-center !rounded-[14px] !px-2 disabled:opacity-50"
       >
         <span className="contents">
-          <KitIcon code={icon} size={22} />
+          <SemanticIcon name={icon} size={22} />
           <span className="frontier-chip-number tabular-nums !text-base">{formatAmount(counts[category])}</span>
         </span>
       </button>
