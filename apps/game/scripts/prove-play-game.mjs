@@ -7,8 +7,8 @@
  * - `--crate <col>,<row>`: a relic crate one of the player's armies stands next to. The map opens on that tile, the
  *   pointer moves over it until the game names it ("Relic Crate"), a click opens its panel, which must name the crate's
  *   pack and its three relics, all level II when the pack is lucky and all level I otherwise. **Open** opens it: the
- *   opened panel must list exactly those relics, and after a reload the game's log must hold "<pack> opened" naming
- *   them again.
+ *   opened panel must list exactly those relics, and after a reload **Log** must open the game's history, which must
+ *   hold "<pack> opened" naming them again.
  * - `--until-end`: the map stays open until the game ends; **Game finished** → **See the results** must reach the
  *   game's own Results page.
  * - `--ended` (and after `--until-end`), at desktop and phone: an ended game's doorway **Results** and its map
@@ -138,17 +138,26 @@ const pressButton = (b, word, within = "body") => {
   return true;
 };
 
-/** The Events card's **All**, which opens the game's log. */
-const openEventsLog = (b) => {
-  const selector = b.evaluate(`(() => {
-    const heading = [...document.querySelectorAll("h2")].find((el) => el.innerText.trim() === "Events");
-    const button = heading?.closest("section")?.querySelector("button");
-    if (!button) return null;
-    button.setAttribute("data-proof-step", "events-all");
-    return '[data-proof-step="events-all"]';
+/** The right column's **Log** button (`QuickFeed`'s `LogToggle`) and the history its panel opens on. */
+export const LOG_BUTTON = 'button[aria-label="Log"]';
+export const HISTORY = 'section[aria-label="World history"]';
+
+/** Presses **Log**, as a player would, and returns why the game's history did not open, or null once it shows. */
+const openHistory = async (b) => {
+  const found = b.evaluate(`(() => {
+    const button = document.querySelector(${JSON.stringify(LOG_BUTTON)});
+    if (!button) return false;
+    button.setAttribute("data-proof-step", "log");
+    return true;
   })()`);
-  if (selector) b.run("click", selector);
+  if (!found) return "no Log button to open the history";
+  b.run("click", '[data-proof-step="log"]');
+  if (!(await waitFor(b, `document.querySelector(${JSON.stringify(HISTORY)}) !== null`, STEP_TIMEOUT_MS)))
+    return "Log opened no history";
+  return null;
 };
+
+const historyText = (b) => b.evaluate(`document.querySelector(${JSON.stringify(HISTORY)})?.innerText ?? ""`);
 
 const clickAt = (b, [x, y], button = "left") => {
   b.run("mouse", "move", String(x), String(y));
@@ -223,9 +232,20 @@ const proveCrate = async (b, base, addresses, [col, row], out) => {
   b.run("reload");
   if (!(await waitFor(b, MAP_READY, READY_TIMEOUT_MS))) return { ...record, problem: "map not ready after reload" };
   await sleep(3000);
-  openEventsLog(b);
-  if (pack) await waitForText(b, `${pack.name} opened`);
-  record.log = bodyText(b)
+  const historyProblem = await openHistory(b);
+  if (historyProblem)
+    return {
+      ...record,
+      screenshots: [...record.screenshots, shot(b, out, "crate-4-no-history.png")],
+      problem: historyProblem,
+    };
+  if (pack)
+    await waitFor(
+      b,
+      `(document.querySelector(${JSON.stringify(HISTORY)})?.innerText ?? "").includes(${JSON.stringify(`${pack.name} opened`)})`,
+      STEP_TIMEOUT_MS,
+    );
+  record.log = historyText(b)
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => line.endsWith(" opened") || line.includes("Relic"));

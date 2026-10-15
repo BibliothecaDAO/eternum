@@ -1,18 +1,40 @@
 import { JSDOM } from "jsdom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { gameAddresses, judgeStep, linesBetween, proveGame, spiralPoints } from "./prove-play-game.mjs";
+import { readFileSync } from "node:fs";
+
+import {
+  gameAddresses,
+  HISTORY,
+  judgeStep,
+  linesBetween,
+  LOG_BUTTON,
+  proveGame,
+  spiralPoints,
+} from "./prove-play-game.mjs";
 import { parseArgs } from "./prove-play.mjs";
 
 const WAR_RELICS = ["Damage Relic I", "Damage Reduction Relic I", "Stamina Relic I"];
 const LUCKY_FORTRESS_RELICS = ["Structure Defense Relic II", "Damage Reduction Relic II", "Troop Production Relic II"];
 
-/** The pages a War crate shows: the closed panel, the opened panel, and the Events log after a reload. */
+/**
+ * The pages a War crate shows: the closed panel, the opened panel, and the history **Log** opens after a reload, as
+ * `EventLogPanel` heads it.
+ */
 const WAR_CRATE_PAGES = {
   panel: ["Crate #12", "Contents", "War pack", ...WAR_RELICS, "Victory points", "250", "Open", "Biome", "Bare"],
   opened: ["Crate opened", "Contents", ...WAR_RELICS, "Biome", "Bare"],
-  log: ["Events", "War pack opened", `Stolsli T1 army · ${WAR_RELICS.join(", ")}`, "+120 Essence", "Stolsli T1 army"],
+  log: [
+    "World history",
+    "War pack opened",
+    `Stolsli T1 army · ${WAR_RELICS.join(", ")}`,
+    "+120 Essence",
+    "Stolsli T1 army · Reveal",
+  ],
 };
+
+/** The right column's quick feed as `QuickFeed` renders it with the log closed. */
+const QUICK_FEED = `<div aria-label="Quick feed"><button type="button" aria-label="Log" aria-expanded="false">Log</button></div>`;
 
 /** A War crate as the proof reads it: the closed panel's pack, the opened panel and the log after a reload. */
 const WAR_CRATE = {
@@ -31,26 +53,47 @@ const luckyFortress = (relics) => ({
 });
 
 /**
- * A browser on a running game with a War crate in the middle of the map: hovering names it, a click opens its panel,
- * **Open** opens it, and a reload shows the log the game holds.
+ * A browser on a running game with a War crate in the middle of the map, whose page is a DOM every check of the proof
+ * runs against: hovering names the crate, a click opens its panel, **Open** opens it, a reload shows the map with its
+ * quick feed, and only a click on the feed's **Log** (when `logOpensHistory`) shows the history.
  */
-const crateBrowser = (pages = WAR_CRATE_PAGES) => {
-  let page = ["Relic Crate"];
+const crateBrowser = ({ pages = WAR_CRATE_PAGES, feed = QUICK_FEED, logOpensHistory = true } = {}) => {
+  const { window } = new JSDOM("<!doctype html><body></body>");
+  const { document } = window;
+  // jsdom lays nothing out: a block's text is its children's, one per line, and every element has a size.
+  Object.defineProperty(window.HTMLElement.prototype, "innerText", {
+    get() {
+      return this.children.length ? [...this.children].map((child) => child.innerText).join("\n") : this.textContent;
+    },
+  });
+  window.HTMLElement.prototype.getBoundingClientRect = () => ({ width: 1, height: 1 });
+  document.documentElement.dataset.bootState = "app-ready";
+  const show = (lines, withFeed = false) => {
+    const items = lines.map((line) => (line === "Open" ? `<button type="button">Open</button>` : `<p>${line}</p>`));
+    document.body.innerHTML = `<canvas></canvas>${withFeed ? feed : ""}<main>${items.join("")}</main>`;
+  };
+  const showHistory = () => {
+    const history = document.createElement("section");
+    history.setAttribute("aria-label", "World history");
+    history.innerHTML = pages.log.map((line) => `<p>${line}</p>`).join("");
+    document.body.append(history);
+  };
+  show(["Relic Crate"]);
   const answer = (data) => JSON.stringify({ success: true, data, error: null });
   return {
     run: (command, ...args) => {
-      if (command === "mouse" && args[0] === "down") page = pages.panel;
-      if (command === "click" && args[0] === '[data-proof-step="Open"]') page = pages.opened;
-      if (command === "reload") page = pages.log;
+      if (command === "mouse" && args[0] === "down") show(pages.panel);
+      if (command === "click") {
+        const target = document.querySelector(args[0]);
+        if (target?.innerText === "Open") show(pages.opened);
+        if (target?.matches(LOG_BUTTON) && logOpensHistory) showHistory();
+      }
+      if (command === "reload") show(["Stolsli T1 army"], true);
       if (command === "errors") return answer({ errors: [] });
       if (command === "console") return answer({ messages: [] });
       return "";
     },
-    evaluate: (js) => {
-      if (js.startsWith("Boolean(")) return true;
-      if (js === "document.body.innerText") return page.join("\n");
-      return js.includes("events-all") ? '[data-proof-step="events-all"]' : '[data-proof-step="Open"]';
-    },
+    evaluate: (js) => Function("document", `return (${js})`)(document),
   };
 };
 
@@ -193,7 +236,16 @@ describe("a game's proof", () => {
     );
   });
 
-  it("drives a crate from the pointer to the log after a reload, keeping the pack's lines", async () => {
+  it("opens history through the controls the game renders", () => {
+    const feed = readFileSync(new URL("../src/ui/features/event-feed/quick-feed.tsx", import.meta.url), "utf8");
+    const panel = readFileSync(new URL("../src/ui/features/event-feed/event-log-panel.tsx", import.meta.url), "utf8");
+    expect(LOG_BUTTON).toBe('button[aria-label="Log"]');
+    expect(feed).toMatch(/<button[^>]*aria-label="Log"/);
+    expect(HISTORY).toBe('section[aria-label="World history"]');
+    expect(panel).toContain('<section aria-label="World history">');
+  });
+
+  it("drives a crate from the pointer to its history after a reload, opened by Log", async () => {
     const record = await proveCrate(crateBrowser());
     expect(record.problem).toBeUndefined();
     expect(record.found).toEqual([720, 450]);
@@ -202,9 +254,19 @@ describe("a game's proof", () => {
     expect(record.log).toEqual(WAR_CRATE.log);
   });
 
-  it("fails a driven crate whose log, after the reload, still titles the opening the old way", async () => {
-    const log = ["Events", "Relic crate opened", `Stolsli T1 army · ${WAR_RELICS.join(", ")}`];
-    const record = await proveCrate(crateBrowser({ ...WAR_CRATE_PAGES, log }));
+  it("fails a driven crate when the page has no Log, or Log opens no history", async () => {
+    const withoutLog = await proveCrate(
+      crateBrowser({ feed: "<section><h2>Events</h2><button>All</button></section>" }),
+    );
+    expect(withoutLog.problem).toBe("no Log button to open the history");
+    expect(withoutLog.log).toBeUndefined();
+    const closed = await proveCrate(crateBrowser({ logOpensHistory: false }));
+    expect(closed.problem).toBe("Log opened no history");
+  });
+
+  it("fails a driven crate whose history still titles the opening the old way", async () => {
+    const log = ["World history", "Relic crate opened", `Stolsli T1 army · ${WAR_RELICS.join(", ")}`];
+    const record = await proveCrate(crateBrowser({ pages: { ...WAR_CRATE_PAGES, log } }));
     expect(record.problem).toBe('the log holds no "War pack opened" after the reload');
   });
 
