@@ -16,47 +16,43 @@ const CODE_FIELD = 'input[autocomplete="one-time-code"]';
 const ENTRY_BUTTON = "[data-playtest-entry]";
 
 /**
- * Signs the profile in when the home page shows it signed out, and keeps it as it is otherwise. The runner reads no
- * mail: it asks for the code on stderr and waits for whoever runs it to write the code to `codeFile`. Returns "kept" or
- * "signed in"; the home page is to be opened again after a sign-in.
+ * Signs the profile in on the sign-in page, which knows the session: a signed-in player is sent on from it at once, a
+ * signed-out one is asked for an email. The runner reads no mail: it asks for the code on stderr and waits for whoever
+ * runs it to write the code to `codeFile`. Returns "kept" or "signed in"; the home page is to be opened again after.
  */
 export async function signInIfSignedOut({ browser, owner, email, baseUrl, codeFile }) {
-  if ((await identityShown(browser, owner)) === "signed-in") return "kept";
   browser.run(["open", new URL("/sign-in", baseUrl).href]);
-  await waitUntil(owner, () => browser.read(isShown(EMAIL_FIELD)), "the sign-in page shows no email field");
+  const before = await signInState(browser, owner, email, ["signed-in", "signed-out"]);
+  if (before === "signed-in") return "kept";
   browser.run(["fill", EMAIL_FIELD, email]);
   browser.click("Send code");
   await waitUntil(owner, () => browser.read(isShown(CODE_FIELD)), `no code field after sending a code to ${email}`);
   browser.run(["type", CODE_FIELD, await waitForSignInCode(owner, email, codeFile)]);
-  let outcome = null;
-  await waitUntil(owner, () => (outcome = browser.read(SIGN_IN_OUTCOME)), `the code did not sign ${email} in`);
-  // A test account is never set up by a run: one that asks for a name is not one to play.
-  if (outcome === "claim-name")
-    throw new Error(`${email} has no name: the sign-in asks to claim one, not a test account`);
+  await signInState(browser, owner, email, ["signed-in"]);
   return "signed in";
 }
 
-const SIGN_IN_OUTCOME = `JSON.stringify(
+/**
+ * Waits for the sign-in page to answer with one of `awaited`: it sends a signed-in player on, asks a signed-out one for
+ * an email. A test account is never set up by a run: one the page asks to claim a name is refused.
+ */
+async function signInState(browser, owner, email, awaited) {
+  let state = null;
+  const answered = () => (state = browser.read(SIGN_IN_STATE)) === "claim-name" || awaited.includes(state);
+  await waitUntil(owner, answered, `the sign-in page gave ${email} none of ${awaited.join(", ")}`);
+  if (state === "claim-name")
+    throw new Error(`${email} has no name: the sign-in asks to claim one, not a test account`);
+  return state;
+}
+
+const SIGN_IN_STATE = `JSON.stringify(
   location.pathname !== "/sign-in"
     ? "signed-in"
     : [...document.querySelectorAll("button")].some((button) => button.textContent.trim() === "Claim name")
       ? "claim-name"
-      : null,
-)`;
-
-/** The rail's foot as the home page settles: the player's portrait once signed in, Sign in otherwise. */
-export async function identityShown(browser, owner) {
-  let identity = null;
-  await waitUntil(owner, () => (identity = browser.read(IDENTITY_EXPRESSION)), "the home page shows no identity");
-  return identity;
-}
-
-const IDENTITY_EXPRESSION = `JSON.stringify(
-  document.querySelector('a[href="/profile"]:not([data-role="tab"]) img')
-    ? "signed-in"
-    : [...document.querySelectorAll("button")].some((button) => button.textContent.trim() === "Sign in")
-      ? "signed-out"
-      : null,
+      : document.querySelector(${JSON.stringify(EMAIL_FIELD)})
+        ? "signed-out"
+        : null,
 )`;
 
 async function waitForSignInCode(owner, email, codeFile) {

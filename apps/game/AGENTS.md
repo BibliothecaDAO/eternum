@@ -105,11 +105,11 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
   stamina, open and close production, the next order's life (below), explore twice (tap a tile beside the army, Enter),
   then the next order dropped by leaving the map. Orders use the map's default zoom; the army must be deployed.
 - **Signing in.** Each player keeps a profile under `.context/playtest-profiles/<email>`; agent-browser is handed it on
-  every command (it relaunches on a temporary profile for a command that omits it). A run whose home page shows the
-  player signed out signs in through the sign-in page as a player does: the email, Send code, then the code. The runner
-  reads no mail: it prints `{"signInCode": {"email", "writeTo"}}` on stderr and waits up to 10 minutes for the code from
-  the sign-in mail in that file, which it deletes once read. An account that asks to claim a name is refused: a run
-  never sets up an account.
+  every command (it relaunches on a temporary profile for a command that omits it). Each run opens the sign-in page
+  first: it sends a signed-in player on at once, and a signed-out one signs in there as a player does: the email, Send
+  code, then the code. The runner reads no mail: it prints `{"signInCode": {"email", "writeTo"}}` on stderr and waits up
+  to 10 minutes for the code from the sign-in mail in that file, which it deletes once read. An account that asks to
+  claim a name is refused: a run never sets up an account.
 - **The next order's life**, each step with the army's first order held in flight at the network (DevTools pauses its
   `starknet_addInvokeTransaction` send while the step acts, then lets it reach the node or, for refused, answers it as
   the node refusing the transaction, a JSON-RPC validation failure, without it reaching the node): a tile tapped beside

@@ -29,12 +29,7 @@ import {
   summarizeRpcSends,
   summarizeStep,
 } from "./client-playtest/evidence.mjs";
-import {
-  continuePastTheDaySummary,
-  enterAsPlayer,
-  identityShown,
-  signInIfSignedOut,
-} from "./client-playtest/player-entry.mjs";
+import { continuePastTheDaySummary, enterAsPlayer, signInIfSignedOut } from "./client-playtest/player-entry.mjs";
 import { Cancelled, createRunOwner } from "./client-playtest/run-owner.mjs";
 import { STEP_SETS } from "./client-playtest/steps.mjs";
 
@@ -273,8 +268,9 @@ async function playRun(context) {
     record.url = player
       ? buildPlayerHomeUrl({ baseUrl: context.baseUrl, rendererMode })
       : buildPlaytestUrl({ baseUrl: context.baseUrl, chainId: game.chainId, gameId: game.gameId, rendererMode });
-    browser.run(["open", record.url]);
+    // A player is signed in first, on the sign-in page, then opens the home page.
     if (player) record.signIn = await signInAsPlayer({ ...context, browser, url: record.url });
+    else browser.run(["open", record.url]);
     const entered = player ? await enterAsPlayer(browser, owner, timeoutMs, { card: stepsGame.card, game }) : null;
     record.boot = { ...(await waitForEntrySnapshot(browser, owner, timeoutMs)), entered };
     browser.screenshot(join(runDir, `${label}-00-boot.png`));
@@ -428,10 +424,7 @@ async function signInAsPlayer({ baseUrl, browser, owner, player, runDir, url }) 
     baseUrl,
     codeFile: join(runDir, "sign-in-code"),
   });
-  if (signIn === "kept") return signIn;
   browser.run(["open", url]);
-  if ((await identityShown(browser, owner)) !== "signed-in")
-    throw new Error(`${player} is not signed in after its code`);
   return signIn;
 }
 
