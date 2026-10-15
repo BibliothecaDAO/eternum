@@ -74,3 +74,18 @@ pnpm --dir apps/game verify:terrain:gallery --base-url 'https://127.0.0.1:4194/?
 Both renderer backends are checked by default. Each capture records the requested world mode and the actual terrain
 snapshot; the gate rejects a mode mismatch. These runs verify presentation and reveal coverage; they do not establish
 performance on a live world. Live proof uses the existing `playtest` command after the dev stack is available.
+
+## Production realms
+
+Open **Models & motion → Realm ladder**, or `/lab/models?family=realms`. Age, normal/wonder, entity, Order and ownership
+controls exercise the same `SettlementModel` used by the world map. All ages compares the ladder at true scale; Close,
+Gameplay and Far use distances 6, 20 and 45. Drag to orbit and scroll to zoom. The entity picker exposes both city and
+kingdom designs and all seven imperial crowns. The separate sculpt is a study, not a runtime option.
+
+`/lab/terrain-benchmark?realms=1` adds 48 production realm placements (24 normal, 24 wonder) to the existing terrain
+trace. The checkbox is also available in the benchmark UI. Its fingerprint ends in `:realms48`; compare identical
+fingerprints for regression claims. The terrain-only trace remains unchanged.
+
+`apps/game/scripts/realms/prove-realm-series.playwright.js` drives the visible realm controls and captures the models,
+heraldry and aura animation. Run its function with the connected browser and a fresh evidence directory; all pages are
+closed when it finishes. Live proof uses the client's existing `playtest` command after dev is available.

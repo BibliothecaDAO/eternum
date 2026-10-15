@@ -46,6 +46,7 @@ export const ProceduralTerrainBenchmarkView = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rendererRef = useRef<ProceduralTerrainBenchmarkRendererHandle | null>(null);
   const capture = searchParams.get("capture") === "1";
+  const realms = searchParams.get("realms") === "1";
   const autoRun = searchParams.get("autorun") === "1";
   const densityMultiplier = resolveDensityMultiplier(searchParams.get("density"));
   const explorationMode = resolveExplorationMode(searchParams.get("explorationMode"));
@@ -68,6 +69,7 @@ export const ProceduralTerrainBenchmarkView = () => {
     const mountFrame = window.requestAnimationFrame(() => {
       void mountProceduralTerrainBenchmarkRenderer({
         autoRun,
+        realms,
         canvas,
         captureMode: capture,
         densityMultiplier,
@@ -103,7 +105,18 @@ export const ProceduralTerrainBenchmarkView = () => {
       rendererRef.current?.dispose();
       rendererRef.current = null;
     };
-  }, [autoRun, capture, configError, densityMultiplier, explorationMode, forceWebGL, runMode, traceMode, variant]);
+  }, [
+    realms,
+    autoRun,
+    capture,
+    configError,
+    densityMultiplier,
+    explorationMode,
+    forceWebGL,
+    runMode,
+    traceMode,
+    variant,
+  ]);
 
   const setOption = (name: string, value: string) => {
     const next = new URLSearchParams(searchParams);
@@ -132,6 +145,14 @@ export const ProceduralTerrainBenchmarkView = () => {
     >
       {!capture && (
         <aside className="flex max-h-[calc(100vh-2rem)] flex-col gap-4 overflow-y-auto border border-white/10 bg-black/60 p-4">
+          <label>
+            <input
+              type="checkbox"
+              checked={realms}
+              onChange={(event) => setOption("realms", event.target.checked ? "1" : "0")}
+            />{" "}
+            48 realms · normal and wonder
+          </label>
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="flex items-center gap-2 text-sm font-semibold text-emerald-200/70">

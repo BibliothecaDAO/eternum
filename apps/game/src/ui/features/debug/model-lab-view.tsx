@@ -1,3 +1,4 @@
+import { RealmSeriesLab } from "./realm-series-lab";
 // @refresh reset
 import {
   Anchor,
@@ -52,6 +53,11 @@ const DESIGN_NOTES = {
 const CLASS_ICONS = { knight: 26, crossbowman: 29, paladin: 32 };
 
 export function ModelLabView() {
+  const [params] = useSearchParams();
+  return params.get("family") === "realms" ? <RealmSeriesLab /> : <UnitModelLabView />;
+}
+
+function UnitModelLabView() {
   const [params, setParams] = useSearchParams();
   const settings = readModelLabSettings(params);
   const settingsRef = useRef(settings);
@@ -164,6 +170,7 @@ export function ModelLabView() {
     <main className="model-lab" data-ready={ready} data-debug-route="model-lab">
       <header className="ml-header">
         <Box size={25} />
+        <Link to="/lab/models?family=realms">Realm ladder</Link>
         <div>
           <strong>Models & motion</strong>
           <span>FLEETS · ARMIES · BIOMES</span>
