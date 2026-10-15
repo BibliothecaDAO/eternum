@@ -33,6 +33,9 @@ ends and leaves through **Game finished** → **See the results**, checking the 
 (`scripts/prove-play-game.mjs`, writing `game-proof.json` and screenshots into a new directory per run). The outpost
 proof below drives the runtime lab; live actions still need an eligible player.
 
+Inside a Frontier match, `pnpm --dir apps/game playtest [--player <email>]` plays it as a spectator or a signed-in
+player and judges each step by what the page shows (`apps/game/AGENTS.md`).
+
 ## Shell (outside a game)
 
 On a desktop, a bar across the top holds the lockup, Play and Season, and You at its right end; keys `1`–`3` open the
@@ -97,7 +100,8 @@ and on a phone just above the foot.
 
 A match opens from the lobby (**Your game**) or from home (**Enter**). Add `?spectate=true` to watch a running game.
 Both modes show War room (`src/ui/features/world/war-room/war-room-hud.tsx`). Below 1024 px wide the same cards stack:
-Next up and the selected realm above one tab bar (Realm, Map, Events, Chat, Details), one sheet at a time.
+Next up and the selected realm above one tab bar (Realm, Map, Events, Chat, Details), one sheet at a time. The map and
+realm routes are `/g/:chain/:game/map` and `/g/:chain/:game/hex`.
 
 | Feature                                                                                  | Where                                             | How to reach it                                                                                                                                                                                        |
 | ---------------------------------------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -138,9 +142,17 @@ one sheet at a time.
 | Chat                                                        | Place bar, **Chat**                         | Tap, or `Enter` on a desktop (docks beside the map)                                                |
 | Today, Season, Production, Realms, Guide, Settings, Exit    | Place bar, **Menu**                         | Tap, then a row                                                                                    |
 | LORDS purse: withdraw, your realms                          | Under the strip                             | Tap the purse                                                                                      |
-| An army's orders                                            | Dock, an army token                         | Tap the token; its orders show in the action bar                                                   |
+| Order an army: explore or move                              | Map, dock or army                           | Pick the army in the dock (or tap it), tap a tile beside it, `Enter`                               |
+| Queue an army's next order                                  | Map                                         | While its order is on its way, tap another tile (below)                                            |
 | Build on a plot                                             | Realm view, an open plot                    | Tap the plot; the build sheet also links Research                                                  |
 | Visit another realm                                         | Menu, **Season**                            | Tap a player, **Visit**; **Leave** returns home                                                    |
+
+- **The next order.** After an order the army stays selected. A tile tapped for it while that order is on its way
+  becomes its next order: the order bar shows **Next order · Queued** with **Cancel**. When the first order applies, the
+  next one runs from where the army then stands, if the tile is still within its reach (else a toast says it is out of
+  reach). One at a time: a later tap replaces it. **Cancel** or `Esc` drops it; so does a refused order, or leaving the
+  map. A tap on your own army or realm still selects it. It is the acting page's own feedback, never a game fact; each
+  step (queued, run, dropped and why) is in the army trace (`worldmap-next-order.ts`).
 
 ## Behaviour that differs from its label
 
@@ -180,10 +192,9 @@ checks red/green ownership on camp, village and stragglers. Save its returned ve
 Each capture blanks its page immediately. Stop the client afterward and retain the evidence.
 
 Asset gates: `pnpm --dir apps/game verify:assets scripts/outposts/outpost-assets.test.mjs`. For live inspection, open
-`/g/<chainId>/<gameId>?spectate=true`, press Map, then select a discovered site's tile. If a Frontier origin reload
-returns to the watched realm, press Map again. Available examples depend on the watched player's revealed tiles.
-Spectators can inspect selection and presentation; capture and single-use rewards need an eligible player. The lab proof
-does not establish those live actions.
+`/g/<chainId>/<gameId>?spectate=true`, press Map, then select a discovered site's tile. Available examples depend on the
+watched player's revealed tiles. Spectators can inspect selection and presentation; capture and single-use rewards need
+an eligible player. The lab proof does not establish those live actions.
 
 - Ruin: Frontier Map → a discovered fallen realm; its beast still follows the same depth table. In `/lab`, choose **Ruin
   · Fallen realm** and place it on the selected tile. Add `&asset=ruin` to the runtime proof URL to capture only the
