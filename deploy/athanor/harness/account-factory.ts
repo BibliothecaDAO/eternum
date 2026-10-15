@@ -35,59 +35,75 @@ interface CreateHarnessAccountsOptions {
 }
 
 const DEFAULT_DEPLOY_CONCURRENCY = 12;
+/** A bot's sign-in crosses the identity Worker; one dropped request must not end a 2,000-bot run. */
+const JOIN_ATTEMPTS = 3;
 
 /** Bots are Realms accounts under the shard's own guardian, each device approved through the operator route. */
 export async function createHarnessAccounts({
   concurrency = DEFAULT_DEPLOY_CONCURRENCY,
-  count,
-  gameId,
-  identity,
-  setupProvider,
-  playProvider,
-  shard,
-  stopped,
+  ...options
 }: CreateHarnessAccountsOptions): Promise<HarnessAccount[]> {
-  const botIds = Array.from({ length: count }, (_, botId) => botId);
-  return mapWithConcurrency(botIds, concurrency, async (botId) => {
-    const privateKey = stark.randomAddress();
-    const device = deviceKeyOf(privateKey);
-    const startedAt = performance.now();
+  const botIds = Array.from({ length: options.count }, (_, botId) => botId);
+  return mapWithConcurrency(botIds, concurrency, (botId) => joinHarnessBotWithRetry(botId, options));
+}
 
+/** Each attempt is a fresh account (new key and label), so a retry never replays a half-finished join. */
+async function joinHarnessBotWithRetry(
+  botId: number,
+  options: Omit<CreateHarnessAccountsOptions, "concurrency">,
+): Promise<HarnessAccount> {
+  for (let attempt = 1; ; attempt += 1) {
     try {
-      const joined = await joinBotAccount({
-        provider: setupProvider,
-        shard,
-        label: stark.randomAddress(),
-        device,
-        identity,
-      });
-      // Every send a bot makes, raw or through the client's provider, takes the client's nonce and fee path.
-      const account = configureGameplayAccountSubmits(
-        new Account({
-          provider: playProvider,
-          address: joined.address,
-          signer: new DeviceSigner(device),
-          cairoVersion: "1",
-        }),
-        shard,
-        stopped,
-      );
-
-      return {
-        account,
-        address: account.address,
-        botId,
-        deployedInMs: elapsedMs(startedAt),
-        gameId,
-        owner: account.address,
-        privateKey,
-        publicKey: device.publicKey,
-      };
+      return await joinHarnessBot(botId, options);
     } catch (error) {
-      const failure = serviceFailure(error, [], "bot_account_join_failed", [privateKey, identity.operatorToken]);
-      throw new Error(`Bot ${botId} sign-in failed: ${failure.type}: ${failure.message}`, { cause: error });
+      if (attempt === JOIN_ATTEMPTS) throw error;
+      console.error(`${(error as Error).message}; attempt ${attempt + 1} of ${JOIN_ATTEMPTS} with a fresh account`);
     }
-  });
+  }
+}
+
+async function joinHarnessBot(
+  botId: number,
+  { gameId, identity, setupProvider, playProvider, shard, stopped }: Omit<CreateHarnessAccountsOptions, "concurrency">,
+): Promise<HarnessAccount> {
+  const privateKey = stark.randomAddress();
+  const device = deviceKeyOf(privateKey);
+  const startedAt = performance.now();
+
+  try {
+    const joined = await joinBotAccount({
+      provider: setupProvider,
+      shard,
+      label: stark.randomAddress(),
+      device,
+      identity,
+    });
+    // Every send a bot makes, raw or through the client's provider, takes the client's nonce and fee path.
+    const account = configureGameplayAccountSubmits(
+      new Account({
+        provider: playProvider,
+        address: joined.address,
+        signer: new DeviceSigner(device),
+        cairoVersion: "1",
+      }),
+      shard,
+      stopped,
+    );
+
+    return {
+      account,
+      address: account.address,
+      botId,
+      deployedInMs: elapsedMs(startedAt),
+      gameId,
+      owner: account.address,
+      privateKey,
+      publicKey: device.publicKey,
+    };
+  } catch (error) {
+    const failure = serviceFailure(error, [], "bot_account_join_failed", [privateKey, identity.operatorToken]);
+    throw new Error(`Bot ${botId} sign-in failed: ${failure.type}: ${failure.message}`, { cause: error });
+  }
 }
 
 export async function mapWithConcurrency<T, R>(
