@@ -55,6 +55,11 @@ export class OwnershipRingLayer {
     this.drape();
   }
 
+  /** How many hexes the layer rings now. */
+  ringed(): number {
+    return this.centres.length;
+  }
+
   /** Terrain pages stream in after the rings are placed; each one that lands re-grounds them. */
   refreshTerrainPlacement(): void {
     if (this.centres.length > 0) this.drape();

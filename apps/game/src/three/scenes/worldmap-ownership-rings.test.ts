@@ -1,3 +1,4 @@
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -27,11 +28,39 @@ beforeEach(() => {
 });
 afterEach(() => {
   disposers.splice(0).forEach((dispose) => dispose());
+  useAccountStore.setState({ account: null });
+  vi.unstubAllGlobals();
   setBlockTimestampSource(null);
   vi.restoreAllMocks();
 });
 
 describe("ownership rings", () => {
+  it("publish the selection, its structure and how many hexes are ringed, and clear with it", () => {
+    // The map's tests run without a page: a window stands in for the one the mirror writes to.
+    const page: { __eternumMapSelection?: unknown; location: { search: string } } = { location: { search: "" } };
+    vi.stubGlobal("window", page);
+    useAccountStore.setState({ account: { address: `0x${ALICE.toString(16)}` } as never });
+    const world = createWorld();
+    world.structure({ id: 1, owner: ALICE, at: [10, 10], category: TileOccupier.RealmRegularLevel1 });
+    world.army({ id: 101, home: 1, at: [14, 11] });
+    world.structure({ id: 3, owner: BOB, at: [20, 20], category: TileOccupier.RealmRegularLevel1 });
+    world.bindRings();
+    const published = () => page.__eternumMapSelection;
+
+    select(10, 10);
+    expect(published()).toEqual({
+      hex: { col: 10, row: 10 },
+      structure: { id: 1, owner: `0x${ALICE.toString(16)}`, realm: true, ownedByViewer: true },
+      ringedHexes: 2,
+    });
+
+    select(20, 20);
+    expect(published()).toMatchObject({ structure: { id: 3, ownedByViewer: false }, ringedHexes: 1 });
+
+    useUIStore.setState({ selectedHex: null });
+    expect(published()).toEqual({ hex: null, structure: null, ringedHexes: 0 });
+  });
+
   it("ring every structure the selected realm's owner holds and every living army out from one", () => {
     const world = createWorld();
     world.structure({ id: 1, owner: ALICE, at: [10, 10], category: TileOccupier.RealmRegularLevel1 });
@@ -253,7 +282,13 @@ function createWorld(options: { expedition?: { dayUnitSeconds: number; spacing: 
     /** Binds the rings and the selection as the world map does; `shown` is the last ringed set, in reading order. */
     bindRings: () => {
       let shown: readonly HexPosition[] = [];
-      disposers.push(bindOwnershipRings({ store, projection, rings: { show: (hexes) => (shown = hexes) } }));
+      disposers.push(
+        bindOwnershipRings({
+          store,
+          projection,
+          rings: { show: (hexes) => (shown = hexes), ringed: () => shown.length },
+        }),
+      );
       disposers.push(
         bindSelectionToMovingStructures({
           projection,
