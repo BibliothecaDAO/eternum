@@ -74,8 +74,5 @@ describe("useChainTimeStore", () => {
     store.setHeartbeat({ timestamp: 1_002_000, source: "herald-head" });
     expect(useChainTimeStore.getState().nowMs).toBe(1_004_000);
     expect(useChainTimeStore.getState().executionFloorMs).toBe(1_002_000);
-
-    store.setHeartbeat({ timestamp: 1_003_000, source: "row-evidence" });
-    expect(useChainTimeStore.getState().executionFloorMs).toBe(1_003_000);
   });
 });

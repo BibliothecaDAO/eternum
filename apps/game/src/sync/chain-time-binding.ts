@@ -1,37 +1,7 @@
-import {
-  setBlockTimestampSource,
-  setChainProvenTimestampSource,
-  setChainTimestampEvidenceSink,
-} from "@bibliothecadao/eternum";
+import { setBlockTimestampSource, setChainProvenTimestampSource } from "@bibliothecadao/eternum";
 
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { CHAIN_TIME_DEBUG_STORAGE_KEY, logChainTimeDebug } from "@/utils/chain-time-debug";
-
-// Row-evidence heartbeats: a chain-written timestamp ahead of the clock proves
-// chain time has reached that moment (see reportObservedChainTimestamp). The
-// flush is deferred because evidence surfaces inside balance reads during React
-// renders, and applied through setHeartbeat, which already ratchets
-// monotonically and caps forward lead. Timestamps past any plausible clock
-// drift are bad data, not evidence.
-const MAX_EVIDENCE_FUTURE_MS = 10 * 60 * 1000;
-let pendingEvidenceTimestampMs = 0;
-let evidenceFlushScheduled = false;
-
-const bindRowEvidenceSink = () => {
-  setChainTimestampEvidenceSink((timestampSeconds) => {
-    const timestampMs = timestampSeconds * 1000;
-    if (timestampMs > Date.now() + MAX_EVIDENCE_FUTURE_MS) return;
-    pendingEvidenceTimestampMs = Math.max(pendingEvidenceTimestampMs, timestampMs);
-    if (evidenceFlushScheduled) return;
-    evidenceFlushScheduled = true;
-    window.setTimeout(() => {
-      evidenceFlushScheduled = false;
-      const timestamp = pendingEvidenceTimestampMs;
-      pendingEvidenceTimestampMs = 0;
-      useChainTimeStore.getState().setHeartbeat({ timestamp, source: "row-evidence" });
-    }, 0);
-  });
-};
 
 /**
  * Binds the client's chain time to the chain-time store, before any game client starts: Herald's hello anchors the
@@ -39,14 +9,13 @@ const bindRowEvidenceSink = () => {
  */
 export const bindChainTime = (): void => {
   setBlockTimestampSource(() => useChainTimeStore.getState().getNowSeconds());
-  // Balances, stamina and spend limits use the execution floor: confirmed heads and row evidence, never a pre-confirmed head.
+  // Balances, stamina and spend limits use the execution floor: confirmed heads, never a pre-confirmed one.
   setChainProvenTimestampSource(() => {
     const floorMs = useChainTimeStore.getState().executionFloorMs;
     return floorMs === null ? null : Math.floor(floorMs / 1000);
   });
-  bindRowEvidenceSink();
   logChainTimeDebug("source_bound", {
-    source: "herald head + row-evidence sink",
+    source: "herald heads",
     debugStorageKey: CHAIN_TIME_DEBUG_STORAGE_KEY,
   });
 };
