@@ -121,6 +121,30 @@ describe("a realm visit", () => {
     expect(host.querySelector('[role="status"]')?.getAttribute("aria-label")).toBe("Visit Rival");
   });
 
+  it("opens a realm already watched when the player asks to visit it, each time they ask, and only then", () => {
+    renderFoot();
+    act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOnArrival: false }));
+    act(() => store.applyFacts([realmRow(8, "0x222")] as never));
+    expect(goTo).not.toHaveBeenCalled();
+
+    // The season board's Visit of the realm being watched: the transport has nothing new to stream, the realm opens.
+    act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOnArrival: true }));
+    expect(goTo).toHaveBeenCalledOnce();
+    expect(goTo).toHaveBeenLastCalledWith(8, expect.anything(), false, { spectator: true });
+
+    // A later fact about that realm opens nothing again.
+    act(() =>
+      store.applyFacts([
+        { ...realmRow(8, "0x222"), value: { ...realmRow(8, "0x222").value, owner: "0x222" } },
+      ] as never),
+    );
+    expect(goTo).toHaveBeenCalledOnce();
+
+    // Back on the map, Visit again: it opens again.
+    act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOnArrival: true }));
+    expect(goTo).toHaveBeenCalledTimes(2);
+  });
+
   it("ends with the account that started it", () => {
     renderFoot();
     act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOnArrival: true }));
