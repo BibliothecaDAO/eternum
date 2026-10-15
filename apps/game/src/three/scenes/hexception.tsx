@@ -31,6 +31,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { resolveSettlementRotationY } from "@/three/structures/settlement-orientation";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import { resolvePlayRouteTarget } from "@/play/navigation/play-route-target";
+import { RealmGridBuilds } from "./hexception-grid-builds";
 import { awaitLocalScenePresentable } from "./local-scene-presentation";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
@@ -296,7 +297,7 @@ export default class HexceptionScene extends HexagonScene {
   private localAssetsStarted = false;
   private lastRealmKey?: string;
   private activeRealmGeneration = 0;
-  private localGridBuilt: Promise<void> = Promise.resolve();
+  private readonly gridBuilds = new RealmGridBuilds();
   private localPresentation: Promise<void> = Promise.resolve();
   private localPresentationReady = true;
   private groundTexturesReady: Promise<void> = Promise.resolve();
@@ -1297,7 +1298,7 @@ export default class HexceptionScene extends HexagonScene {
     const generation = this.activeRealmGeneration;
     this.localPresentationReady = false;
     this.localPresentation = awaitLocalScenePresentable({
-      gridBuilt: this.localGridBuilt,
+      gridBuilt: this.gridBuilds.whenBuilt(),
       groundTextures: this.groundTexturesReady,
     }).finally(() => {
       if (this.ownsRealmGeneration(generation)) this.localPresentationReady = true;
@@ -1305,6 +1306,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   private advanceRealmGeneration(): number {
+    this.gridBuilds.supersede();
     this.activeRealmGeneration += 1;
     return this.activeRealmGeneration;
   }
@@ -1366,33 +1368,24 @@ export default class HexceptionScene extends HexagonScene {
     );
   }
 
+  /**
+   * The realm's grid, in three steps so that none holds a frame. Once the building models load, its cells are laid
+   * out. The terrain page for them is prepared in the terrain worker. Then the page, the buildings and the buildable
+   * hexes are presented, unless a newer build started or the realm was left meanwhile.
+   */
   updateHexceptionGrid(radius: number) {
     if (!this.isEntered) return;
     const mainStructureType = this.tileManager.structureType();
     this.updateCastleLevel();
-    this.localGridBuilt = this.buildHexceptionGrid(radius, this.activeRealmGeneration, mainStructureType);
-  }
-
-  /**
-   * The realm's grid, in three steps so that none holds a frame. Once the building models load, its cells are laid
-   * out. The terrain page for them is prepared in the terrain worker. Then the page, the buildings and the buildable
-   * hexes are presented. A realm left while it builds keeps nothing of it.
-   */
-  private async buildHexceptionGrid(
-    radius: number,
-    realmGeneration: number,
-    mainStructureType: StructureType | undefined,
-  ): Promise<void> {
-    await Promise.allSettled(this.modelLoadPromises);
-    if (!this.ownsRealmGeneration(realmGeneration)) return;
-    const terrainMatricesByBiome = runWithFrameWorkOwner("scene:hexception:grid", () => this.layOutGridCells(radius));
-    try {
-      const page = await this.proceduralTerrain.preparePageAsync(this.terrainPageRequest(terrainMatricesByBiome));
-      if (!this.ownsRealmGeneration(realmGeneration)) return;
-      runWithFrameWorkOwner("scene:hexception:grid", () => this.presentGrid(page, mainStructureType));
-    } finally {
-      releaseGridMatrices(terrainMatricesByBiome);
-    }
+    this.gridBuilds.start({
+      modelsLoaded: () => Promise.allSettled(this.modelLoadPromises),
+      layOut: () => runWithFrameWorkOwner("scene:hexception:grid", () => this.layOutGridCells(radius)),
+      preparePage: (terrainMatricesByBiome) =>
+        this.proceduralTerrain.preparePageAsync(this.terrainPageRequest(terrainMatricesByBiome)),
+      present: (page) =>
+        runWithFrameWorkOwner("scene:hexception:grid", () => this.presentGrid(page, mainStructureType)),
+      release: releaseGridMatrices,
+    });
   }
 
   /** Each cell of the realm and its surroundings, as a matrix under its biome; the buildable hexes are registered. */
