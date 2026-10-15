@@ -17,7 +17,7 @@ const pages = [
   ["news", "/lab/app/home/scroll?capture=1", "[data-layout]"],
 ];
 
-export async function proveIcons(b, out, records, baseUrl, onlyLayout, onlyPages) {
+export async function proveIcons(b, out, records, baseUrl, onlyLayout, onlyPages, missingSvg = false) {
   mkdirSync(out, { recursive: true });
   for (const [layout, width, height] of [
     ["desktop", 1440, 1000],
@@ -32,17 +32,44 @@ export async function proveIcons(b, out, records, baseUrl, onlyLayout, onlyPages
       await b.run("open", `${baseUrl}${path}`, "--ignore-https-errors");
       await b.run("wait", ready);
       record.ready = true;
-      await b.evaluate("Promise.all([...document.images].map(i=>i.decode().catch(()=>null))).then(()=>true)");
-      const state = await b.evaluate(
-        `({icons:[...document.querySelectorAll('img[data-icon],image[data-icon]')].map(i=>({meaning:i.dataset.icon,url:i.getAttribute('src')??i.getAttribute('href'),loaded:i.tagName==='image'||i.naturalWidth>0})),overflow:document.documentElement.scrollWidth>innerWidth,resources:performance.getEntriesByType('resource').map(r=>r.name).filter(url=>new URL(url).pathname.startsWith('/icons/facets/'))})`,
-      );
+      if (missingSvg) {
+        await b.evaluate(`(() => {
+          const marker = document.querySelector('image[data-icon]');
+          if (!marker) throw new Error('The negative control requires an SVG icon');
+          marker.setAttribute('href', '/icons/facets/64/missing-svg-negative-control.webp');
+          return true;
+        })()`);
+      }
+      const state = await b.evaluate(`(async () => {
+        const icons = await Promise.all([...document.querySelectorAll('img[data-icon],image[data-icon]')].map(async element => {
+          const html = element instanceof HTMLImageElement;
+          const url = element.getAttribute(html ? 'src' : 'href');
+          const result = {meaning: element.dataset.icon, kind: html ? 'html' : 'svg', url, loaded: false};
+          try {
+            if (!url) throw new Error('Missing artwork URL');
+            result.resolvedUrl = new URL(url, document.baseURI).href;
+            const image = html ? element : new Image();
+            if (!html) image.src = result.resolvedUrl;
+            await image.decode();
+            result.loaded = image.complete && image.naturalWidth > 0 && image.naturalHeight > 0;
+            result.width = image.naturalWidth;
+            result.height = image.naturalHeight;
+          } catch (error) {
+            result.error = String(error);
+          }
+          return result;
+        }));
+        return {icons, overflow: document.documentElement.scrollWidth > innerWidth,
+          resources: performance.getEntriesByType('resource').map(r => r.name).filter(url => new URL(url).pathname.startsWith('/icons/facets/'))};
+      })()`);
       record.state = state;
       record.checks.push({
-        check: "All rendered icon images loaded from the semantic artwork",
+        check: "All rendered HTML and SVG icon URLs decode as semantic artwork",
         ok: state.icons.length > 0 && state.icons.every((i) => i.loaded && i.url.startsWith("/icons/facets/")),
       });
       record.checks.push({ check: "Page fits viewport width", ok: !state.overflow });
       await b.run("screenshot", join(out, `${record.name}.png`));
+      if (missingSvg) return;
       if (name !== "catalog") continue;
       const check = async (label, expression) =>
         record.checks.push({ check: label, ok: (await b.evaluate(expression)) === true });
@@ -87,6 +114,7 @@ export async function proveIcons(b, out, records, baseUrl, onlyLayout, onlyPages
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   const baseUrl = process.argv[3] ?? "https://127.0.0.1:4193";
+  const missingSvg = process.argv.includes("--missing-svg");
   await runProof(
     {
       parent: resolve(process.argv[2] ?? ".context/icons-proof"),
@@ -94,6 +122,15 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
       baseUrl,
       where: (r) => ({ name: r.name }),
     },
-    (b, out, records) => proveIcons(b, out, records, baseUrl),
+    (b, out, records) =>
+      proveIcons(
+        b,
+        out,
+        records,
+        baseUrl,
+        missingSvg ? "desktop" : undefined,
+        missingSvg ? ["catalog"] : undefined,
+        missingSvg,
+      ),
   );
 }

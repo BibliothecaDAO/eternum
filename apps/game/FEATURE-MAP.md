@@ -232,8 +232,11 @@ badges repeat ownership with colour and shape and retain level or strength value
 
 `pnpm icons:prove <evidence-dir> https://127.0.0.1:<port>` drives the catalog, HUD and shell fixtures at desktop and
 phone sizes against the running client. It uses the same proof recorder as Play and Shell, saves screenshots and
-requested icon URLs, and exits nonzero on missing paintings, overflow or failed interactions. Live game proof still
-requires the shared free Blitz. `pnpm icons:check` validates all meanings, 58 resources, reviewed masters and exports;
-`pnpm icons:build` exports the paintings (optional painting IDs export only those masters).
-`pnpm icons:measure <new-dir>` records individual-image and comparison-atlas byte counts after the client build.
-`pnpm icons:review <new-dir> <baseline-evidence-dir>` makes contact sheets.
+requested icon URLs, and exits nonzero on missing paintings, overflow or failed interactions. HTML images decode in
+place; each SVG image URL is resolved and decoded through an image loader, with decoded dimensions or the failure kept
+in the record. Append `--missing-svg` for the negative control: it replaces one minimap artwork URL with a missing file
+and must exit nonzero with that SVG marked unloaded. Live game proof still requires the shared free Blitz.
+`pnpm icons:check` validates all meanings, 58 resources, reviewed masters and exports; `pnpm icons:build` exports the
+paintings (optional painting IDs export only those masters). `pnpm icons:measure <new-dir>` records individual-image and
+comparison-atlas byte counts after the client build. `pnpm icons:review <new-dir> <baseline-evidence-dir>` makes contact
+sheets.
