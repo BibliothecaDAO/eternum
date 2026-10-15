@@ -22,10 +22,10 @@ import {
 } from "./evidence.mjs";
 
 describe("buildPlaytestUrl", () => {
-  it("opens the game's map as a spectator with the dev overlays off", () => {
+  it("enters the game by Play's Watch link, with the dev overlays off", () => {
     expect(
       buildPlaytestUrl({ baseUrl: "https://127.0.0.1:4173", chainId: "0xa1", gameId: 4, rendererMode: "webgpu-auto" }),
-    ).toBe("https://127.0.0.1:4173/g/0xa1/4/map?spectate=true&rendererMode=webgpu-auto&dev=0");
+    ).toBe("https://127.0.0.1:4173/g/0xa1/4?spectate=true&rendererMode=webgpu-auto&dev=0");
   });
 });
 

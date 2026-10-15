@@ -30,7 +30,8 @@ export function buildPlaytestUrl({ baseUrl, chainId, gameId, rendererMode }) {
     throw new Error("buildPlaytestUrl requires a chainId and a gameId");
   }
   const url = new URL(baseUrl);
-  url.pathname = `/g/${chainId}/${gameId}/map`;
+  // Play's Watch link (`entryHref(game, "spectate")`): the game, not a scene of it.
+  url.pathname = `/g/${chainId}/${gameId}`;
   url.searchParams.set("spectate", "true");
   url.searchParams.set("rendererMode", rendererMode);
   // Measure what players run: the dev overlays stay off even if this browser profile once enabled them.
