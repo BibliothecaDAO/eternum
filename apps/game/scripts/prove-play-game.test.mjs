@@ -194,7 +194,8 @@ const documentOf = (markup) => {
  */
 const liveMapBrowser = ({ page, onPress = () => {} }) => ({
   run: (command, ...args) => {
-    if ((command === "mouse" && args[0] === "up") || ["press", "find", "click"].includes(command)) onPress(command);
+    if ((command === "mouse" && args[0] === "up") || ["press", "find", "click", "dblclick"].includes(command))
+      onPress(command);
     if (command === "errors") return JSON.stringify({ success: true, data: { errors: [] } });
     if (command === "console") return JSON.stringify({ success: true, data: { messages: [] } });
     return "";
@@ -253,7 +254,9 @@ describe("a task that changes the game", () => {
 
   it("fails a farm when the Build panel only opens", async () => {
     const records = await proveTask(
-      liveMapBrowser({ page: () => `${STRIP}<section aria-label="Build">Built here\n3 total</section>` }),
+      liveMapBrowser({
+        page: () => `${STRIP}<section data-popover-panel="build" aria-label="Build">Built here\n3 total</section>`,
+      }),
       "blitz-farm",
     );
     expect(records.map((record) => record.problem)).toEqual(
@@ -266,7 +269,8 @@ describe("a task that changes the game", () => {
     let built = 3;
     const records = await proveTask(
       liveMapBrowser({
-        page: () => `${STRIP}<section aria-label="Build">Built here\n${built} total</section>`,
+        page: () =>
+          `${STRIP}<section data-popover-panel="build" aria-label="Build">Built here\n${built} total</section>`,
         // The second press of each run is the farm's order: Build, then Farm.
         onPress: () => (presses += 1) % 2 === 0 && (built += 1),
       }),
@@ -301,7 +305,7 @@ describe("an action tried before play opens", () => {
     const records = await proveTask(
       liveMapBrowser({
         page: () =>
-          `<button aria-label="Manage production"></button>\n<p>Starts in 2m 10s</p>${open ? '<section aria-label="Production"></section>' : ""}`,
+          `<canvas></canvas>\n<p>Starts in 2m 10s</p>${open ? '<section data-popover-panel="production" aria-label="production"></section>' : ""}`,
         onPress: () => (open = true),
       }),
       "gate-production",

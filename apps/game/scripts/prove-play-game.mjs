@@ -239,6 +239,10 @@ const pressStep = async (b, press, layout) => {
     b.run("press", press.key);
     return true;
   }
+  if (press.dblclick) {
+    b.run("dblclick", press.dblclick);
+    return true;
+  }
   if (press.word) {
     b.run("find", "text", press.word, "click");
     return true;

@@ -16,13 +16,14 @@ const PHONE_AND_DESKTOP = ["desktop", "phone"];
 
 const oneMore = (before, after) => after === before + 1;
 const STRUCTURE_ACTIONS = 'nav[aria-label="Structure actions"]';
-/** The Build workspace, not the strip's or a card's Build button, which carry the same name. */
-const BUILD_PANEL = '[aria-label="Build"]:not(button)';
+/** An open panel by its id: the strip's and a card's Build buttons carry the Build workspace's name, not its id. */
+const panel = (id) => `[data-popover-panel="${id}"]`;
+const BUILD_PANEL = panel("build");
 
 /** How many order surfaces stand open: the workspaces and the popovers where an order is given. */
 const ORDER_SURFACES = `document.querySelectorAll(${JSON.stringify(
-  ["Build", "Military", "Logistics", "Production", "Market"]
-    .map((name) => `[aria-label="${name}"]:not(button)`)
+  ["build", "military", "logistics", "production", "market", "army-deployment", "quick-attack", "spire-travel"]
+    .map(panel)
     .join(", "),
 )}).length`;
 
@@ -43,10 +44,11 @@ export const GAME_TASKS = {
     ...REFUSED_BEFORE_PLAY,
   },
   "gate-production": {
-    goal: "Before play opens: press a resource's Manage production shortcut",
+    goal: "Before play opens: double-click the realm's keep, which opens its production",
     layouts: ["desktop"],
-    presses: [{ name: "Manage production", text: "^Manage production$" }],
+    presses: [{ name: "the realm's keep, double-clicked", dblclick: "canvas" }],
     ...REFUSED_BEFORE_PLAY,
+    view: "realm",
   },
   "blitz-farm": {
     goal: "Blitz: order a farm in the selected realm",
