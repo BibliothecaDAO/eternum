@@ -2,12 +2,33 @@ import { expect, it } from "vitest";
 import { SeatRefused, seatRoster, type LauncherSeats } from "./seat-pipeline";
 import { launchShard, type ShardFaults } from "./test-launch-chain";
 
-/** A shard holding one created game of `roster` players, none seated, and the launcher at nonce 0. */
+/** A shard holding one created game of `roster` players, none seated, seated by s0 from nonce 0. */
 const oneGame = (roster: number, faults: ShardFaults = {}) => {
   const shard = launchShard(faults);
-  const gameId = shard.created({ name: "blitz-1", players: roster });
-  const seats = () => shard.state.sent.map(({ nonce }) => nonce);
-  return { ...shard, gameId, seats };
+  const gameId = shard.created({ name: "blitz-1", players: roster, seater: "s0" });
+  const seats = () => shard.sentBy("s0").map(({ nonce }) => nonce);
+  return {
+    games: shard.games,
+    gameId,
+    seats,
+    chain: shard.chain.seats("s0"),
+    state: {
+      get nonce() {
+        return shard.state.nonce("s0");
+      },
+      get refused() {
+        return shard.state.refused;
+      },
+      get deepestQueue() {
+        return shard.state.deepestQueue;
+      },
+      set refusing(on: boolean) {
+        if (on) shard.state.refusing.add("s0");
+        else shard.state.refusing.delete("s0");
+      },
+    },
+    queue: (nonce: bigint, gameId: number) => shard.queue("s0", nonce, gameId),
+  };
 };
 
 it("seats a roster with one probe and one window, never queuing more than the window", async () => {
@@ -22,7 +43,7 @@ it("resends a seat the RPC refused before forwarding, at the same nonce", async 
   const { chain, state, games, gameId, seats } = oneGame(24, { refuse: [5n] });
   expect(await seatRoster(chain, gameId)).toBe(24);
   expect(games.get(gameId)!.seated).toBe(24);
-  expect(state).toMatchObject({ refused: 1, nonce: 24n });
+  expect([state.refused, state.nonce]).toEqual([1, 24n]);
   expect(seats().filter((nonce) => nonce === 5n)).toHaveLength(1);
 });
 

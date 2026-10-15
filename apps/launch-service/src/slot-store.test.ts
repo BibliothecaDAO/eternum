@@ -1,3 +1,4 @@
+import { slotResolver } from "./paid-blitz";
 import { absentLedgerSlot } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { decodeLedgerSlot } from "../../../packages/value-ledger/src/codecs";
 import { slotValueFixture, registrationIdentityFixture } from "./test-database";
@@ -13,13 +14,15 @@ afterEach(async () => {
   vi.restoreAllMocks();
   await database.close();
 });
-const slots = (chain = "0x1") =>
-  new D1SlotStore(
+const slots = (chain = "0x1") => {
+  const value = slotValueFixture();
+  return new D1SlotStore(
     database.db,
     new D1LaunchStore(database.db, testChain(chain)),
-    slotValueFixture(),
-    registrationIdentityFixture,
+    value,
+    slotResolver(value, registrationIdentityFixture),
   );
+};
 const soon = () => new Date(Math.floor(Date.now() / 1000) * 1000 + 60000).toISOString();
 it("keeps metadata per official chain without a local registration table or roster", async () => {
   const one = slots(),
@@ -60,7 +63,7 @@ it("uses one clock for creation, closure and freezing without closing another ch
     database.db,
     new D1LaunchStore(database.db, testChain()),
     value,
-    registrationIdentityFixture,
+    slotResolver(value, registrationIdentityFixture),
   );
   const two = slots("0x2");
   const close = new Date(now + 60000).toISOString();
@@ -101,7 +104,7 @@ it("preserves a closed schedule through interruption and restart", async () => {
 it("creates no game before close, balances 25 payers, and closes idempotently without a roster copy", async () => {
   const launches = new D1LaunchStore(database.db, testChain());
   const value = slotValueFixture(25);
-  const store = new D1SlotStore(database.db, launches, value, registrationIdentityFixture);
+  const store = new D1SlotStore(database.db, launches, value, slotResolver(value, registrationIdentityFixture));
   await store.create("balanced", soon());
   expect(await launches.list("madara.blitz")).toEqual([]);
   await database.db
@@ -152,7 +155,7 @@ it("marks refunds once at close and never makes a refund decision during an iden
     ),
   };
   const launches = new D1LaunchStore(database.db, testChain());
-  const store = new D1SlotStore(database.db, launches, value, identity);
+  const store = new D1SlotStore(database.db, launches, value, slotResolver(value, identity));
   await store.create("refunds", soon());
   await database.db
     .prepare("UPDATE playtest_slots SET closes_at=?")
@@ -174,7 +177,7 @@ it("publishes the same stored shard key used to open the ledger slot", async () 
     database.db,
     new D1LaunchStore(database.db, testChain("0xabc")),
     value,
-    registrationIdentityFixture,
+    slotResolver(value, registrationIdentityFixture),
   );
   await store.create("keyed", soon());
   const slot = await store.get("keyed");
@@ -192,7 +195,7 @@ it("deletes a failed schedule only after the ledger confirms absence", async () 
     database.db,
     new D1LaunchStore(database.db, testChain()),
     value,
-    registrationIdentityFixture,
+    slotResolver(value, registrationIdentityFixture),
   );
   await expect(store.create("failed", soon())).rejects.toThrow("ledger rejected open");
   expect(value.slot).toHaveBeenCalledTimes(1);
@@ -213,7 +216,7 @@ it.each(["exists", "unavailable"])(
       database.db,
       new D1LaunchStore(database.db, testChain()),
       value,
-      registrationIdentityFixture,
+      slotResolver(value, registrationIdentityFixture),
     );
     const close = soon();
     await expect(store.create("retry", close)).rejects.toBe(openError);
@@ -233,7 +236,7 @@ it("opens custody through preparation and starts every frozen group five minutes
   const value = slotValueFixture(25);
   const open = vi.spyOn(value, "openSlot");
   const launches = new D1LaunchStore(database.db, testChain());
-  const store = new D1SlotStore(database.db, launches, value, registrationIdentityFixture);
+  const store = new D1SlotStore(database.db, launches, value, slotResolver(value, registrationIdentityFixture));
   const closesAt = soon();
   await store.create("five-minutes", closesAt);
   expect(open).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ start: Date.parse(closesAt) / 1000 }));
@@ -260,7 +263,7 @@ it("never reuses an official slot number after a failed open is confirmed absent
     database.db,
     new D1LaunchStore(database.db, testChain()),
     value,
-    registrationIdentityFixture,
+    slotResolver(value, registrationIdentityFixture),
   );
   await expect(store.create("failed", soon())).rejects.toThrow("open refused");
   await store.create("next", soon());

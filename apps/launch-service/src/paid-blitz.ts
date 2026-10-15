@@ -35,6 +35,29 @@ const readClosedPage = async (key: LedgerSlotKey, value: BlitzValuePort) => {
   }
 };
 
+type ClosedSlot = Awaited<ReturnType<typeof closedSlotGroups>>;
+export type SlotResolver = (key: LedgerSlotKey) => Promise<ClosedSlot>;
+
+/**
+ * Resolves each closed slot at most once for as long as the resolver lives. The registrar makes one per alarm, so the
+ * alarm that freezes a slot launches it from that same read of the ledger; a failed read is forgotten and read again.
+ */
+export const slotResolver = (value: BlitzValuePort, identity: RegistrationIdentity): SlotResolver => {
+  const resolved = new Map<string, Promise<ClosedSlot>>();
+  return (key) => {
+    const id = `${BigInt(key.chainId)}:${key.slotId}`;
+    if (!resolved.has(id))
+      resolved.set(
+        id,
+        closedSlotGroups(key, value, identity).catch((error: unknown) => {
+          resolved.delete(id);
+          throw error;
+        }),
+      );
+    return resolved.get(id)!;
+  };
+};
+
 /** Retries derive the same groups from immutable registration order and historical links, without a roster copy. */
 export const closedSlotGroups = async (key: LedgerSlotKey, value: BlitzValuePort, identity: RegistrationIdentity) => {
   let page = await readClosedPage(key, value);

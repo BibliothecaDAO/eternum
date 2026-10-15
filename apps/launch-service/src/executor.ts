@@ -5,7 +5,7 @@ import { LaunchExecutionFailure } from "./errors";
 import type { LaunchRun, LaunchSummary } from "./model";
 import { LaunchShard, type BlitzLaunch } from "./shard-client";
 import type { LaunchServiceStore } from "./store";
-import { closedSlotGroups, type BlitzValuePort } from "./paid-blitz";
+import type { SlotResolver } from "./paid-blitz";
 import { finalizeGame } from "./results";
 import type { CreateGameRequest } from "./schemas";
 import { testBlitzRoster } from "./test-blitz";
@@ -14,15 +14,22 @@ interface LaunchTarget {
   directory: ShardDirectory & import("@realms-world/value-ledger").RegistrationIdentity;
   accountAddress: string;
   privateKey: string;
+  /** Joins the seater pool, the accounts Blitz games name to seat them, and returns their addresses in pool order. */
+  seaters(): Promise<string[]>;
 }
 interface LaunchExecutorService {
   execute(run: LaunchRun, store: LaunchServiceStore): Effect.Effect<LaunchSummary, LaunchExecutionFailure>;
 }
 export class LaunchExecutor extends Context.Service<LaunchExecutor, LaunchExecutorService>()("launch/LaunchExecutor") {}
-export const launchTargetOf = (env: LaunchEnv, accountAddress: string): LaunchTarget => ({
+export const launchTargetOf = (
+  env: LaunchEnv,
+  accountAddress: string,
+  seaters: () => Promise<string[]>,
+): LaunchTarget => ({
   directory: env.IDENTITY,
   accountAddress,
   privateKey: env.LAUNCH_DEPLOYER_PRIVATE_KEY,
+  seaters,
 });
 
 /** Directory membership owns selection; runtime ABI owns command encoding. */
@@ -37,11 +44,11 @@ export const shardChainOf = (env: LaunchEnv, requested?: string | null) => async
   return shards[0]!.chainId;
 };
 
-export const launchExecutorLayer = (target: LaunchTarget, value: BlitzValuePort) =>
+export const launchExecutorLayer = (target: LaunchTarget, resolveSlot: SlotResolver) =>
   Layer.succeed(LaunchExecutor, {
     execute: (run, store) =>
       Effect.tryPromise({
-        try: () => executeRun(run, store, target, value),
+        try: () => executeRun(run, store, target, resolveSlot),
         catch: (cause) => new LaunchExecutionFailure({ runId: run.id, cause }),
       }),
   });
@@ -49,7 +56,7 @@ const executeRun = async (
   run: LaunchRun,
   store: LaunchServiceStore,
   target: LaunchTarget,
-  value: BlitzValuePort,
+  resolveSlot: SlotResolver,
 ): Promise<LaunchSummary> => {
   await requireActiveChain(target.directory, run.chainId);
   const { shard } = await readLaunchShard(target.directory, run.chainId);
@@ -64,7 +71,7 @@ const executeRun = async (
   if (run.kind === "result" && "gameId" in run.request) return finalizeGame(run.request, native);
   if (run.kind !== "game" || "gameId" in run.request) throw new Error("stored_launch_kind_differs");
   const request = run.request;
-  if (request.environment === "madara.blitz") return launchBlitz(run, store, target, value, native);
+  if (request.environment === "madara.blitz") return launchBlitz(run, store, target, resolveSlot, native);
   return store.saveGame(await native.create(request, Date.parse(run.createdAt)));
 };
 
@@ -76,10 +83,10 @@ const launchBlitz = async (
   run: LaunchRun,
   store: LaunchServiceStore,
   target: LaunchTarget,
-  value: BlitzValuePort,
+  resolveSlot: SlotResolver,
   native: LaunchShard,
 ): Promise<LaunchSummary> => {
-  const games = await blitzGamesOf(run, store, target, value);
+  const games = await blitzGamesOf(run, store, resolveSlot, target.seaters);
   const summaries = await native.launchBlitz(games.map(({ launch }) => launch));
   const others = games.flatMap(({ runId }, index) => (runId === run.id ? [] : [{ runId, summary: summaries[index]! }]));
   await store.completeGames(others);
@@ -87,26 +94,39 @@ const launchBlitz = async (
 };
 
 /**
- * The games a Blitz run launches, each with its frozen roster. A paid slot's groups are re-resolved from the ledger
- * once per run, never copied; a test game names its own roster.
+ * The games a Blitz run launches, each with its frozen roster and its seater: a slot's groups are dealt to the seater
+ * pool round-robin by group index, so a restarted run names the same seater for every game. A paid slot's groups come
+ * from the ledger through the alarm's one resolution, never copied; a test game names its own roster. The pool is
+ * joined only once the rosters check out, so a refused run writes nothing to the shard.
  */
 const blitzGamesOf = async (
   run: LaunchRun,
   store: LaunchServiceStore,
-  target: LaunchTarget,
-  value: BlitzValuePort,
+  resolveSlot: SlotResolver,
+  joinSeaters: () => Promise<string[]>,
 ): Promise<{ runId: string; launch: BlitzLaunch }[]> => {
-  const launchOf = (game: LaunchRun, players: BlitzLaunch["players"]) => ({
+  const rosters = await blitzRostersOf(run, store, resolveSlot);
+  const seaters = await joinSeaters();
+  return rosters.map(({ game, players, groupIndex }) => ({
     runId: game.id,
-    launch: { request: game.request as CreateGameRequest, players, createdAt: Date.parse(game.createdAt) },
-  });
-  if (run.slotId === null) return [launchOf(run, testBlitzRoster(run.request as CreateGameRequest, run.chainId))];
-  const { groups } = await closedSlotGroups({ chainId: run.chainId, slotId: run.slotId }, value, target.directory);
+    launch: {
+      request: game.request as CreateGameRequest,
+      players,
+      createdAt: Date.parse(game.createdAt),
+      seater: seaters[groupIndex % seaters.length]!,
+    },
+  }));
+};
+
+const blitzRostersOf = async (run: LaunchRun, store: LaunchServiceStore, resolveSlot: SlotResolver) => {
+  if (run.slotId === null)
+    return [{ game: run, players: testBlitzRoster(run.request as CreateGameRequest, run.chainId), groupIndex: 0 }];
+  const { groups } = await resolveSlot({ chainId: run.chainId, slotId: run.slotId });
   return (await store.slotGames(run.slotId)).map((game) => {
     const groupIndex = (game.request as CreateGameRequest).groupIndex;
     if (!Number.isInteger(groupIndex)) throw new Error("Blitz games require a closed paid slot");
     const players = groups[groupIndex!];
     if (!players?.length) throw new Error("closed_slot_group_missing");
-    return launchOf(game, players);
+    return { game, players, groupIndex: groupIndex! };
   });
 };

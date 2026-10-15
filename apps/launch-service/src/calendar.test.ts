@@ -1,3 +1,4 @@
+import { slotResolver } from "./paid-blitz";
 import { slotValueFixture, registrationIdentityFixture } from "./test-database";
 import { Effect } from "effect";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
@@ -19,7 +20,8 @@ afterEach(async () => {
 
 const stores = () => {
   const launches = new D1LaunchStore(database.db, testChain());
-  const slots = new D1SlotStore(database.db, launches, slotValueFixture(1), registrationIdentityFixture);
+  const value = slotValueFixture(1);
+  const slots = new D1SlotStore(database.db, launches, value, slotResolver(value, registrationIdentityFixture));
   const calendar = new D1CalendarStore(database.db);
   const tick = (now: Date) => {
     vi.spyOn(Date, "now").mockReturnValue(now.getTime());
@@ -128,29 +130,16 @@ test("refuses a Frontier start off the armies tick", async () => {
   expect(await calendar.list()).toEqual([]);
 });
 
-test("a malformed stored Frontier season cannot stop Blitz creation or freezing", async () => {
-  const { launches, slots, calendar, tick } = stores();
+test("a malformed stored Frontier season cannot stop Blitz slot creation", async () => {
+  const { slots, calendar, tick } = stores();
   // Stored before the calendar checked seasons: set refuses one now.
   await database.db
     .prepare("INSERT INTO season_phases (phase, starts_at, ends_at, updated_at) VALUES ('frontier', ?, ?, ?)")
     .bind(day(0).getTime() + 500, day(31).getTime(), Date.now())
     .run();
   await calendar.set({ phase: "blitz", startsAt: day(0).toISOString(), endsAt: day(31).toISOString() }, Date.now());
-  await slots.create("due", new Date(Math.floor(Date.now() / 1000) * 1000 + 60_000).toISOString());
-  await database.db.prepare("UPDATE playtest_slots SET closes_at = 0").run();
   await tick(day(1));
   expect((await slots.list()).map(({ name }) => name)).toContain(blitzSlotName(day(1, 11)));
-  expect((await launches.list("madara.blitz")).map(({ name }) => name)).toContain("due-1");
-});
-
-test("a conflicting timetable slot cannot stop a due roster from freezing", async () => {
-  const { launches, slots, calendar, tick } = stores();
-  await calendar.set({ phase: "blitz", startsAt: day(0).toISOString(), endsAt: day(31).toISOString() }, Date.now());
-  await slots.create("due", new Date(Math.floor(Date.now() / 1000) * 1000 + 60_000).toISOString());
-  await database.db.prepare("UPDATE playtest_slots SET closes_at = 0").run();
-  await slots.create(blitzSlotName(day(1, 11)), day(1, 10).toISOString());
-  await tick(day(1));
-  expect((await launches.list("madara.blitz")).map(({ name }) => name)).toContain("due-1");
 });
 
 const enteredWindow = {
@@ -210,13 +199,13 @@ test("a late-opened Frontier phase still keeps its running end", async () => {
   expect(await calendar.list()).toEqual([entered]);
 });
 
-test("schedule failures log the fixed underlying code and still attempt due freezes", async () => {
+test("schedule failures log the fixed underlying code, and the tick leaves freezing to the registrar", async () => {
   const { slots, calendar, tick } = stores();
   vi.spyOn(calendar, "list").mockRejectedValue(new Error("ledger_head_unconfirmed: Bearer secret-value"));
   const freeze = vi.spyOn(slots, "freezeDueSlots");
   const log = vi.spyOn(console, "error").mockImplementation(() => {});
   await tick(day(1));
-  expect(freeze).toHaveBeenCalledOnce();
+  expect(freeze).not.toHaveBeenCalled();
   expect(log).toHaveBeenCalledWith(
     "launch_schedule_step_failed",
     expect.objectContaining({ code: "ledger_head_unconfirmed" }),

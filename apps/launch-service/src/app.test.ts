@@ -1,3 +1,4 @@
+import { slotResolver } from "./paid-blitz";
 import { day, frontierSeasonEnd } from "./test-dates";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { createLaunchApp } from "./app";
@@ -27,7 +28,7 @@ afterEach(async () => {
 const fixture = (chain = TEST_CHAIN) => {
   const store = new D1LaunchStore(database.db, testChain(chain));
   const value = slotValueFixture(1);
-  const slots = new D1SlotStore(database.db, store, value, registrationIdentityFixture);
+  const slots = new D1SlotStore(database.db, store, value, slotResolver(value, registrationIdentityFixture));
   const calendar = new D1CalendarStore(database.db);
   const armFor = vi.fn();
   const wakeAt = vi.fn(async (): Promise<number | null> => 0);
@@ -223,9 +224,9 @@ test("health names a stalled ledger close, preserves the failure through reads, 
       },
     ],
   });
-  expect(await new D1SlotStore(database.db, store, value, registrationIdentityFixture).freezeFailures()).toHaveLength(
-    1,
-  );
+  expect(
+    await new D1SlotStore(database.db, store, value, slotResolver(value, registrationIdentityFixture)).freezeFailures(),
+  ).toHaveLength(1);
   registrations.mockResolvedValue(page);
   await slots.freezeDueSlots();
   expect((await slots.get("stalled")).frozenAt).not.toBeNull();

@@ -2,28 +2,30 @@ import { slotValueFixture } from "./test-database";
 import { Effect } from "effect";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { LaunchExecutor, launchExecutorLayer } from "./executor";
+import { slotResolver } from "./paid-blitz";
 import { D1LaunchStore } from "./store";
 import { testBlitzRequest } from "./test-blitz";
 import { createLaunchTestDatabase, DEV_CHAIN, PRODUCTION_CHAIN, TEST_CHAIN, testChain } from "./test-database";
 
 const native = vi.hoisted(() => ({
-  launchBlitz: vi.fn(async (launches: readonly { request: { gameName: string }; players: readonly unknown[] }[]) =>
-    launches.map(({ request }, index) => ({
-      environment: "madara.blitz",
-      chain: "madara",
-      gameType: "blitz",
-      gameName: request.gameName,
-      gameId: 7 + index,
-      startTime: 100,
-      durationSeconds: 60,
-      startTimeIso: "1970-01-01T00:01:40.000Z",
-      rpcUrl: "https://shard.test/rpc",
-      configMode: "batched",
-      configSteps: [],
-      dryRun: false,
-      finalizeAt: 160,
-      settlementTransactions: 1,
-    })),
+  launchBlitz: vi.fn(
+    async (launches: readonly { request: { gameName: string }; players: readonly unknown[]; seater: string }[]) =>
+      launches.map(({ request }, index) => ({
+        environment: "madara.blitz",
+        chain: "madara",
+        gameType: "blitz",
+        gameName: request.gameName,
+        gameId: 7 + index,
+        startTime: 100,
+        durationSeconds: 60,
+        startTimeIso: "1970-01-01T00:01:40.000Z",
+        rpcUrl: "https://shard.test/rpc",
+        configMode: "batched",
+        configSteps: [],
+        dryRun: false,
+        finalizeAt: 160,
+        settlementTransactions: 1,
+      })),
   ),
 }));
 vi.mock("./shard-client", () => ({
@@ -65,6 +67,8 @@ const target = {
   },
   accountAddress: "0x1",
   privateKey: "unused-test-key",
+  /** A pool of two seaters; joining it is a shard write, so a refused run must not reach it. */
+  seaters: vi.fn(async () => ["0x5a", "0x5b"]),
 };
 const executeRun = (
   run: import("./model").LaunchRun,
@@ -76,7 +80,7 @@ const executeRun = (
     Effect.gen(function* () {
       const executor = yield* LaunchExecutor;
       return yield* executor.execute(run, store);
-    }).pipe(Effect.provide(launchExecutorLayer(layerTarget, value))),
+    }).pipe(Effect.provide(launchExecutorLayer(layerTarget, slotResolver(value, layerTarget.directory)))),
   );
 it("launches a whole slot from whichever game run it picked, resolving the slot once and completing every game", async () => {
   const store = new D1LaunchStore(database.db, testChain());
@@ -103,9 +107,10 @@ it("launches a whole slot from whichever game run it picked, resolving the slot 
   expect(registrations).toHaveBeenCalledOnce();
   expect(native.launchBlitz).toHaveBeenCalledOnce();
   const [launches] = native.launchBlitz.mock.calls[0]!;
-  expect(launches.map(({ request, players }) => [request.gameName, players.length])).toEqual([
-    ["blitz-1100-1", 13],
-    ["blitz-1100-2", 12],
+  // Groups are dealt to the seater pool round-robin by group index.
+  expect(launches.map(({ request, players, seater }) => [request.gameName, players.length, seater])).toEqual([
+    ["blitz-1100-1", 13, "0x5a"],
+    ["blitz-1100-2", 12, "0x5b"],
   ]);
   expect(summary).toMatchObject({ gameName: "blitz-1100-1", gameId: 7 });
   expect(await store.find("game", "madara.blitz", sibling.name)).toMatchObject({
@@ -140,6 +145,7 @@ it("creates a test game on a dev shard with the named accounts as its roster, re
         { account: "0x456", wallet: "0x456" },
         { account: "0x789", wallet: "0x789" },
       ],
+      seater: "0x5a",
     },
   ]);
   expect(registrations).not.toHaveBeenCalled();
@@ -151,6 +157,7 @@ it("refuses a queued test game on a Worker whose bindings select a production sh
     cause: new Error("test_blitz_dev_shard_only"),
   });
   expect(native.launchBlitz).not.toHaveBeenCalled();
+  expect(target.seaters).not.toHaveBeenCalled();
 });
 it("refuses a test game queued for a dev chain when the bound shard now answers as another chain", async () => {
   listedChain = DEV_CHAIN;
@@ -160,4 +167,5 @@ it("refuses a test game queued for a dev chain when the bound shard now answers 
     cause: new Error("directory_manifest_chain_differs"),
   });
   expect(native.launchBlitz).not.toHaveBeenCalled();
+  expect(target.seaters).not.toHaveBeenCalled();
 });

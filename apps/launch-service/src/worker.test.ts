@@ -65,6 +65,7 @@ interface FixtureGame {
   seed: bigint;
   dev_mode_on: boolean;
   roster: { account: bigint; wallet: bigint }[];
+  seater: bigint;
   ready: boolean;
 }
 let playBlitzFixture = false;
@@ -156,6 +157,8 @@ function blitzRpc(
       });
     case "blitz_roster":
       return response(gamesAbi, entry, game!.roster);
+    case "game_seater":
+      return response(gamesAbi, entry, game!.seater);
     case "game_release":
     case "preset_commitment":
       return response(gamesAbi, entry, 1);

@@ -1,7 +1,7 @@
 import { launchFailure } from "./errors";
-import { BLITZ_SLOT_PREPARATION_SECONDS, type RegistrationIdentity } from "@realms-world/value-ledger";
+import { BLITZ_SLOT_PREPARATION_SECONDS } from "@realms-world/value-ledger";
 import { loadNativePresetConfiguration } from "../../../config/deployer/clean/registrar/native-preset";
-import { closedSlotGroups, SlotCancelled, type BlitzValuePort } from "./paid-blitz";
+import { SlotCancelled, type BlitzValuePort, type SlotResolver } from "./paid-blitz";
 import { nativePresetIdFor } from "../../../config/source/native";
 import type { D1LaunchStore } from "./store";
 import { SlotConflict, SlotNotFound, type PlaytestSlot, type SlotStore, type SlotFreezeFailure } from "./slots";
@@ -22,7 +22,7 @@ export class D1SlotStore implements SlotStore {
     private readonly db: D1Database,
     private readonly launches: D1LaunchStore,
     private readonly value: BlitzValuePort,
-    private readonly identity: RegistrationIdentity,
+    private readonly resolveSlot: SlotResolver,
   ) {}
 
   async create(name: string, closesAt: string): Promise<void> {
@@ -100,7 +100,7 @@ export class D1SlotStore implements SlotStore {
     if (slot.frozenAt) return slot;
     if (!slot.closed) throw new SlotConflict("Registration is still open");
     const key = { chainId: slot.chainId, slotId: slot.slotId };
-    const closed = await closedSlotGroups(key, this.value, this.identity).catch((error: unknown) => {
+    const closed = await this.resolveSlot(key).catch((error: unknown) => {
       if (error instanceof SlotCancelled) return null;
       throw error;
     });
@@ -158,6 +158,17 @@ export class D1SlotStore implements SlotStore {
       .prepare("UPDATE playtest_slots SET freeze_failure=? WHERE chain_id=? AND name=? AND frozen_at IS NULL")
       .bind(JSON.stringify(failure), chainId, name)
       .run();
+  }
+
+  /** When the next slot still open closes, so the registrar can wake to freeze it at its close. */
+  async nextClose(): Promise<number | null> {
+    const row = await this.db
+      .prepare(
+        "SELECT MIN(closes_at) AS close FROM playtest_slots WHERE chain_id=? AND frozen_at IS NULL AND closes_at > ?",
+      )
+      .bind(await this.launches.targetChain(), Date.now())
+      .first<{ close: number | null }>();
+    return row?.close ?? null;
   }
 
   async freezeDueSlots(): Promise<void> {

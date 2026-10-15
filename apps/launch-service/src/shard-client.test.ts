@@ -22,6 +22,7 @@ it("launches a Blitz from its closed slot: creation parameters, settling time, o
     },
     players: roster,
     createdAt: 100000,
+    seater: "0x5a",
   };
   let params: Record<string, unknown> | undefined;
   let seated = false;
@@ -55,6 +56,8 @@ it("launches a Blitz from its closed slot: creation parameters, settling time, o
   head.mockResolvedValue({ block_number: 11, block_hash: "0x11", timestamp: 100 });
   const pins = { gameId: 7, release: 1n, commitment: 2n, l2GasBound: 3n };
   vi.spyOn(native, "pins").mockResolvedValue(pins);
+  vi.spyOn(native, "seaterAccount").mockReturnValue(native);
+  vi.spyOn(native, "view").mockResolvedValue(0x5an);
   vi.spyOn(native, "pendingNonce").mockResolvedValueOnce(9n).mockResolvedValue(10n);
   const send = vi.spyOn(native, "sendSeat").mockResolvedValue("0xabc");
   vi.spyOn(native, "seatOutcome").mockImplementation(async () => {
@@ -71,14 +74,21 @@ it("launches a Blitz from its closed slot: creation parameters, settling time, o
       settlementTransactions: 1,
     }),
   ]);
-  expect(params).toMatchObject({ roster, start_settling_at: 100, start_main_at: 400, registration_start: 99 });
+  expect(params).toMatchObject({
+    roster,
+    seater: "0x5a",
+    start_settling_at: 100,
+    start_main_at: 400,
+    registration_start: 99,
+  });
   expect(closed).toHaveBeenCalledWith("0xc");
   expect(send).toHaveBeenCalledWith(pins, 10n);
 
-  // A retry finds the game and refuses one whose stored roster differs, before any write.
+  // A retry finds the game and refuses one whose stored roster or seater differs, before any write.
   await expect(native.launchBlitz([{ ...launch, players: [{ account: "0xb", wallet: "0x1" }] }])).rejects.toThrow(
     "frozen_roster_differs",
   );
+  await expect(native.launchBlitz([{ ...launch, seater: "0x5b" }])).rejects.toThrow("game_seater_differs");
   expect(create).toHaveBeenCalledOnce();
 });
 
@@ -106,6 +116,7 @@ const releasedShard = (existing: Record<string, number>, currentRelease: number)
     },
     players: roster,
     createdAt: 100000,
+    seater: "0x5a",
   }));
   const games = new Map<string, { id: number; release: number; seed: bigint; ready: boolean }>();
   const seedOf = (params: unknown) => BigInt(String((params as { seed: unknown }).seed));
@@ -155,6 +166,8 @@ const releasedShard = (existing: Record<string, number>, currentRelease: number)
           }) as never,
       );
       vi.spyOn(native, "roster").mockResolvedValue(roster);
+      vi.spyOn(native, "seaterAccount").mockReturnValue(native);
+      vi.spyOn(native, "view").mockResolvedValue(0x5an);
       const pins = vi.spyOn(native, "pins").mockImplementation(async (gameId) => ({
         gameId,
         release: BigInt(byId(gameId).release),
