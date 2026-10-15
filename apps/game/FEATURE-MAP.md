@@ -15,8 +15,8 @@ the game's own sign-in, kept outside the repo): `--crate <col>,<row>` finds a cr
 pointer, opens it and reads it back from the log after a reload; `--until-end <minutes>` stays on the map until the game
 ends and leaves through **Game finished** → **See the results**, checking the page logged no "No game client is active";
 `--ended` presses **Results** on the ended game's doorway and on its map address, at desktop and phone
-(`scripts/prove-play-game.mjs`, writing `game-proof.json` and screenshots into a new directory per run).
-The outpost proof below drives the runtime lab; live actions still need an eligible player.
+(`scripts/prove-play-game.mjs`, writing `game-proof.json` and screenshots into a new directory per run). The outpost
+proof below drives the runtime lab; live actions still need an eligible player.
 
 ## Shell (outside a game)
 
