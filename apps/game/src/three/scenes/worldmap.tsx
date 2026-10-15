@@ -53,6 +53,7 @@ import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { OwnershipRingLayer } from "@/three/managers/ownership-ring-layer";
 import { bindOwnershipRings } from "./worldmap-ownership-rings";
 import { bindSelectionToMovingStructures } from "./worldmap-selection-follow";
+import { reportSelectedArmy } from "./worldmap-selected-army-report";
 import { StructureManager } from "@/three/managers/structure-manager";
 import { FrameBudgetWorkQueue, type FrameBudgetWorkLane } from "@/three/frame-budget-work-queue";
 import { SceneManager } from "@/three/scene-manager";
@@ -8688,6 +8689,7 @@ export default class WorldmapScene extends WarpTravel {
         rings: this.ownershipRings,
       }),
     );
+    this.storeSubscriptions.push(reportSelectedArmy(this.worldSpatialProjection));
     this.storeSubscriptions.push(
       bindSelectionToMovingStructures({
         projection: this.worldSpatialProjection,
