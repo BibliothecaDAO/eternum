@@ -253,6 +253,13 @@ export const getRelicInfo = (relicId: ResourcesIds): RelicInfo | undefined => {
   return RELICS.find((relic) => relic.id === relicId);
 };
 
+/** A relic's name, the one every surface shows: its panel, its resource row and the game's history. */
+export const relicName = (relicId: ResourcesIds): string => {
+  const relic = getRelicInfo(relicId);
+  if (!relic) throw new Error(`Resource ${relicId} is not a relic`);
+  return relic.name;
+};
+
 export const isRelic = (resourceId: ResourcesIds): boolean => {
   return RELICS.some((relic) => relic.id === resourceId);
 };

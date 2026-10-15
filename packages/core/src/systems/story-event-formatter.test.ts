@@ -1,4 +1,4 @@
-import { StructureType } from "@bibliothecadao/types";
+import { RELICS, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
@@ -316,4 +316,16 @@ describe("every story the chain can tell", () => {
   it("refuses a story it has no line for, rather than printing its fields", () => {
     expect(() => buildStoryEventPresentation(story("NotAStory", {}))).toThrow("No presentation for story NotAStory");
   });
+});
+
+it("names a crate's relics as their panel does, one distinct name per relic", () => {
+  expect(new Set(RELICS.map((relic) => relic.name)).size).toBe(RELICS.length);
+  // Game 6's crate: the panel listed these three; the history named the first one as the army's ward.
+  const relics = [
+    ResourcesIds.StructureDamageReductionRelic2,
+    ResourcesIds.ExplorationRewardRelic2,
+    ResourcesIds.TroopProductionRelic2,
+  ];
+  const { description } = buildStoryEventPresentation(story("RelicChestOpened", { relics }));
+  expect(description).toContain("Structure Defense Relic II, Exploration Reward Relic II, Troop Production Relic II");
 });
