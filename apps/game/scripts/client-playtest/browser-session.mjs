@@ -76,10 +76,14 @@ export function tapCommands([dx, dy]) {
   return [`mouse move ${x} ${y}`, "mouse down", "mouse up"];
 }
 
-/** What a player can see that says where they are: the route's scene, the lit place, open sheets, selection, zoom. */
+/**
+ * What a player can see that says where they are: the route's scene, the scene the renderer last drew, the lit place,
+ * open sheets, selection, zoom.
+ */
 const OBSERVE_EXPRESSION = `JSON.stringify({
   path: location.pathname,
   scene: /\\/(map|hex)$/.exec(location.pathname)?.[1] ?? null,
+  rendered: window.__rendererDiagnostics?.sceneName ?? null,
   place: document.querySelector('nav[aria-label="Places"] [aria-current="page"]')?.textContent.trim() ?? null,
   dialogs: [...document.querySelectorAll('[role="dialog"]')].map((dialog) => dialog.getAttribute("aria-label")),
   pressed: [...document.querySelectorAll('button[aria-pressed="true"]')].map((button) => button.getAttribute("aria-label")),

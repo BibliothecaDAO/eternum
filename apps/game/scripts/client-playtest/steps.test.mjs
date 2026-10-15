@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { SPECTATOR_STEPS } from "./steps.mjs";
 
-const onTheMap = { scene: "map", place: "Map", dialogs: [], pressed: [] };
+const onTheMap = { scene: "map", rendered: "map", place: "Map", dialogs: [], pressed: [] };
 const verifyOf = (name) => SPECTATOR_STEPS.find((step) => step.name === name).verify;
 
 describe("the zoom step", () => {
@@ -21,7 +21,19 @@ describe("the zoom step", () => {
   });
 
   it("fails off the map, whatever the distances", () => {
-    const onTheRealm = { ...onTheMap, scene: "hex", place: "Realm" };
+    const onTheRealm = { ...onTheMap, scene: "hex", rendered: "hex", place: "Realm" };
     expect(verify({ seen: onTheRealm, played: { before: 20, zoomedOut: 45, zoomedIn: 11 } }).status).toBe("failed");
+  });
+});
+
+describe("a scene check", () => {
+  const verify = verifyOf("open-map");
+
+  it("fails a route on the map with Map lit while the realm is still drawn", () => {
+    const realmDrawnUnderTheMapRoute = { ...onTheMap, rendered: "hex" };
+    expect(verify({ seen: realmDrawnUnderTheMapRoute })).toMatchObject({
+      status: "failed",
+      reason: expect.stringContaining("hex drawn"),
+    });
   });
 });

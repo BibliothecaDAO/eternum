@@ -92,11 +92,14 @@ function inScene(scene) {
     isIn(seen, place, scene)
       ? completed({ scene })
       : failed(
-          `expected the ${scene} scene with ${place} lit, saw ${seen.scene ?? "no scene"} with ${seen.place ?? "nothing"} lit`,
+          `expected the ${scene} scene drawn with ${place} lit, saw the route on ${seen.scene ?? "no scene"}, ` +
+            `${seen.rendered ?? "no scene"} drawn, ${seen.place ?? "nothing"} lit`,
         );
 }
 
-const isIn = (seen, place, scene) => seen.scene === scene && Boolean(seen.place?.startsWith(place));
+/** The route, the scene drawn and the lit place agree: a route on the map over a realm still drawn is not the map. */
+const isIn = (seen, place, scene) =>
+  seen.scene === scene && seen.rendered === scene && Boolean(seen.place?.startsWith(place));
 
 /** WASD round trip of 16 s; the view before and after are kept to prove the camera moved over the map. */
 async function panTheMap({ browser, extraScreenshot }) {
