@@ -44,8 +44,9 @@ async function main(): Promise<void> {
     accountAddress: required("DEPLOYER_ACCOUNT_ADDRESS"),
     privateKey: required("DEPLOYER_PRIVATE_KEY"),
   });
-  const run = Date.now().toString(36);
-  const groups = splitPlaytestRoster(syntheticRoster(players, run));
+  const runStartedAt = Date.now();
+  const run = runStartedAt.toString(36);
+  const groups = splitPlaytestRoster(syntheticRoster(players, BigInt(runStartedAt)));
   const startedAt = new Date().toISOString();
   const started = now();
   const games = [];
@@ -92,10 +93,10 @@ async function seatGame(launcher: TimedLaunchShard, run: string, index: number, 
 }
 
 /** Distinct, valid contract addresses that belong to nobody. */
-const syntheticRoster = (count: number, run: string) =>
-  Array.from({ length: count }, (_, index) =>
-    hash.computePoseidonHashOnElements([BigInt(`0x${run}`), BigInt(index)]),
-  ).map((value) => `0x${(BigInt(value) % ((1n << 251n) - 256n)).toString(16)}`);
+const syntheticRoster = (count: number, run: bigint) =>
+  Array.from({ length: count }, (_, index) => hash.computePoseidonHashOnElements([run, BigInt(index)])).map(
+    (value) => `0x${(BigInt(value) % ((1n << 251n) - 256n)).toString(16)}`,
+  );
 
 const summary = (values: number[]) => ({
   count: values.length,
