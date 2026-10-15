@@ -52,6 +52,9 @@ services:
       # Export to the shard's existing local metrics collector.
       - --otel-collector-endpoint=http://metrics:4317
       - --otel-export-metrics=true
+      - --db-max-kept-snapshots=0
+    environment:
+      MALLOC_ARENA_MAX: "2"
     volumes: ["chain:/data", "public-config:/config:ro"]
     restart: on-failure
     stop_grace_period: 60s
