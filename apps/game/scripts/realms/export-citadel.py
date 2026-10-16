@@ -41,13 +41,19 @@ def validate_canvas_source(objects):
         marker = obj.data.attributes.get('_YARD_ARCHITECTURE')
         if marker:
             yard.extend(v.co for v, mark in zip(obj.data.vertices, marker.data) if mark.value > 0.5)
-    if not yard or max(math.hypot(v.x, v.y) for v in yard) > 0.70001:
-        raise ValueError('Keep Canvas & Thatch architecture within radius 0.70 inside its existing fence')
+    fence = json.loads((APP / 'scripts/outposts/village-yard.json').read_text())
+    inner_apothem = fence['fenceRadius'] * math.sqrt(3) / 2 - fence['postRadius']
+    if not yard:
+        raise ValueError('Preserve Canvas & Thatch yard architecture markers')
+    clearance = inner_apothem - max(v.x * math.cos(side * math.pi / 3) + v.y * math.sin(side * math.pi / 3)
+                                    for v in yard for side in range(6))
+    if clearance < fence['clearance']:
+        raise ValueError(f'Keep Canvas & Thatch architecture {fence["clearance"]} inside the fence; got {clearance}')
     body = next(obj for obj in objects if obj.name.endswith(' / painted body'))
     colors = [entry.color[0] for entry in body.data.color_attributes['Surface tint'].data]
     if max(colors) - min(colors) < 0.05:
         raise ValueError('Preserve the village vertex contact bake and painted tint')
-    return {'direction': 'canvas-thatch', 'yardRadius': max(math.hypot(v.x, v.y) for v in yard)}
+    return {'direction': 'canvas-thatch', 'fenceClearance': clearance}
 
 
 def production_meshes(crown):

@@ -47,14 +47,24 @@ def order_surface(obj, role, material):
 
 
 def entrance_badge(editable, material):
-    # The existing left entrance post supports the small Order plaque.
+    posts = []
+    for obj in editable.objects:
+        if not obj.name.startswith("Rough pointed yard post"):
+            continue
+        vertices = [obj.matrix_world @ vertex.co for vertex in obj.data.vertices]
+        bottom = min(v.z for v in vertices)
+        feet = [v for v in vertices if abs(v.z - bottom) < 0.00001]
+        center_x = sum(v.x for v in feet) / len(feet)
+        if center_x < -0.001:
+            posts.append((min(v.y for v in vertices), center_x))
+    if not posts:
+        raise ValueError("Keep the left entrance post as the realm Order plaque anchor")
+    front, center_x = min(posts)
     data = bpy.data.meshes.new("Order entrance plaque")
     data.from_pydata(
         [
-            (-0.331, -0.777, 0.19),
-            (-0.289, -0.777, 0.19),
-            (-0.289, -0.777, 0.275),
-            (-0.331, -0.777, 0.275),
+            (center_x + x, front - 0.001, z)
+            for x, z in [(-0.021, 0.19), (0.021, 0.19), (0.021, 0.275), (-0.021, 0.275)]
         ],
         [],
         [(0, 1, 2, 3)],

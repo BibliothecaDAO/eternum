@@ -41,9 +41,10 @@ GPU. The same system serves map, realm view and labs. No ring GLB is loaded.
 The settlement reads the same packed `../outposts/village-canvas-thatch.blend` as the village. The realm exporter runs
 `prepare-canvas-settlement.py` in memory: it replaces the standard's fixed sun with the swappable Order surface, mounts
 a small Order plaque on the existing left entrance post, and marks the tent seams for realm ownership tint.
-Architecture, proportions, UVs, painted textures, vertex contact bake and the radius-0.70 yard limit are preserved. No
-second village source is stored. The former Wellstead source is removed; its old builder was already retired. The
-settlement's height floor is 0.70 so the approved 0.808-high village keeps its proportions; the wonder stays unchanged.
+Architecture, proportions, UVs, painted textures, vertex contact bake and the shared fence clearance in
+`scripts/outposts/village-yard.json` are preserved. No second village source is stored. The former Wellstead source is
+removed; its old builder was already retired. The settlement's height floor is 0.70 so the approved 0.808-high village
+keeps its proportions; the wonder stays unchanged.
 
 Terrace Forum removes the two window hangings and their brackets. Twin Ward removes its glass panes and lower window
 rows while retaining plain upper windows. Both have larger entrances, with the gates inset to keep their wider jambs
@@ -56,3 +57,8 @@ flock /tmp/eternum-lanes-heavy.lock /path/to/blender-5.2.1 --background apps/gam
 Use the Forum source path for the city. Export remains the command above, with `--asset kingdom` or `--asset city`. The
 retained bakes follow the edited geometry through its original UVs; these small doorway edits do not introduce new
 textures. The empire retains its existing glass treatment.
+
+The outposts-15 source places the cottages toward the side fences and the small tent at the rear-right beside the canvas
+shelter. The settlement uses that exact layout. Its Order plaque locates the actual left entrance post; the source check
+reads the shared hex-fence radius, post thickness and minimum clearance. No second layout or circular yard constraint is
+maintained for realms.
