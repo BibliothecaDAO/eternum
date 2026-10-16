@@ -12,7 +12,7 @@ class NodeSettingsTest(unittest.TestCase):
         dev = shard.compose_configuration({**configuration(), "block_time": "1s"}, Path("/tmp/not-deployed"))
         self.assertEqual(dev["services"]["prepare"]["environment"]["BLOCK_TIME"], "1s")
         node = compose["services"]["madara"]
-        self.assertTrue(node["image"].endswith("ec30298d51ce0780e1ad88cc00e1c17bef31530d0e338fe7fcc1d71d1bad31b2"))
+        self.assertTrue(node["image"].endswith("40934db1cdcd0e37058531c9bda152b336a0b594e349cbf2578f3893e0cc20e2"))
         for key in ("mem_limit", "memswap_limit", "cpuset", "cpus", "cpu_quota", "ulimits", "cgroup_parent", "pids_limit"):
             self.assertNotIn(key, node)
         self.assertIn("--db-max-kept-snapshots=0", node["command"])
