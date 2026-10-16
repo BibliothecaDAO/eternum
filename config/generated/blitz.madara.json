@@ -678,10 +678,10 @@
       "staminaCrossbowmanMax": 120,
       "staminaAttackReq": 50,
       "staminaDefenseReq": 40,
-      "staminaExploreWheatCost": 0.03,
+      "staminaExploreWheatCost": 0.1,
       "staminaExploreFishCost": 0,
       "staminaExploreStaminaCost": 30,
-      "staminaTravelWheatCost": 0.03,
+      "staminaTravelWheatCost": 0.05,
       "staminaTravelFishCost": 0,
       "staminaTravelStaminaCost": 20
     },
