@@ -61,7 +61,7 @@ describe("the desktop HUD's keys", () => {
   afterEach(() => {
     act(() => root.unmount());
     host.remove();
-    useNextUpShows.setState({ shown: null, act: null });
+    useNextUpShows.setState({ showing: false, act: null });
   });
 
   it("opens Build, Production, Military and Transfer with B, P, M and T", () => {

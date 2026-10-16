@@ -22,15 +22,14 @@ import { useEffect, useMemo, useState } from "react";
 import { resolveStructureAttention } from "@/ui/features/world/containers/top-header/attention-policy";
 import { useNextUpShows } from "./next-up-shows";
 
-/** Tells the screen what Next up shows (`useNextUpShows`), and that it shows nothing once it unmounts. */
+/** Tells the screen whether Next up shows a step, and that it shows none once it unmounts. */
 const usePublishShown = (step: NextStep | undefined) => {
-  const levelUpOf = step?.kind === "level-up" ? step.realmId : null;
   const showing = step !== undefined;
   useEffect(() => {
-    useNextUpShows.setState({ shown: showing ? { levelUpOf } : null });
-  }, [showing, levelUpOf]);
+    useNextUpShows.setState({ showing });
+  }, [showing]);
   useEffect(() => {
-    return () => useNextUpShows.setState({ shown: null, act: null });
+    return () => useNextUpShows.setState({ showing: false, act: null });
   }, []);
 };
 

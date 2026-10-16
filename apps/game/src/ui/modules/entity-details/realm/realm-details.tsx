@@ -1,4 +1,4 @@
-import { useNextUpOffersLevelUp } from "@/ui/features/world/hud/next-up-shows";
+import { useNextUpHoldsPrimary } from "@/ui/features/world/hud/next-up-shows";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { REQUIREMENT_CHIP, RequirementChips } from "@/ui/design-system/molecules/requirement-chips";
@@ -61,7 +61,7 @@ export const RealmUpgradeCompact = () => {
 
   const upgradeInfo = useStructureUpgrade(structureEntityId);
   const levelUp = useRealmLevelUp(structureEntityId);
-  const nextUpOffersIt = useNextUpOffersLevelUp(structureEntityId);
+  const nextUpHoldsPrimary = useNextUpHoldsPrimary();
   if (!upgradeInfo || !levelUp) return null;
 
   if (!upgradeInfo.isOwner || !ordersAllowed) {
@@ -109,10 +109,10 @@ export const RealmUpgradeCompact = () => {
           disabled={!levelUp.ready}
           className={cn(
             "inline-flex h-7 items-center gap-1 rounded-md border px-3 text-[10px] font-semibold uppercase tracking-[0.16em] shadow transition",
-            // While Next up offers the same step, its button is the filled one; this one is outlined.
+            // While Next up shows a step, its button is the screen's one filled gold action; this one is outlined.
             !levelUp.ready
               ? "border-gold/20 bg-black/40 text-gold/40 cursor-not-allowed"
-              : nextUpOffersIt
+              : nextUpHoldsPrimary
                 ? "border-gold/70 text-gold hover:bg-gold/10"
                 : "border-amber-500/80 bg-amber-400/90 text-black hover:bg-amber-300",
           )}
