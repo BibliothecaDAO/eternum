@@ -54,7 +54,7 @@ export const ArmyColumn = ({
         <span className={HUD_LABEL_BRIGHT}>{label}</span>
         <span
           className={cn(
-            "ml-auto shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-bold leading-none",
+            "ml-auto shrink-0 rounded border px-1.5 py-0.5 text-sm font-bold leading-none",
             getTierStyle(String(army.tier)),
           )}
         >
@@ -72,7 +72,7 @@ export const ArmyColumn = ({
                 type="button"
                 onClick={() => onSelectGuard?.(guard.slot)}
                 className={cn(
-                  "rounded border px-2 py-1 text-[11px] font-semibold transition-colors",
+                  "rounded border px-2 py-1 text-sm font-semibold transition-colors",
                   active
                     ? "border-gold bg-gold/20 text-gold"
                     : "border-gold/30 bg-black/30 text-gold/70 hover:border-gold/60",

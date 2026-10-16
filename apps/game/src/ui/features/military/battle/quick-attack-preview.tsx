@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useStoredBiome } from "@/hooks/helpers/use-tile-at";
 import { type MouseEvent, useEffect, useMemo, useState } from "react";
@@ -28,7 +29,6 @@ import {
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 
-import { X } from "@/ui/design-system/atoms/game-icons";
 import { buildAttackStaminaRequirementLabel, resolveAttackStaminaState } from "./attack-stamina-state";
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots } from "../utils/defense-slot-utils";
 import { formatAcross, survivalOf, type SideRange } from "./battle-range";
@@ -105,7 +105,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const selectedHex = useUIStore((state) => state.selectedHex);
   const openSurface = usePopoverStore((state) => state.openSurface);
   const closeSurface = usePopoverStore((state) => state.closeSurface);
-  const updateSelectedEntityId = useUIStore((state) => state.updateEntityActionSelectedEntityId);
+  const deselectEntity = useUIStore((state) => state.deselectEntity);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Opt-in toggle: when on, the Claim action also garrisons the surviving troops. Off by default.
@@ -373,7 +373,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       playUnitCommandSound("attack");
       await performCall({ direction, resolvedTarget });
 
-      updateSelectedEntityId(null);
+      deselectEntity();
       closeSurface();
     } catch (error) {
       console.error("Quick attack failed", error);
@@ -451,13 +451,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   };
 
   const renderDetailsButton = (extraClassName?: string) => (
-    <Button
-      variant="outline"
-      size="md"
-      onClick={handleShowDetails}
-      forceUppercase={false}
-      className={cn("px-3 py-1 text-xs tracking-wide", extraClassName)}
-    >
+    <Button variant="outline" size="md" onClick={handleShowDetails} className={cn("px-3 py-1 text-sm", extraClassName)}>
       Details
     </Button>
   );
@@ -511,7 +505,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
             className="rounded-full border border-gold/30 bg-transparent p-1 text-gold transition hover:bg-gold/10"
             onClick={closeSurface}
           >
-            <X className="h-3 w-3" />
+            <SemanticIcon name="close" className="h-3 w-3" />
           </button>
         </div>
       </div>
@@ -523,7 +517,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       ) : (
         <div className="space-y-1.5">
           {rollsDice && (
-            <p className="text-xs text-gold/70">
+            <p className="text-sm text-gold/70">
               Each side rolls a d20 for +1% to +20% damage; ranges run from your worst roll to your best.
             </p>
           )}
@@ -554,7 +548,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
                   <li key={index} className="flex items-center gap-2">
                     <span
                       className={cn(
-                        "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold border leading-none",
+                        "shrink-0 rounded px-1.5 py-0.5 text-sm font-bold border leading-none",
                         getTierStyle(slot.tier),
                       )}
                     >
@@ -580,13 +574,13 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           )}
 
           {attackDisabled && (
-            <div className="rounded-md border border-red-400/30 bg-red-900/20 px-3 py-2 text-xs text-red-200">
+            <div className="rounded-md border border-red-400/30 bg-red-900/20 px-3 py-2 text-sm text-red-200">
               <span>{attackButtonLabel}</span>
               {cooldownBlocksAttack && attackerCooldownRemaining > 0 && (
-                <div className="mt-1 text-[11px] text-gold/70">{formatTime(attackerCooldownRemaining)} remaining</div>
+                <div className="mt-1 text-sm text-gold/70">{formatTime(attackerCooldownRemaining)} remaining</div>
               )}
               {isLowStamina && (
-                <div className="mt-1 text-[11px] text-gold/70">
+                <div className="mt-1 text-sm text-gold/70">
                   <div>
                     Current: {attackerStaminaValue ?? "—"} / Required: {requiredAttackStamina}
                   </div>
@@ -616,8 +610,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           disabled={attackDisabled || !targetData || isLoading}
           isLoading={isSubmitting}
           onClick={handlePrimaryAction}
-          forceUppercase={false}
-          className="px-3 py-1 text-xs tracking-wide"
+          className="px-3 py-1 text-sm"
         >
           {rangedClaimBlocked ? "Move adjacent to claim" : willCaptureStructure ? "Claim" : "Attack"}
         </Button>

@@ -6,10 +6,11 @@ until the receipt and that bot's Herald transaction barrier both finish. Library
 reported with the game's reason. A lost submission response is observed by its precomputed hash; the harness never
 advances that account to another nonce while its outcome is unknown.
 
-Account creation retains the identity service's bot-device approval route. New game creation needs
+Account creation retains the identity service's bot-device approval route. Bots join and new games are created through
 `HARNESS_ADMIN_RPC_URL`; player traffic uses `--rpc-url` and the matching Herald manifest. Administration belongs on the
-private node, while gameplay goes through the public proxy. `NATIVE_WORLD_MANIFEST` must include `shard.chainId`,
-`shard.vrfPublicKey` and `shard.l2GasBound`.
+private node, while gameplay goes through the public proxy. `--create-game` creates the Frontier game as the shard's
+launcher instead of playing the directory's; only a measurement shard, whose runner made the harness its launcher,
+accepts it. `NATIVE_WORLD_MANIFEST` must include `shard.chainId`, `shard.vrfPublicKey` and `shard.l2GasBound`.
 
 `pnpm lab:harness:test` resolves workspace sources through this directory's tsconfig, so tests and workers use the
 checkout's command bindings rather than another checkout's built packages. Run commands under
@@ -21,9 +22,8 @@ checkout's command bindings rather than another checkout's built packages. Run c
 signed invokes with the spike's warmed worker barrier. The built-in `wave-fixture.ts` creates an independent real game,
 approved accounts, each player's Herald client, generated command and domain assertions. `heraldConfirmations` comes
 from `connectHarnessGameClient`. No spike contracts, probe counters, simulations or synthetic forwarded IPs are used.
-Setup requires the normal harness identity/launcher environment plus `SHARD_NODE_IMAGE`, recorded as public timing
-evidence. `--fixture <module.ts>` supplies another typed `WaveFixturePort` for a different registered preset or action
-route.
+Setup requires the normal harness identity/launcher environment. `--fixture <module.ts>` supplies another typed
+`WaveFixturePort` for a different registered preset or action route.
 
 ## 96 bots
 

@@ -1,4 +1,6 @@
-import { BUILDING_IMAGES_PATH } from "@/ui/config";
+import { resourceMeaning } from "@/ui/design-system/icon-meaning";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import { BuildingThumbnail } from "./building-thumbnail";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useEffect } from "react";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -18,7 +20,7 @@ export function PlotConstructionPicker(target: PlotConstructionTarget) {
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm font-semibold">Build on this plot</span>
         {form.allowSimpleCost && (
-          <label className="flex items-center gap-2 text-xs">
+          <label className="flex items-center gap-2 text-sm">
             Simple cost
             <input
               type="checkbox"
@@ -30,13 +32,13 @@ export function PlotConstructionPicker(target: PlotConstructionTarget) {
         )}
       </div>
       {form.error && (
-        <p role="status" className="text-xs">
+        <p role="status" className="text-sm">
           {form.error}
         </p>
       )}
       {form.groups.map((group) => (
         <section key={group.label} aria-label={group.label}>
-          <h3 className="mb-1 text-xs font-semibold">{group.label}</h3>
+          <h3 className="mb-1 text-sm font-semibold">{group.label}</h3>
           <div className="grid grid-cols-3 gap-2">
             {group.buildings
               .toSorted((a, b) => Number(a.disabled) - Number(b.disabled))
@@ -55,15 +57,11 @@ export function PlotConstructionPicker(target: PlotConstructionTarget) {
                     setTooltip({ content: <RequirementChips requirements={building.requirements} />, position: "top" })
                   }
                   onMouseLeave={() => setTooltip(null)}
-                  className="relative min-w-0 overflow-hidden rounded border border-gold/25 p-1 text-center text-xs"
+                  className="relative min-w-0 overflow-hidden rounded border border-gold/25 p-1 text-center text-sm"
                 >
-                  <img
-                    src={BUILDING_IMAGES_PATH[building.type as keyof typeof BUILDING_IMAGES_PATH]}
-                    alt=""
-                    className="h-16 w-full object-contain"
-                  />
+                  <BuildingThumbnail building={building.type} alt="" className="h-16 w-full object-contain" />
                   <span className="block font-semibold">{building.label}</span>
-                  <span className="flex flex-wrap justify-center gap-x-2 gap-y-1 py-1 text-[10px] tabular-nums">
+                  <span className="flex flex-wrap justify-center gap-x-2 gap-y-1 py-1 text-sm tabular-nums">
                     {building.requirements === undefined && "—"}
                     {building.requirements?.map((cost) => (
                       <span
@@ -71,8 +69,8 @@ export function PlotConstructionPicker(target: PlotConstructionTarget) {
                         className="inline-flex items-center gap-0.5"
                         title={ResourcesIds[cost.resource]}
                       >
-                        <img
-                          src={`/images/resources/${cost.resource}.png`}
+                        <SemanticIcon
+                          name={resourceMeaning(cost.resource)}
                           alt={ResourcesIds[cost.resource]}
                           className="h-4 w-4"
                         />

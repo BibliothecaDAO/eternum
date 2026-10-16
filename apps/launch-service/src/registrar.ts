@@ -1,11 +1,14 @@
 import { accountJoinErrors } from "@bibliothecadao/eternum/realms-account";
-import { activeShards, serviceFailure } from "@realms-world/value-ledger";
+import { activeShards, LAUNCHER_LABEL, seaterLabels, serviceFailure } from "@realms-world/value-ledger";
 import { DurableObject } from "cloudflare:workers";
 import { Effect, Layer, Semaphore } from "effect";
 import { decodeLaunchEnv } from "./env";
 import { launchExecutorLayer, launchTargetOf } from "./executor";
 import { processNextLaunch } from "./process-launch";
-import { joinLauncherAccount } from "./launcher-account";
+import { joinBotAccount } from "./launcher-account";
+import { slotResolver } from "./paid-blitz";
+import { D1SlotStore, FREEZE_RETRY_MS } from "./slot-store";
+import { launchFailure } from "./errors";
 import { D1LaunchStore, databaseLayer } from "./store";
 
 export interface JoinFailure {
@@ -27,9 +30,11 @@ const joinErrors = [
 ];
 
 /**
- * The registrar: the one object that executes launches, so the deployer account signs one transaction stream at a
- * time. Each alarm runs the next due launch to its end; a launch interrupted by a restart is resumed from chain state
- * on the next alarm, because creation, roster settlement and result batches each check the chain before writing.
+ * The registrar: the one object that executes launches, so the launcher signs one transaction stream at a time and each
+ * seater its own. Each alarm first freezes every slot whose registration has closed, then runs the next due launch to
+ * its end, from the same read of the ledger the freeze made. It wakes at the next due freeze (a slot's close, or the
+ * retry of a failed one) as well as the next due run. A launch interrupted by a restart is resumed from chain state on
+ * the next alarm, because creation, roster settlement and result batches each check the chain before writing.
  */
 export class Registrar extends DurableObject<Record<string, unknown>> {
   private readonly signing = Semaphore.makeUnsafe(1);
@@ -78,9 +83,13 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
         async () => shard.chainId,
         () => activeShards(env.IDENTITY).then((rows) => rows.map((row) => row.chainId)),
       );
+      const resolveSlot = slotResolver(env.VALUE_RELAY, env.IDENTITY);
+      const slots = new D1SlotStore(env.DB, store, env.VALUE_RELAY, resolveSlot);
+      const freeze = await this.freezeClosedSlots(slots);
+      if (freeze !== null) next = Math.min(next ?? Infinity, freeze);
       let accountAddress: string;
       try {
-        accountAddress = await joinLauncherAccount(env, shard.chainId);
+        accountAddress = await joinBotAccount(env, shard.chainId, LAUNCHER_LABEL);
       } catch (error) {
         const diagnostic = serviceFailure(error, joinErrors, "launcher_join_failed", [
           env.OPERATOR_TOKEN,
@@ -97,13 +106,28 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
         next = Math.min(next ?? Infinity, Date.now() + 30000);
         continue;
       }
-      const target = launchTargetOf(env, accountAddress);
-      const services = Layer.mergeAll(databaseLayer(store), launchExecutorLayer(target, env.VALUE_RELAY));
+      const seaters = () => Promise.all(seaterLabels.map((label) => joinBotAccount(env, shard.chainId, label)));
+      const target = launchTargetOf(env, accountAddress, seaters);
+      const services = Layer.mergeAll(databaseLayer(store), launchExecutorLayer(target, resolveSlot));
       await Effect.runPromise(processNextLaunch(Date.now()).pipe(Effect.provide(services)));
       const due = await store.nextDue();
       if (due !== null) next = Math.min(next ?? Infinity, due);
     }
     await this.ctx.storage.put("joinFailures", failures);
     if (next !== null) await this.ctx.storage.setAlarm(Math.max(next, Date.now()));
+  }
+
+  /**
+   * Freezes every closed slot and returns when the next freeze is due. Each slot's freeze records its own failure and
+   * its retry; a pass that cannot reach its database is retried as a whole, and the launches still run meanwhile.
+   */
+  private async freezeClosedSlots(slots: D1SlotStore): Promise<number | null> {
+    try {
+      await slots.freezeDueSlots();
+      return await slots.nextFreeze();
+    } catch (error) {
+      console.error("slot_freeze_unavailable", launchFailure(error));
+      return Date.now() + FREEZE_RETRY_MS;
+    }
   }
 }

@@ -8,7 +8,8 @@
     "./shard": "./src/shard.ts",
     "./commitment": "./src/commitment.ts",
     "./codecs": "./src/codecs.ts",
-    "./blitz-slots": "./src/blitz-slots.ts"
+    "./blitz-slots": "./src/blitz-slots.ts",
+    "./dev-shard": "./src/dev-shard.ts"
   },
   "scripts": {
     "test": "vitest run",
@@ -17,7 +18,8 @@
   "dependencies": {
     "starknet": "catalog:web",
     "@bibliothecadao/eternum": "workspace:*",
-    "@bibliothecadao/provider": "workspace:*"
+    "@bibliothecadao/provider": "workspace:*",
+    "effect": "4.0.4"
   },
   "devDependencies": {
     "typescript": "catalog:web",

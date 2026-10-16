@@ -42,7 +42,7 @@ afterEach(() => {
   closeFightResult();
   resetGameSyncStoryEvents();
   setBlockTimestampSource(null);
-  useUIStore.getState().updateEntityActionSelectedEntityId(null);
+  useUIStore.getState().selectOnMap(null);
   useUIStore.getState().updateEntityActionActionPaths(new Map());
 });
 
@@ -149,7 +149,7 @@ describe("the tile card", () => {
     expect(host.querySelector('[aria-label="troops 1,100"]')).not.toBeNull();
     expect(button("Attack")).toBeUndefined();
 
-    act(() => useUIStore.getState().updateEntityActionSelectedEntityId(201));
+    act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
     expect(button("Attack")?.disabled).toBe(false);
     await act(async () => button("Attack")!.click());
     expect(attack).toHaveBeenCalledWith(expect.objectContaining({ explorer_id: 201, structure_id: SITE }));
@@ -163,7 +163,7 @@ describe("the tile card", () => {
       { hex: { col, row }, actionType },
     ];
     act(() => {
-      useUIStore.getState().updateEntityActionSelectedEntityId(201);
+      useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null });
       useUIStore.getState().updateEntityActionActionPaths(
         new Map([
           [ActionPaths.posKey({ col: 41, row: 12 }), path(41, 12, ActionType.Help)],
@@ -179,7 +179,7 @@ describe("the tile card", () => {
 
   it("tells the selected army the site is too far when it stands out of reach with no order leading beside it", () => {
     const { host, button, unmount } = renderCard("far");
-    act(() => useUIStore.getState().updateEntityActionSelectedEntityId(201));
+    act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
     expect(button("Attack")?.disabled).toBe(true);
     expect(button("Move")).toBeUndefined();
     expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Camp");
@@ -210,7 +210,7 @@ describe("the tile card", () => {
         </GameProvider>,
       ),
     );
-    act(() => useUIStore.getState().updateEntityActionSelectedEntityId(201));
+    act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
     expect(host.querySelector('section[aria-label="Army"]')).not.toBeNull();
     expect(host.querySelector('[aria-label="troops 300"]')).not.toBeNull();
     const button = [...host.querySelectorAll("button")].find((candidate) => candidate.textContent?.includes("Attack"))!;
@@ -229,7 +229,7 @@ describe("an attack in flight on the tile card", () => {
     let settle: (outcome: unknown) => void = () => {};
     waitForAction.mockReturnValue(new Promise((resolve) => (settle = resolve)));
     const card = renderCard("beside");
-    act(() => useUIStore.getState().updateEntityActionSelectedEntityId(201));
+    act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
     return { ...card, settle: (outcome: unknown) => act(async () => settle(outcome)) };
   };
 
@@ -314,7 +314,7 @@ describe("the result of the player's attack", () => {
     let apply: (outcome: unknown) => void = () => {};
     waitForAction.mockReturnValue(new Promise((resolve) => (apply = resolve)));
     const card = renderCard("beside");
-    act(() => useUIStore.getState().updateEntityActionSelectedEntityId(201));
+    act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
     await act(async () => card.button("Attack")!.click());
     act(() => lands(card.store));
     await act(async () => apply(APPLIED));
@@ -401,7 +401,7 @@ describe("the result of the player's attack", () => {
   it("reports no fight for an attack the game refused, whatever happens to either side afterwards", async () => {
     waitForAction.mockResolvedValue({ hash: "0x1", block: 9, status: "REVERTED", revertReason: "Army is resting" });
     const { host, store, button, unmount } = renderCard("beside");
-    act(() => useUIStore.getState().updateEntityActionSelectedEntityId(201));
+    act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
     await act(async () => button("Attack")!.click());
     expect(host.querySelector('[role="status"]')?.textContent).toBe("Army is resting");
     // The army ends its day, and the site's guard changes: neither is this attack's doing.
@@ -438,7 +438,7 @@ describe("an attack on another player's army", () => {
         </GameProvider>,
       ),
     );
-    act(() => useUIStore.getState().updateEntityActionSelectedEntityId(201));
+    act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
     await act(async () =>
       [...host.querySelectorAll("button")].find((candidate) => candidate.textContent?.includes("Attack"))!.click(),
     );

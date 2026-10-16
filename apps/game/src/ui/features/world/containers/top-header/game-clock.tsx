@@ -1,9 +1,10 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { DAY_PHASES, resolveDayPhase, type DayPhaseName } from "@/utils/cycle-progress";
 import { useFactView } from "@/hooks/use-fact-view";
 import { seasonClockView } from "@/sync/fact-views";
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { memo, useEffect } from "react";
-import { Clock, Moon, MoonStar, Sun, SunDim, Sunrise, Sunset } from "@/ui/design-system/atoms/game-icons";
+
 import { configManager } from "@bibliothecadao/eternum";
 import { TickIds } from "@bibliothecadao/types";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
@@ -14,13 +15,13 @@ import { GameFinishedPill } from "./game-finished-pill";
 import { formatGameClockDuration, resolveGameClock } from "./game-clock-policy";
 
 const URGENCY_CLASSES = ["urgency-border-warning", "urgency-border-critical", "urgency-border-final"];
-const PHASE_ICONS: Record<DayPhaseName, typeof Sun> = {
-  Night: Moon,
-  Dawn: Sunrise,
-  Morning: SunDim,
-  Day: Sun,
-  Dusk: Sunset,
-  Evening: MoonStar,
+const PHASE_ICONS: Record<DayPhaseName, IconMeaning> = {
+  Night: "moon" as const,
+  Dawn: "sun" as const,
+  Morning: "sun" as const,
+  Day: "sun" as const,
+  Dusk: "sun" as const,
+  Evening: "moon" as const,
 };
 
 export const GameClock = memo(({ compact = false }: { compact?: boolean }) => {
@@ -53,23 +54,15 @@ export const GameClock = memo(({ compact = false }: { compact?: boolean }) => {
       title={compact ? `${clock.label}\n${breakdown}` : breakdown}
     >
       <span className="flex items-center gap-1.5" aria-label={compact ? clock.label : undefined}>
-        <Clock className="h-3.5 w-3.5 shrink-0" />
-        <span
-          className={cn(HUD_LABEL_BRIGHT, "whitespace-nowrap tabular-nums", compact && "text-[11px] tracking-normal")}
-        >
+        <SemanticIcon name="hourglass" className="h-3.5 w-3.5 shrink-0" />
+        <span className={cn(HUD_LABEL_BRIGHT, "whitespace-nowrap tabular-nums", compact && "text-sm")}>
           {compact ? clock.compactLabel : clock.label}
         </span>
       </span>
       {!compact && <span aria-hidden className="h-4 w-px bg-gold/25" />}
       <span className="flex items-center gap-1.5">
-        <PhaseIcon className="h-3.5 w-3.5 shrink-0" aria-label={dayPhase.name} />
-        <span
-          className={cn(
-            HUD_LABEL_BRIGHT,
-            "whitespace-nowrap tabular-nums",
-            compact && "text-[10px] tracking-normal text-gold/75",
-          )}
-        >
+        <SemanticIcon name={PhaseIcon} className="h-3.5 w-3.5 shrink-0" aria-label={dayPhase.name} />
+        <span className={cn(HUD_LABEL_BRIGHT, "whitespace-nowrap tabular-nums", compact && "text-sm text-gold/75")}>
           {formatGameClockDuration(daySecondsLeft)}
         </span>
       </span>

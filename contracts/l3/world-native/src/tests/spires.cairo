@@ -98,6 +98,14 @@ fn production_initialization_places_the_same_spire_identity_on_both_layers_witho
         0,
     );
     assert!(map(d).tile(tile_key(1, center(d, 1))).is_none());
+    // Spire tiles and their access rings, on both layers, keep the biome the terrain derives for them.
+    let mut tiles = array![];
+    for index in 0_u32..7 {
+        let coord = location(center(d, 3), layout(7), index);
+        tiles.append(coord);
+        tiles.append(Coord { alt: true, ..coord });
+    }
+    assert!(super::terrain::assert_biomes_match_terrain(d, 3, tiles.span()) != 0);
 }
 
 #[test]

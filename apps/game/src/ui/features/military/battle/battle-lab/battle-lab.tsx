@@ -16,7 +16,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { ActorType, BiomeType, ContractAddress, getLayeredAttackDistance, ID } from "@bibliothecadao/types";
-import { Swords } from "@/ui/design-system/atoms/game-icons";
+
 import { useEffect, useMemo, useState } from "react";
 
 import {
@@ -84,7 +84,7 @@ export const BattleLab = ({
   const accountName = usePlayerDisplayName(account.address);
   const selectedHex = useUIStore((s) => s.selectedHex);
   const closeSurface = usePopoverStore((s) => s.closeSurface);
-  const updateSelectedEntityId = useUIStore((s) => s.updateEntityActionSelectedEntityId);
+  const deselectEntity = useUIStore((s) => s.deselectEntity);
 
   const attackerEntityId = selected?.id ?? (0 as ID);
   const targetHex = targetRef?.hex ?? { x: 0, y: 0 };
@@ -288,7 +288,7 @@ export const BattleLab = ({
           structure_id: target.id,
         });
       }
-      updateSelectedEntityId(null);
+      deselectEntity();
       closeSurface();
     } catch (error) {
       console.error("Attack failed:", error);
@@ -325,7 +325,7 @@ export const BattleLab = ({
   return (
     <SurfaceFrame
       title="Combat"
-      icon={Swords}
+      icon={"military" as const}
       onClose={closeSurface}
       className={SURFACE_WORKSPACE_CLASS}
       bodyClassName="relative overflow-x-hidden"

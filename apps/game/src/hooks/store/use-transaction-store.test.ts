@@ -1,3 +1,4 @@
+import { TransactionFailure } from "@bibliothecadao/provider/errors";
 import { describe, expect, it } from "vitest";
 
 import { isTransactionInFlight, statusAfterFailure } from "./use-transaction-store";
@@ -26,4 +27,14 @@ describe("a sent action's row after a failure", () => {
     expect(statusAfterFailure({ stage: "background_confirmation" })).toBe("checking");
     expect(statusAfterFailure({ stage: "confirmation", error: new Error("session replaced") })).toBe("checking");
   });
+});
+
+it("keeps a typed no-answer pending outcome distinct from revert", () => {
+  const error = new TransactionFailure({
+    classification: { kind: "no_answer" },
+    message: "No answer yet",
+    cause: new Error("unknown"),
+  });
+  expect(statusAfterFailure({ stage: "confirmation", error })).toBe("no_answer");
+  expect(statusAfterFailure({ stage: "revert", error })).toBe("reverted");
 });

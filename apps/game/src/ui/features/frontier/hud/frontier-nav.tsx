@@ -30,11 +30,11 @@ export type HudSurface =
  */
 export const useHudSurface = () => {
   const [surface, setSurface] = useState<HudSurface | null>(null);
-  const setSelectedHex = useUIStore((state) => state.setSelectedHex);
+  const closeSelectedTile = useUIStore((state) => state.closeSelectedTile);
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
   const open = (next: HudSurface | null) => {
     if (next) {
-      setSelectedHex(null);
+      closeSelectedTile();
       setSelectedBuildingHex(null);
     }
     setSurface(next);

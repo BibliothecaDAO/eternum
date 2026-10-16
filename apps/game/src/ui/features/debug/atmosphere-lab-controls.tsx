@@ -23,7 +23,7 @@ export function AtmosphereLabControls({
   const [, refresh] = useState(0);
   const preset = WORLD_ATMOSPHERE_PRESETS[phase];
   return (
-    <fieldset className="space-y-3 border border-white/15 p-3 text-xs text-stone-300">
+    <fieldset className="space-y-3 border border-white/15 p-3 text-sm text-stone-300">
       <legend>Lighting setups</legend>
       <label className="flex justify-between gap-2">
         Phase

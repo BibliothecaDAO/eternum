@@ -1,3 +1,4 @@
+import { realmModelIndex, isWonderModelPath } from "../structures/realm-design";
 import { MineKinds } from "@bibliothecadao/types";
 import { configManager, getRealmCountPerHyperstructure, siteKindOf, type SiteKind } from "@bibliothecadao/eternum";
 import {
@@ -15,7 +16,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { resolveSettlementRotationY } from "../structures/settlement-orientation";
 import { SettlementModel } from "../structures/settlement-model";
 import { resolveSettlementRelationship } from "../structures/settlement-appearance";
-import { RiftModelPath, VILLAGE_MODEL_PATH, isSettlementModelPath } from "../constants/scene-constants";
+import { RiftModelPath, isRealmModelPath, isSettlementModelPath } from "../constants/scene-constants";
 import { arePlayersAllied } from "@/utils/entity-ownership";
 import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
@@ -144,7 +145,6 @@ type StructureModel = InstancedModel | RewardTileModel;
 // Fixed per model (buffers never grow, see StructureModel). Sized from the game cap: 96 players times the
 // largest per-player structure class (six Eternum villages) plus the reserved sites, matching the army capacity.
 const STRUCTURE_INSTANCE_CAPACITY = 1024;
-const WONDER_MODEL_INDEX = 4;
 // A full window refresh is sliced into tasks of this size so it never owns a whole frame.
 const FULL_REFRESH_SLICE_BUDGET_MS = 6;
 
@@ -1032,14 +1032,10 @@ export class StructureManager {
       return new SettlementModel(
         gltf,
         STRUCTURE_INSTANCE_CAPACITY,
-        modelPath === VILLAGE_MODEL_PATH ? "village" : "realm",
+        isRealmModelPath(modelPath) ? "realm" : "village",
+        isWonderModelPath(modelPath),
       );
-    return new InstancedModel(
-      gltf,
-      STRUCTURE_INSTANCE_CAPACITY,
-      false,
-      modelPath.includes("wonder") ? "wonder" : StructureType[structureType],
-    );
+    return new InstancedModel(gltf, STRUCTURE_INSTANCE_CAPACITY, false, StructureType[structureType]);
   }
 
   /**
@@ -1357,13 +1353,15 @@ export class StructureManager {
       if (index < 0) throw new Error(`Unknown mine kind ${structure.mineKind}`);
       return index;
     }
-    return structure.structureType === StructureType.Realm ? structure.level : structure.stage;
+    return structure.structureType === StructureType.Realm
+      ? realmModelIndex(structure.level, structure.hasWonder, structure.entityId)
+      : structure.stage;
   }
 
   private getStructureModelIndices(structure: StructureInfo): number[] {
     const base = this.getBaseStructureModelIndex(structure);
     if (structure.fallenRealm) return [base, fallenRealmBeastModelIndex(structure.fallenRealm.beast)];
-    return structure.structureType === StructureType.Realm && structure.hasWonder ? [base, WONDER_MODEL_INDEX] : [base];
+    return [base];
   }
 
   private async performVisibleStructuresUpdate(options: VisibleStructureRefreshOptions = {}): Promise<boolean> {
@@ -1635,6 +1633,7 @@ export class StructureManager {
       }
       if (binding.model instanceof SettlementModel) {
         binding.model.setRelationshipAt(binding.instanceIndex, resolveSettlementRelationship(structure.isMine));
+        binding.model.setWonderEntityAt(binding.instanceIndex, structure.entityId);
         if (binding.model.kind === "realm") binding.model.setOrderAt(binding.instanceIndex, structure.realmOrder);
       }
     }
@@ -1660,12 +1659,6 @@ export class StructureManager {
     const bindings = [this.bindStructureInstance(model, structure.entityId, dirtyModels)];
     if (structure.fallenRealm) {
       bindings.push(this.bindFallenRealmBeast(structure.fallenRealm, models, structure.entityId, dirtyModels));
-    }
-    if (structure.structureType === StructureType.Realm && structure.hasWonder) {
-      const wonderModel = models.get(WONDER_MODEL_INDEX);
-      if (wonderModel) {
-        bindings.push(this.bindStructureInstance(wonderModel, structure.entityId, dirtyModels));
-      }
     }
 
     return bindings.filter(isBoundStructureInstance);

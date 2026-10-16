@@ -46,7 +46,7 @@ export const GuardDismissal = ({
       toast.success("Guard dismissed");
       onDismissed();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not dismiss guard");
+      toast.failed(error, "Could not dismiss guard");
     } finally {
       submitting.current = false;
       setPending(false);
@@ -57,7 +57,7 @@ export const GuardDismissal = ({
     <div className="space-y-2 border-t border-gold/20 pt-2">
       {confirming ? (
         <>
-          <p className="text-xs">
+          <p className="text-sm">
             Dismiss guard in slot {DISPLAYED_SLOT_NUMBER_MAP[slot as GuardSlot]}? All its troops are permanently lost.
           </p>
           <div className="flex gap-2">

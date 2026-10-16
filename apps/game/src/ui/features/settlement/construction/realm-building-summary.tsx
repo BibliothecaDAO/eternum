@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import clsx from "clsx";
 import {
   BuildingType,
@@ -7,7 +8,7 @@ import {
   isEconomyBuilding,
   ResourcesIds,
 } from "@bibliothecadao/types";
-import { Plus } from "@/ui/design-system/atoms/game-icons";
+
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 
 // Paladins (Stable) → Knights (Barracks) → Crossbowmen (Archery). Player
@@ -135,8 +136,8 @@ export const RealmBuildingSummary = ({
   return (
     <section className={clsx("realm-summary-selector", containerClassName, className)}>
       <div className="flex items-center justify-between gap-3">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-gold/60">{headline}</p>
-        <p className="text-[10px] text-gold/45">{totalBuildings > 0 ? `${totalBuildings} total` : "Empty realm"}</p>
+        <p className="text-sm font-semibold text-kit-muted">{headline}</p>
+        <p className="text-sm text-kit-muted">{totalBuildings > 0 ? `${totalBuildings} total` : "Empty realm"}</p>
       </div>
 
       {items.length > 0 ? (
@@ -149,14 +150,14 @@ export const RealmBuildingSummary = ({
               <div
                 key={item.buildingId}
                 className={clsx(
-                  "group relative flex items-center gap-1.5 rounded-full border border-gold/20 bg-brown/30 px-2 py-1 text-[11px] text-gold/90",
+                  "group relative flex items-center gap-1.5 rounded-full border border-gold/20 bg-brown/30 px-2 py-1 text-sm text-gold/90",
                   buildAction && "pr-8 max-lg:pr-12 max-lg:min-h-12",
                 )}
                 title={item.label}
                 aria-label={`${item.label}: ${item.count}`}
               >
                 {military && (
-                  <span className="rounded border border-gold/30 bg-black/40 px-1 text-[9px] font-semibold uppercase tracking-wide text-gold/80">
+                  <span className="rounded border border-gold/30 bg-black/40 px-1 text-sm font-semibold text-gold/80">
                     T{military.tier}
                   </span>
                 )}
@@ -176,7 +177,7 @@ export const RealmBuildingSummary = ({
                         "cursor-not-allowed opacity-40 group-hover:opacity-40",
                     )}
                   >
-                    <Plus className="h-3 w-3" />
+                    <SemanticIcon name="plus" className="h-3 w-3" />
                   </button>
                 )}
               </div>
@@ -184,7 +185,7 @@ export const RealmBuildingSummary = ({
           })}
         </div>
       ) : (
-        <p className="mt-2 text-xs italic text-gold/55">No buildings yet.</p>
+        <p className="mt-2 text-sm text-kit-muted">No buildings yet.</p>
       )}
     </section>
   );

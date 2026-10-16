@@ -1,6 +1,7 @@
-import { RefreshCw } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 import {
   mountTerrainPropDebugRenderer,
@@ -9,7 +10,6 @@ import {
 } from "@/three/debug/terrain-prop-debug-renderer";
 import type { TerrainPropLod } from "@/three/terrain/terrain-prop-catalog";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
 const EMPTY_STATS: TerrainPropDebugStats = {
   activeMode: "webgpu",
@@ -28,7 +28,6 @@ export const TerrainPropDebugView = () => {
   const [stats, setStats] = useState<TerrainPropDebugStats>(EMPTY_STATS);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
-  useBootDocumentState(ready ? "app-ready" : "app-loading", ready ? "terrain_prop_debug_ready" : undefined);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -79,7 +78,7 @@ export const TerrainPropDebugView = () => {
   return (
     <section
       className={cn(
-        "min-h-screen bg-stone-950 text-stone-100",
+        "min-h-[var(--lab-viewport-height)] bg-stone-950 text-stone-100",
         capture ? "block" : "flex flex-col gap-4 p-4 lg:grid lg:grid-cols-[minmax(260px,320px)_1fr]",
       )}
       data-debug-route="terrain-props"
@@ -89,12 +88,9 @@ export const TerrainPropDebugView = () => {
         <aside className="flex flex-col gap-4 border border-white/10 bg-black/55 p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase text-emerald-200/70">Terrain Assets</p>
+              <p className="text-sm font-semibold text-emerald-200/70">Terrain Assets</p>
               <h1 className="mt-1 text-2xl font-semibold text-white">BIOME / 16</h1>
             </div>
-            <Link to="/" className="border border-white/15 px-3 py-2 text-xs font-semibold uppercase text-stone-200">
-              Exit
-            </Link>
           </div>
 
           <DebugSelect label="LOD" value={lod} onChange={(value) => setOption("lod", value)}>
@@ -123,7 +119,7 @@ export const TerrainPropDebugView = () => {
             onClick={() => rendererRef.current?.resetCamera()}
             className="mt-auto flex h-10 items-center justify-center gap-2 border border-emerald-300/35 bg-emerald-300/10 px-3 text-sm font-semibold text-emerald-100"
           >
-            <RefreshCw className="h-4 w-4" />
+            <SemanticIcon name="refresh" className="h-4 w-4" />
             Reset Camera
           </button>
         </aside>
@@ -157,12 +153,12 @@ const DebugSelect = ({
   onChange(value: string): void;
   value: string;
 }) => (
-  <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
+  <label className="flex flex-col gap-2 text-sm font-semibold text-stone-300">
     {label}
     <select
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium normal-case text-white"
+      className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium text-white"
     >
       {children}
     </select>
@@ -171,7 +167,7 @@ const DebugSelect = ({
 
 const DebugMetric = ({ label, value }: { label: string; value: string }) => (
   <div className="border border-white/10 bg-white/[0.04] px-3 py-2">
-    <dt className="text-[0.65rem] font-semibold uppercase text-stone-400">{label}</dt>
+    <dt className="text-sm font-semibold text-stone-400">{label}</dt>
     <dd className="mt-1 font-mono text-sm text-white">{value}</dd>
   </div>
 );

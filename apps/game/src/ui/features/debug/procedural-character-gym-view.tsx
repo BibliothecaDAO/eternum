@@ -1,19 +1,5 @@
-import {
-  Loader2,
-  Camera,
-  Check,
-  FlaskConical,
-  Footprints,
-  Pause,
-  Play,
-  RotateCcw,
-  Shield,
-  StepForward,
-  Swords,
-  Target,
-  X,
-  Zap,
-} from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { KnightAnimationReviewPanel } from "./knight-animation-review-panel";
 import {
   createKnightAnimationScenario,
@@ -21,7 +7,6 @@ import {
   resolveKnightReviewSequence,
 } from "@/three/characters/gym/knight-animation-review";
 import { useCallback, useEffect, useRef, useState, type MutableRefObject, type ReactNode, type RefObject } from "react";
-import { Link } from "react-router-dom";
 
 import {
   applyProceduralUnitConfigPatch,
@@ -53,7 +38,6 @@ import {
   type ProceduralCollisionGymConfig,
 } from "@/three/characters/gym/procedural-collision-gym-config";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
 import { CharacterGymControls } from "./procedural-character-gym-controls";
 import { ProceduralAnimationInspector } from "./procedural-animation-inspector";
@@ -159,7 +143,6 @@ declare global {
 }
 
 export const ProceduralCharacterGymView = () => {
-  useBootDocumentState("app-ready", "procedural_character_gym_ready");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<ProceduralCharacterGymRendererHandle | null>(null);
   const [config, setConfig] = useState(createInitialGymConfig);
@@ -405,7 +388,7 @@ export const ProceduralCharacterGymView = () => {
 
   return (
     <section
-      className="flex min-h-screen flex-col overflow-hidden bg-[#070b13] text-slate-100 lg:h-screen"
+      className="flex min-h-[var(--lab-viewport-height)] flex-col overflow-hidden bg-[#070b13] text-slate-100 lg:h-[var(--lab-viewport-height)]"
       data-debug-route="procedural-characters"
       data-gym-ready={ready ? "true" : "false"}
       data-smoke-phase={stats.smokePhase}
@@ -660,12 +643,10 @@ const CharacterGymHeader = ({
   <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[#0a0f18]/95 px-4 py-3 backdrop-blur-xl lg:px-6">
     <div className="flex min-w-0 items-center gap-3">
       <div className="grid h-10 w-10 shrink-0 place-items-center border border-violet-300/30 bg-violet-400/10 text-violet-200">
-        <FlaskConical className="h-5 w-5" />
+        <SemanticIcon name="research" className="h-5 w-5" />
       </div>
       <div className="min-w-0">
-        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-violet-200/60">
-          Renderer laboratory
-        </p>
+        <p className="text-sm font-semibold text-violet-200/60">Renderer laboratory</p>
         <h1 className="truncate text-lg font-semibold text-white sm:text-xl">Procedural Character Gym</h1>
       </div>
       <RuntimeBadge label={stats.rendererMode} tone={stats.rendererMode === "webgpu" ? "cyan" : "amber"} />
@@ -682,7 +663,7 @@ const CharacterGymHeader = ({
     <div className="flex flex-wrap items-center gap-2">
       {archer && (
         <ActionButton
-          icon={<Target />}
+          icon={<SemanticIcon name="target" />}
           label={naval ? "Broadside" : dragon ? "Fire breath" : "Fire"}
           onClick={onFireArrow}
           primary
@@ -691,56 +672,70 @@ const CharacterGymHeader = ({
       )}
       {archer && (
         <ActionButton
-          icon={<X />}
+          icon={<SemanticIcon name="close" />}
           label={naval ? "Cancel guns" : dragon ? "Cancel breath" : "Cancel draw"}
           onClick={onCancelArrow}
           disabled={!ready}
         />
       )}
-      {melee && <ActionButton icon={<Swords />} label="Attack" onClick={onMeleeAttack} primary disabled={!ready} />}
-      {melee && <ActionButton icon={<X />} label="Cancel attack" onClick={onCancelMelee} disabled={!ready} />}
+      {melee && (
+        <ActionButton
+          icon={<SemanticIcon name="military" />}
+          label="Attack"
+          onClick={onMeleeAttack}
+          primary
+          disabled={!ready}
+        />
+      )}
+      {melee && (
+        <ActionButton
+          icon={<SemanticIcon name="close" />}
+          label="Cancel attack"
+          onClick={onCancelMelee}
+          disabled={!ready}
+        />
+      )}
       <ActionButton
-        icon={<Camera />}
+        icon={<SemanticIcon name="camera" />}
         label={captureBusy ? "Capturing" : "Frames"}
         onClick={onCaptureFrames}
         disabled={!ready || captureBusy || collisionEnabled || stats.mode !== "animated"}
       />
       {locomotion && (
         <ActionButton
-          icon={<Footprints />}
+          icon={<SemanticIcon name="move" />}
           label="Gait"
           onClick={onCaptureGait}
           disabled={!ready || captureBusy || stats.mode !== "animated"}
         />
       )}
       <ActionButton
-        icon={<FlaskConical />}
+        icon={<SemanticIcon name="research" />}
         label="Run smoke"
         onClick={onRunSmoke}
         primary
         disabled={!ready || collisionEnabled}
       />
       <ActionButton
-        icon={<Shield />}
+        icon={<SemanticIcon name="defend" />}
         label={naval ? "Sink" : "Drop"}
         onClick={onDrop}
         disabled={!ready || collisionEnabled || stats.mode !== "animated"}
       />
-      <ActionButton icon={<Zap />} label="Strike" onClick={onStrike} disabled={!ready || collisionEnabled} />
       <ActionButton
-        icon={paused ? <Play /> : <Pause />}
+        icon={<SemanticIcon name="stamina" />}
+        label="Strike"
+        onClick={onStrike}
+        disabled={!ready || collisionEnabled}
+      />
+      <ActionButton
+        icon={paused ? <SemanticIcon name="play" /> : <SemanticIcon name="pause" />}
         label={paused ? "Resume" : "Pause"}
         onClick={onTogglePaused}
         disabled={!ready}
       />
-      <ActionButton icon={<StepForward />} label="Step" onClick={onStep} disabled={!ready || !paused} />
-      <ActionButton icon={<RotateCcw />} label="Reset" onClick={onReset} disabled={!ready} />
-      <Link
-        to="/"
-        className="grid h-9 place-items-center border border-white/10 px-3 text-xs font-semibold uppercase tracking-wider text-slate-300 transition hover:border-white/25 hover:bg-white/[0.06] hover:text-white"
-      >
-        Exit
-      </Link>
+      <ActionButton icon={<SemanticIcon name="step" />} label="Step" onClick={onStep} disabled={!ready || !paused} />
+      <ActionButton icon={<SemanticIcon name="refresh" />} label="Reset" onClick={onReset} disabled={!ready} />
     </div>
   </header>
 );
@@ -787,7 +782,7 @@ const CharacterGymViewport = ({
     {rendererError && <CharacterGymError message={rendererError} />}
     <div className="pointer-events-none absolute top-4 right-4 left-4 flex flex-wrap items-start justify-between gap-3">
       <div className="border border-white/10 bg-[#090e17]/80 px-3 py-2 backdrop-blur-md">
-        <p className="text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-slate-500">Live scenario</p>
+        <p className="text-sm font-semibold text-slate-500">Live scenario</p>
         <p className="mt-1 text-sm text-white">
           {collisionConfig.enabled ? (
             <>
@@ -810,7 +805,7 @@ const CharacterGymViewport = ({
       </div>
       <SmokeStatus stats={stats} />
       {stats.collisionEvaluationReasons.length > 0 && (
-        <div className="max-w-sm border border-red-300/30 bg-red-950/80 px-3 py-2 text-xs text-red-100 backdrop-blur-md">
+        <div className="max-w-sm border border-red-300/30 bg-red-950/80 px-3 py-2 text-sm text-red-100 backdrop-blur-md">
           {stats.collisionEvaluationReasons.join(" · ")}
         </div>
       )}
@@ -832,12 +827,12 @@ const CharacterGymViewport = ({
 const CharacterGymLoadingState = () => (
   <div className="absolute inset-0 grid place-items-center bg-[#070b13]">
     <div className="flex flex-col items-center gap-3 text-center">
-      <Loader2 className="h-8 w-8 animate-spin" />
+      <SemanticIcon name="refresh" className="h-8 w-8 animate-spin" />
       <div>
         <p className="text-sm font-semibold text-white">
           Loading renderer, character assets, procedural mounts, and Jolt
         </p>
-        <p className="mt-1 text-xs text-slate-500">Character and mount resources load only inside the debug routes.</p>
+        <p className="mt-1 text-sm text-slate-500">Character and mount resources load only inside the debug routes.</p>
       </div>
     </div>
   </div>
@@ -925,7 +920,7 @@ const ActionButton = ({
     onClick={onClick}
     disabled={disabled}
     className={cn(
-      "flex h-9 items-center gap-2 border px-3 text-xs font-semibold uppercase tracking-wider transition [&_img]:h-3.5 [&_img]:w-3.5",
+      "flex h-9 items-center gap-2 border px-3 text-sm font-semibold transition [&_img]:h-3.5 [&_img]:w-3.5",
       primary
         ? "border-violet-300/50 bg-violet-400/15 text-violet-100 hover:bg-violet-400/25"
         : "border-white/10 bg-white/[0.025] text-slate-300 hover:bg-white/[0.08] hover:text-white",
@@ -944,17 +939,13 @@ const RuntimeBadge = ({ label, tone }: { label: string; tone: "amber" | "cyan" |
     slate: "border-white/10 bg-white/[0.04] text-slate-400",
     violet: "border-violet-300/25 bg-violet-300/[0.08] text-violet-200",
   };
-  return (
-    <span className={cn("hidden border px-2 py-1 font-mono text-[0.62rem] uppercase sm:inline", tones[tone])}>
-      {label}
-    </span>
-  );
+  return <span className={cn("hidden border px-2 py-1 font-mono text-sm sm:inline", tones[tone])}>{label}</span>;
 };
 
 const Metric = ({ label, value }: { label: string; value: ReactNode }) => (
   <div className="border border-white/10 bg-[#090e17]/80 px-2 py-1.5 text-right backdrop-blur-md">
-    <p className="text-[0.56rem] font-semibold uppercase tracking-wider text-slate-500">{label}</p>
-    <p className="mt-0.5 font-mono text-xs text-slate-100">{value}</p>
+    <p className="text-sm font-semibold text-slate-500">{label}</p>
+    <p className="mt-0.5 font-mono text-sm text-slate-100">{value}</p>
   </div>
 );
 
@@ -971,14 +962,12 @@ const SmokeStatus = ({ stats }: { stats: ProceduralCharacterGymStats }) => {
         !passed && !failed && "border-violet-300/25 bg-[#110d20]/80 text-violet-100",
       )}
     >
-      <p className="text-[0.6rem] font-semibold uppercase tracking-[0.18em] opacity-60">Smoke sequence</p>
-      <p className="mt-1 flex items-center justify-end gap-1.5 text-xs font-semibold uppercase">
-        {passed && <Check className="h-3.5 w-3.5" />}
+      <p className="text-sm font-semibold opacity-60">Smoke sequence</p>
+      <p className="mt-1 flex items-center justify-end gap-1.5 text-sm font-semibold">
+        {passed && <SemanticIcon name="check" className="h-3.5 w-3.5" />}
         {stats.smokePhase}
       </p>
-      {stats.smokeFailures.length > 0 && (
-        <p className="mt-1 max-w-xs text-[0.65rem]">{stats.smokeFailures.join(" · ")}</p>
-      )}
+      {stats.smokeFailures.length > 0 && <p className="mt-1 max-w-xs text-sm">{stats.smokeFailures.join(" · ")}</p>}
     </div>
   );
 };

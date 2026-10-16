@@ -65,12 +65,18 @@ interface FixtureGame {
   seed: bigint;
   dev_mode_on: boolean;
   roster: { account: bigint; wallet: bigint }[];
-  ready: boolean;
+  seater: bigint;
+  /** Players seated by executed seats, and by seats in closed blocks: the open block holds the latest seat. */
+  seated: number;
+  closedSeated: number;
+  seats: number;
 }
 let playBlitzFixture = false;
 let workerNow: number | null = null;
 const createdGames: FixtureGame[] = [];
-const receipts = new Map<string, unknown>();
+const receipts = new Map<string, Record<string, unknown> & { finality_status: string }>();
+/** The open block: the latest seat, which closes when the next seat opens a new block. */
+let openSeat: { gameId: number; seated: boolean; hash: string } | null = null;
 const createEntry = gamesAbi.find((entry) => entry.name === "create_game")!;
 const creationCodec = new CallData([
   ...gamesAbi,
@@ -92,6 +98,7 @@ function blitzRpc(
     transaction_hash?: string;
     contract_address?: string;
     class_hash?: string;
+    block_id?: unknown;
   },
 ) {
   if (method === "starknet_getNonce") return "0x0";
@@ -103,16 +110,23 @@ function blitzRpc(
     const args = calldata.slice(4);
     const transaction_hash = `0x${(receipts.size + 1).toString(16)}`;
     let events: unknown[] = [];
+    let finality_status = "ACCEPTED_ON_L2";
     if (selector === BigInt(hash.getSelectorFromName("create_game"))) {
       const game = creationCodec.parse("creation", args) as unknown as FixtureGame;
-      createdGames.push({ ...game, ready: false });
+      createdGames.push({ ...game, seated: 0, closedSeated: 0, seats: 0 });
     } else {
       expect(selector).toBe(BigInt(hash.getSelectorFromName("play")));
       expect(args.slice(4).map(BigInt)).toEqual(
         encodeNativeCommand(bindings.commandAbi, { kind: "SettleBlitzRoster", value: undefined }).map(BigInt),
       );
       const gameId = Number(args[0]);
-      createdGames[gameId - 1]!.ready = true;
+      const game = createdGames[gameId - 1]!;
+      closeOpenSeat();
+      const seated = game.seated < game.roster.length;
+      if (seated) game.seated++;
+      game.seats++;
+      openSeat = { gameId, seated, hash: transaction_hash };
+      finality_status = "PRE_CONFIRMED";
       events = [
         {
           from_address: "0x77",
@@ -120,7 +134,7 @@ function blitzRpc(
             game_id: gameId,
             actor: LAUNCHER,
             tx_hash: transaction_hash,
-            remaining: 0,
+            remaining: game.roster.length - game.seated,
           }),
         },
       ];
@@ -128,7 +142,7 @@ function blitzRpc(
     receipts.set(transaction_hash, {
       transaction_hash,
       type: "INVOKE",
-      finality_status: "ACCEPTED_ON_L2",
+      finality_status,
       execution_status: "SUCCEEDED",
       block_number: 1,
       block_hash: "0x1",
@@ -151,11 +165,14 @@ function blitzRpc(
     case "game":
       return response(gamesAbi, entry, {
         ...game,
+        ready: (params.block_id === "pre_confirmed" ? game!.seated : game!.closedSeated) === game!.roster.length,
         settled: false,
         end_at: game!.start_main_at + game!.duration_seconds,
       });
     case "blitz_roster":
       return response(gamesAbi, entry, game!.roster);
+    case "game_seater":
+      return response(gamesAbi, entry, game!.seater);
     case "game_release":
     case "preset_commitment":
       return response(gamesAbi, entry, 1);
@@ -164,6 +181,15 @@ function blitzRpc(
     default:
       return undefined;
   }
+}
+
+const sum = (values: number[]) => values.reduce((total, value) => total + value, 0);
+
+function closeOpenSeat() {
+  if (!openSeat) return;
+  if (openSeat.seated) createdGames[openSeat.gameId - 1]!.closedSeated++;
+  receipts.get(openSeat.hash)!.finality_status = "ACCEPTED_ON_L2";
+  openSeat = null;
 }
 
 beforeAll(async () => {
@@ -206,7 +232,7 @@ beforeAll(async () => {
         serviceBindings: {
           IDENTITY: { name: "directory", entrypoint: "ValueIdentity" },
           VALUE_RELAY: { name: "directory", entrypoint: "ValueRelay" },
-          IDENTITY_HTTP: (request) => {
+          IDENTITY_HTTP: (request: Request) => {
             if (new URL(request.url).pathname !== "/api/devices/bots") redirectRequests++;
             approvalRequests++;
             if (!freshAccount)
@@ -340,6 +366,7 @@ it.each([1, 2, 25])(
   async (count) => {
     createdGames.length = 0;
     receipts.clear();
+    openSeat = null;
     await (await mf.getWorker("directory")).fetch("https://fixture/roster", { method: "POST", body: String(count) });
     const sizes = count <= 24 ? [count] : [13, 12];
     playBlitzFixture = true;
@@ -385,7 +412,10 @@ it.each([1, 2, 25])(
     expect(classReads).toBe(1);
     const orderedGames = [...createdGames].sort((a, b) => (a.name < b.name ? -1 : 1));
     expect(orderedGames.map((game) => game.roster.length)).toEqual(sizes);
-    expect(createdGames.every((game) => game.ready)).toBe(true);
+    // One seat transaction per player. The last seat is still in the open block, so the launch found its game ready
+    // only by reading at the state its seats settle on.
+    expect(orderedGames.map(({ seated, seats }) => [seated, seats])).toEqual(sizes.map((size) => [size, size]));
+    expect(sum(orderedGames.map(({ seated, closedSeated }) => seated - closedSeated))).toBe(1);
     expect(orderedGames.flatMap((game) => game.roster.map((player) => player.wallet))).toEqual(
       Array.from({ length: count }, (_, i) => BigInt(i + 1)),
     );

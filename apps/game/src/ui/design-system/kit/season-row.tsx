@@ -1,8 +1,9 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import type { ReactNode } from "react";
 
 import { formatAmount } from "./amount";
-import { KitIcon } from "./kit-icon";
+
 import { OrderEmblem } from "./order-emblem";
 
 /**
@@ -35,11 +36,11 @@ export const SeasonRow = ({
       own ? "rounded-xl border-2 border-kit-gold bg-kit-ground" : "border-b border-kit-line",
     )}
   >
-    <span className="w-[34px] shrink-0 text-center text-[15px] tabular-nums">{formatAmount(rank)}</span>
+    <span className="w-[34px] shrink-0 text-center text-base tabular-nums">{formatAmount(rank)}</span>
     <OrderEmblem order={order} />
-    <span className="min-w-0 flex-1 truncate text-[15px]">{name}</span>
-    <span className="w-12 shrink-0 text-right text-[15px] tabular-nums">{formatAmount(sitesCleared)}</span>
-    <span className="w-14 shrink-0 text-right text-[15px] tabular-nums">{formatAmount(lords)}</span>
-    <KitIcon code="Cv" size={18} />
+    <span className="min-w-0 flex-1 truncate text-base">{name}</span>
+    <span className="w-12 shrink-0 text-right text-base tabular-nums">{formatAmount(sitesCleared)}</span>
+    <span className="w-14 shrink-0 text-right text-base tabular-nums">{formatAmount(lords)}</span>
+    <SemanticIcon name="chevron-right" size={18} />
   </button>
 );

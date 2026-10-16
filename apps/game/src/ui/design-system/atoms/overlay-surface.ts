@@ -16,7 +16,7 @@ const OVERLAY_PILL_CLICKABLE = `${OVERLAY_SURFACE_BASE} ${OVERLAY_SURFACE_HOVER}
 
 /** The one small text button on HUD surfaces: outline pill, sans (never the Cinzel button default). */
 export const HUD_PILL_BUTTON =
-  "rounded-full border border-gold/30 px-3 py-1 font-sans text-xs text-gold transition hover:border-gold/60 disabled:opacity-50 max-lg:min-h-11";
+  "rounded-full border border-gold/30 px-3 py-1 font-sans text-sm text-gold transition hover:border-gold/60 disabled:opacity-50 max-lg:min-h-11";
 
 /**
  * Shared trigger surface for dropdown/select inputs so every dropdown in a

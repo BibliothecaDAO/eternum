@@ -5,13 +5,9 @@ import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
 import { configManager, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { ContractAddress } from "@bibliothecadao/types";
+import { ContractAddress, wholePoints } from "@bibliothecadao/types";
 import { useMemo } from "react";
-import {
-  normalizeLeaderboardAddress,
-  readFinalBlitzResult,
-  REGISTERED_POINTS_PRECISION,
-} from "./finalized-blitz-leaderboard";
+import { normalizeLeaderboardAddress, readFinalBlitzResult } from "./finalized-blitz-leaderboard";
 
 interface InGameLeaderboardStanding {
   address: ContractAddress;
@@ -55,7 +51,7 @@ const buildFinalizedBlitzLeaderboard = (store: NativeFactStore): InGameLeaderboa
         {
           address: ContractAddress(account),
           rank,
-          points: Number(points) / Number(REGISTERED_POINTS_PRECISION),
+          points: wholePoints(points),
           includesLiveShareholderPoints: false,
         },
       ]),

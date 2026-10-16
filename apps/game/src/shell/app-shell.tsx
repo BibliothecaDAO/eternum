@@ -3,7 +3,6 @@ import { Outlet } from "react-router-dom";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
 
-import { useFrontierType } from "@/ui/features/frontier/use-frontier-type";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
 import { useOutsidePlaySession } from "@/utils/spectator-session";
 
@@ -19,8 +18,6 @@ export const AppShell = () => {
   useBootDocumentState("app-ready");
   // Back from a spectated game, the signed-in player is no spectator here.
   useOutsidePlaySession();
-  // The shell wears the player app's one visual system, the same as Frontier's HUD.
-  useFrontierType();
   const { session } = useIdentitySession();
   return (
     <>

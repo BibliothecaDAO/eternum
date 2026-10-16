@@ -9,7 +9,6 @@ import {
   useIdentitySessionStore,
 } from "@/hooks/context/identity-session";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { useFrontierType } from "@/ui/features/frontier/use-frontier-type";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
 import { failureSentence, type IdentityAction } from "@/ui/modules/identity/identity-failures";
 
@@ -31,7 +30,6 @@ const PAINTING = "brooding-plains";
  */
 export const SignInPage = () => {
   useBootDocumentState("app-ready");
-  useFrontierType();
   const { search } = useLocation();
   const next = nextOf(search);
   const { status, session } = useIdentitySession();
@@ -162,8 +160,8 @@ const SignInFrame = ({
   useLayout() === "phone" ? (
     <PageFrame back={next} title={title} tabs={false}>
       <div className="flex flex-col gap-5">
-        {hero && <PhoneHero />}
         {children}
+        {hero && <PhoneHero />}
       </div>
     </PageFrame>
   ) : (
@@ -173,19 +171,19 @@ const SignInFrame = ({
   );
 
 const PhoneHero = () => (
-  <section className="relative isolate -mx-4 flex h-[38dvh] items-end overflow-hidden px-4 pb-3">
+  <section className="relative isolate -mx-4 flex h-[38dvh] items-start overflow-hidden px-4 pt-3">
     <img
       {...paintingSources(PAINTING)}
       sizes="100vw"
       alt=""
       className="absolute inset-0 -z-10 size-full object-cover"
     />
-    <span className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-transparent to-kit-ground" />
-    <p className="font-display text-[26px] leading-[1.15] text-kit-cream">{LORE_LINE}</p>
+    <span className="absolute inset-0 -z-10 bg-gradient-to-b from-kit-ground via-transparent to-transparent" />
+    <p className="font-body text-xl leading-snug text-kit-cream">{LORE_LINE}</p>
   </section>
 );
 
-/** The panel's width; the painting takes the rest of the window beside the rail. */
+/** The panel's width; the painting takes the rest of the window beside it, under the top bar (68 px). */
 const PANEL = "w-[34rem] min-[1800px]:w-[38rem]";
 
 const DesktopSplit = ({ title, children }: { title: string; children?: ReactNode }) => (
@@ -195,12 +193,12 @@ const DesktopSplit = ({ title, children }: { title: string; children?: ReactNode
       <img {...paintingSources(PAINTING)} sizes="70vw" alt="" className="size-full object-cover object-[35%_50%]" />
       <span className="absolute inset-0 bg-gradient-to-t from-kit-ground/80 via-transparent to-transparent" />
     </div>
-    <p className="fixed bottom-10 left-36 max-w-[36rem] font-display text-[44px] leading-[1.1] text-kit-cream [text-shadow:0_2px_0_theme(colors.kit.ink/70%)] min-[1800px]:left-40">
+    <p className="fixed bottom-10 left-8 max-w-[36rem] font-display text-[44px] leading-[1.1] text-kit-cream [text-shadow:0_2px_0_theme(colors.kit.ink/70%)] min-[1800px]:left-12">
       {LORE_LINE}
     </p>
     <section
       className={cn(
-        "leather fixed inset-y-0 right-0 z-10 flex flex-col gap-5 overflow-y-auto border-l bg-kit-plate px-10 pb-10 pt-12",
+        "leather fixed bottom-0 right-0 top-[68px] z-10 flex flex-col gap-5 overflow-y-auto border-l bg-kit-plate px-10 pb-10 pt-12",
         PANEL,
       )}
     >

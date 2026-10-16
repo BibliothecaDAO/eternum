@@ -23,7 +23,7 @@ import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { MapSiteCard } from "./map-site-card";
 import { campBeside, SITE_TILE } from "./site-fixture";
 
-afterEach(() => useUIStore.getState().updateEntityActionSelectedEntityId(null));
+afterEach(() => useUIStore.getState().selectOnMap(null));
 
 describe("a Well's tile card", () => {
   it("shows the stamina it gives, offers Use only with an army beside it, and uses it", async () => {
@@ -55,7 +55,7 @@ describe("a Well's tile card", () => {
     expect(host.querySelector('[aria-label="stamina +60"]')).not.toBeNull();
     expect(use()).toBeUndefined();
 
-    act(() => useUIStore.getState().updateEntityActionSelectedEntityId(201));
+    act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
     expect(use()?.disabled).toBe(false);
     await act(async () => use()!.click());
     expect(interact).toHaveBeenCalledWith(

@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { structureMapPosition } from "@bibliothecadao/eternum";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -36,18 +37,7 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import clsx from "clsx";
-import {
-  ArrowDown,
-  ArrowLeftRight,
-  ArrowUp,
-  Factory,
-  FlaskConical,
-  ShoppingCart,
-  Target,
-  Trash2,
-  X,
-  Zap,
-} from "@/ui/design-system/atoms/game-icons";
+
 import React, { useCallback, useMemo, useState } from "react";
 import {
   ALWAYS_SHOW_RESOURCES,
@@ -305,7 +295,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
   const tiers = useMemo(() => Object.entries(mode.resources.getTiers()), [mode.resources]);
 
   if (structureColumns.length === 0) {
-    return <div className="p-3 text-xs text-gold/70">Own a structure to begin tracking your resources.</div>;
+    return <div className="p-3 text-sm text-gold/70">Own a structure to begin tracking your resources.</div>;
   }
 
   const highlightedStructure = structureColumns.find((structure) => structure.isSelected)?.label;
@@ -658,7 +648,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold text-blueish">💡 Quick Tips</span>
               </div>
-              <ul className="space-y-1 text-xs text-blueish/90">
+              <ul className="space-y-1 text-sm text-blueish/90">
                 <li className="flex items-start gap-2">
                   <span className="text-blueish/70">•</span>
                   <span>
@@ -679,7 +669,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
               className="text-blueish/60 hover:text-blueish transition-colors"
               title="Dismiss"
             >
-              <X className="h-4 w-4" />
+              <SemanticIcon name="close" className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -689,13 +679,13 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
         <div className="sticky top-0 z-20 -mx-4 -mt-4 px-4 pt-4 pb-3 bg-brown/95 backdrop-blur border-b border-gold/15">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-1">
-              <h4 className="text-sm font-semibold uppercase tracking-wide text-gold">Resource overview</h4>
-              <p className="text-[11px] text-gold/60">
+              <h4 className="text-sm font-semibold text-gold">Resource overview</h4>
+              <p className="text-sm text-kit-muted">
                 {structureColumns.length} structures synced
                 {highlightedStructure ? ` • ${highlightedStructure} highlighted` : " • select a structure to manage"}
               </p>
             </div>
-            <div className="flex w-full flex-wrap items-center gap-2 text-[11px] text-gold/70 sm:w-auto sm:justify-end">
+            <div className="flex w-full flex-wrap items-center gap-2 text-sm text-gold/70 sm:w-auto sm:justify-end">
               <div className="flex flex-wrap items-center gap-2">
                 <label className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1">
                   <span className={clsx(pinSelectedColumn && "text-gold")}>Pin Selected Realm</span>
@@ -770,15 +760,15 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                 type="button"
                 onClick={() => setIsCartOpen(true)}
                 className={clsx(
-                  "ml-auto flex items-center gap-1 rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gold transition hover:bg-gold/20 sm:ml-4",
+                  "ml-auto flex items-center gap-1 rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-sm font-semibold text-gold transition hover:bg-gold/20 sm:ml-4",
                   transferDrafts.length === 0 && "opacity-70",
                 )}
                 aria-label="Open transfer cart"
               >
-                <ShoppingCart className="h-4 w-4" />
+                <SemanticIcon name="trade" className="h-4 w-4" />
                 <span>Cart</span>
                 {transferDrafts.length > 0 && (
-                  <span className="ml-1 rounded-full bg-gold px-1.5 text-[10px] font-bold text-brown">
+                  <span className="ml-1 rounded-full bg-gold px-1.5 text-sm font-bold text-brown">
                     {transferDrafts.length}
                   </span>
                 )}
@@ -788,9 +778,9 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
         </div>
 
         <div className="mt-4 overflow-x-auto rounded-xl border border-gold/15 bg-brown/60">
-          <table className="min-w-full text-left text-xxs">
+          <table className="min-w-full text-left text-sm">
             <thead className="sticky top-0 bg-brown/80 backdrop-blur">
-              <tr className="border-b border-gold/15 text-[10px] uppercase text-gold/70">
+              <tr className="border-b border-gold/15 text-sm text-gold/70">
                 <th className="px-3 py-2 font-semibold border-r border-gold/[0.07] sticky left-0 bg-brown/95 backdrop-blur z-10 shadow-sm">
                   <div className="flex items-center gap-1.5">
                     <span>Resource</span>
@@ -799,7 +789,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                 <th className="px-3 py-2 font-semibold border-r border-gold/[0.07]">
                   <div className="flex items-center gap-1">
                     <span>Total</span>
-                    <span className="text-[9px] text-gold/50 normal-case"></span>
+                    <span className="text-sm text-kit-muted"></span>
                   </div>
                 </th>
                 {structureColumns.map((structure) => (
@@ -820,17 +810,14 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                     }}
                   >
                     <div className="flex items-center gap-1.5">
-                      {structure.isSelected && <Target className="h-3 w-3 text-gold" />}
+                      {structure.isSelected && <SemanticIcon name="target" className="h-3 w-3 text-gold" />}
                       <div className="flex flex-col gap-0.5">
                         <span
-                          className={clsx(
-                            "font-semibold leading-tight text-[11px]",
-                            structure.isSelected && "text-gold",
-                          )}
+                          className={clsx("font-semibold leading-tight text-sm", structure.isSelected && "text-gold")}
                         >
                           {structure.label}
                         </span>
-                        <span className="text-[9px] text-gold/50 font-normal">Level {structure.level}</span>
+                        <span className="text-sm text-kit-muted font-normal">Level {structure.level}</span>
                       </div>
                     </div>
                   </th>
@@ -855,7 +842,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
 
                 return (
                   <React.Fragment key={tier}>
-                    <tr className="bg-gold/5 text-[10px] uppercase tracking-wide text-gold/70">
+                    <tr className="bg-gold/5 text-sm text-gold/70">
                       <td className="px-2 py-1" colSpan={structureColumns.length + 2}>
                         <button
                           type="button"
@@ -863,9 +850,13 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                           className="flex w-full items-center justify-between text-left"
                         >
                           <span>{TIER_DISPLAY_NAMES[tier] || tier}</span>
-                          <span className="flex items-center gap-2 text-[9px] font-medium text-gold/60">
+                          <span className="flex items-center gap-2 text-sm font-medium text-kit-muted">
                             {rows.length}
-                            {isCollapsed ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />}
+                            {isCollapsed ? (
+                              <SemanticIcon name="arrow-down" className="h-3 w-3" />
+                            ) : (
+                              <SemanticIcon name="arrow-up" className="h-3 w-3" />
+                            )}
                           </span>
                         </button>
                       </td>
@@ -883,26 +874,26 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                             <td className="px-3 py-2 border-r border-gold/[0.07] sticky left-0 bg-brown/95 backdrop-blur z-10 shadow-sm">
                               <div className="flex items-center gap-2">
                                 <ResourceIcon resource={resourceKey} size="md" />
-                                <span className="text-[11px] font-semibold text-gold/90">{resourceKey}</span>
+                                <span className="text-sm font-semibold text-gold/90">{resourceKey}</span>
                               </div>
                             </td>
                             <td className="px-3 py-2 border-r border-gold/[0.07]">
                               {summary ? (
                                 <div className="flex items-baseline gap-1.5">
-                                  <span className="text-[11px] font-bold text-gold">
+                                  <span className="text-sm font-bold text-gold">
                                     {formatResourceAmount(summary.totalAmount)}
                                   </span>
                                   <span
                                     className={clsx(
-                                      "text-[10px]",
-                                      summary.totalProductionPerSecond > 0 ? "text-green/70" : "text-gold/40",
+                                      "text-sm",
+                                      summary.totalProductionPerSecond > 0 ? "text-green/70" : "text-kit-muted",
                                     )}
                                   >
                                     {formatProductionPerHour(summary.totalProductionPerSecond)}
                                   </span>
                                 </div>
                               ) : (
-                                <span className="text-[11px] text-gold/30">—</span>
+                                <span className="text-sm text-kit-muted">—</span>
                               )}
                             </td>
                             {structureColumns.map((structure) => {
@@ -983,7 +974,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                                       onDragOver={(e) => handleDragOver(e, structure.entityId)}
                                       onDrop={(e) => handleDrop(e, structure.entityId)}
                                     >
-                                      <span className="text-[11px] text-gold/30">-</span>
+                                      <span className="text-sm text-kit-muted">-</span>
                                     </div>
                                   )}
                                 </td>
@@ -1131,22 +1122,20 @@ const TransferCell = React.memo((props: TransferCellProps) => {
         {/* Left: Resource info */}
         <div className="flex flex-col gap-0.5 min-w-0 flex-1">
           <div className="flex items-center gap-1 flex-wrap">
-            <span className="text-[11px] font-medium text-gold/90">{formatResourceAmount(cell.amount)}</span>
+            <span className="text-sm font-medium text-gold/90">{formatResourceAmount(cell.amount)}</span>
             {canCraftRelic && (
-              <span className="rounded border border-relic/40 bg-relic/15 px-1 py-0 text-[9px] uppercase tracking-[0.08em] text-relic2">
-                Forge
-              </span>
+              <span className="rounded border border-relic/40 bg-relic/15 px-1 py-0 text-sm text-relic2">Forge</span>
             )}
             {(pendingOutgoing.length > 0 || pendingIncoming.length > 0) && (
               <div className="flex items-center gap-0.5">
                 {pendingOutgoing.length > 0 && (
-                  <span className="text-[10px] text-danger/70 flex items-center gap-0.5">
-                    <ArrowDown className="h-2.5 w-2.5" />-{totalOutgoing}
+                  <span className="text-sm text-danger/70 flex items-center gap-0.5">
+                    <SemanticIcon name="arrow-down" className="h-2.5 w-2.5" />-{totalOutgoing}
                   </span>
                 )}
                 {pendingIncoming.length > 0 && (
-                  <span className="text-[10px] text-green/70 flex items-center gap-0.5">
-                    <ArrowUp className="h-2.5 w-2.5" />+{totalIncoming}
+                  <span className="text-sm text-green/70 flex items-center gap-0.5">
+                    <SemanticIcon name="arrow-up" className="h-2.5 w-2.5" />+{totalIncoming}
                   </span>
                 )}
               </div>
@@ -1154,15 +1143,15 @@ const TransferCell = React.memo((props: TransferCellProps) => {
           </div>
           {cell.isProducing && (
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-gold/60">{formatProductionPerHour(cell.productionPerSecond)}</span>
+              <span className="text-sm text-kit-muted">{formatProductionPerHour(cell.productionPerSecond)}</span>
               {cell.outputRemaining > 0 && !cell.isStorageCapped && !HIDE_TIME_REMAINING_FOR.includes(resourceId) && (
-                <span className="text-[10px] text-blueish/60" title="Time until production runs out">
+                <span className="text-sm text-blueish/60" title="Time until production runs out">
                   ({formatTimeRemaining(cell.timeRemainingSeconds)})
                 </span>
               )}
             </div>
           )}
-          {cell.isStorageCapped && <span className="text-[10px] text-danger/70">Storage full</span>}
+          {cell.isStorageCapped && <span className="text-sm text-danger/70">Storage full</span>}
         </div>
 
         {/* Right: Action Buttons */}
@@ -1178,7 +1167,7 @@ const TransferCell = React.memo((props: TransferCellProps) => {
                 className="rounded border border-gold/20 bg-gold/10 p-0.5 text-gold transition hover:bg-gold/20"
                 title="Manage production"
               >
-                <Factory className="h-2.5 w-2.5" />
+                <SemanticIcon name="production" className="h-2.5 w-2.5" />
               </button>
             )}
             {canCraftRelic && (
@@ -1192,7 +1181,7 @@ const TransferCell = React.memo((props: TransferCellProps) => {
                 title="Craft relic from research"
                 aria-label="Craft relic from research"
               >
-                <FlaskConical className="h-2.5 w-2.5" />
+                <SemanticIcon name="research" className="h-2.5 w-2.5" />
               </button>
             )}
             {isSelectedStructure && (
@@ -1210,7 +1199,7 @@ const TransferCell = React.memo((props: TransferCellProps) => {
                       className="rounded border border-gold/20 bg-gold/10 p-0.5 text-gold transition hover:bg-gold/20 opacity-0 group-hover:opacity-100"
                       title="Transfer"
                     >
-                      <ArrowLeftRight className="h-2.5 w-2.5" />
+                      <SemanticIcon name="swap" className="h-2.5 w-2.5" />
                     </button>
                   )}
                 />
@@ -1224,7 +1213,7 @@ const TransferCell = React.memo((props: TransferCellProps) => {
                     className="rounded border border-gold/20 bg-gold/10 p-0.5 text-gold transition hover:bg-gold/20 opacity-0 group-hover:opacity-100"
                     title="Quick transfer"
                   >
-                    <Zap className="h-2.5 w-2.5" />
+                    <SemanticIcon name="stamina" className="h-2.5 w-2.5" />
                   </button>
                 )}
               </>
@@ -1241,7 +1230,7 @@ const TransferCell = React.memo((props: TransferCellProps) => {
                 e.stopPropagation();
                 e.target.value && onInlineDestinationSelect(Number(e.target.value));
               }}
-              className="w-full px-2 py-1 text-[11px] bg-brown/20 border border-gold/30 rounded text-gold"
+              className="w-full px-2 py-1 text-sm bg-brown/20 border border-gold/30 rounded text-gold"
               autoFocus
             >
               <option value="">Select destination...</option>
@@ -1258,9 +1247,9 @@ const TransferCell = React.memo((props: TransferCellProps) => {
                 e.stopPropagation();
                 onInlineEditChange(null);
               }}
-              className="w-full flex items-center justify-center gap-1 px-2 py-1 text-[10px] bg-danger/20 text-danger rounded hover:bg-danger/30"
+              className="w-full flex items-center justify-center gap-1 px-2 py-1 text-sm bg-danger/20 text-danger rounded hover:bg-danger/30"
             >
-              <X className="h-2.5 w-2.5" />
+              <SemanticIcon name="close" className="h-2.5 w-2.5" />
               Cancel
             </button>
           </div>
@@ -1270,7 +1259,7 @@ const TransferCell = React.memo((props: TransferCellProps) => {
       {/* Drag Feedback */}
       {isDragTarget && (
         <div className="absolute inset-0 flex items-center justify-center bg-gold/20 rounded-md">
-          <Target className="h-6 w-6 text-gold animate-bounce" />
+          <SemanticIcon name="target" className="h-6 w-6 text-gold animate-bounce" />
         </div>
       )}
     </div>
@@ -1316,12 +1305,12 @@ const TransferCartModal = React.memo(
       >
         <SurfaceFrame
           title="Transfer Cart"
-          icon={ShoppingCart}
+          icon={"trade" as const}
           onClose={onClose}
           className="w-[720px] max-h-[calc(100vh-7rem)]"
           bodyClassName="space-y-4 p-4"
         >
-          <p className="text-xs text-gold/60">
+          <p className="text-sm text-kit-muted">
             {drafts.length} staged transfer{drafts.length === 1 ? "" : "s"}
           </p>
 
@@ -1344,7 +1333,7 @@ const TransferCartModal = React.memo(
             </div>
           )}
 
-          <div className="flex flex-wrap items-center gap-2 border-t border-gold/20 pt-3 text-xs text-gold/70">
+          <div className="flex flex-wrap items-center gap-2 border-t border-gold/20 pt-3 text-sm text-gold/70">
             <span>{selectedCount} selected</span>
             <div className="ml-auto flex gap-2">
               <button
@@ -1359,7 +1348,7 @@ const TransferCartModal = React.memo(
                 type="button"
                 onClick={onSendSelected}
                 disabled={readyCount === 0 || isBatchProcessing}
-                className="rounded-full border border-gold/40 bg-gold/10 px-4 py-1 font-semibold uppercase tracking-wide text-gold transition hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-full border border-gold/40 bg-gold/10 px-4 py-1 font-semibold text-gold transition hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isBatchProcessing ? "Transferring..." : "Transfer All"}
               </button>
@@ -1408,13 +1397,13 @@ const TransferCartItem = React.memo(
           <div className="flex items-center gap-2 text-sm text-gold">
             <ResourceIcon resource={resourceKey} size="sm" />
             <span className="font-semibold">{draft.amount.toLocaleString()}</span>
-            <span className="text-xs text-gold/60">{resourceKey}</span>
+            <span className="text-sm text-kit-muted">{resourceKey}</span>
           </div>
-          <p className="text-[11px] text-gold/60">
+          <p className="text-sm text-kit-muted">
             {fromStructure?.label ?? `#${draft.fromStructureId}`} → {toStructure?.label ?? `#${draft.toStructureId}`}
           </p>
         </div>
-        <div className="flex flex-col gap-1 text-xs">
+        <div className="flex flex-col gap-1 text-sm">
           {draft.isProcessing ? (
             <span className="text-blueish/70">Processing…</span>
           ) : (
@@ -1432,7 +1421,7 @@ const TransferCartItem = React.memo(
                 className="rounded border border-danger/40 px-2 py-1 text-danger transition hover:bg-danger/20"
                 aria-label="Remove from cart"
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <SemanticIcon name="trash" className="h-3.5 w-3.5" />
               </button>
             </>
           )}
@@ -1568,7 +1557,7 @@ const DragDropAmountDialog = React.memo(
           <div className="flex items-center gap-2">
             <ResourceIcon resource={resourceKey} size="lg" />
             <div>
-              <p className="text-xs text-gold/60">
+              <p className="text-sm text-kit-muted">
                 {fromStructure?.label} → {toStructure?.label}
               </p>
             </div>
@@ -1578,7 +1567,7 @@ const DragDropAmountDialog = React.memo(
             <div>
               <label className="block text-sm text-gold/80 mb-2">
                 Amount to transfer
-                <span className="block text-[11px] text-gold/60">
+                <span className="block text-sm text-kit-muted">
                   Max transportable: {formatResourceAmount(maxTransferableAmount)} / Available:{" "}
                   {formatResourceAmount(dragData.maxAmount)}
                 </span>
@@ -1600,9 +1589,9 @@ const DragDropAmountDialog = React.memo(
               <div className="bg-brown/10 rounded p-2 border border-gold/20">
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <ResourceIcon resource={resourceKey} size="sm" withTooltip={false} />
-                  <span className="text-xs font-medium text-gold/90">Balance Preview</span>
+                  <span className="text-sm font-medium text-gold/90">Balance Preview</span>
                 </div>
-                <div className="space-y-1 text-xs">
+                <div className="space-y-1 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gold/70">{fromStructure?.label}:</span>
                     <span className="text-gold">
@@ -1640,12 +1629,12 @@ const DragDropAmountDialog = React.memo(
               </div>
 
               {!canCarry && (
-                <div className="mt-3 p-2 bg-danger/10 border border-danger/20 rounded text-xs text-danger">
+                <div className="mt-3 p-2 bg-danger/10 border border-danger/20 rounded text-sm text-danger">
                   ❌ Need {(neededDonkeys - availableDonkeys).toLocaleString()} more donkeys
                 </div>
               )}
               {canCarry && neededDonkeys > 0 && (
-                <div className="mt-3 p-2 bg-progress-bar-good/10 border border-progress-bar-good/20 rounded text-xs text-progress-bar-good">
+                <div className="mt-3 p-2 bg-progress-bar-good/10 border border-progress-bar-good/20 rounded text-sm text-progress-bar-good">
                   Sufficient Donkey Capacity
                 </div>
               )}
@@ -1658,7 +1647,7 @@ const DragDropAmountDialog = React.memo(
                   key={percentage}
                   type="button"
                   onClick={() => handleQuickSelect(percentage)}
-                  className="px-3 py-1 text-xs bg-gold/20 text-gold rounded hover:bg-gold/30 transition-colors"
+                  className="px-3 py-1 text-sm bg-gold/20 text-gold rounded hover:bg-gold/30 transition-colors"
                 >
                   {percentage === 1 ? "All" : `${percentage * 100}%`}
                 </button>

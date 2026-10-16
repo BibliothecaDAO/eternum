@@ -1,0 +1,38 @@
+// @vitest-environment node
+import { setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { ContractAddress, RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
+import { afterEach, describe, expect, it } from "vitest";
+import { campBeside, SITE } from "@/ui/features/frontier/sites/site-fixture";
+import { minimapMarkersView } from "./minimap-markers";
+
+afterEach(() => setBlockTimestampSource(null));
+
+describe("minimap icon meanings from game facts", () => {
+  it("shows ownership, realm level and army strength from the native rows", () => {
+    const { store } = campBeside();
+    const markers = minimapMarkersView.read(store, ContractAddress("0x111"));
+    expect(markers.get("7")).toEqual({ name: "map-realm", owner: "you", value: "0" });
+    expect(markers.get(String(SITE))).toEqual({ name: "camp", owner: "neutral", value: undefined });
+    expect(markers.get("201")).toEqual({ name: "map-army", owner: "you", value: "••" });
+    expect(minimapMarkersView.read(store, null).get("201")?.owner).toBe("neutral");
+    expect(minimapMarkersView.read(store, ContractAddress("0x222")).get("201")?.owner).toBe("enemy");
+  });
+  it("updates the badge when troops, a site or guild membership changes", () => {
+    const { store } = campBeside();
+    const row = store.require("Structure", { game_id: 1, entity_id: SITE });
+    const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
+    store.applyFacts([
+      { model: "Structure", key: "0x71", value: { ...row, base: { ...row.base, category: StructureType.Village } } },
+      {
+        model: "ExplorerTroops",
+        key: "0x74",
+        value: { ...army, troops: { ...army.troops, count: 6000n * BigInt(RESOURCE_PRECISION) } },
+      },
+      { model: "GuildMember", key: "0x81", value: { game_id: 1, actor: 0x111, guild_id: 8 } },
+      { model: "GuildMember", key: "0x82", value: { game_id: 1, actor: 0x222, guild_id: 8 } },
+    ]);
+    const markers = minimapMarkersView.read(store, ContractAddress("0x222"));
+    expect(markers.get(String(SITE))?.name).toBe("map-village");
+    expect(markers.get("201")).toEqual({ name: "map-army", owner: "ally", value: "•••" });
+  });
+});

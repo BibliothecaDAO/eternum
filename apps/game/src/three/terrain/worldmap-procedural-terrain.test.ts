@@ -498,6 +498,34 @@ describe("WorldmapProceduralTerrain", () => {
     terrain.dispose();
   });
 
+  it("keeps one prepared version per page: a changed page replaces its older version in the cache", async () => {
+    stubPageWorker();
+    const terrain = new WorldmapProceduralTerrain();
+    const input = {
+      cells: [worldCell(0, 0, BiomeType.Beach)],
+      climate: NEUTRAL_BIOME_CLIMATE,
+      mapCenter: 0,
+      pageHeight: 2,
+      pageOrigin: { col: 0, row: 0 },
+      pageWidth: 2,
+      subdivisions: 1,
+    };
+    const occupied = { ...input, cells: [{ ...input.cells[0], occupied: true }] };
+
+    await expect(terrain.presentAsync(input)).resolves.toMatchObject({ builtPages: 1, preparedCachePages: 1 });
+    // The page changes over a session (a reveal, a neighbour): each change replaces the cached version.
+    for (let change = 0; change < 5; change += 1) {
+      await expect(terrain.presentAsync(change % 2 ? input : occupied)).resolves.toMatchObject({
+        builtPages: 1,
+        preparedCachePages: 1,
+        reusedPages: 0,
+      });
+    }
+    // The latest version is still a cache hit.
+    await expect(terrain.presentAsync(occupied)).resolves.toMatchObject({ builtPages: 0, reusedPages: 1 });
+    terrain.dispose();
+  });
+
   it("reuses a prepared page after more than one intervening camera window", async () => {
     stubPageWorker();
     const terrain = new WorldmapProceduralTerrain();

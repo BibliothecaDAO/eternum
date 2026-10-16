@@ -137,13 +137,12 @@ pub struct Troops {
     pub boosts: TroopBoosts,
     pub battle_cooldown_end: u32,
 }
-// Counts retain their full u128 range; stamina and combat flags each use one word.
+// Counts and combat flags share one word without narrowing either field.
 #[derive(Copy, Drop, starknet::Store)]
 pub struct PackedTroops {
-    pub count: u128,
+    pub count_and_combat: felt252,
     pub stamina: felt252,
     pub boosts: felt252,
-    pub combat: u64,
 }
 const TIER_SCALE: u64 = 4;
 const COOLDOWN_SCALE: u64 = 16;
@@ -156,23 +155,32 @@ pub impl TroopsPacking of starknet::storage_access::StorePacking<Troops, PackedT
             TroopTier::T3 => 2,
         };
         PackedTroops {
-            count: value.count,
+            count_and_combat: u256 {
+                low: value.count,
+                high: (Into::<u8, u64>::into(category)
+                    + tier * TIER_SCALE
+                    + Into::<u32, u64>::into(value.battle_cooldown_end) * COOLDOWN_SCALE)
+                    .into(),
+            }
+                .try_into()
+                .unwrap(),
             stamina: match value.stamina {
                 StaminaSource::Inline(bar) => StaminaPacking::pack(bar).into(),
                 StaminaSource::Slot(slot) => u256 { low: slot.into(), high: 1 }.try_into().unwrap(),
             },
             boosts: TroopBoostsPacking::pack(value.boosts),
-            combat: category.into() + tier * TIER_SCALE + value.battle_cooldown_end.into() * COOLDOWN_SCALE,
         }
     }
     fn unpack(value: PackedTroops) -> Troops {
-        let category = match value.combat % TIER_SCALE {
+        let count_and_combat: u256 = value.count_and_combat.into();
+        let combat: u64 = count_and_combat.high.try_into().expect('invalid stored combat');
+        let category = match combat % TIER_SCALE {
             0 => TroopType::Knight,
             1 => TroopType::Paladin,
             2 => TroopType::Crossbowman,
             _ => panic!("invalid stored troop type"),
         };
-        let tier = match value.combat / TIER_SCALE % TIER_SCALE {
+        let tier = match combat / TIER_SCALE % TIER_SCALE {
             0 => TroopTier::T1,
             1 => TroopTier::T2,
             2 => TroopTier::T3,
@@ -181,7 +189,7 @@ pub impl TroopsPacking of starknet::storage_access::StorePacking<Troops, PackedT
         Troops {
             category,
             tier,
-            count: value.count,
+            count: count_and_combat.low,
             stamina: {
                 let packed: u256 = value.stamina.into();
                 match packed.high {
@@ -191,7 +199,7 @@ pub impl TroopsPacking of starknet::storage_access::StorePacking<Troops, PackedT
                 }
             },
             boosts: TroopBoostsPacking::unpack(value.boosts),
-            battle_cooldown_end: (value.combat / COOLDOWN_SCALE).try_into().unwrap(),
+            battle_cooldown_end: (combat / COOLDOWN_SCALE).try_into().unwrap(),
         }
     }
 }
@@ -453,10 +461,18 @@ pub struct ArmySlotAllocation {
     pub allowance: u8,
     pub initial: Stamina,
     pub category: TroopType,
+    pub stamina_config: crate::rules::TroopStaminaConfig,
+}
+// A slot's bar refills to the command's time by the rules the command carries.
+#[derive(Copy, Drop, Serde)]
+pub struct StaminaRefill {
+    pub timestamp: u64,
+    pub stamina_config: crate::rules::TroopStaminaConfig,
+    pub armies_tick_in_seconds: u64,
 }
 #[derive(Copy, Drop, Serde)]
 pub enum ArmySlotAction {
-    Resolve: Option<u64>,
+    Resolve: Option<StaminaRefill>,
     Allocate: ArmySlotAllocation,
     Persist: StaminaSource,
     Release: StaminaSource,

@@ -3,7 +3,7 @@ import { Account, RpcProvider, type Call } from "starknet";
 import { mkdtemp, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { launchHarnessGame } from "./game-setup";
+import { harnessSeasonSeconds, launchHarnessGame } from "./game-setup";
 
 test("Eternum setup confirms each entry entitlement before returning players to the driver", async () => {
   const directory = await mkdtemp(join(tmpdir(), "eternum-entries-"));
@@ -65,4 +65,10 @@ test("Eternum setup confirms each entry entitlement before returning players to 
       else process.env[key] = saved[key];
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+test("A harness game outlasts its run by an hour, in whole day bags when its season has days", () => {
+  expect(harnessSeasonSeconds(0, 30)).toBe(5400);
+  expect(harnessSeasonSeconds(14400, 30)).toBe(288000);
+  expect(harnessSeasonSeconds(120, 30)).toBe(7200);
 });

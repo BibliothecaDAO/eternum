@@ -1,5 +1,6 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { latticeToWorld } from "@/three/utils/hex-lattice";
-import { Loader2, AlertTriangle } from "@/ui/design-system/atoms/game-icons";
+
 import { requireBiomeColor, resolveBiomeTypeFromId } from "@/three/managers/biome-colors";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -157,14 +158,14 @@ export const RealmHexDeployMap = ({
     <div className="flex-1 p-1.5 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-gold/20">
       {isLoading ? (
         <div className="flex justify-center py-2">
-          <Loader2 className="w-5 h-5 animate-spin" />
+          <SemanticIcon name="refresh" className="w-5 h-5 animate-spin" />
         </div>
       ) : noAdjacentAvailable ? (
         <div className="text-center p-2 bg-danger/10 border-l-2 border-danger rounded">
           <div className="p-1 rounded-full bg-danger/20 w-fit mx-auto mb-1">
-            <AlertTriangle className="w-4 h-4 text-danger" />
+            <SemanticIcon name="warning" className="w-4 h-4 text-danger" />
           </div>
-          <p className="text-danger font-bold text-xxs">No adjacent tiles</p>
+          <p className="text-danger font-bold text-sm">No adjacent tiles</p>
         </div>
       ) : (
         <>
@@ -257,7 +258,7 @@ export const RealmHexDeployMap = ({
               );
             })}
           </svg>
-          <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-[9px] uppercase tracking-wider text-gold/55">
+          <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-sm text-kit-muted">
             <span className="inline-flex items-center gap-1">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-gold/70" />
               free

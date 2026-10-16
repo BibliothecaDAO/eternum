@@ -1,6 +1,7 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { resolveCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { type Building, type RealmInfo as RealmInfoType, ResourcesIds } from "@bibliothecadao/types";
-import { Bot, Hammer } from "@/ui/design-system/atoms/game-icons";
+
 import { useEffect, useRef, useState } from "react";
 
 import { Tabs } from "@/ui/design-system/atoms";
@@ -55,7 +56,7 @@ export const ProductionWorkflows = ({
     {
       label: "Manual Production",
       description: "Direct control over buildings and output",
-      icon: Hammer,
+      icon: "build" as const,
       content: (
         <div className="space-y-3">
           {!selectedResource && (
@@ -98,7 +99,7 @@ export const ProductionWorkflows = ({
           {
             label: "Automation",
             description: "Create repeatable production rules",
-            icon: Bot,
+            icon: "automation" as const,
             content: (
               <RealmAutomationPanel
                 realmEntityId={realm.entityId.toString()}
@@ -122,12 +123,12 @@ export const ProductionWorkflows = ({
             const tabClass = `flex flex-1 items-center justify-center gap-2 rounded-md border !space-x-0 ${
               isActive
                 ? "border-gold/60 bg-gold/15 text-gold"
-                : "border-transparent text-gold/65 hover:border-gold/40 hover:text-gold"
+                : "border-transparent text-kit-muted hover:border-gold/40 hover:text-gold"
             } !px-3 !py-1.5 min-h-11 text-center !transition-none`;
             return (
               <Tabs.Tab key={workflow.label} className={tabClass} title={workflow.description}>
-                <Icon className="h-4 w-4" />
-                <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">{workflow.label}</span>
+                <SemanticIcon name={Icon} className="h-4 w-4" />
+                <span className="text-sm font-semibold ">{workflow.label}</span>
               </Tabs.Tab>
             );
           })}

@@ -1,16 +1,8 @@
+import { requireAutomationGameId } from "@/ui/features/infrastructure/automation/model/automation-readiness";
 import { ResourcesIds } from "@bibliothecadao/types";
-import { configManager, getBlockTimestamp } from "@bibliothecadao/eternum";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-
-const resolveCurrentGameId = (): string => {
-  try {
-    const season = configManager.getSeasonConfig();
-    return `${season.startSettlingAt}-${season.startMainAt}-${season.endAt}`;
-  } catch {
-    return "unknown";
-  }
-};
 
 export interface TransferAutomationResourceConfig {
   resourceId: ResourcesIds;
@@ -105,7 +97,7 @@ export const useTransferAutomationStore = create<TransferAutomationState>()(
         const id = generateId();
         const now = getBlockNowMs();
         const active = raw.active ?? true;
-        const gameId = raw.gameId ?? resolveCurrentGameId();
+        const gameId = raw.gameId ?? requireAutomationGameId();
         const resourceIdsArray = Array.from(new Set(raw.resourceIds || [])).filter(
           (r) => typeof r === "number",
         ) as ResourcesIds[];
@@ -192,7 +184,7 @@ export const useTransferAutomationStore = create<TransferAutomationState>()(
     }),
     {
       name: "eternum-transfer-automation",
-      version: 3,
+      version: 4,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ entries: state.entries }),
       migrate: (persisted: unknown) => {
@@ -216,11 +208,17 @@ export const useTransferAutomationStore = create<TransferAutomationState>()(
           const resourceConfigs =
             sanitizeResourceConfigs(persistedEntry.resourceConfigs, fallbackAmount) ??
             buildConfigsFromResources(resourceIds, fallbackAmount);
+          if (
+            typeof persistedEntry.gameId !== "string" ||
+            !persistedEntry.gameId ||
+            persistedEntry.gameId === "unknown"
+          )
+            return;
           entries[id] = {
             id,
             createdAt: typeof persistedEntry.createdAt === "number" ? persistedEntry.createdAt : Date.now(),
             active: Boolean(persistedEntry.active),
-            gameId: typeof persistedEntry.gameId === "string" ? persistedEntry.gameId : resolveCurrentGameId(),
+            gameId: persistedEntry.gameId,
             sourceEntityId: String(persistedEntry.sourceEntityId ?? "0"),
             sourceName: typeof persistedEntry.sourceName === "string" ? persistedEntry.sourceName : undefined,
             destinationEntityId: String(persistedEntry.destinationEntityId ?? "0"),

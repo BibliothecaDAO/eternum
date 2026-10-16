@@ -12,7 +12,7 @@ export const StructureSelect = ({ value, onChange, options }: StructureSelectPro
   const id = useId();
   return (
     <div className="flex min-w-0 items-center gap-2">
-      <label htmlFor={id} className="shrink-0 text-xs text-gold/75">
+      <label htmlFor={id} className="shrink-0 text-sm text-gold/75">
         Structure
       </label>
       <select

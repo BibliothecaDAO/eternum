@@ -1,8 +1,9 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 import { StructureArrivals } from "@/ui/features/economy/resources/resource-arrival";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
-import { PackageOpen } from "@/ui/design-system/atoms/game-icons";
+
 import { memo } from "react";
 
 export const AllResourceArrivals = memo(
@@ -14,9 +15,9 @@ export const AllResourceArrivals = memo(
     if (!hasArrivals) {
       return (
         <div className="h-full flex items-center justify-center p-6">
-          <div className="flex flex-col items-center gap-3 text-gold/40">
-            <PackageOpen size={28} />
-            <p className="text-xs uppercase tracking-widest">No incoming transfers</p>
+          <div className="flex flex-col items-center gap-3 text-kit-muted">
+            <SemanticIcon name="resources" size={28} />
+            <p className="text-sm ">No incoming transfers</p>
           </div>
         </div>
       );
@@ -24,9 +25,7 @@ export const AllResourceArrivals = memo(
 
     return (
       <div className={`p-3 flex flex-col overflow-y-auto gap-3 ${className}`}>
-        <p className="text-[10px] uppercase tracking-wider text-gold/40 px-1">
-          Arrived resources are auto-claimed into your structure's balance.
-        </p>
+        <p className="text-sm text-kit-muted px-1">Arrived resources are auto-claimed into your structure's balance.</p>
         {playerStructures.map((structure) => (
           <StructureArrivals key={structure.entityId} structure={structure} now={now} />
         ))}

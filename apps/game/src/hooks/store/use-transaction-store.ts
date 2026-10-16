@@ -1,3 +1,4 @@
+import { classifyTransactionError } from "@bibliothecadao/provider/errors";
 import type { TransactionFailedPayload, TransactionType } from "@bibliothecadao/provider";
 import { create } from "zustand";
 
@@ -21,11 +22,8 @@ export const statusAfterFailure = ({
 }: Pick<TransactionFailedPayload, "stage" | "failureKind" | "error">): TransactionStatus => {
   if (failureKind === "not_sent") return "not_sent";
   if (stage === "revert") return "reverted";
-  return isNoAnswer(error) ? "no_answer" : "checking";
+  return classifyTransactionError(error).kind === "no_answer" ? "no_answer" : "checking";
 };
-
-/** The client's own "no answer yet" for an action: it released the action without claiming anything of it. */
-const isNoAnswer = (error: unknown): boolean => error instanceof Error && error.name === "TransactionNoAnswerError";
 
 /**
  * Still in the air: sending, or checking an outcome the node has not settled. An unanswered action is not: the client

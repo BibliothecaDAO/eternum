@@ -2,7 +2,7 @@ import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { ActorType, ID } from "@bibliothecadao/types";
-import { ArrowLeftRight } from "@/ui/design-system/atoms/game-icons";
+
 import { Suspense } from "react";
 import { HelpContainer } from "./help-container";
 
@@ -28,7 +28,7 @@ export const HelpModal = ({
   return (
     <SurfaceFrame
       title="Transfer Troops & Relics"
-      icon={ArrowLeftRight}
+      icon={"swap" as const}
       onClose={closeSurface}
       className="w-[920px] max-h-[calc(100vh-7rem)]"
       bodyClassName="overflow-y-auto"

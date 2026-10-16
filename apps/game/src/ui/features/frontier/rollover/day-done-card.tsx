@@ -1,7 +1,8 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { formatExact } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
 import { DayEnds } from "@/ui/design-system/kit/clock-line";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { StoreBar } from "@/ui/design-system/kit/store-bar";
 import { formatDuration } from "@/ui/design-system/kit/time";
 import { CONTINUE, DAY, DAY_DONE, DAY_OPEN, REALM_KEPT, TOMORROW_LASTS, TROOPS } from "@/ui/design-system/kit/words";
@@ -44,21 +45,21 @@ export const DayDoneCard = ({
     <h2 className="frontier-title !text-[26px]">
       {DAY} {endedDay} {DAY_DONE}
     </h2>
-    <p className="text-[14px] font-semibold">
+    <p className="text-sm font-semibold">
       {REALM_KEPT} · {DAY} {endedDay + 1} {DAY_OPEN}
     </p>
     <DayEnds endsAt={clock.endsAt} secondsLeft={clock.secondsLeft} tone={clock.tone} />
-    <p className="flex items-center justify-center gap-1 text-[13px] font-semibold">
-      <KitIcon code="Hg" size={18} />
+    <p className="flex items-center justify-center gap-1 text-sm font-semibold">
+      <SemanticIcon name="hourglass" size={18} />
       <span>{TOMORROW_LASTS}</span>
-      <b className="text-[15px] tabular-nums">{formatDuration(clock.tomorrowSeconds)}</b>
+      <b className="text-base tabular-nums">{formatDuration(clock.tomorrowSeconds)}</b>
     </p>
     <div className="w-full max-w-[360px]">
       <DayTotalsGrid totals={totals} />
     </div>
     {rank && (
-      <p className="flex items-center gap-1.5 text-[20px] tabular-nums">
-        <KitIcon code="Tp" size={24} />#{rank.from} → #{rank.to}
+      <p className="flex items-center gap-1.5 text-xl tabular-nums">
+        <SemanticIcon name="victory" size={24} />#{rank.from} → #{rank.to}
       </p>
     )}
     {armies > 0 && <ArmiesLine armies={armies} troopsLost={troopsLost} returned={returned} />}
@@ -81,21 +82,21 @@ const ArmiesLine = ({
     {Array.from({ length: armies }, (_, index) => (
       <span key={index} className="size-[30px] rounded-full border border-kit-line2 opacity-40" />
     ))}
-    <span className="text-[15px] tabular-nums">−{formatExact(troopsLost)}</span>
+    <span className="text-base tabular-nums">−{formatExact(troopsLost)}</span>
     {returned && (
       <span className="flex items-center gap-1.5 pl-2.5">
         <span className="frontier-chip h-7 !py-0">
           <span className="contents">
             <span className="flex -space-x-1">
-              <KitIcon code="Su" size={18} />
-              <KitIcon code="Tr" size={18} />
+              <SemanticIcon name="order-enlightenment" size={18} />
+              <SemanticIcon name="troops" size={18} />
             </span>
-            <span className="frontier-chip-number tabular-nums !text-[15px]">+{formatExact(returned.fitted)}</span>
+            <span className="frontier-chip-number tabular-nums !text-base">+{formatExact(returned.fitted)}</span>
           </span>
         </span>
         {returned.fitted < returned.sent && (
           <>
-            <span className="text-[14px] tabular-nums text-kit-muted">{formatExact(returned.sent)}</span>
+            <span className="text-sm tabular-nums text-kit-muted">{formatExact(returned.sent)}</span>
             <span className="w-[60px]">
               <StoreBar amount={1} limit={1} tone="ember" />
             </span>

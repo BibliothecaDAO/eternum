@@ -31,10 +31,10 @@ it("routes the directory read through the launch service binding", async () => {
   expect(launchDirectoryMock.mock.calls[0]?.[0].url).toBe("https://launch/api/factory/directory-games");
 });
 
-it("serves health and email sign-in without a history source, while the top list is unavailable", async () => {
+it("serves health and email sign-in while the chain is unreachable, and the top list says it is unavailable", async () => {
   expect((await worker.mf.dispatchFetch(`${ORIGIN}/api/health`)).status).toBe(200);
   expect(await (await worker.mf.dispatchFetch(`${ORIGIN}/api/auth/providers`)).json()).toEqual({ providers: [] });
-  const player = await worker.signInWithEmailCode("no-history@realms.test");
+  const player = await worker.signInWithEmailCode("no-chain@realms.test");
   expect(player.realmsId).toMatch(/^0x/);
   const top = await worker.mf.dispatchFetch(`${ORIGIN}/api/ratings/top`);
   expect(top.status).toBe(503);

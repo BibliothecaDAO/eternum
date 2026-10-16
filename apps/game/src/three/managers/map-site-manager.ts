@@ -10,8 +10,8 @@ import { gltfLoader } from "../utils/utils";
 
 /** Frontier's single-use sites: tile occupancy only, with no Structure, so the tile's category alone places them. */
 const MAP_SITES = [
-  { occupier: TileOccupier.Shrine, path: "/models/frontier/shrine.glb", name: "Shrine" },
-  { occupier: TileOccupier.Well, path: "/models/frontier/well.glb", name: "Well" },
+  { occupier: TileOccupier.Shrine, path: "/models/outposts/shrine.glb", name: "Shrine" },
+  { occupier: TileOccupier.Well, path: "/models/outposts/well.glb", name: "Well" },
 ] as const;
 
 type MapSite = (typeof MAP_SITES)[number];

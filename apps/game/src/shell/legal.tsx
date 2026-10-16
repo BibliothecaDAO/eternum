@@ -1,13 +1,13 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 
 import { communityPlace } from "./community";
 import { useLayout } from "./frame/layout";
 import { PageFrame } from "./frame/page-frame";
+import { WHATS_NEW_PATH } from "./news/posts";
 import { Panel } from "./panel";
-import { FOOTER_WORDS, LEARN_WORDS } from "./words";
+import { FOOTER_WORDS, NEWS_WORDS } from "./words";
 
 /** The terms, the privacy policy and the credits: static text, so the shell serves it with no game module. */
 
@@ -53,17 +53,17 @@ const LegalPage = ({ title, updated, sections }: { title: string; updated: strin
   const desktop = useLayout() === "desktop";
   const reading = (
     <article className="flex max-w-[760px] flex-col gap-5">
-      <p className="flex items-center gap-2 text-[13px] text-kit-muted">
-        <KitIcon code="Cl" size={18} />
-        {LEARN_WORDS.updated} {updated}
+      <p className="flex items-center gap-2 text-sm text-kit-muted">
+        <SemanticIcon name="clock" size={18} />
+        {NEWS_WORDS.updated} {updated}
         {desktop && <OtherLegalPages title={title} />}
       </p>
       {sections.map((section, index) => (
         <section key={section.title} id={sectionId(index)} className="scroll-mt-6">
-          <h2 className="mb-2 font-ui text-[17px] font-bold text-kit-cream">
+          <h2 className="mb-2 font-body text-base font-bold text-kit-cream">
             {index + 1}. {section.title}
           </h2>
-          <div className="space-y-3 text-[17px] leading-[26px] text-kit-cream [&_li]:mb-1 [&_ul]:list-disc [&_ul]:pl-5">
+          <div className="space-y-3 text-base leading-[26px] text-kit-cream [&_li]:mb-1 [&_ul]:list-disc [&_ul]:pl-5">
             {section.body}
           </div>
         </section>
@@ -71,7 +71,7 @@ const LegalPage = ({ title, updated, sections }: { title: string; updated: strin
     </article>
   );
   return (
-    <PageFrame back="/learn" title={title} footer>
+    <PageFrame back={WHATS_NEW_PATH} title={title} footer>
       {desktop ? (
         <div className="grid grid-cols-[20rem_minmax(0,760px)] justify-center gap-10">
           <Contents title={title} sections={sections} />
@@ -86,15 +86,15 @@ const LegalPage = ({ title, updated, sections }: { title: string; updated: strin
 
 const sectionId = (index: number) => `section-${index + 1}`;
 
-/** The sections as a list beside the reading column, staying in view while it scrolls. */
+/** The sections as a list beside the reading column, staying in view under the top bar (68 px) while it scrolls. */
 const Contents = ({ title, sections }: { title: string; sections: LegalSection[] }) => (
-  <nav aria-label={title} className="sticky top-6 self-start">
-    <Panel icon="Dk" title={title}>
+  <nav aria-label={title} className="sticky top-[92px] self-start">
+    <Panel icon="guide" title={title}>
       {sections.map((section, index) => (
         <a
           key={section.title}
           href={`#${sectionId(index)}`}
-          className="flex min-h-10 items-center gap-3 rounded-lg px-1 text-[15px] text-kit-cream hover:bg-kit-gold/[.06]"
+          className="flex min-h-10 items-center gap-3 rounded-lg px-1 text-base text-kit-cream hover:bg-kit-gold/[.06]"
         >
           <span className="w-6 text-right font-bold tabular-nums text-kit-muted">{index + 1}</span>
           {section.title}
@@ -107,7 +107,7 @@ const Contents = ({ title, sections }: { title: string; sections: LegalSection[]
 const OtherLegalPages = ({ title }: { title: string }) => (
   <span className="ml-auto flex gap-4">
     {LEGAL_PAGES.filter((page) => page.word !== title).map((page) => (
-      <Link key={page.to} to={page.to} className="font-ui text-[14px] text-kit-peach hover:text-kit-gold2">
+      <Link key={page.to} to={page.to} className="font-body text-sm text-kit-peach hover:text-kit-gold2">
         {page.word}
       </Link>
     ))}

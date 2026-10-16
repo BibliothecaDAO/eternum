@@ -111,10 +111,10 @@ describe("initial troop", () => {
   const options = (knights: number, crossbows: number) => [
     {
       type: TroopType.Crossbowman,
-      label: "CROSSBOW",
+      label: "Crossbow",
       tiers: [{ tier: TroopTier.T1, available: crossbows, resourceTrait: "" }],
     },
-    { type: TroopType.Knight, label: "KNIGHT", tiers: [{ tier: TroopTier.T1, available: knights, resourceTrait: "" }] },
+    { type: TroopType.Knight, label: "Knight", tiers: [{ tier: TroopTier.T1, available: knights, resourceTrait: "" }] },
   ];
   const knightsOnly = (troop: { type: TroopType }) => troop.type === TroopType.Knight;
 

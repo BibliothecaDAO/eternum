@@ -9,9 +9,9 @@ damage it causes.
 
 The implementation is available in both development surfaces:
 
-- `/debug/procedural-characters` authors one close-up unit, target, loadout, attack, and ragdoll transition.
-- `/debug/procedural-character-benchmark` runs up to 100 mixed units, including scheduled melee attacks, ranged volleys,
-  deaths, respawns, and a bounded number of Jolt ragdolls.
+- `/lab/characters` authors one close-up unit, target, loadout, attack, and ragdoll transition.
+- `/lab/character-benchmark` runs up to 100 mixed units, including scheduled melee attacks, ranged volleys, deaths,
+  respawns, and a bounded number of Jolt ragdolls.
 
 ## Runtime flow
 

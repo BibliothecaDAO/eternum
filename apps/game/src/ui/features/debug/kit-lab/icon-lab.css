@@ -1,0 +1,224 @@
+.icon-lab {
+  max-width: 1500px;
+  margin: auto;
+  padding: 28px;
+  color: #eadbc2;
+  font-family:
+    Atkinson Hyperlegible Next,
+    sans-serif;
+  background: #100e0a;
+  min-height: 100%;
+}
+
+.icon-lab h1,
+.icon-lab h2 {
+  font-family: Bokor, serif;
+  font-weight: 400;
+}
+
+.icon-lab h1 {
+  font-size: 40px;
+}
+
+.icon-lab h2 {
+  font-size: 28px;
+  margin: 20px 0 12px;
+}
+
+.icon-lab h3 {
+  font-size: 20px;
+  margin: 24px 0 12px;
+}
+
+.icon-lab p {
+  line-height: 1.5;
+}
+
+.icon-lab button:not(.frontier-primary) {
+  cursor: pointer;
+}
+
+.icon-controls {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: end;
+  margin: 20px 0;
+}
+
+.icon-controls fieldset {
+  border: 0;
+  padding: 0;
+}
+
+.icon-controls legend {
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.icon-controls button[aria-pressed="true"] {
+  background: #e2d8c5;
+  color: #17140e;
+}
+
+.icon-lab button:focus-visible,
+.icon-lab input:focus-visible {
+  outline: 2px solid #9acfe2;
+  outline-offset: 3px;
+}
+
+.icon-map {
+  width: 320px;
+  height: 250px;
+  position: relative;
+  background: #18251e;
+  border: 1px solid #605c4d;
+}
+
+.icon-hex-grid {
+  position: absolute;
+  inset: 0;
+  width: 320px;
+  height: 250px;
+}
+
+.icon-hex-grid polygon {
+  fill: none;
+  stroke: #415448;
+  stroke-width: 1;
+}
+
+.icon-map[data-grouped="true"] {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  align-items: center;
+  justify-items: center;
+  padding: 8px;
+}
+
+.icon-cluster {
+  background: #11190f;
+  border: 1px solid #8c8b79;
+  border-radius: 3px;
+  padding: 6px 3px;
+}
+
+.icon-cluster strong,
+.icon-cluster small {
+  display: block;
+}
+
+.icon-cluster small {
+  font-size: 9px;
+}
+
+.icon-marker-wrap,
+.icon-marker-key {
+  width: 28px;
+  height: 32px;
+}
+
+.icon-marker-wrap {
+  position: absolute;
+}
+
+.icon-marker-key {
+  position: relative;
+  display: block;
+}
+
+.icon-marker-kinds {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.icon-marker-kinds > div {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+}
+
+.icon-marker-kinds small {
+  font-size: 11px;
+}
+
+.icon-legend {
+  font-size: 13px;
+  max-width: 650px;
+}
+
+.icon-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+}
+
+.icon-card {
+  padding: 16px !important;
+}
+
+.icon-card h4 {
+  font-size: 15px;
+  margin: 0 0 10px;
+}
+
+.icon-canvas {
+  height: 80px;
+  display: grid;
+  place-items: center;
+}
+
+.icon-canvas img {
+  object-fit: contain;
+  max-width: none;
+}
+
+.icon-controls {
+  gap: 12px;
+}
+.icon-controls input,
+.icon-controls select {
+  background: #242219;
+  border: 1px solid #827961;
+  color: #fff;
+  padding: 8px;
+  max-width: 100%;
+}
+.icon-controls label {
+  display: grid;
+  gap: 6px;
+  max-width: 100%;
+}
+.icon-controls button {
+  background: #29241b;
+  border: 1px solid #766e5c;
+  padding: 8px 12px;
+  border-radius: 4px;
+  color: #eee4cf;
+}
+.icon-card {
+  text-align: center;
+}
+.icon-marker-wrap svg {
+  overflow: visible;
+}
+.icon-cluster [data-owner="you"] {
+  color: #66ddab;
+}
+.icon-cluster [data-owner="ally"] {
+  color: #70bdff;
+}
+.icon-cluster [data-owner="enemy"] {
+  color: #ff8176;
+}
+@media (max-width: 600px) {
+  .icon-lab {
+    padding: 16px;
+  }
+  .icon-controls {
+    gap: 12px;
+  }
+}

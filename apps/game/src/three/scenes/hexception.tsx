@@ -1,3 +1,6 @@
+import { REALM_PATHS, realmModelIndex, isWonderModelPath } from "../structures/realm-design";
+import { RealmLivingAura } from "../structures/realm-living-aura";
+import { HexceptionTierModels, disposeBuildingModel } from "./hexception-tier-models";
 import { byStructureCategory } from "@/lib/structure-category-table";
 import { SettlementAnimation } from "../structures/settlement-animation";
 import { HyperstructureModel } from "../structures/hyperstructure-model";
@@ -7,7 +10,7 @@ import {
   resolveSettlementRelationship,
   type SettlementRelationship,
 } from "../structures/settlement-appearance";
-import { VILLAGE_MODEL_PATH, isSettlementModelPath } from "../constants/scene-constants";
+import { isRealmModelPath, isSettlementModelPath } from "../constants/scene-constants";
 import { isAddressEqualToAccount } from "../utils/utils";
 import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
 import { buildingTierModelPath } from "../structures/building-tiers";
@@ -24,13 +27,14 @@ import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
-import { canIssueOrders } from "@/utils/can-issue-orders";
+import { actNowRefusal, canIssueOrders, refusedBeforePlay } from "@/utils/can-issue-orders";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { resolveStoredLocalCameraDistance, useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { resolveSettlementRotationY } from "@/three/structures/settlement-orientation";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import { resolvePlayRouteTarget } from "@/play/navigation/play-route-target";
+import { RealmGridBuilds } from "./hexception-grid-builds";
 import { awaitLocalScenePresentable } from "./local-scene-presentation";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
@@ -40,7 +44,6 @@ import {
   HEX_SIZE,
   LOCAL_CAMERA_ZOOM,
   MinesMaterialsParams,
-  WONDER_REALM,
   castleLevelToRealmCastle,
   hyperstructureStageToModel,
   structureTypeToBuildingType,
@@ -55,7 +58,7 @@ import { SceneManager } from "@/three/scene-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
 import type { TerrainSurface } from "@/three/terrain/terrain-surface";
-import type { TerrainCellInput } from "@/three/terrain/terrain-types";
+import type { PreparedTerrainPage, TerrainCellInput } from "@/three/terrain/terrain-types";
 import {
   type BuildingInstanceAction,
   buildingKey,
@@ -201,6 +204,43 @@ const KEEP_NAMES: Record<StructureType, "realm-castle" | "village" | string> = {
   [StructureType.Stragglers]: "Stragglers",
 };
 
+const BIOME_MATRIX_KEYS = [
+  "None",
+  "Ocean",
+  "DeepOcean",
+  "Beach",
+  "Scorched",
+  "Bare",
+  "Tundra",
+  "Snow",
+  "TemperateDesert",
+  "Shrubland",
+  "ShrublandAlt",
+  "Taiga",
+  "Grassland",
+  "GrasslandAlt",
+  "TemperateDeciduousForest",
+  "TemperateDeciduousForestAlt",
+  "TemperateRainForest",
+  "SubtropicalDesert",
+  "TropicalSeasonalForest",
+  "TropicalRainForest",
+  "Empty",
+] as const;
+
+const emptyTerrainMatricesByBiome = (): Record<BiomeType | "Empty" | string, Matrix4[]> =>
+  Object.fromEntries(BIOME_MATRIX_KEYS.map((key) => [key, []]));
+
+/** The grid's matrices go back to the pool once the page they described is presented or dropped. */
+const releaseGridMatrices = (terrainMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>): void => {
+  const matrixPool = MatrixPool.getInstance();
+  for (const matrices of Object.values(terrainMatricesByBiome)) {
+    matrixPool.releaseAll(matrices);
+    // Cleared so a released matrix is never reused through this record.
+    matrices.length = 0;
+  }
+};
+
 export default class HexceptionScene extends HexagonScene {
   /** A realm's buildings sit on their own local lattice, never moved by the world map's floating origin. */
   protected override get hexSpace(): HexSpace {
@@ -208,9 +248,13 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   private hexceptionRadius = 4;
-  /** Tier models by path, loaded only when a building upgraded past tier I needs one. */
-  private readonly tierModels = new Map<string, { model: Group; animations: AnimationClip[] }>();
-  private readonly tierModelLoads = new Set<string>();
+  private destroyed = false;
+  private readonly tierModels = new HexceptionTierModels(
+    (path) => this.loadBuildingModel(path),
+    () => {
+      if (this.isEntered) this.reconcileAllBuildingInstances(this.tileManager.structureType());
+    },
+  );
   private buildingModels: Map<
     BUILDINGS_GROUPS,
     Map<BUILDINGS_CATEGORIES_TYPES, { model: Group; animations: AnimationClip[] }>
@@ -226,7 +270,7 @@ export default class HexceptionScene extends HexagonScene {
   >();
   private buildingInstances: Map<string, Group> = new Map();
   private pendingBuildingKeys: Set<string> = new Set();
-  private wonderInstances: Map<string, Group> = new Map();
+  private readonly wonderAuras = new Map<string, RealmLivingAura>();
   private buildingMixers: Map<string, AnimationMixer> = new Map();
   private hyperstructureModel?: HyperstructureModel;
   private buildings: HexceptionBuilding[] = [];
@@ -259,7 +303,7 @@ export default class HexceptionScene extends HexagonScene {
   private localAssetsStarted = false;
   private lastRealmKey?: string;
   private activeRealmGeneration = 0;
-  private localGridBuilt: Promise<void> = Promise.resolve();
+  private readonly gridBuilds = new RealmGridBuilds();
   private localPresentation: Promise<void> = Promise.resolve();
   private localPresentationReady = true;
   private groundTexturesReady: Promise<void> = Promise.resolve();
@@ -605,6 +649,10 @@ export default class HexceptionScene extends HexagonScene {
   private async loadBuildingModel(path: string): Promise<{ model: Group; animations: AnimationClip[] }> {
     const gltf = await loader.loadAsync(path);
     const model = gltf.scene as Group;
+    if (this.destroyed) {
+      disposeBuildingModel(model);
+      throw new Error(`Realm view was destroyed while loading ${path}`);
+    }
     model.position.set(0, 0, 0);
     model.rotation.y = Math.PI;
     const meshes: Mesh[] = [];
@@ -706,11 +754,8 @@ export default class HexceptionScene extends HexagonScene {
       });
       this.buildingInstances.clear();
 
-      // remove all previous wonder instances
-      this.wonderInstances.forEach((instance) => {
-        this.scene.remove(instance);
-      });
-      this.wonderInstances.clear();
+      this.wonderAuras.forEach((aura) => aura.dispose());
+      this.wonderAuras.clear();
 
       // clear all animation mixers
       this.buildingMixers.clear();
@@ -751,6 +796,7 @@ export default class HexceptionScene extends HexagonScene {
     this.lastRealmKey = realmKey;
     if (realmChanged) this.prepareLocalPresentation();
     await this.localPresentation;
+    if (this.isEntered && !this.destroyed) this.reconcileAllBuildingInstances(this.tileManager.structureType());
   }
 
   onSwitchOff(_nextSceneName?: SceneName) {
@@ -771,6 +817,9 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   destroy() {
+    this.destroyed = true;
+    this.isEntered = false;
+    this.tierModels.dispose();
     window.clearTimeout(this.newRingTimer);
     usePopoverStore.getState().close("plot-construction");
     this.advanceRealmGeneration();
@@ -814,7 +863,8 @@ export default class HexceptionScene extends HexagonScene {
       }
     });
     this.buildingInstances.clear();
-    this.wonderInstances.clear();
+    this.wonderAuras.forEach((aura) => aura.dispose());
+    this.wonderAuras.clear();
 
     for (const presentation of this.settlementPresentations.values()) {
       presentation.animation.dispose();
@@ -830,20 +880,7 @@ export default class HexceptionScene extends HexagonScene {
           return;
         }
         disposedBuildingModels.add(data.model);
-        data.model.traverse((child: any) => {
-          if (child.isMesh) {
-            if (child.geometry) {
-              child.geometry.dispose();
-            }
-            if (child.material) {
-              if (Array.isArray(child.material)) {
-                child.material.forEach((m: any) => m.dispose());
-              } else {
-                child.material.dispose();
-              }
-            }
-          }
-        });
+        disposeBuildingModel(data.model);
       });
       categoryMap.clear();
     });
@@ -873,7 +910,7 @@ export default class HexceptionScene extends HexagonScene {
     const buildingType = this.pinnedPlot ? null : this.buildingPreview?.getPreviewBuilding();
 
     const account = useAccountStore.getState().account;
-    const canConstruct = !!account && canIssueOrders();
+    const canConstruct = !!account && canIssueOrders() && actNowRefusal() === null;
     if (buildingType) {
       if (!canConstruct || !account) {
         this.clearBuildingMode();
@@ -963,7 +1000,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   private openPlotConstruction(spot: HexPosition): boolean {
-    if (!this.isEntered || !canIssueOrders() || !this.mode.ui.showBuildMenus) return false;
+    if (!this.isEntered || !canIssueOrders() || !this.mode.ui.showBuildMenus || refusedBeforePlay()) return false;
     const entityId = useUIStore.getState().structureEntityId;
     const account = useAccountStore.getState().account;
     const realm = getRealmInfo(entityId, this.game.store, getPlayerName);
@@ -1260,7 +1297,7 @@ export default class HexceptionScene extends HexagonScene {
     const generation = this.activeRealmGeneration;
     this.localPresentationReady = false;
     this.localPresentation = awaitLocalScenePresentable({
-      gridBuilt: this.localGridBuilt,
+      gridBuilt: this.gridBuilds.whenBuilt(),
       groundTextures: this.groundTexturesReady,
     }).finally(() => {
       if (this.ownsRealmGeneration(generation)) this.localPresentationReady = true;
@@ -1268,6 +1305,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   private advanceRealmGeneration(): number {
+    this.gridBuilds.supersede();
     this.activeRealmGeneration += 1;
     return this.activeRealmGeneration;
   }
@@ -1329,90 +1367,52 @@ export default class HexceptionScene extends HexagonScene {
     );
   }
 
+  /**
+   * The realm's grid, in three steps so that none holds a frame. Once the building models load, its cells are laid
+   * out. The terrain page for them is prepared in the terrain worker. Then the page, the buildings and the buildable
+   * hexes are presented, unless a newer build started or the realm was left meanwhile.
+   */
   updateHexceptionGrid(radius: number) {
     if (!this.isEntered) return;
-    const realmGeneration = this.activeRealmGeneration;
-    const dummy = new Object3D();
     const mainStructureType = this.tileManager.structureType();
     this.updateCastleLevel();
-
-    const terrainMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]> = {
-      None: [],
-      Ocean: [],
-      DeepOcean: [],
-      Beach: [],
-      Scorched: [],
-      Bare: [],
-      Tundra: [],
-      Snow: [],
-      TemperateDesert: [],
-      Shrubland: [],
-      ShrublandAlt: [],
-      Taiga: [],
-      Grassland: [],
-      GrasslandAlt: [],
-      TemperateDeciduousForest: [],
-      TemperateDeciduousForestAlt: [],
-      TemperateRainForest: [],
-      SubtropicalDesert: [],
-      TropicalSeasonalForest: [],
-      TropicalRainForest: [],
-      Empty: [],
-    };
-
-    // The whole grid build runs as one macrotask once models resolve; the
-    // frame-owner marker is what attributes the local-view freeze to it.
-    this.localGridBuilt = runOwnedBuildingWorkAfterModelsLoad({
-      apply: () =>
-        runWithFrameWorkOwner("scene:hexception:grid", () => {
-          const regions = getLocalTerrainRegions(this.tileManager.getHexCoords(), radius);
-          this.highlights = [];
-          this.shownMapHexes.clear();
-          this.groundIsStale = false;
-          // The buildable set belongs to this realm and its level; a previous realm's must not linger.
-          this.interactiveHexManager.clearHexes();
-
-          for (const { center, targetHex, isMainHex } of regions) {
-            if (isMainHex) {
-              this.computeMainHexMatrices(radius, dummy, center, targetHex, terrainMatricesByBiome);
-            } else {
-              this.computeNeighborHexMatrices(radius, dummy, center, targetHex, terrainMatricesByBiome);
-            }
-          }
-
-          this.presentProceduralTerrain(terrainMatricesByBiome);
-          this.reconcileAllBuildingInstances(mainStructureType);
-          this.interactiveHexManager.renderAllHexes();
-          if (!this.buildingPreview?.getPreviewBuilding()) this.renderRestingOrNewRing();
-
-          // CRITICAL: Release all matrices back to the pool to prevent memory leaks
-          const matrixPool = MatrixPool.getInstance();
-          let totalMatricesReleased = 0;
-          for (const matrices of Object.values(terrainMatricesByBiome)) {
-            matrixPool.releaseAll(matrices);
-            totalMatricesReleased += matrices.length;
-            // Clear the array to prevent accidental reuse of released matrices
-            matrices.length = 0;
-          }
-          if (VERBOSE_LOGS_ENABLED) console.log(`🧹 Released ${totalMatricesReleased} matrices back to pool`);
-
-          if (typeof window !== "undefined" && this.isEntered) {
-            usePlayRouteReadinessStore.getState().markHexReady(getCurrentPlayRouteBootToken(), {
-              col: this.centerColRow[0],
-              row: this.centerColRow[1],
-            });
-          }
-        }),
-      isOwned: () => this.ownsRealmGeneration(realmGeneration),
-      modelLoadPromises: this.modelLoadPromises,
+    this.gridBuilds.start({
+      modelsLoaded: () => Promise.allSettled(this.modelLoadPromises),
+      layOut: () => runWithFrameWorkOwner("scene:hexception:grid", () => this.layOutGridCells(radius)),
+      preparePage: (terrainMatricesByBiome) =>
+        this.proceduralTerrain.preparePageAsync(this.terrainPageRequest(terrainMatricesByBiome)),
+      present: (page) =>
+        runWithFrameWorkOwner("scene:hexception:grid", () => this.presentGrid(page, mainStructureType)),
+      release: releaseGridMatrices,
     });
   }
 
-  private presentProceduralTerrain(terrainMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>): void {
+  /** Each cell of the realm and its surroundings, as a matrix under its biome; the buildable hexes are registered. */
+  private layOutGridCells(radius: number): Record<BiomeType | "Empty" | string, Matrix4[]> {
+    const dummy = new Object3D();
+    const terrainMatricesByBiome = emptyTerrainMatricesByBiome();
+    const regions = getLocalTerrainRegions(this.tileManager.getHexCoords(), radius);
+    this.highlights = [];
+    this.shownMapHexes.clear();
+    this.groundIsStale = false;
+    // The buildable set belongs to this realm and its level; a previous realm's must not linger.
+    this.interactiveHexManager.clearHexes();
+
+    for (const { center, targetHex, isMainHex } of regions) {
+      if (isMainHex) {
+        this.computeMainHexMatrices(radius, dummy, center, targetHex, terrainMatricesByBiome);
+      } else {
+        this.computeNeighborHexMatrices(radius, dummy, center, targetHex, terrainMatricesByBiome);
+      }
+    }
+    return terrainMatricesByBiome;
+  }
+
+  /** The terrain page request for the laid-out cells: only a cell with a building gets the packed structure pad. */
+  private terrainPageRequest(terrainMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>) {
     const fallbackBiome = this.localBiome(this.centerColRow[0], this.centerColRow[1]);
     const cellsByKey = new Map<string, TerrainCellInput>();
     const worldPosition = new Vector3();
-    // Only a cell with a building gets the packed structure pad; an empty buildable cell keeps its ground.
     const builtKeys = new Set(
       this.buildings.map((building) => {
         worldPosition.setFromMatrixPosition(building.matrix);
@@ -1438,27 +1438,37 @@ export default class HexceptionScene extends HexagonScene {
       });
     });
 
-    const prepared = this.proceduralTerrain.preparePage(
-      createHexceptionTerrainRequest(
-        cellsByKey.values(),
-        configManager.getBiomeClimateConfig() ?? NEUTRAL_BIOME_CLIMATE,
-        `hexception:${this.centerColRow[0]},${this.centerColRow[1]}`,
-      ),
+    return createHexceptionTerrainRequest(
+      cellsByKey.values(),
+      configManager.getBiomeClimateConfig() ?? NEUTRAL_BIOME_CLIMATE,
+      `hexception:${this.centerColRow[0]},${this.centerColRow[1]}`,
     );
-    this.proceduralTerrain.present([prepared]);
+  }
+
+  /** The prepared page, the buildings standing on its surface, the buildable hexes, then the realm is ready. */
+  private presentGrid(page: PreparedTerrainPage, mainStructureType: StructureType | undefined): void {
+    this.proceduralTerrain.present([page]);
+    const worldPosition = new Vector3();
     this.buildings.forEach((building) => {
       worldPosition.setFromMatrixPosition(building.matrix);
       worldPosition.y = this.proceduralTerrain.sampleSurface(worldPosition.x, worldPosition.z).height;
       building.matrix.setPosition(worldPosition);
     });
+    this.reconcileAllBuildingInstances(mainStructureType);
+    this.interactiveHexManager.renderAllHexes();
+    if (!this.buildingPreview?.getPreviewBuilding()) this.renderRestingOrNewRing();
+
+    if (typeof window !== "undefined" && this.isEntered) {
+      usePlayRouteReadinessStore.getState().markHexReady(getCurrentPlayRouteBootToken(), {
+        col: this.centerColRow[0],
+        row: this.centerColRow[1],
+      });
+    }
   }
 
   private reconcileAllBuildingInstances(mainStructureType: StructureType | undefined): void {
     const nextKeys = new Set(this.buildings.map((building) => buildingKey(building)));
-    const renderedKeys = new Set([
-      ...this.buildingInstances.keys(),
-      ...[...this.wonderInstances.keys()].map((key) => key.replace(/_wonder$/, "")),
-    ]);
+    const renderedKeys = new Set(this.buildingInstances.keys());
     renderedKeys.forEach((key) => {
       if (nextKeys.has(key)) return;
       const [col, row] = key.split(",").map(Number);
@@ -1476,15 +1486,13 @@ export default class HexceptionScene extends HexagonScene {
     const key = buildingKey(position);
     const selection = building ? this.resolveBuildingModelSelection(building, mainStructureType) : undefined;
     // A tier's model loads the first time a building needs it; until then the building keeps what it shows.
-    if (selection?.tierPath && !this.tierModels.has(selection.tierPath)) {
+    if (selection?.tierPath && !this.tierModels.get(selection.tierPath)) {
       this.loadTierModel(selection.tierPath);
       return "keep";
     }
     const signature = building && selection ? this.resolveBuildingRenderSignature(building, selection) : undefined;
     const currentInstance = this.buildingInstances.get(key);
-    const currentSignature =
-      currentInstance?.userData[BUILDING_RENDER_SIGNATURE] ??
-      (this.wonderInstances.has(`${key}_wonder`) ? "wonder-only" : undefined);
+    const currentSignature = currentInstance?.userData[BUILDING_RENDER_SIGNATURE];
     const action = resolveBuildingInstanceAction(currentSignature, signature);
 
     if (building && selection && signature && currentInstance && isTierChange(currentSignature, signature)) {
@@ -1542,7 +1550,11 @@ export default class HexceptionScene extends HexagonScene {
     }
 
     const tierPath =
-      group === BUILDINGS_GROUPS.BUILDINGS ? buildingTierModelPath(type as BuildingType, building.tier) : undefined;
+      group === BUILDINGS_GROUPS.REALMS && this.tileManager.getWonder(this.state.structureEntityId)
+        ? REALM_PATHS[realmModelIndex(this.structureStage, true, this.state.structureEntityId)]
+        : group === BUILDINGS_GROUPS.BUILDINGS
+          ? buildingTierModelPath(type as BuildingType, building.tier)
+          : undefined;
     return { group, type, tierPath };
   }
 
@@ -1551,6 +1563,7 @@ export default class HexceptionScene extends HexagonScene {
     return [
       selection.group,
       selection.type,
+      selection.group === BUILDINGS_GROUPS.REALMS ? (selection.tierPath ?? "base") : "base",
       building.resource ?? "none",
       building.pending ? "pending" : "ready",
       `tier${building.tier ?? 1}`,
@@ -1574,7 +1587,6 @@ export default class HexceptionScene extends HexagonScene {
       this.buildingInstances.set(key, model.group);
       return;
     }
-    this.addWonderInstance(building, key);
 
     const buildingData = selection.tierPath
       ? this.tierModels.get(selection.tierPath)
@@ -1586,6 +1598,12 @@ export default class HexceptionScene extends HexagonScene {
     if (selection.group === BUILDINGS_GROUPS.REALMS || selection.group === BUILDINGS_GROUPS.VILLAGE) {
       // Apply after the template and tile transforms so neither can turn the entrance away.
       instance.rotation.set(0, resolveSettlementRotationY(this.tileManager.structureType(), instance.rotation.y), 0);
+    }
+    if (selection.tierPath && isWonderModelPath(selection.tierPath)) {
+      const aura = new RealmLivingAura(buildingData.model);
+      aura.setEntityAt(0, this.state.structureEntityId);
+      instance.add(aura.mesh);
+      this.wonderAuras.set(key, aura);
     }
     instance.scale.set(0.01, 0.01, 0.01);
     instance.userData[BUILDING_RENDER_SIGNATURE] = signature;
@@ -1605,12 +1623,8 @@ export default class HexceptionScene extends HexagonScene {
 
   /** Loads one tier's model once, then lets every building waiting on it draw it. */
   private loadTierModel(path: string): void {
-    if (this.tierModelLoads.has(path)) return;
-    this.tierModelLoads.add(path);
-    void this.loadBuildingModel(path).then((model) => {
-      if (!this.isEntered) return;
-      this.tierModels.set(path, model);
-      this.reconcileAllBuildingInstances(this.tileManager.structureType());
+    void this.tierModels.request(path).catch((error) => {
+      if (!this.destroyed) console.warn(`[Hexception] Failed to load building model ${path}`, error);
     });
   }
 
@@ -1650,31 +1664,6 @@ export default class HexceptionScene extends HexagonScene {
       0,
       readHyperstructureConstruction(this.game.store, safeInteger(this.state.structureEntityId)),
     );
-  }
-
-  private addWonderInstance(building: HexceptionBuilding, key: string): void {
-    const isCenterBuilding = building.col === BUILDINGS_CENTER[0] && building.row === BUILDINGS_CENTER[1];
-    if (
-      !isCenterBuilding ||
-      building.structureType === StructureType.Hyperstructure ||
-      !this.tileManager.getWonder(this.state.structureEntityId)
-    ) {
-      return;
-    }
-
-    const wonderData = this.buildingModels
-      .get(BUILDINGS_GROUPS.WONDER)
-      ?.get(WONDER_REALM.toString() as BUILDINGS_CATEGORIES_TYPES);
-    if (!wonderData) return;
-
-    const wonderKey = `${key}_wonder`;
-    const wonderInstance = wonderData.model.clone();
-    wonderInstance.applyMatrix4(building.matrix);
-    wonderInstance.scale.set(0.01, 0.01, 0.01);
-    this.scene.add(wonderInstance);
-    this.wonderInstances.set(wonderKey, wonderInstance);
-    this.animateBuildingScale(wonderInstance);
-    this.startBuildingAnimations(wonderKey, wonderInstance, wonderData.animations);
   }
 
   private applyMiningBuildingMaterial(
@@ -1764,13 +1753,8 @@ export default class HexceptionScene extends HexagonScene {
       this.buildingInstances.delete(key);
     }
 
-    // Also remove any associated wonder instance
-    const wonderKey = `${key}_wonder`;
-    const wonderInstance = this.wonderInstances.get(wonderKey);
-    if (wonderInstance) {
-      this.scene.remove(wonderInstance);
-      this.wonderInstances.delete(wonderKey);
-    }
+    this.wonderAuras.get(key)?.dispose();
+    this.wonderAuras.delete(key);
 
     // Properly dispose of mixers before removing
     const mixer = this.buildingMixers.get(key);
@@ -1778,13 +1762,6 @@ export default class HexceptionScene extends HexagonScene {
       mixer.stopAllAction();
       mixer.uncacheRoot(mixer.getRoot());
       this.buildingMixers.delete(key);
-    }
-
-    const wonderMixer = this.buildingMixers.get(wonderKey);
-    if (wonderMixer) {
-      wonderMixer.stopAllAction();
-      wonderMixer.uncacheRoot(wonderMixer.getRoot());
-      this.buildingMixers.delete(wonderKey);
     }
   }
 
@@ -1954,13 +1931,8 @@ export default class HexceptionScene extends HexagonScene {
       this.buildingInstances.delete(key);
     }
 
-    // Also remove any associated wonder instance
-    const wonderKey = `${key}_wonder`;
-    const wonderInstance = this.wonderInstances.get(wonderKey);
-    if (wonderInstance) {
-      this.scene.remove(wonderInstance);
-      this.wonderInstances.delete(wonderKey);
-    }
+    this.wonderAuras.get(key)?.dispose();
+    this.wonderAuras.delete(key);
 
     // Properly dispose of mixers before removing
     const mixer = this.buildingMixers.get(key);
@@ -1968,13 +1940,6 @@ export default class HexceptionScene extends HexagonScene {
       mixer.stopAllAction();
       mixer.uncacheRoot(mixer.getRoot());
       this.buildingMixers.delete(key);
-    }
-
-    const wonderMixer = this.buildingMixers.get(wonderKey);
-    if (wonderMixer) {
-      wonderMixer.stopAllAction();
-      wonderMixer.uncacheRoot(wonderMixer.getRoot());
-      this.buildingMixers.delete(wonderKey);
     }
   }
 
@@ -2031,7 +1996,7 @@ export default class HexceptionScene extends HexagonScene {
         presentation.appearance.setRelationship(relationship);
         presentation.relationship = relationship;
       }
-      if (path !== VILLAGE_MODEL_PATH && structure?.metadata.order !== presentation.orderId) {
+      if (isRealmModelPath(path) && structure?.metadata.order !== presentation.orderId) {
         presentation.orderId = structure?.metadata.order;
         void presentation.appearance.setOrder(presentation.orderId).catch((error) => {
           console.error("[Hexception] Unable to prepare realm heraldry", error);

@@ -277,28 +277,14 @@ export class LiveWorld {
     this.lastCheckpointBlock = this.confirmedBlockValue;
   }
 
+  /**
+   * A pre-confirmed receipt. A confirmed one is read, validated and folded by the confirmed replay, which publishes its
+   * status after its facts.
+   */
   public acceptReceipt(receipt: RpcReceipt): void {
-    if (this.native.halted) return;
-    if (receipt.finality_status === "PRE_CONFIRMED") {
-      // Applying it to the overlay validated it, and a receipt the overlay refused was rejected there.
-      if (this.publishPreconfirmedReceipt(receipt)) this.publishReceiptStatus(this.native.outcomeReceipt(receipt));
-      return;
-    }
-    let actionReceipt: RpcReceipt;
-    try {
-      actionReceipt = this.native.actionReceipt(
-        this.overlayFold,
-        receipt,
-        this.transactionCalldata.get(normalizeFelt(receipt.transaction_hash)),
-      );
-    } catch (error) {
-      if (this.deferRegistrationReceipt(receipt, error)) return;
-      this.native.rejectReceipt(receipt, receipt.block_number ?? null, error, true);
-      this.resetOverlay();
-      this.publishOverlayReverts();
-      return;
-    }
-    this.publishReceiptStatus(actionReceipt);
+    if (this.native.halted || receipt.finality_status !== "PRE_CONFIRMED") return;
+    // Applying it to the overlay validated it, and a receipt the overlay refused was rejected there.
+    if (this.publishPreconfirmedReceipt(receipt)) this.publishReceiptStatus(this.native.outcomeReceipt(receipt));
   }
 
   public async publishChainClock(): Promise<void> {

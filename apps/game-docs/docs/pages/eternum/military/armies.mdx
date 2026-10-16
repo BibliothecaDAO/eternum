@@ -16,8 +16,8 @@ engagement opportunities.
 Each Realm and Village has a limited number of guard and field armies The number of armies can be increased by upgrading
 the Realm / Village level as explained in the [Realms](/eternum/realm-and-villages/realm) section. Each military
 building constructed on a Realm or Village also increases total field armies by 1 (up to a maximum of
-**+{ETERNUM_CONFIG().troop.limit.explorerMaxPartyCount-4}**). Lords can deploy armies from the Military tab in the Local
-view. The maximum size of an army is **30,000**
+**+{ETERNUM_CONFIG("eternum").troop.limit.explorerMaxPartyCount-4}**). Lords can deploy armies from the Military tab in
+the Local view. The maximum size of an army is **30,000**
 
 ### Field Armies
 
@@ -52,10 +52,10 @@ Unlike Realms and Villages, world structures have a static number of defense slo
 
 When attacked, guard armies are targeted sequentially starting from the outermost occupied slot. If a guard army is
 destroyed, the slot that it occupied becomes unavailable for reinforcement for
-**{Math.floor(ETERNUM_CONFIG().troop.limit.guardResurrectionDelay / 3600)} hours**. Once all guard armies are defeated,
-the structure becomes vulnerable to being claimed by an adjacent field army (with the exception of Villages, which
-cannot be claimed). Lords can also direct their guard armies to launch attacks against adjacent hexes by selecting their
-structure on the worldmap, then right-clicking the target hex.
+**{Math.floor(ETERNUM_CONFIG("eternum").troop.limit.guardResurrectionDelay / 3600)} hours**. Once all guard armies are
+defeated, the structure becomes vulnerable to being claimed by an adjacent field army (with the exception of Villages,
+which cannot be claimed). Lords can also direct their guard armies to launch attacks against adjacent hexes by selecting
+their structure on the worldmap, then right-clicking the target hex.
 
 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
   <img src="/gifs/attack-from-structure.gif" alt="Attack field army" />

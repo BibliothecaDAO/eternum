@@ -6,6 +6,7 @@ import {
   EntityType,
   getProducedResource,
   RESOURCE_PRECISION,
+  wholePoints,
   ResourcesIds,
   StructureType,
   TickIds,
@@ -515,16 +516,19 @@ export class ClientConfigManager {
   getHyperstructureConfig() {
     return {
       timeBetweenSharesChange: 0,
-      pointsPerCycle: this.rules().victory_points_grant_config.hyp_points_per_second / RESOURCE_PRECISION,
-      pointsForWin:
-        Number(this.facts().require("SeasonWinThreshold", { game_id: this.gameId }).points) / RESOURCE_PRECISION,
+      pointsPerCycle: wholePoints(this.rules().victory_points_grant_config.hyp_points_per_second),
+      pointsForWin: wholePoints(this.facts().require("SeasonWinThreshold", { game_id: this.gameId }).points),
     };
   }
-  getRelicCrateReward() {
-    const rules = this.rules();
+  /** What each scoring action grants in this game, in whole victory points. */
+  getVictoryPointGrants() {
+    const grants = this.rules().victory_points_grant_config;
     return {
-      relicsPerCrate: rules.map_config.relic_chest_relics_per_chest,
-      victoryPoints: rules.victory_points_grant_config.relic_open_points / RESOURCE_PRECISION,
+      exploreTile: wholePoints(grants.explore_tiles_points),
+      claimCampFromBandits: wholePoints(grants.claim_otherstructure_points),
+      claimHyperstructureFromBandits: wholePoints(grants.claim_hyperstructure_points),
+      openRelicCrate: wholePoints(grants.relic_open_points),
+      hyperstructurePerRealmPerSecond: wholePoints(grants.hyp_points_per_second),
     };
   }
   getBasePopulationCapacity() {

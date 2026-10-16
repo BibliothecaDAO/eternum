@@ -1,6 +1,7 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { LABOR, LORDS, REALMS } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
@@ -27,9 +28,9 @@ export const LordsPurse = ({
 }) => {
   const body = (
     <>
-      <KitIcon code="Lo" size={26} />
-      <span className="text-[17px] tabular-nums text-kit-cream">{formatExact(lords)}</span>
-      {gain !== undefined && <span className="text-[15px] tabular-nums text-[#b9e58a]">+{formatExact(gain)}</span>}
+      <SemanticIcon name="lords" size={26} />
+      <span className="text-base tabular-nums text-kit-cream">{formatExact(lords)}</span>
+      {gain !== undefined && <span className="text-base tabular-nums text-[#b9e58a]">+{formatExact(gain)}</span>}
     </>
   );
   const look = cn(
@@ -55,8 +56,8 @@ export const RealmsChip = ({ labor, onOpen }: { labor: number; onOpen: () => voi
     onClick={onOpen}
     className={cn(TAB, "border-kit-hot shadow-[0_0_14px_rgba(246,172,29,0.45)]")}
   >
-    <KitIcon code="Cs" size={24} />
-    <KitIcon code="La" size={22} />
-    <span className="text-[17px] tabular-nums text-kit-cream">+{formatAmount(labor)}</span>
+    <SemanticIcon name="realm" size={24} />
+    <SemanticIcon name="labor" size={22} />
+    <span className="text-base tabular-nums text-kit-cream">+{formatAmount(labor)}</span>
   </button>
 );

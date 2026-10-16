@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { LeftView } from "@/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY_MUTED, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
@@ -10,7 +11,7 @@ import { getTroopResourceId, StaminaManager } from "@bibliothecadao/eternum";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { useExplorersByStructure } from "@/hooks/helpers/use-armies";
 import { type ArmyInfo, type ID, resources, type TroopTier, type TroopType } from "@bibliothecadao/types";
-import { Check, Compass, Crosshair, Loader2, Trash2, X } from "@/ui/design-system/atoms/game-icons";
+
 import { memo, useMemo, useState } from "react";
 
 interface ExistingArmiesPanelProps {
@@ -31,13 +32,13 @@ export const ExistingArmiesPanel = memo(({ structureId, className }: ExistingArm
     <div className={cn("rounded-md border border-gold/25 bg-black/25 px-2.5 py-2", className)}>
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <span className={cn("flex items-center gap-1.5", HUD_LABEL, "text-gold/75")}>
-          <Crosshair className="h-3 w-3 text-gold/65" />
+          <SemanticIcon name="target" className="h-3 w-3 text-kit-muted" />
           Existing armies
         </span>
-        <span className={cn(HUD_LABEL, "text-gold/55")}>{ownedArmies.length}</span>
+        <span className={cn(HUD_LABEL, "text-kit-muted")}>{ownedArmies.length}</span>
       </div>
       {ownedArmies.length === 0 ? (
-        <p className={cn(HUD_BODY_MUTED, "text-[11px]")}>None deployed yet.</p>
+        <p className={cn(HUD_BODY_MUTED, "text-sm")}>None deployed yet.</p>
       ) : (
         <ul className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-1.5 lg:max-h-[220px] overflow-y-auto pr-0.5 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
           {ownedArmies.map((army) => (
@@ -52,7 +53,7 @@ export const ExistingArmiesPanel = memo(({ structureId, className }: ExistingArm
 ExistingArmiesPanel.displayName = "ExistingArmiesPanel";
 
 const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: ID }) => {
-  const setSelectedHex = useUIStore((state) => state.setSelectedHex);
+  const selectOnMap = useUIStore((state) => state.selectOnMap);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
   const timestamp = useCurrentDefaultTick();
   const [confirming, setConfirming] = useState(false);
@@ -86,7 +87,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
   }, [army.troops]);
 
   const handleJump = () => {
-    setSelectedHex({ col: Number(army.position.x), row: Number(army.position.y) });
+    selectOnMap({ kind: "hex", hex: { col: Number(army.position.x), row: Number(army.position.y) } });
     setLeftNavigationView(LeftView.None);
   };
 
@@ -111,7 +112,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
     <li className="flex items-center gap-2 rounded-md border border-gold/20 bg-black/30 px-2 py-1.5" title={army.name}>
       <span
         className={cn(
-          "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold border leading-none",
+          "shrink-0 rounded px-1.5 py-0.5 text-sm font-bold border leading-none",
           getTierStyle(army.troops?.tier as TroopTier),
         )}
       >
@@ -120,7 +121,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
       {troopResourceTrait && (
         <ResourceIcon withTooltip={false} resource={troopResourceTrait} size="sm" className="shrink-0" />
       )}
-      <span className="text-[12px] font-semibold tabular-nums text-gold">{currencyFormat(rawCount, 0)}</span>
+      <span className="text-sm font-semibold tabular-nums text-gold">{currencyFormat(rawCount, 0)}</span>
       {maxStamina > 0 && stamina && (
         <div
           className="flex min-w-0 flex-1 items-center gap-1.5"
@@ -129,25 +130,31 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
           <div className="relative h-2 flex-1 min-w-0 overflow-hidden rounded-sm bg-black/40">
             <div className={cn("absolute inset-y-0 left-0", staminaTone)} style={{ width: `${staminaPercent}%` }} />
           </div>
-          <span className="shrink-0 text-[10px] tabular-nums text-gold/65">
+          <span className="shrink-0 text-sm tabular-nums text-kit-muted">
             {Number(stamina.amount)}/{maxStamina}
           </span>
         </div>
       )}
       <div className="flex shrink-0 items-center gap-0.5">
-        {!confirming && <IconButton icon={Compass} title="Navigate to army" onClick={handleJump} tone="gold" />}
+        {!confirming && <IconButton icon={"map" as const} title="Navigate to army" onClick={handleJump} tone="gold" />}
         {!confirming ? (
-          <IconButton icon={Trash2} title="Disband army" onClick={() => setConfirming(true)} tone="rose" />
+          <IconButton icon={"trash" as const} title="Disband army" onClick={() => setConfirming(true)} tone="rose" />
         ) : (
           <>
             <IconButton
-              icon={deleting ? Loader2 : Check}
+              icon={deleting ? ("refresh" as const) : ("check" as const)}
               title="Confirm disband"
               onClick={handleConfirmDelete}
               tone="emerald"
               spinning={deleting}
             />
-            <IconButton icon={X} title="Cancel" onClick={() => setConfirming(false)} tone="rose" disabled={deleting} />
+            <IconButton
+              icon={"close" as const}
+              title="Cancel"
+              onClick={() => setConfirming(false)}
+              tone="rose"
+              disabled={deleting}
+            />
           </>
         )}
       </div>
@@ -156,7 +163,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
 };
 
 type IconButtonProps = {
-  icon: React.ComponentType<{ className?: string }>;
+  icon: IconMeaning;
   title: string;
   onClick: () => void;
   tone: "gold" | "emerald" | "rose";
@@ -183,6 +190,6 @@ const IconButton = ({ icon: Icon, title, onClick, tone, disabled, spinning }: Ic
       disabled && "opacity-50 cursor-not-allowed",
     )}
   >
-    <Icon className={cn("h-3.5 w-3.5", spinning && "animate-spin")} />
+    <SemanticIcon name={Icon} className={cn("h-3.5 w-3.5", spinning && "animate-spin")} />
   </button>
 );

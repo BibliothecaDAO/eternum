@@ -12,7 +12,13 @@ it("covers every native story and tests every cumulative level", () => {
   const variants = schema.types[storyType].variants.map((variant: { name: string }) => variant.name);
   const nativeLevels = {
     important: ["BattleEvent", "RaidEvent"],
-    standard: ["RealmCreatedStory", "BuildingPlacementStory", "StructureLevelUpStory", "ResourceReceiveArrivalStory"],
+    standard: [
+      "RealmCreatedStory",
+      "SpireDiscovered",
+      "BuildingPlacementStory",
+      "StructureLevelUpStory",
+      "ResourceReceiveArrivalStory",
+    ],
     all: [
       "ProductionStory",
       "BuildingPaymentStory",

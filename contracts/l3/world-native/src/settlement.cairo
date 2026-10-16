@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use crate::troops::Coord;
+use crate::troops::{Coord, TroopType};
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 #[allow(starknet::store_no_default_variant)]
@@ -72,8 +72,6 @@ pub trait ISettlementViews<T> {
     #[cfg(test)]
     fn blitz_settlement_order(self: @T, game_id: u32) -> Span<u8>;
     #[cfg(test)]
-    fn player_has_settled(self: @T, game_id: u32, player: ContractAddress) -> bool;
-    #[cfg(test)]
     fn settlement_rules(self: @T, game_id: u32) -> SettlementRules;
     #[cfg(test)]
     fn realm_grants(self: @T, game_id: u32) -> RealmGrants;
@@ -86,11 +84,9 @@ pub trait ISettlementViews<T> {
 #[starknet::interface]
 pub trait ISettlementPool<T> {
     #[cfg(test)]
-    fn settlement_pool(self: @T, game_id: u32, game_context: crate::commands::ActionContext) -> SettlementPool;
-    fn village_pool(self: @T, game_id: u32, game_context: crate::commands::ActionContext) -> SettlementPool;
-    fn claim_village(
-        ref self: T, game_id: u32, registered: u16, seed: u256, game_context: crate::commands::ActionContext,
-    ) -> Coord;
+    fn settlement_pool(self: @T, game_id: u32, center: Coord) -> SettlementPool;
+    fn village_pool(self: @T, game_id: u32, center: Coord) -> SettlementPool;
+    fn claim_village(ref self: T, game_id: u32, registered: u16, seed: u256, center: Coord) -> Coord;
     #[cfg(test)]
     fn reserved_hyperstructures(self: @T, game_id: u32) -> u32;
 }
@@ -104,7 +100,8 @@ pub trait IBlitzReservations<T> {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct RealmGrants {
     pub resources: Span<crate::resources::ResourceAmount>,
-    pub starting_troops: Span<crate::troops::TroopType>,
+    /// One troop type per biome; empty for a fixed roster, which deals types per player instead.
+    pub starting_troops: Span<TroopType>,
     pub realm_resources: Span<u8>,
 }
 
@@ -134,8 +131,15 @@ pub trait IBlitzHyperstructures<T> {
 pub struct RealmCreation {
     pub realm_id: u16,
     pub traits: crate::realms::RealmTraits,
-    pub grant_troops: bool,
+    pub troops: StartingTroops,
     pub activate_economy: bool,
+}
+/// The troop type a new realm's starting garrison and reserve take.
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub enum StartingTroops {
+    None,
+    Biome,
+    Dealt: TroopType,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct VillageCreation {
@@ -175,6 +179,26 @@ pub fn shuffle_roster(count: u32, root: u256) -> Span<u8> {
         remaining.insert(choice.into(), last);
     }
     players.span()
+}
+
+// A fixed-roster player is dealt the three troop types in a shuffled order, one per realm; a fourth realm starts the
+// order again, so no type leads another by more than one.
+pub fn deal_troop_types(root: u256, realms: u32) -> Span<TroopType> {
+    let (first, second, third) = *array![
+        (TroopType::Knight, TroopType::Crossbowman, TroopType::Paladin),
+        (TroopType::Knight, TroopType::Paladin, TroopType::Crossbowman),
+        (TroopType::Crossbowman, TroopType::Knight, TroopType::Paladin),
+        (TroopType::Crossbowman, TroopType::Paladin, TroopType::Knight),
+        (TroopType::Paladin, TroopType::Knight, TroopType::Crossbowman),
+        (TroopType::Paladin, TroopType::Crossbowman, TroopType::Knight),
+    ]
+        .at(crate::random::range(root, 51071, 6).try_into().unwrap());
+    let order = array![first, second, third];
+    let mut dealt = array![];
+    for index in 0..realms {
+        dealt.append(*order.at(index % 3));
+    }
+    dealt.span()
 }
 
 // Off-map realms retain their launch reference for the starting troop biome and immutable creation story.

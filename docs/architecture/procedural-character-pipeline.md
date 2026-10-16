@@ -171,7 +171,7 @@ equipment in `ProceduralUnitRuntime`, its control in `PROCEDURAL_UNIT_KINDS`, an
 
 ## Gym integration and evaluation loop
 
-Start the client and open `https://127.0.0.1:4174/debug/procedural-characters`:
+Start the client and open `https://127.0.0.1:4174/lab/characters`:
 
 ```bash
 pnpm --dir apps/game dev --host 127.0.0.1 --port 4174
@@ -276,9 +276,9 @@ same character configuration.
 
 ## Knight animation iteration
 
-The **Knight animation review** toolbar in `/debug/procedural-characters` keeps Universal Base T1, the sword/shield
-loadout, seed 1337 and 60 Hz simulation fixed. Select **Walk**, **Run**, **Idle** or **Sword attack**. Each animation
-keeps a separate baseline and candidate in the current session; switching the selector loads its starting configuration.
+The **Knight animation review** toolbar in `/lab/characters` keeps Universal Base T1, the sword/shield loadout, seed
+1337 and 60 Hz simulation fixed. Select **Walk**, **Run**, **Idle** or **Sword attack**. Each animation keeps a separate
+baseline and candidate in the current session; switching the selector loads its starting configuration.
 
 - Walk and run require translating-root gait evidence, including the existing contact, support and clearance gates.
 - Idle captures a two-second stationary hold with quarter-interval atlas poses.

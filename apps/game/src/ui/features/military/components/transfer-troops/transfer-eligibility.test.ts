@@ -5,30 +5,15 @@ import { TransferDirection } from "./transfer-direction";
 import { BALANCE_TRANSFER_SLOT, getTroopTransferBlockReason } from "./transfer-eligibility";
 
 describe("getTroopTransferBlockReason", () => {
-  it("allows explorer-to-explorer transfers when both explorers belong to the same structure", () => {
+  it("allows explorer-to-explorer transfers between armies of different realms", () => {
     expect(
       getTroopTransferBlockReason({
         transferDirection: TransferDirection.ExplorerToExplorer,
         selectedEntityId: 1,
-        targetEntityId: 2,
-        selectedExplorerOwner: 101,
-        targetExplorerOwner: 101,
-        guardSlot: null,
-      }),
-    ).toBeNull();
-  });
-
-  it("blocks explorer-to-explorer transfers when explorers belong to different structures", () => {
-    expect(
-      getTroopTransferBlockReason({
-        transferDirection: TransferDirection.ExplorerToExplorer,
-        selectedEntityId: 1,
-        targetEntityId: 2,
-        selectedExplorerOwner: 101,
         targetExplorerOwner: 202,
         guardSlot: null,
       }),
-    ).toBe("Cannot transfer troops: Both explorers must belong to the same structure");
+    ).toBeNull();
   });
 
   it.each([
@@ -40,8 +25,6 @@ describe("getTroopTransferBlockReason", () => {
       getTroopTransferBlockReason({
         transferDirection: TransferDirection.ExplorerToStructure,
         selectedEntityId: 1,
-        targetEntityId: 202,
-        selectedExplorerOwner: 101,
         sourceHomeOwner: 1n,
         targetOwner: targetOwner as bigint,
         guardSlot: 1,
@@ -49,42 +32,26 @@ describe("getTroopTransferBlockReason", () => {
     ).toBe(expected);
   });
 
-  it("allows structure-to-explorer guard transfers when the explorer belongs to the selected structure", () => {
+  it("allows a guard to join an explorer from another realm", () => {
     expect(
       getTroopTransferBlockReason({
         transferDirection: TransferDirection.StructureToExplorer,
         selectedEntityId: 303,
-        targetEntityId: 2,
-        selectedExplorerOwner: 0,
-        targetExplorerOwner: 303,
+        targetExplorerOwner: 404,
         guardSlot: 1,
       }),
     ).toBeNull();
   });
 
-  it("blocks structure-to-explorer guard transfers when the explorer belongs to a different structure", () => {
-    expect(
+  it("draws structure balance only into the structure's own explorer", () => {
+    const balanceTransfer = (targetExplorerOwner: number) =>
       getTroopTransferBlockReason({
         transferDirection: TransferDirection.StructureToExplorer,
         selectedEntityId: 303,
-        targetEntityId: 2,
-        selectedExplorerOwner: 0,
-        targetExplorerOwner: 404,
-        guardSlot: 1,
-      }),
-    ).toBe("Cannot transfer troops: Explorer must belong to the selected structure");
-  });
-
-  it("keeps the existing balance-transfer ownership rule", () => {
-    expect(
-      getTroopTransferBlockReason({
-        transferDirection: TransferDirection.StructureToExplorer,
-        selectedEntityId: 303,
-        targetEntityId: 2,
-        selectedExplorerOwner: 0,
-        targetExplorerOwner: 404,
+        targetExplorerOwner,
         guardSlot: BALANCE_TRANSFER_SLOT,
-      }),
-    ).toBe("Cannot use structure balance: Explorer is not owned by this structure");
+      });
+    expect(balanceTransfer(303)).toBeNull();
+    expect(balanceTransfer(404)).toBe("Cannot use structure balance: Explorer is not owned by this structure");
   });
 });

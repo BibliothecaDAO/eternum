@@ -38,7 +38,7 @@ test("runner probe completes through the public proxy without an operator invoke
     0,
     identity,
     {
-      async stamp() {
+      stamp() {
         throw new Error("unexpected stamp");
       },
     },

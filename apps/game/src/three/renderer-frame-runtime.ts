@@ -1,9 +1,8 @@
 import { CameraView } from "@/three/scenes/hexagon-scene";
 import type { Camera, Scene } from "three";
 import { runWithFrameWorkOwner } from "./frame-work-owner";
-import { renderRendererBackendFrame } from "./renderer-backend-compat";
 import { setRendererDiagnosticSceneName } from "./renderer-diagnostics";
-import type { RendererBackendV2, RendererOverlayPass } from "./renderer-backend-v2";
+import type { RendererBackend, RendererOverlayPass } from "./renderer-backend";
 import type { RendererSurfaceLike } from "./renderer-backend";
 import type { RendererLabelCadenceView, RendererLabelRuntime } from "./renderer-label-runtime";
 import { SceneName } from "./types";
@@ -43,7 +42,7 @@ interface ResolvedRendererFrame {
 }
 
 interface RunRendererFrameInput {
-  backend: RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
+  backend: RendererBackend & { renderer: RendererSurfaceLike };
   camera: Camera;
   captureStatsSample: () => void;
   currentScene: SceneName | undefined;
@@ -51,10 +50,6 @@ interface RunRendererFrameInput {
   cycleProgress: number;
   deltaTime: number;
   animationsPaused?: boolean;
-  effectsBridgeRuntime?: Pick<
-    { updateWeatherPostProcessing(weatherState?: RendererWeatherState): void },
-    "updateWeatherPostProcessing"
-  >;
   hexceptionScene: RendererFrameSceneController;
   hudScene: RendererFrameHudController;
   labelRuntime: Pick<RendererLabelRuntime, "render" | "shouldRender">;
@@ -97,7 +92,6 @@ export function runRendererFrame(input: RunRendererFrameInput): boolean {
     shouldRenderLabels,
   });
   resolvedFrame.sceneController.onFrameRendered?.(input.now?.() ?? performance.now());
-  input.effectsBridgeRuntime?.updateWeatherPostProcessing(weatherState);
   input.captureStatsSample();
 
   return true;
@@ -224,7 +218,7 @@ function resolveRendererFrameOverlayPasses(input: {
 }
 
 function renderResolvedRendererFrame(input: {
-  backend: RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
+  backend: RendererBackend & { renderer: RendererSurfaceLike };
   camera: Camera;
   hudScene: RendererFrameHudController;
   labelRuntime: Pick<RendererLabelRuntime, "render">;
@@ -236,7 +230,7 @@ function renderResolvedRendererFrame(input: {
   }
 
   runWithFrameWorkOwner("render:backend", () =>
-    renderRendererBackendFrame(input.backend, {
+    input.backend.renderFrame({
       mainCamera: input.camera,
       mainScene: input.resolvedFrame.scene,
       overlayPasses: input.resolvedFrame.overlayPasses,

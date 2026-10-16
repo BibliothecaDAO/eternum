@@ -276,7 +276,14 @@ it("lets two players chat in their Blitz room, keeps its history, survives evict
         clientMessageId: content,
       }),
     );
-  publish("hold the ford");
+  publish("   ");
+  await waitUntil(() => ofType(one.received, "error").length > 0, 5_000);
+  expect(ofType(one.received, "error")[0]).toEqual({
+    type: "error",
+    code: "invalid_world_payload",
+    message: "Invalid message for this room.",
+  });
+  publish("  hold the ford  ");
   await waitUntil(() => ofType(two.received, "world:message").length > 0, 5_000);
   expect(ofType(two.received, "world:message")[0]!.message).toMatchObject({
     content: "hold the ford",
@@ -301,7 +308,16 @@ it("lets two players chat in their Blitz room, keeps its history, survives evict
   const secondInbox = await connect(worker, second.cookie, "/api/chat/inbox");
   await waitUntil(() => ofType(secondInbox.received, "connected").length > 0, 5_000);
   inbox.socket!.send(
-    JSON.stringify({ type: "direct:message", payload: { recipientId: second.realmsId, content: "meet at dawn" } }),
+    JSON.stringify({ type: "direct:message", payload: { recipientId: second.realmsId, content: " " } }),
+  );
+  await waitUntil(() => ofType(inbox.received, "error").length > 0, 5_000);
+  expect(ofType(inbox.received, "error")[0]).toEqual({
+    type: "error",
+    code: "invalid_direct_payload",
+    message: "Invalid direct message.",
+  });
+  inbox.socket!.send(
+    JSON.stringify({ type: "direct:message", payload: { recipientId: second.realmsId, content: "  meet at dawn  " } }),
   );
   await waitUntil(() => ofType(secondInbox.received, "direct:message").length > 0, 5_000);
   const direct = ofType(secondInbox.received, "direct:message")[0]!.message as { threadId: string; content: string };
@@ -312,6 +328,26 @@ it("lets two players chat in their Blitz room, keeps its history, survives evict
     })
   ).json()) as { messages: { content: string }[] };
   expect(thread.messages.map((message) => message.content)).toEqual(["meet at dawn"]);
+
+  await waitUntil(() => ofType(inbox.received, "direct:message").length === 1, 5_000);
+  const typing = { threadId: direct.threadId, playerId: first.realmsId, isTyping: true };
+  inbox.socket!.send(JSON.stringify({ type: "direct:typing", payload: { ...typing, isTyping: "true" } }));
+  inbox.socket!.send(JSON.stringify({ type: "direct:typing", payload: { ...typing, extra: "strip" } }));
+  await waitUntil(() => ofType(secondInbox.received, "direct:typing").length > 0, 5_000);
+  expect(ofType(secondInbox.received, "direct:typing")).toEqual([{ type: "direct:typing", typing }]);
+
+  const receipt = {
+    threadId: direct.threadId,
+    messageId: "read-message",
+    readerId: second.realmsId,
+    readAt: "2024-02-29T12:00+01:00",
+  };
+  secondInbox.socket!.send(
+    JSON.stringify({ type: "direct:read", payload: { ...receipt, readAt: "2023-02-29T12:00Z" } }),
+  );
+  secondInbox.socket!.send(JSON.stringify({ type: "direct:read", payload: { ...receipt, extra: "strip" } }));
+  await waitUntil(() => ofType(inbox.received, "direct:read").length > 0, 5_000);
+  expect(ofType(inbox.received, "direct:read")).toEqual([{ type: "direct:read", receipt }]);
 
   await worker.dispose();
 }, 120_000);

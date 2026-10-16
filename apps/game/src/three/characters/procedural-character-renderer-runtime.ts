@@ -33,7 +33,7 @@ export async function initializeProceduralCharacterRendererRuntime(
     });
     return { unitRuntime, rendererRuntime };
   } catch (error) {
-    rendererRuntime.backend.dispose?.();
+    rendererRuntime.backend.dispose();
     throw error;
   }
 }

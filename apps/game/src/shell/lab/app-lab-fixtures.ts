@@ -116,6 +116,19 @@ const liveBlitz = (member: boolean) =>
     player_state: member ? owned : null,
     slotId: LAB_SLOT_KEY.slotId,
   });
+/** A seat on a Blitz roster whose game is still being prepared: it opens in two hours, the player's realm not ready yet. */
+const preparingBlitz = game({
+  game_id: 8,
+  name: "blitz-1900-1",
+  mode: "blitz",
+  status: "Registration",
+  ready: false,
+  clock: { start_settling_at: NOW + 3600, start_main_at: NOW + 7200, end_at: NOW + 14_400, end_grace_seconds: 0 },
+  player_count: 18,
+  roster_count: 24,
+  player_state: { registered: true, settled: false, roster_wallet: LAB_WALLET, structures: [] },
+  slotId: LAB_SLOT_KEY.slotId,
+});
 const eternum = game({
   game_id: 9,
   name: "eternum-1",
@@ -137,6 +150,8 @@ export const LAB_SCREENS = {
   "no-realm": { signedIn: true, games: [frontier(false), liveBlitz(false), eternum] },
   "blitz-seat": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "season-over": { signedIn: true, games: [endedFrontier, liveBlitz(false), eternum] },
+  // A seat in a game still being prepared: Play leads with its lobby, never Enter before the game opens.
+  "blitz-preparing": { signedIn: true, games: [frontier(false), preparingBlitz, liveBlitz(false), eternum] },
   "wallet-none": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "wallet-ready": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "entry-choose": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
@@ -317,7 +332,10 @@ export const LAB_FRONTIER_BOARD: HeraldFrontierLeaderboard = {
   })),
 };
 
-/** A finished Blitz: the player third of 24. */
+/**
+ * A finished Blitz: the player third of five, each row with the activity its points came from, as Herald's points
+ * board answers it (the score card draws the player's).
+ */
 export const LAB_BLITZ_BOARD: HeraldLeaderboard = {
   game_id: "7",
   mode: "points",
@@ -325,8 +343,15 @@ export const LAB_BLITZ_BOARD: HeraldLeaderboard = {
     address,
     rank: index + 1,
     totalPoints: 412 - index * 30,
+    activityBreakdown: {
+      exploration: { count: 48 - index * 6, points: 96 - index * 12 },
+      openRelicChest: { count: 3, points: 30 },
+      hyperStructureBanditsDefeat: { count: 1, points: 100 },
+      otherStructureBanditsDefeat: { count: 4 - (index % 3), points: 80 - (index % 3) * 20 },
+      hyperstructureShare: { count: 1, points: 106 - index * 18 + (index % 3) * 20 },
+    },
   })),
-} as unknown as HeraldLeaderboard;
+};
 
 /** Names for the rivals the identity Worker would serve; the unnamed one reads "Lord" and its last four. */
 export const LAB_PROFILES = Object.fromEntries(

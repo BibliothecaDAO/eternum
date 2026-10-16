@@ -10,6 +10,8 @@ trait IResourceFixture<T> {
     fn start(ref self: T, key: ResourceKey);
     fn settle(ref self: T, key: ResourceKey);
     fn destroy(ref self: T, key: ResourceKey);
+    fn change_capacity(ref self: T, key: ResourceKey, amount: u128, increase: bool);
+    fn stop_at(ref self: T, key: ResourceKey, resource_type: u8, rate: u64, now: u32);
     fn balance(self: @T, key: ResourceKey) -> u128;
     fn production(self: @T, key: ResourceKey) -> Production;
     fn weight(self: @T, key: ResourceKey) -> Weight;
@@ -61,6 +63,12 @@ mod ResourceFixture {
         }
         fn destroy(ref self: ContractState, key: ResourceKey) {
             self.resources.destroy(key);
+        }
+        fn change_capacity(ref self: ContractState, key: ResourceKey, amount: u128, increase: bool) {
+            self.resources.change_capacity(key, amount, increase);
+        }
+        fn stop_at(ref self: ContractState, key: ResourceKey, resource_type: u8, rate: u64, now: u32) {
+            self.resources.stop_production(key, resource_type, rate, 1, now, 0);
         }
         fn balance(self: @ContractState, key: ResourceKey) -> u128 {
             crate::logic::resources::balance(key, 23)
@@ -351,4 +359,46 @@ fn frontier_rates_keep_the_same_total_at_every_output_tier() {
             assert_eq!(balance, cents * crate::rules::RESOURCE_PRECISION / 100 * 10000);
         }
     }
+}
+
+#[test]
+fn resource_commits_preserve_capacity_events_and_clear_the_last_producer_timestamp() {
+    let resources = fixture();
+    let key = ResourceKey { game_id: 1, entity_id: 7 };
+    resources.initialize(key, 100);
+    resources.grant_at(key, 2, 10, 1, 10);
+    let mut spy = spy_events();
+    resources.change_capacity(key, 50, true);
+    let events = spy.get_events().emitted_by(resources.contract_address);
+    assert_eq!(events.events.len(), 1);
+    let (_, event) = events.events.at(0);
+    assert_eq!(event.keys.span(), array![selector!("RowSet"), 1, 'ResourceWeight'].span());
+    assert_eq!(event.data.span(), array![2, 1, 7, 2, 150, 10].span());
+    resources.start_at(key, 2, 2, 20, 10);
+    let mut spy = spy_events();
+    resources.stop_at(key, 2, 2, 20);
+    assert_eq!(resources.read_slot(key, 2), (30, Default::default(), Weight { capacity: 150, weight: 30 }));
+    let events = spy.get_events().emitted_by(resources.contract_address);
+    assert_eq!(events.events.len(), 3);
+    let (_, balance) = events.events.at(0);
+    assert_eq!(balance.keys.span(), array![selector!("RowSet"), 1, 'ResourceBalance'].span());
+    assert_eq!(balance.data.span(), array![3, 1, 7, 2, 1, 30].span());
+    let (_, production) = events.events.at(1);
+    assert_eq!(production.keys.span(), array![selector!("RowDeleted"), 1, 'ResourceProduction'].span());
+    assert_eq!(production.data.span(), array![3, 1, 7, 2].span());
+    let (_, weight) = events.events.at(2);
+    assert_eq!(weight.keys.span(), array![selector!("RowSet"), 1, 'ResourceWeight'].span());
+    assert_eq!(weight.data.span(), array![2, 1, 7, 2, 150, 30].span());
+    let mut spy = spy_events();
+    resources.spend_at(key, 2, 0, 1, 30);
+    assert_eq!(spy.get_events().emitted_by(resources.contract_address).events.len(), 0);
+    assert_eq!(resources.read_slot(key, 2), (30, Default::default(), Weight { capacity: 150, weight: 30 }));
+    let mut spy = spy_events();
+    resources.grant_at(key, 37, 7, 0, 31);
+    let events = spy.get_events().emitted_by(resources.contract_address);
+    assert_eq!(events.events.len(), 1);
+    let (_, balance) = events.events.at(0);
+    assert_eq!(balance.keys.span(), array![selector!("RowSet"), 1, 'ResourceBalance'].span());
+    assert_eq!(balance.data.span(), array![3, 1, 7, 37, 1, 7].span());
+    assert_eq!(resources.read_slot(key, 37), (7, Default::default(), Weight { capacity: 150, weight: 30 }));
 }

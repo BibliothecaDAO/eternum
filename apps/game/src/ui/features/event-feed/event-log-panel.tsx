@@ -6,7 +6,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { PopoverPanel, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { configManager } from "@bibliothecadao/eternum";
 import { TickIds } from "@bibliothecadao/types";
-import { ScrollText } from "@/ui/design-system/atoms/game-icons";
+
 import { useState } from "react";
 import { orderHeadlineFeed, useHeadlineFeedStore } from "../news-headlines/headline-feed-store";
 import { FeedRowLine } from "./feed-row-line";
@@ -47,7 +47,7 @@ export const EventLogPanel = ({
       onDismiss={onDismiss}
       isInsideAnchor={isInsideAnchor}
     >
-      <SurfaceFrame title="Log" icon={ScrollText} onClose={onDismiss} className="h-[calc(100vh-7rem)]">
+      <SurfaceFrame title="Log" icon={"chronicles" as const} onClose={onDismiss} className="h-[calc(100vh-7rem)]">
         <div className="flex gap-3 border-b border-gold/15 px-3 py-2" aria-label="Event filters">
           {FILTERS.map((value) => (
             <button
@@ -55,21 +55,21 @@ export const EventLogPanel = ({
               key={value}
               aria-pressed={filter === value}
               onClick={() => setFilter(value)}
-              className={cn("font-sans capitalize", HUD_LABEL, filter === value ? "text-gold" : "text-gold/45")}
+              className={cn("font-sans capitalize", HUD_LABEL, filter === value ? "text-gold" : "text-kit-muted")}
             >
               {value}
             </button>
           ))}
         </div>
         {isError && (
-          <p className="px-3 py-2 text-xs text-danger">
+          <p className="px-3 py-2 text-sm text-danger">
             Event history could not load.{" "}
-            <button type="button" className="font-sans text-xs underline" onClick={() => void refetch()}>
+            <button type="button" className="font-sans text-sm underline" onClick={() => void refetch()}>
               Retry
             </button>
           </p>
         )}
-        {!isError && rows.length === 0 && <p className="px-3 py-4 text-xs text-gold/50">No important events yet.</p>}
+        {!isError && rows.length === 0 && <p className="px-3 py-4 text-sm text-kit-muted">No important events yet.</p>}
         <div className="flex flex-col gap-1 px-2 py-2">
           {rows.map((row) => (
             <FeedRowLine key={row.id} row={row} />

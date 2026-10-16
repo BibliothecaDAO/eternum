@@ -37,9 +37,9 @@ afterEach(() => {
 const convergedMap = () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   overrideSpectateIntent(false);
-  usePlayRouteReadinessStore.getState().reset(1);
-  usePlayRouteReadinessStore.getState().markWorldmapReady(1);
-  usePlayRouteReadinessStore.getState().markWorldmapConverged(1);
+  const token = usePlayRouteReadinessStore.getState().startBoot();
+  usePlayRouteReadinessStore.getState().markWorldmapReady(token);
+  usePlayRouteReadinessStore.getState().markWorldmapConverged(token);
 };
 
 const mountHandoff = async () => {

@@ -18,7 +18,7 @@ export const ViewOnMapIcon = ({
 
   return (
     <CircleButton
-      image="/image-icons/world.png"
+      image="map"
       size="md"
       className={clsx(" fill-gold hover:fill-gold/50 hover:animate-pulse duration-300 transition-all", className)}
       onClick={() => {

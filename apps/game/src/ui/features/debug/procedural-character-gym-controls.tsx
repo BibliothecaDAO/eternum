@@ -1,17 +1,5 @@
-import {
-  Activity,
-  Check,
-  ChevronRight,
-  Copy,
-  Crosshair,
-  Dices,
-  FlaskConical,
-  RotateCcw,
-  Shield,
-  Swords,
-  Target,
-  Zap,
-} from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
@@ -351,7 +339,7 @@ const MELEE_TARGET_FIELDS: readonly MeleeNumericField[] = [
 export const CharacterGymControls = (props: CharacterGymControlsProps) => (
   <aside className="order-2 max-h-[48vh] overflow-y-auto border-t border-white/10 bg-[#0b111b] lg:order-1 lg:max-h-none lg:border-t-0 lg:border-r">
     <div className="space-y-3 p-4">
-      <div className="border border-violet-300/15 bg-violet-300/[0.045] p-3 text-xs leading-relaxed text-slate-300">
+      <div className="border border-violet-300/15 bg-violet-300/[0.045] p-3 text-sm leading-relaxed text-slate-300">
         Tune archers, melee knights, mounts, Sky Dragons, or the naval ship. Projectile releases, fire breath, weapon
         contacts, flight, water motion, sinking, cosmetics, and the exact production handoff share one runtime.
       </div>
@@ -371,14 +359,14 @@ export const CharacterGymControls = (props: CharacterGymControlsProps) => (
           <BodyControls config={props.config.humanoid} onPatchConfig={props.onPatchConfig} />
           <NumericControlSection
             title="Joint limits"
-            icon={<Swords />}
+            icon={<SemanticIcon name="military" />}
             fields={JOINT_FIELDS}
             config={props.config.humanoid}
             onPatchConfig={props.onPatchConfig}
           />
           <NumericControlSection
             title="Impact"
-            icon={<Zap />}
+            icon={<SemanticIcon name="stamina" />}
             fields={IMPACT_FIELDS}
             config={props.config.humanoid}
             onPatchConfig={props.onPatchConfig}
@@ -387,23 +375,23 @@ export const CharacterGymControls = (props: CharacterGymControlsProps) => (
       )}
       <DebugControls {...props} />
       <Link
-        to="/debug/procedural-character-benchmark"
-        className="flex items-center justify-between border border-cyan-300/20 bg-cyan-300/[0.04] px-3 py-2 text-xs uppercase tracking-wider text-cyan-200 transition hover:bg-cyan-300/[0.09] hover:text-white"
+        to="/lab/character-benchmark"
+        className="flex items-center justify-between border border-cyan-300/20 bg-cyan-300/[0.04] px-3 py-2 text-sm text-cyan-200 transition hover:bg-cyan-300/[0.09] hover:text-white"
       >
-        Crowd benchmark <ChevronRight className="h-4 w-4" />
+        Crowd benchmark <SemanticIcon name="chevron-right" className="h-4 w-4" />
       </Link>
       <Link
-        to="/debug/three-chunks"
-        className="flex items-center justify-between border border-white/10 bg-white/[0.025] px-3 py-2 text-xs uppercase tracking-wider text-slate-400 transition hover:bg-white/[0.06] hover:text-white"
+        to="/lab/chunks"
+        className="flex items-center justify-between border border-white/10 bg-white/[0.025] px-3 py-2 text-sm text-slate-400 transition hover:bg-white/[0.06] hover:text-white"
       >
-        Three.js chunk lab <ChevronRight className="h-4 w-4" />
+        Three.js chunk lab <SemanticIcon name="chevron-right" className="h-4 w-4" />
       </Link>
     </div>
   </aside>
 );
 
 const CollisionGymControls = ({ collisionConfig, onPatchCollisionConfig }: CharacterGymControlsProps) => (
-  <ControlSection title="Collision bench" icon={<FlaskConical />} defaultOpen>
+  <ControlSection title="Collision bench" icon={<SemanticIcon name="research" />} defaultOpen>
     <ToggleControl
       label="Multi-actor simulation"
       checked={collisionConfig.enabled}
@@ -459,7 +447,7 @@ const MeleeControls = ({ config, onPatchConfig }: CharacterGymControlsProps) => 
     isProceduralMeleeGearFittedToRig(gear, rigAdapterId);
   return (
     <>
-      <ControlSection title="Melee loadout" icon={<Swords />} defaultOpen>
+      <ControlSection title="Melee loadout" icon={<SemanticIcon name="military" />} defaultOpen>
         <SelectControl
           label="Weapon cosmetic"
           value={config.melee.weaponId}
@@ -478,7 +466,7 @@ const MeleeControls = ({ config, onPatchConfig }: CharacterGymControlsProps) => 
           onChange={(detailedEquipment) => onPatchConfig({ melee: { detailedEquipment } })}
         />
       </ControlSection>
-      <ControlSection title="Melee attack cycle" icon={<Crosshair />} defaultOpen>
+      <ControlSection title="Melee attack cycle" icon={<SemanticIcon name="target" />} defaultOpen>
         <MeleeAttackVariantControl config={config} onPatchConfig={onPatchConfig} />
         <ToggleControl
           label="Auto attack"
@@ -487,7 +475,7 @@ const MeleeControls = ({ config, onPatchConfig }: CharacterGymControlsProps) => 
         />
         <MeleeRangeFieldList fields={MELEE_TIMING_FIELDS} config={config.melee} onPatchConfig={onPatchConfig} />
       </ControlSection>
-      <ControlSection title="Weapon pose" icon={<Activity />} defaultOpen>
+      <ControlSection title="Weapon pose" icon={<SemanticIcon name="activity" />} defaultOpen>
         <MeleeRangeFieldList fields={MELEE_POSE_FIELDS} config={config.melee} onPatchConfig={onPatchConfig} />
         <ToggleControl
           label="Contact arc"
@@ -500,7 +488,7 @@ const MeleeControls = ({ config, onPatchConfig }: CharacterGymControlsProps) => 
           onChange={(showSockets) => onPatchConfig({ melee: { showSockets } })}
         />
       </ControlSection>
-      <ControlSection title="Melee target lane" icon={<Target />} defaultOpen>
+      <ControlSection title="Melee target lane" icon={<SemanticIcon name="target" />} defaultOpen>
         <MeleeRangeFieldList fields={MELEE_TARGET_FIELDS} config={config.melee} onPatchConfig={onPatchConfig} />
       </ControlSection>
     </>
@@ -509,7 +497,7 @@ const MeleeControls = ({ config, onPatchConfig }: CharacterGymControlsProps) => 
 
 const ArcherControls = ({ config, onPatchConfig }: CharacterGymControlsProps) => (
   <>
-    <ControlSection title="Archer shot cycle" icon={<Crosshair />} defaultOpen>
+    <ControlSection title="Archer shot cycle" icon={<SemanticIcon name="target" />} defaultOpen>
       <ToggleControl
         label="Auto fire"
         checked={config.archer.autoFire}
@@ -517,7 +505,7 @@ const ArcherControls = ({ config, onPatchConfig }: CharacterGymControlsProps) =>
       />
       <ArcherRangeFieldList fields={ARCHER_TIMING_FIELDS} config={config.archer} onPatchConfig={onPatchConfig} />
     </ControlSection>
-    <ControlSection title="Bow and aim" icon={<Swords />} defaultOpen>
+    <ControlSection title="Bow and aim" icon={<SemanticIcon name="military" />} defaultOpen>
       <ToggleControl
         label="Close-detail equipment"
         checked={config.archer.detailedEquipment}
@@ -530,10 +518,10 @@ const ArcherControls = ({ config, onPatchConfig }: CharacterGymControlsProps) =>
         onChange={(showSockets) => onPatchConfig({ archer: { showSockets } })}
       />
     </ControlSection>
-    <ControlSection title="Target lane" icon={<Target />} defaultOpen>
+    <ControlSection title="Target lane" icon={<SemanticIcon name="target" />} defaultOpen>
       <ArcherRangeFieldList fields={ARCHER_TARGET_FIELDS} config={config.archer} onPatchConfig={onPatchConfig} />
     </ControlSection>
-    <ControlSection title="Projectile pool" icon={<Zap />} defaultOpen>
+    <ControlSection title="Projectile pool" icon={<SemanticIcon name="stamina" />} defaultOpen>
       <SelectControl
         label="Projectile fixed step"
         value={String(config.archer.projectileFixedStep)}
@@ -557,7 +545,7 @@ const ArcherControls = ({ config, onPatchConfig }: CharacterGymControlsProps) =>
 
 const BoatControls = ({ config, onPatchConfig }: CharacterGymControlsProps) => (
   <>
-    <ControlSection title="Water motion" icon={<Activity />} defaultOpen>
+    <ControlSection title="Water motion" icon={<SemanticIcon name="activity" />} defaultOpen>
       <SegmentedControl
         label="State"
         value={config.boat.motionMode}
@@ -574,7 +562,7 @@ const BoatControls = ({ config, onPatchConfig }: CharacterGymControlsProps) => (
         onChange={(showWake) => onPatchConfig({ boat: { showWake } })}
       />
     </ControlSection>
-    <ControlSection title="Broadside cycle" icon={<Crosshair />} defaultOpen>
+    <ControlSection title="Broadside cycle" icon={<SemanticIcon name="target" />} defaultOpen>
       <ToggleControl
         label="Auto fire"
         checked={config.boat.autoFire}
@@ -587,10 +575,10 @@ const BoatControls = ({ config, onPatchConfig }: CharacterGymControlsProps) => (
         onChange={(showSockets) => onPatchConfig({ boat: { showSockets } })}
       />
     </ControlSection>
-    <ControlSection title="Cannonball and target" icon={<Target />} defaultOpen>
+    <ControlSection title="Cannonball and target" icon={<SemanticIcon name="target" />} defaultOpen>
       <BoatRangeFieldList fields={BOAT_PROJECTILE_FIELDS} config={config.boat} onPatchConfig={onPatchConfig} />
     </ControlSection>
-    <ControlSection title="Sink animation" icon={<Zap />} defaultOpen>
+    <ControlSection title="Sink animation" icon={<SemanticIcon name="stamina" />} defaultOpen>
       <BoatRangeFieldList fields={BOAT_SINK_FIELDS} config={config.boat} onPatchConfig={onPatchConfig} />
     </ControlSection>
   </>
@@ -598,7 +586,7 @@ const BoatControls = ({ config, onPatchConfig }: CharacterGymControlsProps) => (
 
 const DragonControls = ({ config, onPatchConfig }: CharacterGymControlsProps) => (
   <>
-    <ControlSection title="Dragon locomotion" icon={<Activity />} defaultOpen>
+    <ControlSection title="Dragon locomotion" icon={<SemanticIcon name="activity" />} defaultOpen>
       <SegmentedControl
         label="State"
         value={config.dragon.locomotionMode}
@@ -613,7 +601,7 @@ const DragonControls = ({ config, onPatchConfig }: CharacterGymControlsProps) =>
       />
       <DragonRangeFieldList fields={DRAGON_FLIGHT_FIELDS} config={config.dragon} onPatchConfig={onPatchConfig} />
     </ControlSection>
-    <ControlSection title="Fire breath" icon={<Crosshair />} defaultOpen>
+    <ControlSection title="Fire breath" icon={<SemanticIcon name="target" />} defaultOpen>
       <ToggleControl
         label="Auto fire"
         checked={config.dragon.autoFire}
@@ -625,7 +613,7 @@ const DragonControls = ({ config, onPatchConfig }: CharacterGymControlsProps) =>
 );
 
 const CharacterControls = ({ config, selectedPreset, onApplyPreset, onPatchConfig }: CharacterGymControlsProps) => (
-  <ControlSection title="Character" icon={<Shield />} defaultOpen>
+  <ControlSection title="Character" icon={<SemanticIcon name="defend" />} defaultOpen>
     <SelectControl
       label="Unit"
       value={config.kind}
@@ -709,7 +697,7 @@ const CharacterControls = ({ config, selectedPreset, onApplyPreset, onPatchConfi
         className="mt-[1.35rem] grid h-9 w-9 place-items-center border border-white/10 text-slate-300 transition hover:bg-white/10 hover:text-white"
         aria-label="Randomize deterministic character seed"
       >
-        <Dices className="h-4 w-4" />
+        <SemanticIcon name="dice" className="h-4 w-4" />
       </button>
     </div>
     <ColorControl
@@ -743,7 +731,7 @@ const MotionControls = ({
   config: ProceduralCharacterConfig;
   onPatchConfig: CharacterGymControlsProps["onPatchConfig"];
 }) => (
-  <ControlSection title="Procedural motion" icon={<Activity />} defaultOpen>
+  <ControlSection title="Procedural motion" icon={<SemanticIcon name="activity" />} defaultOpen>
     <SegmentedControl
       label="State"
       value={config.animationMode}
@@ -767,7 +755,7 @@ const HorseMotionControls = ({
   config: ProceduralHorseConfig;
   onPatchConfig: CharacterGymControlsProps["onPatchConfig"];
 }) => (
-  <ControlSection title="Horse gait and grounding" icon={<Activity />} defaultOpen>
+  <ControlSection title="Horse gait and grounding" icon={<SemanticIcon name="activity" />} defaultOpen>
     <SelectControl
       label="Gait"
       value={config.gait}
@@ -816,7 +804,7 @@ const BodyControls = ({
   config: ProceduralCharacterConfig;
   onPatchConfig: CharacterGymControlsProps["onPatchConfig"];
 }) => (
-  <ControlSection title="Jolt bodies" icon={<FlaskConical />}>
+  <ControlSection title="Jolt bodies" icon={<SemanticIcon name="research" />}>
     <RangeFieldList fields={BODY_FIELDS.slice(0, 1)} config={config} onPatchConfig={onPatchConfig} />
     <SelectControl
       label="Fixed step"
@@ -857,7 +845,7 @@ const NumericControlSection = ({
 );
 
 const DebugControls = ({ config, copied, onCopyConfig, onPatchConfig, onResetCamera }: CharacterGymControlsProps) => (
-  <ControlSection title="Debug view" icon={<Activity />}>
+  <ControlSection title="Debug view" icon={<SemanticIcon name="activity" />}>
     {config.kind !== "boat" && (
       <ToggleControl
         label="Joint markers"
@@ -910,9 +898,9 @@ const DebugControls = ({ config, copied, onCopyConfig, onPatchConfig, onResetCam
       checked={config.humanoid.autoRotate}
       onChange={(autoRotate) => onPatchConfig({ humanoid: { autoRotate } })}
     />
-    <ControlButton icon={<RotateCcw />} label="Reset camera" onClick={onResetCamera} />
+    <ControlButton icon={<SemanticIcon name="refresh" />} label="Reset camera" onClick={onResetCamera} />
     <ControlButton
-      icon={copied ? <Check className="text-emerald-300" /> : <Copy />}
+      icon={copied ? <SemanticIcon name="check" className="text-emerald-300" /> : <SemanticIcon name="copy" />}
       label={copied ? "Copied" : "Copy config JSON"}
       onClick={onCopyConfig}
     />
@@ -1094,12 +1082,12 @@ const ControlSection = ({
   defaultOpen?: boolean;
 }) => (
   <details open={defaultOpen} className="group border border-white/10 bg-black/20">
-    <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300 transition hover:bg-white/[0.035]">
+    <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-sm font-semibold text-slate-300 transition hover:bg-white/[0.035]">
       <span className="flex items-center gap-2 [&_img]:h-3.5 [&_img]:w-3.5 [&_img]:text-violet-300">
         {icon}
         {title}
       </span>
-      <ChevronRight className="h-3.5 w-3.5 transition-transform group-open:rotate-90" />
+      <SemanticIcon name="chevron-right" className="h-3.5 w-3.5 transition-transform group-open:rotate-90" />
     </summary>
     <div className="space-y-3 border-t border-white/[0.07] p-3">{children}</div>
   </details>
@@ -1116,7 +1104,7 @@ interface NumericControlProps {
 
 const RangeControl = ({ label, value, min, max, step, onChange }: NumericControlProps) => (
   <label className="block">
-    <span className="mb-1.5 flex items-center justify-between gap-3 text-[0.68rem] font-medium uppercase tracking-wider text-slate-400">
+    <span className="mb-1.5 flex items-center justify-between gap-3 text-sm font-medium text-slate-400">
       {label}
       <input
         type="number"
@@ -1125,7 +1113,7 @@ const RangeControl = ({ label, value, min, max, step, onChange }: NumericControl
         max={max}
         step={step}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="h-7 w-20 border border-white/10 bg-[#080d15] px-2 text-right font-mono text-xs text-slate-200 outline-none focus:border-violet-300/60"
+        className="h-7 w-20 border border-white/10 bg-[#080d15] px-2 text-right font-mono text-sm text-slate-200 outline-none focus:border-violet-300/60"
       />
     </span>
     <input
@@ -1142,7 +1130,7 @@ const RangeControl = ({ label, value, min, max, step, onChange }: NumericControl
 
 const NumberControl = ({ label, value, min, max, step, onChange }: NumericControlProps) => (
   <label className="block">
-    <span className="mb-1.5 block text-[0.68rem] font-medium uppercase tracking-wider text-slate-400">{label}</span>
+    <span className="mb-1.5 block text-sm font-medium text-slate-400">{label}</span>
     <input
       type="number"
       value={value}
@@ -1150,7 +1138,7 @@ const NumberControl = ({ label, value, min, max, step, onChange }: NumericContro
       max={max}
       step={step}
       onChange={(event) => onChange(Number(event.target.value))}
-      className="h-9 w-full border border-white/10 bg-[#080d15] px-2 font-mono text-xs text-slate-200 outline-none focus:border-violet-300/60"
+      className="h-9 w-full border border-white/10 bg-[#080d15] px-2 font-mono text-sm text-slate-200 outline-none focus:border-violet-300/60"
     />
   </label>
 );
@@ -1167,11 +1155,11 @@ const SelectControl = ({
   onChange(value: string): void;
 }) => (
   <label className="block">
-    <span className="mb-1.5 block text-[0.68rem] font-medium uppercase tracking-wider text-slate-400">{label}</span>
+    <span className="mb-1.5 block text-sm font-medium text-slate-400">{label}</span>
     <select
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="h-9 w-full border border-white/10 bg-[#080d15] px-2 text-xs text-slate-200 outline-none focus:border-violet-300/60"
+      className="h-9 w-full border border-white/10 bg-[#080d15] px-2 text-sm text-slate-200 outline-none focus:border-violet-300/60"
     >
       {options.map((option) => (
         <option key={option.value} value={option.value} disabled={option.disabled}>
@@ -1194,7 +1182,7 @@ const SegmentedControl = ({
   onChange(value: string): void;
 }) => (
   <fieldset>
-    <legend className="mb-1.5 text-[0.68rem] font-medium uppercase tracking-wider text-slate-400">{label}</legend>
+    <legend className="mb-1.5 text-sm font-medium text-slate-400">{label}</legend>
     <div className="grid grid-flow-col auto-cols-fr gap-1">
       {options.map((option) => (
         <button
@@ -1202,7 +1190,7 @@ const SegmentedControl = ({
           type="button"
           onClick={() => onChange(option.value)}
           className={cn(
-            "h-8 border text-xs font-semibold transition",
+            "h-8 border text-sm font-semibold transition",
             value === option.value
               ? "border-violet-300/60 bg-violet-400/15 text-violet-100"
               : "border-white/10 bg-white/[0.025] text-slate-400 hover:bg-white/[0.06] hover:text-white",
@@ -1217,9 +1205,9 @@ const SegmentedControl = ({
 
 const ColorControl = ({ label, value, onChange }: { label: string; value: string; onChange(value: string): void }) => (
   <label className="flex items-center justify-between gap-3">
-    <span className="text-[0.68rem] font-medium uppercase tracking-wider text-slate-400">{label}</span>
+    <span className="text-sm font-medium text-slate-400">{label}</span>
     <span className="flex items-center gap-2">
-      <span className="font-mono text-xs text-slate-400">{value}</span>
+      <span className="font-mono text-sm text-slate-400">{value}</span>
       <input
         type="color"
         value={value}
@@ -1240,7 +1228,7 @@ const ToggleControl = ({
   onChange(value: boolean): void;
 }) => (
   <label className="flex cursor-pointer items-center justify-between gap-3 py-0.5">
-    <span className="text-[0.68rem] font-medium uppercase tracking-wider text-slate-400">{label}</span>
+    <span className="text-sm font-medium text-slate-400">{label}</span>
     <input
       type="checkbox"
       checked={checked}
@@ -1254,7 +1242,7 @@ const ControlButton = ({ icon, label, onClick }: { icon: ReactNode; label: strin
   <button
     type="button"
     onClick={onClick}
-    className="flex h-9 w-full items-center justify-center gap-2 border border-white/10 bg-white/[0.035] text-xs font-semibold uppercase tracking-wider text-slate-300 transition hover:bg-white/[0.08] hover:text-white [&_img]:h-3.5 [&_img]:w-3.5"
+    className="flex h-9 w-full items-center justify-center gap-2 border border-white/10 bg-white/[0.035] text-sm font-semibold text-slate-300 transition hover:bg-white/[0.08] hover:text-white [&_img]:h-3.5 [&_img]:w-3.5"
   >
     {icon}
     {label}

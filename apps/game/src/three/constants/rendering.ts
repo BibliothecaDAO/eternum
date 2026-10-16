@@ -1,24 +1,5 @@
 import { IS_FLAT_MODE } from "@/ui/config";
 
-export type RendererToneMappingMode = "aces-filmic" | "cineon" | "linear" | "neutral" | "reinhard";
-
-export interface PostProcessingConfig {
-  brightness: number;
-  contrast: number;
-  hue: number;
-  saturation: number;
-  toneMapping: {
-    mode: RendererToneMappingMode;
-    exposure: number;
-    whitePoint: number;
-  };
-  vignette: {
-    darkness: number;
-    offset: number;
-  };
-  bloomIntensity: number;
-}
-
 export const CAMERA_CONFIG = {
   fov: 45,
   near: 0.1,
@@ -56,7 +37,5 @@ export const FOG_CONFIG = {
   near: 15,
   far: 35,
 };
-
-export const POST_PROCESSING_CONFIG: PostProcessingConfig | null = null;
 
 export const CAMERA_FAR_PLANE = IS_FLAT_MODE ? CAMERA_CONFIG.far.flat : CAMERA_CONFIG.far.default;

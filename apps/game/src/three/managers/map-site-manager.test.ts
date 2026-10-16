@@ -49,8 +49,8 @@ describe("Frontier's map sites", () => {
     };
     const manager = new MapSiteManager(new Scene(), projection as never);
     await vi.waitFor(() => expect(models.map(({ name }) => name)).toEqual(["Shrine"]));
-    expect(load).toHaveBeenCalledWith("/models/frontier/shrine.glb");
-    expect(load).not.toHaveBeenCalledWith("/models/frontier/well.glb");
+    expect(load).toHaveBeenCalledWith("/models/outposts/shrine.glb");
+    expect(load).not.toHaveBeenCalledWith("/models/outposts/well.glb");
     expect(models[0].count).toBe(2);
 
     // Using a Shrine consumes its occupancy; a Well is found.

@@ -14,15 +14,16 @@
         font-display: swap;
       }
       @font-face {
-        font-family: "Realms UI";
-        src: url("/fonts/im-fell-english-sc-regular.ttf") format("truetype");
+        font-family: "Atkinson Hyperlegible Next";
+        src: url("/fonts/atkinson-hyperlegible-next.woff2") format("woff2");
+        font-weight: 200 800;
         font-display: swap;
       }
       :root {
         color-scheme: dark;
         background: #130f0c;
         color: #f4ebdc;
-        font-family: system-ui, sans-serif;
+        font-family: "Atkinson Hyperlegible Next", system-ui, sans-serif;
       }
       body {
         margin: 0;
@@ -63,9 +64,9 @@
         background: linear-gradient(180deg, #f3d08a, #dfaa54);
         color: #1b1207;
         font:
-          400 19px "Realms UI",
-          serif;
-        letter-spacing: 0.05em;
+          700 18px "Atkinson Hyperlegible Next",
+          system-ui,
+          sans-serif;
         text-decoration: none;
       }
       a:focus-visible {

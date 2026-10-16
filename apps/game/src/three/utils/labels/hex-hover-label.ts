@@ -1,3 +1,4 @@
+import { resourceMeaning, iconUrl } from "@/ui/design-system/icon-meaning";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
@@ -75,7 +76,7 @@ export class HexHoverLabel {
       "border",
       "border-gold/40",
       "text-gold",
-      "text-xs",
+      "text-sm",
       "shadow-md",
       "backdrop-blur-sm",
       "-translate-x-1/2",
@@ -106,7 +107,7 @@ export class HexHoverLabel {
 
     if (content.kind === "resource") {
       const icon = document.createElement("img");
-      icon.src = `/images/resources/${content.resourceId}.png`;
+      icon.src = iconUrl(resourceMeaning(content.resourceId));
       icon.alt = content.resourceName || "Resource";
       icon.classList.add("w-5", "h-5", "object-contain");
       container.appendChild(icon);

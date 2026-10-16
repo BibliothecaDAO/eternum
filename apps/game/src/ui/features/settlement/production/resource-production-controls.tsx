@@ -1,5 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { canIssueOrders } from "@/utils/can-issue-orders";
+import { canIssueOrders, useActNowRefusal } from "@/utils/can-issue-orders";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { Button, NumberInput, Tabs } from "@/ui/design-system/atoms";
 import { HUD_BODY_MUTED, HUD_CUE, HUD_HEADLINE, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
@@ -9,7 +9,7 @@ import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities"
 import { configManager, divideByPrecision, formatTime, getBuildingQuantity } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { getBuildingFromResource, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
+import { ActionRefusedError, getBuildingFromResource, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { LaborResourcesPanel } from "./labor-resources-panel";
 import { RawResourcesPanel } from "./raw-resources-panel";
@@ -48,6 +48,7 @@ export const ResourceProductionControls = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const ordersAllowed = useUIStore(canIssueOrders);
+  const refusal = useActNowRefusal();
   const currentDefaultTick = useCurrentDefaultTick();
 
   const laborEnabled = configManager.isCommandEnabled("BurnLaborForResourceProduction");
@@ -82,8 +83,7 @@ export const ResourceProductionControls = ({
     try {
       await burn_resource_for_resource_production(calldata);
     } catch (error) {
-      console.error(error);
-      setError("Production could not start. Try again.");
+      setError(productionError(error));
     } finally {
       setIsLoading(false);
     }
@@ -104,8 +104,7 @@ export const ResourceProductionControls = ({
       try {
         await burn_labor_for_resource_production(calldata);
       } catch (error) {
-        console.error(error);
-        setError("Production could not start. Try again.");
+        setError(productionError(error));
       } finally {
         setIsLoading(false);
       }
@@ -239,7 +238,7 @@ export const ResourceProductionControls = ({
 
   if (compact)
     return (
-      <section aria-label={`${ResourcesIds[selectedResource]} production`} className="space-y-2 text-xs">
+      <section aria-label={`${ResourcesIds[selectedResource]} production`} className="space-y-2 text-sm">
         {canUseLabor && (
           <div role="group" aria-label="Production recipe" className="flex gap-1">
             <button
@@ -274,9 +273,10 @@ export const ResourceProductionControls = ({
                 )
                 .join(" · ")}
         </p>
-        {(error || isDisabled) && (
+        {(error || isDisabled || refusal) && (
           <p role="status">
             {error ??
+              refusal ??
               (currentInputs === undefined
                 ? "This recipe is unknown here."
                 : isOverBalance
@@ -286,7 +286,7 @@ export const ResourceProductionControls = ({
         )}
         <Button
           onClick={useRawResources ? handleRawResourcesProduce : handleLaborResourcesProduce}
-          disabled={!ordersAllowed || isDisabled || isLoading}
+          disabled={!ordersAllowed || isDisabled || isLoading || refusal !== null}
           isLoading={isLoading}
           variant="gold"
           className="w-full"
@@ -352,7 +352,7 @@ export const ResourceProductionControls = ({
       </div>
 
       {error && (
-        <p role="status" className="text-xs text-danger">
+        <p role="status" className="text-sm text-danger">
           {error}
         </p>
       )}
@@ -366,14 +366,21 @@ export const ResourceProductionControls = ({
       </div>
       <Button
         onClick={useRawResources ? handleRawResourcesProduce : handleLaborResourcesProduce}
-        disabled={!ordersAllowed || isDisabled || isLoading}
+        disabled={!ordersAllowed || isDisabled || isLoading || refusal !== null}
         isLoading={isLoading}
-        variant={isDisabled ? "outline" : "gold"}
+        variant={isDisabled || refusal ? "outline" : "gold"}
         className="sticky bottom-0 min-h-11 w-full"
         size="md"
       >
-        {isDisabled ? "Not enough resources" : "Start production"}
+        {refusal ?? (isDisabled ? "Not enough resources" : "Start production")}
       </Button>
     </div>
   );
+};
+
+/** What a failed start says: the game's reason when it refused the order (play not open yet), else a retry. */
+const productionError = (error: unknown): string => {
+  if (error instanceof ActionRefusedError) return error.message;
+  console.error(error);
+  return "Production could not start. Try again.";
 };

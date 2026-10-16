@@ -6,9 +6,7 @@ import { resolveBootPhase } from "./play-route-boot";
 import { usePlayRouteReadinessStore } from "./play-route-readiness-store";
 
 const phaseAt = (resumeScene: "hex" | null, prepare: (token: number) => void) => {
-  const readiness = usePlayRouteReadinessStore.getState();
-  readiness.reset(1);
-  prepare(1);
+  prepare(usePlayRouteReadinessStore.getState().startBoot());
   return resolveBootPhase({
     bootstrapError: null,
     bootstrapStatus: "ready",
@@ -66,9 +64,9 @@ describe("a scene the entry waits on that does not set up", () => {
   });
 
   it("forgets that the map could not be drawn once the map opens", () => {
-    usePlayRouteReadinessStore.getState().reset(1);
-    usePlayRouteReadinessStore.getState().markSceneFailed(1, "map", new Error("The world map did not open."));
-    usePlayRouteReadinessStore.getState().markWorldmapReady(1);
+    const token = usePlayRouteReadinessStore.getState().startBoot();
+    usePlayRouteReadinessStore.getState().markSceneFailed(token, "map", new Error("The world map did not open."));
+    usePlayRouteReadinessStore.getState().markWorldmapReady(token);
     expect(usePlayRouteReadinessStore.getState().sceneFailure).toBeNull();
   });
 

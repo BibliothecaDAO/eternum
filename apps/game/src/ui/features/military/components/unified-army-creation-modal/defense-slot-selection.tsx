@@ -1,9 +1,10 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { ResourceIcon } from "@/ui/design-system/molecules";
 import { getTierStyle } from "@/ui/utils/tier-styles";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
 import { DISPLAYED_SLOT_NUMBER_MAP, GUARD_SLOT_NAMES, resources, TroopTier } from "@bibliothecadao/types";
 import clsx from "clsx";
-import { AlertTriangle } from "@/ui/design-system/atoms/game-icons";
+
 import { useMemo } from "react";
 
 import { GuardCooldownBadge } from "../guard-cooldown-badge";
@@ -95,7 +96,7 @@ export const DefenseSlotSelection = ({
                 hasGuard && !isSlotCompatible && "border-danger/50 hover:border-danger/60",
               )}
             >
-              <div className="absolute top-0.5 right-0.5 bg-gold/30 text-gold text-xxs px-1 rounded font-bold">
+              <div className="absolute top-0.5 right-0.5 bg-gold/30 text-gold text-sm px-1 rounded font-bold">
                 {displayedSlotNumber}
               </div>
 
@@ -106,7 +107,7 @@ export const DefenseSlotSelection = ({
               )}
 
               <div className="flex-1 min-w-0">
-                <div className={clsx("text-xs font-bold truncate", isSelected ? "text-gold" : "text-gold/80")}>
+                <div className={clsx("text-sm font-bold truncate", isSelected ? "text-gold" : "text-gold/80")}>
                   {slotName}
                 </div>
                 {hasGuard ? (
@@ -115,14 +116,14 @@ export const DefenseSlotSelection = ({
                       {guardTier && (
                         <span
                           className={clsx(
-                            "flex-shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-bold leading-none",
+                            "flex-shrink-0 rounded border px-1.5 py-0.5 text-sm font-bold leading-none",
                             getTierStyle(guardTier),
                           )}
                         >
                           {guardTier}
                         </span>
                       )}
-                      <span className={clsx("text-xs font-bold", isSelected ? "text-gold" : "text-gold/90")}>
+                      <span className={clsx("text-sm font-bold", isSelected ? "text-gold" : "text-gold/90")}>
                         {guardCountLabel}
                       </span>
                     </div>
@@ -131,7 +132,7 @@ export const DefenseSlotSelection = ({
                 ) : cooldownSeconds > 0 ? (
                   <GuardCooldownBadge seconds={cooldownSeconds} />
                 ) : (
-                  <div className={clsx("text-xxs", isSelected ? "text-gold" : "text-gold/60")}>Empty</div>
+                  <div className={clsx("text-sm", isSelected ? "text-gold" : "text-kit-muted")}>Empty</div>
                 )}
               </div>
             </button>
@@ -139,17 +140,17 @@ export const DefenseSlotSelection = ({
         })}
       </div>
       {sortedSlots.length === 0 && (
-        <div className="mt-1 text-xxs text-center text-gold/60 uppercase">Upgrade to unlock slots</div>
+        <div className="mt-1 text-sm text-center text-kit-muted">Upgrade to unlock slots</div>
       )}
       {defenseSlotInfoMessage && (
-        <div className="mt-1 bg-brown/15 border-l-2 border-gold rounded px-2 py-0.5 text-xxs text-gold/80 font-medium">
+        <div className="mt-1 bg-brown/15 border-l-2 border-gold rounded px-2 py-0.5 text-sm text-gold/80 font-medium">
           {defenseSlotInfoMessage}
         </div>
       )}
       {defenseSlotErrorMessage && (
         <div className="mt-1 bg-danger/10 border-l-2 border-danger rounded px-2 py-0.5 flex items-center gap-1.5">
-          <AlertTriangle className="w-3 h-3 text-danger flex-shrink-0" />
-          <span className="text-xxs text-danger font-semibold">{defenseSlotErrorMessage}</span>
+          <SemanticIcon name="warning" className="w-3 h-3 text-danger flex-shrink-0" />
+          <span className="text-sm text-danger font-semibold">{defenseSlotErrorMessage}</span>
         </div>
       )}
     </div>

@@ -1,3 +1,4 @@
+import { slotResolver } from "./paid-blitz";
 import { day, frontierSeasonEnd } from "./test-dates";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { createLaunchApp } from "./app";
@@ -10,6 +11,8 @@ import {
   slotValueFixture,
   registrationIdentityFixture,
   TEST_CHAIN,
+  DEV_CHAIN,
+  PRODUCTION_CHAIN,
 } from "./test-database";
 
 const token = { authorization: "Bearer operator-test-token", "content-type": "application/json" };
@@ -22,10 +25,10 @@ afterEach(async () => {
   vi.restoreAllMocks();
   await database.close();
 });
-const fixture = () => {
-  const store = new D1LaunchStore(database.db, testChain());
+const fixture = (chain = TEST_CHAIN) => {
+  const store = new D1LaunchStore(database.db, testChain(chain));
   const value = slotValueFixture(1);
-  const slots = new D1SlotStore(database.db, store, value, registrationIdentityFixture);
+  const slots = new D1SlotStore(database.db, store, value, slotResolver(value, registrationIdentityFixture));
   const calendar = new D1CalendarStore(database.db);
   const armFor = vi.fn();
   const wakeAt = vi.fn(async (): Promise<number | null> => 0);
@@ -67,6 +70,7 @@ test.each([
   ["POST", "/api/factory/runs/madara.frontier/frontier-7/actions/continue"],
   ["POST", "/api/factory/runs/madara.eternum/old/actions/delete"],
   ["POST", "/api/factory/results/madara.blitz/old/actions/continue"],
+  ["POST", "/api/factory/test-blitz"],
 ])("requires an operator token for %s %s", async (method, url) => {
   const { app } = fixture();
   for (const headers of [session, {}, { authorization: "Bearer wrong" }] as Record<string, string>[])
@@ -220,9 +224,9 @@ test("health names a stalled ledger close, preserves the failure through reads, 
       },
     ],
   });
-  expect(await new D1SlotStore(database.db, store, value, registrationIdentityFixture).freezeFailures()).toHaveLength(
-    1,
-  );
+  expect(
+    await new D1SlotStore(database.db, store, value, slotResolver(value, registrationIdentityFixture)).freezeFailures(),
+  ).toHaveLength(1);
   registrations.mockResolvedValue(page);
   await slots.freezeDueSlots();
   expect((await slots.get("stalled")).frozenAt).not.toBeNull();
@@ -245,4 +249,71 @@ test("health exposes fixed freeze codes but never private diagnostic text", asyn
   expect(body).toContain('"code":"registration_history_incomplete"');
   expect(body).not.toContain("secret-value");
   expect(JSON.stringify(log.mock.calls)).not.toContain("secret-value");
+});
+
+const testBlitz = (app: ReturnType<typeof fixture>["app"], body: unknown) =>
+  app.request("/api/factory/test-blitz", { method: "POST", headers: token, body: JSON.stringify(body) });
+
+test("an operator queues a test Blitz on a dev shard with the named roster, starting one preparation window later", async () => {
+  const { app, store, armFor } = fixture(DEV_CHAIN);
+  const requestedAt = Date.now();
+  const response = await testBlitz(app, { name: "test-hud", players: ["0x0ABC", "0x456"] });
+  expect(response.status).toBe(202);
+  expect(await response.json()).toMatchObject({ gameName: "test-hud", status: "queued" });
+  const [run] = await store.list("madara.blitz");
+  expect(run).toMatchObject({ chainId: DEV_CHAIN, slotId: null, name: "test-hud" });
+  expect(run!.request).toMatchObject({ environment: "madara.blitz", players: ["0xabc", "0x456"] });
+  const startsIn = Date.parse((run!.request as { gameStartTime: string }).gameStartTime) - requestedAt;
+  expect(startsIn).toBeGreaterThanOrEqual(300_000);
+  expect(startsIn).toBeLessThanOrEqual(301_000);
+  expect(armFor).toHaveBeenCalledOnce();
+});
+
+test("a retry after a lost response returns the same run, and another roster under that name is refused", async () => {
+  const { app, store } = fixture(DEV_CHAIN);
+  const request = { name: "test-hud", players: ["0x456", "0x789"] };
+  const first = (await (await testBlitz(app, request)).json()) as { runId: string };
+  vi.useFakeTimers({ now: Date.now() + 120_000, toFake: ["Date"] });
+  try {
+    const retry = await testBlitz(app, request);
+    expect(retry.status).toBe(202);
+    expect(await retry.json()).toMatchObject({ runId: first.runId, gameName: "test-hud" });
+    expect((await testBlitz(app, { ...request, players: ["0x789", "0x456"] })).status).toBe(409);
+  } finally {
+    vi.useRealTimers();
+  }
+  const runs = await store.list("madara.blitz");
+  expect(runs).toHaveLength(1);
+  expect(runs[0]!.request).toMatchObject({ players: ["0x456", "0x789"] });
+});
+
+test("a slot's game cannot be taken over by a test Blitz of the same name", async () => {
+  const { app, store } = fixture(DEV_CHAIN);
+  await store.enqueue("game", { environment: "madara.blitz", gameName: "test-x-1", slotId: 12, groupIndex: 0 });
+  expect((await testBlitz(app, { name: "test-x-1", players: ["0x456"] })).status).toBe(409);
+});
+
+test("a Worker bound to a production shard has no test Blitz route, even configured as staging", async () => {
+  const { app, store, armFor } = fixture(PRODUCTION_CHAIN);
+  expect((await testBlitz(app, { name: "test-hud", players: ["0x456"] })).status).toBe(404);
+  expect(await store.list("madara.blitz")).toEqual([]);
+  expect(armFor).not.toHaveBeenCalled();
+});
+
+test.each([
+  ["no players", { name: "test-hud", players: [] }],
+  ["a repeated account", { name: "test-hud", players: ["0x456", "0x0456"] }],
+  ["the zero account", { name: "test-hud", players: ["0x0"] }],
+  ["a name instead of an account", { name: "test-hud", players: ["uxplay"] }],
+  [
+    "more than one game's roster",
+    { name: "test-hud", players: Array.from({ length: 25 }, (_, index) => `0x${(index + 1).toString(16)}`) },
+  ],
+  ["no request name", { players: ["0x456"] }],
+  ["a slot-style name", { name: "blitz-20261014-2000-1", players: ["0x456"] }],
+  ["a name too long for the shard", { name: `test-${"a".repeat(27)}`, players: ["0x456"] }],
+])("refuses a test Blitz request with %s", async (_case, body) => {
+  const { app, store } = fixture(DEV_CHAIN);
+  expect((await testBlitz(app, body)).status).toBe(400);
+  expect(await store.list("madara.blitz")).toEqual([]);
 });

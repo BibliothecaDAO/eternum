@@ -120,7 +120,7 @@ abstract class BaseIconWorldFxEffect implements ManagedWorldFxEffect, IconFxAnim
       div.className = "fx-label";
       div.textContent = spec.labelText;
       div.style.color = "rgb(223 170 84)";
-      div.style.fontFamily = FONTS.ui;
+      div.style.fontFamily = FONTS.body;
       div.style.fontSize = "16px";
       div.style.fontWeight = "bold";
       div.style.textShadow = "0 0 5px black";
@@ -390,7 +390,7 @@ class TextWorldFxEffect implements ManagedWorldFxEffect {
     div.className = "troop-diff-fx";
     div.textContent = spec.text;
     div.style.color = spec.color;
-    div.style.fontFamily = FONTS.ui;
+    div.style.fontFamily = FONTS.body;
     div.style.fontSize = spec.fontSize ?? "36px";
     div.style.fontWeight = "bold";
     div.style.textShadow = "0 0 12px black, 0 0 6px black, 2px 2px 4px black";

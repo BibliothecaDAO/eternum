@@ -1,6 +1,7 @@
-import { Gauge, Play, RefreshCw } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 import {
   mountProceduralTerrainBenchmarkRenderer,
@@ -27,7 +28,6 @@ import {
 } from "@/three/terrain/verification/terrain-benchmark-fixture";
 import { PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER } from "@/three/terrain/terrain-props";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
 const EMPTY_FRAME_STATS = {
   above16Ms: 0,
@@ -47,6 +47,7 @@ export const ProceduralTerrainBenchmarkView = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rendererRef = useRef<ProceduralTerrainBenchmarkRendererHandle | null>(null);
   const capture = searchParams.get("capture") === "1";
+  const realms = searchParams.get("realms") === "1";
   const autoRun = searchParams.get("autorun") === "1";
   const densityMultiplier = resolveDensityMultiplier(searchParams.get("density"));
   const explorationMode = resolveExplorationMode(searchParams.get("explorationMode"));
@@ -60,7 +61,6 @@ export const ProceduralTerrainBenchmarkView = () => {
   );
   const [error, setError] = useState<string | null>(configError);
   const [mounted, setMounted] = useState(false);
-  useBootDocumentState(mounted ? "app-ready" : "app-loading", mounted ? "terrain_benchmark_ready" : undefined);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -70,6 +70,7 @@ export const ProceduralTerrainBenchmarkView = () => {
     const mountFrame = window.requestAnimationFrame(() => {
       void mountProceduralTerrainBenchmarkRenderer({
         autoRun,
+        realms,
         canvas,
         captureMode: capture,
         densityMultiplier,
@@ -105,7 +106,18 @@ export const ProceduralTerrainBenchmarkView = () => {
       rendererRef.current?.dispose();
       rendererRef.current = null;
     };
-  }, [autoRun, capture, configError, densityMultiplier, explorationMode, forceWebGL, runMode, traceMode, variant]);
+  }, [
+    realms,
+    autoRun,
+    capture,
+    configError,
+    densityMultiplier,
+    explorationMode,
+    forceWebGL,
+    runMode,
+    traceMode,
+    variant,
+  ]);
 
   const setOption = (name: string, value: string) => {
     const next = new URLSearchParams(searchParams);
@@ -125,7 +137,7 @@ export const ProceduralTerrainBenchmarkView = () => {
   return (
     <section
       className={cn(
-        "min-h-screen bg-stone-950 text-stone-100",
+        "min-h-[var(--lab-viewport-height)] bg-stone-950 text-stone-100",
         capture ? "block" : "flex flex-col gap-4 p-4 xl:grid xl:grid-cols-[380px_1fr]",
       )}
       data-debug-route="procedural-terrain-benchmark"
@@ -134,10 +146,18 @@ export const ProceduralTerrainBenchmarkView = () => {
     >
       {!capture && (
         <aside className="flex max-h-[calc(100vh-2rem)] flex-col gap-4 overflow-y-auto border border-white/10 bg-black/60 p-4">
+          <label>
+            <input
+              type="checkbox"
+              checked={realms}
+              onChange={(event) => setOption("realms", event.target.checked ? "1" : "0")}
+            />{" "}
+            48 realms · normal and wonder
+          </label>
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-200/70">
-                <Gauge className="h-4 w-4" /> Terrain Benchmark
+              <p className="flex items-center gap-2 text-sm font-semibold text-emerald-200/70">
+                <SemanticIcon name="gauge" className="h-4 w-4" /> Terrain Benchmark
               </p>
               <h1 className="mt-1 text-2xl font-semibold text-white">Full-Screen Biome Load</h1>
               <p className="mt-2 text-sm leading-5 text-stone-400">
@@ -145,9 +165,6 @@ export const ProceduralTerrainBenchmarkView = () => {
                 boundaries and records frame, coverage, and lifecycle evidence.
               </p>
             </div>
-            <Link to="/" className="border border-white/15 px-3 py-2 text-xs font-semibold uppercase text-stone-200">
-              Exit
-            </Link>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -235,14 +252,14 @@ export const ProceduralTerrainBenchmarkView = () => {
               disabled={snapshot.status === "running" || snapshot.status === "complete"}
               className="flex h-10 items-center justify-center gap-2 border border-emerald-300/35 bg-emerald-300/10 px-3 text-sm font-semibold text-emerald-100 disabled:opacity-40"
             >
-              <Play className="h-4 w-4" /> Run benchmark
+              <SemanticIcon name="play" className="h-4 w-4" /> Run benchmark
             </button>
             <button
               type="button"
               onClick={() => rendererRef.current?.resetCamera()}
               className="flex h-10 items-center justify-center gap-2 border border-white/15 px-3 text-sm font-semibold text-stone-200"
             >
-              <RefreshCw className="h-4 w-4" /> Reset camera
+              <SemanticIcon name="refresh" className="h-4 w-4" /> Reset camera
             </button>
           </div>
         </aside>
@@ -276,12 +293,12 @@ const BenchmarkSelect = ({
   options: Array<[string, string]>;
   value: string;
 }) => (
-  <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
+  <label className="flex flex-col gap-2 text-sm font-semibold text-stone-300">
     {label}
     <select
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium normal-case text-white"
+      className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium text-white"
     >
       {options.map(([optionValue, optionLabel]) => (
         <option key={optionValue} value={optionValue}>
@@ -294,8 +311,8 @@ const BenchmarkSelect = ({
 
 const BenchmarkMetric = ({ label, value }: { label: string; value: string }) => (
   <div className="border border-white/10 bg-white/[0.04] px-2 py-2">
-    <dt className="text-[0.6rem] font-semibold uppercase text-stone-500">{label}</dt>
-    <dd className="mt-1 truncate font-mono text-xs text-white">{value}</dd>
+    <dt className="text-sm font-semibold text-stone-500">{label}</dt>
+    <dd className="mt-1 truncate font-mono text-sm text-white">{value}</dd>
   </div>
 );
 

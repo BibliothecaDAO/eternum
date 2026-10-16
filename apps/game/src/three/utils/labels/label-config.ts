@@ -63,7 +63,7 @@ const BASE_LABEL_CONFIG: LabelConfig = {
     "rounded-md",
     "p-0.5",
     "-translate-x-1/2",
-    "text-xxs",
+    "text-sm",
     "flex",
     "items-center",
     "group",

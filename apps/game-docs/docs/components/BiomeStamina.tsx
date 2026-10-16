@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import { ETERNUM_CONFIG } from "@/utils/config";
+import type { GameType } from "@config";
 import { Fragment } from "react";
 import { colors, icon, modifiers, section, table } from "./styles";
 
@@ -79,8 +80,9 @@ const getTroopIcon = (troopType: TroopType): string => {
   }
 };
 
-export const BiomeStamina = () => {
-  const config = ETERNUM_CONFIG();
+/** Its page names the mode: Blitz and Eternum each show their own stamina. */
+export const BiomeStamina = ({ mode }: { mode: GameType }) => {
+  const config = ETERNUM_CONFIG(mode);
   const baseStaminaCost = config.troop.stamina.staminaTravelStaminaCost || 0;
   const biomeBonus = config.troop.stamina.staminaBonusValue || 0;
 

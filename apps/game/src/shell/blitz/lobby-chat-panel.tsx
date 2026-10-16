@@ -35,17 +35,15 @@ export const LobbyChatPanel = ({
 }) => {
   const chat = useLobbyChat(slot, membership);
   return (
-    <Panel icon="Ct" title={CHAT_WORDS.chat}>
+    <Panel icon="chat" title={CHAT_WORDS.chat}>
       {chat.hold === "signed-out" ? (
-        <p className="px-1 py-2 text-[15px] text-kit-muted">{CHAT_WORDS.signInToRead}</p>
+        <p className="px-1 py-2 text-base text-kit-muted">{CHAT_WORDS.signInToRead}</p>
       ) : chat.hold === "unanswered" ? (
         <ServiceFailure service="chat" error={new Error("lobby chat closed")} />
       ) : (
         <>
           <Messages messages={chat.messages} />
-          {chat.hold && HOLD_LINES[chat.hold] && (
-            <p className="px-1 text-[13px] text-kit-amber">{HOLD_LINES[chat.hold]}</p>
-          )}
+          {chat.hold && HOLD_LINES[chat.hold] && <p className="px-1 text-sm text-kit-amber">{HOLD_LINES[chat.hold]}</p>}
           {chat.canWrite && <Composer send={chat.send} />}
         </>
       )}
@@ -61,10 +59,10 @@ const Messages = ({ messages }: { messages: readonly WorldChatMessage[] }) => {
     list.current?.scrollTo({ top: list.current.scrollHeight });
   }, [messages.length]);
   return (
-    <ol ref={list} className="flex h-64 flex-col gap-1.5 overflow-y-auto px-1 py-2 text-[15px]">
+    <ol ref={list} className="flex h-64 flex-col gap-1.5 overflow-y-auto px-1 py-2 text-base">
       {messages.map((message) => (
         <li key={message.id} className="break-words">
-          <b className="mr-2 font-ui text-kit-gold2">
+          <b className="mr-2 font-body text-kit-gold2">
             {isOwn(message, session?.user.realmsId)
               ? YOU
               : displayPlayerName(message.sender.playerId, message.sender.displayName ?? null)}
@@ -98,7 +96,7 @@ const Composer = ({ send }: { send: (content: string) => void }) => {
         maxLength={MESSAGE_LIMIT}
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
-        className="h-12 w-full rounded-xl border-2 border-kit-line2 bg-kit-ground px-3 pr-16 text-[15px] text-kit-cream placeholder:text-kit-muted focus:border-kit-peach focus:outline-none"
+        className="h-12 w-full rounded-xl border-2 border-kit-line2 bg-kit-ground px-3 pr-16 text-base text-kit-cream placeholder:text-kit-muted focus:border-kit-peach focus:outline-none"
       />
       <Kbd keyName="Enter" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 max-lg:hidden" />
     </form>

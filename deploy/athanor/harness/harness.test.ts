@@ -41,7 +41,7 @@ import {
   summarizeRpcMetrics,
 } from "./report";
 import type { WorkerWorkloadSummary } from "./report";
-import { createHarnessProvider, parseHarnessArgs, playersOf } from "./run";
+import { createHarnessProvider, parseHarnessArgs, playersOf, workerArguments } from "./run";
 import { BlockTag } from "starknet";
 import { EventEmitter } from "node:events";
 import type { Worker } from "node:worker_threads";
@@ -218,7 +218,18 @@ describe("Madara harness workload", () => {
     expect(bots[0].explorers.map(({ explorerId }) => explorerId)).toEqual(resumed ? [11, 21] : [11]);
   });
 
+  it("plays the directory's game unless told to create it as a measurement shard's launcher", () => {
+    expect(parseHarnessArgs(["--game-type", "frontier"]).createGame).toBe(false);
+    expect(parseHarnessArgs(["--game-type", "frontier", "--create-game", "--bots", "4"])).toMatchObject({
+      createGame: true,
+      bots: 4,
+    });
+  });
+
   it("selects Eternum and rejects deferred ledger options", () => {
+    expect(() => parseHarnessArgs(["--game-type", "frontier", "--interval-seconds", "30"])).toThrow(
+      "--interval-seconds paces a cadence",
+    );
     expect(parseHarnessArgs([]).gameType).toBe("frontier");
     expect(parseHarnessArgs(["--game-type", "eternum"]).gameType).toBe("eternum");
     expect(parseHarnessArgs(["--game-type", "eternum"])).toMatchObject({ presetId: 3, functional: false });
@@ -390,6 +401,29 @@ describe("Madara harness workload", () => {
       outcome: "driver_failed",
       rpc: { getBlock: { calls: 0 } },
     });
+  });
+
+  it("spreads a cadence's bots evenly across the interval", async () => {
+    spyOn(configManager, "getMapCenter").mockReturnValue(0);
+    const world = fakeWorld([2, { coord: { x: 10, y: 10 }, staminaAmount: 120n, staminaSettledAt: 1 }]);
+    const first = readyHarnessBot(world);
+    const second = {
+      ...readyHarnessBot(world),
+      botId: 2,
+      address: "0x2",
+      explorers: [{ explorerId: 2, lastUsedAt: -1, outwardDirection: 0 }],
+    } as HarnessBot;
+    const workload = await runWorkload({
+      bots: [first, second],
+      game: world.game,
+      intervalSeconds: 1,
+      minutes: 0.001,
+      provider: confirmingProvider(),
+    });
+    const scheduled = workload.actions.map(
+      (action) => Date.parse(action.scheduledAt!) - Date.parse(workload.startedAt),
+    );
+    expect(scheduled).toEqual([0, 500]);
   });
 
   it("waits for setup stamina to regenerate before measuring the workload", async () => {
@@ -974,6 +1008,36 @@ describe("Madara harness CLI and concurrency", () => {
       ).toMatchObject({ rpcUrl: TEST_ENDPOINTS.RPC_URL, heraldUrl: TEST_ENDPOINTS.HERALD_URL });
     } finally {
       Object.assign(process.env, TEST_ENDPOINTS);
+    }
+  });
+
+  it("starts each worker with arguments its own parser accepts, keeping the run's workload", () => {
+    for (const run of [
+      ["--game-type", "frontier", "--bots", "8", "--workers", "2", "--minutes", "30"],
+      [
+        "--game-type",
+        "frontier",
+        "--bots",
+        "8",
+        "--workers",
+        "2",
+        "--frontier-burst",
+        "booth",
+        "--burst-window-seconds",
+        "15",
+      ],
+      ["--game-type", "eternum", "--bots", "8", "--interval-seconds", "5"],
+    ]) {
+      const options = parseHarnessArgs(run);
+      const worker = parseHarnessArgs(workerArguments(options, 4, "/tmp/game.json"));
+      expect(worker).toMatchObject({
+        bots: 4,
+        gameType: options.gameType,
+        workload: options.workload,
+        minutes: options.minutes,
+        intervalSeconds: options.intervalSeconds,
+        frontierBurst: options.frontierBurst,
+      });
     }
   });
 

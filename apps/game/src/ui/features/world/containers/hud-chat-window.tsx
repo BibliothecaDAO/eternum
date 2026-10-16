@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { useRequestSignIn } from "@/shell/sign-in/sign-in-route";
 import { resolveChatSenderName } from "@/hooks/use-player-profile";
@@ -12,7 +13,7 @@ import {
 } from "@/ui/features/social";
 import { configManager } from "@bibliothecadao/eternum";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
-import { MessageSquare } from "@/ui/design-system/atoms/game-icons";
+
 import { useEffect, useMemo, useRef } from "react";
 import { getActiveGame } from "@/runtime/world";
 import { isTypingTarget } from "@/utils/shortcuts/typing-target";
@@ -136,16 +137,16 @@ export function HudChatWindow({
         // A signed-out spectator's strip is their way into the sign-in flow, which brings them back to this game.
         onClick={() => (initializer ? onOpenChange(!open) : requestSignIn())}
         className={cn(
-          "pointer-events-auto flex h-8 w-full shrink-0 items-center gap-2 rounded-xl px-3 text-left font-sans normal-case tracking-normal",
+          "pointer-events-auto flex h-8 w-full shrink-0 items-center gap-2 rounded-xl px-3 text-left font-sans ",
           OVERLAY_SURFACE_BASE,
           "hover:border-gold/50",
           foldToIcon && "portrait:w-auto portrait:self-start",
         )}
       >
-        <MessageSquare className="h-3.5 w-3.5 shrink-0 text-gold/70" />
+        <SemanticIcon name="chat" className="h-3.5 w-3.5 shrink-0 text-gold/70" />
         <span className={cn("min-w-0 flex-1 truncate", HUD_BODY, foldToIcon && "portrait:sr-only")}>{stripText}</span>
         {initializer && !open && unread > 0 && (
-          <span aria-label="Unread chat messages" className="rounded-full bg-gold px-1.5 text-[10px] text-dark-brown">
+          <span aria-label="Unread chat messages" className="rounded-full bg-gold px-1.5 text-sm text-dark-brown">
             {unread}
           </span>
         )}

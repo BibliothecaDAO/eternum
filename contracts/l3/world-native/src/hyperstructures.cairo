@@ -77,6 +77,9 @@ pub trait IHyperstructures<T> {
         ref self: T, game_id: u32, timestamp: u64, game_context: crate::commands::ActionContext,
     ) -> u32;
     fn record_hyperstructure(ref self: T, key: ResourceKey, seed: felt252, completed: bool);
+    fn transfer_hyperstructure_shares(
+        ref self: T, key: ResourceKey, owner: ContractAddress, context: crate::commands::ActionContext,
+    );
     fn initialize_hyperstructure(
         ref self: T, game_id: u32, actor: ContractAddress, id: u64, context: crate::commands::ActionContext,
     );

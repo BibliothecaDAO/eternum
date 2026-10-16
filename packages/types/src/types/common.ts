@@ -154,7 +154,6 @@ export interface Resources {
   colour: string;
   id: number;
   description: string;
-  img: string;
   ticker: string;
   rarity?: string;
 }
@@ -217,9 +216,10 @@ export interface ResourceOutputs {
   [key: number]: number;
 }
 
+/** A reveal's pool row: drawn by its weight, it pays this percent of the revealing army's strength. */
 export interface BlitzExplorationReward {
   rewardId: ResourcesIds;
-  amount: number;
+  percent: number;
   probabilityBps: number;
 }
 
@@ -270,7 +270,6 @@ export interface Config {
     shardsMineInitialFishBalance: number;
     relicDiscoveryIntervalSeconds: number;
     relicHexDistanceFromCenter: number;
-    relicChestRelicsPerChest: number;
     bitcoinMineWinProbability: number;
     bitcoinMineFailProbability: number;
   };
@@ -331,6 +330,8 @@ export interface Config {
       empireGuardSlots: number;
       startingGuard: number;
       campArmies: number;
+      /** The most army strength an exploration reward pays on; a preset without it pays on the whole army. */
+      exploreRewardStrengthCap?: number;
 
       mercenariesTroopLowerBound: number;
       mercenariesTroopUpperBound: number;
@@ -498,7 +499,6 @@ export type FactoryMapConfigOverrides = Partial<
     | "hyperstructureFailProbIncreasePerHyperstructureFound"
     | "relicDiscoveryIntervalSeconds"
     | "relicHexDistanceFromCenter"
-    | "relicChestRelicsPerChest"
   >
 >;
 

@@ -44,7 +44,7 @@ describe("procedural character performance benchmark", () => {
         baseUrl: "https://127.0.0.1:4174",
         rendererMode: "webgpu-force-webgl",
       }),
-    ).toBe("https://127.0.0.1:4174/debug/procedural-character-benchmark?rendererMode=webgpu-force-webgl");
+    ).toBe("https://127.0.0.1:4174/lab/character-benchmark?rendererMode=webgpu-force-webgl");
   });
 
   it("accepts only registered benchmark appearances", () => {

@@ -14,7 +14,7 @@ import {
   type InvocationsSignerDetails,
 } from "starknet";
 
-import { TransactionNotSentError } from "@bibliothecadao/provider";
+import { playRefusalReasonOf, PLAYS_IN_FLIGHT, TransactionNotSentError } from "@bibliothecadao/provider";
 
 import { pause, transactionAnswer, TransactionNoAnswerError } from "./transaction-answer";
 
@@ -51,7 +51,7 @@ interface ExecuteGameplayAccountTransactionOptions {
 
 /**
  * A sent action: its hash as soon as the send returns, and `inBlock`, which resolves on Herald or node inclusion.
- * An unanswered action releases the queue without claiming it was not sent.
+ * An unanswered action leaves the account's plays in flight without claiming it was not sent.
  */
 export interface SentGameplayTransaction extends InvokeFunctionResponse {
   inBlock: Promise<void>;
@@ -60,8 +60,17 @@ export interface SentGameplayTransaction extends InvokeFunctionResponse {
 const configuredGameplaySubmits = new WeakMap<object, ConfiguredGameplaySubmit>();
 /** Own submission bookkeeping, shared by every account object for the same chain and address. */
 interface AccountSubmission {
+  /** Resolves once the previous play was answered, so plays leave in nonce order and none leaves behind a refusal. */
   pending: Promise<void>;
+  /** The nonce the next play takes. Unknown, it is read once none of the account's plays is in flight. */
   nextNonce?: bigint;
+  /** Each play sent and not yet included, refused or given up on. */
+  inFlight: Set<PlayInFlight>;
+}
+interface PlayInFlight {
+  settled: Promise<void>;
+  /** Its send got no answer: until it settles, a play after it cannot know it is not stranded behind it. */
+  answerLost: boolean;
 }
 const accountSubmissions = new Map<string, AccountSubmission>();
 const submissionKey = (chainId: string, address: string) => `${BigInt(chainId)}:${BigInt(address)}`;
@@ -95,12 +104,17 @@ export function configureGameplayAccountSubmits<TAccount extends AccountInterfac
   return account;
 }
 
-/** The first action of a session leaves without a nonce round trip: the read happens before the player acts. */
+/**
+ * The first action of a session leaves without a nonce round trip: the read happens before the player acts. As every
+ * read of an unknown nonce, it happens only with none of the account's plays in flight; a busy account's next send
+ * reads it once idle.
+ */
 function readNonceAhead(account: GameplaySubmitAccount, shard: GameplayShard): void {
   const submission = submissionOf(shard.chainId, account.address);
   submission.pending = submission.pending
     .then(async () => {
-      if (submission.nextNonce === undefined) submission.nextNonce = BigInt(await account.getNonce(ACCOUNT_NONCE));
+      if (submission.nextNonce !== undefined || submission.inFlight.size > 0) return;
+      submission.nextNonce = BigInt(await account.getNonce(ACCOUNT_NONCE));
     })
     // An unread nonce is read again by the first send.
     .catch(() => undefined);
@@ -110,15 +124,18 @@ function submissionOf(chainId: string, address: string): AccountSubmission {
   const key = submissionKey(chainId, address);
   let submission = accountSubmissions.get(key);
   if (!submission) {
-    submission = { pending: Promise.resolve() };
+    submission = { pending: Promise.resolve(), inFlight: new Set() };
     accountSubmissions.set(key, submission);
   }
   return submission;
 }
 
 /**
- * One send in flight per account: Herald inclusion frees the next send at the nonce after the one just used.
- * The send returns its hash or rejects on an explicit admission refusal. Other errors are reconciled, never resent.
+ * An account's plays leave one after another at the nonces it numbers itself, each once the one before it was
+ * answered, without waiting for its inclusion: up to PLAYS_IN_FLIGHT sent and not yet included, as the shard admits.
+ * A play never leaves behind one whose answer is still to come, so a refusal never leaves a later play waiting behind
+ * its nonce. The send returns its hash or rejects on an explicit admission refusal. Other errors are reconciled,
+ * never resent.
  */
 export function executeGameplayAccountTransaction({
   account,
@@ -136,15 +153,26 @@ export function executeGameplayAccountTransaction({
   account.getChainId = async () => shard.chainId as Awaited<ReturnType<AccountInterface["getChainId"]>>;
 
   const state = submissionOf(shard.chainId, account.address);
-  const sending = state.pending.then(() => {
+  const sending = state.pending.then(async () => {
+    await untilRoomInFlight(state);
     owner?.throwIfAborted();
     return sendAndReconcile(account, execute, calls, shard, details, owner, state, waitForTransaction);
   });
-  state.pending = sending.then(({ inBlock }) => inBlock).catch(() => undefined);
+  state.pending = sending.then(noop, noop);
   return sending;
 }
 
-/** A transaction from another tab spent a nonce we did not reserve. Reconcile at the next send. */
+const noop = () => {};
+
+/** A play leaves beside the account's others only when its nonce is known and no answer before it was lost. */
+async function untilRoomInFlight(submission: AccountSubmission): Promise<void> {
+  const plays = () => [...submission.inFlight];
+  const room = () =>
+    submission.nextNonce === undefined || plays().some((play) => play.answerLost) ? 1 : PLAYS_IN_FLIGHT;
+  while (submission.inFlight.size >= room()) await Promise.race(plays().map((play) => play.settled));
+}
+
+/** A transaction from another tab spent a nonce we did not number: read it again once none of ours is in flight. */
 export function invalidateGameplayNonce(chainId: string, address: string): void {
   const submission = accountSubmissions.get(submissionKey(chainId, address));
   if (!submission) return;
@@ -157,7 +185,10 @@ function assertConfiguredChain(address: string, configuredChain: string, request
   }
 }
 
-/** Signs and sends at the current nonce, then reconciles whatever the send answered against the node. */
+/**
+ * Signs and sends at the account's next nonce and returns once the send is answered (or the play is seen included),
+ * reconciling whatever it answered against the node.
+ */
 async function sendAndReconcile(
   account: GameplaySubmitAccount,
   execute: RawExecute,
@@ -168,12 +199,10 @@ async function sendAndReconcile(
   submission: AccountSubmission,
   waitForTransaction?: (transactionHash: string) => Promise<GameSyncTransaction>,
 ): Promise<SentGameplayTransaction> {
-  const nonce =
-    submission.nextNonce === undefined
-      ? await account.getNonce(ACCOUNT_NONCE)
-      : `0x${submission.nextNonce.toString(16)}`;
-  const frame = playFrame(nonce, shard, details);
-  submission.nextNonce = BigInt(nonce);
+  const nonce = submission.nextNonce ?? BigInt(await account.getNonce(ACCOUNT_NONCE));
+  submission.nextNonce = nonce + 1n;
+  const { play, settle } = enterFlight(submission);
+  const frame = playFrame(`0x${nonce.toString(16)}`, shard, details);
   const expectedHash = ordinaryHash(account.address, calls, shard, frame);
   let heraldReported: GameSyncTransaction | undefined;
   const reported = waitForTransaction?.(expectedHash)
@@ -191,15 +220,18 @@ async function sendAndReconcile(
       (response) => response.transaction_hash,
       (error: unknown) => {
         if (isAdmissionRefused(error) && !heraldReported) {
-          throw new TransactionNotSentError(expectedHash, { cause: error });
+          throw new TransactionNotSentError(expectedHash, { cause: error, reason: playRefusalReasonOf(error) });
         }
         // Anything after forwarding began proves nothing (-32011, a lost reply): reconcile, never resend.
+        play.answerLost = true;
         return hashOfUnansweredSend(error) ?? expectedHash;
       },
     ),
   ]).catch((error) => {
     cancelled.abort(error);
+    // A refused or unanswered play leaves its nonce in doubt: read it again once none of the account's is in flight.
     submission.nextNonce = undefined;
+    settle();
     throw error;
   });
   let sent = expected;
@@ -212,18 +244,23 @@ async function sendAndReconcile(
       waitForTransaction?.(transactionHash).catch(() => new Promise<never>(() => {})),
     );
   }
-  const inBlock = sent.inBlock.then(
-    () => {
-      // Another tab's status may have invalidated our reservation while this send was waiting.
-      if (submission.nextNonce === BigInt(nonce)) submission.nextNonce += 1n;
-    },
-    (error) => {
+  const inBlock = sent.inBlock
+    .catch((error) => {
       submission.nextNonce = undefined;
       throw error;
-    },
-  );
+    })
+    .finally(settle);
   void inBlock.catch(() => {});
   return { ...sent, inBlock };
+}
+
+/** Counts a play in flight until `settle` says it was included, refused or given up on. */
+function enterFlight(submission: AccountSubmission): { play: PlayInFlight; settle: () => void } {
+  let settle!: () => void;
+  const play: PlayInFlight = { settled: new Promise<void>((resolve) => (settle = resolve)), answerLost: false };
+  submission.inFlight.add(play);
+  void play.settled.then(() => submission.inFlight.delete(play));
+  return { play, settle };
 }
 
 /** Herald and the node can establish inclusion; the first answer stops the fallback. */

@@ -11,7 +11,7 @@ type TimestampSource = () => number;
  * heads; until one is known there is no chain time, and a reader fails by name instead of guessing a wall clock.
  */
 let timestampSource: TimestampSource | null = null;
-/** The newest timestamp the chain itself has written (a closed head or a row). Null until one is known. */
+/** The newest confirmed head's time. Null until one is known. */
 let chainProvenTimestampSource: (() => number | null) | null = null;
 
 export const setBlockTimestampSource = (source: TimestampSource | null) => {
@@ -20,26 +20,10 @@ export const setBlockTimestampSource = (source: TimestampSource | null) => {
 
 /**
  * Production and stamina figures and action gates use the same chain-proven time. A transaction executes at or
- * after the newest chain-written timestamp; the running estimate may lead it and cannot justify a balance.
+ * after the newest confirmed head; the running estimate may lead it and cannot justify a balance.
  */
 export const setChainProvenTimestampSource = (source: (() => number | null) | null) => {
   chainProvenTimestampSource = source;
-};
-
-// A chain-written timestamp ahead of the local chain-time estimate is proof the
-// chain's clock has reached that moment. Reporting it lets the clock re-anchor
-// instead of silently under-reporting elapsed time (the invariant the display
-// math needs is client-time >= every production settlement timestamp the client holds).
-type ChainTimestampEvidenceSink = (timestampSeconds: number) => void;
-let chainTimestampEvidenceSink: ChainTimestampEvidenceSink | null = null;
-
-export const setChainTimestampEvidenceSink = (sink: ChainTimestampEvidenceSink | null) => {
-  chainTimestampEvidenceSink = sink;
-};
-
-export const reportObservedChainTimestamp = (timestampSeconds: number) => {
-  if (!Number.isFinite(timestampSeconds) || timestampSeconds <= 0) return;
-  chainTimestampEvidenceSink?.(timestampSeconds);
 };
 
 export const getBlockTimestamp = () => {

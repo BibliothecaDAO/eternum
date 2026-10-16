@@ -11,6 +11,7 @@ import { l2TransactionUrl } from "@/runtime/l2-rpc";
 import { requireActiveGame } from "@/runtime/world/store";
 import { type EnvironmentLedger, environmentLedger } from "@/shell/value/ledger";
 import { useLedgerPaused } from "@/shell/value/use-ledger-paused";
+import { SETTINGS_PATH } from "@/shell/profile/settings-route";
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { configManager } from "@bibliothecadao/eternum";
@@ -57,7 +58,7 @@ export const FrontierWithdraw = ({ realm, onClose }: { realm: NativeRows["Struct
       });
       setSent({ amount, claimId: receipt.transaction_hash, fromBlock });
     } catch (error) {
-      toast.error(extractReadableErrorMessage(error, "The withdrawal could not be sent."));
+      toast.failed(error, "The withdrawal could not be sent.");
     } finally {
       setSending(null);
     }
@@ -72,7 +73,7 @@ export const FrontierWithdraw = ({ realm, onClose }: { realm: NativeRows["Struct
       amount={amount}
       onAmount={setAmount}
       onWithdraw={() => void withdraw()}
-      onLinkWallet={() => navigate("/profile/account")}
+      onLinkWallet={() => navigate(SETTINGS_PATH)}
       onClose={onClose}
     />
   );

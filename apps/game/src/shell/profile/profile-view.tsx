@@ -1,8 +1,9 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount } from "@/ui/design-system/kit/amount";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { findOwnEntry } from "@/ui/features/frontier/board/standings";
@@ -13,7 +14,7 @@ import { Loading } from "../loading";
 import { OwnRatingLine } from "../rating-line";
 import { paintingSources } from "../paintings";
 import { Panel } from "../panel";
-import { AgeLabel } from "../play/age-card";
+import { AgeLabel } from "../play/age-label";
 import { ageOf } from "../play/ages";
 import { chooseSeason } from "../season";
 import { HistoryRow } from "../season-tab/history-row";
@@ -79,9 +80,9 @@ export const PlayerCard = ({ account, own }: { account: string; own: boolean }) 
       <h2 className="max-w-full px-4 font-display text-[30px] leading-none text-kit-cream">
         <PlayerName account={account} />
       </h2>
-      <p className="flex items-center gap-2 text-[14px] text-kit-muted">
+      <p className="flex items-center gap-2 text-sm text-kit-muted">
         {standing && <OrderEmblem order={standing.order} size={20} />}
-        <b className="font-ui text-kit-gold">{standing ? `#${standing.rank}` : "—"}</b>
+        <b className="font-body text-kit-gold">{standing ? `#${standing.rank}` : "—"}</b>
         {SEASON_WORDS.of} {formatAmount(field)} ·
         <AgeLabel numeral={frontier.numeral} />
         <span className="text-kit-cream">{frontier.name}</span>
@@ -91,32 +92,31 @@ export const PlayerCard = ({ account, own }: { account: string; own: boolean }) 
   );
 };
 
-/** The desktop's finished games, in a titled plate. */
-export const RecentGames = ({ account }: { account: string }) => (
-  <Panel icon="Tp" title={PROFILE_WORDS.recentGames}>
-    <History account={account} framed={false} />
-  </Panel>
-);
+/** The desktop's finished games, in a titled plate; none, no plate. */
+export const RecentGames = ({ account }: { account: string }) => <History account={account} titled />;
 
-/** The player's banner: until their best age is a recorded fact, Frontier's painting stands for it. */
+/**
+ * The player's banner, their portrait and name at its top: until their best age is a recorded fact, Frontier's painting
+ * stands for it, behind them.
+ */
 const ProfileBanner = ({ account, own }: { account: string; own: boolean }) => {
   const profile = usePlayerProfile(account);
   const { own: standing } = useSeasonStanding(account);
   return (
-    <section className="painted flex h-40 items-end gap-3 rounded-2xl p-3">
+    <section className="painted flex h-40 items-start gap-3 rounded-2xl p-3">
       <img
         {...paintingSources(ageOf("frontier").painting)}
         sizes="(min-width: 1024px) 50vw, 100vw"
         alt=""
         className="absolute inset-0 -z-10 size-full object-cover"
       />
-      <span className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent to-kit-ground/90" />
+      <span className="absolute inset-0 -z-10 bg-gradient-to-b from-kit-ground/90 to-transparent" />
       <img
         src={playerPortraitUrl(account, profile.portrait)}
         alt=""
         className={cn("size-20 rounded-full border-[3px] object-cover", own ? "border-kit-peach" : "border-kit-line2")}
       />
-      <div className="flex min-w-0 items-center gap-2 pb-2 font-ui text-[22px] font-bold text-kit-cream">
+      <div className="flex min-h-20 min-w-0 items-center gap-2 font-body text-xl font-bold text-kit-cream">
         {standing && <OrderEmblem order={standing.order} size={26} />}
         <PlayerName account={account} />
       </div>
@@ -130,34 +130,37 @@ const SeasonFigure = ({ account }: { account: string }) => {
   const frontier = ageOf("frontier");
   return (
     <section className="flex items-center gap-3 plate p-3">
-      <KitIcon code="Tp" size={30} />
-      <span className="font-ui text-[28px] font-extrabold tabular-nums text-kit-gold">
+      <SemanticIcon name="victory" size={30} />
+      <span className="font-body text-[28px] font-extrabold tabular-nums text-kit-gold">
         {own ? `#${own.rank}` : "—"}
       </span>
-      <span className="text-[15px] text-kit-muted">
+      <span className="text-base text-kit-muted">
         {SEASON_WORDS.of} {formatAmount(field)}
       </span>
       <span className="ml-auto flex items-center gap-2">
         <AgeLabel numeral={frontier.numeral} />
-        <span className="font-ui text-[15px] font-bold text-kit-cream">{frontier.name}</span>
+        <span className="font-body text-base font-bold text-kit-cream">{frontier.name}</span>
       </span>
     </section>
   );
 };
 
-/** Their finished games, newest first; absent when they have none. */
-const History = ({ account, framed = true }: { account: string; framed?: boolean }) => {
+/** Their finished games, newest first, on a plate (titled on desktop); absent when they have none. */
+const History = ({ account, titled = false }: { account: string; titled?: boolean }) => {
   const history = useRecentResults(HISTORY, account);
   const now = useNowSeconds();
   if (history.isError)
     return <ServiceFailure service="results" error={history.error} retry={() => void history.refetch()} />;
   if (history.isPending) return <Loading />;
   if (history.data.games.length === 0) return null;
-  return (
-    <ul className={cn(framed && "plate px-2")}>
-      {history.data.games.map((game) => (
-        <HistoryRow key={`${game.chainId}:${game.game_id}`} game={game} player={account} now={now} />
-      ))}
-    </ul>
+  const rows = history.data.games.map((game) => (
+    <HistoryRow key={`${game.chainId}:${game.game_id}`} game={game} player={account} now={now} />
+  ));
+  return titled ? (
+    <Panel icon="victory" title={PROFILE_WORDS.recentGames}>
+      <ul>{rows}</ul>
+    </Panel>
+  ) : (
+    <ul className="plate px-2">{rows}</ul>
   );
 };

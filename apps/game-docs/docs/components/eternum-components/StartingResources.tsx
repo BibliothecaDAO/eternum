@@ -78,7 +78,7 @@ const ResourceItem = ({ resourceId, amount }: { resourceId: number; amount: numb
 };
 
 export const StartingResources = ({ structureType }: Props) => {
-  const config = ETERNUM_CONFIG();
+  const config = ETERNUM_CONFIG("eternum");
   const allStartingResources =
     structureType === StructureType.Village ? config.villageStartingResources : config.startingResources;
 

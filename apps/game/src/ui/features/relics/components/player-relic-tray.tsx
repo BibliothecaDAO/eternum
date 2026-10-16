@@ -41,7 +41,7 @@ const RELIC_ITEM_CLASSES =
 const RELIC_ITEM_THEME = "border-relic2/40 bg-relic/10 backdrop-blur-sm";
 const RELIC_ITEM_INTERACTIVE =
   "cursor-pointer transition-colors duration-150 hover:bg-relic/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60";
-const RELIC_AMOUNT_CLASS = "text-xxs font-semibold text-gold/90";
+const RELIC_AMOUNT_CLASS = "text-sm font-semibold text-gold/90";
 
 const toNumber = (value: unknown): number => {
   if (typeof value === "number") {
@@ -164,9 +164,7 @@ const PlayerRelicTray = memo(({ variant = "floating", className }: PlayerRelicTr
             />
           </div>
         ) : (
-          <div className="flex flex-1 items-center text-xs font-medium text-gold/60 italic">
-            No relics discovered yet.
-          </div>
+          <div className="flex flex-1 items-center text-sm font-medium text-kit-muted">No relics discovered yet.</div>
         )}
       </div>
     );
@@ -180,7 +178,7 @@ const PlayerRelicTray = memo(({ variant = "floating", className }: PlayerRelicTr
     <div className={cn("pointer-events-auto ml-auto", className)}>
       <div className="rounded-xl border border-gold/25 bg-black/80 p-2 shadow-[0_6px_18px_rgba(0,0,0,0.45)] backdrop-blur-md">
         <div className="mb-1 flex items-center justify-between gap-2">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-gold/60">Relics</span>
+          <span className="text-sm font-semibold text-kit-muted">Relics</span>
         </div>
         <div className="max-w-xs overflow-x-auto">
           <RelicGrid

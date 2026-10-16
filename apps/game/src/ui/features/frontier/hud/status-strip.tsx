@@ -1,8 +1,9 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import { ClockLine } from "@/ui/design-system/kit/clock-line";
 import { DayDial } from "@/ui/design-system/kit/day-dial";
-import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { StoreBar } from "@/ui/design-system/kit/store-bar";
 import { formatDuration } from "@/ui/design-system/kit/time";
 import { TONE_TEXT, type Tone } from "@/ui/design-system/kit/tone";
@@ -32,11 +33,11 @@ export type StoreReading = {
   flyTarget: string;
 };
 
-const STORES: Record<StoreKind, { icon: IconCode; word: string }> = {
-  essence: { icon: "Es", word: ESSENCE },
-  labor: { icon: "La", word: LABOR },
-  wheat: { icon: "Wh", word: WHEAT },
-  troops: { icon: "Tr", word: TROOPS },
+const STORES: Record<StoreKind, { icon: IconMeaning; word: string }> = {
+  essence: { icon: "essence", word: ESSENCE },
+  labor: { icon: "labor", word: LABOR },
+  wheat: { icon: "wheat", word: WHEAT },
+  troops: { icon: "troops", word: TROOPS },
 };
 
 /**
@@ -112,9 +113,9 @@ const StorePlate = ({ store }: { store: StoreReading }) => {
       >
         <span className="flex items-center justify-center gap-0.5">
           <span data-fly-target={store.flyTarget} className="inline-flex">
-            <KitIcon code={icon} size={18} />
+            <SemanticIcon name={icon} size={18} />
           </span>
-          <span className={cn("text-[15px] leading-none tabular-nums", TONE_TEXT[store.tone])}>
+          <span className={cn("text-base leading-none tabular-nums", TONE_TEXT[store.tone])}>
             {shown === undefined ? "—" : <TickNumber value={shown} format={formatAmount} />}
           </span>
         </span>

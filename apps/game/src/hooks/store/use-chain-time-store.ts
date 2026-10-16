@@ -8,7 +8,7 @@ type ProviderHeartbeat = {
   source?: string;
   /**
    * A pre-confirmed block's time: it moves the clock, but no transaction executes at it yet. The gateway records an
-   * action at its latest confirmed head, so only confirmed heads and chain-written rows raise the execution floor.
+   * action at its latest confirmed head, so only confirmed heads raise the execution floor.
    */
   preconfirmed?: boolean;
 };

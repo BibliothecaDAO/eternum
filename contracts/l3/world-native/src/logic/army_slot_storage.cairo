@@ -2,8 +2,8 @@ use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use crate::events::RowSet;
 use crate::stamina::{StaminaSourceTrait, StaminaTrait};
 use crate::troops::{
-    ArmySlot, ArmySlotKey, ArmySlotRecord, Coord, ExplorerKey, ExplorerRecord, ExplorerTroops, Stamina, StaminaSource,
-    Troops,
+    ArmySlot, ArmySlotKey, ArmySlotRecord, Coord, ExplorerKey, ExplorerRecord, ExplorerTroops, Stamina, StaminaRefill,
+    StaminaSource, Troops,
 };
 
 pub fn read(key: ArmySlotKey) -> Option<ArmySlot> {
@@ -44,23 +44,20 @@ fn occupied(key: ArmySlotKey, explorer_id: u64) -> ArmySlot {
 }
 
 // Command arithmetic gets a transient bar; only persist writes it back, preserving the stored Slot tag.
-pub fn resolve(key: ExplorerKey, mut explorer: ExplorerTroops, timestamp: Option<u64>) -> ExplorerTroops {
+pub fn resolve(key: ExplorerKey, mut explorer: ExplorerTroops, refill: Option<StaminaRefill>) -> ExplorerTroops {
     if let StaminaSource::Slot(slot) = explorer.troops.stamina {
         let slot_key = key_for(key, explorer.owner, explorer.coord, slot);
         let mut stamina = occupied(slot_key, key.explorer_id).stamina;
-        if let Some(timestamp) = timestamp {
+        if let Some(refill) = refill {
             let progress = crate::logic::progression::require(key);
-            let rules = crate::logic::game::rules(key.game_id);
-            let maximum = crate::progression::stamina_max(
-                progress, explorer.troops.category, rules.troop_stamina_config,
-            );
+            let maximum = crate::progression::stamina_max(progress, explorer.troops.category, refill.stamina_config);
             stamina
                 .refill_to_max(
                     ref explorer.troops.boosts,
                     maximum,
-                    rules.troop_stamina_config,
-                    rules.tick_config.armies_tick_in_seconds,
-                    timestamp,
+                    refill.stamina_config,
+                    refill.armies_tick_in_seconds,
+                    refill.timestamp,
                 );
             stamina.clamp(maximum);
         }

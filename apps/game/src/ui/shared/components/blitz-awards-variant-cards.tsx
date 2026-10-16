@@ -1,4 +1,6 @@
-import { Hyperstructure, ChevronsUp } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import { FONTS } from "@/tokens";
+
 import { forwardRef, useMemo, useState, type Ref } from "react";
 import { createPortal } from "react-dom";
 
@@ -9,7 +11,7 @@ import type { IdentityProfile } from "@realms-world/identity";
 import { BLITZ_CARD_DIMENSIONS } from "../lib/blitz-highlight";
 import {
   BLITZ_CARD_BASE_STYLES,
-  BLITZ_CARD_FONT_IMPORT,
+  BLITZ_CARD_FONT_FACES,
   BLITZ_CARD_GOLD_THEME,
   formatBlitzValue as formatValue,
 } from "../lib/blitz-card-shared";
@@ -147,8 +149,8 @@ const getOptionSixMetricIconId = (awardId: AwardId): OptionSixMetricIconId | nul
 };
 
 const OptionSixMetricIcon = ({ iconId }: { iconId: OptionSixMetricIconId }) => {
-  if (iconId === "first-hyperstructure") return <Hyperstructure />;
-  return <ChevronsUp />;
+  if (iconId === "first-hyperstructure") return <SemanticIcon name="spire" />;
+  return <SemanticIcon name="chevron-up" />;
 };
 
 const resolveWinner = (
@@ -161,7 +163,7 @@ const resolveWinner = (
 };
 
 const AWARDS_CARD_BASE_STYLES = `
-  ${BLITZ_CARD_FONT_IMPORT}
+  ${BLITZ_CARD_FONT_FACES}
   ${BLITZ_CARD_BASE_STYLES}
   ${BLITZ_CARD_GOLD_THEME}
 
@@ -187,8 +189,7 @@ const AWARDS_CARD_BASE_STYLES = `
   }
 
   .blitz-card-root .award-title {
-    font-family: "IM Fell English", serif;
-    font-style: italic;
+    font-family: ${FONTS.display};
     font-size: 16px;
     line-height: 20px;
     color: #ffffff;
@@ -214,7 +215,7 @@ const AWARDS_CARD_BASE_STYLES = `
 
   .blitz-card-root .award-value {
     margin-top: 3px;
-    font-family: "Montserrat", sans-serif;
+    font-family: ${FONTS.body};
     font-weight: 800;
     font-size: 54px;
     line-height: 58px;
@@ -292,7 +293,7 @@ const AWARDS_CARD_BASE_STYLES = `
   }
 
   .blitz-card-root .award-winner {
-    font-family: "IM Fell English", serif;
+    font-family: ${FONTS.body};
     font-style: normal;
     font-weight: 400;
     font-size: 18px;
@@ -907,19 +908,16 @@ const OPTION_SIX_STYLES = `
   .blitz-card-root.variant-option-six .award-value.option-six-value-sm {
     font-size: 43px;
     line-height: 46px;
-    letter-spacing: -0.4px;
   }
 
   .blitz-card-root.variant-option-six .award-value.option-six-value-xs {
     font-size: 39px;
     line-height: 42px;
-    letter-spacing: -0.6px;
   }
 
   .blitz-card-root.variant-option-six .award-value.option-six-value-xxs {
     font-size: 35px;
     line-height: 38px;
-    letter-spacing: -0.8px;
   }
 
   .blitz-card-root.variant-option-six .award-winner-row {

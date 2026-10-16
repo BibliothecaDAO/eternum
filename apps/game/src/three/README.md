@@ -30,7 +30,8 @@ must be identical between them.
 
 - `game-renderer.ts`: renderer bootstrap, controls, frame loop, and top-level runtime ownership.
 - `renderer-backend-runtime.ts`: initializes the WebGPU/WebGL2-fallback backend and handles device-loss recovery.
-- `renderer-effects-runtime.ts`: owns the shared post-process plan.
+- `renderer-backend.ts`: the required backend contract shared by the game and renderer labs.
+- `renderer-effects-runtime.ts`: applies the shared visual profile and reports environment support.
 - `scene-manager.ts`: switches scenes and owns transition ordering and input-surface handoff.
 - `scenes/hexagon-scene.ts`: shared camera, lighting, fog, shadow refresh, input, and visibility behavior.
 - `scenes/worldmap.tsx`: chunked world traversal rendered from the session spatial projection.
@@ -44,7 +45,7 @@ The top-level frame reads like this:
 1. Apply Quality/Battery pacing at the single animation-loop boundary.
 2. Update controls and the active scene.
 3. Drain the shared frame-budget queue for terrain and entity presentation work.
-4. Render the active scene through the backend's post-process path.
+4. Render the active scene through the shared backend.
 5. Render HUD and label overlays.
 
 Input immediately leaves Battery idle pacing. Camera movement selects already-synchronized projection data and may
@@ -94,3 +95,23 @@ Do not dispose cosmetic- or FX-cache-owned geometry or textures from a scene man
 
 Keep DEV instrumentation out of production paths and preserve the forced-WebGL smoke whenever renderer ownership or
 effects code changes.
+
+The normal player entry does not load the graphics GUI. Use `?dev=1` to load debug controls; `GameRenderer` owns their
+single root and disposes it on teardown. Use `?dev=0` to disable the persisted debug preference.
+
+## Chunk lab
+
+`/lab/chunks` exercises the shared renderer without authentication. Select Baseline, Dense, or Stress and use Reset
+Camera to return to the fixture's initial view. The route supports the same `rendererMode` query as the game.
+
+With the client running, verify both backends with the maintained smoke command:
+
+```sh
+pnpm --dir apps/game exec node scripts/run-renderer-debug-smoke.mjs --base-url https://127.0.0.1:4179 --scenarios baseline,dense,stress --output /tmp/chunk-native.json
+pnpm --dir apps/game exec node scripts/run-renderer-debug-smoke.mjs --base-url 'https://127.0.0.1:4179/?rendererMode=webgpu-force-webgl' --scenarios baseline,dense,stress --output /tmp/chunk-fallback.json
+```
+
+The check reads rendered pixels through a canvas copy, verifies fixture metrics, and checks backend health and browser
+errors. `readRendererDebugSnapshot` and `evaluateRendererDebugSmokeResult` also support browser-tool runs of this gate.
+
+All development tools share the [lab entry and feature map](../lab/README.md).

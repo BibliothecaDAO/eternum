@@ -1,8 +1,8 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import Button from "@/ui/design-system/atoms/button";
 import { HUD_CUE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
-import { RotateCcw } from "@/ui/design-system/atoms/game-icons";
 
 import { BattleCooldownTimer } from "../battle-cooldown-timer";
 import type { AttackMode } from "./use-battle-lab-state";
@@ -48,8 +48,8 @@ export const ActionFooter = ({
               type="button"
               onClick={() => onSetAttackType(option)}
               className={cn(
-                "px-6 py-1.5 text-sm font-semibold uppercase tracking-wide transition-colors",
-                attackType === option ? "bg-gold/20 text-gold" : "bg-black/30 text-gold/60 hover:text-gold",
+                "px-6 py-1.5 text-sm font-semibold transition-colors",
+                attackType === option ? "bg-gold/20 text-gold" : "bg-black/30 text-kit-muted hover:text-gold",
               )}
               aria-pressed={attackType === option}
             >
@@ -63,9 +63,9 @@ export const ActionFooter = ({
         <button
           type="button"
           onClick={onResetToLive}
-          className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-black/30 px-3 py-1 text-xs font-semibold text-gold/80 transition hover:border-gold hover:text-gold"
+          className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-black/30 px-3 py-1 text-sm font-semibold text-gold/80 transition hover:border-gold hover:text-gold"
         >
-          <RotateCcw className="h-3 w-3" />
+          <SemanticIcon name="refresh" className="h-3 w-3" />
           Reset to live
         </button>
       )}

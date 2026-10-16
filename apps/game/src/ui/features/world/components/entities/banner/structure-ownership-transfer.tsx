@@ -57,7 +57,7 @@ export const StructureOwnershipTransfer = ({ structureId }: { structureId: numbe
       setRecipient("");
       toast.success("Structure ownership transferred");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not transfer ownership");
+      toast.failed(error, "Could not transfer ownership");
     } finally {
       submitting.current = false;
       setPending(false);
@@ -68,7 +68,7 @@ export const StructureOwnershipTransfer = ({ structureId }: { structureId: numbe
     <div className="mt-2 space-y-2 border-t border-gold/20 pt-2">
       {confirming ? (
         <>
-          <label className="block text-xs">
+          <label className="block text-sm">
             Recipient gameplay account
             <input
               className="mt-1 w-full rounded border border-gold/30 bg-black/25 p-2"
@@ -79,11 +79,11 @@ export const StructureOwnershipTransfer = ({ structureId }: { structureId: numbe
               disabled={pending}
             />
           </label>
-          <p className="text-xs">
+          <p className="text-sm">
             Transfer this structure and its inventory to this gameplay account. This cannot be undone.
           </p>
           {recipient && !validRecipient && (
-            <p role="alert" className="text-xs text-red-300">
+            <p role="alert" className="text-sm text-red-300">
               Enter a valid, nonzero gameplay account other than your own.
             </p>
           )}

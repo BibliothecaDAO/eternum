@@ -4,7 +4,7 @@ import type { PushNotificationDevice } from "./notification-database";
 import { notificationWorkerRequest } from "./local-notification-client";
 
 const pushLock = "realms-push-registration";
-export const readPushDevice = () => notificationWorkerRequest<PushNotificationDevice | null>("0x0", "push-status");
+export const readPushDevice = (signal?: AbortSignal) => notificationWorkerRequest("0x0", "push-status", {}, signal);
 
 export async function enablePushNotifications(
   owner: string,
@@ -19,11 +19,7 @@ export async function enablePushNotifications(
   await navigator.locks.request(pushLock, async () => {
     assertCurrentOwner(owner);
     if (gameAlerts || directMessages) {
-      const capabilities = await notificationWorkerRequest<{
-        automaticGameAlerts: boolean;
-        directMessageAlerts: boolean;
-        gameForegroundLease: boolean;
-      }>(owner, "push-capabilities").catch(() => {
+      const capabilities = await notificationWorkerRequest(owner, "push-capabilities").catch(() => {
         throw new Error("Apply the latest game update before enabling background alerts.");
       });
       if (
@@ -36,7 +32,7 @@ export async function enablePushNotifications(
     try {
       const previous = await readPushDevice();
       if (previous?.state === "revoking") await revokePushDevice(previous.owner);
-      const device = await notificationWorkerRequest<PushNotificationDevice>(owner, "prepare-push");
+      const device = await notificationWorkerRequest(owner, "prepare-push");
       const registration = await requireRegistration();
       const subscription = await resolveBrowserSubscription(registration, publicKey, previous !== null);
       assertCurrentOwner(owner);
@@ -90,8 +86,7 @@ export async function disablePushNotifications(owner: string): Promise<void> {
   if (device) await navigator.locks.request(pushLock, () => removeRevokedPushDevice(device));
 }
 
-const revokeLocalPushDevice = (owner: string, id?: string) =>
-  notificationWorkerRequest<PushNotificationDevice | null>(owner, "revoke-push", { id });
+const revokeLocalPushDevice = (owner: string, id?: string) => notificationWorkerRequest(owner, "revoke-push", { id });
 
 async function revokePushDevice(owner: string): Promise<void> {
   const device = await revokeLocalPushDevice(owner);
@@ -149,11 +144,13 @@ async function readInstalledPushDevice(
 }
 
 /** Refreshes the server lease that prevents automatic push while any game window is visible. */
-export async function syncPushGameForeground(owner: string): Promise<void> {
+export async function syncPushGameForeground(owner: string, signal?: AbortSignal): Promise<void> {
+  signal?.throwIfAborted();
   assertCurrentOwner(owner);
-  const device = await readPushDevice();
+  const device = await readPushDevice(signal);
   if (device?.owner !== owner || device.state !== "active") return;
-  const foreground = await notificationWorkerRequest<boolean>(owner, "game-foreground-status");
+  const foreground = await notificationWorkerRequest(owner, "game-foreground-status", {}, signal);
+  signal?.throwIfAborted();
   assertCurrentOwner(owner);
   await identityClient.setPushGameForeground(owner, device.id, foreground);
 }

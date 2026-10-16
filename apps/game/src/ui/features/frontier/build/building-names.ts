@@ -1,5 +1,6 @@
+import { type IconMeaning } from "@/ui/design-system/icon";
 import { BARRACKS, FARM, HUT, TRAINING_BUILDINGS, WORKSHOP } from "@/ui/design-system/kit/words";
-import type { IconCode } from "@/ui/design-system/kit/kit-icon";
+
 import { BuildingType } from "@bibliothecadao/types";
 
 /** Frontier's buildings by their glossary names and icons, the only ones its build, upgrade and research sheets show. */
@@ -24,19 +25,19 @@ export const buildingName = (category: BuildingType): string => {
   return name;
 };
 
-const ICONS: Partial<Record<BuildingType, IconCode>> = {
-  [BuildingType.ResourceWheat]: "Fm",
-  [BuildingType.ResourceLabor]: "Wk",
-  [BuildingType.ResourceKnightT1]: "Bs",
-  [BuildingType.WorkersHut]: "Ht",
-  [BuildingType.WarHall]: "Wa",
-  [BuildingType.SupplyYard]: "Sy",
-  [BuildingType.ScoutsLodge]: "Ld",
-  [BuildingType.Hearth]: "He",
+const ICONS: Partial<Record<BuildingType, IconMeaning>> = {
+  [BuildingType.ResourceWheat]: "farm",
+  [BuildingType.ResourceLabor]: "workshop",
+  [BuildingType.ResourceKnightT1]: "barracks",
+  [BuildingType.WorkersHut]: "workers-hut",
+  [BuildingType.WarHall]: "war-hall",
+  [BuildingType.SupplyYard]: "supply-yard",
+  [BuildingType.ScoutsLodge]: "scout-lodge",
+  [BuildingType.Hearth]: "hearth",
 };
 
 /** A Frontier building's icon; a building Frontier does not raise is loud. */
-export const buildingIcon = (category: BuildingType): IconCode => {
+export const buildingIcon = (category: BuildingType): IconMeaning => {
   const icon = ICONS[category];
   if (!icon) throw new Error(`Frontier has no building ${category}`);
   return icon;

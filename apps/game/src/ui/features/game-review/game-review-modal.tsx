@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { type GameReviewData } from "@/services/review/game-review-service";
 import { Button } from "@/ui/design-system/atoms";
 import { BlitzAwardsOptionSixCardWithSelector } from "@/ui/shared/components/blitz-awards-variant-cards";
@@ -6,7 +7,7 @@ import { BlitzMapFingerprintCardWithSelector } from "@/ui/shared/components/blit
 import { BLITZ_CARD_DIMENSIONS } from "@/ui/shared/lib/blitz-highlight";
 import { buildGameReviewStepShareMessage } from "@/ui/shared/lib/x-share-messages";
 import { toPng } from "html-to-image";
-import { ArrowLeft, ArrowRight, Copy, Flag, Gift, Loader2, Share2, X } from "@/ui/design-system/atoms/game-icons";
+
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MutableRefObject } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 
@@ -75,18 +76,18 @@ const GameFinishedStep = ({ data }: { data: GameReviewData }) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-gold">
-        <Flag className="h-4 w-4" />
+        <SemanticIcon name="flag" className="h-4 w-4" />
         <h3 className="font-serif text-xl">Game Is Finished</h3>
       </div>
-      <p className="text-xs uppercase tracking-wider text-gold/60">World: {data.worldName}</p>
+      <p className="text-sm text-kit-muted">World: {data.worldName}</p>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
-          <p className="text-[11px] uppercase tracking-wider text-gold/60">Winner</p>
+          <p className="text-sm text-kit-muted">Winner</p>
           <p className="mt-1 text-sm text-white">{winnerLabel}</p>
         </div>
         <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
-          <p className="text-[11px] uppercase tracking-wider text-gold/60">Registered Players</p>
+          <p className="text-sm text-kit-muted">Registered Players</p>
           <p className="mt-1 text-sm text-white">{formatValue(data.stats.numberOfPlayers)}</p>
         </div>
       </div>
@@ -117,18 +118,18 @@ const ResultOutcomeStep = ({
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-gold">
-        <Gift className="h-4 w-4" />
+        <SemanticIcon name="reward" className="h-4 w-4" />
         <h3 className="font-serif text-xl">Result Outcome</h3>
       </div>
-      <p className="text-xs uppercase tracking-wider text-gold/60">Game: {data.worldName}</p>
+      <p className="text-sm text-kit-muted">Game: {data.worldName}</p>
 
       <div ref={captureRef} className="mx-auto grid w-full gap-3 sm:grid-cols-2" style={CARD_PREVIEW_STYLE}>
         <div className="rounded-xl border border-gold/20 bg-dark/80 p-4">
-          <p className="text-[11px] uppercase tracking-wider text-gold/60">Rank</p>
+          <p className="text-sm text-kit-muted">Rank</p>
           <p className="mt-1 text-2xl text-white">{finalized ? (data.personalScore?.rank ?? "—") : "—"}</p>
         </div>
         <div className="rounded-xl border border-gold/20 bg-dark/80 p-4">
-          <p className="text-[11px] uppercase tracking-wider text-gold/60">Victory points</p>
+          <p className="text-sm text-kit-muted">Victory points</p>
           <p className="mt-1 text-2xl text-white">
             {finalized ? (data.personalScore?.points.toLocaleString() ?? "—") : "—"}
           </p>
@@ -355,7 +356,7 @@ export const GameReviewModal = ({ isOpen, world, nextGame, onClose }: GameReview
       toast.success("Step image copied to clipboard.");
     } catch (caughtError) {
       console.error("Failed to copy review step image", caughtError);
-      toast.error("Could not copy the image.");
+      toast.failed(caughtError, "Could not copy the image.");
     } finally {
       setIsCopying(false);
     }
@@ -412,7 +413,7 @@ export const GameReviewModal = ({ isOpen, world, nextGame, onClose }: GameReview
               className="rounded-lg p-1.5 text-white/60 transition-colors hover:bg-white/10"
               aria-label="Close"
             >
-              <X className="h-5 w-5" />
+              <SemanticIcon name="close" className="h-5 w-5" />
             </button>
           </div>
 
@@ -430,10 +431,10 @@ export const GameReviewModal = ({ isOpen, world, nextGame, onClose }: GameReview
                 />
               );
             })}
-            <span className="ml-1 text-[11px] text-gold/70">
+            <span className="ml-1 text-sm text-gold/70">
               {currentStepNumber}/{steps.length}
             </span>
-            <span className="text-[11px] uppercase tracking-wider text-gold/50">{currentStepLabel}</span>
+            <span className="text-sm text-kit-muted">{currentStepLabel}</span>
           </div>
           <div className="endgame-header-ornament" />
         </div>
@@ -441,7 +442,7 @@ export const GameReviewModal = ({ isOpen, world, nextGame, onClose }: GameReview
         <div className="flex-1 overflow-y-auto p-3 sm:p-4">
           {isLoading ? (
             <div className="flex min-h-[320px] flex-col items-center justify-center">
-              <Loader2 className="h-10 w-10 animate-spin text-gold" />
+              <SemanticIcon name="refresh" className="h-10 w-10 animate-spin text-gold" />
               <p className="mt-3 text-sm text-gold/70">Loading game review...</p>
             </div>
           ) : error || !reviewData ? (
@@ -449,7 +450,7 @@ export const GameReviewModal = ({ isOpen, world, nextGame, onClose }: GameReview
               <div className="rounded-xl border border-danger/40 bg-danger/10 px-4 py-2 text-sm text-lightest">
                 Failed to load game review data.
               </div>
-              <Button onClick={() => void refetch()} variant="outline" forceUppercase={false}>
+              <Button onClick={() => void refetch()} variant="outline">
                 Retry
               </Button>
             </div>
@@ -506,7 +507,7 @@ export const GameReviewModal = ({ isOpen, world, nextGame, onClose }: GameReview
                               setMapFingerprintZoom(MAP_FINGERPRINT_ZOOM_LEVELS[nextIndex]);
                             }}
                             disabled={!canZoomIn}
-                            className="px-2.5 py-2 text-sm font-semibold uppercase tracking-wider text-gold transition-colors enabled:hover:bg-gold/10 disabled:cursor-not-allowed disabled:text-gold/40 sm:px-3"
+                            className="px-2.5 py-2 text-sm font-semibold text-gold transition-colors enabled:hover:bg-gold/10 disabled:cursor-not-allowed disabled:text-kit-muted sm:px-3"
                             aria-label="Zoom in"
                           >
                             +
@@ -519,7 +520,7 @@ export const GameReviewModal = ({ isOpen, world, nextGame, onClose }: GameReview
                               setMapFingerprintZoom(MAP_FINGERPRINT_ZOOM_LEVELS[nextIndex]);
                             }}
                             disabled={!canZoomOut}
-                            className="px-2.5 py-2 text-sm font-semibold uppercase tracking-wider text-gold transition-colors enabled:hover:bg-gold/10 disabled:cursor-not-allowed disabled:text-gold/40 sm:px-3"
+                            className="px-2.5 py-2 text-sm font-semibold text-gold transition-colors enabled:hover:bg-gold/10 disabled:cursor-not-allowed disabled:text-kit-muted sm:px-3"
                             aria-label="Zoom out"
                           >
                             -
@@ -530,7 +531,7 @@ export const GameReviewModal = ({ isOpen, world, nextGame, onClose }: GameReview
                               const nextIndex = (currentGoldLevelIndex + 1) % MAP_FINGERPRINT_GOLD_LEVELS.length;
                               setMapFingerprintGoldLevel(MAP_FINGERPRINT_GOLD_LEVELS[nextIndex]);
                             }}
-                            className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-gold transition-colors enabled:hover:bg-gold/10 sm:px-3"
+                            className="px-2.5 py-1 text-sm font-semibold text-gold transition-colors enabled:hover:bg-gold/10 sm:px-3"
                             aria-label={`Gold level ${Math.round(mapFingerprintGoldLevel * 100)} percent`}
                             title={`Gold ${Math.round(mapFingerprintGoldLevel * 100)}% (click to cycle)`}
                           >
@@ -572,21 +573,19 @@ export const GameReviewModal = ({ isOpen, world, nextGame, onClose }: GameReview
                 onClick={handlePrevStep}
                 variant="outline"
                 className="gap-2 !px-3 !py-2"
-                forceUppercase={false}
                 disabled={stepIndex === 0 || isLoading || Boolean(error)}
               >
-                <ArrowLeft className="h-4 w-4" />
+                <SemanticIcon name="arrow-left" className="h-4 w-4" />
                 Back
               </Button>
               <Button
                 onClick={handleNextStep}
                 variant="gold"
                 className="gap-2 !px-3 !py-2 shadow-lg shadow-gold/20"
-                forceUppercase={false}
                 disabled={isLoading || Boolean(error)}
               >
                 {stepIndex >= steps.length - 1 ? "Close" : "Next"}
-                <ArrowRight className="h-4 w-4" />
+                <SemanticIcon name="arrow-right" className="h-4 w-4" />
               </Button>
             </div>
 
@@ -596,21 +595,19 @@ export const GameReviewModal = ({ isOpen, world, nextGame, onClose }: GameReview
                   onClick={handleCopyStep}
                   variant="secondary"
                   className="gap-2 !px-3 !py-2"
-                  forceUppercase={false}
                   isLoading={isCopying}
                   disabled={isLoading || Boolean(error) || isCopying}
                 >
-                  <Copy className="h-4 w-4" />
+                  <SemanticIcon name="copy" className="h-4 w-4" />
                   {isCopying ? "Copying..." : "Copy PNG"}
                 </Button>
                 <Button
                   onClick={handleShareOnX}
                   variant="outline"
                   className="gap-2 !px-3 !py-2"
-                  forceUppercase={false}
                   disabled={isLoading || Boolean(error) || !shareMessage}
                 >
-                  <Share2 className="h-4 w-4" />
+                  <SemanticIcon name="share" className="h-4 w-4" />
                   Share on X
                 </Button>
               </div>

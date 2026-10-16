@@ -82,7 +82,7 @@ describe("the doorway", () => {
       source: "boot",
       phase: "reconnect_required",
       audience: "player",
-      accountError: "Device limit reached.",
+      accountError: "This account is signed in on 8 devices.",
     });
     expect(view.blocker).toEqual({ kind: "devices" });
   });

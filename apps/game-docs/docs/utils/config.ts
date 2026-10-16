@@ -1,13 +1,12 @@
 import { getConfigFromNetwork, type GameType } from "@config";
-import { DOCS_CHAIN, env } from "../../env";
+import { DOCS_CHAIN } from "../../env";
 
-const resolveConfigGameType = (explicitGameType?: GameType, envGameType?: GameType): GameType =>
-  explicitGameType ?? envGameType ?? "blitz";
-
-export const ETERNUM_CONFIG = (explicitGameType?: GameType) => {
-  const config = getConfigFromNetwork(
-    DOCS_CHAIN,
-    resolveConfigGameType(explicitGameType, env.VITE_PUBLIC_FORCE_GAME_MODE_ID as GameType | undefined),
-  );
-  return config;
+/**
+ * A mode's balance as the game reads it, from its generated config document. Every caller names its mode: a page is
+ * Blitz's or Eternum's, and a shared component takes its page's mode, so a Blitz page never reads Eternum's numbers.
+ * A missing mode fails the build at prerender instead of falling back to one.
+ */
+export const ETERNUM_CONFIG = (gameType: GameType) => {
+  if (!gameType) throw new Error("ETERNUM_CONFIG needs the page's game mode");
+  return getConfigFromNetwork(DOCS_CHAIN, gameType);
 };

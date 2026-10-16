@@ -1,17 +1,17 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { identityUsername, IDENTITY_POPOVER_ID, useIdentitySession } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { isAccountStatePrompt } from "@/hooks/context/gameplay-account-sync";
 import { AccountStatePrompt } from "@/shell/account-state";
+import { useRealmsPlayer } from "@/shell/herald";
 import { useRequestSignIn } from "@/shell/sign-in/sign-in-route";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { usePlayers } from "@/hooks/use-player-profile";
 import { gameStructuresView } from "@/sync/fact-views";
-import { resetBootstrap } from "@/init/bootstrap";
 import { buildEntryHref } from "@/play/navigation/play-route";
 import { getActiveGame } from "@/runtime/world";
-import { BuildingThumbs } from "@/ui/config";
 import Button from "@/ui/design-system/atoms/button";
 import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -20,7 +20,7 @@ import { normalizeLeaderboardAddress } from "@/ui/features/social/player/finaliz
 import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { ContractAddress } from "@bibliothecadao/types";
-import { Eye as EyeIcon, Trophy, Loader2 as LoaderIcon } from "@/ui/design-system/atoms/game-icons";
+
 import { useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -42,9 +42,12 @@ const useIdentityChipState = (): IdentityChipState => {
   const players = usePlayers();
   const structures = useFactView(gameStructuresView);
   const { standingsByAddress } = useInGameLeaderboard();
+  // The player's account is known from the session alone, before (or without) joining it on this shard: a spectator
+  // who owns realms here is counted as their owner, and offered Play.
+  const { data: player } = useRealmsPlayer();
 
   return useMemo(() => {
-    const owner = gameplayAddress ? ContractAddress(gameplayAddress) : null;
+    const owner = player ? ContractAddress(player) : null;
     return resolveIdentityChipState({
       isExplicitSpectateSession: isExplicitSpectateSession(),
       identity: { status, name: identityUsername(session) },
@@ -53,7 +56,7 @@ const useIdentityChipState = (): IdentityChipState => {
       owned: owner === null ? NO_OWNED_STRUCTURES : countOwnedStructures(structures, owner),
       standing: owner === null ? null : (standingsByAddress.get(normalizeLeaderboardAddress(owner)) ?? null),
     });
-  }, [gameplayAddress, players, provisioningError, session, standingsByAddress, status, structures]);
+  }, [gameplayAddress, player, players, provisioningError, session, standingsByAddress, status, structures]);
 };
 
 /** Player identity opens the leaderboard, a session without a name opens the sign-in flow's name step; other states keep their sign-in surface. */
@@ -80,7 +83,7 @@ export const IdentityChip = ({ compact = false }: { compact?: boolean }) => {
 const LeaderboardSurface = () => (
   <SurfaceFrame
     title="Leaderboard"
-    icon={Trophy}
+    icon={"victory" as const}
     onClose={() => usePopoverStore.getState().close(LEADERBOARD_POPOVER_ID)}
     className={SURFACE_WORKSPACE_CLASS}
   >
@@ -120,7 +123,7 @@ const IdentityChipTrigger = ({
         TOP_PILL,
         HUD_LABEL_BRIGHT,
         "identity-chip min-w-0 max-w-full whitespace-nowrap transition-colors hover:bg-gold/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold",
-        compact && "gap-1.5 px-2 font-sans text-xs normal-case tracking-normal",
+        compact && "gap-1.5 px-2 font-sans text-sm ",
         isOpen && "border-gold/60 bg-gold/15",
       )}
     >
@@ -138,11 +141,11 @@ const CompactIdentityLabel = ({ state }: { state: IdentityChipState }) => {
       </>
     );
   }
-  const Icon = state.kind === "connecting" ? LoaderIcon : EyeIcon;
+  const Icon = state.kind === "connecting" ? ("refresh" as const) : ("eye" as const);
   const label = compactLabel(state.kind);
   return (
     <>
-      <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
+      <SemanticIcon name={Icon} aria-hidden="true" className="h-4 w-4 shrink-0" />
       <span className="truncate">{label}</span>
     </>
   );
@@ -153,7 +156,7 @@ const IdentityChipLabel = ({ state }: { state: IdentityChipState }) => {
     case "spectating":
       return (
         <>
-          <EyeIcon className="h-3.5 w-3.5 text-gold" aria-hidden="true" />
+          <SemanticIcon name="eye" className="h-3.5 w-3.5 text-gold" aria-hidden="true" />
           <span>Spectating</span>
           {state.name && <Separator />}
           {state.name && <span className="max-w-[140px] truncate">as {state.name}</span>}
@@ -164,7 +167,7 @@ const IdentityChipLabel = ({ state }: { state: IdentityChipState }) => {
     case "signed-out":
       return (
         <>
-          <EyeIcon className="h-3.5 w-3.5 text-gold/70" aria-hidden="true" />
+          <SemanticIcon name="eye" className="h-3.5 w-3.5 text-gold/70" aria-hidden="true" />
           <span>Not signed in</span>
           <Separator />
           <span className="text-gold/70">View only</span>
@@ -173,7 +176,7 @@ const IdentityChipLabel = ({ state }: { state: IdentityChipState }) => {
     case "connecting":
       return (
         <>
-          <LoaderIcon className="h-3.5 w-3.5 animate-spin text-gold" aria-hidden="true" />
+          <SemanticIcon name="refresh" className="h-3.5 w-3.5 animate-spin text-gold" aria-hidden="true" />
           <span>Connecting</span>
           {state.name && <Separator />}
           {state.name && <span className="max-w-[140px] truncate">{state.name}</span>}
@@ -182,7 +185,7 @@ const IdentityChipLabel = ({ state }: { state: IdentityChipState }) => {
     case "player":
       return (
         <>
-          <img src={BuildingThumbs.guild} alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
+          <SemanticIcon name="guild" alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
           <span className="max-w-[140px] truncate">{state.name}</span>
           {state.standing && <Separator />}
           {state.standing && <span>#{state.standing.rank}</span>}
@@ -206,7 +209,7 @@ const compactLabel = (kind: Exclude<IdentityChipState["kind"], "player">): strin
   }
 };
 
-const Separator = () => <span className="text-gold/50">·</span>;
+const Separator = () => <span className="text-kit-muted">·</span>;
 
 const IdentityChipPanelBody = ({ state }: { state: Exclude<IdentityChipState, { kind: "player" | "unnamed" }> }) => {
   switch (state.kind) {
@@ -224,7 +227,7 @@ const IdentityChipPanelBody = ({ state }: { state: Exclude<IdentityChipState, { 
           {isAccountStatePrompt(state.error) ? (
             <AccountStatePrompt />
           ) : (
-            state.error && <span className="text-xs text-danger">{state.error}</span>
+            state.error && <span className="text-sm text-danger">{state.error}</span>
           )}
         </div>
       );
@@ -267,14 +270,13 @@ const SpectatingPanel = ({ state }: { state: Extract<IdentityChipState, { kind: 
   );
 };
 
-/** Re-enters the active game in play intent: a fresh bootstrap without the spectate flag. */
+/** Re-enters the active game in play intent: its entry takes the booted game over without the spectate flag. */
 const useEnterActiveGameAsPlayer = () => {
   const navigate = useNavigate();
 
   return useCallback(() => {
     const world = getActiveGame();
     if (!world) return;
-    resetBootstrap();
     navigate(buildEntryHref({ chainId: world.chainId, gameId: world.gameId, intent: "play", autoSettle: false }));
   }, [navigate]);
 };

@@ -47,10 +47,11 @@ const putInstallOff = () => {
 
 /**
  * The app's one notice (spec 14), first that applies: Offline (the last values stay, Try again reads them anew), an
- * update ready, or Install (Later puts it off a week). PageFrame places it above the foot row on a phone and bottom centre on desktop; a game
- * never shows it, so an update waits until Exit.
+ * update ready, or Install (Later puts it off a week), which only Play offers: every other page keeps its room. PageFrame
+ * places it above the foot row on a phone and in the top bar on desktop; a game never shows it, so an update waits
+ * until Exit.
  */
-export const useAppNotice = () => {
+export const useAppNotice = ({ offersInstall }: { offersInstall: boolean }) => {
   const online = useOnline();
   const { session } = useIdentitySession();
   const update = usePwaUpdate();
@@ -60,12 +61,18 @@ export const useAppNotice = () => {
 
   if (!online)
     return (
-      <Notice icon="Of" line={OFFLINE} verb={TRY_AGAIN} onVerb={() => void appQueryClient.refetchQueries()} ember />
+      <Notice
+        icon="network-off"
+        line={OFFLINE}
+        verb={TRY_AGAIN}
+        onVerb={() => void appQueryClient.refetchQueries()}
+        ember
+      />
     );
   if (update.ready)
     return (
       <Notice
-        icon="Up"
+        icon="refresh"
         line={APP_STATE_WORDS.updateReady}
         verb={APP_STATE_WORDS.update}
         loading={updating || update.waiting ? APP_STATE_WORDS.updating : undefined}
@@ -77,10 +84,10 @@ export const useAppNotice = () => {
       />
     );
   // Install is offered once the player has an account, never to a first visit.
-  if (session && !install.installed && !installLater)
+  if (offersInstall && session && !install.installed && !installLater)
     return (
       <Notice
-        icon="In"
+        icon="download"
         line={APP_STATE_WORDS.onHomeScreen}
         verb={APP_STATE_WORDS.install}
         onVerb={() => void install.install()}

@@ -273,6 +273,7 @@ fn fresh_world(ready: bool) -> Deployment {
             d.games,
             || {
                 crate::state::write().registrar.roster_sizes.write(1, 1);
+                crate::state::write().registrar.seaters.write(1, d.actor);
                 crate::state::write()
                     .presets
                     .entry(crate::logic::game::preset_commitment(crate::logic::game::game(1)))
@@ -942,7 +943,6 @@ fn draw_case(case: u8) -> (Deployment, TestAction, u64) {
             let (d, home) = super::artificer::setup(false);
             (d, TestAction { game_id: 3, actor: d.actor, command: Command::CraftRelic(home.entity_id) }, 30)
         },
-        4 => chest_case(),
         5 => season_case(),
         6 => {
             let (d, home) = super::village::setup(false);
@@ -990,14 +990,6 @@ fn battle_case() -> (Deployment, TestAction, u64) {
     (d, TestAction { game_id: 3, actor: d.actor, command }, 80)
 }
 
-fn chest_case() -> (Deployment, TestAction, u64) {
-    let (d, _, explorer) = super::relics::setup(true);
-    let coord = super::relics::chest(d, crate::troops::Coord { alt: false, x: 2000200, y: 2000200 }, 321, 40);
-    super::relics::move_fixture(d, explorer, crate::geometry::neighbor(coord, 0));
-    let command = Command::OpenRelicChest(crate::relics::OpenChest { explorer_id: explorer.entity_id, coord });
-    (d, TestAction { game_id: 3, actor: d.actor, command }, 50)
-}
-
 fn season_case() -> (Deployment, TestAction, u64) {
     let d = super::registrar::setup();
     let registrar = crate::registrar::IRegistrarDispatcher { contract_address: d.games };
@@ -1035,10 +1027,6 @@ fn season_case() -> (Deployment, TestAction, u64) {
 #[test_case(name: "route_03_roots_08_15", 3, 8)]
 #[test_case(name: "route_03_roots_16_23", 3, 16)]
 #[test_case(name: "route_03_roots_24_31", 3, 24)]
-#[test_case(name: "route_04_roots_00_07", 4, 0)]
-#[test_case(name: "route_04_roots_08_15", 4, 8)]
-#[test_case(name: "route_04_roots_16_23", 4, 16)]
-#[test_case(name: "route_04_roots_24_31", 4, 24)]
 #[test_case(name: "route_05_roots_00_07", 5, 0)]
 #[test_case(name: "route_05_roots_08_15", 5, 8)]
 #[test_case(name: "route_05_roots_16_23", 5, 16)]

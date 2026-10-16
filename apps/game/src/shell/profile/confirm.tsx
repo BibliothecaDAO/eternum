@@ -26,8 +26,8 @@ export const Confirm = ({
 }) => {
   const body = (
     <div className="flex flex-col gap-3 py-2">
-      <h2 className="font-ui text-[20px] font-bold text-kit-cream">{question}</h2>
-      <p className="text-[15px] text-kit-muted">{cost}</p>
+      <h2 className="font-body text-xl font-bold text-kit-cream">{question}</h2>
+      <p className="text-base text-kit-muted">{cost}</p>
       <Button role="primary" word={PROFILE_WORDS.keep} onClick={onKeep} />
       <Button role="outline" word={verb} loading={doing} onClick={onConfirm} />
     </div>

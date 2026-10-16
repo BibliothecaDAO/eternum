@@ -1,5 +1,6 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { Factory, FlaskConical, Sparkles } from "@/ui/design-system/atoms/game-icons";
+
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -176,7 +177,7 @@ export const ResourceChip = ({
       />
       {relicEffectActivated && (
         <span
-          className="inline-flex items-center gap-1 text-[10px] font-semibold text-relic2"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-relic2"
           onMouseEnter={(e) => {
             e.stopPropagation();
             setTooltip({
@@ -190,19 +191,18 @@ export const ResourceChip = ({
             setTooltip(null);
           }}
         >
-          <Sparkles className="h-3 w-3 animate-pulse" />
+          <SemanticIcon name="relics" className="h-3 w-3 animate-pulse" />
           {formatTime(relicTimeRemaining)}
         </span>
       )}
-      {ratePerHour && <span className="text-[10px] font-semibold tabular-nums text-emerald-300">{ratePerHour}</span>}
-      {hasReachedMaxCap && amountProduced > 0n && (
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-300">Max</span>
-      )}
-      {timeLeft && <span className={cn(HUD_CUE, "tracking-normal")}>{timeLeft}</span>}
+      {ratePerHour && <span className="text-sm font-semibold tabular-nums text-emerald-300">{ratePerHour}</span>}
+      {hasReachedMaxCap && amountProduced > 0n && <span className="text-sm font-semibold text-amber-300">Max</span>}
+      {timeLeft && <span className={cn(HUD_CUE, "")}>{timeLeft}</span>}
       <span className="ml-auto" />
       {canShowProductionShortcut && (
         <button
           data-tooltip-anchor
+          aria-label="Manage production"
           onClick={(event) => {
             event.stopPropagation();
             handleOpenProduction();
@@ -218,7 +218,7 @@ export const ResourceChip = ({
           disabled={disableButtons}
           className={actionButton}
         >
-          <Factory className="h-4 w-4" />
+          <SemanticIcon name="production" className="h-4 w-4" />
         </button>
       )}
       {canOpenCraftRelic && (
@@ -247,7 +247,7 @@ export const ResourceChip = ({
           aria-label="Craft relic from research"
           className={cn(actionButton, "border border-relic/35 bg-relic/10 text-relic2 hover:bg-relic/20")}
         >
-          <FlaskConical className="h-4 w-4" />
+          <SemanticIcon name="research" className="h-4 w-4" />
         </button>
       )}
       {showTransfer && (
@@ -313,7 +313,7 @@ export const ResourceChip = ({
           onMouseLeave={() => setTooltip(null)}
           className={actionButton}
         >
-          <Sparkles className="h-4 w-4" />
+          <SemanticIcon name="relics" className="h-4 w-4" />
         </button>
       )}
     </div>

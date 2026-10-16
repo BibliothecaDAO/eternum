@@ -114,9 +114,9 @@ describe("native transaction receipt routing", () => {
       block: 10,
       status: "ACCEPTED_ON_L2",
     });
-    expect(messages.findIndex((message) => message.type === "diff")).toBeLessThan(
-      messages.findIndex((message) => message.type === "tx"),
-    );
+    const diff = messages.findIndex((message) => message.type === "diff");
+    expect(diff).toBeGreaterThanOrEqual(0);
+    expect(diff).toBeLessThan(messages.findIndex((message) => message.type === "tx"));
   });
 
   it("reads the game's refusal from the receipt: rolled back, its class and reason, never applied", () => {
@@ -128,20 +128,31 @@ describe("native transaction receipt routing", () => {
     expect(native.outcomeReceipt(receipt([], "0x125"))).not.toHaveProperty("rejection");
   });
 
-  it.each(["PRE_CONFIRMED", "ACCEPTED_ON_L2"])(
-    "streams a refused action at %s as REJECTED with the game's class and reason",
-    (finality_status) => {
-      const { native, decoder, fold } = setup();
-      const live = liveWorld(native, decoder, fold);
-      const messages = streamOf(live);
-      live.acceptTransaction({ finality_status: "PRE_CONFIRMED", transaction_hash: "0x124", ...play(1) });
-      live.acceptReceipt({ ...receipt([rejectedEvent("0x124")], "0x124"), finality_status });
-      expect(messages.filter((message) => message.type === "tx").at(-1)).toMatchObject({
-        hash: "0x124",
-        status: "REJECTED",
-        status_class: "GAMEPLAY_REJECTED",
-        revert_reason: "explorer is dead",
-      });
-    },
-  );
+  it("streams a refused action as REJECTED with the game's class and reason, pre-confirmed then confirmed", async () => {
+    const { native, decoder, fold } = setup();
+    const refused = receipt([rejectedEvent("0x124")], "0x124");
+    const block: RpcBlockWithReceipts = {
+      block_number: 10,
+      timestamp: 100,
+      transactions: [{ receipt: refused, transaction: play(1) }],
+    };
+    const live = liveWorld(native, decoder, fold, {
+      readBlock: async (number: unknown) =>
+        number === "pre_confirmed" ? { ...block, block_number: 11, transactions: [] } : block,
+    } as unknown as MadaraRpc);
+    const messages = streamOf(live);
+    live.acceptTransaction({ finality_status: "PRE_CONFIRMED", transaction_hash: "0x124", ...play(1) });
+    live.acceptReceipt({ ...refused, finality_status: "PRE_CONFIRMED" });
+    await live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
+    const rejected = {
+      hash: "0x124",
+      status: "REJECTED",
+      status_class: "GAMEPLAY_REJECTED",
+      revert_reason: "explorer is dead",
+    };
+    expect(messages.filter((message) => message.type === "tx")).toEqual([
+      expect.objectContaining({ ...rejected, block: null }),
+      expect.objectContaining({ ...rejected, block: 10 }),
+    ]);
+  });
 });

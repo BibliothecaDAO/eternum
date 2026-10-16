@@ -1,10 +1,126 @@
 import type { Camera, Object3D, Scene, Texture } from "three";
-import type {
-  RendererBackendV2,
-  RendererFramePipeline,
-  RendererPostProcessController,
-  RendererPostProcessPlan,
-} from "./renderer-backend-v2";
+
+import type { RendererBuildMode } from "./renderer-build-mode";
+
+export type RendererActiveMode = "webgpu" | "webgl2-fallback";
+export type RendererFallbackReason =
+  | "webgpu-device-lost"
+  | `webgpu-init-error:${string}`
+  | "webgpu-init-timeout"
+  | "webgpu-silent-fallback"
+  | null;
+
+export interface RendererAdapterInfo {
+  architecture: string;
+  description: string;
+  isFallbackAdapter?: boolean;
+  vendor: string;
+}
+
+export interface RendererBackendCapabilities {
+  supportsEnvironmentIbl: boolean;
+  supportsToneMappingControl: boolean;
+  supportsColorGrade: boolean;
+  supportsBloom: boolean;
+  supportsVignette: boolean;
+  supportsChromaticAberration: boolean;
+  supportsWideLines: boolean;
+}
+
+export type RendererCapabilityFeature =
+  | "environmentIbl"
+  | "toneMappingControl"
+  | "colorGrade"
+  | "bloom"
+  | "vignette"
+  | "chromaticAberration"
+  | "wideLines";
+
+export interface RendererFeatureDegradation {
+  detail?: string;
+  feature: RendererCapabilityFeature;
+  reason: "disabled-by-profile" | "disabled-by-user" | "fallback-active" | "unsupported-backend";
+}
+
+export interface RendererInitDiagnostics {
+  activeMode: RendererActiveMode;
+  adapterInfo?: RendererAdapterInfo;
+  buildMode: RendererBuildMode;
+  deviceStatus?: "ready";
+  fallbackReason: RendererFallbackReason;
+  initTimeMs: number;
+  requestedMode: RendererBuildMode;
+}
+
+export interface RendererDeviceLostEvent {
+  activeMode: RendererActiveMode;
+  message?: string;
+}
+
+export interface RendererBackend {
+  readonly capabilities: RendererBackendCapabilities;
+  readonly renderer?: RendererSurfaceLike;
+  applyRenderVisuals(input: { pixelRatio: number; shadows: boolean; width: number; height: number }): void;
+  dispose(): void;
+  initialize(): Promise<RendererInitDiagnostics>;
+  renderFrame(pipeline: RendererFramePipeline): void;
+  resize(width: number, height: number): void;
+}
+
+export interface RendererOverlayPass {
+  camera: Camera;
+  name?: string;
+  scene: Scene;
+}
+
+export interface RendererFramePipeline {
+  mainCamera: Camera;
+  mainScene: Scene;
+  overlayPasses?: RendererOverlayPass[];
+  sceneName?: string;
+}
+
+export type RendererBackendFactory = (options: { isMobileDevice: boolean; pixelRatio: number }) => RendererBackend;
+
+export function createRendererBackendCapabilities(
+  input: Partial<RendererBackendCapabilities> = {},
+): RendererBackendCapabilities {
+  return {
+    supportsBloom: input.supportsBloom ?? false,
+    supportsChromaticAberration: input.supportsChromaticAberration ?? false,
+    supportsColorGrade: input.supportsColorGrade ?? false,
+    supportsEnvironmentIbl: input.supportsEnvironmentIbl ?? false,
+    supportsToneMappingControl: input.supportsToneMappingControl ?? false,
+    supportsVignette: input.supportsVignette ?? false,
+    supportsWideLines: input.supportsWideLines ?? false,
+  };
+}
+
+export class RendererInitTimeoutError extends Error {
+  /** Mode of the renderer that was created but never finished initializing; null when creation itself stalled. */
+  readonly timedOutMode: RendererActiveMode | null;
+
+  constructor(message: string, timedOutMode: RendererActiveMode | null = null) {
+    super(message);
+    this.name = "RendererInitTimeoutError";
+    this.timedOutMode = timedOutMode;
+  }
+}
+
+export function createRendererInitDiagnostics(
+  input: Pick<RendererInitDiagnostics, "activeMode" | "buildMode" | "requestedMode"> &
+    Partial<Pick<RendererInitDiagnostics, "adapterInfo" | "deviceStatus" | "fallbackReason" | "initTimeMs">>,
+): RendererInitDiagnostics {
+  return {
+    activeMode: input.activeMode,
+    ...(input.adapterInfo ? { adapterInfo: { ...input.adapterInfo } } : {}),
+    buildMode: input.buildMode,
+    ...(input.deviceStatus ? { deviceStatus: input.deviceStatus } : {}),
+    fallbackReason: input.fallbackReason ?? null,
+    initTimeMs: input.initTimeMs ?? 0,
+    requestedMode: input.requestedMode,
+  };
+}
 
 export interface RendererInfoLike {
   autoReset?: boolean;
@@ -41,25 +157,3 @@ export interface RendererSurfaceLike {
   toneMapping: number;
   toneMappingExposure: number;
 }
-
-export interface EnvironmentSceneTarget {
-  setEnvironment(environment: Texture, intensity: number): void;
-}
-
-export interface RendererEnvironmentTargets {
-  hexceptionScene: EnvironmentSceneTarget;
-  intensity: number;
-  worldmapScene: EnvironmentSceneTarget;
-}
-
-interface RendererBackend extends RendererBackendV2 {
-  readonly renderer: RendererSurfaceLike;
-  applyEnvironment(targets: RendererEnvironmentTargets): Promise<void>;
-  applyPostProcessPlan(plan: RendererPostProcessPlan): RendererPostProcessController;
-  applyRenderVisuals(input: { pixelRatio: number; shadows: boolean; width: number; height: number }): void;
-  dispose(): void;
-  renderFrame(pipeline: RendererFramePipeline): void;
-  resize(width: number, height: number): void;
-}
-
-export type RendererBackendFactory = (options: { isMobileDevice: boolean; pixelRatio: number }) => RendererBackend;

@@ -1,135 +1,21 @@
+import {
+  RELIC_COST_PER_LEVEL,
+  RELIC_PACKS,
+  RELICS,
+  RelicRecipientType,
+  relicName,
+  LUCKY_CHEST_PERCENT,
+} from "@bibliothecadao/types";
 import { colors, section, table } from "../styles";
 
-const RELIC_DATA = [
-  {
-    relic: "Stamina Relic",
-    level: 1,
-    effect: "Increases stamina regeneration by 50% for 3 Eternum Days (18 minutes).",
-    activatedBy: "Army",
-    essenceCost: 250,
-    discoveryChance: "7.5%",
-  },
-  {
-    relic: "Stamina Relic",
-    level: 2,
-    effect: "Increases stamina regeneration by 100% for 3 Eternum Days (18 minutes).",
-    activatedBy: "Army",
-    essenceCost: 500,
-    discoveryChance: "4.0%",
-  },
-  {
-    relic: "Damage Relic",
-    level: 1,
-    effect: "Increases damage by 20% for 3 Eternum Days (18 minutes).",
-    activatedBy: "Army",
-    essenceCost: 250,
-    discoveryChance: "7.5%",
-  },
-  {
-    relic: "Damage Relic",
-    level: 2,
-    effect: "Increases damage by 40% for 3 Eternum Days (18 minutes).",
-    activatedBy: "Army",
-    essenceCost: 500,
-    discoveryChance: "4.0%",
-  },
-  {
-    relic: "Damage Reduction Relic",
-    level: 1,
-    effect: "Reduces damage taken by 20% for 3 Eternum Days (18 minutes).",
-    activatedBy: "Army",
-    essenceCost: 250,
-    discoveryChance: "7.5%",
-  },
-  {
-    relic: "Damage Reduction Relic",
-    level: 2,
-    effect: "Reduces damage taken by 40% for 3 Eternum Days (18 minutes).",
-    activatedBy: "Army",
-    essenceCost: 500,
-    discoveryChance: "4.0%",
-  },
-  {
-    relic: "Exploration Relic",
-    level: 1,
-    effect: "Instantly explores a one-tile radius.",
-    activatedBy: "Army",
-    essenceCost: 250,
-    discoveryChance: "7.5%",
-  },
-  {
-    relic: "Exploration Relic",
-    level: 2,
-    effect: "Instantly explores a two-tile radius.",
-    activatedBy: "Army",
-    essenceCost: 500,
-    discoveryChance: "4.0%",
-  },
-  {
-    relic: "Exploration Reward Relic",
-    level: 1,
-    effect: "Double all exploration rewards for 3 Eternum Days (18 minutes).",
-    activatedBy: "Army",
-    essenceCost: 250,
-    discoveryChance: "7.5%",
-  },
-  {
-    relic: "Exploration Reward Relic",
-    level: 2,
-    effect: "Triple all exploration rewards for 3 Eternum Days (18 minutes).",
-    activatedBy: "Army",
-    essenceCost: 500,
-    discoveryChance: "4.0%",
-  },
-  {
-    relic: "Structure Damage Reduction Relic",
-    level: 1,
-    effect: "Reduces damage taken by all guard armies by 15% for 3 Eternum Days (18 minutes).",
-    activatedBy: "Realm",
-    essenceCost: 250,
-    discoveryChance: "7.5%",
-  },
-  {
-    relic: "Structure Damage Reduction Relic",
-    level: 2,
-    effect: "Reduces damage taken by all guard armies by 30% for 3 Eternum Days (18 minutes).",
-    activatedBy: "Realm",
-    essenceCost: 500,
-    discoveryChance: "4.0%",
-  },
-  {
-    relic: "Production Relic",
-    level: 1,
-    effect: "Increases resource production rate by 20% for 3 Eternum Days (18 minutes).",
-    activatedBy: "Realm",
-    essenceCost: 250,
-    discoveryChance: "7.5%",
-  },
-  {
-    relic: "Production Relic",
-    level: 2,
-    effect: "Increases resource production rate by 40% for 3 Eternum Days (18 minutes).",
-    activatedBy: "Realm",
-    essenceCost: 500,
-    discoveryChance: "4.0%",
-  },
-  {
-    relic: "Troop Production Relic",
-    level: 1,
-    effect: "Increases troop production rate by 15% for 3 Eternum Days (18 minutes).",
-    activatedBy: "Realm",
-    essenceCost: 250,
-    discoveryChance: "6.0%",
-  },
-  {
-    relic: "Troop Production Relic",
-    level: 2,
-    effect: "Increases troop production rate by 30% for 3 Eternum Days (18 minutes).",
-    activatedBy: "Realm",
-    essenceCost: 500,
-    discoveryChance: "2.0%",
-  },
-];
+// Every row reads the game's own relic table: its name, level, effect and recipient, and the Essence an activation costs.
+const RELIC_DATA = RELICS.map((relic) => ({
+  relic: relic.name.replace(/ (I|II)$/, ""),
+  level: relic.level,
+  effect: relic.effect,
+  activatedBy: relic.recipientType === RelicRecipientType.Explorer ? "Army" : "Realm",
+  essenceCost: RELIC_COST_PER_LEVEL[relic.level],
+}));
 
 // Component styles
 const componentStyles = {
@@ -164,11 +50,6 @@ const componentStyles = {
     textAlign: "center" as const,
     color: colors.text.light,
   },
-  chanceCell: {
-    ...table.cell,
-    textAlign: "center" as const,
-    color: colors.text.light,
-  },
 };
 
 const RelicTable = () => {
@@ -184,7 +65,6 @@ const RelicTable = () => {
               <th style={table.headerCell}>Effect</th>
               <th style={table.headerCell}>Activated By</th>
               <th style={table.headerCell}>Essence Cost</th>
-              <th style={table.headerCell}>Discovery Chance</th>
             </tr>
           </thead>
           <tbody>
@@ -197,7 +77,6 @@ const RelicTable = () => {
                 <td style={componentStyles.effectCell}>{relic.effect}</td>
                 <td style={componentStyles.activatedByCell}>{relic.activatedBy}</td>
                 <td style={componentStyles.essenceCell}>{relic.essenceCost}</td>
-                <td style={componentStyles.chanceCell}>{relic.discoveryChance}</td>
               </tr>
             ))}
           </tbody>
@@ -206,5 +85,35 @@ const RelicTable = () => {
     </div>
   );
 };
+
+/** The four packs a Relic Crate can hold, with their chances, from the game's own pack table. */
+export const RelicPackTable = () => (
+  <div style={section.wrapper}>
+    <div style={section.subtitle}>Relic Crate Packs</div>
+    <div style={table.wrapper}>
+      <table style={table.table}>
+        <thead>
+          <tr>
+            <th style={table.headerCell}>Pack</th>
+            <th style={table.headerCell}>Relics</th>
+            <th style={table.headerCell}>Chance</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Object.entries(RELIC_PACKS).map(([pack, { oddsPercent, relics }]) => (
+            <tr key={pack}>
+              <td style={componentStyles.relicNameCell}>{pack}</td>
+              <td style={componentStyles.effectCell}>
+                {relics.map((id) => relicName(id).replace(/ I$/, "")).join(", ")}
+              </td>
+              <td style={table.cell}>{oddsPercent}%</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <p>One crate in five is lucky: its whole pack is level 2.</p>
+  </div>
+);
 
 export default RelicTable;

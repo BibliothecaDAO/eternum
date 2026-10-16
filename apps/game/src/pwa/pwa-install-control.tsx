@@ -1,9 +1,10 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { useEffect } from "react";
 import { create } from "zustand";
 
 import { APP_STATE_WORDS } from "@/shell/words";
 import { Button } from "@/ui/design-system/kit/button";
-import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { Sheet } from "@/ui/design-system/kit/sheet";
 
 import { isAppleMobile, isInstalledPwa } from "./browser-capabilities";
@@ -61,20 +62,20 @@ export const useInstall = () => {
 export function PwaInstallControl() {
   const { installed, install } = useInstall();
   if (installed) return null;
-  return <Button role="outline" word={APP_STATE_WORDS.install} icon="In" onClick={() => void install()} />;
+  return <Button role="outline" word={APP_STATE_WORDS.install} icon="download" onClick={() => void install()} />;
 }
 
 /** The browser's steps, as its own words on pictograms: Safari on an iPhone, or on a Mac. */
 const InstallSheet = ({ onClose }: { onClose: () => void }) => {
-  const steps: [IconCode, string][] = isAppleMobile()
+  const steps: [IconMeaning, string][] = isAppleMobile()
     ? [
-        ["Xs", APP_STATE_WORDS.share],
-        ["In", APP_STATE_WORDS.addToHomeScreen],
-        ["Ok", APP_STATE_WORDS.add],
+        ["share", APP_STATE_WORDS.share],
+        ["download", APP_STATE_WORDS.addToHomeScreen],
+        ["check", APP_STATE_WORDS.add],
       ]
     : [
-        ["Mn", APP_STATE_WORDS.file],
-        ["In", APP_STATE_WORDS.addToDock],
+        ["menu", APP_STATE_WORDS.file],
+        ["download", APP_STATE_WORDS.addToDock],
       ];
   return (
     <Sheet label={APP_STATE_WORDS.install} onClose={onClose}>
@@ -84,9 +85,9 @@ const InstallSheet = ({ onClose }: { onClose: () => void }) => {
             key={word}
             className="flex min-h-14 items-center gap-3 rounded-xl border border-kit-line bg-kit-plate px-3"
           >
-            <span className="font-ui text-[20px] font-extrabold text-kit-peach">{index + 1}</span>
-            <KitIcon code={icon} size={28} />
-            <span className="font-ui text-[17px] font-semibold text-kit-cream">{word}</span>
+            <span className="font-body text-xl font-extrabold text-kit-peach">{index + 1}</span>
+            <SemanticIcon name={icon} size={28} />
+            <span className="font-body text-base font-semibold text-kit-cream">{word}</span>
           </li>
         ))}
       </ol>

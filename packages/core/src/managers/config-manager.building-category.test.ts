@@ -35,6 +35,24 @@ describe("native immutable configuration", () => {
     });
   });
 
+  it("reads victory points in the units the game awards them", () => {
+    const { manager, write } = fixture();
+    write("SeasonWinThreshold", [54], { game_id: 54, points: 10_000_000_000n });
+    // The preset grants 1,000 points per crate and 1 point per hyperstructure second, at six decimals on chain.
+    expect(manager.getVictoryPointGrants()).toEqual({
+      exploreTile: 10,
+      claimCampFromBandits: 500,
+      claimHyperstructureFromBandits: 3_000,
+      openRelicCrate: 1_000,
+      hyperstructurePerRealmPerSecond: 1,
+    });
+    expect(manager.getHyperstructureConfig()).toEqual({
+      timeBetweenSharesChange: 0,
+      pointsPerCycle: 1,
+      pointsForWin: 10_000,
+    });
+  });
+
   it("throws for absent building rules instead of granting zero-cost population", () => {
     const { manager } = fixture();
     expect(() => manager.getBuildingCategoryConfig(BuildingType.WorkersHut)).toThrow("not synchronized");

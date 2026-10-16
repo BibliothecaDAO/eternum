@@ -25,6 +25,8 @@ POSTGRES_CONFIG = Path("/postgres-config")
 IDENTITY = ("shard", "chain_id", "guardian_url", "l2_gas_bound")
 # The release this image deploys, baked at build by deploy/release/facts.ts.
 RELEASE_FACTS = Path("/release/release-facts.json")
+# Madara's compiled-class cache, mounted read-only from its data volume.
+MADARA_NATIVE_CACHE = Path("/madara/native_classes")
 
 
 def configuration():
@@ -33,7 +35,7 @@ def configuration():
         "shard": chain_id.lower().replace("_", "-"), "chain_id": chain_id, "port_base": 0,
         "guardian_url": os.environ["GUARDIAN_URL"], "public_rpc_url": os.environ["PUBLIC_RPC_URL"],
         "public_herald_url": os.environ["PUBLIC_HERALD_URL"],
-        "vrf_workers": int(os.environ["VRF_WORKERS"]), "l2_gas_bound": os.environ["L2_GAS_BOUND"],
+        "l2_gas_bound": os.environ["L2_GAS_BOUND"],
         "player_capacity": int(os.environ["PLAYER_CAPACITY"]),
         "block_time": os.environ.get("BLOCK_TIME", "2s"),
         "chain_config": os.environ.get("CHAIN_CONFIG", str(ROOT / "deploy/athanor/chain-config.yaml")),
@@ -159,7 +161,14 @@ def deploy(config, presets):
     publish_deployed_config(config)
     record["presets"] = register_presets(env, presets)
     shard.write_json(complete, record)
+    warm_native_classes(env)
     print(complete.read_text())
+
+
+# The first play of a class runs on the VM while Madara compiles it; every start compiles the world's classes first.
+def warm_native_classes(env):
+    shard.run(["bun", "deploy/athanor/scripts/warm-native-classes.ts", str(DATA), env["RPC_URL"], str(MADARA_NATIVE_CACHE)],
+              DATA, "native-warm", env)
 
 
 def deploy_world_once(config, env):
@@ -191,9 +200,10 @@ def chain_commitment(preset, on_chain, released):
     return on_chain
 
 
-def harness_invocation(args, environ, data=DATA, started=None):
-    """The harness command against this shard: its private settings from harness.env, its reports under
-    data/harness/<start time> unless the caller names a directory."""
+def harness_invocation(args, environ, data=DATA, started=None, script="run.ts"):
+    """The harness command against this shard (run.ts, burst.ts for the 2,000-player wave, blitz-split.ts for a Blitz
+    roster split): its private settings from harness.env, its reports under data/harness/<start time> unless the caller
+    names a directory."""
     environment = {**environ, **operator_environment(),
                    **shard.read_private_environment(data / "harness.env"), **shard.host_credentials(data)}
     operator = json.loads((data / "gameplay-contracts.json").read_text())["operatorAccountAddress"]
@@ -208,7 +218,7 @@ def harness_invocation(args, environ, data=DATA, started=None):
         environment[field] = str(data / filename)
     stamp = time.strftime("%Y%m%dT%H%M%SZ", started or time.gmtime())
     environment.setdefault("HARNESS_OUTPUT_DIRECTORY", str(data / "harness" / stamp))
-    return ["bun", "deploy/athanor/harness/run.ts", *args], environment
+    return ["bun", f"deploy/athanor/harness/{script}", *args], environment
 
 
 def probe():
@@ -247,9 +257,10 @@ if __name__ == "__main__":
         os.environ.update(operator_environment())
         probe()
         raise SystemExit(0)
-    if action == "harness":
+    if action in ("harness", "wave", "split"):
         # The harness runs as the host user, so what it writes is already the user's: it execs before any chown.
-        argv, environment = harness_invocation(sys.argv[2:], os.environ)
+        script = {"wave": "burst.ts", "split": "blitz-split.ts"}.get(action, "run.ts")
+        argv, environment = harness_invocation(sys.argv[2:], os.environ, script=script)
         os.execvpe(argv[0], argv, environment)
     config = configuration()
     presets = requested_presets(os.environ, json.loads(RELEASE_FACTS.read_text()))
@@ -257,5 +268,9 @@ if __name__ == "__main__":
         prepare(config)
     elif action == "deploy":
         deploy(config, presets)
+    elif action == "measurement-roles":
+        # The runner's call only; the script refuses a chain named after a deployment environment.
+        shard.run(["bun", "deploy/athanor/scripts/measurement-roles.ts", str(DATA)], DATA, "measurement-roles",
+                  environment(config))
     else:
-        raise ValueError("Expected prepare or deploy")
+        raise ValueError("Expected prepare, deploy or measurement-roles")

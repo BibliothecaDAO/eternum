@@ -240,7 +240,6 @@ describe("native fact store", () => {
       hyps_fail_prob_increase_p_fnd: 0,
       relic_discovery_interval_sec: 60000,
       relic_hex_dist_from_center: 10,
-      relic_chest_relics_per_chest: 1,
     };
     store.applyFacts([set("0x1", "GameOverrides", { ...overrides, map })]);
     const stored = store.require("GameOverrides", { game_id: 1 });

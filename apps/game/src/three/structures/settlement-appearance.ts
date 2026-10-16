@@ -1,3 +1,4 @@
+import { iconUrl, orderMeaning } from "@/ui/design-system/icon-meaning";
 import { orders } from "@bibliothecadao/types";
 import {
   CanvasTexture,
@@ -267,7 +268,7 @@ export function createRealmBannerAtlas(): CanvasTexture {
 
 function loadOrderArtwork(): Promise<HTMLImageElement[]> {
   return (orderArtwork ??= Promise.all(
-    orders.map((order) => new ImageLoader().loadAsync(`/images/orders/${order.orderName.toLowerCase()}.png`)),
+    orders.map((order) => new ImageLoader().loadAsync(iconUrl(orderMeaning(order.orderId), 256))),
   ).catch((error) => {
     orderArtwork = undefined;
     throw error;

@@ -1,0 +1,2 @@
+Subject: A very compact steel helmet emblem, front view, broad closed dome, one dark horizontal visor opening. Painted material and lit bevel but absolutely no fine detail. Must remain obvious at 12 pixels. No badge frame, plume or shoulders.
+Old counterpart: apps/game/public/images/labels/army.png.

@@ -122,9 +122,7 @@ fn bar(d: super::Deployment, key: crate::troops::ExplorerKey, game_id: u32) -> u
     snforge_std::interact_with_state(
         d.games,
         || {
-            let context = crate::commands::load_context(
-                game_id, crate::commands::ActionContext { raw_root: 123, timestamp: 360 },
-            );
+            let context = crate::commands::load_context(game_id, 123, 360);
             crate::logic::troops::active_explorer(key, 360, context).troops.stamina.inline().amount
         },
     )

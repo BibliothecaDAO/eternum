@@ -4,9 +4,13 @@
 recorded-intent admission path. Set up a playable client with `createGameClient` from `@bibliothecadao/eternum`, which
 installs the manifest, ABI, signing and submission dependencies together.
 
-The provider serializes a player's pending commands and waits for the ticket's own outcome. Several players' tickets may
-share one transaction; transaction success alone does not establish that an individual action succeeded. Herald's
-transaction stream supplies confirmation, while the native fact store supplies resulting game state.
+Each gameplay action is signed as its own invoke. The shared client submission queue is keyed by chain and account:
+sends leave in nonce order after the previous send's answer, with up to four actions awaiting inclusion. A refusal or
+unknown answer pauses later sends until reconciliation; an action with an unknown outcome is never resent automatically.
+The provider does not add another account-wide lock.
+
+A successful invoke does not by itself establish that the gameplay action succeeded. Herald's transaction stream
+supplies the action outcome, while its ordered fact updates supply the resulting game state through the native store.
 
 `native-command.ts` defines the command payload types, backed by the generated contract ABI. Provider methods with UI
 callers delegate to these commands. Administrative commands use the typed deployer and launch-service paths.

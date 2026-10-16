@@ -1,5 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useRealmVisit } from "@/sync/active-game-client";
+import { dropNextOrder } from "@/three/scenes/worldmap-next-order";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { SETTINGS } from "@/ui/design-system/kit/words";
@@ -38,12 +39,11 @@ import { useRealmLabor } from "./value/use-realm-labor";
 import { useRealmLords } from "./value/use-realm-lords";
 import { OfflineNotice } from "./hud/offline-notice";
 import { SceneFailureNotice } from "./hud/scene-failure-notice";
-import { OrderBar } from "./hud/order-bar";
+import { NextOrderBar, OrderBar } from "./hud/order-bar";
 import { FrontierToday } from "./log/frontier-today";
 import { FrontierProduction } from "./production/frontier-production";
 import { FrontierResearch } from "./research/frontier-research";
 import { ClearedRuinChest } from "./chest/cleared-ruin-chest";
-import { useFrontierType } from "./use-frontier-type";
 import { dayClock } from "./hud/day-clock";
 import { BuildingsInFlight } from "./build/build-sheet";
 import { DayDone } from "./rollover/day-done";
@@ -59,7 +59,6 @@ type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
  * the season's top five and chat docked open. Everything else opens from these as a sheet.
  */
 export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
-  useFrontierType();
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const realm = useFrontierRealm();
   // On a visit the dock shows the visited realm's armies; no order renders for a realm the player does not own.
@@ -93,7 +92,8 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
     />
   );
   const openArmy = (explorerId: number) => {
-    useUIStore.getState().updateEntityActionSelectedEntityId(explorerId);
+    // The army opens on its HUD surface, not on a tile card.
+    useUIStore.getState().selectOnMap({ kind: "army", entityId: explorerId, tile: null });
     setSurface("army");
   };
 
@@ -205,8 +205,11 @@ const ArmyAction = ({
   const armies = useDockArmies(realm);
   const order = useArmyOrder();
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
+  const nextOrder = useUIStore((state) => state.entityActions.nextOrder);
   const selected = armies.find((army) => army.explorerId === selectedId);
   if (order && selected) return <PendingOrder rules={rules} realm={realm} order={order} army={selected} />;
+  if (selected && nextOrder?.entityId === selected.explorerId)
+    return <NextOrderBar onCancel={() => dropNextOrder("cancelled", selected.explorerId)} />;
   return (
     <>
       <RealmBuildingsRow realm={realm} />

@@ -1,8 +1,9 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
-import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { type Refusal, RefusedVerb } from "@/ui/design-system/kit/refused-verb";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
@@ -12,12 +13,12 @@ import type { ReactNode } from "react";
 /** A building type's row: its tier, the sides taken at each tier, and the next tier's Essence and labor. */
 export type TreeRow = {
   key: string;
-  icon: IconCode;
+  icon: IconMeaning;
   name: string;
   /** What the row's next tier gives, in one line, on its tooltip. */
   tip: string;
   tier: Tier;
-  sides: readonly IconCode[];
+  sides: readonly IconMeaning[];
   /** The next tier's price; undefined at legendary. */
   next: { essence: number; labor: number } | undefined;
   /** The tier is a choice of two sides, final for the season. */
@@ -29,7 +30,7 @@ export type TreeRow = {
 /** A castle row: a shrine, a well or a reach beyond the spire, its Essence price, learned or locked. */
 export type CastleNode = {
   key: string;
-  icon: IconCode;
+  icon: IconMeaning;
   /** A word (Shrine, Well) or the reach's numeral (I, II, III). */
   label: string;
   /** What researching it opens, in one line, on its tooltip. */
@@ -67,9 +68,9 @@ export const TreePage = ({
     className="frontier-card pointer-events-auto flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto !rounded-xl p-2"
   >
     <header className="flex h-12 shrink-0 items-center gap-2">
-      <h2 className="frontier-title flex-1 !text-[20px]">{RESEARCH}</h2>
-      <Chip icons={["Es"]} label={ESSENCE} value={formatAmount(essence)} />
-      <Chip icons={["La"]} label={LABOR} value={formatAmount(labor)} />
+      <h2 className="frontier-title flex-1 !text-xl">{RESEARCH}</h2>
+      <Chip icons={["essence"]} label={ESSENCE} value={formatAmount(essence)} />
+      <Chip icons={["labor"]} label={LABOR} value={formatAmount(labor)} />
     </header>
     {rows.map((row) => (
       <Row key={row.key} row={row} chosen={row.key === chosen} onOpen={() => onRow(row.key)} />
@@ -98,12 +99,12 @@ const Row = ({ row, chosen, onOpen }: { row: TreeRow; chosen: boolean; onOpen: (
       chosen && "!border-2 !border-kit-hot",
     )}
   >
-    <KitIcon code={row.icon} size={26} />
+    <SemanticIcon name={row.icon} size={26} />
     <span className="flex w-24 shrink-0 flex-col gap-0.5">
-      <span className="text-[12px] font-semibold text-kit-cream">{row.name}</span>
+      <span className="text-sm font-semibold text-kit-cream">{row.name}</span>
       <span className="flex gap-0.5">
         {row.sides.map((side, index) => (
-          <KitIcon key={index} code={side} size={18} />
+          <SemanticIcon key={index} name={side} size={18} />
         ))}
       </span>
     </span>
@@ -113,15 +114,15 @@ const Row = ({ row, chosen, onOpen }: { row: TreeRow; chosen: boolean; onOpen: (
       {row.researching ? (
         <InFlightWord word={UPGRADING} />
       ) : row.next ? (
-        <span className="flex items-center gap-1 text-[14px] tabular-nums text-kit-cream">
-          {row.choice && <KitIcon code="Fx" size={16} />}
-          <KitIcon code="Es" size={14} />
+        <span className="flex items-center gap-1 text-sm tabular-nums text-kit-cream">
+          {row.choice && <SemanticIcon name="final-seal" size={16} />}
+          <SemanticIcon name="essence" size={14} />
           {formatAmount(row.next.essence)}
-          <KitIcon code="La" size={14} />
+          <SemanticIcon name="labor" size={14} />
           {formatAmount(row.next.labor)}
         </span>
       ) : (
-        <KitIcon code="Ok" size={18} />
+        <SemanticIcon name="check" size={18} />
       )}
     </span>
   </button>
@@ -137,17 +138,21 @@ const Node = ({ node, onOpen }: { node: CastleNode; onOpen: () => void }) => (
     className={cn("flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1", node.state === "locked" && "opacity-50")}
   >
     <span className="relative flex size-11 items-center justify-center rounded-full border border-kit-line2 bg-kit-ground">
-      <KitIcon code={node.icon} size={20} />
+      <SemanticIcon name={node.icon} size={20} />
       {node.state !== "open" && (
-        <KitIcon code={node.state === "learned" ? "Ok" : "Lk"} size={16} className="absolute -right-1 -top-1" />
+        <SemanticIcon
+          name={node.state === "learned" ? "check" : "lock"}
+          size={16}
+          className="absolute -right-1 -top-1"
+        />
       )}
     </span>
-    <span className="text-[12px] font-semibold text-kit-cream">{node.label}</span>
+    <span className="text-sm font-semibold text-kit-cream">{node.label}</span>
     {node.researching ? (
       <InFlightWord word={RESEARCHING} />
     ) : (
-      <span className="flex items-center gap-0.5 text-[14px] tabular-nums text-kit-cream">
-        <KitIcon code="Es" size={14} />
+      <span className="flex items-center gap-0.5 text-sm tabular-nums text-kit-cream">
+        <SemanticIcon name="essence" size={14} />
         {formatAmount(node.essence)}
       </span>
     )}
@@ -156,7 +161,7 @@ const Node = ({ node, onOpen }: { node: CastleNode; onOpen: () => void }) => (
 
 /** In the price's place on a row whose research is in flight: the word of what is under way, pulsing. */
 const InFlightWord = ({ word }: { word: string }) => (
-  <span role="status" className="animate-pulse text-[13px] font-semibold text-kit-gold2">
+  <span role="status" className="animate-pulse text-sm font-semibold text-kit-gold2">
     {word}
   </span>
 );
@@ -183,20 +188,25 @@ export const CastleNodeSheet = ({
 }) => (
   <Sheet label={node.label} onClose={onClose}>
     <header className="flex items-center gap-2.5">
-      <KitIcon code={node.icon} size={30} />
-      <h2 className="frontier-title flex-1 !text-[20px]">{node.label}</h2>
+      <SemanticIcon name={node.icon} size={30} />
+      <h2 className="frontier-title flex-1 !text-xl">{node.label}</h2>
     </header>
     <div className="flex items-center justify-center gap-2">{gives}</div>
     {node.state === "learned" ? (
       <span className="flex justify-center">
-        <KitIcon code="Ok" size={26} />
+        <SemanticIcon name="check" size={26} />
       </span>
     ) : refusal ? (
-      <RefusedVerb icon="Rs" word={RESEARCH} prices={[{ of: "essence", amount: node.essence }]} refusal={refusal} />
+      <RefusedVerb
+        icon="research"
+        word={RESEARCH}
+        prices={[{ of: "essence", amount: node.essence }]}
+        refusal={refusal}
+      />
     ) : (
       <Button
         role="primary"
-        icon="Rs"
+        icon="research"
         word={RESEARCH}
         prices={[{ of: "essence", amount: node.essence }]}
         loading={sending ? RESEARCHING : undefined}

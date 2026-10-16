@@ -1,7 +1,8 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { formatExact } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { StoreBar } from "@/ui/design-system/kit/store-bar";
 import { CANCEL, LORDS, REFILL, REFILLING, STAMINA } from "@/ui/design-system/kit/words";
@@ -28,9 +29,9 @@ export const RefillButton = ({
       aria-label={`${LORDS} ${formatExact(held)} / ${formatExact(price)}`}
       className="frontier-card flex h-12 shrink-0 items-center gap-1.5 !rounded-xl px-2"
     >
-      <KitIcon code="Lo" size={18} />
+      <SemanticIcon name="lords" size={18} />
       <span className="flex min-w-14 flex-col gap-[3px]">
-        <span className="whitespace-nowrap text-[14px] tabular-nums text-kit-cream">
+        <span className="whitespace-nowrap text-sm tabular-nums text-kit-cream">
           {formatExact(held)} / {formatExact(price)}
         </span>
         <StoreBar amount={held} limit={price} tone="calm" />
@@ -39,7 +40,7 @@ export const RefillButton = ({
   ) : (
     <Button
       role="secondary"
-      icon="St"
+      icon="stamina"
       word={REFILL}
       prices={[{ of: "lords", amount: price }]}
       loading={refilling ? REFILLING : undefined}
@@ -68,13 +69,17 @@ export const RefillConfirm = ({
   return (
     <Sheet label={REFILL} onClose={onCancel}>
       <header className="flex items-center gap-2.5">
-        <KitIcon code="St" size={30} />
-        <h2 className="frontier-title flex-1 !text-[20px]">{REFILL}</h2>
+        <SemanticIcon name="stamina" size={30} />
+        <h2 className="frontier-title flex-1 !text-xl">{REFILL}</h2>
       </header>
       <div className="flex items-center justify-center gap-2">
-        <Chip icons={["St"]} label={STAMINA} value={`${formatExact(stamina.current)} → ${formatExact(stamina.max)}`} />
         <Chip
-          icons={["Lo"]}
+          icons={["stamina"]}
+          label={STAMINA}
+          value={`${formatExact(stamina.current)} → ${formatExact(stamina.max)}`}
+        />
+        <Chip
+          icons={["lords"]}
           label={LORDS}
           value={`${formatExact(held)} → ${held === undefined ? "—" : formatExact(held - price)}`}
         />

@@ -137,51 +137,7 @@
     "shardsMineInitialWheatBalance": 1000,
     "shardsMineInitialFishBalance": 1000,
     "relicDiscoveryIntervalSeconds": 300,
-    "relicHexDistanceFromCenter": 10,
-    "relicChestRelicsPerChest": 3
-  },
-  "blitz": {
-    "exploration": {
-      "rewards": [
-        {
-          "rewardId": 38,
-          "amount": 150,
-          "probabilityBps": 3500
-        },
-        {
-          "rewardId": 38,
-          "amount": 300,
-          "probabilityBps": 2500
-        },
-        {
-          "rewardId": 38,
-          "amount": 600,
-          "probabilityBps": 1500
-        },
-        {
-          "rewardId": 23,
-          "amount": 500,
-          "probabilityBps": 1500
-        },
-        {
-          "rewardId": 23,
-          "amount": 1000,
-          "probabilityBps": 500
-        },
-        {
-          "rewardId": 25,
-          "amount": 500,
-          "probabilityBps": 500
-        }
-      ]
-    },
-    "registration": {
-      "registration_count_max": 96,
-      "registration_delay_seconds": 10,
-      "collectible_timelock_address": "0x0",
-      "collectibles_lootchest_address": "0x0",
-      "collectibles_elitenft_address": "0x0"
-    }
+    "relicHexDistanceFromCenter": 10
   },
   "resources": {
     "resourcePrecision": 1000000000,
@@ -659,15 +615,15 @@
     },
     {
       "resource": 26,
-      "amount": 3500
+      "amount": 1000
     },
     {
       "resource": 29,
-      "amount": 3500
+      "amount": 1000
     },
     {
       "resource": 32,
-      "amount": 3500
+      "amount": 1000
     }
   ],
   "villageStartingResources": [
@@ -722,10 +678,10 @@
       "staminaCrossbowmanMax": 120,
       "staminaAttackReq": 50,
       "staminaDefenseReq": 40,
-      "staminaExploreWheatCost": 0.03,
+      "staminaExploreWheatCost": 0.1,
       "staminaExploreFishCost": 0,
       "staminaExploreStaminaCost": 30,
-      "staminaTravelWheatCost": 0.03,
+      "staminaTravelWheatCost": 0.05,
       "staminaTravelFishCost": 0,
       "staminaTravelStaminaCost": 20
     },
@@ -739,7 +695,7 @@
       "cityGuardSlots": 2,
       "kingdomGuardSlots": 3,
       "empireGuardSlots": 4,
-      "startingGuard": 1500,
+      "startingGuard": 1000,
       "campArmies": 1,
       "mercenariesTroopLowerBound": 800,
       "mercenariesTroopUpperBound": 1600,
@@ -752,7 +708,8 @@
       "t3TierStrength": 9,
       "t1TierModifier": 50,
       "t2TierModifier": 100,
-      "t3TierModifier": 150
+      "t3TierModifier": 150,
+      "exploreRewardStrengthCap": 3000
     }
   },
   "buildings": {
@@ -1437,6 +1394,49 @@
     "pointsForNonHyperstructureClaimAgainstBandits": "250000000",
     "pointsForTileExploration": "5000000",
     "pointsForRelicDiscovery": "250000000"
+  },
+  "blitz": {
+    "registration": {
+      "registration_count_max": 96,
+      "registration_delay_seconds": 10,
+      "collectible_timelock_address": "0x0",
+      "collectibles_lootchest_address": "0x0",
+      "collectibles_elitenft_address": "0x0"
+    },
+    "exploration": {
+      "rewards": [
+        {
+          "rewardId": 38,
+          "percent": 5,
+          "probabilityBps": 3500
+        },
+        {
+          "rewardId": 38,
+          "percent": 10,
+          "probabilityBps": 2500
+        },
+        {
+          "rewardId": 38,
+          "percent": 20,
+          "probabilityBps": 1500
+        },
+        {
+          "rewardId": 23,
+          "percent": 10,
+          "probabilityBps": 1500
+        },
+        {
+          "rewardId": 23,
+          "percent": 20,
+          "probabilityBps": 500
+        },
+        {
+          "rewardId": 25,
+          "percent": 10,
+          "probabilityBps": 500
+        }
+      ]
+    }
   },
   "faith": {
     "enabled": false,

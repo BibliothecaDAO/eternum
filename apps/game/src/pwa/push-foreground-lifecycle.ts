@@ -1,6 +1,9 @@
+import * as Data from "effect/Data";
+import * as Effect from "effect/Effect";
+import * as Queue from "effect/Queue";
+import * as Schedule from "effect/Schedule";
 import { syncPushGameForeground } from "./push-notification-client";
 
-const FOREGROUND_REFRESH_MS = 20_000;
 const FOREGROUND_EVENTS = [
   "focus",
   "online",
@@ -11,44 +14,51 @@ const FOREGROUND_EVENTS = [
   "pushRegistrationChanged",
 ] as const;
 
-/** Keeps one coalesced presence request in flight and refreshes the crash-safe server lease while the app runs. */
+class ForegroundSyncError extends Data.TaggedError("ForegroundSyncError")<{ cause: unknown }> {}
+
+/** One pending refresh coalesces events while the current server lease request completes. */
 export function startPushForegroundLifecycle(owner: string): () => void {
   if (!("serviceWorker" in navigator)) return () => {};
-  let disposed = false;
-  let running = false;
-  let requested = false;
-  let reportedFailure = false;
-
-  const runRequestedSyncs = async () => {
-    while (requested && !disposed) {
-      requested = false;
-      try {
-        await syncPushGameForeground(owner);
-        reportedFailure = false;
-      } catch {
-        if (!reportedFailure) console.warn("push_game_foreground_sync_failed");
-        reportedFailure = true;
-      }
-    }
-    running = false;
-  };
-
-  const requestSync = () => {
-    requested = true;
-    if (running) return;
-    running = true;
-    void runRequestedSyncs();
-  };
-
-  requestSync();
-  const refresh = window.setInterval(requestSync, FOREGROUND_REFRESH_MS);
-  document.addEventListener("visibilitychange", requestSync);
-  FOREGROUND_EVENTS.forEach((event) => window.addEventListener(event, requestSync));
-
-  return () => {
-    disposed = true;
-    window.clearInterval(refresh);
-    document.removeEventListener("visibilitychange", requestSync);
-    FOREGROUND_EVENTS.forEach((event) => window.removeEventListener(event, requestSync));
-  };
+  return Effect.runCallback(
+    Effect.scoped(
+      Effect.gen(function* () {
+        const requests = yield* Queue.sliding<void>(1);
+        const requestSync = () => {
+          Queue.offerUnsafe(requests, undefined);
+        };
+        yield* Effect.acquireRelease(
+          Effect.sync(() => {
+            document.addEventListener("visibilitychange", requestSync);
+            for (const event of FOREGROUND_EVENTS) window.addEventListener(event, requestSync);
+          }),
+          () =>
+            Effect.sync(() => {
+              document.removeEventListener("visibilitychange", requestSync);
+              for (const event of FOREGROUND_EVENTS) window.removeEventListener(event, requestSync);
+            }),
+        );
+        yield* Effect.forkScoped(Effect.sync(requestSync).pipe(Effect.repeat(Schedule.spaced(20_000))), {
+          startImmediately: true,
+        });
+        let reportedFailure = false;
+        const refresh = Effect.tryPromise({
+          try: (signal) => syncPushGameForeground(owner, signal),
+          catch: (cause) => new ForegroundSyncError({ cause }),
+        }).pipe(
+          Effect.tap(() =>
+            Effect.sync(() => {
+              reportedFailure = false;
+            }),
+          ),
+          Effect.catch(() =>
+            Effect.sync(() => {
+              if (!reportedFailure) console.warn("push_game_foreground_sync_failed");
+              reportedFailure = true;
+            }),
+          ),
+        );
+        yield* Queue.take(requests).pipe(Effect.andThen(refresh), Effect.forever);
+      }),
+    ),
+  );
 }

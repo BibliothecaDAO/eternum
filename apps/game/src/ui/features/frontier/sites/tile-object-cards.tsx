@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
@@ -6,7 +7,7 @@ import { TileOccupier } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 import { reachMark } from "../depth-art";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { Sheet } from "@/ui/design-system/kit/sheet";
 
 /** The map tile the player tapped, when it holds a spire. */
@@ -27,7 +28,7 @@ export const SpireCard = ({ onClose }: { onClose: () => void }) => {
   return (
     <Sheet label="Spire" onClose={onClose}>
       <header className="flex items-center gap-3">
-        <KitIcon code={reachMark(1)} size={96} />
+        <SemanticIcon name={reachMark(1)} size={96} />
         <h2 className="frontier-title">Spire</h2>
       </header>
       <button

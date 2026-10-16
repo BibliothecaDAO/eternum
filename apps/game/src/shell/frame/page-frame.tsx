@@ -1,7 +1,7 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
 import { Link, type To } from "react-router-dom";
 
-import { ArrowLeft } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { BACK } from "@/ui/design-system/kit/words";
 
@@ -13,24 +13,26 @@ import { AppFooter } from "./footer";
 import { Kbd } from "./kbd";
 import { useLayout } from "./layout";
 import { Lockup } from "./lockup";
-import { PLACES, Rail, TabBar } from "./tabs";
+import { PLACES, TabBar, TopBar } from "./tabs";
 
 type PageFrameProps = {
   /** A page opened from another names where Back leads; a tab page has none. */
   back?: To;
   /** The page's title: beside Back on the phone, in the title row on desktop. A tab page shows the lockup instead. */
   title?: string;
-  /** One notice, directly above the foot row (phone) or at the top right over the page (desktop). */
+  /** One notice, directly above the foot row (phone) or in the top bar (desktop): it covers nothing and pushes nothing. */
   notice?: ReactNode;
   /** The foot row: the page's buttons (one primary) or its stepper. */
   foot?: ReactNode;
-  /** The four tabs; a full-screen step (sign-in, entering a match) has none. */
+  /** The three places; a full-screen step (sign-in, entering a match) has none. */
   tabs?: boolean;
+  /** Play, the one page that offers to install the app. */
+  offersInstall?: boolean;
   /** A painting across the desktop window behind the page, faded into the ground in its lower third. */
   painting?: Painting;
   /** The painting fills the desktop's first screen: a stage, as the first visit is drawn. */
   stage?: boolean;
-  /** A page that scrolls ends on the desktop's footer. */
+  /** A page that scrolls ends on the footer: What's new, a post, the legal pages. */
   footer?: boolean;
   children: ReactNode;
 };
@@ -38,13 +40,14 @@ type PageFrameProps = {
 /**
  * The composer: the only code that places a page's parts. Each part sits in its band, tagged so a test can hold every
  * control to its place: Back top left and nothing else there, nothing to tap in a phone's top right, one foot row,
- * notices directly above it on a phone and at the desktop's top right, the tabs at the phone's foot or in the desktop
- * rail, with the desktop's keys (1–4 the places, Esc Back).
+ * notices directly above it on a phone and in the desktop's top bar (covering nothing, pushing nothing down), the tabs
+ * at the phone's foot or in the desktop's top bar, with the desktop's keys (1–3 the places, Esc Back). Every page's
+ * content starts at the top of its body: a painting is the ground behind it, never a space above it.
  */
 export const PageFrame = (props: PageFrameProps) => {
   const layout = useLayout();
-  // The page's own notice first (a refusal it caused); else the app's (offline, an update, install).
-  const appNotice = useAppNotice();
+  // The page's own notice first (a refusal it caused); else the app's (offline, an update, install on Play).
+  const appNotice = useAppNotice({ offersInstall: props.offersInstall ?? false });
   const framed = { ...props, notice: props.notice ?? appNotice };
   return (
     <div data-layout={layout} className="bg-kit-ground font-body text-kit-cream">
@@ -54,13 +57,14 @@ export const PageFrame = (props: PageFrameProps) => {
   );
 };
 
-const PhoneFrame = ({ back, title, notice, foot, tabs = true, children }: PageFrameProps) => (
+const PhoneFrame = ({ back, title, notice, foot, tabs = true, footer = false, children }: PageFrameProps) => (
   <div className="flex h-dvh flex-col">
     <header data-band="top" className="flex min-h-12 shrink-0 items-center gap-1 px-4 pt-[env(safe-area-inset-top)]">
       {back === undefined ? <Lockup /> : <PhoneTitle back={back} title={title} />}
     </header>
     <main data-band="body" className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
       {children}
+      {footer && <AppFooter />}
     </main>
     {notice ? (
       <div data-band="notice" className="shrink-0 px-4 pb-2">
@@ -93,8 +97,8 @@ const DesktopFrame = ({
 }: PageFrameProps) => {
   useDesktopKeys({ places: tabs ? PLACES : [], back });
   return (
-    <div className="relative isolate flex min-h-screen">
-      <Rail places={tabs} />
+    <div className="relative isolate flex min-h-screen flex-col">
+      <TopBar places={tabs} notice={notice} />
       <div className="relative flex min-w-0 flex-1 flex-col">
         {painting && <Backdrop painting={painting} stage={stage} />}
         {back !== undefined || title ? (
@@ -116,11 +120,6 @@ const DesktopFrame = ({
           </div>
         )}
       </div>
-      {notice ? (
-        <div data-band="notice" className="fixed right-6 top-6 z-40 w-[26rem]">
-          {notice}
-        </div>
-      ) : null}
     </div>
   );
 };
@@ -135,7 +134,7 @@ const DesktopTitle = ({ back, title }: { back: To | undefined; title?: string })
         aria-label={BACK}
         className="-ml-2 flex h-12 shrink-0 items-center gap-1.5 rounded-xl px-2 hover:bg-kit-gold/[.06]"
       >
-        <ArrowLeft size={26} />
+        <SemanticIcon name="arrow-left" size={26} />
         <Kbd keyName="Esc" />
       </Link>
     )}
@@ -170,7 +169,7 @@ const PhoneTitle = ({ back, title }: { back: To; title?: string }) => (
       aria-label={BACK}
       className="-ml-2 flex size-12 shrink-0 items-center justify-center rounded-xl"
     >
-      <ArrowLeft size={26} />
+      <SemanticIcon name="arrow-left" size={26} />
     </Link>
     {title ? <h1 className="truncate font-display text-[24px] leading-tight">{title}</h1> : null}
   </>

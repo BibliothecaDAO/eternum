@@ -17,6 +17,8 @@ interface SharedLaunchOptions {
 export interface CreateGameRequest extends SharedLaunchOptions {
   slotId?: number;
   groupIndex?: number;
+  /** A test Blitz's player accounts, named by the operator; a paid Blitz reads its players from its slot instead. */
+  players?: string[];
   gameName: string;
   gameStartTime?: string;
 }

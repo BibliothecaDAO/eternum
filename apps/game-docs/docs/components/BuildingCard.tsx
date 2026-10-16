@@ -1,4 +1,5 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
+import type { GameType } from "@config";
 import { BuildingType, resources } from "@bibliothecadao/types";
 import BuildingCosts from "./BuildingCosts";
 import ResourceIcon from "./ResourceIcon";
@@ -15,14 +16,17 @@ interface BuildingCardProps {
   buildingType: BuildingType;
   description: string[];
   multipleImages?: boolean;
+  /** The page's mode: Blitz and Eternum buildings differ in population and cost. */
+  mode: GameType;
 }
 
-export default function BuildingCard({ title, image, buildingType, description }: BuildingCardProps) {
-  const population = ETERNUM_CONFIG().buildings.buildingPopulation[buildingType] || 0;
-  let populationCapacity = ETERNUM_CONFIG().buildings.buildingCapacity[buildingType] || 0;
+export default function BuildingCard({ title, image, buildingType, description, mode }: BuildingCardProps) {
+  const config = ETERNUM_CONFIG(mode);
+  const population = config.buildings.buildingPopulation[buildingType] || 0;
+  let populationCapacity = config.buildings.buildingCapacity[buildingType] || 0;
   const isLaborBuilding = buildingType === BuildingType.ResourceLabor;
   if (isLaborBuilding) {
-    populationCapacity = ETERNUM_CONFIG().populationCapacity.basePopulation;
+    populationCapacity = config.populationCapacity.basePopulation;
   }
 
   // Determine if this building produces a resource
@@ -126,7 +130,7 @@ export default function BuildingCard({ title, image, buildingType, description }
         </div>
       </div>
 
-      <BuildingCosts buildingType={buildingType} />
+      <BuildingCosts buildingType={buildingType} mode={mode} />
     </div>
   );
 }

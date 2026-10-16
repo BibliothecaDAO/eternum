@@ -7,8 +7,8 @@ import { MAP, REALM, RESUME, SEASON, SIGN_IN } from "@/ui/design-system/kit/word
 export const WORDS = {
   play: "Play",
   season: SEASON,
-  learn: "Learn",
-  profile: "Profile",
+  /** The player's own place: their card, their finished games, Settings. */
+  you: "You",
   signIn: SIGN_IN,
   dev: "Dev",
   /** Start Frontier on a first visit; entry is free. */
@@ -23,7 +23,7 @@ export const WORDS = {
   results: "Results",
   /** A game under way. */
   live: "Live",
-  /** The home card when no age has a game live or scheduled; awaiting the owner's wording (a gap in spec 03's table). */
+  /** Play's lead when no mode has a game live or scheduled. */
   noSeason: "No season running",
   /** Before an age's numeral: "Age II". */
   age: "Age",
@@ -41,10 +41,16 @@ export const FOOTER_WORDS = {
   owner: "© 2026 BibliothecaDAO",
 } as const;
 
-/** Play on the desktop: its panels. */
+/** Play: what is under way now, and each mode's next and finished games behind its switch. */
 export const PLAY_WORDS = {
-  blitzGames: "Blitz games",
-  nextBlitz: "Next Blitz",
+  now: "Now",
+  later: "Next and done",
+  /** The modes' switch, named for assistive technology. */
+  modes: "Modes",
+  /** A switch's dot, named for assistive technology: the mode holds something of the player's. */
+  yours: "Something of yours",
+  ended: "Ended",
+  players: "Players",
 } as const;
 
 /** The lore's line, on the first visit's painting and on sign-in (approved 25 September). */
@@ -81,7 +87,7 @@ export const SIGN_IN_WORDS = {
   portrait: "Portrait",
 } as const;
 
-/** Blitz's list and lobby: the steps on Join, the seat's cost, and what stands where an action cannot. */
+/** Blitz's rows and lobby: the steps on Join, the seat's cost, and what stands where an action cannot. */
 export const BLITZ_WORDS = {
   preparing: "Preparing…",
   /** Shown only to assistive technology; the seats are drawn. */
@@ -90,9 +96,12 @@ export const BLITZ_WORDS = {
   registeredUnit: "registered",
   /** Under a slot's registered count: why it has no seats yet. */
   drawnAtClose: (seats: number) => `No cap. Games of up to ${seats} are drawn when entry closes.`,
-  /** A slot's row: its lobby holds the paid entry. */
-  open: "Open",
+  /** A slot taking players: its lobby holds the paid entry. */
+  join: "Join",
+  /** A seated game still being prepared: its lobby shows the roster and Preparing until it opens. */
+  lobby: "Lobby",
   /** Above the lobby's countdown. */
+  closesIn: "Entry closes in",
   startsIn: "Starts in",
   endsIn: "Ends in",
 } as const;
@@ -117,8 +126,8 @@ export const DOORWAY_WORDS = {
   signInToPlay: "Sign in to play.",
   notOnThisGame: "Not on this game.",
   ended: "This game has ended.",
-  deviceLimit: "Device limit reached.",
-  devices: "Devices",
+  deviceLimit: "This account is signed in on 8 devices.",
+  deviceLimitRecovery: "On an already signed-in device, open Settings → Devices and remove one. Then try again here.",
   /** A scene that could not be set up, named for what the player does not see; the cause is in the console. */
   mapNotDrawn: "The map could not be drawn.",
   realmNotDrawn: "The realm could not be drawn.",
@@ -126,7 +135,7 @@ export const DOORWAY_WORDS = {
   openRealm: "Open realm",
 } as const;
 
-/** The Season tab and a game's Results. */
+/** Season and a game's Results. */
 export const SEASON_WORDS = {
   /** The view switch's name, for assistive technology. */
   views: "Season views",
@@ -141,13 +150,16 @@ export const SEASON_WORDS = {
 export const RATING_WORDS = {
   rating: "Rating",
   blitzRating: "Blitz rating",
-  yourGames: "Your games",
   /** A Realms account with no linked wallet carries no rating (not 0, not 1000). */
-  unlinked: "Link a wallet in Account to carry a rating.",
+  unlinked: "Link a wallet in Settings to carry a rating.",
 } as const;
 
-/** Profile and its pages: Account, Devices and Notifications, their rows, sheets and confirms. */
+/** You and Settings: their rows and groups, Settings' sheets and confirms. */
 export const PROFILE_WORDS = {
+  settings: "Settings",
+  /** The docs site, opened in a new tab. */
+  howToPlay: "How to play",
+  whatsNew: "What's new",
   account: "Account",
   notifications: "Notifications",
   devices: "Devices",
@@ -305,16 +317,14 @@ export const REWARD_WORDS = {
   noLords: "No LORDS now",
 } as const;
 
-/** The Blitz season's prize on Season. */
+/** The Blitz season's prize, on Blitz's rating board. */
 export const SEASON_PRIZE_WORDS = {
   unreadable: "The season's prize could not be read.",
-  title: "Blitz season",
   pool: "Prize pool",
   ends: (date: string) => `Ends ${date}`,
   final: "Final",
   paysToday: "If the season ended now",
   placesPaid: (count: number) => `${count} places paid`,
-  place: (place: number) => `#${place}`,
   noPlaces: "No place is paid until players are ranked.",
   yourShare: "Your share",
   review: "Claims open in",
@@ -333,31 +343,17 @@ export const LEVEL_WORDS = {
   all: { word: "All", line: "Plus every clear, fight and build" },
 } as const;
 
-/** Learn: its two views, the guides, a post's stepper and the legal links. */
-export const LEARN_WORDS = {
-  guides: "Guides",
-  news: "News",
-  howFrontier: "How Frontier plays",
-  howBlitz: "How Blitz plays",
-  howEternum: "How Eternum plays",
-  byPlayers: "Guides by players",
+/** What's new under You: a post's stepper and reading time, and the legal pages' date. */
+export const NEWS_WORDS = {
   newer: "Newer",
   older: "Older",
-  terms: "Terms",
-  privacy: "Privacy",
   updated: "Updated",
   /** A post's reading time: "4min". */
   minutes: (count: number) => `${count}min`,
-  /** The Scroll, the posts read inside Learn. */
+  /** The Scroll, the posts read inside What's new. */
   scroll: "The Scroll",
   thoughtPiece: "Thought piece",
   update: "Update",
-  /** Below the Scroll's newest posts: everything else in News, on Learn. */
-  /** The four ages as the lore site tells them, on Learn. */
-  chronicle: "The chronicle",
-  lostAges: "The Lost Ages",
-  /** Under Guides by players: "6 guides". */
-  guidesCount: (count: number) => `${count} guides`,
 } as const;
 
 /** The app's own states: install, update, offline, a page that does not exist. */

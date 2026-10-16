@@ -5,11 +5,11 @@ import { useLayout } from "@/shell/frame/layout";
 import { PageFrame } from "@/shell/frame/page-frame";
 import { StepVerb } from "@/shell/frame/step-verb";
 import type { Painting } from "@/shell/paintings";
+import { DEVICES_PATH } from "@/shell/profile/settings-route";
 import { DOORWAY_WORDS, WORDS } from "@/shell/words";
 import { Button } from "@/ui/design-system/kit/button";
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { TRY_AGAIN } from "@/ui/design-system/kit/words";
-import { useFrontierType } from "@/ui/features/frontier/use-frontier-type";
 
 import type { DoorwayView } from "./doorway-view";
 import { StepTrack } from "./step-track";
@@ -35,6 +35,7 @@ export const DoorwayScreen = ({
   onOpenRealm,
   onSignIn,
   onSpectate,
+  results,
   children,
 }: {
   view: DoorwayView;
@@ -48,13 +49,21 @@ export const DoorwayScreen = ({
   onOpenRealm?: () => void;
   onSignIn: () => void;
   onSpectate?: () => void;
+  /** The finished game's Results page, where an ended game's doorway leads. */
+  results?: string;
   /** A mode's own control at the realm step, kept inside the doorway's frame. */
   children?: ReactNode;
 }) => {
-  useFrontierType();
   const desktop = useLayout() === "desktop";
   const hold = (
-    <Hold view={view} onRetry={onRetry} onOpenRealm={onOpenRealm} onSignIn={onSignIn} onSpectate={onSpectate} />
+    <Hold
+      view={view}
+      onRetry={onRetry}
+      onOpenRealm={onOpenRealm}
+      onSignIn={onSignIn}
+      onSpectate={onSpectate}
+      results={results}
+    />
   );
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-kit-ground">
@@ -85,7 +94,7 @@ export const DoorwayScreen = ({
 const RealmRising = ({ realm }: { realm: DoorwayRealm }) => (
   <div className="flex flex-col items-center gap-3">
     {realm.emblem && <img src={realm.emblem.art} alt={realm.emblem.name} className="size-12 object-contain" />}
-    <h2 className="text-center font-ui text-[26px] font-extrabold text-kit-cream">{realm.name}</h2>
+    <h2 className="text-center font-body text-[26px] font-extrabold text-kit-cream">{realm.name}</h2>
   </div>
 );
 
@@ -96,12 +105,14 @@ const Hold = ({
   onOpenRealm,
   onSignIn,
   onSpectate,
+  results,
 }: {
   view: DoorwayView;
   onRetry: () => void;
   onOpenRealm?: () => void;
   onSignIn: () => void;
   onSpectate?: () => void;
+  results?: string;
 }) => {
   const navigate = useNavigate();
   const desktop = useLayout() === "desktop";
@@ -131,26 +142,39 @@ const Hold = ({
     case "sign-in":
       return plate(
         DOORWAY_WORDS.signInToPlay,
-        <Button role="primary" word={WORDS.signIn} icon="Pf" onClick={onSignIn} />,
+        <Button role="primary" word={WORDS.signIn} icon="person" onClick={onSignIn} />,
       );
     case "retry": {
-      const retry = <Button role="outline" word={TRY_AGAIN} icon="Sp" onClick={onRetry} />;
+      const retry = <Button role="outline" word={TRY_AGAIN} icon="refresh" onClick={onRetry} />;
       return view.blocker.openRealm && onOpenRealm
         ? plate(
             view.blocker.line,
-            <Button role="primary" word={DOORWAY_WORDS.openRealm} icon="Cs" onClick={onOpenRealm} />,
+            <Button role="primary" word={DOORWAY_WORDS.openRealm} icon="realm" onClick={onOpenRealm} />,
             retry,
           )
         : plate(view.blocker.line, retry);
     }
     case "devices":
-      return plate(
-        DOORWAY_WORDS.deviceLimit,
-        <Button role="primary" word={DOORWAY_WORDS.devices} icon="Dv" onClick={() => navigate("/profile")} />,
+      return (
+        <div className="flex w-full flex-col gap-3">
+          <ReasonPlate reason={{ kind: "failed", line: DOORWAY_WORDS.deviceLimit }} />
+          <p className="text-sm text-kit-cream">{DOORWAY_WORDS.deviceLimitRecovery}</p>
+          <a href={DEVICES_PATH} target="_blank" rel="noopener noreferrer" className="text-kit-gold underline">
+            Settings → Devices
+          </a>
+          <Button role="primary" word={TRY_AGAIN} icon="refresh" onClick={onRetry} />
+        </div>
       );
   }
-  if (!view.spectating || !onSpectate) return null;
-  return view.spectating === "watch"
-    ? plate(DOORWAY_WORDS.notOnThisGame, <Button role="secondary" word={WORDS.watch} icon="Wc" onClick={onSpectate} />)
-    : plate(DOORWAY_WORDS.ended, <Button role="secondary" word={WORDS.results} icon="Tp" onClick={onSpectate} />);
+  if (view.spectating === "watch" && onSpectate)
+    return plate(
+      DOORWAY_WORDS.notOnThisGame,
+      <Button role="secondary" word={WORDS.watch} icon="watch" onClick={onSpectate} />,
+    );
+  if (view.spectating === "results" && results)
+    return plate(
+      DOORWAY_WORDS.ended,
+      <Button role="secondary" word={WORDS.results} icon="victory" onClick={() => navigate(results)} />,
+    );
+  return null;
 };

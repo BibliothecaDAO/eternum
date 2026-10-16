@@ -1,9 +1,10 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { formatRelicBonusText } from "@/ui/utils/relic-utils";
 import { bonusActive, formatTime } from "@bibliothecadao/eternum";
 import { getRelicInfo, ID, RelicEffect, RelicInfo, ResourcesIds } from "@bibliothecadao/types";
-import { Sparkles } from "@/ui/design-system/atoms/game-icons";
+
 import { useMemo } from "react";
 
 interface ActiveRelicEffectsProps {
@@ -105,8 +106,8 @@ export const ActiveRelicEffects = ({
               title={`${effect.relicInfo.name}: ${effect.relicInfo.effect}`}
             >
               <ResourceIcon resource={ResourcesIds[effect.resourceId]} size="xs" withTooltip={false} />
-              <span className={`truncate text-[11px] font-semibold ${text}`}>{effect.bonusText}</span>
-              <span className={`shrink-0 text-[10px] font-medium ${timerColor}`}>
+              <span className={`truncate text-sm font-semibold ${text}`}>{effect.bonusText}</span>
+              <span className={`shrink-0 text-sm font-medium ${timerColor}`}>
                 {formatTime(effect.remainingSeconds)}
               </span>
             </div>
@@ -114,7 +115,7 @@ export const ActiveRelicEffects = ({
         })}
         {hiddenEffectsCount > 0 ? (
           <div
-            className="flex items-center rounded border border-gold/25 bg-black/40 px-2 py-1 text-[10px] font-semibold text-gold/70"
+            className="flex items-center rounded border border-gold/25 bg-black/40 px-2 py-1 text-sm font-semibold text-gold/70"
             title={`${hiddenEffectsCount} more active relic effect${hiddenEffectsCount === 1 ? "" : "s"}`}
           >
             +{hiddenEffectsCount}
@@ -127,8 +128,8 @@ export const ActiveRelicEffects = ({
   if (compact) {
     return (
       <div className={`flex flex-col gap-1.5 w-full mt-1 border-t border-gold/20 pt-1.5 ${className ?? ""}`}>
-        <div className="text-xxs text-gold/80 uppercase font-semibold flex items-center gap-1">
-          <Sparkles className="h-3 w-3 text-relic2 animate-pulse" />
+        <div className="text-sm text-gold/80 font-semibold flex items-center gap-1">
+          <SemanticIcon name="relics" className="h-3 w-3 text-relic2 animate-pulse" />
           Active Relic Effects
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -146,8 +147,8 @@ export const ActiveRelicEffects = ({
                 title={`${effect.relicInfo.name}: ${effect.relicInfo.effect}`}
               >
                 <ResourceIcon resource={ResourcesIds[effect.resourceId]} size="xs" withTooltip={false} />
-                <span className={`text-[11px] font-semibold ${text}`}>{effect.bonusText}</span>
-                <span className={`text-[10px] font-medium ${timerColor}`}>{formatTime(effect.remainingSeconds)}</span>
+                <span className={`text-sm font-semibold ${text}`}>{effect.bonusText}</span>
+                <span className={`text-sm font-medium ${timerColor}`}>{formatTime(effect.remainingSeconds)}</span>
               </div>
             );
           })}
@@ -158,8 +159,8 @@ export const ActiveRelicEffects = ({
 
   return (
     <div className={`flex flex-col gap-2 w-full mt-1 border-t border-gold/20 pt-2 ${className ?? ""}`}>
-      <div className="text-xs text-gold/80 uppercase font-semibold flex items-center gap-1">
-        <Sparkles className="h-3 w-3 text-relic2 animate-pulse" />
+      <div className="text-sm text-gold/80 font-semibold flex items-center gap-1">
+        <SemanticIcon name="relics" className="h-3 w-3 text-relic2 animate-pulse" />
         Active Relic Effects
       </div>
 
@@ -181,12 +182,12 @@ export const ActiveRelicEffects = ({
                 <ResourceIcon resource={ResourcesIds[effect.resourceId]} size="sm" withTooltip={false} />
                 <div className="flex flex-col gap-0.5">
                   <span className={`text-sm font-semibold ${text}`}>{effect.relicInfo.name}</span>
-                  <span className="text-xs text-gold/70">{effect.bonusText}</span>
-                  <span className="text-xxs text-gold/60">{effect.relicInfo.effect}</span>
+                  <span className="text-sm text-gold/70">{effect.bonusText}</span>
+                  <span className="text-sm text-kit-muted">{effect.relicInfo.effect}</span>
                 </div>
               </div>
-              <div className={`text-xs ${timerColor} font-medium mt-1.5 flex items-center gap-1`}>
-                <Sparkles className="h-3 w-3" />
+              <div className={`text-sm ${timerColor} font-medium mt-1.5 flex items-center gap-1`}>
+                <SemanticIcon name="relics" className="h-3 w-3" />
                 {formatTime(effect.remainingSeconds)} left
               </div>
             </div>

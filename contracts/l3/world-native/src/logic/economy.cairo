@@ -73,7 +73,7 @@ pub mod EconomyLogic {
             command: CreateOrder,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_command(game_id, context.timestamp, false, context);
             self.validate_offer(game_id, actor, command, context.timestamp);
@@ -100,7 +100,7 @@ pub mod EconomyLogic {
             command: AcceptOrder,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_command(game_id, context.timestamp, false, context);
             let key = TradeKey { game_id, trade_id: command.trade_id };
@@ -128,7 +128,7 @@ pub mod EconomyLogic {
             trade_id: u64,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_command(game_id, context.timestamp, true, context);
             let key = TradeKey { game_id, trade_id };
@@ -164,7 +164,7 @@ pub mod EconomyLogic {
             banks: Span<BankPlacement>,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             assert!(actor == crate::state::read().launcher.read(), "only launcher");
             assert!(banks.len() == 6, "six regional banks required");
@@ -183,7 +183,7 @@ pub mod EconomyLogic {
             command: Swap,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.execute_swap(game_id, actor, command, context, true);
             ()
@@ -195,7 +195,7 @@ pub mod EconomyLogic {
             command: Swap,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.execute_swap(game_id, actor, command, context, false);
             ()
@@ -207,7 +207,7 @@ pub mod EconomyLogic {
             command: AddLiquidity,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             if actor != crate::state::read().launcher.read() {
                 assert_playing(context.game.unbox(), context.timestamp);
@@ -268,7 +268,7 @@ pub mod EconomyLogic {
             command: RemoveLiquidity,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_command(game_id, context.timestamp, true, context);
             let bank = self.bank_structure(game_id, command.bank_id);

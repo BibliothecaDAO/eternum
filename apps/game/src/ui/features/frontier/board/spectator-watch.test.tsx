@@ -2,14 +2,16 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
 
-const { startVisit, leader } = vi.hoisted(() => ({
-  startVisit: vi.fn(),
-  leader: { address: "0xa1", structure_id: "7" },
-}));
-vi.mock("./season-board", () => ({ useSeasonBoard: () => ({ data: [leader] }) }));
+const { startVisit, leader, board } = vi.hoisted(() => {
+  const leader = { address: "0xa1", structure_id: "7" };
+  return { startVisit: vi.fn(), leader, board: { data: [leader] as unknown[] } };
+});
+vi.mock("./season-board", () => ({ useSeasonBoard: () => board }));
 vi.mock("@/sync/active-game-client", () => ({ startRealmVisit: startVisit, useRealmVisit: () => null }));
 
-import { useAccountStore } from "@/hooks/store/use-account-store";
+import { resetEntryDestination, whenEntryDestinationSettled } from "@/game-entry/entry-destination";
+import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
+import { overrideSpectateIntent } from "@/utils/spectator-session";
 import { useSpectatorWatchesTheLeader } from "./spectator-watch";
 
 const Hud = () => {
@@ -32,6 +34,72 @@ describe("a spectator", () => {
 
     useAccountStore.setState({ account: null });
     mount()();
-    expect(startVisit).toHaveBeenCalledWith({ player: "0xa1", structureId: 7 });
+    expect(startVisit).toHaveBeenCalledWith({ player: "0xa1", structureId: 7, opensOnArrival: true });
+  });
+
+  it("leaves the map nothing to open on when the season has no leader to watch", async () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    resetEntryDestination();
+    useAccountStore.setState({ account: null });
+    board.data = [];
+    startVisit.mockClear();
+
+    mount()();
+
+    expect(startVisit).not.toHaveBeenCalled();
+    await expect(whenEntryDestinationSettled()).resolves.toBeNull();
+    board.data = [leader];
+  });
+
+  describe("entered to spectate while an account is still held", () => {
+    const enterToSpectate = () => {
+      (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+      resetEntryDestination();
+      useAccountStore.setState({ account: { address: "0x111" } as never });
+      overrideSpectateIntent(true);
+      startVisit.mockClear();
+      expect(accountAddress()).toBeNull();
+    };
+
+    it("watches the season's leader", () => {
+      enterToSpectate();
+      try {
+        mount()();
+        expect(startVisit).toHaveBeenCalledWith({ player: "0xa1", structureId: 7, opensOnArrival: true });
+      } finally {
+        overrideSpectateIntent(false);
+      }
+    });
+
+    it("leaves the map nothing to open on when the season has no leader", async () => {
+      enterToSpectate();
+      board.data = [];
+      try {
+        mount()();
+        expect(startVisit).not.toHaveBeenCalled();
+        await expect(whenEntryDestinationSettled()).resolves.toBeNull();
+      } finally {
+        overrideSpectateIntent(false);
+        board.data = [leader];
+      }
+    });
+  });
+
+  it("opens the watched realm only when the address names no place", () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    useAccountStore.setState({ account: null });
+    startVisit.mockClear();
+    const entered = window.location.href;
+    try {
+      window.history.replaceState(null, "", "/g/0x4445/1/map?col=-1968759586&row=-2000471286&spectate=true");
+      mount()();
+      expect(startVisit).toHaveBeenCalledWith({ player: "0xa1", structureId: 7, opensOnArrival: false });
+
+      window.history.replaceState(null, "", "/g/0x4445/1/map?spectate=true");
+      mount()();
+      expect(startVisit).toHaveBeenLastCalledWith({ player: "0xa1", structureId: 7, opensOnArrival: true });
+    } finally {
+      window.history.replaceState(null, "", entered);
+    }
   });
 });

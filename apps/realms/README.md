@@ -10,10 +10,15 @@ groups of at most 100. A persisted budget of 10,000 upstream RPC methods per UTC
 methods across callers. Exhaustion returns 429; missing or partial evidence returns an error, never a cached rating or
 an invented initial value. Repeated reads cost fresh RPC calls.
 
-The top list enumerates holders from the existing immutable `starknet_mmr_updates` history and its atomic
-`airfoil.checkpoints` watermark through the portal's `/api/ratings/population` GET. It reads every holder's token value
-at that named hash and ranks the complete population, even when only a few leaders are requested. SQL supplies
-population and history, never a second rating value. There is no new history table or credential.
+The top list ranks every wallet the environment's rating token has ever updated. The reader learns them from the token's
+own `MMRUpdated` events, in ranges of 100,000 blocks from the block where the token was deployed (found once by
+searching for its class). It keeps only those wallets and the block (height and hash) they were read through, so each
+request reads only the blocks since then. A range whose last block changes hash while its events are read publishes
+nothing; if the kept block is later replaced, the wallets are discarded and read again, so a wallet seen only on a
+replaced block is never ranked. A range is added only if the chain still holds the kept block once the range is read;
+otherwise the wallets are discarded too. While the chain's head is below the kept block the list is refused, until a
+block at that height decides. It then reads every wallet's token value at one block and ranks the complete population,
+even when only a few leaders are requested. The stored wallets are never a rating value.
 
 Displayed owners may have `profile: {realmsId, name, portrait} | null` from their current verified wallet link. Names
 and portraits are presentation metadata; they never select the rating wallet. An unlinked owner remains an address.
@@ -28,18 +33,14 @@ consumption. Deployed accounts retain contract verification; offchain verificati
 allow-listed deployment data.
 
 The Realms collection and rating token come from `contracts/common/addresses/dev.json` or `mainnet.json`, selected by
-`ENVIRONMENT`, like the ledger. Optional `RATING_HISTORY_URL` names the indexed population for that environment's rating
-token. Omit it (or leave it empty) until that token has a history producer: only `/api/ratings/top` returns 503
-`ratings_unavailable`; identity, sign-in and wallet rating reads remain available. The top-list reader requires HTTPS
-when configured. Do not point a dev token at production's population: the history response does not identify its token,
-so it cannot prove that those holders cover dev ratings. Both environments run on mainnet. Staging uses `dev.json`: its
-own ledger, test token, rating token and collections, and the real Realms collection. Production uses `mainnet.json`. No
-missing dev address falls back to production. Labor ownership runs through the private `ValueIdentity.realmOwnerOf`
-service binding; the relay's second Realms RPC is removed. Rating readers live in separate Worker deployments; every
-token lookup selects the environment book directly.
+`ENVIRONMENT`, like the ledger. Both environments run on mainnet. Staging uses `dev.json`: its own ledger, test token,
+rating token and collections, and the real Realms collection. Production uses `mainnet.json`. No missing dev address
+falls back to production. Labor ownership runs through the private `ValueIdentity.realmOwnerOf` service binding; the
+relay's second Realms RPC is removed. Rating readers live in separate Worker deployments; every token lookup selects the
+environment book directly.
 
 The client and Workers share the address book through `environmentL2`. The deployment workflow does not override its
-chain or ledger. The single `L2_RPC_URL` secret serves the Worker and the browser build. The history URL is not a
-deployment prerequisite. Discord is offered only when both optional credentials are configured; email code sign-in uses
-the required Resend key. The deployment script supplies the required generated VAPID pair; the push contact, notifier
-interval and account class are code constants. Operators configure and deploy the environment.
+chain or ledger. The single `L2_RPC_URL` secret serves the Worker and the browser build. Discord is offered only when
+both optional credentials are configured; email code sign-in uses the required Resend key. The deployment script
+supplies the required generated VAPID pair; the push contact, notifier interval and account class are code constants.
+Operators configure and deploy the environment.

@@ -29,7 +29,7 @@ export const TroopBadge = ({ category, tier, label, className, emphasize = false
       {tier !== undefined ? (
         <span
           className={clsx(
-            "shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-bold leading-none",
+            "shrink-0 rounded border px-1.5 py-0.5 text-sm font-bold leading-none",
             getTierStyle(String(tier)),
           )}
         >{`${tier}`}</span>
@@ -39,7 +39,7 @@ export const TroopBadge = ({ category, tier, label, className, emphasize = false
           <ResourceIcon resource={trait} size="xs" withTooltip={false} />
         </span>
       ) : null}
-      {label ? <span className="text-xs capitalize">{label}</span> : null}
+      {label ? <span className="text-sm capitalize">{label}</span> : null}
     </span>
   );
 };

@@ -120,7 +120,7 @@ const componentStyles = {
 };
 
 export const WeightTable = () => {
-  const config = ETERNUM_CONFIG();
+  const config = ETERNUM_CONFIG("eternum");
   const weights = config.resources.resourceWeightsGrams;
 
   // Create a lookup map for weights

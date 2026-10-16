@@ -41,6 +41,7 @@ const TILE_OCCUPANT_KINDS: Record<TileOccupier, TileOccupantKind> = {
   [TileOccupier.Rift]: "structure",
   [TileOccupier.Ruin]: "structure",
   [TileOccupier.Stragglers]: "structure",
+  [TileOccupier.DormantSpire]: "map-site",
 };
 
 const tileOccupantKind = (tileOccupier: number): TileOccupantKind | undefined =>
@@ -54,7 +55,7 @@ export const isTileOccupierStructure = (tileOccupier: TileOccupier) => {
 
 export const isTileOccupierArmy = (tileOccupier: number) => tileOccupantKind(tileOccupier) === "army";
 
-/** A shrine or well: a single-use tile object with no Structure, which no army may enter. */
+/** A shrine, a well or a dormant spire: a tile object with no Structure, which no army may enter. */
 export const isTileOccupierMapSite = (tileOccupier: number) => tileOccupantKind(tileOccupier) === "map-site";
 
 export const isTileOccupierChest = (tileOccupier: TileOccupier) => {

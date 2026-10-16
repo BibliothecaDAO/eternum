@@ -146,7 +146,6 @@ const main = async (): Promise<void> => {
       snapshot: (gameId, _confirmedBlock, models, actor, owner) => live.snapshot(gameId, models, actor, owner),
     },
     history: historyStore,
-    metrics: loaded.metrics,
     undecodableEventCount: () => native.receiptFailures,
     ingestionFailure: () =>
       native.halted

@@ -139,10 +139,9 @@ describe("renderer route runtime", () => {
 
     // The app's own navigation moves history with no event of the browser's: the scene's frame announces it.
     for (const outside of [
-      "/learn",
+      "/profile/settings",
       "/",
-      "/blitz",
-      "/frontier",
+      "/blitz/slot-blitz-1",
       "/season",
       "/scroll",
       "/profile",
@@ -183,7 +182,7 @@ describe("renderer route runtime", () => {
     });
     runtime.start();
     runtime.syncFromLocation();
-    window.history.replaceState({}, "", "/learn");
+    window.history.replaceState({}, "", "/season");
     window.dispatchEvent(new PopStateEvent("popstate"));
     expect(ownPage.mock.calls).toEqual([[true], [false]]);
     runtime.dispose();

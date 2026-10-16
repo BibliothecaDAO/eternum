@@ -1,3 +1,4 @@
+import { Effect } from "effect";
 import {
   decodeFrontierSeason,
   rpcAt,
@@ -54,6 +55,19 @@ export const ledgerResultAdapter =
       );
       if (BigInt(posted) !== BigInt(result.commitment)) throw new Error("ledger_result_not_recorded");
     });
+
+/**
+ * A result is posted for the slot that paid for its game, once that slot's roster is verified. A game the launch
+ * directory declares outside any slot took no entry, so its result has nothing to post and is complete as it stands.
+ */
+export const postVerifiedResult = async (
+  result: BlitzResult,
+  verifyRoster: (chainId: string, gameId: number) => Promise<number | null>,
+  postFor: (slotId: number) => RelayPorts["ledger"]["postResult"],
+): Promise<void> => {
+  const slotId = await verifyRoster(result.chainId, result.gameId);
+  if (slotId !== null) await Effect.runPromise(postFor(slotId)(result));
+};
 
 const resultCalldata = (result: BlitzResult, slotId: number): string[] => {
   const calldata = [result.chainId, String(slotId), String(result.gameId), String(result.rows.length)];

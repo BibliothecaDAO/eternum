@@ -43,7 +43,7 @@ export const HelpContainer = ({
     }
   }, [transferType]);
 
-  const updateSelectedEntityId = useUIStore((state) => state.updateEntityActionSelectedEntityId);
+  const deselectEntity = useUIStore((state) => state.deselectEntity);
   const closeSurface = usePopoverStore((state) => state.closeSurface);
 
   // Get the current entities we're working with based on direction state
@@ -77,7 +77,7 @@ export const HelpContainer = ({
 
   // Handle transfer completion
   const handleTransferComplete = () => {
-    updateSelectedEntityId(null);
+    deselectEntity();
     closeSurface();
   };
 
@@ -96,10 +96,10 @@ export const HelpContainer = ({
         <div className="flex border-b border-gold/20 bg-dark-brown/70">
           {transfers.includes("troops") && (
             <button
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold uppercase tracking-wide border-b-2 transition-all duration-200 ${
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-all duration-200 ${
                 transferType === TransferType.Troops
                   ? "text-gold border-gold bg-gold/10"
-                  : "text-gold/60 border-transparent hover:text-gold/90 hover:bg-gold/5"
+                  : "text-kit-muted border-transparent hover:text-gold/90 hover:bg-gold/5"
               }`}
               onClick={() => setTransferType(TransferType.Troops)}
             >
@@ -109,10 +109,10 @@ export const HelpContainer = ({
           )}
           {transfers.includes("relics") && (
             <button
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold uppercase tracking-wide border-b-2 transition-all duration-200 ${
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-all duration-200 ${
                 transferType === TransferType.Relics
                   ? "text-gold border-gold bg-gold/10"
-                  : "text-gold/60 border-transparent hover:text-gold/90 hover:bg-gold/5"
+                  : "text-kit-muted border-transparent hover:text-gold/90 hover:bg-gold/5"
               }`}
               onClick={() => setTransferType(TransferType.Relics)}
             >

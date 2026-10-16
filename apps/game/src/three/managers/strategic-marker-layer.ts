@@ -1,3 +1,4 @@
+import { iconUrl } from "@/ui/design-system/icon-meaning";
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import {
   CanvasTexture,
@@ -51,13 +52,13 @@ export interface StrategicMarkerLayerOptions {
 }
 
 const STRUCTURE_MARKER_TEXTURE_PATHS: Readonly<Record<StrategicStructureMarkerKind, string>> = {
-  bank: "/images/labels/chest.png",
-  hyperstructure: "/images/labels/hyperstructure.png",
-  mine: "/images/labels/fragment_mine.png",
-  realm: "/images/labels/realm.png",
-  village: "/images/labels/village.png",
+  bank: iconUrl("chest"),
+  hyperstructure: iconUrl("hyperstructure"),
+  mine: iconUrl("mine"),
+  realm: iconUrl("realm"),
+  village: iconUrl("village"),
 };
-const ARMY_MARKER_TEXTURE_PATH = "/images/labels/army.png";
+const ARMY_MARKER_TEXTURE_PATH = iconUrl("army");
 export const STRATEGIC_MARKER_HEIGHT = 0.6;
 /** World units; at the far band (distance 80, 38° fov) a 2.6-unit quad is ~35 px tall — readable like a minimap icon. */
 const STRUCTURE_MARKER_SIZE = 2.6;

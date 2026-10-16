@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/react";
 import {
+  classifyTransactionError,
   type TransactionFailureStage,
   type TransactionProviderState,
   type TransactionRetrySafety,
@@ -57,23 +58,6 @@ const MAX_SANITIZE_KEYS = 20;
 const MAX_SANITIZE_ITEMS = 20;
 const MAX_STRING_LENGTH = 500;
 const SENSITIVE_KEY_PATTERN = /account|calldata|private|secret|seed|signer|signature|password|authorization/i;
-const WALLET_REJECTION_PATTERNS = [
-  /4001/,
-  /action[_ ]?rejected/i,
-  /cancelled by user/i,
-  /denied by user/i,
-  /rejected by user/i,
-  /request aborted/i,
-  /transaction rejected/i,
-  /user (cancelled|canceled|closed|denied|rejected)/i,
-  /wallet.*(cancelled|canceled|denied|rejected)/i,
-];
-const REVERT_REASON_PATTERNS = [
-  /execution reverted/i,
-  /failed with reason/i,
-  /\brevert(?:ed)?\b/i,
-  /\bentrypoint_failed\b/i,
-];
 const reportedFailureKeys = new Map<string, number>();
 
 const readString = (value: unknown): string | undefined =>
@@ -251,28 +235,13 @@ const buildBreadcrumbData = (context: Partial<Omit<ClientTransactionFailureConte
   });
 };
 
-const isWalletRejectedError = (error: unknown): boolean => {
-  const readableMessage = extractReadableErrorMessage(error, "").trim();
-  if (!readableMessage) {
-    return false;
-  }
-
-  return WALLET_REJECTION_PATTERNS.some((pattern) => pattern.test(readableMessage));
-};
-
 const resolveClientTransactionFailureStageFromError = (
   error: unknown,
   fallback: Extract<ClientTransactionFailureStage, "submit" | "confirmation" | "background_confirmation">,
 ): ClientTransactionFailureStage => {
-  if (isWalletRejectedError(error)) {
-    return "wallet_rejected";
-  }
-
-  const readableMessage = extractReadableErrorMessage(error, "").trim();
-  if (REVERT_REASON_PATTERNS.some((pattern) => pattern.test(readableMessage))) {
-    return "revert";
-  }
-
+  const { kind } = classifyTransactionError(error);
+  if (kind === "user_cancelled") return "wallet_rejected";
+  if (kind === "reverted") return "revert";
   return fallback;
 };
 

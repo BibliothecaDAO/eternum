@@ -1,3 +1,4 @@
+import { iconUrl } from "@/ui/design-system/icon-meaning";
 import { CameraView } from "../../scenes/camera-view";
 import { createContentContainer } from "./label-components";
 import { LABEL_STYLES, LABEL_TYPE_CONFIGS } from "./label-config";
@@ -34,7 +35,7 @@ const ChestLabelType: LabelTypeDefinition<ChestLabelData> = {
     labelDiv.style.setProperty("border-color", LABEL_STYLES.CHEST.borderColor!, "important");
 
     const img = document.createElement("img");
-    img.src = "/images/labels/chest.png";
+    img.src = iconUrl("chest");
     img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
     img.setAttribute("data-component", "chest-icon");
     labelDiv.appendChild(img);
@@ -48,7 +49,7 @@ const ChestLabelType: LabelTypeDefinition<ChestLabelData> = {
 
     const hint = document.createElement("span");
     hint.textContent = "Right-click with an army to open";
-    hint.classList.add("text-[10px]", "opacity-80");
+    hint.classList.add("text-sm", "opacity-80");
     hint.setAttribute("data-role", "chest-hint");
     contentContainer.appendChild(hint);
 

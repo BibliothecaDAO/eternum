@@ -14,7 +14,7 @@ import type { GameKey, SlotKey } from "./value/ledger";
 export type BlitzAction = "enter" | "spectate" | "registered" | "open" | "refund";
 
 /**
- * One Blitz on the lobby's Blitz card (design o4): live, or the moment it starts, and one action;
+ * One Blitz as Play and its lobby read it: live, or the moment it starts, and one action;
  * a game has its roster's seats, a slot only the count the ledger registered (it is uncapped and splits into games at
  * close). A game comes from the directory; a slot still taking players comes from the launch service, and its games
  * join the directory only once the slot closes, so the two never show the same game.
@@ -96,10 +96,6 @@ export const seatedGameOf = (
       isSameStarknetAddress(seat, wallet)
     );
   });
-
-/** The row a card with room for one shows: the player's own game to enter, else the next slot to open. */
-export const leadBlitzRow = (rows: readonly BlitzRow[]): BlitzRow | undefined =>
-  rows.find((row) => row.action === "enter") ?? rows.find((row) => row.action === "open") ?? rows[0];
 
 const gameRow = (game: DirectoryGame, startsAt: number | null): BlitzRow => ({
   kind: "game",

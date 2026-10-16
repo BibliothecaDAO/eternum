@@ -53,6 +53,7 @@ const createHeraldHeadRecorder = () => {
     }
     anchored = true;
     chainTime.anchor(heraldHeartbeat(head));
+    markGameEntryMilestone("chain-time-anchored");
   };
 };
 

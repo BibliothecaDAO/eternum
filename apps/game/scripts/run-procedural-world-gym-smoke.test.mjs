@@ -37,7 +37,7 @@ describe("procedural world gym smoke contract", () => {
         baseUrl: "https://127.0.0.1:4174/play/map?foo=bar",
         rendererMode: "webgpu-force-webgl",
       }),
-    ).toBe("https://127.0.0.1:4174/debug/procedural-world-gym?rendererMode=webgpu-force-webgl");
+    ).toBe("https://127.0.0.1:4174/lab/world?rendererMode=webgpu-force-webgl");
   });
 
   it("accepts a moving, fully grounded 100-character biome scene", () => {

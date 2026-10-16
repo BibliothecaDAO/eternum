@@ -55,10 +55,10 @@ it("announces each address the scene shows and its leaving, so a renderer that o
   window.addEventListener(SCENE_ADDRESS_EVENT, count);
   await act(async () =>
     root.render(
-      <MemoryRouter initialEntries={["/learn"]}>
+      <MemoryRouter initialEntries={["/season"]}>
         <Navigator />
         <Routes>
-          <Route path="/learn" element={<p>learn</p>} />
+          <Route path="/season" element={<p>season</p>} />
           <Route
             path="/g/:chain/:game/*"
             element={
@@ -81,7 +81,7 @@ it("announces each address the scene shows and its leaving, so a renderer that o
     const inside = announced;
     expect(inside).toBeGreaterThanOrEqual(3);
     // Out by the app's own navigation: the frame says it has left.
-    await act(async () => navigate("/learn"));
+    await act(async () => navigate("/season"));
     expect(announced).toBe(inside + 1);
     await act(async () => navigate("/g/0xa/1/map"));
     expect(announced).toBe(inside + 2);

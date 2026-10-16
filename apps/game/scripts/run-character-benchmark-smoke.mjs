@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import { parseAgentBrowserJson, runAgentBrowser } from "./run-renderer-debug-smoke.mjs";
 
-const BENCHMARK_PATH = "/debug/procedural-character-benchmark";
+const BENCHMARK_PATH = "/lab/character-benchmark";
 const DEFAULT_BASE_URL = "https://127.0.0.1:4173";
 const DEFAULT_TIMEOUT_MS = 60_000;
 const POLL_INTERVAL_MS = 250;

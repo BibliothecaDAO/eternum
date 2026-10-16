@@ -145,10 +145,9 @@ mount, that is a separate representation/behavior feature in addition to this su
 ### Executed visual review
 
 The 2026-08-27 WebGL2 gym review captured a T1 horse walk and a T3 walk from four phase samples and five locked views.
-The T1 sheet is preserved at
-[`output/playwright/horse-review/horse-t1-walk-contact-sheet.png`](../../output/playwright/horse-review/horse-t1-walk-contact-sheet.png).
-The full in-place 47-frame report is at
-[`output/playwright/horse-review/horse-walk-temporal-report.json`](../../output/playwright/horse-review/horse-walk-temporal-report.json).
+The historical T1 contact sheet and full in-place 47-frame report are not stored in this checkout. For a new capture,
+use the maintained [frame inspector](./procedural-animation-frame-inspector.md); the numbers below describe the dated
+review, not a current validation run.
 
 The objective capture passed its current generic assertions: 47 nonblank frames, no recorded pose issues, minimum horse
 bend alignment `1.0`, maximum consecutive joint displacement `0.11126`, and maximum in-place stance drift `0.04669`.

@@ -7,7 +7,6 @@ import { visualizer } from "rollup-plugin-visualizer";
 import { ConfigEnv, defineConfig, loadEnv, Plugin, PluginOption, UserConfig } from "vite";
 import mkcert from "vite-plugin-mkcert";
 import { VitePWA } from "vite-plugin-pwa";
-import topLevelAwait from "vite-plugin-top-level-await";
 import wasm from "vite-plugin-wasm";
 import { resolveRendererViteAliases } from "./src/three/renderer-vite-config";
 import { PWA_PRECACHE_BUDGET_BYTES, PWA_PRECACHE_FILES } from "./build/pwa-assets.mjs";
@@ -84,8 +83,9 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
     plugins.unshift(mkcert() as any);
   }
 
+  // The build targets esnext, so a wasm module's top-level await stays native and every importer waits for it. A
+  // transform that wraps it in a promise lets importers run first and read exports that are not assigned yet.
   plugins.push(wasm());
-  plugins.push(topLevelAwait() as any);
 
   if (isBuild) {
     plugins.push({

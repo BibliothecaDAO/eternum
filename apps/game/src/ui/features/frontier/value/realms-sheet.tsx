@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { type FormEvent, type ReactNode, useState } from "react";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -5,7 +6,7 @@ import { shortAddress } from "@/ui/design-system/kit/address";
 import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { Sheet } from "@/ui/design-system/kit/sheet";
@@ -73,14 +74,14 @@ export const RealmsSheet = ({
 }) => (
   <Sheet label={REALMS} onClose={onClose}>
     <header className="flex items-center gap-2.5">
-      <KitIcon code="Cs" size={28} />
-      <h2 className="frontier-title flex-1 !text-[20px]">{REALMS}</h2>
-      {wallet !== null && <Chip icons={["Wt"]} label={REALMS} value={shortAddress(wallet)} />}
+      <SemanticIcon name="realm" size={28} />
+      <h2 className="frontier-title flex-1 !text-xl">{REALMS}</h2>
+      {wallet !== null && <Chip icons={["backpack"]} label={REALMS} value={shortAddress(wallet)} />}
     </header>
     {wallet === null ? (
       <>
         <ReasonPlate reason={{ kind: "failed", line: NO_WALLET }} />
-        <Button role="primary" icon="Xs" word={LINK_WALLET} onClick={onLinkWallet} />
+        <Button role="primary" icon="share" word={LINK_WALLET} onClick={onLinkWallet} />
       </>
     ) : (
       <>
@@ -93,7 +94,7 @@ export const RealmsSheet = ({
           <ReasonPlate reason={{ kind: "failed", line: realmsADay(cap) }} />
         )}
         {plan.canAdd && <AddRealm adding={adding} onAdd={onAdd} />}
-        {plan.rows.length === 0 && <p className="text-center text-[15px] text-kit-cream">{REALMS_ELSEWHERE}</p>}
+        {plan.rows.length === 0 && <p className="text-center text-base text-kit-cream">{REALMS_ELSEWHERE}</p>}
         {plan.rows.length > 0 && (
           <ClaimStep
             plan={plan}
@@ -128,7 +129,7 @@ const ClaimStep = ({
     return plan.rows.some((row) => row.state === "claimed") ? (
       <ReasonPlate
         reason={{ kind: "failed", line: CLAIMED_TODAY }}
-        step={<Chip icons={["Hg"]} label={CLAIMED_TODAY} value={formatDuration(secondsLeft)} />}
+        step={<Chip icons={["hourglass"]} label={CLAIMED_TODAY} value={formatDuration(secondsLeft)} />}
       />
     ) : null;
   if (plan.fits < plan.total)
@@ -136,7 +137,7 @@ const ClaimStep = ({
       <>
         <ReasonPlate
           reason={{ kind: "failed", line: fitOf(formatExact(plan.fits), formatExact(plan.total)) }}
-          step={<Chip icons={["La"]} label={LABOR} value={FULL} ember />}
+          step={<Chip icons={["labor"]} label={LABOR} value={FULL} ember />}
         />
         <div className="flex gap-2">
           {plan.fits > 0 && (
@@ -147,7 +148,7 @@ const ClaimStep = ({
               onClick={onClaim}
             />
           )}
-          <Button role="primary" icon="Cs" word={REALM} onClick={onRealm} className="flex-1" />
+          <Button role="primary" icon="realm" word={REALM} onClick={onRealm} className="flex-1" />
         </div>
       </>
     );
@@ -155,7 +156,7 @@ const ClaimStep = ({
     <>
       <div className="flex justify-center">
         <Chip
-          icons={["La"]}
+          icons={["labor"]}
           label={LABOR}
           value={`${formatExact(labor)} → ${formatExact(labor === undefined ? undefined : labor + plan.total)}`}
         />
@@ -185,12 +186,12 @@ const RealmRow = ({
     )}
   >
     <OrderEmblem order={order} size={28} />
-    <span className="min-w-0 flex-1 truncate text-[16px] text-kit-cream">
-      {name} <span className="text-[13px] tabular-nums text-kit-muted">#{formatExact(id)}</span>
+    <span className="min-w-0 flex-1 truncate text-base text-kit-cream">
+      {name} <span className="text-sm tabular-nums text-kit-muted">#{formatExact(id)}</span>
     </span>
-    {state === "claimed" && <KitIcon code="Ok" size={24} />}
-    {state === "absent" && <span className="shrink-0 text-[13px] text-kit-muted">{REALM_NOT_IN_WALLET}</span>}
-    {state === "locked" && <KitIcon code="Lk" size={22} />}
+    {state === "claimed" && <SemanticIcon name="check" size={24} />}
+    {state === "absent" && <span className="shrink-0 text-sm text-kit-muted">{REALM_NOT_IN_WALLET}</span>}
+    {state === "locked" && <SemanticIcon name="lock" size={22} />}
     {children}
   </div>
 );
@@ -198,8 +199,8 @@ const RealmRow = ({
 const LaborChip = ({ amount }: { amount: number }) => (
   <span data-tone="lit" className="frontier-chip h-8 shrink-0 !py-0">
     <span className="contents">
-      <KitIcon code="La" size={22} />
-      <span className="frontier-chip-number tabular-nums !text-[15px]">+{formatAmount(amount)}</span>
+      <SemanticIcon name="labor" size={22} />
+      <span className="frontier-chip-number tabular-nums !text-base">+{formatAmount(amount)}</span>
     </span>
   </span>
 );
@@ -222,14 +223,14 @@ const AddRealm = ({ adding, onAdd }: { adding: boolean; onAdd: (realmId: number)
       aria-label={ADD_REALM}
       className="frontier-card flex min-h-14 items-center gap-2.5 !rounded-xl border-dashed px-3 py-2"
     >
-      <KitIcon code="Cs" size={28} className="opacity-60" />
+      <SemanticIcon name="realm" size={28} className="opacity-60" />
       <input
         aria-label={REALM_NUMBER}
         inputMode="numeric"
         placeholder={`${ADD_REALM} #`}
         value={number}
         onChange={(event) => setNumber(event.target.value.replace(/\D/g, ""))}
-        className="min-w-0 flex-1 bg-transparent text-[16px] tabular-nums text-kit-cream placeholder:text-kit-muted focus:outline-none"
+        className="min-w-0 flex-1 bg-transparent text-base tabular-nums text-kit-cream placeholder:text-kit-muted focus:outline-none"
       />
       <Button
         type="submit"

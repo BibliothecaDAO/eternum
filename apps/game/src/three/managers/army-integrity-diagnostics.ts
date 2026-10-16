@@ -1,4 +1,4 @@
-import type { RendererActiveMode } from "../renderer-backend-v2";
+import type { RendererActiveMode } from "../renderer-backend";
 import type { ArmyRenderViolation } from "./army-slot-auditor";
 
 interface ReportArmyIntegrityHealInput {

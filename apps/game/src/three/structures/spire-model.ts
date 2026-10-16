@@ -10,7 +10,8 @@ import { LocalEmissiveGlow } from "./local-emissive-glow";
 interface SpirePlacement {
   matrix: Matrix4;
   phase: number;
-  portal: ReturnType<SpirePortalMaterials["create"]>;
+  /** A dormant spire has no portal and holds its first pose. */
+  portal: ReturnType<SpirePortalMaterials["create"]> | null;
 }
 
 function prepareSpire(gltf: GLTF) {
@@ -78,25 +79,35 @@ export class SpireModel extends InstancedModel {
   }
 
   override setMatrixAt(index: number, matrix: Matrix4): void {
+    this.placeSpire(index, matrix, false);
+  }
+
+  /** Places a working spire, or a dormant one: no portal, held still in its first pose. */
+  placeSpire(index: number, matrix: Matrix4, dormant: boolean): void {
     if (index < 0 || index >= this.placementCapacity) return;
     if (matrix.determinant() === 0) {
-      const removed = this.placements.get(index);
-      if (removed) this.group.remove(removed.portal.group);
-      this.placements.delete(index);
+      this.removePlacement(index);
       super.setMatrixAt(index, matrix);
       return;
     }
     let placement = this.placements.get(index);
+    if (placement && (placement.portal === null) !== dormant) {
+      this.removePlacement(index);
+      placement = undefined;
+    }
     if (!placement) {
-      placement = { matrix: matrix.clone(), phase: 0, portal: this.portalMaterials.create(this.prepared.portals) };
+      const portal = dormant ? null : this.portalMaterials.create(this.prepared.portals);
+      placement = { matrix: matrix.clone(), phase: 0, portal };
       this.placements.set(index, placement);
-      this.group.add(placement.portal.group);
+      if (portal) this.group.add(portal.group);
     }
     placement.matrix.copy(matrix);
     placement.phase = placedModelPhase(matrix.elements[12], matrix.elements[14]);
-    placement.portal.group.matrixAutoUpdate = false;
-    placement.portal.group.matrix.copy(matrix);
-    placement.portal.group.matrixWorldNeedsUpdate = true;
+    if (placement.portal) {
+      placement.portal.group.matrixAutoUpdate = false;
+      placement.portal.group.matrix.copy(matrix);
+      placement.portal.group.matrixWorldNeedsUpdate = true;
+    }
     this.writePose(index, placement);
   }
 
@@ -107,23 +118,20 @@ export class SpireModel extends InstancedModel {
 
   override setCount(count: number): void {
     const resolved = Math.max(0, Math.min(count, this.placementCapacity));
-    for (const [index, placement] of this.placements) {
-      if (index < resolved) continue;
-      this.group.remove(placement.portal.group);
-      this.placements.delete(index);
-    }
+    for (const index of [...this.placements.keys()]) if (index >= resolved) this.removePlacement(index);
     super.setCount(resolved);
   }
 
   override updateAnimations(delta: number, context?: AnimationVisibilityContext & { camera?: Camera }): void {
     this.seconds += Number.isFinite(delta) ? Math.max(0, delta) : 0;
     if (!this.getCount() || !this.group.visible) return;
-    for (const [index, placement] of this.placements) this.writePose(index, placement);
-    if (context?.camera)
-      sortSpirePortals(
-        Array.from(this.placements.values(), (placement) => placement.portal.group),
-        context.camera,
-      );
+    const portals: Group[] = [];
+    for (const [index, placement] of this.placements) {
+      if (!placement.portal) continue;
+      this.writePose(index, placement);
+      portals.push(placement.portal.group);
+    }
+    if (context?.camera) sortSpirePortals(portals, context.camera);
   }
 
   override dispose(): void {
@@ -168,15 +176,22 @@ export class SpireModel extends InstancedModel {
     return boxes.map((box) => box.expandByScalar(0.01).getBoundingSphere(new Sphere()));
   }
 
+  private removePlacement(index: number): void {
+    const removed = this.placements.get(index);
+    if (removed?.portal) this.group.remove(removed.portal.group);
+    this.placements.delete(index);
+  }
+
   private writePose(index: number, placement: SpirePlacement): void {
     // Each placement keeps a stable phase without changing the authored eight-second speed or hidden wisp resets.
-    this.clipMixer.setTime(this.seconds + placement.phase * this.clipDuration);
+    this.clipMixer.setTime(placement.portal ? this.seconds + placement.phase * this.clipDuration : 0);
     this.prepared.evaluator.updateMatrixWorld(true);
     this.instancedMeshes.forEach((mesh, part) => {
       this.composed.multiplyMatrices(placement.matrix, this.prepared.solids[part].matrixWorld);
       mesh.setMatrixAt(index, this.composed);
       queueInstanceUpdate(mesh.instanceMatrix, index, 1);
     });
+    if (!placement.portal) return;
     placement.portal.surfaces.forEach((mesh, part) => {
       mesh.matrix.copy(this.prepared.portals[part].matrixWorld);
       mesh.matrixWorldNeedsUpdate = true;

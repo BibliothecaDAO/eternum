@@ -34,6 +34,278 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-10-16",
+    title: "The command sidebar is back",
+    description:
+      "Blitz and Eternum use the command sidebar again: your structures and the selected one's panel and actions on the left, events and the selected tile on the right, and the Empire, Map, Log, Chat and Details tabs on a phone.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-16",
+    title: "Warm windows in realms",
+    description:
+      "City and kingdom windows glow with warm glass. Imperial upper windows share that light, with wooden shutters on the lower floor.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-16",
+    title: "Clearer realm entrances",
+    description:
+      "Settlements use Canvas & Thatch with your Order and ownership colours. Terrace Forum has unobstructed upper windows and larger doors; Twin Ward has plain upper windows, cleaner lower walls and larger entrances.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-16",
+    title: "Full windows open centred",
+    description:
+      "Windows such as Transfer Troops & Relics, spire travel, relic crafting and battle details now open in the middle of the screen instead of next to the army or button that opened them, so they no longer spill off the edge. Every full window, Build and Production included, opens there each time, even after you dragged one aside.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-16",
+    title: "Village tents stay in view",
+    description:
+      "Village cottages sit toward the side fences, opening the hearth yard and the view of the small tent beside the rear canvas shelter.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-16",
+    title: "Crates say where relics went",
+    description:
+      "An opened relic crate's feed row and log line now name its pack and where its relics went: army relics to the army that opened it, realm relics to that army's home realm, where the realm's card lists them. A dormant spire now stands on its hex without a name over it.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-16",
+    title: "Preview the building you place",
+    description:
+      "Construction cards now show the game’s building models, including farms, workshops and markets. Action and resource icons keep their painted artwork.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-16",
+    title: "Explore with small armies, fight with big ones",
+    description:
+      "In Blitz, a reveal now finds a share of the exploring army's strength up to 3,000 (3,000 T1, 1,000 T2 or 334 T3): at that size a tile finds 150, 300 or 600 Essence, 300 or 600 labor, or 300 donkeys, and a smaller army finds its share of that. A bigger army finds no more, and neither does a dormant spire pay more, so explore with small armies and keep the big ones for battle.",
+    type: "balance",
+  },
+  {
+    date: "2026-10-16",
+    title: "Big Blitz armies eat on the march",
+    description:
+      "In Blitz, every troop now costs 0.05 wheat per hex it moves and 0.10 per hex it explores, up from 0.03. A 1,000-troop army pays 50 wheat a step; a 20,000-troop army pays 1,000, so moving a big army needs farms behind it.",
+    type: "balance",
+  },
+  {
+    date: "2026-10-16",
+    title: "Clear device limit recovery",
+    description:
+      "If eight devices already use your account, game entry explains how to remove one from a signed-in device and try again.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-16",
+    title: "Shadows hold still",
+    description:
+      "The sun now lights the map from one direction all day, so shadows no longer creep and shimmer as the day turns. Day and night still colour the world.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-15",
+    title: "Your army stays selected",
+    description: "After you order an army to move or explore, it stays selected, ready for its next order.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-15",
+    title: "Painted icons across the game",
+    description:
+      "Resources, soldier tiers, buildings and actions share the Facets paintings across the map and every page. Transfer shows a loaded donkey; Production shows a forge. Hex minimap badges repeat ownership with colour and shape.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-15",
+    title: "The command sidebar is back",
+    description:
+      "Blitz and Eternum return to the left command sidebar, the structure list, the empire cockpit and the fading events, in the readable type. A realm's level-up and a suggested level-up are sent the one way the castle sheet sends them.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-15",
+    title: "Realms grow through the ages",
+    description:
+      "Canvas & Thatch, Terrace Forum and Twin Ward lead to the imperial citadel. Each age has its own wonders, rising magic and your Order on its banners.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-15",
+    title: "Mist at the frontier",
+    description:
+      "Moving mist marks the edge of explored land. Frontier takes on warm Ember light and darker mist; Blitz keeps its familiar lighting.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-15",
+    title: "Open yards around village cottages",
+    description:
+      "Village cottages sit clear of the fence, with lower roofs, a shared hearth and room to walk around them.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-15",
+    title: "Canvas and thatch villages",
+    description:
+      "Villages combine thatched cottages, canvas shelters and a shared hearth, with your colors on their standard and tent trim.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-15",
+    title: "Relic crates hold themed packs",
+    description:
+      "Each Blitz relic crate now holds one pack of three relics, named on its tile before you open it: War, Explore, Produce or Fortress. Army relics go to the army that opens it, realm relics to its home realm. One crate in five is lucky and holds the whole pack at level II. Labor Production Relic II now adds 40%, twice level I.",
+    type: "balance",
+  },
+  {
+    date: "2026-10-15",
+    title: "Bigger armies find more",
+    description:
+      "In Blitz, what a reveal finds now grows with the army that explores: a share of its troops times their tier (1 for T1, 3 for T2, 9 for T3), so a 1,000-troop T1 army finds what every army found before. One reveal in two hundred finds a dormant spire: your realm receives three times the army's strength in Essence, and the spire stays on its hex, blocking it and doing nothing else.",
+    type: "balance",
+  },
+  {
+    date: "2026-10-15",
+    title: "The map opens on your realm",
+    description:
+      "Entering a game, the map now opens where your realm is, or the realm you watch, instead of reloading the page the first time you open it. Watching a Frontier season, Map stays on the map instead of returning to the watched realm.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-15",
+    title: "Blitz ends on time",
+    description:
+      "Every Blitz keeps its scheduled start and end. Entry closes five minutes before the start; if placing every player's realms runs late, the game opens as soon as the last realm is placed and still ends on schedule.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-15",
+    title: "One troop type per realm",
+    description:
+      "Each of your three Blitz realms starts with 1,000 T1 troops in its garrison and 1,000 in reserve: one realm Knights, one Crossbowmen, one Paladins, in an order drawn for you.",
+    type: "balance",
+  },
+  {
+    date: "2026-10-15",
+    title: "Merge armies across realms",
+    description:
+      "Your armies from different realms can now merge when they hold the same troop type and tier, in every mode.",
+    type: "balance",
+  },
+  {
+    date: "2026-10-15",
+    title: "Play from a game you watch",
+    description:
+      "Watching a game where you hold realms now offers Play from your name chip, and pressing it brings you straight into your own realms instead of waiting on your account.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-15",
+    title: "Places across the top",
+    description:
+      "On a desktop, Play, Season and You now sit in a bar across the top, keys 1 to 3 as before, and every page starts its content right under it. A Blitz result opens on your score card, the one you share after a game, stacked on a phone so every word reads at full size.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-15",
+    title: "Rifts within fallen walls",
+    description:
+      "Fallen realms show rubble in their courts and violet fissures within broken walls, around the same guarding beasts.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-15",
+    title: "The clock opens with the game",
+    description:
+      "The game clock and the start notice follow the chain, so a Blitz no longer shows as running minutes before your orders can go through.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-15",
+    title: "Crate points and relic names",
+    description:
+      "A relic crate shows the victory points it really grants, and each relic keeps one name in the crate, your stocks and the game's history.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-15",
+    title: "Results after the end",
+    description:
+      "When a game ends, Game finished, the game's doorway and its map's address all lead to its Results page: your place, the standings and your rewards.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-15",
+    title: "Distinct outposts and discoveries",
+    description:
+      "Spot camps, villages and stranded companies by their silhouettes, with new shrines and wells on the world map.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-15",
+    title: "See everything a player holds",
+    description:
+      "Selecting a realm on the world map rings every structure and army its owner holds, yours or another player's, so their reach shows at a glance. The rings follow captures and moves, and clear with the selection.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-14",
+    title: "Three places: Play, Season, You",
+    description:
+      "The app now has three places. Season shows one board per mode, and Blitz's rating board carries the prize each place would take if the season ended now. You holds your card, your finished games and one Settings page for your account, payout wallet, notifications, music and devices, plus How to play and What's new. The Blitz lobby counts down to one moment at a time, and a result's chest Open is its main button.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-14",
+    title: "Leaderboard fits a phone",
+    description:
+      "On a narrow screen the leaderboard shows rank, name and points in full, with what each player did written under their name.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-14",
+    title: "Queue an army's next order",
+    description:
+      "An army stays selected after you order it. Tap a tile while its order is on its way and that tile becomes its next order, shown in the order bar: it leaves as soon as the first one lands. A later tap replaces it, and Cancel or Escape drops it.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-14",
+    title: "Play shows what you can do now",
+    description:
+      "Play leads with your next step and one button, lists everything under way with its own (resume your day, watch a match), and keeps each mode's next and finished games behind a switch. Results of any game you have not opened appear there, and signing in or linking a wallet from a Blitz lobby brings you back to it.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-14",
+    title: "One readable typeface",
+    description:
+      "Everything you read is set in one legible face at 14 px or larger, in sentence case, with enough contrast on every panel.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-14",
+    title: "One lab for every tool",
+    description:
+      "Art, character, renderer and interface tools share one lab selector. Model review and terrain captures keep their existing addresses.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-14",
+    title: "Neutral tone mapping control",
+    description:
+      "Graphics debug controls expose Neutral tone mapping alongside the existing renderer modes and exposure slider.",
+    type: "improvement",
+  },
+  {
     date: "2026-10-14",
     title: "Army highlights hold still",
     description:

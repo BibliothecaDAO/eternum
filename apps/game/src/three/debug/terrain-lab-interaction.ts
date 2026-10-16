@@ -1,8 +1,9 @@
+import { isWonderModelPath } from "../structures/realm-design";
 import { RewardTileModel } from "@/three/rewards/reward-tile-model";
 import {
   ChestModelPath,
   RiftModelPath,
-  VILLAGE_MODEL_PATH,
+  isRealmModelPath,
   SPIRE_MODEL_PATH,
   isSettlementModelPath,
 } from "@/three/constants/scene-constants";
@@ -177,7 +178,13 @@ export class TerrainLabInteraction {
     this.pendingExploration = { prepared: revealed, source, revision, coveredFrame: false };
   }
 
-  async placeBuilding(path: string, yaw: number, hyperstructureId = 17, constructionProgress = 100): Promise<void> {
+  async placeBuilding(
+    path: string,
+    yaw: number,
+    hyperstructureId = 17,
+    constructionProgress = 100,
+    dormant = false,
+  ): Promise<void> {
     this.cancelExplorationPreview();
     const asset = TERRAIN_LAB_BUILDINGS.find((building) => building.path === path);
     if (!asset) throw new Error(`Unknown lab building: ${path}`);
@@ -190,6 +197,7 @@ export class TerrainLabInteraction {
       yaw,
       hyperstructureId,
       constructionProgress,
+      dormant,
     });
     await this.presentFixture();
   }
@@ -288,7 +296,8 @@ export class TerrainLabInteraction {
         center.z,
       );
       const index = counts.get(building.path) ?? 0;
-      model.setMatrixAt(index, this.matrix);
+      if (model instanceof SpireModel) model.placeSpire(index, this.matrix, building.dormant ?? false);
+      else model.setMatrixAt(index, this.matrix);
       if (model instanceof SettlementModel) this.applySettlementHeraldry(model, index);
       if (model instanceof HyperstructureModel)
         model.setConstructionAt(index, {
@@ -364,7 +373,7 @@ export class TerrainLabInteraction {
   ): InstancedModel | RewardTileModel {
     if (path === SPIRE_MODEL_PATH) return new SpireModel(gltf, capacity);
     if (isSettlementModelPath(path))
-      return new SettlementModel(gltf, capacity, path === VILLAGE_MODEL_PATH ? "village" : "realm");
+      return new SettlementModel(gltf, capacity, isRealmModelPath(path) ? "realm" : "village", isWonderModelPath(path));
     if (path === ChestModelPath || path === RiftModelPath) return new RewardTileModel(gltf, capacity);
     return new InstancedModel(gltf, capacity, false, name);
   }
@@ -380,6 +389,7 @@ export class TerrainLabInteraction {
 
   private applySettlementHeraldry(model: SettlementModel, index: number): void {
     model.setRelationshipAt(index, this.preview.relationship);
+    model.setWonderEntityAt(index, 1001 + index);
     if (model.kind === "realm") model.setOrderAt(index, this.preview.realmOrderId);
   }
 

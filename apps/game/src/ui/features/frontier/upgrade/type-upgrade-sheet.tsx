@@ -1,7 +1,8 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Button, type Price } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
-import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { type Refusal, RefusedVerb } from "@/ui/design-system/kit/refused-verb";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
@@ -9,10 +10,10 @@ import { chooseOne, RESEARCH, UPGRADE, UPGRADING } from "@/ui/design-system/kit/
 import type { ReactNode } from "react";
 
 /** One side of a tier's choice: its art and name, and what it gives every building of the type, before → after. */
-type Side = { icon: IconCode; name: string; gain: { icon: IconCode; label: string; value: string } };
+type Side = { icon: IconMeaning; name: string; gain: { icon: IconMeaning; label: string; value: string } };
 
 /** One figure of the building as it stands: its icons, its number, and the name its tooltip says. */
-export type Figure = { icons: IconCode[]; label: string; value: string };
+export type Figure = { icons: IconMeaning[]; label: string; value: string };
 
 /** What a building is doing now, as chips: icons and numbers on the surface, each named when asked. */
 export const Figures = ({ figures }: { figures: readonly Figure[] }) => (
@@ -50,7 +51,7 @@ export const TypeUpgradeSheet = ({
   onResearch,
   onClose,
 }: {
-  icon: IconCode;
+  icon: IconMeaning;
   name: string;
   /** What the building does as it stands. */
   now?: readonly Figure[];
@@ -78,10 +79,16 @@ export const TypeUpgradeSheet = ({
   return (
     <Sheet label={name} onClose={onClose}>
       <header className="flex items-center gap-2.5">
-        <KitIcon code={icon} size={30} />
-        <h2 className="frontier-title flex-1 !text-[20px]">{name}</h2>
+        <SemanticIcon name={icon} size={30} />
+        <h2 className="frontier-title flex-1 !text-xl">{name}</h2>
         {onResearch && (
-          <Button role="outline" icon="Rs" word={RESEARCH} className="!h-10 !px-3 lg:mr-10" onClick={onResearch} />
+          <Button
+            role="outline"
+            icon="research"
+            word={RESEARCH}
+            className="!h-10 !px-3 lg:mr-10"
+            onClick={onResearch}
+          />
         )}
       </header>
       {now && now.length > 0 && <Figures figures={now} />}
@@ -89,13 +96,13 @@ export const TypeUpgradeSheet = ({
         <TierChip tier={tier} showWord />
         {!top && (
           <>
-            <span aria-hidden className="text-[18px] text-kit-muted">
+            <span aria-hidden className="text-lg text-kit-muted">
               →
             </span>
             <TierChip tier={(tier + 1) as Tier} showWord />
           </>
         )}
-        {top && <KitIcon code="Ok" size={22} />}
+        {top && <SemanticIcon name="check" size={22} />}
       </div>
       {!top && gives}
       {!top && sides && (
@@ -110,7 +117,7 @@ export const TypeUpgradeSheet = ({
           <RefusedVerb word={UPGRADE} prices={prices} refusal={waits} />
         ) : (
           <div className="flex items-center gap-2">
-            {sides && <KitIcon code="Fx" size={26} />}
+            {sides && <SemanticIcon name="final-seal" size={26} />}
             <Button
               role="primary"
               word={UPGRADE}
@@ -139,9 +146,9 @@ const SideCard = ({ side, lifted, onLift }: { side: Side; lifted: boolean; onLif
     )}
   >
     <span className="flex size-[52px] items-center justify-center rounded-xl bg-kit-ground">
-      <KitIcon code={side.icon} size={30} />
+      <SemanticIcon name={side.icon} size={30} />
     </span>
-    <span className="text-[14px] font-semibold text-kit-cream">{side.name}</span>
+    <span className="text-sm font-semibold text-kit-cream">{side.name}</span>
     <Chip icons={[side.gain.icon]} label={side.gain.label} value={side.gain.value} />
   </button>
 );

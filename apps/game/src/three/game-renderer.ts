@@ -2,7 +2,7 @@ import { configManager } from "@bibliothecadao/eternum";
 import { updateGameEndFreeze } from "./effects/game-end-freeze";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
-import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
+import { GRAPHICS_DEV_GUI_ENABLED, createGraphicsGuiLifetime, createGuiFolder } from "@/three/utils/gui-manager";
 import { IS_MOBILE } from "@/ui/config";
 import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import { env } from "../../env";
@@ -21,7 +21,6 @@ import {
   resizeRendererDisplay,
 } from "./renderer-display-runtime";
 import { type RendererBackendFactory, type RendererSurfaceLike } from "./renderer-backend";
-import { disposeRendererBackend } from "./renderer-backend-compat";
 import { initializeRendererBackendRuntime } from "./renderer-backend-runtime";
 import { reloadWithWebGLRenderer } from "./renderer-device-loss-recovery";
 import { createRendererFoundationRuntime } from "./renderer-foundation-runtime";
@@ -36,7 +35,7 @@ import { bootstrapRendererStartupRuntime } from "./renderer-startup-runtime";
 import { resolveRendererRouteSceneFromHref } from "./renderer-route-runtime";
 import type { RendererSessionRuntime } from "./renderer-session-runtime";
 import type { RendererSupportRuntimeRegistry } from "./renderer-support-runtime-registry";
-import type { RendererBackendV2, RendererDeviceLostEvent } from "./renderer-backend-v2";
+import type { RendererBackend, RendererDeviceLostEvent } from "./renderer-backend";
 import { createGameRendererRuntimeAssembly, type GameRendererRuntimeState } from "./game-renderer-runtime-assembly";
 import { getRendererDiagnosticActiveMode } from "./renderer-diagnostics";
 import {
@@ -54,7 +53,7 @@ import { createPipelineCompiler } from "@/three/pipeline-compiler";
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const GRAPHICS_DEV_ENABLED = DEV_MODE_ENABLED;
 
-type RendererBackendRuntime = RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
+type RendererBackendRuntime = RendererBackend & { renderer: RendererSurfaceLike };
 export default class GameRenderer {
   private labelRuntime!: RendererLabelRuntime;
   private readonly sessionRuntime: RendererSessionRuntime<HUDScene>;
@@ -88,6 +87,7 @@ export default class GameRenderer {
   private sceneManager!: SceneManager;
   private cleanupIntervals: NodeJS.Timeout[] = [];
   private guiFolders: TrackableGuiFolder[] = [];
+  private readonly graphicsGui = createGraphicsGuiLifetime();
   private readonly isMobileDevice = IS_MOBILE;
   private backendInitializationPromise?: Promise<void>;
   private isRecoveringFromDeviceLoss = false;
@@ -159,10 +159,10 @@ export default class GameRenderer {
       search: window.location.search,
     });
     if (this.isDestroyed) {
-      disposeRendererBackend(backend as RendererBackendRuntime);
+      backend.dispose();
       return;
     }
-    this.backend = backend as RendererBackendRuntime;
+    this.backend = backend;
     this.renderer = renderer;
     configureGltfTextureSupport(renderer as Parameters<typeof configureGltfTextureSupport>[0]);
   }
@@ -221,15 +221,16 @@ export default class GameRenderer {
     // animate kickoff) instead of being hidden inside the `renderer-init`
     // aggregate.
     const backendStart = performance.now();
-    await this.backendInitializationPromise;
+    await Promise.all([this.backendInitializationPromise, this.graphicsGui.ready]);
     recordGameEntryDuration("renderer-init-backend-await", performance.now() - backendStart);
 
     if (this.isDestroyed) {
       return;
     }
     if (GRAPHICS_DEV_GUI_ENABLED) {
-      this.supportRuntimeRegistry.getControlBridge().setupGuiControls();
+      await this.supportRuntimeRegistry.getControlBridge().setupGuiControls(() => !this.isDestroyed);
     }
+    if (this.isDestroyed) return;
     this.sessionRuntime.startListeners();
     const initialSceneName = resolveRendererRouteSceneFromHref({
       href: window.location.href,
@@ -389,7 +390,6 @@ export default class GameRenderer {
           hexceptionScene: this.hexceptionScene,
           hudScene: this.hudScene,
           labelRuntime: this.labelRuntime,
-          effectsBridgeRuntime: this.supportRuntimeRegistry.getEffectsBridge(),
           worldmapScene: this.worldmapScene,
         });
 
@@ -501,5 +501,6 @@ export default class GameRenderer {
       },
       transitionManager: this.transitionManager,
     });
+    this.graphicsGui.dispose();
   }
 }

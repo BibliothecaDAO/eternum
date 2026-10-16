@@ -74,25 +74,24 @@ const blitzRealmUpgradeCosts = {
   ],
 };
 
-const blitzStartingResources = buildArenaStartingResources(
-  {
-    [ResourcesIds.Wheat]: 1_000,
-    [ResourcesIds.Labor]: 1_500,
-    [ResourcesIds.Wood]: 360,
-    [ResourcesIds.Coal]: 240,
-    [ResourcesIds.Copper]: 120,
-    [ResourcesIds.Donkey]: 500,
-  },
-  5_000,
-);
+const blitzStartingResources = buildArenaStartingResources({
+  [ResourcesIds.Wheat]: 1_000,
+  [ResourcesIds.Labor]: 1_500,
+  [ResourcesIds.Wood]: 360,
+  [ResourcesIds.Coal]: 240,
+  [ResourcesIds.Copper]: 120,
+  [ResourcesIds.Donkey]: 500,
+});
 
+// Percents of the army's strength up to the 3,000 cap: an army at the cap finds 150, 300 or 600 Essence, 300 or 600
+// labor, or 300 donkeys.
 const blitzExplorationRewards = [
-  { rewardId: ResourcesIds.Essence, amount: 150, probabilityBps: 3_500 },
-  { rewardId: ResourcesIds.Essence, amount: 300, probabilityBps: 2_500 },
-  { rewardId: ResourcesIds.Essence, amount: 600, probabilityBps: 1_500 },
-  { rewardId: ResourcesIds.Labor, amount: 500, probabilityBps: 1_500 },
-  { rewardId: ResourcesIds.Labor, amount: 1_000, probabilityBps: 500 },
-  { rewardId: ResourcesIds.Donkey, amount: 500, probabilityBps: 500 },
+  { rewardId: ResourcesIds.Essence, percent: 5, probabilityBps: 3_500 },
+  { rewardId: ResourcesIds.Essence, percent: 10, probabilityBps: 2_500 },
+  { rewardId: ResourcesIds.Essence, percent: 20, probabilityBps: 1_500 },
+  { rewardId: ResourcesIds.Labor, percent: 10, probabilityBps: 1_500 },
+  { rewardId: ResourcesIds.Labor, percent: 20, probabilityBps: 500 },
+  { rewardId: ResourcesIds.Donkey, percent: 10, probabilityBps: 500 },
 ] as const;
 
 function buildBlitzResourceOutputs() {
@@ -103,9 +102,13 @@ function buildBlitzResourceOutputs() {
   };
 }
 
+// Wheat per troop per step, so a big army's march needs a wheat economy behind it while scouts stay cheap. Exploring
+// costs more than moving: its reward grows with the army.
 const blitzStaminaConfig = {
   staminaInitial: 30,
   staminaGainPerTick: 30,
+  staminaTravelWheatCost: 0.05,
+  staminaExploreWheatCost: 0.1,
 };
 
 const blitzVictoryPointConfig = {
@@ -133,6 +136,8 @@ export const blitzBalance: ConfigPatch = {
   },
   troop: {
     stamina: blitzStaminaConfig,
+    // A reveal pays on at most 3,000 strength: explore with small armies, fight with big ones.
+    limit: { exploreRewardStrengthCap: 3_000 },
   },
   victoryPoints: blitzVictoryPointConfig,
   buildings: {

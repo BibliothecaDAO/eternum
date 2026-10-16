@@ -4,7 +4,7 @@ import { activeMapLayer } from "@/three/map-layer";
 import { FELT_CENTER } from "@/ui/config";
 import { projectionChangesForLayer, type WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { TileOccupier } from "@bibliothecadao/types";
-import { Camera, Group, Object3D, Scene } from "three";
+import { Camera, Group, Object3D, Scene, type Vector3 } from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import type { SpireModel } from "../structures/spire-model";
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain, type TerrainSurface } from "../terrain/terrain-surface";
@@ -19,13 +19,18 @@ export interface RuleSpires {
   subscribe(onChange: () => void): () => void;
 }
 
-type SpireHex = { col: number; row: number };
+/** A spire's hex; a dormant one, found by a Blitz reveal, stands without its portal or a name over it, as scenery. */
+type SpireHex = { col: number; row: number; dormant: boolean };
+
+const isSpireTile = (occupierType: number | undefined) =>
+  occupierType === TileOccupier.Spire || occupierType === TileOccupier.DormantSpire;
 
 /** Spires belong to tiles or to a rule, so they never require a Structure component. */
 export class SpireManager {
   private readonly dummy = new Object3D();
   private readonly subscriptions: Array<() => void>;
-  private placements: Array<{ hex: SpireHex; label: CSS2DObject }> = [];
+  /** Each placed spire, the height it stands at on the terrain, and its name label (none for a dormant spire). */
+  private placements: Array<{ hex: SpireHex; y: number; label: CSS2DObject | null }> = [];
   private model: SpireModel | null = null;
   private loading: Promise<void> | null = null;
   private capacity = 0;
@@ -45,8 +50,7 @@ export class SpireManager {
         const relevant = projectionChangesForLayer(changes, activeMapLayer());
         if (
           relevant.some(
-            ({ previous, current }) =>
-              previous?.occupierType === TileOccupier.Spire || current?.occupierType === TileOccupier.Spire,
+            ({ previous, current }) => isSpireTile(previous?.occupierType) || isSpireTile(current?.occupierType),
           )
         )
           this.refresh();
@@ -73,14 +77,14 @@ export class SpireManager {
   public refreshTerrainPlacement(): void {
     if (!this.model || this.destroyed) return;
     let changed = false;
-    this.placements.forEach(({ hex, label }, index) => {
-      const position = this.getSpirePosition(hex);
-      const labelHeight = position.y + this.model!.labelHeight;
-      if (label.position.y === labelHeight) return;
+    this.placements.forEach((placement, index) => {
+      const position = this.getSpirePosition(placement.hex);
+      if (placement.y === position.y) return;
       this.dummy.position.copy(position);
       this.dummy.updateMatrix();
-      this.model!.setMatrixAt(index, this.dummy.matrix);
-      label.position.y = labelHeight;
+      this.model!.placeSpire(index, this.dummy.matrix, placement.hex.dormant);
+      placement.y = position.y;
+      if (placement.label) placement.label.position.y = position.y + this.model!.labelHeight;
       changed = true;
     });
     if (changed) {
@@ -104,7 +108,7 @@ export class SpireManager {
     this.model?.setCount(0);
     if (!tiles.length) return;
     if (!this.model || tiles.length > this.capacity) {
-      // No spire tiles means no asset request, including every Blitz game.
+      // No spire tiles means no asset request: a Blitz game loads it only once a reveal finds a dormant spire.
       if (!this.loading) {
         this.loading = this.loadModel(tiles.length).finally(() => {
           this.loading = null;
@@ -121,16 +125,20 @@ export class SpireManager {
     const position = this.getSpirePosition(hex);
     this.dummy.position.copy(position);
     this.dummy.updateMatrix();
-    this.model!.setMatrixAt(index, this.dummy.matrix);
+    this.model!.placeSpire(index, this.dummy.matrix, hex.dormant);
+    this.placements.push({ hex, y: position.y, label: hex.dormant ? null : this.addLabel(position) });
+  }
+
+  private addLabel(position: Vector3): CSS2DObject {
     const element = document.createElement("div");
     element.textContent = "Spire";
-    element.className = "rounded-md px-2 py-1 text-xs text-gold bg-dark-brown/90 border border-gold/30";
+    element.className = "rounded-md px-2 py-1 text-sm text-gold bg-dark-brown/90 border border-gold/30";
     element.style.pointerEvents = "none";
     const label = new CSS2DObject(element);
     label.position.copy(position);
     label.position.y += this.model!.labelHeight;
     this.labels.add(label);
-    this.placements.push({ hex, label });
+    return label;
   }
 
   private getSpirePosition(hex: SpireHex) {
@@ -160,10 +168,15 @@ export class SpireManager {
     const layer = activeMapLayer();
     const tileSpires = this.projection
       .getTiles(layer)
-      .filter((tile) => tile.occupierType === TileOccupier.Spire)
-      .map((tile) => ({ col: tile.hexCoords.col, row: tile.hexCoords.row }));
+      .filter((tile) => isSpireTile(tile.occupierType))
+      .map((tile) => ({
+        col: tile.hexCoords.col,
+        row: tile.hexCoords.row,
+        dormant: tile.occupierType === TileOccupier.DormantSpire,
+      }));
     // A rule spire stands on the realm's surface ring.
-    return !layer && this.ruleSpires ? [...tileSpires, ...this.ruleSpires.hexes()] : tileSpires;
+    if (layer || !this.ruleSpires) return tileSpires;
+    return [...tileSpires, ...this.ruleSpires.hexes().map((hex) => ({ ...hex, dormant: false }))];
   }
 
   private clearLabels(): void {

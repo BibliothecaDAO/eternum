@@ -93,12 +93,9 @@ export class MadaraSubscriptions {
 
   private subscribe(socket: WebSocket): void {
     this.send(socket, 1, "starknet_subscribeNewHeads", {});
-    this.send(socket, 3, "starknet_subscribeNewTransactionReceipts", {
-      finality_status: ["PRE_CONFIRMED", "ACCEPTED_ON_L2"],
-    });
-    this.send(socket, 4, "starknet_subscribeNewTransactions", {
-      finality_status: ["PRE_CONFIRMED", "ACCEPTED_ON_L2"],
-    });
+    // A confirmed block's transactions and receipts are read whole by the confirmed replay that each head starts.
+    this.send(socket, 3, "starknet_subscribeNewTransactionReceipts", { finality_status: ["PRE_CONFIRMED"] });
+    this.send(socket, 4, "starknet_subscribeNewTransactions", { finality_status: ["PRE_CONFIRMED"] });
   }
 
   private acceptSubscription(payload: JsonRpcMessage, ready: Set<number>): void {

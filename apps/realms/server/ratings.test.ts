@@ -9,7 +9,6 @@ import { routeIdentityRequest } from "./routes";
 const query = vi.fn();
 const env = {
   ENVIRONMENT: "production",
-  RATING_HISTORY_URL: "https://realms.world/api/ratings/population",
   L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
   PUBLIC_RATE_LIMIT: { limit: vi.fn(async () => ({ success: true })) },
   DB: { prepare: () => ({ bind: (...ids: string[]) => ({ all: () => query(ids) }) }) },

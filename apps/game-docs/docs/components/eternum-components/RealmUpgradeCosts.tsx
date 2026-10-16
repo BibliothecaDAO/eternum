@@ -10,7 +10,7 @@ type Props = {
 };
 
 export default function RealmUpgradeCosts({ level, description }: Props) {
-  const config = ETERNUM_CONFIG();
+  const config = ETERNUM_CONFIG("eternum");
   const realmUpgradeCosts = config.realmUpgradeCosts[level];
 
   const styles = {

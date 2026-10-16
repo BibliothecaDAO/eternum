@@ -1,4 +1,5 @@
-import { Check, X as Cross } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { DROPDOWN_CONTENT, DROPDOWN_TRIGGER } from "@/ui/design-system/atoms/overlay-surface";
 import TextInput from "@/ui/design-system/atoms/text-input";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -130,7 +131,8 @@ export const SelectRelic: React.FC<SelectRelicProps> = ({
       {label && <span className="text-sm font-medium text-gold/80">{label}</span>}
       <div className="flex items-center gap-2 w-full">
         {selectedRelics.length > 0 && (
-          <Cross
+          <SemanticIcon
+            name="close"
             className="my-auto w-8 hover:opacity-50  hover:scale-125 hover:animate-pulse duration-300 transition-all cursor-pointer"
             onClick={clearSelection}
           />
@@ -182,16 +184,16 @@ export const SelectRelic: React.FC<SelectRelicProps> = ({
                           <ResourceIcon resource={ResourcesIds[relic.id]} size="sm" />
                           <div className="flex flex-col">
                             <span className="font-medium">{relic.name}</span>
-                            <span className={clsx("text-xs", getRelicTypeColor(relic.type))}>{relic.effect}</span>
+                            <span className={clsx("text-sm", getRelicTypeColor(relic.type))}>{relic.effect}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <span
-                            className={clsx("px-2 py-1 rounded text-xs", getRecipientTypeColor(relic.recipientType))}
+                            className={clsx("px-2 py-1 rounded text-sm", getRecipientTypeColor(relic.recipientType))}
                           >
                             {relic.recipientType}
                           </span>
-                          {isSelected && allowMultiple && <Check className="h-4 w-4" />}
+                          {isSelected && allowMultiple && <SemanticIcon name="check" className="h-4 w-4" />}
                         </div>
                       </div>
                     </div>
@@ -213,7 +215,7 @@ export const SelectRelic: React.FC<SelectRelicProps> = ({
             >
               <ResourceIcon resource={ResourcesIds[relic.id]} size="xs" />
               <span>{relic.name}</span>
-              <span className={clsx("text-xs", getRelicTypeColor(relic.type))}>
+              <span className={clsx("text-sm", getRelicTypeColor(relic.type))}>
                 (
                 {relic.bonus > 1
                   ? `+${Math.round((relic.bonus - 1) * 100)}%`

@@ -107,12 +107,16 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
   },
   HyperstructurePoints: { fields: [17, 50], expected: { player: 17n, points: 50n } },
   RelicChestOpened: {
-    fields: [7, 1, 12, 34, 2, 4, 5, 50],
-    expected: { explorer_id: 7n, coord, relics: [4n, 5n], points: 50n },
+    fields: [7, 1, 12, 34, 3, 1, 2, 50, 44, 50],
+    expected: { explorer_id: 7n, coord, chest: { pack: "Fortress", lucky: true }, relics: [50n, 44n], points: 50n },
   },
   ExplorationReward: {
     fields: [7, 3, 1, 12, 34, 1, 100],
     expected: { explorer_id: 7n, receiver: 3n, coord, resource_type: 1n, amount: 100n },
+  },
+  SpireDiscovered: {
+    fields: [7, 3, 1, 12, 34, 38, 3000],
+    expected: { explorer_id: 7n, receiver: 3n, coord, resource_type: 38n, amount: 3000n },
   },
   SeasonEnded: { fields: [17], expected: 17n },
   FaithPledged: {

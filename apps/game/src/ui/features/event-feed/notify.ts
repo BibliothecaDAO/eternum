@@ -1,4 +1,7 @@
 import type { ReactNode } from "react";
+
+import { extractReadableErrorMessage } from "@/utils/error-message";
+
 import { type FeedNoticeKind, useEventFeedStore } from "./event-feed-store";
 
 interface NoticeOptions {
@@ -26,6 +29,12 @@ export const toast = Object.assign((title: ReactNode, options?: NoticeOptions) =
   info: (title: ReactNode, options?: NoticeOptions) => push("info", title, options),
   success: (title: ReactNode, options?: NoticeOptions) => push("success", title, options),
   error: (title: ReactNode, options?: NoticeOptions) => push("error", title, options),
+  /**
+   * An action that failed, the one way every failure handler says so: the reason its error names (the shard's refusal,
+   * the game's revert, the client's own gate), and `fallback` only when it names none.
+   */
+  failed: (error: unknown, fallback: string, options?: NoticeOptions) =>
+    toast.error(extractReadableErrorMessage(error, fallback), options),
   warning: (title: ReactNode, options?: NoticeOptions) => push("warning", title, options),
   custom: (render: (id: string) => ReactNode, options?: NoticeOptions): string => {
     const id = options?.id ?? `notice-custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;

@@ -27,7 +27,7 @@ import { chestLedgerReads, finishChestOnLedger } from "./chest-ledger";
 import { DurableChestStore, finishRequestedChests } from "./chests";
 import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
 import { Effect, Result, Semaphore } from "effect";
-import { ledgerResultAdapter } from "./ledger";
+import { ledgerResultAdapter, postVerifiedResult } from "./ledger";
 import { ledgerPaymentRead, ledgerWithdrawalVoided } from "./chain";
 import { presentsOperatorToken } from "@realms-world/identity";
 import { identityAdapter } from "./adapters";
@@ -37,7 +37,7 @@ import { RelayFailure, relayOperation, type RelayPorts, type LaborClaim } from "
 
 interface RelayEnv extends RelaySettings {
   IDENTITY_HTTP: Fetcher;
-  ROSTER_MONITOR: { verifyRoster(chainId: string, gameId: number): Promise<number> };
+  ROSTER_MONITOR: { verifyRoster(chainId: string, gameId: number): Promise<number | null> };
   IDENTITY: ShardDirectory & {
     l2ChainId(): Promise<string>;
     realmOwnerOf(realmId: string): Promise<string>;
@@ -221,10 +221,13 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   postResult(result: import("./ports").BlitzResult) {
     return Effect.runPromise(
       this.ledgerPermit(
-        relayOperation("verify and post paid game results", async () => {
-          const slotId = await this.env.ROSTER_MONITOR.verifyRoster(result.chainId, result.gameId);
-          await Effect.runPromise(ledgerResultAdapter(ledgerCredentialsOf(this.env), slotId)(result));
-        }),
+        relayOperation("verify and post paid game results", () =>
+          postVerifiedResult(
+            result,
+            (chainId, gameId) => this.env.ROSTER_MONITOR.verifyRoster(chainId, gameId),
+            (slotId) => ledgerResultAdapter(ledgerCredentialsOf(this.env), slotId),
+          ),
+        ),
         [result.chainId],
       ),
     );

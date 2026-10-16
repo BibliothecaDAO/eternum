@@ -5,13 +5,11 @@ export const BALANCE_TRANSFER_SLOT = "balance" as const;
 
 type GuardSelection = number | typeof BALANCE_TRANSFER_SLOT | null;
 
-interface SameStructureTransferParams {
+interface TroopTransferParams {
   transferDirection: TransferDirection;
   selectedEntityId: ID;
-  targetEntityId: ID;
   sourceHomeOwner?: bigint;
   targetOwner?: bigint;
-  selectedExplorerOwner?: ID | bigint | null;
   targetExplorerOwner?: ID | bigint | null;
   guardSlot: GuardSelection;
 }
@@ -24,41 +22,24 @@ const idsMatch = (left: ID | bigint | null | undefined, right: ID | bigint | nul
   return String(left) === String(right);
 };
 
+/** Armies of one owner merge across realms; the chain still refuses mixed troop types. */
 export const getTroopTransferBlockReason = ({
   transferDirection,
   selectedEntityId,
-  selectedExplorerOwner,
   targetExplorerOwner,
   guardSlot,
   sourceHomeOwner,
   targetOwner,
-}: SameStructureTransferParams): string | null => {
+}: TroopTransferParams): string | null => {
   if (transferDirection === TransferDirection.ExplorerToStructure) {
     return sourceHomeOwner !== undefined && sourceHomeOwner === targetOwner
       ? null
       : "Cannot reinforce: Explorer home and target must have the same owner";
   }
-  if (transferDirection === TransferDirection.ExplorerToExplorer) {
-    return idsMatch(selectedExplorerOwner, targetExplorerOwner)
-      ? null
-      : "Cannot transfer troops: Both explorers must belong to the same structure";
-  }
-
-  if (transferDirection !== TransferDirection.StructureToExplorer) {
-    return null;
-  }
-
-  if (guardSlot === BALANCE_TRANSFER_SLOT) {
+  if (transferDirection === TransferDirection.StructureToExplorer && guardSlot === BALANCE_TRANSFER_SLOT) {
     return idsMatch(targetExplorerOwner, selectedEntityId)
       ? null
       : "Cannot use structure balance: Explorer is not owned by this structure";
   }
-
-  if (typeof guardSlot === "number") {
-    return idsMatch(targetExplorerOwner, selectedEntityId)
-      ? null
-      : "Cannot transfer troops: Explorer must belong to the selected structure";
-  }
-
   return null;
 };

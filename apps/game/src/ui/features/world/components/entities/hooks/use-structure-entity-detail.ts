@@ -1,7 +1,8 @@
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
-import { byStructureCategory } from "@/lib/structure-category-table";
+import { iconUrl } from "@/ui/design-system/icon-meaning";
+import { realmMeaning, structureMeaning, mineMeaning } from "@/ui/design-system/domain-icon-meaning";
 import {
   Position,
   configManager,
@@ -20,7 +21,7 @@ import { usePlayerProfile } from "@/hooks/use-player-profile";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRowOrAbsent, useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { ContractAddress, ID, BANDITS_NAME, RelicEffect, StructureType } from "@bibliothecadao/types";
+import { ContractAddress, ID, BANDITS_NAME, RelicEffect, StructureType, wholePoints } from "@bibliothecadao/types";
 import { useCallback, useMemo } from "react";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { presentedMineKind } from "@bibliothecadao/eternum";
@@ -34,36 +35,6 @@ interface AlignmentBadge {
   label: string;
   className: string;
 }
-
-const CONSTRUCTION = "/images/buildings/construction";
-
-/**
- * The picture behind a structure's detail, by category: a realm's castle by its level, a picture of its own, or none.
- * A new category fails typecheck here until it is given one.
- */
-const DETAIL_PICTURES: Record<StructureType, "realm-castle" | string | null> = {
-  [StructureType.Realm]: "realm-castle",
-  [StructureType.Hyperstructure]: `${CONSTRUCTION}/hyperstructure.png`,
-  [StructureType.Mine]: `${CONSTRUCTION}/essence-rift.png`,
-  [StructureType.Village]: `${CONSTRUCTION}/camp.png`,
-  [StructureType.Camp]: `${CONSTRUCTION}/camp.png`,
-  [StructureType.Bank]: `${CONSTRUCTION}/bank.png`,
-  [StructureType.BitcoinMine]: null,
-  [StructureType.Rift]: null,
-  [StructureType.Ruin]: null,
-  [StructureType.Stragglers]: null,
-};
-
-const REALM_CASTLE_PICTURES = [
-  `${CONSTRUCTION}/castleZero.png`,
-  `${CONSTRUCTION}/castleOne.png`,
-  `${CONSTRUCTION}/castleTwo.png`,
-  `${CONSTRUCTION}/castleThree.png`,
-] as const;
-
-/** A realm's castle is drawn at its level, the tallest from level three up. */
-const realmCastleStage = (level: number | bigint | null | undefined): 0 | 1 | 2 | 3 =>
-  Math.min(3, Math.max(0, Math.floor(Number(level ?? 0)))) as 0 | 1 | 2 | 3;
 
 export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEntityDetailOptions) => {
   const {
@@ -117,12 +88,12 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   // hyperstructure with no share allocation yet grants nothing and shows no rate.
   const hyperstructurePointsPerSecond =
     structure?.base.category === StructureType.Hyperstructure && shares
-      ? Number(
+      ? wholePoints(
           sharedPointsPerSecond(
             store.require("SliceRules", { game_id: keys.game_id }).victory_points_grant_config.hyp_points_per_second,
             shares.multiplier,
           ),
-        ) / 1_000_000
+        )
       : undefined;
 
   const ownerDisplayName = structure?.owner ? displayPlayerName(structure.owner, ownerProfile.name) : BANDITS_NAME;
@@ -137,11 +108,15 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   const backgroundImage = useMemo(() => {
     if (!structure?.base?.category) return undefined;
 
-    const picture = byStructureCategory(DETAIL_PICTURES, structure.base.category, "detail picture", null);
-    return picture === "realm-castle"
-      ? REALM_CASTLE_PICTURES[realmCastleStage(structure.base.level)]
-      : (picture ?? undefined);
-  }, [structure?.base?.category, structure?.base?.level]);
+    return iconUrl(
+      structure.base.category === StructureType.Realm
+        ? realmMeaning(structure.base.level)
+        : structure.base.category === StructureType.Mine
+          ? mineMeaning(structure.metadata.mine_kind)
+          : structureMeaning(structure.base.category),
+      256,
+    );
+  }, [structure]);
 
   const guardSlotsUsed = structure && guards ? guards.filter((guard) => guard.troops.count > 0n).length : undefined;
   const guardSlotsMax =

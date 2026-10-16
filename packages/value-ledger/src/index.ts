@@ -24,6 +24,7 @@ export { resolveBlitzRoster, splitPlaytestRoster } from "./blitz-roster";
 export type { RegistrationIdentity, SlotCohort, LaunchCohorts } from "./blitz-roster";
 
 export { activeShards, requireActiveChain, readRegisteredShard } from "./official-shards";
+export { isDevShardChain } from "./dev-shard";
 export type { ShardDirectory, RegisteredShard } from "./official-shards";
 
 export { computeSeasonTop } from "./season-top";
@@ -32,5 +33,12 @@ export { readBlitzRoster } from "./shard-roster";
 
 export { readFrontierFunding, type FrontierFundingTerms } from "./frontier-funding";
 
-export { serviceError, serviceFailure, serviceResponseFailure } from "./service-error";
-export { LAUNCHER_LABEL, RELAY_LABEL, launcherAccountAddress, relayAccountAddress } from "./shard-accounts";
+export { ServiceResponseFailure, serviceError, serviceFailure, serviceResponseFailure } from "./service-error";
+export {
+  LAUNCHER_LABEL,
+  RELAY_LABEL,
+  launcherAccountAddress,
+  relayAccountAddress,
+  seaterLabels,
+  seaterAccountAddresses,
+} from "./shard-accounts";

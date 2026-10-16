@@ -34,6 +34,7 @@ interface EntrySide {
   phase: GameEntryModalPhase;
   audience: DoorwayAudience;
   signedIn: boolean;
+  accountError?: string | null;
   /** Founding the realm failed; its detail is in the console. */
   foundingFailed?: boolean;
   blitzEntry?: BlitzEntry | null;
@@ -50,6 +51,8 @@ interface BootSide {
   failedScene?: PlayScene | null;
   /** The player's own realm is known, so its view can open without the map. */
   realmCanOpen?: boolean;
+  /** The game is over and finalized, so it leads to its results instead of booting. */
+  ended?: boolean;
 }
 
 const SPECTATOR_STEPS: DoorwayStep[] = ["map", "play"];
@@ -90,12 +93,12 @@ const place = (step: DoorwayStep, overrides: Partial<Place> = {}): Place => ({
   ...overrides,
 });
 
-const entryPlace = ({ phase, signedIn, foundingFailed = false, blitzEntry }: EntrySide): Place => {
+const entryPlace = ({ phase, signedIn, accountError, foundingFailed = false, blitzEntry }: EntrySide): Place => {
   switch (phase) {
     case "loading":
       return place("account");
     case "account":
-      return place("account", { blocker: signedIn ? null : SIGN_IN });
+      return place("account", { blocker: accountError ? accountBlocker(accountError) : signedIn ? null : SIGN_IN });
     case "settlement-waiting":
       return place("realm");
     case "settlement":
@@ -113,7 +116,8 @@ const entryPlace = ({ phase, signedIn, foundingFailed = false, blitzEntry }: Ent
   }
 };
 
-const bootPlace = ({ phase, accountError, failedScene, realmCanOpen = false }: BootSide): Place => {
+const bootPlace = ({ phase, accountError, failedScene, realmCanOpen = false, ended = false }: BootSide): Place => {
+  if (ended) return place("account", { done: true, spectating: "results" });
   switch (phase) {
     case "normalize_route":
     case "await_account":

@@ -1,5 +1,4 @@
 import { toast } from "@/ui/features/event-feed/notify";
-import { extractReadableErrorMessage } from "@/utils/error-message";
 import { DEFAULT_COORD_ALT } from "@bibliothecadao/eternum";
 import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import type { ID } from "@bibliothecadao/types";
@@ -27,7 +26,7 @@ export async function openRelicCrate({
     });
     return true;
   } catch (error) {
-    toast.error(`Could not open the chest: ${extractReadableErrorMessage(error, "transaction rejected")}`, {
+    toast.failed(error, "Could not open the chest.", {
       location: { x: hex.col, y: hex.row },
     });
     return false;

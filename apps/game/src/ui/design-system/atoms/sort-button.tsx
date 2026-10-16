@@ -1,4 +1,5 @@
-import { ChevronDown as CaretDown, ChevronUp as CaretUp } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import clsx from "clsx";
 
 type SortButtonProps = {
@@ -49,18 +50,20 @@ export const SortButton = ({
     <button
       className={clsx(
         isActive && sort !== "none" ? activeClassName : inactiveClassName,
-        "flex items-center cursor-pointer text-xxs",
+        "flex items-center cursor-pointer text-sm",
         className,
       )}
       {...props}
     >
       <div onClick={() => onChange(sortKey, nextSort(sort))}>{label}</div>
       <div className="flex flex-col items-center justify-center ml-1">
-        <CaretUp
+        <SemanticIcon
+          name="chevron-up"
           onClick={() => onChange(sortKey, sort !== "asc" ? "asc" : "none")}
           className={clsx("h-3 w-3", classNameCaret, sort == "asc" ? "opacity-100" : "opacity-40")}
         />
-        <CaretDown
+        <SemanticIcon
+          name="chevron-down"
           onClick={() => onChange(sortKey, sort !== "desc" ? "desc" : "none")}
           className={clsx("h-3 w-3", classNameCaret, sort == "desc" ? "opacity-100" : "opacity-40")}
         />

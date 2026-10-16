@@ -32,11 +32,11 @@ export const ArmyStatusBar = ({
     onClick={onOpen}
     className="frontier-card pointer-events-auto flex h-11 w-full items-center justify-center gap-1.5 !rounded-xl px-1"
   >
-    <Chip icons={["St"]} label={STAMINA} value={formatAmount(stamina)} />
+    <Chip icons={["stamina"]} label={STAMINA} value={formatAmount(stamina)} />
     {secondsToFull !== undefined && secondsToFull > 0 && <FullIn seconds={secondsToFull} />}
     {revealYield !== null && (
       <Chip
-        icons={["Es", "La"]}
+        icons={["essence", "labor"]}
         label={`${ESSENCE}, ${LABOR}`}
         value={revealYield === undefined ? "—" : `+${formatAmount(revealYield)}`}
       />

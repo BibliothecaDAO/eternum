@@ -1,3 +1,4 @@
+use core::num::traits::Zero;
 use starknet::ContractAddress;
 use crate::presets::PresetDefinition;
 
@@ -11,6 +12,8 @@ pub struct CreateGameParams {
     pub end_grace_seconds: u32,
     pub dev_mode_on: bool,
     pub roster: Span<RosterPlayer>,
+    /// The pool account that seats this fixed roster; zero for an open-entry game.
+    pub seater: ContractAddress,
     pub registration_start: u32,
     pub biome_climate: crate::rules::BiomeClimateConfig,
     pub map_override: Option<crate::rules::MapConfig>,
@@ -29,6 +32,7 @@ pub trait IRegistrar<T> {
     fn next_game_id(self: @T) -> u32;
     fn game_id_by_name(self: @T, name: felt252) -> u32;
     fn blitz_roster(self: @T, game_id: u32) -> Span<RosterPlayer>;
+    fn game_seater(self: @T, game_id: u32) -> ContractAddress;
     fn create_game(ref self: T, params: CreateGameParams) -> u32;
 }
 #[starknet::interface]
@@ -64,8 +68,10 @@ pub fn validate_params(params: CreateGameParams, rules: LaunchRules) {
     if rules.entry_rule == crate::rules::ENTRY_ROSTER {
         validate_roster_size(params.roster.len(), rules.settlement_mode);
         assert!(!params.dev_mode_on, "Blitz does not use development mode");
+        assert!(params.seater.is_non_zero(), "a fixed roster needs its seater");
     } else {
         assert!(params.roster.is_empty(), "Eternum does not use a fixed roster");
+        assert!(params.seater.is_zero(), "an open game has no seater");
     }
 }
 pub(crate) fn validate_roster_size(count: u32, mode: crate::settlement::SettlementMode) {

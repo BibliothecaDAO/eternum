@@ -1,4 +1,5 @@
-import { Plus } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { memo, useCallback, useMemo, useRef } from "react";
 
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -243,12 +244,12 @@ export const MergedResourcePanel = memo(
                   "absolute -bottom-1 -left-1 z-20 inline-flex h-4 w-4 items-center justify-center rounded-full border shadow-md transition",
                   buildEnabled
                     ? "border-amber-500/80 bg-amber-400/90 text-black hover:bg-amber-300"
-                    : "border-gold/20 bg-black/70 text-gold/40 cursor-not-allowed opacity-70",
+                    : "border-gold/20 bg-black/70 text-kit-muted cursor-not-allowed opacity-70",
                 )}
                 title={buildEnabled ? `Build ${label}` : (buildReason ?? "Cannot build")}
                 aria-label={`Build ${label}`}
               >
-                <Plus className="h-2.5 w-2.5" />
+                <SemanticIcon name="plus" className="h-2.5 w-2.5" />
               </button>
             )}
           </div>
@@ -277,7 +278,7 @@ export const MergedResourcePanel = memo(
     );
 
     if (tokens.length === 0 && !hasRelics) {
-      return <p className="text-xxs italic text-gold/60">No resources yet.</p>;
+      return <p className="text-sm text-kit-muted">No resources yet.</p>;
     }
 
     // Relics first, on their own dedicated, clickable row. Then the resource +

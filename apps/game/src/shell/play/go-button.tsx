@@ -1,7 +1,7 @@
+import { type IconMeaning } from "@/ui/design-system/icon";
 import { useNavigate } from "react-router-dom";
 
 import { Button } from "@/ui/design-system/kit/button";
-import type { IconCode } from "@/ui/design-system/kit/kit-icon";
 
 /** The kit's button for a verb that leads somewhere: a card's one action, as a route. */
 export const GoButton = ({
@@ -14,7 +14,7 @@ export const GoButton = ({
 }: {
   role: "primary" | "secondary";
   word: string;
-  icon: IconCode;
+  icon: IconMeaning;
   to: string;
   /** What the tap records before it leads on. */
   onGo?: () => void;

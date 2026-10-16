@@ -8,7 +8,7 @@ vi.hoisted(() => vi.stubGlobal("fetch", async () => new Response(null, { status:
 
 import { identityClient } from "@/hooks/context/identity-session";
 
-import { AccountCard } from "./account-card";
+import { AccountCard, SignOut } from "./account-card";
 
 const session = {
   session: { id: "s", expiresAt: "2099-01-01T00:00:00.000Z", userId: "u" },
@@ -25,6 +25,7 @@ it("asks before signing out, with Keep as the safe choice", async () => {
     root.render(
       <MemoryRouter>
         <AccountCard session={session} />
+        <SignOut />
       </MemoryRouter>,
     ),
   );

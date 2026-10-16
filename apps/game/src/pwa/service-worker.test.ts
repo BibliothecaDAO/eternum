@@ -88,3 +88,24 @@ it("tells a page which release it serves", () => {
   listeners.get("message")!({ data: { type: "RELEASE" }, ports: [port] });
   expect(port.postMessage).toHaveBeenCalledWith("release-a");
 });
+
+it("aborts a stalled navigation at the deadline and returns only the offline shell", async () => {
+  vi.useFakeTimers();
+  const offline = new Response("offline shell");
+  cache.match.mockResolvedValue(offline);
+  network.mockImplementation(() => new Promise(() => {}));
+  const response = navigate("/play").mock.calls[0][0];
+  const signal = network.mock.calls[0][1].signal as AbortSignal;
+  expect(signal.aborted).toBe(false);
+  await vi.advanceTimersByTimeAsync(8000);
+  expect(await response).toBe(offline);
+  expect(signal.aborted).toBe(true);
+  expect(vi.getTimerCount()).toBe(0);
+  vi.useRealTimers();
+});
+
+it("returns a network error when offline without a cached shell", async () => {
+  network.mockRejectedValue(new Error("offline"));
+  cache.match.mockResolvedValue(undefined);
+  expect((await navigate("/").mock.calls[0][0]).type).toBe("error");
+});

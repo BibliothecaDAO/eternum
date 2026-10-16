@@ -59,7 +59,6 @@ pub trait IGame<T> {
     fn game(self: @T, game_id: u32) -> GameRegistry;
     fn rules(self: @T, game_id: u32) -> SliceRules;
     fn write_game(ref self: T, game_id: u32, game: GameRegistry);
-    fn start_blitz(ref self: T, game_id: u32, timestamp: u64);
 }
 
 #[starknet::interface]

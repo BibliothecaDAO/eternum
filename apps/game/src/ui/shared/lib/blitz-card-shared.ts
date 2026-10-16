@@ -4,6 +4,8 @@
  * that are common across all 960x540 shareable cards.
  */
 
+import { FONT_FACES, FONTS } from "@/tokens";
+
 import { formatOrdinal } from "./blitz-highlight";
 
 export const blitzNumberFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
@@ -14,15 +16,18 @@ export const formatBlitzRankParts = (rank: number | null | undefined): { value: 
   if (!rank || rank < 1) {
     return { value: "--", suffix: "" };
   }
-  const ordinal = formatOrdinal(rank).toUpperCase();
-  const match = ordinal.match(/^(\d+)(ST|ND|RD|TH)$/);
+  const match = formatOrdinal(rank).match(/^(\d+)(st|nd|rd|th)$/i);
   if (!match) {
     return { value: `${rank}`, suffix: "" };
   }
-  return { value: match[1], suffix: match[2] };
+  return { value: match[1], suffix: match[2].toLowerCase() };
 };
 
-export const BLITZ_CARD_FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Montserrat:wght@400;700;800&display=swap');`;
+/** The share cards draw in the app's own faces, served by the app (no font service), so an exported image matches the game. */
+export const BLITZ_CARD_FONT_FACES = FONT_FACES.map(
+  (face) =>
+    `@font-face { font-family: ${face.fontFamily}; src: ${face.src}; font-weight: ${face.fontWeight}; font-display: ${face.fontDisplay}; }`,
+).join("\n");
 
 /**
  * Base CSS for `.blitz-card-root` and its shared child elements.
@@ -37,13 +42,7 @@ export const BLITZ_CARD_BASE_STYLES = `
     background: #000000;
     overflow: hidden;
     color: #ffffff;
-    font-family:
-      "Montserrat",
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      sans-serif;
+    font-family: ${FONTS.body};
     box-shadow: 0 40px 120px rgba(0, 0, 0, 0.65);
     --overlay-gradient: linear-gradient(148.15deg, rgba(10, 10, 10, 0) 11.96%, #b38728 79.96%);
     --border-glow: rgba(191, 149, 63, 0.18);
@@ -157,14 +156,13 @@ export const BLITZ_CARD_BASE_STYLES = `
     flex-direction: column;
     gap: 0;
     align-items: flex-start;
-    font-family: "IM Fell English", serif;
+    font-family: ${FONTS.display};
     z-index: 4;
   }
 
   .blitz-card-root .title-stack .eyebrow {
     font-size: 16px;
     line-height: 20px;
-    font-style: italic;
     color: #ffffff;
     opacity: 0.75;
   }
@@ -181,8 +179,7 @@ export const BLITZ_CARD_BASE_STYLES = `
   }
 
   .blitz-card-root .stat-label {
-    font-family: "IM Fell English", serif;
-    font-style: italic;
+    font-family: ${FONTS.body};
     font-size: 16px;
     line-height: 20px;
     color: #ffffff;
@@ -191,7 +188,7 @@ export const BLITZ_CARD_BASE_STYLES = `
 
   .blitz-card-root .stat-value {
     margin-top: 4px;
-    font-family: "Montserrat", sans-serif;
+    font-family: ${FONTS.body};
     font-weight: 800;
     font-size: 20px;
     line-height: 24px;
@@ -211,7 +208,7 @@ export const BLITZ_CARD_BASE_STYLES = `
     align-items: flex-start;
     justify-content: center;
     gap: 4px;
-    font-family: "IM Fell English", serif;
+    font-family: ${FONTS.body};
     z-index: 4;
   }
 
@@ -225,7 +222,6 @@ export const BLITZ_CARD_BASE_STYLES = `
   .blitz-card-root .cta-subtitle {
     font-size: 20px;
     line-height: 25px;
-    font-style: italic;
     color: #ffffff;
     opacity: 0.75;
   }
@@ -240,7 +236,7 @@ export const BLITZ_CARD_BASE_STYLES = `
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
-    font-family: "IM Fell English", serif;
+    font-family: ${FONTS.body};
     z-index: 4;
   }
 
@@ -254,7 +250,6 @@ export const BLITZ_CARD_BASE_STYLES = `
   .blitz-card-root .player .address {
     font-size: 20px;
     line-height: 25px;
-    font-style: italic;
     color: #ffffff;
     opacity: 0.75;
   }
@@ -280,8 +275,7 @@ export const BLITZ_CARD_BASE_STYLES = `
   }
 
   .blitz-card-root .powered .copy {
-    font-family: "IM Fell English", serif;
-    font-style: italic;
+    font-family: ${FONTS.body};
     font-size: 16px;
     line-height: 20px;
     color: #ffffff;

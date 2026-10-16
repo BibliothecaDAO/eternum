@@ -124,13 +124,13 @@ const useMarkAnsweredSeen = (stepId: string | null, markSeen: (ids: readonly str
 const useShowMe = (realm: NativeRows["Structure"]) => {
   const goToPlace = useGoToFrontierPlace(realm);
   const navigateToMapView = useNavigateToMapView();
-  const setSelectedHex = useUIStore((state) => state.setSelectedHex);
+  const selectOnMap = useUIStore((state) => state.selectOnMap);
   return (place: GuidePlace, camp: GuideFacts["camp"]) => {
     if (place === "realm") goToPlace(false);
     if (place === "deploy") pointAtDeploy();
     if (place === "camp" && camp) {
       navigateToMapView(Position.fromContract(camp));
-      setSelectedHex({ col: camp.x, row: camp.y });
+      selectOnMap({ kind: "hex", hex: { col: camp.x, row: camp.y } });
     }
   };
 };

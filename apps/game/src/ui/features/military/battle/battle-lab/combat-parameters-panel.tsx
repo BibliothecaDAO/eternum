@@ -32,7 +32,7 @@ export const CombatParametersPanel = ({ parameters, onParametersChange, show }: 
       <div className="space-y-2">
         {Object.entries(parameters).map(([key, value]) => (
           <label key={key} className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-[0.12em] text-gold/60">
+            <span className="text-sm text-kit-muted">
               {key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}
             </span>
             <input

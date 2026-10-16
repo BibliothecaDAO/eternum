@@ -12,13 +12,13 @@ const spacingGap: Record<LayoutScale, string> = {
 };
 
 const titleText: Record<LayoutScale, string> = {
-  default: "text-xs",
-  compact: "text-xxs",
+  default: "text-sm",
+  compact: "text-sm",
 };
 
 const bodyText: Record<LayoutScale, string> = {
   default: "text-sm",
-  compact: "text-xs",
+  compact: "text-sm",
 };
 
 const getScale = (compact: boolean): LayoutScale => (compact ? "compact" : "default");
@@ -71,7 +71,7 @@ export const EntityDetailStat = ({
   const scale = getScale(compact);
   return (
     <div className={cn("flex flex-col", spacingGap[scale], className)}>
-      <span className={cn("font-semibold uppercase tracking-[0.18em] text-gold/70", titleText[scale])}>{label}</span>
+      <span className={cn("font-semibold text-gold/70", titleText[scale])}>{label}</span>
       <span className={cn(emphasizeValue ? "text-gold" : "text-gold/80", bodyText[scale])}>{value}</span>
     </div>
   );

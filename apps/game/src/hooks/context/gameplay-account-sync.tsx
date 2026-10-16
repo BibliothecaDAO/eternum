@@ -3,9 +3,9 @@ import { configureGameplayAccountSubmits } from "@bibliothecadao/eternum/game-cl
 import { identityClient, useIdentitySession } from "@/hooks/context/identity-session";
 import { parseEntryRoute, parsePlayRoute } from "@/play/navigation/play-route";
 import { requireOpenShard } from "@/runtime/world/shards";
-import { isExplicitSpectateSession } from "@/utils/spectator-session";
-import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
-import { DeviceRemovedError, getOrCreateDeviceKey, joinRealmsAccount } from "@bibliothecadao/eternum";
+import { useGameRouteSpectateIntent } from "@/utils/spectator-session";
+import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
+import { DeviceLimitError, DeviceRemovedError, getOrCreateDeviceKey, joinRealmsAccount } from "@bibliothecadao/eternum";
 import type { Shard } from "@bibliothecadao/eternum/game-client";
 import { IdentityRequestError } from "@realms-world/identity";
 import type { ReactNode } from "react";
@@ -14,11 +14,13 @@ import { useLocation } from "react-router-dom";
 import { DOORWAY_WORDS } from "@/shell/words";
 
 // The account is joined when a player enters a game to play: its deploy happens at game entry, not in the first click,
-// and never for a shard the player only opens or spectates.
+// and never for a shard the player only opens or spectates. This is the root of every game route, so it is where the
+// route's spectate intent is resolved for everything under it.
 const usePlayingShardChainId = (): string | null => {
   const location = useLocation();
+  const spectating = useGameRouteSpectateIntent();
   const game = parsePlayRoute(location) ?? parseEntryRoute(location);
-  return game && !isExplicitSpectateSession() ? game.chainId : null;
+  return game && !spectating ? game.chainId : null;
 };
 
 /** Keyed by chain id, so moving between the scenes of one game keeps the joined account. */
@@ -66,7 +68,7 @@ export function GameplayAccountSync({ children }: { children: ReactNode }) {
     let active = true;
     setGameplayAccount(null, null);
     joinRealmsAccount({
-      provider: getCachedRpcProvider(shard.rpcUrl),
+      provider: getShardRpcProvider(shard.rpcUrl),
       shard,
       realmsId,
       device: getOrCreateDeviceKey(localStorage),
@@ -99,7 +101,7 @@ export const isAccountStatePrompt = (provisioningError: string | null): boolean 
 // detail (an RPC dump, a transaction's params) goes to the console only.
 const ACCOUNT_SETUP_FAILED = "Your account could not be set up for this game. Try again in a moment.";
 
-/** The device limit names the step the player takes (the doorway offers Devices), never a menu path in a sentence. */
+/** Both entry routes use the same device-limit recovery. */
 export const DEVICE_LIMIT_REACHED = DOORWAY_WORDS.deviceLimit;
 
 const ACCOUNT_REFUSALS: Record<string, string> = {
@@ -111,10 +113,12 @@ const ACCOUNT_REFUSALS: Record<string, string> = {
 
 const accountStateOf = (error: unknown): string | null => {
   const code =
-    error instanceof DeviceRemovedError
-      ? "device_revoked"
-      : error instanceof IdentityRequestError
-        ? error.code
-        : undefined;
+    error instanceof DeviceLimitError
+      ? "device_limit"
+      : error instanceof DeviceRemovedError
+        ? "device_revoked"
+        : error instanceof IdentityRequestError
+          ? error.code
+          : undefined;
   return code ? (ACCOUNT_REFUSALS[code] ?? null) : null;
 };

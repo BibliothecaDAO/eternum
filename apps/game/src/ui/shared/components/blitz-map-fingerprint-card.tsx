@@ -6,7 +6,7 @@ import type { GameReviewMapSnapshot, GameReviewMapSnapshotTile } from "@/service
 import { requireBiomeColor, resolveBiomeTypeFromId } from "@/three/managers/biome-colors";
 import { FELT_CENTER } from "@/ui/config";
 import { BLITZ_CARD_DIMENSIONS } from "../lib/blitz-highlight";
-import { BLITZ_CARD_BASE_STYLES, BLITZ_CARD_FONT_IMPORT, BLITZ_CARD_GOLD_THEME } from "../lib/blitz-card-shared";
+import { BLITZ_CARD_BASE_STYLES, BLITZ_CARD_FONT_FACES, BLITZ_CARD_GOLD_THEME } from "../lib/blitz-card-shared";
 import { APP_HOST } from "@/config/app-address";
 
 type MapFingerprintViewMode = "biome" | "occupier";
@@ -35,7 +35,7 @@ const GOLD_DARK: [number, number, number] = [102, 69, 18];
 const GOLD_LIGHT: [number, number, number] = [252, 236, 184];
 
 const MAP_FINGERPRINT_CARD_STYLES = `
-  ${BLITZ_CARD_FONT_IMPORT}
+  ${BLITZ_CARD_FONT_FACES}
   ${BLITZ_CARD_BASE_STYLES}
   ${BLITZ_CARD_GOLD_THEME}
 

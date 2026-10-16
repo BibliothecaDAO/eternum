@@ -1,8 +1,8 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { SIGN_IN_CODE_LENGTH } from "@realms-world/identity";
 import { useState } from "react";
 
 import { Button } from "@/ui/design-system/kit/button";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 
 import { ClockChip } from "../clock-chip";
 import { useNowSeconds } from "../use-now";
@@ -46,7 +46,7 @@ export const CodeStep = ({
     <Button
       role="outline"
       word={SIGN_IN_WORDS.newCode}
-      icon="Em"
+      icon="mail"
       onClick={onNewCode}
       loading={sending ? SIGN_IN_WORDS.sending : undefined}
     />
@@ -64,17 +64,17 @@ export const CodeStep = ({
       <button
         type="button"
         onClick={onChangeEmail}
-        className="flex min-h-12 max-w-full items-center gap-2 font-ui text-[17px] font-bold text-kit-cream"
+        className="flex min-h-12 max-w-full items-center gap-2 font-body text-base font-bold text-kit-cream"
       >
-        <KitIcon code="Em" size={22} />
+        <SemanticIcon name="mail" size={22} />
         <span className="truncate">{email}</span>
-        <KitIcon code="Ed" size={20} />
+        <SemanticIcon name="edit" size={20} />
       </button>
       <CodeBoxes code={code} refused={error !== null} disabled={checking || expired} onType={type} />
       {expired ? (
         newCode
       ) : checking ? (
-        <p className="font-ui text-[15px] font-bold text-kit-muted">{SIGN_IN_WORDS.checking}</p>
+        <p className="font-body text-base font-bold text-kit-muted">{SIGN_IN_WORDS.checking}</p>
       ) : (
         <ClockChip prefix="expires" at={expiresAt} now={now} />
       )}

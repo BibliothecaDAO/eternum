@@ -1,3 +1,4 @@
+import { RELICS } from "../../../packages/types/src/constants/relics";
 // Tables from the pinned game rules, owned by the mode configuration.
 const RESOURCE_ORDER = [3, 1, 2, 4, 6, 8, 5, 11, 7, 15, 14, 20, 13, 12, 16, 21, 18, 17, 10, 19, 9, 22];
 const VILLAGE_WEIGHTS = [
@@ -14,10 +15,10 @@ export const villageResourcePool = RESOURCE_ORDER.map((resource_type, index) => 
   weight: VILLAGE_WEIGHTS[index],
 }));
 
-export function eternumExplorationRewards(amount: number) {
+export function eternumExplorationRewards(percent: number) {
   return [...RESOURCE_ORDER, 24].map((resource_type, index) => ({
     resource_type,
-    amount,
+    percent,
     weight: EXPLORATION_WEIGHTS[index],
   }));
 }
@@ -44,10 +45,8 @@ export const startingTroopsByBiome = [
 
 export const realmResourcePool = [3, 2, 4, 5, 11, 7, 19, 9, 22];
 
-const RELIC_RATES = [
-  5000, 10000, 2000, 4000, 2000, 4000, 0, 0, 10000, 20000, 1500, 3000, 2000, 4000, 2000, 2000, 1500, 3000,
-];
-export const relicRules = RELIC_RATES.map((rate_bps, index) => {
+// Each relic's rate comes from the one relic table, in id order from Stamina Relic I (39).
+export const relicRules = RELICS.toSorted((left, right) => left.id - right.id).map(({ rateBps: rate_bps }, index) => {
   const uses = index < 2 ? 3 : index === 6 ? 1 : index === 7 ? 2 : 0;
   const levelTwo = index % 2 === 1;
   const draw_weight = index === 14 || index === 15 ? 0 : index === 16 ? 600 : index === 17 ? 200 : levelTwo ? 400 : 750;

@@ -1,6 +1,7 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Button } from "@/ui/design-system/kit/button";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { LEAVE, VISIT } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
@@ -29,11 +30,9 @@ export const VisitFoot = ({
     aria-label={`${VISIT} ${label}`}
     className="frontier-card pointer-events-auto flex items-center gap-2 !rounded-xl p-1.5 pl-2"
   >
-    <KitIcon code="Ey" size={24} />
+    <SemanticIcon name="explore" size={24} />
     {order !== undefined && <OrderEmblem order={order} />}
-    <span className={cn("min-w-0 flex-1 truncate text-[16px] text-kit-cream", arriving && "animate-pulse")}>
-      {name}
-    </span>
-    {onLeave && <Button role="primary" icon="Bk" word={LEAVE} onClick={onLeave} className="w-[130px]" />}
+    <span className={cn("min-w-0 flex-1 truncate text-base text-kit-cream", arriving && "animate-pulse")}>{name}</span>
+    {onLeave && <Button role="primary" icon="arrow-left" word={LEAVE} onClick={onLeave} className="w-[130px]" />}
   </div>
 );

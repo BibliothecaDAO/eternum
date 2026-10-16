@@ -1,3 +1,5 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import type { IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import { AmountSlider } from "@/ui/design-system/kit/amount-slider";
@@ -46,7 +48,7 @@ export const DeployView = ({
   onClose,
 }: {
   slots: { used: number; allowed: number } | undefined;
-  art: string | undefined;
+  art: IconMeaning | undefined;
   troopsAtHome: number | undefined;
   count: number | undefined;
   troopsMax: number;
@@ -74,13 +76,13 @@ export const DeployView = ({
   return (
     <Sheet label={DEPLOY} onClose={onClose}>
       <header className="flex items-center justify-between">
-        <h2 className="frontier-title !text-[20px]">{DEPLOY}</h2>
+        <h2 className="frontier-title !text-xl">{DEPLOY}</h2>
         {slots && <SlotMarks used={slots.used} allowed={slots.allowed} />}
       </header>
       <Hero art={art} count={count} />
       <AmountSlider
         label={TROOPS}
-        icon="Ey"
+        icon="explore"
         value={count ?? 0}
         max={troopsMax}
         stop={wheatStop}
@@ -97,15 +99,15 @@ export const DeployView = ({
           <Equation equation={equation} rations={rations} />
           <div className="flex items-center justify-center gap-1.5">
             {count === 1 ? (
-              <Chip icons={["Ey"]} label={DEPLOY_FIGURES.scout} value="" />
+              <Chip icons={["explore"]} label={DEPLOY_FIGURES.scout} value="" />
             ) : (
               <Chip
-                icons={["Es", "La"]}
+                icons={["essence", "labor"]}
                 label={DEPLOY_FIGURES.revealSends}
                 value={revealYield === undefined ? "—" : `+${formatAmount(revealYield)}`}
               />
             )}
-            <Chip icons={["St"]} label={DEPLOY_FIGURES.startingStamina} value={formatAmount(startingStamina)} />
+            <Chip icons={["stamina"]} label={DEPLOY_FIGURES.startingStamina} value={formatAmount(startingStamina)} />
             {startingTiers && <AttributeMarks tiers={startingTiers} />}
           </div>
           <DayEnds endsAt={clock?.endsAt} secondsLeft={clock?.secondsLeft} tone={clock?.tone ?? "calm"} />
@@ -136,21 +138,21 @@ const Equation = ({
 }) => (
   <div className="flex items-center justify-center gap-1.5">
     <Chip
-      icons={rations ? ["Wh", "Ra"] : ["Wh"]}
+      icons={rations ? ["wheat", "rations"] : ["wheat"]}
       label={DEPLOY_FIGURES.wheatToDeploy}
       value={`−${formatExact(equation?.wheatCost)}`}
     />
-    <span aria-hidden className="text-[16px] text-kit-muted">
+    <span aria-hidden className="text-base text-kit-muted">
       →
     </span>
     <Chip
-      icons={["Wh"]}
+      icons={["wheat"]}
       label={DEPLOY_FIGURES.wheatLeft}
       value={formatExact(equation?.wheatLeft)}
       ember={equation?.wheatLeft === 0}
     />
     <Chip
-      icons={["Bt"]}
+      icons={["move"]}
       label={DEPLOY_FIGURES.tilesPaid}
       value={formatAmount(equation?.tiles)}
       ember={equation?.tiles === 0}
@@ -159,10 +161,10 @@ const Equation = ({
 );
 
 /** The troops as their portrait, and the count large beside it. */
-const Hero = ({ art, count }: { art: string | undefined; count: number | undefined }) => (
+const Hero = ({ art, count }: { art: IconMeaning | undefined; count: number | undefined }) => (
   <div className="flex items-center justify-center gap-3.5">
     <span className="size-16 overflow-hidden rounded-full border border-kit-line2 bg-kit-ground">
-      {art && <img src={art} alt="" className="size-full object-cover" />}
+      {art && <SemanticIcon name={art} alt="" className="size-full object-cover" />}
     </span>
     <span role="img" aria-label={`${TROOPS} ${formatExact(count)}`} className="frontier-hero tabular-nums">
       {formatExact(count)}

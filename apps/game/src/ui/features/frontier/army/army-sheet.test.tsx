@@ -36,7 +36,7 @@ const render = (
     root.render(
       <ArmySheet
         name="Army 1"
-        art="/images/armies/knightT1.png"
+        art="knight-t1"
         troops={5_000}
         xp={overrides.xp ?? 260}
         stamina={{ current: overrides.stamina ?? 90, max: 150, secondsToFull: 7_200 }}
@@ -69,7 +69,7 @@ describe("the army", () => {
     render("logistics");
     expect(row("Logistics").textContent).toBe("Logistics100XP");
     expect(row("Battle").querySelector(".text-light-red")?.textContent).toBe("400XP");
-    expect(row("Homecoming").querySelector('img[src="/image-icons/kit/ui-check.png"]')).not.toBeNull();
+    expect(row("Homecoming").querySelector('img[src="/icons/facets/64/check.webp"]')).not.toBeNull();
   });
 
   it("buys the chosen tier for its XP price, showing what it changes and the stamina it refills", () => {

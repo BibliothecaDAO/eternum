@@ -5,7 +5,8 @@ pub trait IGameplay<T> {
         game_id: u32,
         actor: starknet::ContractAddress,
         arguments: Span<felt252>,
-        context: crate::commands::ActionContext,
+        raw_root: u256,
+        timestamp: u64,
     ) -> Result<Span<felt252>, crate::commands::Rejection>;
 }
 
@@ -69,7 +70,7 @@ pub mod SeasonLogic {
         fn close_season(
             ref self: ContractState, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
         ) -> u64 {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let classes = self.release.classes(game_id);
 
@@ -112,7 +113,7 @@ pub mod SeasonLogic {
         fn mark_game_settled(
             ref self: ContractState, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
         ) -> u64 {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
             let mut game = context.game.unbox();
             if game.settled {
                 return (0);
@@ -138,7 +139,7 @@ pub mod SeasonLogic {
         fn register_relic_points(
             ref self: ContractState, game_id: u32, actor: ContractAddress, game_context: crate::commands::ActionContext,
         ) {
-            let game_context = crate::commands::load_context(game_id, game_context);
+            let game_context = crate::commands::execution_context(game_id, game_context);
 
             let points = game_context.rules.unbox().victory_points_grant_config.relic_open_points;
             self.register_points(game_id, actor, points.into(), crate::game::PointActivity::RelicChest);
@@ -159,7 +160,7 @@ pub mod SeasonLogic {
             category: u8,
             game_context: crate::commands::ActionContext,
         ) -> u128 {
-            let game_context = crate::commands::load_context(game_id, game_context);
+            let game_context = crate::commands::execution_context(game_id, game_context);
 
             let rules = game_context.rules.unbox().victory_points_grant_config;
             let amount = if category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY {
@@ -183,7 +184,7 @@ pub mod SeasonLogic {
         fn register_exploration(
             ref self: ContractState, game_id: u32, actor: ContractAddress, game_context: crate::commands::ActionContext,
         ) {
-            let game_context = crate::commands::load_context(game_id, game_context);
+            let game_context = crate::commands::execution_context(game_id, game_context);
 
             let amount = game_context.rules.unbox().victory_points_grant_config.explore_tiles_points;
             self.register_points(game_id, actor, amount.into(), crate::game::PointActivity::Exploration);
@@ -269,9 +270,11 @@ pub mod SeasonLogic {
             game_id: u32,
             actor: ContractAddress,
             arguments: Span<felt252>,
-            context: crate::commands::ActionContext,
+            raw_root: u256,
+            timestamp: u64,
         ) -> Result<Span<felt252>, crate::commands::Rejection> {
-            let context = crate::commands::load_context(game_id, context);
+            // The one read of the game and its rules in a play; every library call below receives them.
+            let context = crate::commands::load_context(game_id, raw_root, timestamp);
 
             let (index, route, payload) = crate::commands::route_command(arguments).map_err(|code| rejection(code))?;
             let rules = context.rules.unbox();

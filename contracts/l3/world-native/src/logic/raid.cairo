@@ -24,7 +24,7 @@ pub mod RaidLogic {
             command: crate::combat_actions::Raid,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             crate::logic::combat::raid(game_id, actor, command, context);
             ()

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "build": "vocs build -o ../dist",
+    "build": "vocs build -o ../dist && node scripts/check-rendered-balance.mjs dist",
     "format": "npx prettier --write . --root=..",
     "format:check": "npx prettier --check . --root=..",
     "dev": "vocs dev",

@@ -18,7 +18,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "starknet": "catalog:game"
+    "starknet": "catalog:game",
+    "effect": "4.0.4"
   },
   "devDependencies": {
     "tsup": "^8.0.2",

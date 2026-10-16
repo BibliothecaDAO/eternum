@@ -51,6 +51,29 @@ pub(crate) fn occupancy_from_bits(data: u128) -> Option<TileOccupancy> {
     )
 }
 
+// Zero is absent; adding one preserves both layers and every u32 coordinate, including the origin.
+pub(crate) fn position_bits(coord: Coord) -> u128 {
+    coord.x.into() * 2 + coord.y.into() * 0x200000000 + if coord.alt {
+        2
+    } else {
+        1
+    }
+}
+
+pub(crate) fn position_from_bits(data: u128) -> Option<Coord> {
+    if data == 0 {
+        return None;
+    }
+    let bits = data - 1;
+    Some(
+        Coord {
+            alt: bits % 2 == 1,
+            x: (bits / 2 % 0x100000000).try_into().unwrap(),
+            y: (bits / 0x200000000).try_into().unwrap(),
+        },
+    )
+}
+
 #[starknet::interface]
 pub trait IMapLogic<T> {
     fn biome(self: @T, key: TileKey, game_context: crate::commands::BiomeContext) -> u8;

@@ -29,7 +29,7 @@ const DropdownList = ({
   maxHeight = "md",
   padding = "xs",
   isEmpty = false,
-  emptyState = <div className="px-2 py-1 text-xs text-gold/50">No results found</div>,
+  emptyState = <div className="px-2 py-1 text-sm text-kit-muted">No results found</div>,
 }: DropdownListProps) => (
   <div
     className={clsx(

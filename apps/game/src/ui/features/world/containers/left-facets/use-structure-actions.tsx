@@ -1,11 +1,10 @@
-import { canIssueOrders } from "@/utils/can-issue-orders";
+import { canIssueOrders, useActNowRefusal } from "@/utils/can-issue-orders";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { configManager } from "@bibliothecadao/eternum";
 import { LeftView } from "@/types";
-import { BuildingThumbs } from "@/ui/config";
 import { MarketModal } from "@/ui/features/economy/trading";
 import { ProductionModal } from "@/ui/features/settlement";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
@@ -18,9 +17,10 @@ export interface StructureActionBadge {
 export interface StructureAction {
   id: "build" | "production" | "military" | "transfer" | "trade";
   label: string;
-  image: string;
   active: boolean;
   badges?: StructureActionBadge[];
+  /** Why the action cannot be taken now (before play opens), or null. */
+  refusal: string | null;
   onClick: () => void;
 }
 
@@ -46,7 +46,7 @@ export const isStructureActionEnabled = (
 
 /**
  * The actions of the active owned structure (Build, Production, Military, Transfer, Trade) that the game's commands
- * allow, each with its open state and dispatch. Null for a spectator or while a foreign structure is selected, so the
+ * allow, each with its open state and dispatch, and shut with the reason until play opens. Null for a spectator or while a foreign structure is selected, so the
  * desktop panel and the compact strip appear and disappear together.
  */
 export function useStructureActions(): StructureAction[] | null {
@@ -64,6 +64,7 @@ export function useStructureActions(): StructureAction[] | null {
   const arrivedArrivalsNumber = useUIStore((state) => state.arrivedArrivalsNumber);
   const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
   const ordersAllowed = useUIStore(canIssueOrders);
+  const refusal = useActNowRefusal();
 
   if (!ordersAllowed) return null;
   if (!isOwnStructure) return null;
@@ -97,30 +98,30 @@ export function useStructureActions(): StructureAction[] | null {
     {
       id: "build",
       label: "Build",
-      image: BuildingThumbs.construction,
       active: view === LeftView.ConstructionView,
       onClick: toggleView(LeftView.ConstructionView),
+      refusal,
     },
     {
       id: "production",
       label: "Production",
-      image: BuildingThumbs.production,
       active: openId === "production",
       onClick: openProduction,
+      refusal,
     },
     {
       id: "military",
       label: "Military",
-      image: BuildingThumbs.military,
       active: view === LeftView.MilitaryView,
       onClick: toggleView(LeftView.MilitaryView),
+      refusal,
     },
     {
       id: "transfer",
       label: "Transfer",
-      image: BuildingThumbs.transfer,
       active: view === LeftView.ResourceArrivals,
       onClick: openLogistics,
+      refusal,
       badges: [
         { count: arrivedArrivalsNumber, tone: "ready" },
         { count: pendingArrivalsNumber, tone: "pending" },
@@ -129,9 +130,9 @@ export function useStructureActions(): StructureAction[] | null {
     {
       id: "trade",
       label: "Trade",
-      image: BuildingThumbs.scale,
       active: openId === "market",
       onClick: openMarket,
+      refusal,
     },
   ];
   return actions.filter((action) =>

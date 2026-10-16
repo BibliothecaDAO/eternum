@@ -1,5 +1,5 @@
 import { type ReactNode, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { useIdentitySession } from "@/hooks/context/identity-session";
@@ -17,18 +17,15 @@ import { StepVerb } from "../frame/step-verb";
 import { entryHref } from "../game-links";
 import { Loading } from "../loading";
 import { NothingHere } from "../not-found";
-import { paintingSources } from "../paintings";
-import { AgeLabel } from "../play/age-card";
 import { ageOf } from "../play/ages";
-import { type PlayFacts, usePlayFacts } from "../play/play-facts";
+import { usePlayFacts } from "../play/play-facts";
 import { LiveChip, StateChip } from "../play/state-chip";
-import { ServiceFailure } from "../service-failure";
 import { FailureLine } from "../sign-in/failure-line";
 import { type EnvironmentLedger, environmentLedger } from "../value/ledger";
 import { BLITZ_WORDS, ENTRY_WORDS, WORDS } from "../words";
 import { chatMembershipOf, useEntryTerms } from "./entry";
-import { PaidEntry } from "./entry-panel";
-import { GameRow, SeatsChip } from "./game-row";
+import { PaidEntry, SignInToJoin } from "./entry-panel";
+import { SeatsChip } from "./seats-chip";
 import { type LobbyStep, lobbyId, lobbyRowOf, lobbyStep, lobbyTitle, seatsOf } from "./lobby";
 import { LobbyChatPanel } from "./lobby-chat-panel";
 import { RegisteredCount, RosterGrid, SeatGrid } from "./seat-grid";
@@ -36,101 +33,7 @@ import { RegisteredCount, RosterGrid, SeatGrid } from "./seat-grid";
 const BLITZ = ageOf("blitz");
 
 /**
- * Blitz's games (spec 05): live first, then by start, each with when, its seats and one action; a row opens its
- * lobby. The age's painting heads the list on a phone; the desktop stands the list on it, the next filling game's
- * lobby beside it.
- */
-export const BlitzListPage = () => {
-  const facts = usePlayFacts();
-  const desktop = useLayout() === "desktop";
-  const rows = (
-    <section className="plate px-3">
-      <BlitzRows facts={facts} />
-    </section>
-  );
-  return (
-    <PageFrame back="/" title={BLITZ.name} painting={BLITZ.painting} stage>
-      {desktop ? (
-        <div className="grid grid-cols-[minmax(0,1fr)_34rem] items-start gap-6">
-          {rows}
-          <NextLobby facts={facts} />
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          <AgeHeader />
-          {rows}
-        </div>
-      )}
-    </PageFrame>
-  );
-};
-
-/** Beside the desktop's rows: the next slot taking players, as its lobby shows it, with its one step. */
-const NextLobby = ({ facts }: { facts: PlayFacts }) => {
-  const row = facts.blitz.find((candidate) => candidate.kind === "slot" && candidate.action === "open");
-  if (row?.kind !== "slot") return null;
-  const step = lobbyStep(row);
-  return (
-    <section className="plate flex flex-col gap-4 p-5">
-      <Link to={`/blitz/${lobbyId(row)}`} className="painted flex h-36 items-end rounded-xl p-4">
-        <img
-          {...paintingSources(BLITZ.painting)}
-          sizes="34rem"
-          alt=""
-          className="absolute inset-0 -z-10 size-full object-cover"
-        />
-        <span className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent to-kit-ground/90" />
-        <span className="flex items-baseline gap-2">
-          <AgeLabel numeral={BLITZ.numeral} />
-          <h2 className="font-display text-[34px] leading-none text-kit-cream">{lobbyTitle(row)}</h2>
-        </span>
-      </Link>
-      <LobbyClock row={row} step={step} now={facts.now} />
-      <RegisteredCount slot={row.slot} large={false} closed={false} />
-      <LobbyAction row={row} step={step} desktop />
-    </section>
-  );
-};
-
-const AgeHeader = () => (
-  <header className="painted flex h-36 items-end rounded-2xl p-3">
-    <img
-      {...paintingSources(BLITZ.painting)}
-      sizes="100vw"
-      alt=""
-      className="absolute inset-0 -z-10 size-full object-cover"
-    />
-    <span className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-kit-ground/20 to-kit-ground/90" />
-    <div className="flex flex-col gap-1">
-      <span className="flex items-center gap-2">
-        <AgeLabel numeral={BLITZ.numeral} />
-        <h2 className="font-ui text-[20px] font-bold text-kit-cream">{BLITZ.name}</h2>
-      </span>
-      <p className="text-[13px] text-kit-muted">{BLITZ.lore}</p>
-    </div>
-  </header>
-);
-
-/** The games as rows, live first; a panel shows the first few. */
-export const BlitzRows = ({ facts, limit }: { facts: PlayFacts; limit?: number }) => {
-  if (facts.slots.isError)
-    return <ServiceFailure service="slots" error={facts.slots.error} retry={() => void facts.slots.refetch()} />;
-  if (facts.directory.isError)
-    return (
-      <ServiceFailure service="directory" error={facts.directory.error} retry={() => void facts.directory.refetch()} />
-    );
-  if (!facts.slots.isSuccess || !facts.directory.isSuccess) return <Loading />;
-  return (
-    <ul>
-      {facts.blitz.slice(0, limit).map((row) => (
-        <GameRow key={row.key} row={row} now={facts.now} />
-      ))}
-    </ul>
-  );
-};
-
-/**
- * One Blitz before it starts (spec 06): its clock and one step. A slot shows its registered count and its paid entry; a
+ * One Blitz before it starts (spec 06): its one clock and one step. A slot shows its registered count and its paid entry; a
  * launched game its seats with the player's own ringed, Preparing until the roster's realms are ready, then Enter.
  * There is no way out of a seat (ruled).
  */
@@ -143,14 +46,14 @@ export const BlitzLobbyPage = () => {
   const row = lobbyRowOf(facts.blitz, facts.slots.data?.slots ?? [], id);
   if (!row) {
     return (
-      <PageFrame back="/blitz" title={BLITZ.name} tabs={false}>
+      <PageFrame back="/" title={BLITZ.name} tabs={false}>
         {facts.slots.isSuccess && facts.directory.isSuccess ? <NothingHere /> : <Loading />}
       </PageFrame>
     );
   }
   const step = lobbyStep(row);
-  const clock = <LobbyClock row={row} step={step} now={facts.now} />;
   const desktop = layout === "desktop";
+  const clock = <LobbyClock row={row} step={step} now={facts.now} large={desktop} />;
   const wallet = session ? payoutAddressOf(session.user) : null;
   const action =
     row.kind === "game" ? (
@@ -159,6 +62,7 @@ export const BlitzLobbyPage = () => {
       <SlotEntry
         key={row.slot.name}
         slot={row.slot}
+        signedIn={session !== null}
         wallet={wallet}
         owed={facts.refunds.get(row.slot.name)}
         games={facts.games}
@@ -166,7 +70,7 @@ export const BlitzLobbyPage = () => {
     );
   return (
     <PageFrame
-      back="/blitz"
+      back="/"
       title={lobbyTitle(row)}
       tabs={false}
       foot={desktop ? undefined : action}
@@ -188,7 +92,6 @@ export const BlitzLobbyPage = () => {
           </section>
           <div className="flex flex-col gap-5">
             <section className="plate flex flex-col gap-4 p-5">
-              {!hasSlotStarted(row, facts.now) && <Countdown row={row} now={facts.now} />}
               {clock}
               {action}
             </section>
@@ -212,21 +115,24 @@ export const BlitzLobbyPage = () => {
   );
 };
 
-/** The desktop lobby's large clock: the time to the start, or to the end of a live game, to the second. */
-const Countdown = ({ row, now }: { row: BlitzRow; now: number }) => {
-  const live = row.startsAt === null;
-  const at = live ? (row.kind === "game" ? row.game.clock.end_at : undefined) : row.startsAt;
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="font-ui text-[14px] tracking-[.06em] text-kit-muted">
-        {live ? BLITZ_WORDS.endsIn : BLITZ_WORDS.startsIn}
-      </span>
-      <span className="font-display text-[64px] leading-none text-kit-cream">
-        {at === undefined || at === null ? "—" : countdown(at - now)}
-      </span>
-    </div>
-  );
+/**
+ * The one moment a lobby counts down to, the next that matters: a slot's close while it takes players, then its games'
+ * start; a game's start, then its end once it is live. A slot whose games have started counts to nothing. The lobby's
+ * title already names the start, so the clock never repeats it beside the close.
+ */
+const nextMoment = (row: BlitzRow, now: number): { prefix: "closes" | "starts" | "ends"; at: number } | null => {
+  if (row.kind === "slot") {
+    if (now < row.closesAt) return { prefix: "closes", at: row.closesAt };
+    return row.startsAt !== null && now < row.startsAt ? { prefix: "starts", at: row.startsAt } : null;
+  }
+  return row.startsAt === null ? { prefix: "ends", at: row.game.clock.end_at } : { prefix: "starts", at: row.startsAt };
 };
+
+/** A slot whose registration has closed: its lobby is kept for its entry's outcome. */
+const isClosedSlot = (row: BlitzRow, now: number): boolean => row.kind === "slot" && now >= row.closesAt;
+
+/** The desktop's countdown words, to the second: "Entry closes in 0:59:12". */
+const COUNTDOWN_WORDS = { closes: BLITZ_WORDS.closesIn, starts: BLITZ_WORDS.startsIn, ends: BLITZ_WORDS.endsIn };
 
 /** Hours, minutes and seconds left: "2:04:12"; never below zero. */
 const countdown = (seconds: number) => {
@@ -235,45 +141,31 @@ const countdown = (seconds: number) => {
   return `${Math.floor(left / 3600)}:${pad(Math.floor(left / 60) % 60)}:${pad(left % 60)}`;
 };
 
-/** A slot whose registration has closed: its lobby is kept for its entry's outcome. */
-const isClosedSlot = (row: BlitzRow, now: number): boolean => row.kind === "slot" && now >= row.closesAt;
-
-/** A slot whose games have started: there is no start left to count down to. */
-const hasSlotStarted = (row: BlitzRow, now: number): boolean =>
-  row.kind === "slot" && row.startsAt !== null && now >= row.startsAt;
-
 /**
- * A slot's two times: when its registration closes (closed, once it has) and, until then and through the preparation
- * window after it, when its games start.
+ * The lobby's one clock (large on desktop, a chip on a phone), with what stands beside it: Live, Entry closed, Joined
+ * while the seat's game is prepared, a game's seats.
  */
-const SlotTimes = ({ row, now }: { row: Extract<BlitzRow, { kind: "slot" }>; now: number }) => (
-  <>
-    {isClosedSlot(row, now) ? (
-      <StateChip icon="Lk" text={ENTRY_WORDS.closed} />
-    ) : (
-      <ClockChip prefix="closes" at={row.closesAt} now={now} />
-    )}
-    {!hasSlotStarted(row, now) && <ClockChip prefix="starts" at={row.startsAt ?? undefined} now={now} />}
-  </>
-);
-
-const LobbyClock = ({ row, step, now }: { row: BlitzRow; step: LobbyStep; now: number }) => (
-  <div className="flex flex-wrap items-center gap-2">
-    {row.startsAt === null ? (
-      <>
-        <LiveChip />
-        {row.kind === "game" && <ClockChip prefix="ends" at={row.game.clock.end_at} now={now} />}
-      </>
-    ) : row.kind === "slot" ? (
-      <SlotTimes row={row} now={now} />
-    ) : (
-      <ClockChip prefix="starts" at={row.startsAt} now={now} />
-    )}
-    {step.kind === "preparing" && <StateChip icon="Ok" text={WORDS.joined} />}
-    {/* A slot's lobby draws its one number large (RegisteredCount); a game's seats ride here as a chip. */}
-    {step.kind !== "preparing" && row.kind === "game" && <SeatsChip row={row} />}
-  </div>
-);
+const LobbyClock = ({ row, step, now, large }: { row: BlitzRow; step: LobbyStep; now: number; large: boolean }) => {
+  const moment = nextMoment(row, now);
+  return (
+    <div className="flex flex-col gap-3">
+      {large && moment && (
+        <div className="flex flex-col gap-1">
+          <span className="font-ui text-[14px] tracking-[.06em] text-kit-muted">{COUNTDOWN_WORDS[moment.prefix]}</span>
+          <span className="font-display text-[64px] leading-none text-kit-cream">{countdown(moment.at - now)}</span>
+        </div>
+      )}
+      <div className="flex flex-wrap items-center gap-2">
+        {row.startsAt === null && <LiveChip />}
+        {isClosedSlot(row, now) && <StateChip icon="lock" text={ENTRY_WORDS.closed} />}
+        {!large && moment && <ClockChip prefix={moment.prefix} at={moment.at} now={now} />}
+        {step.kind === "preparing" && <StateChip icon="check" text={WORDS.joined} />}
+        {/* A slot's lobby draws its one number large (RegisteredCount); a game's seats ride here as a chip. */}
+        {step.kind !== "preparing" && row.kind === "game" && <SeatsChip row={row} />}
+      </div>
+    </div>
+  );
+};
 
 /** The lobby's one step, or the fact standing where it would. */
 const LobbyAction = ({ row, step, desktop }: { row: BlitzRow; step: LobbyStep; desktop: boolean }) => {
@@ -283,7 +175,12 @@ const LobbyAction = ({ row, step, desktop }: { row: BlitzRow; step: LobbyStep; d
   switch (step.kind) {
     case "open":
       return verb(
-        <Button role="primary" word={BLITZ_WORDS.open} icon="Pl" onClick={() => navigate(`/blitz/${lobbyId(row)}`)} />,
+        <Button
+          role="primary"
+          word={BLITZ_WORDS.join}
+          icon="play"
+          onClick={() => navigate(`/blitz/${lobbyId(row)}`)}
+        />,
       );
     case "preparing":
       return <Button role="primary" word={WORDS.enter} loading={BLITZ_WORDS.preparing} />;
@@ -291,7 +188,12 @@ const LobbyAction = ({ row, step, desktop }: { row: BlitzRow; step: LobbyStep; d
       return (
         row.kind === "game" &&
         verb(
-          <Button role="primary" word={WORDS.enter} icon="Pl" onClick={() => navigate(entryHref(row.game, "play"))} />,
+          <Button
+            role="primary"
+            word={WORDS.enter}
+            icon="play"
+            onClick={() => navigate(entryHref(row.game, "play"))}
+          />,
         )
       );
     case "watch":
@@ -301,7 +203,7 @@ const LobbyAction = ({ row, step, desktop }: { row: BlitzRow; step: LobbyStep; d
           <Button
             role="secondary"
             word={WORDS.watch}
-            icon="Wc"
+            icon="watch"
             onClick={() => navigate(entryHref(row.game, "spectate"))}
           />,
         )
@@ -339,11 +241,13 @@ const RegistrantChat = ({
  */
 const SlotEntry = ({
   slot,
+  signedIn,
   wallet,
   owed,
   games,
 }: {
   slot: PlaytestSlot;
+  signedIn: boolean;
   /** The payout wallet's address; null when the player has linked none. */
   wallet: string | null;
   owed: string | undefined;
@@ -355,6 +259,7 @@ const SlotEntry = ({
   if (owed && owed !== refundWallet) setRefundWallet(owed);
   const ledger = environmentLedger();
   if (!ledger) return <FailureLine line={ENTRY_WORDS.unreadable} />;
+  if (!signedIn) return <SignInToJoin />;
   const key = slotKeyOf(slot);
   const owner = refundWallet ?? wallet;
   const game = owner ? seatedGameOf(games, key, owner) : undefined;

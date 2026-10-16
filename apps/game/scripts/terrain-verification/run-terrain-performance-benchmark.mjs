@@ -17,7 +17,7 @@ const POLL_MS = 500;
 
 export function buildTerrainPerformanceUrl(baseUrl, scenario) {
   const url = new URL(baseUrl);
-  url.pathname = "/debug/procedural-terrain-benchmark";
+  url.pathname = "/lab/terrain-benchmark";
   url.search = "";
   url.searchParams.set("capture", "1");
   url.searchParams.set("autorun", "1");

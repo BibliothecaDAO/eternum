@@ -6,13 +6,14 @@ import { D1CalendarStore } from "./calendar-store";
 import { decodeLaunchEnv, type LaunchEnv } from "./env";
 import { shardChainOf } from "./executor";
 import { runLaunchSchedule } from "./schedule";
+import { slotResolver } from "./paid-blitz";
 import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore } from "./store";
 
 /**
  * The launch Worker, served under the app's /api beside identity: /api/factory/* for operators and /api/slots/* for
  * players. Its cron tick follows the season calendar: it creates the Frontier season game at its start and the next
- * Blitz slot inside the Blitz window, freezes closed slots, and wakes the registrar that executes launches.
+ * Blitz slot inside the Blitz window, and wakes the registrar, which freezes closed slots and executes launches.
  */
 export default {
   fetch(request: Request, rawEnv: Record<string, unknown>): Response | Promise<Response> {
@@ -38,7 +39,7 @@ const launchStoresOf = (env: LaunchEnv, chainId?: string | null) => {
   );
   return {
     launches,
-    slots: new D1SlotStore(env.DB, launches, env.VALUE_RELAY, env.IDENTITY),
+    slots: new D1SlotStore(env.DB, launches, env.VALUE_RELAY, slotResolver(env.VALUE_RELAY, env.IDENTITY)),
     calendar: new D1CalendarStore(env.DB),
   };
 };
@@ -72,5 +73,8 @@ export class ValueLaunchDirectory extends WorkerEntrypoint<Record<string, unknow
   }
   rosterCohorts() {
     return launchStoresOf(decodeLaunchEnv(this.env)).launches.rosterCohorts();
+  }
+  directoryGames() {
+    return launchStoresOf(decodeLaunchEnv(this.env)).launches.playerDirectoryGames();
   }
 }

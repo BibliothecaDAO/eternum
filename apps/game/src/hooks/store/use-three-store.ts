@@ -1,6 +1,8 @@
 import { ActionPath } from "@bibliothecadao/eternum";
 import { BuildingType, HexPosition, ID, Position } from "@bibliothecadao/types";
 
+import { deriveMapSelection, type MapSelectionIntent, withoutSelectedTile } from "./map-selection";
+
 export interface ThreeStore {
   navigationTarget: HexPosition | null;
   setNavigationTarget: (hex: HexPosition | null) => void;
@@ -11,12 +13,20 @@ export interface ThreeStore {
   hoveredHex: HexPosition | null;
   setHoveredHex: (hex: HexPosition | null) => void;
   entityActions: EntityActions;
-  setEntityActions: (entityActions: EntityActions) => void;
   updateEntityActionHoveredHex: (hoveredHex: HexPosition | null) => void;
+  updateEntityActionNextOrder: (nextOrder: NextOrder | null) => void;
   updateEntityActionActionPaths: (actionPaths: Map<string, ActionPath[]>) => void;
-  updateEntityActionSelectedEntityId: (selectedEntityId: ID | null) => void;
+  /** The player's one selection on the map (map-selection.ts); `selectedHex` and the selected entity derive from it. */
+  mapSelection: MapSelectionIntent;
+  selectOnMap: (intent: MapSelectionIntent) => void;
+  /** Closes the selected tile's card: a tile or structure is deselected, an army stays selected with no tile. */
+  closeSelectedTile: () => void;
+  /** Deselects the selected army or structure; a plain tile stays selected. */
+  deselectEntity: () => void;
+  /** Derives the selection again from where its entity stands now (the map calls it as its projection changes). */
+  refreshMapSelection: () => void;
+  /** Derived from `mapSelection`: the contract hex the tile panel, the selection ring and the cards name. */
   selectedHex: HexPosition | null;
-  setSelectedHex: (hex: HexPosition | null) => void;
   hoveredBattle: Position | null;
   setHoveredBattle: (hex: Position | null) => void;
   selectedBuilding: BuildingType;
@@ -33,10 +43,17 @@ export interface SelectedBuildingHex {
   innerRow: number;
 }
 
+/** The tile a player tapped for an army whose last order is still in flight: that army's next order. */
+export interface NextOrder {
+  entityId: ID;
+  hex: HexPosition;
+}
+
 interface EntityActions {
   hoveredHex: HexPosition | null;
   actionPaths: Map<string, ActionPath[]>;
   selectedEntityId: ID | null;
+  nextOrder: NextOrder | null;
 }
 
 const CAMERA_DISTANCE_EPSILON = 0.5;
@@ -113,36 +130,45 @@ export const createThreeStoreSlice = (
     hoveredHex: null,
     actionPaths: new Map(),
     selectedEntityId: null,
-  },
-  setEntityActions: (entityActions: EntityActions) => {
-    const currentActions = get().entityActions;
-    if (
-      areHexesEqual(currentActions.hoveredHex, entityActions.hoveredHex) &&
-      currentActions.actionPaths === entityActions.actionPaths &&
-      currentActions.selectedEntityId === entityActions.selectedEntityId
-    ) {
-      return;
-    }
-    set({ entityActions });
+    nextOrder: null,
   },
   updateEntityActionHoveredHex: (hoveredHex: HexPosition | null) => {
     if (areHexesEqual(get().entityActions.hoveredHex, hoveredHex)) return;
     set((state) => ({ entityActions: { ...state.entityActions, hoveredHex } }));
   },
+  updateEntityActionNextOrder: (nextOrder: NextOrder | null) => {
+    set((state) => ({ entityActions: { ...state.entityActions, nextOrder } }));
+  },
   updateEntityActionActionPaths: (actionPaths: Map<string, ActionPath[]>) => {
     if (get().entityActions.actionPaths === actionPaths) return;
     set((state) => ({ entityActions: { ...state.entityActions, actionPaths } }));
   },
-  updateEntityActionSelectedEntityId: (selectedEntityId: ID | null) => {
-    if (get().entityActions.selectedEntityId === selectedEntityId) return;
-    set((state) => ({ entityActions: { ...state.entityActions, selectedEntityId } }));
-  },
   // Nothing is selected until the player selects something: no stand-in hex at the origin.
-  selectedHex: null,
-  setSelectedHex: (hex: HexPosition | null) => {
-    if (areHexesEqual(get().selectedHex, hex)) return;
-    set({ selectedHex: hex });
+  mapSelection: null,
+  selectOnMap: (intent: MapSelectionIntent) => {
+    set({ mapSelection: intent });
+    get().refreshMapSelection();
   },
+  closeSelectedTile: () => get().selectOnMap(withoutSelectedTile(get().mapSelection)),
+  deselectEntity: () => {
+    if (get().mapSelection?.kind !== "hex") get().selectOnMap(null);
+  },
+  refreshMapSelection: () => {
+    const state = get();
+    // The layer lives in the UI slice of the same store.
+    const layer = Boolean((state as ThreeStore & { mapLayer?: boolean }).mapLayer);
+    const { selectedEntityId, selectedHex } = deriveMapSelection(state.mapSelection, layer);
+    const entityChanged = state.entityActions.selectedEntityId !== selectedEntityId;
+    if (!entityChanged && areHexesEqual(state.selectedHex, selectedHex)) return;
+    set((current) => ({
+      selectedHex,
+      // An entity's offered orders are its own: another selection starts with none until the map plans them.
+      entityActions: entityChanged
+        ? { ...current.entityActions, selectedEntityId, actionPaths: new Map() }
+        : current.entityActions,
+    }));
+  },
+  selectedHex: null,
   hoveredBattle: null,
   setHoveredBattle: (hex: Position | null) => {
     if (arePositionsEqual(get().hoveredBattle, hex)) return;

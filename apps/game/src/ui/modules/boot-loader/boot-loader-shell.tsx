@@ -46,20 +46,10 @@ export const BootLoaderShell = ({
             panelClassName,
           )}
         >
-          {caption ? (
-            <div className="mb-2 text-[0.6rem] uppercase tracking-[0.5em] text-gold/35 sm:text-[0.65rem]">
-              {caption}
-            </div>
-          ) : null}
-          {title ? (
-            <h2 className="font-['Space_Grotesk',ui-sans-serif,system-ui,sans-serif] text-[1.15rem] font-semibold tracking-[0.1em] text-gold/90 sm:text-[1.35rem]">
-              {title}
-            </h2>
-          ) : null}
+          {caption ? <div className="mb-2 text-sm text-kit-muted sm:text-sm">{caption}</div> : null}
+          {title ? <h2 className="text-lg font-semibold text-gold/90 sm:text-xl">{title}</h2> : null}
           {subtitle ? (
-            <p className="mx-auto mt-3 max-w-[28rem] font-['Space_Grotesk',ui-sans-serif,system-ui,sans-serif] text-sm text-[rgba(236,224,194,0.72)] sm:text-[0.95rem]">
-              {subtitle}
-            </p>
+            <p className="mx-auto mt-3 max-w-[28rem] text-sm text-[rgba(236,224,194,0.72)] sm:text-base">{subtitle}</p>
           ) : null}
 
           <SegmentedBracketLoader className="mt-6" mode={mode} progress={progress} segments={segments} />

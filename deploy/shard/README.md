@@ -22,7 +22,6 @@ PUBLIC_RPC_URL=https://rpc.example.org/rpc/v0_10_2
 PUBLIC_HERALD_URL=https://herald.example.org
 PLAYER_CAPACITY=2000
 PRESETS=2,5,101
-VRF_WORKERS=8
 L2_GAS_BOUND=0x47868c00
 HOST_UID=1000
 HOST_GID=1000
@@ -31,7 +30,7 @@ HOST_GID=1000
 Use image digests from the same release. The pinned node image and chain template are shared by package and runner. The
 host must have the athanor slice and enough memory for node, Herald, database, metrics and the stamping runtime. The
 node defaults to 24 GiB and Herald to 6 GiB. The RPC container has a 2 GiB RAM limit, with no additional swap, for its
-eight Bun worker isolates, native prover and bounded request queue. Measure its high-water RSS in the 2,000-player run;
+one process, which stamps each play inline with the native prover. Measure its high-water RSS in the 2,000-player run;
 this is capacity provisioning, not a claim that RSS was measured on the node.
 
 Deployment runs `docker compose run --rm --no-deps prepare` before creating the stack, so the RPC file bind exists and
@@ -72,7 +71,11 @@ Herald's existing listener first serves the real prepared identity at `/manifest
 Official deployment registers the Herald URL as pending after starting Herald and before starting initialization or
 enrolling the operator. Pending shards are hidden from players. Init then deploys Games, sets owner/launcher/ledger
 roles and registers the selected presets. Games is created with the bootstrap owner and the launcher and relay addresses
-derived from the guardian identity. The two service Workers join those accounts on their own alarm or cron.
+derived from the guardian identity. The two service Workers join those accounts on their own alarm or cron. Last, on
+every start, init has Madara compile each of the world's classes to native code (`warm-native-classes.ts`): Madara
+compiles a class only when it first runs it, and runs that first execution on the VM, 2–4× slower. Madara compiles four
+at once and refuses more, so init asks again each round for every class still missing, until all are compiled or 15
+minutes pass (then the start fails, naming them). Classes already in Madara's cache cost one directory read.
 
 After initialization, deployment compares the deployed classes, schema and selected preset commitments with the build's
 facts. It confirms the distinct on-chain roles, then activates the directory entry through Herald's real manifest. A
@@ -88,7 +91,8 @@ The compose services restart on failure. Initializer logs and `harness.env` are 
 | Measurement runner  | PENDING before enrolment; retires on stop; never activates               | `operator-command.py runner CONFIGURATION RUNNER_DATA_DIRECTORY --matrix` |
 
 Run each command above as `python3 deploy/athanor/scripts/operator-command.py ...`. The wrapper reads the box's
-protected token file; ops provisions it. Use `stop.py` for a manually started runner so its directory entry is retired.
+protected token file; ops provisions it. Use `stop.py` for a manually started runner: it keeps the runner's logs,
+removes its containers and volumes, and retires its directory entry.
 
 ## Operations: back up and restore
 

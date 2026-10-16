@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useFactView } from "@/hooks/use-fact-view";
 import { guildsView } from "@/sync/fact-views";
 import { LORDS_PRIZE_POOL, STRK_PRIZE_POOL } from "@/ui/constants";
@@ -15,7 +16,7 @@ import {
 import { useGame } from "@/hooks/context/game-context";
 import { usePlayerWhitelist } from "@/hooks/helpers/use-guilds";
 import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
-import { ChevronRight, Download } from "@/ui/design-system/atoms/game-icons";
+
 import { useMemo, useState } from "react";
 
 export const Guilds = ({
@@ -322,14 +323,14 @@ export const Guilds = ({
               className="flex items-center gap-1.5"
               title="Download social data as JSON"
             >
-              <Download className="w-4 h-4" />
+              <SemanticIcon name="download" className="w-4 h-4" />
               Export Data
             </Button>
           </div>
           {playerGuild?.entityId ? (
             <Button variant="gold" onClick={() => viewGuildMembers(playerGuild.entityId)} className="sm:ml-auto">
               Tribe {playerGuild.name}
-              <ChevronRight className="w-4 h-4 ml-2" />
+              <SemanticIcon name="chevron-right" className="w-4 h-4 ml-2" />
             </Button>
           ) : (
             <Button
@@ -368,10 +369,10 @@ export const Guilds = ({
               <GuildRow key={guild.entityId} guild={guild} onClick={() => viewGuildMembers(guild.entityId)} />
             ))}
             {!filteredGuilds.length && guildsViewGuildInvites && (
-              <p className="text-center italic text-gold/70 py-4">No Tribe Invites Received</p>
+              <p className="text-center text-gold/70 py-4">No Tribe Invites Received</p>
             )}
             {!filteredGuilds.length && !guildsViewGuildInvites && guildsGuildSearchTerm && (
-              <p className="text-center italic text-gold/70 py-4">No Tribes Found</p>
+              <p className="text-center text-gold/70 py-4">No Tribes Found</p>
             )}
           </div>
         </div>

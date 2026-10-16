@@ -28,6 +28,15 @@ export const BLITZ_CARD_DIMENSIONS = {
   height: 540,
 };
 
+/**
+ * The same card re-laid for a portrait phone: a column as wide as a phone's page (about 358 px at 390), so the card is
+ * drawn at about its own size and its smallest words (15 px) display at 14 px or more down to a 360 px phone.
+ */
+export const BLITZ_CARD_PORTRAIT_DIMENSIONS = {
+  width: 340,
+  height: 630,
+};
+
 export const formatOrdinal = (rank: number): string => {
   const positiveRank = Math.max(1, Math.trunc(rank));
   const remainder = positiveRank % 100;

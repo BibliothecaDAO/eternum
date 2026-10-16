@@ -1,7 +1,5 @@
 use starknet::Event as EventTrait;
-use starknet::storage::{
-    StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
-};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::events::RowSet;
 use crate::game::{GameOverrides, GameRegistry};
 use crate::rules::SliceRules;
@@ -74,19 +72,13 @@ pub fn game_exists(game_id: u32) -> bool {
     crate::state::read().games.games.entry(game_id).preset_id.read() != 0
 }
 
-pub fn start_blitz(game_id: u32, context: crate::commands::ExecutionContext) {
-    assert!(context.rules.unbox().entry_rule == crate::rules::ENTRY_ROSTER, "fixed roster required");
+/// The last seat opens a fixed-roster game. Its start and end were fixed at creation: a late roster plays a shorter
+/// game.
+pub fn mark_roster_ready(game_id: u32) {
     let mut game = game(game_id);
     assert!(!game.ready, "roster already ready");
-    let duration = game.end_at - game.start_main_at;
-    game.start_main_at = core::cmp::max(game.start_main_at, context.timestamp);
-    game.end_at = game.start_main_at + duration;
     game.ready = true;
-    let stored = crate::state::write().games.games.entry(game_id);
-    stored.start_main_at.write(game.start_main_at);
-    stored.end_at.write(game.end_at);
-    stored.ready.write(game.ready);
-    emit_game(game_id, game);
+    write_game(game_id, game);
 }
 
 /// The preset id is immutable; every game keeps the definition it launched with.

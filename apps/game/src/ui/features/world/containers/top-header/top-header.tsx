@@ -1,4 +1,5 @@
-import { Eye as EyeIcon, Swords } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { HudHeaderLayout } from "./hud-header-layout";
@@ -121,9 +122,9 @@ export const TopHeader = memo(() => {
         <div className="fixed top-16 left-1/2 z-50 -translate-x-1/2 pointer-events-auto">
           <div className="flex items-center gap-2 rounded-lg border-2 border-gold bg-black/40 px-4 py-2 text-gold shadow-lg animate-bounce">
             {followingArmyMessage?.toLowerCase().includes("combat") ? (
-              <Swords className="w-4 h-4 animate-pulse text-gold" />
+              <SemanticIcon name="military" className="w-4 h-4 animate-pulse text-gold" />
             ) : (
-              <EyeIcon className="w-4 h-4 animate-pulse text-gold" />
+              <SemanticIcon name="eye" className="w-4 h-4 animate-pulse text-gold" />
             )}
             <span className={HUD_LABEL_BRIGHT}>{followingArmyMessage ?? "Following Army"}</span>
           </div>

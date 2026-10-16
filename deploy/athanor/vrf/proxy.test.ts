@@ -4,6 +4,8 @@ import { expect, test } from "bun:test";
 import { startReadRpc } from "../scripts/read-rpc";
 import { identity, invoke } from "./fixtures";
 import { STAMP_TAG, type PlayInvoke } from "./transaction";
+import { launcherAccountAddress, seaterAccountAddresses } from "../../../packages/value-ledger/src/shard-accounts";
+import { PLAYS_IN_FLIGHT } from "../../../packages/provider/src/play-refusal";
 
 async function fixture(
   result: unknown = { transaction_hash: "0x777" },
@@ -33,6 +35,7 @@ async function fixture(
         await holdClass?.();
         return Response.json(classReply, { status: classStatus });
       }
+      await hold?.(call.params[0]);
       forwarded.push(call);
       return Response.json({
         jsonrpc: "2.0",
@@ -44,9 +47,8 @@ async function fixture(
     },
   });
   const stamper = {
-    async stamp(tx: PlayInvoke) {
+    stamp(tx: PlayInvoke) {
       stamped.push(tx);
-      await hold?.(tx);
       return { transactionHash: "0x777", suffix: [STAMP_TAG, "0x1", "0x2", "0x3", "0x4", "0x5"] };
     },
   };
@@ -118,8 +120,44 @@ test("one current-nonce play is stamped and only its hash reaches the device", a
     expect((await f.call("starknet_addInvokeTransaction", [invoke()])).error).toEqual({
       code: -32010,
       message: "Transaction refused",
+      data: { reason: "nonce" },
     });
     expect(f.stamped).toHaveLength(1);
+  } finally {
+    f.close();
+  }
+});
+test("a seater may queue plays up to 48 nonces ahead; the launcher and players only within their plays in flight", async () => {
+  const f = await fixture();
+  const seaters = seaterAccountAddresses(identity);
+  const play = (sender_address: string, nonce: number) => ({
+    ...invoke(),
+    sender_address,
+    nonce: `0x${nonce.toString(16)}`,
+  });
+  const refused = { code: -32010, message: "Transaction refused", data: { reason: "nonce" } };
+  try {
+    f.setNonce("0xa");
+    for (const [seater, nonce] of [
+      [seaters[0]!, 10],
+      [seaters[0]!, 11],
+      [seaters[15]!, 34],
+      [seaters[7]!, 58],
+    ] as const)
+      expect((await f.call("starknet_addInvokeTransaction", [play(seater, nonce)])).result).toEqual({
+        transaction_hash: "0x777",
+      });
+    for (const nonce of [9, 59])
+      expect((await f.call("starknet_addInvokeTransaction", [play(seaters[0]!, nonce)])).error).toEqual(refused);
+    const lastInFlight = 10 + PLAYS_IN_FLIGHT - 1;
+    for (const sender of [launcherAccountAddress(identity), "0x42"]) {
+      expect((await f.call("starknet_addInvokeTransaction", [play(sender, lastInFlight)])).result).toEqual({
+        transaction_hash: "0x777",
+      });
+      for (const nonce of [9, lastInFlight + 1])
+        expect((await f.call("starknet_addInvokeTransaction", [play(sender, nonce)])).error).toEqual(refused);
+    }
+    expect(f.stamped.map((tx) => Number(tx.nonce))).toEqual([10, 11, 34, 58, lastInFlight, lastInFlight]);
   } finally {
     f.close();
   }
@@ -136,7 +174,7 @@ test("node rejection never leaks a stamped body, proof or backend diagnostic", a
     f.close();
   }
 });
-test("estimates, simulation, future nonces, altered bounds, body and trace reads never get a proof", async () => {
+test("estimates, simulation, nonces past the plays in flight, altered bounds, body and trace reads never get a proof", async () => {
   const f = await fixture();
   try {
     for (const method of ["starknet_estimateFee", "starknet_simulateTransactions"])
@@ -151,7 +189,7 @@ test("estimates, simulation, future nonces, altered bounds, body and trace reads
     ])
       expect((await f.call(method, ["0x777"])).error).toBeDefined();
     for (const tx of [
-      { ...invoke(), nonce: "0x1" },
+      { ...invoke(), nonce: `0x${PLAYS_IN_FLIGHT.toString(16)}` },
       { ...invoke(), tip: "0x1" },
       { ...invoke(), calldata: ["0x2", ...invoke().calldata.slice(1)] },
     ])
@@ -228,6 +266,7 @@ test("one pending dispatch per account refuses overlap while another account pro
     expect((await f.call("starknet_addInvokeTransaction", [invoke()])).error).toEqual({
       code: -32010,
       message: "Transaction refused",
+      data: { reason: "in-flight" },
     });
     expect(
       (await f.call("starknet_addInvokeTransaction", [{ ...invoke(), sender_address: "0x43" }])).result
@@ -380,7 +419,7 @@ test("the class cache requires an explicit positive shard player capacity", () =
           0,
           { ...identity, playerCapacity: playerCapacity as number },
           {
-            async stamp() {
+            stamp() {
               throw new Error("Unexpected stamp");
             },
           },

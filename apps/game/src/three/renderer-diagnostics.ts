@@ -4,9 +4,7 @@ import type {
   RendererCapabilityFeature,
   RendererFeatureDegradation,
   RendererInitDiagnostics,
-  RendererPostProcessPlan,
-} from "./renderer-backend-v2";
-import type { WebgpuPostprocessPolicy } from "./webgpu-postprocess-policy";
+} from "./renderer-backend";
 import {
   markRendererGpuDeviceLost,
   markRendererGpuDeviceReady,
@@ -27,13 +25,11 @@ interface RendererDiagnosticsSnapshot {
   buildMode: RendererInitDiagnostics["buildMode"] | null;
   capabilities: RendererBackendCapabilities | null;
   degradations: RendererFeatureDegradation[];
-  effectPlan: RendererPostProcessPlan | null;
   fallbackReason: string | null;
   fallbacks: number;
   gpuTelemetry: ReturnType<typeof snapshotRendererGpuTelemetry>;
   initErrors: number;
   initTimeMs: number | null;
-  postprocessPolicy: WebgpuPostprocessPolicy | null;
   requestedMode: RendererInitDiagnostics["requestedMode"] | null;
   sceneName: string | null;
   startupTimings: RendererStartupTimingsSnapshot;
@@ -49,13 +45,11 @@ const createRendererDiagnosticsState = (): RendererDiagnosticsSnapshot => ({
   buildMode: null,
   capabilities: null,
   degradations: [],
-  effectPlan: null,
   fallbackReason: null,
   fallbacks: 0,
   gpuTelemetry: snapshotRendererGpuTelemetry(),
   initErrors: 0,
   initTimeMs: null,
-  postprocessPolicy: null,
   requestedMode: null,
   sceneName: null,
   startupTimings: snapshotRendererStartupTimings(),
@@ -144,27 +138,6 @@ export function replaceRendererDiagnosticDegradations(
   syncRendererDiagnosticsWindow();
 }
 
-export function setRendererDiagnosticEffectPlan(effectPlan: RendererPostProcessPlan): void {
-  rendererDiagnosticsState.effectPlan = {
-    antiAlias: effectPlan.antiAlias,
-    bloom: { ...effectPlan.bloom },
-    chromaticAberration: { ...effectPlan.chromaticAberration },
-    colorGrade: { ...effectPlan.colorGrade },
-    toneMapping: { ...effectPlan.toneMapping },
-    vignette: { ...effectPlan.vignette },
-  };
-  syncRendererDiagnosticsWindow();
-}
-
-export function setRendererDiagnosticPostprocessPolicy(policy: WebgpuPostprocessPolicy): void {
-  rendererDiagnosticsState.postprocessPolicy = {
-    bloomRouting: policy.bloomRouting,
-    mode: policy.mode,
-    unsupportedFeatures: [...policy.unsupportedFeatures],
-  };
-  syncRendererDiagnosticsWindow();
-}
-
 export function setRendererDiagnosticSceneName(sceneName: string): void {
   // Phase 3.6: called every rendered frame; skip the deep window snapshot unless the
   // scene name actually changed (other diagnostics re-mirror via their own setters).
@@ -186,25 +159,8 @@ export function snapshotRendererDiagnostics(): RendererDiagnosticsSnapshot {
     adapterInfo: rendererDiagnosticsState.adapterInfo ? { ...rendererDiagnosticsState.adapterInfo } : null,
     capabilities: rendererDiagnosticsState.capabilities ? { ...rendererDiagnosticsState.capabilities } : null,
     degradations: rendererDiagnosticsState.degradations.map((degradation) => ({ ...degradation })),
-    effectPlan: rendererDiagnosticsState.effectPlan
-      ? {
-          antiAlias: rendererDiagnosticsState.effectPlan.antiAlias,
-          bloom: { ...rendererDiagnosticsState.effectPlan.bloom },
-          chromaticAberration: { ...rendererDiagnosticsState.effectPlan.chromaticAberration },
-          colorGrade: { ...rendererDiagnosticsState.effectPlan.colorGrade },
-          toneMapping: { ...rendererDiagnosticsState.effectPlan.toneMapping },
-          vignette: { ...rendererDiagnosticsState.effectPlan.vignette },
-        }
-      : null,
     gpuTelemetry: snapshotRendererGpuTelemetry(),
     startupTimings: snapshotRendererStartupTimings(),
-    postprocessPolicy: rendererDiagnosticsState.postprocessPolicy
-      ? {
-          bloomRouting: rendererDiagnosticsState.postprocessPolicy.bloomRouting,
-          mode: rendererDiagnosticsState.postprocessPolicy.mode,
-          unsupportedFeatures: [...rendererDiagnosticsState.postprocessPolicy.unsupportedFeatures],
-        }
-      : null,
   };
 }
 

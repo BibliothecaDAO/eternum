@@ -12,7 +12,7 @@ const getResourceName = (id: number): string => {
 
 // Helper function to get total hyperstructure completion points
 export const getTotalHyperstructureCompletionPoints = (): number => {
-  const config = ETERNUM_CONFIG();
+  const config = ETERNUM_CONFIG("eternum");
   const hyperstructureConstructionCost = config.hyperstructures.hyperstructureConstructionCost;
 
   // Get all hyperstructure IDs
@@ -49,7 +49,7 @@ const componentStyles = {
 
 // Component for Hyperstructure Construction Costs
 export const HyperstructureConstructionCostTable = () => {
-  const config = ETERNUM_CONFIG();
+  const config = ETERNUM_CONFIG("eternum");
   const hyperstructureConstructionCost = config.hyperstructures.hyperstructureConstructionCost;
 
   // Get all hyperstructure IDs and sort them for consistent display
@@ -108,7 +108,7 @@ export const HyperstructureConstructionCostTable = () => {
 
 // Component for Hyperstructure Initialization Shards Cost
 export const HyperstructureInitializationShardsTable = () => {
-  const config = ETERNUM_CONFIG();
+  const config = ETERNUM_CONFIG("eternum");
   const hyperstructureInitializationShardsCost = config.hyperstructures.hyperstructureInitializationShardsCost;
   const resourceId = hyperstructureInitializationShardsCost.resource;
   const resourceName = getResourceName(resourceId);
@@ -142,7 +142,7 @@ export const HyperstructureInitializationShardsTable = () => {
 
 // Component for Hyperstructure Points Information
 export const HyperstructurePointsTable = () => {
-  const config = ETERNUM_CONFIG();
+  const config = ETERNUM_CONFIG("eternum");
   const hyperstructurePointsPerCycle = config.hyperstructures.hyperstructurePointsPerCycle;
   const hyperstructurePointsForWin = config.hyperstructures.hyperstructurePointsForWin;
 

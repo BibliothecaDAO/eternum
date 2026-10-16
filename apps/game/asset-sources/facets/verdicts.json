@@ -1,0 +1,934 @@
+{
+  "faceted/stone": {
+    "verdict": "beats shipped",
+    "reason": "Pale fractured stone reads as rock at 32 px; lit planes and grain replace the jewel-like old facets."
+  },
+  "faceted/wood": {
+    "verdict": "beats shipped",
+    "reason": "Bark, cut end and end-grain hold at 64 px; a broad warm log silhouette remains at 32 px."
+  },
+  "faceted/wheat": {
+    "verdict": "beats shipped",
+    "reason": "Broader lit grain planes produce a stronger crop silhouette at 32 px; painted edges hold at 64 px."
+  },
+  "faceted/fish": {
+    "verdict": "beats shipped",
+    "reason": "Silver scales and a clear tail replace the bright blue polygon fish and its ground shadow."
+  },
+  "faceted/labor": {
+    "verdict": "beats shipped",
+    "reason": "A gripping hand and working hammer fill the square better than the distant full-body worker."
+  },
+  "faceted/essence": {
+    "verdict": "equal",
+    "reason": "The bottle remains clear at both sizes. Glass and violet volume improve at 64 px; the old magenta bottle is equally distinct at 32 px."
+  },
+  "faceted/ironwood": {
+    "verdict": "equal",
+    "reason": "Dense bark and red end-grain distinguish it from ordinary wood; the old black log has comparable contrast at 32 px."
+  },
+  "faceted/fragment": {
+    "verdict": "equal",
+    "reason": "The orange-green shard retains its identity; surface light improves at 64 px but the old silhouette is already strong."
+  },
+  "faceted/realm": {
+    "verdict": "beats shipped",
+    "reason": "Stone gate and slate roofs establish a material building instead of a monochrome gold token. Level remains an external badge."
+  },
+  "faceted/camp": {
+    "verdict": "equal",
+    "reason": "Both tents read at 32 px. The new canvas has stronger folds at 64 px without adding another visual object."
+  },
+  "faceted/hyperstructure": {
+    "verdict": "beats shipped",
+    "reason": "Stone spires and the lit core give the site material depth missing from the flat old emblem."
+  },
+  "faceted/chest": {
+    "verdict": "beats shipped",
+    "reason": "Wood and iron separate clearly at both sizes, replacing the all-gold chest with a readable object."
+  },
+  "faceted/move": {
+    "verdict": "equal",
+    "reason": "Leather boots retain material detail at 64 px. The old footprints are faster as a pure sign at 32 px."
+  },
+  "faceted/explore": {
+    "verdict": "equal",
+    "reason": "The map and lens have convincing depth; the old eye is simpler at 32 px. The map distinguishes this from a watch-only spyglass."
+  },
+  "faceted/attack": {
+    "verdict": "equal",
+    "reason": "A lit blade is clean and free of the old shield frame. Its narrow silhouette is less prominent but remains legible at 32 px."
+  },
+  "faceted/build": {
+    "verdict": "equal",
+    "reason": "The mallet and block match the shipped material quality; removing the second tool makes the 32 px subject cleaner."
+  },
+  "faceted/trade": {
+    "verdict": "equal",
+    "reason": "The iron balance keeps the familiar scale silhouette with clear pans. Small chains still merge at 32 px as in the old art."
+  },
+  "faceted/stamina": {
+    "verdict": "equal",
+    "reason": "Amber depth is stronger at 64 px; the old lightning silhouette is equally clear at 32 px. This meaning is reserved for stamina."
+  },
+  "faceted/victory": {
+    "verdict": "beats shipped",
+    "reason": "The silver trophy and green laurel have clearer volume than the flat old cup at 32 and 64 px."
+  },
+  "faceted/settings": {
+    "verdict": "beats shipped",
+    "reason": "One iron gear reads more clearly than the framed dial and key, with enough face shading to feel physical."
+  },
+  "faceted/chat": {
+    "verdict": "beats shipped",
+    "reason": "Two painted speech forms preserve the conversation meaning and remove the gold rim; ivory faces stay clear at 32 px."
+  },
+  "faceted/map-army": {
+    "verdict": "equal",
+    "reason": "An unframed helmet preserves a compact military silhouette; painted light replaces the old shield engraving."
+  },
+  "faceted/map-realm": {
+    "verdict": "equal",
+    "reason": "A broad gate and crenellations preserve the site silhouette while leaving ownership to the surrounding shape."
+  },
+  "faceted/knight-t1": {
+    "verdict": "beats shipped",
+    "reason": "Open face, mail and red neckcloth read at 24 px; the shipped full figure is much smaller. Plain helmet separates T1 from the closed T2 and crested T3."
+  },
+  "faceted/knight-t2": {
+    "verdict": "beats shipped",
+    "reason": "The approved armoured bust fills the square more clearly than the shipped figure. Closed steel helmet and red mantle sit between the open T1 and crested T3."
+  },
+  "faceted/knight-t3": {
+    "verdict": "beats shipped",
+    "reason": "Large red crest and layered shoulder plates survive 24 px reduction. Shipped tiers reuse the same small figure; this silhouette identifies the richest knight."
+  },
+  "faceted/crossbowman-t1": {
+    "verdict": "beats shipped",
+    "reason": "A visible face under a green hood and a held wooden crossbow replace the weapon-only study. The broad brown weapon and hood remain visible at 24 px."
+  },
+  "faceted/crossbowman-t2": {
+    "verdict": "beats shipped",
+    "reason": "Steel kettle helmet and plated shoulders separate this soldier from the hooded T1. The held crossbow remains clear; small face detail needs 32 px."
+  },
+  "faceted/crossbowman-t3": {
+    "verdict": "beats shipped",
+    "reason": "The large green crest, bright crossbow limbs and broad plate distinguish the veteran at 24 px. Shipped tiers have the same thin full-body silhouette."
+  },
+  "faceted/paladin-t1": {
+    "verdict": "equal",
+    "reason": "Ivory hood, visible face, upright sword and blue-white tabard read as a holy warrior. The shipped mounted figure remains a strong silhouette; this is a different close portrait."
+  },
+  "faceted/paladin-t2": {
+    "verdict": "equal",
+    "reason": "Winged steel helmet replaces the T1 hood while the sword and blue-white tabard preserve the type. Shipped mount is clearer as cavalry; the portrait is clearer as armour."
+  },
+  "faceted/paladin-t3": {
+    "verdict": "equal",
+    "reason": "White crest and bright layered plate enlarge the top silhouette at 24 px. Blue-white cloth and upright sword preserve the holy warrior identity without a shield."
+  },
+  "faceted/map-village": {
+    "verdict": "beats shipped",
+    "reason": "Paired red roofs distinguish village from the pale realm towers. The compact painted houses retain material at 32 px and roof colour at 12\u201316 px."
+  },
+  "faceted/map-mine": {
+    "verdict": "beats shipped",
+    "reason": "Dark opening and green crystal give mine a distinct colour mass. Fine pickaxe detail falls away at 12 px; the entrance and crystal carry the reading."
+  },
+  "faceted/coal": {
+    "verdict": "equal",
+    "reason": "Coal: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/copper": {
+    "verdict": "equal",
+    "reason": "Copper: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/donkey": {
+    "verdict": "equal",
+    "reason": "Pack donkey, upright ears and laden saddlebags remain identifiable at 24 and 32 px. Carries the Transfer meaning without resembling Move boots."
+  },
+  "faceted/production": {
+    "verdict": "equal",
+    "reason": "Anvil, hammer and orange heated ingot read as a forge at 24 and 32 px, distinct from the Settings wheel."
+  },
+  "faceted/obsidian": {
+    "verdict": "equal",
+    "reason": "Obsidian: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/gold": {
+    "verdict": "equal",
+    "reason": "Gold: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/silver": {
+    "verdict": "equal",
+    "reason": "Silver: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/mithral": {
+    "verdict": "equal",
+    "reason": "Mithral: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/alchemical-silver": {
+    "verdict": "equal",
+    "reason": "Alchemical Silver: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/cold-iron": {
+    "verdict": "equal",
+    "reason": "Cold Iron: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/deep-crystal": {
+    "verdict": "equal",
+    "reason": "Deep Crystal: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/ruby": {
+    "verdict": "equal",
+    "reason": "Ruby: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/diamonds": {
+    "verdict": "equal",
+    "reason": "Diamonds: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/hartwood": {
+    "verdict": "equal",
+    "reason": "Hartwood: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/ignium": {
+    "verdict": "equal",
+    "reason": "Ignium: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/twilight-quartz": {
+    "verdict": "equal",
+    "reason": "Twilight Quartz: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/true-ice": {
+    "verdict": "equal",
+    "reason": "True Ice: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/adamantine": {
+    "verdict": "equal",
+    "reason": "Adamantine: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/sapphire": {
+    "verdict": "equal",
+    "reason": "Sapphire: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/ethereal-silica": {
+    "verdict": "equal",
+    "reason": "Ethereal Silica: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/dragonhide": {
+    "verdict": "equal",
+    "reason": "Dragonhide: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/lords": {
+    "verdict": "equal",
+    "reason": "Lords: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/stamina-relic-1": {
+    "verdict": "equal",
+    "reason": "Stamina Relic1: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+  },
+  "faceted/stamina-relic-2": {
+    "verdict": "equal",
+    "reason": "Stamina Relic2: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+  },
+  "faceted/damage-relic-1": {
+    "verdict": "equal",
+    "reason": "Damage Relic1: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+  },
+  "faceted/damage-relic-2": {
+    "verdict": "equal",
+    "reason": "Damage Relic2: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+  },
+  "faceted/damage-reduction-relic-1": {
+    "verdict": "equal",
+    "reason": "Damage Reduction Relic1: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+  },
+  "faceted/damage-reduction-relic-2": {
+    "verdict": "equal",
+    "reason": "Damage Reduction Relic2: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+  },
+  "faceted/exploration-relic-1": {
+    "verdict": "equal",
+    "reason": "Exploration Relic1: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+  },
+  "faceted/exploration-relic-2": {
+    "verdict": "equal",
+    "reason": "Exploration Relic2: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+  },
+  "faceted/exploration-reward-relic-1": {
+    "verdict": "equal",
+    "reason": "Exploration Reward Relic1: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+  },
+  "faceted/exploration-reward-relic-2": {
+    "verdict": "equal",
+    "reason": "Exploration Reward Relic2: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+  },
+  "faceted/structure-damage-reduction-relic-1": {
+    "verdict": "equal",
+    "reason": "Structure Damage Reduction Relic1: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+  },
+  "faceted/structure-damage-reduction-relic-2": {
+    "verdict": "equal",
+    "reason": "Structure Damage Reduction Relic2: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+  },
+  "faceted/production-relic-1": {
+    "verdict": "equal",
+    "reason": "Production Relic1: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+  },
+  "faceted/production-relic-2": {
+    "verdict": "equal",
+    "reason": "Production Relic2: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+  },
+  "faceted/labor-production-relic-1": {
+    "verdict": "equal",
+    "reason": "Labor Production Relic1: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+  },
+  "faceted/labor-production-relic-2": {
+    "verdict": "equal",
+    "reason": "Labor Production Relic2: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+  },
+  "faceted/troop-production-relic-1": {
+    "verdict": "equal",
+    "reason": "Troop Production Relic1: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+  },
+  "faceted/troop-production-relic-2": {
+    "verdict": "equal",
+    "reason": "Troop Production Relic2: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+  },
+  "faceted/research": {
+    "verdict": "equal",
+    "reason": "Research: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/s-a-t": {
+    "verdict": "equal",
+    "reason": "S A T: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/military": {
+    "verdict": "equal",
+    "reason": "Military: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/automation": {
+    "verdict": "equal",
+    "reason": "Automation: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/map": {
+    "verdict": "equal",
+    "reason": "World Map: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/guild": {
+    "verdict": "equal",
+    "reason": "Guild: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/close": {
+    "verdict": "equal",
+    "reason": "Close: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/check": {
+    "verdict": "equal",
+    "reason": "Check: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/chevron-down": {
+    "verdict": "equal",
+    "reason": "Chevron Down: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/arrow-right": {
+    "verdict": "equal",
+    "reason": "Arrow Right: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/plus": {
+    "verdict": "equal",
+    "reason": "Plus: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/search": {
+    "verdict": "equal",
+    "reason": "Search: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/pause": {
+    "verdict": "equal",
+    "reason": "Pause: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/play": {
+    "verdict": "equal",
+    "reason": "Play: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/refresh": {
+    "verdict": "equal",
+    "reason": "Refresh: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/warning": {
+    "verdict": "equal",
+    "reason": "Warning: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/info": {
+    "verdict": "equal",
+    "reason": "Info: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/copy": {
+    "verdict": "equal",
+    "reason": "Copy: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/eye": {
+    "verdict": "equal",
+    "reason": "Eye: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/lock": {
+    "verdict": "equal",
+    "reason": "Lock: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/unlock": {
+    "verdict": "equal",
+    "reason": "Unlock: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/edit": {
+    "verdict": "equal",
+    "reason": "Edit: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/trash": {
+    "verdict": "equal",
+    "reason": "Trash: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/mail": {
+    "verdict": "equal",
+    "reason": "Mail: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/crown": {
+    "verdict": "equal",
+    "reason": "Crown: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/pickaxe": {
+    "verdict": "equal",
+    "reason": "Pickaxe: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/people": {
+    "verdict": "equal",
+    "reason": "People: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/person": {
+    "verdict": "equal",
+    "reason": "Person: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/skull": {
+    "verdict": "equal",
+    "reason": "Skull: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/star": {
+    "verdict": "equal",
+    "reason": "Star: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/flame": {
+    "verdict": "equal",
+    "reason": "Flame: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/sun": {
+    "verdict": "equal",
+    "reason": "Sun: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/moon": {
+    "verdict": "equal",
+    "reason": "Moon: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/location": {
+    "verdict": "equal",
+    "reason": "Location: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/target": {
+    "verdict": "equal",
+    "reason": "Target: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/calendar": {
+    "verdict": "equal",
+    "reason": "Calendar: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/expand": {
+    "verdict": "equal",
+    "reason": "Expand: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/collapse": {
+    "verdict": "equal",
+    "reason": "Collapse: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/menu": {
+    "verdict": "equal",
+    "reason": "Menu: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/volume": {
+    "verdict": "equal",
+    "reason": "Volume: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/mute": {
+    "verdict": "equal",
+    "reason": "Mute: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/music": {
+    "verdict": "equal",
+    "reason": "Music: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/camera": {
+    "verdict": "equal",
+    "reason": "Camera: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/video": {
+    "verdict": "equal",
+    "reason": "Video: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/bug": {
+    "verdict": "equal",
+    "reason": "Bug: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/dice": {
+    "verdict": "equal",
+    "reason": "Dice: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/gauge": {
+    "verdict": "equal",
+    "reason": "Gauge: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/anchor": {
+    "verdict": "equal",
+    "reason": "Anchor: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/ship": {
+    "verdict": "equal",
+    "reason": "Ship: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/waves": {
+    "verdict": "equal",
+    "reason": "Waves: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/flag": {
+    "verdict": "equal",
+    "reason": "Flag: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/layers": {
+    "verdict": "equal",
+    "reason": "Layers: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/hexagon": {
+    "verdict": "equal",
+    "reason": "Hexagon: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/hash": {
+    "verdict": "equal",
+    "reason": "Hash: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/share": {
+    "verdict": "equal",
+    "reason": "Share: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/notifications": {
+    "verdict": "equal",
+    "reason": "Bell: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/book": {
+    "verdict": "equal",
+    "reason": "Book: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/rocket": {
+    "verdict": "equal",
+    "reason": "Rocket: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/wrench": {
+    "verdict": "equal",
+    "reason": "Wrench: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/mountain": {
+    "verdict": "equal",
+    "reason": "Mountain: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/trees": {
+    "verdict": "equal",
+    "reason": "Trees: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/watch": {
+    "verdict": "equal",
+    "reason": "Telescope: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/route": {
+    "verdict": "equal",
+    "reason": "Route: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/network-off": {
+    "verdict": "equal",
+    "reason": "Network Off: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/monitor": {
+    "verdict": "equal",
+    "reason": "Monitor: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/activity": {
+    "verdict": "equal",
+    "reason": "Activity: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/cloud-lightning": {
+    "verdict": "equal",
+    "reason": "Cloud Lightning: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/download": {
+    "verdict": "equal",
+    "reason": "Download: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/external-link": {
+    "verdict": "equal",
+    "reason": "External Link: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/swap": {
+    "verdict": "equal",
+    "reason": "Swap: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/skip": {
+    "verdict": "equal",
+    "reason": "Skip: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/step": {
+    "verdict": "equal",
+    "reason": "Step: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/minus": {
+    "verdict": "equal",
+    "reason": "Minus: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/pin": {
+    "verdict": "equal",
+    "reason": "Pin: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/backpack": {
+    "verdict": "equal",
+    "reason": "Backpack: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/resources": {
+    "verdict": "equal",
+    "reason": "Storage crates: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/defend": {
+    "verdict": "equal",
+    "reason": "Defend: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/home": {
+    "verdict": "equal",
+    "reason": "Home: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/exit": {
+    "verdict": "equal",
+    "reason": "Leave: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/guide": {
+    "verdict": "equal",
+    "reason": "Guide: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/chronicles": {
+    "verdict": "equal",
+    "reason": "Chronicles: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/news": {
+    "verdict": "equal",
+    "reason": "News: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/help": {
+    "verdict": "equal",
+    "reason": "Help: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/bank": {
+    "verdict": "equal",
+    "reason": "Bank: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/portal": {
+    "verdict": "equal",
+    "reason": "Portal: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/relics": {
+    "verdict": "equal",
+    "reason": "Relics: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/health": {
+    "verdict": "equal",
+    "reason": "Health: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/strength": {
+    "verdict": "equal",
+    "reason": "Strength: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/claim": {
+    "verdict": "equal",
+    "reason": "Claim: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/raid": {
+    "verdict": "equal",
+    "reason": "Raid: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/deploy": {
+    "verdict": "equal",
+    "reason": "Deploy: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/upgrade": {
+    "verdict": "equal",
+    "reason": "Upgrade: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/travel": {
+    "verdict": "equal",
+    "reason": "Travel: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/shrine": {
+    "verdict": "equal",
+    "reason": "Shrine: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/well": {
+    "verdict": "equal",
+    "reason": "Well: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+  },
+  "faceted/order-giants": {
+    "verdict": "equal",
+    "reason": "Order of Giants: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
+  },
+  "faceted/order-perfection": {
+    "verdict": "equal",
+    "reason": "Order of Perfection: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
+  },
+  "faceted/order-rage": {
+    "verdict": "equal",
+    "reason": "Order of Rage: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
+  },
+  "faceted/order-fox": {
+    "verdict": "equal",
+    "reason": "Order of the Fox: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
+  },
+  "faceted/order-twins": {
+    "verdict": "equal",
+    "reason": "Order of the Twins: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
+  },
+  "faceted/order-fury": {
+    "verdict": "equal",
+    "reason": "Order of Fury: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
+  },
+  "faceted/order-reflection": {
+    "verdict": "equal",
+    "reason": "Order of Reflection: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
+  },
+  "faceted/order-detection": {
+    "verdict": "equal",
+    "reason": "Order of Detection: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
+  },
+  "faceted/order-brilliance": {
+    "verdict": "equal",
+    "reason": "Order of Brilliance: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
+  },
+  "faceted/order-protection": {
+    "verdict": "equal",
+    "reason": "Order of Protection: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
+  },
+  "faceted/order-power": {
+    "verdict": "equal",
+    "reason": "Order of Power: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
+  },
+  "faceted/order-titans": {
+    "verdict": "equal",
+    "reason": "Order of Titans: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
+  },
+  "faceted/order-vitriol": {
+    "verdict": "equal",
+    "reason": "Order of Vitriol: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
+  },
+  "faceted/order-anger": {
+    "verdict": "equal",
+    "reason": "Order of Anger: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
+  },
+  "faceted/order-enlightenment": {
+    "verdict": "equal",
+    "reason": "Order of Enlightenment: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
+  },
+  "faceted/stragglers": {
+    "verdict": "equal",
+    "reason": "Stragglers: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/ruin": {
+    "verdict": "equal",
+    "reason": "Ruin: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/rift": {
+    "verdict": "equal",
+    "reason": "Rift: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/spire": {
+    "verdict": "equal",
+    "reason": "Spire: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/bitcoin-mine": {
+    "verdict": "equal",
+    "reason": "Bitcoin Mine: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/realm-0": {
+    "verdict": "equal",
+    "reason": "Settlement: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/realm-1": {
+    "verdict": "equal",
+    "reason": "City: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/realm-3": {
+    "verdict": "equal",
+    "reason": "Empire: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/farm": {
+    "verdict": "equal",
+    "reason": "Farm: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/workshop": {
+    "verdict": "equal",
+    "reason": "Workshop: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/barracks": {
+    "verdict": "equal",
+    "reason": "Barracks: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/workers-hut": {
+    "verdict": "equal",
+    "reason": "Workers hut: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/war-hall": {
+    "verdict": "equal",
+    "reason": "War hall: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/supply-yard": {
+    "verdict": "equal",
+    "reason": "Supply yard: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/scout-lodge": {
+    "verdict": "equal",
+    "reason": "Scout lodge: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/hearth": {
+    "verdict": "equal",
+    "reason": "Hearth: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/fields": {
+    "verdict": "equal",
+    "reason": "Fields: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/granary": {
+    "verdict": "equal",
+    "reason": "Granary: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/tools": {
+    "verdict": "equal",
+    "reason": "Tools: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/storehouse": {
+    "verdict": "equal",
+    "reason": "Storehouse: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/drill": {
+    "verdict": "equal",
+    "reason": "Drill: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/rations": {
+    "verdict": "equal",
+    "reason": "Rations: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/final-seal": {
+    "verdict": "equal",
+    "reason": "Final seal: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/army-capacity": {
+    "verdict": "equal",
+    "reason": "Army capacity: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/clock": {
+    "verdict": "equal",
+    "reason": "Match clock: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/hourglass": {
+    "verdict": "equal",
+    "reason": "Time remaining: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/depth-1": {
+    "verdict": "equal",
+    "reason": "Ethereal reach I: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/depth-2": {
+    "verdict": "equal",
+    "reason": "Ethereal reach II: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/depth-3": {
+    "verdict": "equal",
+    "reason": "Ethereal reach III: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/reward": {
+    "verdict": "equal",
+    "reason": "Reward: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/stable": {
+    "verdict": "equal",
+    "reason": "Stable: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/archery": {
+    "verdict": "equal",
+    "reason": "Archery: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/lumber-mill": {
+    "verdict": "equal",
+    "reason": "Lumber mill: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/fishing-village": {
+    "verdict": "equal",
+    "reason": "Fishing village: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/forge": {
+    "verdict": "equal",
+    "reason": "Forge: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/research-lab": {
+    "verdict": "equal",
+    "reason": "Research laboratory: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/dragon-tannery": {
+    "verdict": "equal",
+    "reason": "Dragon tannery: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/rating-storm-lord": {
+    "verdict": "equal",
+    "reason": "Storm Lord: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/rating-warlord": {
+    "verdict": "equal",
+    "reason": "Warlord: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/rating-conqueror": {
+    "verdict": "equal",
+    "reason": "Conqueror: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/rating-marauder": {
+    "verdict": "equal",
+    "reason": "Marauder: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/rating-raider": {
+    "verdict": "equal",
+    "reason": "Raider: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/rating-scrapper": {
+    "verdict": "equal",
+    "reason": "Scrapper: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+  },
+  "faceted/order-gods": {
+    "verdict": "equal",
+    "reason": "Order of Gods: repaint preserves the original emblem silhouette and colour at 24 and 32 px. The rejected wheat motif is removed."
+  },
+  "faceted/order-skill": {
+    "verdict": "equal",
+    "reason": "Order of Skill: repaint preserves the original emblem silhouette and colour at 24 and 32 px. The rejected wheat motif is removed."
+  },
+  "faceted/strk": {
+    "verdict": "equal",
+    "reason": "Retained the token brand mark without a decorative frame; unchanged identity at 24 and 32 px."
+  },
+  "faceted/discord": {
+    "verdict": "beats shipped",
+    "reason": "White ceramic emblem preserves the Discord silhouette at 24 and 32 px; removing the gilded plaque improves shape separation. Compared in round-4/review-03."
+  },
+  "faceted/picks": {
+    "verdict": "equal",
+    "reason": "Two light cards remain a distinct fan; indigo star and red rear stripe separate the fronts. Painted paper replaces the flat gilded placeholder."
+  },
+  "faceted/twitter": {
+    "verdict": "equal",
+    "reason": "The familiar bird silhouette is retained with a clean blue painted volume; no border or plaque."
+  }
+}

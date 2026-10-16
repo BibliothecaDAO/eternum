@@ -1,3 +1,4 @@
+import { resourceMeaning, iconUrl } from "@/ui/design-system/icon-meaning";
 import type { HexPosition } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { createWorldFxBackend, type WorldFxBackend, type WorldFxHandle } from "../fx/world-fx-backends";
@@ -181,7 +182,7 @@ export class ResourceFXManager {
 
     const loadPromise = new Promise<THREE.Texture>((resolve, reject) => {
       this.textureLoader.load(
-        `/images/resources/${resourceId}.png`,
+        iconUrl(resourceMeaning(resourceId)),
         (loadedTexture) => {
           loadedTexture.colorSpace = THREE.SRGBColorSpace;
           loadedTexture.minFilter = THREE.LinearFilter;

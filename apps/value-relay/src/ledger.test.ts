@@ -4,7 +4,7 @@ import { Effect } from "effect";
 import { hash } from "starknet";
 import { beforeEach, expect, it, vi } from "vitest";
 import { blitzCommitment } from "@realms-world/value-ledger/commitment";
-import { ledgerMonitorReads, ledgerResultAdapter } from "./ledger";
+import { ledgerMonitorReads, ledgerResultAdapter, postVerifiedResult } from "./ledger";
 
 const rpc = vi.hoisted(() => ({
   call: vi.fn(),
@@ -186,4 +186,31 @@ it("reads the funded deposit through the committed ledger ABI at a confirmed hea
   await expect(
     Effect.runPromise(ledgerMonitorReads(credentials.rpcUrl, credentials.contractAddress).frontierPool("0x1", 7)),
   ).rejects.toMatchObject({ operation: "read ledger Frontier pool" });
+});
+
+const unpostedResult = { chainId: "0x1", gameId: 9, rows: [{ wallet: "0x456", rank: 1 }], commitment: "0x1" };
+it("posts a verified paid result for the slot that paid for it", async () => {
+  const post = vi.fn(() => Effect.void);
+  const postFor = vi.fn(() => post);
+  await postVerifiedResult(unpostedResult, async () => 4, postFor);
+  expect(postFor).toHaveBeenCalledWith(4);
+  expect(post).toHaveBeenCalledWith(unpostedResult);
+});
+it("completes a result outside any slot without posting it to the ledger", async () => {
+  const postFor = vi.fn();
+  await expect(postVerifiedResult(unpostedResult, async () => null, postFor)).resolves.toBeUndefined();
+  expect(postFor).not.toHaveBeenCalled();
+});
+it("leaves a result whose slot cannot be verified unposted and failing, so the relay retries it", async () => {
+  const postFor = vi.fn();
+  await expect(
+    postVerifiedResult(
+      unpostedResult,
+      async () => {
+        throw new Error("paid_game_slot_missing");
+      },
+      postFor,
+    ),
+  ).rejects.toThrow("paid_game_slot_missing");
+  expect(postFor).not.toHaveBeenCalled();
 });

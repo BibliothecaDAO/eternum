@@ -1,17 +1,6 @@
-import {
-  Loader2,
-  Activity,
-  Dices,
-  Gauge,
-  Pause,
-  Play,
-  RotateCcw,
-  Skull,
-  StepForward,
-  Users,
-} from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { useCallback, useEffect, useRef, useState, type MutableRefObject, type ReactNode, type RefObject } from "react";
-import { Link } from "react-router-dom";
 
 import {
   listOfferedProceduralCharacterAppearances,
@@ -33,7 +22,6 @@ import {
 } from "@/three/characters/benchmark/procedural-character-benchmark-renderer";
 import { ProceduralCharacterPerformanceEvaluator } from "@/three/characters/benchmark/procedural-character-performance-evaluation";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
 const INITIAL_STATS: ProceduralCharacterBenchmarkStats = {
   actorCount: 0,
@@ -121,7 +109,6 @@ export const ProceduralWorldGymView = () => <ProceduralCharacterBenchmarkExperie
 
 const ProceduralCharacterBenchmarkExperience = ({ mode }: { mode: BenchmarkExperienceMode }) => {
   const worldGym = mode === "world";
-  useBootDocumentState("app-ready", worldGym ? "procedural_world_gym_ready" : "procedural_character_benchmark_ready");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<ProceduralCharacterBenchmarkRendererHandle | null>(null);
   const [config, setConfig] = useState(
@@ -204,7 +191,7 @@ const ProceduralCharacterBenchmarkExperience = ({ mode }: { mode: BenchmarkExper
 
   return (
     <section
-      className="flex min-h-screen flex-col overflow-hidden bg-[#070b12] text-slate-100 lg:h-screen"
+      className="flex min-h-[var(--lab-viewport-height)] flex-col overflow-hidden bg-[#070b12] text-slate-100 lg:h-[var(--lab-viewport-height)]"
       data-actor-count={stats.actorCount}
       data-collision-body-count={stats.collisionBodyCount}
       data-benchmark-ready={ready && !stats.loadingActors ? "true" : "false"}
@@ -347,10 +334,10 @@ const BenchmarkHeader = ({
   <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[#0a1019]/95 px-4 py-3 backdrop-blur-xl lg:px-6">
     <div className="flex min-w-0 items-center gap-3">
       <div className="grid h-10 w-10 shrink-0 place-items-center border border-cyan-300/30 bg-cyan-400/10 text-cyan-200">
-        <Gauge className="h-5 w-5" />
+        <SemanticIcon name="gauge" className="h-5 w-5" />
       </div>
       <div className="min-w-0">
-        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-cyan-200/60">
+        <p className="text-sm font-semibold text-cyan-200/60">
           {worldGym ? "Integrated world laboratory" : "Crowd laboratory"}
         </p>
         <h1 className="truncate text-lg font-semibold text-white sm:text-xl">
@@ -368,39 +355,21 @@ const BenchmarkHeader = ({
     </div>
     <div className="flex flex-wrap items-center gap-2">
       <BenchmarkAction
-        icon={<Skull />}
+        icon={<SemanticIcon name="skull" />}
         label="Kill burst"
         onClick={onKillBurst}
         disabled={!ready || !canKill}
         primary
       />
-      <BenchmarkAction icon={<Gauge />} label="Measure" onClick={onMeasure} disabled={!ready} />
+      <BenchmarkAction icon={<SemanticIcon name="gauge" />} label="Measure" onClick={onMeasure} disabled={!ready} />
       <BenchmarkAction
-        icon={paused ? <Play /> : <Pause />}
+        icon={paused ? <SemanticIcon name="play" /> : <SemanticIcon name="pause" />}
         label={paused ? "Resume" : "Pause"}
         onClick={onTogglePaused}
         disabled={!ready}
       />
-      <BenchmarkAction icon={<StepForward />} label="Step" onClick={onStep} disabled={!ready || !paused} />
-      <BenchmarkAction icon={<RotateCcw />} label="Reset" onClick={onReset} disabled={!ready} />
-      <Link
-        to={worldGym ? "/debug/procedural-character-benchmark" : "/debug/procedural-world-gym"}
-        className="grid h-9 place-items-center border border-white/10 px-3 text-xs font-semibold uppercase tracking-wider text-slate-300 transition hover:border-white/25 hover:bg-white/[0.06] hover:text-white"
-      >
-        {worldGym ? "Hex lab" : "World gym"}
-      </Link>
-      <Link
-        to="/debug/procedural-characters"
-        className="grid h-9 place-items-center border border-white/10 px-3 text-xs font-semibold uppercase tracking-wider text-slate-300 transition hover:border-white/25 hover:bg-white/[0.06] hover:text-white"
-      >
-        Animation
-      </Link>
-      <Link
-        to="/"
-        className="grid h-9 place-items-center border border-white/10 px-3 text-xs font-semibold uppercase tracking-wider text-slate-300 transition hover:border-white/25 hover:bg-white/[0.06] hover:text-white"
-      >
-        Exit
-      </Link>
+      <BenchmarkAction icon={<SemanticIcon name="step" />} label="Step" onClick={onStep} disabled={!ready || !paused} />
+      <BenchmarkAction icon={<SemanticIcon name="refresh" />} label="Reset" onClick={onReset} disabled={!ready} />
     </div>
   </header>
 );
@@ -420,18 +389,18 @@ const BenchmarkControls = ({
 }) => (
   <aside className="order-2 max-h-[48vh] overflow-y-auto border-t border-white/10 bg-[#0b111b] lg:order-1 lg:max-h-none lg:border-t-0 lg:border-r">
     <div className="space-y-3 p-4">
-      <div className="border border-cyan-300/15 bg-cyan-300/[0.045] p-3 text-xs leading-relaxed text-slate-300">
+      <div className="border border-cyan-300/15 bg-cyan-300/[0.045] p-3 text-sm leading-relaxed text-slate-300">
         {worldGym
           ? "The production terrain and army runtimes now share one renderer and lifecycle. One hundred mixed units walk across sixteen generated biomes while grounding, props, frame cost, collisions, and GPU resources remain observable."
           : "The production runtime now mixes Archers, Knights, Crossbowmen, horses, and mounted Paladins. One pooled arrow owner and one shared Jolt world keep volleys, gait, rider, crowd, and death costs comparable."}
       </div>
-      <ControlSection title="Population" icon={<Users />} defaultOpen>
+      <ControlSection title="Population" icon={<SemanticIcon name="people" />} defaultOpen>
         <button
           type="button"
           onClick={onApplyWalkingPerformanceProfile}
-          className="flex h-9 w-full items-center justify-center gap-2 border border-emerald-300/30 bg-emerald-300/[0.08] text-xs font-semibold uppercase tracking-wider text-emerald-100 transition hover:bg-emerald-300/[0.14]"
+          className="flex h-9 w-full items-center justify-center gap-2 border border-emerald-300/30 bg-emerald-300/[0.08] text-sm font-semibold text-emerald-100 transition hover:bg-emerald-300/[0.14]"
         >
-          <Gauge className="h-3.5 w-3.5" /> 60 FPS walking profile
+          <SemanticIcon name="gauge" className="h-3.5 w-3.5" /> 60 FPS walking profile
         </button>
         <ToggleControl
           label="Presentation collisions"
@@ -500,12 +469,12 @@ const BenchmarkControls = ({
         <button
           type="button"
           onClick={() => onPatchConfig({ seed: Math.floor(Math.random() * 2_147_483_647) })}
-          className="flex h-9 w-full items-center justify-center gap-2 border border-white/10 bg-white/[0.035] text-xs font-semibold uppercase tracking-wider text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+          className="flex h-9 w-full items-center justify-center gap-2 border border-white/10 bg-white/[0.035] text-sm font-semibold text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
         >
-          <Dices className="h-3.5 w-3.5" /> New seed
+          <SemanticIcon name="dice" className="h-3.5 w-3.5" /> New seed
         </button>
       </ControlSection>
-      <ControlSection title="Motion" icon={<Activity />} defaultOpen>
+      <ControlSection title="Motion" icon={<SemanticIcon name="activity" />} defaultOpen>
         <SegmentedControl
           label="Locomotion"
           columns={2}
@@ -567,7 +536,7 @@ const BenchmarkControls = ({
           onChange={(stepHeight) => onPatchConfig({ stepHeight })}
         />
       </ControlSection>
-      <ControlSection title="Death cycle" icon={<Skull />} defaultOpen>
+      <ControlSection title="Death cycle" icon={<SemanticIcon name="skull" />} defaultOpen>
         <RangeControl
           label="Deaths / second"
           value={config.deathsPerSecond}
@@ -594,7 +563,7 @@ const BenchmarkControls = ({
           onChange={(corpseSeconds) => onPatchConfig({ corpseSeconds })}
         />
       </ControlSection>
-      <ControlSection title="Render" icon={<Gauge />}>
+      <ControlSection title="Render" icon={<SemanticIcon name="gauge" />}>
         <RangeControl
           label="Pixel ratio"
           value={config.pixelRatio}
@@ -616,9 +585,9 @@ const BenchmarkControls = ({
         <button
           type="button"
           onClick={onResetCamera}
-          className="flex h-9 w-full items-center justify-center gap-2 border border-white/10 bg-white/[0.035] text-xs font-semibold uppercase tracking-wider text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+          className="flex h-9 w-full items-center justify-center gap-2 border border-white/10 bg-white/[0.035] text-sm font-semibold text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
         >
-          <RotateCcw className="h-3.5 w-3.5" /> Reset camera
+          <SemanticIcon name="refresh" className="h-3.5 w-3.5" /> Reset camera
         </button>
       </ControlSection>
     </div>
@@ -645,12 +614,12 @@ const BenchmarkViewport = ({
     {(!ready || stats.loadingActors) && !rendererError && (
       <div className="pointer-events-none absolute inset-0 z-30 grid place-items-center bg-[#070b12]/88 backdrop-blur-sm">
         <div className="flex flex-col items-center gap-3 text-center">
-          <Loader2 className="h-8 w-8 animate-spin" />
+          <SemanticIcon name="refresh" className="h-8 w-8 animate-spin" />
           <div>
             <p className="text-sm font-semibold text-white">
               {worldGym ? "Growing biomes and articulated crowd" : "Building articulated crowd"}
             </p>
-            <p className="mt-1 font-mono text-xs text-slate-400">
+            <p className="mt-1 font-mono text-sm text-slate-400">
               {stats.actorCount} / {config.actorCount} actors
             </p>
           </div>
@@ -667,7 +636,7 @@ const BenchmarkViewport = ({
     )}
     <div className="pointer-events-none absolute top-4 right-4 left-4 z-20 flex flex-wrap items-start justify-between gap-3">
       <div className="border border-white/10 bg-[#090e17]/82 px-3 py-2 backdrop-blur-md">
-        <p className="text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-slate-500">Simulation</p>
+        <p className="text-sm font-semibold text-slate-500">Simulation</p>
         <p className="mt-1 text-sm text-white">
           {worldGym
             ? `${stats.terrainBiomeCount} biomes · ${stats.terrainCellCount} terrain cells · ${stats.terrainPropCount} props · ${stats.terrainGroundedActorCount}/${stats.runningCount} grounded · `
@@ -687,7 +656,7 @@ const BenchmarkViewport = ({
         </p>
       </div>
       {stats.physicsFailures.length > 0 && (
-        <div className="max-w-sm border border-red-300/30 bg-red-950/80 px-3 py-2 text-xs text-red-100 backdrop-blur-md">
+        <div className="max-w-sm border border-red-300/30 bg-red-950/80 px-3 py-2 text-sm text-red-100 backdrop-blur-md">
           {stats.physicsFailures.join(" · ")}
         </div>
       )}
@@ -748,7 +717,7 @@ const ControlSection = ({
   defaultOpen?: boolean;
 }) => (
   <details open={defaultOpen} className="border border-white/10 bg-black/20">
-    <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300 [&_img]:h-3.5 [&_img]:w-3.5 [&_img]:text-cyan-300">
+    <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 text-sm font-semibold text-slate-300 [&_img]:h-3.5 [&_img]:w-3.5 [&_img]:text-cyan-300">
       {icon}
       {title}
     </summary>
@@ -774,7 +743,7 @@ const RangeControl = ({
   onChange(value: number): void;
 }) => (
   <label className="block">
-    <span className="mb-1.5 flex items-center justify-between gap-3 text-[0.68rem] font-medium uppercase tracking-wider text-slate-400">
+    <span className="mb-1.5 flex items-center justify-between gap-3 text-sm font-medium text-slate-400">
       {label}
       <span className="font-mono text-slate-200">
         {formatControlValue(value, step)}
@@ -809,7 +778,7 @@ const NumberControl = ({
   onChange(value: number): void;
 }) => (
   <label className="block">
-    <span className="mb-1.5 block text-[0.68rem] font-medium uppercase tracking-wider text-slate-400">{label}</span>
+    <span className="mb-1.5 block text-sm font-medium text-slate-400">{label}</span>
     <input
       type="number"
       value={value}
@@ -817,7 +786,7 @@ const NumberControl = ({
       max={max}
       step={step}
       onChange={(event) => onChange(Number(event.target.value))}
-      className="h-9 w-full border border-white/10 bg-[#080d15] px-2 font-mono text-xs text-slate-200 outline-none focus:border-cyan-300/60"
+      className="h-9 w-full border border-white/10 bg-[#080d15] px-2 font-mono text-sm text-slate-200 outline-none focus:border-cyan-300/60"
     />
   </label>
 );
@@ -836,7 +805,7 @@ const SegmentedControl = ({
   onChange(value: string): void;
 }) => (
   <fieldset>
-    <legend className="mb-1.5 text-[0.68rem] font-medium uppercase tracking-wider text-slate-400">{label}</legend>
+    <legend className="mb-1.5 text-sm font-medium text-slate-400">{label}</legend>
     <div className={cn("grid gap-1", columns === 4 ? "grid-cols-4" : columns === 3 ? "grid-cols-3" : "grid-cols-2")}>
       {options.map((option) => (
         <button
@@ -844,7 +813,7 @@ const SegmentedControl = ({
           type="button"
           onClick={() => onChange(option.value)}
           className={cn(
-            "h-8 border text-xs font-semibold transition",
+            "h-8 border text-sm font-semibold transition",
             value === option.value
               ? "border-cyan-300/60 bg-cyan-400/15 text-cyan-100"
               : "border-white/10 bg-white/[0.025] text-slate-400 hover:bg-white/[0.06] hover:text-white",
@@ -867,7 +836,7 @@ const ToggleControl = ({
   onChange(value: boolean): void;
 }) => (
   <label className="flex cursor-pointer items-center justify-between gap-3 py-0.5">
-    <span className="text-[0.68rem] font-medium uppercase tracking-wider text-slate-400">{label}</span>
+    <span className="text-sm font-medium text-slate-400">{label}</span>
     <input
       type="checkbox"
       checked={checked}
@@ -895,7 +864,7 @@ const BenchmarkAction = ({
     onClick={onClick}
     disabled={disabled}
     className={cn(
-      "flex h-9 items-center gap-2 border px-3 text-xs font-semibold uppercase tracking-wider transition [&_img]:h-3.5 [&_img]:w-3.5",
+      "flex h-9 items-center gap-2 border px-3 text-sm font-semibold transition [&_img]:h-3.5 [&_img]:w-3.5",
       primary
         ? "border-red-300/45 bg-red-400/15 text-red-100 hover:bg-red-400/25"
         : "border-white/10 bg-white/[0.025] text-slate-300 hover:bg-white/[0.08] hover:text-white",
@@ -914,17 +883,13 @@ const BenchmarkBadge = ({ label, tone }: { label: string; tone: "amber" | "cyan"
     emerald: "border-emerald-300/25 bg-emerald-300/[0.08] text-emerald-200",
     violet: "border-violet-300/25 bg-violet-300/[0.08] text-violet-200",
   };
-  return (
-    <span className={cn("hidden border px-2 py-1 font-mono text-[0.62rem] uppercase sm:inline", tones[tone])}>
-      {label}
-    </span>
-  );
+  return <span className={cn("hidden border px-2 py-1 font-mono text-sm sm:inline", tones[tone])}>{label}</span>;
 };
 
 const Metric = ({ label, value }: { label: string; value: ReactNode }) => (
   <div className="border border-white/10 bg-[#090e17]/82 px-2 py-1.5 text-right backdrop-blur-md">
-    <p className="text-[0.56rem] font-semibold uppercase tracking-wider text-slate-500">{label}</p>
-    <p className="mt-0.5 font-mono text-xs text-slate-100">{value}</p>
+    <p className="text-sm font-semibold text-slate-500">{label}</p>
+    <p className="mt-0.5 font-mono text-sm text-slate-100">{value}</p>
   </div>
 );
 

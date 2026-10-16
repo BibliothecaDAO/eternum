@@ -1,6 +1,7 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { formatExact } from "@/ui/design-system/kit/amount";
 import { Chip } from "@/ui/design-system/kit/chip";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
 import { LORDS, RUIN, TROOPS, XP } from "@/ui/design-system/kit/words";
 import { EASE } from "@/ui/motion/motion-scale";
@@ -46,16 +47,16 @@ export const RuinChestMoment = ({
           className="rounded-3xl"
           style={{ boxShadow: GLOW_PX[tier] ? `0 0 ${GLOW_PX[tier]}px theme(colors.kit.hot)` : undefined }}
         >
-          <KitIcon code="Ch" size={132} />
+          <SemanticIcon name="chest" size={132} />
         </span>
         <span className="flex items-center gap-2" aria-label={`${formatExact(lords)} ${LORDS}`}>
-          <KitIcon code="Lo" size={34} />
+          <SemanticIcon name="lords" size={34} />
           <span className="text-[44px] leading-none tabular-nums text-kit-gold2">+{formatExact(lords)}</span>
         </span>
         <TierChip tier={tier} showWord />
         <span className="flex items-center gap-2">
           {xp !== undefined && <Chip icons={[]} label={XP} value={`+${formatExact(xp)}`} unit={XP} />}
-          <Chip icons={["Sk"]} label={TROOPS} value={`−${formatExact(troopsLost)}`} />
+          <Chip icons={["skull"]} label={TROOPS} value={`−${formatExact(troopsLost)}`} />
         </span>
       </motion.span>
     </button>

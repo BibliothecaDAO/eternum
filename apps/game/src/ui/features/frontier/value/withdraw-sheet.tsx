@@ -1,9 +1,10 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { formatExact } from "@/ui/design-system/kit/amount";
 import { AmountSlider } from "@/ui/design-system/kit/amount-slider";
 import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
-import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import {
@@ -56,8 +57,8 @@ export const WithdrawSheet = ({
   onClose: () => void;
 }) => (
   <Sheet label={WITHDRAW} onClose={onClose}>
-    <h2 className="frontier-title flex items-center gap-2.5 !text-[20px]">
-      <KitIcon code={step.kind === "paid" ? "Ok" : "Lo"} size={28} />
+    <h2 className="frontier-title flex items-center gap-2.5 !text-xl">
+      <SemanticIcon name={step.kind === "paid" ? "check" : "lords"} size={28} />
       {WITHDRAW}
     </h2>
     <WithdrawBody
@@ -108,8 +109,8 @@ const Pick = ({
   onWithdraw: () => void;
 }) => (
   <>
-    <Hero icon="Lo" value={formatExact(amount)} />
-    <AmountSlider label={LORDS} icon="Lo" value={amount} max={held ?? 0} disabled={!held} onChange={onAmount} />
+    <Hero icon="lords" value={formatExact(amount)} />
+    <AmountSlider label={LORDS} icon="lords" value={amount} max={held ?? 0} disabled={!held} onChange={onAmount} />
     <Flow before={held} after={held === undefined ? undefined : held - amount} address={address} />
     <Button
       role="primary"
@@ -123,15 +124,15 @@ const Pick = ({
 
 const NoWallet = ({ held, onLinkWallet }: { held: number | undefined; onLinkWallet: () => void }) => (
   <>
-    <Hero icon="Lo" value={formatExact(held)} />
+    <Hero icon="lords" value={formatExact(held)} />
     <ReasonPlate reason={{ kind: "failed", line: NO_WALLET }} />
-    <Button role="primary" icon="Xs" word={LINK_WALLET} onClick={onLinkWallet} />
+    <Button role="primary" icon="share" word={LINK_WALLET} onClick={onLinkWallet} />
   </>
 );
 
 const Refused = ({ held, address, line }: { held: number | undefined; address: string; line: string }) => (
   <>
-    <Hero icon="Lo" value={formatExact(held)} />
+    <Hero icon="lords" value={formatExact(held)} />
     <div className="flex justify-center">
       <WalletChip address={address} />
     </div>
@@ -142,7 +143,7 @@ const Refused = ({ held, address, line }: { held: number | undefined; address: s
 
 const Sending = ({ amount, held, wallet }: { amount: number; held: number | undefined; wallet: string | null }) => (
   <>
-    <Hero icon="Lo" value={formatExact(amount)} />
+    <Hero icon="lords" value={formatExact(amount)} />
     <Leaving held={held} wallet={wallet} />
     <Button role="primary" word={WITHDRAW} loading={SENDING} />
   </>
@@ -150,7 +151,7 @@ const Sending = ({ amount, held, wallet }: { amount: number; held: number | unde
 
 const Waiting = ({ amount, held, wallet }: { amount: number; held: number | undefined; wallet: string | null }) => (
   <>
-    <Hero icon="Hg" value={formatExact(amount)} />
+    <Hero icon="hourglass" value={formatExact(amount)} />
     <Leaving held={held} wallet={wallet} />
     <ReasonPlate reason={{ kind: "failed", line: paidWhenResumed(formatExact(amount)) }} />
   </>
@@ -166,7 +167,7 @@ const Paid = ({
   onClose: () => void;
 }) => (
   <>
-    <Hero icon="Wt" value={`+${formatExact(step.amount)}`} />
+    <Hero icon="backpack" value={`+${formatExact(step.amount)}`} />
     {wallet !== null && (
       <div className="flex justify-center">
         <WalletChip address={wallet} paid />
@@ -177,9 +178,9 @@ const Paid = ({
         href={step.transactionUrl}
         target="_blank"
         rel="noreferrer"
-        className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl border-2 border-kit-line2 px-4 font-ui text-[17px] font-semibold text-kit-cream hover:border-kit-gold"
+        className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl border-2 border-kit-line2 px-4 font-body text-base font-semibold text-kit-cream hover:border-kit-gold"
       >
-        <KitIcon code="Xs" size={22} />
+        <SemanticIcon name="share" size={22} />
         {TRANSACTION}
       </a>
       <Button role="primary" word={CONTINUE} onClick={onClose} className="flex-1" />
@@ -190,8 +191,8 @@ const Paid = ({
 /** The count left in the game, and the wallet the LORDS are on their way to. */
 const Leaving = ({ held, wallet }: { held: number | undefined; wallet: string | null }) => (
   <div className="flex items-center justify-center gap-1.5">
-    <Chip icons={["Lo"]} label={LORDS} value={formatExact(held)} />
-    <span aria-hidden className="text-[16px] text-kit-muted">
+    <Chip icons={["lords"]} label={LORDS} value={formatExact(held)} />
+    <span aria-hidden className="text-base text-kit-muted">
       →
     </span>
     {wallet !== null && <WalletChip address={wallet} />}
@@ -208,9 +209,9 @@ const Flow = ({
   address: string;
 }) => (
   <div className="flex flex-col items-center gap-1.5">
-    <Chip icons={["Lo"]} label={LORDS} value={`${formatExact(before)} → ${formatExact(after)}`} />
+    <Chip icons={["lords"]} label={LORDS} value={`${formatExact(before)} → ${formatExact(after)}`} />
     <span className="flex items-center gap-1.5">
-      <span aria-hidden className="text-[16px] text-kit-muted">
+      <span aria-hidden className="text-base text-kit-muted">
         ↓
       </span>
       <WalletChip address={address} />
@@ -221,17 +222,17 @@ const Flow = ({
 const WalletChip = ({ address, paid = false }: { address: string; paid?: boolean }) => (
   <span data-tone={paid ? "gain" : undefined} className="frontier-chip h-7 shrink-0 !py-0">
     <span className="contents">
-      <KitIcon code="Wt" size={18} />
-      <span className="frontier-chip-number tabular-nums !text-[15px]">{shortAddress(address)}</span>
-      {paid && <KitIcon code="Ok" size={18} />}
+      <SemanticIcon name="backpack" size={18} />
+      <span className="frontier-chip-number tabular-nums !text-base">{shortAddress(address)}</span>
+      {paid && <SemanticIcon name="check" size={18} />}
     </span>
   </span>
 );
 
-const Hero = ({ icon, value }: { icon: IconCode; value: string }) => (
+const Hero = ({ icon, value }: { icon: IconMeaning; value: string }) => (
   <div className="flex items-center justify-center gap-3.5">
     <span className="flex size-16 items-center justify-center rounded-full border border-kit-line2 bg-kit-ground">
-      <KitIcon code={icon} size={44} />
+      <SemanticIcon name={icon} size={44} />
     </span>
     <span className="frontier-hero tabular-nums">{value}</span>
   </div>

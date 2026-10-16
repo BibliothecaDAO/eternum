@@ -22,6 +22,7 @@ import { fetchSettlementSnapshot, type SettlementSnapshot } from "@/runtime/worl
 import { isGameOver, isMember } from "@/runtime/world/directory";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { gamePainting, modeLabel } from "@/shell/game-links";
+import { resultsHref } from "@/shell/season-tab/results-link";
 import { StateChip } from "@/shell/play/state-chip";
 import { BLITZ_WORDS } from "@/shell/words";
 import { ClockChip } from "@/shell/clock-chip";
@@ -102,6 +103,7 @@ export const GameEntryModal = ({
   const requestSignIn = useRequestSignIn();
   const sessionStatus = useIdentitySessionStore((state) => state.status);
   const account = useAccountStore((state) => state.account);
+  const accountError = useAccountStore((state) => state.provisioningError);
   // The chain name written at registration is the identity username, when one was chosen.
   const accountName = useIdentitySessionStore((state) => identityUsername(state.session));
   const usernameFelt = useMemo(
@@ -580,6 +582,7 @@ export const GameEntryModal = ({
     phase,
     audience: isSpectateMode ? "spectator" : "player",
     signedIn: sessionStatus === "signed-in",
+    accountError,
     foundingFailed: settleStage === "error",
     blitzEntry,
   });
@@ -590,14 +593,21 @@ export const GameEntryModal = ({
       realm={realm}
       title={worldMeta ? modeLabel(worldMeta) : undefined}
       painting={worldMeta ? gamePainting(worldMeta) : undefined}
-      onRetry={settleStage === "error" ? () => void handleSettle() : handleRetry}
+      onRetry={
+        accountError
+          ? () => window.location.reload()
+          : settleStage === "error"
+            ? () => void handleSettle()
+            : handleRetry
+      }
       onSignIn={() => requestSignIn()}
       onSpectate={handleSpectate}
+      results={resultsHref({ chainId: game.chainId, game_id: game.gameId })}
     >
       {phase === "settlement-waiting" && <ClockChip prefix="starts" at={seasonStartAt ?? undefined} now={nowSeconds} />}
       {phase === "settlement" && isBlitzMode && worldMeta && (
         <StateChip
-          icon="Ok"
+          icon="check"
           text={`${BLITZ_WORDS.preparing} ${Math.min(worldMeta.player_count, worldMeta.roster_count)}/${worldMeta.roster_count}`}
         />
       )}

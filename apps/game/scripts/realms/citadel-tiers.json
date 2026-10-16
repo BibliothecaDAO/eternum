@@ -1,0 +1,38 @@
+{
+  "settlement": {
+    "height": [
+      0.7,
+      1.35
+    ],
+    "age": 1,
+    "defense": "timber",
+    "footprintRadius": 0.92
+  },
+  "city": {
+    "height": [
+      1.3,
+      1.65
+    ],
+    "age": 2,
+    "defense": "timber",
+    "footprintRadius": 0.94
+  },
+  "kingdom": {
+    "height": [
+      1.8,
+      2.2
+    ],
+    "age": 3,
+    "defense": "stone",
+    "footprintRadius": 0.97
+  },
+  "empire": {
+    "height": [
+      2.6,
+      3.01
+    ],
+    "age": 4,
+    "defense": "stone",
+    "footprintRadius": 1
+  }
+}

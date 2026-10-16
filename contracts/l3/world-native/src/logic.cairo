@@ -34,6 +34,7 @@ pub mod realms;
 pub mod registrar;
 pub mod registry;
 pub mod release;
+pub mod relic_chests;
 pub mod relics;
 pub mod relics_domain;
 pub mod research;

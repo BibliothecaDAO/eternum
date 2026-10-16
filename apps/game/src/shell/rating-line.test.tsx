@@ -42,6 +42,6 @@ it("tells a reader with no wallet how to carry a rating, and shows a dash for an
     "fetch",
     vi.fn(async () => new Response(null, { status: 503 })),
   );
-  expect(await lineFor(null)).toBe("Link a wallet in Account to carry a rating.");
+  expect(await lineFor(null)).toBe("Link a wallet in Settings to carry a rating.");
   expect(await lineFor("0xe1")).toBe("—· Blitz rating");
 });

@@ -1,4 +1,6 @@
 import ResourceIcon from "@/components/ResourceIcon";
+import { ETERNUM_CONFIG } from "@/utils/config";
+import { getLevelName } from "@bibliothecadao/types";
 import { colors, formatAmount, section, table } from "@/components/styles";
 
 export const BlitzRealmLeveling = () => {
@@ -27,31 +29,16 @@ export const BlitzRealmLeveling = () => {
     whiteSpace: "normal" as const, // Allow wrapping for the resources cell since it contains multiple items
   };
 
-  // Hardcoded realm leveling data for blitz (Series 0: all Realms start at City level)
-  const levelData = [
-    {
-      currentLevel: "City",
-      nextLevel: "Kingdom",
-      resources: [
-        { id: 23, amount: 720 }, // Labor
-        { id: 35, amount: 2400 }, // Wheat
-        { id: 38, amount: 600 }, // Essence
-        { id: 3, amount: 360 }, // Wood
-      ],
-    },
-    {
-      currentLevel: "Kingdom",
-      nextLevel: "Empire",
-      resources: [
-        { id: 23, amount: 1440 }, // Labor
-        { id: 35, amount: 4800 }, // Wheat
-        { id: 38, amount: 1200 }, // Essence
-        { id: 3, amount: 720 }, // Wood
-        { id: 2, amount: 360 }, // Coal
-        { id: 4, amount: 360 }, // Copper
-      ],
-    },
-  ];
+  // Each level a realm can buy, from the Blitz config: its cost is keyed by the level it reaches.
+  const upgradeCosts: Record<string, { resource: number; amount: number }[]> =
+    ETERNUM_CONFIG("blitz").realmUpgradeCosts;
+  const levelData = Object.entries(upgradeCosts)
+    .filter(([, costs]) => costs.length > 0)
+    .map(([level, costs]) => ({
+      currentLevel: getLevelName(Number(level) - 1),
+      nextLevel: getLevelName(Number(level)),
+      resources: costs.map(({ resource, amount }) => ({ id: resource, amount })),
+    }));
 
   return (
     <div style={section.wrapper}>

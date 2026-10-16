@@ -14,9 +14,16 @@ pub enum Discovery {
     Stragglers,
     Shrine,
     Well,
+    Spire,
 }
 
+// One reveal in two hundred, in basis points, when spire discovery is on.
+pub const SPIRE_FIND_BPS: u128 = 50;
+
 pub fn surface(config: MapConfig, seed: u256, distance: u128, hyperstructures: u32, mode_rules: u32) -> Discovery {
+    if mode_rules & crate::rules::DISCOVER_SPIRES != 0 && lottery(seed, 3, SPIRE_FIND_BPS, 10000 - SPIRE_FIND_BPS) {
+        return Discovery::Spire;
+    }
     if mode_rules & crate::rules::DISCOVER_HYPERSTRUCTURES != 0 {
         let hyper_success = hyperstructure_weight(config, distance, hyperstructures);
         let hyper_total: u128 = config.hyps_win_prob.into() + config.hyps_fail_prob.into();
@@ -111,6 +118,7 @@ pub fn tile_occupier(discovery: Discovery) -> Option<u8> {
     match discovery {
         Discovery::Shrine => Some(crate::taxonomy::SHRINE_OCCUPIER),
         Discovery::Well => Some(crate::taxonomy::WELL_OCCUPIER),
+        Discovery::Spire => Some(crate::taxonomy::DORMANT_SPIRE_OCCUPIER),
         _ => None,
     }
 }

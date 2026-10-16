@@ -226,7 +226,7 @@ describe("createGameClient", () => {
     client.dispose();
   });
 
-  it("writes Herald facts and sends the next command at 300 ms despite a 19 s node visibility gap", async () => {
+  it("sends a player's next command at once and writes Herald facts at 300 ms despite a 19 s node visibility gap", async () => {
     const harness = createHarness({ actor: "0x303019" });
     const client = await bootClient(harness);
     vi.useFakeTimers();
@@ -282,13 +282,11 @@ describe("createGameClient", () => {
       const first = provider.submitCommand(account, explore);
       const next = provider.submitCommand(account, explore);
       await vi.advanceTimersByTimeAsync(299);
-      expect(nonces).toEqual(["0x7"]);
-      await vi.advanceTimersByTimeAsync(1);
-      expect(client.setup.store.require("EntityName", { game_id: 54, entity_id: 9 }).name).toBe(1n);
-      expect(complete).toHaveBeenCalledOnce();
       expect(nonces).toEqual(["0x7", "0x8"]);
-      await vi.advanceTimersByTimeAsync(300);
+      expect(complete).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1);
       await Promise.all([first, next]);
+      expect(client.setup.store.require("EntityName", { game_id: 54, entity_id: 9 }).name).toBe(2n);
       expect(complete).toHaveBeenCalledTimes(2);
       expect(getNonce).toHaveBeenCalledOnce();
       await vi.advanceTimersByTimeAsync(19_000);

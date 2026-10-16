@@ -1,19 +1,7 @@
+import { TransactionType } from "@bibliothecadao/provider";
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { structureMapPosition } from "@bibliothecadao/eternum";
-import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
-import {
-  Castle,
-  Check,
-  Clock3,
-  Crown,
-  Hourglass,
-  Info,
-  Package,
-  Shield,
-  Skull,
-  Swords,
-  TriangleAlert,
-  Trophy,
-} from "@/ui/design-system/atoms/game-icons";
+
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { configManager, Position } from "@bibliothecadao/eternum";
@@ -34,22 +22,22 @@ import { resolveStoryEventPosition } from "./story-feed-row";
 /** One feed row in the Log button's translucent black, not the panels' surface: a fixed icon column, one line of
  *  text, the time flush right. */
 export const FEED_ROW_CLASS =
-  "pointer-events-auto flex h-8 w-full items-center gap-2 rounded-md bg-black/50 px-2.5 text-xs text-gold backdrop-blur-[2px]";
+  "pointer-events-auto flex h-8 w-full items-center gap-2 rounded-md bg-black/50 px-2.5 text-sm text-gold backdrop-blur-[2px]";
 const FEED_ROW_ICON_COLUMN_CLASS = "flex w-4 shrink-0 items-center justify-center";
 
-const HEADLINE_ICONS: Record<HeadlineType, GameIcon> = {
-  "realm-fall": Castle,
-  "hyper-capture": Crown,
-  elimination: Skull,
-  "game-start": Crown,
-  "game-end": Trophy,
-  "five-min-warning": Clock3,
-  "t3-building": Shield,
+const HEADLINE_ICONS: Record<HeadlineType, IconMeaning> = {
+  "realm-fall": "realm" as const,
+  "hyper-capture": "hyperstructure" as const,
+  elimination: "skull" as const,
+  "game-start": "play" as const,
+  "game-end": "victory" as const,
+  "five-min-warning": "hourglass" as const,
+  "t3-building": "build" as const,
 };
 
 export const HeadlineIcon = ({ type }: { type: HeadlineType }) => {
   const Icon = HEADLINE_ICONS[type];
-  return <Icon className="h-4 w-4 shrink-0" />;
+  return <SemanticIcon name={Icon} className="h-4 w-4 shrink-0" />;
 };
 
 /** One feed row, quick feed or log: icon, one line of text, the time; a row with a place flies the camera. */
@@ -61,7 +49,7 @@ export const FeedRowLine = ({ row, style }: { row: ImportantFeedRow; style?: CSS
     <>
       <span className={FEED_ROW_ICON_COLUMN_CLASS}>{icon}</span>
       <span className="min-w-0 flex-1 truncate text-left">{text}</span>
-      <span className="ml-auto shrink-0 text-right tabular-nums text-gold/50">{formatFeedTime(row.at)}</span>
+      <span className="ml-auto shrink-0 text-right tabular-nums text-kit-muted">{formatFeedTime(row.at)}</span>
     </>
   );
   if (!target) {
@@ -75,7 +63,7 @@ export const FeedRowLine = ({ row, style }: { row: ImportantFeedRow; style?: CSS
     <button
       type="button"
       onClick={() => navigate(target)}
-      className={cn(FEED_ROW_CLASS, "font-sans normal-case tracking-normal hover:bg-black/70")}
+      className={cn(FEED_ROW_CLASS, "font-sans hover:bg-black/70")}
       style={style}
     >
       {content}
@@ -109,30 +97,48 @@ function summarizeFeedRow(row: ImportantFeedRow): { icon: ReactNode; text: React
   if (row.kind === "headline") {
     return { icon: <HeadlineIcon type={row.headline.type} />, text: row.headline.description };
   }
-  if (row.kind === "story") return { icon: <Swords className="h-4 w-4 shrink-0" />, text: summarizeStory(row) };
+  if (row.kind === "story") return { icon: <StoryIcon story={row.event.story} />, text: summarizeStory(row) };
   if (row.kind === "arrival") {
     return {
-      icon: <Package className="h-4 w-4 shrink-0" />,
+      icon: <SemanticIcon name="transfer" className="h-4 w-4 shrink-0" />,
       text: `${transferRowLabel(row)} · #${row.structureEntityId}`,
     };
   }
   if (row.kind === "transaction") {
     const { transaction } = row;
     const failed = transaction.status === "reverted" || transaction.status === "not_sent";
-    const Icon = failed ? TriangleAlert : transaction.status === "success" ? Check : Hourglass;
+    const Icon =
+      transaction.type === TransactionType.SEND
+        ? "transfer"
+        : failed
+          ? ("warning" as const)
+          : transaction.status === "success"
+            ? ("check" as const)
+            : ("hourglass" as const);
     return {
-      icon: <Icon className={cn("h-4 w-4 shrink-0", failed && "text-danger")} />,
+      icon: <SemanticIcon name={Icon} className={cn("h-4 w-4 shrink-0", failed && "text-danger")} />,
       text: `${transferRowLabel(row) ?? transaction.description} · ${transactionStatusLine(transaction)}`,
     };
   }
   const Icon =
     row.notice.kind === "error" || row.notice.kind === "warning"
-      ? TriangleAlert
+      ? ("warning" as const)
       : row.notice.kind === "success"
-        ? Check
-        : Info;
-  return { icon: <Icon className="h-4 w-4 shrink-0" />, text: row.notice.title };
+        ? ("check" as const)
+        : ("info" as const);
+  return { icon: <SemanticIcon name={Icon} className="h-4 w-4 shrink-0" />, text: row.notice.title };
 }
+
+/** A fight's swords; a delivery's donkey; any other news of the player's realms, their castle. */
+const StoryIcon = ({ story }: { story: string }) => {
+  const Icon =
+    story === "BattleEvent" || story === "RaidEvent"
+      ? ("military" as const)
+      : story === "ResourceReceiveArrivalStory"
+        ? ("transfer" as const)
+        : ("realm" as const);
+  return <SemanticIcon name={Icon} className="h-4 w-4 shrink-0" />;
+};
 
 function summarizeStory(row: Extract<ImportantFeedRow, { kind: "story" }>): string {
   const { event } = row;

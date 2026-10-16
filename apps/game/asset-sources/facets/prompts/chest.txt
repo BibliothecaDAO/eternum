@@ -1,0 +1,2 @@
+Subject: A closed treasure chest in three-quarter view, heavy reddish oak boards, dark forged-iron straps and a simple square iron latch. Domed lid, believable wood and iron, no gold trim or spilling coins.
+Old counterpart: apps/game/public/image-icons/kit/ui-chest.png.

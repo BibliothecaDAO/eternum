@@ -34,7 +34,7 @@ export function AutomationPresetSwitch({ entityId, entityType }: { entityId: num
           aria-pressed={inferRealmPreset(automation) === preset.id}
           disabled={!ordersAllowed || !hydrated}
           onClick={() => selectPreset(preset.id)}
-          className="px-1.5 py-1 text-[10px] normal-case tracking-normal aria-pressed:bg-gold/20 disabled:opacity-50"
+          className="px-1.5 py-1 text-sm aria-pressed:bg-gold/20 disabled:opacity-50"
         >
           {preset.label}
         </button>

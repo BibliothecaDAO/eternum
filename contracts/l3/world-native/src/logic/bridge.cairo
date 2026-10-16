@@ -46,7 +46,7 @@ pub mod BridgeState {
             command: Deposit,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let target = self.authorize(game_id, actor, command.structure_id, context.timestamp, context);
             let rules = self.deposit_rules(game_id);
@@ -108,7 +108,7 @@ pub mod BridgeState {
             command: Withdraw,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let source = self.authorize(game_id, actor, command.structure_id, context.timestamp, context);
             let withdrawals = self.withdrawals();
@@ -160,7 +160,7 @@ pub mod BridgeState {
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) -> () {
-            let game_context = crate::commands::load_context(game_id, game_context);
+            let game_context = crate::commands::execution_context(game_id, game_context);
 
             self.withdraw_liquidity_token(game_id, actor, bank_id, resource_type, amount, timestamp, game_context);
             ()

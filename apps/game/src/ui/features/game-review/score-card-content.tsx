@@ -1,9 +1,9 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
-import { Copy, Loader2, Share2 } from "@/ui/design-system/atoms/game-icons";
 
 import { Button } from "@/ui/design-system/atoms";
-import { BlitzHighlightCardWithSelector } from "@/ui/shared/components/blitz-highlight-card";
+import { type BlitzCardLayout, BlitzHighlightCardWithSelector } from "@/ui/shared/components/blitz-highlight-card";
 import {
   BLITZ_CARD_DIMENSIONS,
   BLITZ_DEFAULT_SHARE_ORIGIN,
@@ -21,6 +21,8 @@ interface ScoreCardContentProps {
   isLoading?: boolean;
   error?: string | null;
   showActions?: boolean;
+  /** Portrait on a phone's page; the image it copies and shares is always the landscape card. */
+  layout?: BlitzCardLayout;
 }
 
 const toHighlightPlayer = (entry: LandingLeaderboardEntry, name: string): BlitzHighlightPlayer => ({
@@ -48,6 +50,7 @@ export const ScoreCardContent = ({
   isLoading = false,
   error = null,
   showActions = true,
+  layout = "landscape",
 }: ScoreCardContentProps) => {
   const [isCopyingImage, setIsCopyingImage] = useState(false);
   const cardRef = useRef<HTMLDivElement | null>(null);
@@ -107,7 +110,7 @@ export const ScoreCardContent = ({
       }
     } catch (caughtError) {
       console.error("Failed to copy highlight image", caughtError);
-      toast.error("Copy failed. Please try again.");
+      toast.failed(caughtError, "Copy failed. Please try again.");
     } finally {
       setIsCopyingImage(false);
     }
@@ -131,13 +134,13 @@ export const ScoreCardContent = ({
     navigator.clipboard
       .writeText(shareMessage)
       .then(() => toast.success("Message copied to clipboard!"))
-      .catch(() => toast.error("Failed to copy message"));
+      .catch((error) => toast.failed(error, "Failed to copy message"));
   }, [shareMessage]);
 
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
-        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+        <SemanticIcon name="refresh" className="w-10 h-10 text-gold animate-spin" />
         <p className="mt-4 text-sm text-white/60">Loading your score...</p>
       </div>
     );
@@ -162,7 +165,12 @@ export const ScoreCardContent = ({
   return (
     <>
       <div className="flex justify-center" ref={cardRef}>
-        <BlitzHighlightCardWithSelector title="Realms Blitz" subtitle="Blitz Leaderboard" highlight={highlightPlayer} />
+        <BlitzHighlightCardWithSelector
+          title="Realms Blitz"
+          subtitle="Blitz Leaderboard"
+          highlight={highlightPlayer}
+          layout={layout}
+        />
       </div>
 
       {showActions && (
@@ -171,30 +179,27 @@ export const ScoreCardContent = ({
             onClick={handleCopyImage}
             variant="gold"
             className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
-            forceUppercase={false}
             isLoading={isCopyingImage}
             disabled={isCopyingImage || !highlightPlayer}
           >
-            <Copy className="h-4 w-4" />
+            <SemanticIcon name="copy" className="h-4 w-4" />
             <span>{isCopyingImage ? "Preparing image..." : "Copy highlight image"}</span>
           </Button>
           <Button
             onClick={handleShareOnX}
             variant="outline"
             className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
-            forceUppercase={false}
             disabled={!highlightPlayer}
           >
-            <Share2 className="h-4 w-4" />
+            <SemanticIcon name="share" className="h-4 w-4" />
             <span>Share on X</span>
           </Button>
           <Button
             onClick={handleCopyMessage}
             variant="secondary"
             className="w-full flex-1 justify-center gap-2 !px-4 !py-2.5"
-            forceUppercase={false}
           >
-            <Copy className="h-4 w-4" />
+            <SemanticIcon name="copy" className="h-4 w-4" />
             <span>Copy message</span>
           </Button>
         </div>

@@ -1,0 +1,72 @@
+{
+  "/images/buildings/construction/archery.png": {
+    "model": "/models/new-buildings-opt/archerrange.glb",
+    "modelSha256": "04d9f4b4064a491b2f5ce3869339cc3ced10984d7d8538c578c7bee4668fc4e1",
+    "imageSha256": "699a5ba9b14dd80ea314bd0ff50d33787586d2cbc1e2f553497620414cb2fd1b"
+  },
+  "/images/buildings/construction/barracks.png": {
+    "model": "/models/new-buildings-opt/barracks.glb",
+    "modelSha256": "4dccdf2e63598a78a3fad6b0a03e4f8e0d535ec304472144552e21aba86de1f5",
+    "imageSha256": "644687c585cd6aef890fd010f2709f6ec67476aa5dae5979f238ac122ee8af97"
+  },
+  "/images/buildings/construction/castle.png": {
+    "model": "/models/new-buildings-opt/castle1.glb",
+    "modelSha256": "ac2f3db439b30e789665396bb19ffadddef531596eec6690377dad329f32e15a",
+    "imageSha256": "5e2a5064c4156bc3030006c14bba4420560f94f358c9a666ab0292e7b307625a"
+  },
+  "/images/buildings/construction/farm.png": {
+    "model": "/models/new-buildings-opt/farm.glb",
+    "modelSha256": "29bdee8dc0e9db8e45afc730b7092cfc794d9fef07dc145d67afcf1d197c4187",
+    "imageSha256": "577f351cff1deedf6cd4ad6370e2e006e834f70a9f008274eb4aaeec56cf8731"
+  },
+  "/images/buildings/construction/fishing_village.png": {
+    "model": "/models/new-buildings-opt/fishery.glb",
+    "modelSha256": "6c996fe35a54a30c6abe34f9985668f3138f524a9c864348a5f17e07ce818ef8",
+    "imageSha256": "80ae68002e3e0dfb4d22391a42e4e211dfb82333a7b393ec08eb271924d4af8a"
+  },
+  "/images/buildings/construction/market.png": {
+    "model": "/models/new-buildings-opt/market.glb",
+    "modelSha256": "24caeb6c98baf47a53120dfdae78806d9d2af9dd4a7cf1c3092efb875d28daf9",
+    "imageSha256": "256e1bdf71360a4a9f4dbf4998bc3622f84278e4763d60eba8dd2c667656c22f"
+  },
+  "/images/buildings/construction/storehouse.png": {
+    "model": "/models/new-buildings-opt/storehouse.glb",
+    "modelSha256": "bc9e3313313bfd612223015aac74e02dbffa28d179273236b324f0fd33e439cf",
+    "imageSha256": "53ab5c49ebf356db8f28fb893d3e44f50be9ef6355777f8faecd4fb513d1aaaa"
+  },
+  "/images/buildings/construction/workers_hut.png": {
+    "model": "/models/new-buildings-opt/workers_hut.glb",
+    "modelSha256": "1b158f385d0c420e0cb0516a097c905bb9f621da01a665d43713162b8018d353",
+    "imageSha256": "f5796a903478682ca41d55ca883ad1247922b2fbb551b26e6df67423e72d62c1"
+  },
+  "/images/buildings/construction/forge.png": {
+    "model": "/models/new-buildings-opt/forge.glb",
+    "modelSha256": "de7ad4e51aea049e56dd0dc8509e3167eac49245f0555c0fee9932b6ced870c6",
+    "imageSha256": "d6a33d5d151cce803994498a2934777d4ff31d5cee5a75590849348c69f4c599"
+  },
+  "/images/buildings/construction/mine.png": {
+    "model": "/models/new-buildings-opt/mine.glb",
+    "modelSha256": "a8c64cd7c49cdca9aae20dd7e0ae0242c5130db4dc4be953a6f55bda3d759efb",
+    "imageSha256": "f4bc16fb05c98b263ea4c1c04fcf5a1ed31a8e9a07b2ddfd36050d090997caad"
+  },
+  "/images/buildings/construction/lumber_mill.png": {
+    "model": "/models/new-buildings-opt/lumber_mill.glb",
+    "modelSha256": "9bcdb40e81cb60886495d3f0314671c95bf1d37bb0cb349a8e9c05c619822870",
+    "imageSha256": "4a46b4301916f90859d66fd1e0eb92f87abbc1e56d6eef64f39e5dca44f45515"
+  },
+  "/images/buildings/construction/dragonhide.png": {
+    "model": "/models/new-buildings-opt/dragonhide.glb",
+    "modelSha256": "b4d898ed9618fe964ef80d5349ad761806401240eea807e8d6aa1f7ddfed0c2a",
+    "imageSha256": "13d6ba460d653397b16627f6a42c8e4693982eb9f46bbb4a8067d9cf8b2eae56"
+  },
+  "/images/buildings/construction/essence-rift.png": {
+    "model": "/models/reward-tiles/rift.glb",
+    "modelSha256": "134730f681899c93287d6167946d58c3f9cfdca7b443f8131e495638135ed2d9",
+    "imageSha256": "4fb5873fbf6547c70370e415deee030a2e567c0f3ad009e2457659af5af68b58"
+  },
+  "/images/buildings/construction/stable.png": {
+    "model": "/models/new-buildings-opt/stable.glb",
+    "modelSha256": "5ae2e013c1c09afb5225c13de794daade9ae164f1cafe995f5dcdfde1b687175",
+    "imageSha256": "e5866ab3a3f270eca4b6899c1a71cd1bc21743db9594828cae9a8f85b576280d"
+  }
+}

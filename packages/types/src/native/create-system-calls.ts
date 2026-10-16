@@ -5,7 +5,20 @@ import * as SystemProps from "../types";
 export type SystemCallAuthHandler = {
   onNoAccount?: () => void;
   onError?: (error: Error) => void;
+  /**
+   * Why no action can be sent right now (the game has not opened to play), or null. Every system call asks it before
+   * sending, so no entrance acts early; the chain would refuse with "game not started".
+   */
+  refuseNow?: () => string | null;
 };
+
+/** A system call the client did not send, because the game does not accept actions yet; its message is the reason. */
+export class ActionRefusedError extends Error {
+  constructor(reason: string) {
+    super(reason);
+    this.name = "ActionRefusedError";
+  }
+}
 
 export type BatchTransactionReceipt = GetTransactionReceiptResponse & { remaining: bigint };
 
@@ -14,6 +27,9 @@ export type SystemCalls = ReturnType<typeof createSystemCalls>;
 export function createSystemCalls({ provider, authHandler }: { provider: any; authHandler?: SystemCallAuthHandler }) {
   const withAuth = <T extends (...args: any[]) => Promise<any>>(fn: T): T => {
     return (async (...args: Parameters<T>) => {
+      // A refusal is the game's state, not a failure: it is thrown to the caller and never reported as an error.
+      const refusal = authHandler?.refuseNow?.() ?? null;
+      if (refusal !== null) throw new ActionRefusedError(refusal);
       try {
         const props = args[0] as SystemProps.SystemSigner;
 
@@ -145,10 +161,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     props: SystemProps.InitializeHyperstructureProps,
   ): Promise<GetTransactionReceiptResponse> => {
     return await provider.initialize(props);
-  };
-
-  const allocate_shares = async (props: SystemProps.SetCoOwnersProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.allocate_shares(props);
   };
 
   const contribute_to_construction = async (
@@ -389,7 +401,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     update_structure_ownership: withAuth(update_structure_ownership),
 
     initialize_hyperstructure: withAuth(initialize_hyperstructure),
-    allocate_shares: withAuth(allocate_shares),
     contribute_to_construction: withAuth(contribute_to_construction),
     set_access: withAuth(set_access),
     end_game: withAuth(end_game),

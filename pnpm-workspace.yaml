@@ -26,7 +26,6 @@ catalogs:
     "@starknet-react/core": 5.0.3
     "@types/react": ^18
     "@types/react-dom": ^18
-    bignumber.js: ^9.3.0
     react: ^18
     react-dom: ^18
     starknet: ^8.5.2
@@ -34,7 +33,6 @@ catalogs:
     type-fest: ^2.19.0
     viem: ^2.24.3
     vite: ^5.4.21
-    zod: ^3.25.76
   web:
     bun-types: 1.4.2
     "@types/react": ^19.2.14
@@ -54,5 +52,5 @@ catalogs:
     zod: ^4.3.6
 
 patchedDependencies:
+  three@0.186.1: patches/three@0.186.1.patch
   "@cartridge/controller@0.13.16": patches/@cartridge__controller@0.13.16.patch
-  three@0.185.1: patches/three@0.185.1.patch

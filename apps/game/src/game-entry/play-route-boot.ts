@@ -256,14 +256,10 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
   const resolvedRequest = useMemo(() => resolvePlayBootRequest(location), [location.pathname, location.search]);
   const [bootToken, setBootToken] = useState(0);
   const readiness = usePlayRouteReadinessStore();
-  const nextBootTokenRef = useRef(0);
   const previousEntryRef = useRef<CanonicalPlayEntry | null>(null);
 
   const startPlayRouteBoot = useCallback(() => {
-    const nextBootToken = nextBootTokenRef.current + 1;
-    nextBootTokenRef.current = nextBootToken;
-    usePlayRouteReadinessStore.getState().reset(nextBootToken);
-    setBootToken(nextBootToken);
+    setBootToken(usePlayRouteReadinessStore.getState().startBoot());
     setShowBlankOverlay(true);
   }, [setShowBlankOverlay]);
 

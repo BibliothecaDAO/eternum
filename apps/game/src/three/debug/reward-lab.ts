@@ -86,7 +86,7 @@ export async function mountRewardLab(
     return lab;
   } catch (error) {
     if (lab) lab.dispose();
-    else runtime.backend.dispose?.();
+    else runtime.backend.dispose();
     if (!signal.aborted) console.error("[RewardLab] Could not initialize the reward studies", error);
     throw error;
   }
@@ -246,7 +246,7 @@ class RewardReviewScene implements RewardLab {
     disposeSkinnedSceneTemplates([...this.templates.values()].map(({ scene }) => scene));
     this.environment.dispose();
     this.reflectionMap?.dispose();
-    this.runtime.backend.dispose?.();
+    this.runtime.backend.dispose();
     this.runtime.renderer.domElement.remove();
     this.relicRenderer.domElement.remove();
   }

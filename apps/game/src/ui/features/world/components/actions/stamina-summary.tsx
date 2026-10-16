@@ -3,7 +3,7 @@ import { configManager } from "@bibliothecadao/eternum";
 import type { ActionPath } from "@bibliothecadao/eternum";
 import type { ID } from "@bibliothecadao/types";
 import { useStaminaManager } from "@/hooks/helpers/use-stamina";
-import { getPathStaminaCost } from "@/hooks/exploration-automation-planner";
+import { getPathStaminaCost } from "@/lib/army-stamina/path-cost";
 import clsx from "clsx";
 import { useMemo } from "react";
 
@@ -27,5 +27,5 @@ export const StaminaSummary = ({ selectedEntityId, isExplored, path }: StaminaSu
   const { color: statusColor } = staminaTone(stamina?.amount, requiredStamina);
   const displayRequired = requiredStamina === 0 ? "0" : `-${formatAmount(requiredStamina)}`;
 
-  return <span className={clsx(statusColor, "text-xs font-semibold")}>{displayRequired}</span>;
+  return <span className={clsx(statusColor, "text-sm font-semibold")}>{displayRequired}</span>;
 };

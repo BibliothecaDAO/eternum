@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { skipToken, useQuery } from "@tanstack/react-query";
 
 import { isSameStarknetAddress } from "@realms-world/identity";
 import type { ChestContent, PlayerResult, Registration } from "@realms-world/value-ledger/codecs";
@@ -70,6 +70,25 @@ export const useReward = (ledger: EnvironmentLedger, keys: PlayedGameKeys, walle
     refetchInterval: (query) =>
       query.state.data?.chest?.requested && !query.state.data.chest.finished ? 5_000 : 30_000,
   });
+
+/** The seat a finished game rewards: the ledger, the game's keys, and the wallet the roster froze for the player. */
+export interface RewardSeat {
+  ledger: EnvironmentLedger;
+  keys: PlayedGameKeys;
+  owner: string;
+}
+
+/**
+ * Whether the seat's chest waits sealed in its wallet: its Open is then the Results page's one gold step. The same read
+ * as the reward panel's, so it is asked once.
+ */
+export const useSealedChest = (seat: RewardSeat | null): boolean => {
+  const reward = useQuery({
+    queryKey: seat ? rewardKey(seat.keys, seat.owner) : ["ledger", "reward", "no-seat"],
+    queryFn: seat ? () => readReward(seat.ledger, seat.keys, seat.owner) : skipToken,
+  });
+  return seat !== null && reward.data !== undefined && rewardState(reward.data, seat.owner) === "sealed";
+};
 
 const readReward = async (read: EnvironmentLedger, keys: PlayedGameKeys, wallet: string): Promise<Reward> => {
   const [result, registration, collection] = await Promise.all([

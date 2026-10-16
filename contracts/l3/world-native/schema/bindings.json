@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "e181850338febef8b5fd8a562b0e1131a438299a494322f5235ae60c6faf5ac8",
+  "schemaIdentity": "706b281be1c8da6c91df2cf8856fa91981c9a779882440e7fbccf8f3c85844ac",
   "commandAbi": [
     {
       "type": "interface",
@@ -1557,6 +1557,10 @@
     },
     {
       "name": "SiteChest",
+      "scope": "game"
+    },
+    {
+      "name": "RelicChest",
       "scope": "game"
     },
     {

@@ -85,7 +85,7 @@ export const ResourceCost = ({
           )}
         </div>
         {type === "horizontal" && trait && (
-          <div className={clsx("relative font-normal self-start uppercase text-opacity-75", `text-${traitTextSize}`)}>
+          <div className={clsx("relative font-normal self-start text-opacity-75", `text-${traitTextSize}`)}>
             {trait}
           </div>
         )}

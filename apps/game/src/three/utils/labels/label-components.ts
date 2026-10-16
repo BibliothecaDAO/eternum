@@ -1,3 +1,5 @@
+import { resourceMeaning, iconUrl } from "@/ui/design-system/icon-meaning";
+import { FONTS } from "@/tokens";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import {
   isStaminaRecharging,
@@ -215,7 +217,7 @@ export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLEle
   const container = document.createElement("div");
   container.classList.add("flex", "items-center", "truncate", "gap-1");
   if (cameraView === CameraView.Medium) {
-    container.classList.add("gap-0.5", "text-[11px]");
+    container.classList.add("gap-0.5", "text-sm");
   }
   container.setAttribute("data-component", "owner");
 
@@ -262,7 +264,7 @@ export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLEle
     const guildBadge = document.createElement("span");
     guildBadge.textContent = `⚔️ ${cleanedName || "Guild"}`;
     guildBadge.classList.add(
-      "text-xxs",
+      "text-sm",
       "bg-gradient-to-r",
       fromColor,
       toColor,
@@ -298,7 +300,7 @@ export const createStaminaBar = (currentStamina: number, maxStamina: number, inp
   container.setAttribute("data-component", "stamina-bar");
 
   if (cameraView === CameraView.Medium) {
-    container.classList.add("flex", "items-center", "gap-1", "text-[11px]");
+    container.classList.add("flex", "items-center", "gap-1", "text-sm");
 
     const icon = document.createElement("span");
     icon.textContent = "⚡";
@@ -310,7 +312,7 @@ export const createStaminaBar = (currentStamina: number, maxStamina: number, inp
 
     const percent = document.createElement("span");
     percent.textContent = formatStaminaPercent(displayedCurrent, maxStamina);
-    percent.classList.add("font-semibold", "tracking-tight");
+    percent.classList.add("font-semibold");
     if (recharging) {
       percent.classList.add(STAMINA_RECHARGING_TEXT_CLASS);
     }
@@ -324,7 +326,7 @@ export const createStaminaBar = (currentStamina: number, maxStamina: number, inp
   container.style.display = "flex";
   container.style.alignItems = "center";
   container.style.gap = "4px";
-  container.style.fontSize = "10px";
+  container.style.fontSize = "14px";
 
   const icon = document.createElement("span");
   icon.textContent = "⚡";
@@ -370,8 +372,8 @@ export const createStaminaBar = (currentStamina: number, maxStamina: number, inp
   const text = document.createElement("span");
   text.textContent = `${displayedCurrent}/${maxStamina}`;
   text.style.color = "#ffffff";
-  text.style.fontFamily = "monospace";
-  text.style.fontSize = "10px";
+  text.style.fontFamily = FONTS.body;
+  text.style.fontSize = "14px";
   text.style.fontWeight = "500";
   if (recharging) {
     text.classList.add(STAMINA_RECHARGING_TEXT_CLASS);
@@ -394,7 +396,7 @@ export const createTroopCountDisplay = (
   const cameraView = resolveCameraView(inputView);
   const container = document.createElement("div");
   container.setAttribute("data-component", "troop-count");
-  container.classList.add("flex", "items-center", "rounded", "bg-black/40", "text-xxs", "w-fit");
+  container.classList.add("flex", "items-center", "rounded", "bg-black/40", "text-sm", "w-fit");
 
   if (cameraView === CameraView.Medium) {
     container.classList.add("gap-1", "px-1", "py-0.5");
@@ -405,7 +407,7 @@ export const createTroopCountDisplay = (
   const swordIcon = document.createElement("span");
   swordIcon.textContent = "⚔️";
   if (cameraView === CameraView.Medium) {
-    swordIcon.classList.add("text-[11px]");
+    swordIcon.classList.add("text-sm");
   }
   container.appendChild(swordIcon);
 
@@ -415,7 +417,7 @@ export const createTroopCountDisplay = (
     iconContainer.classList.add("w-6", "h-6", "flex-shrink-0", "flex", "items-center", "justify-center");
 
     const img = document.createElement("img");
-    img.src = `/images/resources/${resourceId}.png`;
+    img.src = iconUrl(resourceMeaning(resourceId));
     img.classList.add("w-full", "h-full", "object-contain");
     iconContainer.appendChild(img);
     container.appendChild(iconContainer);
@@ -427,7 +429,7 @@ export const createTroopCountDisplay = (
   countSpan.classList.add("font-semibold", "min-w-[1rem]", "text-center");
   countSpan.style.color = SOFT_LABEL_COLOR;
   if (cameraView === CameraView.Medium) {
-    countSpan.classList.add("text-[11px]", "min-w-0");
+    countSpan.classList.add("text-sm", "min-w-0");
   } else {
     countSpan.classList.add("text-white");
   }
@@ -436,7 +438,7 @@ export const createTroopCountDisplay = (
 
   const tierBadge = document.createElement("span");
   tierBadge.textContent = `T${tierValue}`;
-  tierBadge.classList.add("px-1", "py-0.5", "rounded", "text-[10px]", "font-bold", "border");
+  tierBadge.classList.add("px-1", "py-0.5", "rounded", "text-sm", "font-bold", "border");
   tierBadge.classList.add(...getTierStyle(tierValue).split(" "));
   if (cameraView === CameraView.Medium) {
     tierBadge.classList.add("leading-none");
@@ -458,17 +460,16 @@ export const createGuardArmyDisplay = (
   container.setAttribute("data-component", "guard-armies");
 
   if (cameraView === CameraView.Medium) {
-    container.classList.add("flex", "flex-row", "flex-wrap", "gap-1", "text-[11px]");
+    container.classList.add("flex", "flex-row", "flex-wrap", "gap-1", "text-sm");
     container.style.color = SOFT_LABEL_COLOR;
   } else {
-    container.classList.add("flex", "flex-row", "gap-1", "text-xxs", "overflow-x-auto");
+    container.classList.add("flex", "flex-row", "gap-1", "text-sm", "overflow-x-auto");
     container.style.color = SOFT_LABEL_COLOR;
   }
 
   if (!guardArmies || guardArmies.length === 0) {
     const noGuards = document.createElement("span");
     noGuards.textContent = "No Guards";
-    noGuards.classList.add("italic");
     container.appendChild(noGuards);
     return container;
   }
@@ -509,7 +510,7 @@ export const createGuardArmyDisplay = (
 
     const totalLabel = document.createElement("span");
     totalLabel.textContent = "Total";
-    totalLabel.classList.add("uppercase", "tracking-wide", "text-[10px]", "text-gold/70", "font-semibold");
+    totalLabel.classList.add("text-sm", "text-gold/70", "font-semibold");
     totalContainer.appendChild(totalLabel);
 
     const totalValue = document.createElement("span");
@@ -539,7 +540,7 @@ export const createGuardArmyDisplay = (
       iconContainer.classList.add("w-6", "h-6", "flex-shrink-0", "flex", "items-center", "justify-center");
 
       const img = document.createElement("img");
-      img.src = `/images/resources/${resourceId}.png`;
+      img.src = iconUrl(resourceMeaning(resourceId));
       img.classList.add("w-full", "h-full", "object-contain");
       iconContainer.appendChild(img);
       guardDiv.appendChild(iconContainer);
@@ -553,7 +554,7 @@ export const createGuardArmyDisplay = (
 
     const tierBadge = document.createElement("span");
     tierBadge.textContent = `T${guard.tier}`;
-    tierBadge.classList.add("px-1", "py-0.5", "rounded", "text-[10px]", "font-bold", "border");
+    tierBadge.classList.add("px-1", "py-0.5", "rounded", "text-sm", "font-bold", "border");
     tierBadge.classList.add(...getTierStyle(guard.tier).split(" "));
     guardDiv.appendChild(tierBadge);
 
@@ -575,16 +576,16 @@ export const createProductionDisplay = (
   container.setAttribute("data-component", "productions");
 
   if (cameraView === CameraView.Medium) {
-    container.classList.add("flex", "flex-wrap", "items-center", "gap-1", "text-[11px]");
+    container.classList.add("flex", "flex-wrap", "items-center", "gap-1", "text-sm");
     container.style.color = SOFT_LABEL_COLOR;
   } else {
-    container.classList.add("flex", "flex-wrap", "items-center", "gap-1", "text-xxs");
+    container.classList.add("flex", "flex-wrap", "items-center", "gap-1", "text-sm");
   }
 
   if (!activeProductions || activeProductions.length === 0) {
     const noProduction = document.createElement("span");
     noProduction.textContent = "No Active Production";
-    noProduction.classList.add("text-gray-400", "italic");
+    noProduction.classList.add("text-gray-400");
     container.appendChild(noProduction);
     return container;
   }
@@ -616,13 +617,13 @@ export const createProductionDisplay = (
 
       const img = document.createElement("img");
       if (resourceName === "House") {
-        img.src = "/images/buildings/thumb/house.png";
+        img.src = iconUrl("home");
       } else if (resourceName === "Silo") {
-        img.src = "/images/buildings/thumb/silo.png";
+        img.src = iconUrl("granary");
       } else {
         const resourceId = ResourcesIds[resourceName as keyof typeof ResourcesIds];
         if (resourceId) {
-          img.src = `/images/resources/${resourceId}.png`;
+          img.src = iconUrl(resourceMeaning(resourceId));
         }
       }
 
@@ -633,7 +634,7 @@ export const createProductionDisplay = (
 
     const countSpan = document.createElement("span");
     countSpan.textContent = `${production.buildingCount}`;
-    countSpan.classList.add("font-semibold", "text-xs");
+    countSpan.classList.add("font-semibold", "text-sm");
     countSpan.style.color = SOFT_LABEL_COLOR;
     productionDiv.appendChild(countSpan);
 
@@ -700,7 +701,7 @@ const createIncomingTroopIcon = (resourceId: ResourcesIds): HTMLElement => {
   iconContainer.classList.add("w-5", "h-5", "flex-shrink-0", "flex", "items-center", "justify-center");
 
   const img = document.createElement("img");
-  img.src = `/images/resources/${resourceId}.png`;
+  img.src = iconUrl(resourceMeaning(resourceId));
   img.classList.add("w-full", "h-full", "object-contain");
   img.setAttribute("data-role", "incoming-troop-icon");
   iconContainer.appendChild(img);
@@ -719,7 +720,7 @@ const createIncomingTroopCount = (count: number): HTMLElement => {
 const createIncomingTroopTierIndicator = (troopTier: TroopTier): HTMLElement => {
   const tierValue = resolveTroopTierValue(troopTier);
   const tierIndicator = document.createElement("span");
-  tierIndicator.classList.add("px-1", "py-0.5", "rounded", "text-[10px]", "font-bold", "border", "leading-none");
+  tierIndicator.classList.add("px-1", "py-0.5", "rounded", "text-sm", "font-bold", "border", "leading-none");
   tierIndicator.classList.add(...getTierStyle(tierValue).split(" "));
   tierIndicator.setAttribute("data-role", "incoming-troop-tier");
   tierIndicator.textContent = `T${tierValue}`;
@@ -770,7 +771,7 @@ const createIncomingTroopList = (arrivals: IncomingTroopArrival[]): HTMLElement 
   if (arrivals.length > visibleArrivals.length) {
     const overflow = document.createElement("div");
     overflow.setAttribute("data-role", "incoming-troops-overflow");
-    overflow.classList.add("text-[10px]", "font-medium", "text-gold/70");
+    overflow.classList.add("text-sm", "font-medium", "text-gold/70");
     overflow.textContent = `+${arrivals.length - visibleArrivals.length} more`;
     container.appendChild(overflow);
   }
@@ -908,13 +909,13 @@ const createBattleTimer = (battleTimerLeft: number): HTMLElement => {
   // Timer icon
   const timerIcon = document.createElement("span");
   timerIcon.textContent = "⏱️";
-  timerIcon.classList.add("text-xs");
+  timerIcon.classList.add("text-sm");
   timerDiv.appendChild(timerIcon);
 
   // Timer text
   const timerText = document.createElement("span");
   timerText.textContent = formatTime(battleTimerLeft);
-  timerText.classList.add("text-red-300", "font-mono", "text-xxs", "font-bold");
+  timerText.classList.add("text-red-300", "font-mono", "text-sm", "font-bold");
   timerText.setAttribute("data-role", "timer-text");
   timerDiv.appendChild(timerText);
 
@@ -945,7 +946,7 @@ export const createDirectionIndicators = (
   }
 
   const container = document.createElement("div");
-  container.classList.add("flex", "items-center", "justify-center", "gap-1", "text-xxs", "animate-fade-in");
+  container.classList.add("flex", "items-center", "justify-center", "gap-1", "text-sm", "animate-fade-in");
   container.setAttribute("data-component", "direction-indicators");
 
   // Attack direction (offensive) - emoji left, arrow right
@@ -956,7 +957,7 @@ export const createDirectionIndicators = (
     // Attack icon (left)
     const attackIcon = document.createElement("span");
     attackIcon.textContent = "⚔️";
-    attackIcon.classList.add("text-xs");
+    attackIcon.classList.add("text-sm");
     attackDiv.appendChild(attackIcon);
 
     // Direction arrow (right)
@@ -974,7 +975,7 @@ export const createDirectionIndicators = (
     // Defense icon (left)
     const defenseIcon = document.createElement("span");
     defenseIcon.textContent = "🛡️";
-    defenseIcon.classList.add("text-xs");
+    defenseIcon.classList.add("text-sm");
     defenseDiv.appendChild(defenseIcon);
 
     // Direction arrow (right)

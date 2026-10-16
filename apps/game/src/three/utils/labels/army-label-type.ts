@@ -1,3 +1,4 @@
+import { resourceMeaning, iconUrl } from "@/ui/design-system/icon-meaning";
 import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/camera-view";
 import {
@@ -38,7 +39,7 @@ export interface ArmyLabelData extends LabelData {
 // The wheat marker uses the resource bars' own wheat art, so it reads as the same resource across the HUD.
 const createFoodBlockedMarker = (): HTMLElement => {
   const marker = document.createElement("img");
-  marker.src = `/images/resources/${ResourcesIds.Wheat}.png`;
+  marker.src = iconUrl(resourceMeaning(ResourcesIds.Wheat));
   marker.alt = "Not enough wheat to march";
   marker.title = "Not enough wheat to march";
   marker.setAttribute("data-component", "food-blocked");
@@ -65,7 +66,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
 
     // Add army icon
     const img = document.createElement("img");
-    img.src = `/images/labels/${data.isMine ? "army" : "enemy_army"}.png`;
+    img.src = iconUrl("map-army");
     img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
     img.setAttribute("data-component", "army-icon");
 
@@ -108,7 +109,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
         textContainer.appendChild(staminaBar);
       } else if (data.currentStamina === undefined || cameraView !== CameraView.Medium) {
         const staminaInfo = document.createElement("div");
-        staminaInfo.classList.add("flex", "items-center", "text-xxs", "gap-1");
+        staminaInfo.classList.add("flex", "items-center", "text-sm", "gap-1");
 
         const staminaIcon = document.createElement("span");
         staminaIcon.textContent = "⚡";
@@ -249,7 +250,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
           contentContainer.appendChild(staminaBar);
         } else if (data.currentStamina === undefined || cameraView !== CameraView.Medium) {
           const staminaInfo = document.createElement("div");
-          staminaInfo.classList.add("flex", "items-center", "text-xxs", "gap-1");
+          staminaInfo.classList.add("flex", "items-center", "text-sm", "gap-1");
 
           const staminaIcon = document.createElement("span");
           staminaIcon.textContent = "⚡";
@@ -269,7 +270,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
 
     const armyIcon = element.querySelector('[data-component="army-icon"]') as HTMLImageElement;
     if (armyIcon) {
-      armyIcon.src = `/images/labels/${data.isMine ? "army" : "enemy_army"}.png`;
+      armyIcon.src = iconUrl("map-army");
     }
 
     const staminaBar = element.querySelector('[data-component="stamina-bar"]');

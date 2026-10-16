@@ -1,6 +1,7 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import clsx from "clsx";
 import gsap from "gsap";
-import { ChevronDown, ChevronUp } from "@/ui/design-system/atoms/game-icons";
+
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { EffectIntensity, PlayerEffect, PointDeltas } from "./use-leaderboard-effects";
@@ -181,7 +182,11 @@ const RankChangeEffect = ({ change, intensity, position }: RankChangeEffectProps
         transform: "translateX(-50%)",
       }}
     >
-      {isUp ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+      {isUp ? (
+        <SemanticIcon name="chevron-up" className="w-4 h-4" />
+      ) : (
+        <SemanticIcon name="chevron-down" className="w-4 h-4" />
+      )}
       <span>{positions}</span>
     </div>
   );

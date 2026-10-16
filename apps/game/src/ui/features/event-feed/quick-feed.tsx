@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
@@ -7,7 +8,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { triggerConnectionForceReconnect } from "@/ui/features/world/components/network-status-retry";
 import { configManager } from "@bibliothecadao/eternum";
 import { TickIds } from "@bibliothecadao/types";
-import { RefreshCw, ScrollText, WifiOff } from "@/ui/design-system/atoms/game-icons";
+
 import { useEffect, useRef, useState } from "react";
 import { orderHeadlineFeed, useHeadlineFeedStore } from "../news-headlines/headline-feed-store";
 import type { Headline } from "../news-headlines/headline-types";
@@ -16,6 +17,7 @@ import { FEED_ROW_CLASS, FeedRowLine, HeadlineIcon } from "./feed-row-line";
 import { type ImportantFeedRow, selectImportantFeedRows, selectQuickFeedRows } from "./important-feed-rows";
 import { toast } from "./notify";
 import { useFeedRows } from "./use-feed-rows";
+import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 
 const QUICK_FEED_WINDOW_MS = 20_000;
 const QUICK_FEED_MAX_ROWS = 5;
@@ -28,12 +30,9 @@ export const QuickFeed = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogTog
     <LogToggle
       open={logOpen}
       onToggle={onLogToggle}
-      className={cn(
-        "h-8 gap-1.5 rounded-md bg-black/50 px-2.5 font-sans backdrop-blur-[2px] hover:bg-black/70",
-        HUD_LABEL,
-      )}
+      className={cn("h-9 gap-1.5 rounded-md px-2.5 font-sans hover:border-gold/50", OVERLAY_SURFACE_BASE, HUD_LABEL)}
     >
-      <ScrollText className="h-4 w-4" />
+      <SemanticIcon name="chronicles" className="h-4 w-4" />
       Log
     </LogToggle>
     <QuickFeedRows />
@@ -123,14 +122,15 @@ export function useImportantFeed() {
 
 /** Rows that arrived since the log was last open; zero while it is open. */
 export function useUnreadFeedCount(rows: ImportantFeedRow[], logOpen: boolean): number {
-  const [seenAt, setSeenAt] = useState(() => Date.now());
-  useEffect(() => setSeenAt(Date.now()), [logOpen]);
-  return logOpen ? 0 : rows.filter((row) => row.at > seenAt).length;
+  const [seen, setSeen] = useState(() => ({ logOpen, at: Date.now() }));
+  // Opening or closing the log marks every row it holds as seen.
+  if (seen.logOpen !== logOpen) setSeen({ logOpen, at: Math.max(seen.at, ...rows.map((row) => row.at)) });
+  return logOpen ? 0 : rows.filter((row) => row.at > seen.at).length;
 }
 
 export const UnreadFeedBadge = ({ count }: { count: number }) =>
   count > 0 ? (
-    <span aria-label="Unread events" className="rounded-full bg-gold px-1.5 text-[10px] text-dark-brown">
+    <span aria-label="Unread events" className="rounded-full bg-gold px-1.5 text-sm text-dark-brown">
       {count}
     </span>
   ) : null;
@@ -170,15 +170,15 @@ function OfflineRow() {
   if (status !== "disconnected") return null;
   return (
     <div aria-label="Offline" className={cn(FEED_ROW_CLASS, "border border-danger/60 text-danger")}>
-      <WifiOff className="h-4 w-4 shrink-0" />
+      <SemanticIcon name="network-off" className="h-4 w-4 shrink-0" />
       <span className="min-w-0 flex-1 truncate">Offline</span>
       <button
         type="button"
         disabled={reconnecting}
         onClick={() => void triggerConnectionForceReconnect()}
-        className="inline-flex items-center gap-1 font-sans text-xs normal-case tracking-normal text-danger hover:underline disabled:cursor-wait"
+        className="inline-flex items-center gap-1 font-sans text-sm text-danger hover:underline disabled:cursor-wait"
       >
-        <RefreshCw className={cn("h-3 w-3", reconnecting && "animate-spin")} />
+        <SemanticIcon name="refresh" className={cn("h-3 w-3", reconnecting && "animate-spin")} />
         Retry
       </button>
     </div>

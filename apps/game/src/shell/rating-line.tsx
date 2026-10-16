@@ -11,7 +11,7 @@ import { RATING_WORDS } from "./words";
  * change: rating stays read-only (the owner, 8 October).
  */
 export const RatingLine = ({ wallet }: { wallet: string | null }) => {
-  if (wallet === null) return <p className="text-[13px] text-kit-muted">{RATING_WORDS.unlinked}</p>;
+  if (wallet === null) return <p className="text-sm text-kit-muted">{RATING_WORDS.unlinked}</p>;
   return <WalletRating wallet={wallet} />;
 };
 
@@ -24,7 +24,7 @@ export const OwnRatingLine = () => {
 const WalletRating = ({ wallet }: { wallet: string }) => {
   const answer = useRatings([wallet]).data?.ratings[wallet];
   return (
-    <p className="flex items-center gap-2 text-[14px] text-kit-muted">
+    <p className="flex items-center gap-2 text-sm text-kit-muted">
       {answer ? (
         <>
           <RatingFigure rating={answer.rating} />

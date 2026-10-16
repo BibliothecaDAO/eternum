@@ -33,20 +33,20 @@ describe("the build sheet", () => {
         <BuildView
           population={{ free: 2, total: 6 }}
           tiles={[
-            { key: "farm", icon: "Fm", name: "Farm", tip: "", foot: { kind: "price", labor: 6_800, short: false } },
+            { key: "farm", icon: "farm", name: "Farm", tip: "", foot: { kind: "price", labor: 6_800, short: false } },
             {
               key: "workshop",
-              icon: "Wk",
+              icon: "workshop",
               name: "Workshop",
               tip: "",
               foot: { kind: "price", labor: 10_000, short: true },
             },
-            { key: "war", icon: "Wa", name: "War hall", tip: "", foot: { kind: "built" } },
-            { key: "lodge", icon: "Ld", name: "Scouts' lodge", tip: "", foot: { kind: "locked", gate: 3 } },
+            { key: "war", icon: "war-hall", name: "War hall", tip: "", foot: { kind: "built" } },
+            { key: "lodge", icon: "scout-lodge", name: "Scouts' lodge", tip: "", foot: { kind: "locked", gate: 3 } },
           ]}
           chosen={0}
           onChoose={onChoose}
-          gains={[{ icon: "Wh", value: "+375/h", label: "produces" }]}
+          gains={[{ icon: "wheat", value: "+375/h", label: "produces" }]}
           prices={[{ of: "labor", amount: 6_800 }]}
           refusal={undefined}
           sending={false}
@@ -79,7 +79,7 @@ describe("the build sheet", () => {
         <BuildView
           population={{ free: 2, total: 6 }}
           tiles={[
-            { key: "farm", icon: "Fm", name: "Farm", tip: "", foot: { kind: "price", labor: 15_000, short: true } },
+            { key: "farm", icon: "farm", name: "Farm", tip: "", foot: { kind: "price", labor: 15_000, short: true } },
           ]}
           chosen={0}
           onChoose={() => {}}
@@ -87,7 +87,7 @@ describe("the build sheet", () => {
           prices={[{ of: "labor", amount: 15_000 }]}
           refusal={{
             reason: { kind: "short", of: "labor", held: 9_640, need: 15_000, wait: 10 * 3_600 + 44 * 60 },
-            fix: { icon: "Mp", word: "Explore for labor", onFix },
+            fix: { icon: "map", word: "Explore for labor", onFix },
           }}
           sending={false}
           onBuild={() => {}}
@@ -108,8 +108,12 @@ describe("the build sheet", () => {
 
 describe("the castle", () => {
   const CASTLE_MAKES = [
-    { icons: ["La" as const], label: "labor the castle makes an hour", value: "+101/h" },
-    { icons: ["La" as const, "Sg" as const], label: "labor held of its store's limit", value: "2,011 / 6,000" },
+    { icons: ["labor" as const], label: "labor the castle makes an hour", value: "+101/h" },
+    {
+      icons: ["labor" as const, "resources" as const],
+      label: "labor held of its store's limit",
+      value: "2,011 / 6,000",
+    },
   ];
 
   it("shows what the castle itself makes an hour and what its store holds, each named for the tooltip", () => {
@@ -133,7 +137,7 @@ describe("the castle", () => {
 
   const side = (level: number) => ({
     level,
-    art: "/images/buildings/construction/castleOne.png",
+    art: "realm-1" as const,
     plots: [6, 18, 36, 60][level],
     slots: [3, 4, 5, 6][level],
     limit: undefined,
@@ -180,7 +184,7 @@ describe("the castle", () => {
           prices={[{ of: "labor", amount: 4_000 }]}
           refusal={{
             reason: { kind: "short", of: "labor", held: 2_011, need: 4_000, wait: 19 * 3_600 + 44 * 60 },
-            fix: { icon: "Mp", word: "Explore for labor", onFix },
+            fix: { icon: "map", word: "Explore for labor", onFix },
           }}
           sending={false}
           onUpgrade={onUpgrade}

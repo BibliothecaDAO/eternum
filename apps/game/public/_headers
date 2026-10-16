@@ -33,8 +33,6 @@
   Cache-Control: no-cache
 /lab/*
   Cache-Control: no-cache
-/debug/*
-  Cache-Control: no-cache
 /sw.js
   Cache-Control: no-cache
 /manifest.webmanifest

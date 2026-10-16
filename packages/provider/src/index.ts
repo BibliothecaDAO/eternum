@@ -27,7 +27,7 @@ import {
   uint256,
   shortString,
 } from "starknet";
-import { extractErrorMessage } from "./classify-transaction-error";
+import { classifyTransactionError, TransactionFailure, extractErrorMessage } from "./classify-transaction-error";
 import { ACTION_CHECKING_AFTER_MS, TransactionNotSentError } from "./transaction-not-sent";
 import {
   TransactionFailedPayload,
@@ -52,9 +52,22 @@ type SubmittedTransaction = {
   inBlock?: Promise<void>;
 };
 
-export { classifyTransactionError, extractErrorMessage, formatErrorForConsole } from "./classify-transaction-error";
+/**
+ * A shard's RPC. Its node reads the JSON-RPC body whatever type the request declares, and a `text/plain` POST is a CORS
+ * simple request: the browser sends it without the preflight a JSON one waits for on each new connection.
+ */
+export const createShardRpcProvider = (nodeUrl?: string): RpcProvider =>
+  new RpcProvider({ nodeUrl, headers: { "Content-Type": "text/plain" } });
+
+export {
+  classifyTransactionError,
+  TransactionFailure,
+  extractErrorMessage,
+  formatErrorForConsole,
+} from "./classify-transaction-error";
 export type { ClassifiedTransactionError } from "./classify-transaction-error";
 export { ACTION_CHECKING_AFTER_MS, TransactionNotSentError } from "./transaction-not-sent";
+export { PLAY_REFUSALS, PLAYS_IN_FLIGHT, playRefusalReasonOf, type PlayRefusalReason } from "./play-refusal";
 export { TransactionType } from "./types";
 export type {
   TransactionFailedPayload,
@@ -68,11 +81,6 @@ export type {
   TransactionStreamWaiter,
 } from "./types";
 
-const matchesDestroyedConnectionError = (error: unknown): boolean => {
-  const message = extractErrorMessage(error, "").toLowerCase();
-  return message.includes("destroyed connection") || message.includes("connection destroyed");
-};
-
 const classifySubmitFailure = (
   error: unknown,
 ): {
@@ -81,7 +89,7 @@ const classifySubmitFailure = (
   hasTxHash: boolean;
   retrySafety: TransactionRetrySafety;
 } => {
-  if (matchesDestroyedConnectionError(error)) {
+  if (classifyTransactionError(error).kind === "connection_destroyed") {
     return {
       failureKind: "provider_connection_destroyed",
       providerState: "destroyed",
@@ -96,11 +104,6 @@ const classifySubmitFailure = (
     hasTxHash: false,
     retrySafety: "unknown",
   };
-};
-
-type ActorExecutionLock = {
-  completed: Promise<void>;
-  resolve: () => void;
 };
 
 type TransactionFailureError = Error & {
@@ -133,9 +136,15 @@ const attachTransactionFailureStage = (
   fallbackMessage = "Unknown error",
 ): TransactionFailureError => {
   const stagedError: TransactionFailureError =
-    error instanceof Error
-      ? (error as TransactionFailureError)
-      : (new Error(extractErrorMessage(error, fallbackMessage)) as TransactionFailureError);
+    error instanceof TransactionNotSentError || error instanceof TransactionFailure
+      ? error
+      : new TransactionFailure({
+          classification: classifyTransactionError(error),
+          message: extractErrorMessage(error, fallbackMessage),
+          cause: error,
+        });
+  if (error instanceof Error && (error as TransactionFailureError).rawRevertReason !== undefined)
+    stagedError.rawRevertReason = (error as TransactionFailureError).rawRevertReason;
   stagedError.transactionFailureStage = stage;
   return stagedError;
 };
@@ -158,7 +167,6 @@ export interface ProviderContracts {
 export class EternumProvider extends EventEmitter {
   readonly contracts: ProviderContracts;
   readonly provider: RpcProvider;
-  private pendingActorExecutionLocks = new Map<string, ActorExecutionLock>();
   private nativeSubmission?: NativeSubmission;
   private commandAbi?: Abi;
   private resolveOwnedStructure?: (actor: string) => number;
@@ -185,7 +193,7 @@ export class EternumProvider extends EventEmitter {
   ) {
     super();
     this.contracts = contracts;
-    this.provider = new RpcProvider({ nodeUrl: url });
+    this.provider = createShardRpcProvider(url);
     this.gameId = scope?.gameId ?? 0;
     this.transactionStreamWaiter = scope?.transactionStreamWaiter;
   }
@@ -252,45 +260,6 @@ export class EternumProvider extends EventEmitter {
       ({ entrypoint }) => entrypoint === "Explore" || entrypoint === "Move",
     );
     return Array.isArray(call?.calldata) ? this.normalizeAddress(String(call.calldata[2])) : undefined;
-  }
-
-  private getTransactionSerializationKey(signer: Account | AccountInterface): string {
-    return `native:${this.gameId}:${this.normalizeAddress(signer.address)}`;
-  }
-
-  private createActorExecutionLock(): ActorExecutionLock {
-    let resolve!: () => void;
-    const completed = new Promise<void>((innerResolve) => {
-      resolve = innerResolve;
-    });
-
-    return { completed, resolve };
-  }
-
-  private async acquireActorExecutionLock(key: string): Promise<() => void> {
-    while (true) {
-      const existingLock = this.pendingActorExecutionLocks.get(key);
-      if (!existingLock) {
-        const lock = this.createActorExecutionLock();
-        this.pendingActorExecutionLocks.set(key, lock);
-
-        let released = false;
-        return () => {
-          if (released) {
-            return;
-          }
-          released = true;
-
-          const currentLock = this.pendingActorExecutionLocks.get(key);
-          if (currentLock === lock) {
-            this.pendingActorExecutionLocks.delete(key);
-          }
-          lock.resolve();
-        };
-      }
-
-      await existingLock.completed;
-    }
   }
 
   /** Every command is the player's own signed invoke of the shard's play entry; there is no other way to submit. */
@@ -410,19 +379,6 @@ export class EternumProvider extends EventEmitter {
       });
     }
 
-    // One action of a player at a time: the next command is sent only after Herald applies this one.
-    let releaseActorExecutionLock: (() => void) | undefined = await this.acquireActorExecutionLock(
-      this.getTransactionSerializationKey(signer),
-    );
-    if (txType === TransactionType.EXPLORE) {
-      this.emit("transactionProgress", {
-        stage: "explore_provider_lock_acquired",
-        type: txType,
-        explorerId: this.getExploreTransactionExplorerId(transactionDetails),
-        signerAddress: transactionMeta.signerAddress,
-      });
-    }
-
     let tx: SubmittedTransaction;
     // Admission to visible: from sending the invoke to the stream reporting its outcome with its facts applied.
     let submitStartedAt = 0;
@@ -437,11 +393,10 @@ export class EternumProvider extends EventEmitter {
       }
       submitStartedAt = Date.now();
       tx = await this.submitTransaction(signer, transactionDetails);
-    } catch (error) {
+    } catch (cause) {
+      const error = attachTransactionFailureStage(cause, "submit");
       const message = extractErrorMessage(error);
       const submitFailure = classifySubmitFailure(error);
-      releaseActorExecutionLock?.();
-      releaseActorExecutionLock = undefined;
       this.emitTransactionFailure({
         ...transactionMeta,
         message: `Transaction failed to submit: ${message}`,
@@ -460,8 +415,6 @@ export class EternumProvider extends EventEmitter {
       transactionHash: tx.transaction_hash,
     };
     if (!this.transactionStreamWaiter) {
-      releaseActorExecutionLock?.();
-      releaseActorExecutionLock = undefined;
       this.emitTransactionPending(tx.transaction_hash, transactionMeta);
       return {
         statusReceipt: "PENDING",
@@ -482,16 +435,8 @@ export class EternumProvider extends EventEmitter {
       Math.max(0, submitStartedAt + ACTION_CHECKING_AFTER_MS - Date.now()),
     );
     void streamReceipt.catch(() => undefined).finally(() => clearTimeout(checking));
-    // The actor's next command is sent only after Herald applies this one, so its effects are visible first.
-    const waitPromise = releaseActorExecutionLock
-      ? streamReceipt.finally(() => {
-          releaseActorExecutionLock?.();
-          releaseActorExecutionLock = undefined;
-        })
-      : streamReceipt;
-
     this.emitTransactionPending(tx.transaction_hash, transactionMeta);
-    void waitPromise
+    void streamReceipt
       .then((receipt) => {
         this.emit("transactionComplete", {
           details: receipt,
@@ -1022,20 +967,6 @@ export class EternumProvider extends EventEmitter {
   public async end_game(props: SystemProps.EndGameProps) {
     return requireBatchReceipt(
       await this.submitCommand(props.signer, { kind: "CloseSeason", value: undefined }, TransactionType.END_GAME),
-    );
-  }
-
-  public async allocate_shares(props: SystemProps.SetCoOwnersProps) {
-    return this.submitCommand(
-      props.signer,
-      {
-        kind: "AllocateHyperstructureShares",
-        value: {
-          hyperstructure_id: props.hyperstructure_entity_id,
-          shareholders: props.co_owners.map((owner) => ({ player: owner[0], bps: owner[1] })),
-        },
-      },
-      TransactionType.ALLOCATE_SHARES,
     );
   }
 

@@ -13,6 +13,7 @@ import {
 import { getTerrainPropRole } from "./terrain-prop-catalog";
 import type { TerrainCellInput, TerrainPropInstance, TerrainSurfaceSample } from "./terrain-types";
 import { isTerrainWaterBiome, TERRAIN_WATER_LEVEL } from "./terrain-water";
+import { releaseDrawnObject } from "../utils/release-drawn-object";
 
 type Animator = ReturnType<typeof createCreatureAnimator>;
 interface WildlifeView {
@@ -165,6 +166,8 @@ export class TerrainWildlife {
     for (const [id, view] of this.views)
       if (!this.population.creatures.has(id)) {
         this.object3d.remove(view.root);
+        // The creature is a clone sharing its template's geometry and materials: those stay, its render objects go.
+        releaseDrawnObject(view.root);
         this.views.delete(id);
       }
   }

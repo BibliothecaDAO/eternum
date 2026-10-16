@@ -74,7 +74,7 @@ interface ArmyCreationOptions {
 const TROOP_TYPES: TroopType[] = [TroopType.Crossbowman, TroopType.Knight, TroopType.Paladin];
 const TROOP_TIERS: TroopTier[] = [TroopTier.T1, TroopTier.T2, TroopTier.T3];
 
-const formatTroopTypeLabel = (type: TroopType) => (type === TroopType.Crossbowman ? "CROSSBOW" : type);
+const formatTroopTypeLabel = (type: TroopType) => (type === TroopType.Crossbowman ? "Crossbow" : type);
 
 export const useArmyCreation = ({
   structureId: activeStructureId,
@@ -430,11 +430,10 @@ export const useArmyCreation = ({
 
   const selectedGuardLabel =
     selectedGuardTier && selectedGuardCategory ? `${selectedGuardTier} ${selectedGuardCategory}` : null;
-  const selectedGuardLabelUpper = selectedGuardLabel?.toUpperCase() ?? null;
 
   const defenseSlotErrorMessage = !armyType
-    ? !isDefenseSlotCompatible && selectedGuardLabelUpper
-      ? `Slot ${DISPLAYED_SLOT_NUMBER_MAP[guardSlot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]} currently contains ${selectedGuardLabelUpper}. Reinforce it with the same troop type and tier.`
+    ? !isDefenseSlotCompatible && selectedGuardLabel
+      ? `Slot ${DISPLAYED_SLOT_NUMBER_MAP[guardSlot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]} currently contains ${selectedGuardLabel}. Reinforce it with the same troop type and tier.`
       : selectedSlotCooldown > 0
         ? `Slot ${DISPLAYED_SLOT_NUMBER_MAP[guardSlot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]} was wiped out and is rebuilding for ${formatTime(selectedSlotCooldown)}.`
         : isDefenseSlotCreationBlocked
@@ -451,9 +450,7 @@ export const useArmyCreation = ({
     !armyType &&
     (!canInteractWithDefense || isDefenseSlotCreationBlocked || !isDefenseSlotCompatible || selectedSlotCooldown > 0);
 
-  const actionLabel = armyType
-    ? "CREATE FIELD ARMY"
-    : `ADD DEFENSE - ${GUARD_SLOT_NAMES[guardSlot as GuardSlot]?.toUpperCase()}`;
+  const actionLabel = armyType ? "Create field army" : `Add defense: ${GUARD_SLOT_NAMES[guardSlot as GuardSlot]}`;
 
   const blockedReason = resolveArmyCreationBlockedReason({
     hasStructure: Boolean(structureComponent),

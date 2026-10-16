@@ -192,7 +192,7 @@ describe("native resource facts", () => {
     expect(observed).toBeUndefined();
     expect(() => second.current(0)).toThrow("Invalid resource");
   });
-  it("starts every Blitz producer at the final main clock after delayed roster preparation", () => {
+  it("starts every Blitz producer at the fixed main clock, even while the roster is still being seated", () => {
     const store = new NativeFactStore();
     store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 350 });
     store.applyFacts([
@@ -202,14 +202,10 @@ describe("native resource facts", () => {
       }),
       ...upsert("0x2", {
         SliceRules: { ...rules, game_id: 1, mode_rules: nativeRuleConstants.PRODUCTION_START },
-        GameRegistry: game,
+        GameRegistry: { ...game, ready: false, start_main_at: 1000n },
       }),
     ]);
     const manager = new ResourceManager(store, 7, 1);
-    expect(manager.balanceWithProduction(999, 23)!.balance).toBe(0);
-    expect(manager.getActiveProductions()).toEqual([]);
-    store.applyFacts([...upsert("0x2", { GameRegistry: { ...game, ready: true, start_main_at: 1000n } })]);
-    expect(manager.balanceWithProduction(999, 23)!.balance).toBe(0);
     expect(manager.balanceWithProduction(1000, 23)!.balance).toBe(0);
     expect(manager.balanceWithProduction(1001, 23)!.balance).toBe(2);
     expect(manager.getProductionEndsAt(23)).toBe(1005);

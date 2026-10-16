@@ -1,11 +1,17 @@
 import { readFileSync } from "node:fs";
 import { isIP } from "node:net";
 import { hash } from "starknet";
-import type { StampProvider } from "../vrf/native";
-import { startStampPool, workerCount } from "../vrf/pool";
+import { openProver, type StampProvider } from "../vrf/native";
 import { felt, gameInvoke, MAX_TRANSACTION_BYTES, type PlayIdentity } from "../vrf/transaction";
 import { permitsAccountRequest, type ShardIdentity } from "./account-rpc-policy";
 import { accountRequestLimiter, rpcClientAddress } from "./rpc-client-limit";
+import { isDevShardChain } from "../../../packages/value-ledger/src/dev-shard";
+import { seaterAccountAddresses } from "../../../packages/value-ledger/src/shard-accounts";
+import {
+  PLAY_REFUSED_CODE,
+  PLAYS_IN_FLIGHT,
+  type PlayRefusalReason,
+} from "../../../packages/provider/src/play-refusal";
 
 const READ_METHODS = new Set([
   "starknet_specVersion",
@@ -29,19 +35,33 @@ const READ_METHODS = new Set([
   "starknet_getStorageProof",
   "starknet_getCompiledCasm",
 ]);
-// CPU-only 2,000-stamp waves took 381–395 ms; bound queued work and private reads too.
 const MAX_BATCH_CALLS = 32;
 const PREPARATION_TIMEOUT_MS = 2000;
 const FORWARD_TIMEOUT_MS = 5000;
 type Preparation = { signal: AbortSignal; deadline: number };
 type ProxyIdentity = ShardIdentity & PlayIdentity & { playerCapacity: number };
 type AccountClassReader = (sender: string, signal: AbortSignal) => Promise<string>;
+/**
+ * A player's play may run PLAYS_IN_FLIGHT - 1 nonces past its account's current one, so a burst of orders waits on a
+ * round trip per play, not on each play's inclusion; the mempool holds at most PLAYS_IN_FLIGHT of its plays. A stamp
+ * ahead of the current nonce is not readable before it executes: no public method returns a transaction's body. A
+ * seater, one of the pool accounts that seat fixed rosters, may queue its seats this far ahead.
+ */
+const SEATER_NONCE_WINDOW = 48n;
+const PLAYER_NONCE_WINDOW = BigInt(PLAYS_IN_FLIGHT - 1);
+
+/** The preparation ran out of time before the play could be forwarded. */
+class PreparationExpired extends Error {}
 
 function assertBeforeForward(preparation: Preparation) {
-  preparation.signal.throwIfAborted();
+  if (preparation.signal.aborted) throw new PreparationExpired();
   // A busy event loop can delay the abort event; elapsed time still refuses a late forward.
-  if (performance.now() >= preparation.deadline) throw new Error("Transaction refused");
+  if (performance.now() >= preparation.deadline) throw new PreparationExpired();
 }
+
+/** A refusal before forwarding was the preparation's deadline when it ran out of time; otherwise `otherwise`. */
+const refusalOf = (error: unknown, preparation: Preparation, otherwise: PlayRefusalReason): PlayRefusalReason =>
+  error instanceof PreparationExpired || preparation.signal.aborted ? "deadline" : otherwise;
 
 function untilAborted<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -83,8 +103,16 @@ function isRead(call: unknown): boolean {
   return request.jsonrpc === "2.0" && typeof request.method === "string" && READ_METHODS.has(request.method);
 }
 
-function refuse(code: number, message: string, status = 200): Response {
-  return Response.json({ jsonrpc: "2.0", id: null, error: { code, message } }, { status, headers: CORS });
+function refuse(code: number, message: string, status = 200, data?: object): Response {
+  return Response.json(
+    { jsonrpc: "2.0", id: null, error: { code, message, ...(data ? { data } : {}) } },
+    { status, headers: CORS },
+  );
+}
+
+/** A write refused before the node took it, naming the rule (play-refusal.ts): never a detail of the box. */
+function refuseTransaction(reason: PlayRefusalReason, status: number): Response {
+  return refuse(PLAY_REFUSED_CODE, "Transaction refused", status, { reason });
 }
 
 function privateNode(upstream: string): URL {
@@ -120,16 +148,20 @@ export function startReadRpc(
   }
   assertPlayerCapacity(identity.playerCapacity);
   const readAccountClass = accountClassReader(node, identity);
+  const seaters = new Set(seaterAccountAddresses(identity).map((address) => felt(address)!));
   const allowance = accountRequestLimiter();
   const inFlightAccounts = new Set<string>();
+  // Browsers hide a cross-origin request's connect, TLS and wait timings unless the response allows it. Only a dev chain
+  // shows them: the chain identity, not a setting, decides, so no production deploy can carry it.
+  const timingAllowed = isDevShardChain(identity.chainId);
   return Bun.serve({
     hostname,
     port,
     maxRequestBodySize: MAX_TRANSACTION_BYTES,
-    fetch(request, server) {
+    async fetch(request, server) {
       const peer = server.requestIP(request)?.address;
       const client = peer ? rpcClientAddress(peer, trustedProxy, request.headers) : undefined;
-      return handlePublicRequest(
+      const response = await handlePublicRequest(
         request,
         node,
         identity,
@@ -138,7 +170,10 @@ export function startReadRpc(
         allowance,
         inFlightAccounts,
         readAccountClass,
+        seaters,
       );
+      if (timingAllowed) response.headers.set("Timing-Allow-Origin", "*");
+      return response;
     },
   });
 }
@@ -182,6 +217,7 @@ async function handlePublicRequest(
   allowance: ReturnType<typeof accountRequestLimiter>,
   inFlightAccounts: Set<string>,
   readAccountClass: AccountClassReader,
+  seaters: ReadonlySet<bigint>,
 ): Promise<Response> {
   const preparation: Preparation = {
     deadline: performance.now() + PREPARATION_TIMEOUT_MS,
@@ -196,7 +232,7 @@ async function handlePublicRequest(
   let payload: unknown;
   try {
     const raw = await untilAborted(request.arrayBuffer(), preparation.signal);
-    if (raw.byteLength > MAX_TRANSACTION_BYTES) return refuse(-32010, "Transaction refused", 413);
+    if (raw.byteLength > MAX_TRANSACTION_BYTES) return refuseTransaction("validation", 413);
     payload = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(raw));
   } catch {
     return refuse(-32700, "Invalid JSON", 400);
@@ -213,14 +249,14 @@ async function handlePublicRequest(
   }
   let admitted: (Admitted | undefined)[];
   try {
-    // Validate the entire batch before producing any proof. Independent accounts then stamp concurrently.
+    // Validate the entire batch before producing any proof.
     admitted = await untilAborted(
       Promise.all(calls.map((call) => admitRequest(call, identity, preparation.signal, readAccountClass))),
       preparation.signal,
     );
-  } catch {
+  } catch (error) {
     return calls.some(isWrite)
-      ? refuse(-32010, "Transaction refused", 502)
+      ? refuseTransaction(refusalOf(error, preparation, "unavailable"), 502)
       : refuse(-32012, "RPC read unavailable", 502);
   }
   if (admitted.some((call) => !call)) return refuse(-32601, "RPC method is not public");
@@ -236,6 +272,7 @@ async function handlePublicRequest(
         preparation,
         request.signal,
         readAccountClass,
+        seaters,
       ),
     ),
   );
@@ -294,15 +331,20 @@ async function nodeCall(
   if (!response.ok || value.result === undefined || Object.hasOwn(value, "error")) throw new Error("Node unavailable");
   return value.result;
 }
-function transactionRefused(id: unknown) {
-  return rpcError(id, -32010, "Transaction refused");
+function transactionRefused(id: unknown, reason: PlayRefusalReason) {
+  return rpcError(id, PLAY_REFUSED_CODE, "Transaction refused", { reason });
 }
-function rpcError(id: unknown, code: number, message: string, transactionHash?: string) {
-  return {
-    jsonrpc: "2.0",
-    id: id ?? null,
-    error: { code, message, ...(transactionHash ? { data: { transaction_hash: transactionHash } } : {}) },
-  };
+function rpcError(id: unknown, code: number, message: string, data?: object) {
+  return { jsonrpc: "2.0", id: id ?? null, error: { code, message, ...(data ? { data } : {}) } };
+}
+/** The proxy tried to forward and cannot say whether the node took the write: the hash it computed, if any. */
+function outcomeUnknown(id: unknown, transactionHash?: string) {
+  return rpcError(
+    id,
+    -32011,
+    "Transaction outcome unknown",
+    transactionHash ? { transaction_hash: transactionHash } : undefined,
+  );
 }
 function isWrite(value: unknown): boolean {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
@@ -344,11 +386,15 @@ function readAnswer(answer: NodeAnswer, call: RpcCall): unknown {
   }
   return rpcError(call.id, -32012, "RPC read unavailable");
 }
+// Starknet's VALIDATION_FAILURE: the account's own validation refused the transaction at admission, so it never applies.
+const VALIDATION_FAILURE = 55;
 function writeAnswer(answer: NodeAnswer, call: RpcCall, expectedHash?: string): unknown {
   const result = answer.result as { transaction_hash?: unknown; contract_address?: unknown } | undefined;
   const hash = felt(result?.transaction_hash);
+  if (answer.error?.code === VALIDATION_FAILURE && !Object.hasOwn(answer, "result"))
+    return transactionRefused(call.id, "validation");
   if (Object.hasOwn(answer, "error") || hash === undefined || (expectedHash && hash !== felt(expectedHash)))
-    return rpcError(call.id, -32011, "Transaction outcome unknown", expectedHash);
+    return outcomeUnknown(call.id, expectedHash);
   const contract = call.method === "starknet_addDeployAccountTransaction" ? felt(result?.contract_address) : undefined;
   return {
     jsonrpc: "2.0",
@@ -369,14 +415,17 @@ async function forwardRequest(
   preparation: Preparation,
   clientSignal: AbortSignal,
   readAccountClass: AccountClassReader,
+  seaters: ReadonlySet<bigint>,
 ): Promise<unknown> {
   const { call, game } = admitted;
   const play = game?.entrypoint.stamp ? game.transaction : undefined;
   const account = play ? felt(play.sender_address)!.toString() : undefined;
-  if (account && inFlightAccounts.has(account)) return transactionRefused(call.id);
+  if (account && inFlightAccounts.has(account)) return transactionRefused(call.id, "in-flight");
   if (account) inFlightAccounts.add(account);
   let forwarded = false;
   let expectedHash: string | undefined;
+  // What a failure before forwarding refuses for, as the preparation moves on: reading the node, then stamping.
+  let stage: PlayRefusalReason = "unavailable";
   try {
     assertBeforeForward(preparation);
     let outgoing = game ? { ...call, params: [game.transaction] } : call;
@@ -388,13 +437,16 @@ async function forwardRequest(
         ]),
         preparation.signal,
       );
-      // No speculative future nonce: retrying the same accepted transaction uses the same root.
-      if (felt(nonce) !== felt(play.nonce) || felt(accountClass) !== felt(identity.accountClassHash))
-        return transactionRefused(call.id);
+      // Retrying the same accepted transaction uses the same root.
+      if (felt(accountClass) !== felt(identity.accountClassHash)) return transactionRefused(call.id, "validation");
+      if (!admitsNonce(felt(play.nonce), felt(nonce), seaters.has(felt(play.sender_address)!)))
+        return transactionRefused(call.id, "nonce");
       assertBeforeForward(preparation);
-      const stamp = await untilAborted(stamper.stamp(play), preparation.signal);
+      stage = "stamp";
+      const stamp = stamper.stamp(play);
       const hash = felt(stamp.transactionHash);
-      if (hash === undefined) return transactionRefused(call.id);
+      if (hash === undefined) return transactionRefused(call.id, "stamp");
+      stage = "unavailable";
       expectedHash = `0x${hash.toString(16)}`;
       outgoing = { ...call, params: [{ ...play, signature: [...play.signature, ...stamp.suffix] }] };
     }
@@ -413,14 +465,19 @@ async function forwardRequest(
     const answer: unknown = await untilAborted(response.json(), forwardSignal);
     if (!response.ok || !validReply(answer, call)) throw new Error("Invalid private node reply");
     return isWrite(call) ? writeAnswer(answer, call, expectedHash) : readAnswer(answer, call);
-  } catch {
+  } catch (error) {
     if (!isWrite(call)) return rpcError(call.id, -32012, "RPC read unavailable");
     return forwarded
-      ? rpcError(call.id, -32011, "Transaction outcome unknown", expectedHash)
-      : transactionRefused(call.id);
+      ? outcomeUnknown(call.id, expectedHash)
+      : transactionRefused(call.id, refusalOf(error, preparation, stage));
   } finally {
     if (account) inFlightAccounts.delete(account);
   }
+}
+
+function admitsNonce(sent: bigint | undefined, current: bigint | undefined, isSeater: boolean): boolean {
+  if (sent === undefined || current === undefined) return false;
+  return sent >= current && sent <= current + (isSeater ? SEATER_NONCE_WINDOW : PLAYER_NONCE_WINDOW);
 }
 
 async function assertChainIdentity(node: URL, identity: PlayIdentity, limit: bigint) {
@@ -462,8 +519,7 @@ async function startConfiguredProxy() {
     keyFile = process.env.VRF_KEY_FILE;
   if (!upstream || !manifestPath || !keyFile)
     throw new Error("NODE_RPC_URL, NATIVE_WORLD_MANIFEST and VRF_KEY_FILE are required");
-  const port = Number(process.env.PORT),
-    count = workerCount(process.env.VRF_WORKERS);
+  const port = Number(process.env.PORT);
   if (!Number.isSafeInteger(port) || port < 1 || port > 65535) throw new Error("Invalid PORT");
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   const identity: ProxyIdentity = {
@@ -481,16 +537,32 @@ async function startConfiguredProxy() {
     throw new Error("Invalid shard VRF manifest");
   const node = privateNode(upstream);
   await assertChainIdentity(node, identity, limit);
-  const pool = await startStampPool(keyFile, identity, count).catch(() => {
-    throw new Error("VRF prover initialization failed");
-  });
+  const prover = openVerifiedProver(keyFile, identity);
   try {
-    startReadRpc(upstream, port, identity, pool, process.env.RPC_TRUSTED_PROXY);
-    console.log(JSON.stringify({ event: "public_rpc_ready", workers: count }));
+    startReadRpc(upstream, port, identity, prover, process.env.RPC_TRUSTED_PROXY);
+    console.log(JSON.stringify({ event: "public_rpc_ready" }));
   } catch {
-    pool.close();
+    prover.close();
     throw new Error("Public RPC startup failed");
   }
+}
+
+/** The prover for the shard's protected key, refused unless its point is the one Games verifies against. */
+function openVerifiedProver(keyFile: string, identity: PlayIdentity) {
+  let prover: ReturnType<typeof openProver>;
+  try {
+    prover = openProver(keyFile, identity.chainId);
+  } catch {
+    throw new Error("VRF prover initialization failed");
+  }
+  if (
+    felt(prover.publicKey.x) !== felt(identity.vrfPublicKey.x) ||
+    felt(prover.publicKey.y) !== felt(identity.vrfPublicKey.y)
+  ) {
+    prover.close();
+    throw new Error("VRF prover initialization failed");
+  }
+  return prover;
 }
 if (import.meta.main)
   startConfiguredProxy().catch((error: unknown) => {

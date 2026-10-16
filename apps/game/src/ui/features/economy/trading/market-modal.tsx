@@ -19,7 +19,7 @@ import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import { useMarket } from "@/hooks/helpers/use-trade";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { findResourceById, ID, MarketInterface, ResourcesIds } from "@bibliothecadao/types";
-import { Store } from "@/ui/design-system/atoms/game-icons";
+
 import { lazy, Suspense, useMemo, useState } from "react";
 import { resolveBestPrices } from "./best-prices";
 import { MarketResourceSidebar } from "./market-resource-sidebar";
@@ -65,7 +65,7 @@ export const MarketModal = () => {
   return (
     <SurfaceFrame
       title="Market"
-      icon={Store}
+      icon={"trade" as const}
       onClose={closeSurface}
       className={SURFACE_WORKSPACE_CLASS}
       bodyClassName="overflow-hidden"

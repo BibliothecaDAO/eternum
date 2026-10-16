@@ -1,0 +1,137 @@
+[
+  {
+    "id": "settlement",
+    "label": "Canvas & Thatch",
+    "level": 0,
+    "wonder": false,
+    "source": "../outposts/village-canvas-thatch.blend",
+    "path": "/models/realms/settlement.glb"
+  },
+  {
+    "id": "city",
+    "label": "Terrace Forum",
+    "level": 1,
+    "wonder": false,
+    "source": "options/citadel-terraced-forum.blend",
+    "path": "/models/realms/city.glb"
+  },
+  {
+    "id": "kingdom",
+    "label": "Twin Ward",
+    "level": 2,
+    "wonder": false,
+    "source": "options/citadel-twin-ward.blend",
+    "path": "/models/realms/kingdom.glb"
+  },
+  {
+    "id": "empire",
+    "label": "Empire",
+    "level": 3,
+    "wonder": false,
+    "source": "citadel-empire-mix.blend",
+    "path": "/models/realms/empire.glb"
+  },
+  {
+    "id": "standing-stones",
+    "label": "Standing Stones",
+    "level": 0,
+    "wonder": true,
+    "source": "citadel-settlement-wonder.blend",
+    "path": "/models/realms/standing-stones.glb"
+  },
+  {
+    "id": "sun-dial",
+    "label": "Sun Dial",
+    "level": 1,
+    "wonder": true,
+    "source": "options/citadel-sun-dial.blend",
+    "path": "/models/realms/sun-dial.glb"
+  },
+  {
+    "id": "oath-arch",
+    "label": "Oath Arch",
+    "level": 1,
+    "wonder": true,
+    "source": "options/citadel-oath-arch.blend",
+    "path": "/models/realms/oath-arch.glb"
+  },
+  {
+    "id": "star-lantern",
+    "label": "Star Lantern",
+    "level": 2,
+    "wonder": true,
+    "source": "options/citadel-star-lantern.blend",
+    "path": "/models/realms/star-lantern.glb"
+  },
+  {
+    "id": "twin-guardians",
+    "label": "Twin Guardians",
+    "level": 2,
+    "wonder": true,
+    "source": "options/citadel-twin-guardians.blend",
+    "path": "/models/realms/twin-guardians.glb"
+  },
+  {
+    "id": "sanctum-aureole",
+    "label": "Imperial Sanctum \u00b7 aureole",
+    "level": 3,
+    "wonder": true,
+    "source": "citadel-wonder.blend",
+    "seed": 1003,
+    "path": "/models/realms/sanctum-aureole.glb"
+  },
+  {
+    "id": "sanctum-triptych",
+    "label": "Imperial Sanctum \u00b7 triptych",
+    "level": 3,
+    "wonder": true,
+    "source": "citadel-wonder.blend",
+    "seed": 1009,
+    "path": "/models/realms/sanctum-triptych.glb"
+  },
+  {
+    "id": "sanctum-crescent",
+    "label": "Imperial Sanctum \u00b7 crescent",
+    "level": 3,
+    "wonder": true,
+    "source": "citadel-wonder.blend",
+    "seed": 1043,
+    "path": "/models/realms/sanctum-crescent.glb"
+  },
+  {
+    "id": "sanctum-star",
+    "label": "Imperial Sanctum \u00b7 star",
+    "level": 3,
+    "wonder": true,
+    "source": "citadel-wonder.blend",
+    "seed": 1002,
+    "path": "/models/realms/sanctum-star.glb"
+  },
+  {
+    "id": "sanctum-lantern",
+    "label": "Imperial Sanctum \u00b7 lantern",
+    "level": 3,
+    "wonder": true,
+    "source": "citadel-wonder.blend",
+    "seed": 1042,
+    "path": "/models/realms/sanctum-lantern.glb"
+  },
+  {
+    "id": "sanctum-lotus",
+    "label": "Imperial Sanctum \u00b7 lotus",
+    "level": 3,
+    "wonder": true,
+    "source": "citadel-wonder.blend",
+    "seed": 1008,
+    "path": "/models/realms/sanctum-lotus.glb"
+  },
+  {
+    "id": "sanctum-fan",
+    "label": "Imperial Sanctum \u00b7 fan",
+    "level": 3,
+    "wonder": true,
+    "source": "citadel-wonder.blend",
+    "seed": 1010,
+    "path": "/models/realms/sanctum-fan.glb"
+  }
+]

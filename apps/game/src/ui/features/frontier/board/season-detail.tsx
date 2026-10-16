@@ -54,29 +54,29 @@ export const SeasonDetailSheet = ({
   <Sheet label={label} onClose={onClose}>
     <header className="flex h-11 items-center gap-2.5">
       <OrderEmblem order={detail.order} size={34} />
-      <span className="min-w-0 flex-1 truncate text-[20px] text-kit-cream">{detail.name}</span>
-      <Chip icons={["Tp"]} label={SEASON} value={`#${detail.rank}`} />
+      <span className="min-w-0 flex-1 truncate text-xl text-kit-cream">{detail.name}</span>
+      <Chip icons={["victory"]} label={SEASON} value={`#${detail.rank}`} />
     </header>
     <div className="flex flex-wrap items-center justify-center gap-1.5">
-      <Chip icons={["Fl"]} label={CLEARED} value={formatAmount(detail.sites.total)} />
-      <span aria-hidden className="text-[16px] text-kit-muted">
+      <Chip icons={["flag"]} label={CLEARED} value={formatAmount(detail.sites.total)} />
+      <span aria-hidden className="text-base text-kit-muted">
         =
       </span>
-      <Chip icons={["Cp"]} label={CAMP} value={formatAmount(detail.sites.camps)} />
-      <Chip icons={["Rf"]} label={RIFT} value={formatAmount(detail.sites.rifts)} />
-      <Chip icons={["Fr"]} label={RUIN} value={formatAmount(detail.sites.ruins)} />
-      <Chip icons={["Tr"]} label={STRAGGLERS} value={formatAmount(detail.sites.stragglers)} />
+      <Chip icons={["camp"]} label={CAMP} value={formatAmount(detail.sites.camps)} />
+      <Chip icons={["rift"]} label={RIFT} value={formatAmount(detail.sites.rifts)} />
+      <Chip icons={["ruin"]} label={RUIN} value={formatAmount(detail.sites.ruins)} />
+      <Chip icons={["troops"]} label={STRAGGLERS} value={formatAmount(detail.sites.stragglers)} />
     </div>
     <div className="flex items-center justify-center gap-1.5">
-      <Chip icons={["Ch"]} label={CHESTS} value={formatAmount(detail.chests)} />
-      <Chip icons={["Lo"]} label={LORDS} value={formatAmount(detail.lords)} />
-      <Chip icons={["Dp"]} label={ETHEREAL} value={reachShown(detail.reach)} />
+      <Chip icons={["chest"]} label={CHESTS} value={formatAmount(detail.chests)} />
+      <Chip icons={["lords"]} label={LORDS} value={formatAmount(detail.lords)} />
+      <Chip icons={["portal"]} label={ETHEREAL} value={reachShown(detail.reach)} />
     </div>
     <div className="flex items-center justify-center gap-1.5">
-      <Chip icons={["Es"]} label={ESSENCE} value={`+${formatAmount(detail.essence)}`} />
-      <Chip icons={["La"]} label={LABOR} value={`+${formatAmount(detail.labor)}`} />
+      <Chip icons={["essence"]} label={ESSENCE} value={`+${formatAmount(detail.essence)}`} />
+      <Chip icons={["labor"]} label={LABOR} value={`+${formatAmount(detail.labor)}`} />
     </div>
-    {onVisit && <Button role="primary" icon="Ey" word={VISIT} onClick={onVisit} />}
+    {onVisit && <Button role="primary" icon="explore" word={VISIT} onClick={onVisit} />}
   </Sheet>
 );
 

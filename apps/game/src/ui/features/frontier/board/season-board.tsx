@@ -67,7 +67,7 @@ export const FrontierSeason = ({ rules, onBack }: { rules: ExpeditionRules; onBa
   const { rows, pinned } = useSeasonListRows(board.data, LIST_LENGTH);
   const chosen = entries.find((entry) => entry.address === opened);
   const visit = (entry: Entry) => {
-    startRealmVisit({ player: entry.address, structureId: safeInteger(entry.structure_id) });
+    startRealmVisit({ player: entry.address, structureId: safeInteger(entry.structure_id), opensOnArrival: true });
     onBack();
   };
   return (

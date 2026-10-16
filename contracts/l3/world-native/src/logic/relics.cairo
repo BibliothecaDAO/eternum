@@ -62,7 +62,7 @@ pub mod RelicState {
             command: OpenChest,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_command(game_id, context.timestamp, context);
             let classes = self.logic_classes(game_id);
@@ -71,8 +71,9 @@ pub mod RelicState {
             );
             assert!(explorer.troops.count != 0, "explorer is dead");
             assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to chest");
-            IRelicMapLibraryDispatcher { class_hash: classes.map.read() }.consume_relic_chest(game_id, command.coord);
-            self.pay_chest(game_id, actor, command, context);
+            let chest_id = IRelicMapLibraryDispatcher { class_hash: classes.map.read() }
+                .consume_relic_chest(game_id, command.coord);
+            self.pay_chest(game_id, actor, command, chest_id, explorer.owner, context);
             ()
         }
         fn apply_relic(
@@ -82,7 +83,7 @@ pub mod RelicState {
             command: ApplyRelic,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_command(game_id, context.timestamp, context);
             assert!(
@@ -141,7 +142,7 @@ pub mod RelicState {
             command: crate::progression::BuyTier,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
             self.assert_command(game_id, context.timestamp, context);
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
@@ -180,7 +181,7 @@ pub mod RelicState {
             command: crate::relics::InteractSite,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
             self.assert_command(game_id, context.timestamp, context);
             assert!(context.rules.unbox().day_unit_seconds != 0, "site requires expedition");
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
@@ -221,7 +222,7 @@ pub mod RelicState {
             command: crate::relics::RefillStamina,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
             self.assert_command(game_id, context.timestamp, context);
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
@@ -264,7 +265,7 @@ pub mod RelicState {
             command: crate::relics::WithdrawLords,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
             crate::relics::assert_claim_window(
                 context.game.unbox(), crate::logic::lords_budget::chest_rules(game_id), context.timestamp,
             );
@@ -301,9 +302,7 @@ pub mod RelicState {
                 let home = crate::resources::ResourceKey { game_id: key.game_id, entity_id: value.home };
                 let progress = crate::logic::progression::create(key, crate::logic::research::learned(home));
                 // A slot's first army of the day starts full at its own maximum, trained Logistics included.
-                let maximum = crate::progression::stamina_max(
-                    progress, value.category, crate::logic::game::rules(key.game_id).troop_stamina_config,
-                );
+                let maximum = crate::progression::stamina_max(progress, value.category, value.stamina_config);
                 let initial = crate::troops::Stamina { amount: maximum, ..value.initial };
                 return ResolvedArmySlot {
                     stamina: army_slot_storage::allocate(
@@ -315,12 +314,12 @@ pub mod RelicState {
             let mut explorer = crate::logic::troops::explorer(key).expect('missing slot explorer');
             let mut battle_bonus_percent = 0;
             let stamina = match action {
-                ArmySlotAction::Resolve(timestamp) => {
+                ArmySlotAction::Resolve(refill) => {
                     battle_bonus_percent =
                         crate::rules::battle_bonus_bps(crate::logic::progression::require(key).battle)
                         .try_into()
                         .unwrap();
-                    army_slot_storage::resolve(key, explorer, timestamp).troops.stamina
+                    army_slot_storage::resolve(key, explorer, refill).troops.stamina
                 },
                 ArmySlotAction::Persist(stamina) => {
                     let previous = explorer.into_record();
@@ -354,7 +353,7 @@ pub mod RelicState {
             explorer_id: u64,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(site.game_id, context);
+            let context = crate::commands::execution_context(site.game_id, context);
             let explorer_key = ExplorerKey { game_id: site.game_id, explorer_id };
             let explorer = crate::logic::troops::active_explorer(explorer_key, context.timestamp, context);
             self.refund_capture_stamina(explorer_key, explorer, context);
@@ -389,7 +388,7 @@ pub mod RelicState {
             structure_id: u64,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_command(game_id, context.timestamp, context);
             let key = ResourceKey { game_id, entity_id: structure_id };
@@ -411,7 +410,7 @@ pub mod RelicState {
                 );
             let mut root = context.raw_root;
             let seed = crate::random::game_root(ref root, game_id);
-            let relic = *crate::relics::draw_relics(self.relic_rules(game_id), seed, 1).at(0);
+            let relic = crate::relics::draw_relic(self.relic_rules(game_id), seed);
             self
                 .resources(game_id)
                 .grant_resource(
@@ -486,20 +485,25 @@ pub mod RelicState {
             game_id: u32,
             actor: ContractAddress,
             command: OpenChest,
+            chest_id: u64,
+            home: u64,
             context: ExecutionContext,
         ) {
-            let mut root = context.raw_root;
-            let seed = crate::random::game_root(ref root, game_id);
             let config = context.rules.unbox();
-            let relics = crate::relics::draw_relics(
-                self.relic_rules(game_id), seed, config.map_config.relic_chest_relics_per_chest,
-            );
-            let key = ResourceKey { game_id, entity_id: command.explorer_id };
+            let chest = crate::logic::relic_chests::take(ResourceKey { game_id, entity_id: chest_id });
+            let relics = crate::relics::pack_relics(chest);
+            let army = ResourceKey { game_id, entity_id: command.explorer_id };
+            let realm = ResourceKey { game_id, entity_id: home };
             for id in relics {
+                let holder = if crate::relics::is_army_relic(*id) {
+                    army
+                } else {
+                    realm
+                };
                 self
                     .resources(game_id)
                     .grant_resource(
-                        key,
+                        holder,
                         *id,
                         crate::rules::RESOURCE_PRECISION,
                         context.timestamp,
@@ -509,7 +513,7 @@ pub mod RelicState {
             let points = config.victory_points_grant_config.relic_open_points.into();
             IPointsLibraryDispatcher { class_hash: get_dep_component!(@self, Life).classes(game_id).season.read() }
                 .register_relic_points(game_id, actor, crate::commands::action_context(context));
-            self.record_chest_opened(game_id, actor, command, relics, points, context.timestamp);
+            self.record_chest_opened(game_id, actor, command, chest, relics, points, context.timestamp);
         }
 
         fn record_lords_withdrawal(
@@ -572,6 +576,7 @@ pub mod RelicState {
             game_id: u32,
             actor: ContractAddress,
             command: OpenChest,
+            chest: crate::relics::RelicChest,
             relics: Span<u8>,
             points: u128,
             timestamp: u64,
@@ -587,7 +592,7 @@ pub mod RelicState {
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
                         story: crate::ownership::Story::RelicChestOpened(
                             crate::relics::ChestOpened {
-                                explorer_id: command.explorer_id, coord: command.coord, relics, points,
+                                explorer_id: command.explorer_id, coord: command.coord, chest, relics, points,
                             },
                         ),
                     },

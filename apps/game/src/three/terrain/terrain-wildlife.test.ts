@@ -1,5 +1,5 @@
 import { BiomeType } from "@bibliothecadao/types";
-import { BoxGeometry, Group, Mesh, MeshStandardMaterial } from "three";
+import { BoxGeometry, EventDispatcher, Group, Mesh, MeshStandardMaterial, type Object3D } from "three";
 import { describe, expect, it, vi } from "vitest";
 import { BiomeCreaturePopulation, wildlifeRegion } from "./creatures/biome-creature-population";
 import { findNearestTerrainHex } from "./terrain-coordinates";
@@ -190,8 +190,18 @@ describe("terrain wildlife lifecycle", () => {
     wildlife.object3d.visible = false;
     wildlife.update(20);
     expect(wildlife.getStats().creatures).toEqual(before.creatures);
+    // A released animal's meshes fire dispose, which frees their render objects; the shared template stays.
+    const releasedMeshes: Object3D[] = [];
+    wildlife.object3d.children[0].traverse((object) => {
+      if ((object as Mesh).isMesh) releasedMeshes.push(object);
+    });
+    const released = vi.fn();
+    for (const mesh of releasedMeshes)
+      (mesh as unknown as EventDispatcher<{ dispose: object }>).addEventListener("dispose", released);
     wildlife.sync([], []);
     expect(wildlife.getStats().loaded).toBe(0);
+    expect(releasedMeshes.length).toBeGreaterThan(0);
+    expect(released).toHaveBeenCalledTimes(releasedMeshes.length);
     wildlife.dispose();
     expect(wildlife.object3d.children).toHaveLength(0);
   });

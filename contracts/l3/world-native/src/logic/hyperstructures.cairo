@@ -105,6 +105,24 @@ pub mod HyperstructureState {
                         seed,
                     },
                 );
+            // A complete hyperstructure always holds a shares row; nobody earns until its first owner claims it.
+            if completed {
+                self.write_shares(key, ShareAllocation { start_at: 0, multiplier: 0, shareholders: array![].span() });
+            }
+        }
+        fn transfer_hyperstructure_shares(
+            ref self: ComponentState<TContractState>,
+            key: ResourceKey,
+            owner: ContractAddress,
+            context: crate::commands::ActionContext,
+        ) {
+            let context = crate::commands::execution_context(key.game_id, context);
+            // Shared allocations stay with their shareholders; owner-only shares follow the structure.
+            if !crate::rules::rule_enabled(context.rules.unbox(), crate::rules::OWNER_ONLY_SHARES)
+                || self.state(key).stage != Stage::Complete {
+                return;
+            }
+            self.reallocate(key, array![Share { player: owner, bps: 10000 }].span(), context);
         }
         fn initialize_hyperstructure(
             ref self: ComponentState<TContractState>,
@@ -113,7 +131,7 @@ pub mod HyperstructureState {
             id: u64,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_command(game_id, context.timestamp, context);
             let key = ResourceKey { game_id, entity_id: id };
@@ -135,7 +153,7 @@ pub mod HyperstructureState {
             contribution: Contribution,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_command(game_id, context.timestamp, context);
             crate::resources::assert_unique_resources(contribution.resources);
@@ -175,7 +193,7 @@ pub mod HyperstructureState {
             command: AllocateShares,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_command(game_id, context.timestamp, context);
             let key = ResourceKey { game_id, entity_id: command.hyperstructure_id };
@@ -186,16 +204,7 @@ pub mod HyperstructureState {
                 crate::rules::rule_enabled(context.rules.unbox(), crate::rules::OWNER_ONLY_SHARES),
                 actor,
             );
-            self.checkpoint(key, context.timestamp, context);
-            self
-                .write_shares(
-                    key,
-                    ShareAllocation {
-                        start_at: context.timestamp,
-                        multiplier: self.multiplier(key, context),
-                        shareholders: command.shareholders,
-                    },
-                );
+            self.reallocate(key, command.shareholders, context);
             ()
         }
         fn set_construction_access(
@@ -205,7 +214,7 @@ pub mod HyperstructureState {
             command: SetConstructionAccess,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_command(game_id, context.timestamp, context);
             let key = ResourceKey { game_id, entity_id: command.hyperstructure_id };
@@ -226,7 +235,7 @@ pub mod HyperstructureState {
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) -> u32 {
-            let game_context = crate::commands::load_context(game_id, game_context);
+            let game_context = crate::commands::execution_context(game_id, game_context);
 
             let (cutoff, start, count) = self
                 .data
@@ -252,7 +261,7 @@ pub mod HyperstructureState {
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) -> u32 {
-            let game_context = crate::commands::load_context(game_id, game_context);
+            let game_context = crate::commands::execution_context(game_id, game_context);
 
             let game = game_context.game.unbox();
             assert!(game.end_at != 0 && timestamp >= game.end_at, "game not ended");
@@ -446,6 +455,22 @@ pub mod HyperstructureState {
                         model: 'HyperstructureShares',
                         keys: array![key.game_id.into(), key.entity_id.into()].span(),
                         values: values.span(),
+                    },
+                );
+        }
+        /// Pays the outgoing shareholders up to now, then starts the new allocation at the current multiplier.
+        fn reallocate(
+            ref self: ComponentState<TContractState>,
+            key: ResourceKey,
+            shareholders: Span<Share>,
+            game_context: crate::commands::ExecutionContext,
+        ) {
+            self.checkpoint(key, game_context.timestamp, game_context);
+            self
+                .write_shares(
+                    key,
+                    ShareAllocation {
+                        start_at: game_context.timestamp, multiplier: self.multiplier(key, game_context), shareholders,
                     },
                 );
         }

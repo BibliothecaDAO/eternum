@@ -41,11 +41,11 @@ export const RendererDebugControl = ({
 
   return (
     <div
-      className={`pointer-events-auto rounded-md border border-gold/20 bg-black/75 px-3 py-2 font-mono text-[10px] text-gold/70 backdrop-blur ${className}`}
+      className={`pointer-events-auto rounded-md border border-gold/20 bg-black/75 px-3 py-2 font-mono text-sm text-gold/70 backdrop-blur ${className}`}
       data-testid="renderer-debug-control"
     >
       <div className="flex items-center justify-between gap-3">
-        <span className="uppercase tracking-[0.16em] text-gold/45">Renderer</span>
+        <span className="text-kit-muted">Renderer</span>
         <span className="text-gold/90" data-testid="renderer-active-mode">
           {formatActiveMode(diagnostics.activeMode)}
         </span>
@@ -61,7 +61,7 @@ export const RendererDebugControl = ({
               className={`rounded border px-2 py-1 text-center transition max-lg:flex max-lg:min-h-11 max-lg:items-center max-lg:justify-center ${
                 isRequested
                   ? "border-gold/60 bg-gold/20 text-gold"
-                  : "border-gold/20 bg-black/30 text-gold/55 hover:bg-gold/10 hover:text-gold"
+                  : "border-gold/20 bg-black/30 text-kit-muted hover:bg-gold/10 hover:text-gold"
               }`}
               aria-label={`Reload with ${label}`}
               aria-current={isRequested ? "true" : undefined}
@@ -79,11 +79,13 @@ export const RendererDebugControl = ({
         </div>
       ) : null}
       {showDiagnostics && adapter ? (
-        <div className="mt-1 truncate text-gold/45" title={adapter}>
+        <div className="mt-1 truncate text-kit-muted" title={adapter}>
           {adapter}
         </div>
       ) : null}
-      {showDiagnostics && <div className="mt-1 text-gold/35">Reloads with console diagnostics for that page load.</div>}
+      {showDiagnostics && (
+        <div className="mt-1 text-kit-muted">Reloads with console diagnostics for that page load.</div>
+      )}
     </div>
   );
 };

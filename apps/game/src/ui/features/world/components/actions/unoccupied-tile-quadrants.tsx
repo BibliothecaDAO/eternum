@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { type ReactNode, useCallback, useMemo } from "react";
 
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -5,7 +6,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_CUE, HUD_HEADLINE, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
-import { Trees, Crosshair as CrosshairIcon } from "@/ui/design-system/atoms/game-icons";
+
 import { formatBiomeBonus } from "@/ui/features/military";
 import { BattleLab } from "@/ui/features/military/battle/battle-lab";
 import { configManager } from "@bibliothecadao/eternum";
@@ -130,11 +131,11 @@ export const BiomeSummaryCard = ({
       <button
         type="button"
         onClick={onSimulateBattle}
-        className="inline-flex items-center gap-1 rounded-md border border-gold/40 bg-gold/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold transition hover:border-gold hover:bg-gold/20"
+        className="inline-flex items-center gap-1 rounded-md border border-gold/40 bg-gold/10 px-2 py-0.5 text-sm font-semibold text-gold transition hover:border-gold hover:bg-gold/20"
         title="Simulate a battle in this biome"
         aria-label="Simulate battle"
       >
-        <CrosshairIcon className="h-3 w-3" />
+        <SemanticIcon name="target" className="h-3 w-3" />
         Battle
       </button>
     ) : undefined;
@@ -143,7 +144,7 @@ export const BiomeSummaryCard = ({
     <InfoBubble
       collapsible={false}
       title={coordsLabel ?? "Biome"}
-      icon={Trees}
+      icon={"trees" as const}
       cue={
         <span className="flex items-center gap-1">
           {headerAction}
@@ -180,7 +181,7 @@ export const BiomeSummaryCard = ({
                     <span className={cn("flex items-center gap-1 break-words leading-[1.05]", HUD_LABEL)}>
                       {config.label}
                       {isHighlighted && (
-                        <span className="rounded-sm border border-gold/50 bg-gold/15 px-1 text-[8px] uppercase tracking-[0.18em] text-gold">
+                        <span className="rounded-sm border border-gold/50 bg-gold/15 px-1 text-sm text-gold">
                           Your army
                         </span>
                       )}

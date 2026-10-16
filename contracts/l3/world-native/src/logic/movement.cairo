@@ -7,7 +7,7 @@ pub mod MovementLogic {
     use crate::geometry::{neighbor, spire_neighbor, tile_key};
     use crate::logic::release::ReleaseState;
     use crate::logic::troops::TroopState;
-    use crate::map::IMapLogicDispatcherTrait;
+    use crate::map::{BIOME_SCALE, BYTE_RANGE, IMapLogicDispatcherTrait};
     use crate::resources::{IResourceOperationsDispatcherTrait, ResourceKey};
     use crate::stamina::StaminaSourceTrait;
     use crate::structures::IStructureOperationsDispatcherTrait;
@@ -42,7 +42,7 @@ pub mod MovementLogic {
             command: Explore,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let rules = self.authorize(game_id, context);
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
@@ -60,11 +60,14 @@ pub mod MovementLogic {
                 .map(|tile| tile.data)
                 .unwrap_or(0);
             assert!(crate::logic::map::occupancy(tile).is_none(), "destination occupied");
-            let biome: crate::biome::Biome = self
-                .map_dispatcher(game_id)
-                .biome(tile, crate::commands::biome_context(context))
+            let stored_biome: u8 = (data / BIOME_SCALE % BYTE_RANGE).try_into().unwrap();
+            let exploring = stored_biome == 0;
+            let biome: crate::biome::Biome = if exploring {
+                self.map_dispatcher(game_id).biome(tile, crate::commands::biome_context(context))
+            } else {
+                stored_biome
+            }
                 .into();
-            let exploring = (data / 0x20000000000) % 0x100 == 0;
             self.pay_movement(game_id, ref explorer, rules, biome, exploring, context.timestamp, context);
             let mut raw_root = context.raw_root;
             let seed = crate::random::game_root(ref raw_root, game_id);
@@ -140,11 +143,22 @@ pub mod MovementLogic {
             );
             crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
 
+            let extraction = crate::exploration_rewards::IExtractionLibraryDispatcher {
+                class_hash: self.release.classes(game_id).map.read(),
+            };
+            if discovery == crate::discovery::Discovery::Spire {
+                crate::exploration_rewards::IExtractionDispatcherTrait::raise_dormant_spire(
+                    extraction,
+                    game_id,
+                    actor,
+                    command.explorer_id,
+                    destination,
+                    crate::commands::action_context(context),
+                );
+            }
             if !explorer.coord.alt {
                 crate::exploration_rewards::IExtractionDispatcherTrait::extract_exploration_reward(
-                    crate::exploration_rewards::IExtractionLibraryDispatcher {
-                        class_hash: self.release.classes(game_id).map.read(),
-                    },
+                    extraction,
                     game_id,
                     actor,
                     command.explorer_id,
@@ -164,7 +178,7 @@ pub mod MovementLogic {
         fn displace_explorer(
             ref self: ContractState, game_id: u32, explorer_id: u64, game_context: crate::commands::ActionContext,
         ) {
-            let game_context = crate::commands::load_context(game_id, game_context);
+            let game_context = crate::commands::execution_context(game_id, game_context);
 
             let key = ExplorerKey { game_id, explorer_id };
             let explorer = crate::logic::troops::explorer(key).expect('missing blocking explorer');
@@ -199,7 +213,7 @@ pub mod MovementLogic {
             command: crate::commands::EnterDepth,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let rules = self.authorize(game_id, context);
             assert!(rules.day_unit_seconds != 0, "depth entry requires expeditions");
@@ -257,7 +271,7 @@ pub mod MovementLogic {
             command: crate::commands::Move,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let rules = self.authorize(game_id, context);
             assert!(!command.directions.is_empty(), "empty movement path");
@@ -279,8 +293,9 @@ pub mod MovementLogic {
                     .expect('undiscovered movement tile')
                     .data;
                 assert!(crate::logic::map::occupancy(tile).is_none(), "movement tile occupied");
-                assert!((data / 0x20000000000) % 256 != 0, "undiscovered movement tile");
-                let biome = self.map_dispatcher(game_id).biome(tile, crate::commands::biome_context(context)).into();
+                let stored_biome: u8 = (data / BIOME_SCALE % BYTE_RANGE).try_into().unwrap();
+                assert!(stored_biome != 0, "undiscovered movement tile");
+                let biome = stored_biome.into();
                 self.pay_movement(game_id, ref explorer, rules, biome, false, context.timestamp, context);
                 explorer.coord = destination;
             }
@@ -299,7 +314,7 @@ pub mod MovementLogic {
             command: crate::commands::ToggleAlternate,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.authorize(game_id, context);
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };

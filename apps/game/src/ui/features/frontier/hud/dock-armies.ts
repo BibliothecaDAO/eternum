@@ -1,3 +1,5 @@
+import type { IconMeaning } from "@/ui/design-system/icon";
+import { troopMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -22,7 +24,7 @@ export type DockArmy = {
   number: number;
   troopsFact: NativeRows["ExplorerTroops"]["troops"];
   label: string;
-  art: string;
+  art: IconMeaning;
   xp: number | undefined;
   /** The attribute tier its XP buys next: its XP price and the tier it reaches; none at legendary or while unknown. */
   xpGoal: { price: number; tier: number } | undefined;
@@ -82,9 +84,7 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
   });
 };
 
-/** An army's diorama: its troops on their hex base. */
-export const armyArt = (troops: { category: string; tier: string }) =>
-  `/images/armies/${troops.category.toLowerCase()}${troops.tier}.png`;
+export const armyArt = troopMeaning;
 
 /**
  * An army as every line outside the dock names it (the day log): by the same name as its card. An army no longer on

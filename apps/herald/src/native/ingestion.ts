@@ -112,11 +112,6 @@ export class NativeIngestion {
     return { events, decoded, changes: this.commit(fold, events) };
   }
 
-  actionReceipt(fold: WorldFold, receipt: RpcReceipt, calldata?: string[]): RpcReceipt {
-    this.validateReceipt(fold.overlay(), receipt, receipt.block_number ?? null, 0, calldata);
-    return this.outcomeReceipt(receipt);
-  }
-
   /**
    * The receipt with the game's refusal, if Games recorded one (GameplayRejected v1): the action rolled back, so its
    * status is REJECTED with the game's reason, distinct from a pre-roll REVERTED. For a receipt already validated.

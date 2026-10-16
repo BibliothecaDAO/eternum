@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
@@ -16,7 +17,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { displayAddress } from "@/ui/utils/utils";
 import { useGame } from "@/hooks/context/game-context";
 import { ID, StructureType } from "@bibliothecadao/types";
-import { Loader, Sparkles } from "@/ui/design-system/atoms/game-icons";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 
@@ -194,7 +195,7 @@ export const FaithDevotionActionPanel = ({ structureEntityId, className }: Faith
   if (isLoadingStructure) {
     return (
       <div className={cn("flex items-center gap-2", HUD_BODY_MUTED, className)}>
-        <Loader className="h-3.5 w-3.5 animate-spin" />
+        <SemanticIcon name="refresh" className="h-3.5 w-3.5 animate-spin" />
         Loading structure
       </div>
     );
@@ -271,7 +272,7 @@ export const FaithDevotionActionPanel = ({ structureEntityId, className }: Faith
             disabled={!canDevote}
             onClick={openDevotionModal}
           >
-            <Sparkles className="h-3.5 w-3.5" />
+            <SemanticIcon name="relics" className="h-3.5 w-3.5" />
             {devotionStatus ? "Change devotion" : "Devote to a wonder"}
           </button>
         </div>
@@ -377,7 +378,7 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
       toast.success("Devotion updated.");
       closeModal();
     } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to update devotion."));
+      toast.failed(error, "Failed to update devotion.");
     } finally {
       setIsSubmitting(false);
     }
@@ -391,7 +392,7 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
       bodyClassName="overflow-auto"
     >
       <div className="flex flex-col gap-3 p-4">
-        <div className="rounded-md border border-gold/20 bg-black/25 p-3 text-xxs text-gold/75">
+        <div className="rounded-md border border-gold/20 bg-black/25 p-3 text-sm text-gold/75">
           <p>
             Structure: <span className="font-semibold text-gold">{structureLabel}</span>
           </p>
@@ -404,21 +405,21 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
         </div>
 
         {isLoadingWonders ? (
-          <div className="flex items-center justify-center py-8 text-xs text-gold/70">
-            <Loader className="mr-2 h-4 w-4 animate-spin" />
+          <div className="flex items-center justify-center py-8 text-sm text-gold/70">
+            <SemanticIcon name="refresh" className="mr-2 h-4 w-4 animate-spin" />
             Loading wonders...
           </div>
         ) : wondersError ? (
-          <div className="rounded-md border border-red-400/30 bg-red-950/25 p-3 text-xs text-red-200/90">
+          <div className="rounded-md border border-red-400/30 bg-red-950/25 p-3 text-sm text-red-200/90">
             {getErrorMessage(wondersError, "Failed to load wonders.")}
           </div>
         ) : wonderEntries.length === 0 ? (
-          <div className="rounded-md border border-gold/20 bg-black/25 p-3 text-xs text-gold/75">
+          <div className="rounded-md border border-gold/20 bg-black/25 p-3 text-sm text-gold/75">
             No wonders available in this world yet.
           </div>
         ) : (
           <div className="max-h-[clamp(280px,40vh,560px)] overflow-auto rounded-md border border-gold/20 bg-black/25">
-            <div className="sticky top-0 z-10 grid grid-cols-[minmax(0,1fr)_110px_90px] gap-2 border-b border-gold/20 bg-[#1d160e] px-3 py-2 text-xxs uppercase tracking-[0.2em] text-gold/70">
+            <div className="sticky top-0 z-10 grid grid-cols-[minmax(0,1fr)_110px_90px] gap-2 border-b border-gold/20 bg-[#1d160e] px-3 py-2 text-sm text-gold/70">
               <span>Wonder</span>
               <span className="text-right">FP/sec</span>
               <span className="text-right">Followers</span>
@@ -438,13 +439,13 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
                     onClick={() => setSelectedWonderId(entry.wonderId)}
                   >
                     <span className="min-w-0">
-                      <span className="block truncate text-xs font-semibold text-gold">{entry.wonderName}</span>
-                      <span className="block truncate text-xxs text-gold/65">{buildWonderOwnerLabel(entry)}</span>
+                      <span className="block truncate text-sm font-semibold text-gold">{entry.wonderName}</span>
+                      <span className="block truncate text-sm text-kit-muted">{buildWonderOwnerLabel(entry)}</span>
                     </span>
-                    <span className="text-right font-mono text-xs text-gold/85">
+                    <span className="text-right font-mono text-sm text-gold/85">
                       {entry.faithPointsPerSecond.toLocaleString()}
                     </span>
-                    <span className="text-right font-mono text-xs text-gold/85">
+                    <span className="text-right font-mono text-sm text-gold/85">
                       {entry.followerCount.toLocaleString()}
                     </span>
                   </button>
@@ -455,7 +456,7 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
         )}
 
         <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0 text-xxs text-gold/65">
+          <div className="min-w-0 text-sm text-kit-muted">
             {selectedWonder ? (
               <span className="truncate">
                 Selected: <span className="font-semibold text-gold">{selectedWonder.wonderName}</span>
@@ -465,13 +466,12 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Button size="xs" variant="outline" forceUppercase={false} onClick={closeModal} disabled={isSubmitting}>
+            <Button size="xs" variant="outline" onClick={closeModal} disabled={isSubmitting}>
               Cancel
             </Button>
             <Button
               size="xs"
               variant="gold"
-              forceUppercase={false}
               isLoading={isSubmitting}
               disabled={!selectedWonderId || alreadyDevotedToSelection}
               onClick={() => {

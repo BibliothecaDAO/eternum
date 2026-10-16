@@ -1,5 +1,9 @@
 # Mobile client — scope and POC path (iOS + Android, one codebase, shared backend)
 
+This proposal retains uncompleted mobile scope. Its dated measurements and implementation inventory need revalidation;
+the [current renderer guide](../../apps/game/src/three/README.md) and [feature map](../../apps/game/FEATURE-MAP.md)
+describe the shipping client.
+
 Written 2026-09-10 from a read of `apps/game`, `packages/*`, `apps/herald`, `apps/realms`, the git history of the two
 earlier mobile attempts, and current platform facts (WKWebView, Android WebView, three.js r185/r186, Cartridge native
 docs, store policy). Every claim below cites the file or source it came from. Nothing here has been run on a phone yet;
@@ -29,11 +33,11 @@ layout"). A Vite + React + wouter + shadcn web client, Feature-Sliced Design, 8 
 text-based" with its own lighter three.js worldmap (~8 k lines under `src/shared/lib/three`, plain `WebGLRenderer`,
 `pixelRatio = min(dpr, 2)`, OrbitControls, chunked loading). It synced **directly from Torii**
 (`@dojoengine/torii-wasm`, `@bibliothecadao/torii`, `src/app/dojo/sync.ts`) and carried its own copy of Controller login
-and session policies. `docs/plans/realms-phase-1-brief.md:126-131` records why it was deleted: a second copy of the
-login work, and it cannot compile once `GameChain` replaced `Chain`. Both of its foundations are gone: Torii-direct sync
-was replaced by Herald, and Controller session policies were replaced by the gameplay account.
-`realms-phase-2-brief.md:571` parks its revival as `apps/mobile`. **Do not revive it**; its worldmap scene is the only
-reusable idea (a small purpose-built scene) and even that is superseded by the content ladder in the main client.
+and session policies. The phase-1 migration deleted it because it duplicated the login work and could not compile once
+`GameChain` replaced `Chain`. Both of its foundations are gone: Torii-direct sync was replaced by Herald, and Controller
+session policies were replaced by the gameplay account. The historical phase-2 proposal parked its revival as
+`apps/mobile`. **Do not revive it**; its worldmap scene is the only reusable idea (a small purpose-built scene) and even
+that is superseded by the content ladder in the main client.
 
 **`client/apps/game-native`** (branch `ponderingdemocritus/rn-webgpu-mobile`, 2026-02-24, seven commits in one day,
 never merged). Despite the branch name it contains **no WebGPU** — it is a bare React Native 0.84 text-first app
@@ -87,9 +91,8 @@ three's WebGL2 backend, after a guaranteed 3.2 s WebGPU probe timeout (`:138`).
    KTX2 with `detectSupport(renderer)` (`game-renderer.ts:173`), and `scripts/compress-models.mjs` exists (480 px / 768
    px hero, 80 MB budget). **Roughly three quarters of the library has never been run through it.** Order of magnitude
    at the close band: 150–350 MB texture + geometry residency before framebuffers.
-2. **JS heap.** Recorded **371–406 MB** steady on desktop, spectating a finished game with zero churn
-   (`docs/plans/realms-client-brief.md:210,226,244`). On iOS that heap shares one ~1.25 GB budget with GPU allocations,
-   DOM and Wasm.
+2. **JS heap.** Recorded **371–406 MB** steady on desktop, spectating a finished game with zero churn (historical
+   desktop client measurements). On iOS that heap shares one ~1.25 GB budget with GPU allocations, DOM and Wasm.
 3. **Instance-pool growth class.** `three/utils/instanced-matrix-attribute-pool.ts:6-12` records that the pool "grew by
    gigabytes of Float32Array backing stores while browsing the map". It is now capped at 64 MB — a fix for desktop, a
    large fixed charge on a phone. Fixed capacities allocate full size regardless of population: structures 1024
@@ -108,14 +111,14 @@ three's WebGL2 backend, after a guaranteed 3.2 s WebGPU probe timeout (`:138`).
    `renderer.setSize(window.innerWidth, window.innerHeight)` mid-frame (`webgpu-renderer-backend.ts:366`), a swapchain
    reallocation at the moment memory is scarce. `MemoryMonitor` reads `performance.memory`, which is **zero on Safari**
    (`utils/memory-monitor.ts:84-106`) — the one memory instrument does not work on the platform that crashes.
-7. **Boot time.** Entry-ready is **10.5–12.1 s on desktop headless** (`renderer-lane-webgpu-revisit-codex-brief.md` item
-   0). A 3–5× phone multiplier lands in watchdog territory before first frame; the dashboard also idle-prefetches every
+7. **Boot time.** Entry-ready is **10.5–12.1 s on desktop headless** (historical renderer measurements). A 3–5× phone
+   multiplier lands in watchdog territory before first frame; the dashboard also idle-prefetches every
    army/building/chest model, terrain textures, the HDR env map and ~120 PNGs (`ui/utils/play-asset-manifest.ts`) with
    no Save-Data guard.
 8. **DOM labels.** `CSS2DRenderer` labels are real DOM nodes; the close band issued **507 compact-label draws**
-   (`realms-client-brief.md:547`). Mobile Safari's compositor handles this far worse than desktop.
+   (historical client capture). Mobile Safari's compositor handles this far worse than desktop.
 9. **Full-game snapshot.** One WebSocket per `game_id` delivers the whole game — 35 models / ~5,155 rows, receive 910
-   ms + apply 373 ms on desktop for a 96-player match (`realms-client-brief.md`, Half three). The only lever is model
+   ms + apply 373 ms on desktop for a 96-player match (historical full-snapshot measurement). The only lever is model
    subsetting (`snapshotModels`, `apps/game/src/sync/game-sync.ts:70-71`); there is no area scoping.
 
 **What already helps:** a truthful WebGL2 fallback with backend telemetry (`webgpu-renderer-backend.ts:182,478-491`);
@@ -126,8 +129,8 @@ in production (`:68-71`; `jolt-ragdoll-world.ts` only reachable via the dynamic 
 `procedural-army-character-layer.ts:389`); post-processing fully disabled (`:135`); two mobile branches already threaded
 through the backend factory (`PCFShadowMap`, `UnsignedByteType` output, 1.5× label cadence —
 `webgpu-renderer-backend.ts:102-107`, `game-renderer-policy.ts:250-268`); disposal discipline in
-`army-model.ts:2583-2648`; `StatsRecorder` and `frame-work-owner.ts` spike attribution; a real boot benchmark driving
-real spectate URLs (`scripts/run-renderer-load-benchmark.mjs`).
+`army-model.ts:2583-2648`; `StatsRecorder` and `frame-work-owner.ts` spike attribution; a real playtest driving real
+spectate URLs (`scripts/run-client-playtest.mjs`).
 
 **No mobile measurement of any kind exists in this repo.** That is the first thing to fix.
 
@@ -261,8 +264,8 @@ afternoon.
 - Replace the device-loss **page reload** with in-place renderer recreation; remove `setSize` from the frame-error path.
 - Add a Save-Data / `connection.effectiveType` guard to `prefetch-play-assets.ts`, and `snapshotModels` subsetting for
   the mobile lane (drop models the phone HUD never reads).
-- Extend `run-renderer-load-benchmark.mjs` with a device-lab target (a phone over WebDriver / Playwright on device) so
-  the numbers are repeatable, not anecdotal.
+- Extend `run-client-playtest.mjs` with a device-lab target (a phone over WebDriver / Playwright on device) so the
+  numbers are repeatable, not anecdotal.
 
 **Gate:** on the iPhone 13-class and mid-range Android devices, spectate a live 96-player game for 10 minutes across all
 three zoom bands with **zero WebContent or GPU-process terminations**, entry-ready ≤ 20 s on Wi-Fi, close-band p95 frame

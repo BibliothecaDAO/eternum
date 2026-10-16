@@ -1,12 +1,14 @@
 import { launchFailure } from "./errors";
-import { BLITZ_SLOT_PREPARATION_SECONDS, type RegistrationIdentity } from "@realms-world/value-ledger";
+import { BLITZ_SLOT_PREPARATION_SECONDS } from "@realms-world/value-ledger";
 import { loadNativePresetConfiguration } from "../../../config/deployer/clean/registrar/native-preset";
-import { closedSlotGroups, SlotCancelled, type BlitzValuePort } from "./paid-blitz";
+import { SlotCancelled, type BlitzValuePort, type SlotResolver } from "./paid-blitz";
 import { nativePresetIdFor } from "../../../config/source/native";
 import type { D1LaunchStore } from "./store";
 import { SlotConflict, SlotNotFound, type PlaytestSlot, type SlotStore, type SlotFreezeFailure } from "./slots";
 
 const SELECT_SLOTS = "SELECT * FROM playtest_slots";
+/** How long a slot whose freeze failed waits before the registrar tries it again. */
+export const FREEZE_RETRY_MS = 30_000;
 
 interface SlotRow {
   chain_id: string;
@@ -22,7 +24,7 @@ export class D1SlotStore implements SlotStore {
     private readonly db: D1Database,
     private readonly launches: D1LaunchStore,
     private readonly value: BlitzValuePort,
-    private readonly identity: RegistrationIdentity,
+    private readonly resolveSlot: SlotResolver,
   ) {}
 
   async create(name: string, closesAt: string): Promise<void> {
@@ -100,7 +102,7 @@ export class D1SlotStore implements SlotStore {
     if (slot.frozenAt) return slot;
     if (!slot.closed) throw new SlotConflict("Registration is still open");
     const key = { chainId: slot.chainId, slotId: slot.slotId };
-    const closed = await closedSlotGroups(key, this.value, this.identity).catch((error: unknown) => {
+    const closed = await this.resolveSlot(key).catch((error: unknown) => {
       if (error instanceof SlotCancelled) return null;
       throw error;
     });
@@ -158,6 +160,22 @@ export class D1SlotStore implements SlotStore {
       .prepare("UPDATE playtest_slots SET freeze_failure=? WHERE chain_id=? AND name=? AND frozen_at IS NULL")
       .bind(JSON.stringify(failure), chainId, name)
       .run();
+  }
+
+  /**
+   * When the registrar must next try to freeze: the earliest unfrozen slot's close, or, for one whose last freeze
+   * failed, a retry after that failure. A slot already due, such as one that closed while another was freezing, is due
+   * now; every unfrozen slot counts, so no unfinished freeze is left to the cron.
+   */
+  async nextFreeze(): Promise<number | null> {
+    const row = await this.db
+      .prepare(
+        `SELECT MIN(MAX(closes_at, COALESCE(json_extract(freeze_failure, '$.checkedAt') + ?, 0))) AS due
+         FROM playtest_slots WHERE chain_id=? AND frozen_at IS NULL`,
+      )
+      .bind(FREEZE_RETRY_MS, await this.launches.targetChain())
+      .first<{ due: number | null }>();
+    return row?.due ?? null;
   }
 
   async freezeDueSlots(): Promise<void> {

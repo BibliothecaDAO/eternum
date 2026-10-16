@@ -8,7 +8,7 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useBlitzHyperstructureCreation } from "@/hooks/use-blitz-hyperstructure-creation";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_BODY, HUD_HEADLINE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
+import { HUD_BODY, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
 import { HUD_PILL_BUTTON, OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
 import {
@@ -23,15 +23,13 @@ import { BattleLab } from "@/ui/features/military/battle/battle-lab";
 import { BiomeType, HexPosition, ID, TileOccupier, TroopType } from "@bibliothecadao/types";
 import {
   biomeTypeOf,
-  configManager,
-  Position,
   hasTileOccupier,
   isTileOccupierArmy,
   isTileOccupierChest,
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
-import { type ReactNode, useCallback, useMemo } from "react";
+import { type ReactNode, useCallback } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 
 // Layout: vertical column of bubbles. The outer parent (TileDetails atom in
@@ -93,20 +91,6 @@ const SelectedWorldmapEntityContent = ({
   if (!tile || !isExplored) {
     return null;
   }
-
-  // Small fallback "STRUCTURE TILE · (x, y)" + re-sync chip for non-structure
-  // tiles. Structure tiles merge the same info into the owner bubble itself.
-  const coordChip = coordsLabel ? (
-    <div
-      className={cn(
-        "pointer-events-auto mb-2 flex items-center justify-between gap-2 rounded-xl px-3 py-2",
-        OVERLAY_SURFACE_BASE,
-      )}
-    >
-      <span className={cn("min-w-0 flex-1 truncate", HUD_LABEL)}>{coordsLabel}</span>
-      {headerAction}
-    </div>
-  ) : null;
 
   // A crate opened this session keeps its panel after the tile empties, now listing what it yielded.
   if (isChest || crateOpening) {
@@ -176,7 +160,8 @@ const SelectedWorldmapEntityContent = ({
           onSimulateBattle={handleSimulateBattle}
         />
       ) : (
-        // A shrine or well is used from Frontier's own card; here its tile reads like any other.
+        // A shrine or well is used from Frontier's own card and a dormant spire offers nothing; here its tile reads like
+        // any other.
         <UnoccupiedTileQuadrants biome={biome} coordsLabel={coordsLabel} headerAction={headerAction} />
       )}
     </div>
@@ -274,7 +259,7 @@ const SelectedStructureActionPanel = ({
 }) => {
   const { isLoadingStructure } = useStructureEntityDetail({ structureEntityId });
   if (isLoadingStructure) {
-    return <div className="flex h-full items-center justify-center text-xxs text-gold/70">Loading structure...</div>;
+    return <div className="flex h-full items-center justify-center text-sm text-gold/70">Loading structure...</div>;
   }
 
   return <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={onSimulateBattle} />;
@@ -298,22 +283,16 @@ const TileChrome = ({
 );
 
 const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition }) => {
-  const { canCreate, createHyperstructure, isCreating } = useBlitzHyperstructureCreation({
-    hexCoords: selectedHex,
-  });
+  const { canCreate, createHyperstructure, isCreating } = useBlitzHyperstructureCreation({ contractHex: selectedHex });
 
   const handleCreateHyperstructure = useCallback(async () => {
     try {
       await createHyperstructure();
     } catch (error) {
       console.error("[ReservedHyperstructurePanel] Failed to create reserved hyperstructure", error);
-      const raw = error instanceof Error ? error.message : String(error);
-      // A stale tile can still show "reserved" after someone created it —
-      // translate the contract revert instead of dumping the paymaster error.
-      const message = raw.includes("already been created")
-        ? "This hyperstructure was already created — the map is catching up."
-        : raw || "Failed to create the hyperstructure.";
-      toast.error(message, { location: { x: selectedHex.col, y: selectedHex.row } });
+      toast.failed(error, "Failed to create the hyperstructure.", {
+        location: { x: selectedHex.col, y: selectedHex.row },
+      });
     }
   }, [createHyperstructure, selectedHex.col, selectedHex.row]);
 

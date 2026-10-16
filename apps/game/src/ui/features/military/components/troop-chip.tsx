@@ -23,22 +23,22 @@ export const TroopChip = ({
     xs: {
       padding: "px-1.5 py-0.5",
       gap: "gap-1",
-      text: "text-[10px]",
-      tierText: "text-[9px]",
+      text: "text-sm",
+      tierText: "text-sm",
       tierPadding: "px-1 py-0.5",
     },
     sm: {
       padding: "px-2 py-1",
       gap: "gap-2",
-      text: "text-xs",
-      tierText: "text-[11px]",
+      text: "text-sm",
+      tierText: "text-sm",
       tierPadding: "px-1.5 py-0.5",
     },
     md: {
       padding: "px-2.5 py-1.5",
       gap: "gap-2",
       text: "text-sm",
-      tierText: "text-xs",
+      tierText: "text-sm",
       tierPadding: "px-2 py-1",
     },
     lg: {

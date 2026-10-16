@@ -98,7 +98,6 @@ it("refuses RPC redirects using the real Worker-compatible manual mode", async (
 it("never includes private environment values in decode failures", () => {
   const raw = {
     ...env,
-    RATING_HISTORY_URL: "https://history.test/population",
     BETTER_AUTH_SECRET: "private-marker",
   };
   try {

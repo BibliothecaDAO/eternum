@@ -92,7 +92,7 @@ pub mod ProductionLogic {
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) {
-            let game_context = crate::commands::load_context(key.game_id, game_context);
+            let game_context = crate::commands::execution_context(key.game_id, game_context);
 
             let rules = game_context.rules.unbox();
             let mut bonus = self.production.bonus(key);
@@ -133,7 +133,7 @@ pub mod ProductionLogic {
             command: RefillProduction,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let key = self.assert_production_command(game_id, actor, command, context.timestamp, context);
             self.refill_from_recipes(key, command, false, context.timestamp, context);
@@ -146,7 +146,7 @@ pub mod ProductionLogic {
             command: RefillProduction,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let key = self.assert_production_command(game_id, actor, command, context.timestamp, context);
             self.refill_from_recipes(key, command, true, context.timestamp, context);

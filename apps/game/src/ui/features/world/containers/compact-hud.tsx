@@ -1,10 +1,11 @@
-import { X } from "@/ui/design-system/atoms/game-icons";
+import type { IconMeaning } from "@/ui/design-system/icon";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import type { CompactLane } from "@/hooks/helpers/use-compact-hud";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
-import { BuildingThumbs } from "@/ui/config";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { EventLogPanel } from "@/ui/features/event-feed/event-log-panel";
@@ -42,12 +43,12 @@ type CompactTab = "empire" | "map" | "log" | "chat" | "details";
 const SHEET_TABS: ReadonlySet<CompactTab> = new Set(["empire", "map", "details"]);
 
 const COMPACT_TAB_IMAGES = {
-  empire: BuildingThumbs.home,
-  standings: BuildingThumbs.trophy,
-  map: BuildingThumbs.worldMap,
-  log: BuildingThumbs.latestUpdates,
-  chat: BuildingThumbs.discord,
-  details: BuildingThumbs.compass,
+  empire: "home" as const,
+  standings: "victory" as const,
+  map: "map" as const,
+  log: "news" as const,
+  chat: "discord" as const,
+  details: "explore" as const,
 } as const;
 
 /** Safe-area insets, never less than the shell's own padding so a phone without a notch keeps its gutters. */
@@ -141,7 +142,7 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
         <div className={cn("flex min-h-0 flex-col justify-end", layout.panels)}>
           <div className="flex flex-col items-end gap-1 px-2 pb-1">
             {open === null && ordersAllowed && (
-              <p className="pointer-events-none self-center rounded-full bg-[#101c23] px-3 py-1.5 font-sans text-xs text-gold/85">
+              <p className="pointer-events-none self-center rounded-full bg-kit-plate px-3 py-1.5 font-sans text-sm text-kit-cream">
                 Tap to select · Hold to move
               </p>
             )}
@@ -166,9 +167,9 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
                   type="button"
                   aria-label="Close panel"
                   onClick={closeAndFocusTab}
-                  className="flex h-11 w-11 items-center justify-center rounded-lg text-gold/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:bg-gold/15"
+                  className="flex h-11 w-11 items-center justify-center rounded-lg text-kit-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:bg-gold/15"
                 >
-                  <X className="h-5 w-5" />
+                  <SemanticIcon name="close" className="h-5 w-5" />
                 </button>
               </header>
               <div className="min-h-0 overflow-y-auto overscroll-contain p-2 touch-pan-y">
@@ -188,7 +189,7 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
           ref={navigation}
           aria-label="HUD tabs"
           className={cn(
-            "pointer-events-auto flex h-auto items-stretch gap-1 border-gold/20 bg-[#101c23]",
+            "pointer-events-auto flex h-auto items-stretch gap-0.5 border-gold/20 bg-kit-plate",
             layout.tabBar,
           )}
           style={layout.tabBarStyle}
@@ -213,23 +214,31 @@ const StructureActionStrip = ({ lane }: { lane: CompactLane }) => {
   const actions = useStructureActions();
   if (!actions) return null;
   const layout = LANE_LAYOUT[lane];
+  const refusal = actions[0]?.refusal ?? null;
   return (
-    <nav
-      aria-label="Structure actions"
-      className={cn("pointer-events-auto flex items-stretch gap-1 border-gold/20 bg-[#101c23]", layout.actions)}
-      style={layout.actionsStyle}
-    >
-      {actions.map((action) => (
-        <ActionTile key={action.id} variant="compact" action={action} />
-      ))}
-    </nav>
+    <>
+      {refusal && lane === "portrait" && (
+        <p role="status" className="self-center rounded-full bg-kit-plate px-3 py-1 text-sm font-semibold text-gold">
+          {refusal}
+        </p>
+      )}
+      <nav
+        aria-label="Structure actions"
+        className={cn("pointer-events-auto flex items-stretch gap-1 border-gold/20 bg-kit-plate", layout.actions)}
+        style={layout.actionsStyle}
+      >
+        {actions.map((action) => (
+          <ActionTile key={action.id} variant="compact" action={action} />
+        ))}
+      </nav>
+    </>
   );
 };
 
 interface TabSpec {
   id: CompactTab;
   label: string;
-  image: string;
+  image: IconMeaning;
   badge?: number;
   ref?: RefObject<HTMLButtonElement>;
 }
@@ -247,16 +256,16 @@ const TabButton = ({
     <button
       ref={tab.ref}
       type="button"
-      aria-label={tab.label}
       aria-expanded={active}
       aria-controls={active && SHEET_TABS.has(tab.id) ? "compact-hud-sheet" : undefined}
       onClick={() => onToggle(tab.id)}
       className={cn(
-        "relative flex min-h-14 min-w-0 flex-1 items-center justify-center rounded-lg p-2 transition-[background-color,color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:scale-[0.97] active:bg-gold/15",
-        active ? "bg-gold/15 text-gold" : "text-gold/75",
+        "relative flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-0.5 py-1 transition-[background-color,color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:scale-[0.97] active:bg-gold/15",
+        active ? "bg-gold/15 text-gold" : "text-kit-cream",
       )}
     >
-      <img src={tab.image} alt="" aria-hidden="true" className="h-9 w-9 object-contain" />
+      <SemanticIcon name={tab.image} alt="" aria-hidden="true" className="h-7 w-7 object-contain" />
+      <span className="max-w-full truncate text-sm font-semibold">{tab.label}</span>
       {tab.badge !== undefined && tab.badge > 0 && (
         <span className="absolute right-1/4 top-0">
           <UnreadFeedBadge count={tab.badge} />
@@ -278,7 +287,7 @@ const SheetContent = ({
   if (tab === "map") return <MinimapPanel compact />;
   if (tab === "details" && tileDetails === null)
     return (
-      <div className="flex flex-col items-center gap-2 px-4 py-6 text-center font-sans text-sm text-gold/80">
+      <div className="flex flex-col items-center gap-2 px-4 py-6 text-center font-sans text-sm text-kit-muted">
         <img src={COMPACT_TAB_IMAGES.details} alt="" aria-hidden="true" className="h-7 w-7 object-contain" />
         <p>Tap a tile on the map to inspect its army, structure, or terrain.</p>
       </div>

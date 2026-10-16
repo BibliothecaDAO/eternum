@@ -1,10 +1,11 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { SortButton, SortInterface } from "@/ui/design-system/atoms/sort-button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { SortPanel } from "@/ui/design-system/molecules/sort-panel";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import { GuildInfo, ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
-import { Globe, Lock } from "@/ui/design-system/atoms/game-icons";
+
 import { ReactElement, useMemo } from "react";
 
 interface GuildCustom extends GuildInfo {
@@ -74,10 +75,7 @@ export const GuildListHeader = ({
           label={label}
           sortKey={sortKey}
           activeSort={activeSort}
-          className={clsx(
-            "w-full gap-2 text-[0.7rem] font-semibold uppercase tracking-[0.16em] transition-colors hover:text-amber-200",
-            align,
-          )}
+          className={clsx("w-full gap-2 text-sm font-semibold transition-colors hover:text-amber-200", align)}
           classNameCaret="w-2.5 h-2.5"
           activeClassName="text-amber-200"
           inactiveClassName="text-gold/70"
@@ -102,19 +100,19 @@ export const GuildRow = ({ guild, onClick }: { guild: GuildCustom; onClick: () =
       })}
     >
       <div
-        className={clsx("grid w-full cursor-pointer items-center gap-x-4 px-4 py-2 text-xs", GUILD_GRID_TEMPLATE)}
+        className={clsx("grid w-full cursor-pointer items-center gap-x-4 px-4 py-2 text-sm", GUILD_GRID_TEMPLATE)}
         onClick={onClick}
       >
-        <p className="text-center font-medium italic text-gold/90">{guild.rank === null ? "—" : `#${guild.rank}`}</p>
+        <p className="text-center font-medium text-gold/90">{guild.rank === null ? "—" : `#${guild.rank}`}</p>
         <div className="flex min-w-0 items-center gap-2">
           {guild.isPublic ? (
-            <Globe className="h-4 w-4 shrink-0 text-emerald-300/90" />
+            <SemanticIcon name="map" className="h-4 w-4 shrink-0 text-emerald-300/90" />
           ) : (
-            <Lock className="h-4 w-4 shrink-0 text-amber-300/90" />
+            <SemanticIcon name="lock" className="h-4 w-4 shrink-0 text-amber-300/90" />
           )}
           <p className="truncate text-sm font-semibold text-gold">{guild.name}</p>
           {guild.isMember && (
-            <span className="shrink-0 rounded-full border border-amber-200/50 bg-amber-200/20 px-2 py-0.5 text-[0.55rem] font-semibold uppercase tracking-[0.16em] text-amber-200">
+            <span className="shrink-0 rounded-full border border-amber-200/50 bg-amber-200/20 px-2 py-0.5 text-sm font-semibold text-amber-200">
               Your Tribe
             </span>
           )}

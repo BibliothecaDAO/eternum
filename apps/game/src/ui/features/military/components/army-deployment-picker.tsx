@@ -1,4 +1,5 @@
-import { X } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { useEffect } from "react";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -36,7 +37,7 @@ const ArmyDeploymentForm = (target: ArmyDeploymentTarget) => {
           aria-label="Close deployment picker"
           onClick={() => usePopoverStore.getState().close("army-deployment")}
         >
-          <X className="h-4 w-4" />
+          <SemanticIcon name="close" className="h-4 w-4" />
         </button>
       </div>
       <TroopSelectionGrid
@@ -59,9 +60,9 @@ const ArmyDeploymentForm = (target: ArmyDeploymentTarget) => {
         embedded
         compact
       />
-      {form.troopTrainingLine && <p className="px-1 text-xs text-gold/70">{form.troopTrainingLine}</p>}
-      {form.raiseCostLine && <p className="px-1 text-xs text-gold/70">{form.raiseCostLine}</p>}
-      <p className="px-1 text-xs">
+      {form.troopTrainingLine && <p className="px-1 text-sm text-gold/70">{form.troopTrainingLine}</p>}
+      {form.raiseCostLine && <p className="px-1 text-sm text-gold/70">{form.raiseCostLine}</p>}
+      <p className="px-1 text-sm">
         Uses {form.troopCount.toLocaleString()} of {form.selectedAvailable.toLocaleString()}{" "}
         {form.selectedTroopCombo.tier} {form.selectedTroopCombo.type}
       </p>

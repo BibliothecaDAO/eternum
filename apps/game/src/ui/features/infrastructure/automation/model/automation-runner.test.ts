@@ -1,205 +1,174 @@
-// @vitest-environment node
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ResourcesIds } from "@bibliothecadao/types";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  AutomationCancelledError,
-  AutomationSignerSkippedError,
-  AutomationTimeoutError,
-  executeProductionPlansSequentially,
-  isSignerTransientError,
-  type ExecutableProductionPlan,
+  AutomationPending,
+  AutomationRejected,
+  AutomationSignerUnavailable,
+  createAutomationTask,
 } from "./automation-runner";
-import type { RealmProductionPlan } from "@bibliothecadao/eternum/automation";
-import type { RealmAutomationConfig } from "@/hooks/store/use-automation-store";
-import type { ExecuteRealmProductionPlanProps } from "@bibliothecadao/types";
 
-const makePlan = (realmId: number): RealmProductionPlan => ({
-  realmId,
-  realmKey: String(realmId),
-  realmName: `Realm ${realmId}`,
-  callset: {
-    resourceToResource: [{ resourceId: ResourcesIds.Knight, cycles: 1 }],
-    laborToResource: [],
-  },
-  consumptionByResource: {},
-  outputsByResource: { [ResourcesIds.Knight]: 1 },
-  resourceExecutions: [],
-  laborExecutions: [],
-  skipped: [],
-  evaluatedResourceIds: [ResourcesIds.Knight],
+let signerId = 0;
+const client = (world = "0xabc", chainId = "0x1") => ({ gameId: 1, shard: { chainId, worldAddress: world } });
+const harness = () => {
+  const run = createAutomationTask<{ label: string; amount: number }>();
+  const execute = vi.fn(async (_action: { label: string; amount: number }) => {});
+  const plan = vi.fn(async (submit: Parameters<Parameters<typeof run>[1]>[0]) => {
+    await submit({ label: "A", amount: 10 }, execute);
+  });
+  return {
+    run,
+    execute,
+    plan,
+    observer: {
+      client: client(),
+      signer: `0x${++signerId}`,
+      signal: new AbortController().signal,
+      onConfirmed: vi.fn(),
+    },
+  };
+};
+afterEach(() => vi.useRealTimers());
+
+describe("automation receipts", () => {
+  it("delivers the submitted action once, then permits the next pass", async () => {
+    const h = harness();
+    await h.run(h.observer, h.plan);
+    await h.run(h.observer, h.plan);
+    expect(h.execute.mock.calls).toEqual([[{ label: "A", amount: 10 }], [{ label: "A", amount: 10 }]]);
+    expect(h.observer.onConfirmed.mock.calls).toEqual(h.execute.mock.calls);
+  });
+  it.each(["invalid transaction nonce", "account validation failed", "insufficient max fee"])(
+    "tags signer failure: %s",
+    async (message) => {
+      const h = harness();
+      h.execute.mockRejectedValueOnce(new Error(message));
+      await expect(h.run(h.observer, h.plan)).rejects.toBeInstanceOf(AutomationSignerUnavailable);
+      expect(h.observer.onConfirmed).not.toHaveBeenCalled();
+      await h.run(h.observer, h.plan);
+      expect(h.observer.onConfirmed).toHaveBeenCalledTimes(1);
+    },
+  );
+  it("preserves a gameplay rejection as a different typed failure", async () => {
+    const h = harness();
+    h.execute.mockRejectedValue(new Error("insufficient resource balance"));
+    await expect(h.run(h.observer, h.plan)).rejects.toBeInstanceOf(AutomationRejected);
+    expect(h.observer.onConfirmed).not.toHaveBeenCalled();
+  });
+  it("does not even plan when already canceled", async () => {
+    const h = harness();
+    await expect(h.run({ ...h.observer, signal: AbortSignal.abort() }, h.plan)).rejects.toBeDefined();
+    expect(h.plan).not.toHaveBeenCalled();
+    expect(h.execute).not.toHaveBeenCalled();
+  });
+  it.each(["cancellation", "timeout"])(
+    "reconciles A before planning B after %s, even if settings change",
+    async (exit) => {
+      vi.useFakeTimers();
+      const h = harness();
+      const controller = new AbortController();
+      const original = { label: "A", amount: 10 };
+      let resolve!: () => void;
+      h.execute.mockImplementationOnce(
+        () =>
+          new Promise<void>((done) => {
+            resolve = done;
+          }),
+      );
+      const stopped = expect(
+        h.run({ ...h.observer, signal: controller.signal }, async (submit) => submit(original, h.execute)),
+      ).rejects.toBeDefined();
+      if (exit === "timeout") await vi.advanceTimersByTimeAsync(30_001);
+      else controller.abort();
+      await stopped;
+      original.label = "B";
+      original.amount = 99;
+      resolve();
+      const newPlan = vi.fn(async (submit: Parameters<Parameters<typeof h.run>[1]>[0]) => submit(original, h.execute));
+      const activeConfirmed = vi.fn();
+      await h.run({ ...h.observer, onConfirmed: activeConfirmed }, newPlan);
+      expect(h.observer.onConfirmed).not.toHaveBeenCalled();
+      expect(newPlan).not.toHaveBeenCalled();
+      expect(h.execute.mock.calls).toEqual([[{ label: "A", amount: 10 }]]);
+      expect(activeConfirmed.mock.calls).toEqual([[{ label: "A", amount: 10 }]]);
+      await h.run({ ...h.observer, onConfirmed: activeConfirmed }, newPlan);
+      expect(h.execute.mock.calls[1]).toEqual([{ label: "B", amount: 99 }]);
+    },
+  );
+  it.each(["unresolved", "completed"])(
+    "isolates %s receipts across worlds with identical game, signer and action IDs",
+    async (state) => {
+      const h = harness();
+      const stopA = new AbortController();
+      let resolve!: () => void;
+      h.execute.mockImplementationOnce(
+        () =>
+          new Promise<void>((done) => {
+            resolve = done;
+          }),
+      );
+      const stopped = expect(h.run({ ...h.observer, signal: stopA.signal }, h.plan)).rejects.toBeDefined();
+      stopA.abort();
+      await stopped;
+      if (state === "completed") resolve();
+      const worldB = { ...h.observer, client: client("0xdef"), onConfirmed: vi.fn() };
+      await h.run(worldB, h.plan);
+      expect(h.execute).toHaveBeenCalledTimes(2);
+      expect(worldB.onConfirmed.mock.calls).toEqual([[{ label: "A", amount: 10 }]]);
+      resolve();
+      const recoveredA = vi.fn();
+      await h.run({ ...h.observer, client: client("0x0ABC", "0x01"), onConfirmed: recoveredA }, h.plan);
+      expect(h.execute).toHaveBeenCalledTimes(2);
+      expect(recoveredA.mock.calls).toEqual([[{ label: "A", amount: 10 }]]);
+      expect(h.observer.onConfirmed).not.toHaveBeenCalled();
+    },
+  );
+  it("isolates chains even when world address, game and signer are equal", async () => {
+    const h = harness();
+    const stop = new AbortController();
+    let resolve!: () => void;
+    h.execute.mockImplementationOnce(
+      () =>
+        new Promise<void>((done) => {
+          resolve = done;
+        }),
+    );
+    const stopped = expect(h.run({ ...h.observer, signal: stop.signal }, h.plan)).rejects.toBeDefined();
+    stop.abort();
+    await stopped;
+    await h.run({ ...h.observer, client: client("0xabc", "0x2") }, h.plan);
+    expect(h.execute).toHaveBeenCalledTimes(2);
+    resolve();
+    await h.run(h.observer, h.plan);
+    expect(h.execute).toHaveBeenCalledTimes(2);
+  });
+  it("blocks other tasks for the same signer while a native transaction outcome is unknown", async () => {
+    const h = harness();
+    const unknown = new Error("No answer yet");
+    unknown.name = "TransactionNoAnswerError";
+    h.execute.mockRejectedValue(unknown);
+    for (let i = 0; i < 2; i++) await expect(h.run(h.observer, h.plan)).rejects.toBeInstanceOf(AutomationPending);
+    const other = harness();
+    await expect(other.run(h.observer, other.plan)).rejects.toBeInstanceOf(AutomationSignerUnavailable);
+    expect(h.execute).toHaveBeenCalledTimes(1);
+    expect(other.execute).not.toHaveBeenCalled();
+  });
+  it("keeps the immutable receipt if its local handler mutates data then fails", async () => {
+    const h = harness();
+    h.observer.onConfirmed.mockImplementationOnce((action) => {
+      action.amount = 999;
+      throw new Error("view unavailable");
+    });
+    await expect(h.run(h.observer, h.plan)).rejects.toThrow("view unavailable");
+    await h.run(h.observer, h.plan);
+    expect(h.execute).toHaveBeenCalledTimes(1);
+    expect(h.observer.onConfirmed.mock.calls[1]).toEqual([{ label: "A", amount: 10 }]);
+  });
 });
 
-const makeRealmConfig = (realmId: number): RealmAutomationConfig => ({
-  realmId: String(realmId),
-  realmName: `Realm ${realmId}`,
-  entityType: "realm",
-  presetId: "smart",
-  autoBalance: true,
-  customPercentages: {},
-  createdAt: 1,
-  updatedAt: 1,
-});
-
-const makeExecutablePlan = (realmId: number): ExecutableProductionPlan => ({
-  plan: makePlan(realmId),
-  realmConfig: makeRealmConfig(realmId),
-  realmLabel: `Realm ${realmId}`,
-  planLogPayload: {},
-});
-
-describe("executeProductionPlansSequentially", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it("times out a stuck realm tx and continues to the next realm", async () => {
-    const callOrder: number[] = [];
-    const executeRealmProductionPlan = vi.fn(async ({ realm_entity_id }: ExecuteRealmProductionPlanProps) => {
-      const realmId = Number(realm_entity_id);
-      callOrder.push(realmId);
-      if (realmId === 1) {
-        return new Promise(() => {});
-      }
-    });
-
-    const resultsPromise = executeProductionPlansSequentially({
-      executablePlans: [makeExecutablePlan(1), makeExecutablePlan(2)],
-      signer: { address: "0xabc" } as ExecuteRealmProductionPlanProps["signer"],
-      executeRealmProductionPlan,
-      timeoutMs: 50,
-    });
-
-    await vi.advanceTimersByTimeAsync(51);
-    const results = await resultsPromise;
-
-    expect(callOrder).toEqual([1, 2]);
-    expect(results).toHaveLength(2);
-    expect(results[0].status).toBe("rejected");
-    if (results[0].status === "rejected") {
-      expect(results[0].reason.error).toBeInstanceOf(AutomationTimeoutError);
-    }
-    expect(results[1].status).toBe("fulfilled");
-  });
-
-  it("skips a realm when isCancelled returns realm scope and continues the rest", async () => {
-    vi.useRealTimers();
-    const executed: number[] = [];
-    const executeRealmProductionPlan = vi.fn(async ({ realm_entity_id }: ExecuteRealmProductionPlanProps) => {
-      executed.push(Number(realm_entity_id));
-    });
-
-    const results = await executeProductionPlansSequentially({
-      executablePlans: [makeExecutablePlan(1), makeExecutablePlan(2), makeExecutablePlan(3)],
-      signer: { address: "0xabc" } as ExecuteRealmProductionPlanProps["signer"],
-      executeRealmProductionPlan,
-      isCancelled: ({ plan }) =>
-        plan.realmId === 2
-          ? { cancelled: true, reason: "Realm no longer owned", scope: "realm" }
-          : { cancelled: false },
-    });
-
-    expect(executed).toEqual([1, 3]);
-    expect(results.map((r) => r.status)).toEqual(["fulfilled", "rejected", "fulfilled"]);
-    const skipped = results[1];
-    if (skipped.status === "rejected") {
-      expect(skipped.reason.error).toBeInstanceOf(AutomationCancelledError);
-      expect((skipped.reason.error as AutomationCancelledError).scope).toBe("realm");
-    }
-  });
-
-  it("aborts remaining realms when isCancelled returns pass scope", async () => {
-    vi.useRealTimers();
-    const executed: number[] = [];
-    const executeRealmProductionPlan = vi.fn(async ({ realm_entity_id }: ExecuteRealmProductionPlanProps) => {
-      executed.push(Number(realm_entity_id));
-    });
-
-    let passed = 0;
-    const results = await executeProductionPlansSequentially({
-      executablePlans: [makeExecutablePlan(1), makeExecutablePlan(2), makeExecutablePlan(3)],
-      signer: { address: "0xabc" } as ExecuteRealmProductionPlanProps["signer"],
-      executeRealmProductionPlan,
-      isCancelled: () => {
-        passed += 1;
-        return passed === 2 ? { cancelled: true, reason: "Game has ended", scope: "pass" } : { cancelled: false };
-      },
-    });
-
-    expect(executed).toEqual([1]);
-    expect(results.map((r) => r.status)).toEqual(["fulfilled", "rejected", "rejected"]);
-    results.slice(1).forEach((entry) => {
-      if (entry.status === "rejected") {
-        expect(entry.reason.error).toBeInstanceOf(AutomationCancelledError);
-      }
-    });
-  });
-
-  it("short-circuits tail realms with AutomationSignerSkippedError when a signer-transient error fires", async () => {
-    vi.useRealTimers();
-    const executed: number[] = [];
-    const executeRealmProductionPlan = vi.fn(async ({ realm_entity_id }: ExecuteRealmProductionPlanProps) => {
-      const realmId = Number(realm_entity_id);
-      executed.push(realmId);
-      if (realmId === 1) throw new Error("StarknetError: Invalid transaction nonce");
-    });
-
-    const results = await executeProductionPlansSequentially({
-      executablePlans: [makeExecutablePlan(1), makeExecutablePlan(2), makeExecutablePlan(3)],
-      signer: { address: "0xabc" } as ExecuteRealmProductionPlanProps["signer"],
-      executeRealmProductionPlan,
-    });
-
-    expect(executed).toEqual([1]);
-    expect(results.map((r) => r.status)).toEqual(["rejected", "rejected", "rejected"]);
-    expect((results[0] as { reason: { error: unknown } }).reason.error).toBeInstanceOf(Error);
-    expect((results[1] as { reason: { error: unknown } }).reason.error).toBeInstanceOf(AutomationSignerSkippedError);
-    expect((results[2] as { reason: { error: unknown } }).reason.error).toBeInstanceOf(AutomationSignerSkippedError);
-  });
-
-  it("recognises common signer-transient error payloads", () => {
-    expect(isSignerTransientError(new Error("nonce too low"))).toBe(true);
-    expect(isSignerTransientError(new Error("StarknetError: Invalid transaction nonce"))).toBe(true);
-    expect(isSignerTransientError({ message: "account validation failed" })).toBe(true);
-    expect(isSignerTransientError({ cause: { message: "insufficient fee" } })).toBe(true);
-    expect(isSignerTransientError(new Error("some unrelated error"))).toBe(false);
-    expect(isSignerTransientError(new AutomationTimeoutError(1000))).toBe(false);
-    expect(isSignerTransientError(new AutomationCancelledError("x"))).toBe(false);
-  });
-
-  it("executes production plans sequentially and continues after a failed realm", async () => {
-    vi.useRealTimers();
-    const callOrder: number[] = [];
-    const executeRealmProductionPlan = vi.fn(async ({ realm_entity_id }: ExecuteRealmProductionPlanProps) => {
-      const realmId = Number(realm_entity_id);
-      callOrder.push(realmId);
-      if (realmId === 2) {
-        throw new Error("recipe validation failed");
-      }
-    });
-
-    const results = await executeProductionPlansSequentially({
-      executablePlans: [makeExecutablePlan(1), makeExecutablePlan(2), makeExecutablePlan(3)],
-      signer: { address: "0xabc" } as ExecuteRealmProductionPlanProps["signer"],
-      executeRealmProductionPlan,
-    });
-
-    expect(callOrder).toEqual([1, 2, 3]);
-    expect(results.map((result) => result.status)).toEqual(["fulfilled", "rejected", "fulfilled"]);
-    expect(executeRealmProductionPlan).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({ realm_entity_id: 1, skipQueue: true }),
-    );
-    expect(executeRealmProductionPlan).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({ realm_entity_id: 2, skipQueue: true }),
-    );
-    expect(executeRealmProductionPlan).toHaveBeenNthCalledWith(
-      3,
-      expect.objectContaining({ realm_entity_id: 3, skipQueue: true }),
-    );
-  });
+it("does not classify disposal of native transaction observation as a rejected transaction", async () => {
+  const h = harness();
+  h.execute.mockRejectedValue(new Error("Game client disposed"));
+  await expect(h.run(h.observer, h.plan)).rejects.toBeInstanceOf(AutomationPending);
+  await expect(h.run(h.observer, h.plan)).rejects.toBeInstanceOf(AutomationPending);
+  expect(h.execute).toHaveBeenCalledTimes(1);
+  expect(h.observer.onConfirmed).not.toHaveBeenCalled();
 });

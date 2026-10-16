@@ -16,6 +16,7 @@
     "@bibliothecadao/eternum": "workspace:*",
     "@bibliothecadao/provider": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
+    "@realms-world/value-ledger": "workspace:*",
     "pg": "^8.18.0",
     "starknet": "catalog:web"
   },

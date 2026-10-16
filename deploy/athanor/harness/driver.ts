@@ -179,7 +179,8 @@ interface PathReservation {
 
 interface TrackTransactionOptions {
   confirmationTimeoutMs?: number;
-  actionIndex?: number;
+  /** With the stage, kind, bot and tick, it names one action: a later record under the same name is its retry. */
+  actionIndex: number;
   botId: number;
   exploreRequested?: boolean;
   gameId: number;
@@ -438,14 +439,19 @@ export async function runWorkload({
   const pathReservations = new PathReservations(bots, game);
 
   for (let tick = 0; tick < ticks; tick += 1) {
-    const scheduledAtMs = burst ? workloadStartedAtMs : workloadStartedAtMs + tick * intervalSeconds * 1_000;
-    await sleepUntil(scheduledAtMs);
+    const tickStartedAtMs = burst ? workloadStartedAtMs : workloadStartedAtMs + tick * intervalSeconds * 1_000;
+    await sleepUntil(tickStartedAtMs);
     for (const [botIndex, bot] of bots.entries()) {
       const actionIndex = tick * bots.length + botIndex;
+      // A cadence spreads its bots evenly across the interval, so it offers bots / interval actions a second.
+      const scheduledAtMs = burst
+        ? tickStartedAtMs
+        : tickStartedAtMs + (botIndex * intervalSeconds * 1_000) / bots.length;
       const previous = botQueues.get(bot.botId)!;
       botQueues.set(
         bot.botId,
         previous.then(async () => {
+          await sleepUntil(scheduledAtMs);
           const rpc = createRpcMetrics();
           const action = await runBotAction({
             actionIndex,
@@ -542,6 +548,7 @@ async function settleEternumBot({
 }): Promise<TrackedTransaction> {
   const name = `bot-${harnessAccount.botId.toString().padStart(3, "0")}`;
   return trackTransaction({
+    actionIndex: 0,
     botId: harnessAccount.botId,
     gameId: game.gameId,
     kind: "settle",
@@ -572,6 +579,7 @@ async function createBotExplorer({
   const troopType = troopTypes.get(structure.structureId);
   if (troopType === undefined) throw new Error(`No starting troop type exists for structure ${structure.structureId}`);
   return trackTransaction({
+    actionIndex: 0,
     botId: harnessAccount.botId,
     gameId: game.gameId,
     kind: "create-explorer",

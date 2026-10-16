@@ -75,6 +75,7 @@ async function deployGameplayContracts(): Promise<GameplayDeploymentResult> {
     chainId: await provider.getChainId(),
     accountClassHash: playerAccountClassHash,
     guardianPublicKey: manifest.shard.guardianPublicKey,
+    l2GasBound: manifest.shard.l2GasBound,
   });
   const result = {
     operatorAccountAddress: addAddressPadding(operatorAddress),

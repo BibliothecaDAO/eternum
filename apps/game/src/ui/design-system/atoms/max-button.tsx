@@ -48,7 +48,7 @@ export const MaxButton = React.forwardRef<HTMLButtonElement | HTMLDivElement, Ma
           disabled={isDisabled}
           className={cn("h-8 w-8 p-0", className)}
         >
-          <span className="text-xs font-medium">M</span>
+          <span className="text-sm font-medium">M</span>
         </Button>
       );
     }

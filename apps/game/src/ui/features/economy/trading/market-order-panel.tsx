@@ -249,7 +249,7 @@ export const OrderRowHeader = memo(({ resourceId, isBuy }: { resourceId?: number
           <>
             <ResourceIcon size="xs" resource="Lords" withTooltip={false} />
             <span>/</span>
-            <ResourceIcon size="xs" resource={findResourceById(resourceId)?.trait || ""} withTooltip={false} />
+            <ResourceIcon size="xs" resource={resourceId} withTooltip={false} />
           </>
         )}
       </span>
@@ -412,13 +412,13 @@ export const OrderRow = memo(
       <div
         className={cn(
           ORDER_GRID,
-          "h-9 border-b border-gold/10 px-2 text-[11px] tabular-nums transition-colors hover:bg-gold/10 max-lg:h-11",
+          "h-9 border-b border-gold/10 px-2 text-sm tabular-nums transition-colors hover:bg-gold/10 max-lg:h-11",
           isSelf && "bg-blueish/10",
         )}
         title={`Expires ${new Date(offer.expiresAt * 1000).toLocaleString()}`}
       >
         <span className={cn("flex items-center gap-1", isBuy ? "text-red" : "text-green")}>
-          <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(getDisplayResource)?.trait || ""} />
+          <ResourceIcon withTooltip={false} size="xs" resource={getDisplayResource} />
           {getsDisplay}
         </span>
         <span className="text-center text-gold">{formatNumber(offer.perLords, 4)}</span>

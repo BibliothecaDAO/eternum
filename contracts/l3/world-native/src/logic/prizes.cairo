@@ -75,7 +75,7 @@ pub mod PrizesLogic {
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) -> () {
-            let game_context = crate::commands::load_context(key.game_id, game_context);
+            let game_context = crate::commands::execution_context(key.game_id, game_context);
 
             let game = game_context.game.unbox();
             self.faith.transfer(key.game_id, key.entity_id, owner, timestamp, game.end_at);
@@ -116,7 +116,7 @@ pub mod PrizesLogic {
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) {
-            let game_context = crate::commands::load_context(key.game_id, game_context);
+            let game_context = crate::commands::execution_context(key.game_id, game_context);
 
             assert!(category == crate::taxonomy::BITCOIN_MINE_CATEGORY, "not a Bitcoin mine");
             let interval = game_context.rules.unbox().tick_config.bitcoin_phase_in_seconds;
@@ -126,7 +126,7 @@ pub mod PrizesLogic {
         fn bitcoin_mine_captured(
             ref self: ContractState, key: ResourceKey, timestamp: u64, game_context: crate::commands::ActionContext,
         ) {
-            let game_context = crate::commands::load_context(key.game_id, game_context);
+            let game_context = crate::commands::execution_context(key.game_id, game_context);
 
             let rules = game_context.rules.unbox();
             let mine = crate::logic::structures::structure(key).expect('missing Bitcoin mine');
@@ -154,7 +154,7 @@ pub mod PrizesLogic {
             command: crate::bitcoin::ClaimPhase,
             context: crate::commands::ActionContext,
         ) -> u64 {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_bitcoin_phase_closed(game_id, command.phase, context.timestamp, context);
             assert!(!command.mine_ids.is_empty(), "empty Bitcoin claim batch");
@@ -180,7 +180,7 @@ pub mod PrizesLogic {
             command: crate::bitcoin::ContributeLabor,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_bitcoin_command(game_id, context.timestamp, context);
             let game = context.game.unbox();
@@ -213,7 +213,7 @@ pub mod PrizesLogic {
             phase: u64,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_bitcoin_phase_closed(game_id, phase, context.timestamp, context);
             self.bitcoin.close(crate::bitcoin::PhaseKey { game_id, phase });
@@ -225,7 +225,7 @@ pub mod PrizesLogic {
             phase: u64,
             context: crate::commands::ActionContext,
         ) {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             self.assert_bitcoin_phase_closed(game_id, phase, context.timestamp, context);
             self.bitcoin.bind(crate::bitcoin::PhaseKey { game_id, phase }, context.raw_root);

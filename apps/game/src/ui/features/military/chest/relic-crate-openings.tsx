@@ -4,14 +4,17 @@ import { WorldUpdateListener } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useEffect } from "react";
 
-/** Every crate opening on the map: one feed row that flies to the hex, and the relics kept for the tile panel. */
+/**
+ * Every crate opening on the map: one feed row, titled as the history titles it (its pack and where its relics went),
+ * that flies to the hex, and the relics kept for the tile panel.
+ */
 export const RelicCrateOpenings = () => {
   const { setup } = useGame();
   useEffect(
     () =>
       new WorldUpdateListener(setup).RelicChest.onRelicChestOpened((opening) => {
         useRelicCrateStore.getState().recordOpening(opening);
-        toast.success(`Crate opened · ${opening.relics.length} relics`, { location: opening.hex });
+        toast.success(opening.title, { location: opening.hex });
       }),
     [setup],
   );

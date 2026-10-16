@@ -1,5 +1,4 @@
 import { TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
-import { reportObservedChainTimestamp } from "../utils/timestamp";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { battleBonusBps, logisticsStamina } from "../utils/attribute-tiers";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
@@ -22,7 +21,6 @@ export const troopStaminaLimits = (rules: TroopStaminaRules, troopType: TroopTyp
 /** Below the cap, any partition of the same seconds yields the same gain and remainder, including boost expiry. */
 export function staminaAt(troops: Troops, timestamp: number, rules: TroopStaminaRules, tickSeconds: number) {
   const bar = troops.stamina;
-  if (bar.settled_at > timestamp) reportObservedChainTimestamp(bar.settled_at);
   const { staminaInitial, staminaMax } = troopStaminaLimits(rules, troops.category, troops.tier);
   const maximum = BigInt(troops.staminaMax ?? staminaMax);
   const secondsLeft = troops.boosts.incr_stamina_regen_seconds_left;

@@ -1,4 +1,4 @@
-import { RpcProvider } from "starknet";
+import { hash, RpcProvider } from "starknet";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { testRatingReader } from "./rating-test-reader";
 import { routeIdentityRequest } from "./routes";
@@ -10,10 +10,10 @@ let identityRows: { realmsId: string; address: string | null }[] = [];
 let profiles: { address: string; realmsId: string; id: string; name: string; image: string | null }[] = [];
 const profileBatch = vi.fn(async () => [{ results: profiles }]);
 let cache: ReturnType<typeof testRatingReader>;
-let population = { ...block, players: ["0xa", "0xb", "0xc", "0xd"] };
+const updated = (players: string[]) => ({ events: players.map((player) => ({ keys: [MMR_UPDATED, player] })) });
+const MMR_UPDATED = hash.getSelectorFromName("MMRUpdated");
 const env = {
   ENVIRONMENT: "production",
-  RATING_HISTORY_URL: "https://realms.world/api/ratings/population",
   L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
   PUBLIC_RATE_LIMIT: { limit: vi.fn(async () => ({ success: true })) },
   DB: { batch: profileBatch, prepare: () => ({ bind: () => ({ all: async () => ({ results: identityRows }) }) }) },
@@ -30,20 +30,13 @@ beforeEach(() => {
   profileBatch.mockClear();
   cache = testRatingReader();
   env.RATING_READER = cache.binding as unknown as IdentityEnv["RATING_READER"];
-  population = { ...block, players: ["0xa", "0xb", "0xc", "0xd"] };
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async (_url: unknown, init?: RequestInit) =>
-      init?.method === "HEAD"
-        ? new Response(null, {
-            headers: { "x-rating-hash": population.block_hash!, "x-rating-block": String(population.block_number) },
-          })
-        : Response.json(population),
-    ),
-  );
   identityRows = [{ realmsId: "0x1", address: "0xd" }];
   vi.spyOn(RpcProvider.prototype, "getChainId").mockResolvedValue("0x534e5f4d41494e");
   vi.spyOn(RpcProvider.prototype, "getBlock").mockResolvedValue(block);
+  vi.spyOn(RpcProvider.prototype, "getClassHashAt").mockResolvedValue("0x1");
+  vi.spyOn(RpcProvider.prototype, "getEvents").mockResolvedValue(
+    updated(["0xa", "0xb", "0xc", "0xd"]) as Awaited<ReturnType<RpcProvider["getEvents"]>>,
+  );
   vi.spyOn(RpcProvider.prototype, "callContract").mockImplementation(async ({ calldata }) => {
     const player = Array.isArray(calldata) ? String(calldata[0]) : "";
     const points = player === "0xa" || player === "0xb" ? 2000n : player === "0xc" ? 1600n : 1000n;
@@ -53,7 +46,6 @@ beforeEach(() => {
 afterEach(() => {
   cache.close();
   vi.restoreAllMocks();
-  vi.unstubAllGlobals();
 });
 
 it("serves tied top positions and the reader below the top from one block and value map", async () => {
@@ -72,9 +64,8 @@ it("serves tied top positions and the reader below the top from one block and va
   });
   expect(RpcProvider.prototype.callContract).toHaveBeenCalledTimes(4);
   for (const args of vi.mocked(RpcProvider.prototype.callContract).mock.calls) expect(args[1]).toBe("0xabc");
-  expect(fetch).toHaveBeenCalledWith(
-    "https://realms.world/api/ratings/population",
-    expect.objectContaining({ headers: { "cache-control": "no-cache" } }),
+  expect(RpcProvider.prototype.getEvents).toHaveBeenCalledWith(
+    expect.objectContaining({ keys: [[MMR_UPDATED]], to_block: { block_number: 77 } }),
   );
 });
 
@@ -84,14 +75,9 @@ it("uses the same current rating read for a ranked reader and a never-ranked ini
     entries: [{ rank: 1 }, { rank: 1 }, { rank: 3 }, { rank: 4 }],
     self: { rank: 3, rating: "1600" },
   });
-  population = { ...block, block_number: 78, block_hash: "0xdef", players: [] };
-  vi.mocked(RpcProvider.prototype.getBlock).mockResolvedValue(
-    population as Awaited<ReturnType<RpcProvider["getBlock"]>>,
-  );
   const unrated = await request("player=0xe");
   expect(await unrated.json()).toMatchObject({
-    total: 0,
-    entries: [],
+    total: 4,
     self: { status: "rated", rating: "1000", rank: null },
   });
 });
@@ -100,31 +86,26 @@ it.each(["limit=0", "limit=101", "limit=x", "player=0x0", "player=0xa&realmsId=0
   "rejects invalid top queries: %s",
   async (query) => {
     expect((await request(query)).status).toBe(400);
-    expect(fetch).not.toHaveBeenCalled();
+    expect(RpcProvider.prototype.getEvents).not.toHaveBeenCalled();
   },
 );
 
-it("never supplies a partial ranking when history or a rating read fails", async () => {
-  vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 503 }));
+it("never supplies a partial ranking when the population or a rating read fails", async () => {
+  vi.mocked(RpcProvider.prototype.getEvents).mockRejectedValueOnce(new Error("events unavailable"));
   expect((await request()).status).toBe(503);
   vi.mocked(RpcProvider.prototype.callContract).mockRejectedValue(new Error("rating unavailable"));
   expect((await request()).status).toBe(503);
 });
 
-it("refuses a SQL watermark inconsistent with the chain instead of returning a truncated list", async () => {
-  population = { ...block, block_number: 78, players: ["0xa"] };
-  expect((await request()).status).toBe(503);
-});
-
-it("does not publish a partial list after the shared read deadline expires", async () => {
+it("does not publish a list whose rating reads outlast their deadline", async () => {
   const controller = new AbortController();
   vi.spyOn(AbortSignal, "timeout").mockReturnValue(controller.signal);
-  vi.mocked(fetch).mockImplementation(async () => {
+  vi.mocked(RpcProvider.prototype.callContract).mockImplementation(async () => {
     controller.abort();
-    throw new Error("History deadline expired");
+    return [`0x${(1000n * 10n ** 18n).toString(16)}`, "0x0"];
   });
   expect((await request()).status).toBe(503);
-  expect(RpcProvider.prototype.callContract).not.toHaveBeenCalled();
+  expect(RpcProvider.prototype.callContract).toHaveBeenCalledTimes(4);
 });
 
 it("reads trusted names alongside fresh wallet ratings and leaves unlinked owners as addresses", async () => {

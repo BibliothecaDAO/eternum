@@ -18,8 +18,7 @@
       "hyps_fail_prob_increase_p_hex": 9820,
       "hyps_fail_prob_increase_p_fnd": 1,
       "relic_discovery_interval_sec": 0,
-      "relic_hex_dist_from_center": 0,
-      "relic_chest_relics_per_chest": 0
+      "relic_hex_dist_from_center": 0
     },
     "biome_climate_config": {
       "elevation_scale_bps": 10000,
@@ -72,6 +71,7 @@
       "empire_guard_slots": 4,
       "starting_guard": 1500,
       "camp_armies": 1,
+      "explore_reward_strength_cap": 0,
       "mercenaries_troop_lower_bound": 800,
       "mercenaries_troop_upper_bound": 1500,
       "settlement_deployment_cap": 3000,

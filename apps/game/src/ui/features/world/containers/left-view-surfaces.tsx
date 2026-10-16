@@ -1,4 +1,3 @@
-import { Package as PackageIcon } from "@/ui/design-system/atoms/game-icons";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -44,14 +43,7 @@ const ActiveViewSurface = () => {
 
   if (surface === "build") {
     return (
-      <PopoverPanel
-        id="build"
-        ariaLabel="Build"
-        anchor="top-center"
-        rememberPosition
-        className="w-auto p-0"
-        onDismiss={closeView}
-      >
+      <PopoverPanel id="build" ariaLabel="Build" anchor="top-center" className="w-auto p-0" onDismiss={closeView}>
         <ConstructionModal structureEntityId={structureEntityId} />
       </PopoverPanel>
     );
@@ -62,13 +54,12 @@ const ActiveViewSurface = () => {
         id="logistics"
         ariaLabel="Logistics"
         anchor="top-center"
-        rememberPosition
         className="w-auto p-0"
         onDismiss={closeView}
       >
         <SurfaceFrame
           title="Logistics"
-          icon={PackageIcon}
+          icon={"resources" as const}
           onClose={closeView}
           className={SURFACE_WORKSPACE_CLASS}
           bodyClassName="overflow-hidden"
@@ -80,14 +71,7 @@ const ActiveViewSurface = () => {
   }
   if (surface === "military") {
     return (
-      <PopoverPanel
-        id="military"
-        ariaLabel="Military"
-        anchor="top-center"
-        rememberPosition
-        className="w-auto p-0"
-        onDismiss={closeView}
-      >
+      <PopoverPanel id="military" ariaLabel="Military" anchor="top-center" className="w-auto p-0" onDismiss={closeView}>
         <MilitaryModal structureEntityId={structureEntityId} />
       </PopoverPanel>
     );

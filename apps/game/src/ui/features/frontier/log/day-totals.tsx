@@ -1,5 +1,6 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { formatAmount } from "@/ui/design-system/kit/amount";
-import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { CHESTS, ESSENCE, LABOR, LORDS, REVEALS, SITES_CLEARED } from "@/ui/design-system/kit/words";
 
 /** A day's totals as the log counts them; LORDS arrive with the contracts' ruin chests. Unknown shows as a dash. */
@@ -16,18 +17,18 @@ export type DayTotals = {
 export const DayTotalsGrid = ({ totals }: { totals: DayTotals }) => (
   <TotalsGrid
     cells={[
-      { icon: "Ey", name: REVEALS, value: formatAmount(totals.reveals) },
-      { icon: "Fl", name: SITES_CLEARED, value: formatAmount(totals.cleared) },
-      { icon: "Ch", name: CHESTS, value: formatAmount(totals.chests) },
-      { icon: "Es", name: ESSENCE, value: gained(totals.essence) },
-      { icon: "La", name: LABOR, value: gained(totals.labor) },
-      { icon: "Lo", name: LORDS, value: gained(totals.lords) },
+      { icon: "explore", name: REVEALS, value: formatAmount(totals.reveals) },
+      { icon: "flag", name: SITES_CLEARED, value: formatAmount(totals.cleared) },
+      { icon: "chest", name: CHESTS, value: formatAmount(totals.chests) },
+      { icon: "essence", name: ESSENCE, value: gained(totals.essence) },
+      { icon: "labor", name: LABOR, value: gained(totals.labor) },
+      { icon: "lords", name: LORDS, value: gained(totals.lords) },
     ]}
   />
 );
 
 /** One total: its icon, the name the icon stands for, and its figure. */
-type TotalCell = { icon: IconCode; name: string; value: string };
+type TotalCell = { icon: IconMeaning; name: string; value: string };
 
 /**
  * Totals as icons beside numbers, three to a row: a day's, or a season's. Each cell is one image named with its
@@ -49,7 +50,7 @@ const Total = ({ cell }: { cell: TotalCell }) => (
     aria-label={`${cell.name} ${cell.value}`}
     className="flex h-[34px] items-center justify-center gap-1.5"
   >
-    <KitIcon code={cell.icon} size={22} />
-    <span className="text-[17px] tabular-nums">{cell.value}</span>
+    <SemanticIcon name={cell.icon} size={22} />
+    <span className="text-base tabular-nums">{cell.value}</span>
   </span>
 );

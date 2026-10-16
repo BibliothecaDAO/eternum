@@ -8,7 +8,7 @@ import {
   Group,
   Mesh,
   Object3D,
-  PCFSoftShadowMap,
+  PCFShadowMap,
   Texture,
   PerspectiveCamera,
   Scene,
@@ -81,7 +81,7 @@ export async function mountModelLabRenderer(input: Input): Promise<ModelLabRende
   const initialized = await initializeProceduralCharacterRendererRuntime({ pixelRatioCap: 1.5, preloadPhysics: false });
   if (input.signal.aborted) {
     initialized.unitRuntime.dispose();
-    initialized.rendererRuntime.backend.dispose?.();
+    initialized.rendererRuntime.backend.dispose();
     input.signal.throwIfAborted();
   }
   let lab: ModelReviewScene | undefined;
@@ -94,7 +94,7 @@ export async function mountModelLabRenderer(input: Input): Promise<ModelLabRende
     if (lab) lab.dispose();
     else {
       initialized.unitRuntime.dispose();
-      initialized.rendererRuntime.backend.dispose?.();
+      initialized.rendererRuntime.backend.dispose();
     }
     throw error;
   }
@@ -135,7 +135,7 @@ class ModelReviewScene implements ModelLabRenderer {
     this.renderer = initialized.rendererRuntime.renderer as LoopRenderer;
     configureRendererColorOutput(this.renderer);
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = PCFSoftShadowMap;
+    this.renderer.shadowMap.type = PCFShadowMap;
     this.scene.background = new Color(0x819997);
     this.scene.add(this.stage, this.footprints);
     this.environment = new ModelLabEnvironment(this.scene);
@@ -313,7 +313,7 @@ class ModelReviewScene implements ModelLabRenderer {
     }
     this.shipAssets.clear();
     this.runtime.dispose();
-    this.initialized.rendererRuntime.backend.dispose?.();
+    this.initialized.rendererRuntime.backend.dispose();
     this.renderer.domElement.remove();
   }
 

@@ -35,7 +35,7 @@ export const DevSyncOverlay = () => {
 
   return (
     <div
-      className="pointer-events-none fixed bottom-2 left-2 z-[90] rounded bg-black/70 px-2.5 py-1.5 font-mono text-[10px] leading-4 text-white/80"
+      className="pointer-events-none fixed bottom-2 left-2 z-[90] rounded bg-black/70 px-2.5 py-1.5 font-mono text-sm leading-4 text-white/80"
       data-testid="dev-sync-overlay"
     >
       <div>

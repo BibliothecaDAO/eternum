@@ -385,6 +385,7 @@ async function playAction(
 ): Promise<TrackedTransaction> {
   const before = rules && action.charge ? await waitForWheatState(player.client, player.realmId) : undefined;
   const result = await trackTransaction({
+    actionIndex: currentDay(player).actions,
     botId: player.identity.botId,
     gameId: game.gameId,
     kind: action.kind,
@@ -522,6 +523,7 @@ async function settleFrontierPlayer(
   const { game, provider } = options;
   const own = game.forActor(identity.address);
   const transaction = await trackTransaction({
+    actionIndex: 0,
     botId: identity.botId,
     gameId: game.gameId,
     kind: "settle",

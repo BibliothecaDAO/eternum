@@ -1,6 +1,6 @@
 import { registerEnvironmentPreset } from "../registrar/register-preset";
 import { buildLedgerEconomicPreset, buildRegisterLedgerPresetCalldata } from "../ledger/economics";
-import { blitzRosterOf, findRegistrarGame } from "../registrar/calls";
+import { findRegistrarGame } from "../registrar/calls";
 import { nativePresets } from "../../../source/native";
 import { afterAll, describe, expect, test, mock, spyOn } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -97,6 +97,20 @@ describe("native presets", () => {
       expect(preset.economy.labor.unwrap()).toEqual({ amount: 1000n, account_daily_limit: 0 });
     }
     for (const id of [2, 3, 4]) expect(buildNativePreset(configuration(id), id).economy.labor.isNone()).toBe(true);
+  });
+  test.each([2, 4])(
+    "a fixed-roster realm (preset %i) starts with 1,000 T1 troops garrisoned and 1,000 in reserve, its type dealt",
+    (id) => {
+      const preset = buildNativePreset(configuration(id), id);
+      expect(preset.settlement.realms.starting_troops).toEqual([]);
+      expect(preset.rules.troop_limit_config.starting_guard).toBe(1_000);
+      expect(
+        preset.settlement.realms.resources.filter(({ resource_type }) => [26, 29, 32].includes(resource_type)),
+      ).toEqual([26, 29, 32].map((resource_type) => ({ resource_type, amount: 1_000_000_000_000n })));
+    },
+  );
+  test("Eternum keeps its biome troop table", () => {
+    expect(buildNativePreset(configuration(3), 3).settlement.realms.starting_troops).toHaveLength(17);
   });
   test("Frontier caps daily chest prices without supplying a season duration", () => {
     const config = loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID);
@@ -609,34 +623,8 @@ describe("fixed Regular Blitz rosters", () => {
     twoPlayerMode: false,
     useMapOverride: false,
   };
-  test("creation requires its frozen roster and never enables a wrong mode", () => {
-    const config = configuration(2);
-    const players = [{ wallet: "0xabc", account: "0xdef" }];
-    expect(() => buildNativeGameParams(config, input)).toThrow("roster at creation");
-    expect(() => buildNativeGameParams(config, { ...input, twoPlayerMode: true }, players)).toThrow(
-      "Settlement layout",
-    );
-    expect(() => buildNativeGameParams(config, { ...input, devModeOn: true }, players)).toThrow("development mode");
-    expect(buildNativeGameParams(config, input, players).roster).toEqual(players);
-  });
-  test("a roster is its players' accounts in registration order, each once", () => {
-    expect(
-      blitzRosterOf([
-        { account: "0x02", wallet: "0xa" },
-        { account: "0x1", wallet: "0xb" },
-      ]),
-    ).toEqual([
-      { account: "0x2", wallet: "0xa" },
-      { account: "0x1", wallet: "0xb" },
-    ]);
-    expect(() =>
-      blitzRosterOf([
-        { account: "0x01", wallet: "0xa" },
-        { account: "0x1", wallet: "0xb" },
-      ]),
-    ).toThrow("Duplicate");
-    expect(() => blitzRosterOf([{ account: "0x0", wallet: "0xa" }])).toThrow("Invalid");
-    expect(() => blitzRosterOf([])).toThrow("1 to 24");
+  test("a fixed-roster game is never created outside its closed slot", () => {
+    expect(() => buildNativeGameParams(configuration(2), input)).toThrow("launch from a closed slot");
   });
   test("creation recovery reads the registrar without waiting for Herald", async () => {
     const callContract = mock(async () => ["0x7"]);

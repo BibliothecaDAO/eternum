@@ -1,8 +1,9 @@
 import { IdentityRequestError } from "@realms-world/identity";
-import { act } from "react";
+import { act, useState } from "react";
+import { Account, RpcError, hash, num } from "starknet";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
-import { afterEach, expect, it, vi } from "vitest";
+import { BrowserRouter, useNavigate } from "react-router-dom";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 const { identity, joinRealmsAccount, approveDeviceChange, provider } = vi.hoisted(() => ({
   identity: { session: { user: { realmsId: "0xabc" } } as { user: { realmsId: string } } | null },
@@ -11,6 +12,8 @@ const { identity, joinRealmsAccount, approveDeviceChange, provider } = vi.hoiste
   provider: {
     getClassHashAt: vi.fn(async () => "0x3"),
     callContract: vi.fn(async () => ["0x1"]),
+    getEvents: vi.fn(async () => ({ events: [] as { keys: string[] }[] })),
+    waitForTransaction: vi.fn(async () => ({})),
   },
 }));
 vi.mock("@bibliothecadao/eternum", async () => {
@@ -31,13 +34,23 @@ vi.mock("@/runtime/world/shards", () => ({
     rpcUrl: "https://rpc.test",
     accountClassHash: "0x3",
     guardianPublicKey: "0x9",
+    l2GasBound: "0x47868c00",
   }),
 }));
-vi.mock("@/utils/cached-rpc-provider", () => ({ getCachedRpcProvider: () => provider }));
+vi.mock("@/utils/shard-rpc-provider", () => ({ getShardRpcProvider: () => provider }));
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
 
+import { isExplicitSpectateSession, resolveSpectateIntent } from "@/utils/spectator-session";
+
 import { GameplayAccountSync } from "./gameplay-account-sync";
+import { DoorwayScreen } from "@/ui/features/game-entry/doorway/doorway-screen";
+import { doorwayView } from "@/ui/features/game-entry/doorway/doorway-view";
+
+beforeEach(async () => {
+  const account = await import("../../../../../packages/core/src/account/realms-account");
+  joinRealmsAccount.mockImplementation(account.joinRealmsAccount);
+});
 
 async function openAt(path: string) {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -55,6 +68,9 @@ async function openAt(path: string) {
 }
 
 afterEach(() => {
+  vi.restoreAllMocks();
+  provider.callContract.mockReset().mockResolvedValue(["0x1"]);
+  provider.getEvents.mockReset().mockResolvedValue({ events: [] });
   joinRealmsAccount.mockClear();
   approveDeviceChange.mockReset();
   provider.getClassHashAt.mockReset().mockResolvedValue("0x3");
@@ -86,10 +102,106 @@ it.each([
   ["device_revoked", "device_removed"],
   ["account_not_secured", "Secure your account by signing in with Discord or an email code."],
   ["not_your_account", "This game account does not belong to your sign-in. Sign in to the account that owns it."],
-  ["device_limit", "Device limit reached."],
+  ["device_limit", "This account is signed in on 8 devices."],
 ])("shows the recovery for guardian refusal %s", async (code, expected) => {
   provider.getClassHashAt.mockRejectedValueOnce({ code: 20 });
   approveDeviceChange.mockRejectedValueOnce(new IdentityRequestError(403, code));
   await openAt("/g/0xa1/1");
   expect(useAccountStore.getState().provisioningError).toBe(expected);
 });
+
+it("joins the account the moment a spectator presses Play, though the spectated map latched the intent", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  window.history.pushState({}, "", "/g/0xa1/1/map?spectate=true");
+  const navigation: { to: ((path: string) => void) | null } = { to: null };
+  const Navigator = () => {
+    navigation.to = useNavigate();
+    return null;
+  };
+  const root = createRoot(document.createElement("div"));
+  await act(async () =>
+    root.render(
+      <BrowserRouter>
+        <GameplayAccountSync>
+          <Navigator />
+        </GameplayAccountSync>
+      </BrowserRouter>,
+    ),
+  );
+  // The spectated map's boot latches the intent, as it does in the game.
+  resolveSpectateIntent(window.location);
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
+  expect(joinRealmsAccount).not.toHaveBeenCalled();
+
+  // The identity chip's Play leads to the doorway's play entry, in-app: no reload clears the latch.
+  await act(async () => navigation.to!("/g/0xa1/1"));
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
+  expect(isExplicitSpectateSession()).toBe(false);
+  expect(joinRealmsAccount).toHaveBeenCalledOnce();
+  expect(joinRealmsAccount.mock.calls[0][0]).toMatchObject({ shard: { chainId: "0xa1" }, realmsId: "0xabc" });
+  await act(async () => root.unmount());
+});
+
+it.each(["entry", "boot"] as const)(
+  "shows recovery from the real refused join on the %s doorway and retries",
+  async (source) => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    window.history.pushState({}, "", "/g/0xa1/1");
+    provider.callContract.mockImplementation(async () => ["0x0"]);
+    provider.getEvents.mockResolvedValue({
+      events: Array.from({ length: 8 }, (_, i) => ({
+        keys: [num.toHex(hash.starknetKeccak("DeviceAdded")), num.toHex(i + 100)],
+      })),
+    });
+    approveDeviceChange.mockResolvedValue(["0x5", "0x6"]);
+    const execute = vi
+      .spyOn(Account.prototype, "execute")
+      .mockRejectedValueOnce(
+        new RpcError({ code: -32010, message: "Transaction refused" } as never, "starknet_addInvokeTransaction", {}),
+      )
+      .mockResolvedValue({ transaction_hash: "0x8" });
+    const Recovery = ({ retry }: { retry: () => void }) => {
+      const { account, provisioningError: accountError } = useAccountStore();
+      if (account) return <p>Joined game</p>;
+      const view =
+        source === "entry"
+          ? doorwayView({ source, phase: "account", audience: "player", signedIn: true, accountError })
+          : doorwayView({ source, phase: "reconnect_required", audience: "player", accountError });
+      return <DoorwayScreen view={view} realm={null} onRetry={retry} onSignIn={() => {}} />;
+    };
+    const Entry = () => {
+      const [attempt, retry] = useState(0);
+      return (
+        <GameplayAccountSync key={attempt}>
+          <Recovery retry={() => retry(attempt + 1)} />
+        </GameplayAccountSync>
+      );
+    };
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    try {
+      await act(async () =>
+        root.render(
+          <BrowserRouter>
+            <Entry />
+          </BrowserRouter>,
+        ),
+      );
+      expect(container.textContent).toContain("This account is signed in on 8 devices.");
+      expect(container.textContent).toContain("On an already signed-in device");
+      const link = container.querySelector<HTMLAnchorElement>('a[href="/profile/settings#devices"]');
+      expect(link?.textContent).toBe("Settings → Devices");
+      expect(link?.target).toBe("_blank");
+      expect(container.textContent).not.toContain("Transaction refused");
+      expect(execute).toHaveBeenCalledOnce();
+      const retry = [...container.querySelectorAll("button")].find((b) => b.textContent === "Try again")!;
+      expect(retry).toBeTruthy();
+      provider.getEvents.mockResolvedValue({ events: [] });
+      await act(async () => retry.click());
+      expect(execute).toHaveBeenCalledTimes(2);
+      expect(container.textContent).toBe("Joined game");
+    } finally {
+      await act(async () => root.unmount());
+    }
+  },
+);

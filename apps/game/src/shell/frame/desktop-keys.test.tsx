@@ -5,8 +5,7 @@ import { afterEach, expect, it } from "vitest";
 
 import { useDesktopKeys } from "./desktop-keys";
 import { StepVerb } from "./step-verb";
-
-const PLACES = ["/", "/season", "/learn", "/profile"];
+import { PLACES } from "./tabs";
 
 const Page = ({ back }: { back?: string }) => {
   useDesktopKeys({ places: PLACES, back });
@@ -56,8 +55,12 @@ const mount = async (path: string, back?: string) => {
   };
 };
 
-it("opens the places with 1 to 4 and leads Back with Esc", async () => {
+it("opens the three places with 1 to 3 and leads Back with Esc", async () => {
   const page = await mount("/blitz/x", "/blitz");
+  await page.press("4");
+  expect(page.where()).toBe("/blitz/x");
+  await page.press("3");
+  expect(page.where()).toBe("/profile");
   await page.press("2");
   expect(page.where()).toBe("/season");
   await page.press("Escape");

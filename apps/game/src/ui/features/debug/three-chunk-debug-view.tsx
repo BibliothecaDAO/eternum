@@ -1,6 +1,6 @@
-import { RefreshCw } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 
 import {
   debugChunkScenarios,
@@ -15,7 +15,6 @@ import {
   type ThreeChunkDebugRendererHandle,
 } from "@/three/debug/three-chunk-debug-renderer";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
 const INITIAL_FRAME_STATS: ThreeChunkDebugFrameStats = {
   fps: 0,
@@ -28,9 +27,7 @@ const INITIAL_FRAME_STATS: ThreeChunkDebugFrameStats = {
 const integerFormatter = new Intl.NumberFormat("en-US");
 
 export const ThreeChunkDebugView = () => {
-  useBootDocumentState("app-ready", "three_chunk_debug_ready");
-
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<ThreeChunkDebugRendererHandle | null>(null);
   const [scenarioId, setScenarioId] = useState<DebugChunkScenarioId>("baseline");
   const [frameStats, setFrameStats] = useState<ThreeChunkDebugFrameStats>(INITIAL_FRAME_STATS);
@@ -40,24 +37,34 @@ export const ThreeChunkDebugView = () => {
   const metrics = useMemo(() => resolveDebugChunkMetrics(scenario), [scenario]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!container) return;
+    const controller = new AbortController();
+    let handle: ThreeChunkDebugRendererHandle | undefined;
 
-    try {
-      setRendererError(null);
-      rendererRef.current = mountThreeChunkDebugRenderer({
-        canvas,
-        scenario,
-        onFrame: setFrameStats,
+    setRendererError(null);
+    void mountThreeChunkDebugRenderer({
+      container,
+      signal: controller.signal,
+      scenario,
+      onFrame: setFrameStats,
+    })
+      .then((mounted) => {
+        if (controller.signal.aborted) {
+          mounted.dispose();
+          return;
+        }
+        handle = mounted;
+        rendererRef.current = mounted;
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) setRendererError(resolveRendererErrorMessage(error));
       });
-    } catch (error) {
-      rendererRef.current = null;
-      setRendererError(resolveRendererErrorMessage(error));
-    }
 
     return () => {
-      rendererRef.current?.dispose();
-      rendererRef.current = null;
+      controller.abort();
+      handle?.dispose();
+      if (rendererRef.current === handle) rendererRef.current = null;
     };
   }, [scenario]);
 
@@ -77,30 +84,24 @@ export const ThreeChunkDebugView = () => {
 
   return (
     <section
-      className="flex min-h-screen flex-col gap-4 bg-slate-950 p-4 text-slate-100 lg:grid lg:grid-cols-[minmax(260px,320px)_1fr]"
+      className="flex min-h-[var(--lab-viewport-height)] flex-col gap-4 bg-slate-950 p-4 text-slate-100 lg:grid lg:grid-cols-[minmax(260px,320px)_1fr]"
       data-debug-route="three-chunks"
     >
       <aside className="flex flex-col gap-4 border border-white/10 bg-black/55 p-4 backdrop-blur-md">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase text-sky-200/70">Renderer Debug</p>
+            <p className="text-sm font-semibold text-sky-200/70">Renderer Debug</p>
             <h1 className="mt-1 text-2xl font-semibold text-white">Three.js Chunks</h1>
           </div>
-          <Link
-            to="/"
-            className="border border-white/15 px-3 py-2 text-xs font-semibold uppercase text-slate-200 transition-colors hover:bg-white/10"
-          >
-            Exit
-          </Link>
         </div>
 
-        <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-slate-300">
+        <label className="flex flex-col gap-2 text-sm font-semibold text-slate-300">
           Scenario
           <select
             value={scenarioId}
             onChange={handleScenarioChange}
             className={cn(
-              "h-10 border border-white/15 bg-slate-950/90 px-3 text-sm font-medium normal-case tracking-normal text-white",
+              "h-10 border border-white/15 bg-slate-950/90 px-3 text-sm font-medium text-white",
               "outline-none transition-colors focus:border-sky-300",
             )}
             aria-label="Debug scenario"
@@ -132,18 +133,13 @@ export const ThreeChunkDebugView = () => {
             "text-sm font-semibold text-sky-100 transition-colors hover:bg-sky-300/20",
           )}
         >
-          <RefreshCw className="h-4 w-4" />
+          <SemanticIcon name="refresh" className="h-4 w-4" />
           Reset Camera
         </button>
       </aside>
 
       <div className="relative min-h-[520px] overflow-hidden border border-white/10 bg-slate-950 shadow-[0_20px_80px_rgba(0,0,0,0.45)]">
-        <canvas
-          ref={canvasRef}
-          id="three-chunk-debug-canvas"
-          className="h-full min-h-[520px] w-full touch-none"
-          aria-label="Three.js chunk debug canvas"
-        />
+        <div ref={containerRef} className="absolute inset-0" />
         {rendererError && (
           <div className="absolute inset-x-4 bottom-4 border border-red-300/40 bg-red-950/80 p-3 text-sm text-red-100 backdrop-blur">
             {rendererError}
@@ -156,7 +152,7 @@ export const ThreeChunkDebugView = () => {
 
 const DebugMetric = ({ label, value }: { label: string; value: string }) => (
   <div className="border border-white/10 bg-white/[0.04] px-3 py-2">
-    <dt className="text-[0.65rem] font-semibold uppercase text-slate-400">{label}</dt>
+    <dt className="text-sm font-semibold text-slate-400">{label}</dt>
     <dd className="mt-1 font-mono text-base text-white">{value}</dd>
   </div>
 );

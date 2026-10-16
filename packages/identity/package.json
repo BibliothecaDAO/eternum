@@ -29,7 +29,8 @@
   "dependencies": {
     "@realms-world/chain": "workspace:*",
     "@bibliothecadao/notifications": "workspace:*",
-    "@scure/starknet": "^1.1.0"
+    "@scure/starknet": "^1.1.0",
+    "effect": "4.0.4"
   },
   "devDependencies": {
     "tsup": "^8.0.2",

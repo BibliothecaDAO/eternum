@@ -1,3 +1,4 @@
+import { REALM_PATHS } from "../structures/realm-design";
 import { StructureProgress } from "@bibliothecadao/eternum";
 import {
   BuildingType,
@@ -39,8 +40,6 @@ enum BuildingFilenames {
   Mine = "mine.glb",
   LumberMill = "lumber_mill.glb",
   Dragonhide = "dragonhide.glb",
-  Wonder = "wonder2.glb",
-  WonderAnimated = "wonder2.glb",
 }
 
 export const ChestModelPath = "/models/reward-tiles/chest-c2.glb";
@@ -48,28 +47,31 @@ export const RiftModelPath = "/models/reward-tiles/rift.glb";
 const BITCOIN_MINE_MODEL_PATH = "/models/ethereal/bitcoin-mine.glb";
 const RIFT_MODEL_PATH = "/models/reward-tiles/rift.glb";
 
-export const VILLAGE_MODEL_PATH = "/models/settlements/village.glb";
+export const VILLAGE_MODEL_PATH = "/models/outposts/village.glb";
+export const CAMP_MODEL_PATH = "/models/outposts/camp.glb";
+export const STRAGGLERS_MODEL_PATH = "/models/outposts/stragglers.glb";
 export const REALM_MODEL_PATHS = {
-  [RealmLevelNames.Settlement]: "/models/settlements/settlement.glb",
-  [RealmLevelNames.City]: "/models/settlements/city.glb",
-  [RealmLevelNames.Kingdom]: "/models/settlements/kingdom.glb",
-  [RealmLevelNames.Empire]: "/models/settlements/empire.glb",
+  [RealmLevelNames.Settlement]: REALM_PATHS[0],
+  [RealmLevelNames.City]: REALM_PATHS[1],
+  [RealmLevelNames.Kingdom]: REALM_PATHS[2],
+  [RealmLevelNames.Empire]: REALM_PATHS[3],
 } as const;
 
 export function isRealmModelPath(path: string): boolean {
-  return Object.values(REALM_MODEL_PATHS).some((realmPath) => realmPath === path);
+  return REALM_PATHS.includes(path);
 }
 
 export function isSettlementModelPath(path: string): boolean {
-  return path === VILLAGE_MODEL_PATH || isRealmModelPath(path);
+  return [VILLAGE_MODEL_PATH, CAMP_MODEL_PATH, STRAGGLERS_MODEL_PATH].includes(path) || isRealmModelPath(path);
 }
 
 export const SHARED_BUILDING_MODEL_PATHS = buildUniqueAssetPaths([
   ...Object.values(BuildingFilenames).map((fileName) => `${BUILDINGS_MODELS_PATH}${fileName}`),
   RiftModelPath,
   BITCOIN_MINE_MODEL_PATH,
-  ...Object.values(REALM_MODEL_PATHS),
+  ...REALM_PATHS,
   VILLAGE_MODEL_PATH,
+  CAMP_MODEL_PATH,
   HYPERSTRUCTURE_MODEL_PATH,
 ]);
 
@@ -99,14 +101,11 @@ export const hyperstructureStageToModel: Record<StructureProgress, Hyperstructur
   [StructureProgress.STAGE_3]: HyperstructureTypesNames.STAGE_3,
 };
 
-export const WONDER_REALM = "Wonder";
-
 export enum BUILDINGS_GROUPS {
   BUILDINGS = "buildings",
   RESOURCES_MINING = "resources_mining",
   HYPERSTRUCTURE = "hyperstructure",
   REALMS = "realms",
-  WONDER = "wonder",
   VILLAGE = "village",
 }
 
@@ -115,7 +114,6 @@ export type BUILDINGS_CATEGORIES_TYPES =
   | ResourceMiningTypes
   | RealmLevelNames
   | HyperstructureTypesNames
-  | typeof WONDER_REALM
   | StructureType.Village
   | StructureType.Camp;
 
@@ -157,15 +155,12 @@ export const buildingModelPaths = (isBlitz: boolean) => {
     [BUILDINGS_GROUPS.REALMS]: REALM_MODEL_PATHS,
     [BUILDINGS_GROUPS.VILLAGE]: {
       [StructureType.Village]: VILLAGE_MODEL_PATH,
-      [StructureType.Camp]: VILLAGE_MODEL_PATH,
+      [StructureType.Camp]: CAMP_MODEL_PATH,
     },
     [BUILDINGS_GROUPS.HYPERSTRUCTURE]: {
       [HyperstructureTypesNames.STAGE_1]: HYPERSTRUCTURE_MODEL_PATH,
       [HyperstructureTypesNames.STAGE_2]: HYPERSTRUCTURE_MODEL_PATH,
       [HyperstructureTypesNames.STAGE_3]: HYPERSTRUCTURE_MODEL_PATH,
-    },
-    [BUILDINGS_GROUPS.WONDER]: {
-      [WONDER_REALM]: BUILDINGS_MODELS_PATH + BuildingFilenames.Wonder,
     },
   };
 };
@@ -175,23 +170,16 @@ const PROGRESS_FINAL_THRESHOLD = 100;
 
 export function getStructureModelPaths(): Record<StructureType, string[]> {
   return {
-    [StructureType.Realm]: [
-      REALM_MODEL_PATHS[RealmLevelNames.Settlement],
-      REALM_MODEL_PATHS[RealmLevelNames.City],
-      REALM_MODEL_PATHS[RealmLevelNames.Kingdom],
-      REALM_MODEL_PATHS[RealmLevelNames.Empire],
-      BUILDINGS_MODELS_PATH + BuildingFilenames.WonderAnimated,
-    ],
+    [StructureType.Realm]: REALM_PATHS,
     [StructureType.Hyperstructure]: [HYPERSTRUCTURE_MODEL_PATH],
     [StructureType.Bank]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Bank],
     [StructureType.Mine]: Object.values(MineKinds).map((kind) => kind.model),
     [StructureType.Village]: [VILLAGE_MODEL_PATH],
-    [StructureType.Camp]: [VILLAGE_MODEL_PATH],
+    [StructureType.Camp]: [CAMP_MODEL_PATH],
     [StructureType.BitcoinMine]: [BITCOIN_MINE_MODEL_PATH],
     [StructureType.Rift]: [RIFT_MODEL_PATH],
     [StructureType.Ruin]: FALLEN_REALM_MODEL_PATHS,
-    // Stragglers wait on their own art and stand as a camp until it lands.
-    [StructureType.Stragglers]: [VILLAGE_MODEL_PATH],
+    [StructureType.Stragglers]: [STRAGGLERS_MODEL_PATH],
   };
 }
 

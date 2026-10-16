@@ -19,8 +19,10 @@ pub fn grants(game_id: u32) -> RealmGrants {
         resources.append(preset.realm_grants.read(index));
     }
     let mut starting_troops = array![];
-    for biome in 1_u8..18 {
-        starting_troops.append(preset.starting_troops.read(biome));
+    if preset.rules.entry_rule.read() != crate::rules::ENTRY_ROSTER {
+        for biome in 1_u8..18 {
+            starting_troops.append(preset.starting_troops.read(biome));
+        }
     }
     let mut realm_resources = array![];
     for index in 0..preset.realm_resource_count.read() {
@@ -31,11 +33,18 @@ pub fn grants(game_id: u32) -> RealmGrants {
     }
 }
 
+pub fn biome_troop(game_id: u32, biome: u8) -> crate::troops::TroopType {
+    let preset = crate::logic::preset_record::for_game(game_id);
+    assert!(preset.rules.entry_rule.read() != crate::rules::ENTRY_ROSTER, "a fixed roster deals its troop types");
+    preset.starting_troops.read(biome)
+}
+
 pub fn entry(key: EntryKey) -> Option<PlayerEntry> {
     let state = crate::state::read();
     state.settlements.entries.read((key.game_id, key.owner))
 }
 
+#[cfg(test)]
 pub fn blitz_order(game_id: u32) -> Span<u8> {
     let state = crate::state::read();
     let mut players = array![];
@@ -296,7 +305,6 @@ pub mod SettlementState {
         fn record_entry(ref self: ComponentState<TContractState>, key: EntryKey, player: starknet::ContractAddress) {
             assert!(key.owner.is_non_zero(), "gameplay account is not bound");
             self.data.settlements.entries.write((key.game_id, key.owner), Some(PlayerEntry { player }));
-            self.data.settlements.entered_players.write((key.game_id, player), true);
             self
                 .emit(
                     RowSet {

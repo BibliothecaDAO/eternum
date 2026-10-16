@@ -14,7 +14,12 @@ pub fn active_explorer(
             "EXPIRED_ARMY",
         );
     }
-    crate::logic::army_slots::resolve(key, explorer, Some(timestamp))
+    let refill = crate::troops::StaminaRefill {
+        timestamp,
+        stamina_config: rules.troop_stamina_config,
+        armies_tick_in_seconds: rules.tick_config.armies_tick_in_seconds,
+    };
+    crate::logic::army_slots::resolve(key, explorer, Some(refill))
 }
 
 pub fn owned_structure(game_id: u32, entity_id: u64, actor: ContractAddress) -> Structure {
@@ -228,7 +233,7 @@ pub mod TroopsLogic {
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) {
-            let game_context = crate::commands::load_context(game_id, game_context);
+            let game_context = crate::commands::execution_context(game_id, game_context);
 
             assert_playing(game_context.game.unbox(), timestamp);
             let rules = game_context.rules.unbox();
@@ -253,7 +258,7 @@ pub mod TroopsLogic {
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) {
-            let game_context = crate::commands::load_context(key.game_id, game_context);
+            let game_context = crate::commands::execution_context(key.game_id, game_context);
 
             let base = crate::logic::structures::structure(key).expect('missing guarded structure').base;
             let category = base.category;
@@ -300,7 +305,7 @@ pub mod TroopsLogic {
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) {
-            let game_context = crate::commands::load_context(key.game_id, game_context);
+            let game_context = crate::commands::execution_context(key.game_id, game_context);
 
             let home = crate::logic::structures::structure(key).expect('missing guard structure');
             let guard_key = crate::guards::GuardKey { game_id: key.game_id, structure_id: key.entity_id, slot: 0 };
@@ -331,7 +336,7 @@ pub mod TroopsLogic {
             command: crate::troop_management::ManageTroops,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let rules = self.authorize(game_id, context);
             match command {
@@ -552,7 +557,6 @@ pub mod TroopsLogic {
             assert!(command.amount <= source.troops.count, "insufficient source troops");
             let target_is_explorer = match command.target {
                 crate::troop_management::Army::Explorer(_) => {
-                    assert!(source.home == target.home, "armies must share a home");
                     assert!(target.troops.count != 0, "target explorer is dead");
                     true
                 },
@@ -689,7 +693,7 @@ pub mod TroopsLogic {
             command: CreateExplorer,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let rules = self.authorize(game_id, context);
             let home = crate::logic::troops::owned_structure(game_id, command.structure_id, actor);
@@ -738,11 +742,18 @@ pub mod TroopsLogic {
                     .stamina =
                         crate::logic::army_slots::allocate(
                             ExplorerKey { game_id, explorer_id: id },
-                            command.structure_id,
-                            today,
-                            home.base.troop_max_explorer_count.try_into().expect('invalid slot allowance'),
-                            troops.stamina.inline(),
-                            category,
+                            crate::troops::ArmySlotAllocation {
+                                home: command.structure_id,
+                                epoch: today,
+                                allowance: home
+                                    .base
+                                    .troop_max_explorer_count
+                                    .try_into()
+                                    .expect('invalid slot allowance'),
+                                initial: troops.stamina.inline(),
+                                category,
+                                stamina_config: rules.troop_stamina_config,
+                            },
                         );
             }
             crate::logic::map::MapState::occupy(
@@ -817,7 +828,7 @@ pub mod TroopsLogic {
             actor: Option<ContractAddress>,
             game_context: crate::commands::ActionContext,
         ) -> ExplorerTroops {
-            let game_context = crate::commands::load_context(key.game_id, game_context);
+            let game_context = crate::commands::execution_context(key.game_id, game_context);
             match actor {
                 Some(actor) => crate::logic::troops::authorized_explorer(
                     key, actor, game_context.timestamp, game_context,
@@ -832,7 +843,7 @@ pub mod TroopsLogic {
             before: u128,
             game_context: crate::commands::ActionContext,
         ) {
-            let game_context = crate::commands::load_context(key.game_id, game_context);
+            let game_context = crate::commands::execution_context(key.game_id, game_context);
 
             self
                 .resources_dispatcher(key.game_id)

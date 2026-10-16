@@ -1,3 +1,4 @@
+import { FONTS } from "@/tokens";
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import Stats from "three/addons/libs/stats.module.js";
 import type { RendererSurfaceLike } from "./renderer-backend";
@@ -190,7 +191,7 @@ class GameRendererMonitoringRuntime implements RendererMonitoringRuntime {
       left: 0px;
       background: rgba(0, 0, 0, 0.8);
       color: #00ff00;
-      font-family: monospace;
+      font-family: ${FONTS.body};
       font-size: 10px;
       padding: 5px;
       border-radius: 3px;

@@ -24,7 +24,7 @@ pub mod CombatLogic {
             command: Battle,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             crate::logic::combat::battle_guard(game_id, actor, command, context);
             ()
@@ -39,7 +39,7 @@ pub mod CombatLogic {
             command: crate::combat_actions::AttackExplorer,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             crate::logic::combat::battle(game_id, actor, command, context);
             ()
@@ -51,7 +51,7 @@ pub mod CombatLogic {
             command: crate::combat_actions::GuardAttack,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             crate::logic::combat::guard_attack(game_id, actor, command, context);
             ()

@@ -1,5 +1,5 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { TroopTier, TroopType } from "@bibliothecadao/types";
-import { Map, Zap } from "@/ui/design-system/atoms/game-icons";
 
 const formatStaminaModifier = (modifier: number, isAttacker: boolean) => {
   const percentage = ((modifier - 1) * 100).toFixed(0);
@@ -36,13 +36,13 @@ const formatTypeAndBonusesCompact = (
           {TroopType[category]} {tier}
         </span>
       </div>
-      <div className="flex justify-between items-center text-xs gap-1">
+      <div className="flex justify-between items-center text-sm gap-1">
         <div className="flex items-center gap-1 bg-gold/10 px-1.5 py-0.5 rounded">
-          <Map className="w-3 h-3 text-gold/80" />
+          <SemanticIcon name="map" className="w-3 h-3 text-gold/80" />
           <span>{formatBiomeBonus(biomeBonus)}</span>
         </div>
         <div className="flex items-center gap-1 bg-gold/10 px-1.5 py-0.5 rounded">
-          <Zap className="w-3 h-3 text-gold/80" />
+          <SemanticIcon name="stamina" className="w-3 h-3 text-gold/80" />
           <span>{formatStaminaModifier(staminaModifier, isAttacker)}</span>
         </div>
       </div>
@@ -74,20 +74,20 @@ export const formatTypeAndBonuses = (
       <div className="grid grid-cols-2 gap-2">
         <div className="flex items-center p-2.5 bg-gold/10 rounded-md hover:bg-gold/15 transition-colors shadow-sm">
           <div className="w-6 h-6 mr-2 flex items-center justify-center text-gold/80">
-            <Map className="w-5 h-5" />
+            <SemanticIcon name="map" className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-xs text-gold/70 font-medium uppercase">Terrain Bonus</div>
+            <div className="text-sm text-gold/70 font-medium">Terrain Bonus</div>
             <div className="font-bold text-lg">{formatBiomeBonus(biomeBonus)}</div>
           </div>
         </div>
 
         <div className="flex items-center p-2.5 bg-gold/10 rounded-md hover:bg-gold/15 transition-colors shadow-sm">
           <div className="w-6 h-6 mr-2 flex items-center justify-center text-gold/80">
-            <Zap className="w-5 h-5" />
+            <SemanticIcon name="stamina" className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-xs text-gold/70 font-medium uppercase">Stamina {isAttacker ? "Bonus" : "Penalty"}</div>
+            <div className="text-sm text-gold/70 font-medium">Stamina {isAttacker ? "Bonus" : "Penalty"}</div>
             <div className="font-bold text-lg">{formatStaminaModifier(staminaModifier, isAttacker)}</div>
           </div>
         </div>

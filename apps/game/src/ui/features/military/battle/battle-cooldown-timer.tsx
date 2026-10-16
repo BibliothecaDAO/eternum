@@ -1,4 +1,5 @@
-import { Hourglass } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { formatTime } from "@bibliothecadao/eternum";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 
@@ -15,7 +16,7 @@ export const BattleCooldownTimer = ({ cooldownEnd, className = "" }: BattleCoold
 
   return (
     <div className={`flex items-center gap-2 ${className}`} role="timer" aria-live="polite">
-      <Hourglass className="w-4 h-4 animate-pulse" />
+      <SemanticIcon name="hourglass" className="w-4 h-4 animate-pulse" />
       <span className="text-red-400 font-semibold">Battle Cooldown: {formatTime(timeRemaining)}</span>
     </div>
   );

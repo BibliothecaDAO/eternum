@@ -37,7 +37,7 @@ describe("provider submission boundary", () => {
     await expect(sent).resolves.toMatchObject({ transaction_hash: "0x1" });
   });
 
-  it("holds one player's next command until its outcome, and a reverted one fails with its reason", async () => {
+  it("sends a player's commands without waiting for each other's outcome; a reverted one fails with its reason", async () => {
     const provider = makeProvider();
     const outcomes = new Map<string, (value: Awaited<ReturnType<TransactionStreamWaiter>>) => void>();
     let sent = 0;
@@ -52,12 +52,15 @@ describe("provider submission boundary", () => {
     const first = provider.claim_wonder_points({ signer, value: 1 }).catch(() => undefined);
     const next = provider.claim_wonder_points({ signer, value: 2 });
     const other = provider.claim_wonder_points({ signer: { address: "0x222" } as AccountInterface, value: 3 });
-    await vi.waitFor(() => expect(submit).toHaveBeenCalledTimes(2));
-    expect(submit.mock.calls.map(([actor]) => (actor as AccountInterface).address)).toEqual(["0x111", "0x222"]);
+    await vi.waitFor(() => expect(submit).toHaveBeenCalledTimes(3));
+    expect(submit.mock.calls.map(([actor]) => (actor as AccountInterface).address)).toEqual([
+      "0x111",
+      "0x111",
+      "0x222",
+    ]);
 
     outcomes.get("0x1")!({ hash: "0x1", block: 4, status: "REVERTED", revertReason: "not enough stamina" });
     await first;
-    await vi.waitFor(() => expect(submit).toHaveBeenCalledTimes(3));
     outcomes.get("0x2")!({ hash: "0x2", block: 4, status: "PRE_CONFIRMED" });
     outcomes.get("0x3")!({ hash: "0x3", block: 5, status: "PRE_CONFIRMED" });
     await Promise.all([next, other]);
@@ -95,7 +98,7 @@ describe("provider submission boundary", () => {
     });
   });
 
-  it("Herald at 300 ms frees the player while the node inclusion promise remains silent for 19 s", async () => {
+  it("Herald's report at 300 ms completes each command while the node's inclusion stays silent for 19 s", async () => {
     vi.useFakeTimers();
     const provider = makeProvider();
     let sent = 0;
@@ -108,19 +111,21 @@ describe("provider submission boundary", () => {
       (hash) =>
         new Promise((resolve) => setTimeout(() => resolve({ hash, block: null, status: "PRE_CONFIRMED" }), 300)),
     );
+    const completed = vi.fn();
+    provider.on("transactionComplete", completed);
     const signer = { address: "0x111" } as AccountInterface;
     const first = provider.claim_wonder_points({ signer, value: 1 });
     const next = provider.claim_wonder_points({ signer, value: 2 });
     await vi.advanceTimersByTimeAsync(299);
-    expect(submit).toHaveBeenCalledOnce();
-    await vi.advanceTimersByTimeAsync(1);
     expect(submit).toHaveBeenCalledTimes(2);
-    await vi.advanceTimersByTimeAsync(300);
+    expect(completed).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
     await Promise.all([first, next]);
+    expect(completed).toHaveBeenCalledTimes(2);
     await vi.advanceTimersByTimeAsync(19_000);
   });
 
-  it("the checking window labels uncertainty without freeing the next command", async () => {
+  it("the checking window labels a command still unsettled after 10 s, once", async () => {
     vi.useFakeTimers();
     const provider = makeProvider();
     let settleFirst!: () => void;
@@ -144,14 +149,11 @@ describe("provider submission boundary", () => {
     const first = provider.claim_wonder_points({ signer, value: 1 });
     const next = provider.claim_wonder_points({ signer, value: 2 });
     await vi.advanceTimersByTimeAsync(9_000);
-    expect(submit).toHaveBeenCalledOnce();
+    expect(checking).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1_000);
     expect(checking).toHaveBeenCalledWith(expect.objectContaining({ transactionHash: "0x7" }));
-    expect(submit).toHaveBeenCalledOnce();
     settleFirst();
-    await first;
-    await vi.waitFor(() => expect(submit).toHaveBeenCalledTimes(2));
-    await next;
+    await Promise.all([first, next]);
     await vi.waitFor(() => expect(completed).toHaveBeenCalledTimes(2));
     expect(checking).toHaveBeenCalledOnce();
   });
@@ -178,7 +180,7 @@ describe("provider submission boundary", () => {
     expect(failed.mock.calls[0][0]).toMatchObject({ failureKind: "not_sent", transactionHash: "0x9" });
   });
 
-  it("keeps a slow action pending with no timeout and signs the next only after Herald applies it", async () => {
+  it("keeps a slow action pending with no timeout while the player's next command goes", async () => {
     vi.useFakeTimers();
     const provider = makeProvider();
     let admit!: (value: { transaction_hash: string }) => void;
@@ -203,14 +205,41 @@ describe("provider submission boundary", () => {
     const slow = provider.claim_wonder_points({ signer, value: 1 });
     const next = provider.claim_wonder_points({ signer, value: 2 });
     await vi.advanceTimersByTimeAsync(70_000);
+    expect(submit).toHaveBeenCalledTimes(2);
     admit({ transaction_hash: "0xabc" });
     await vi.advanceTimersByTimeAsync(0);
-    expect(submit).toHaveBeenCalledOnce();
     apply({ hash: "0xabc", block: 5, status: "PRE_CONFIRMED" });
     await Promise.all([slow, next]);
-    expect(submit).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(0);
     expect(failed).not.toHaveBeenCalled();
     // Admission to visible runs from sending the invoke to the stream reporting its outcome.
-    expect(completed.mock.calls[0][0].admissionToVisibleMs).toBe(70_000);
+    expect(completed.mock.calls.map(([event]) => event.admissionToVisibleMs)).toEqual([0, 70_000]);
+  });
+});
+
+it("records the submit classification once and keeps the original cause", async () => {
+  const provider = makeProvider();
+  const cause = Object.assign(new Error("wallet refused"), { code: 4001 });
+  provider.setNativeSubmission(
+    async () => {
+      throw cause;
+    },
+    bindings.commandAbi as Abi,
+    () => 9,
+  );
+  const failed = vi.fn();
+  provider.on("transactionFailed", failed);
+  await expect(
+    provider.claim_wonder_points({ signer: { address: "0x111" } as AccountInterface, value: 1 }),
+  ).rejects.toMatchObject({
+    _tag: "TransactionFailure",
+    cause,
+    classification: { kind: "user_cancelled" },
+    transactionFailureStage: "submit",
+  });
+  expect(failed).toHaveBeenCalledTimes(1);
+  expect(failed.mock.calls[0][0]).toMatchObject({
+    stage: "submit",
+    error: { _tag: "TransactionFailure", classification: { kind: "user_cancelled" } },
   });
 });

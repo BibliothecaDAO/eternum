@@ -1,6 +1,6 @@
 import type { NativePreset } from "../common/native-preset";
 import { nativeRuleConstants as rule } from "../../../contracts/l3/world-native/schema/client.gen";
-import { startingTroopsByBiome, realmResourcePool, relicRules } from "../common/native-data";
+import { realmResourcePool, relicRules } from "../common/native-data";
 import { arenaModeRules, arenaCommandMask } from "../common/native-commands";
 import { blitzBalance } from "./balance";
 
@@ -10,13 +10,13 @@ export const blitzPreset: NativePreset = {
     mmrEnabled: true,
   },
   bitcoinEnabled: false,
-  startingTroops: startingTroopsByBiome,
+  startingTroops: [],
   realmResources: realmResourcePool,
   relics: relicRules,
-  supplies: blitzBalance.blitz!.exploration!.rewards!.map(({ rewardId, amount, probabilityBps }) => ({
+  supplies: blitzBalance.blitz!.exploration!.rewards!.map(({ rewardId, percent, probabilityBps }) => ({
     resource_type: rewardId!,
-    amount: amount!,
-    amount_max: amount!,
+    percent: percent!,
+    percent_max: percent!,
     weight: probabilityBps!,
   })),
   bridgeResources: [],
@@ -24,7 +24,7 @@ export const blitzPreset: NativePreset = {
   gameType: "blitz",
   environmentGameType: "blitz",
   settlementMode: "Triple",
-  modeRules: arenaModeRules,
+  modeRules: arenaModeRules | rule.DISCOVER_SPIRES,
   entryRule: rule.ENTRY_ROSTER,
   commandMask: arenaCommandMask,
   spacing: 6,

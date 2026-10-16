@@ -26,9 +26,9 @@ describe("Production", () => {
       root.render(
         <ProductionSheet
           lines={[
-            line({ icon: "Wh", spentAt: "deploy" }),
-            line({ icon: "La", spentAt: "realm", held: 18_000, tone: "ember" }),
-            line({ icon: "Tr", spentAt: "deploy", perHour: 0, noBuilding: true, fullIn: undefined }),
+            line({ icon: "wheat", spentAt: "deploy" }),
+            line({ icon: "labor", spentAt: "realm", held: 18_000, tone: "ember" }),
+            line({ icon: "troops", spentAt: "deploy", perHour: 0, noBuilding: true, fullIn: undefined }),
           ]}
           onSpend={onSpend}
           onBuild={onBuild}

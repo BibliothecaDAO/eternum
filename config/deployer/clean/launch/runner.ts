@@ -1,5 +1,3 @@
-import { nativePresetForId } from "../../../source/native";
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { buildNativeGameParams, loadNativePresetConfiguration } from "../registrar/native-preset";
 import { buildNativePreset } from "../config/native-preset";
 import { setTimeout as sleep } from "node:timers/promises";
@@ -16,8 +14,6 @@ import { resolveDeploymentEnvironment } from "../environment";
 import {
   assertRegistrarAvailable,
   createRegistrarGame,
-  settleBlitzRoster,
-  blitzRosterOf,
   findRegistrarGame,
   resolveRegistrarWorldAddress,
 } from "../registrar/calls";
@@ -162,28 +158,20 @@ async function assertLaunchChainTargets(launch: PreparedLaunch): Promise<void> {
 }
 
 async function buildRegistrarGameParams(launch: PreparedLaunch) {
-  const players = launch.request.roster ?? [];
-  const fixedRoster = nativePresetForId(launch.runtime.presetId).entryRule === nativeRuleConstants.ENTRY_ROSTER;
-  const roster = fixedRoster ? blitzRosterOf(players) : [];
-  if (!fixedRoster && players.length) throw new Error("Eternum does not use a fixed roster");
   const block = await launch.runtime.provider.getBlock("latest");
-  return buildNativeGameParams(
-    launch.config,
-    {
-      gameName: launch.request.gameName,
-      presetId: launch.runtime.presetId,
-      startMainAt: launch.runtime.startTime,
-      chainTimestamp: block.timestamp,
-      durationSeconds: launch.config.season.durationSeconds,
-      devModeOn: launch.config.dev.mode.on,
-      singleRealmMode: launch.config.settlement.single_realm_mode,
-      twoPlayerMode: launch.config.settlement.two_player_mode ?? false,
-      useMapOverride: Boolean(
-        launch.request.mapConfigOverrides && Object.keys(launch.request.mapConfigOverrides).length > 0,
-      ),
-    },
-    roster,
-  );
+  return buildNativeGameParams(launch.config, {
+    gameName: launch.request.gameName,
+    presetId: launch.runtime.presetId,
+    startMainAt: launch.runtime.startTime,
+    chainTimestamp: block.timestamp,
+    durationSeconds: launch.config.season.durationSeconds,
+    devModeOn: launch.config.dev.mode.on,
+    singleRealmMode: launch.config.settlement.single_realm_mode,
+    twoPlayerMode: launch.config.settlement.two_player_mode ?? false,
+    useMapOverride: Boolean(
+      launch.request.mapConfigOverrides && Object.keys(launch.request.mapConfigOverrides).length > 0,
+    ),
+  });
 }
 
 function applyGameIdentity(launch: PreparedLaunch, gameId: number): void {
@@ -291,20 +279,6 @@ async function waitForGameIndex(launch: PreparedLaunch): Promise<void> {
   applyGameIdentity(launch, row.gameId);
 }
 
-async function createAndSettleGame(launch: PreparedLaunch): Promise<void> {
-  const fixedRoster = nativePresetForId(launch.runtime.presetId).entryRule === nativeRuleConstants.ENTRY_ROSTER;
-  await createGame(launch);
-  if (!fixedRoster || !launch.request.roster?.length) return;
-  const settlement = await settleBlitzRoster(
-    launch.runtime.provider,
-    await resolveGameId(launch),
-    launchCredentials(launch),
-    launch.request.manifest,
-  );
-  launch.summary.finalizeAt = settlement.finalizeAt;
-  launch.summary.settlementTransactions = settlement.settlementTransactions;
-}
-
 async function finishLaunch(launch: PreparedLaunch): Promise<LaunchGameSummary> {
   const summary = await launch.store.saveGame(launch.summary);
   launch.runtime.progress.log(`Launch summary written to ${summary.outputPath}`);
@@ -325,7 +299,7 @@ export async function launchGame(
     return finishDryRun(launch);
   }
   await assertLaunchChainTargets(launch);
-  await createAndSettleGame(launch);
+  await createGame(launch);
   await waitForGameIndex(launch);
   return finishLaunch(launch);
 }

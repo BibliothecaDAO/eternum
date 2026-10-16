@@ -1,7 +1,7 @@
 #[starknet::contract]
 pub mod SettlementLogic {
     use core::num::traits::Zero;
-    use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
+    use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
     use starknet::{ContractAddress, get_caller_address};
     use crate::commands::ExecutionContext as DomainContext;
     use crate::logic::release::ReleaseState;
@@ -121,7 +121,7 @@ pub mod SettlementLogic {
             command: crate::realms::SettleSeason,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let classes = self.release.classes(game_id);
             let owner = actor;
@@ -153,7 +153,10 @@ pub mod SettlementLogic {
             let coord = if rules.day_unit_seconds == 0 {
                 ISeasonPlacementLibraryDispatcher { class_hash: classes.placement.read() }
                     .claim_season_settlement(
-                        game_id, progress.realm_count, seed, crate::commands::action_context(context),
+                        game_id,
+                        progress.realm_count,
+                        seed,
+                        crate::settlement_grid::map_center(context.rules.unbox().map_center_offset),
                     )
             } else {
                 crate::settlement::off_map_realm_reference(realm_id)
@@ -165,7 +168,10 @@ pub mod SettlementLogic {
                     coord,
                     SettlementCreation::Realm(
                         RealmCreation {
-                            realm_id: realm_id.try_into().unwrap(), traits, grant_troops: true, activate_economy: true,
+                            realm_id: realm_id.try_into().unwrap(),
+                            traits,
+                            troops: crate::settlement::StartingTroops::Biome,
+                            activate_economy: true,
                         },
                     ),
                     crate::commands::action_context(context),
@@ -199,7 +205,7 @@ pub mod SettlementLogic {
             command: SettleVillage,
             context: crate::commands::ActionContext,
         ) -> () {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
 
             let classes = self.release.classes(game_id);
             let owner = actor;
@@ -218,7 +224,12 @@ pub mod SettlementLogic {
             let resource = crate::village::select_resource(village_rules.resource_pool, seed);
             let progress = self.settlements.data.settlements.progress.read(game_id);
             let coord = ISettlementPoolLibraryDispatcher { class_hash: classes.placement.read() }
-                .claim_village(game_id, progress.registered, seed, crate::commands::action_context(context));
+                .claim_village(
+                    game_id,
+                    progress.registered,
+                    seed,
+                    crate::settlement_grid::map_center(context.rules.unbox().map_center_offset),
+                );
             let village_id = ISettlementCreationLibraryDispatcher { class_hash: classes.structures.read() }
                 .create_settlement(
                     game_id,
@@ -254,10 +265,6 @@ pub mod SettlementLogic {
             self.settlements.data.settlements.progress.read(game_id)
         }
         #[cfg(test)]
-        fn player_has_settled(self: @ContractState, game_id: u32, player: ContractAddress) -> bool {
-            self.settlements.data.settlements.entered_players.read((game_id, player))
-        }
-        #[cfg(test)]
         fn player_entry(self: @ContractState, key: EntryKey) -> Option<PlayerEntry> {
             crate::logic::settlement::entry(key)
         }
@@ -270,7 +277,10 @@ pub mod SettlementLogic {
             assert!(key.game_id != 0, "game id zero is reserved");
             assert!(crate::logic::game::game_exists(key.game_id), "prepare an existing game");
             assert!(
-                crate::logic::game::rules(key.game_id).entry_rule != crate::rules::ENTRY_ROSTER,
+                crate::logic::preset_record::for_game(key.game_id)
+                    .rules
+                    .entry_rule
+                    .read() != crate::rules::ENTRY_ROSTER,
                 "Blitz uses a fixed roster",
             );
             crate::logic::entry::assert_ledger_operator();
@@ -287,35 +297,39 @@ pub mod SettlementLogic {
         fn settle_blitz_roster(
             ref self: ContractState, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
         ) -> u64 {
-            let context = crate::commands::load_context(game_id, context);
+            let context = crate::commands::execution_context(game_id, context);
             let game = context.game.unbox();
             assert!(context.rules.unbox().entry_rule == crate::rules::ENTRY_ROSTER, "not a Blitz game");
             assert!(context.timestamp >= game.start_settling_at, "settling not started");
-            let roster = crate::logic::registrar::blitz_roster(game_id);
+            let roster_size = self.data.registrar.roster_sizes.read(game_id);
+            assert!(roster_size != 0, "game has no Blitz roster");
             let progress = self.settlements.data.settlements.progress.read(game_id);
-            if progress.registered.into() == roster.len() {
+            if progress.registered.into() == roster_size {
                 return (0);
             }
+            let mut root = context.raw_root;
+            let seed = crate::random::game_root(ref root, game_id);
             if progress.registered == 0 {
-                let mut root = context.raw_root;
-                let seed = crate::random::game_root(ref root, game_id);
-                self.settlements.initialize_blitz_order(game_id, roster.len(), seed);
+                self.settlements.initialize_blitz_order(game_id, roster_size, seed);
             }
-            let order = crate::logic::settlement::blitz_order(game_id);
-            let player = *roster.at((*order.at(progress.registered.into())).into());
-            self.settlements.record_entry(EntryKey { game_id, owner: player.account }, player.account);
+            let seat = progress.registered.into();
+            assert!(seat < self.data.settlements.blitz_order_size.read(game_id), "seat outside settlement order");
+            let player_index = self.data.settlements.blitz_order.read((game_id, seat));
+            assert!(Into::<u8, u32>::into(player_index) < roster_size, "seat outside Blitz roster");
+            let player = self.data.registrar.roster_players.entry((game_id, player_index.into())).account.read();
+            self.settlements.record_entry(EntryKey { game_id, owner: player }, player);
             let rules = crate::logic::settlement::rules(game_id);
-            let center = 2147483646 - context.rules.unbox().map_center_offset;
             let coords = crate::settlement_grid::settlement_location(
-                crate::troops::Coord { alt: false, x: center, y: center },
+                crate::settlement_grid::map_center(context.rules.unbox().map_center_offset),
                 rules.mode,
                 rules.spacing,
                 progress.registered.into(),
             );
-            self.create_settlement_realms(game_id, player.account, coords, context);
-            let remaining: u64 = (roster.len() - Into::<u16, u32>::into(progress.registered) - 1).into();
+            let troops = crate::settlement::deal_troop_types(seed, coords.len());
+            self.create_settlement_realms(game_id, player, coords, troops, context);
+            let remaining: u64 = (roster_size - Into::<u16, u32>::into(progress.registered) - 1).into();
             if remaining == 0 {
-                crate::logic::game::start_blitz(game_id, context);
+                crate::logic::game::mark_roster_ready(game_id);
             }
             (remaining)
         }
@@ -347,7 +361,10 @@ pub mod SettlementLogic {
                     crate::settlement::off_map_realm_reference(realm_id),
                     SettlementCreation::Realm(
                         RealmCreation {
-                            realm_id: realm_id.try_into().unwrap(), traits, grant_troops: true, activate_economy: true,
+                            realm_id: realm_id.try_into().unwrap(),
+                            traits,
+                            troops: crate::settlement::StartingTroops::Biome,
+                            activate_economy: true,
                         },
                     ),
                     crate::commands::action_context(context),
@@ -389,14 +406,16 @@ pub mod SettlementLogic {
             game_id: u32,
             actor: ContractAddress,
             coords: Span<crate::troops::Coord>,
+            troops: Span<crate::troops::TroopType>,
             context: DomainContext,
         ) -> u64 {
             let structures = ISettlementCreationLibraryDispatcher {
                 class_hash: self.release.classes(game_id).structures.read(),
             };
             let mut progress = self.settlements.data.settlements.progress.read(game_id);
+            let grants = crate::logic::settlement::grants(game_id);
             let mut first_realm = 0;
-            for coord in coords {
+            for (coord, category) in coords.into_iter().zip(troops) {
                 progress.realm_count += 1;
                 let realm = structures
                     .create_settlement(
@@ -407,11 +426,9 @@ pub mod SettlementLogic {
                             RealmCreation {
                                 realm_id: progress.realm_count,
                                 traits: crate::realms::RealmTraits {
-                                    wonder: 1,
-                                    order: 0,
-                                    resources: crate::logic::settlement::grants(game_id).realm_resources,
+                                    wonder: 1, order: 0, resources: grants.realm_resources,
                                 },
-                                grant_troops: true,
+                                troops: crate::settlement::StartingTroops::Dealt(*category),
                                 activate_economy: true,
                             },
                         ),

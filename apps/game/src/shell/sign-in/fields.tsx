@@ -1,8 +1,8 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { IDENTITY_PORTRAITS, SIGN_IN_CODE_LENGTH } from "@realms-world/identity";
 
 import { portraitUrl } from "@/services/identity/player-portrait";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 
 import { SIGN_IN_WORDS } from "../words";
 
@@ -40,7 +40,7 @@ export const CodeBoxes = ({
         key={index}
         aria-hidden
         className={cn(
-          "flex h-16 w-12 items-center justify-center rounded-xl border-2 bg-kit-plate font-ui text-[30px] font-extrabold text-kit-cream",
+          "flex h-16 w-12 items-center justify-center rounded-xl border-2 bg-kit-plate font-body text-[30px] font-extrabold text-kit-cream",
           refused ? "border-kit-red" : index === code.length ? "border-kit-peach" : "border-kit-line",
           disabled && "opacity-50",
         )}
@@ -75,9 +75,9 @@ export const NameField = ({
       autoComplete="nickname"
       onChange={(event) => onName(event.target.value)}
       aria-invalid={!valid}
-      className="min-w-0 flex-1 bg-transparent font-ui text-[20px] font-bold text-kit-cream outline-none"
+      className="min-w-0 flex-1 bg-transparent font-body text-xl font-bold text-kit-cream outline-none"
     />
-    {valid && <KitIcon code="Ok" size={24} />}
+    {valid && <SemanticIcon name="check" size={24} />}
   </label>
 );
 

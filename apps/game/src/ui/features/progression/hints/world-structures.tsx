@@ -1,17 +1,9 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { Headline } from "@/ui/design-system/molecules/headline";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { configManager, formatTime } from "@bibliothecadao/eternum";
 import { findResourceById, BANDITS_NAME, resources, ResourcesIds, StructureType } from "@bibliothecadao/types";
-
-const STRUCTURE_IMAGE_PREFIX = "/images/buildings/thumb/";
-const STRUCTURE_IMAGE_PATHS = {
-  [StructureType.Bank]: STRUCTURE_IMAGE_PREFIX + "mine.png",
-  [StructureType.Hyperstructure]: STRUCTURE_IMAGE_PREFIX + "hyperstructure.png",
-  [StructureType.Realm]: STRUCTURE_IMAGE_PREFIX + "mine.png",
-  [StructureType.Mine]: STRUCTURE_IMAGE_PREFIX + "mine.png",
-  [StructureType.Village]: STRUCTURE_IMAGE_PREFIX + "village.png",
-};
 
 export const WorldStructures = () => {
   return (
@@ -60,7 +52,7 @@ const HyperstructureCreationTable = () => {
           <tr className="border-b border-gold/10 hover:bg-gold/5 transition-colors">
             <td className="p-4">
               <div className="flex justify-center">
-                <img className="h-36 min-w-20" src={STRUCTURE_IMAGE_PATHS[structureId]} alt="Hyperstructure" />
+                <SemanticIcon className="h-36 min-w-20" name="hyperstructure" size={144} alt="Hyperstructure" />
               </div>
             </td>
             <td className="p-4">
@@ -112,7 +104,7 @@ const HyperstructureCompletionTable = () => {
                 <div className="flex items-center">
                   <div className="flex">
                     <div className="mr-3">
-                      <ResourceIcon size="md" resource={resources.find((r) => r.id === resource)?.trait || ""} />
+                      <ResourceIcon size="md" resource={resource} />
                     </div>
                   </div>
                   <div className="ml-auto">

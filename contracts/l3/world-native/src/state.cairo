@@ -53,6 +53,7 @@ pub type Storage =
         crate::registrar::RosterPlayer,
         crate::relics::LordsBudget,
         crate::relics::LordsWithdrawal,
+        crate::relics::RelicChest,
         crate::resources::Production,
         crate::resources::Weight,
         crate::settlement::SettlementProgress,

@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { useAudio } from "@/audio/hooks/useAudio";
 import { resolveCompactLane, useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import {
@@ -9,8 +10,7 @@ import {
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
-import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
-import { X } from "@/ui/design-system/atoms/game-icons";
+
 import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
@@ -64,8 +64,6 @@ interface PopoverPanelProps {
   mapClick?: PopoverMapClick;
   /** Pointer-downs inside the anchor are the trigger's own clicks, never an outside dismiss. */
   isInsideAnchor?: (target: EventTarget | null) => boolean;
-  /** A desk the player can move: it opens where the last remembered desk was left. */
-  rememberPosition?: boolean;
 }
 
 const neverInsideAnchor = () => false;
@@ -74,8 +72,14 @@ const neverInsideAnchor = () => false;
  * The one panel: portaled to the body, capped to the viewport, closed by Escape or a pointer-down outside. It is
  * store-free — whoever mounts it owns its open state — so a view-driven surface (the sidebar's Build, Military,
  * Logistics and Chat), a store popover and a store surface all render through exactly this.
+ *
+ * A surface's life is its id: a panel that goes on to show another surface (Production replaced by the leaderboard,
+ * Build by Military) starts afresh, placed by the rule and undragged. The same surface aimed again (another tile for
+ * the same order) stays where the player left it.
  */
-export const PopoverPanel = ({
+export const PopoverPanel = (props: PopoverPanelProps) => <OpenPanel key={props.id} {...props} />;
+
+const OpenPanel = ({
   id,
   ariaLabel,
   anchor,
@@ -86,12 +90,11 @@ export const PopoverPanel = ({
   onDismiss,
   isInsideAnchor = neverInsideAnchor,
   mapClick = "dismiss",
-  rememberPosition = false,
 }: PopoverPanelProps) => {
   const panelRef = useRef<HTMLDivElement>(null);
   const [panelStyle, setPanelStyle] = useState<CSSProperties | null>(null);
   const lane = useCompactLane();
-  const drag = useSurfaceDrag(rememberPosition, lane === null);
+  const drag = useSurfaceDrag(lane === null);
   const resolveAnchor = typeof anchor === "function" ? anchor : () => anchor;
   const resolveAnchorRef = useRef(resolveAnchor);
   resolveAnchorRef.current = resolveAnchor;
@@ -106,10 +109,15 @@ export const PopoverPanel = ({
     const place = () =>
       setPanelStyle(resolvePanelStyle(resolveAnchorRef.current(), align, placement, panelRef.current));
     place();
+    // Content that grows or shrinks after opening (data arriving) moves a centred modal and a popover's fit.
+    const content = panelRef.current?.firstElementChild;
+    const contentResize = content && typeof ResizeObserver !== "undefined" ? new ResizeObserver(place) : null;
+    if (content) contentResize?.observe(content);
     window.addEventListener("resize", place);
     window.visualViewport?.addEventListener("resize", place);
     window.visualViewport?.addEventListener("scroll", place);
     return () => {
+      contentResize?.disconnect();
       window.removeEventListener("resize", place);
       window.visualViewport?.removeEventListener("resize", place);
       window.visualViewport?.removeEventListener("scroll", place);
@@ -233,7 +241,8 @@ export const Popover = ({ id, trigger, children, ariaLabel, align = "start", cla
 
 /**
  * Renders the store's surface — content handed to `openSurface` by a scene click or a plain button — through the
- * same panel, hanging from the rect it was opened at (or the top centre when it has none). Mounted once in the HUD.
+ * same panel: a popover hangs from the rect it was opened at (or the top centre when it has none), a full modal stands
+ * in the middle of the screen. Mounted once in the HUD.
  */
 export const SurfaceHost = () => {
   const surface = usePopoverStore((state) => state.surface);
@@ -255,7 +264,6 @@ export const SurfaceHost = () => {
       id={surface.id}
       ariaLabel={surface.id}
       anchor={surface.anchor ?? "top-center"}
-      rememberPosition={surface.anchor === null}
       placement={surface.placement}
       mapClick={surface.mapClick}
       className="w-auto p-0"
@@ -268,7 +276,7 @@ export const SurfaceHost = () => {
 
 interface PopoverHeaderProps {
   title: ReactNode;
-  icon?: GameIcon;
+  icon?: IconMeaning;
   onClose: () => void;
 }
 
@@ -279,7 +287,7 @@ const PopoverHeader = ({ title, icon: Icon, onClose }: PopoverHeaderProps) => (
     className="flex shrink-0 cursor-move max-lg:cursor-default select-none touch-none items-center justify-between gap-2 border-b border-gold/15 px-4 py-2.5 max-lg:py-1"
   >
     <span className={cn("flex items-center gap-2", HUD_LABEL_BRIGHT)}>
-      {Icon && <Icon className="h-4 w-4 text-gold" />}
+      {Icon && <SemanticIcon name={Icon} className="h-4 w-4 text-gold" />}
       {title}
     </span>
     <button
@@ -289,14 +297,14 @@ const PopoverHeader = ({ title, icon: Icon, onClose }: PopoverHeaderProps) => (
       aria-label="Close"
       title="Close"
     >
-      <X className="h-4 w-4" />
+      <SemanticIcon name="close" className="h-4 w-4" />
     </button>
   </div>
 );
 
 interface SurfaceFrameProps {
   title: ReactNode;
-  icon?: GameIcon;
+  icon?: IconMeaning;
   onClose: () => void;
   footer?: ReactNode;
   /** Width and height of the surface, usually `SURFACE_WORKSPACE_CLASS`; the panel caps both to the viewport. */
@@ -305,7 +313,7 @@ interface SurfaceFrameProps {
   children: ReactNode;
 }
 
-/** A large surface's frame: the header strip over a scrolling body, with an optional footer. */
+/** A large surface's frame: the header strip over a scrolling body, with an optional footer. It is a full modal. */
 export const SurfaceFrame = ({
   title,
   icon,
@@ -315,7 +323,7 @@ export const SurfaceFrame = ({
   bodyClassName,
   children,
 }: SurfaceFrameProps) => (
-  <div className={cn("flex max-w-full min-h-0 flex-col", className)}>
+  <div data-surface-frame className={cn("flex max-w-full min-h-0 flex-col", className)}>
     <PopoverHeader title={title} icon={icon} onClose={onClose} />
     <div className={cn("min-h-0 flex-1 overflow-y-auto", bodyClassName)}>{children}</div>
     {footer && <div className="shrink-0 border-t border-gold/15 p-4 max-lg:p-2">{footer}</div>}
@@ -331,8 +339,9 @@ export const surfaceAnchorFrom = (element: Element): SurfaceAnchor => {
 /**
  * Where the panel sits. Below `lg` every anchor collapses: a phone has no room beside a trigger, so upright it is a
  * bottom sheet whose height budget is its content plus the safe-area strip, and sideways it is a drawer down the
- * right edge under the header, so a `SURFACE_WORKSPACE_CLASS` child fits exactly either way. Desktop placement
- * hangs from the anchor as before.
+ * right edge under the header, so a `SURFACE_WORKSPACE_CLASS` child fits exactly either way. On desktop a full modal
+ * stands in the middle of the screen, wherever it was opened from (a tile, a button), unless it is set against a side
+ * of the screen; a small popover hangs from its anchor.
  */
 const resolvePanelStyle = (
   anchor: PanelAnchor,
@@ -343,10 +352,30 @@ const resolvePanelStyle = (
   const lane = resolveCompactLane();
   if (lane === "portrait") return resolveCompactSheetStyle();
   if (lane === "landscape") return resolveCompactDrawerStyle();
+  if (isFullModal(panel) && !isSideEdge(anchor)) return resolveCentredPanelStyle(panel);
   if (placement === "beside" && typeof anchor !== "string") {
     return resolveBesidePanelStyle(anchor, panel) ?? resolveAnchoredPanelStyle(anchor, align, panel);
   }
   return resolveAnchoredPanelStyle(anchor, align, panel);
+};
+
+/** A full modal is a `SurfaceFrame`; anything else in a panel is a small popover. */
+const isFullModal = (panel: HTMLElement | null): boolean =>
+  panel?.querySelector(":scope > [data-surface-frame]") != null;
+
+const isSideEdge = (anchor: PanelAnchor): boolean => anchor === "right-edge" || anchor === "bottom-right";
+
+/** In the middle of the screen below the header, as far as its height allows. */
+const resolveCentredPanelStyle = (panel: HTMLElement | null): CSSProperties => {
+  const room = viewportHeightBelow(HEADER_CLEARANCE_PX);
+  const top = HEADER_CLEARANCE_PX + Math.max(0, (room - (panel?.scrollHeight ?? 0)) / 2);
+  return {
+    top,
+    left: "50%",
+    transform: "translateX(-50%)",
+    maxHeight: viewportHeightBelow(top),
+    maxWidth: Math.max(0, window.innerWidth - 2 * VIEWPORT_MARGIN_PX),
+  };
 };
 
 /**
@@ -446,33 +475,11 @@ const resolveAnchoredPanelStyle = (
 
 const viewportHeightBelow = (top: number): number => Math.max(0, window.innerHeight - top - VIEWPORT_MARGIN_PX);
 
-const FREE_SURFACE_OFFSET_KEY = "eternum.free-surface-offset";
-
-/** Where the player last left a free-floating desk; every desk (Build, Production, Military, Transfer) opens there. */
-const readFreeSurfaceOffset = (): { x: number; y: number } => {
-  try {
-    const stored = JSON.parse(window.localStorage.getItem(FREE_SURFACE_OFFSET_KEY) ?? "null");
-    if (stored && Number.isFinite(stored.x) && Number.isFinite(stored.y)) return { x: stored.x, y: stored.y };
-  } catch {
-    // No stored position: the desk opens where it is placed.
-  }
-  return { x: 0, y: 0 };
-};
-
-const writeFreeSurfaceOffset = (offset: { x: number; y: number }): void => {
-  try {
-    window.localStorage.setItem(FREE_SURFACE_OFFSET_KEY, JSON.stringify(offset));
-  } catch {
-    // Storage refused: the position still holds for this open.
-  }
-};
-
 /**
- * A surface with a header can be dragged by it. An anchored popover keeps its offset until it closes; a free desk
- * remembers where it was left and every free desk opens there.
+ * A surface with a header can be dragged by it while it is open; it opens where its placement puts it every time.
  */
-function useSurfaceDrag(isFreeSurface: boolean, enabled: boolean) {
-  const [offset, setOffset] = useState(() => (isFreeSurface ? readFreeSurfaceOffset() : { x: 0, y: 0 }));
+function useSurfaceDrag(enabled: boolean) {
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
   const dragStart = useRef<{ pointerX: number; pointerY: number; offsetX: number; offsetY: number } | null>(null);
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!enabled) return;
@@ -489,7 +496,6 @@ function useSurfaceDrag(isFreeSurface: boolean, enabled: boolean) {
       y: start.offsetY + event.clientY - start.pointerY,
     };
     setOffset(next);
-    if (isFreeSurface) writeFreeSurfaceOffset(next);
   };
   const onPointerUp = () => {
     dragStart.current = null;

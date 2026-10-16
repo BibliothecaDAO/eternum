@@ -3,15 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { buildNativeDirectory, buildNativeLeaderboard } from "./native/read-models";
 import { createHeraldRequestHandler } from "./http";
 import { shardManifest } from "./native/fixtures";
-import type { GameSnapshot, ReplayMetrics } from "./types";
-
-const metrics: ReplayMetrics = {
-  decoded_events: 10,
-  event_messages: 1,
-  pages: 1,
-  retained_rows: 2,
-  store_events: 9,
-};
+import type { GameSnapshot } from "./types";
 
 const snapshot: GameSnapshot = {
   confirmed_block: 12,
@@ -71,7 +63,6 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
     },
     snapshot: () => snapshot,
   },
-  metrics,
   history: {
     frontierDayRanks: async () => null,
     frontierHistory: async () => [],
@@ -127,6 +118,8 @@ describe("herald HTTP", () => {
       success: true,
       undecodable_events: 2,
     });
+    // Startup replay counts belong to the herald_ready log line; health reports only live facts.
+    expect(health).not.toHaveProperty("metrics");
 
     const response = await handler(new Request("http://herald/games/7/snapshot?models=Structure"));
     expect(response.status).toBe(200);
@@ -182,7 +175,6 @@ it("passes a battle-only history filter to the store before pagination", async (
     confirmedBlock: () => 12,
     chainTimestamp: () => 100,
     decodedModelCount: 0,
-    metrics,
     fold: { ...httpState.fold, modelRows: () => [], snapshot: () => snapshot },
     undecodableEventCount: () => 0,
     history: {
@@ -477,4 +469,27 @@ it("hidden check games never enter the directory clock or require public directo
   const response = await handle(new Request("http://herald/games"));
   expect(response.status).toBe(200);
   expect((await response.json()).games).toEqual([]);
+});
+
+it("lets browsers read request timings only on a dev chain", async () => {
+  const chainNamed = (name: string) => `0x${Buffer.from(name, "ascii").toString("hex")}`;
+  for (const [chain, allowed] of [
+    ["DEV_18de3131a6e90bc7", "*"],
+    ["PRODUCTION_18de3131a6e90bc7", null],
+    ["PROD_DEV_1", null],
+  ] as const) {
+    const served = createHeraldRequestHandler({
+      ...httpState,
+      manifest: { ...shardManifest, chainId: chainNamed(chain) },
+    });
+    for (const request of [
+      new Request("http://herald/manifest"),
+      new Request("http://herald/games"),
+      new Request("http://herald/games", { method: "OPTIONS" }),
+      new Request("http://herald/other"),
+    ]) {
+      const response = await served(request);
+      expect([chain, request.url, response.headers.get("timing-allow-origin")]).toEqual([chain, request.url, allowed]);
+    }
+  }
 });

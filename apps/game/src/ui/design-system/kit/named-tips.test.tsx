@@ -42,7 +42,7 @@ const mount = (onClick = () => undefined) =>
       <>
         <Tooltip />
         <button type="button" data-testid="army" onClick={onClick}>
-          <Chip icons={["St"]} label="stamina" value="150" />
+          <Chip icons={["stamina"]} label="stamina" value="150" />
         </button>
         <TierChip tier={1} showWord />
         <Button role="primary" word="Deploy" />

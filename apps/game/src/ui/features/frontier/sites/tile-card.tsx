@@ -1,3 +1,4 @@
+import { type IconMeaning } from "@/ui/design-system/icon";
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -9,7 +10,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { requestArmySelection } from "@/three/scenes/worldmap-army-select-request";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
-import type { IconCode } from "@/ui/design-system/kit/kit-icon";
+
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { biomeTypeOf, configManager, entityMapPosition, isViewerOwner } from "@bibliothecadao/eternum";
@@ -66,7 +67,10 @@ const SITE_MODELS = [
 ] as const;
 
 /** The resources a clear pays home, by the icon the card draws them with. */
-const PAY_ICONS: Partial<Record<ResourcesIds, IconCode>> = { [ResourcesIds.Labor]: "La", [ResourcesIds.Essence]: "Es" };
+const PAY_ICONS: Partial<Record<ResourcesIds, IconMeaning>> = {
+  [ResourcesIds.Labor]: "labor",
+  [ResourcesIds.Essence]: "essence",
+};
 
 /** What the tile card attacks: a standing site through its guard, or another player's army. */
 type AttackTarget =

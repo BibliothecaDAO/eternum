@@ -1,4 +1,4 @@
-import { StructureType } from "@bibliothecadao/types";
+import { RELICS, relicChestRelics, StructureType } from "@bibliothecadao/types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
@@ -256,8 +256,15 @@ describe("every story the chain can tell", () => {
     },
     BankLiquidity: { resource_type: 23, add: true },
     HyperstructurePoints: { player: "0x123", points: 5 },
-    RelicChestOpened: { explorer_id: 7, coord, relics: [39, 40], points: 1000 },
+    RelicChestOpened: {
+      explorer_id: 7,
+      coord,
+      chest: { pack: "War", lucky: false },
+      relics: [41, 43, 39],
+      points: 1000,
+    },
     ExplorationReward: { explorer_id: 7, receiver: 5, coord, resource_type: 38, amount: "150000000000" },
+    SpireDiscovered: { explorer_id: 7, receiver: 5, coord, resource_type: 38, amount: "3000000000000" },
     SeasonEnded: { value: "0x123" },
     FaithPledged: { structure_id: 5, wonder_id: 6, owner_rate: 1, pledger_rate: 1 },
     FaithRemoved: { structure_id: 5, wonder_id: 6 },
@@ -313,7 +320,47 @@ describe("every story the chain can tell", () => {
     );
   });
 
+  it("tells a dormant spire's find by the Essence it paid", () => {
+    const found = story("SpireDiscovered", {
+      explorer_id: 7,
+      receiver: 5,
+      coord,
+      resource_type: 38,
+      amount: "3000000000000",
+    });
+    expect(buildStoryEventPresentation(found).title).toBe("Dormant spire found: +3000 Essence");
+  });
+
   it("refuses a story it has no line for, rather than printing its fields", () => {
     expect(() => buildStoryEventPresentation(story("NotAStory", {}))).toThrow("No presentation for story NotAStory");
   });
+});
+
+it("names an opened chest by its pack and where its relics went, and lists them as their panel does", () => {
+  expect(new Set(RELICS.map((relic) => relic.name)).size).toBe(RELICS.length);
+  vi.spyOn(configManager, "getPresetId").mockReturnValue(2);
+  const { store, setStructure, setExplorer } = buildStore();
+  setStructure(5, 1, 1);
+  setExplorer(7, 5, "T1");
+  const opened = (chest: { pack: "War" | "Explore" | "Produce" | "Fortress"; lucky: boolean }) =>
+    buildStoryEventPresentation(
+      story("RelicChestOpened", { explorer_id: 7, chest, relics: relicChestRelics(chest) }),
+      store,
+    );
+  expect(opened({ pack: "Explore", lucky: true })).toMatchObject({
+    title: "Explore pack · lucky: 3 relics to Stolsli T1 army",
+    description: "Exploration Relic II, Exploration Reward Relic II, Stamina Relic II",
+  });
+  expect(opened({ pack: "Produce", lucky: false }).title).toBe("Produce pack: 3 relics to Stolsli");
+  expect(opened({ pack: "Fortress", lucky: false }).title).toBe(
+    "Fortress pack: 1 relic to Stolsli T1 army, 2 to Stolsli",
+  );
+});
+
+it("names a gone army's chest delivery without its names", () => {
+  const chest = { pack: "Produce", lucky: false } as const;
+  const { title } = buildStoryEventPresentation(
+    story("RelicChestOpened", { explorer_id: 7, chest, relics: relicChestRelics(chest) }),
+  );
+  expect(title).toBe("Produce pack: 3 relics to its realm");
 });

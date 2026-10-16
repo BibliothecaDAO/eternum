@@ -1,3 +1,4 @@
+import type { GameModeId } from "@/config/game-modes";
 import { createPipelineCompiler } from "@/three/pipeline-compiler";
 import { WeatherLabRuntime } from "./weather-lab-runtime";
 import { updateGameEndFreeze } from "@/three/effects/game-end-freeze";
@@ -14,7 +15,7 @@ import {
   DirectionalLight,
   HemisphereLight,
   Fog,
-  PCFSoftShadowMap,
+  PCFShadowMap,
   InstancedMesh,
   Matrix4,
   PerspectiveCamera,
@@ -56,6 +57,7 @@ const LAB_LIGHTING_OPTIONS = {
 } as const;
 
 export interface ProceduralTerrainDebugStats {
+  gameMode: GameModeId;
   activeMode: "webgl2-fallback" | "webgpu";
   biomeCount: number;
   buildingInstances: number;
@@ -124,7 +126,13 @@ export interface ProceduralTerrainDebugRendererHandle {
   resetCamera(): void;
   focusSelection(): void;
   previewExploration(entryEdge: number): Promise<void>;
-  placeBuilding(path: string, yaw: number, hyperstructureId?: number, constructionProgress?: number): Promise<void>;
+  placeBuilding(
+    path: string,
+    yaw: number,
+    hyperstructureId?: number,
+    constructionProgress?: number,
+    dormant?: boolean,
+  ): Promise<void>;
   removeBuilding(clearAll?: boolean): Promise<void>;
   setPreview(preview: TerrainLabPreview): Promise<void>;
   setCycleProgress(progress: number): void;
@@ -136,6 +144,7 @@ export interface ProceduralTerrainDebugRendererHandle {
 }
 
 interface MountProceduralTerrainDebugRendererInput {
+  gameMode?: GameModeId;
   canvas: HTMLCanvasElement;
   captureMode: boolean;
   localRadius?: number;
@@ -162,6 +171,7 @@ type TerrainDebugRendererConstructor = new (options: {
 }) => TerrainDebugRendererSurface;
 
 interface TerrainDebugRuntime {
+  gameMode: GameModeId;
   atmosphere: WorldAtmosphereController;
   weather: WeatherLabRuntime;
   cycleProgress: number;
@@ -205,7 +215,7 @@ export async function mountProceduralTerrainDebugRenderer(
   try {
     const runtime = await createRuntime(input);
     const resizeObserver = observeCanvas(input.canvas, runtime);
-    const stopAnimation = startAnimation(runtime);
+    const stopAnimation = startAnimation(runtime, input);
     const stats = readStats(runtime, input.forceWebGL, input.texturedGround);
     debugWindow.__terrainVerification = {
       getSnapshot: () => readStats(runtime, input.forceWebGL, input.texturedGround),
@@ -232,7 +242,8 @@ export async function mountProceduralTerrainDebugRenderer(
       getStats: () => readStats(runtime, input.forceWebGL, input.texturedGround),
       resetCamera: () => positionCamera(runtime.camera, runtime.controls, runtime.cameraFrame),
       previewExploration: (entryEdge) => runtime.interaction.previewExploration(entryEdge),
-      placeBuilding: (path, yaw, id, progress) => runtime.interaction.placeBuilding(path, yaw, id, progress),
+      placeBuilding: (path, yaw, id, progress, dormant) =>
+        runtime.interaction.placeBuilding(path, yaw, id, progress, dormant),
       removeBuilding: (clearAll) => runtime.interaction.removeBuilding(clearAll),
       setPreview: (preview) => runtime.interaction.configure(preview),
       setWeatherEvolving: (enabled) => runtime.weather.setEvolving(enabled),
@@ -276,7 +287,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   renderer.setPixelRatio(1);
   renderer.setClearColor(background, 1);
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = PCFSoftShadowMap;
+  renderer.shadowMap.type = PCFShadowMap;
   await renderer.init();
   configureGltfTextureSupport(renderer as Parameters<typeof configureGltfTextureSupport>[0]);
 
@@ -294,7 +305,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   const cameraFrame = createCameraFrame(camera, request.cells);
   positionCamera(camera, controls, cameraFrame);
 
-  const terrain = new ProceduralTerrain({ streaming: true });
+  const terrain = new ProceduralTerrain({ streaming: true, gameMode: input.gameMode });
   await Promise.all([terrain.loadProps(), terrain.loadGroundTextures()]);
   terrain.setQualityTier(input.qualityTier);
   let prepared = await terrain.preparePageAsync(request);
@@ -369,6 +380,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     ...ecologyTransects,
   } satisfies Omit<
     ProceduralTerrainDebugStats,
+    | "gameMode"
     | "activeMode"
     | "drawCalls"
     | "firstRenderMs"
@@ -381,7 +393,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   >;
   scene.add(terrain.object3d);
   if (realmModel) scene.add(realmModel.group);
-  const { atmosphere, sun } = createGameLighting(scene);
+  const { atmosphere, sun } = createGameLighting(scene, input.gameMode);
   const weather = new WeatherLabRuntime(scene, sun, controls, (x, z) => terrain.sampleSurface(x, z).height);
   atmosphere.update(50, controls.target, { snap: true });
   terrain.setGroundTextureDetailEnabled(input.texturedGround);
@@ -404,6 +416,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     atmosphere,
     weather,
     cycleProgress: 50,
+    gameMode: input.gameMode ?? "blitz",
     gameEnded: false,
     interaction,
     camera,
@@ -565,7 +578,10 @@ function advanceRevealToProgress(terrain: ProceduralTerrain, progress: number): 
   for (let step = 0; step < steps; step += 1) terrain.update(Math.min(0.05, targetSeconds - step * 0.05));
 }
 
-function createGameLighting(scene: Scene): { atmosphere: WorldAtmosphereController; sun: DirectionalLight } {
+function createGameLighting(
+  scene: Scene,
+  gameMode: GameModeId = "blitz",
+): { atmosphere: WorldAtmosphereController; sun: DirectionalLight } {
   const ambient = new AmbientLight();
   const hemisphere = new HemisphereLight();
   const sun = new DirectionalLight();
@@ -574,7 +590,14 @@ function createGameLighting(scene: Scene): { atmosphere: WorldAtmosphereControll
   // The game controller also uses this detached fog object for atmosphere colors.
   // Exploration coverage belongs to TerrainFogField, not Three.js distance fog.
   return {
-    atmosphere: new WorldAtmosphereController(scene, sun, hemisphere, ambient, new Fog(TERRAIN_DEEP_FOG_COLOR)),
+    atmosphere: new WorldAtmosphereController(
+      scene,
+      sun,
+      hemisphere,
+      ambient,
+      new Fog(TERRAIN_DEEP_FOG_COLOR),
+      gameMode,
+    ),
     sun,
   };
 }
@@ -617,7 +640,7 @@ function resizeRenderer(canvas: HTMLCanvasElement, runtime: TerrainDebugRuntime)
   runtime.camera.updateProjectionMatrix();
 }
 
-function startAnimation(runtime: TerrainDebugRuntime): () => void {
+function startAnimation(runtime: TerrainDebugRuntime, input: MountProceduralTerrainDebugRendererInput): () => void {
   let previousFrameTime: number | null = null;
   runtime.renderer.setAnimationLoop((time) => {
     if (previousFrameTime !== null) {
@@ -625,7 +648,10 @@ function startAnimation(runtime: TerrainDebugRuntime): () => void {
       if (runtime.frameSamplesMs.length > 240) runtime.frameSamplesMs.shift();
     }
     previousFrameTime = time;
-    const deltaSeconds = Math.min(0.05, Math.max(0, (runtime.frameSamplesMs.at(-1) ?? 0) / 1_000));
+    const deltaSeconds =
+      input.captureMode && input.sceneId === "fog-reveal"
+        ? 0
+        : Math.min(0.05, Math.max(0, (runtime.frameSamplesMs.at(-1) ?? 0) / 1_000));
     updateGameEndFreeze(0, runtime.gameEnded, deltaSeconds);
     runtime.controls.update();
     runtime.atmosphere.update(
@@ -654,6 +680,7 @@ function readStats(
   >;
   return {
     ...verification,
+    gameMode: runtime.gameMode,
     wildlife: runtime.terrain.getWildlifeStats(),
     buildingInstances: runtime.interaction.getState().buildings.length,
     propInstances: runtime.terrain.getPropStats().instances,

@@ -78,26 +78,26 @@ export const BootDebugPanel = ({ currentTaskLabel, slowThresholdMs = 1500 }: Boo
   const durationEntries = Object.entries(snapshot.durations).sort(([, a], [, b]) => b - a);
 
   return (
-    <div className="mx-auto mt-2 w-full max-w-[28rem] rounded-md border border-gold/15 bg-black/40 px-3 py-2 text-left font-mono text-[0.65rem] leading-snug text-gold/70">
-      <div className="flex items-center justify-between gap-3 text-[0.7rem]">
-        <span className="uppercase tracking-[0.2em] text-gold/50">debug</span>
+    <div className="mx-auto mt-2 w-full max-w-[28rem] rounded-md border border-gold/15 bg-black/40 px-3 py-2 text-left font-mono text-sm leading-snug text-gold/70">
+      <div className="flex items-center justify-between gap-3 text-sm">
+        <span className="text-kit-muted">debug</span>
         <span className="tabular-nums text-gold/85">
           {snapshot.elapsedMs === null ? "—" : `${formatMs(snapshot.elapsedMs)} elapsed`}
         </span>
       </div>
 
       <div className="mt-1 grid grid-cols-[7rem_1fr] gap-x-3 gap-y-0.5">
-        <span className="text-gold/40">phase</span>
+        <span className="text-kit-muted">phase</span>
         <span className="truncate text-gold/85">{currentTaskLabel ?? "—"}</span>
 
-        <span className="text-gold/40">last milestone</span>
+        <span className="text-kit-muted">last milestone</span>
         <span className="truncate text-gold/85">
           {lastMilestone === null
             ? "—"
             : `${lastMilestone.name} (+${formatMs(lastMilestone.deltaMs)}, ${formatMs(lastMilestone.elapsedMs)} total)`}
         </span>
 
-        <span className="text-gold/40">since last</span>
+        <span className="text-kit-muted">since last</span>
         <span
           className={
             sinceLastMilestoneMs !== null && sinceLastMilestoneMs > slowThresholdMs ? "text-red-300" : "text-gold/85"
@@ -106,7 +106,7 @@ export const BootDebugPanel = ({ currentTaskLabel, slowThresholdMs = 1500 }: Boo
           {sinceLastMilestoneMs === null ? "—" : `${formatMs(sinceLastMilestoneMs)} idle`}
         </span>
 
-        <span className="text-gold/40">slowest step</span>
+        <span className="text-kit-muted">slowest step</span>
         <span className="truncate text-gold/85">
           {slowestStep === null ? "—" : `${slowestStep.name} (+${formatMs(slowestStep.deltaMs)})`}
         </span>
@@ -114,11 +114,11 @@ export const BootDebugPanel = ({ currentTaskLabel, slowThresholdMs = 1500 }: Boo
 
       {durationEntries.length > 0 ? (
         <details className="mt-2">
-          <summary className="cursor-pointer text-gold/45">recorded durations ({durationEntries.length})</summary>
+          <summary className="cursor-pointer text-kit-muted">recorded durations ({durationEntries.length})</summary>
           <div className="mt-1 grid grid-cols-[1fr_auto] gap-x-3 gap-y-0.5">
             {durationEntries.map(([name, ms]) => (
               <div key={name} className="contents">
-                <span className="truncate text-gold/65">{name}</span>
+                <span className="truncate text-kit-muted">{name}</span>
                 <span className={`tabular-nums ${ms > slowThresholdMs ? "text-red-300" : "text-gold/80"}`}>
                   {formatMs(ms)}
                 </span>
@@ -130,15 +130,15 @@ export const BootDebugPanel = ({ currentTaskLabel, slowThresholdMs = 1500 }: Boo
 
       {steps.length > 0 ? (
         <details className="mt-2">
-          <summary className="cursor-pointer text-gold/45">milestones ({steps.length})</summary>
+          <summary className="cursor-pointer text-kit-muted">milestones ({steps.length})</summary>
           <div className="mt-1 grid grid-cols-[1fr_auto_auto] gap-x-3 gap-y-0.5">
             {steps.map((step) => (
               <div key={step.name} className="contents">
-                <span className="truncate text-gold/65">{step.name}</span>
-                <span className={`tabular-nums ${step.deltaMs > slowThresholdMs ? "text-red-300" : "text-gold/55"}`}>
+                <span className="truncate text-kit-muted">{step.name}</span>
+                <span className={`tabular-nums ${step.deltaMs > slowThresholdMs ? "text-red-300" : "text-kit-muted"}`}>
                   +{formatMs(step.deltaMs)}
                 </span>
-                <span className="tabular-nums text-gold/35">{formatMs(step.elapsedMs)}</span>
+                <span className="tabular-nums text-kit-muted">{formatMs(step.elapsedMs)}</span>
               </div>
             ))}
           </div>

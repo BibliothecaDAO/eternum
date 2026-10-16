@@ -1,4 +1,5 @@
-import { getMinePresentation } from "@bibliothecadao/types";
+import { structureMeaning, mineMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { iconUrl, resourceMeaning } from "@/ui/design-system/icon-meaning";
 import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
 import { Position } from "@bibliothecadao/eternum";
 import { BuildingType, ResourcesIds, StructureType } from "@bibliothecadao/types";
@@ -21,37 +22,10 @@ import { resolveCameraView } from "./label-view";
 import { attachDirectionIndicators, createLabelBase } from "./label-shared";
 import { applyEntityLabelViewModelMetadata, buildStructureEntityLabelViewModel } from "./entity-label-view-model";
 
-/**
- * A structure's label icon: every category has one, and a player's own realm or village-like structure wears its own.
- */
-const STRUCTURE_ICONS = (fragmentMineIcon: string) => ({
-  STRUCTURES: {
-    [StructureType.Village]: "/images/labels/enemy_village.png",
-    [StructureType.Camp]: "/images/labels/enemy_village.png",
-    [StructureType.Realm]: "/images/labels/enemy_realm.png",
-    [StructureType.Hyperstructure]: "/images/labels/hyperstructure.png",
-    [StructureType.Bank]: `/images/resources/${ResourcesIds.Lords}.png`,
-    [StructureType.Mine]: fragmentMineIcon,
-    [StructureType.BitcoinMine]: "/images/labels/fragment_mine.png",
-    [StructureType.Rift]: "/images/labels/essence_rift.png",
-    [StructureType.Ruin]: "/images/labels/enemy_realm.png",
-    [StructureType.Stragglers]: "/images/labels/enemy_village.png",
-  } satisfies Record<StructureType, string>,
-  MY_STRUCTURES: {
-    [StructureType.Village]: "/images/labels/village.png",
-    [StructureType.Camp]: "/images/labels/village.png",
-    [StructureType.Realm]: "/images/labels/realm.png",
-  } as Partial<Record<StructureType, string>>,
-});
-
-const resolveStructureIconPath = (data: StructureLabelData): string => {
-  const icons = STRUCTURE_ICONS(
-    data.structureType === StructureType.Mine
-      ? getMinePresentation(data.mineKind!).icon
-      : "/images/labels/fragment_mine.png",
+const resolveStructureIconPath = (data: StructureLabelData): string =>
+  iconUrl(
+    data.structureType === StructureType.Mine ? mineMeaning(data.mineKind!) : structureMeaning(data.structureType),
   );
-  return (data.isMine && icons.MY_STRUCTURES[data.structureType]) || icons.STRUCTURES[data.structureType];
-};
 
 interface StructureLabelData extends LabelData {
   structureType: StructureType;
@@ -172,7 +146,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
 
       // Add icon based on status
       const vpIcon = document.createElement("span");
-      vpIcon.classList.add("text-xs");
+      vpIcon.classList.add("text-sm");
       if (isOwned) {
         vpIcon.textContent = "⚡";
         vpIcon.classList.add("text-order-brilliance");
@@ -184,7 +158,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
 
       // Add the VP value
       const realmCountText = document.createElement("span");
-      realmCountText.classList.add("font-bold", "text-xs");
+      realmCountText.classList.add("font-bold", "text-sm");
 
       if (isOwned) {
         realmCountText.classList.add("text-order-brilliance", "text-shadow-glow-brilliance-xs");
@@ -197,7 +171,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
 
       // Add VP/s label with status
       const vpLabel = document.createElement("span");
-      vpLabel.classList.add("text-xxs", "font-normal");
+      vpLabel.classList.add("text-sm", "font-normal");
 
       if (isOwned) {
         vpLabel.classList.add("text-order-brilliance/80");
@@ -389,21 +363,21 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
         if (vpIcon && realmCountText && vpLabel) {
           if (isOwned) {
             vpIcon.textContent = "⚡";
-            vpIcon.className = "text-xs text-order-brilliance";
+            vpIcon.className = "text-sm text-order-brilliance";
           } else {
             vpIcon.textContent = "💤";
-            vpIcon.className = "text-xs text-muted-foreground";
+            vpIcon.className = "text-sm text-muted-foreground";
           }
 
           realmCountText.textContent = `${data.hyperstructureRealmCount}`;
-          realmCountText.className = "font-bold text-xs";
+          realmCountText.className = "font-bold text-sm";
           if (isOwned) {
             realmCountText.classList.add("text-order-brilliance", "text-shadow-glow-brilliance-xs");
           } else {
             realmCountText.classList.add("text-muted-foreground");
           }
 
-          vpLabel.className = "text-xxs font-normal";
+          vpLabel.className = "text-sm font-normal";
           if (isOwned) {
             vpLabel.classList.add("text-order-brilliance/80");
             vpLabel.textContent = "VP/s";
@@ -453,7 +427,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
         newRealmCountDisplay.setAttribute("data-component", "realm-count");
 
         const vpIcon = document.createElement("span");
-        vpIcon.classList.add("text-xs");
+        vpIcon.classList.add("text-sm");
         if (isOwned) {
           vpIcon.textContent = "⚡";
           vpIcon.classList.add("text-order-brilliance");
@@ -464,7 +438,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
         newRealmCountDisplay.appendChild(vpIcon);
 
         const realmCountText = document.createElement("span");
-        realmCountText.classList.add("font-bold", "text-xs");
+        realmCountText.classList.add("font-bold", "text-sm");
 
         if (isOwned) {
           realmCountText.classList.add("text-order-brilliance", "text-shadow-glow-brilliance-xs");
@@ -476,7 +450,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
         newRealmCountDisplay.appendChild(realmCountText);
 
         const vpLabel = document.createElement("span");
-        vpLabel.classList.add("text-xxs", "font-normal");
+        vpLabel.classList.add("text-sm", "font-normal");
 
         if (isOwned) {
           vpLabel.classList.add("text-order-brilliance/80");

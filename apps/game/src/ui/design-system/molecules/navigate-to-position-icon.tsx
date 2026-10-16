@@ -19,7 +19,7 @@ export const NavigateToPositionIcon = ({
 
   return (
     <CircleButton
-      image="/image-icons/compass.png"
+      image="explore"
       size="md"
       className={` fill-gold hover:fill-gold/50 transition-all duration-300 ${className}`}
       onClick={() => {

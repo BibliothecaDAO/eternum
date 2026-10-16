@@ -34,7 +34,6 @@ export function buildMapConfig(config: Config) {
     hyps_fail_prob_increase_p_fnd: config.exploration.hyperstructureFailProbIncreasePerHyperstructureFound,
     relic_discovery_interval_sec: config.exploration.relicDiscoveryIntervalSeconds,
     relic_hex_dist_from_center: config.exploration.relicHexDistanceFromCenter,
-    relic_chest_relics_per_chest: config.exploration.relicChestRelicsPerChest,
   };
 }
 
@@ -84,6 +83,8 @@ export function buildTroopLimitConfig(config: Config) {
     empire_guard_slots: config.troop.limit.empireGuardSlots,
     starting_guard: config.troop.limit.startingGuard,
     camp_armies: config.troop.limit.campArmies,
+    // A preset that sets no cap pays exploration rewards on the whole army, which the contract reads as 0.
+    explore_reward_strength_cap: config.troop.limit.exploreRewardStrengthCap ?? 0,
 
     mercenaries_troop_lower_bound: config.troop.limit.mercenariesTroopLowerBound,
     mercenaries_troop_upper_bound: config.troop.limit.mercenariesTroopUpperBound,

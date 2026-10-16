@@ -3,7 +3,6 @@ import { createHash } from "node:crypto";
 import {
   copyFileSync,
   existsSync,
-  mkdirSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
@@ -13,21 +12,13 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, relative, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const modelsRoot = resolve(appRoot, "public/models");
 const gltfTransform = resolve(appRoot, "node_modules/.bin/gltf-transform");
-const heroModels = new Set([
-  "settlements/settlement.glb",
-  "settlements/city.glb",
-  "settlements/kingdom.glb",
-  "settlements/empire.glb",
-  "new-buildings-opt/castle1.glb",
-  "new-buildings-opt/wonder.glb",
-  "new-buildings-opt/wonder2.glb",
-]);
+const heroModels = new Set(["new-buildings-opt/castle1.glb"]);
 const precompressedTextureSizeLimits = new Map([
   ["cosmetics/low-res/0x1011401.glb", 1_024],
   ["cosmetics/low-res/0x305011501.glb", 1_024],
@@ -69,15 +60,15 @@ function main() {
   const beforeBytes = sumFileSizes(modelPaths);
   // Keep the completed output beside the source tree so each final rename is
   // atomic and cannot fail at the cross-filesystem boundary of the OS temp dir.
-  const outputRoot = mkdtempSync(join(dirname(modelsRoot), ".model-compression-"));
+  const outputParent = requestedModel ? dirname(modelPaths[0]) : dirname(modelsRoot);
+  const outputRoot = mkdtempSync(join(outputParent, ".model-compression-"));
   const unregisterSignalCleanup = registerSignalCleanup(outputRoot);
   const transformed = [];
 
   try {
     for (const [index, modelPath] of modelPaths.entries()) {
       const relativePath = relative(modelsRoot, modelPath);
-      const outputPath = join(outputRoot, relativePath);
-      mkdirSync(dirname(outputPath), { recursive: true });
+      const outputPath = join(outputRoot, `${index}.glb`);
       process.stdout.write(`[models ${index + 1}/${modelPaths.length}] ${relativePath}\n`);
       transformModel(modelPath, outputPath, relativePath);
       stampTextureContentHashes(outputPath);
@@ -419,7 +410,11 @@ function runGltfTransform(args) {
 function listModelPaths(requestedModel) {
   if (requestedModel) {
     const requestedPath = resolve(modelsRoot, requestedModel);
-    if (!requestedPath.startsWith(`${modelsRoot}/`) || !existsSync(requestedPath)) {
+    if (
+      (!isAbsolute(requestedModel) && !requestedPath.startsWith(`${modelsRoot}/`)) ||
+      !requestedPath.endsWith(".glb") ||
+      !existsSync(requestedPath)
+    ) {
       throw new Error(`Unknown model path: ${requestedModel}`);
     }
     return [requestedPath];
@@ -447,7 +442,7 @@ function readRequestedModel(args) {
     return undefined;
   }
   if (!args[onlyIndex + 1]) {
-    throw new Error("--only requires a path relative to apps/game/public/models");
+    throw new Error("--only requires a public model path or an absolute review GLB path");
   }
   return args[onlyIndex + 1];
 }

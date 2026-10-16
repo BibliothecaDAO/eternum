@@ -1,6 +1,7 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
-import { MessageCircle } from "@/ui/design-system/atoms/game-icons";
+
 import { useCallback, useMemo } from "react";
 import {
   useRealtimeChatActions,
@@ -62,7 +63,7 @@ export const RealtimeChatToggleButton = ({ className, variant = "inline" }: Real
         }
       >
         <div className="relative flex h-full w-full items-center justify-center">
-          <MessageCircle className="h-4 w-4 md:h-5 md:w-5" style={{ color: "#996929" }} />
+          <SemanticIcon name="chat" className="h-4 w-4 md:h-5 md:w-5" style={{ color: "#996929" }} />
           <span className={cn("absolute bottom-1 right-1 h-2 w-2 rounded-full", indicatorClass)} />
         </div>
       </CircleButton>
@@ -74,13 +75,13 @@ export const RealtimeChatToggleButton = ({ className, variant = "inline" }: Real
       type="button"
       onClick={handleToggle}
       className={cn(
-        "flex items-center gap-2 px-3 py-1.5 mr-20 mb-3 transition text-gold/70 hover:text-gold border border-gold/30 hover:border-gold bg-dark/70 hover:bg-dark/60 rounded text-xs shadow-inner shadow-black/30",
+        "flex items-center gap-2 px-3 py-1.5 mr-20 mb-3 transition text-gold/70 hover:text-gold border border-gold/30 hover:border-gold bg-dark/70 hover:bg-dark/60 rounded text-sm shadow-inner shadow-black/30",
         className,
       )}
     >
       <span className="font-medium">Open Chat</span>
       {unreadTotal > 0 && (
-        <span className="bg-red/40 text-white text-[10px] px-1.5 py-0.5 rounded-full">{unreadTotal}</span>
+        <span className="bg-red/40 text-white text-sm px-1.5 py-0.5 rounded-full">{unreadTotal}</span>
       )}
       <span className={cn("h-1.5 w-1.5 rounded-full", indicatorClass)} />
     </button>

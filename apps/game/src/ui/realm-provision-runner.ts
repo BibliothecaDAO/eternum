@@ -1,11 +1,10 @@
-/**
- * Provisions every owned realm that the chain still reports unprovisioned, once the main phase has started. The
- * chain's own definition of "provisioned" is a labor building on the realm, so the candidates read that count from
- * native store; the runner keeps only the realms it has already confirmed, so a slow diff never sends a second call.
- *
- * A failed batch waits a growing number of heads before the next attempt (doubling, capped) and, after enough
- * failures, leaves its realms alone until the next reload.
- */
+import * as Cause from "effect/Cause";
+import * as Duration from "effect/Duration";
+import * as Effect from "effect/Effect";
+import * as Queue from "effect/Queue";
+import * as Schedule from "effect/Schedule";
+import { AutomationPending } from "@/ui/features/infrastructure/automation/model/automation-runner";
+
 export interface RealmProvisionCandidate {
   entityId: number;
   name: string;
@@ -14,90 +13,121 @@ export interface RealmProvisionCandidate {
 
 export interface RealmProvisionPhase {
   mainStartsAt: number | null;
-  /** The registry's one answer to "is the season over", closed early or past its end. */
   over: boolean;
   devModeOn: boolean;
 }
 
-/** How a failed batch will be retried: heads until the next attempt, or null once the runner has given up. */
 export interface RealmProvisionRetry {
   attempt: number;
   nextAttemptInHeads: number | null;
 }
 
-export interface RealmProvisionRunnerDeps {
+interface RealmProvisionRunnerDeps {
+  /** The realms as the game's facts say now; read again before every send. */
   readRealms(): RealmProvisionCandidate[];
+  /** Another level-up step for the realm is in flight (the castle lock): it is left to that send. */
+  isHeld(realmId: number): boolean;
   readPhase(): RealmProvisionPhase;
   nowSeconds(): number;
   hasSigner(): boolean;
-  /** One batched transaction for every realm; resolves once confirmed, rejects on failure. */
-  submit(realmIds: number[]): Promise<void>;
+  subscribeHeads(head: () => void): () => void;
+  submit(
+    realm: RealmProvisionCandidate,
+    confirmed: (submitted: RealmProvisionCandidate) => void,
+    signal: AbortSignal,
+  ): Promise<void>;
   report: {
-    /** The whole confirmed batch, so the reporter can retire that batch's failure row. */
     provisioned(realms: RealmProvisionCandidate[]): void;
     failed(realms: RealmProvisionCandidate[], error: unknown, retry: RealmProvisionRetry): void;
   };
 }
 
-export interface RealmProvisionRunner {
-  /** Runs at every confirmed head. */
-  onConfirmedHead(): Promise<void>;
-}
+const PROVISION_RETRY_CAP_HEADS = 8;
+const PROVISION_FAILURES_BEFORE_GIVING_UP = 6;
 
-/** Waits of 1, 2, 4, 8, 8 heads between attempts, then the sixth failure gives the batch up until reload. */
-export const PROVISION_RETRY_CAP_HEADS = 8;
-export const PROVISION_FAILURES_BEFORE_GIVING_UP = 6;
+const isMainPhaseOpen = (deps: RealmProvisionRunnerDeps) => {
+  const phase = deps.readPhase();
+  return !phase.over && (phase.devModeOn || (phase.mainStartsAt !== null && deps.nowSeconds() >= phase.mainStartsAt));
+};
 
-export function createRealmProvisionRunner(deps: RealmProvisionRunnerDeps): RealmProvisionRunner {
-  const confirmed = new Set<number>();
-  const abandoned = new Set<number>();
-  let inFlight = false;
-  let failures = 0;
-  let headsUntilRetry = 0;
+/** A retry consumes confirmed heads, never wall-clock time. Disposal releases the listener and observer. */
+export const startRealmProvisionRunner = (deps: RealmProvisionRunnerDeps): (() => void) =>
+  Effect.runCallback(
+    Effect.scoped(
+      Effect.gen(function* () {
+        const heads = yield* Queue.unbounded<void>();
+        const confirmed = new Set<number>();
+        const abandoned = new Set<number>();
+        let submitting = false;
+        const nextHead = Queue.take(heads);
+        yield* Effect.acquireRelease(
+          Effect.sync(() =>
+            deps.subscribeHeads(() => {
+              if (!submitting) Queue.offerUnsafe(heads, undefined);
+            }),
+          ),
+          (unsubscribe) => Effect.sync(unsubscribe),
+        );
 
-  const isMainPhaseOpen = (): boolean => {
-    const phase = deps.readPhase();
-    const now = deps.nowSeconds();
-    const started = phase.devModeOn || (phase.mainStartsAt !== null && now >= phase.mainStartsAt);
-    return started && !phase.over;
-  };
+        const candidates = () =>
+          deps
+            .readRealms()
+            .filter((realm) => !realm.provisioned && !confirmed.has(realm.entityId) && !abandoned.has(realm.entityId));
+        // Each send waits for the one before it, and the player can provision a realm meanwhile: a realm is sent
+        // only if the facts read just before its send still call for it and no other step holds it.
+        const stillToSend = (realmId: number) =>
+          deps.isHeld(realmId) ? undefined : candidates().find((realm) => realm.entityId === realmId);
+        const provision = Effect.gen(function* () {
+          for (const { entityId } of candidates()) {
+            if (!deps.hasSigner() || !isMainPhaseOpen(deps)) return;
+            const realm = stillToSend(entityId);
+            if (!realm) continue;
+            submitting = true;
+            yield* Effect.tryPromise({
+              try: (signal) =>
+                deps.submit(
+                  realm,
+                  (submitted) => {
+                    confirmed.add(submitted.entityId);
+                    deps.report.provisioned([submitted]);
+                  },
+                  signal,
+                ),
+              catch: (error) => error,
+            }).pipe(
+              Effect.ensuring(
+                Effect.sync(() => {
+                  submitting = false;
+                }),
+              ),
+            );
+          }
+        });
+        const retry = Schedule.fromStepWithMetadata(
+          Effect.succeed(({ attempt, input }: Schedule.InputMetadata<unknown>) =>
+            Effect.gen(function* () {
+              const realms = candidates();
+              const stop = attempt >= PROVISION_FAILURES_BEFORE_GIVING_UP || input instanceof AutomationPending;
+              const skipHeads = Math.min(2 ** (attempt - 1), PROVISION_RETRY_CAP_HEADS);
+              deps.report.failed(realms, input, { attempt, nextAttemptInHeads: stop ? null : skipHeads });
+              if (stop) {
+                realms.forEach((realm) => abandoned.add(realm.entityId));
+                return yield* Cause.done(attempt);
+              }
+              // Skip the advertised heads; the following head can submit again.
+              for (let head = 0; head <= skipHeads; head++) yield* nextHead;
+              return [attempt, Duration.zero] as [number, Duration.Duration];
+            }),
+          ),
+        );
 
-  const selectRealmsToProvision = (): RealmProvisionCandidate[] =>
-    deps
-      .readRealms()
-      .filter((realm) => !realm.provisioned && !confirmed.has(realm.entityId) && !abandoned.has(realm.entityId));
-
-  const scheduleRetry = (realms: RealmProvisionCandidate[]): RealmProvisionRetry => {
-    failures += 1;
-    if (failures >= PROVISION_FAILURES_BEFORE_GIVING_UP) {
-      realms.forEach((realm) => abandoned.add(realm.entityId));
-      return { attempt: failures, nextAttemptInHeads: null };
-    }
-    headsUntilRetry = Math.min(2 ** (failures - 1), PROVISION_RETRY_CAP_HEADS);
-    return { attempt: failures, nextAttemptInHeads: headsUntilRetry };
-  };
-
-  return {
-    async onConfirmedHead() {
-      if (headsUntilRetry > 0) {
-        headsUntilRetry -= 1;
-        return;
-      }
-      if (inFlight || !deps.hasSigner() || !isMainPhaseOpen()) return;
-      const realms = selectRealmsToProvision();
-      if (realms.length === 0) return;
-
-      inFlight = true;
-      try {
-        await deps.submit(realms.map((realm) => realm.entityId));
-        failures = 0;
-        realms.forEach((realm) => confirmed.add(realm.entityId));
-        deps.report.provisioned(realms);
-      } catch (error) {
-        deps.report.failed(realms, error, scheduleRetry(realms));
-      } finally {
-        inFlight = false;
-      }
-    },
-  };
-}
+        while (true) {
+          yield* provision.pipe(
+            Effect.retry(retry),
+            Effect.catch(() => Effect.void),
+          );
+          yield* nextHead;
+        }
+      }),
+    ),
+  );

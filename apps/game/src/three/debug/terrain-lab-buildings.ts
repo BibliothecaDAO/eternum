@@ -1,9 +1,12 @@
+import { REALM_ASSETS } from "../structures/realm-design";
 import {
   ChestModelPath,
+  STRAGGLERS_MODEL_PATH,
   SHARED_BUILDING_MODEL_PATHS,
   SPIRE_MODEL_PATH,
   getStructureModelPaths,
 } from "@/three/constants/scene-constants";
+import { FALLEN_REALM_RUIN_PATH } from "../structures/fallen-realm";
 import { StructureType } from "@bibliothecadao/types";
 import { HYPERSTRUCTURE_MODEL_PATH } from "../structures/hyperstructure-design";
 
@@ -14,6 +17,8 @@ export interface TerrainLabBuilding {
   yaw: number;
   hyperstructureId?: number;
   constructionProgress?: number;
+  /** A spire found by a Blitz reveal: no portal, still. */
+  dormant?: boolean;
 }
 
 const BUILDING_LABELS: Record<string, string> = {
@@ -21,17 +26,27 @@ const BUILDING_LABELS: Record<string, string> = {
   city: "Realm · City",
   kingdom: "Realm · Kingdom",
   empire: "Realm · Empire",
-  village: "Camp / Village · Three yurts",
+  village: "Village · Canvas & Thatch",
+  camp: "Camp · Canvas and stockade",
+  stragglers: "Stragglers · Stranded company",
   archerrange: "Archery range",
   castle1: "Hall / Holy site",
   fishery: "Fishery",
-  wonder2: "Wonder",
   chest_model: "Chest",
+  ruin: "Ruin · Fallen realm",
   spire: "Spire · Levitating portal",
 };
 
 export const TERRAIN_LAB_BUILDINGS = [
-  ...new Set([...SHARED_BUILDING_MODEL_PATHS, ChestModelPath, SPIRE_MODEL_PATH]),
+  ...new Set([
+    ...SHARED_BUILDING_MODEL_PATHS,
+    STRAGGLERS_MODEL_PATH,
+    FALLEN_REALM_RUIN_PATH,
+    "/models/outposts/shrine.glb",
+    "/models/outposts/well.glb",
+    ChestModelPath,
+    SPIRE_MODEL_PATH,
+  ]),
 ].map((path) => {
   const filename = path
     .split("/")
@@ -42,7 +57,9 @@ export const TERRAIN_LAB_BUILDINGS = [
     label:
       path === HYPERSTRUCTURE_MODEL_PATH
         ? "Hyperstructure · Procedural tower"
-        : (BUILDING_LABELS[filename] ?? filename.replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase())),
+        : (REALM_ASSETS.find((asset) => asset.path === path)?.label ??
+          BUILDING_LABELS[filename] ??
+          filename.replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase())),
   };
 });
 

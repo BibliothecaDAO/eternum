@@ -35,6 +35,9 @@ jobs:
       - name: Build packages
         run: pnpm run build:packages
 
+      - name: Validate painted icons
+        run: pnpm icons:check
+
       - name: Typecheck game client
         run: pnpm --dir ./apps/game typecheck
 

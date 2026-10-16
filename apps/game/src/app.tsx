@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ReactNode } from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 
 import "./index.css";
@@ -8,66 +8,34 @@ import { SceneRoute } from "./scene-route";
 import { PwaInstallRuntime } from "./pwa/pwa-install-control";
 import { appQueryClient } from "./runtime/query-client";
 import { AppShell } from "./shell/app-shell";
-import { LearnPage, ScrollPage } from "./shell/learn/learn-page";
-import { PostPage } from "./shell/learn/post-page";
+import { WhatsNewPage } from "./shell/news/news";
+import { PostPage } from "./shell/news/post-page";
 import { IS_DEV_ENVIRONMENT } from "./shell/frame/environment";
 import { NotFoundPage } from "./shell/not-found";
-import { BlitzListPage, BlitzLobbyPage } from "./shell/blitz/blitz-pages";
-import { DominionPage, EternumPage, FrontierPage } from "./shell/play/age-pages";
+import { BlitzLobbyPage } from "./shell/blitz/blitz-pages";
 import { PlayPage } from "./shell/play/play-page";
-import { PlayerPage, ProfilePage, ProfileRowPage } from "./shell/profile/profile-pages";
+import { PlayerPage, ProfilePage, SettingsPage } from "./shell/profile/profile-pages";
 import { ResultsPage } from "./shell/season-tab/results-page";
 import { SeasonPage } from "./shell/season-tab/season-page";
 import { SignInPage } from "./shell/sign-in/sign-in-page";
 import { FirstFrame } from "./shell/first-frame";
 import { SIGN_IN_PATH } from "./shell/sign-in/sign-in-route";
 
-const MotionLabView = lazy(() =>
-  import("./ui/features/debug/motion-lab/motion-lab-view").then((module) => ({ default: module.MotionLabView })),
-);
-const KitLabView = lazy(() =>
-  import("./ui/features/debug/kit-lab/kit-lab-view").then((module) => ({ default: module.KitLabView })),
-);
-const DebugThreeChunkView = lazy(() =>
-  import("./ui/features/debug/three-chunk-debug-view").then((module) => ({ default: module.ThreeChunkDebugView })),
-);
-const DebugProceduralCharacterGymView = lazy(() =>
-  import("./ui/features/debug/procedural-character-gym-view").then((module) => ({
-    default: module.ProceduralCharacterGymView,
-  })),
-);
-const DebugProceduralCharacterBenchmarkView = lazy(() =>
-  import("./ui/features/debug/procedural-character-benchmark-view").then((module) => ({
-    default: module.ProceduralCharacterBenchmarkView,
-  })),
-);
-const DebugProceduralWorldGymView = lazy(() =>
-  import("./ui/features/debug/procedural-character-benchmark-view").then((module) => ({
-    default: module.ProceduralWorldGymView,
-  })),
-);
-const DebugTerrainPropView = lazy(() =>
-  import("./ui/features/debug/terrain-prop-debug-view").then((module) => ({ default: module.TerrainPropDebugView })),
-);
-const DebugProceduralTerrainBenchmarkView = lazy(() =>
-  import("./ui/features/debug/procedural-terrain-benchmark-view").then((module) => ({
-    default: module.ProceduralTerrainBenchmarkView,
-  })),
-);
-const DebugWorldFxGymView = lazy(() =>
-  import("./ui/features/debug/world-fx-gym-view").then((module) => ({ default: module.WorldFxGymView })),
-);
-const GraphicsLabView = lazy(() =>
-  import("./ui/features/debug/graphics-lab-view").then((module) => ({ default: module.GraphicsLabView })),
-);
+const LabApp = lazy(() => import("./lab/lab-app").then((module) => ({ default: module.LabApp })));
 // Reading matter loads on demand, so the cold path carries no post or legal text.
-const AppLabView = lazy(() => import("./shell/lab/app-lab").then((module) => ({ default: module.AppLabView })));
 const TermsPage = lazy(() => import("./shell/legal").then((module) => ({ default: module.TermsPage })));
 const PrivacyPage = lazy(() => import("./shell/legal").then((module) => ({ default: module.PrivacyPage })));
 const CreditsPage = lazy(() => import("./shell/legal").then((module) => ({ default: module.CreditsPage })));
 const GameClientApp = lazy(() => import("./game-client-app").then((module) => ({ default: module.GameClientApp })));
 
 const AppFallback = FirstFrame;
+
+/**
+ * Play's former pages, shared publicly before Play took them in: each still leads to Play. `public/_redirects` answers a
+ * full load with a permanent redirect; these routes answer the app's own navigation and the dev server, which serve
+ * the shell for every path.
+ */
+export const RETIRED_PLAY_PATHS = ["/blitz", "/frontier", "/eternum", "/dominion"] as const;
 
 const LazyRoute = ({ children }: { children: ReactNode }) => <Suspense fallback={<AppFallback />}>{children}</Suspense>;
 
@@ -79,20 +47,16 @@ export const appRoutes = (
   <>
     <Route element={<AppShell />}>
       <Route index element={<PlayPage />} />
-      <Route path="blitz" element={<BlitzListPage />} />
+      {RETIRED_PLAY_PATHS.map((path) => (
+        <Route key={path} path={path.slice(1)} element={<Navigate to="/" replace />} />
+      ))}
       <Route path="blitz/:id" element={<BlitzLobbyPage />} />
-      <Route path="frontier" element={<FrontierPage />} />
-      <Route path="eternum" element={<EternumPage />} />
-      <Route path="dominion" element={<DominionPage />} />
       <Route path="season" element={<SeasonPage />} />
       <Route path="results/:id" element={<ResultsPage />} />
       <Route path="profile" element={<ProfilePage />} />
-      <Route path="profile/account" element={<ProfileRowPage row="account" />} />
-      <Route path="profile/notifications" element={<ProfileRowPage row="notifications" />} />
-      <Route path="profile/devices" element={<ProfileRowPage row="devices" />} />
+      <Route path="profile/settings" element={<SettingsPage />} />
       <Route path="p/:address" element={<PlayerPage />} />
-      <Route path="learn" element={<LearnPage />} />
-      <Route path="scroll" element={<ScrollPage />} />
+      <Route path="scroll" element={<WhatsNewPage />} />
       <Route path="scroll/:post" element={<PostPage />} />
       <Route
         path="terms"
@@ -129,98 +93,15 @@ export const appRoutes = (
         </SceneRoute>
       }
     />
-    {/* The labs and debug scenes exist only in the dev environment's build. */}
     {IS_DEV_ENVIRONMENT && (
-      <>
-        <Route
-          path="/lab/motion"
-          element={
-            <LazyRoute>
-              <MotionLabView />
-            </LazyRoute>
-          }
-        />
-        <Route
-          path="/lab/kit/*"
-          element={
-            <LazyRoute>
-              <KitLabView />
-            </LazyRoute>
-          }
-        />
-        <Route
-          path="/lab/app/:screen/*"
-          element={
-            <LazyRoute>
-              <AppLabView />
-            </LazyRoute>
-          }
-        />
-        <Route
-          path="/lab/*"
-          element={
-            <SceneRoute fallback={<AppFallback />}>
-              <GraphicsLabView />
-            </SceneRoute>
-          }
-        />
-        <Route
-          path="/debug/three-chunks"
-          element={
-            <SceneRoute fallback={<AppFallback />}>
-              <DebugThreeChunkView />
-            </SceneRoute>
-          }
-        />
-        <Route
-          path="/debug/procedural-characters"
-          element={
-            <SceneRoute fallback={<AppFallback />}>
-              <DebugProceduralCharacterGymView />
-            </SceneRoute>
-          }
-        />
-        <Route
-          path="/debug/procedural-character-benchmark"
-          element={
-            <SceneRoute fallback={<AppFallback />}>
-              <DebugProceduralCharacterBenchmarkView />
-            </SceneRoute>
-          }
-        />
-        <Route
-          path="/debug/procedural-world-gym"
-          element={
-            <SceneRoute fallback={<AppFallback />}>
-              <DebugProceduralWorldGymView />
-            </SceneRoute>
-          }
-        />
-        <Route
-          path="/debug/terrain-props"
-          element={
-            <SceneRoute fallback={<AppFallback />}>
-              <DebugTerrainPropView />
-            </SceneRoute>
-          }
-        />
-        <Route
-          path="/debug/procedural-terrain-benchmark"
-          element={
-            <SceneRoute fallback={<AppFallback />}>
-              <DebugProceduralTerrainBenchmarkView />
-            </SceneRoute>
-          }
-        />
-        <Route
-          path="/debug/world-fx"
-          element={
-            <SceneRoute fallback={<AppFallback />}>
-              <DebugWorldFxGymView />
-            </SceneRoute>
-          }
-        />
-      </>
+      <Route
+        path="/lab/*"
+        element={
+          <LazyRoute>
+            <LabApp />
+          </LazyRoute>
+        }
+      />
     )}
   </>
 );

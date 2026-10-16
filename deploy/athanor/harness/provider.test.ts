@@ -11,6 +11,7 @@ test("receipt tracking polls POST RPC and disposal stops further observations", 
     execution_status: "SUCCEEDED",
   })) as typeof provider.getTransactionStatus;
   const result = await trackTransaction({
+    actionIndex: 0,
     botId: 0,
     gameId: 1,
     kind: "move",

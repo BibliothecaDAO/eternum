@@ -85,8 +85,6 @@ def validate_runtime_configuration(config):
     block_time = config.get("block_time", "2s")
     if not isinstance(block_time, str) or not re.fullmatch(r"[1-9][0-9]*s", block_time):
         raise ValueError("block_time must be a positive whole number of seconds")
-    if type(config.get("vrf_workers")) is not int or not 1 <= config["vrf_workers"] <= 64:
-        raise ValueError("vrf_workers must be explicit 1..64")
     bound = config.get("l2_gas_bound")
     if not isinstance(bound, str) or not re.fullmatch(r"0x[0-9a-fA-F]{1,16}", bound) or int(bound, 16) == 0:
         raise ValueError("l2_gas_bound must be nonzero hex u64")
@@ -145,7 +143,7 @@ def compose_configuration(config, directory):
         "SHARD_HERALD_IMAGE": config["herald_image"],
         "GUARDIAN_URL": config["guardian_url"], "PUBLIC_RPC_URL": config["public_rpc_url"],
         "PUBLIC_HERALD_URL": config["public_herald_url"], "PLAYER_CAPACITY": str(config["player_capacity"]),
-        "VRF_WORKERS": str(config["vrf_workers"]), "L2_GAS_BOUND": config["l2_gas_bound"],
+        "L2_GAS_BOUND": config["l2_gas_bound"],
         "TRUSTED_PROXY": config.get("trusted_proxy", ""),
         "HOST_UID": str(os.getuid()), "HOST_GID": str(os.getgid()), "BIND_ADDRESS": "127.0.0.1",
         "RPC_PORT": str(config["port_base"] + 5), "HERALD_PORT": str(config["port_base"] + 1),
@@ -235,7 +233,6 @@ def deployment_environment(config, directory):
         "HERALD_URL": "http://herald:3003",
         "HERALD_PUBLIC_RPC_URL": config["public_rpc_url"],
         "PUBLIC_HERALD_URL": config["public_herald_url"],
-        "VRF_WORKERS": str(config["vrf_workers"]),
         "L2_GAS_BOUND": config["l2_gas_bound"],
         "VRF_KEY_FILE": str(directory / "vrf-key.json"),
         "COMPOSE_PROJECT_NAME": f"athanor-{config['shard']}",
@@ -380,9 +377,11 @@ def start_shard(config, directory):
     command = [*DOCKER, "compose", "-f", str(directory / "compose.json")]
     try:
         start_runner_stack(config, directory, command)
-        return record_runner_readiness(config, compose, directory, command)
+        readiness = record_runner_readiness(config, compose, directory, command)
+        grant_measurement_roles(directory, command)
+        return readiness
     except BaseException:
-        stop_shard(directory)
+        remove_shard(directory)
         raise
 
 
@@ -395,6 +394,14 @@ def record_runner_readiness(config, compose, directory, command):
     result = deployment_manifest(config, compose, directory, manifest, rpc_rtt, herald_rtt)
     write_json(directory / "manifest.json", result)
     return result
+
+
+def grant_measurement_roles(directory, command):
+    """A measurement shard's harness creates its own games, so the runner, never an official deployment, makes the
+    harness's operator the launcher and ledger operator. It runs after the readiness probe, which checks the roles the
+    deploy set."""
+    run([*command, "run", "--rm", "--no-deps", "--entrypoint", "python3", "harness",
+         "/app/deploy/shard/init.py", "measurement-roles"], directory, "measurement-roles")
 
 
 def start_runner_stack(config, directory, command):
@@ -421,9 +428,18 @@ def start_runner_stack(config, directory, command):
         raise RuntimeError("initialization failed; read private deployment logs")
 
 
-def stop_shard(directory):
+def remove_shard(directory):
+    """A runner shard is never started again: its containers' logs stay in its directory as shard-logs.log, then its
+    containers, volumes and network go. The logs are read even when stopping fails, and the shard goes even when
+    reading them fails."""
     command = [*DOCKER, "compose", "-f", str(directory / "compose.json")]
-    run([*command, "stop"], directory, "shard-stop")
+    try:
+        try:
+            run([*command, "stop"], directory, "shard-stop")
+        finally:
+            keep_shard_logs(directory, command)
+    finally:
+        run([*command, "down", "--volumes", "--remove-orphans"], directory, "shard-down")
     # Only an acknowledged PENDING registration belongs to this run; intent alone cannot retire a listing.
     receipt = directory / "directory-registration-ack.json"
     if receipt.exists():
@@ -436,16 +452,43 @@ def stop_shard(directory):
         directory_status(config, "retired")
 
 
+def keep_shard_logs(directory, command):
+    """Reads the containers' logs once: a removal repeated after the containers are gone keeps the first copy."""
+    kept = directory / "shard-logs.log"
+    if kept.exists():
+        return
+    run([*command, "logs", "--no-color"], directory, "shard-logs-reading")
+    (directory / "shard-logs-reading.log").rename(kept)
+
+
 # Each workload key is a harness option (underscores for dashes, true for a bare flag), so a matrix can run every shape
-# the harness runs: a Frontier burst, an Eternum game, a chosen preset. The harness refuses the rest.
+# the harness runs: a Frontier burst, an Eternum game, a chosen preset. `"wave": true` runs the 2,000-player wave
+# (burst.ts) and `"split": true` the launcher seating a frozen Blitz roster (blitz-split.ts) instead. The harness
+# refuses the rest.
+WORKLOAD_SCRIPTS = {"wave": "burst.ts", "split": "blitz-split.ts"}
+
+
 def workload_command(workload):
     if not workload:
         raise ValueError("workload must name the harness run")
+    named = [key for key in WORKLOAD_SCRIPTS if workload.get(key) is True]
+    if len(named) > 1:
+        raise ValueError("a workload runs one script")
+    script = WORKLOAD_SCRIPTS[named[0]] if named else "run.ts"
     options = []
     for key, value in workload.items():
+        if key in WORKLOAD_SCRIPTS:
+            continue
         flag = f"--{key.replace('_', '-')}"
         options += [flag] if value is True else [flag, str(value)]
-    return ["bun", "deploy/athanor/harness/run.ts", *options]
+    return ["bun", f"deploy/athanor/harness/{script}", *options]
+
+
+def harness_container_command(compose_file, command):
+    """The workload inside the shard's harness container, its reports in data/workload."""
+    action = next((key for key, script in WORKLOAD_SCRIPTS.items() if command[1].endswith(f"/{script}")), "harness")
+    return [*DOCKER, "compose", "-f", str(compose_file), "run", "--rm", "-e", "HARNESS_OUTPUT_DIRECTORY=/data/workload",
+            "--entrypoint", "python3", "harness", "/app/deploy/shard/init.py", action, *command[2:]]
 
 
 def run_workload(command, directory, environment):
@@ -478,11 +521,13 @@ def run_matrix(matrix, directory):
         if target.exists():
             raise ValueError(f"duplicate run directory: {target}")
         result = {"passed": False}
+        started = False
         try:
+            # A start that fails removes its own shard; the arm removes only a shard that started.
             start_shard(config, target)
+            started = True
             environment = dict(os.environ)
-            command = [*DOCKER, "compose", "-f", str(target / "compose.json"), "run", "--rm",
-                       "-e", "HARNESS_OUTPUT_DIRECTORY=/data/workload", "harness", *command[2:]]
+            command = harness_container_command(target / "compose.json", command)
             result.update(measures.measure_workload(
                 DOCKER, lambda: run_workload(command, target, environment), f"athanor-{config['shard']}-madara-1",
                 target / "metrics" / "metrics.jsonl", target / "chain-config.yaml", target / "workload"))
@@ -493,7 +538,8 @@ def run_matrix(matrix, directory):
         finally:
             if (target / "compose.json").exists():
                 write_json(target / "matrix-result.json", result)
-                stop_shard(target)
+            if started:
+                remove_shard(target)
     return {"passed": True, "directory": str(directory)}
 
 

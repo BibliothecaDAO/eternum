@@ -60,7 +60,6 @@ const MAP_CONFIG_OVERRIDE_LIMITS = {
   hyperstructureFailProbIncreasePerHyperstructureFound: U16_MAX,
   relicDiscoveryIntervalSeconds: U16_MAX,
   relicHexDistanceFromCenter: U8_MAX,
-  relicChestRelicsPerChest: U8_MAX,
 } satisfies Record<keyof FactoryMapConfigOverrides, number>;
 
 const MAP_CONFIG_OVERRIDE_PAIR_GROUPS = [

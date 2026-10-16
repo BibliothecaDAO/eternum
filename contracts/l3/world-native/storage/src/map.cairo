@@ -3,9 +3,8 @@ use starknet::storage::Map;
 #[starknet::storage_node]
 pub struct MapStateStorage {
     pub tiles: Map<(u32, bool, u32, u32), u128>,
-    pub exists: Map<(u32, bool, u32, u32), bool>,
     pub occupancy: Map<(u32, bool, u32, u32), u128>,
-    pub entity_tiles: Map<(u32, u64), Option<(bool, u32, u32)>>,
+    pub entity_tiles: Map<(u32, u64), u128>,
 }
 
 #[starknet::storage_node]

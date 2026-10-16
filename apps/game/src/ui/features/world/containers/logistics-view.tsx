@@ -19,7 +19,7 @@ const TAB_KEYS = ["arrivals", "transfer", "automation", "balances"] as const;
 type LogisticsTab = (typeof TAB_KEYS)[number];
 
 const tabClass =
-  "!mx-0 min-h-11 flex items-center justify-center rounded-md border border-gold/20 bg-black/25 px-3 py-1.5 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-gold/75 transition hover:border-gold/40 hover:text-gold";
+  "!mx-0 min-h-11 flex items-center justify-center rounded-md border border-gold/20 bg-black/25 px-3 py-1.5 text-center text-sm font-semibold text-gold/75 transition hover:border-gold/40 hover:text-gold";
 
 interface LogisticsViewProps {
   hasArrivals: boolean;
@@ -68,7 +68,7 @@ export const LogisticsView = ({ hasArrivals }: LogisticsViewProps) => {
               {totalArrivals > 0 && (
                 <span
                   className={clsx(
-                    "inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums",
+                    "inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-sm font-bold tabular-nums",
                     badgeTone,
                   )}
                   title={`${arrivedArrivalsNumber} ready · ${pendingArrivalsNumber} pending`}

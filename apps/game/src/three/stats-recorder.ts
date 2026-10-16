@@ -1,3 +1,4 @@
+import { FONTS } from "@/tokens";
 interface StatsRecordingSample {
   timestamp: number;
   elapsedMs: number;
@@ -61,7 +62,7 @@ export class StatsRecorder {
         right: 10px;
         background: rgba(255, 0, 0, 0.8);
         color: white;
-        font-family: monospace;
+        font-family: ${FONTS.body};
         font-size: 14px;
         padding: 8px 12px;
         border-radius: 4px;

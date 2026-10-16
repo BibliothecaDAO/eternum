@@ -34,14 +34,14 @@ export interface WaveGame {
   provider: HarnessProvider;
   games: string;
   classHash: string;
-  nodeImage: string;
   players: WavePlayer[];
   /** Verify aggregate real-contract effects, never the spike's shared probe counter. */
   verify(): Promise<void>;
   dispose(): void;
 }
 export interface WaveFixturePort {
-  createGame(players: number): Promise<WaveGame>;
+  /** `create`: the harness creates the game as the shard's launcher (measurement shards); else the directory's. */
+  createGame(players: number, create: boolean): Promise<WaveGame>;
 }
 export interface WaveOptions {
   players: number;
@@ -53,6 +53,8 @@ export interface WaveOptions {
   closeLog?: string;
   offsetMs?: number;
   receiptCheckpoint?: string;
+  /** Create the wave's game as the shard's launcher instead of playing the directory's (measurement shards). */
+  createGame: boolean;
 }
 
 async function runWave(port: WaveFixturePort, options: WaveOptions) {
@@ -67,14 +69,21 @@ async function runWave(port: WaveFixturePort, options: WaveOptions) {
     tier: 2,
   };
   save(options.out, result);
+  // Where a failed wave stopped, named without request bodies or credentials.
+  let stage = "creating the game and its players";
   try {
-    game = await port.createGame(options.players);
+    game = await port.createGame(options.players, options.createGame);
     validateWave(game, options);
     const fixture = game;
     result = { ...result, ...waveHeader(game) };
     save(options.out, result);
+    stage = "signing the wave";
     const payloads = await prepareWavePayloads(game);
     let trigger: Trigger | null = null;
+    stage = "sending the wave";
+    // One instant on both clocks: sends are timed on the monotonic clock, the node and the RPC log wall time.
+    const clockPair = { monotonicNs: String(now()), wallMs: Date.now() };
+    const startedAt = new Date().toISOString();
     const rows = await burst(game.rpcUrl, payloads, options.workers, async () => {
       const ready = () => {
         if (options.readyFile) save(options.readyFile, { readyNs: String(now()), accounts: options.players });
@@ -92,23 +101,29 @@ async function runWave(port: WaveFixturePort, options: WaveOptions) {
     );
     const spreadMs =
       Number(rows.reduce((at, row) => (BigInt(row.sentNs) > at ? BigInt(row.sentNs) : at), first) - first) / 1e6;
+    stage = "observing outcomes";
     const actions = await mapWithConcurrency(rows, 64, async (row) => {
       const index = payloads.findIndex((payload) => payload.hash === row.hash);
       const player = fixture.players[index]!;
       player.client.runtime.recordSubmittedTransaction(row.hash);
       return observeWaveAction(fixture, player, row, first, options.timeoutMs);
     });
+    stage = "verifying effects";
     await fixture.verify();
-    const evidence = waveEvidence(actions, first, spreadMs, trigger, options.players);
+    const workload = { startedAt, endedAt: new Date().toISOString() };
+    const evidence = { ...waveEvidence(actions, first, spreadMs, trigger, options.players), clockPair, workload };
     if (options.receiptCheckpoint)
       save(options.receiptCheckpoint, { completed: evidence.completed, lastReceiptNs: evidence.lastReceiptNs });
     result = { ...result, ...evidence };
-  } catch {
+  } catch (error) {
+    // The cause goes to the harness log on the box only; the published result names the stage.
+    console.error(`Wave failed while ${stage}:`, error);
     result = {
       ...result,
       status: "failed",
       passed: false,
       error: "wave did not complete; inspect route/fact prerequisites without publishing request bodies",
+      failedAt: stage,
     };
   } finally {
     try {
@@ -127,7 +142,6 @@ function waveHeader(game: WaveGame) {
     chainId: game.bounds.chainId,
     contract: game.games,
     classHash: game.classHash,
-    nodeImage: game.nodeImage,
     writes: 1,
     hashes: 1,
     visibleDefinition:
@@ -303,9 +317,13 @@ if (import.meta.main) {
         "offset-ms": { type: "string" },
         "ready-file": { type: "string" },
         "receipt-checkpoint": { type: "string" },
+        "create-game": { type: "boolean", default: false },
+        "herald-url": { type: "string" },
       },
     });
     if (!values.out) throw new Error("Output path required");
+    // The wave's players watch this Herald; a measurement names the shard's own instead of its public hostname.
+    if (values["herald-url"]) process.env.HERALD_URL = values["herald-url"];
     const players = Number(values.players),
       workers = Number(values.workers),
       timeoutMs = Number(values["timeout-ms"]);
@@ -331,6 +349,7 @@ if (import.meta.main) {
       offsetMs: Number(values["offset-ms"] ?? "0"),
       readyFile: values["ready-file"],
       receiptCheckpoint: values["receipt-checkpoint"],
+      createGame: values["create-game"] === true,
     });
     console.log(
       JSON.stringify({

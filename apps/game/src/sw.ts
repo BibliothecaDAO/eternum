@@ -1,4 +1,6 @@
 /// <reference lib="webworker" />
+import * as Effect from "effect/Effect";
+import * as Data from "effect/Data";
 import { cleanupOutdatedCaches, matchPrecache, precacheAndRoute } from "workbox-precaching";
 import { installNotificationWorker } from "./pwa/notification-worker";
 
@@ -30,17 +32,21 @@ function isGameNavigation(request: Request): boolean {
   );
 }
 
-async function loadOnlinePageOrOfflineShell(request: Request): Promise<Response> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8_000);
-  try {
-    // No HTML cache: a retired lazy chunk can still recover by reloading the current deployment.
-    const response = await fetch(request, { cache: "no-store", signal: controller.signal });
-    if (response.status < 500) return response;
-  } catch {
-    // Offline, timed out, or unreachable: only the dedicated offline document is available locally.
-  } finally {
-    clearTimeout(timeout);
-  }
-  return (await matchPrecache("offline.html")) ?? Response.error();
+class NavigationUnavailable extends Data.TaggedError("NavigationUnavailable")<{ cause?: unknown }> {}
+
+function loadOnlinePageOrOfflineShell(request: Request): Promise<Response> {
+  const online = Effect.tryPromise({
+    // No HTML cache: a retired lazy chunk can recover by reloading the current deployment.
+    try: (signal) => fetch(request, { cache: "no-store", signal }),
+    catch: (cause) => new NavigationUnavailable({ cause }),
+  }).pipe(
+    Effect.timeoutOrElse({ duration: 8_000, orElse: () => Effect.fail(new NavigationUnavailable({})) }),
+    Effect.flatMap((response) =>
+      response.status < 500 ? Effect.succeed(response) : Effect.fail(new NavigationUnavailable({})),
+    ),
+    Effect.catchTag("NavigationUnavailable", () =>
+      Effect.promise(async () => (await matchPrecache("offline.html")) ?? Response.error()),
+    ),
+  );
+  return Effect.runPromise(online);
 }

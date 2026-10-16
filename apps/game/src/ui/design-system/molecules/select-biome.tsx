@@ -74,14 +74,14 @@ export const SelectBiome: React.FC<SelectBiomeProps> = ({
                   const bonus = configManager.getBiomeCombatBonus(type, selectedBiome as BiomeType);
                   return (
                     <div key={type} className="flex items-center gap-2 w-16 justify-end">
-                      <ResourceIcon resource={resources.find((r) => r.id === resourceId)?.trait || ""} size="sm" />
+                      <ResourceIcon resource={resourceId} size="sm" />
                       <span
                         className={
                           bonus > 1
-                            ? "text-order-brilliance text-xs"
+                            ? "text-order-brilliance text-sm"
                             : bonus < 1
-                              ? "text-order-giants text-xs"
-                              : "text-gold/50 text-xs"
+                              ? "text-order-giants text-sm"
+                              : "text-kit-muted text-sm"
                         }
                       >
                         {formatBonus(bonus)}
@@ -104,14 +104,14 @@ export const SelectBiome: React.FC<SelectBiomeProps> = ({
                   const bonus = configManager.getBiomeCombatBonus(type, biome);
                   return (
                     <div key={type} className="flex items-center gap-2 w-16 justify-end">
-                      <ResourceIcon resource={resources.find((r) => r.id === resourceId)?.trait || ""} size="sm" />
+                      <ResourceIcon resource={resourceId} size="sm" />
                       <span
                         className={
                           bonus > 1
                             ? "text-order-brilliance text-sm font-medium"
                             : bonus < 1
                               ? "text-order-giants text-sm font-medium"
-                              : "text-gold/50 text-sm"
+                              : "text-kit-muted text-sm"
                         }
                       >
                         {formatBonus(bonus)}

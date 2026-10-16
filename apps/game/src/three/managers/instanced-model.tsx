@@ -37,8 +37,6 @@ const ANIMATION_INTERVAL_MULTIPLIER_MEDIUM = 2;
 const ANIMATION_INTERVAL_MULTIPLIER_LARGE = 3;
 
 // Reusable matrices for instance transformations
-const instanceMatrix = new Matrix4();
-const rotationMatrix = new Matrix4();
 const zeroMatrix = new Matrix4().makeScale(0, 0, 0);
 // Fixed per-instance buffer capacity when the consumer does not size one
 // (single-instance previews and the like). Buffers never grow — see
@@ -136,8 +134,6 @@ export default class InstancedModel {
   // Animation optimization
   private lastAnimationUpdate = 0;
   private animationUpdateInterval = 1000 / 20; // 20 FPS for animations
-  private lastWonderUpdate = 0;
-  private wonderUpdateInterval = 1000 / 30; // 30 FPS for wonder rotation
   private animationFrameOffset = 0;
   private lastBucketStride = 1;
 
@@ -192,8 +188,7 @@ export default class InstancedModel {
         if (gltf.animations.length > 0) {
           if (
             gltf.animations[0].tracks.find((track: any) => track.name.split(".")[0] === child.name) &&
-            name !== StructureType[StructureType.Mine] &&
-            name !== "wonder"
+            name !== StructureType[StructureType.Mine]
           ) {
             tmp.animated = true;
             for (let i = 0; i < this.capacity; i++) {
@@ -605,31 +600,6 @@ export default class InstancedModel {
       if (completedAnimationPass) {
         this.lastAnimationUpdate = now;
       }
-    }
-
-    // Wonder rotation with its own frame limiting
-    if (this.name === "wonder" && now - this.lastWonderUpdate >= this.wonderUpdateInterval) {
-      const rotationSpeed = 1; // Adjust speed as needed
-
-      this.instancedMeshes.forEach((mesh) => {
-        for (let i = 0; i < mesh.count; i++) {
-          // Get the current instance matrix
-          mesh.getMatrixAt(i, instanceMatrix);
-
-          // Create a rotation matrix around Y axis
-          rotationMatrix.makeRotationY(rotationSpeed * deltaTime);
-
-          // Apply rotation to the instance matrix
-          instanceMatrix.multiply(rotationMatrix);
-
-          // Set the updated matrix back to the instance
-          mesh.setMatrixAt(i, instanceMatrix);
-        }
-
-        mesh.instanceMatrix.needsUpdate = true;
-      });
-
-      this.lastWonderUpdate = now;
     }
   }
 

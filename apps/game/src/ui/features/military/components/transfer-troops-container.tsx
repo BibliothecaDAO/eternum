@@ -1,3 +1,4 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import Button from "@/ui/design-system/atoms/button";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
@@ -27,7 +28,7 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import { AlertTriangle, ArrowLeftRight } from "@/ui/design-system/atoms/game-icons";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots, MAX_GUARD_SLOT_COUNT } from "../utils/defense-slot-utils";
 import { getGuardStaminaSnapshot } from "../utils/guard-stamina";
@@ -139,13 +140,11 @@ export const TransferTroopsContainer = ({
     if (balance === undefined) return undefined;
     return { resourceId, balance, category, tier };
   }, [currentDefaultTick, selectedResourceState, targetExplorerTroops?.troops]);
-  const sameStructureBlockReason = useMemo(
+  const transferRestriction = useMemo(
     () =>
       getTroopTransferBlockReason({
         transferDirection,
         selectedEntityId,
-        targetEntityId,
-        selectedExplorerOwner: selectedExplorerTroops?.owner ?? null,
         sourceHomeOwner: selectedExplorerConnectedStructure?.owner,
         targetOwner: targetStructure?.owner,
         targetExplorerOwner: targetExplorerTroops?.owner ?? null,
@@ -154,15 +153,12 @@ export const TransferTroopsContainer = ({
     [
       guardSlot,
       selectedEntityId,
-      selectedExplorerTroops?.owner,
       selectedExplorerConnectedStructure?.owner,
       targetStructure?.owner,
-      targetEntityId,
       targetExplorerTroops?.owner,
       transferDirection,
     ],
   );
-  const transferRestriction = sameStructureBlockReason;
   const isTransferBlocked = transferRestriction !== null;
 
   const troopCapacityLimit = useMemo(() => {
@@ -779,7 +775,6 @@ export const TransferTroopsContainer = ({
       { col: targetHex.x, row: targetHex.y },
     );
     if (direction === null) return;
-    if (sameStructureBlockReason) return;
 
     try {
       setLoading(true);
@@ -899,10 +894,6 @@ export const TransferTroopsContainer = ({
     if (troopAmount === 0) return true;
 
     if (guardSelectionRequired && guardSlot === null) {
-      return true;
-    }
-
-    if (sameStructureBlockReason) {
       return true;
     }
 
@@ -1027,10 +1018,6 @@ export const TransferTroopsContainer = ({
 
     if (guardSelectionRequired && guardSlot === null) {
       return "Please select a guard slot";
-    }
-
-    if (sameStructureBlockReason) {
-      return sameStructureBlockReason;
     }
 
     if (transferDirection === TransferDirection.ExplorerToExplorer) {
@@ -1328,10 +1315,10 @@ export const TransferTroopsContainer = ({
                     </div>
                     {capacityNotice && (
                       <div
-                        className={`rounded-md border px-3 py-2 text-xs ${
+                        className={`rounded-md border px-3 py-2 text-sm ${
                           capacityNotice.tone === "danger"
                             ? "border-danger/40 bg-danger/10 text-danger"
-                            : "border-gold/30 text-gold/60"
+                            : "border-gold/30 text-kit-muted"
                         }`}
                       >
                         {capacityNotice.message}
@@ -1339,7 +1326,7 @@ export const TransferTroopsContainer = ({
                     )}
                     {quickAmountOptions.length > 0 && (
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs text-gold/60">Quick set:</span>
+                        <span className="text-sm text-kit-muted">Quick set:</span>
                         {quickAmountOptions.map((option) => {
                           const isActive = troopAmount === option.value;
                           if (!guardFactsKnown) return <LoadingAnimation />;
@@ -1349,7 +1336,7 @@ export const TransferTroopsContainer = ({
                               key={option.label}
                               type="button"
                               onClick={() => handleQuickAmountSelect(option.value)}
-                              className={`rounded-md border px-3 py-1 text-xs font-medium transition-colors ${
+                              className={`rounded-md border px-3 py-1 text-sm font-medium transition-colors ${
                                 isActive
                                   ? "border-gold bg-gold/20 text-gold"
                                   : "border-gold/30 bg-dark-brown text-gold/70 hover:bg-gold/10"
@@ -1369,7 +1356,7 @@ export const TransferTroopsContainer = ({
 
               <div className="flex-1 min-w-0 space-y-4 rounded-md border border-gold/30 bg-dark-brown/60 p-4">
                 <div className="rounded-md border border-gold/40 bg-dark-brown/50 p-3">
-                  <div className="text-[10px] uppercase tracking-wide text-gold/60">Transfer direction</div>
+                  <div className="text-sm text-kit-muted">Transfer direction</div>
                   <div className="mt-2 flex items-center justify-between gap-3">
                     <span className="text-base font-semibold text-gold">{directionLabel}</span>
                     {onToggleDirection ? (
@@ -1378,10 +1365,9 @@ export const TransferTroopsContainer = ({
                         variant="outline"
                         size="xs"
                         disabled={!canToggleDirection}
-                        forceUppercase={false}
                         className="flex items-center gap-2"
                       >
-                        <ArrowLeftRight className="h-3 w-3" />
+                        <SemanticIcon name="swap" className="h-3 w-3" />
                         Swap
                       </Button>
                     ) : null}
@@ -1391,14 +1377,14 @@ export const TransferTroopsContainer = ({
 
                 {troopMismatchMessage && (
                   <div className="flex items-start gap-2 rounded-md border border-danger/40 bg-danger/10 p-3 text-sm text-danger/80">
-                    <AlertTriangle className="mt-[2px] h-4 w-4 flex-shrink-0" />
+                    <SemanticIcon name="warning" className="mt-[2px] h-4 w-4 flex-shrink-0" />
                     <span>{troopMismatchMessage}</span>
                   </div>
                 )}
 
                 {!transferReady && disabledMessage && !troopMismatchMessage && (
                   <div className="flex items-start gap-2 rounded-md border border-danger/40 bg-danger/10 p-3 text-sm text-danger/80">
-                    <AlertTriangle className="mt-[2px] h-4 w-4 flex-shrink-0" />
+                    <SemanticIcon name="warning" className="mt-[2px] h-4 w-4 flex-shrink-0" />
                     <span>{disabledMessage}</span>
                   </div>
                 )}

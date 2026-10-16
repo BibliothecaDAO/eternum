@@ -11,10 +11,6 @@ import { ID } from "@bibliothecadao/types";
 import { useUIStore } from "../store/use-ui-store";
 
 /** The chain coordinate a navigation selects: the UI store keeps selections as contract hexes. */
-const toSelectedHex = (position: Position): { col: number; row: number } => {
-  const contract = position.getContract();
-  return { col: contract.x, row: contract.y };
-};
 
 const resolvePlaySceneHref = (scene: PlayScene, position: Position): string => {
   const playRoute = parsePlayRoute(window.location);
@@ -58,17 +54,18 @@ export const useNavigateToMapView = () => {
 
 export const useGoToStructure = (setupResult: GameClientSetup | null) => {
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
-  const setSelectedHex = useUIStore((state) => state.setSelectedHex);
+  const selectOnMap = useUIStore((state) => state.selectOnMap);
   const navigateToHexView = useNavigateToHexView();
   const navigateToMapView = useNavigateToMapView();
 
-  const updateSelectedHex = useCallback(
-    (nextSelection: { col: number; row: number }) => {
-      setSelectedHex(nextSelection);
+  const selectStructure = useCallback(
+    (entityId: ID) => {
+      const structure = { kind: "structure", entityId } as const;
+      selectOnMap(structure);
       // World scene clears selection on URL changes; reapply next tick to keep the tile highlighted.
-      setTimeout(() => setSelectedHex(nextSelection), 0);
+      setTimeout(() => selectOnMap(structure), 0);
     },
-    [setSelectedHex],
+    [selectOnMap],
   );
 
   return async (
@@ -88,7 +85,7 @@ export const useGoToStructure = (setupResult: GameClientSetup | null) => {
       worldMapPosition: targetPosition,
     });
 
-    updateSelectedHex(toSelectedHex(targetPosition));
+    selectStructure(structureEntityId);
 
     if (isMapView) {
       navigateToMapView(targetPosition);

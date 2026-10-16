@@ -1,7 +1,6 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Direction } from "@bibliothecadao/types";
-
-import { CastleGlyph } from "../glyphs";
 
 /** Where each ring tile sits around the realm, by the direction the army steps out in. */
 const ANGLE: Record<Direction, number> = {
@@ -40,7 +39,7 @@ export const DeployRing = ({
 }) => (
   <div role="radiogroup" aria-label="Deploy tile" className="relative mx-auto size-36 shrink-0">
     <span className="absolute left-1/2 top-1/2 flex size-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center">
-      <CastleGlyph className="size-8" />
+      <SemanticIcon name="realm" className="size-8" />
     </span>
     {ring.map((tile) => {
       const angle = (ANGLE[tile.direction] * Math.PI) / 180;
@@ -71,7 +70,7 @@ export const DeployRing = ({
           )}
         >
           {!tile.explored && (
-            <span aria-hidden className="text-[15px] font-extrabold text-[#a8b0b8]">
+            <span aria-hidden className="text-base font-extrabold text-[#a8b0b8]">
               ?
             </span>
           )}

@@ -1,7 +1,8 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { formatExact } from "./amount";
-import { type IconCode, KitIcon } from "./kit-icon";
+
 import { MAXIMUM, MINIMUM } from "./words";
 
 /**
@@ -19,7 +20,7 @@ export const AmountSlider = ({
   onChange,
 }: {
   label: string;
-  icon: IconCode;
+  icon: IconMeaning;
   value: number;
   max: number;
   stop?: number;
@@ -32,7 +33,7 @@ export const AmountSlider = ({
   return (
     <div className={cn("flex h-12 items-center gap-2", disabled && "opacity-40")}>
       <End name={MINIMUM} amount={least} disabled={disabled} onTake={onChange}>
-        <KitIcon code={icon} size={18} />
+        <SemanticIcon name={icon} size={18} />
       </End>
       <span className="relative flex h-12 flex-1 items-center">
         <input
@@ -79,7 +80,7 @@ const End = ({
     onClick={() => onTake(amount)}
     className="flex h-12 shrink-0 items-center"
   >
-    <span className="frontier-chip h-8 !gap-1 !px-2.5 !py-0 text-[15px] tabular-nums text-kit-cream">
+    <span className="frontier-chip h-8 !gap-1 !px-2.5 !py-0 text-base tabular-nums text-kit-cream">
       <span className="contents">
         {children}
         {formatExact(amount)}

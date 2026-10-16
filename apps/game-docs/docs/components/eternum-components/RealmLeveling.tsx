@@ -4,7 +4,7 @@ import ResourceIcon from "../ResourceIcon";
 import { colors, formatAmount, section, table } from "../styles";
 
 export const RealmLeveling = () => {
-  const config = ETERNUM_CONFIG();
+  const config = ETERNUM_CONFIG("eternum");
   const { realmUpgradeCosts } = config;
 
   // Level names corresponding to levels 1-4

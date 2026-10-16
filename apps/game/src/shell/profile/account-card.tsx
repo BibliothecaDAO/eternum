@@ -1,5 +1,6 @@
 import { nameRuleViolation, type Session } from "@realms-world/identity";
 import { type ReactNode, useEffect, useState, type FormEvent } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import {
   identityClient,
@@ -20,19 +21,24 @@ import { NameField, PortraitGrid } from "../sign-in/fields";
 import { PROFILE_WORDS, SIGN_IN_WORDS, WALLET_WORDS } from "../words";
 import { Confirm } from "./confirm";
 import { payoutAddressOf } from "@/hooks/context/payout-wallet";
+import { walletReturnOf } from "./settings-route";
 import { PayoutWalletPanel } from "./payout-wallet-panel";
 import { SettingRow, SettingRows } from "./setting-row";
 
-type Open = "name" | "portrait" | "payout" | "sign-out" | null;
+type Open = "name" | "portrait" | "payout" | null;
 
 /**
- * Account (spec 11): the name, the portrait, how the player signs in and the payout wallet, each a row that opens its
- * sheet; Sign out last, outline, asking first. The payout wallet opens beside the rows on desktop.
+ * Account (spec 11), Settings' first group: the name, the portrait, how the player signs in and the payout wallet, each
+ * a row that opens its sheet (under the rows on desktop). Sent to Settings from a page that needs a wallet (`?next=`),
+ * it opens on the payout wallet and returns there once one is linked.
  */
 export const AccountCard = ({ session }: { session: Session }) => {
   const refresh = useIdentitySessionStore((state) => state.refresh);
   const account = useAccountStore((state) => state.account?.address);
-  const [open, setOpen] = useState<Open>(null);
+  const payout = payoutAddressOf(session.user);
+  const returnTo = walletReturnOf(useLocation().search);
+  useReturnOnceLinked(returnTo, payout);
+  const [open, setOpen] = useState<Open>(returnTo && !payout ? "payout" : null);
   const close = () => setOpen(null);
   // A row opens its setting, and the same row closes it again.
   const toggle = (row: Exclude<Open, null>) => setOpen(open === row ? null : row);
@@ -40,20 +46,19 @@ export const AccountCard = ({ session }: { session: Session }) => {
     close();
     void refresh();
   };
-  const payout = payoutAddressOf(session.user);
   return (
     <div className="flex flex-col gap-4">
       <SettingRows>
         <SettingRow
-          icon="Pf"
+          icon="person"
           name={PROFILE_WORDS.name}
           value={account ? <PlayerName account={account} /> : (identityUsername(session) ?? "—")}
           onOpen={() => toggle("name")}
         />
-        <SettingRow icon="Ed" name={PROFILE_WORDS.portrait} onOpen={() => toggle("portrait")} />
-        <SettingRow icon="Dc" name={PROFILE_WORDS.signInMethods} value={<SignInMethods session={session} />} />
+        <SettingRow icon="edit" name={PROFILE_WORDS.portrait} onOpen={() => toggle("portrait")} />
+        <SettingRow icon="discord" name={PROFILE_WORDS.signInMethods} value={<SignInMethods session={session} />} />
         <SettingRow
-          icon="Wt"
+          icon="backpack"
           name={WALLET_WORDS.payoutWallet}
           value={payout ? shortAddress(payout) : PROFILE_WORDS.linkWallet}
           onOpen={() => toggle("payout")}
@@ -74,18 +79,36 @@ export const AccountCard = ({ session }: { session: Session }) => {
           <PortraitSheet current={session.user.image ?? null} onDone={done} />
         </Opened>
       )}
-      <Button role="outline" word={PROFILE_WORDS.signOut} icon="Xo" onClick={() => setOpen("sign-out")} />
-      {open === "sign-out" && (
+    </div>
+  );
+};
+
+/** Sign out, Settings' last step: outline, asking first. */
+export const SignOut = () => {
+  const [asking, setAsking] = useState(false);
+  return (
+    <>
+      <Button role="outline" word={PROFILE_WORDS.signOut} icon="exit" onClick={() => setAsking(true)} />
+      {asking && (
         <Confirm
           question={PROFILE_WORDS.signOutAsk}
           cost={PROFILE_WORDS.signOutCost}
           verb={PROFILE_WORDS.signOut}
-          onKeep={close}
+          onKeep={() => setAsking(false)}
           onConfirm={() => void signOutIdentitySession().catch(reportSignOutFailure)}
         />
       )}
-    </div>
+    </>
   );
+};
+
+/** Back to the page that sent the player here once a wallet is linked; a wallet already linked on arrival stays put. */
+const useReturnOnceLinked = (returnTo: string | null, payout: string | null) => {
+  const navigate = useNavigate();
+  const [linkedOnArrival] = useState(payout !== null);
+  useEffect(() => {
+    if (returnTo && payout && !linkedOnArrival) navigate(returnTo, { replace: true });
+  }, [linkedOnArrival, navigate, payout, returnTo]);
 };
 
 /**
@@ -160,7 +183,7 @@ const NameSheet = ({ current, onDone }: { current: string; onDone: () => void })
         role="primary"
         type="submit"
         word={SIGN_IN_WORDS.claimName}
-        icon="Ok"
+        icon="check"
         disabled={!valid}
         loading={saving ? SIGN_IN_WORDS.saving : undefined}
       />

@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
+import {
+  getCurrentPlayRouteBootToken,
+  onPlayRouteBootStarted,
+  usePlayRouteReadinessStore,
+} from "@/game-entry/play-route-readiness-store";
+
 import { createControlledAsyncCall, flushMicrotasks } from "./worldmap-test-harness";
 import { startWorldmapEntryReadiness } from "./worldmap-entry-readiness";
 
@@ -225,5 +231,43 @@ describe("startWorldmapEntryReadiness", () => {
     expect(waitForAmbientConvergence).not.toHaveBeenCalled();
     expect(markCriticalPassReady).toHaveBeenCalledWith(20);
     expect(markWorldmapConverged).toHaveBeenCalledWith(20);
+  });
+
+  it("readies a boot that starts while the map is shown, and not from the earlier boot's late convergence", async () => {
+    const readiness = () => usePlayRouteReadinessStore.getState();
+    const earlierConvergence = createControlledAsyncCall<[], void>();
+    // The map as WorldmapScene announces it: for the boot current when its pass starts, while it stays shown.
+    let shown = true;
+    const announceMap = (waitForAmbientConvergence: () => Promise<void>) => {
+      const bootToken = getCurrentPlayRouteBootToken();
+      return startWorldmapEntryReadiness({
+        bootToken,
+        commitCriticalPass: async () => {},
+        isCurrent: () => shown && bootToken === getCurrentPlayRouteBootToken(),
+        markCriticalPassReady: readiness().markWorldmapReady,
+        markWorldmapConverged: readiness().markWorldmapConverged,
+        requiresAmbientConvergence: true,
+        reportAmbientConvergenceError: vi.fn(),
+        waitForAmbientConvergence,
+      });
+    };
+
+    // A spectator's boot sets the map up; its convergence is still on the way.
+    readiness().startBoot();
+    await announceMap(earlierConvergence.fn);
+    const stop = onPlayRouteBootStarted(() => void announceMap(async () => {}));
+
+    // The player presses Play: the boot remounts and starts again, and no scene setup follows.
+    const playBoot = readiness().startBoot();
+    await flushMicrotasks(4);
+    expect(readiness()).toMatchObject({ bootToken: playBoot, worldmapReady: true, worldmapConverged: true });
+
+    // Switched off, the map answers no later boot; the spectator boot's convergence lands on nothing.
+    shown = false;
+    stop();
+    const laterBoot = readiness().startBoot();
+    earlierConvergence.resolveNext();
+    await flushMicrotasks(4);
+    expect(readiness()).toMatchObject({ bootToken: laterBoot, worldmapReady: false, worldmapConverged: false });
   });
 });

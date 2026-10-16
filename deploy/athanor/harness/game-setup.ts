@@ -9,6 +9,8 @@ import {
 } from "../../../config/deployer/clean/registrar/native-preset";
 import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
 import { nativePresetForId } from "../../../config/source/native";
+import { GAME_ENVIRONMENTS } from "../../../config/shared/game-environments";
+import { seasonSeconds } from "../../../packages/core/src/utils/days";
 import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import type { NativeWorldManifest } from "../../../config/deployer/clean/world/native/types";
 import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
@@ -35,25 +37,21 @@ export async function launchHarnessGame(input: {
   try {
     await assertProviderChain(privateProvider, manifest, "HARNESS_ADMIN_RPC_URL");
     const account = createOperatorAccount(privateProvider, address, privateKey);
-    const environment = "madara.eternum";
+    const environment = environmentOfPreset(input.presetId);
     const config = loadNativePresetConfiguration(environment, input.presetId);
     const preset = buildNativePreset(config, input.presetId);
     const startAt = Math.floor(Date.now() / 1000) + 60;
-    const params = buildNativeGameParams(
-      config,
-      {
-        gameName: input.gameName,
-        presetId: input.presetId,
-        startMainAt: startAt,
-        chainTimestamp: startAt - 60,
-        durationSeconds: Math.ceil(input.minutes * 60) + 3600,
-        devModeOn: false,
-        singleRealmMode: config.settlement.single_realm_mode,
-        twoPlayerMode: nativePresetForId(input.presetId).settlementMode === "Duel",
-        useMapOverride: false,
-      },
-      [],
-    );
+    const params = buildNativeGameParams(config, {
+      gameName: input.gameName,
+      presetId: input.presetId,
+      startMainAt: startAt,
+      chainTimestamp: startAt - 60,
+      durationSeconds: harnessSeasonSeconds(preset.rules.day_unit_seconds, input.minutes),
+      devModeOn: false,
+      singleRealmMode: config.settlement.single_realm_mode,
+      twoPlayerMode: nativePresetForId(input.presetId).settlementMode === "Duel",
+      useMapOverride: false,
+    });
     const gameId = input.gameId ?? (await createRegistrarGame(account, params, manifest, preset)).gameId;
     if (!gameId) throw new Error("Registrar did not return a game id");
     for (const [index, owner] of input.owners.entries())
@@ -95,4 +93,20 @@ async function registerHarnessEntitlement(
 /** Administration must bypass the public endpoint's play-only fee and tip policy. */
 export function createHarnessAdminProvider(): HarnessProvider {
   return new HarnessProvider(required("HARNESS_ADMIN_RPC_URL"));
+}
+
+/** A harness game outlasts its run by an hour; a season with days lasts whole bags of them, or the contract refuses it. */
+export function harnessSeasonSeconds(dayUnitSeconds: number, minutes: number): number {
+  const seconds = Math.ceil(minutes * 60) + 3600;
+  if (dayUnitSeconds === 0) return seconds;
+  const bag = seasonSeconds(1, dayUnitSeconds);
+  return Math.ceil(seconds / bag) * bag;
+}
+
+/** The deployment environment whose preset definitions hold this preset (Frontier presets live in madara.frontier). */
+function environmentOfPreset(presetId: number) {
+  const gameType = nativePresetForId(presetId).environmentGameType;
+  const environment = GAME_ENVIRONMENTS.find((entry) => entry.gameType === gameType);
+  if (!environment) throw new Error(`No deployment environment for preset ${presetId}`);
+  return environment.id;
 }

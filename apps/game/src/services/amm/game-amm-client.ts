@@ -1,3 +1,5 @@
+import * as Effect from "effect/Effect";
+import * as Result from "effect/Result";
 import {
   AmmV2ApiClient,
   LiquidityTransactions as AmmV2LiquidityTransactions,
@@ -29,7 +31,7 @@ export interface Pool {
   feeTo: string;
 }
 
-export interface SwapEvent {
+interface SwapEvent {
   txHash: string;
   user: string;
   tokenIn: string;
@@ -51,7 +53,7 @@ interface LiquidityEvent {
   timestamp: number;
 }
 
-export interface PriceCandle {
+interface PriceCandle {
   timestamp: number;
   open: number;
   high: number;
@@ -178,7 +180,14 @@ class GameAmmApiClient {
   }
 
   private async loadLordsPair(tokenAddress: string): Promise<PairSummary | null> {
-    return this.apiClient.lookupPair(tokenAddress, this.lordsAddress);
+    const result = await Effect.runPromise(
+      this.apiClient.lookupPair(tokenAddress, this.lordsAddress).pipe(
+        Effect.catchTag("PairNotFound", () => Effect.succeed(null)),
+        Effect.result,
+      ),
+    );
+    if (Result.isFailure(result)) throw result.failure;
+    return result.success;
   }
 }
 

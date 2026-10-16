@@ -1,6 +1,6 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { resources, ResourcesIds, TroopType } from "@bibliothecadao/types";
+import { ResourcesIds, TroopType } from "@bibliothecadao/types";
 import React, { useState } from "react";
 
 interface SelectTroopProps {
@@ -41,17 +41,7 @@ export const SelectTroop: React.FC<SelectTroopProps> = ({ onSelect, className, d
         <SelectValue placeholder="Select troop">
           {selectedTroop && (
             <div className="flex items-center">
-              <ResourceIcon
-                resource={
-                  resources.find(
-                    (r) =>
-                      r.id ===
-                      TROOP_RESOURCES.find((t) => t.type === TroopType[selectedTroop as keyof typeof TroopType])
-                        ?.resourceId,
-                  )?.trait || ""
-                }
-                size="md"
-              />
+              <ResourceIcon resource={selectedTroop} size="md" />
               <span className="ml-2">{formatTroopName(selectedTroop)}</span>
             </div>
           )}
@@ -61,7 +51,7 @@ export const SelectTroop: React.FC<SelectTroopProps> = ({ onSelect, className, d
         {TROOP_RESOURCES.map(({ type, resourceId }) => (
           <SelectItem key={type} value={TroopType[type]}>
             <div className="flex items-center">
-              <ResourceIcon resource={resources.find((r) => r.id === resourceId)?.trait || ""} size="md" />
+              <ResourceIcon resource={resourceId} size="md" />
               <span className="ml-2">{formatTroopName(TroopType[type])}</span>
             </div>
           </SelectItem>

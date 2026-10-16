@@ -107,7 +107,6 @@ export class ResourceManager {
     return {
       ...production,
       last_settled_at: Math.max(production.last_settled_at, Number(game.start_main_at)),
-      production_rate: game.ready ? production.production_rate : 0n,
     };
   }
 

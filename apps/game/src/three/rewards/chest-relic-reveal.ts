@@ -1,3 +1,4 @@
+import { resourceMeaning, iconUrl } from "@/ui/design-system/icon-meaning";
 import { MathUtils } from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { getRelicInfo } from "@bibliothecadao/types";
@@ -19,7 +20,7 @@ export class ChestRelicReveal {
       icon.style.cssText =
         "width:48px;height:48px;border:1px solid #be81ec;border-radius:50%;background:#22112ee8;box-shadow:0 0 18px #a535dda0;padding:4px;opacity:0;";
       const image = document.createElement("img");
-      image.src = `/images/resources/${resourceId}.png`;
+      image.src = iconUrl(resourceMeaning(resourceId));
       image.alt = relic?.name ?? `Relic ${resourceId}`;
       image.style.cssText = "width:100%;height:100%;object-fit:contain;";
       icon.append(image);

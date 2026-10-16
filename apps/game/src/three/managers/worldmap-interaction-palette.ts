@@ -59,6 +59,12 @@ const GENERIC_HOVER_PALETTE: HoverVisualPalette = {
   visualMode: "fill",
 };
 
+/** A player's holdings wear the plain hover ring at rest, the ring players already read as "this hex". */
+export const OWNERSHIP_RING_LOOK = {
+  color: GENERIC_HOVER_PALETTE.rimColor,
+  intensity: GENERIC_HOVER_PALETTE.intensity,
+} as const;
+
 export function resolveHighlightLayerPalette(
   actionType: ActionType | string | null | undefined,
 ): HighlightLayerPalette {

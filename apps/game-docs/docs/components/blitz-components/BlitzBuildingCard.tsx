@@ -26,7 +26,7 @@ export const BlitzBuildingCard = ({
   resourceCosts?: Cost[];
   standardOnly?: boolean;
 }) => {
-  const population = ETERNUM_CONFIG().buildings.buildingPopulation[buildingType] || 0;
+  const population = ETERNUM_CONFIG("blitz").buildings.buildingPopulation[buildingType] || 0;
 
   // Determine if this building produces a resource (exclude Worker's Hut and Storehouse)
   const isResourceBuilding = buildingType !== 1 && buildingType !== 2; // 1 = Worker's Hut, 2 = Storehouse

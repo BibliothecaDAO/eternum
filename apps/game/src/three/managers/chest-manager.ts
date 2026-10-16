@@ -1,3 +1,4 @@
+import { iconUrl } from "@/ui/design-system/icon-meaning";
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
 import { activeMapLayer } from "@/three/map-layer";
 import { resolveChestTransition } from "../rewards/chest-transition-policy";
@@ -161,7 +162,7 @@ export class ChestManager {
     // Load chest icon texture
     const textureLoader = new THREE.TextureLoader();
     textureLoader.load(
-      "/images/labels/chest.png",
+      iconUrl("chest"),
       (texture) => {
         if (this.isDestroyed) {
           texture.dispose();

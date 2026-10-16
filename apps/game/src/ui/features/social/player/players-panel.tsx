@@ -1,4 +1,5 @@
-import { ChevronDown, ChevronUp, Search } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { useLeaderboardActivity } from "@/hooks/use-leaderboard-activity";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -6,7 +7,6 @@ import { type PlayerLeaderboardActivityEntry } from "@/services/leaderboard/play
 import Button from "@/ui/design-system/atoms/button";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import TextInput from "@/ui/design-system/atoms/text-input";
-import { VICTORY_POINT_VALUES, formatHyperstructureControlVpRange } from "@/config/victory-points";
 import { EndSeasonButton } from "../components/end-season-button";
 import { PlayerList, type PlayerCustom } from "./player-list";
 import { normalizeLeaderboardAddress } from "./finalized-blitz-leaderboard";
@@ -47,6 +47,7 @@ export const PlayersPanel = ({
   const [inputValue, setInputValue] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showPointsBreakdown, setShowPointsBreakdown] = useState(false);
+  const grants = configManager.getVictoryPointGrants();
   const {
     data: activityEntries,
     isFetching: isActivityBreakdownFetching,
@@ -183,7 +184,7 @@ export const PlayersPanel = ({
               className="flex-1 btn-bronze"
             />
             <Button onClick={handleSearch} variant="primary" className="flex items-center gap-1 px-4">
-              <Search size={14} />
+              <SemanticIcon name="search" size={14} />
               <span>Search</span>
             </Button>
           </div>
@@ -218,39 +219,33 @@ export const PlayersPanel = ({
             >
               <span className="text-gold font-semibold text-sm">Points Breakdown</span>
               {showPointsBreakdown ? (
-                <ChevronUp size={16} className="text-gold" />
+                <SemanticIcon name="chevron-up" size={16} className="text-gold" />
               ) : (
-                <ChevronDown size={16} className="text-gold" />
+                <SemanticIcon name="chevron-down" size={16} className="text-gold" />
               )}
             </button>
             {showPointsBreakdown && (
               <div className="border-t border-gold/15 px-3 pb-3 pt-2">
-                <div className="flex flex-col gap-1 text-xs">
+                <div className="flex flex-col gap-1 text-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-gold/50">Explore a tile</span>
-                    <span className="text-gold font-semibold">{VICTORY_POINT_VALUES.exploreTile} VP</span>
+                    <span className="text-kit-muted">Explore a tile</span>
+                    <span className="text-gold font-semibold">{grants.exploreTile} VP</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gold/50">Claim an Essence Rift or Camp from {BANDITS_NAME}</span>
-                    <span className="text-gold font-semibold">
-                      {VICTORY_POINT_VALUES.claimWorldStructureFromBandits} VP
-                    </span>
+                    <span className="text-kit-muted">Claim an Essence Rift or Camp from {BANDITS_NAME}</span>
+                    <span className="text-gold font-semibold">{grants.claimCampFromBandits} VP</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gold/50">Claim a Hyperstructure from {BANDITS_NAME}</span>
-                    <span className="text-gold font-semibold">
-                      {VICTORY_POINT_VALUES.claimHyperstructureFromBandits} VP
-                    </span>
+                    <span className="text-kit-muted">Claim a Hyperstructure from {BANDITS_NAME}</span>
+                    <span className="text-gold font-semibold">{grants.claimHyperstructureFromBandits} VP</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gold/50">Open a Relic Crest</span>
-                    <span className="text-gold font-semibold">{VICTORY_POINT_VALUES.openRelicChest} VP</span>
+                    <span className="text-kit-muted">Open a Relic Crate</span>
+                    <span className="text-gold font-semibold">{grants.openRelicCrate} VP</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gold/50">
-                      Control a Hyperstructure (1 point per realm settled in 8 tile radius)
-                    </span>
-                    <span className="text-gold font-semibold">{formatHyperstructureControlVpRange()}</span>
+                    <span className="text-kit-muted">Control a Hyperstructure, per realm settled within 8 tiles</span>
+                    <span className="text-gold font-semibold">{grants.hyperstructurePerRealmPerSecond} VP/s</span>
                   </div>
                 </div>
               </div>

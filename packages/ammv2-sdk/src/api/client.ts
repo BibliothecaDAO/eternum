@@ -1,3 +1,5 @@
+import * as Data from "effect/Data";
+import * as Effect from "effect/Effect";
 import type {
   CandleInterval,
   PaginationOpts,
@@ -34,6 +36,18 @@ export interface PaginatedResponse<T> {
   };
 }
 
+export class PairNotFound extends Data.TaggedError("PairNotFound")<{ path: string }> {}
+
+export class AmmApiFailure extends Data.TaggedError("AmmApiFailure")<{
+  kind: "transport" | "http" | "decode";
+  status?: number;
+  cause?: unknown;
+}> {
+  get message() {
+    return `AMMv2 ${this.kind} failure${this.status === undefined ? "" : ` (HTTP ${this.status})`}`;
+  }
+}
+
 export class AmmV2ApiClient {
   private baseUrl: string;
 
@@ -48,25 +62,30 @@ export class AmmV2ApiClient {
     return unwrapApiData(response).map((pair) => decodePairSummary(pair));
   }
 
-  async getPair(pairAddress: string): Promise<PairSummary | null> {
-    try {
-      const response = await this.fetch<RawPairSummary | { data: RawPairSummary }>(`/pairs/${pairAddress}`);
-      return decodePairSummary(unwrapApiData(response));
-    } catch {
-      return null;
-    }
+  getPair(pairAddress: string) {
+    return this.readPair(`/pairs/${pairAddress}`);
   }
 
-  async lookupPair(tokenA: string, tokenB: string): Promise<PairSummary | null> {
-    try {
-      const response = await this.fetch<RawPairSummary | { data: RawPairSummary }>("/pairs/lookup", {
-        tokenA,
-        tokenB,
-      });
-      return decodePairSummary(unwrapApiData(response));
-    } catch {
-      return null;
-    }
+  lookupPair(tokenA: string, tokenB: string) {
+    return this.readPair("/pairs/lookup", { tokenA, tokenB });
+  }
+
+  private readPair(path: string, params?: Record<string, string>) {
+    return Effect.tryPromise({
+      try: () => this.fetch<unknown>(path, params),
+      catch: (cause) => (cause instanceof AmmApiFailure ? cause : new AmmApiFailure({ kind: "transport", cause })),
+    }).pipe(
+      Effect.catchIf(
+        (failure) => failure.status === 404,
+        () => Effect.fail(new PairNotFound({ path })),
+      ),
+      Effect.flatMap((response) =>
+        Effect.try({
+          try: () => decodePairSummary(unwrapApiData(response)),
+          catch: (cause) => new AmmApiFailure({ kind: "decode", cause }),
+        }),
+      ),
+    );
   }
 
   async getSwapHistory(
@@ -146,10 +165,14 @@ export class AmmV2ApiClient {
     const response = await globalThis.fetch(url.toString());
 
     if (!response.ok) {
-      throw new Error(`AMMv2 API error: ${response.status} ${response.statusText}`);
+      throw new AmmApiFailure({ kind: "http", status: response.status });
     }
 
-    return response.json() as Promise<T>;
+    try {
+      return (await response.json()) as T;
+    } catch (cause) {
+      throw new AmmApiFailure({ kind: "decode", cause });
+    }
   }
 }
 

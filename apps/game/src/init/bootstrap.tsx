@@ -1,10 +1,11 @@
 import * as Sentry from "@sentry/react";
 import { DEV_MODE_ENABLED, verboseLog } from "@/utils/dev-mode";
 import { formatReadableErrorForConsole } from "@/utils/error-message";
+import { actNowRefusal } from "@/utils/can-issue-orders";
 import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import { createBrowserGameClient } from "@/services/game-client";
 import type { GameClient } from "@bibliothecadao/eternum";
-import { SupersededGameSyncStartError } from "@bibliothecadao/eternum/game-sync";
+import { GameFinalizedError, SupersededGameSyncStartError } from "@bibliothecadao/eternum/game-sync";
 import { type SystemCallAuthHandler } from "@bibliothecadao/types";
 
 import { resolveEntryContextCacheKey, type ResolvedEntryContext } from "@/game-entry/context";
@@ -113,7 +114,12 @@ const runBootstrap = async ({
     throw error;
   }
 };
-export const resetBootstrap = () => {
+
+/**
+ * Only entering another game resets the boot, from its doorway. The game's screens read the active client while they
+ * are mounted, so nothing in them may take it away; leaving a game keeps it booted for a return.
+ */
+const resetBootstrap = () => {
   verboseLog("[BOOTSTRAP] Resetting bootstrap state");
   attachedGameClient = null;
   cancelActiveBootstrapSubscriptions();
@@ -152,10 +158,13 @@ export const bootstrapGameForEntryContext = async (
     }
 
     bootstrapSession.clearFailure();
-    Sentry.captureException(error, {
-      tags: { feature: "bootstrap", error_type: "game_setup", setup_phase: "bootstrap" },
-      extra: { context: "Unhandled error during game bootstrap" },
-    });
+    // A finalized game is the end of a match, not a fault to report.
+    if (!(error instanceof GameFinalizedError)) {
+      Sentry.captureException(error, {
+        tags: { feature: "bootstrap", error_type: "game_setup", setup_phase: "bootstrap" },
+        extra: { context: "Unhandled error during game bootstrap" },
+      });
+    }
     throw error;
   }
 };
@@ -240,6 +249,8 @@ const createEntryGameClient = async (input: EntryGameClientInput): Promise<GameC
 const bootstrapAuthHandler: SystemCallAuthHandler = {
   // The identity chip derives "not signed in" from the identity session itself; nothing to open here.
   onNoAccount: () => verboseLog("[bootstrap] No gameplay account - the identity chip carries the sign-in surface"),
+  // Every action from every entrance is sent through here: before play opens none leaves the client.
+  refuseNow: () => actNowRefusal(),
   onError: (error: unknown) => {
     console.error(`System call error: ${formatReadableErrorForConsole(error)}`);
 

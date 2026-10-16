@@ -1,3 +1,7 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+import { readTransferResources } from "@/ui/features/infrastructure/automation/model/automation-readiness";
+import * as Result from "effect/Result";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
@@ -14,53 +18,23 @@ import { CATEGORY_FILTER_OPTIONS } from "@/ui/features/world/containers/structur
 import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
 import {
   calculateDonkeysNeeded,
-  configManager,
   getTotalResourceWeightKg,
   isMilitaryResource,
   ResourceManager,
 } from "@bibliothecadao/eternum";
-import type { VillageIconKey } from "@/config/game-modes";
-import { byStructureCategory } from "@/lib/structure-category-table";
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { CapacityConfig, RESOURCE_PRECISION, ResourcesIds, Structure, StructureType } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, ResourcesIds, Structure, StructureType } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
-import { Castle, Crown, Pickaxe, Hyperstructure, Star, Tent } from "@/ui/design-system/atoms/game-icons";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 import { accountAddress } from "@/hooks/store/use-account-store";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
-const VILLAGE_ICON_BY_KEY: Record<VillageIconKey, typeof Castle> = {
-  castle: Castle,
-  tent: Tent,
-};
-
 const canOpenTransferInventory = (structure: Structure) =>
   resolveStructureUiCapabilities(structure.structure).canOpenTransferInventory;
-
-/**
- * A structure's icon in the transfer lists, by category; a village takes the game mode's own. A new category fails
- * typecheck here until it has one.
- */
-const STRUCTURE_ICONS: Record<StructureType, typeof Castle | "village"> = {
-  [StructureType.Realm]: Crown,
-  [StructureType.Village]: "village",
-  [StructureType.Camp]: "village",
-  [StructureType.Mine]: Pickaxe,
-  [StructureType.Hyperstructure]: Hyperstructure,
-  [StructureType.Bank]: Castle,
-  [StructureType.BitcoinMine]: Castle,
-  [StructureType.Rift]: Castle,
-  [StructureType.Ruin]: Castle,
-  [StructureType.Stragglers]: Castle,
-};
-
-const getStructureIcon = (category: StructureType, villageIconKey: VillageIconKey) => {
-  const icon = byStructureCategory(STRUCTURE_ICONS, category, "transfer list icon", Castle);
-  return icon === "village" ? VILLAGE_ICON_BY_KEY[villageIconKey] : icon;
-};
 
 // Multi-select structure-category filter. Reuses the shared CATEGORY_FILTER_OPTIONS
 // icon/label mapping and the FilterChipsRow chip styling, but toggles a Set so a
@@ -93,13 +67,13 @@ const CategoryFilterChips = ({
             className={`inline-flex h-6 w-6 max-lg:h-11 max-lg:w-11 flex-shrink-0 items-center justify-center rounded-md border transition ${
               isActive
                 ? "border-gold/60 bg-gold/15 text-gold shadow-[0_0_6px_rgba(223,170,84,0.22)]"
-                : "border-gold/15 bg-black/20 text-gold/65 hover:border-gold/40 hover:text-gold"
+                : "border-gold/15 bg-black/20 text-kit-muted hover:border-gold/40 hover:text-gold"
             }`}
             aria-pressed={isActive}
             aria-label={option.label}
             title={option.label}
           >
-            <Icon className="h-3.5 w-3.5" />
+            <SemanticIcon name={Icon} className="h-3.5 w-3.5" />
           </button>
         );
       })}
@@ -113,8 +87,8 @@ interface TransferAutomationPanelProps {
 
 export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationPanelProps) => {
   const playerStructures = useFactView(playerStructuresView);
-  const currentDefaultTick = useCurrentDefaultTick();
   const mode = useGameModeConfig();
+  const currentDefaultTick = useCurrentDefaultTick();
   const { favorites } = useFavoriteStructures();
   const favoriteDestinationIds = useMemo(() => new Set(favorites), [favorites]);
 
@@ -434,42 +408,13 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
     });
   }, [selectedResources]);
 
-  // Compute current source balances (human units) for flat slider maxes
-  const sourceBalances = useMemo(() => {
-    const map = new Map<number, number>();
-    if (!store || !selectedSourceId) return map;
-    try {
-      const rm = new ResourceManager(store, selectedSourceId);
-      for (const rid of selectedResources) {
-        // An unknown balance is left out, so the resource offers nothing to send.
-        const bal = rm.balanceWithProduction(currentDefaultTick, rid)?.balance;
-        if (bal !== undefined) map.set(rid, Math.max(0, Math.floor(bal / RESOURCE_PRECISION)));
-      }
-    } catch {
-      // ignore balance fetch errors
-    }
-    return map;
+  const resourceReadiness = useMemo(() => {
+    if (!store || !selectedSourceId) return null;
+    return readTransferResources(new ResourceManager(store, selectedSourceId), currentDefaultTick, selectedResources);
   }, [store, revision, selectedSourceId, selectedResources, currentDefaultTick]);
-
-  // Donkey availability separate to avoid re-computation on slider changes
-  const donkeyAvailable = useMemo(() => {
-    if (!store || !selectedSourceId) return 0;
-    try {
-      const rm = new ResourceManager(store, selectedSourceId);
-      const raw = rm.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey)?.balance;
-      return raw === undefined ? 0 : Math.max(0, Math.floor(raw / RESOURCE_PRECISION));
-    } catch {
-      return 0;
-    }
-  }, [store, revision, selectedSourceId, currentDefaultTick]);
-
-  const donkeyCapacityKgPerUnit = useMemo(() => {
-    try {
-      return configManager.getCapacityConfigKg(CapacityConfig.Donkey);
-    } catch {
-      return 0;
-    }
-  }, []);
+  const transferResources = resourceReadiness && Result.isSuccess(resourceReadiness) ? resourceReadiness.success : null;
+  const resourceError =
+    resourceReadiness && Result.isFailure(resourceReadiness) ? resourceReadiness.failure.message : null;
 
   const visibleResourceIds = useMemo(() => {
     return Array.from(availableResources)
@@ -491,7 +436,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
 
   // Computed preview for absolute amounts and donkey capacity (fast path)
   const transferPreview = useMemo(() => {
-    if (!selectedSourceId || selectedResources.length === 0)
+    if (!transferResources || !selectedSourceId || selectedResources.length === 0)
       return null as null | {
         perResource: { id: ResourcesIds; humanAmount: number }[];
         totalKg: number;
@@ -499,7 +444,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       };
     const perResource = selectedResources
       .map((rid) => {
-        const available = sourceBalances.get(rid) ?? 0;
+        const available = transferResources.balances.get(rid)!;
         const cfg = resourceConfigs[rid] ?? { amount: 0 };
         const amt = Math.max(0, Math.min(available, Math.floor(cfg.amount)));
         return { id: rid, humanAmount: amt };
@@ -507,8 +452,8 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       .filter((x) => x.humanAmount > 0);
     const totalKg = getTotalResourceWeightKg(perResource.map((p) => ({ resourceId: p.id, amount: p.humanAmount })));
     const need = calculateDonkeysNeeded(totalKg);
-    return { perResource, totalKg, donkeys: { have: donkeyAvailable, need } };
-  }, [selectedSourceId, selectedResources, resourceConfigs, sourceBalances, donkeyAvailable]);
+    return { perResource, totalKg, donkeys: { have: transferResources.donkeys, need } };
+  }, [selectedSourceId, selectedResources, resourceConfigs, transferResources]);
 
   const perTransferDonkeyNeed = transferPreview?.donkeys.need ?? 0;
   const aggregatedDonkeyNeed =
@@ -522,21 +467,19 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
   );
 
   useEffect(() => {
-    if (selectedResources.length === 0) return;
+    if (!transferResources || selectedResources.length === 0) return;
     setResourceConfigs((prev) => {
       let mutated = false;
       const next = { ...prev };
       for (const rid of selectedResources) {
         const existing = prev[rid];
         if (!existing) continue;
-        let available = sourceBalances.get(rid) ?? 0;
+        let available = transferResources.balances.get(rid)!;
         if (rid === ResourcesIds.Donkey) {
           available = Math.max(0, available - aggregatedDonkeyNeed);
         }
-        // A resource whose weight rule is unknown cannot be loaded onto donkeys.
-        const weightPerUnit = configManager.getResourceWeightKg(rid as ResourcesIds);
-        if (weightPerUnit === undefined) available = 0;
-        const totalCarryKg = donkeyCapacityKgPerUnit * donkeyAvailable;
+        const weightPerUnit = transferResources.weights.get(rid)!;
+        const totalCarryKg = transferResources.capacity * transferResources.donkeys;
         const donkeyLimited = weightPerUnit ? Math.floor(totalCarryKg / weightPerUnit) : available;
         const perDestinationResourceCap = Math.floor(available / destinationCountForLimits);
         const perDestinationDonkeyCap = Math.floor(donkeyLimited / destinationCountForLimits);
@@ -550,14 +493,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       }
       return mutated ? next : prev;
     });
-  }, [
-    selectedResources,
-    sourceBalances,
-    donkeyAvailable,
-    donkeyCapacityKgPerUnit,
-    destinationCountForLimits,
-    aggregatedDonkeyNeed,
-  ]);
+  }, [selectedResources, transferResources, destinationCountForLimits, aggregatedDonkeyNeed]);
 
   const addScheduled = useTransferAutomationStore((s) => s.add);
 
@@ -674,7 +610,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
         setStatusMessage(resolvedDestinationIds.length > 1 ? "Transfers started" : "Transfer started");
       } catch (e) {
         console.error(e);
-        toast.error("Transfer failed.");
+        toast.failed(e, "Transfer failed.");
         setStatusMessage("Transfer failed");
       } finally {
         setIsSubmitting(false);
@@ -710,7 +646,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       }
     } catch (e) {
       console.error(e);
-      toast.error("Immediate run failed. Scheduled for later.");
+      toast.failed(e, "Immediate run failed.", { description: "Scheduled for later." });
       setStatusMessage("Scheduled; immediate run failed");
     }
 
@@ -785,7 +721,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
               const name = mode.structure.getName(ps.structure).name;
               const entityId = safeInteger(ps.entityId);
               const isSel = selectedSourceId === entityId;
-              const Icon = getStructureIcon(ps.category, mode.ui.villageIconKey);
+              const Icon = structureMeaning(ps.category);
               return (
                 <button
                   key={ps.entityId}
@@ -794,7 +730,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                   onClick={() => setSelectedSourceId(isSel ? null : entityId)}
                 >
                   <div className="flex min-w-0 items-center gap-2">
-                    <Icon className="h-4 w-4 shrink-0 text-gold" aria-hidden />
+                    <SemanticIcon name={Icon} className="h-4 w-4 shrink-0 text-gold" aria-hidden />
                     <div className="truncate text-sm font-semibold">{name}</div>
                   </div>
                 </button>
@@ -806,7 +742,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       <section className="space-y-2">
         <h3 className="text-sm font-semibold text-gold">2. Resources</h3>
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1 rounded-full border border-gold/40 bg-brown/40 px-1 py-0.5 text-xxs font-semibold uppercase tracking-widest">
+          <div className="flex items-center gap-1 rounded-full border border-gold/40 bg-brown/40 px-1 py-0.5 text-sm font-semibold ">
             <button
               type="button"
               onClick={() => setResourceFilter("all")}
@@ -829,7 +765,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
               Military
             </button>
           </div>
-          <Button variant="outline" size="xs" forceUppercase={false} onClick={resetPanel}>
+          <Button variant="outline" size="xs" onClick={resetPanel}>
             Reset
           </Button>
         </div>
@@ -852,7 +788,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
               >
                 <ResourceIcon resource={ResourcesIds[resourceId]} size="xs" />
                 <span className="truncate">{ResourcesIds[resourceId]}</span>
-                <span className="ml-auto shrink-0 text-[10px] text-gold/60">({totalHuman.toLocaleString()})</span>
+                <span className="ml-auto shrink-0 text-sm text-kit-muted">({totalHuman.toLocaleString()})</span>
               </button>
             );
           })}
@@ -863,7 +799,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
         <section className="space-y-2">
           <h3 className="text-sm font-semibold text-gold">3. Destination</h3>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap items-center gap-3 text-xxs text-gold/60">
+            <div className="flex flex-wrap items-center gap-3 text-sm text-kit-muted">
               <CategoryFilterChips
                 categories={destinationCategories}
                 selected={destCategoryFilter}
@@ -874,7 +810,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                 Owned only
               </label>
             </div>
-            <div className="text-xs text-gold/70">
+            <div className="text-sm text-gold/70">
               {allowMultiDestination && actualDestinationCount > 0 ? `${actualDestinationCount} selected` : ""}
             </div>
           </div>
@@ -883,7 +819,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
               const name = mode.structure.getName(ps.structure).name;
               const entityId = safeInteger(ps.entityId);
               const isSel = destinationIds.includes(entityId);
-              const Icon = getStructureIcon(ps.category, mode.ui.villageIconKey);
+              const Icon = structureMeaning(ps.category);
               const isFavorite = favoriteDestinationIds.has(entityId);
               return (
                 <button
@@ -893,8 +829,8 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                   onClick={() => toggleDestinationSelection(entityId)}
                 >
                   <div className="flex min-w-0 items-center gap-2">
-                    {isFavorite && <Star className="h-4 w-4 shrink-0  text-gold" aria-hidden />}
-                    <Icon className="h-4 w-4 shrink-0 text-gold" aria-hidden />
+                    {isFavorite && <SemanticIcon name="star" className="h-4 w-4 shrink-0  text-gold" aria-hidden />}
+                    <SemanticIcon name={Icon} className="h-4 w-4 shrink-0 text-gold" aria-hidden />
                     <div className="truncate text-sm font-semibold">{name}</div>
                   </div>
                 </button>
@@ -904,19 +840,17 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
         </section>
       )}
 
-      {selectedResources.length > 0 && selectedSourceId && (
+      {transferResources && selectedResources.length > 0 && selectedSourceId && (
         <section className="space-y-2">
           <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-2">
             {selectedResources.map((rid) => {
               const cfg = resourceConfigs[rid] ?? { amount: 0 };
-              let available = sourceBalances.get(rid) ?? 0;
+              let available = transferResources.balances.get(rid)!;
               if (rid === ResourcesIds.Donkey) {
                 available = Math.max(0, available - aggregatedDonkeyNeed);
               }
-              // A resource whose weight rule is unknown cannot be loaded onto donkeys.
-              const weightPerUnit = configManager.getResourceWeightKg(rid as ResourcesIds);
-              if (weightPerUnit === undefined) available = 0;
-              const totalCarryKg = donkeyCapacityKgPerUnit * donkeyAvailable;
+              const weightPerUnit = transferResources.weights.get(rid)!;
+              const totalCarryKg = transferResources.capacity * transferResources.donkeys;
               const donkeyLimited = weightPerUnit ? Math.floor(totalCarryKg / weightPerUnit) : available;
               const perDestinationResourceCap = Math.floor(available / destinationCountForLimits);
               const perDestinationDonkeyCap = Math.floor(donkeyLimited / destinationCountForLimits);
@@ -925,16 +859,16 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
               return (
                 <div key={`cfg-${rid}`} className="rounded border border-gold/20 bg-black/20 p-2">
                   <div className="flex items-center justify-between gap-2 mb-1">
-                    <div className="flex min-w-0 items-center gap-2 text-xs text-gold/80">
+                    <div className="flex min-w-0 items-center gap-2 text-sm text-gold/80">
                       <ResourceIcon resource={ResourcesIds[rid]} size="xs" />
                       <div className="truncate font-semibold" title={ResourcesIds[rid] as string}>
                         {ResourcesIds[rid]}
                       </div>
                     </div>
-                    <div className="shrink-0 text-xxs text-gold/60">Avail: {available.toLocaleString()}</div>
+                    <div className="shrink-0 text-sm text-kit-muted">Avail: {available.toLocaleString()}</div>
                   </div>
                   <div>
-                    <div className="flex items-center justify-between mb-1 text-xxs text-gold/60">
+                    <div className="flex items-center justify-between mb-1 text-sm text-kit-muted">
                       <span>
                         Selected: {selectedAmount.toLocaleString()} / {maxAmount.toLocaleString()}
                       </span>
@@ -984,7 +918,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                           [rid]: { amount: Math.max(0, Math.min(maxAmount, nextValue)) },
                         }));
                       }}
-                      className="mt-2 w-full rounded border border-gold/30 bg-black/40 px-2 py-1 text-xs max-lg:min-h-11 max-lg:text-base text-gold/80 placeholder:text-gold/40 focus:border-gold/60 focus:outline-none disabled:opacity-50"
+                      className="mt-2 w-full rounded border border-gold/30 bg-black/40 px-2 py-1 text-sm max-lg:min-h-11 max-lg:text-base text-gold/80 placeholder:text-kit-muted focus:border-gold/60 focus:outline-none disabled:opacity-50"
                       disabled={maxAmount === 0}
                     />
                   </div>
@@ -993,7 +927,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
             })}
           </div>
           {transferPreview && (
-            <div className="space-y-1 text-xxs text-gold/60">
+            <div className="space-y-1 text-sm text-kit-muted">
               <span className={donkeyShortage ? "text-danger/80" : "text-gold/70"}>
                 Donkeys {aggregatedDonkeyNeed.toLocaleString()} used / {transferPreview.donkeys.have.toLocaleString()}{" "}
                 available
@@ -1002,7 +936,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
           )}
 
           {transferPreview && donkeyShortage && (
-            <div className="flex items-start gap-2 rounded-md border border-danger/40 bg-danger/10 p-2 text-xs text-danger/80">
+            <div className="flex items-start gap-2 rounded-md border border-danger/40 bg-danger/10 p-2 text-sm text-danger/80">
               <span>
                 Insufficient donkeys to cover all selected destinations. Reduce the load or add more donkeys at the
                 source.
@@ -1014,7 +948,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
 
       {selectedResources.length > 0 && selectedSourceId && (
         <section className="space-y-2">
-          <div className="flex flex-wrap items-center gap-3 text-xs text-gold/70">
+          <div className="flex flex-wrap items-center gap-3 text-sm text-gold/70">
             <label className="flex items-center gap-2">
               <input type="radio" name="freq" checked={!repeat} onChange={() => setRepeat(false)} /> One-off
             </label>
@@ -1049,9 +983,9 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                       const nextValue = Number.isFinite(rawValue) ? rawValue : 1;
                       setIntervalMinutes(Math.max(1, Math.min(30, nextValue)));
                     }}
-                    className="w-16 rounded border border-gold/30 bg-black/40 px-2 py-1 text-xxs text-gold/80 placeholder:text-gold/40 focus:border-gold/60 focus:outline-none"
+                    className="w-16 rounded border border-gold/30 bg-black/40 px-2 py-1 text-sm text-gold/80 placeholder:text-kit-muted focus:border-gold/60 focus:outline-none"
                   />
-                  <span className="text-xxs text-gold/60">min</span>
+                  <span className="text-sm text-kit-muted">min</span>
                 </>
               )}
             </div>
@@ -1074,14 +1008,15 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                   selectedResources.length === 0 ||
                   !selectedSourceId ||
                   actualDestinationCount === 0 ||
-                  donkeyShortage
+                  donkeyShortage ||
+                  !transferResources
                 }
               >
                 {repeat ? "Schedule" : "Transfer"}
               </Button>
-              {statusMessage && (
+              {(resourceError || statusMessage) && (
                 <span role="status" className="text-sm text-gold/70">
-                  {statusMessage}
+                  {resourceError || statusMessage}
                 </span>
               )}
             </>

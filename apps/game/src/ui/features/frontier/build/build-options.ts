@@ -1,3 +1,4 @@
+import { type IconMeaning } from "@/ui/design-system/icon";
 import {
   buildingCostRise,
   getBuildingCosts,
@@ -16,7 +17,6 @@ import {
 } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, getProducedResource, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 
-import type { IconCode } from "@/ui/design-system/kit/kit-icon";
 import { LABOR, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
 
 /**
@@ -51,10 +51,10 @@ type Product = ResourcesIds.Wheat | ResourcesIds.Labor | ResourcesIds.Knight;
  * Each product as the sheets show it: its icon, its glossary word and the realm store that holds it. Keyed by the
  * products themselves, so one without its word or icon does not compile, and no sheet looks one up at its own risk.
  */
-export const PRODUCTS: Record<Product, { icon: IconCode; word: string; store: "wheat" | "labor" | "troops" }> = {
-  [ResourcesIds.Wheat]: { icon: "Wh", word: WHEAT, store: "wheat" },
-  [ResourcesIds.Labor]: { icon: "La", word: LABOR, store: "labor" },
-  [ResourcesIds.Knight]: { icon: "Tr", word: TROOPS, store: "troops" },
+export const PRODUCTS: Record<Product, { icon: IconMeaning; word: string; store: "wheat" | "labor" | "troops" }> = {
+  [ResourcesIds.Wheat]: { icon: "wheat", word: WHEAT, store: "wheat" },
+  [ResourcesIds.Labor]: { icon: "labor", word: LABOR, store: "labor" },
+  [ResourcesIds.Knight]: { icon: "troops", word: TROOPS, store: "troops" },
 };
 
 const isProduct = (resource: ResourcesIds | undefined): resource is Product =>

@@ -1,8 +1,9 @@
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatExact } from "@/ui/design-system/kit/amount";
 import { Button, type Price } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
-import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { FixButton, type Refusal } from "@/ui/design-system/kit/refused-verb";
 import { Sheet } from "@/ui/design-system/kit/sheet";
@@ -15,7 +16,7 @@ import { BUILD, BUILDING, freeOf, POPULATION, PRICE_UP } from "@/ui/design-syste
  */
 export type BuildTile = {
   key: string;
-  icon: IconCode;
+  icon: IconMeaning;
   name: string;
   /** What the building does, in one line, on the card's tooltip. */
   tip: string;
@@ -31,7 +32,7 @@ export type BuildTile = {
 };
 
 /** What the chosen building gives, as chips: what it makes or houses, and the population it takes. */
-export type BuildGain = { icon: IconCode; value: string; label: string };
+export type BuildGain = { icon: IconMeaning; value: string; label: string };
 
 /**
  * The build sheet (wireframe 02): the realm's free population in its head, the grid of buildings, the chosen one's
@@ -65,9 +66,9 @@ export const BuildView = ({
 }) => (
   <Sheet label={BUILD} onClose={onClose}>
     <header className="flex items-center justify-between gap-2">
-      <h2 className="frontier-title !text-[20px]">{BUILD}</h2>
+      <h2 className="frontier-title !text-xl">{BUILD}</h2>
       <Chip
-        icons={["Pp"]}
+        icons={["person"]}
         label={POPULATION}
         value={`${formatExact(population.free)} / ${formatExact(population.total)}`}
         tip={freeOf(POPULATION, formatExact(population.free), formatExact(population.total))}
@@ -109,31 +110,31 @@ const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boole
         dim && "opacity-50",
       )}
     >
-      <KitIcon code={tile.icon} size={26} />
-      <span className="text-[11px] font-semibold text-kit-cream">{tile.name}</span>
+      <SemanticIcon name={tile.icon} size={26} />
+      <span className="text-sm font-semibold text-kit-cream">{tile.name}</span>
       <Foot foot={tile.foot} />
     </button>
   );
 };
 
 const Foot = ({ foot }: { foot: BuildTile["foot"] }) => {
-  if (foot.kind === "built") return <KitIcon code="Ok" size={18} />;
+  if (foot.kind === "built") return <SemanticIcon name="check" size={18} />;
   if (foot.kind === "locked")
     return (
       <span className="flex items-center gap-[3px]">
-        <KitIcon code="Lk" size={16} />
-        <KitIcon code="Bs" size={16} />
+        <SemanticIcon name="lock" size={16} />
+        <SemanticIcon name="barracks" size={16} />
         <TierChip tier={foot.gate} showWord={false} />
       </span>
     );
   return (
     <span className="flex items-center gap-[3px]">
-      <KitIcon code="La" size={14} />
-      <span className={cn("text-[14px] tabular-nums", foot.short ? "text-light-red" : "text-kit-cream")}>
+      <SemanticIcon name="labor" size={14} />
+      <span className={cn("text-sm tabular-nums", foot.short ? "text-light-red" : "text-kit-cream")}>
         {formatExact(foot.labor)}
       </span>
       {foot.raised && (
-        <span role="img" aria-label={PRICE_UP} data-tip={foot.raised} className="text-[13px] leading-none text-kit-hot">
+        <span role="img" aria-label={PRICE_UP} data-tip={foot.raised} className="text-sm leading-none text-kit-hot">
           ↑
         </span>
       )}

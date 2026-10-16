@@ -1,11 +1,11 @@
-import { ACESFilmicToneMapping, CineonToneMapping, NeutralToneMapping, ReinhardToneMapping } from "three";
+import { PCFShadowMap } from "three";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   resetRendererDiagnostics,
   snapshotRendererDiagnostics,
   syncRendererBackendDiagnostics,
 } from "./renderer-diagnostics";
-import { RendererInitTimeoutError } from "./renderer-backend-v2";
+import { RendererInitTimeoutError } from "./renderer-backend";
 import { resetRendererStartupTimings, snapshotRendererStartupTimings } from "./perf/renderer-startup-telemetry";
 import { createWebGPURendererBackend } from "./webgpu-renderer-backend";
 import { createRenderableOverlayScene } from "./renderer-overlay-passes.test-fixture";
@@ -18,7 +18,6 @@ vi.mock("three/webgpu", () => ({
   ACESFilmicToneMapping: 4,
   HalfFloatType: 1016,
   PCFShadowMap: 1,
-  PCFSoftShadowMap: 2,
   UnsignedByteType: 1009,
   WebGPURenderer: class {
     constructor(parameters: { forceWebGL: boolean }) {
@@ -271,10 +270,10 @@ describe("createWebGPURendererBackend", () => {
     vi.useRealTimers();
   });
 
-  it("tries the real WebGPU renderer on a fresh automatic boot", async () => {
+  it.each([false, true])("boots WebGPU with supported PCF shadows (mobile: %s)", async (isMobileDevice) => {
     const backend = createWebGPURendererBackend(
       {
-        isMobileDevice: false,
+        isMobileDevice,
         pixelRatio: 1,
         requestedMode: "webgpu-auto",
       },
@@ -287,6 +286,7 @@ describe("createWebGPURendererBackend", () => {
 
     expect(threeWebGpuMock.rendererParameters).toEqual([{ forceWebGL: false }]);
     expect(diagnostics).toEqual(expect.objectContaining({ activeMode: "webgpu", fallbackReason: null }));
+    expect(backend.renderer?.shadowMap).toEqual({ enabled: true, type: PCFShadowMap });
   });
 
   it("falls back when WebGPU renderer creation never resolves", async () => {
@@ -536,103 +536,6 @@ describe("createWebGPURendererBackend", () => {
     );
   });
 
-  it("applies renderer-supported tone mapping controls directly when the native runtime is disabled", async () => {
-    const renderer = createRendererSurface();
-    const backend = createWebGPURendererBackend(
-      {
-        isMobileDevice: false,
-        pixelRatio: 1,
-        requestedMode: "webgpu-auto",
-      },
-      {
-        createRenderer: vi.fn(async () => ({
-          activeMode: "webgpu" as const,
-          renderer: Object.assign(renderer, {
-            init: vi.fn(async () => {}),
-          }),
-        })),
-        now: vi.fn(() => 0),
-      },
-    );
-
-    await backend.initialize();
-
-    backend.applyPostProcessPlan?.({
-      antiAlias: "none",
-      bloom: { enabled: true, intensity: 0.4 },
-      chromaticAberration: { enabled: true },
-      colorGrade: {
-        brightness: 0.1,
-        contrast: 0.2,
-        hue: 0.3,
-        saturation: 0.4,
-      },
-      toneMapping: {
-        exposure: 1.25,
-        mode: "cineon",
-        whitePoint: 1,
-      },
-      vignette: {
-        darkness: 0.5,
-        enabled: true,
-        offset: 0.25,
-      },
-    });
-
-    expect(renderer.toneMapping).toBe(CineonToneMapping);
-    expect(renderer.toneMappingExposure).toBe(1.25);
-
-    backend.applyPostProcessPlan?.({
-      antiAlias: "none",
-      bloom: { enabled: false, intensity: 0 },
-      chromaticAberration: { enabled: false },
-      colorGrade: {
-        brightness: 0,
-        contrast: 0,
-        hue: 0,
-        saturation: 0,
-      },
-      toneMapping: {
-        exposure: 0.9,
-        mode: "neutral",
-        whitePoint: 1,
-      },
-      vignette: {
-        darkness: 0,
-        enabled: false,
-        offset: 0,
-      },
-    });
-
-    expect(renderer.toneMapping).toBe(NeutralToneMapping);
-    expect(renderer.toneMappingExposure).toBe(0.9);
-
-    backend.applyPostProcessPlan?.({
-      antiAlias: "none",
-      bloom: { enabled: false, intensity: 0 },
-      chromaticAberration: { enabled: false },
-      colorGrade: {
-        brightness: 0,
-        contrast: 0,
-        hue: 0,
-        saturation: 0,
-      },
-      toneMapping: {
-        exposure: 0.7,
-        mode: "reinhard",
-        whitePoint: 1,
-      },
-      vignette: {
-        darkness: 0,
-        enabled: false,
-        offset: 0,
-      },
-    });
-
-    expect(renderer.toneMapping).toBe(ReinhardToneMapping);
-    expect(renderer.toneMappingExposure).toBe(0.7);
-  });
-
   it("owns quality, resize, frame rendering, and disposal once initialized", async () => {
     const renderer = createRendererSurface();
     const clearPolicies: boolean[] = [];
@@ -656,15 +559,15 @@ describe("createWebGPURendererBackend", () => {
 
     await backend.initialize();
 
-    backend.applyRenderVisuals?.({
+    backend.applyRenderVisuals({
       pixelRatio: 1.5,
       shadows: true,
       width: 640,
       height: 360,
     });
-    backend.resize?.(800, 450);
+    backend.resize(800, 450);
     const overlayScene = createRenderableOverlayScene("overlay-scene");
-    backend.renderFrame?.({
+    backend.renderFrame({
       mainCamera: { id: "main-camera" } as never,
       mainScene: { id: "main-scene" } as never,
       overlayPasses: [
@@ -674,7 +577,7 @@ describe("createWebGPURendererBackend", () => {
         },
       ],
     });
-    backend.dispose?.();
+    backend.dispose();
 
     expect(renderer.setPixelRatio).toHaveBeenCalledWith(1.5);
     expect(renderer.shadowMap.enabled).toBe(true);
@@ -720,7 +623,7 @@ describe("createWebGPURendererBackend", () => {
     await backend.initialize();
 
     expect(() =>
-      backend.renderFrame?.({
+      backend.renderFrame({
         mainCamera: { id: "main-camera" } as never,
         mainScene: { id: "main-scene" } as never,
       }),
@@ -754,54 +657,9 @@ describe("createWebGPURendererBackend", () => {
       );
       await backend.initialize();
 
-      expect(() => backend.renderFrame?.({ mainCamera: {} as never, mainScene: {} as never })).toThrow(failure);
+      expect(() => backend.renderFrame({ mainCamera: {} as never, mainScene: {} as never })).toThrow(failure);
       expect(renderer.autoClear).toBe(false);
       expect(renderer.clear).not.toHaveBeenCalled();
     },
   );
-
-  it("resolves neutral tone mapping to NeutralToneMapping, distinct from aces-filmic", async () => {
-    const renderer = createRendererSurface();
-    const backend = createWebGPURendererBackend(
-      {
-        isMobileDevice: false,
-        pixelRatio: 1,
-        requestedMode: "webgpu-auto",
-      },
-      {
-        createRenderer: vi.fn(async () => ({
-          activeMode: "webgpu" as const,
-          renderer: Object.assign(renderer, {
-            init: vi.fn(async () => {}),
-          }),
-        })),
-        now: vi.fn(() => 0),
-      },
-    );
-
-    await backend.initialize();
-
-    backend.applyPostProcessPlan?.({
-      antiAlias: "none",
-      bloom: { enabled: false, intensity: 0 },
-      chromaticAberration: { enabled: false },
-      colorGrade: { brightness: 0, contrast: 0, hue: 0, saturation: 0 },
-      toneMapping: { exposure: 1, mode: "neutral", whitePoint: 1 },
-      vignette: { darkness: 0, enabled: false, offset: 0 },
-    });
-
-    expect(renderer.toneMapping).toBe(NeutralToneMapping);
-    expect(renderer.toneMapping).not.toBe(ACESFilmicToneMapping);
-
-    backend.applyPostProcessPlan?.({
-      antiAlias: "none",
-      bloom: { enabled: false, intensity: 0 },
-      chromaticAberration: { enabled: false },
-      colorGrade: { brightness: 0, contrast: 0, hue: 0, saturation: 0 },
-      toneMapping: { exposure: 1, mode: "aces-filmic", whitePoint: 1 },
-      vignette: { darkness: 0, enabled: false, offset: 0 },
-    });
-
-    expect(renderer.toneMapping).toBe(ACESFilmicToneMapping);
-  });
 });

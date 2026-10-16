@@ -78,12 +78,12 @@ const RelicActivationHolderCard = ({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-gold">{holder.entityName}</p>
-          <p className="text-xs text-gold/60">ID: {holder.entityId}</p>
+          <p className="text-sm text-kit-muted">ID: {holder.entityId}</p>
         </div>
-        <div className="text-xs font-semibold text-gold/70">Amount: {currencyFormat(holder.amount, 0)}</div>
+        <div className="text-sm font-semibold text-gold/70">Amount: {currencyFormat(holder.amount, 0)}</div>
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-semibold">
+      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm font-semibold">
         <span
           className={`rounded px-2 py-1 ${
             compatible ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"
@@ -101,7 +101,7 @@ const RelicActivationHolderCard = ({
       </div>
 
       {isArmyHolder && parentRealmLabel && (
-        <div className="mt-2 w-full text-xxs text-gold/60">Parent Realm · {parentRealmLabel}</div>
+        <div className="mt-2 w-full text-sm text-kit-muted">Parent Realm · {parentRealmLabel}</div>
       )}
 
       {isArmyHolder && holder.troops && (
@@ -123,7 +123,7 @@ const RelicActivationHolderCard = ({
         <RelicIncompatibilityNotice relicInfo={relicInfo} recipientType={holder.recipientType} className="mt-2" />
       )}
 
-      {activationError && <p className="mt-2 text-xs font-semibold text-red-300">{activationError}</p>}
+      {activationError && <p className="mt-2 text-sm font-semibold text-red-300">{activationError}</p>}
 
       <div className="mt-3 flex justify-end">
         <Button

@@ -1,3 +1,5 @@
+import { createRealmDensityFixture } from "./realm-density-fixture";
+import { updateGameEndFreeze } from "../effects/game-end-freeze";
 import {
   AmbientLight,
   Color,
@@ -57,6 +59,7 @@ export interface ProceduralTerrainBenchmarkRendererHandle {
 }
 
 interface MountProceduralTerrainBenchmarkRendererInput {
+  realms?: boolean;
   autoRun: boolean;
   canvas: HTMLCanvasElement;
   captureMode: boolean;
@@ -93,6 +96,8 @@ interface CameraMotion {
 }
 
 interface TerrainBenchmarkRuntime {
+  realms?: Awaited<ReturnType<typeof createRealmDensityFixture>>;
+  previousFrameTime?: number;
   activeCellKeys: Set<string>;
   benchmarkPromise: Promise<TerrainBenchmarkSnapshot> | null;
   camera: PerspectiveCamera;
@@ -148,6 +153,7 @@ const ASSET_REQUEST_TIMELINE_CAPACITY = 4096;
 export async function mountProceduralTerrainBenchmarkRenderer(
   input: MountProceduralTerrainBenchmarkRendererInput,
 ): Promise<ProceduralTerrainBenchmarkRendererHandle> {
+  updateGameEndFreeze(0, false, 0);
   const debugWindow = window as TerrainBenchmarkWindow;
   const runtime = await createBenchmarkRuntime(input);
   const resizeObserver = observeCanvas(input.canvas, runtime);
@@ -208,6 +214,7 @@ async function createBenchmarkRuntime(
   scene.add(terrain.object3d);
   positionCamera(runtime, INITIAL_FOCUS, CAMERA_DISTANCE.medium);
   await presentBenchmarkWindow(runtime, INITIAL_FOCUS, { settleFrames: false });
+  if (input.realms) runtime.realms = await createRealmDensityFixture(scene, terrain, controls.target);
   renderer.render(scene, camera);
   runtime.recorder.recordRenderedFrame(performance.now());
   return runtime;
@@ -412,6 +419,10 @@ function setBenchmarkPhase(runtime: TerrainBenchmarkRuntime, phase: TerrainBench
 function startAnimation(runtime: TerrainBenchmarkRuntime): void {
   runtime.renderer.setAnimationLoop((time) => {
     if (runtime.disposed) return;
+    runtime.realms?.update(
+      runtime.previousFrameTime === undefined ? 0 : Math.min((time - runtime.previousFrameTime) / 1000, 0.1),
+    );
+    runtime.previousFrameTime = time;
     updateCameraMotion(runtime, time);
     runtime.recorder.recordFrame(time);
     runtime.controls.update();
@@ -553,7 +564,7 @@ function readBenchmarkSnapshot(runtime: TerrainBenchmarkRuntime): TerrainBenchma
     fixture: {
       cellCount: TERRAIN_BENCHMARK_CELL_COLUMNS * TERRAIN_BENCHMARK_CELL_ROWS,
       explorationMode: runtime.explorationMode,
-      fingerprint: runtime.fixture.fingerprint,
+      fingerprint: runtime.fixture.fingerprint + (runtime.realms ? ":realms48" : ""),
       pageCount: TERRAIN_BENCHMARK_PAGE_COLUMNS * TERRAIN_BENCHMARK_PAGE_ROWS,
       visiblePageCount: TERRAIN_BENCHMARK_WINDOW_COLUMNS * TERRAIN_BENCHMARK_WINDOW_ROWS,
     },
@@ -630,6 +641,7 @@ function disposeBenchmarkRuntime(
   resizeObserver.disconnect();
   runtime.controls.dispose();
   runtime.workQueue.dispose();
+  runtime.realms?.dispose();
   runtime.terrain.dispose();
   runtime.scene.clear();
   runtime.renderer.dispose();

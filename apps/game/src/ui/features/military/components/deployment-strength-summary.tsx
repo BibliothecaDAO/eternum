@@ -1,7 +1,8 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { configManager } from "@bibliothecadao/eternum";
 import { TroopTier } from "@bibliothecadao/types";
-import { ChevronDown } from "@/ui/design-system/atoms/game-icons";
+
 import { useId, useState } from "react";
 
 interface DeploymentStrengthSummaryProps {
@@ -23,8 +24,8 @@ const isDeploymentLevel = (level: number | null | undefined): level is number =>
 
 const Metric = ({ label, value }: { label: string; value: string }) => (
   <div className="rounded border border-gold/15 bg-black/20 px-2 py-1">
-    <div className="text-[10px] uppercase tracking-[0.12em] text-gold/60">{label}</div>
-    <div className="mt-1 text-xs font-semibold text-gold">{value}</div>
+    <div className="text-sm text-kit-muted">{label}</div>
+    <div className="mt-1 text-sm font-semibold text-gold">{value}</div>
   </div>
 );
 
@@ -71,7 +72,7 @@ export const DeploymentStrengthSummary = ({
   if (!collapsible) {
     return (
       <div className={cn("rounded border border-gold/20 bg-black/35 px-2 py-2", className)}>
-        <div className="text-[10px] uppercase tracking-[0.16em] text-gold/60">Deployment & Strength</div>
+        <div className="text-sm text-kit-muted">Deployment & Strength</div>
         <div className="mt-2">{metrics}</div>
       </div>
     );
@@ -87,12 +88,13 @@ export const DeploymentStrengthSummary = ({
         aria-controls={metricsId}
       >
         <span className="flex items-center gap-2">
-          <span className="text-[10px] uppercase tracking-[0.16em] text-gold/60">Deployment & Strength</span>
-          <span className="text-[10px] uppercase tracking-[0.12em] text-gold/45">
-            {isExpanded ? "Hide details" : "Show details"}
-          </span>
+          <span className="text-sm text-kit-muted">Deployment & Strength</span>
+          <span className="text-sm text-kit-muted">{isExpanded ? "Hide details" : "Show details"}</span>
         </span>
-        <ChevronDown className={cn("h-4 w-4 text-gold/70 transition-transform", isExpanded && "rotate-180")} />
+        <SemanticIcon
+          name="chevron-down"
+          className={cn("h-4 w-4 text-gold/70 transition-transform", isExpanded && "rotate-180")}
+        />
       </button>
       {isExpanded ? (
         <div id={metricsId} className="border-t border-gold/15 px-2 py-2">

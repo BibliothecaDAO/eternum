@@ -75,7 +75,7 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
         return sent;
       });
     } catch (error) {
-      toast.error(extractReadableErrorMessage(error, "The army could not deploy."));
+      toast.failed(error, "The army could not deploy.");
     }
   };
 

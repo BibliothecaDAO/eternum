@@ -54,11 +54,7 @@ pub mod GamesFixture {
         TContractState, +Drop<TContractState>,
     > of crate::realms::ISeasonPlacement<TContractState> {
         fn claim_season_settlement(
-            ref self: TContractState,
-            game_id: u32,
-            settled_count: u16,
-            seed: u256,
-            game_context: crate::commands::ActionContext,
+            ref self: TContractState, game_id: u32, settled_count: u16, seed: u256, center: crate::troops::Coord,
         ) -> crate::troops::Coord {
             let classes = fixture_classes(game_id);
             crate::realms::ISeasonPlacementDispatcherTrait::claim_season_settlement(
@@ -66,7 +62,7 @@ pub mod GamesFixture {
                 game_id,
                 settled_count,
                 seed,
-                game_context,
+                center,
             )
         }
     }
@@ -75,31 +71,27 @@ pub mod GamesFixture {
         TContractState, +Drop<TContractState>,
     > of crate::settlement::ISettlementPool<TContractState> {
         fn settlement_pool(
-            self: @TContractState, game_id: u32, game_context: crate::commands::ActionContext,
+            self: @TContractState, game_id: u32, center: crate::troops::Coord,
         ) -> crate::settlement::SettlementPool {
             let classes = fixture_classes(game_id);
             crate::settlement::ISettlementPoolDispatcherTrait::settlement_pool(
                 crate::settlement::ISettlementPoolLibraryDispatcher { class_hash: classes.placement.read() },
                 game_id,
-                game_context,
+                center,
             )
         }
         fn village_pool(
-            self: @TContractState, game_id: u32, game_context: crate::commands::ActionContext,
+            self: @TContractState, game_id: u32, center: crate::troops::Coord,
         ) -> crate::settlement::SettlementPool {
             let classes = fixture_classes(game_id);
             crate::settlement::ISettlementPoolDispatcherTrait::village_pool(
                 crate::settlement::ISettlementPoolLibraryDispatcher { class_hash: classes.placement.read() },
                 game_id,
-                game_context,
+                center,
             )
         }
         fn claim_village(
-            ref self: TContractState,
-            game_id: u32,
-            registered: u16,
-            seed: u256,
-            game_context: crate::commands::ActionContext,
+            ref self: TContractState, game_id: u32, registered: u16, seed: u256, center: crate::troops::Coord,
         ) -> crate::troops::Coord {
             let classes = fixture_classes(game_id);
             crate::settlement::ISettlementPoolDispatcherTrait::claim_village(
@@ -107,7 +99,7 @@ pub mod GamesFixture {
                 game_id,
                 registered,
                 seed,
-                game_context,
+                center,
             )
         }
         fn reserved_hyperstructures(self: @TContractState, game_id: u32) -> u32 {
@@ -224,6 +216,24 @@ pub mod GamesFixture {
                 context,
             )
         }
+        fn raise_dormant_spire(
+            ref self: TContractState,
+            game_id: u32,
+            actor: starknet::ContractAddress,
+            explorer_id: u64,
+            coord: crate::troops::Coord,
+            context: crate::commands::ActionContext,
+        ) {
+            let classes = fixture_classes(game_id);
+            crate::exploration_rewards::IExtractionDispatcherTrait::raise_dormant_spire(
+                crate::exploration_rewards::IExtractionLibraryDispatcher { class_hash: classes.map.read() },
+                game_id,
+                actor,
+                explorer_id,
+                coord,
+                context,
+            )
+        }
     }
     #[starknet::embeddable]
     pub impl RelicMapFixture<TContractState, +Drop<TContractState>> of crate::relics::IRelicMap<TContractState> {
@@ -255,7 +265,7 @@ pub mod GamesFixture {
                 game_context,
             )
         }
-        fn consume_relic_chest(ref self: TContractState, game_id: u32, coord: crate::troops::Coord) {
+        fn consume_relic_chest(ref self: TContractState, game_id: u32, coord: crate::troops::Coord) -> u64 {
             let classes = fixture_classes(game_id);
             crate::relics::IRelicMapDispatcherTrait::consume_relic_chest(
                 crate::relics::IRelicMapLibraryDispatcher { class_hash: classes.map.read() }, game_id, coord,
@@ -753,14 +763,6 @@ pub mod GamesFixture {
             let classes = fixture_classes(game_id);
             crate::settlement::ISettlementViewsDispatcherTrait::blitz_settlement_order(
                 crate::settlement::ISettlementViewsLibraryDispatcher { class_hash: classes.settlement.read() }, game_id,
-            )
-        }
-        fn player_has_settled(self: @TContractState, game_id: u32, player: starknet::ContractAddress) -> bool {
-            let classes = fixture_classes(game_id);
-            crate::settlement::ISettlementViewsDispatcherTrait::player_has_settled(
-                crate::settlement::ISettlementViewsLibraryDispatcher { class_hash: classes.settlement.read() },
-                game_id,
-                player,
             )
         }
         fn settlement_rules(self: @TContractState, game_id: u32) -> crate::settlement::SettlementRules {
@@ -1668,12 +1670,6 @@ pub mod GamesFixture {
                 crate::game::IGameLibraryDispatcher { class_hash: classes.registry.read() }, game_id, game,
             )
         }
-        fn start_blitz(ref self: TContractState, game_id: u32, timestamp: u64) {
-            let classes = fixture_classes(game_id);
-            crate::game::IGameDispatcherTrait::start_blitz(
-                crate::game::IGameLibraryDispatcher { class_hash: classes.registry.read() }, game_id, timestamp,
-            )
-        }
     }
 
     #[starknet::embeddable]
@@ -1888,6 +1884,20 @@ pub mod GamesFixture {
                 key,
                 seed,
                 completed,
+            )
+        }
+        fn transfer_hyperstructure_shares(
+            ref self: TContractState,
+            key: crate::resources::ResourceKey,
+            owner: starknet::ContractAddress,
+            context: crate::commands::ActionContext,
+        ) {
+            let classes = fixture_classes(key.game_id);
+            crate::hyperstructures::IHyperstructuresDispatcherTrait::transfer_hyperstructure_shares(
+                crate::hyperstructures::IHyperstructuresLibraryDispatcher { class_hash: classes.economy.read() },
+                key,
+                owner,
+                context,
             )
         }
         fn initialize_hyperstructure(

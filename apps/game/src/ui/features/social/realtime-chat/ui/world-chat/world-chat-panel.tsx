@@ -1,4 +1,5 @@
-import { MapPin } from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
 
 import { Position } from "@bibliothecadao/eternum";
@@ -78,11 +79,11 @@ const CoordinateNavButton = ({
 }) => {
   return (
     <button
-      className="inline-flex items-center gap-1 px-1.5 py-0.5 text-gold hover:text-gold/50 transition-colors duration-200 rounded bg-gold/15 hover:bg-gold/25"
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 text-gold hover:text-kit-muted transition-colors duration-200 rounded bg-gold/15 hover:bg-gold/25"
       onClick={() => onNavigate?.(coordinates)}
     >
-      <span className="text-xs">{`${coordinates.x}, ${coordinates.y}`}</span>
-      <MapPin className="w-3 h-3" />
+      <span className="text-sm">{`${coordinates.x}, ${coordinates.y}`}</span>
+      <SemanticIcon name="location" className="w-3 h-3" />
     </button>
   );
 };
@@ -271,7 +272,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
     <section className={`flex h-full min-h-0 flex-1 flex-col ${className ?? ""}`}>
       <div className="flex-1 min-h-0 px-4 py-3">
         {!hasChannelAccess && (
-          <p className="text-sm text-gold/50">{reconnecting ? "Reconnecting…" : "Chat unavailable."}</p>
+          <p className="text-sm text-kit-muted">{reconnecting ? "Reconnecting…" : "Chat unavailable."}</p>
         )}
         {hasChannelAccess && zone && (
           <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -280,7 +281,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
               <div ref={topSentinelRef} className="h-1" />
 
               {zone.historyError && (
-                <div role="status" className="mb-2 text-xs text-gold/70">
+                <div role="status" className="mb-2 text-sm text-gold/70">
                   {zone.historyError}{" "}
                   <button
                     type="button"
@@ -293,7 +294,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
               )}
               {zone.isFetchingHistory && (
                 <div className="flex justify-center py-2">
-                  <span className="text-xs text-gold/50">Loading older messages...</span>
+                  <span className="text-sm text-kit-muted">Loading older messages...</span>
                 </div>
               )}
 
@@ -307,12 +308,12 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
                       {dateSeparators.has(index) && (
                         <li key={`sep-${index}`} className="flex items-center gap-2 py-2 px-4">
                           <div className="flex-1 border-t border-gold/20" />
-                          <span className="text-xs text-gold/40">{dateSeparators.get(index)}</span>
+                          <span className="text-sm text-kit-muted">{dateSeparators.get(index)}</span>
                           <div className="flex-1 border-t border-gold/20" />
                         </li>
                       )}
                       {/* Every message carries its author: avatar, time and name, then the text. */}
-                      <li className="flex items-start gap-2 text-[13px] leading-snug text-white/90">
+                      <li className="flex items-start gap-2 text-sm leading-snug text-white/90">
                         <UserAvatar
                           name={senderName}
                           address={message.sender.playerId}
@@ -347,7 +348,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
                   );
                 })}
                 {messages.length === 0 && !zone.isFetchingHistory && !zone.historyError && (
-                  <li className="text-sm text-gold/50">No messages yet. Be the first to say hello!</li>
+                  <li className="text-sm text-kit-muted">No messages yet. Be the first to say hello!</li>
                 )}
               </ul>
             </div>

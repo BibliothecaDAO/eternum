@@ -1,0 +1,156 @@
+--- a/src/nodes/core/NodeBuilder.js
++++ b/src/nodes/core/NodeBuilder.js
+@@ -3235,68 +3235,17 @@
+ 	}
+ 
+ 	/**
+-	 * Async version of build() that yields to main thread between shader stages.
++	 * Async version of build() that yields before preparing a complete shader.
+ 	 * Use this in compileAsync() to prevent blocking the main thread.
+ 	 *
+ 	 * @return {Promise<NodeBuilder>} A promise that resolves to this node builder.
+ 	 */
+ 	async buildAsync() {
+ 
+-		this.prebuild();
+-
+-		// setup() -> stage 1: create possible new nodes and/or return an output reference node
+-		// analyze()   -> stage 2: analyze nodes to possible optimization and validation
+-		// generate()  -> stage 3: generate shader
+-
+-		for ( const buildStage of defaultBuildStages ) {
+-
+-			this.setBuildStage( buildStage );
+-
+-			if ( this.context.position && this.context.position.isNode ) {
+-
+-				this.flowNodeFromShaderStage( 'vertex', this.context.position );
+-
+-			}
+-
+-			for ( const shaderStage of shaderStages ) {
+-
+-				this.setShaderStage( shaderStage );
+-
+-				const flowNodes = this.flowNodes[ shaderStage ];
+-
+-				for ( const node of flowNodes ) {
+-
+-					if ( buildStage === 'generate' ) {
+-
+-						this.flowNode( node );
+-
+-					} else {
+-
+-						node.build( this );
+-
+-					}
+-
+-				}
+-
+-				// Yield to main thread after each shader stage to prevent blocking
+-				await yieldToMain();
+-
+-			}
+-
+-		}
+-
+-		this.setBuildStage( null );
+-		this.setShaderStage( null );
+-
+-		// stage 4: build code for a specific output
+-
+-		this.buildCode();
+-		this.buildUpdateNodes();
+-
+-		return this;
+-
+-	}
+-
++		await yieldToMain();
++		return this.build();
++
++	}
+ 	/**
+ 	 * Returns shared data object for the given node.
+ 	 *
+--- a/src/renderers/common/Renderer.js
++++ b/src/renderers/common/Renderer.js
+@@ -1052,8 +1052,7 @@
+ 		this._handleObjectFunction = previousHandleObjectFunction;
+ 		this._compilationPromises = previousCompilationPromises;
+ 
+-		// Process compilation work items sequentially to avoid freezing
+-		// Yields between objects to keep animation smooth
++		const pendingCompilations = [];
+ 
+ 		const total = compilationPromises.length;
+ 		let loaded = 0;
+@@ -1074,31 +1073,31 @@
+ 			this._bindings.updateForRender( renderObject );
+ 			this._isPreCompiling = false;
+ 
+-			// Wait for pipeline creation
+ 			const pipelinePromises = [];
+ 			this._pipelines.getForRender( renderObject, pipelinePromises );
+-			if ( pipelinePromises.length > 0 ) {
+-
+-				await Promise.all( pipelinePromises );
+-
+-			}
+-
+-			this._isPreCompiling = true;
+-			this._nodes.updateAfter( renderObject );
+-			this._isPreCompiling = false;
+-
+-			loaded ++;
+-
+-			if ( onProgress !== null ) {
+-
+-				onProgress( new ProgressEvent( 'progress', { lengthComputable: true, loaded, total } ) );
+-
+-			}
++			const completion = Promise.all( pipelinePromises ).then( () => {
++
++				this._isPreCompiling = true;
++				this._nodes.updateAfter( renderObject );
++				this._isPreCompiling = false;
++				loaded ++;
++
++				if ( onProgress !== null ) {
++
++					onProgress( new ProgressEvent( 'progress', { lengthComputable: true, loaded, total } ) );
++
++				}
++
++			} );
++			completion.catch( () => {} );
++			pendingCompilations.push( completion );
+ 
+ 			// Yield between objects to allow animation frames
+ 			await yieldToMain();
+ 
+ 		}
++
++		await Promise.all( pendingCompilations );
+ 
+ 	}
+ 
+@@ -3265,7 +3264,7 @@
+ 
+ 				const frustum = camera.isArrayCamera ? _frustumArray : _frustum;
+ 
+-				if ( ! object.frustumCulled || object.intersectsFrustum( frustum ) ) {
++				if ( this._handleObjectFunction === this._createObjectPipeline || ! object.frustumCulled || object.intersectsFrustum( frustum ) ) {
+ 
+ 					if ( this.sortObjects === true ) {
+ 
+@@ -3291,7 +3290,7 @@
+ 
+ 				const frustum = camera.isArrayCamera ? _frustumArray : _frustum;
+ 
+-				if ( ! object.frustumCulled || object.intersectsFrustum( frustum ) ) {
++				if ( this._handleObjectFunction === this._createObjectPipeline || ! object.frustumCulled || object.intersectsFrustum( frustum ) ) {
+ 
+ 					const { geometry, material } = object;
+ 

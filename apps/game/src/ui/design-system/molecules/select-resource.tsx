@@ -1,5 +1,5 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { X as Cross } from "@/ui/design-system/atoms/game-icons";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import TextInput from "@/ui/design-system/atoms/text-input";
@@ -100,7 +100,8 @@ export const SelectResource: React.FC<SelectResourceProps> = ({
 
   return (
     <div className="flex items-center">
-      <Cross
+      <SemanticIcon
+        name="close"
         className={clsx(
           "my-auto w-8 mx-auto hover:opacity-50  hover:scale-125 hover:animate-pulse duration-300 transition-all",
           { "pointer-events-none opacity-50": !selectedResource },

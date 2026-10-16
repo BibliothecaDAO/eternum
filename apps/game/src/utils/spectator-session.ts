@@ -4,9 +4,12 @@
  * Two related but distinct concepts exist:
  *
  *  - `isExplicitSpectateSession()`: the player ENTERED this play session as a
- *    spectator (`?spectate=true`). Latched by `resolveSpectateIntent` wherever a
- *    play route is resolved, while the entry URL is intact — in-app navigation
- *    can strip the query param, so the live URL is only a fallback. Wins over
+ *    spectator (`?spectate=true`). Latched by `resolveSpectateIntent` from the
+ *    game route the app is on: `useGameRouteSpectateIntent`, at the root of every
+ *    game route (the doorway and the scenes), resolves it on each of their renders
+ *    before any reader below it, so leaving a spectated map for the doorway's play
+ *    entry ends the intent at once — in-app navigation can strip the query param,
+ *    so the live URL is only a fallback. Wins over
  *    every ownership-based auto-flip: spectating a game where the logged-in
  *    account owns structures is a supported, deliberate state, and the HUD must
  *    show no ownership chrome for it.
@@ -25,6 +28,7 @@
  */
 
 import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 
 /** The one parse of the `spectate` query. Route rewrites use it to carry the flag through a legacy URL. */
 export const hasSpectateQuery = (search: string): boolean => new URLSearchParams(search).get("spectate") === "true";
@@ -36,6 +40,12 @@ export const resolveSpectateIntent = (location: Pick<Location, "search">): boole
   sessionSpectateIntent = hasSpectateQuery(location.search);
   return sessionSpectateIntent;
 };
+
+/**
+ * The intent of the game route the app is on, resolved and latched on every render of the game routes' root. A route
+ * states it whole: the doorway's play entry (`/g/:chain/:game`) is play, `?spectate=true` is spectate.
+ */
+export const useGameRouteSpectateIntent = (): boolean => resolveSpectateIntent(useLocation());
 
 /** A deliberate user action (exit-spectator flow) may override the intent. */
 export const overrideSpectateIntent = (spectating: boolean): void => {

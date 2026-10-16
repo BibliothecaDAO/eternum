@@ -1,6 +1,6 @@
 import { SortInterface } from "@/ui/design-system/atoms/sort-button";
-import { divideByPrecision, getBlockTimestamp, toHexString } from "@bibliothecadao/eternum";
-import { ContractAddress, ResourceCost, ResourcesIds } from "@bibliothecadao/types";
+import { divideByPrecision, getBlockTimestamp } from "@bibliothecadao/eternum";
+import { ResourceCost, ResourcesIds } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 
 export { getEntityIdFromKeys };
@@ -46,17 +46,6 @@ export function displayAddress(string: string) {
   if (string === undefined) return "unknown";
   return string.substring(0, 6) + "..." + string.substring(string.length - 4);
 }
-
-export const copyPlayerAddressToClipboard = (address: ContractAddress, name: string, hex: boolean = false) => {
-  navigator.clipboard
-    .writeText(hex ? toHexString(address) : address.toString())
-    .then(() => {
-      alert(`Address of ${name} copied to clipboard`);
-    })
-    .catch((err) => {
-      console.error("Failed to copy: ", err);
-    });
-};
 
 export function sortItems<T>(items: T[], activeSort: SortInterface, defaultSortKey: SortInterface): T[] {
   const compareValues = (a: T, b: T, sortKey: string, sortDirection: "asc" | "desc" | "none"): number => {

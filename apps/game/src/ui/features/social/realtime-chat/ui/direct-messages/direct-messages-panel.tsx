@@ -186,7 +186,7 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
   return (
     <section className={`flex h-full min-h-0 flex-1 flex-col ${className ?? ""}`}>
       {thread && recipientId && (
-        <header className="flex items-center justify-between gap-2 border-b border-gold/20 px-4 py-2 text-xs">
+        <header className="flex items-center justify-between gap-2 border-b border-gold/20 px-4 py-2 text-sm">
           <span className="text-gold/70">{recipientLabel}</span>
           <button
             type="button"
@@ -203,7 +203,7 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
         </header>
       )}
       <div className="flex-1 min-h-0 px-4 py-3">
-        {!thread && <p className="text-sm text-gold/50">Select a conversation to get started.</p>}
+        {!thread && <p className="text-sm text-kit-muted">Select a conversation to get started.</p>}
         {thread && (
           <div className="flex h-full min-h-0 flex-col overflow-hidden">
             <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto pr-1 scroll-smooth">
@@ -212,7 +212,7 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
 
               {thread.isFetchingHistory && (
                 <div className="flex justify-center py-2">
-                  <span className="text-xs text-gold/50">Loading older messages...</span>
+                  <span className="text-sm text-kit-muted">Loading older messages...</span>
                 </div>
               )}
 
@@ -227,11 +227,11 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
                       {dateSeparators.has(index) && (
                         <li key={`sep-${index}`} className="flex items-center gap-2 py-2 px-4">
                           <div className="flex-1 border-t border-gold/20" />
-                          <span className="text-xs text-gold/40">{dateSeparators.get(index)}</span>
+                          <span className="text-sm text-kit-muted">{dateSeparators.get(index)}</span>
                           <div className="flex-1 border-t border-gold/20" />
                         </li>
                       )}
-                      <li className="flex items-start gap-2 text-[13px] leading-snug text-white/90">
+                      <li className="flex items-start gap-2 text-sm leading-snug text-white/90">
                         <UserAvatar
                           name={displayLabel}
                           address={message.senderId}
@@ -247,12 +247,12 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
                   );
                 })}
                 {thread.messages.length === 0 && (
-                  <li className="text-sm text-gold/50">No messages yet. Say hi to start the conversation!</li>
+                  <li className="text-sm text-kit-muted">No messages yet. Say hi to start the conversation!</li>
                 )}
               </ul>
             </div>
             {typing.length > 0 && (
-              <div className="px-4 py-1 text-xs text-gold/50 italic">
+              <div className="px-4 py-1 text-sm text-kit-muted">
                 {typing.length === 1 ? "Someone is" : `${typing.length} people are`} typing
                 <span className="animate-pulse">...</span>
               </div>

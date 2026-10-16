@@ -6,8 +6,6 @@ import {
   STARTING_RESOURCES,
 } from "./resources";
 
-const REALM_DEPLOYED_START_TROOP_COUNT = 1_500;
-
 function buildT1TroopRecipe(copperAmount: number) {
   return [
     { resource: ResourcesIds.Wheat, amount: 2 },
@@ -123,17 +121,20 @@ function isRealmStartingTroopResource(resource: ResourcesIds): boolean {
   return resource === ResourcesIds.Knight || resource === ResourcesIds.Crossbowman || resource === ResourcesIds.Paladin;
 }
 
+/**
+ * A fixed-roster realm starts with this many T1 troops garrisoned and as many in reserve, of the one type it was dealt.
+ * The garrison is the troop limit's starting guard; the reserve is granted in the dealt type only.
+ */
+export const ARENA_STARTING_TROOPS = 1_000;
+
 export function buildArenaStartingResources(
   startingResourceAmounts: Partial<Record<ResourcesIds, number>>,
-  targetRealmTroopCount: number,
 ): ResourceCost[] {
-  const startingTroopAmount = targetRealmTroopCount - REALM_DEPLOYED_START_TROOP_COUNT;
-
   return STARTING_RESOURCES.map((resource) => {
     if (isRealmStartingTroopResource(resource.resource)) {
       return {
         ...resource,
-        amount: startingTroopAmount,
+        amount: ARENA_STARTING_TROOPS,
       };
     }
 

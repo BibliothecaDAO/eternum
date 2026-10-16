@@ -4,14 +4,16 @@ export type ArmyMovementLatencyPhase =
   | "move_requested"
   | "explore_intent_queued"
   | "explore_submit_started"
-  | "explore_provider_lock_acquired"
   | "explore_tx_hash_received"
   | "explore_next_safe_unblocked"
   | "tx_submitted"
   | "tx_response_received"
   | "tx_confirmed"
   | "movement_started"
-  | "movement_completed";
+  | "movement_completed"
+  | "next_order_queued"
+  | "next_order_run"
+  | "next_order_dropped";
 
 export type ArmyMovementLatencySource = "worldmap";
 

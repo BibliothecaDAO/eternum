@@ -25,6 +25,8 @@ interface LaunchRunRow {
 }
 
 export interface LaunchServiceStore extends LaunchRunStore {
+  /** The shard chain this store's runs launch on, as the directory selects it. */
+  targetChain(): Promise<string>;
   /** Queues a run; a running or complete run of the same name is handed back as it is. */
   enqueue(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun>;
   /** Creates a run once; whatever run already has that name is handed back untouched. */
@@ -42,6 +44,10 @@ export interface LaunchServiceStore extends LaunchRunStore {
   /** When the next queued run falls due, if any. */
   nextDue(): Promise<number | null>;
   complete(runId: string, summary: LaunchSummary): Promise<void>;
+  /** A paid slot's game runs on this chain, one per group, in group order. */
+  slotGames(slotId: number): Promise<LaunchRun[]>;
+  /** Completes the other game runs a slot launch settled alongside the run it executed, whatever their queue state. */
+  completeGames(games: readonly { runId: string; summary: LaunchGameSummary }[]): Promise<void>;
   retry(runId: string, errorMessage: string, retryDelayMs: number): Promise<void>;
   /** Requeues a run that ran too early; the attempt is given back. */
   defer(runId: string, delayMs: number): Promise<void>;
@@ -256,6 +262,33 @@ export class D1LaunchStore implements LaunchServiceStore {
         .bind(JSON.stringify(storedSummary(runId, summary)), now, now, runId),
       ...this.resultRunFor(chain, summary, now),
     ]);
+  }
+
+  async slotGames(slotId: number): Promise<LaunchRun[]> {
+    const { results } = await this.db
+      .prepare(
+        "SELECT * FROM launch_runs WHERE chain_id = ? AND kind = 'game' AND slot_id = ? ORDER BY json_extract(request,'$.groupIndex')",
+      )
+      .bind(await this.chainId(), slotId)
+      .all<LaunchRunRow>();
+    return results.map(toRun);
+  }
+
+  async completeGames(games: readonly { runId: string; summary: LaunchGameSummary }[]): Promise<void> {
+    if (!games.length) return;
+    const now = Date.now();
+    const chain = await this.chainId();
+    await this.db.batch(
+      games.flatMap(({ runId, summary }) => [
+        this.db
+          .prepare(
+            `UPDATE launch_runs SET status = 'complete', summary = ?, error_message = NULL, completed_at = ?, updated_at = ?
+             WHERE id = ? AND status IN ('queued', 'running')`,
+          )
+          .bind(JSON.stringify(storedSummary(runId, summary)), now, now, runId),
+        ...this.resultRunFor(chain, summary, now),
+      ]),
+    );
   }
 
   /** A launched Blitz game has its result recorded at its actual end, in the same write as the launch completes. */

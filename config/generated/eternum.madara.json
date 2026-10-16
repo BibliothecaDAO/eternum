@@ -142,8 +142,7 @@
     "shardsMineInitialWheatBalance": 1000,
     "shardsMineInitialFishBalance": 1000,
     "relicDiscoveryIntervalSeconds": 0,
-    "relicHexDistanceFromCenter": 0,
-    "relicChestRelicsPerChest": 0
+    "relicHexDistanceFromCenter": 0
   },
   "resources": {
     "resourcePrecision": 1000000000,

@@ -1,153 +1,186 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  createRealmProvisionRunner,
-  PROVISION_FAILURES_BEFORE_GIVING_UP,
-  PROVISION_RETRY_CAP_HEADS,
+  startRealmProvisionRunner,
   type RealmProvisionCandidate,
   type RealmProvisionPhase,
 } from "./realm-provision-runner";
+import { AutomationPending } from "@/ui/features/infrastructure/automation/model/automation-runner";
 
 const realm = (entityId: number, provisioned = false): RealmProvisionCandidate => ({
   entityId,
   name: `Realm ${entityId}`,
   provisioned,
 });
-
+const disposers: (() => void)[] = [];
+afterEach(() => {
+  disposers.splice(0).forEach((dispose) => dispose());
+});
+const flush = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 const harness = (
   overrides: {
     realms?: RealmProvisionCandidate[];
     phase?: Partial<RealmProvisionPhase>;
     now?: number;
     signer?: boolean;
-    submit?: (ids: number[]) => Promise<void>;
+    submit?: (id: number, signal: AbortSignal) => Promise<void>;
   } = {},
 ) => {
-  const store = {
+  const state = {
     realms: overrides.realms ?? [realm(1), realm(2, true), realm(3)],
     phase: { mainStartsAt: 100, over: false, devModeOn: false, ...overrides.phase },
     now: overrides.now ?? 150,
     signer: overrides.signer ?? true,
   };
+  let notify!: () => void;
+  const unsubscribe = vi.fn();
   const submit = vi.fn(overrides.submit ?? (async () => {}));
   const report = { provisioned: vi.fn(), failed: vi.fn() };
-  const runner = createRealmProvisionRunner({
-    readRealms: () => store.realms,
-    readPhase: () => store.phase,
-    nowSeconds: () => store.now,
-    hasSigner: () => store.signer,
-    submit,
+  const stop = startRealmProvisionRunner({
+    readRealms: () => state.realms,
+    isHeld: () => false,
+    readPhase: () => state.phase,
+    nowSeconds: () => state.now,
+    hasSigner: () => state.signer,
+    subscribeHeads: (head) => {
+      notify = head;
+      return unsubscribe;
+    },
+    submit: async (realm, confirmed, signal) => {
+      await submit(realm.entityId, signal);
+      if (!signal.aborted) confirmed(realm);
+    },
     report,
   });
-  return { store, submit, report, runner };
+  disposers.push(stop);
+  return {
+    state,
+    submit,
+    report,
+    stop,
+    unsubscribe,
+    head: async () => {
+      notify();
+      await flush();
+    },
+  };
 };
 
-describe("realm provision runner", () => {
-  it("sends one batch for every unprovisioned realm and reports each one", async () => {
-    const { runner, submit, report } = harness();
-    await runner.onConfirmedHead();
-    expect(submit).toHaveBeenCalledTimes(1);
-    expect(submit).toHaveBeenCalledWith([1, 3]);
-    expect(report.provisioned.mock.calls[0][0].map((entry: RealmProvisionCandidate) => entry.entityId)).toEqual([1, 3]);
-    expect(report.failed).not.toHaveBeenCalled();
+describe("confirmed-head provisioning", () => {
+  it("submits each unprovisioned realm and retains each confirmed result before native diffs arrive", async () => {
+    const h = harness();
+    await vi.waitFor(() => expect(h.report.provisioned.mock.calls.length + h.report.failed.mock.calls.length).toBe(2));
+    expect(h.submit.mock.calls.map(([id]) => id)).toEqual([1, 3]);
+    expect(h.report.provisioned.mock.calls.map(([realms]) => realms[0].entityId)).toEqual([1, 3]);
+    await h.head();
+    expect(h.submit).toHaveBeenCalledTimes(2);
+    h.state.realms.push(realm(4));
+    await h.head();
+    await vi.waitFor(() => expect(h.submit.mock.calls.map(([id]) => id)).toEqual([1, 3, 4]));
   });
-
-  it("waits for the main phase on the chain clock and stops after the season ends", async () => {
-    const { runner, submit, store } = harness({ now: 50 });
-    await runner.onConfirmedHead();
-    expect(submit).not.toHaveBeenCalled();
-    store.now = 100;
-    await runner.onConfirmedHead();
-    expect(submit).toHaveBeenCalledTimes(1);
-    const late = harness({ now: 1_001, phase: { over: true } });
-    await late.runner.onConfirmedHead();
-    expect(late.submit).not.toHaveBeenCalled();
+  it("waits for phase and signer readiness, including dev mode, and respects game end", async () => {
+    const h = harness({ now: 50, signer: false });
+    await flush();
+    h.state.now = 100;
+    await h.head();
+    expect(h.submit).not.toHaveBeenCalled();
+    h.state.signer = true;
+    await h.head();
+    await vi.waitFor(() => expect(h.report.provisioned).toHaveBeenCalledTimes(2));
+    const dev = harness({ now: 0, phase: { devModeOn: true } });
+    await vi.waitFor(() => expect(dev.report.provisioned).toHaveBeenCalledTimes(2));
+    const over = harness({ phase: { devModeOn: true, over: true } });
+    await flush();
+    await over.head();
+    expect(over.submit).not.toHaveBeenCalled();
   });
-
-  it("treats dev mode as an open main phase and waits for the gameplay signer", async () => {
-    const { runner, submit, store } = harness({ now: 0, phase: { devModeOn: true }, signer: false });
-    await runner.onConfirmedHead();
-    expect(submit).not.toHaveBeenCalled();
-    store.signer = true;
-    await runner.onConfirmedHead();
-    expect(submit).toHaveBeenCalledWith([1, 3]);
-  });
-
-  it("does not resend a confirmed realm before native store catches up", async () => {
-    const { runner, submit, store } = harness();
-    await runner.onConfirmedHead();
-    // The diff has not landed yet: the realms still read unprovisioned, but nothing is sent again.
-    await runner.onConfirmedHead();
-    expect(submit).toHaveBeenCalledTimes(1);
-    store.realms = [realm(1, true), realm(3, true), realm(4)];
-    await runner.onConfirmedHead();
-    expect(submit).toHaveBeenLastCalledWith([4]);
-  });
-
-  it("backs off a failing batch by doubling heads up to the cap, then gives up after six failures until reload", async () => {
-    expect(PROVISION_RETRY_CAP_HEADS).toBe(8);
-    expect(PROVISION_FAILURES_BEFORE_GIVING_UP).toBe(6);
-    const { runner, submit, report, store } = harness({
+  it("skips exactly 1, 2, 4, 8, 8 confirmed heads between failures, then stops after six attempts", async () => {
+    const h = harness({
       submit: async () => {
         throw new Error("nonce");
       },
     });
-    const headsBetweenAttempts: number[] = [];
-    let sinceLastAttempt = 0;
-    for (let head = 0; head < 80; head += 1) {
-      const attemptsBefore = submit.mock.calls.length;
-      await runner.onConfirmedHead();
-      if (submit.mock.calls.length > attemptsBefore) {
-        if (attemptsBefore > 0) headsBetweenAttempts.push(sinceLastAttempt);
-        sinceLastAttempt = 0;
-      } else {
-        sinceLastAttempt += 1;
-      }
+    await vi.waitFor(() => expect(h.report.failed).toHaveBeenCalledTimes(1));
+    for (const skipped of [1, 2, 4, 8, 8]) {
+      const before = h.submit.mock.calls.length;
+      for (let i = 0; i < skipped; i++) await h.head();
+      expect(h.submit).toHaveBeenCalledTimes(before);
+      await h.head();
+      await vi.waitFor(() => expect(h.report.failed).toHaveBeenCalledTimes(before + 1));
     }
-    expect(submit).toHaveBeenCalledTimes(6);
-    expect(headsBetweenAttempts).toEqual([1, 2, 4, 8, 8]);
-    expect(report.failed.mock.calls.map(([, , retry]) => retry)).toEqual([
-      { attempt: 1, nextAttemptInHeads: 1 },
-      { attempt: 2, nextAttemptInHeads: 2 },
-      { attempt: 3, nextAttemptInHeads: 4 },
-      { attempt: 4, nextAttemptInHeads: 8 },
-      { attempt: 5, nextAttemptInHeads: 8 },
-      { attempt: 6, nextAttemptInHeads: null },
-    ]);
-    // Given up: a new head sends nothing for those realms, but a new realm still gets its own batch.
-    store.realms = [realm(1), realm(3), realm(9)];
-    await runner.onConfirmedHead();
-    expect(submit).toHaveBeenLastCalledWith([9]);
+    for (let i = 0; i < 10; i++) await h.head();
+    expect(h.submit).toHaveBeenCalledTimes(6);
+    expect(h.report.failed.mock.calls.map(([, , retry]) => retry)).toEqual(
+      [1, 2, 4, 8, 8, null].map((heads, index) => ({ attempt: index + 1, nextAttemptInHeads: heads })),
+    );
+    h.state.realms.push(realm(9));
+    await h.head();
+    await vi.waitFor(() => expect(h.report.failed).toHaveBeenCalledTimes(7));
+    expect(h.submit.mock.calls.at(-1)?.[0]).toBe(9);
+    expect(h.report.failed.mock.calls.at(-1)?.[2]).toEqual({ attempt: 1, nextAttemptInHeads: 1 });
   });
-
-  it("resets the backoff after a success", async () => {
+  it("does not repeat a confirmed realm when the next realm in the batch fails", async () => {
     let fail = true;
-    const { runner, submit, report } = harness({
-      submit: async () => {
-        if (fail) throw new Error("nonce");
+    const h = harness({
+      submit: async (id) => {
+        if (id === 3 && fail) throw new Error("rejected");
       },
     });
-    await runner.onConfirmedHead();
+    await vi.waitFor(() => expect(h.report.provisioned.mock.calls.length + h.report.failed.mock.calls.length).toBe(2));
+    expect(h.submit.mock.calls.map(([id]) => id)).toEqual([1, 3]);
     fail = false;
-    await runner.onConfirmedHead();
-    await runner.onConfirmedHead();
-    expect(submit).toHaveBeenCalledTimes(2);
-    expect(report.provisioned).toHaveBeenCalledTimes(1);
-    expect(report.failed).toHaveBeenCalledTimes(1);
+    await h.head();
+    await h.head();
+    await vi.waitFor(() => expect(h.report.provisioned).toHaveBeenCalledTimes(2));
+    expect(h.submit.mock.calls.map(([id]) => id)).toEqual([1, 3, 3]);
+    expect(h.report.provisioned.mock.calls.map(([realms]) => realms[0].entityId)).toEqual([1, 3]);
   });
-
-  it("lets one batch finish before the next head sends another", async () => {
+  it("ignores concurrent heads while submission is outstanding", async () => {
     let release!: () => void;
-    const { runner, submit } = harness({ submit: () => new Promise<void>((resolve) => (release = resolve)) });
-    const first = runner.onConfirmedHead();
-    await runner.onConfirmedHead();
-    expect(submit).toHaveBeenCalledTimes(1);
+    const h = harness({
+      realms: [realm(1)],
+      submit: () =>
+        new Promise<void>((resolve) => {
+          release = resolve;
+        }),
+    });
+    await flush();
+    await h.head();
+    await h.head();
+    expect(h.submit).toHaveBeenCalledTimes(1);
     release();
-    await first;
+    await flush();
+    await h.head();
+    expect(h.submit).toHaveBeenCalledTimes(1);
   });
-});
-
-it("closes dev provisioning once the registry says the season is over", async () => {
-  const { runner, submit } = harness({ now: 1000, phase: { devModeOn: true, over: true } });
-  await runner.onConfirmedHead();
-  expect(submit).not.toHaveBeenCalled();
+  it("does not retry an unknown transaction as a rejection", async () => {
+    const h = harness({
+      submit: async () => {
+        throw new AutomationPending({ message: "No answer yet" });
+      },
+    });
+    await vi.waitFor(() => expect(h.report.failed).toHaveBeenCalledTimes(1));
+    for (let i = 0; i < 12; i++) await h.head();
+    expect(h.submit).toHaveBeenCalledTimes(1);
+    expect(h.report.failed.mock.calls[0][2]).toEqual({ attempt: 1, nextAttemptInHeads: null });
+  });
+  it("releases subscriptions, aborts observation, and sends no next realm after disposal", async () => {
+    let release!: () => void;
+    const h = harness({
+      submit: () =>
+        new Promise<void>((resolve) => {
+          release = resolve;
+        }),
+    });
+    await vi.waitFor(() => expect(h.submit).toHaveBeenCalledTimes(1));
+    const signal = h.submit.mock.calls[0][1];
+    h.stop();
+    await vi.waitFor(() => expect(h.unsubscribe).toHaveBeenCalledTimes(1));
+    expect(signal.aborted).toBe(true);
+    release();
+    await flush();
+    await h.head();
+    expect(h.submit).toHaveBeenCalledTimes(1);
+    expect(h.report.provisioned).not.toHaveBeenCalled();
+    expect(h.report.failed).not.toHaveBeenCalled();
+  });
 });

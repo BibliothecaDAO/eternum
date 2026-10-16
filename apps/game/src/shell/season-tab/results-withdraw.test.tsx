@@ -23,6 +23,11 @@ vi.mock("../herald", () => ({
   useDirectory: () => ({ data: { games: [] } }),
   useRecentResults: () => ({ data: { games: [] } }),
 }));
+// Signed out, without asking a session service: these tests read where Results leads.
+vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/hooks/context/identity-session")>()),
+  useIdentitySession: () => ({ status: "signed-out", session: null }),
+}));
 vi.mock("@/ui/design-system/kit/player-name", () => ({
   PlayerName: ({ account }: { account: string }) => <span>{account}</span>,
 }));
@@ -41,13 +46,16 @@ const Where = () => {
   return <output data-where>{pathname + search}</output>;
 };
 
-const open = async () => {
+/** A list opens Results with where its Back leads; Play and a match's end open it bare. */
+const FROM_LIST = { pathname: "/results/0x52-3", state: { back: "/p/0xa1" } };
+
+const open = async (entry: string | typeof FROM_LIST = FROM_LIST) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const container = document.createElement("div");
   const root = createRoot(container);
   await act(async () =>
     root.render(
-      <MemoryRouter initialEntries={["/results/0x52-3?from=list"]}>
+      <MemoryRouter initialEntries={[entry]}>
         <Routes>
           <Route path="/results/:id" element={<ResultsPage />} />
           <Route path="*" element={null} />
@@ -73,4 +81,15 @@ it("offers no way in to a reader who held no realm in that season", async () => 
   const { button } = await open();
   expect(button("Season")).toBeDefined();
   expect(button("Withdraw")).toBeUndefined();
+});
+
+it("leads Back to the list that opened it, with no Continue; opened from Play, Continue is the gold step and no Back", async () => {
+  const fromList = await open();
+  expect(fromList.container.querySelector('[data-role="back"]')!.getAttribute("href")).toBe("/p/0xa1");
+  expect(fromList.button("Continue")).toBeUndefined();
+  await unmount?.();
+
+  const fromPlay = await open("/results/0x52-3");
+  expect(fromPlay.container.querySelector('[data-role="back"]')).toBeNull();
+  expect(fromPlay.button("Continue")!.className).toContain("primary");
 });

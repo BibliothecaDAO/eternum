@@ -89,7 +89,7 @@ const listValueStyle = {
 };
 
 export function BlitzTroopMovementTable() {
-  const config = ETERNUM_CONFIG();
+  const config = ETERNUM_CONFIG("blitz");
 
   return (
     <div style={section.wrapper}>

@@ -137,8 +137,6 @@ export const getTxMessage = (type: TransactionType): string => {
       return "Contributed to hyperstructure";
       return "Updated construction access";
       return "Claimed construction points";
-    case TransactionType.ALLOCATE_SHARES:
-      return "Allocated shares";
       return "Claimed wonder production bonus";
 
     // Realms & Settlement

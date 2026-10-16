@@ -1,7 +1,8 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import type { CompactLane } from "@/hooks/helpers/use-compact-hud";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import type { ID, MarketInterface, ResourcesIds } from "@bibliothecadao/types";
-import { ChevronDown } from "@/ui/design-system/atoms/game-icons";
+
 import { useState } from "react";
 import { resolveBestPrice } from "./best-prices";
 import {
@@ -74,8 +75,8 @@ const SideToggle = ({ side, onSelect }: { side: TradeSide; onSelect: (side: Trad
           aria-selected={isSelected}
           onClick={() => onSelect(option.key)}
           className={cn(
-            "min-h-11 rounded-md border font-sans text-sm font-semibold uppercase tracking-[0.16em] transition-colors",
-            isSelected ? option.selectedClass : "border-gold/20 text-gold/65",
+            "min-h-11 rounded-md border font-sans text-sm font-semibold transition-colors",
+            isSelected ? option.selectedClass : "border-gold/20 text-kit-muted",
           )}
         >
           {option.label}
@@ -118,7 +119,12 @@ const OffersDisclosure = ({
           isBuy={isBuy}
           offers={offers}
           className="min-h-9"
-          trailing={<ChevronDown className={cn("h-4 w-4 text-gold/70 transition-transform", isOpen && "rotate-180")} />}
+          trailing={
+            <SemanticIcon
+              name="chevron-down"
+              className={cn("h-4 w-4 text-gold/70 transition-transform", isOpen && "rotate-180")}
+            />
+          }
         />
       </button>
       {isOpen && (
@@ -159,7 +165,7 @@ const OffersDisclosure = ({
             <button
               type="button"
               onClick={() => setReveal(reveal === "all" ? "top" : "all")}
-              className="min-h-11 w-full border-t border-gold/15 font-sans text-xs text-gold transition-colors hover:bg-gold/10"
+              className="min-h-11 w-full border-t border-gold/15 font-sans text-sm text-gold transition-colors hover:bg-gold/10"
             >
               {reveal === "all" ? "Show less" : `See all ${offers.length}`}
             </button>

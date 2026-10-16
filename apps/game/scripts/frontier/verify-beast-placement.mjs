@@ -11,13 +11,17 @@ if (!/^beast-(troll|wyvern|hydra)$/.test(assetId ?? "")) {
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({
   "draco3d.decoder": await draco.createDecoderModule(),
 });
-const ruin = await readGeometry("fallen-realm-ruin");
+const ruinPath = process.argv[3] ?? fileURLToPath(new URL("../../public/models/outposts/ruin.glb", import.meta.url));
+const scale = process.argv[4] === undefined ? undefined : Number(process.argv[4]);
+if (scale !== undefined && (!Number.isFinite(scale) || scale <= 0)) throw new Error("Scale must be positive");
+const ruin = await readGeometry("fallen-realm-ruin", ruinPath);
 const beast = await readGeometry(assetId);
-const measurement = measurePlacement({ assetId, ruin, beast });
+const measurement = measurePlacement({ assetId, ruin, beast, scale });
 console.log(JSON.stringify(measurement));
+if (measurement.passed === false) process.exitCode = 1;
 
-async function readGeometry(name) {
-  const path = fileURLToPath(new URL(`../../public/models/frontier/${name}.glb`, import.meta.url));
+async function readGeometry(name, override) {
+  const path = override ?? fileURLToPath(new URL(`../../public/models/frontier/${name}.glb`, import.meta.url));
   const document = await io.read(path);
   const vertices = [];
   const triangles = [];

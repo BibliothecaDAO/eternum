@@ -1,5 +1,5 @@
 import type { Camera, Object3D } from "three";
-import type { RendererFramePipeline, RendererOverlayPass } from "./renderer-backend-v2";
+import type { RendererFramePipeline, RendererOverlayPass } from "./renderer-backend";
 
 interface OverlayPassRenderer {
   clearDepth(): void;

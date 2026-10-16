@@ -1,8 +1,10 @@
+import { HexMarker } from "@/ui/design-system/hex-marker";
+import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { minimapMarkersView, type MinimapMarker } from "./minimap-markers";
 import { latticeHexAt, latticeHexBoundsForWorldRect, latticeToWorld } from "@/three/utils/hex-lattice";
 import { fromRenderHex, toRenderHex } from "@/three/world-origin";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
-import { playerStructuresView, selectableArmiesView } from "@/sync/fact-views";
 import { FELT_CENTER } from "@/ui/config";
 import { requireBiomeColor, resolveBiomeTypeFromId } from "@/three/managers/biome-colors";
 import {
@@ -12,7 +14,7 @@ import {
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
-import { HexPosition, StructureType, TileOccupier, getMinePresentation } from "@bibliothecadao/types";
+import { HexPosition, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 
@@ -86,23 +88,6 @@ const CAMERA_CIRCLE_SCREEN_RADIUS_PX = 60;
 const WORLD_CAMERA_DISTANCE_REFERENCE = 20;
 const TILE_WINDOW_STEP = HEX_SIZE * 8;
 const MINIMAP_SCALE_REFERENCE = 1.4;
-
-type TileMarker = {
-  iconSrc: string;
-  sizeMultiplier?: number;
-};
-
-const LABEL_ICONS = {
-  armyMine: "/images/labels/army.png",
-  armyEnemy: "/images/labels/enemy_army.png",
-  realmMine: "/images/labels/realm.png",
-  realmEnemy: "/images/labels/enemy_realm.png",
-  villageMine: "/images/labels/village.png",
-  villageEnemy: "/images/labels/enemy_village.png",
-  hyperstructure: "/images/labels/hyperstructure.png",
-  fragmentMine: "/images/labels/fragment_mine.png",
-  chest: "/images/labels/chest.png",
-} as const;
 
 /**
  * Minimap pixels for a normalized hex: the world map's lattice at minimap scale, drawn relative to the floating world
@@ -226,6 +211,34 @@ const resolveMinimapScaleForCameraDistance = (cameraDistance: number | null | un
     ? clamp((MINIMAP_SCALE_REFERENCE * WORLD_CAMERA_DISTANCE_REFERENCE) / cameraDistance, 0.4, 4)
     : MINIMAP_SCALE_REFERENCE;
 
+/** Sites the world places with no entity of their own: the tile's occupier alone names them. */
+const SITE_MEANINGS: Partial<Record<number, MinimapMarker["name"]>> = {
+  [TileOccupier.Spire]: "spire",
+  [TileOccupier.DormantSpire]: "spire",
+  [TileOccupier.Shrine]: "shrine",
+  [TileOccupier.Well]: "well",
+  [TileOccupier.ReservedHyperstructure]: "hyperstructure",
+  [TileOccupier.Chest]: "chest",
+};
+
+/**
+ * A tile's marker, read from what occupies it first: an empty tile has none, whatever entity id it still carries; a
+ * known entity's own marker; else the occupier's meaning. A zero or missing id is no entity, so never looked up.
+ */
+const resolveTileMarker = (tile: MinimapTile, markers: ReadonlyMap<string, MinimapMarker>): MinimapMarker | null => {
+  const type = tile.occupier_type ?? 0;
+  if (!hasTileOccupier(type)) return null;
+  const id = tile.occupier_id ?? "";
+  const known = id && id !== "0" ? markers.get(id) : undefined;
+  if (known) return known;
+  const site = SITE_MEANINGS[type];
+  if (site) return { name: site, owner: "neutral" };
+  const structure = getStructureInfoFromTileOccupier(type);
+  if (structure) return { name: structureMeaning(structure.type), owner: "neutral" };
+  if (getExplorerInfoFromTileOccupier(type)) return { name: "map-army", owner: "neutral" };
+  return null;
+};
+
 interface HexMinimapProps {
   tiles: MinimapTile[];
   selectedHex: HexPosition | null;
@@ -236,28 +249,8 @@ interface HexMinimapProps {
 export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetHex }: HexMinimapProps) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [viewport, setViewport] = useState<{ width: number; height: number }>({ width: 800, height: 600 });
-  const playerStructures = useFactView(playerStructuresView);
-  const selectableArmies = useFactView(selectableArmiesView);
+  const markers = useFactView(minimapMarkersView);
   const cameraDistance = useUIStore((state) => state.cameraDistance);
-
-  const ownedStructureIds = useMemo(() => {
-    return new Set(
-      playerStructures
-        .map((structure) => normalizeEntityId(structure.entityId))
-        .filter((id): id is string => Boolean(id)),
-    );
-  }, [playerStructures]);
-
-  const ownedExplorerIds = useMemo(() => {
-    const ids = new Set<string>();
-
-    selectableArmies.forEach((army) => {
-      const id = normalizeEntityId(army.entityId);
-      if (id) ids.add(id);
-    });
-
-    return ids;
-  }, [selectableArmies]);
 
   const centeredIndex = useMemo(() => buildCenteredIndex(tiles), [tiles]);
 
@@ -376,14 +369,17 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
     [dispatchCameraMove],
   );
 
+  // Follow the camera by its hex, not its object: a new object for the same hex must not pull back a dragged view.
+  const cameraCol = cameraTargetHex?.col;
+  const cameraRow = cameraTargetHex?.row;
   useEffect(() => {
-    if (!cameraTargetHex || isDraggingRef.current) return;
-    const col = cameraTargetHex.col - FELT_CENTER();
-    const row = cameraTargetHex.row - FELT_CENTER();
+    if (cameraCol === undefined || cameraRow === undefined || isDraggingRef.current) return;
+    const col = cameraCol - FELT_CENTER();
+    const row = cameraRow - FELT_CENTER();
     const centerPixel = offsetToPixel(col, row);
     followTargetRef.current = centerPixel;
     startFollowAnimation();
-  }, [cameraTargetHex, startFollowAnimation]);
+  }, [cameraCol, cameraRow, startFollowAnimation]);
 
   useEffect(() => {
     const svg = svgRef.current;
@@ -459,62 +455,7 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
     return result;
   }, [tiles.length, centeredIndex.byCol, minX, maxX, minY, maxY]);
 
-  const getTileMarker = useCallback(
-    (tile: MinimapTile) => {
-      const occupierType = tile.occupier_type ?? 0;
-      if (occupierType === TileOccupier.Chest) {
-        return { iconSrc: LABEL_ICONS.chest } satisfies TileMarker;
-      }
-
-      const hasStructure = isTileOccupierStructure(occupierType);
-
-      if (hasStructure) {
-        const info = getStructureInfoFromTileOccupier(occupierType);
-        if (!info) return null;
-
-        switch (info.type) {
-          case StructureType.Mine:
-            return tile.mineKind === undefined
-              ? null
-              : ({ iconSrc: getMinePresentation(tile.mineKind).icon } satisfies TileMarker);
-          case StructureType.BitcoinMine:
-            return { iconSrc: LABEL_ICONS.fragmentMine } satisfies TileMarker;
-          case StructureType.Village:
-          case StructureType.Camp:
-            return {
-              iconSrc: ownedStructureIds.has(normalizeEntityId(tile.occupier_id) ?? "")
-                ? LABEL_ICONS.villageMine
-                : LABEL_ICONS.villageEnemy,
-            } satisfies TileMarker;
-          case StructureType.Realm:
-            return {
-              iconSrc: ownedStructureIds.has(normalizeEntityId(tile.occupier_id) ?? "")
-                ? LABEL_ICONS.realmMine
-                : LABEL_ICONS.realmEnemy,
-            } satisfies TileMarker;
-          case StructureType.Hyperstructure:
-            return {
-              iconSrc: LABEL_ICONS.hyperstructure,
-              sizeMultiplier: info.reserved ? 1.05 : 1.1,
-            } satisfies TileMarker;
-          default:
-            return null;
-        }
-      }
-
-      const explorerInfo = getExplorerInfoFromTileOccupier(occupierType);
-      if (explorerInfo) {
-        const occupierId = normalizeEntityId(tile.occupier_id);
-        return {
-          iconSrc: occupierId && ownedExplorerIds.has(occupierId) ? LABEL_ICONS.armyMine : LABEL_ICONS.armyEnemy,
-          sizeMultiplier: 0.9,
-        } satisfies TileMarker;
-      }
-
-      return null;
-    },
-    [ownedStructureIds, ownedExplorerIds],
-  );
+  const getTileMarker = useCallback((tile: MinimapTile) => resolveTileMarker(tile, markers), [markers]);
 
   const tileElements = useMemo(
     () =>
@@ -522,7 +463,6 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
         const marker = getTileMarker(tile);
         const fill = getBiomeColor(tile.biome);
         const occupierColor = getOccupierColor(tile);
-        const iconSize = marker ? HEX_SIZE * 2.2 * (marker.sizeMultiplier ?? 1) : 0;
         return (
           <g key={`${tile.col}:${tile.row}`}>
             <polygon points={points} fill={fill} stroke="#1f130a" strokeWidth={0.6} fillOpacity={0.92} />
@@ -536,17 +476,7 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
                 strokeWidth={0.8}
               />
             )}
-            {marker && (
-              <image
-                href={marker.iconSrc}
-                x={pixel.x - iconSize / 2}
-                y={pixel.y - iconSize / 2}
-                width={iconSize}
-                height={iconSize}
-                preserveAspectRatio="xMidYMid meet"
-                className="pointer-events-none select-none"
-              />
-            )}
+            {marker && <HexMarker {...marker} x={pixel.x} y={pixel.y} radius={HEX_SIZE} />}
           </g>
         );
       }),

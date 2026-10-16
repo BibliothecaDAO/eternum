@@ -3,13 +3,12 @@ import { createRoot } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
 import { expect, it, vi } from "vitest";
 
-// The Blitz season's prize has its own test; this page test reads Frontier's board and the switch.
-vi.mock("./season-prize", () => ({ SeasonPrizePanel: () => null }));
+// Blitz's board has its own test; this page test reads Frontier's board and the switch.
+vi.mock("./blitz-board", () => ({ BlitzBoard: () => <p>Blitz board</p> }));
 vi.mock("../herald", () => ({
   useDirectory: () => ({ data: undefined, isError: true, isPending: false, error: new Error("502"), refetch: vi.fn() }),
   useLeaderboard: () => ({ data: undefined, isError: false, isPending: true }),
   useRealmsPlayer: () => ({ data: null }),
-  useRecentResults: () => ({ data: undefined, isError: false, isPending: true }),
 }));
 vi.spyOn(console, "error").mockImplementation(() => undefined);
 
@@ -35,6 +34,8 @@ it("says Season did not answer in the glossary's words, with Try again, and the 
     const blitz = [...body.querySelectorAll('[role="radio"]')].find((radio) => radio.textContent === "Blitz")!;
     await act(async () => (blitz as HTMLButtonElement).click());
     expect(blitz.getAttribute("aria-checked")).toBe("true");
+    expect(body.textContent).toContain("Blitz board");
+    expect(body.textContent).not.toContain("Season did not answer.");
   } finally {
     await act(async () => root.unmount());
   }

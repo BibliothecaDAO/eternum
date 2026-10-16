@@ -17,13 +17,13 @@ const SENT: FightSent = {
   targetId: SITE,
   site: "Camp",
   armyId: 201,
-  armyArt: "/images/armies/knightT1.png",
+  armyArt: "knight-t1",
   army: 1_498,
   homeId: 7,
   clearXp: 82,
 };
 /** What the clear's own record paid, as the card's caller reads it. */
-const PAID: FightGain = { pay: { icon: "La", amount: 550, storeFull: false }, xp: 82 };
+const PAID: FightGain = { pay: { icon: "labor", amount: 550, storeFull: false }, xp: 82 };
 const paid = () => PAID;
 const record = (army: [number, number], guard: [number, number]) => ({
   army: { before: army[0], after: army[1] },

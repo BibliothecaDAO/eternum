@@ -1,12 +1,5 @@
 import { configureRendererColorOutput } from "./renderer-color-output";
 import { GameMapMaterialLibrary } from "./effects/game-map-material-library";
-import {
-  ACESFilmicToneMapping,
-  CineonToneMapping,
-  LinearToneMapping,
-  NeutralToneMapping,
-  ReinhardToneMapping,
-} from "three";
 import { VERBOSE_LOGS_ENABLED, verboseLog } from "@/utils/dev-mode";
 
 import type { RendererSurfaceLike } from "./renderer-backend";
@@ -17,18 +10,14 @@ import {
   RendererInitTimeoutError,
   type RendererAdapterInfo,
   type RendererActiveMode,
-  type RendererBackendV2,
+  type RendererBackend,
   type RendererDeviceLostEvent,
   type RendererFramePipeline,
   type RendererFallbackReason,
-  type RendererPostProcessController,
-  type RendererPostProcessRuntime,
-  type RendererPostProcessPlan,
-} from "./renderer-backend-v2";
+} from "./renderer-backend";
 import type { RendererBuildMode } from "./renderer-build-mode";
 import { recordRendererStartupTiming } from "./perf/renderer-startup-telemetry";
 import { renderRendererOverlayPasses } from "./renderer-overlay-passes";
-import { createWebGPUPostProcessRuntime } from "./webgpu-postprocess-runtime";
 import { instrumentGpuBackendHotPaths } from "./gpu-backend-hot-path-instrumentation";
 
 interface WebGPURendererSurface extends RendererSurfaceLike {
@@ -66,7 +55,6 @@ interface WebGPURendererDevice {
 }
 
 interface WebGPURendererBackendDependencies {
-  createPostProcessRuntime(input: { renderer: WebGPURendererSurface }): RendererPostProcessRuntime;
   createRenderer(input: {
     forceWebGL: boolean;
     isMobileDevice: boolean;
@@ -90,7 +78,7 @@ async function createDefaultWebGPURenderer(input: {
   const { threeWebGPUModule } = await loadWebGpuRendererModules(input.signal);
   recordRendererStartupTiming("webgpu-module-import", performance.now() - moduleImportStartedAt);
 
-  const { HalfFloatType, PCFShadowMap, PCFSoftShadowMap, UnsignedByteType, WebGPURenderer } =
+  const { HalfFloatType, PCFShadowMap, UnsignedByteType, WebGPURenderer } =
     threeWebGPUModule as typeof import("three/webgpu");
 
   throwIfAborted(input.signal);
@@ -103,7 +91,7 @@ async function createDefaultWebGPURenderer(input: {
 
   renderer.autoClear = false;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = input.isMobileDevice ? PCFShadowMap : PCFSoftShadowMap;
+  renderer.shadowMap.type = PCFShadowMap;
   configureRendererColorOutput(renderer);
   renderer.info.autoReset = false;
 
@@ -131,12 +119,10 @@ function instrumentWebGpuBackendHotPaths(renderer: WebGPURendererSurface): void 
 }
 
 const defaultDependencies: WebGPURendererBackendDependencies = {
-  createPostProcessRuntime: createWebGPUPostProcessRuntime,
   createRenderer: createDefaultWebGPURenderer,
   now: () => performance.now(),
 };
 
-const ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME = false;
 // Native initialization takes under 700 ms in the NVIDIA startup captures after
 // removing the animated loading background. Bound a stalled driver.
 const WEBGPU_BACKEND_STARTUP_TIMEOUT_MS = 3_200;
@@ -145,11 +131,6 @@ const WEBGPU_BACKEND_STARTUP_TIMEOUT_MS = 3_200;
 const WEBGL2_BACKEND_STARTUP_TIMEOUT_MS = 15_000;
 let webGpuFrameRecoveryWarned = false;
 let webGpuRendererModulesPromise: Promise<WebGpuRendererModules> | null = null;
-
-const NOOP_POST_PROCESS_CONTROLLER: RendererPostProcessController = {
-  setColorGrade: () => {},
-  setVignette: () => {},
-};
 
 const WEBGPU_RENDERER_BACKEND_CAPABILITIES = createRendererBackendCapabilities({
   supportsBloom: false,
@@ -278,22 +259,6 @@ function attachWebGpuDeviceDiagnostics(input: {
   };
 }
 
-function resolveRendererToneMapping(mode: RendererPostProcessPlan["toneMapping"]["mode"]): number {
-  switch (mode) {
-    case "linear":
-      return LinearToneMapping;
-    case "reinhard":
-      return ReinhardToneMapping;
-    case "cineon":
-      return CineonToneMapping;
-    case "neutral":
-      return NeutralToneMapping;
-    case "aces-filmic":
-    default:
-      return ACESFilmicToneMapping;
-  }
-}
-
 function isRecoverableWebGpuFrameError(error: unknown): boolean {
   if (!(error instanceof TypeError)) {
     return false;
@@ -397,13 +362,12 @@ export function createWebGPURendererBackend(
     requestedMode: RendererBuildMode;
   },
   dependencies: Partial<WebGPURendererBackendDependencies> = defaultDependencies,
-): RendererBackendV2 {
+): RendererBackend {
   const resolvedDependencies = {
     ...defaultDependencies,
     ...dependencies,
   } satisfies WebGPURendererBackendDependencies;
   let renderer: RendererSurfaceLike | undefined;
-  let postProcessRuntime: RendererPostProcessRuntime | undefined;
   let cleanupDeviceDiagnostics: (() => void) | undefined;
   let disposed = false;
 
@@ -500,19 +464,6 @@ export function createWebGPURendererBackend(
     get renderer() {
       return renderer;
     },
-    applyPostProcessPlan(plan) {
-      if (!postProcessRuntime) {
-        if (!renderer) {
-          return NOOP_POST_PROCESS_CONTROLLER;
-        }
-
-        renderer.toneMapping = resolveRendererToneMapping(plan.toneMapping.mode);
-        renderer.toneMappingExposure = plan.toneMapping.exposure;
-        return NOOP_POST_PROCESS_CONTROLLER;
-      }
-
-      return postProcessRuntime.setPlan(plan);
-    },
     applyRenderVisuals(input) {
       if (!renderer) {
         return;
@@ -521,18 +472,11 @@ export function createWebGPURendererBackend(
       renderer.setPixelRatio(input.pixelRatio);
       renderer.shadowMap.enabled = input.shadows;
       renderer.setSize(input.width, input.height);
-      if (ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME) {
-        postProcessRuntime?.setSize(input.width, input.height);
-      }
     },
     dispose() {
       disposed = true;
       cleanupDeviceDiagnostics?.();
       cleanupDeviceDiagnostics = undefined;
-      if (ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME) {
-        postProcessRuntime?.dispose();
-        postProcessRuntime = undefined;
-      }
       renderer?.dispose();
       renderer = undefined;
     },
@@ -544,9 +488,6 @@ export function createWebGPURendererBackend(
         cleanupDeviceDiagnostics?.();
         cleanupDeviceDiagnostics = lane.releaseDeviceDiagnostics;
         renderer = lane.renderer;
-        if (ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME) {
-          postProcessRuntime = resolvedDependencies.createPostProcessRuntime({ renderer: lane.renderer });
-        }
 
         return createRendererInitDiagnostics({
           activeMode: lane.activeMode,
@@ -562,23 +503,12 @@ export function createWebGPURendererBackend(
       }
     },
     renderFrame(pipeline: RendererFramePipeline) {
-      if (!ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME || !postProcessRuntime) {
-        if (!renderer) {
-          return;
-        }
-
-        renderMainFrameWithRecovery(renderer, pipeline);
-        renderRendererOverlayPasses(renderer, pipeline);
-        return;
-      }
-
-      postProcessRuntime.renderFrame(pipeline);
+      if (!renderer) return;
+      renderMainFrameWithRecovery(renderer, pipeline);
+      renderRendererOverlayPasses(renderer, pipeline);
     },
     resize(width: number, height: number) {
       renderer?.setSize(width, height);
-      if (ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME) {
-        postProcessRuntime?.setSize(width, height);
-      }
     },
   };
 }

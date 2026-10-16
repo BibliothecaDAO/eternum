@@ -17,10 +17,10 @@ const STORES: {
   row: number;
   spentAt: SpentAt;
 }[] = [
-  { icon: "Wh", store: "wheat", resource: ResourcesIds.Wheat, row: research.ROW_FARM, spentAt: "deploy" },
-  { icon: "La", store: "labor", resource: ResourcesIds.Labor, row: research.ROW_WORKSHOP, spentAt: "realm" },
+  { icon: "wheat", store: "wheat", resource: ResourcesIds.Wheat, row: research.ROW_FARM, spentAt: "deploy" },
+  { icon: "labor", store: "labor", resource: ResourcesIds.Labor, row: research.ROW_WORKSHOP, spentAt: "realm" },
   // One troop type: the barracks train the realm's troops.
-  { icon: "Tr", store: "troops", resource: ResourcesIds.Knight, row: research.ROW_BARRACKS, spentAt: "deploy" },
+  { icon: "troops", store: "troops", resource: ResourcesIds.Knight, row: research.ROW_BARRACKS, spentAt: "deploy" },
 ];
 
 /**

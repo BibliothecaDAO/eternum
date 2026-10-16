@@ -14,17 +14,17 @@ directory, launches and the other central services are the environment's Workers
 ## Runtime and deployment
 
 The shard package in [deploy/shard](../shard/README.md) owns Madara, PostgreSQL, Herald, one stamping RPC and metrics.
-The init image carries the compiled contracts and native verifier; the Herald image also carries the stamping bundle,
-worker and native prover. The box builds init, Herald and metrics images from its checkout. There is no gateway image or
-service.
+The init image carries the compiled contracts and native verifier; the Herald image also carries the stamping bundle and
+native prover. The RPC stamps each play inline. The box builds init, Herald and metrics images from its checkout. There
+is no gateway image or service.
 
 For first deployment and updates use `python3 deploy/athanor/scripts/operator-command.py deploy ENVIRONMENT DIRECTORY`.
 `deploy/release/ENVIRONMENT.json` is the reviewed input source. The deployer builds its images under the shared Cairo
 lock, with compilation pinned to cores 8–11. For measurements use the existing
 `python3 deploy/athanor/scripts/shard.py CONFIGURATION DIRECTORY` runner with explicit local image digests, unique chain
-identity, official RPC/Herald URLs, guardian, presets, worker count and fixed play bound. The runner writes its resolved
-Compose file and public deployment manifest alongside private initialization logs. Both paths register PENDING before
-enrolment. Only official deployment runs the activation gate; measurement runners stay hidden and retire on stop.
+identity, official RPC/Herald URLs, guardian, presets and fixed play bound. The runner writes its resolved Compose file
+and public deployment manifest alongside private initialization logs. Both paths register PENDING before enrolment. Only
+official deployment runs the activation gate; measurement runners stay hidden and retire on stop.
 
 The dev node belongs to the operator running its trials. Deployment and workload commands take
 `/opt/athanor/isolated-stack.lock` themselves; do not hold it around those commands. No command should target the
@@ -86,7 +86,7 @@ shards, run it from the package directory with the protected operator credential
 
 ```bash
 sudo docker compose run --rm harness \
-  --bots 6 --minutes 6 --interval-seconds 15 --setup-concurrency 6 --game-type frontier --functional
+  --bots 6 --minutes 6 --setup-concurrency 6 --game-type frontier --functional
 ```
 
 The `harness` service runs the init image on the shard's network as the host user, with the shard's `harness.env`: the
@@ -102,7 +102,7 @@ operator token from its protected `/opt/athanor/operator-token` mount; host comm
 
 The node and Herald URLs are required (`--rpc-url`/`RPC_URL`, `--herald-url`/`HERALD_URL`) and have no default; the
 `harness` service takes them from `harness.env`. Player invokes use the public stamping RPC. Setup and administrative
-calls use HARNESS_ADMIN_RPC_URL on the private node inside the Compose network.
+calls, bot accounts joining included, use HARNESS_ADMIN_RPC_URL on the private node inside the Compose network.
 
 A roster run drives every player as a worker thread of one process and asserts its gates once, over the whole run, in
 `rosters-<time>/summary.json`. A run fails only on correctness: the action threshold (3,500 for the frozen 96-player
@@ -135,7 +135,9 @@ it, by one function in `scripts/measures.py` that a runner trial and a package s
 after (`host-state.sh`), the node's anonymous memory and kept RocksDB snapshots every 15 s, read from the cgroup Docker
 placed the node in, and, over the workload window the harness's reports span, the node's closed blocks from its logs and
 its metrics export (`block-stats.sh`) and the harness's gas per block reconciled against them. Block statistics are the
-run's close-cost evidence: a window without a closed block fails the run.
+run's close-cost evidence: a window without a closed block fails the run. Every workload report gives its window as
+`workload.startedAt`/`endedAt`; one that observes no per-action outcomes or per-block gas omits them, and the result
+names those measurements unavailable rather than zero.
 
 Measure one of our package shards from its deploy directory:
 
@@ -147,5 +149,14 @@ python3 deploy/athanor/scripts/operator-command.py measure /opt/athanor/runs/sta
 It takes the isolated-stack lock, runs the package's `harness` service with the options after `--` and writes
 `data/measure/NAME/result.json` beside the harness's reports in `data/measure/NAME/workload`. Report latency separately
 from gas and execution resources. Admission-to-visible includes queue wait and the Herald barrier.
+
+A measurement shard (the runner, `operator-command.py runner CONFIGURATION DIRECTORY --matrix`) has no directory-listed
+game: it stays PENDING. After its readiness probe the runner makes the harness's operator the Games launcher and ledger
+operator (`scripts/measurement-roles.ts`, refused on any chain named after a deployment environment), so the harness
+creates its own games there. Eternum runs create theirs as always; a Frontier run or the 2,000-player wave takes
+`--create-game`. Matrix workloads name the shard's own endpoints, `"rpc_url": "http://rpc:8080/rpc/v0_10_2"` and
+`"herald_url": "http://herald:3003"`, with `public_rpc_url` set to the same RPC URL. When an arm ends, passed or failed,
+the runner keeps its containers' logs in `DIRECTORY/SHARD/shard-logs.log` and removes the shard's containers, volumes
+and network; the images it ran stay for the next arm.
 
 Preserve the baseline image and chain data until final acceptance and the approved cutover.

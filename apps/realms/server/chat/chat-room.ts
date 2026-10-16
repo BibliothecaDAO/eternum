@@ -1,3 +1,5 @@
+import * as Result from "effect/Result";
+import * as Schema from "effect/Schema";
 import { DurableObject } from "cloudflare:workers";
 import {
   worldChatPublishSchema,
@@ -100,8 +102,8 @@ export class ChatRoom extends DurableObject<unknown> {
 
   private async publish(socket: WebSocket, member: RoomMember, message: WorldPublishMessage) {
     const room = await this.ctx.storage.get<string>("room");
-    const parsed = worldChatPublishSchema.safeParse(message.payload);
-    if (!parsed.success || message.zoneId !== room || parsed.data.zoneId !== room) {
+    const parsed = Schema.decodeUnknownResult(worldChatPublishSchema)(message.payload);
+    if (Result.isFailure(parsed) || message.zoneId !== room || parsed.success.zoneId !== room) {
       sendChat(socket, { type: "error", code: "invalid_world_payload", message: "Invalid message for this room." });
       return;
     }
@@ -113,9 +115,9 @@ export class ChatRoom extends DurableObject<unknown> {
       id: crypto.randomUUID(),
       senderId: member.realmsId,
       senderName: member.displayName ?? null,
-      content: parsed.data.content,
-      location: parsed.data.location ? JSON.stringify(parsed.data.location) : null,
-      metadata: parsed.data.metadata ? JSON.stringify(parsed.data.metadata) : null,
+      content: parsed.success.content,
+      location: parsed.success.location ? JSON.stringify(parsed.success.location) : null,
+      metadata: parsed.success.metadata ? JSON.stringify(parsed.success.metadata) : null,
       createdAt: Date.now(),
     };
     this.ctx.storage.sql.exec(

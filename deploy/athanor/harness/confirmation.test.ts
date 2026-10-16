@@ -10,6 +10,7 @@ const accepted = {
 
 const track = (confirmed: Promise<unknown> | undefined, provider = accepted) =>
   trackTransaction({
+    actionIndex: 0,
     botId: 1,
     gameId: 1,
     kind: "explore",
@@ -22,6 +23,7 @@ const track = (confirmed: Promise<unknown> | undefined, provider = accepted) =>
 describe("transaction confirmation deadline", () => {
   it("fails an action whose submission is never announced instead of waiting for it", async () => {
     const result = await trackTransaction({
+      actionIndex: 0,
       botId: 3,
       gameId: 2,
       kind: "upgrade",
@@ -50,6 +52,7 @@ describe("transaction confirmation deadline", () => {
     } as unknown as HarnessProvider;
     try {
       const result = await trackTransaction({
+        actionIndex: 0,
         botId: 1,
         gameId: 1,
         kind: "explore",
@@ -95,6 +98,7 @@ describe("transaction confirmation deadline", () => {
     } as unknown as HarnessProvider;
     try {
       const result = await trackTransaction({
+        actionIndex: 0,
         botId: 1,
         gameId: 1,
         kind: "explore",

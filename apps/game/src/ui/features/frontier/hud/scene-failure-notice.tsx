@@ -12,7 +12,7 @@ export const SceneFailureNotice = () => {
   if (!failed) return null;
   return (
     <Notice
-      icon={failed === "map" ? "Mp" : "Cs"}
+      icon={failed === "map" ? "map" : "realm"}
       line={failed === "map" ? DOORWAY_WORDS.mapNotDrawn : DOORWAY_WORDS.realmNotDrawn}
       verb={TRY_AGAIN}
       onVerb={() => window.location.reload()}

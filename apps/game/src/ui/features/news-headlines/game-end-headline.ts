@@ -19,7 +19,7 @@ export function resolveGameEndHeadline(
     id: `game-end:${gameId}`,
     type: "game-end",
     icon: "game-end",
-    title: "THE GAME HAS ENDED",
+    title: "The game has ended",
     description: names.length
       ? `${names.join(" and ")} ${names.length === 1 ? "wins" : "share victory"}!`
       : "No player finished ranked.",

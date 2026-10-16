@@ -1,15 +1,5 @@
-import {
-  AlertTriangle,
-  Camera,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Hash,
-  Layers3,
-  RefreshCw,
-  X,
-} from "@/ui/design-system/atoms/game-icons";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+
 import type { ReactNode } from "react";
 
 import {
@@ -66,12 +56,10 @@ export const ProceduralAnimationInspector = ({
     >
       <header className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-3 py-2">
         <div className="flex items-center gap-2">
-          <Camera className="h-4 w-4 text-violet-200" />
+          <SemanticIcon name="camera" className="h-4 w-4 text-violet-200" />
           <div>
-            <p className="text-[0.58rem] font-semibold uppercase tracking-[0.2em] text-violet-200/55">
-              Deterministic pose bench
-            </p>
-            <p className="text-xs font-semibold text-white">
+            <p className="text-sm font-semibold text-violet-200/55">Deterministic pose bench</p>
+            <p className="text-sm font-semibold text-white">
               {result.plan.sequence} · {result.frames.length} poses · {imageCount} views · {result.plan.overlay} ·{" "}
               {evaluation.automatedHardGatePassed ? "objective pass" : "objective fail"} · {evaluation.contactMetric}
               {result.plan.rootMotionSpeed > 0 ? ` · root ${result.plan.rootMotionSpeed.toFixed(2)} u/s` : ""}
@@ -81,20 +69,20 @@ export const ProceduralAnimationInspector = ({
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
           <InspectorButton
-            icon={<Layers3 />}
+            icon={<SemanticIcon name="layers" />}
             label="5-view atlas"
             disabled={busy}
             onClick={() => onCapture("phase-atlas", "diagnostic", repeatCaptureOptions)}
           />
           <InspectorButton
-            icon={<RefreshCw />}
+            icon={<SemanticIcon name="refresh" />}
             label="Every frame"
             disabled={busy}
             onClick={() => onCapture("all-frames", "clean", repeatCaptureOptions)}
           />
           <InspectorButton
             active={result.plan.overlay === "diagnostic"}
-            icon={<Hash />}
+            icon={<SemanticIcon name="hash" />}
             label={result.plan.overlay === "diagnostic" ? "Labels on" : "Labels off"}
             disabled={busy}
             onClick={() =>
@@ -105,9 +93,13 @@ export const ProceduralAnimationInspector = ({
               )
             }
           />
-          <InspectorButton icon={<Download />} label="JSON" onClick={() => downloadCaptureReport(result)} />
           <InspectorButton
-            icon={<Download />}
+            icon={<SemanticIcon name="download" />}
+            label="JSON"
+            onClick={() => downloadCaptureReport(result)}
+          />
+          <InspectorButton
+            icon={<SemanticIcon name="download" />}
             label="Contact sheet"
             disabled={busy || !result.frames.some(({ views }) => views.some(({ imageDataUrl }) => imageDataUrl))}
             onClick={() => void downloadCaptureContactSheet(result)}
@@ -118,13 +110,13 @@ export const ProceduralAnimationInspector = ({
             className="grid h-8 w-8 place-items-center border border-white/10 text-slate-400 transition hover:bg-white/10 hover:text-white"
             aria-label="Close animation inspector"
           >
-            <X className="h-3.5 w-3.5" />
+            <SemanticIcon name="close" className="h-3.5 w-3.5" />
           </button>
         </div>
       </header>
 
       {evaluation.footRollFailures.length > 0 && (
-        <p className="px-3 py-2 text-xs text-amber-200">{evaluation.footRollFailures.join(" · ")}</p>
+        <p className="px-3 py-2 text-sm text-amber-200">{evaluation.footRollFailures.join(" · ")}</p>
       )}
       {evaluation.measurements.locomotion && <LocomotionDiagnostics locomotion={evaluation.measurements.locomotion} />}
 
@@ -136,7 +128,7 @@ export const ProceduralAnimationInspector = ({
           onClick={() => previous && onSelectFrame(previous.frameIndex)}
           className="grid w-9 shrink-0 place-items-center border-r border-white/10 text-slate-400 transition hover:bg-white/[0.06] hover:text-white disabled:opacity-25"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <SemanticIcon name="chevron-left" className="h-4 w-4" />
         </button>
         <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto p-2" data-animation-frame-strip="true">
           {result.frames.map((frame) => (
@@ -156,7 +148,7 @@ export const ProceduralAnimationInspector = ({
           onClick={() => next && onSelectFrame(next.frameIndex)}
           className="grid w-9 shrink-0 place-items-center border-l border-white/10 text-slate-400 transition hover:bg-white/[0.06] hover:text-white disabled:opacity-25"
         >
-          <ChevronRight className="h-4 w-4" />
+          <SemanticIcon name="chevron-right" className="h-4 w-4" />
         </button>
       </div>
 
@@ -235,29 +227,29 @@ const FrameThumbnail = ({
       {frame.imageDataUrl ? (
         <img src={frame.imageDataUrl} alt="" className="h-full w-full object-contain" />
       ) : (
-        <div className="grid h-full place-items-center text-[0.58rem] uppercase text-slate-600">semantic only</div>
+        <div className="grid h-full place-items-center text-sm text-slate-600">semantic only</div>
       )}
       <span
         className={cn(
-          "absolute top-1 right-1 grid h-5 min-w-5 place-items-center border px-1 text-[0.55rem] font-bold",
+          "absolute top-1 right-1 grid h-5 min-w-5 place-items-center border px-1 text-sm font-bold",
           frame.issues.length > 0
             ? "border-amber-300/35 bg-amber-950/85 text-amber-200"
             : "border-emerald-300/25 bg-emerald-950/80 text-emerald-200",
         )}
       >
-        {frame.issues.length || <CheckCircle2 className="h-3 w-3" />}
+        {frame.issues.length || <SemanticIcon name="check" className="h-3 w-3" />}
       </span>
     </div>
     <div className="px-2 py-1.5">
-      <p className="font-mono text-[0.62rem] text-white">F{frame.frameIndex}</p>
-      <p className="truncate text-[0.56rem] uppercase tracking-wider text-slate-500">{frame.runtimePhase}</p>
+      <p className="font-mono text-sm text-white">F{frame.frameIndex}</p>
+      <p className="truncate text-sm text-slate-500">{frame.runtimePhase}</p>
     </div>
   </button>
 );
 
 const FrameViewCoverage = ({ frame }: { frame: ProceduralAnimationFrameCapture }) => (
   <div className="border-b border-white/10 px-3 py-2" data-animation-view-strip="true">
-    <p className="mb-1.5 text-[0.55rem] font-semibold uppercase tracking-[0.18em] text-violet-200/45">
+    <p className="mb-1.5 text-sm font-semibold text-violet-200/45">
       Spatial coverage · one pose, five diagnostic angles
     </p>
     <div className="flex gap-2 overflow-x-auto pb-1">
@@ -284,12 +276,10 @@ const FrameViewCoverage = ({ frame }: { frame: ProceduralAnimationFrameCapture }
                 />
               </a>
             ) : (
-              <div className="grid h-full place-items-center text-[0.55rem] uppercase text-slate-600">unavailable</div>
+              <div className="grid h-full place-items-center text-sm text-slate-600">unavailable</div>
             )}
           </div>
-          <figcaption className="truncate px-2 py-1.5 text-[0.56rem] uppercase tracking-wider text-slate-400">
-            {view.label}
-          </figcaption>
+          <figcaption className="truncate px-2 py-1.5 text-sm text-slate-400">{view.label}</figcaption>
         </figure>
       ))}
     </div>
@@ -308,10 +298,10 @@ const FrameDiagnostics = ({
   return (
     <div className="grid grid-cols-2 gap-2 px-3 py-2 md:grid-cols-[auto_repeat(8,minmax(0,1fr))]">
       <div className="col-span-2 min-w-32 md:col-span-1">
-        <p className="font-mono text-xs font-semibold text-white">
+        <p className="font-mono text-sm font-semibold text-white">
           F{frame.frameIndex} · {frame.elapsedSeconds.toFixed(3)}s
         </p>
-        <p className="text-[0.58rem] uppercase tracking-wider text-slate-500">
+        <p className="text-sm text-slate-500">
           expected {frame.expectedPhase} · runtime {frame.runtimePhase}
         </p>
       </div>
@@ -337,12 +327,12 @@ const FrameDiagnostics = ({
       <DiagnosticMetric label="R foot Δ" value={formatDegrees(resolveFootStep(frame, previousFrame, "right"))} />
       <div className="col-span-2 md:col-span-9">
         {frame.issues.length > 0 ? (
-          <p className="flex items-center gap-1.5 text-[0.62rem] text-amber-200">
-            <AlertTriangle className="h-3.5 w-3.5 shrink-0" /> {frame.issues.join(" · ")}
+          <p className="flex items-center gap-1.5 text-sm text-amber-200">
+            <SemanticIcon name="warning" className="h-3.5 w-3.5 shrink-0" /> {frame.issues.join(" · ")}
           </p>
         ) : (
-          <p className="flex items-center gap-1.5 text-[0.62rem] text-emerald-300">
-            <CheckCircle2 className="h-3.5 w-3.5" /> No pose assertions failed in this frame
+          <p className="flex items-center gap-1.5 text-sm text-emerald-300">
+            <SemanticIcon name="check" className="h-3.5 w-3.5" /> No pose assertions failed in this frame
           </p>
         )}
       </div>
@@ -371,8 +361,8 @@ function formatFootAngularPeak(
 
 const DiagnosticMetric = ({ label, value }: { label: string; value: string }) => (
   <div className="border border-white/[0.07] bg-white/[0.025] px-2 py-1">
-    <p className="text-[0.52rem] uppercase tracking-wider text-slate-600">{label}</p>
-    <p className="mt-0.5 font-mono text-[0.68rem] text-slate-200">{value}</p>
+    <p className="text-sm text-slate-600">{label}</p>
+    <p className="mt-0.5 font-mono text-sm text-slate-200">{value}</p>
   </div>
 );
 
@@ -394,7 +384,7 @@ const InspectorButton = ({
     disabled={disabled}
     onClick={onClick}
     className={cn(
-      "flex h-8 items-center gap-1.5 border px-2 text-[0.6rem] font-semibold uppercase tracking-wider transition hover:bg-white/[0.07] hover:text-white disabled:opacity-30 [&_img]:h-3 [&_img]:w-3",
+      "flex h-8 items-center gap-1.5 border px-2 text-sm font-semibold transition hover:bg-white/[0.07] hover:text-white disabled:opacity-30 [&_img]:h-3 [&_img]:w-3",
       active ? "border-cyan-300/40 bg-cyan-300/10 text-cyan-100" : "border-white/10 text-slate-300",
     )}
     data-active={active ? "true" : "false"}
@@ -483,10 +473,10 @@ function drawContactSheetViewHeaders(
 }
 
 function resolveShortViewLabel(viewId: ProceduralAnimationViewCapture["id"]): string {
-  if (viewId === "right-profile") return "RIGHT PROFILE";
-  if (viewId === "left-profile") return "LEFT PROFILE";
-  if (viewId === "elevated-three-quarter") return "ELEVATED 3/4";
-  if (viewId === "front-three-quarter") return "FRONT 3/4";
+  if (viewId === "right-profile") return "Right profile";
+  if (viewId === "left-profile") return "Left profile";
+  if (viewId === "elevated-three-quarter") return "Elevated 3/4";
+  if (viewId === "front-three-quarter") return "Front 3/4";
   return viewId.toUpperCase();
 }
 

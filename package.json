@@ -83,11 +83,13 @@
     "lab:harness": "bun --tsconfig-override deploy/athanor/harness/tsconfig.json deploy/athanor/harness/run.ts",
     "lab:harness:test": "bun test --tsconfig-override deploy/athanor/harness/tsconfig.json deploy/athanor/harness",
     "lab:harness:burst": "bun --tsconfig-override deploy/athanor/harness/tsconfig.json deploy/athanor/harness/burst.ts --players 2000",
+    "lab:harness:split": "bun --tsconfig-override deploy/athanor/harness/tsconfig.json deploy/athanor/harness/blitz-split.ts --players 2000",
     "lab:harness:96:frontier": "bun --tsconfig-override deploy/athanor/harness/tsconfig.json deploy/athanor/harness/run.ts --game-type frontier --bots 96 --workers 6 --minutes 10",
     "lab:push-receiver": "bun deploy/athanor/harness/push-receiver.ts",
     "lab:probe-account": "bun deploy/athanor/scripts/probe-deploy-account.ts",
     "lab:probe-herald": "node deploy/athanor/scripts/probe-herald-client.mjs",
     "lab:probe-sandbox-proxy": "bun deploy/athanor/scripts/probe-sandbox-proxy.ts",
+    "test-blitz": "bun apps/launch-service/scripts/test-blitz.ts",
     "summary:weekly": "node scripts/generate-weekly-summary.js",
     "summary:monthly": "DAYS_TO_ANALYZE=30 OUTPUT_PATH=monthly-summary.md node scripts/generate-weekly-summary.js",
     "realm-names:generate": "node scripts/generate-realm-names.mjs",
@@ -101,7 +103,12 @@
     "deploy": "bun --no-env-file deploy/first/deploy.ts",
     "deploy:cloudflare": "bun --no-env-file deploy/first/cloudflare.ts",
     "season": "bun --no-env-file deploy/first/owner-command.ts season",
-    "teardown": "bun --no-env-file deploy/first/teardown.ts"
+    "teardown": "bun --no-env-file deploy/first/teardown.ts",
+    "icons:build": "node scripts/icons/build.mjs",
+    "icons:check": "node --test scripts/icons/*.test.mjs && node scripts/icons/build.mjs --check",
+    "icons:review": "node scripts/icons/review.mjs",
+    "icons:prove": "node scripts/icons/prove.mjs",
+    "icons:measure": "node scripts/icons/measure.mjs"
   },
   "dependencies": {
     "@bibliothecadao/provider": "workspace:*",

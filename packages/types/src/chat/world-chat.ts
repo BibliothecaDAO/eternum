@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as Schema from "effect/Schema";
 
 import {
   displayNameSchema,
@@ -15,35 +15,37 @@ const MAX_MESSAGE_BATCH = 100;
 
 export const GLOBAL_CHAT_CHANNEL_ID = "world:global";
 
-const worldChatSenderSchema = z.object({
+const worldChatSenderSchema = Schema.Struct({
   playerId: playerIdSchema,
-  displayName: displayNameSchema.optional(),
-  avatarUrl: z.string().url().optional(),
+  displayName: Schema.optional(displayNameSchema),
+  avatarUrl: Schema.optional(Schema.Trim.check(Schema.makeFilter((value) => URL.canParse(value)))),
 });
 
-const worldChatMessageSchema = z.object({
+const worldChatMessageSchema = Schema.Struct({
   id: entityIdSchema,
   sender: worldChatSenderSchema,
   zoneId: zoneIdSchema,
   content: messageContentSchema,
   createdAt: timestampSchema,
-  location: mapLocationSchema.optional(),
-  metadata: metadataSchema.optional(),
+  location: Schema.optional(mapLocationSchema),
+  metadata: Schema.optional(metadataSchema),
 });
 
-export const worldChatPublishSchema = z.object({
+export const worldChatPublishSchema = Schema.Struct({
   zoneId: zoneIdSchema,
   content: messageContentSchema,
-  location: mapLocationSchema.optional(),
-  metadata: metadataSchema.optional(),
+  location: Schema.optional(mapLocationSchema),
+  metadata: Schema.optional(metadataSchema),
 });
 
-const worldChatHistoryQuerySchema = z.object({
+const worldChatHistoryQuerySchema = Schema.Struct({
   zoneId: zoneIdSchema,
-  cursor: z.string().optional(),
-  limit: z.number().int().min(1).max(MAX_MESSAGE_BATCH).optional(),
-  since: timestampSchema.optional(),
+  cursor: Schema.optional(Schema.String),
+  limit: Schema.optional(
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(1), Schema.isLessThanOrEqualTo(MAX_MESSAGE_BATCH)),
+  ),
+  since: Schema.optional(timestampSchema),
 });
-export interface WorldChatMessage extends z.infer<typeof worldChatMessageSchema> {}
-export interface WorldChatPublishPayload extends z.infer<typeof worldChatPublishSchema> {}
-export interface WorldChatHistoryQuery extends z.infer<typeof worldChatHistoryQuerySchema> {}
+export interface WorldChatMessage extends Schema.Schema.Type<typeof worldChatMessageSchema> {}
+export interface WorldChatPublishPayload extends Schema.Schema.Type<typeof worldChatPublishSchema> {}
+export interface WorldChatHistoryQuery extends Schema.Schema.Type<typeof worldChatHistoryQuerySchema> {}

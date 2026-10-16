@@ -8,7 +8,7 @@ use crate::game::IPointsDispatcherTrait;
 use crate::hyperstructures::{
     AllocateShares, ConstructionAccess, ConstructionResource, Contribution, HyperstructureRules,
     IHyperstructuresDispatcher, IHyperstructuresDispatcherTrait, IHyperstructuresSafeDispatcher,
-    IHyperstructuresSafeDispatcherTrait, SetConstructionAccess, Share, Stage,
+    IHyperstructuresSafeDispatcherTrait, SetConstructionAccess, Share, ShareAllocation, Stage,
 };
 use crate::registrar::IRegistrarSafeDispatcherTrait;
 use crate::resources::{IResourceOperationsDispatcher, ResourceAmount, ResourceKey, ResourceSlot};
@@ -65,7 +65,7 @@ fn setup_mode_with_threshold(
     if let Some(mode) = mode {
         preset.settlement.mode = mode;
         preset.settlement.spacing = 6;
-        preset.settlement.realms = super::settlement::grants();
+        preset.settlement.realms = super::settlement::grants_for(preset.rules.entry_rule);
     }
     let (deployment, first, second) = super::resource_commands::setup_with_preset(preset);
     start_cheat_caller_address(deployment.games, deployment.games);
@@ -476,7 +476,7 @@ fn blitz_multiplier_counts_realms_in_the_configured_geometry_and_preserves_old_r
             crate::settlement::RealmCreation {
                 realm_id: 3,
                 traits: crate::realms::RealmTraits { wonder: 0, order: 0, resources: array![].span() },
-                grant_troops: false,
+                troops: crate::settlement::StartingTroops::None,
                 activate_economy: false,
             },
         ),
@@ -572,6 +572,103 @@ fn reserved_complete_hyperstructures_have_no_seed_and_discoveries_keep_their_see
     let original = view(deployment).hyperstructure(unfinished).unwrap();
     assert_eq!(original.stage, Stage::Foundation);
     assert_eq!(original.seed, 101);
+    let reserved = view(deployment).hyperstructure(create_reserved(deployment, 31)).unwrap();
+    assert_eq!(reserved.stage, Stage::Complete);
+    assert_eq!(reserved.seed, 0);
+    assert_eq!(view(deployment).hyperstructure(unfinished).unwrap(), original);
+}
+
+#[test]
+fn capture_pays_the_outgoing_owner_and_moves_owner_only_shares_to_the_captor() {
+    let (deployment, hyper, from, second) = setup_mode_with_threshold(
+        true, 0, Some(crate::settlement::SettlementMode::Duel),
+    );
+    complete(deployment, hyper, from);
+    let captor: starknet::ContractAddress = 987.try_into().unwrap();
+    owner(deployment, second, captor);
+    let before = points(deployment, deployment.actor);
+    capture(deployment, hyper, second, 100);
+    assert_eq!(points(deployment, deployment.actor) - before, 100000);
+    assert_eq!(
+        view(deployment).hyperstructure_shares(hyper),
+        ShareAllocation {
+            start_at: 100, multiplier: 2, shareholders: array![Share { player: captor, bps: 10000 }].span(),
+        },
+    );
+    checkpoint(deployment, 150);
+    assert_eq!(points(deployment, deployment.actor) - before, 100000);
+    assert_eq!(points(deployment, captor), 100000);
+}
+
+#[test]
+fn reserved_hyperstructures_hold_an_empty_shares_row_and_earn_nothing_until_their_first_claim() {
+    let (deployment, _, _, second) = setup_mode_with_threshold(true, 0, Some(crate::settlement::SettlementMode::Duel));
+    let reserved = create_reserved(deployment, 31);
+    let mut events = snforge_std::spy_events();
+    assert_eq!(
+        view(deployment).hyperstructure_shares(reserved),
+        ShareAllocation { start_at: 0, multiplier: 0, shareholders: array![].span() },
+    );
+    let actor = points(deployment, deployment.actor);
+    checkpoint(deployment, 60);
+    assert_eq!(points(deployment, deployment.actor), actor);
+    let captor: starknet::ContractAddress = 987.try_into().unwrap();
+    owner(deployment, second, captor);
+    capture(deployment, reserved, second, 100);
+    let claimed = points(deployment, captor);
+    assert_eq!(
+        view(deployment).hyperstructure_shares(reserved),
+        ShareAllocation {
+            start_at: 100, multiplier: 2, shareholders: array![Share { player: captor, bps: 10000 }].span(),
+        },
+    );
+    checkpoint(deployment, 150);
+    assert_eq!(points(deployment, captor) - claimed, 100000);
+    assert_eq!(points(deployment, deployment.actor), actor);
+    // The row exists from creation; the claim checkpoints the empty allocation before writing the captor's.
+    assert_eq!(share_writes(ref events, deployment, reserved), array!['start_at', 'start_at', 'set', 'start_at']);
+}
+
+#[test]
+fn a_hyperstructure_recorded_complete_emits_its_empty_shares_row() {
+    let (deployment, _, _, _) = setup_mode(true);
+    let key = ResourceKey { game_id: 3, entity_id: 777 };
+    let mut events = snforge_std::spy_events();
+    view(deployment).record_hyperstructure(key, 0, true);
+    assert_eq!(share_writes(ref events, deployment, key), array!['set']);
+    assert_eq!(
+        view(deployment).hyperstructure_shares(key),
+        ShareAllocation { start_at: 0, multiplier: 0, shareholders: array![].span() },
+    );
+}
+
+#[test]
+fn capture_leaves_shared_allocations_with_their_shareholders() {
+    let (deployment, hyper, from, second) = setup();
+    complete(deployment, hyper, from);
+    let other: starknet::ContractAddress = 987.try_into().unwrap();
+    assert!(
+        execute(
+            deployment,
+            allocate(
+                hyper, array![Share { player: deployment.actor, bps: 2500 }, Share { player: other, bps: 7500 }].span(),
+            ),
+            100,
+        ),
+    );
+    let allocation = view(deployment).hyperstructure_shares(hyper);
+    let before = (points(deployment, deployment.actor), points(deployment, other));
+    let captor: starknet::ContractAddress = 654.try_into().unwrap();
+    owner(deployment, second, captor);
+    capture(deployment, hyper, second, 120);
+    assert_eq!(
+        IStructureOperationsDispatcher { contract_address: deployment.games }.structure(hyper).unwrap().owner, captor,
+    );
+    assert_eq!(view(deployment).hyperstructure_shares(hyper), allocation);
+    assert_eq!((points(deployment, deployment.actor), points(deployment, other)), before);
+}
+
+fn create_reserved(deployment: super::Deployment, timestamp: u64) -> ResourceKey {
     let coord = crate::troops::Coord { alt: false, x: 2000200, y: 2000000 };
     let tile = crate::geometry::tile_key(3, coord);
     snforge_std::interact_with_state(
@@ -588,16 +685,51 @@ fn reserved_complete_hyperstructures_have_no_seed_and_discoveries_keep_their_see
         || {
             library
                 .create_reserved_hyperstructure(
-                    3, deployment.actor, coord, crate::commands::ActionContext { raw_root: 42, timestamp: 31 },
+                    3,
+                    deployment.actor,
+                    coord,
+                    crate::commands::action_context(crate::commands::load_context(3, 42, timestamp)),
                 );
         },
     );
     stop_cheat_caller_address(deployment.games);
-    let id = snforge_std::interact_with_state(
-        deployment.games, || crate::logic::map::occupancy(tile).unwrap().entity_id,
+    ResourceKey {
+        game_id: 3,
+        entity_id: snforge_std::interact_with_state(
+            deployment.games, || crate::logic::map::occupancy(tile).unwrap().entity_id,
+        ),
+    }
+}
+
+fn capture(deployment: super::Deployment, hyper: ResourceKey, home: ResourceKey, timestamp: u64) {
+    snforge_std::start_cheat_block_timestamp(deployment.games, timestamp);
+    start_cheat_caller_address(deployment.games, deployment.games);
+    crate::guards::IStructureCaptureDispatcherTrait::capture_structure(
+        crate::guards::IStructureCaptureDispatcher { contract_address: deployment.games },
+        hyper,
+        home.entity_id,
+        timestamp,
+        crate::commands::action_context(ExecutionContext { timestamp, ..crate::tests::context(deployment.games, 3) }),
     );
-    let reserved = view(deployment).hyperstructure(ResourceKey { game_id: 3, entity_id: id }).unwrap();
-    assert_eq!(reserved.stage, Stage::Complete);
-    assert_eq!(reserved.seed, 0);
-    assert_eq!(view(deployment).hyperstructure(unfinished).unwrap(), original);
+    stop_cheat_caller_address(deployment.games);
+}
+
+/// The shares writes one hyperstructure emitted, in order: 'set' for a full row, else the member written.
+fn share_writes(
+    ref events: snforge_std::EventSpy, deployment: super::Deployment, hyper: ResourceKey,
+) -> Array<felt252> {
+    let mut writes = array![];
+    for (_, event) in events.get_events().emitted_by(deployment.games).events.span() {
+        if event.keys.len() < 4
+            || *event.keys.at(3) != 'HyperstructureShares'
+            || *event.data.at(2) != hyper.entity_id.into() {
+            continue;
+        }
+        if *event.keys.at(1) == selector!("RowSet") {
+            writes.append('set');
+        } else if *event.keys.at(1) == selector!("RowMemberSet") {
+            writes.append(*event.keys.at(4));
+        }
+    }
+    writes
 }

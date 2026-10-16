@@ -8,7 +8,7 @@ The character gym can replay an animation from frame zero at the configured fixe
 or a five-view phase atlas, and reconstruct any captured frame exactly. This removes wall-clock timing and camera drift
 from animation review.
 
-Open `/debug/procedural-characters` and choose **Frames**. The inspector provides:
+Open `/lab/characters` and choose **Frames**. The inspector provides:
 
 - a horizontally scrollable frame strip;
 - expected and actual action phases;

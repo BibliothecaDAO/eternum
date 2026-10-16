@@ -7,12 +7,10 @@ import { DevSyncOverlay } from "../debug/dev-sync-overlay";
 import { SurfaceHost } from "../design-system/molecules/popover";
 import { Tooltip } from "../design-system/molecules/tooltip";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
-import { ExplorationAutomationManager } from "../features/infrastructure/automation/exploration-automation-manager";
 import { TransferAutomationManager } from "../features/infrastructure/automation/transfer-automation-manager";
 import { ActionInfo } from "../features/world/components/actions/action-info";
 import { BottomRightPanel } from "../features/world/components/bottom-right-panel";
 import { ContextMenu } from "../features/world/components/context-menu/context-menu";
-import { BlitzSetHyperstructureShareholdersTo100 } from "../features/world/components/hyperstructures/blitz-hyperstructure-shareholder";
 import { CompactHud } from "../features/world/containers/compact-hud";
 import { LeftCommandSidebar } from "../features/world/containers/left-command-sidebar";
 import { LeftViewSurfaces } from "../features/world/containers/left-view-surfaces";
@@ -80,7 +78,6 @@ const BackgroundSystems = () => (
     <RelicCrateOpenings />
     <BlockTimestampPoller />
     <GameCycleEffects />
-    <BlitzSetHyperstructureShareholdersTo100 />
     <AutomationSystems />
     <ExpeditionRollover />
     <SentryUserSync />
@@ -94,7 +91,6 @@ const AutomationSystems = () => {
     <>
       <AutomationManager />
       <TransferAutomationManager />
-      <ExplorationAutomationManager />
     </>
   );
 };
@@ -160,7 +156,7 @@ const ArenaHud = () => {
 };
 
 const VersionDisplay = () => (
-  <div className="absolute bottom-4 right-6 text-xs text-white/60 hover:text-white pointer-events-auto bg-white/20 rounded-lg p-1 max-lg:hidden">
+  <div className="absolute bottom-4 right-6 text-sm text-white/60 hover:text-white pointer-events-auto bg-white/20 rounded-lg p-1 max-lg:hidden">
     <a target="_blank" href={"https://github.com/BibliothecaDAO/eternum"} rel="noopener noreferrer">
       {env.VITE_PUBLIC_GAME_VERSION}
     </a>

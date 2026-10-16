@@ -59,10 +59,16 @@ describe("MadaraSubscriptions", () => {
     await started;
     await vi.waitFor(() => expect(accepted).toEqual(["ready", "head:12"]));
     expect(socket.sent).toContainEqual({
+      id: 3,
+      jsonrpc: "2.0",
+      method: "starknet_subscribeNewTransactionReceipts",
+      params: { finality_status: ["PRE_CONFIRMED"] },
+    });
+    expect(socket.sent).toContainEqual({
       id: 4,
       jsonrpc: "2.0",
       method: "starknet_subscribeNewTransactions",
-      params: { finality_status: ["PRE_CONFIRMED", "ACCEPTED_ON_L2"] },
+      params: { finality_status: ["PRE_CONFIRMED"] },
     });
     subscriptions.stop();
   });

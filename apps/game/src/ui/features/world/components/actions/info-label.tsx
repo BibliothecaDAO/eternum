@@ -31,7 +31,7 @@ const INFO_LABEL_VARIANT_STYLES: Record<
 };
 
 const INFO_LABEL_BASE_CLASSES =
-  "relative flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold leading-tight transition-colors duration-200 backdrop-blur-[2px]";
+  "relative flex items-center gap-1 rounded-md border px-2 py-1 text-sm font-semibold leading-tight transition-colors duration-200 backdrop-blur-[2px]";
 
 const amplifyOpacity = (color?: string) => {
   if (!color) return color;

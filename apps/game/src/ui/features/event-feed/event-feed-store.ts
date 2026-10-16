@@ -27,6 +27,13 @@ interface EventFeedStore {
 
 let nextNoticeId = 0;
 
+/** The same words again, as when one refused click is refused on two paths: one row, at the latest moment. */
+const repeats = (notice: Pick<FeedNotice, "kind" | "title" | "description">, other: FeedNotice) =>
+  typeof notice.title === "string" &&
+  other.kind === notice.kind &&
+  other.title === notice.title &&
+  other.description === notice.description;
+
 /**
  * The event feed's own state: notices. Transaction rows come from the transaction store and arrival rows from the
  * `resourceArrivals` slice — the feed derives its rows from those, it never copies them.
@@ -38,7 +45,7 @@ export const useEventFeedStore = create<EventFeedStore>()((set) => ({
     set((state) => ({
       notices: [
         { ...notice, id: noticeId, ttlMs, at: Date.now() },
-        ...state.notices.filter((n) => n.id !== noticeId),
+        ...state.notices.filter((n) => n.id !== noticeId && !repeats(notice, n)),
       ].slice(0, MAX_NOTICES),
     }));
     return noticeId;

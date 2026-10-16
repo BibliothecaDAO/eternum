@@ -11,9 +11,10 @@ import {
 } from "./native/read-models";
 import { isCheckGame, type DirectoryInput, type GameDirectorySource } from "./game-directory";
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
-import type { GameSnapshot, ReplayMetrics } from "./types";
+import type { GameSnapshot } from "./types";
 import type { HistoryQuery, HistoryStore } from "./history-store";
 import type { ShardManifest } from "@bibliothecadao/eternum/game-sync";
+import { isDevShardChain } from "@realms-world/value-ledger/dev-shard";
 
 interface SnapshotSource extends GameDirectorySource {
   snapshot: (
@@ -42,7 +43,6 @@ interface HeraldHttpState {
   chainTimestamp: () => number;
   decodedModelCount: number;
   fold: SnapshotSource;
-  metrics: ReplayMetrics;
   history?: Pick<
     HistoryStore,
     "queryStoryCursor" | "queryEvents" | "reviewSnapshot" | "activity" | "frontierHistory" | "frontierDayRanks"
@@ -120,7 +120,10 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
   const dayRanksPath = /^\/games\/([0-9]+)\/days\/([0-9]+)\/ranks$/;
   const leaderboardPath = /^\/games\/([0-9]+)\/leaderboard$/;
 
-  return async (request) => {
+  // Browsers hide a cross-origin request's connect, TLS and wait timings unless the response allows it. Only a dev chain
+  // shows them: the chain identity, not a setting, decides, so no production deploy can carry it.
+  const timingAllowed = isDevShardChain(state.manifest.chainId);
+  const answer = async (request: Request): Promise<Response> => {
     const url = new URL(request.url);
     if (request.method === "OPTIONS") return new Response(null, { headers: PUBLIC_READ_HEADERS, status: 204 });
     if (request.method === "GET" && url.pathname === `${directoryPath}/updates`) {
@@ -139,7 +142,6 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
           ...(failure ? { ingestion_failure: failure } : {}),
           confirmed_block: state.confirmedBlock(),
           decoded_models: state.decodedModelCount,
-          metrics: state.metrics,
           service: "herald",
           success: !failure,
           undecodable_events: state.undecodableEventCount(),
@@ -245,6 +247,11 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
       const message = error instanceof Error ? error.message : String(error);
       return jsonResponse({ error: message }, 400);
     }
+  };
+  return async (request) => {
+    const response = await answer(request);
+    if (timingAllowed) response.headers.set("Timing-Allow-Origin", "*");
+    return response;
   };
 };
 
