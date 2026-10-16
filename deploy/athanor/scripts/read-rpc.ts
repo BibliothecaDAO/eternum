@@ -103,7 +103,25 @@ function isRead(call: unknown): boolean {
   return request.jsonrpc === "2.0" && typeof request.method === "string" && READ_METHODS.has(request.method);
 }
 
+/**
+ * Every refusal the RPC answers is logged with its reason. Lines wait for the next turn of the event loop and are
+ * written together, after the answers that caused them: a refusal's log never adds an await or a write to any request.
+ */
+const refusals: Record<string, unknown>[] = [];
+function logRefusal(refusal: Record<string, unknown>) {
+  if (refusals.push({ event: "rpc_refused", ...refusal }) === 1) setTimeout(writeRefusals, 0);
+}
+function writeRefusals() {
+  console.log(
+    refusals
+      .splice(0)
+      .map((refusal) => JSON.stringify(refusal))
+      .join("\n"),
+  );
+}
+
 function refuse(code: number, message: string, status = 200, data?: object): Response {
+  logRefusal({ code, message, status, ...data });
   return Response.json(
     { jsonrpc: "2.0", id: null, error: { code, message, ...(data ? { data } : {}) } },
     { status, headers: CORS },
@@ -331,16 +349,22 @@ async function nodeCall(
   if (!response.ok || value.result === undefined || Object.hasOwn(value, "error")) throw new Error("Node unavailable");
   return value.result;
 }
-function transactionRefused(id: unknown, reason: PlayRefusalReason) {
-  return rpcError(id, PLAY_REFUSED_CODE, "Transaction refused", { reason });
+function transactionRefused(call: RpcCall, reason: PlayRefusalReason) {
+  return refusedCall(call, PLAY_REFUSED_CODE, "Transaction refused", { reason });
 }
 function rpcError(id: unknown, code: number, message: string, data?: object) {
   return { jsonrpc: "2.0", id: id ?? null, error: { code, message, ...(data ? { data } : {}) } };
 }
+/** One call of a batch refused, logged with its method and, for a write, its sender. */
+function refusedCall(call: RpcCall, code: number, message: string, data?: object) {
+  const sender = (invokeFrom(call) as { sender_address?: unknown } | undefined)?.sender_address;
+  logRefusal({ code, message, method: call.method, ...(typeof sender === "string" ? { sender } : {}), ...data });
+  return rpcError(call.id, code, message, data);
+}
 /** The proxy tried to forward and cannot say whether the node took the write: the hash it computed, if any. */
-function outcomeUnknown(id: unknown, transactionHash?: string) {
-  return rpcError(
-    id,
+function outcomeUnknown(call: RpcCall, transactionHash?: string) {
+  return refusedCall(
+    call,
     -32011,
     "Transaction outcome unknown",
     transactionHash ? { transaction_hash: transactionHash } : undefined,
@@ -376,7 +400,7 @@ function readAnswer(answer: NodeAnswer, call: RpcCall): unknown {
       typeof code === "number" &&
       ESTIMATE_REFUSALS.has(code)
     )
-      return rpcError(call.id, -32013, "Estimate refused");
+      return refusedCall(call, -32013, "Estimate refused");
     if (
       code === 29 &&
       (call.method === "starknet_getTransactionStatus" || call.method === "starknet_getTransactionReceipt")
@@ -384,7 +408,7 @@ function readAnswer(answer: NodeAnswer, call: RpcCall): unknown {
       return rpcError(call.id, 29, "Transaction hash not found");
     if (typeof code === "number" && READ_NOT_FOUND.has(code)) return rpcError(call.id, code, READ_NOT_FOUND.get(code)!);
   }
-  return rpcError(call.id, -32012, "RPC read unavailable");
+  return refusedCall(call, -32012, "RPC read unavailable");
 }
 // Starknet's VALIDATION_FAILURE: the account's own validation refused the transaction at admission, so it never applies.
 const VALIDATION_FAILURE = 55;
@@ -392,9 +416,9 @@ function writeAnswer(answer: NodeAnswer, call: RpcCall, expectedHash?: string): 
   const result = answer.result as { transaction_hash?: unknown; contract_address?: unknown } | undefined;
   const hash = felt(result?.transaction_hash);
   if (answer.error?.code === VALIDATION_FAILURE && !Object.hasOwn(answer, "result"))
-    return transactionRefused(call.id, "validation");
+    return transactionRefused(call, "validation");
   if (Object.hasOwn(answer, "error") || hash === undefined || (expectedHash && hash !== felt(expectedHash)))
-    return outcomeUnknown(call.id, expectedHash);
+    return outcomeUnknown(call, expectedHash);
   const contract = call.method === "starknet_addDeployAccountTransaction" ? felt(result?.contract_address) : undefined;
   return {
     jsonrpc: "2.0",
@@ -420,7 +444,7 @@ async function forwardRequest(
   const { call, game } = admitted;
   const play = game?.entrypoint.stamp ? game.transaction : undefined;
   const account = play ? felt(play.sender_address)!.toString() : undefined;
-  if (account && inFlightAccounts.has(account)) return transactionRefused(call.id, "in-flight");
+  if (account && inFlightAccounts.has(account)) return transactionRefused(call, "in-flight");
   if (account) inFlightAccounts.add(account);
   let forwarded = false;
   let expectedHash: string | undefined;
@@ -438,14 +462,14 @@ async function forwardRequest(
         preparation.signal,
       );
       // Retrying the same accepted transaction uses the same root.
-      if (felt(accountClass) !== felt(identity.accountClassHash)) return transactionRefused(call.id, "validation");
+      if (felt(accountClass) !== felt(identity.accountClassHash)) return transactionRefused(call, "validation");
       if (!admitsNonce(felt(play.nonce), felt(nonce), seaters.has(felt(play.sender_address)!)))
-        return transactionRefused(call.id, "nonce");
+        return transactionRefused(call, "nonce");
       assertBeforeForward(preparation);
       stage = "stamp";
       const stamp = stamper.stamp(play);
       const hash = felt(stamp.transactionHash);
-      if (hash === undefined) return transactionRefused(call.id, "stamp");
+      if (hash === undefined) return transactionRefused(call, "stamp");
       stage = "unavailable";
       expectedHash = `0x${hash.toString(16)}`;
       outgoing = { ...call, params: [{ ...play, signature: [...play.signature, ...stamp.suffix] }] };
@@ -466,10 +490,10 @@ async function forwardRequest(
     if (!response.ok || !validReply(answer, call)) throw new Error("Invalid private node reply");
     return isWrite(call) ? writeAnswer(answer, call, expectedHash) : readAnswer(answer, call);
   } catch (error) {
-    if (!isWrite(call)) return rpcError(call.id, -32012, "RPC read unavailable");
+    if (!isWrite(call)) return refusedCall(call, -32012, "RPC read unavailable");
     return forwarded
-      ? outcomeUnknown(call.id, expectedHash)
-      : transactionRefused(call.id, refusalOf(error, preparation, stage));
+      ? outcomeUnknown(call, expectedHash)
+      : transactionRefused(call, refusalOf(error, preparation, stage));
   } finally {
     if (account) inFlightAccounts.delete(account);
   }
