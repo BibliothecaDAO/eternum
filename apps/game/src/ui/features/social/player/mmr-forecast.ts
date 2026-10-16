@@ -3,7 +3,7 @@ import { fetchDirectory } from "@/runtime/world/directory";
 import { getActiveGame } from "@/runtime/world";
 import { environmentLedger, type RankedWallet, type SlotKey } from "@/shell/value/ledger";
 import { configManager } from "@bibliothecadao/eternum";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 import { normalizeLeaderboardAddress } from "./finalized-blitz-leaderboard";
@@ -78,7 +78,6 @@ export const useMmrForecast = (pointsByAccount: ReadonlyMap<string, { points: nu
     enabled: rated.data === true && ranked.length > 0,
     staleTime: Infinity,
     retry: false,
-    placeholderData: keepPreviousData,
   });
 
   return useMemo((): MmrForecast => {
@@ -86,6 +85,7 @@ export const useMmrForecast = (pointsByAccount: ReadonlyMap<string, { points: nu
     if (slot.isError || rated.isError || preview.isError) return { status: "unavailable" };
     if (slot.isPending || (key !== null && rated.isPending)) return { status: "waiting" };
     if (key === null || rated.data !== true || ranked.length === 0) return { status: "off" };
+    // Only this ranking's answer is a forecast: while the ledger is asked again, the last ranking's deltas are not shown.
     if (!preview.data) return { status: "waiting" };
     const accountOf = new Map((roster?.players ?? []).map((seat) => [seat.wallet, seat.account]));
     const deltaByAccount = new Map<string, number>();
@@ -110,9 +110,14 @@ export const useMmrForecast = (pointsByAccount: ReadonlyMap<string, { points: nu
   ]);
 };
 
-/** A live game's slot on the ledger, from our directory; null for a game outside any slot (a free game). */
+/**
+ * A live game's slot on the ledger, from our directory; null only for a game it lists outside any slot (a free game).
+ * A shard or game it could not read, or a game it does not list, is unknown, not free: the read fails, so the forecast
+ * says unavailable and a later opening asks again.
+ */
 const findSlot = async (chainId: string, gameId: number): Promise<SlotKey | null> => {
   const shard = (await fetchDirectory()).find((listed) => BigInt(listed.chainId) === BigInt(chainId));
-  const slotId = shard?.games?.find((entry) => entry.game_id === gameId)?.slotId ?? null;
-  return slotId === null ? null : { shard: shard!.chainId, slotId };
+  const entry = shard?.games?.find((game) => game.game_id === gameId);
+  if (!shard || !entry || entry.error || entry.slotId === undefined) throw new Error("game_slot_unavailable");
+  return entry.slotId === null ? null : { shard: shard.chainId, slotId: entry.slotId };
 };

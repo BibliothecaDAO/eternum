@@ -66,6 +66,24 @@ describe("the leaderboard's columns", () => {
   });
 });
 
+describe("the scoring rules on a phone", () => {
+  it("give every activity's points in one line, where the activity columns are hidden", () => {
+    const html = renderToStaticMarkup(
+      <PlayerList
+        players={[player]}
+        grants={grants}
+        mmr="off"
+        viewPlayerInfo={() => {}}
+        whitelistPlayer={() => {}}
+        isLoading={false}
+      />,
+    );
+    expect(html).toContain(
+      '<p aria-label="Scoring rules" class="px-3 pb-2 text-xs text-gold/60 md:hidden">Tiles 5 each · Crates 250 each · Rifts/Camps 300 each · HS Taken 1.5K each · HS Held 2/s a realm</p>',
+    );
+  });
+});
+
 describe("the MMR column", () => {
   const rows = (mmr: "off" | "ready" | "unavailable", players: PlayerCustom[]) =>
     renderToStaticMarkup(

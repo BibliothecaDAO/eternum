@@ -229,6 +229,7 @@ export const PlayerList = ({
 
   return (
     <div className="flex flex-col">
+      <ScoringRulesLine showTribeDetails={showTribeDetails} grants={grants} />
       <PlayerListHeader
         showTribeDetails={showTribeDetails}
         grants={grants}
@@ -327,6 +328,19 @@ const resolveColumns = (
         ]),
   ];
 };
+
+/**
+ * The scoring rules where the activity columns are hidden (a phone): the same grants the wide header puts under each
+ * column, in one line above the table.
+ */
+const ScoringRulesLine = ({ showTribeDetails, grants }: { showTribeDetails: boolean; grants: VictoryPointGrants }) => (
+  <p aria-label="Scoring rules" className="px-3 pb-2 text-xs text-gold/60 md:hidden">
+    {resolveColumns(showTribeDetails, grants, "off")
+      .filter((column) => column.grant)
+      .map((column) => `${column.label} ${column.grant}`)
+      .join(" · ")}
+  </p>
+);
 
 const PlayerListHeader = ({
   showTribeDetails,
