@@ -1,17 +1,16 @@
-import { ResourcesIds } from "@bibliothecadao/types";
+import { ETERNUM_CONFIG } from "@/utils/config";
+import { formatNumberWithCommas } from "@/utils/formatting";
+import { resources } from "@bibliothecadao/types";
 import ResourceIcon from "../ResourceIcon";
 import { section, table } from "../styles";
-import { formatNumberWithCommas } from "@/utils/formatting";
 
+type ExplorationReward = { rewardId: number; percent: number; probabilityBps: number };
+
+/** A reveal's possible rewards, from the Blitz config: a share of the exploring army's strength, up to the cap. */
 export const ExplorationRewards = () => {
-  const rewards = [
-    { material: "Essence", id: ResourcesIds.Essence, percent: 15, chance: 35 },
-    { material: "Essence", id: ResourcesIds.Essence, percent: 30, chance: 25 },
-    { material: "Essence", id: ResourcesIds.Essence, percent: 60, chance: 15 },
-    { material: "Labor", id: ResourcesIds.Labor, percent: 50, chance: 15 },
-    { material: "Labor", id: ResourcesIds.Labor, percent: 100, chance: 5 },
-    { material: "Donkeys", id: ResourcesIds.Donkey, percent: 50, chance: 5 },
-  ];
+  const config = ETERNUM_CONFIG("blitz");
+  const rewards: ExplorationReward[] = config.blitz.exploration.rewards;
+  const strengthCap: number = config.troop.limit.exploreRewardStrengthCap;
 
   return (
     <div style={section.wrapper}>
@@ -23,24 +22,27 @@ export const ExplorationRewards = () => {
             <tr>
               <th style={table.headerCell}>Material</th>
               <th style={table.headerCell}>Share of army strength</th>
-              <th style={table.headerCell}>1,000 T1 troops earn</th>
+              <th style={table.headerCell}>An army at {formatNumberWithCommas(strengthCap)} strength finds</th>
               <th style={table.headerCell}>Chance of Discovery</th>
             </tr>
           </thead>
           <tbody>
-            {rewards.map((reward, index) => (
-              <tr key={index}>
-                <td style={table.resourceCell}>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
-                    <ResourceIcon name={reward.material} id={reward.id} size="sm" />
-                    {reward.material}
-                  </span>
-                </td>
-                <td style={table.cell}>{reward.percent}%</td>
-                <td style={table.cell}>{formatNumberWithCommas(reward.percent * 10)}</td>
-                <td style={table.cell}>{reward.chance}%</td>
-              </tr>
-            ))}
+            {rewards.map((reward, index) => {
+              const material = resources.find((resource) => resource.id === reward.rewardId)?.trait ?? "";
+              return (
+                <tr key={index}>
+                  <td style={table.resourceCell}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+                      <ResourceIcon name={material} id={reward.rewardId} size="sm" />
+                      {material}
+                    </span>
+                  </td>
+                  <td style={table.cell}>{reward.percent}%</td>
+                  <td style={table.cell}>{formatNumberWithCommas((reward.percent * strengthCap) / 100)}</td>
+                  <td style={table.cell}>{reward.probabilityBps / 100}%</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
