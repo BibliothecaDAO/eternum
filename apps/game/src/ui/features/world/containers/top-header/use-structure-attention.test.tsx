@@ -13,6 +13,7 @@ const chain = vi.hoisted(() => ({
     storyPayload: Record<string, unknown>;
     position: { block: number; transactionIndex: number; eventIndex: number };
     confirmation: { preconfirmed: boolean; confirmedAfterAttach: boolean };
+    streamGeneration: number | null;
   }[],
   read: "success" as "pending" | "success" | "error",
 }));
@@ -67,6 +68,7 @@ const battle = (block: number, defender: number, striker: string, holder: string
   owner: striker,
   position: { block, transactionIndex: 0, eventIndex: 0 },
   confirmation: { preconfirmed: false, confirmedAfterAttach: live },
+  streamGeneration: live ? 0 : null,
   storyPayload: {
     attacker_id: 900,
     defender_id: defender,

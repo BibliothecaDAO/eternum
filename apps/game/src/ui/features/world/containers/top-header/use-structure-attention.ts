@@ -2,6 +2,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
@@ -44,6 +45,7 @@ export const useStructureAttention = () => {
  */
 const usePlayerCombatHistory = (): CombatHistory | null => {
   const player = useAccountStore((state) => state.account?.address);
+  const streamGeneration = useConnectionStore((state) => state.lastGlobalHandshake);
   const battles = useStoryEvents(COMBAT_HISTORY, "BattleEvent", player);
   const raids = useStoryEvents(COMBAT_HISTORY, "RaidEvent", player);
   const transfers = useStoryEvents(COMBAT_HISTORY, "TroopsTransferred", player);
@@ -52,10 +54,10 @@ const usePlayerCombatHistory = (): CombatHistory | null => {
     () =>
       known
         ? {
-            actions: guardActions([...battles.data, ...raids.data, ...transfers.data]),
+            actions: guardActions([...battles.data, ...raids.data, ...transfers.data], streamGeneration),
             isPlayer: (address) => address !== null && isAddressEqualToAccount(address),
           }
         : null,
-    [known, battles.data, raids.data, transfers.data],
+    [known, battles.data, raids.data, transfers.data, streamGeneration],
   );
 };

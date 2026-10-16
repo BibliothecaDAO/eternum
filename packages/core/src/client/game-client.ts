@@ -168,6 +168,7 @@ const startSync = async (
     release.dispose();
     outcomes.abort(new Error("Game client disposed"));
   };
+  runtime.subscribeResynced(() => input.observer?.onResynced?.());
   await runtime.startSession(session);
   await release.ready();
   // Chain time must be known before the first spatial projection reads it.

@@ -56,9 +56,11 @@ function attackedStructures(now: number, guards: readonly NativeRows["Guard"][],
 }
 
 /**
- * The action behind a structure's current cooldown: its latest action, when that came over the live stream. Herald
- * streams each block's stories with its facts, gap-checked, so no action newer than a live one is unread. A latest
- * action read from history only may have newer ones not read yet: null, and the structure stays unclassified.
+ * The action behind a structure's current cooldown: its latest action, when that came over the current stream. Herald
+ * sends an action's stories in the same gap-checked diff as its facts, and the client takes the stories first, so
+ * within one stream no action newer than a live one is unread. Across a reconnect or a replacement snapshot that no
+ * longer holds: the new facts may follow actions whose stories are not read yet. So a latest action read from history,
+ * or delivered by an earlier stream, gives null, and the structure stays unclassified until one arrives live again.
  */
 function currentAction(combat: CombatHistory, structureId: number): GuardAction | null {
   const latest = combat.actions
@@ -92,6 +94,7 @@ interface ActionStory {
   storyPayload: Record<string, unknown>;
   position: ChainPlace;
   confirmation: { preconfirmed: boolean; confirmedAfterAttach?: boolean } | null;
+  streamGeneration: number | null;
 }
 
 /**
@@ -99,11 +102,12 @@ interface ActionStory {
  * guards strike out, the attacker's own; a raid hits the raided structure's; troops moved into a guard merge their
  * cooldown into it, the player's own act.
  */
-export function guardActions(stories: readonly ActionStory[]): GuardAction[] {
+export function guardActions(stories: readonly ActionStory[], streamGeneration: number): GuardAction[] {
   return stories.flatMap((event) => {
     const value = event.storyPayload;
+    const live = isLive(event, streamGeneration);
     const on = (structureId: unknown, striker: unknown, holder: unknown) =>
-      actionOn(event, structureId, striker, holder);
+      actionOn(event, live, structureId, striker, holder);
     if (event.story === "RaidEvent") return [on(value.structure_id, value.player, value.target_owner)];
     if (event.story === "TroopsTransferred") {
       const guard = (value.target as { Guard?: { structure_id?: unknown } } | undefined)?.Guard;
@@ -115,16 +119,23 @@ export function guardActions(stories: readonly ActionStory[]): GuardAction[] {
   });
 }
 
-const actionOn = (event: ActionStory, structureId: unknown, striker: unknown, holder: unknown): GuardAction => ({
+const actionOn = (
+  event: ActionStory,
+  live: boolean,
+  structureId: unknown,
+  striker: unknown,
+  holder: unknown,
+): GuardAction => ({
   structureId: safeInteger(structureId as bigint | number | string),
   place: event.position,
-  live: isLive(event.confirmation),
+  live,
   striker: striker == null ? null : String(striker),
   holder: holder == null ? null : String(holder),
 });
 
-/** Delivered by this session's stream after its snapshot: pre-confirmed, or confirmed after the socket attached. */
-const isLive = (confirmation: ActionStory["confirmation"]): boolean =>
+/** Delivered by the current stream after its snapshot: pre-confirmed, or confirmed after the socket attached. */
+const isLive = ({ confirmation, streamGeneration }: ActionStory, current: number): boolean =>
+  streamGeneration === current &&
   Boolean(confirmation && (confirmation.preconfirmed || confirmation.confirmedAfterAttach));
 
 const playerOf = (side: unknown): unknown => (side as { player?: unknown } | undefined)?.player;

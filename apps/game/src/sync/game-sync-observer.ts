@@ -85,6 +85,9 @@ export const createGameSyncObserver = (input: GameSyncObserverInput): GameClient
     markGameEntryMilestone("initial-sync-started");
   },
   onSubscriptionActive: recordGamewideSubscriptionActive,
+  // A replacement snapshot starts the stream over as a reconnect does: history is read again, and what the earlier
+  // stream delivered no longer vouches for the facts.
+  onResynced: () => useConnectionStore.getState().recordGlobalHandshake(),
   onConnection: (reachable) => useConnectionStore.getState().setGlobalStatus(reachable ? "connected" : "reconnecting"),
   onLiveUpdate: recordGamewideLiveUpdate,
   onLiveApplyFailed: () => useConnectionStore.getState().setGlobalStatus("failed"),

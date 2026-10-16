@@ -34,6 +34,12 @@ interface StoryEventData {
   owner: string | null;
   /** Every player the story names (`storyParticipants`), the set Herald's history filters a player's read by. */
   participants: string[];
+  /**
+   * The stream generation (the connection's last handshake) a streamed story arrived in; null when read from history.
+   * A reconnect or a replacement snapshot starts a new generation, so what an older stream delivered proves nothing
+   * about the facts the new one brings.
+   */
+  streamGeneration: number | null;
   story: string;
   storyPayload: Record<string, unknown>;
   timestamp: string;
@@ -121,6 +127,7 @@ const storyEventFromValue = (
     position: chainPosition,
     owner: owner === null || owner === undefined ? null : String(owner),
     participants: storyParticipants(value).owners,
+    streamGeneration: null,
     entity_id: storyEntityId(value.entity_id ?? value.explorer_id ?? value.attacker_id),
     tx_hash: transactionHash,
     story: variant.type,
@@ -135,8 +142,12 @@ export const toStreamStoryEvent = (
   event: GameSyncEvent,
   scope: StoryEventScope,
   confirmation?: GameSyncEventConfirmation,
-): StreamStoryEvent | null =>
-  EVENT_MODELS.has(event.model) ? storyEventFromValue(event.model, event.value, scope, confirmation) : null;
+): StreamStoryEvent | null => {
+  const story = EVENT_MODELS.has(event.model)
+    ? storyEventFromValue(event.model, event.value, scope, confirmation)
+    : null;
+  return story && { ...story, streamGeneration: useConnectionStore.getState().lastGlobalHandshake };
+};
 
 const chainPositionOf = (position: Record<string, unknown>): ChainPosition | null => {
   const { block_number: block, transaction_index: transactionIndex, event_index: eventIndex } = position;

@@ -5,6 +5,8 @@ import { guardActions, nextAttentionItem, resolveStructureAttention, type Combat
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
 const ME = "0xme";
+/** The current stream generation: the last handshake. */
+const STREAM = 7;
 const THEM = "0xthem";
 const structure = (entityId: number) => ({ entityId }) as Structure;
 const guard = (entityId: number, end: number) =>
@@ -17,6 +19,7 @@ const story = (block: number, kind: string, owner: string | null, payload: Recor
   storyPayload: payload,
   position: { block, transactionIndex: 0, eventIndex: 0 },
   confirmation: { preconfirmed: false, confirmedAfterAttach: by === "live" },
+  streamGeneration: by === "live" ? STREAM : null,
 });
 /** A battle in `block` against structure `defender`'s guards, struck by `striker` while `holder` held it. */
 const battle = (
@@ -50,7 +53,7 @@ const reinforce = (block: number, structureId: number, by: Arrival = "live") =>
     by,
   );
 const history = (stories: Parameters<typeof guardActions>[0]): CombatHistory => ({
-  actions: guardActions(stories),
+  actions: guardActions(stories, STREAM),
   isPlayer: (address) => address === ME,
 });
 const attacked = (guards: NativeRows["Guard"][], combat: CombatHistory | null, now = 120) =>
@@ -124,4 +127,11 @@ it("cycles attention before suggestions and recovers when an item disappears", (
   expect(nextAttentionItem(items, "suggestion:1")?.key).toBe("attention:1");
   expect(nextAttentionItem(items, "removed")?.key).toBe("attention:1");
   expect(nextAttentionItem([], null)).toBeUndefined();
+});
+it("stays silent on actions an earlier stream delivered, after a reconnect or a replacement snapshot", () => {
+  const before = battle(30, 1, THEM, ME);
+  const earlier = { ...before, streamGeneration: STREAM - 1 };
+  expect(attacked([guard(1, 170)], history([before]))).toEqual([1]);
+  expect(attacked([guard(1, 170)], history([earlier]))).toEqual([]);
+  expect(attacked([guard(1, 170)], history([earlier, battle(115, 1, THEM, ME)]))).toEqual([1]);
 });
