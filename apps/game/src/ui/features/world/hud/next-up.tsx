@@ -18,8 +18,19 @@ import { type RealmLevelUp, useRealmLevelUp } from "@/ui/modules/entity-details/
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { configManager, Position, structureMapPosition } from "@bibliothecadao/eternum";
 import type { ID, Structure } from "@bibliothecadao/types";
-import { useMemo, useState } from "react";
-import { resolveStructureAttention } from "./attention-policy";
+import { useEffect, useMemo, useState } from "react";
+import { resolveStructureAttention } from "@/ui/features/world/containers/top-header/attention-policy";
+import { useNextUpShows } from "./next-up-shows";
+
+/** Tells the screen what Next up shows (`useNextUpShows`), and that it shows nothing once it unmounts. */
+const usePublishShown = (step: NextStep | undefined) => {
+  const levelUpOf = step?.kind === "level-up" ? step.realmId : null;
+  const showing = step !== undefined;
+  useEffect(() => {
+    useNextUpShows.setState({ shown: showing ? { levelUpOf } : null });
+  }, [showing, levelUpOf]);
+  useEffect(() => () => useNextUpShows.setState({ shown: null }), []);
+};
 
 /** A realm's level-up, read and sent by the realm's own hook; or any other step, with its line and its one verb. */
 type NextStep =
@@ -34,9 +45,10 @@ type NextStep =
 export const NextUp = () => {
   const steps = useNextSteps();
   const [cursor, setCursor] = useState(0);
-  if (steps.length === 0) return null;
-  const index = cursor % steps.length;
-  const step = steps[index];
+  const index = steps.length === 0 ? 0 : cursor % steps.length;
+  const step = steps[index] as NextStep | undefined;
+  usePublishShown(step);
+  if (!step) return null;
   return (
     <section
       aria-label="Next up"
@@ -145,13 +157,22 @@ function useAttentionSteps(): NextStep[] {
   const arrivedIds = useUIStore((state) => state.arrivedArrivalStructureIds);
   const now = Math.floor(useNowMs() / 1000);
   const revision = useNativeRevision(["Guard"]);
-  const attention = useMemo(
+  const { attackedIds, targets } = useMemo(
     () =>
       resolveStructureAttention(structures, arrivedIds, now, [
         ...setup.store.inGame("Guard", configManager.getActiveGameId()),
       ]),
     [structures, arrivedIds, now, setup.store, revision],
   );
+  // Those under attack first, then those with arrivals.
+  const attention = [
+    ...targets
+      .filter(({ entityId }) => attackedIds.has(entityId))
+      .map((structure) => ({ structure, reason: "attacked" })),
+    ...targets
+      .filter(({ entityId }) => !attackedIds.has(entityId))
+      .map((structure) => ({ structure, reason: "arrived" })),
+  ];
 
   const show = (structure: Structure) => {
     const position = structureMapPosition(setup.store, structure.structure);

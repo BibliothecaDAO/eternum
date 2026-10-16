@@ -66,7 +66,7 @@ export const useHoldings = () => {
   const nameVersion = useUIStore((state) => state.structureNameVersion);
   const playerStructures = useFactView(playerStructuresView);
   const goToStructure = useGoToStructure(setup);
-  const [query, setQuery] = useState("");
+  const [typed, setTyped] = useState<{ kind: LeftListFilter; text: string }>({ kind: "all", text: "" });
 
   const structures = useStructuresWithMetadata({
     structures: playerStructures,
@@ -84,6 +84,11 @@ export const useHoldings = () => {
   }, [structures]);
 
   const filter = shownKind(savedFilter, kinds);
+  const searchable = (kinds.find(({ kind }) => kind === filter)?.count ?? structures.length) >= SEARCH_FROM;
+  // A search belongs to the kind it was typed in, and only while that kind's field shows: one typed elsewhere, or
+  // hidden once the kind falls under SEARCH_FROM, filters nothing.
+  const query = searchable && typed.kind === filter ? typed.text : "";
+  const setQuery = useCallback((text: string) => setTyped({ kind: filter, text }), [filter]);
 
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -116,7 +121,7 @@ export const useHoldings = () => {
     setFilter,
     query,
     setQuery,
-    searchable: (kinds.find(({ kind }) => kind === filter)?.count ?? structures.length) >= SEARCH_FROM,
+    searchable,
     visible,
     selectedId,
     selected: structures.find((structure) => structure.entityId === selectedId) ?? null,

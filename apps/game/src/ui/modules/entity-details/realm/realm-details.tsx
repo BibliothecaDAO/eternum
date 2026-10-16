@@ -1,3 +1,4 @@
+import { useNextUpOffersLevelUp } from "@/ui/features/world/hud/next-up-shows";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { REQUIREMENT_CHIP, RequirementChips } from "@/ui/design-system/molecules/requirement-chips";
@@ -60,6 +61,7 @@ export const RealmUpgradeCompact = () => {
 
   const upgradeInfo = useStructureUpgrade(structureEntityId);
   const levelUp = useRealmLevelUp(structureEntityId);
+  const nextUpOffersIt = useNextUpOffersLevelUp(structureEntityId);
   if (!upgradeInfo || !levelUp) return null;
 
   if (!upgradeInfo.isOwner || !ordersAllowed) {
@@ -107,9 +109,12 @@ export const RealmUpgradeCompact = () => {
           disabled={!levelUp.ready}
           className={cn(
             "inline-flex h-7 items-center gap-1 rounded-md border px-3 text-[10px] font-semibold uppercase tracking-[0.16em] shadow transition",
-            levelUp.ready
-              ? "border-amber-500/80 bg-amber-400/90 text-black hover:bg-amber-300"
-              : "border-gold/20 bg-black/40 text-gold/40 cursor-not-allowed",
+            // While Next up offers the same step, its button is the filled one; this one is outlined.
+            !levelUp.ready
+              ? "border-gold/20 bg-black/40 text-gold/40 cursor-not-allowed"
+              : nextUpOffersIt
+                ? "border-gold/70 text-gold hover:bg-gold/10"
+                : "border-amber-500/80 bg-amber-400/90 text-black hover:bg-amber-300",
           )}
         >
           <SemanticIcon name={Icon} className="h-3.5 w-3.5" />

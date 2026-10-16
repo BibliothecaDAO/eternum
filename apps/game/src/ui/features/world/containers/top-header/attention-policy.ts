@@ -2,6 +2,10 @@ import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-clien
 import type { Structure, ID } from "@bibliothecadao/types";
 import { getBattleTimerLeft } from "@/three/utils/combat-directions";
 
+/**
+ * The structures that need the player now, by id: those under attack (while the battle badge shows it) and those with
+ * arrivals waiting. `attackedIds` says which are under attack, for a surface that words the two apart.
+ */
 export function resolveStructureAttention(
   structures: Structure[],
   arrivedStructureIds: ID[],
@@ -18,7 +22,7 @@ export function resolveStructureAttention(
   const targets = structures
     .filter((structure) => attentionIds.has(structure.entityId))
     .toSorted((a, b) => a.entityId - b.entityId);
-  return { attackedCount: attacked.length, targets };
+  return { attackedCount: attacked.length, attackedIds, targets };
 }
 
 export function nextAttentionItem<T extends { key: string }>(items: T[], currentKey: string | null): T | undefined {
