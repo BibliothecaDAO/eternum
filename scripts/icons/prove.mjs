@@ -6,12 +6,15 @@ import { runProof } from "../../apps/game/scripts/prove-run.mjs";
 const pages = [
   ["catalog", "/lab/kit/icons", ".icon-card"],
   ["hud", "/lab/kit/hud/selected", "[data-icon]"],
+  ["purse", "/lab/kit/hud/value-hud", "[data-icon=lords]"],
+  ["frontier", "/lab/kit/hud/season-over", "[data-icon=lords]"],
+  ["withdraw", "/lab/kit/hud/withdraw", "[data-icon=lords]"],
   ["hud-menu", "/lab/kit/hud/menu", "[data-icon]"],
   ["landing", "/lab/app/first-visit/?capture=1", "[data-layout]"],
   ["play", "/lab/app/home/?capture=1", "[data-layout]"],
   ["season", "/lab/app/season-running/season?capture=1", "[data-layout]"],
-  ["results", "/lab/app/reward-sealed/results/0x5245414c4d53-7?capture=1", "[data-layout]"],
-  ["entry", "/lab/app/entry-choose/blitz/slot-blitz-1630?capture=1", "[data-layout]"],
+  ["results", "/lab/app/reward-sealed/results/0x5245414c4d53-7?capture=1", "[data-icon=lords]"],
+  ["entry", "/lab/app/entry-choose/blitz/slot-blitz-1630?capture=1", "[data-icon=lords]"],
   ["account", "/lab/app/home/profile?capture=1", "[data-layout]"],
   ["settings", "/lab/app/home/profile/settings?capture=1", "[data-layout]"],
   ["news", "/lab/app/home/scroll?capture=1", "[data-layout]"],
@@ -152,9 +155,22 @@ export async function proveIcons(b, out, records, baseUrl, onlyLayout, onlyPages
       record.state = state;
       record.checks.push({
         check: "All rendered HTML and SVG icon URLs decode as semantic artwork",
-        ok: state.icons.length > 0 && state.icons.every((i) => i.loaded && i.url.startsWith("/icons/facets/")),
+        ok:
+          state.icons.length > 0 &&
+          state.icons.every(
+            (i) =>
+              i.loaded && (i.meaning === "lords" ? i.url === "/tokens/lords.png" : i.url.startsWith("/icons/facets/")),
+          ),
       });
+      const lords = state.icons.filter((icon) => icon.meaning === "lords");
+      if (["catalog", "purse", "frontier", "withdraw", "entry", "results"].includes(name)) {
+        record.checks.push({
+          check: "LORDS displays the official token mark",
+          ok: lords.length > 0 && lords.every((icon) => icon.loaded && icon.url === "/tokens/lords.png"),
+        });
+      }
       record.checks.push({ check: "Page fits viewport width", ok: !state.overflow });
+      if (name === "catalog" || name === "results") await b.run("scrollintoview", '[data-icon="lords"]');
       await b.run("screenshot", join(out, `${record.name}.png`));
       if (missingSvg) return;
       if (name !== "catalog") continue;
@@ -282,7 +298,11 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
             records,
             baseUrl,
             missingSvg ? "desktop" : undefined,
-            missingSvg || process.argv.includes("--catalog") ? ["catalog"] : undefined,
+            missingSvg || process.argv.includes("--catalog")
+              ? ["catalog"]
+              : process.argv.includes("--lords")
+                ? ["catalog", "purse", "frontier", "withdraw", "entry", "results"]
+                : undefined,
             missingSvg,
           ),
   );

@@ -313,8 +313,8 @@
       "resourceId": 22
     },
     "lords": {
-      "art": "lords",
-      "label": "Lords",
+      "token": "lords",
+      "label": "LORDS",
       "family": "Resources",
       "resourceId": 37
     },

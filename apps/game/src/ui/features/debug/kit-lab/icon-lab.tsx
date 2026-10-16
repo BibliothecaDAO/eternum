@@ -22,7 +22,10 @@ export function IconLab() {
     <main className="icon-lab" data-art="facets" data-hidden={!labels}>
       <header>
         <h1>Facets icons</h1>
-        <p>Production artwork at actual HUD sizes. Every meaning uses the same renderer as the game.</p>
+        <p>
+          Production artwork at actual HUD sizes. LORDS keeps its official token mark. Every meaning uses the same
+          renderer as the game.
+        </p>
       </header>
       <RealmHexFillComparison />
       <RealmLevelIcons />

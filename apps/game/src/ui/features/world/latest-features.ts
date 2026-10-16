@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-16",
+    title: "Official LORDS token mark",
+    description:
+      "LORDS amounts use the official token symbol in your purse, entry fees, rewards and resource transfers.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-16",
     title: "Keys for the HUD",
     description:
       "B, P, M and T open Build, Production, Military and Transfer, Space takes Next up's step, and I selects your next idle army (full stamina, no order), as does the new Idle button on the minimap. No key fires while you type.",

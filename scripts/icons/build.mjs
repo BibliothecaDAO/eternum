@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, access } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 import { normalizeMaster } from "./normalize.mjs";
@@ -14,6 +14,7 @@ const [{ icons }, meanings, resources, verdicts] = await Promise.all([
   read("verdicts"),
 ]);
 validateIcons({ icons, meanings, resources, verdicts });
+await access(`${repo}/apps/game/public/tokens/lords.png`);
 const output = `${repo}/apps/game/public/icons/facets`;
 await validateIconFiles(icons, source, process.argv.includes("--check") ? output : undefined);
 if (!process.argv.includes("--check")) {

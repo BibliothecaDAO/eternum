@@ -219,10 +219,6 @@
     "verdict": "equal",
     "reason": "Dragonhide: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
   },
-  "faceted/lords": {
-    "verdict": "equal",
-    "reason": "Lords: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
-  },
   "faceted/stamina-relic-1": {
     "verdict": "equal",
     "reason": "Stamina Relic1: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
@@ -950,5 +946,13 @@
   "faceted/map-realm-3": {
     "verdict": "beats shipped",
     "reason": "A dominant teal cone above short round turrets distinguishes Empire from the paired Kingdom peaks inside a small ownership hex."
+  },
+  "official/lords": {
+    "verdict": "beats shipped",
+    "reason": "Unmodified LORDS token monogram, matching the published token logo and the official account portal mark. Replaces the unrelated painted castle coin.",
+    "source": "https://www.coingecko.com/en/coins/lords",
+    "publishedLogo": "https://assets.coingecko.com/coins/images/22171/standard/Frame_1.png?1696521515",
+    "officialSource": "https://github.com/BibliothecaDAO/account-portal/blob/main/apps/account-portal/src/components/icons/lords.svg",
+    "sha256": "85733ae2eefcc665bd797bee7cc9f768306a021bc4ec4b07104a10dbaf42a33c"
   }
 }

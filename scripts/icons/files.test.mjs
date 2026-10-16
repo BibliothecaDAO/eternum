@@ -46,3 +46,17 @@ test("the build file check rejects missing masters and exports", async () => {
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("LORDS keeps the verified official token bytes and no painted deliveries", async () => {
+  const game = new URL("../../apps/game/", import.meta.url);
+  const verdicts = JSON.parse(await readFile(new URL("asset-sources/facets/verdicts.json", game), "utf8"));
+  const token = await readFile(new URL("public/tokens/lords.png", game));
+  assert.equal(createHash("sha256").update(token).digest("hex"), verdicts["official/lords"].sha256);
+  for (const file of [
+    "asset-sources/facets/masters/lords.png",
+    "asset-sources/facets/prompts/lords.txt",
+    ...[64, 128, 256].map((size) => `public/icons/facets/${size}/lords.webp`),
+  ]) {
+    await assert.rejects(readFile(new URL(file, game)), { code: "ENOENT" });
+  }
+});

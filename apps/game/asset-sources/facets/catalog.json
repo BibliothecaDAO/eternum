@@ -338,12 +338,6 @@
       "prompt": "prompts/dragonhide.txt"
     },
     {
-      "id": "lords",
-      "label": "Lords",
-      "family": "Resources",
-      "prompt": "prompts/lords.txt"
-    },
-    {
       "id": "stamina-relic-1",
       "label": "Stamina Relic1",
       "family": "Relics",

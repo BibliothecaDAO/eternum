@@ -8,7 +8,7 @@ import { HexMarker } from "./hex-marker";
 import { realmMeaning, realmMarkerMeaning } from "./domain-icon-meaning";
 import type { ResourcesIds } from "@bibliothecadao/types";
 
-describe("semantic painted icons", () => {
+describe("semantic icons", () => {
   it("gives every realm level its own portrait and hex emblem", () => {
     for (const level of [0, 1, 2, 3]) {
       expect(iconDefinition(realmMeaning(level)).art).toBe(`realm-${level}`);
@@ -76,4 +76,21 @@ describe("semantic painted icons", () => {
     expect(markup("enemy")).toContain("M0 -3 L3 2 L-3 2 Z");
     expect(markup("you")).toContain(">3</text>");
   });
+});
+
+it("uses the unmodified LORDS token mark for resource, DOM and SVG consumers at every delivery size", () => {
+  expect(resourceMeaning(37)).toBe("lords");
+  for (const size of [64, 128, 256] as const) {
+    expect(iconUrl(resourceMeaning(37), size)).toBe("/tokens/lords.png");
+    const html = renderToStaticMarkup(<Icon name="lords" size={size} />);
+    expect(html).toContain('src="/tokens/lords.png"');
+    expect(html).not.toContain("rotate");
+  }
+  expect(
+    renderToStaticMarkup(
+      <svg>
+        <SvgIcon name="lords" />
+      </svg>,
+    ),
+  ).toContain('href="/tokens/lords.png"');
 });

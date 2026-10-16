@@ -347,3 +347,16 @@ ownership shape and level pip stay the same.
 `pnpm icons:prove <new-evidence-dir> https://127.0.0.1:4193 --minimap-url '<live-spectator-map-url>'` checks decoded
 realm art, rim clearance and level pips in the real minimap at its current camera zoom, then captures the map and
 minimap.
+
+## LORDS token artwork
+
+LORDS uses the unmodified `/tokens/lords.png` through the shared `lords` meaning, including resource 37. The purse,
+entry fees, Frontier rewards, results, transfers and coin animations resolve that meaning through the same renderer. No
+Facets painting stands in for the token. The official source and verified file hash are recorded under `official/lords`
+in `asset-sources/facets/verdicts.json`; icon validation rejects the old painted coin and a redirected LORDS resource
+mapping.
+
+In `/lab/kit/icons`, search **lords** to inspect the mark at 24/32/64 px. `/lab/kit/hud/value-hud`,
+`/lab/kit/hud/season-over` and `/lab/kit/hud/withdraw` show the purse, Frontier results and withdrawal with production
+components. `pnpm icons:prove <new-evidence-dir> https://127.0.0.1:4193 --lords` also checks the lobby entry and results
+fixtures at desktop and phone widths, requiring every LORDS image to decode from the official token path.

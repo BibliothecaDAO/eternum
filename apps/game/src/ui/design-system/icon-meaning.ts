@@ -6,7 +6,10 @@ export type IconMeaning = keyof typeof meanings;
 export type IconPixels = 64 | 128 | 256;
 export const iconMeanings = Object.keys(meanings) as IconMeaning[];
 
-type Meaning = { art: string; label: string; family: string; rotation?: number; orderId?: number };
+type Meaning = { label: string; family: string; rotation?: number; orderId?: number } & (
+  | { art: string; token?: never }
+  | { token: string; art?: never }
+);
 export function iconDefinition(name: IconMeaning): Meaning {
   const definition: Meaning = meanings[name];
   if (!definition) throw new Error(`Unknown icon meaning: ${name}`);
@@ -14,10 +17,11 @@ export function iconDefinition(name: IconMeaning): Meaning {
 }
 
 export function iconUrl(name: IconMeaning, pixels: IconPixels = 64): string {
-  return `/icons/facets/${pixels}/${iconDefinition(name).art}.webp`;
+  const definition = iconDefinition(name);
+  return definition.token ? `/tokens/${definition.token}.png` : `/icons/facets/${pixels}/${definition.art}.webp`;
 }
 
-/** A resource's painting, by its id: the one way to name a resource's icon (a display name is not a key). */
+/** A resource's artwork, by its id: the one way to name a resource's icon (a display name is not a key). */
 export function resourceMeaning(resource: ResourcesIds): IconMeaning {
   const entry = resources[String(resource) as keyof typeof resources];
   if (!entry) throw new Error(`Unknown resource icon: ${resource}`);
