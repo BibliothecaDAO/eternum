@@ -329,8 +329,15 @@ const documentOf = (markup) => {
       return this.textContent;
     },
   });
+  // Nor does it lay anything out: an element's box is its `data-box` ("left,top,width,height") on a 1440×900 screen.
+  window.Element.prototype.getBoundingClientRect = function () {
+    const [left, top, width, height] = (this.dataset.box ?? "0,0,0,0").split(",").map(Number);
+    return { left, top, width, height, right: left + width, bottom: top + height };
+  };
   return window.document;
 };
+
+const SCREEN = { innerWidth: 1440, innerHeight: 900 };
 
 /**
  * A browser on a live map whose page is `page()`, markup read again at each evaluation and queried as the runner's
@@ -351,7 +358,12 @@ const liveMapBrowser = ({ page, onPress = () => {} }) => ({
     if (js.includes("dataset.bootState")) return true;
     // A control the task names is on the page: the runner marks it, then clicks it.
     if (js.includes("data-proof-press")) return "[data-proof-press]";
-    return Function("document", `return (${js})`)(documentOf(page()));
+    return Function(
+      "document",
+      "innerWidth",
+      "innerHeight",
+      `return (${js})`,
+    )(documentOf(page()), SCREEN.innerWidth, SCREEN.innerHeight);
   },
 });
 
@@ -435,6 +447,30 @@ describe("a task that changes the game", () => {
       ["desktop", 2, ["Build", "Farm"], undefined, { before: 3, after: 4 }],
       ["phone", 2, ["Build", "Farm's Build"], undefined, { before: 4, after: 5 }],
     ]);
+  });
+});
+
+describe("a full modal opened from the map", () => {
+  const transferFrom = (box) =>
+    proveTask(
+      liveMapBrowser({
+        page: () =>
+          `<p>Troops / Resources</p><section data-popover-panel="help" data-box="${box}">Transfer Troops &amp; Relics</section>`,
+      }),
+      "blitz-transfer",
+    );
+
+  it("passes when Transfer Troops & Relics stands in the middle of the screen", async () => {
+    const records = await transferFrom("260,96,920,600");
+    expect(records.map((record) => [record.layout, record.clicks, record.problem])).toEqual([
+      ["desktop", 2, undefined],
+      ["phone", 2, undefined],
+    ]);
+  });
+
+  it("fails when it hangs from the army's tile, off the screen's edge", async () => {
+    const records = await transferFrom("1100,500,920,600");
+    expect(records[0].problem).toBe("the task's end state did not show");
   });
 });
 

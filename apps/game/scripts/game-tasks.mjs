@@ -263,6 +263,24 @@ export const GAME_TASKS = {
     expect: (before, after) => after !== before,
     done: "true",
   },
+  "blitz-transfer": {
+    goal: "Blitz: open Transfer Troops & Relics from an army beside its realm",
+    layouts: PHONE_AND_DESKTOP,
+    view: "map",
+    presses: [
+      { name: "the next army", key: "Tab" },
+      // The transfer order's tooltip; "Transfer" alone is also the action strip's button.
+      { name: "its realm's tile, right-clicked", tile: "Troops / Resources", button: "right" },
+    ],
+    // A full modal stands in the middle of the screen, wherever on the map it was opened from, and wholly on it.
+    done: `(() => {
+      const panel = document.querySelector(${JSON.stringify(panel("help"))});
+      if (!panel) return false;
+      const box = panel.getBoundingClientRect();
+      const centredAcross = Math.abs(box.left + box.width / 2 - innerWidth / 2) <= 2;
+      return centredAcross && box.top >= 0 && box.left >= 0 && box.bottom <= innerHeight && box.right <= innerWidth;
+    })()`,
+  },
   "blitz-standings": {
     goal: "Blitz: see the standings",
     layouts: PHONE_AND_DESKTOP,
