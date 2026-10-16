@@ -186,9 +186,12 @@ const getResourceItemClass = (variant: InventoryItemVariant) =>
     ? "border-gold/45 bg-[linear-gradient(180deg,rgba(56,40,14,0.95),rgba(10,10,10,0.96))]"
     : "border-gold/25 bg-[linear-gradient(180deg,rgba(28,21,9,0.9),rgba(8,8,8,0.95))]";
 
-/** A relic reads at a glance wherever its chip shows: its painting large, its count at 14 px. */
+/** A relic reads at a glance wherever its chip shows: its painting large, its count at 14 px, its name beneath. */
 const RELIC_ICON_SIZE = "lg";
 const RELIC_COUNT_CLASS = "text-sm";
+
+/** "Damage Reduction Relic I" reads "Damage Reduction I" on its chip. */
+const relicChipName = (name: string) => name.replace(" Relic", "");
 
 const getRelicItemClass = (item: DisplayItem) => {
   if (item.isActive) {
@@ -298,7 +301,7 @@ export const CompactEntityInventory = memo(
       const itemVariant = options.hero ? "hero" : "default";
 
       // Tight (non-hero) tiles get a fixed width; grid/hero tiles fill their cell.
-      const widthClass = variant === "tight" && !options.hero ? "w-14" : "w-full";
+      const widthClass = variant === "tight" && !options.hero ? (item.isRelic ? "w-auto min-w-14" : "w-14") : "w-full";
 
       const itemClasses = cn(
         "flex h-full appearance-none flex-col items-center justify-center rounded-xl border text-center normal-case [font:inherit] [letter-spacing:inherit] shadow-[inset_0_1px_0_rgba(255,214,102,0.08)]",
@@ -324,6 +327,11 @@ export const CompactEntityInventory = memo(
           >
             {formatInventoryAmount(item.amount, { compact: !options.hero })}
           </span>
+          {relicInfo && !options.hero && (
+            <span className="mt-1 max-w-full truncate text-xs leading-none text-gold/80">
+              {relicChipName(relicInfo.name)}
+            </span>
+          )}
           {showLabels && resourceDef && (
             <span className="mt-0.5 text-[10px] text-gold/65 truncate" title={resourceDef.trait}>
               {resourceDef.ticker ?? resourceDef.trait}
