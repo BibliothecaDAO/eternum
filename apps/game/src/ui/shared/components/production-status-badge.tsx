@@ -13,25 +13,25 @@ const clamp = (value: number, min: number, max: number) => Math.min(Math.max(val
 const PRODUCING_COLOR: [number, number, number] = [52, 211, 153]; // emerald
 const IDLE_COLOR: [number, number, number] = [251, 191, 36]; // amber
 
+/**
+ * The one resource ring, wherever a resource shows with its production (the holding card, the structure details, the
+ * Production and Build windows): its painting in a ring that glows and empties as production runs, how many buildings
+ * make it on the top-left badge, and how much is held on the bottom rim. Time left is in its tooltip, never a badge.
+ */
 interface ProductionStatusBadgeProps {
   resource: ResourcesIds;
   tooltipText: string;
   isProducing: boolean;
   timeRemainingSeconds: number | null;
-  totalCount?: number;
+  /** How many buildings make it: the top-left badge, none at zero. */
+  buildings?: number;
+  /** How much is held, already formatted ("12.4K"): the bottom rim. */
+  amount?: string;
   size?: "sm" | "md" | "xs";
   onClick?: () => void;
   showInputIcons?: boolean;
   className?: string;
   showTooltip?: boolean;
-  cornerTopLeft?: string;
-  cornerTopRight?: string;
-  cornerBottomRight?: string;
-  /**
-   * Optional class name applied to the top-right corner badge. Lets callers recolor it
-   * (e.g. green/red for positive/negative net production rates).
-   */
-  cornerTopRightClassName?: string;
   /** Changes when the caller wants one accrual sweep around the token; unchanged keys never replay it. */
   accrualKey?: number;
 }
@@ -41,16 +41,13 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
   tooltipText,
   isProducing,
   timeRemainingSeconds,
-  totalCount = 0,
+  buildings = 0,
+  amount,
   size = "sm",
   onClick,
   showInputIcons = false,
   className,
   showTooltip = true,
-  cornerTopLeft,
-  cornerTopRight,
-  cornerBottomRight,
-  cornerTopRightClassName,
   accrualKey,
 }) => {
   const effectiveRemaining = timeRemainingSeconds === null ? null : Math.max(timeRemainingSeconds, 0);
@@ -66,19 +63,19 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
     size === "md"
       ? {
           wrapper: "h-11 w-11",
-          iconPadding: "p-2",
+          iconPadding: "p-0.5",
           ringOffset: "-inset-[5px]",
           progressOffset: "-inset-[4px]",
-          icon: "sm" as const,
+          icon: "lg" as const,
           iconRadius: 28,
         }
       : size === "sm"
         ? {
             wrapper: "h-12 w-12",
-            iconPadding: "p-2.5",
+            iconPadding: "p-1",
             ringOffset: "-inset-[6px]",
             progressOffset: "-inset-[5px]",
-            icon: "sm" as const,
+            icon: "lg" as const,
             iconRadius: 30,
           }
         : {
@@ -177,9 +174,9 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
       >
         <ResourceIcon resource={resource} size={preset.icon} tooltipText={tooltipText} withTooltip={showTooltip} />
       </div>
-      {cornerTopLeft && (
-        <span className="absolute -top-1.5 -left-1.5 z-10 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-black/85 px-1.5 text-[10px] font-semibold text-gold/90 shadow-md border border-gold/40">
-          {cornerTopLeft}
+      {buildings > 0 && (
+        <span className="absolute -left-1 -top-1 z-10 flex h-4 min-w-4 items-center justify-center rounded-full border border-gold/40 bg-black/85 px-1 text-[10px] font-semibold leading-none text-gold/90 shadow-md">
+          {buildings}
         </span>
       )}
       {accrualKey !== undefined && accrualKey > 0 && (
@@ -189,24 +186,9 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
           className={clsx("absolute pointer-events-none rounded-full accrual-sweep", preset.progressOffset)}
         />
       )}
-      {cornerTopRight && (
-        <span
-          className={clsx(
-            "absolute -top-1.5 -right-1.5 z-10 flex h-5 min-w-[24px] items-center justify-center rounded-full bg-black/85 px-1.5 text-[10px] font-semibold shadow-md border border-gold/40",
-            cornerTopRightClassName ?? "text-gold/90",
-          )}
-        >
-          {cornerTopRight}
-        </span>
-      )}
-      {cornerBottomRight && (
-        <span className="absolute -bottom-1.5 -right-1.5 z-10 flex h-5 min-w-[24px] items-center justify-center rounded-full bg-black/85 px-1.5 text-[10px] font-semibold text-gold/80 shadow-md border border-gold/30">
-          {cornerBottomRight}
-        </span>
-      )}
-      {!cornerTopLeft && !cornerTopRight && !cornerBottomRight && totalCount > 0 && (
-        <span className="absolute -top-1.5 -right-1.5 z-10 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gold px-1 text-[10px] font-semibold text-[#2a1f14] shadow-md">
-          {totalCount}
+      {amount && (
+        <span className="absolute -bottom-1.5 left-1/2 z-10 flex h-4 -translate-x-1/2 items-center justify-center whitespace-nowrap rounded-full border border-gold/40 bg-black/85 px-1 text-[10px] font-semibold leading-none tabular-nums text-gold/90 shadow-md">
+          {amount}
         </span>
       )}
     </div>

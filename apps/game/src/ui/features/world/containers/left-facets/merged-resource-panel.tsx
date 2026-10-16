@@ -7,6 +7,7 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ProductionStatusBadge } from "@/ui/shared";
+import { resourcesInTierOrder } from "@/ui/shared/resource-tier-order";
 import { formatInventoryAmount } from "@/ui/features/world/components/entities/compact-entity-inventory";
 import type { StructureProductionSummary } from "@/ui/features/world/components/entities/structure-production-summary";
 import { formatTimeRemaining } from "@/ui/features/economy/resources/entity-resource-table/utils";
@@ -54,9 +55,8 @@ interface MergedResourcePanelProps {
 
 /**
  * One panel that merges the old Production + Balance bubbles. Every relevant
- * resource is a single ProductionStatusBadge (the buildings-section token):
- *   top-left   = # production buildings   top-right = current balance
- *   bottom-left = production timer/ring    bottom-right = build "+"
+ * resource is a single ProductionStatusBadge, the one resource ring: its production buildings on the top-left badge,
+ * the balance on the bottom rim, time left in its tooltip, and a build "+" at its bottom-left.
  * The "+" reuses the exact build path from the build menu (buildRealmBuilding +
  * resolveConstructionBuildability), so it auto-builds
  * and is enabled only when the realm can afford the building. Tokens are split
@@ -124,19 +124,10 @@ export const MergedResourcePanel = memo(
     // Group ids by the game's own tier order (insertion order is already
     // economic → transport → food → T1 → T2 → T3); split military out. Relics
     // are excluded entirely — they get their own dedicated row above the grid.
-    const { resourceIds, militaryIds } = useMemo(() => {
-      const tiers = mode.resources.getTiers() as Record<string, ResourcesIds[]>;
-      const resourceList: ResourcesIds[] = [];
-      let military: ResourcesIds[] = [];
-      for (const [key, ids] of Object.entries(tiers)) {
-        if (key === "military") {
-          military = ids;
-        } else {
-          resourceList.push(...ids);
-        }
-      }
-      return { resourceIds: resourceList.filter((id) => !isRelic(id)), militaryIds: military };
-    }, [mode]);
+    const { resourceIds, militaryIds } = useMemo(
+      () => resourcesInTierOrder(mode.resources.getTiers() as Record<string, ResourcesIds[]>),
+      [mode],
+    );
 
     // Whether the structure holds any relic, so an empty token grid still keeps
     // the panel (and its relic row) visible.
@@ -226,9 +217,8 @@ export const MergedResourcePanel = memo(
               timeRemainingSeconds={effectiveRemaining}
               size="sm"
               showTooltip
-              cornerTopLeft={count}
-              cornerTopRight={balanceLabel}
-              cornerBottomRight={timer}
+              buildings={item?.totalBuildings ?? 0}
+              amount={balanceLabel}
               accrualKey={resolveAccrualKey(resourceId, balanceLabel)}
             />
             {isBuildable && canBuild && (

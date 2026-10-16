@@ -1205,9 +1205,8 @@ export const BuildingCard = ({
         timeRemainingSeconds={effectiveRemainingSeconds}
         size="md"
         showTooltip={false}
-        cornerTopLeft={totalProductionBuildings > 0 ? `${totalProductionBuildings}` : undefined}
-        cornerTopRight={outputLabel}
-        cornerBottomRight={formattedRemaining ?? undefined}
+        buildings={totalProductionBuildings}
+        amount={outputLabel}
       />
     ) : null;
 

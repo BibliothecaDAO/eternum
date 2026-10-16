@@ -196,7 +196,7 @@ const SidebarRealm = ({
                     tooltipText={tooltipParts.filter(Boolean).join(" • ")}
                     isProducing={summary.isProducing}
                     timeRemainingSeconds={effectiveRemainingSeconds}
-                    totalCount={summary.totalBuildings}
+                    buildings={summary.totalBuildings}
                     size="xs"
                     onClick={() => onSelectResource(realm.entityId, summary.resourceId)}
                   />

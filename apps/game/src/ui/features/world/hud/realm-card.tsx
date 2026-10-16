@@ -3,7 +3,6 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
-import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { formatTimeRemaining } from "@/ui/features/economy/resources/entity-resource-table/utils";
 import {
   CompactEntityInventory,
@@ -27,12 +26,8 @@ import { inferRealmPreset, type RealmPresetId } from "@bibliothecadao/eternum/au
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { EntityType, type ID, isRelic, RelicRecipientType, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useMemo } from "react";
-import { Medallion, useHoverNote } from "./medallion";
-
-const RESOURCE_IDS = Object.values(ResourcesIds).filter((value): value is ResourcesIds => typeof value === "number");
-
-/** Production that runs longer than this draws a full ring; less, the ring empties as it runs out. */
-const FULL_RING_SECONDS = 60 * 60;
+import { ProductionStatusBadge } from "@/ui/shared";
+import { resourcesInTierOrder } from "@/ui/shared/resource-tier-order";
 
 /**
  * The selected holding of the player's: its name with rename, its population, building tiles and automation, then a
@@ -52,7 +47,7 @@ export const RealmCard = ({ holding }: { holding: StructureWithMetadata | null }
         holding={holding}
         automation={isVillage ? "village" : detail.structure.base.category === StructureType.Realm ? "realm" : null}
       />
-      <ResourceMedallions resources={detail.resources} summary={summary} />
+      <ResourceRings resources={detail.resources} summary={summary} />
       <HeldRelics entityId={entityId} resources={detail.resources} activeRelicIds={detail.relicEffects} />
     </section>
   );
@@ -164,16 +159,20 @@ type ResourceReading = {
   secondsLeft: number | null;
 };
 
-/** What a holding makes or holds, by resource id: never a resource it neither makes nor holds. */
+/** What a holding makes or holds, in the classic HUD's tier order: never a resource it neither makes nor holds. */
 const useResourceReadings = (resources: ResourceManager | null | undefined, summary: StructureProductionSummary) => {
   const now = useCurrentDefaultTick();
+  const mode = useGameModeConfig();
   return useMemo<ResourceReading[]>(() => {
     const held = new Map<number, number>();
     for (const balance of resources?.balances(now) ?? []) {
       held.set(Number(balance.resourceId), divideByPrecision(Number(balance.amount)));
     }
     const made = new Map(summary.items.map((item) => [item.resourceId, item]));
-    return RESOURCE_IDS.filter((resourceId) => !isRelic(resourceId)).flatMap((resourceId) => {
+    const { resourceIds, militaryIds } = resourcesInTierOrder(
+      mode.resources.getTiers() as Record<string, ResourcesIds[]>,
+    );
+    return [...resourceIds, ...militaryIds].flatMap((resourceId) => {
       const item = made.get(resourceId);
       const amount = held.get(resourceId) ?? 0;
       if (!item && amount <= 0) return [];
@@ -187,10 +186,11 @@ const useResourceReadings = (resources: ResourceManager | null | undefined, summ
         },
       ];
     });
-  }, [resources, summary, now]);
+  }, [resources, summary, now, mode]);
 };
 
-const ResourceMedallions = ({
+/** The holding's resources as the one resource ring, five to a row. */
+const ResourceRings = ({
   resources,
   summary,
 }: {
@@ -198,42 +198,27 @@ const ResourceMedallions = ({
   summary: StructureProductionSummary;
 }) => {
   const readings = useResourceReadings(resources, summary);
-  if (readings.length === 0) return <p className="text-base text-kit-muted">No resources yet.</p>;
+  if (readings.length === 0) return <p className="text-sm text-kit-muted">No resources yet.</p>;
   return (
-    <ul aria-label="Resources" className="grid grid-cols-5 justify-items-center gap-y-4 pb-2 pt-1">
+    <ul aria-label="Resources" className="grid grid-cols-5 justify-items-center gap-y-5 pb-2 pt-2">
       {readings.map((reading) => (
-        <ResourceMedallion key={reading.resourceId} reading={reading} />
+        <li key={reading.resourceId}>
+          <ProductionStatusBadge
+            resource={reading.resourceId}
+            tooltipText={describeResource(reading)}
+            isProducing={reading.producing}
+            timeRemainingSeconds={reading.secondsLeft}
+            buildings={reading.buildings}
+            amount={formatInventoryAmount(reading.held)}
+            size="md"
+          />
+        </li>
       ))}
     </ul>
   );
 };
 
-const ResourceMedallion = ({ reading }: { reading: ResourceReading }) => {
-  const note = useHoverNote();
-  const name = ResourcesIds[reading.resourceId];
-  return (
-    <li
-      tabIndex={0}
-      aria-label={describeResource(reading)}
-      className="shrink-0 rounded-full"
-      {...note(describeResource(reading))}
-    >
-      <Medallion
-        icon={resourceMeaning(reading.resourceId)}
-        size="sm"
-        ring={reading.producing ? productionShare(reading.secondsLeft) : undefined}
-        corner={reading.buildings > 0 ? reading.buildings : undefined}
-        foot={formatInventoryAmount(reading.held)}
-      />
-      <span className="sr-only">{name}</span>
-    </li>
-  );
-};
-
-const productionShare = (secondsLeft: number | null) =>
-  secondsLeft === null ? 1 : Math.min(1, secondsLeft / FULL_RING_SECONDS);
-
-/** "Wheat · 12,400 held · 3 buildings making it, 4h left": what a medallion's badges stand for. */
+/** "Wheat · 12,400 held · 3 buildings · 4h of production left": the ring's tooltip. */
 const describeResource = ({ resourceId, held, buildings, producing, secondsLeft }: ResourceReading): string => {
   const parts = [`${ResourcesIds[resourceId]} · ${Math.floor(held).toLocaleString()} held`];
   if (buildings > 0) parts.push(`${buildings} building${buildings === 1 ? "" : "s"}`);
