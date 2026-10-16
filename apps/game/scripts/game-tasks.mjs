@@ -1,8 +1,9 @@
 /**
  * The tasks a game's proof drives (`prove:play --game … --tasks <task,task>`), each as a player does it on the HUD as it
  * stands: the view it starts from at rest, the presses in order, and the end state that must show. A press is a control
- * whose words match `text` (inside `within`), a `word` clicked where it shows, a `key`, or for `tile` the map tile whose
- * tooltip names that order (`button: "right"` sends it at once); a press with a `layout` is made at that size only.
+ * whose words match `text` (inside `within`), a `word` clicked where it shows, a `key`, a field `fill`ed with `value`,
+ * for `tile` the map tile whose tooltip names that order (`button: "right"` sends it at once), or for `holdingTile`
+ * another of the player's holdings on the map than the one selected; a press with a `layout` is made at that size only.
  *
  * A task that changes the game names a `reading` of what its order changes, read where the order is given just before
  * its last press and again after it, and `expect`s how it changes (`changes` says what): one more farm, not merely the
@@ -26,6 +27,32 @@ const TROOPS_HELD = `[...document.querySelectorAll('section[aria-label="Selected
   .map((el) => el.getAttribute("aria-label")?.match(/^(?:Knight|Crossbowman|Paladin)(?:T[23])? · ([\\d,]+) held/)?.[1])
   .filter(Boolean)
   .reduce((sum, held) => sum + Number(held.replaceAll(",", "")), 0)`;
+
+const TRANSFER_PANEL = panel("transfer");
+const HOLDING_ROWS = 'aside[aria-label="Holdings"] [role=tabpanel]';
+const SEND_TO_ROWS = `${TRANSFER_PANEL} section[aria-label="Send to"] [role=tabpanel]`;
+const WHEAT_TOTAL = `${TRANSFER_PANEL} input[aria-label="Wheat: total to send"]`;
+const SEND_ONE_WHEAT = [
+  { name: "one wheat", fill: WHEAT_TOTAL, value: "1" },
+  { name: "Send", within: TRANSFER_PANEL, text: "^Send " },
+];
+
+/**
+ * A transfer sent: the chain took it (its toast), and the window shows it, one more delivery on the road or the
+ * source's wheat down (a delivery joining one already on the road to that holding adds no row).
+ */
+const TRANSFER_SENT = {
+  reading: `(() => {
+    const surface = document.querySelector(${JSON.stringify(TRANSFER_PANEL)});
+    const wheat = surface?.querySelector('input[aria-label="Wheat: total to send"]')?.closest("[role=row]");
+    if (!wheat) return null;
+    const arrivals = surface.querySelector('nav[aria-label="Logistics"]').innerText.match(/Arrivals \\((\\d+)\\)/);
+    return { arriving: Number(arrivals?.[1] ?? 0), wheat: Number(wheat.children[1].innerText.replace(/,/g, "")) };
+  })()`,
+  changes: "one more delivery on the road or less wheat at the source",
+  expect: (before, after) => after.arriving > before.arriving || after.wheat < before.wheat,
+  done: `document.body.innerText.includes("Transfer sent.")`,
+};
 
 /** How many order surfaces stand open: the workspaces and the popovers where an order is given. */
 const ORDER_SURFACES = `document.querySelectorAll(${JSON.stringify(
@@ -164,6 +191,29 @@ export const GAME_TASKS = {
       const centredAcross = Math.abs(box.left + box.width / 2 - innerWidth / 2) <= 2;
       return centredAcross && box.top >= 0 && box.left >= 0 && box.bottom <= innerHeight && box.right <= innerWidth;
     })()`,
+  },
+  "blitz-transfer-window": {
+    goal: "Blitz: send a realm's wheat to another holding from the Transfer button",
+    layouts: ["desktop"],
+    view: "map",
+    presses: [
+      { name: "Transfer", within: STRUCTURE_ACTIONS, text: "^Transfer$" },
+      { name: "the first holding to send to", within: SEND_TO_ROWS, text: "." },
+      ...SEND_ONE_WHEAT,
+    ],
+    ...TRANSFER_SENT,
+  },
+  "blitz-transfer-gesture": {
+    goal: "Blitz: select a holding, right-click another of yours, and send it wheat",
+    layouts: ["desktop"],
+    view: "map",
+    presses: [
+      // The row's own button: the star beside it is named by its pin words.
+      { name: "the first holding", within: HOLDING_ROWS, text: "^(?!Pin |Unpin ).+" },
+      { name: "another of your holdings, right-clicked", holdingTile: true, button: "right" },
+      ...SEND_ONE_WHEAT,
+    ],
+    ...TRANSFER_SENT,
   },
   "blitz-standings": {
     goal: "Blitz: see the standings, in a window as large as its table and rows",

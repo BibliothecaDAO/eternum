@@ -7,6 +7,8 @@ const READY_TIMEOUT_MS = 60_000;
 const STEP_TIMEOUT_MS = 20_000;
 const AT_REST_SETTLE_MS = 8_000;
 const CRATE_SEARCH = { radius: 240, step: 40 };
+/** Another holding sits further off than a crate beside an army: the search reaches across the map's middle. */
+const HOLDING_SEARCH = { radius: 480, step: 40 };
 const open = (b, url) => b.run("open", url, "--ignore-https-errors");
 const shot = async (b, out, name) => {
   await b.run("screenshot", `${out}/${name}`);
@@ -24,8 +26,10 @@ export const spiralPoints = ([cx, cy], { radius, step }) => {
 /**
  * Presses the first visible control inside `within` whose words match `text`, scrolled to and clicked as a player
  * would; for `tile`, moves the pointer out from the screen's centre until the map's tooltip names that order, and
- * clicks there (with `button`, right for an order sent at once); for `key`, presses that key; for `word`, clicks
- * the element showing that word, as agent-browser finds it. False when nothing matched.
+ * clicks there (with `button`, right for an order sent at once); for `holdingTile`, moves it out until it rests on
+ * another of the player's holdings than the one selected, and clicks there; for `fill`, types `value` into that
+ * field; for `key`, presses that key; for `word`, clicks the element showing that word, as agent-browser finds it.
+ * False when nothing matched.
  */
 const pressStep = async (b, press, layout) => {
   if (press.key) {
@@ -40,20 +44,19 @@ const pressStep = async (b, press, layout) => {
     await b.run("find", "text", press.word, "click");
     return true;
   }
-  if (press.tile) {
-    const centre = VIEWPORTS[layout].map((side) => side / 2);
-    for (const point of spiralPoints(centre, CRATE_SEARCH)) {
-      await b.run("mouse", "move", String(point[0]), String(point[1]));
-      await sleep(150);
-      if (await b.evaluate(`document.body.innerText.includes(${JSON.stringify(press.tile)})`)) {
-        await b.run("mouse", "move", ...point.map(String));
-        await b.run("mouse", "down", press.button ?? "left");
-        await b.run("mouse", "up", press.button ?? "left");
-        return true;
-      }
-    }
-    return false;
+  if (press.fill) {
+    await b.run("fill", press.fill, press.value);
+    return true;
   }
+  if (press.tile)
+    return clickTileWhere(
+      b,
+      layout,
+      CRATE_SEARCH,
+      press.button,
+      `document.body.innerText.includes(${JSON.stringify(press.tile)})`,
+    );
+  if (press.holdingTile) return clickTileWhere(b, layout, HOLDING_SEARCH, press.button, ANOTHER_HOLDING_HOVERED);
   const selector = await b.evaluate(`(() => {
     const scope = [...document.querySelectorAll(${JSON.stringify(press.within ?? "body")})];
     const pattern = new RegExp(${JSON.stringify(press.text)});
@@ -74,6 +77,28 @@ const pressStep = async (b, press, layout) => {
   await b.run("scrollintoview", selector);
   await b.run("click", selector);
   return true;
+};
+
+/** The map's selection names a holding, and the pointer rests on another of the player's. */
+const ANOTHER_HOLDING_HOVERED = `(() => {
+  const map = window.__eternumMapSelection;
+  return Boolean(map?.hovered?.ownedByViewer && map.structure && map.hovered.id !== Number(map.structure.id));
+})()`;
+
+/** Moves the pointer out from the screen's centre until `found` holds, and clicks there with `button`. */
+const clickTileWhere = async (b, layout, search, button = "left", found) => {
+  const centre = VIEWPORTS[layout].map((side) => side / 2);
+  for (const point of spiralPoints(centre, search)) {
+    await b.run("mouse", "move", String(point[0]), String(point[1]));
+    await sleep(150);
+    if (await b.evaluate(found)) {
+      await b.run("mouse", "move", ...point.map(String));
+      await b.run("mouse", "down", button);
+      await b.run("mouse", "up", button);
+      return true;
+    }
+  }
+  return false;
 };
 
 /** One task from its view at rest: each press with the screenshot after it, then whether its end state shows. */
