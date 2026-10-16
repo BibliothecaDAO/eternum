@@ -1,4 +1,4 @@
-import { Account, hash, num, type ProviderInterface } from "starknet";
+import { Account, RpcProvider, hash, num, type ProviderInterface } from "starknet";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   deviceKeyOf,
@@ -8,7 +8,16 @@ import {
   revokeDeviceEverywhere,
 } from "./realms-account";
 
-const shard = { chainId: "0x1", accountClassHash: "0x2", guardianPublicKey: "0x3" };
+const shard = { chainId: "0x1", accountClassHash: "0x2", guardianPublicKey: "0x3", l2GasBound: "0x47868c00" };
+/** What every join and device transaction carries: no tip, and the shard's fee-free bounds instead of a fee estimate. */
+const FEE_FREE = {
+  tip: 0,
+  resourceBounds: {
+    l1_gas: { max_amount: 0n, max_price_per_unit: 0n },
+    l1_data_gas: { max_amount: 0n, max_price_per_unit: 0n },
+    l2_gas: { max_amount: 0x47868c00n, max_price_per_unit: 0n },
+  },
+};
 const device = deviceKeyOf("0x4");
 const approve = vi.fn(async () => ["0x5", "0x6"]);
 
@@ -62,21 +71,33 @@ describe("joining a shard", () => {
     expect(new Headers(send.mock.calls[0][1]?.headers).get("authorization")).toBe("Bearer fixture-token");
   });
 
-  it("deploys with no tip, so nothing estimates one from recent blocks", async () => {
+  it("deploys with no tip and the shard's fee-free bounds, so it sends neither a tip nor a fee estimate", async () => {
     const deployAccount = vi.spyOn(Account.prototype, "deployAccount").mockResolvedValue({
       contract_address: "0x7",
       transaction_hash: "0x8",
     });
     await joinRealmsAccount({ provider: provider(false), shard, realmsId: "0x9", device, approve });
     expect(deployAccount).toHaveBeenCalledOnce();
-    expect(deployAccount.mock.calls[0][1]).toEqual({ tip: 0 });
+    expect(deployAccount.mock.calls[0][1]).toEqual(FEE_FREE);
   });
 
-  it("adds this device to a deployed account with no tip", async () => {
+  it("sends no fee estimate through starknet.js when it deploys, the stamping RPC's account allowance being one per join", async () => {
+    const estimate = vi.spyOn(Account.prototype, "estimateAccountDeployFee");
+    vi.spyOn(Account.prototype, "accountInvocationsFactory").mockResolvedValue([{}] as never);
+    // Account.deployAccount sends through its parent's method, so the send is stubbed there.
+    const send = vi
+      .spyOn(RpcProvider.prototype, "deployAccountContract")
+      .mockResolvedValue({ contract_address: "0x7", transaction_hash: "0x8" });
+    await joinRealmsAccount({ provider: provider(false), shard, realmsId: "0x10", device, approve });
+    expect(estimate).not.toHaveBeenCalled();
+    expect(send).toHaveBeenCalledOnce();
+  });
+
+  it("adds this device to a deployed account with no tip and the shard's fee-free bounds", async () => {
     const execute = vi.spyOn(Account.prototype, "execute").mockResolvedValue({ transaction_hash: "0x8" });
     await joinRealmsAccount({ provider: provider(true), shard, realmsId: "0x9", device, approve });
     expect(execute).toHaveBeenCalledOnce();
-    expect(execute.mock.calls[0][1]).toEqual({ tip: 0 });
+    expect(execute.mock.calls[0][1]).toEqual(FEE_FREE);
     expect(approve).toHaveBeenCalledWith(expect.objectContaining({ action: "ADD", counter: 2 }));
   });
 

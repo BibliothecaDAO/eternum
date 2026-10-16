@@ -4,6 +4,7 @@ import { utils as starknetKeyUtils } from "@scure/starknet";
 import { botRealmsId, realmsAccountAddress, type DeviceChange } from "@realms-world/identity/account";
 import { Account, BlockTag, ec, hash, num, type ProviderInterface } from "starknet";
 import { operatorRequest } from "./operator-request";
+import { resolveGameTransactionResourceBounds } from "./transaction-resource-bounds";
 export { operatorRequest } from "./operator-request";
 
 /**
@@ -18,8 +19,15 @@ const CONTRACT_NOT_FOUND = 20;
 // The account's own state is read where its transactions land: a deployment or device change is pre-confirmed within
 // the block, and a read of the last closed block would ask the guardian again with a stale counter.
 const ACCOUNT_STATE = BlockTag.PRE_CONFIRMED;
-// Like every native submit: no tip, so no tip estimate reads recent blocks before signing.
-const NO_TIP = { tip: 0 };
+/**
+ * An account transaction's details, like every native submit's: no tip, so no tip estimate reads recent blocks, and the
+ * shard's fixed fee-free bounds, so no fee estimate is sent. The chain charges no fee, and the stamping RPC counts each
+ * estimate against the caller's account-operation allowance.
+ */
+const accountTransactionDetails = (shard: RealmsAccountShard) => ({
+  tip: 0,
+  resourceBounds: resolveGameTransactionResourceBounds(BigInt(shard.l2GasBound)),
+});
 const DEVICE_KEY_STORAGE_KEY = "realms:device-key";
 const RECEIPT_POLL_MS = 250;
 
@@ -37,6 +45,8 @@ export interface RealmsAccountShard {
   chainId: string;
   accountClassHash: string;
   guardianPublicKey: string;
+  /** The manifest's per-transaction L2 gas bound: a decimal or hex string, or the client's parsed bigint. */
+  l2GasBound: bigint | string;
 }
 
 /** The identity Worker of the shard's environment, reached with that environment's operator token. */
@@ -163,7 +173,7 @@ async function joinOnce(
           addressSalt: realmsId,
           contractAddress: address,
         },
-        NO_TIP,
+        accountTransactionDetails(shard),
       ),
     );
     await joinStep("account_join_receipt_failed", () =>
@@ -178,7 +188,7 @@ async function joinOnce(
     const counter = (await joinStep("account_join_counter_failed", () => deviceChangeCounter(provider, address))) + 1;
     const joining = realmsAccount(provider, address, device, await approval(counter));
     const joined = await joinStep("account_join_device_add_failed", () =>
-      joining.execute(isDeviceCall(address, device.publicKey), NO_TIP),
+      joining.execute(isDeviceCall(address, device.publicKey), accountTransactionDetails(shard)),
     );
     await joinStep("account_join_receipt_failed", () =>
       provider.waitForTransaction(joined.transaction_hash, { retryInterval: RECEIPT_POLL_MS }),
@@ -278,7 +288,7 @@ async function revokeDevice({
       entrypoint: "revoke_device",
       calldata: [deviceKey, r, s],
     },
-    NO_TIP,
+    accountTransactionDetails(shard),
   );
   await account.waitForTransaction(result.transaction_hash, { retryInterval: RECEIPT_POLL_MS });
   return result.transaction_hash;
