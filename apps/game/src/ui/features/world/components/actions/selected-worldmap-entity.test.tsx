@@ -35,10 +35,10 @@ const panelFor = (occupierType: TileOccupier) => {
 describe("the selected tile panel", () => {
   it("opens the army panel for an army only, never for a shrine or well", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-    useUIStore.getState().setSelectedHex({ col: 4, row: 5 });
+    useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 4, row: 5 } });
     expect(panelFor(TileOccupier.ExplorerPaladinT2)).toBe("army");
     expect(panelFor(TileOccupier.Shrine)).toBe("tile");
     expect(panelFor(TileOccupier.Well)).toBe("tile");
-    useUIStore.getState().setSelectedHex(null);
+    useUIStore.getState().selectOnMap(null);
   });
 });

@@ -105,7 +105,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const selectedHex = useUIStore((state) => state.selectedHex);
   const openSurface = usePopoverStore((state) => state.openSurface);
   const closeSurface = usePopoverStore((state) => state.closeSurface);
-  const updateSelectedEntityId = useUIStore((state) => state.updateEntityActionSelectedEntityId);
+  const deselectEntity = useUIStore((state) => state.deselectEntity);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Opt-in toggle: when on, the Claim action also garrisons the surviving troops. Off by default.
@@ -373,7 +373,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       playUnitCommandSound("attack");
       await performCall({ direction, resolvedTarget });
 
-      updateSelectedEntityId(null);
+      deselectEntity();
       closeSurface();
     } catch (error) {
       console.error("Quick attack failed", error);

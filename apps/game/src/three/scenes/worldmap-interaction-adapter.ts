@@ -1,5 +1,6 @@
 import { Position } from "@bibliothecadao/eternum";
 import { AudioManager } from "@/audio/core/AudioManager";
+import type { MapSelectionIntent } from "@/hooks/store/map-selection";
 import type { HexEntityInfo, HexPosition, ID } from "@bibliothecadao/types";
 import { navigateToStructure } from "../utils/navigation";
 import { openStructureContextMenu } from "./context-menu/structure-context-menu";
@@ -8,7 +9,7 @@ type OpenStructureContextMenuInput = Parameters<typeof openStructureContextMenu>
 
 interface WorldmapInteractionState {
   selectedHex?: { col: number; row: number } | null;
-  setSelectedHex(input: { col: number; row: number } | null): void;
+  selectOnMap(intent: MapSelectionIntent): void;
   setStructureEntityId(
     structureId: ID,
     options: {
@@ -18,21 +19,12 @@ interface WorldmapInteractionState {
   ): void;
 }
 
-interface SelectedHexManagerLike {
-  setPosition(x: number, z: number): void;
-}
-
 interface CreateWorldmapInteractionAdapterInput {
   state: WorldmapInteractionState;
-  selectedHexManager?: SelectedHexManagerLike;
   store?: OpenStructureContextMenuInput["store"];
 }
 
-export function createWorldmapInteractionAdapter({
-  state,
-  selectedHexManager,
-  store,
-}: CreateWorldmapInteractionAdapterInput) {
+export function createWorldmapInteractionAdapter({ state, store }: CreateWorldmapInteractionAdapterInput) {
   return {
     enterStructure(input: {
       hexCoords: HexPosition;
@@ -47,11 +39,8 @@ export function createWorldmapInteractionAdapter({
       navigateToStructure(Position.fromNormalized({ x: input.hexCoords.col, y: input.hexCoords.row }), "hex");
     },
 
-    selectHex(input: {
-      contractHexPosition: { x: number; y: number };
-      isMine: boolean;
-      position: { x: number; z: number };
-    }) {
+    /** A tap on a tile selects it as terrain; the map then selects the army or structure it holds, if any. */
+    selectHex(input: { contractHexPosition: { x: number; y: number }; isMine: boolean }) {
       if (
         input.contractHexPosition.x === state.selectedHex?.col &&
         input.contractHexPosition.y === state.selectedHex?.row
@@ -59,11 +48,7 @@ export function createWorldmapInteractionAdapter({
         return;
       }
 
-      selectedHexManager?.setPosition(input.position.x, input.position.z);
-      state.setSelectedHex({
-        col: input.contractHexPosition.x,
-        row: input.contractHexPosition.y,
-      });
+      state.selectOnMap({ kind: "hex", hex: { col: input.contractHexPosition.x, row: input.contractHexPosition.y } });
 
       if (input.isMine) {
         AudioManager.getInstance().play("ui.hex_select");

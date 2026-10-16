@@ -61,7 +61,7 @@ describe("the selected army's report", () => {
     const army = () => (page.__eternumMapSelection as { army: unknown }).army;
     expect(army()).toBeNull();
 
-    useUIStore.getState().updateEntityActionSelectedEntityId(7);
+    useUIStore.getState().selectOnMap({ kind: "army", entityId: 7, tile: "own" });
     offerOrdersOn(6);
     expect(army()).toEqual({ id: 7, hex: { col: 10, row: 10 }, orders: 6 });
 
@@ -72,7 +72,7 @@ describe("the selected army's report", () => {
     offerOrdersOn(4);
     expect(army()).toEqual({ id: 7, hex: { col: 11, row: 10 }, orders: 4 });
 
-    useUIStore.getState().updateEntityActionSelectedEntityId(null);
+    useUIStore.getState().selectOnMap(null);
     expect(army()).toBeNull();
   });
 
@@ -80,7 +80,7 @@ describe("the selected army's report", () => {
     page.__eternumMapSelection = { hex: { col: 1, row: 2 }, structure: null, ringedHexes: 3 };
     stop = reportSelectedArmy(createProjection());
 
-    useUIStore.getState().updateEntityActionSelectedEntityId(42);
+    useUIStore.getState().selectOnMap({ kind: "structure", entityId: 42 });
     expect(page.__eternumMapSelection).toEqual({
       hex: { col: 1, row: 2 },
       structure: null,

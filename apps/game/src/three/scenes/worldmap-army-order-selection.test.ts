@@ -13,7 +13,8 @@ const APPLIED = { hash: "0x1", block: 9, status: "SUCCEEDED" };
 const REFUSED = { hash: "0x1", block: 9, status: "REJECTED", revertReason: "Tile is occupied" };
 
 const send = () => vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
-const select = (entityId: number | null) => useUIStore.getState().updateEntityActionSelectedEntityId(entityId);
+const select = (entityId: number | null) =>
+  useUIStore.getState().selectOnMap(entityId === null ? null : { kind: "army", entityId, tile: "own" });
 const selected = () => getLiveWorldmapEntityActions().selectedEntityId;
 
 /** The orders the map offered, with whether the army was still in flight then: orders are only planned for a free one. */

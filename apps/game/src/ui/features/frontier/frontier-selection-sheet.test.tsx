@@ -37,13 +37,13 @@ const sheetFor = (occupierType: number | null) => {
 describe("Frontier's selection sheet", () => {
   it("opens a Frontier card for a spire, and nothing for a tile without one", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-    useUIStore.getState().setSelectedHex({ col: 4, row: 5 });
+    useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 4, row: 5 } });
     expect(sheetFor(TileOccupier.Spire)).toBe("Spire");
     // An empty tile, an unrevealed one, or an army the dock already shows: no card, and never the old inspector.
     expect(sheetFor(TileOccupier.None)).toBeNull();
     expect(sheetFor(null)).toBeNull();
     expect(sheetFor(TileOccupier.ExplorerKnightT1)).toBeNull();
-    useUIStore.getState().setSelectedHex(null);
+    useUIStore.getState().selectOnMap(null);
   });
 });
 
@@ -98,8 +98,8 @@ it("offers depth entry from Frontier for an own army at the computed spire", asy
     },
   ] as never);
   useAccountStore.setState({ account: { address: "0x111" } as never });
-  useUIStore.getState().updateEntityActionSelectedEntityId(201);
-  useUIStore.getState().setSelectedHex({ col: beside.col, row: beside.row });
+  // Army 201 selected, acting on the tile beside it.
+  useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: { col: beside.col, row: beside.row } });
   tiles.current = [];
   const enter = vi.fn().mockResolvedValue(undefined);
   const host = document.createElement("div");
@@ -128,7 +128,6 @@ it("offers depth entry from Frontier for an own army at the computed spire", asy
     expect(enter).toHaveBeenCalledWith(expect.objectContaining({ explorerId: 201, depth: 1 }));
   } finally {
     act(() => root.unmount());
-    useUIStore.getState().updateEntityActionSelectedEntityId(null);
-    useUIStore.getState().setSelectedHex(null);
+    useUIStore.getState().selectOnMap(null);
   }
 });

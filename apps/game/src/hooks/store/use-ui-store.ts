@@ -162,7 +162,11 @@ export const useUIStore = create(
       set({ showBlankOverlay: show });
     },
     mapLayer: false,
-    setMapLayer: (mapLayer) => set({ mapLayer }),
+    setMapLayer: (mapLayer) => {
+      set({ mapLayer });
+      // The selection shows only on the layer its entity stands on.
+      get().refreshMapSelection();
+    },
     isSideMenuOpened: true,
     toggleSideMenu: () => set((state) => ({ isSideMenuOpened: !state.isSideMenuOpened })),
     isSoundOn: readLocalBool("soundEnabled", true),

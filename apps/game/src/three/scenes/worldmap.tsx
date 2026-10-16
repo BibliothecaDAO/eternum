@@ -52,7 +52,7 @@ import { ReservedHyperstructureManager } from "@/three/managers/reserved-hyperst
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { OwnershipRingLayer } from "@/three/managers/ownership-ring-layer";
 import { bindOwnershipRings } from "./worldmap-ownership-rings";
-import { bindSelectionToMovingStructures } from "./worldmap-selection-follow";
+import { bindMapSelection } from "./worldmap-map-selection";
 import { reportSelectedArmy } from "./worldmap-selected-army-report";
 import { StructureManager } from "@/three/managers/structure-manager";
 import { FrameBudgetWorkQueue, type FrameBudgetWorkLane } from "@/three/frame-budget-work-queue";
@@ -856,6 +856,7 @@ export default class WorldmapScene extends WarpTravel {
   private chestManager!: ChestManager;
   private worldSpatialProjection!: WorldSpatialProjection;
   private unsubscribeWorldSpatialProjection?: () => void;
+  private unbindMapSelection?: () => void;
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
   private proceduralTerrain!: WorldmapProceduralTerrain;
   private strategicMarkers!: StrategicMarkerLayer;
@@ -1189,6 +1190,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private initializeWorldmapManagers(): void {
     this.worldSpatialProjection = requireActiveGameSyncRuntime().requireWorldSpatialProjection();
+    this.unbindMapSelection = bindMapSelection(this.worldSpatialProjection);
     this.compactEntityLabelRenderer = new CompactEntityLabelRenderer(this.scene);
     this.armyLabelsGroup = new Group();
     this.armyLabelsGroup.name = "ArmyLabelsGroup";
@@ -1773,7 +1775,9 @@ export default class WorldmapScene extends WarpTravel {
         const hex = { col: tile.x, row: tile.y };
         // The fallen site's tile card goes with it; the card of what it paid takes its place.
         const selectedHex = useUIStore.getState().selectedHex;
-        if (selectedHex?.col === payout.coord.x && selectedHex.row === payout.coord.y) this.state.setSelectedHex(null);
+        if (selectedHex?.col === payout.coord.x && selectedHex.row === payout.coord.y) {
+          useUIStore.getState().closeSelectedTile();
+        }
         playSiteClear({
           clear: payout,
           troopsLost: payout.troopsLost,
@@ -1830,7 +1834,6 @@ export default class WorldmapScene extends WarpTravel {
     this.ownershipRings = new OwnershipRingLayer(this.scene, this.getTerrainSurface());
     this.interactionAdapter = createWorldmapInteractionAdapter({
       state: this.state,
-      selectedHexManager: this.selectedHexManager,
       store: this.game.store,
     });
     this.interactiveHexManager.applyHoverPalette(resolveHoverVisualPalette({ hasSelection: false }));
@@ -2695,8 +2698,6 @@ export default class WorldmapScene extends WarpTravel {
     this.handleHexSelection(hexCoords, clickPlan.isMine);
 
     if (clickPlan.selection.type === "army") {
-      // The pulse marks a selected army; the selected-hex fill under it would only tint the unit.
-      this.selectedHexManager.resetPosition();
       // The plan selects an army only for the viewer who owns it, so a viewer is present here.
       this.onArmySelection(clickPlan.selection.entityId, viewer!);
       this.logInteractionDebug("army_selected_via_left_click", {
@@ -2727,15 +2728,7 @@ export default class WorldmapScene extends WarpTravel {
 
   protected handleHexSelection(hexCoords: HexPosition, isMine: boolean) {
     const contractHexPosition = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
-    const position = getWorldPositionForHex(hexCoords);
-    this.interactionAdapter.selectHex({
-      contractHexPosition,
-      isMine,
-      position: {
-        x: position.x,
-        z: position.z,
-      },
-    });
+    this.interactionAdapter.selectHex({ contractHexPosition, isMine });
   }
 
   protected onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void {
@@ -3209,7 +3202,10 @@ export default class WorldmapScene extends WarpTravel {
 
   /** The target's tile card with the selected army kept as its actor: the forecast and Attack, or what the army lacks. */
   private openTargetCardForSelectedArmy(siteHex: HexPosition): void {
-    this.selectContractHexWithoutFeedback(siteHex);
+    const armyId = getLiveWorldmapEntityActions().selectedEntityId;
+    this.state.selectOnMap(
+      armyId === null ? { kind: "hex", hex: siteHex } : { kind: "army", entityId: armyId, tile: siteHex },
+    );
     this.state.updateEntityActionHoveredHex(null);
   }
 
@@ -3414,7 +3410,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private onStructureSelection(selectedEntityId: ID, hexCoords?: HexPosition) {
-    this.state.updateEntityActionSelectedEntityId(selectedEntityId);
+    this.state.selectOnMap({ kind: "structure", entityId: selectedEntityId });
 
     if (!hexCoords) return;
 
@@ -3461,8 +3457,6 @@ export default class WorldmapScene extends WarpTravel {
       worldMapPosition: Position.fromNormalized({ x: hex.col, y: hex.row }),
       spectator: !canIssueOrders(),
     });
-    const position = getWorldPositionForHex(hex);
-    this.selectedHexManager.setPosition(position.x, position.z);
   }
 
   private clearEvictedArmyMovementVisuals(entityId: ID): void {
@@ -3722,7 +3716,7 @@ export default class WorldmapScene extends WarpTravel {
       return false;
     }
 
-    this.state.updateEntityActionSelectedEntityId(selectedEntityId);
+    this.state.selectOnMap({ kind: "army", entityId: selectedEntityId, tile: "own" });
     playUnitCommandSound("select");
     this.selectedArmyOrders.offer(selectedEntityId, playerAddress);
     return true;
@@ -3733,7 +3727,6 @@ export default class WorldmapScene extends WarpTravel {
    * offered again at that order's outcome (offerOrdersAtOutcome), with no second click.
    */
   private offerSelectedArmyOrders(selectedEntityId: ID, playerAddress: ContractAddress): void {
-    this.showSelectedArmyTile(selectedEntityId);
     if (this.hasOrderInFlight(selectedEntityId)) {
       this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
       return;
@@ -3833,18 +3826,6 @@ export default class WorldmapScene extends WarpTravel {
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
   }
 
-  private showSelectedArmyTile(selectedEntityId: ID): void {
-    const armyPosition = this.getArmyDisplayPosition(selectedEntityId);
-    if (armyPosition) {
-      const worldPos = getWorldPositionForHex(armyPosition);
-      this.selectedHexManager.setPosition(worldPos.x, worldPos.z);
-    } else {
-      if (import.meta.env.DEV) {
-        console.warn(`[Worldmap] No projected army position found for ${selectedEntityId}`);
-      }
-    }
-  }
-
   private queueArmySelectionRecovery(selectedEntityId: ID, playerAddress: ContractAddress): void {
     if (this.armySelectionRecoveryInFlight.has(selectedEntityId)) {
       return;
@@ -3907,23 +3888,22 @@ export default class WorldmapScene extends WarpTravel {
     await openRelicCrate({ systemCalls: this.game.systemCalls, account, explorerId, hex });
   }
 
-  private selectContractHexWithoutFeedback(hexCoords: HexPosition): void {
+  /** The selection ring stands on the selected hex the selection derives: the tile every panel and card names. */
+  private showSelectedHexRing(selectedHex: HexPosition | null): void {
+    if (!selectedHex) {
+      this.selectedHexManager.resetPosition();
+      return;
+    }
     const position = getWorldPositionForHex({
-      col: hexCoords.col - FELT_CENTER(),
-      row: hexCoords.row - FELT_CENTER(),
+      col: selectedHex.col - FELT_CENTER(),
+      row: selectedHex.row - FELT_CENTER(),
     });
-
     this.selectedHexManager.setPosition(position.x, position.z);
-    this.state.setSelectedHex({
-      col: hexCoords.col,
-      row: hexCoords.row,
-    });
   }
 
   private clearSelection() {
-    this.selectedHexManager.resetPosition();
-    this.state.setSelectedHex(null);
     this.clearEntitySelection();
+    this.state.selectOnMap(null);
   }
 
   private updateEntityActionPaths(actionPaths: Map<string, ActionPath[]>) {
@@ -3963,7 +3943,7 @@ export default class WorldmapScene extends WarpTravel {
     showOrderTip(null);
     this.highlightHexManager.highlightHexes([]);
     this.updateEntityActionPaths(new Map());
-    this.state.updateEntityActionSelectedEntityId(null);
+    this.state.deselectEntity();
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
     this.attachWorldmapManagerLabels();
   }
@@ -4126,7 +4106,7 @@ export default class WorldmapScene extends WarpTravel {
       reportAmbientConvergenceError: (error) => this.reportAmbientConvergenceError(error),
       waitForAmbientConvergence: () => this.awaitInitialTerrainConvergence(),
     });
-    if (setupContext.isCurrent()) this.redrawHeldSelection();
+    if (setupContext.isCurrent()) this.showSelectedHexRing(useUIStore.getState().selectedHex);
   }
 
   /** A boot that starts while the map is shown gets the same entry readiness a setup would have given it. */
@@ -4156,16 +4136,6 @@ export default class WorldmapScene extends WarpTravel {
   public override setCameraOwnedByFlight(owned: boolean): void {
     super.setCameraOwnedByFlight(owned);
     this.chunkWorkQueue.setHeld(owned);
-  }
-
-  private redrawHeldSelection(): void {
-    const selectedHex = this.state.selectedHex;
-    if (!selectedHex || getLiveWorldmapEntityActions().selectedEntityId !== null) return;
-    const position = getWorldPositionForHex({
-      col: selectedHex.col - FELT_CENTER(),
-      row: selectedHex.row - FELT_CENTER(),
-    });
-    this.selectedHexManager.setPosition(position.x, position.z);
   }
 
   private reportAmbientConvergenceError(error: unknown): void {
@@ -8264,6 +8234,8 @@ export default class WorldmapScene extends WarpTravel {
     this.disposeWorldUpdateSubscriptions();
     this.unsubscribeWorldSpatialProjection?.();
     this.unsubscribeWorldSpatialProjection = undefined;
+    this.unbindMapSelection?.();
+    this.unbindMapSelection = undefined;
     this.pendingArmyMovementVisualLifecycleDisposers.forEach((dispose) => dispose());
     this.pendingArmyMovementVisualLifecycleDisposers.clear();
     this.pendingExploreLatencyActions.clear();
@@ -8641,7 +8613,7 @@ export default class WorldmapScene extends WarpTravel {
     this.pinnedRenderAreas.clear();
     this.hydratedChunkRefreshes.clear();
     this.hydratedRefreshSuppressionAreaKeys.clear();
-    this.selectedHexManager.resetPosition();
+    this.showSelectedHexRing(useUIStore.getState().selectedHex);
     this.armyManager.resetLayer();
     this.structureManager.resetLayer();
     this.chestManager.resetLayer();
@@ -8672,6 +8644,7 @@ export default class WorldmapScene extends WarpTravel {
       },
       onSelectedHexChanged: (selectedHex) => {
         this.state.selectedHex = selectedHex;
+        this.showSelectedHexRing(selectedHex);
       },
     });
     this.storeSubscriptions.push(
@@ -8682,12 +8655,6 @@ export default class WorldmapScene extends WarpTravel {
       }),
     );
     this.storeSubscriptions.push(reportSelectedArmy(this.worldSpatialProjection));
-    this.storeSubscriptions.push(
-      bindSelectionToMovingStructures({
-        projection: this.worldSpatialProjection,
-        moveSelection: (hex) => this.selectContractHexWithoutFeedback(hex),
-      }),
-    );
     this.storeSubscriptions.push(
       useChainTimeStore.subscribe((next, previous) => {
         if (next.executionFloorMs !== previous.executionFloorMs) this.followSelectedArmyReach();
@@ -8823,6 +8790,7 @@ export default class WorldmapScene extends WarpTravel {
       clearEntitySelection: () => this.clearEntitySelection(),
       onSelectedHexChanged: (selectedHex) => {
         this.state.selectedHex = selectedHex;
+        this.showSelectedHexRing(selectedHex);
       },
       onSynced: (uiState) => {
         this.logInteractionDebug("sync_state_from_store", {
@@ -8847,7 +8815,7 @@ export default class WorldmapScene extends WarpTravel {
 
     try {
       this.selectedHexManager.resetPosition();
-      if (nextSceneName !== SceneName.Hexception) this.state.setSelectedHex(null);
+      if (nextSceneName !== SceneName.Hexception) this.state.selectOnMap(null);
       this.state.setHoveredHex(null);
       this.highlightHexManager.highlightHexes([]);
       if (shouldResetSharedInteractionState) {

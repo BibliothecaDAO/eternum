@@ -37,7 +37,6 @@ export const StructureListColumn = memo(() => {
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
-  const setSelectedHex = useUIStore((state) => state.setSelectedHex);
   const playerStructures = useFactView(playerStructuresView);
   const structureNameVersion = useUIStore((state) => state.structureNameVersion);
   const setPendingRenameStructureEntityId = useUIStore((state) => state.setPendingRenameStructureEntityId);
@@ -69,13 +68,12 @@ export const StructureListColumn = memo(() => {
       if (target?.structure) {
         const position = structureMapPosition(store, target.structure);
         if (!position) return;
-        setSelectedHex({ col: position.x, row: position.y });
         void goToStructure(entityId, Position.fromContract(position), isMapView);
       } else {
         setStructureEntityId(entityId);
       }
     },
-    [goToStructure, isMapView, playerStructures, setSelectedHex, setStructureEntityId],
+    [goToStructure, isMapView, playerStructures, setStructureEntityId],
   );
 
   const handleRequestRename = useCallback(

@@ -41,7 +41,7 @@ const resolveCaptureTitle = (isHyperstructure: boolean, playerTook: boolean, pla
 export function NewsHeadlineBridge() {
   const { setup } = useGame();
   const { isMapView } = useQuery();
-  const setSelectedHex = useUIStore((state) => state.setSelectedHex);
+  const selectOnMap = useUIStore((state) => state.selectOnMap);
   const winner = useSeasonWinner();
   const endRevision = useNativeRevision(["BlitzResult", "BlitzRoster", "PlayerPoints"]);
   const goToStructure = useGoToStructure(setup);
@@ -64,10 +64,10 @@ export function NewsHeadlineBridge() {
   const shownIdsRef = useRef(new Set<string>());
 
   // Navigation refs
-  const navRef = useRef({ goToStructure, navigateToMapView, setSelectedHex, isMapView });
+  const navRef = useRef({ goToStructure, navigateToMapView, selectOnMap, isMapView });
   useEffect(() => {
-    navRef.current = { goToStructure, navigateToMapView, setSelectedHex, isMapView };
-  }, [goToStructure, navigateToMapView, setSelectedHex, isMapView]);
+    navRef.current = { goToStructure, navigateToMapView, selectOnMap, isMapView };
+  }, [goToStructure, navigateToMapView, selectOnMap, isMapView]);
 
   // --- Enqueue helper ---
   const enqueue = useCallback((headline: Headline) => {
@@ -183,15 +183,15 @@ export function NewsHeadlineBridge() {
   // --- Navigation handler ---
   const handleNavigate = useCallback(
     async (location: { x: number; y: number; entityId: number }) => {
-      const { goToStructure, navigateToMapView, setSelectedHex, isMapView } = navRef.current;
+      const { goToStructure, navigateToMapView, selectOnMap, isMapView } = navRef.current;
       const position = Position.fromContract({ x: location.x, y: location.y });
 
       const col = Number(location.x);
       const row = Number(location.y);
       if (Number.isFinite(col) && Number.isFinite(row)) {
         const next = { col, row };
-        setSelectedHex(next);
-        setTimeout(() => setSelectedHex(next), 0);
+        selectOnMap({ kind: "hex", hex: next });
+        setTimeout(() => selectOnMap({ kind: "hex", hex: next }), 0);
       }
 
       try {

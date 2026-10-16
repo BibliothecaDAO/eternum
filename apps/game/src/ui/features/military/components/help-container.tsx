@@ -43,7 +43,7 @@ export const HelpContainer = ({
     }
   }, [transferType]);
 
-  const updateSelectedEntityId = useUIStore((state) => state.updateEntityActionSelectedEntityId);
+  const deselectEntity = useUIStore((state) => state.deselectEntity);
   const closeSurface = usePopoverStore((state) => state.closeSurface);
 
   // Get the current entities we're working with based on direction state
@@ -77,7 +77,7 @@ export const HelpContainer = ({
 
   // Handle transfer completion
   const handleTransferComplete = () => {
-    updateSelectedEntityId(null);
+    deselectEntity();
     closeSurface();
   };
 

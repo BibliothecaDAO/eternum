@@ -92,7 +92,8 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
     />
   );
   const openArmy = (explorerId: number) => {
-    useUIStore.getState().updateEntityActionSelectedEntityId(explorerId);
+    // The army opens on its HUD surface, not on a tile card.
+    useUIStore.getState().selectOnMap({ kind: "army", entityId: explorerId, tile: null });
     setSurface("army");
   };
 

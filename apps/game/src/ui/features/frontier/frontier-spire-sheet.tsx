@@ -46,7 +46,7 @@ export const FrontierSpireSheet = ({ realm, onClose }: { realm: NativeRows["Stru
     <Sheet
       label="Spire"
       onClose={() => {
-        useUIStore.getState().updateEntityActionSelectedEntityId(null);
+        useUIStore.getState().deselectEntity();
         onClose();
       }}
     >

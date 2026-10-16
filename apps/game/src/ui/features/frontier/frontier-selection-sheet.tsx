@@ -38,10 +38,10 @@ export const FrontierSelectionSheet = ({
   const tileObject = useSelectedTileObject();
   const keep = useKeepSelected(realm);
   const building = useSelectedBuildingRow(realm);
-  const setSelectedHex = useUIStore((state) => state.setSelectedHex);
+  const closeSelectedTile = useUIStore((state) => state.closeSelectedTile);
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
   const close = () => {
-    setSelectedHex(null);
+    closeSelectedTile();
     setSelectedBuildingHex(null);
   };
   if (fight)

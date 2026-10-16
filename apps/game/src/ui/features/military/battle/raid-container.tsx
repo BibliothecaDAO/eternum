@@ -81,7 +81,6 @@ export const RaidContainer = ({
   const [showRaidResult, setShowRaidResult] = useState(false);
   const [raidTransactionHash, setRaidTransactionHash] = useState<string | null>(null);
 
-  const updateSelectedEntityId = useUIStore((state) => state.updateEntityActionSelectedEntityId);
   const selectedHex = useUIStore((state) => state.selectedHex);
   const timestamp = useCurrentDefaultTick();
   const targetTroops = useMemo(

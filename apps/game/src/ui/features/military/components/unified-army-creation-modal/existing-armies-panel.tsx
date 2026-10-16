@@ -53,7 +53,7 @@ export const ExistingArmiesPanel = memo(({ structureId, className }: ExistingArm
 ExistingArmiesPanel.displayName = "ExistingArmiesPanel";
 
 const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: ID }) => {
-  const setSelectedHex = useUIStore((state) => state.setSelectedHex);
+  const selectOnMap = useUIStore((state) => state.selectOnMap);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
   const timestamp = useCurrentDefaultTick();
   const [confirming, setConfirming] = useState(false);
@@ -87,7 +87,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
   }, [army.troops]);
 
   const handleJump = () => {
-    setSelectedHex({ col: Number(army.position.x), row: Number(army.position.y) });
+    selectOnMap({ kind: "hex", hex: { col: Number(army.position.x), row: Number(army.position.y) } });
     setLeftNavigationView(LeftView.None);
   };
 

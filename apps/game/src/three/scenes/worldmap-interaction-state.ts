@@ -11,12 +11,8 @@ export function getLiveWorldmapEntityActions(): WorldmapEntityActions {
 /** Clears the map's selection; a next order queued for the army that was selected leaves with it, traced. */
 export function resetWorldmapEntityActions(): void {
   dropNextOrder("not-selected");
+  useUIStore.getState().deselectEntity();
   useUIStore.setState((state) => ({
-    entityActions: {
-      ...state.entityActions,
-      hoveredHex: null,
-      actionPaths: new Map(),
-      selectedEntityId: null,
-    },
+    entityActions: { ...state.entityActions, hoveredHex: null, actionPaths: new Map() },
   }));
 }

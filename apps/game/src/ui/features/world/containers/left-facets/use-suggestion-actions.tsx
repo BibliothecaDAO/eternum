@@ -39,7 +39,6 @@ export const useSuggestionActions = () => {
   const [pendingSuggestionIds, setPendingSuggestionIds] = useState<string[]>([]);
 
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
-  const setSelectedHex = useUIStore((state) => state.setSelectedHex);
   const playerStructures = useFactView(playerStructuresView);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
   const openSurface = usePopoverStore((state) => state.openSurface);
@@ -52,13 +51,12 @@ export const useSuggestionActions = () => {
       if (target?.structure) {
         const position = structureMapPosition(setup.store, target.structure);
         if (!position) return;
-        setSelectedHex({ col: position.x, row: position.y });
         await goToStructure(realmId, Position.fromContract(position), forceMap || isMapView);
       } else {
         setStructureEntityId(realmId);
       }
     },
-    [goToStructure, isMapView, playerStructures, setSelectedHex, setStructureEntityId],
+    [goToStructure, isMapView, playerStructures, setStructureEntityId],
   );
 
   const runAutoBuildSuggestion = useCallback(
