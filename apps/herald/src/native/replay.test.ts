@@ -57,6 +57,7 @@ describe("native confirmed replay and transaction delivery", () => {
           snapshot: (game, block, models) => world.snapshot(game, block, models),
         },
         undecodableEventCount: () => 0,
+        nodeHealth: () => null,
       });
     for (const path of ["/games", "/games/1/leaderboard"]) {
       const rebuilt = await handler(restored)(new Request(`http://localhost${path}`));
@@ -318,6 +319,7 @@ it("halts a live confirmed fold atomically while leaving the process available",
       snapshot: (game, block, models) => fold.snapshot(game, block, models),
     },
     undecodableEventCount: () => native.receiptFailures,
+    nodeHealth: () => null,
     ingestionFailure: () =>
       native.halted
         ? { block: native.halted.block, transactionHash: native.halted.transactionHash, error: native.halted.message }

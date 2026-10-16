@@ -94,6 +94,7 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
     reviewSnapshot: async () => snapshot,
   },
   undecodableEventCount: () => 2,
+  nodeHealth: () => null,
 };
 const handler = createHeraldRequestHandler(httpState);
 
@@ -120,6 +121,13 @@ describe("herald HTTP", () => {
     });
     // Startup replay counts belong to the herald_ready log line; health reports only live facts.
     expect(health).not.toHaveProperty("metrics");
+    expect(health.node).toBeNull();
+    const sampled = { sampled_at: 1_800_000_000, memory_bytes: 1_900_000_000, host_memory_bytes: 96_000_000_000 };
+    const withNode = createHeraldRequestHandler({ ...httpState, nodeHealth: () => sampled });
+    await expect((await withNode(new Request("http://herald/health"))).json()).resolves.toMatchObject({
+      node: sampled,
+      success: true,
+    });
 
     const response = await handler(new Request("http://herald/games/7/snapshot?models=Structure"));
     expect(response.status).toBe(200);
@@ -177,6 +185,7 @@ it("passes a battle-only history filter to the store before pagination", async (
     decodedModelCount: 0,
     fold: { ...httpState.fold, modelRows: () => [], snapshot: () => snapshot },
     undecodableEventCount: () => 0,
+    nodeHealth: () => null,
     history: {
       frontierDayRanks: async () => null,
       frontierHistory: async () => [],
@@ -409,6 +418,7 @@ it("serves Frontier history at one confirmed head, caches successes only and kee
     fold: { ...httpState.fold, modelRows },
     history: { ...httpState.history!, frontierHistory },
     undecodableEventCount: () => 0,
+    nodeHealth: () => null,
   });
   const url = "http://herald/games/7/leaderboard";
   const pending = read(new Request(url));
@@ -443,6 +453,7 @@ it("serves immutable per-day ranks, with explicit unavailable and unclosed respo
   const handler = createHeraldRequestHandler({
     ...httpState,
     undecodableEventCount: () => 0,
+    nodeHealth: () => null,
     history: { ...httpState.history!, frontierDayRanks },
   });
   const request = (day: string) => handler(new Request(`http://localhost/games/1/days/${day}/ranks`));

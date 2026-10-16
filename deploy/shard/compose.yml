@@ -1,5 +1,9 @@
 name: ${SHARD_NAME:?Choose a unique shard name}
 
+# The node runs alone in its own slice, so the metrics collector can read its memory (node-health.json, served on
+# Herald's /health). systemd nests a slice at each dash: node.slice/node-<shard...>.slice, outside every resource limit.
+x-node-slice: &node-slice node-${SHARD_NAME}.slice
+
 x-madara-image: &madara-image ghcr.io/madara-alliance/madara@sha256:40934db1cdcd0e37058531c9bda152b336a0b594e349cbf2578f3893e0cc20e2
 
 # Docker keeps container logs without limit by default; the node alone writes about 400 MB a day while idle. Each
@@ -42,6 +46,7 @@ services:
     command: ["prepare"]
   madara:
     logging: *logging
+    cgroup_parent: *node-slice
     image: *madara-image
     entrypoint: ["tini", "--", "/bin/madara"]
     command:
@@ -94,7 +99,7 @@ services:
     logging: *logging
     image: ${SHARD_HERALD_IMAGE:?Use the published Herald image digest}
     entrypoint: ["/bin/sh", "-ec", "set -a; . /runtime/herald.env; exec bun /app/herald.js"]
-    volumes: ["public-config:/config:ro", "herald-config:/runtime:ro"]
+    volumes: ["public-config:/config:ro", "herald-config:/runtime:ro", "${SHARD_DATA:-./data}/metrics:/metrics:ro"]
     ports: ["${BIND_ADDRESS:-127.0.0.1}:${HERALD_PORT:-8081}:3003"]
     restart: on-failure
     depends_on:
@@ -139,6 +144,7 @@ services:
     logging: *logging
     image: ${SHARD_METRICS_IMAGE:?Use the published metrics image digest}
     command: ["--config=/config/collector.json"]
+    environment: { NODE_SLICE: *node-slice }
     user: "${HOST_UID:?}:${HOST_GID:?}"
     volumes: ["public-config:/config:ro", "${SHARD_DATA:-./data}/metrics:/data", "/sys/fs/cgroup:/host-cgroup:ro"]
     read_only: true

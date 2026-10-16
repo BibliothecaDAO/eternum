@@ -20,6 +20,19 @@ Herald is behind the node by more than 2 blocks (degraded) or more than 10 (down
 2. `sudo docker ps -a --filter name=realms-dev- --format '{{.Names}} {{.Status}}'`: something restarting or exited.
 3. `sudo docker logs --since 15m realms-dev-madara-1 2>&1 | tail -50`, then the same for `realms-dev-herald-1`.
 
+## node:<chain> — a world's node memory
+
+The node uses half of the host's memory or more (degraded) or three quarters (down), or no node runs in its slice
+(down), or the shard's metrics collector has not sampled it for a minute (degraded). Nothing limits the node's memory,
+so it grows until the host runs out.
+
+1. `curl -s https://herald.dev-realms.party/health`: `node` holds the last sample (`memory_bytes`, `host_memory_bytes`,
+   `sampled_at`); `null` means Herald cannot read the collector's file.
+2. `sudo docker stats --no-stream realms-dev-madara-1 realms-dev-metrics-1`: the node's memory now, and whether the
+   collector runs.
+3. `sudo docker logs --since 1h realms-dev-madara-1 2>&1 | tail -50`; a node that keeps growing is restarted with
+   `sudo docker restart realms-dev-madara-1` (Herald reconnects; the chain is kept).
+
 ## launch — game launches and seating
 
 The launch Worker reports a failed or stranded run, or a launcher or slot that could not join or freeze. A game is not

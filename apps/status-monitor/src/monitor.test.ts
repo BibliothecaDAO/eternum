@@ -47,7 +47,13 @@ const network =
         rpcUrl: "https://rpc.public.test",
       });
     if (url.endsWith("/health"))
-      return response({ service: "herald", success: true, confirmed_block: 10, undecodable_events: 0 });
+      return response({
+        service: "herald",
+        success: true,
+        confirmed_block: 10,
+        undecodable_events: 0,
+        node: { sampled_at: now, memory_bytes: 2e9, host_memory_bytes: 96e9 },
+      });
     if (url === "https://rpc.public.test") {
       const rpc = JSON.parse(String(init?.body));
       return response({ jsonrpc: "2.0", id: rpc.id, result: { block_number: 10, timestamp: now } });
@@ -70,6 +76,7 @@ it("probes every public path and world, not merely a directory200", async () => 
     ["monitor", "up"],
     ["ledger", "up"],
     ["shard:0xa", "up"],
+    ["node:0xa", "up"],
   ]);
   const failed = await probeServices(
     network({ "https://shard.public.test/health": new Response(null, { status: 503 }) }),
@@ -617,5 +624,26 @@ it("sends nothing from an overlapping observation that loses its write", async (
   } finally {
     errors.mockRestore();
     await disposeWorker(mf);
+  }
+});
+
+it("alerts on a node's memory share, a stopped node, and a sample it cannot trust", async () => {
+  const health = (node: unknown) =>
+    response({ service: "herald", success: true, confirmed_block: 10, undecodable_events: 0, node });
+  for (const [node, status] of [
+    [{ sampled_at: now, memory_bytes: 47e9, host_memory_bytes: 96e9 }, "up"],
+    [{ sampled_at: now, memory_bytes: 48e9, host_memory_bytes: 96e9 }, "degraded"],
+    [{ sampled_at: now, memory_bytes: 72e9, host_memory_bytes: 96e9 }, "down"],
+    [{ sampled_at: now, memory_bytes: null, host_memory_bytes: 96e9 }, "down"],
+    [{ sampled_at: now - 61, memory_bytes: 2e9, host_memory_bytes: 96e9 }, "degraded"],
+    [null, "degraded"],
+  ] as const) {
+    const result = await probeServices(
+      network({ "https://shard.public.test/health": health(node) }),
+      now,
+      [],
+      valueTargets,
+    );
+    expect(result.probes.find((p) => p.id === "node:0xa")!.status).toBe(status);
   }
 });

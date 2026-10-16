@@ -1,4 +1,5 @@
-"""Collect cgroup CPU samples and report sustained node block-close degradation from the existing OTLP export."""
+"""Collect cgroup CPU samples, report sustained node block-close degradation from the existing OTLP export, and keep the
+node's memory where Herald's /health publishes it."""
 
 import json
 import math
@@ -16,6 +17,8 @@ INTERVAL_SECONDS = 10
 CLOSE_LIMIT_SECONDS = 0.006
 CGROUP_ROOT = Path('/host-cgroup')
 OUTPUT = Path('/data/container-metrics.jsonl')
+# The node runs in its own slice (compose.yml), so its memory is the slice's; Herald serves this file on /health.
+NODE_HEALTH = Path('/data/node-health.json')
 # The collector's own export rotates at 100 MB and keeps two older files (collector.json); these samples do the same,
 # so a long-lived shard's metrics stay bounded.
 ROTATE_BYTES = 100 * 2**20
@@ -43,6 +46,7 @@ def main():
     try:
         while collector.poll() is None:
             previous = append_samples(CGROUP_ROOT, OUTPUT, previous)
+            write_node_health(CGROUP_ROOT, os.environ['NODE_SLICE'], NODE_HEALTH, int(time.time()))
             for event in close_alarm.poll(Path('/data/metrics.jsonl')):
                 print(json.dumps(event), flush=True)
             deadline += INTERVAL_SECONDS
@@ -169,6 +173,32 @@ def append_samples(root, output, previous):
             stream.write(json.dumps(sample, separators=(',', ':')) + '\n')
             current[key] = (elapsed_clock, counters['usage_usec'])
     return current
+
+
+def slice_directory(name):
+    """systemd nests a slice under one per dash: node-realms-dev.slice is node.slice/node-realms.slice/<itself>."""
+    parts = name.removesuffix('.slice').split('-')
+    return Path(*('-'.join(parts[:depth]) + '.slice' for depth in range(1, len(parts) + 1)))
+
+
+def write_node_health(root, node_slice, output, now):
+    """The node's memory, or null while no node runs in its slice, beside the host's, replaced whole each sample."""
+    scopes = sorted((root / slice_directory(node_slice)).glob('*.scope'))
+    try:
+        memory = sum(int((scope / 'memory.current').read_text()) for scope in scopes) if scopes else None
+    except FileNotFoundError:
+        memory = None  # The node stopped between listing its scope and reading it.
+    health = {'sampled_at': now, 'memory_bytes': memory, 'host_memory_bytes': host_memory_bytes()}
+    written = output.with_name(output.name + '.writing')
+    written.write_text(json.dumps(health))
+    written.replace(output)
+
+
+def host_memory_bytes():
+    for line in Path('/proc/meminfo').read_text().splitlines():
+        if line.startswith('MemTotal:'):
+            return int(line.split()[1]) * 1024
+    raise RuntimeError('MemTotal missing from /proc/meminfo')
 
 
 def rotate(output):
