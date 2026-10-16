@@ -102,6 +102,7 @@
 
 /* A round command bubble with its word under it. */
 .hud-bubble {
+  position: relative;
   pointer-events: auto;
   display: flex;
   width: 76px;
@@ -214,4 +215,30 @@
 .hud-tab[aria-selected="true"] {
   border-bottom-color: #f3d08a;
   color: #f3d08a;
+}
+
+/* A key's cap beside the control it presses: the HUD tells each key where it acts. */
+.hud-key {
+  display: inline-flex;
+  min-width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(243, 208, 138, 0.45);
+  border-radius: 5px;
+  padding: 0 4px;
+  font-family: var(--font-ui, var(--font-body));
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #d6bd84;
+}
+.hud-bubble__key {
+  position: absolute;
+  top: -4px;
+  left: 2px;
+  z-index: 2;
+  background: #0d171b;
 }

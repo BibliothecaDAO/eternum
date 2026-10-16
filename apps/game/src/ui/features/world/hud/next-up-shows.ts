@@ -2,15 +2,18 @@ import type { ID } from "@bibliothecadao/types";
 import { create } from "zustand";
 
 /**
- * What Next up shows now, so another surface offering the same action stays secondary: the screen's one filled gold
- * button is Next up's. Null while Next up shows nothing or is not mounted (the phone HUD has none).
+ * What Next up shows now: whose Provision or Level up it offers, so another surface offering the same stays secondary
+ * (the screen's one filled gold button is Next up's), and its step's action while it can be taken, which `Space` runs.
+ * Empty while Next up shows nothing or is not mounted (the phone HUD has none).
  */
-type NextUpShown = {
-  /** The realm whose Provision or Level up Next up offers, if that is its step. */
-  levelUpOf: ID | null;
-} | null;
+interface NextUpShown {
+  /** Whether Next up shows a step, and the realm whose Provision or Level up it is, if it is one. */
+  shown: { levelUpOf: ID | null } | null;
+  /** The shown step's action, while it can be taken. */
+  act: (() => void) | null;
+}
 
-export const useNextUpShows = create<{ shown: NextUpShown }>(() => ({ shown: null }));
+export const useNextUpShows = create<NextUpShown>(() => ({ shown: null, act: null }));
 
 /** Whether Next up is offering this realm's Provision or Level up, which any other of its buttons then leaves to it. */
 export const useNextUpOffersLevelUp = (realmId: ID | null) =>

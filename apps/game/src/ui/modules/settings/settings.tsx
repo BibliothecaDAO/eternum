@@ -315,7 +315,7 @@ function AudioSettings() {
   );
 }
 
-const KEY_NAMES: Record<string, string> = { Escape: "Esc" };
+const KEY_NAMES: Record<string, string> = { Escape: "Esc", " ": "Space" };
 const formatShortcutKey = (
   key: string,
   modifiers?: { shift?: boolean; ctrl?: boolean; alt?: boolean; meta?: boolean },

@@ -29,7 +29,7 @@ const usePublishShown = (step: NextStep | undefined) => {
   useEffect(() => {
     useNextUpShows.setState({ shown: showing ? { levelUpOf } : null });
   }, [showing, levelUpOf]);
-  useEffect(() => () => useNextUpShows.setState({ shown: null }), []);
+  useEffect(() => () => useNextUpShows.setState({ shown: null, act: null }), []);
 };
 
 /** A realm's level-up, read and sent by the realm's own hook; or any other step, with its line and its one verb. */
@@ -55,7 +55,12 @@ export const NextUp = () => {
       className={cn(OVERLAY_SURFACE_BASE, "pointer-events-auto flex flex-col gap-2 rounded-xl p-3")}
     >
       <div className="flex items-center justify-between gap-2">
-        <h2 className="hud-panel-title">Next up</h2>
+        <h2 className="hud-panel-title flex items-center gap-2">
+          Next up
+          <kbd className="hud-key" title="Space does it">
+            Space
+          </kbd>
+        </h2>
         {steps.length > 1 && (
           <button
             type="button"
@@ -87,19 +92,30 @@ const StepBody = ({
   busy: boolean;
   disabled?: boolean;
   run: () => void;
-}) => (
-  <div className="flex flex-col gap-2">
-    <p className="text-base text-kit-cream">{line}</p>
-    <Button
-      role="primary"
-      word={verb}
-      loading={busy ? "Sending…" : undefined}
-      disabled={disabled}
-      onClick={run}
-      className="w-full"
-    />
-  </div>
-);
+}) => {
+  usePublishAct(busy || disabled ? null : run);
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-base text-kit-cream">{line}</p>
+      <Button
+        role="primary"
+        word={verb}
+        loading={busy ? "Sending…" : undefined}
+        disabled={disabled}
+        onClick={run}
+        className="w-full"
+      />
+    </div>
+  );
+};
+
+/** Hands `Space` the shown step's action while it can be taken, and takes it back when the step changes or goes. */
+const usePublishAct = (act: (() => void) | null) => {
+  useEffect(() => {
+    useNextUpShows.setState({ act });
+    return () => useNextUpShows.setState({ act: null });
+  }, [act]);
+};
 
 /** A realm's level-up step as its hook reads it, whichever realm it is: the same readiness, send and lock as its card. */
 const LevelUpStep = ({ realmId, name }: { realmId: ID; name: string }) => {
