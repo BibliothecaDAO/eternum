@@ -1,0 +1,190 @@
+/* The map label drafts, in the War room HUD's look (hud/hud.css, index.css under classic-hud): Exo 2 text, Cinzel
+   titles, the teal glass surface, gold hairlines. Relation reads as one colour per side: yours gold, an ally teal, an
+   enemy red, an unowned thing stone. Every word is 14 px or more. */
+.mll {
+  --mll-glass: linear-gradient(180deg, rgba(25, 41, 48, 0.94), rgba(16, 28, 35, 0.96));
+  --mll-hairline: rgba(223, 170, 84, 0.55);
+  --mll-own: #f3d08a;
+  --mll-ally: #7fd6cf;
+  --mll-enemy: #ff7b6b;
+  --mll-neutral: #b9b1a1;
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  font-family: "Exo 2", system-ui, sans-serif;
+  color: #f4ebdc;
+}
+.mll [data-relation="own"] {
+  --mll-side: var(--mll-own);
+}
+.mll [data-relation="ally"] {
+  --mll-side: var(--mll-ally);
+}
+.mll [data-relation="enemy"] {
+  --mll-side: var(--mll-enemy);
+}
+.mll [data-relation="neutral"] {
+  --mll-side: var(--mll-neutral);
+}
+
+.mll-at {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
+}
+
+/* The resting plate: an icon, the name, the side's colour as a bar on its left. */
+.mll-plate {
+  display: flex;
+  height: 26px;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  border: 1px solid var(--mll-hairline);
+  border-left: 3px solid var(--mll-side);
+  border-radius: 6px;
+  background: var(--mll-glass);
+  padding: 0 8px 0 5px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45);
+  transition: opacity 120ms ease;
+}
+.mll-plate__meter {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 2px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.12);
+}
+.mll-plate__meter > i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: #66ddab;
+}
+.mll-tier {
+  border-radius: 4px;
+  background: rgba(223, 170, 84, 0.18);
+  padding: 2px 4px;
+  color: var(--mll-own);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* The quiet mark: the kind's painting in a disk ringed in the side's colour. */
+.mll-pin {
+  position: relative;
+  display: flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--mll-side);
+  border-radius: 9999px;
+  background: radial-gradient(circle at 50% 35%, #2a3f45 0%, #16252a 70%, #0d171b 100%);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+.mll-pin__badge {
+  position: absolute;
+  right: -10px;
+  top: -8px;
+  border: 1px solid var(--mll-hairline);
+  border-radius: 9999px;
+  background: #0d171b;
+  padding: 0 4px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 18px;
+}
+.mll-tag {
+  margin-top: 3px;
+  border-radius: 4px;
+  background: rgba(13, 23, 27, 0.82);
+  padding: 1px 5px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px #000;
+}
+
+/* Selected: a gold ring, whatever the mark. */
+.mll [data-selected="true"] :is(.mll-plate, .mll-pin, .mll-card) {
+  border-color: var(--mll-own);
+  box-shadow:
+    0 0 0 2px rgba(243, 208, 138, 0.55),
+    0 0 16px rgba(243, 208, 138, 0.45);
+}
+.mll [data-hovered="true"] .mll-pin {
+  border-color: #fff3d6;
+}
+.mll [data-yields="true"] {
+  opacity: 0;
+}
+
+/* The hover card: four lines at most. */
+.mll-card {
+  width: 236px;
+  border: 1px solid var(--mll-hairline);
+  border-top: 3px solid var(--mll-side);
+  border-radius: 8px;
+  background: var(--mll-glass);
+  padding: 8px 10px 9px;
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(243, 208, 138, 0.22);
+}
+.mll-card__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mll-card__title {
+  font-family: "Cinzel", serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #f1dfb0;
+}
+.mll-card__owner {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mll-side);
+}
+.mll-card__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.mll-card__track {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.12);
+}
+.mll-card__track > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: #66ddab;
+}
+.mll-dock {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+}
+.mll-leader {
+  position: absolute;
+  height: 0;
+  border-top: 1px dashed rgba(243, 208, 138, 0.7);
+  transform-origin: 0 0;
+}

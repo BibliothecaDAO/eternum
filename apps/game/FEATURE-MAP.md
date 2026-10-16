@@ -227,6 +227,10 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
 - **A selected structure that moves takes the selection with it**: when a Frontier realm is raised on its next day's
   site, the selected hex, its ring, the tile panel and the ownership rings move there together
   (`src/three/scenes/worldmap-selection-follow.ts`).
+- **Labels**: a plate over each realm, structure and army, and a card on hover. An unnamed army or structure is called
+  by its kind ("Camp", "Army"), never by its entity id (`getEntityName`, `packages/core/src/utils/entities.ts`), the
+  same name the attack toast uses. Drafts of a new label and hover system are in the dev build's lab, `/lab/map-labels`
+  (`system`, `naming`, `zoom`, `hover`, `select` in the address).
 
 ## Outposts
 

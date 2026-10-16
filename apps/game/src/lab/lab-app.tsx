@@ -108,6 +108,17 @@ const TOOLS = [
     ),
   },
   {
+    group: "Renderer",
+    label: "Map labels",
+    path: "/lab/map-labels",
+    route: "map-labels",
+    View: lazy(() =>
+      import("../ui/features/debug/map-label-lab/map-label-lab-view").then((module) => ({
+        default: module.MapLabelLabView,
+      })),
+    ),
+  },
+  {
     group: "Interface",
     label: "Motion primitives",
     path: "/lab/motion",

@@ -34,6 +34,9 @@ vi.mock("../ui/features/debug/three-chunk-debug-view", () => ({ ThreeChunkDebugV
 vi.mock("../ui/features/debug/procedural-terrain-benchmark-view", () => ({
   ProceduralTerrainBenchmarkView: () => <Tool name="terrain-benchmark" />,
 }));
+vi.mock("../ui/features/debug/map-label-lab/map-label-lab-view", () => ({
+  MapLabelLabView: () => <Tool name="map-labels" />,
+}));
 vi.mock("../ui/features/debug/motion-lab/motion-lab-view", () => ({ MotionLabView: () => <Tool name="motion" /> }));
 vi.mock("../ui/features/debug/kit-lab/kit-lab-view", () => ({ KitLabView: () => <Tool name="kit" /> }));
 vi.mock("../shell/lab/app-lab", () => ({ AppLabView: () => <Tool name="app" /> }));
@@ -91,6 +94,7 @@ it.each([
   ["/lab/world", "world"],
   ["/lab/chunks", "chunks"],
   ["/lab/terrain-benchmark", "terrain-benchmark"],
+  ["/lab/map-labels?system=pins&zoom=close", "map-labels"],
   ["/lab/motion", "motion"],
   ["/lab/kit/hud/live", "kit"],
   ["/lab/app/home/profile", "app"],
