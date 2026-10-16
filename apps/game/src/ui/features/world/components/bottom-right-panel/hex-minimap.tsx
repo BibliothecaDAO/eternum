@@ -139,9 +139,13 @@ type CenteredTileEntry = {
   bounds: { minX: number; maxX: number; minY: number; maxY: number };
 };
 
+type Bounds = { minX: number; maxX: number; minY: number; maxY: number };
+
 type CenteredIndex = {
   byCol: Map<number, CenteredTileEntry[]>;
-  bounds: { minX: number; maxX: number; minY: number; maxY: number };
+  bounds: Bounds;
+  /** The revealed terrain's bounds (tiles with a biome), without known structures standing on unrevealed hexes. */
+  explored: Bounds | null;
 };
 
 const buildCenteredIndex = (tiles: MinimapTile[]): CenteredIndex => {
@@ -151,6 +155,7 @@ const buildCenteredIndex = (tiles: MinimapTile[]): CenteredIndex => {
   let maxX = -Infinity;
   let minY = Infinity;
   let maxY = -Infinity;
+  const explored = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity };
 
   for (const tile of tiles) {
     const centeredCol = tile.col - center;
@@ -167,6 +172,12 @@ const buildCenteredIndex = (tiles: MinimapTile[]): CenteredIndex => {
     maxX = Math.max(maxX, tileMaxX);
     minY = Math.min(minY, tileMinY);
     maxY = Math.max(maxY, tileMaxY);
+    if (tile.biome !== undefined) {
+      explored.minX = Math.min(explored.minX, tileMinX);
+      explored.maxX = Math.max(explored.maxX, tileMaxX);
+      explored.minY = Math.min(explored.minY, tileMinY);
+      explored.maxY = Math.max(explored.maxY, tileMaxY);
+    }
 
     const entry: CenteredTileEntry = {
       tile,
@@ -200,6 +211,7 @@ const buildCenteredIndex = (tiles: MinimapTile[]): CenteredIndex => {
       minY: Number.isFinite(minY) ? minY : 0,
       maxY: Number.isFinite(maxY) ? maxY : 0,
     },
+    explored: Number.isFinite(explored.minX) ? explored : null,
   };
 };
 
@@ -261,7 +273,7 @@ const FIT_MARGIN = HEX_SIZE * 2;
 
 /** The scale and centre that show every explored tile in the box, or null once they no longer fit at a readable size. */
 const fitExploredView = (
-  bounds: { minX: number; maxX: number; minY: number; maxY: number },
+  bounds: Bounds,
   viewport: { width: number; height: number },
 ): { x: number; y: number; scale: number } | null => {
   const width = bounds.maxX - bounds.minX + FIT_MARGIN * 2;
@@ -316,16 +328,17 @@ export const HexMinimap = ({
     };
   }, [tiles.length, cameraTargetHex, cameraDistance, navigationTarget, selectedHex, centeredIndex.bounds, zoom]);
 
-  // Fitted to what is explored, the box holds the whole explored area, wherever the camera is and however far it is:
-  // the fit is the view itself, not a copy kept in state. Otherwise the camera and drags move the free view.
+  // Fitted to the revealed terrain, the box holds all of it, wherever the camera is and however far it is: the fit is
+  // the view shown, not a copy kept in state. The camera and drags move the free view behind it, which keeps following
+  // the camera and settles there, so the view is already in place when the explored area outgrows the fit.
   const fitted = useMemo(
-    () => (fitExplored && tiles.length > 0 ? fitExploredView(centeredIndex.bounds, viewport) : null),
-    [fitExplored, tiles.length, centeredIndex.bounds, viewport],
+    () => (fitExplored && centeredIndex.explored ? fitExploredView(centeredIndex.explored, viewport) : null),
+    [fitExplored, centeredIndex.explored, viewport],
   );
   const [freeView, setView] = useState<{ x: number; y: number; scale: number }>(initialView);
   const view = fitted ?? freeView;
-  const viewRef = useRef(view);
-  viewRef.current = view;
+  const viewRef = useRef(freeView);
+  viewRef.current = freeView;
   const isDraggingRef = useRef(false);
 
   const followTargetRef = useRef<{ x: number; y: number } | null>(null);

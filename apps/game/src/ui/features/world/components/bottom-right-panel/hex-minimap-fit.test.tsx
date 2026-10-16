@@ -1,8 +1,8 @@
-import { act, StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import { expect, it, vi } from "vitest";
+import { act, Profiler } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-import { HexMinimap } from "./hex-minimap";
+import { HexMinimap, type MinimapTile } from "./hex-minimap";
 
 // The minimap's markers and the game's synchronized configuration are not this test's business.
 vi.mock("@/hooks/use-fact-view", () => ({ useFactView: () => new Map() }));
@@ -11,48 +11,126 @@ vi.mock("@/ui/config", async (importOriginal) => ({
   FELT_CENTER: () => 0,
 }));
 
-const wait = (ms: number) => act(async () => void (await new Promise((resolve) => setTimeout(resolve, ms))));
+type Hex = { col: number; row: number };
 
-/** The centre of the area an SVG viewBox shows. */
-const shownCentre = (svg: SVGSVGElement) => {
-  const [minX, minY, width, height] = svg.getAttribute("viewBox")!.split(" ").map(Number);
-  return { x: minX + width / 2, y: minY + height / 2 };
+/** Animation frames run only when the test steps them, 20 ms apart, with React's commits counted. */
+let frames: Map<number, FrameRequestCallback>;
+let serial: number;
+let now: number;
+let commits: number;
+let host: HTMLDivElement;
+let root: Root;
+
+beforeEach(() => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  frames = new Map();
+  serial = 0;
+  now = 0;
+  commits = 0;
+  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+    frames.set(++serial, callback);
+    return serial;
+  });
+  vi.stubGlobal("cancelAnimationFrame", (id: number) => frames.delete(id));
+  host = document.createElement("div");
+  root = createRoot(host);
+});
+
+afterEach(async () => {
+  await act(async () => root.unmount());
+  vi.unstubAllGlobals();
+});
+
+const show = (tiles: MinimapTile[], camera: Hex, look: "badges" | "classic" = "badges") =>
+  act(async () =>
+    root.render(
+      <Profiler id="minimap" onRender={() => commits++}>
+        <HexMinimap tiles={tiles} selectedHex={null} navigationTarget={null} cameraTargetHex={camera} look={look} />
+      </Profiler>,
+    ),
+  );
+
+const step = async (count = 1) => {
+  for (let index = 0; index < count; index++) {
+    now += 20;
+    const due = [...frames.values()];
+    frames.clear();
+    await act(async () => due.forEach((callback) => callback(now)));
+  }
 };
 
-it("shows the whole explored area once it loads, wherever the camera is and while the view still follows it", async () => {
-  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-  const host = document.createElement("div");
-  document.body.append(host);
-  const root = createRoot(host);
-  // An explored cross around the world's centre, with the camera at its east end.
-  const explored = [
-    ...[-6, -4, -2, 0, 2, 4, 6].map((col) => ({ col, row: 0, biome: 11 })),
-    ...[-4, -2, 2, 4].map((row) => ({ col: 0, row, biome: 11 })),
-  ];
-  const show = (tiles: typeof explored, camera: { col: number; row: number }) =>
-    act(async () =>
-      root.render(
-        <StrictMode>
-          <HexMinimap tiles={tiles} selectedHex={null} navigationTarget={null} cameraTargetHex={camera} look="badges" />
-        </StrictMode>,
-      ),
-    );
-  try {
-    // The tiles load after the minimap mounts, as they do in a game: the view starts following the camera first.
-    await show([], { col: 6, row: 0 });
-    await wait(30);
-    await show(explored, { col: 6, row: 0 });
-    await wait(600);
-    const svg = host.querySelector("svg")!;
-    const fitted = svg.getAttribute("viewBox");
-    expect(shownCentre(svg).x).toBeCloseTo(0, 0);
-    expect(shownCentre(svg).y).toBeCloseTo(0, 0);
+/** What 20 more frames with no input change: commits and frames still asked for. Zero both once settled. */
+const idleWork = async () => {
+  const before = commits;
+  await step(20);
+  return { commits: commits - before, frames: frames.size };
+};
 
-    await show(explored, { col: -6, row: 0 });
-    await wait(600);
-    expect(svg.getAttribute("viewBox")).toBe(fitted);
-  } finally {
-    await act(async () => root.unmount());
-    host.remove();
-  }
+const shown = () => {
+  const [minX, minY, width, height] = host.querySelector("svg")!.getAttribute("viewBox")!.split(" ").map(Number);
+  return { x: minX + width / 2, y: minY + height / 2, width };
+};
+
+const revealed = (cols: number[], row = 0): MinimapTile[] => cols.map((col) => ({ col, row, biome: 11 }));
+/** A known structure standing on a hex the player has not revealed: a marker, not terrain. */
+const knownStructure = (col: number, row: number): MinimapTile => ({
+  col,
+  row,
+  occupier_id: "123",
+  occupier_type: 3,
+  occupier_is_structure: true,
+});
+const EXPLORED = revealed([-6, -4, -2, 0, 2, 4, 6]);
+
+it("fits the revealed terrain once it loads after mount, and settles while the camera stands elsewhere", async () => {
+  await show([], { col: 6, row: 0 });
+  await step();
+  await show(EXPLORED, { col: 6, row: 0 });
+  await step(100);
+  expect(shown().x).toBeCloseTo(0, 0);
+  expect(shown().y).toBeCloseTo(0, 0);
+  expect(await idleWork()).toEqual({ commits: 0, frames: 0 });
+
+  const fitted = host.querySelector("svg")!.getAttribute("viewBox");
+  await show(EXPLORED, { col: -6, row: 0 });
+  await step(100);
+  expect(host.querySelector("svg")!.getAttribute("viewBox")).toBe(fitted);
+  expect(await idleWork()).toEqual({ commits: 0, frames: 0 });
+});
+
+it("does not zoom out to a known structure on unrevealed terrain", async () => {
+  await show(EXPLORED, { col: 0, row: 0 });
+  await step(100);
+  const fitted = host.querySelector("svg")!.getAttribute("viewBox");
+  await show([...EXPLORED, knownStructure(30, 20)], { col: 0, row: 0 });
+  await step(100);
+  expect(host.querySelector("svg")!.getAttribute("viewBox")).toBe(fitted);
+});
+
+it("takes in remote terrain once it is revealed", async () => {
+  await show(EXPLORED, { col: 0, row: 0 });
+  await step(100);
+  const before = shown();
+  await show([...EXPLORED, ...revealed([20])], { col: 0, row: 0 });
+  await step(100);
+  expect(shown().width).toBeGreaterThan(before.width);
+  expect(shown().x).toBeGreaterThan(before.x);
+});
+
+it("leaves the fit for the camera once the revealed terrain needs less than the readable scale, already there", async () => {
+  // Where the camera is on the minimap: a classic minimap, which never fits, follows it there.
+  await show(EXPLORED, { col: 6, row: 0 }, "classic");
+  await step(100);
+  const camera = shown();
+  await act(async () => root.unmount());
+  root = createRoot(host);
+
+  await show(EXPLORED, { col: 6, row: 0 });
+  await step(100);
+  expect(shown().x).toBeCloseTo(0, 0);
+  await show([...EXPLORED, ...revealed([-400, 400])], { col: 6, row: 0 });
+  await step();
+  expect(shown().x).toBeCloseTo(camera.x, 0);
+  expect(shown().y).toBeCloseTo(camera.y, 0);
+  expect(await idleWork()).toEqual({ commits: 0, frames: 0 });
 });
