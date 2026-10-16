@@ -114,9 +114,9 @@ describe("native transaction receipt routing", () => {
       block: 10,
       status: "ACCEPTED_ON_L2",
     });
-    expect(messages.findIndex((message) => message.type === "diff")).toBeLessThan(
-      messages.findIndex((message) => message.type === "tx"),
-    );
+    const diff = messages.findIndex((message) => message.type === "diff");
+    expect(diff).toBeGreaterThanOrEqual(0);
+    expect(diff).toBeLessThan(messages.findIndex((message) => message.type === "tx"));
   });
 
   it("reads the game's refusal from the receipt: rolled back, its class and reason, never applied", () => {
