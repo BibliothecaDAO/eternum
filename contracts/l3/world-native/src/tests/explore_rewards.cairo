@@ -4,12 +4,13 @@ use crate::discovery::{Discovery, SPIRE_FIND_BPS, surface};
 use crate::exploration_rewards::{ExplorationReward, ExtractedReward, pool_reward, spire_reward};
 use crate::geometry::{neighbor, tile_key};
 use crate::map::IMapLogicDispatcher;
-use crate::resources::{ESSENCE, ResourceKey};
+use crate::resources::{ESSENCE, LABOR, ResourceKey};
 use crate::rules::{DISCOVER_CAMPS, DISCOVER_SPIRES, RESOURCE_PRECISION};
 use crate::tests::state::{GameState, MapObservationTrait, StructureObservationTrait, TroopObservationTrait};
 use crate::troops::{ExplorerKey, TroopTier, Troops};
 use super::play_fixture::{TestAction, play, rejection};
 
+const DONKEY: u8 = 25;
 // Raw roots for game 3 whose explore seed finds, and misses, a spire.
 const SPIRE_ROOT: u256 = 255;
 const NO_SPIRE_ROOT: u256 = 1;
@@ -198,11 +199,56 @@ fn blitz_reward_cap() -> u16 {
     let (_, blitz) = super::preset_projection::current_definition("blitz");
     blitz.rules.troop_limit_config.explore_reward_strength_cap
 }
+/// The current Blitz preset's exploration pool.
+fn blitz_rows() -> Span<ExplorationReward> {
+    let (_, blitz) = super::preset_projection::current_definition("blitz");
+    blitz.exploration
+}
+
+#[test]
+fn each_blitz_row_pays_its_percent_of_strength_up_to_three_thousand() {
+    // (resource, percent, draw weight) of the current Blitz pool, in its order.
+    let table = array![
+        (ESSENCE, 5_u128, 3500_u128), (ESSENCE, 10, 2500), (ESSENCE, 20, 1500), (LABOR, 10, 1500), (LABOR, 20, 500),
+        (DONKEY, 10, 500),
+    ];
+    let rows = blitz_rows();
+    assert_eq!(rows.len(), table.len());
+    let mut limits = limits();
+    limits.explore_reward_strength_cap = blitz_reward_cap();
+    // 100, 500, 1k, 3k and 20k T1 and 334 T3 (strength 3,006), and what each row pays them in whole units.
+    let armies = array![
+        (100_u128, TroopTier::T1), (500, TroopTier::T1), (1000, TroopTier::T1), (3000, TroopTier::T1),
+        (20000, TroopTier::T1), (334, TroopTier::T3),
+    ];
+    let paid = array![
+        array![5_u128, 10, 20, 10, 20, 10],
+        array![25, 50, 100, 50, 100, 50],
+        array![50, 100, 200, 100, 200, 100],
+        array![150, 300, 600, 300, 600, 300],
+        array![150, 300, 600, 300, 600, 300],
+        array![150, 300, 600, 300, 600, 300],
+    ];
+    for index in 0..table.len() {
+        let (resource_type, percent, weight) = *table.at(index);
+        let row = *rows.at(index);
+        assert_eq!(
+            (row.resource_type, row.percent, row.percent_max, row.weight), (resource_type, percent, percent, weight),
+        );
+        for army in 0..armies.len() {
+            let (count, tier) = *armies.at(army);
+            let troops = Troops { count: count * RESOURCE_PRECISION, tier, ..Default::default() };
+            let reward = pool_reward(array![row].span(), troops, limits, 40, 7);
+            assert_eq!(reward.resource_type, resource_type);
+            assert_eq!(reward.amount, *paid.at(army).at(index) * RESOURCE_PRECISION);
+        }
+    }
+}
 
 /// A Blitz realm and its one army of `count` troops at `tier`, raised through the real command, under the Blitz
 /// preset's reward cap. The fixture realm is a Settlement, so its deployment cap is raised for one army to hold 20k T1,
-/// and its store to hold them; its explored tiles find nothing, so the army steps onto them and is paid there, on a 30
-/// percent Essence row.
+/// and its store to hold them; its explored tiles find nothing, so the army steps onto them and is paid there, on the
+/// Blitz pool's largest Essence row.
 fn blitz_army_of(count: u128, tier: u8) -> (super::Deployment, ResourceKey, ExplorerKey) {
     let mut rules = super::camps::rules(true);
     rules.map_config.camp_win_probability = 0;
@@ -213,7 +259,7 @@ fn blitz_army_of(count: u128, tier: u8) -> (super::Deployment, ResourceKey, Expl
     rules.structure_capacity_config.realm_capacity = 1_000_000_000_000_000;
     let mut preset = super::resource_commands::fixture_preset(rules);
     preset.structures.board = None;
-    preset.exploration = essence_row(30);
+    preset.exploration = array![*blitz_rows().at(2)].span();
     let (d, home, _) = super::resource_commands::setup_with_preset(preset);
     super::resource_commands::grant(d, home, 26 + tier, count * RESOURCE_PRECISION);
     for food in array![35_u8, 36] {
@@ -230,9 +276,11 @@ fn blitz_army_of(count: u128, tier: u8) -> (super::Deployment, ResourceKey, Expl
 #[test]
 fn a_blitz_explore_pays_on_at_most_three_thousand_strength() {
     assert_eq!(blitz_reward_cap(), 3000);
-    // (troops, tier, Essence on the 30 percent row). 334 T3 is strength 3,006. Uncapped this was 150, 300, 900, 6,000
-    // and 901.8.
-    let cases = array![(500_u128, 0_u8, 150_u128), (1_000, 0, 300), (3_000, 0, 900), (20_000, 0, 900), (334, 2, 900)];
+    // (troops, tier, Essence on the 20 percent row). 334 T3 is strength 3,006. Uncapped this would be 20, 100, 200,
+    // 600, 4,000 and 601.2.
+    let cases = array![
+        (100_u128, 0_u8, 20_u128), (500, 0, 100), (1_000, 0, 200), (3_000, 0, 600), (20_000, 0, 600), (334, 2, 600),
+    ];
     for (count, tier, essence) in cases {
         let (d, home, explorer) = blitz_army_of(count, tier);
         let origin = GameState { contract_address: d.games }.explorer(explorer).unwrap().coord;

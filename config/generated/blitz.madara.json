@@ -1407,32 +1407,32 @@
       "rewards": [
         {
           "rewardId": 38,
-          "percent": 15,
+          "percent": 5,
           "probabilityBps": 3500
         },
         {
           "rewardId": 38,
-          "percent": 30,
+          "percent": 10,
           "probabilityBps": 2500
         },
         {
           "rewardId": 38,
-          "percent": 60,
+          "percent": 20,
           "probabilityBps": 1500
         },
         {
           "rewardId": 23,
-          "percent": 50,
+          "percent": 10,
           "probabilityBps": 1500
         },
         {
           "rewardId": 23,
-          "percent": 100,
+          "percent": 20,
           "probabilityBps": 500
         },
         {
           "rewardId": 25,
-          "percent": 50,
+          "percent": 10,
           "probabilityBps": 500
         }
       ]

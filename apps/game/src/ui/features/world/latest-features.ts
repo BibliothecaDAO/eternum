@@ -92,7 +92,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-16",
     title: "Explore with small armies, fight with big ones",
     description:
-      "In Blitz, what a reveal finds now stops growing at 3,000 strength (3,000 T1, 1,000 T2 or 334 T3), and so does a dormant spire's Essence. A bigger army finds no more, so explore with small armies and keep the big ones for battle.",
+      "In Blitz, a reveal now finds a share of the exploring army's strength up to 3,000 (3,000 T1, 1,000 T2 or 334 T3): at that size a tile finds 150, 300 or 600 Essence, 300 or 600 labor, or 300 donkeys, and a smaller army finds its share of that. A bigger army finds no more, and neither does a dormant spire pay more, so explore with small armies and keep the big ones for battle.",
     type: "balance",
   },
   {
