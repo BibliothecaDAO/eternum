@@ -318,3 +318,10 @@ artwork at desktop and phone sizes.
 The production entity portrait and castle upgrade use `realmMeaning(level)`; the native minimap selects
 `realmMarkerMeaning(level)` in `minimap-markers.ts`. Category-only realm symbols remain generic. The four reference
 renders use the shipped GLBs named in `realm-model-references.json`, with source and render hashes.
+
+`/lab/kit/icons#hex-fill` compares the previous realm emblem inset with the production fill at the minimap's default
+19.6 px tile size and at 30 px, for every level and ownership cue. The fill follows each painting's silhouette; the rim,
+ownership shape and level pip stay the same.
+`pnpm icons:prove <new-evidence-dir> https://127.0.0.1:4193 --minimap-url '<live-spectator-map-url>'` checks decoded
+realm art, rim clearance and level pips in the real minimap at its current camera zoom, then captures the map and
+minimap.

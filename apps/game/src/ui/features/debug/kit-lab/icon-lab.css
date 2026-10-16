@@ -222,3 +222,10 @@
     gap: 12px;
   }
 }
+
+#hex-fill [data-hex-fill="before"] image {
+  x: -9px;
+  y: -10px;
+  width: 18px;
+  height: 18px;
+}

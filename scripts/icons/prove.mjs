@@ -17,6 +17,93 @@ const pages = [
   ["news", "/lab/app/home/scroll?capture=1", "[data-layout]"],
 ];
 
+async function readRealmEmblems(selector) {
+  const images = [...document.querySelectorAll(`${selector} image[data-icon^="map-realm-"]`)];
+  return Promise.all(
+    images.map(async (element) => {
+      const image = new Image();
+      image.src = element.getAttribute("href");
+      await image.decode();
+      const canvas = document.createElement("canvas");
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext("2d");
+      context.drawImage(image, 0, 0);
+      const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+      const style = getComputedStyle(element);
+      const size = parseFloat(style.width);
+      const x = parseFloat(style.x);
+      const y = parseFloat(style.y);
+      const marker = element.closest("[data-marker]");
+      const rim = marker.querySelector("polygon");
+      const radius = Math.max(...[...rim.points].map((point) => Math.hypot(point.x, point.y)));
+      const innerApothem = (radius * Math.sqrt(3)) / 2 - Number(rim.getAttribute("stroke-width")) / 2;
+      let clearance = Infinity;
+      let paintedPixels = 0;
+      for (let row = 0; row < canvas.height; row++) {
+        for (let col = 0; col < canvas.width; col++) {
+          if (data[(row * canvas.width + col) * 4 + 3] <= 8) continue;
+          paintedPixels++;
+          // Test all four corners of each visible source pixel against the six inner rim edges.
+          for (const dx of [0, 1])
+            for (const dy of [0, 1]) {
+              const px = x + ((col + dx) / canvas.width) * size;
+              const py = y + ((row + dy) / canvas.height) * size;
+              const edgeDistance = Math.max(Math.abs(px), Math.abs(px) / 2 + (Math.abs(py) * Math.sqrt(3)) / 2);
+              clearance = Math.min(clearance, innerApothem - edgeDistance);
+            }
+        }
+      }
+      const pip = marker.querySelector("text");
+      const overlays = [...marker.children].slice([...marker.children].indexOf(element) + 1);
+      return {
+        meaning: element.dataset.icon,
+        owner: marker.dataset.owner,
+        size,
+        x,
+        y,
+        screenPixels: element.getBoundingClientRect().width,
+        rimColor: rim.getAttribute("stroke"),
+        clearance,
+        paintedPixels,
+        value: pip?.textContent,
+        pipAboveArt: overlays.some((overlay) => overlay.contains(pip)),
+        ownershipAboveArt: overlays.some((overlay) => overlay.getAttribute("transform") === "translate(-7 8)"),
+      };
+    }),
+  );
+}
+
+export async function proveMinimapEmblems(b, out, records, url) {
+  mkdirSync(out, { recursive: true });
+  const record = { name: "live-minimap-emblems", ready: false, presses: [], checks: [] };
+  records.push(record);
+  await b.run("set", "viewport", "1440", "1000");
+  await b.run("open", url, "--ignore-https-errors");
+  await b.run("wait", '[aria-label="Minimap"] [data-marker^="map-realm-"]');
+  record.ready = true;
+  record.emblems = await b.evaluate(`(${readRealmEmblems})('[aria-label="Minimap"]')`);
+  record.view = await b.evaluate(`(() => {
+    const svg = document.querySelector('[aria-label="Minimap"] svg');
+    return { url: location.href, viewport: [innerWidth, innerHeight], viewBox: svg.getAttribute('viewBox'),
+      minimap: svg.getBoundingClientRect().toJSON(), scale: svg.getScreenCTM().a };
+  })()`);
+  record.checks.push({
+    check: "Live realm paintings fill their hex without crossing the inner rim",
+    ok:
+      record.emblems.length > 0 &&
+      record.emblems.every((emblem) => emblem.size >= 23 && emblem.paintedPixels > 0 && emblem.clearance >= 0),
+  });
+  record.checks.push({
+    check: "Level pips and ownership cues remain above the paintings",
+    ok: record.emblems.every(
+      (emblem) => emblem.value === emblem.meaning.slice(-1) && emblem.pipAboveArt && emblem.ownershipAboveArt,
+    ),
+  });
+  await b.run("screenshot", join(out, "live-minimap-page.png"));
+  await b.run("open", "about:blank");
+}
+
 export async function proveIcons(b, out, records, baseUrl, onlyLayout, onlyPages, missingSvg = false) {
   mkdirSync(out, { recursive: true });
   for (const [layout, width, height] of [
@@ -102,6 +189,30 @@ export async function proveIcons(b, out, records, baseUrl, onlyLayout, onlyPages
         "Every level has its own painting and four ownership hex badges",
         "[0,1,2,3].every(level=>document.querySelector('[data-realm-level=\"'+level+'\"] [data-icon=realm-'+level+']') && document.querySelectorAll('#realm-levels [data-marker=map-realm-'+level+']').length===4)",
       );
+      record.realmFill = await b.evaluate(`(${readRealmEmblems})('#hex-fill [data-hex-fill="after"]')`);
+      record.checks.push({
+        check: "All four enlarged emblems clear their rims and retain ownership and level pips",
+        ok:
+          record.realmFill.length === 32 &&
+          record.realmFill.every(
+            (emblem) =>
+              emblem.size >= 23 &&
+              emblem.clearance >= 0 &&
+              emblem.value === emblem.meaning.slice(-1) &&
+              emblem.pipAboveArt &&
+              emblem.ownershipAboveArt,
+          ),
+      });
+      await check(
+        "Before comparison retains the previous 18px inset",
+        `
+        [...document.querySelectorAll('#hex-fill [data-hex-fill="before"] image')].every(image =>
+          parseFloat(getComputedStyle(image).width) === 18 && parseFloat(getComputedStyle(image).x) === -9 && parseFloat(getComputedStyle(image).y) === -10)`,
+      );
+      for (const level of [0, 1, 2, 3]) {
+        await b.run("scrollintoview", `[data-hex-fill-level='${level}']`);
+        await b.run("screenshot", join(out, `${layout}-hex-fill-${level}.png`));
+      }
       for (const size of [24, 32, 64]) {
         await b.run("click", `[data-realm-size='${size}']`);
         await check(
@@ -163,14 +274,16 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
       where: (r) => ({ name: r.name }),
     },
     (b, out, records) =>
-      proveIcons(
-        b,
-        out,
-        records,
-        baseUrl,
-        missingSvg ? "desktop" : undefined,
-        missingSvg || process.argv.includes("--catalog") ? ["catalog"] : undefined,
-        missingSvg,
-      ),
+      process.argv.includes("--minimap-url")
+        ? proveMinimapEmblems(b, out, records, process.argv[process.argv.indexOf("--minimap-url") + 1])
+        : proveIcons(
+            b,
+            out,
+            records,
+            baseUrl,
+            missingSvg ? "desktop" : undefined,
+            missingSvg || process.argv.includes("--catalog") ? ["catalog"] : undefined,
+            missingSvg,
+          ),
   );
 }

@@ -3,7 +3,7 @@ import { Icon } from "@/ui/design-system/icon";
 import { iconDefinition, iconMeanings, type IconMeaning } from "@/ui/design-system/icon-meaning";
 import { ActionTile } from "@/ui/features/world/containers/left-facets/structure-actions-panel";
 import { Button } from "@/ui/design-system/kit/button";
-import { RealmLevelIcons } from "./realm-level-icons";
+import { RealmLevelIcons, RealmHexFillComparison } from "./realm-level-icons";
 import { IconMinimap } from "./icon-minimap";
 import "./icon-lab.css";
 const families = [...new Set(iconMeanings.map((name) => iconDefinition(name).family))];
@@ -24,6 +24,7 @@ export function IconLab() {
         <h1>Facets icons</h1>
         <p>Production artwork at actual HUD sizes. Every meaning uses the same renderer as the game.</p>
       </header>
+      <RealmHexFillComparison />
       <RealmLevelIcons />
       <div className="icon-controls">
         <fieldset>

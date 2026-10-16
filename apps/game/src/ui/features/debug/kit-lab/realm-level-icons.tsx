@@ -99,3 +99,43 @@ export function RealmLevelIcons() {
     </section>
   );
 }
+
+export function RealmHexFillComparison() {
+  return (
+    <section id="hex-fill" aria-label="Realm hex fill comparison" className="my-6 space-y-4">
+      <h2>Realm hex fill · before / after</h2>
+      <p>
+        Same paintings, ownership rims and level pips. Shown at the game's default minimap zoom (19.6 px per tile) and
+        enlarged for inspection.
+      </p>
+      {[0, 1, 2, 3].map((level) => (
+        <article key={level} data-hex-fill-level={level} className="rounded border border-white/15 p-3">
+          <h3 className="!mt-0">Level {level}</h3>
+          <div className="grid grid-cols-2 gap-4">
+            {(["before", "after"] as const).map((version) => (
+              <figure key={version} data-hex-fill={version}>
+                <figcaption>{version === "before" ? "Before · inset" : "After · filled"}</figcaption>
+                {[19.6, 30].map((pixels) => (
+                  <div key={pixels} className="my-3 flex gap-1" data-hex-fill-size={pixels}>
+                    {(["you", "ally", "enemy", "neutral"] as const).map((owner) => (
+                      <svg
+                        key={owner}
+                        viewBox="-15 -15 30 30"
+                        width={pixels}
+                        height={pixels}
+                        role="img"
+                        aria-label={`${owner}, level ${level}, ${version}`}
+                      >
+                        <HexMarker name={realmMarkerMeaning(level)} owner={owner} value={String(level)} />
+                      </svg>
+                    ))}
+                  </div>
+                ))}
+              </figure>
+            ))}
+          </div>
+        </article>
+      ))}
+    </section>
+  );
+}

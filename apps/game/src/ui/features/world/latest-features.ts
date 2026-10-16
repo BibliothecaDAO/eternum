@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-16",
+    title: "Larger realm minimap emblems",
+    description: "Realm paintings fill more of their minimap hex, with ownership colours and level numbers kept clear.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-16",
     title: "Recognize each realm level",
     description:
       "Realm portraits and minimap badges now follow each level’s buildings: canvas and thatch, the city forum, twin towers and the imperial spire.",
