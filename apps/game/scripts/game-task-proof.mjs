@@ -24,7 +24,7 @@ export const spiralPoints = ([cx, cy], { radius, step }) => {
 };
 
 /**
- * Presses the first visible control inside `within` whose words match `text`, scrolled to and clicked as a player
+ * Presses the first visible control inside `within` (or matched by it) whose words match `text`, scrolled to and clicked as a player
  * would; for `tile`, moves the pointer out from the screen's centre until the map's tooltip names that order, and
  * clicks there (with `button`, right for an order sent at once); for `holdingTile`, moves it out until it rests on
  * another of the player's holdings than the one selected, and clicks there; for `fill`, types `value` into that
@@ -58,10 +58,11 @@ const pressStep = async (b, press, layout) => {
     );
   if (press.holdingTile) return clickTileWhere(b, layout, HOLDING_SEARCH, press.button, ANOTHER_HOLDING_HOVERED);
   const selector = await b.evaluate(`(() => {
+    const CONTROL = "button, a[href], [role=button], [role=tab]";
     const scope = [...document.querySelectorAll(${JSON.stringify(press.within ?? "body")})];
     const pattern = new RegExp(${JSON.stringify(press.text)});
     const control = scope
-      .flatMap((root) => [...root.querySelectorAll("button, a[href], [role=button], [role=tab]")])
+      .flatMap((root) => [root, ...root.querySelectorAll(CONTROL)].filter((el) => el.matches(CONTROL)))
       .find(
         (el) =>
           [el.innerText.replace(/\\s+/g, " ").trim(), el.getAttribute("aria-label") ?? ""].some((words) =>

@@ -30,16 +30,17 @@ const TROOPS_HELD = `[...document.querySelectorAll('section[aria-label="Selected
 
 const TRANSFER_PANEL = panel("transfer");
 const HOLDING_ROWS = 'aside[aria-label="Holdings"] [role=tabpanel]';
-const SEND_TO_ROWS = `${TRANSFER_PANEL} section[aria-label="Send to"] [role=tabpanel]`;
+const SEND_TO_UNPICKED = `${TRANSFER_PANEL} section[aria-label="Send to"] [role=tabpanel] button[aria-pressed="false"]`;
 const WHEAT_TOTAL = `${TRANSFER_PANEL} input[aria-label="Wheat: total to send"]`;
-const SEND_ONE_WHEAT = [
-  { name: "one wheat", fill: WHEAT_TOTAL, value: "1" },
+const sendWheat = (total) => [
+  { name: `${total} wheat`, fill: WHEAT_TOTAL, value: String(total) },
   { name: "Send", within: TRANSFER_PANEL, text: "^Send " },
 ];
 
 /**
- * A transfer sent: the chain took it (its toast), and the window shows it, one more delivery on the road or the
- * source's wheat down (a delivery joining one already on the road to that holding adds no row).
+ * A transfer sent: the chain took it (its toast, "Transfers sent." for several), and the window shows it, one more
+ * delivery on the road or the source's wheat down (a delivery joining one already on the road to that holding adds no
+ * row).
  */
 const TRANSFER_SENT = {
   reading: `(() => {
@@ -51,7 +52,7 @@ const TRANSFER_SENT = {
   })()`,
   changes: "one more delivery on the road or less wheat at the source",
   expect: (before, after) => after.arriving > before.arriving || after.wheat < before.wheat,
-  done: `document.body.innerText.includes("Transfer sent.")`,
+  done: `/Transfers? sent\\./.test(document.body.innerText)`,
 };
 
 /** How many order surfaces stand open: the workspaces and the popovers where an order is given. */
@@ -193,13 +194,15 @@ export const GAME_TASKS = {
     })()`,
   },
   "blitz-transfer-window": {
-    goal: "Blitz: send a realm's wheat to another holding from the Transfer button",
+    goal: "Blitz: send a realm's wheat to two other holdings at once from the Transfer button",
     layouts: ["desktop"],
     view: "map",
     presses: [
       { name: "Transfer", within: STRUCTURE_ACTIONS, text: "^Transfer$" },
-      { name: "the first holding to send to", within: SEND_TO_ROWS, text: "." },
-      ...SEND_ONE_WHEAT,
+      // Two destinations: the wheat total splits evenly between them, one call each in one transaction.
+      { name: "a holding to send to", within: SEND_TO_UNPICKED, text: "." },
+      { name: "a second holding to send to", within: SEND_TO_UNPICKED, text: "." },
+      ...sendWheat(2),
     ],
     ...TRANSFER_SENT,
   },
@@ -211,7 +214,7 @@ export const GAME_TASKS = {
       // The row's own button: the star beside it is named by its pin words.
       { name: "the first holding", within: HOLDING_ROWS, text: "^(?!Pin |Unpin ).+" },
       { name: "another of your holdings, right-clicked", holdingTile: true, button: "right" },
-      ...SEND_ONE_WHEAT,
+      ...sendWheat(1),
     ],
     ...TRANSFER_SENT,
   },
