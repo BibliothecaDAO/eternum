@@ -1,0 +1,502 @@
+/*
+ * realms.world's dark theme, as its account portal draws it: the night ground lit gold from the top, hairline panels,
+ * IM Fell English SC titles and places, Cinzel capitals on buttons, Exo 2 for reading, and one parchment step. The
+ * colours are the site's own tokens, the same the game's web app reads (its "site" look). Faces are under the SIL
+ * Open Font License beside them in fonts/.
+ */
+@font-face {
+  font-family: "IM Fell English SC";
+  src: url("fonts/im-fell-english-sc.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Exo 2";
+  src: url("fonts/exo-2.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Cinzel";
+  src: url("fonts/cinzel.woff2") format("woff2");
+  font-weight: 400 900;
+  font-display: swap;
+}
+
+:root {
+  --ground: #070b0d;
+  --plate: #0b0e11;
+  --plate2: #0f141a;
+  --line: #382c19;
+  --line2: #4f3f2a;
+  --cream: #eeeeee;
+  --muted: #b4b4b4;
+  --gold: #d5b36a;
+  --peach: #fcdfc2;
+  --sage: #05df72;
+  --red: #e55032;
+  --ink: #0a191a;
+  --radius: 6px;
+  --display: "IM Fell English SC", serif;
+  --label: "Cinzel", serif;
+  --text: "Exo 2", system-ui, sans-serif;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+[hidden] {
+  display: none !important;
+}
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  background: var(--ground) radial-gradient(circle at 50% 0%, rgb(213 179 106 / 0.08), transparent 608px) no-repeat;
+  color: var(--cream);
+  font: 15px/1.5 var(--text);
+}
+
+/* The rail: the portal's sidebar, eyebrow groups and places. */
+.rail {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px 16px;
+  border-right: 1px solid var(--line);
+  background: var(--plate);
+}
+.brand {
+  display: grid;
+  margin: 0 8px 12px;
+}
+.brand-name {
+  font: 22px/1 var(--display);
+  text-transform: uppercase;
+  color: var(--peach);
+}
+.brand-sub {
+  color: var(--muted);
+  font-size: 14px;
+}
+.eyebrow {
+  margin: 16px 8px 6px;
+  font: 12px/1 var(--display);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.place {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 7px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--cream);
+  font: 15px var(--text);
+  cursor: pointer;
+}
+.place:hover {
+  background: var(--plate2);
+}
+.place[aria-current="page"] {
+  border-color: var(--line2);
+  background: var(--plate2);
+  color: var(--peach);
+}
+.rail-foot {
+  margin-top: auto;
+  display: grid;
+  gap: 10px;
+}
+.who {
+  margin: 0 8px;
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+/* The environment switch: Dev in the site's quiet frame, Prod lit red once chosen. */
+.switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--line2);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.switch button {
+  padding: 8px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: 600 13px var(--label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.switch [data-env="dev"][aria-pressed="true"] {
+  background: var(--plate2);
+  color: var(--peach);
+}
+.switch [data-env="production"][aria-pressed="true"] {
+  background: var(--red);
+  color: var(--ink);
+}
+
+.stage {
+  min-width: 0;
+}
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--line);
+  background: rgb(7 11 13 / 0.85);
+  backdrop-filter: blur(8px);
+}
+.bar h1 {
+  margin: 0;
+  font: 26px/1.1 var(--display);
+  text-transform: uppercase;
+  background: linear-gradient(180deg, var(--peach) 0%, var(--gold) 60%, var(--peach) 100%);
+  background-clip: text;
+  color: transparent;
+}
+.env-badge {
+  border: 1px solid var(--line2);
+  border-radius: var(--radius);
+  padding: 2px 10px;
+  font: 600 12px var(--label);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--peach);
+}
+.env-badge.production {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+main {
+  display: grid;
+  gap: 16px;
+  max-width: 1100px;
+  padding: 20px 24px 40px;
+}
+main > div {
+  display: grid;
+  gap: 16px;
+}
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Panels: a hairline on the night, lit from the top. */
+.plate {
+  padding: 14px 18px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--plate) radial-gradient(circle at 50% 0%, rgb(213 179 106 / 0.06), transparent 58%);
+  box-shadow: inset 0 1px 0 rgb(213 179 106 / 0.13);
+}
+.plate h2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 10px;
+  padding-bottom: 8px;
+  background: linear-gradient(90deg, transparent, rgb(252 223 194 / 0.35) 30%, transparent) bottom / 100% 1px no-repeat;
+  font: 18px/1.2 var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gold);
+}
+.note {
+  color: var(--muted);
+  font: 14px var(--text);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.banner {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--red);
+  border-radius: var(--radius);
+  background: rgb(229 80 50 / 0.08);
+  font-size: 14px;
+}
+.error {
+  color: var(--red);
+  font-size: 14px;
+}
+
+.strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.probe {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px;
+  border: 1px solid var(--line2);
+  border-radius: 999px;
+  font-size: 14px;
+}
+.probe small {
+  color: var(--muted);
+  font-size: 13px;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sage);
+}
+.dot.degraded {
+  background: var(--gold);
+}
+.dot.down {
+  background: var(--red);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+th,
+td {
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: middle;
+}
+th {
+  color: var(--muted);
+  font: 500 12px var(--label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+td.end {
+  text-align: right;
+  white-space: nowrap;
+}
+td.quiet-cell {
+  color: var(--muted);
+}
+.scroll {
+  overflow-x: auto;
+}
+.state {
+  display: inline-block;
+  padding: 1px 8px;
+  border: 1px solid var(--line2);
+  border-radius: var(--radius);
+  font-size: 13px;
+}
+.state.attention {
+  border-color: var(--red);
+  color: var(--red);
+}
+.state.running,
+.state.queued,
+.state.open {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.state.complete,
+.state.done {
+  border-color: var(--sage);
+  color: var(--sage);
+}
+code,
+pre {
+  font:
+    13px ui-monospace,
+    monospace;
+}
+pre {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--ground);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.command {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+.command b {
+  font: 600 13px var(--label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--peach);
+}
+
+/* The one step: the site's flat parchment face. */
+.step {
+  padding: 8px 16px;
+  border: 1px solid rgb(252 223 194 / 0.5);
+  border-radius: var(--radius);
+  background: var(--peach);
+  color: var(--ink);
+  font: 600 13px var(--label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.step:hover:enabled {
+  filter: brightness(1.06);
+}
+/* Every other button: the night in a double hairline, as the site's quiet buttons. */
+.quiet {
+  padding: 6px 12px;
+  border: 1px solid rgb(252 223 194 / 0.35);
+  border-radius: var(--radius);
+  background: rgb(7 11 13 / 0.88);
+  box-shadow:
+    inset 0 0 0 3px var(--ground),
+    inset 0 0 0 4px rgb(252 223 194 / 0.16);
+  color: var(--cream);
+  font: 600 12px var(--label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.quiet:hover:enabled {
+  border-color: rgb(252 223 194 / 0.7);
+}
+.quiet + .quiet {
+  margin-left: 6px;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+dialog {
+  width: min(540px, calc(100vw - 32px));
+  padding: 20px;
+  border: 1px solid var(--line2);
+  border-radius: var(--radius);
+  background: var(--plate);
+  color: var(--cream);
+}
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.6);
+}
+dialog h3 {
+  margin: 0 0 14px;
+  font: 22px var(--display);
+  text-transform: uppercase;
+  color: var(--peach);
+}
+label {
+  display: grid;
+  gap: 4px;
+  margin: 10px 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+input,
+textarea {
+  padding: 8px 10px;
+  border: 1px solid var(--line2);
+  border-radius: var(--radius);
+  background: var(--ground);
+  color: var(--cream);
+  font: 14px var(--text);
+}
+.kinds {
+  display: grid;
+  gap: 8px;
+}
+.kinds button {
+  padding: 12px 14px;
+  border: 1px solid var(--line2);
+  border-radius: var(--radius);
+  background: var(--plate2);
+  color: var(--cream);
+  font: 15px var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.kinds button:hover:enabled {
+  border-color: var(--peach);
+}
+.kinds b {
+  font: 16px var(--display);
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.kinds small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+@media (max-width: 760px) {
+  body {
+    grid-template-columns: 1fr;
+  }
+  .rail {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 12px 16px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .brand {
+    margin: 0 8px 0 0;
+  }
+  .rail nav {
+    display: flex;
+    gap: 4px;
+  }
+  .rail .eyebrow {
+    display: none;
+  }
+  .rail-foot {
+    margin: 0;
+    width: 100%;
+  }
+  .bar,
+  main {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .pair {
+    grid-template-columns: 1fr;
+  }
+  th.wide,
+  td.wide {
+    display: none;
+  }
+}

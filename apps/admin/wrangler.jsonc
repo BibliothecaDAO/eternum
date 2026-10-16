@@ -1,0 +1,31 @@
+// The operator page: one Worker for dev and production, behind Cloudflare Access on ADMIN_HOSTNAME.
+// Access holds who may sign in (and a second application on /api/production/* who may act on production); the
+// Worker re-checks the Access token on every API call. The operator tokens are Worker secrets:
+// OPERATOR_TOKEN_DEV and OPERATOR_TOKEN_PRODUCTION. Nothing deploys it yet.
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "realms-admin",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "env": {
+    "production": {
+      "name": "realms-admin",
+      "workers_dev": false,
+      "routes": [{ "pattern": "admin.realms.party", "custom_domain": true }],
+      "assets": { "directory": "./public", "binding": "ASSETS" },
+      "vars": {
+        "ADMIN_HOSTNAME": "admin.realms.party",
+        "ACCESS_TEAM_DOMAIN": "",
+        "ACCESS_AUD": "",
+        "ACCESS_PRODUCTION_AUD": "",
+      },
+      "d1_databases": [{ "binding": "AUDIT", "database_name": "realms-admin", "migrations_dir": "migrations" }],
+      "r2_buckets": [
+        { "binding": "STATUS_DEV", "bucket_name": "realms-status-staging" },
+        { "binding": "STATUS_PRODUCTION", "bucket_name": "realms-status" },
+      ],
+    },
+  },
+}

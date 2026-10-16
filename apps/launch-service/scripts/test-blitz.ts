@@ -13,18 +13,12 @@
  */
 import environments from "../../../deploy/first/environments.json";
 import { gamePath } from "../../../packages/notifications/src/delivery";
+import type { FactoryRunRecord as RunRecord } from "../src/operator-api";
 
 const ORIGIN = environments.dev.origin;
 const POLL_MS = 5_000;
 const DEADLINE_MS = 10 * 60_000;
 const DIRECTORY_DEADLINE_MS = 60_000;
-
-interface RunRecord {
-  gameName: string;
-  status: "queued" | "running" | "complete" | "attention";
-  steps: { errorMessage?: string }[];
-  artifacts: { gameId?: number };
-}
 
 const main = async () => {
   const [name, ...players] = process.argv.slice(2);

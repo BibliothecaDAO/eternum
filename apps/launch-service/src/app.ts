@@ -16,7 +16,8 @@ import { isDevShardChain } from "@realms-world/value-ledger";
 interface LaunchAppDependencies {
   config: { operatorToken: string };
   /** What the version and health routes report, so a deploy can tell its own answers from its predecessor's. */
-  deployment: { environment: string; version: string };
+  /** `revision` is the commit the Worker was published from: its version tag, set by the deploy. */
+  deployment: { environment: string; version: string; revision: string };
   store: LaunchServiceStore;
   slots: SlotStore;
   calendar: CalendarStore;

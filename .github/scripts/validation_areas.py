@@ -61,6 +61,7 @@ AREAS = {
         "contracts/l3/player-account/class-hash.json",
         ".github/workflows/test-services.yml",
         "apps/launch-service/**",
+        "apps/admin/**",
         "apps/realms/**",
         "apps/value-relay/**",
         "apps/status-monitor/**",

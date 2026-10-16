@@ -44,6 +44,19 @@
         "cloudflare"
       ]
     },
+    "apps/admin": {
+      "entry": [
+        "src/worker.ts",
+        "public/admin.js",
+        "lab/fixtures.js",
+        "scripts/lab.mjs"
+      ],
+      "paths": {
+        "@bibliothecadao/eternum/realms-account": [
+          "../../packages/core/src/account/realms-account.ts"
+        ]
+      }
+    },
     "apps/launch-service": {
       "entry": [
         "src/worker.ts"
