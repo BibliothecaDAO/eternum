@@ -115,8 +115,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const executionSecond = useCurrentDefaultTick();
 
   const { target: targetData, targetResources, isLoading } = useAttackTargetData(attacker.id, target.hex, target.alt);
-  const targetOwner = targetData?.addressOwner ? BigInt(targetData.addressOwner) : 0n;
-  const targetOwnerName = usePlayerDisplayName(targetOwner === 0n ? null : targetOwner);
+  const targetOwnerName = usePlayerDisplayName(targetData ? (targetData.addressOwner ?? 0n) : null);
 
   const combatConfig = useMemo(() => configManager.getCombatConfig(), []);
   const ethereal = target.alt;
@@ -335,7 +334,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   })();
 
   // Who survives and what each side loses are the casualty lines below; the title only names the sides.
-  const title = combatTitle(accountName, { loaded: Boolean(targetData), owner: targetOwnerName });
+  const title = combatTitle(accountName, targetOwnerName);
   const fightCost = (() => {
     if (!fight) return null;
     const [worst, best] = [describeFightCost(fight.worst.forecast), describeFightCost(fight.best.forecast)];

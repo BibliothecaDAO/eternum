@@ -10,7 +10,7 @@ import {
   type ResourcesIds,
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { getStructureName, type PlayerNameResolver } from "../utils/entities";
+import { displayPlayerName, getStructureName, type PlayerNameResolver } from "../utils/entities";
 import { siteKindOf, structureMapPosition } from "../utils/expeditions";
 import { Position } from "./position";
 import { getIsBlitz } from "../utils/utils";
@@ -696,13 +696,6 @@ function toNumber(value: unknown): number | null {
   return null;
 }
 
-function shortenAddress(value: unknown): string | null {
-  if (!value) return null;
-  const raw = String(value);
-  if (raw.length <= 10) return raw;
-  return `${raw.slice(0, 6)}…${raw.slice(-4)}`;
-}
-
 function amountToBigInt(value: unknown): bigint | null {
   if (value === undefined || value === null) return null;
   if (typeof value === "bigint") return value;
@@ -828,17 +821,6 @@ function nameOwner(
   resolvePlayerName?: PlayerNameResolver,
 ): string | undefined {
   if (owner === undefined || owner === null) return undefined;
-  if (typeof owner === "string" && owner.startsWith("0x")) {
-    if (isZeroAddress(owner)) return "Neutral";
-    return resolvePlayerName?.(owner) ?? shortenAddress(owner) ?? owner;
-  }
+  if (typeof owner === "string" && owner.startsWith("0x")) return displayPlayerName(owner, resolvePlayerName?.(owner));
   return components ? (describeStructureName(owner, components) ?? undefined) : undefined;
 }
-
-const isZeroAddress = (address: string): boolean => {
-  try {
-    return BigInt(address) === 0n;
-  } catch {
-    return false;
-  }
-};

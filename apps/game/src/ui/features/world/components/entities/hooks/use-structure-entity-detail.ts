@@ -21,7 +21,14 @@ import { usePlayerProfile } from "@/hooks/use-player-profile";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRowOrAbsent, useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { ContractAddress, ID, BANDITS_NAME, RelicEffect, StructureType, wholePoints } from "@bibliothecadao/types";
+import {
+  ContractAddress,
+  ID,
+  NEUTRAL_OWNER_NAME,
+  RelicEffect,
+  StructureType,
+  wholePoints,
+} from "@bibliothecadao/types";
 import { useCallback, useMemo } from "react";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { presentedMineKind } from "@bibliothecadao/eternum";
@@ -65,7 +72,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   const isMine = isViewerOwner(structure?.owner, userAddress);
   const isAlly = isMine || Boolean(playerGuild && userGuild && playerGuild.entityId === userGuild.entityId);
   const ownerProfile = usePlayerProfile(structure?.owner);
-  const addressName = structure?.owner ? (ownerProfile.name ?? undefined) : BANDITS_NAME;
+  const addressName = structure?.owner ? (ownerProfile.name ?? undefined) : NEUTRAL_OWNER_NAME;
   const timestamp = useCurrentDefaultTick();
   const relicEffects: RelicEffect[] = useMemo(() => {
     const effects: RelicEffect[] = [];
@@ -96,7 +103,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
         )
       : undefined;
 
-  const ownerDisplayName = structure?.owner ? displayPlayerName(structure.owner, ownerProfile.name) : BANDITS_NAME;
+  const ownerDisplayName = displayPlayerName(structure?.owner ?? 0n, ownerProfile.name);
 
   const isHyperstructure = structure?.base.category === StructureType.Hyperstructure;
 

@@ -1,6 +1,6 @@
 import { Headline } from "@/ui/design-system/molecules/headline";
 import { configManager } from "@bibliothecadao/eternum";
-import { BANDITS_NAME, TickIds } from "@bibliothecadao/types";
+import { NEUTRAL_OWNER_NAME, TickIds } from "@bibliothecadao/types";
 import { tableOfContents } from "./utils";
 
 export const GettingStarted = () => {
@@ -14,7 +14,7 @@ export const GettingStarted = () => {
     },
     {
       title: "Victory Points Breakdown",
-      content: `Victory Points (VP) are earned through various actions: Explore a tile - ${grants.exploreTile} VP, Claim a World Structure from ${BANDITS_NAME} - ${grants.claimCampFromBandits} VP, Claim a Hyperstructure from ${BANDITS_NAME} - ${grants.claimHyperstructureFromBandits} VP, Open a Relic Crate - ${grants.openRelicCrate} VP, Control a Hyperstructure - ${grants.hyperstructurePerRealmPerSecond} VP/second per nearby settled Realm. The first player to reach ${pointsForWin.toLocaleString()} points gains the power to end the season and claim victory.`,
+      content: `Victory Points (VP) are earned through various actions: Explore a tile - ${grants.exploreTile} VP, Claim a World Structure from ${NEUTRAL_OWNER_NAME} - ${grants.claimCampFromBandits} VP, Claim a Hyperstructure from ${NEUTRAL_OWNER_NAME} - ${grants.claimHyperstructureFromBandits} VP, Open a Relic Crate - ${grants.openRelicCrate} VP, Control a Hyperstructure - ${grants.hyperstructurePerRealmPerSecond} VP/second per nearby settled Realm. The first player to reach ${pointsForWin.toLocaleString()} points gains the power to end the season and claim victory.`,
     },
     {
       title: "The Realms Day",

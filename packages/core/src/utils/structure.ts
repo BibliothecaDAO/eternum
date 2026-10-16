@@ -4,7 +4,6 @@ import {
   getMinePresentation,
   ContractAddress,
   ID,
-  BANDITS_NAME,
   Structure,
   StructureType,
 } from "@bibliothecadao/types";
@@ -31,7 +30,7 @@ export const getStructure = (
     position,
     isMine: isViewerOwner(structure.owner, playerAddress),
     isMercenary: structure.owner === 0n,
-    ownerName: structure.owner === 0n ? BANDITS_NAME : displayPlayerName(structure.owner, playerName(structure.owner)),
+    ownerName: displayPlayerName(structure.owner, playerName(structure.owner)),
     category: structure.base.category,
   };
 };

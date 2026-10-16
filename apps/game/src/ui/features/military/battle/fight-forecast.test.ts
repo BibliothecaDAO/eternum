@@ -1,4 +1,4 @@
-import type { FightForecast } from "@bibliothecadao/eternum";
+import { displayPlayerName, type FightForecast } from "@bibliothecadao/eternum";
 import { describe, expect, it } from "vitest";
 import { combatTitle, describeFightCost, wholeTroops } from "./fight-forecast";
 
@@ -19,16 +19,14 @@ const fight = (overrides: Partial<FoughtForecast>): FightForecast => ({
 });
 
 describe("combatTitle", () => {
-  it("names the two sides in full, an unowned target as the Bandits", () => {
-    expect(combatTitle("djizus", { loaded: true, owner: "Stolsli of the North" })).toBe(
-      "djizus vs Stolsli of the North",
-    );
-    expect(combatTitle("djizus", { loaded: true, owner: null })).toBe("djizus vs Bandits");
-    expect(combatTitle(null, { loaded: true, owner: "Stolsli" })).toBe("Your army vs Stolsli");
+  it("names the two sides in full", () => {
+    expect(combatTitle("djizus", "Stolsli of the North")).toBe("djizus vs Stolsli of the North");
+    expect(combatTitle("djizus", displayPlayerName("0x0", null))).toBe("djizus vs The Vanguard");
+    expect(combatTitle(null, "Stolsli")).toBe("Your army vs Stolsli");
   });
 
   it("names only the attacker before the target is known, and never the fight's outcome", () => {
-    expect(combatTitle("djizus", { loaded: false, owner: null })).toBe("djizus");
+    expect(combatTitle("djizus", null)).toBe("djizus");
   });
 });
 

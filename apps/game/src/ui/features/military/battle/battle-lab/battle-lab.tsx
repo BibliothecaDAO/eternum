@@ -307,7 +307,7 @@ export const BattleLab = ({
       attackerNameText: `${accountName || getPlayerDisplayName(account.address)} ${attackerGuild ? `from ${attackerGuild} tribe` : ""}`,
       attackerTroopsText: `${Math.floor(state.attacker.troopCount)} ${state.attacker.tier} ${state.attacker.troopType}`,
       defenderTroopsText: `${Math.floor(state.defender.troopCount)} ${state.defender.tier} ${state.defender.troopType}`,
-      defenderNameText: `${target.addressOwner ? getPlayerDisplayName(target.addressOwner) : "Bandits"} ${defenderGuild ? `from ${defenderGuild}` : ""}`,
+      defenderNameText: `${getPlayerDisplayName(target.addressOwner ?? 0n)} ${defenderGuild ? `from ${defenderGuild}` : ""}`,
       url: env.VITE_SOCIAL_LINK,
     });
   }, [

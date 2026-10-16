@@ -1,7 +1,7 @@
 import { safeInteger } from "./safe-integer";
 import { entityMapPosition } from "./tile";
 import { structureMapPosition } from "./expeditions";
-import { CapacityConfig, ContractAddress, ID, StructureType } from "@bibliothecadao/types";
+import { CapacityConfig, ContractAddress, ID, NEUTRAL_OWNER_NAME, StructureType } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { shortString } from "starknet";
@@ -118,9 +118,12 @@ const getEntityNameFromLocalStorage = (entityId: ID) => {
 export const unclaimedPlayerName = (address: ContractAddress | string): string =>
   `Lord ${BigInt(address).toString(16).padStart(4, "0").slice(-4)}`;
 
-/** The one display rule for a player: the claimed name, else the unclaimed one, never an address. */
+/**
+ * The one display rule for an owner: the Vanguard for the zero address, which holds what no player does; else the
+ * player's claimed name, else the unclaimed one; never an address.
+ */
 export const displayPlayerName = (address: ContractAddress | string, name: string | null | undefined): string =>
-  name || unclaimedPlayerName(address);
+  BigInt(address) === 0n ? NEUTRAL_OWNER_NAME : name || unclaimedPlayerName(address);
 
 /**
  * A player's name, from the one place names live: the player's Realms profile, looked up by the client that owns the

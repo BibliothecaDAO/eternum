@@ -19,10 +19,10 @@ export const describeFightCost = (forecast: FightForecast): string | null => {
 };
 
 /**
- * A combat panel's title: the two sides, as the battle lab and raid results name them. An unowned target is the
- * Bandits; before the target is known, the attacker alone.
+ * A combat panel's title: the two sides, as the battle lab and raid results name them, the target by its owner's
+ * display name (the Vanguard when no player holds it); before the target is known, the attacker alone.
  */
-export const combatTitle = (attacker: string | null, target: { loaded: boolean; owner: string | null }): string => {
+export const combatTitle = (attacker: string | null, targetOwner: string | null): string => {
   const you = attacker || "Your army";
-  return target.loaded ? `${you} vs ${target.owner ?? "Bandits"}` : you;
+  return targetOwner === null ? you : `${you} vs ${targetOwner}`;
 };

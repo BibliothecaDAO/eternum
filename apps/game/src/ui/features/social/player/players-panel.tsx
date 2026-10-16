@@ -11,7 +11,7 @@ import { useInGameLeaderboard } from "./use-in-game-leaderboard";
 import { configManager, getGuildFromPlayerAddress, isViewerOwner } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { ContractAddress, BANDITS_NAME, PlayerInfo } from "@bibliothecadao/types";
+import { ContractAddress, NEUTRAL_OWNER_NAME, PlayerInfo } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
 
 const buildActivityBreakdownLookup = (entries: PlayerLeaderboardActivityEntry[]) =>
@@ -142,11 +142,11 @@ export const PlayersPanel = ({
                     <span className="text-gold font-semibold">{grants.exploreTile} VP</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gold/50">Claim an Essence Rift or Camp from {BANDITS_NAME}</span>
+                    <span className="text-gold/50">Claim an Essence Rift or Camp from {NEUTRAL_OWNER_NAME}</span>
                     <span className="text-gold font-semibold">{grants.claimCampFromBandits} VP</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gold/50">Claim a Hyperstructure from {BANDITS_NAME}</span>
+                    <span className="text-gold/50">Claim a Hyperstructure from {NEUTRAL_OWNER_NAME}</span>
                     <span className="text-gold font-semibold">{grants.claimHyperstructureFromBandits} VP</span>
                   </div>
                   <div className="flex items-center justify-between">

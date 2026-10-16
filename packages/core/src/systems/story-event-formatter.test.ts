@@ -59,7 +59,7 @@ const story = (storyType: string, storyPayload: Record<string, unknown>, entityI
   ({ storyType, storyPayload, entityId, ownerAddress: "0x123" }) as Event;
 
 describe("owner naming", () => {
-  it("names owners through the injected resolver, reads the zero address as Neutral, and shortens the rest", () => {
+  it("names owners through the injected resolver, the zero address as the Vanguard, and the rest by the one rule", () => {
     const resolve = (address: string) => (address === "0x70bf" ? "Lord KB" : null);
     const presentation = buildStoryEventPresentation(
       {
@@ -85,7 +85,7 @@ describe("owner naming", () => {
     );
     expect(presentation.owner).toBe("Lord KB");
     expect(presentation.description).toContain("Attacker [Lord KB]");
-    expect(presentation.description).toContain("Defender [Neutral]");
+    expect(presentation.description).toContain("Defender [The Vanguard]");
     const unnamed = buildStoryEventPresentation(
       {
         ownerAddress: "0x1234567890abcdef",
@@ -100,7 +100,7 @@ describe("owner naming", () => {
       undefined,
       resolve,
     );
-    expect(unnamed.owner).toBe("0x1234…cdef");
+    expect(unnamed.owner).toBe("Lord cdef");
   });
 });
 

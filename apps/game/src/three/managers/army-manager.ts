@@ -67,7 +67,7 @@ import type {
   WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
 import { BiomeType, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
-import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
+import { displayPlayerName, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { shortString } from "starknet";
 import * as THREE from "three";
 import { Color, Euler, Group, Raycaster, Scene, Vector3 } from "three";
@@ -649,16 +649,12 @@ export class ArmyManager {
   }
 
   private addDebugArmyFromControls(input: { col: number; entityId: number; isMine: boolean; row: number }): void {
+    // A debug army spawned as the viewer's with no viewer is neutral, owned by nobody.
+    const address = input.isMine ? (accountAddress() ?? 0n) : 0n;
     this.addArmy({
       entityId: input.entityId,
       hexCoords: Position.fromNormalized({ x: input.col, y: input.row }),
-      owner: {
-        // A debug army spawned as the viewer's with no viewer is neutral, owned by nobody.
-        address: input.isMine ? (accountAddress() ?? 0n) : 0n,
-        // TODO: Add owner name and guild name
-        ownerName: "Neutral",
-        guildName: "None",
-      },
+      owner: { address, ownerName: displayPlayerName(address, null), guildName: "None" },
       category: TroopType.Paladin,
       tier: TroopTier.T1,
       troopCount: 10,
