@@ -1,7 +1,7 @@
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
 import { BiomeType, StructureType } from "@bibliothecadao/types";
-import { Group, InstancedMesh, Mesh, PerspectiveCamera, Scene } from "three";
+import { EventDispatcher, Group, InstancedMesh, Mesh, PerspectiveCamera, Scene } from "three";
 import { describe, expect, it, vi } from "vitest";
 
 import { terrainHexToWorld } from "./terrain-coordinates";
@@ -124,6 +124,9 @@ describe("ProceduralTerrain", () => {
     const firstSummary = terrain.present([first]);
     const firstMesh = terrain.object3d.getObjectByName("procedural-terrain-land") as Mesh;
     const dispose = vi.spyOn(firstMesh.geometry, "dispose");
+    // The renderer frees a mesh's render objects when the mesh itself fires dispose.
+    const released = vi.fn();
+    (firstMesh as unknown as EventDispatcher<{ dispose: object }>).addEventListener("dispose", released);
 
     expect(firstSummary.pages).toBe(1);
     const sameContent = prepareTerrainPage(request(BiomeType.Grassland, false));
@@ -134,6 +137,7 @@ describe("ProceduralTerrain", () => {
     const replacement = prepareTerrainPage(request(BiomeType.Grassland, true));
     terrain.present([replacement]);
     expect(dispose).toHaveBeenCalledOnce();
+    expect(released).toHaveBeenCalledOnce();
 
     const replacementMesh = terrain.object3d.getObjectByName("procedural-terrain-land") as Mesh;
     const replacementDispose = vi.spyOn(replacementMesh.geometry, "dispose");

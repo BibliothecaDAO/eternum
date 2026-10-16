@@ -40,3 +40,23 @@ declare module "three/webgpu" {
     outputBufferType?: number;
   }
 }
+
+declare module "three/src/renderers/common/RenderObject.js" {
+  /** What the WebGPU renderer keeps per drawn object and pass; it lives until the object or a material is disposed. */
+  export default class RenderObject {
+    constructor(
+      nodes: unknown,
+      geometries: unknown,
+      renderer: unknown,
+      object: unknown,
+      material: unknown,
+      scene: unknown,
+      camera: unknown,
+      lightsNode: unknown,
+      renderContext: unknown,
+      clippingContext: unknown,
+    );
+    onDispose: () => void;
+    readonly onMaterialDispose: () => void;
+  }
+}

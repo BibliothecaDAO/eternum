@@ -45,6 +45,7 @@ import type {
   TerrainPageRequest,
   TerrainSurfaceSample,
 } from "./terrain-types";
+import { releaseDrawnObject } from "../utils/release-drawn-object";
 
 interface PresentedTerrainPage {
   prepared: PreparedTerrainPage;
@@ -715,6 +716,7 @@ function disposePageGroup(group: Group): void {
     if (object instanceof InstancedMesh) object.dispose();
     if (object instanceof Mesh && !object.geometry.userData.sharedBasalt) object.geometry.dispose();
   });
+  releaseDrawnObject(group);
   group.clear();
 }
 

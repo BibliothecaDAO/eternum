@@ -199,10 +199,12 @@ interface WorldBounds {
 }
 
 const BIOME_VALUES = new Set<string>(Object.values(BiomeType));
-// Out-and-back pans reuse the expensive worker result; the cache holds CPU-side typed arrays and evicts the
-// least-recently-used signatures. One byte budget replaces the former 64-page count, whose worst case retained
-// 328 MiB: a 24x24 page measures 1.80 MiB of land, 5.12 MiB of ocean and 0.66 MiB of ethereal basalt, so the budget
-// keeps four 4x4 camera windows of land and still holds a full window of open sea.
+// Out-and-back pans reuse the expensive worker result. The cache holds one prepared version per page, the latest:
+// reveals, armies arriving and leaving and neighbours keep changing a page's request, and keeping every version grew
+// one page to 164 copies in a 50-minute session. A version that comes back is built again. The cache then
+// evicts the least-recently-used pages past one byte budget: a 24x24 page measures 1.80 MiB of land, 5.12 MiB of
+// ocean and 0.66 MiB of ethereal basalt, so the budget keeps four 4x4 camera windows of land and still holds a full
+// window of open sea.
 const PREPARED_PAGE_CACHE_BYTES_LIMIT = 128 * 1024 * 1024;
 const ROAD_PAGE_PADDING = 1.5;
 const PRESENT_STEP_METRIC: Record<TerrainPresentStep, TerrainPresentStepMetric> = {
@@ -223,7 +225,8 @@ class SupersededPresentationError extends Error {
 export class WorldmapProceduralTerrain {
   readonly object3d: Group;
   private readonly terrain: ProceduralTerrain;
-  private readonly preparedBySignature = new Map<string, PreparedTerrainPage>();
+  /** The latest prepared version of each page, by page key, with the signature it was prepared for. */
+  private readonly preparedByPageKey = new Map<string, { signature: string; page: PreparedTerrainPage }>();
   private readonly pendingBySignature = new Map<string, Promise<PreparedTerrainPage>>();
   private readonly presentMetrics: TerrainPresentMetrics = {
     presentPageTaskMaxMs: 0,
@@ -413,7 +416,7 @@ export class WorldmapProceduralTerrain {
       ...presentation,
       ...reuse,
       ...summarizePreparedPages(preparedPages),
-      preparedCachePages: this.preparedBySignature.size,
+      preparedCachePages: this.preparedByPageKey.size,
       commitMs: run.commitMs,
       prepareMs: run.workerBuildMs ?? Number.NaN,
     };
@@ -429,7 +432,7 @@ export class WorldmapProceduralTerrain {
     if (run.criticalPagesReady || !input.onCriticalPagesReady || !input.criticalPageKeys?.length) return;
     const ready = input.criticalPageKeys.every((key) => {
       const preparation = preparations.find(({ request }) => request.pageKey === key);
-      const prepared = preparation && this.preparedBySignature.get(preparation.signature);
+      const prepared = preparation && this.cachedPage(preparation);
       return prepared !== undefined && this.terrain.isPagePresented(prepared);
     });
     if (!ready) return;
@@ -694,7 +697,7 @@ export class WorldmapProceduralTerrain {
 
   private countPageReuse(preparations: readonly TerrainPagePreparation[]): TerrainPageReuse {
     const reusedPages = preparations.filter(
-      ({ signature }) => this.preparedBySignature.has(signature) || this.pendingBySignature.has(signature),
+      (preparation) => this.cachedPage(preparation) !== undefined || this.pendingBySignature.has(preparation.signature),
     ).length;
     return { builtPages: preparations.length - reusedPages, reusedPages };
   }
@@ -741,7 +744,7 @@ export class WorldmapProceduralTerrain {
   }
 
   private resolvePreparedPage(preparation: TerrainPagePreparation): Promise<ResolvedTerrainPage> {
-    const cached = this.preparedBySignature.get(preparation.signature);
+    const cached = this.cachedPage(preparation);
     if (cached) {
       this.touchPreparedPage(preparation.signature, cached);
       return Promise.resolve({ page: cached, signature: preparation.signature, source: "cache", workerBuildMs: 0 });
@@ -823,8 +826,8 @@ export class WorldmapProceduralTerrain {
       console.error(`[Terrain] Pages ${pageKeys} could not be committed; drawing their ground without props`, error);
       for (const resolved of pages) {
         resolved.page = { ...resolved.page, propInstances: [] };
-        if (this.preparedBySignature.has(resolved.signature))
-          this.preparedBySignature.set(resolved.signature, resolved.page);
+        const cached = this.preparedByPageKey.get(resolved.page.request.pageKey);
+        if (cached?.signature === resolved.signature) cached.page = resolved.page;
       }
       this.terrain.commitPages(
         pages.map(({ page }) => page),
@@ -834,31 +837,39 @@ export class WorldmapProceduralTerrain {
     }
   }
 
+  /** The cached page for this preparation: the page's latest version, when it was prepared for this signature. */
+  private cachedPage(preparation: TerrainPagePreparation): PreparedTerrainPage | undefined {
+    const cached = this.preparedByPageKey.get(preparation.request.pageKey);
+    return cached?.signature === preparation.signature ? cached.page : undefined;
+  }
+
+  /** Keeps `prepared` as its page's latest version, replacing any older one, and most recently used. */
   private touchPreparedPage(signature: string, prepared: PreparedTerrainPage): void {
-    this.removePreparedPage(signature);
-    this.preparedBySignature.set(signature, prepared);
+    const pageKey = prepared.request.pageKey;
+    this.removePreparedPage(pageKey);
+    this.preparedByPageKey.set(pageKey, { signature, page: prepared });
     this.preparedCacheBytes += prepared.diagnostics.geometryBytes;
     this.prunePreparedCache();
   }
 
   private prunePreparedCache(): void {
     while (this.preparedCacheBytes > PREPARED_PAGE_CACHE_BYTES_LIMIT) {
-      const oldestSignature = this.preparedBySignature.keys().next().value;
-      if (oldestSignature === undefined) return;
-      this.removePreparedPage(oldestSignature);
+      const oldestPageKey = this.preparedByPageKey.keys().next().value;
+      if (oldestPageKey === undefined) return;
+      this.removePreparedPage(oldestPageKey);
     }
   }
 
-  private removePreparedPage(signature: string): void {
-    const page = this.preparedBySignature.get(signature);
-    if (!page) return;
-    this.preparedCacheBytes -= page.diagnostics.geometryBytes;
-    this.preparedBySignature.delete(signature);
+  private removePreparedPage(pageKey: string): void {
+    const cached = this.preparedByPageKey.get(pageKey);
+    if (!cached) return;
+    this.preparedCacheBytes -= cached.page.diagnostics.geometryBytes;
+    this.preparedByPageKey.delete(pageKey);
   }
 
   private clearPreparedWork(): void {
     this.preparedCacheRevision += 1;
-    this.preparedBySignature.clear();
+    this.preparedByPageKey.clear();
     this.preparedCacheBytes = 0;
     this.pendingBySignature.clear();
   }
