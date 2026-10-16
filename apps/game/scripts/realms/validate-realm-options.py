@@ -1,8 +1,9 @@
 """Construction checks for independent options; visual direction still requires rendered review."""
 
-import math
 import json
+import math
 from pathlib import Path
+
 import bmesh
 import bpy
 
@@ -34,39 +35,14 @@ def validate(objects):
             raise ValueError(
                 f"Geometry exceeds age footprint / one-hex contact skirt: {tuple(v)}"
             )
-    if bpy.context.scene.get("realmDirection") == "wellstead":
-        buildings = [
-            o
-            for o in editable
-            if o.name.startswith(
-                (
-                    "Roof / Wellstead",
-                    "Wall / Wellstead",
-                    "Wellstead / field tent",
-                    "Wellstead / canvas porch",
-                )
-            )
-        ]
-        for obj in buildings:
-            for vertex in obj.data.vertices:
-                if any(
-                    vertex.co.x * math.cos(i * math.pi / 3)
-                    + vertex.co.y * math.sin(i * math.pi / 3)
-                    > radius * (math.sqrt(3) / 2 - 0.10)
-                    for i in range(6)
-                ):
-                    raise ValueError(
-                        "Wellstead buildings need a clear yard inside the palisade, as in the painting"
-                    )
     for obj in editable:
-        if obj.name.startswith("Curtain / dressed facing"):
-            if any(
-                face.normal.x * face.center.x + face.normal.y * face.center.y <= 0
-                for face in obj.data.polygons
-            ):
-                raise ValueError(
-                    "Preserve authored outward normals on open curtain cladding"
-                )
+        if obj.name.startswith("Curtain / dressed facing") and any(
+            face.normal.x * face.center.x + face.normal.y * face.center.y <= 0
+            for face in obj.data.polygons
+        ):
+            raise ValueError(
+                "Preserve authored outward normals on open curtain cladding"
+            )
     for prefix in ["Curtain / crown", "Curtain / merlon"]:
         parts = [o for o in editable if o.name.startswith(prefix)]
         if parts:
@@ -74,25 +50,26 @@ def validate(objects):
             if max(tops) - min(tops) > 0.00001:
                 raise ValueError("Curtain must have one level all around the hex")
     for obj in editable:
-        if obj.name.startswith("Curtain / core"):
-            if any(
-                max(
-                    v.co.x * math.cos(i * math.pi / 3)
-                    + v.co.y * math.sin(i * math.pi / 3)
-                    for v in obj.data.vertices
-                )
-                > radius * (math.sqrt(3) / 2 - 0.0025)
-                for i in range(6)
-            ):
-                raise ValueError(
-                    "Inset the mortar core behind ashlar; coplanar surfaces flicker"
-                )
+        if obj.name.startswith("Curtain / core") and any(
+            max(
+                v.co.x * math.cos(i * math.pi / 3)
+                + v.co.y * math.sin(i * math.pi / 3)
+                for v in obj.data.vertices
+            )
+            > radius * (math.sqrt(3) / 2 - 0.0025)
+            for i in range(6)
+        ):
+            raise ValueError(
+                "Inset the mortar core behind ashlar; coplanar surfaces flicker"
+            )
     gate = next(o for o in objects if o.get("citadelOrderSurface") == "gate")
+    jamb = bpy.data.objects["Gate / jamb"]
+    front = min(v.co.y for v in jamb.data.vertices)
     if any(
-        abs(v.co.x) > 0.06 * radius or v.co.y > -0.92 * radius
+        abs(v.co.x) > 0.06 * radius or v.co.y > front - 0.001 or v.co.y < front - 0.03
         for v in gate.data.vertices
     ):
-        raise ValueError("Keep the Order imprint on the front corner gate")
+        raise ValueError("Mount the Order imprint directly on the gate's front face")
     bar = bpy.data.objects["Banner / anchored crossbar"]
     xs = [v.co.x for v in bar.data.vertices]
     zs = [v.co.z for v in bar.data.vertices]

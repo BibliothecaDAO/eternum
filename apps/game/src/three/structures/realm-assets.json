@@ -1,10 +1,10 @@
 [
   {
     "id": "settlement",
-    "label": "Wellstead",
+    "label": "Canvas & Thatch",
     "level": 0,
     "wonder": false,
-    "source": "options/citadel-wellstead.blend",
+    "source": "../outposts/village-canvas-thatch.blend",
     "path": "/models/realms/settlement.glb"
   },
   {

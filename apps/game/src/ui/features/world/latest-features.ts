@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-16",
+    title: "Clearer realm entrances",
+    description:
+      "Settlements use Canvas & Thatch with your Order and ownership colours. Terrace Forum has unobstructed upper windows and larger doors; Twin Ward has plain upper windows, cleaner lower walls and larger entrances.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-16",
     title: "Full windows open centred",
     description:
       "Windows such as Transfer Troops & Relics, spire travel, relic crafting and battle details now open in the middle of the screen instead of next to the army or button that opened them, so they no longer spill off the edge. Every full window, Build and Production included, opens there each time, even after you dragged one aside.",
@@ -140,7 +147,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-15",
     title: "Realms grow through the ages",
     description:
-      "Wellstead, Terrace Forum and Twin Ward lead to the imperial citadel. Each age has its own wonders, rising magic and your Order on its banners.",
+      "Canvas & Thatch, Terrace Forum and Twin Ward lead to the imperial citadel. Each age has its own wonders, rising magic and your Order on its banners.",
     type: "improvement",
   },
   {
