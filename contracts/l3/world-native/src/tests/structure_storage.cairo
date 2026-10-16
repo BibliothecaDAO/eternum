@@ -135,3 +135,26 @@ fn slot_stamina_packing_preserves_every_slot_and_the_full_inline_bar() {
     };
     assert_eq!(TroopsPacking::unpack(TroopsPacking::pack(value)), value);
 }
+
+#[test]
+fn troop_storage_keeps_maximum_counts_separate_from_every_combat_flag() {
+    for category in array![TroopType::Knight, TroopType::Paladin, TroopType::Crossbowman] {
+        for tier in array![TroopTier::T1, TroopTier::T2, TroopTier::T3] {
+            for count in array![0_u128, 0xffffffffffffffffffffffffffffffff] {
+                for cooldown in array![0_u32, 0xffffffff] {
+                    let value = Troops {
+                        category,
+                        tier,
+                        count,
+                        battle_cooldown_end: cooldown,
+                        stamina: crate::troops::StaminaSource::Slot(255),
+                        ..Default::default(),
+                    };
+                    assert_eq!(TroopsPacking::unpack(TroopsPacking::pack(value)), value);
+                    let changed = Troops { count: count ^ 1, ..value };
+                    assert_eq!(TroopsPacking::unpack(TroopsPacking::pack(changed)), changed);
+                }
+            }
+        }
+    }
+}
