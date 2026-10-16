@@ -30,6 +30,7 @@ import {
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
 import { type ReactNode, useCallback } from "react";
+import { formatTilePanelTitle } from "@/ui/features/world/components/bottom-right-panel/tile-panel-title";
 import { toast } from "@/ui/features/event-feed/notify";
 
 // Layout: vertical column of bubbles. The outer parent (TileDetails atom in
@@ -39,12 +40,35 @@ import { toast } from "@/ui/features/event-feed/notify";
 const occupiedEntityLayoutClass = "flex min-w-0 shrink-0 flex-col gap-2 pointer-events-auto";
 const scrollableEntityDetailClass = "h-auto min-w-0 overflow-visible";
 
+/**
+ * What a picked map tile shows, in two parts a HUD lays out: what stands on it (none on a bare tile), named in a word,
+ * and its biome with what it does to each troop.
+ */
+export interface MapTileParts {
+  occupantWord: string | null;
+  occupant: ReactNode | null;
+  biome: ReactNode;
+}
+
+const stackParts = ({ occupant, biome }: MapTileParts) => (
+  <div className={occupiedEntityLayoutClass}>
+    {occupant}
+    {biome}
+  </div>
+);
+
+/**
+ * The selected map tile's panel. `layout` arranges its parts (stacked by default); `hideHoldingResources` leaves a
+ * structure's resources out when it is the selected holding, whose card already shows them.
+ */
 export const SelectedWorldmapEntity = ({
-  coordsLabel,
   headerAction,
+  layout = stackParts,
+  hideHoldingResources = false,
 }: {
-  coordsLabel?: string;
   headerAction?: ReactNode;
+  layout?: (parts: MapTileParts) => ReactNode;
+  hideHoldingResources?: boolean;
 } = {}) => {
   const selectedHex = useUIStore((state) => state.selectedHex);
 
@@ -53,20 +77,28 @@ export const SelectedWorldmapEntity = ({
   }
 
   return (
-    <SelectedWorldmapEntityContent selectedHex={selectedHex} coordsLabel={coordsLabel} headerAction={headerAction} />
+    <SelectedWorldmapEntityContent
+      selectedHex={selectedHex}
+      headerAction={headerAction}
+      layout={layout}
+      hideHoldingResources={hideHoldingResources}
+    />
   );
 };
 
 const SelectedWorldmapEntityContent = ({
   selectedHex,
-  coordsLabel,
   headerAction,
+  layout,
+  hideHoldingResources,
 }: {
   selectedHex: HexPosition;
-  coordsLabel?: string;
   headerAction?: ReactNode;
+  layout: (parts: MapTileParts) => ReactNode;
+  hideHoldingResources: boolean;
 }) => {
   const openSurface = usePopoverStore((state) => state.openSurface);
+  const selectedHoldingId = useUIStore((state) => state.structureEntityId);
 
   const tile = useTileAt(selectedHex.col, selectedHex.row);
   const crateOpening = useRelicCrateOpening(selectedHex);
@@ -92,80 +124,100 @@ const SelectedWorldmapEntityContent = ({
     return null;
   }
 
+  const title = (label: string) => formatTilePanelTitle(label, selectedHex);
+  const biomeCard = <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />;
+
   // A crate opened this session keeps its panel after the tile empties, now listing what it yielded.
   if (isChest || crateOpening) {
-    return (
-      <RelicCrateTilePanel
-        crateEntityId={isChest ? tile.occupier_id : null}
-        opening={crateOpening}
-        selectedHex={selectedHex}
-        biome={biome}
-        coordsLabel={coordsLabel}
-        headerAction={headerAction}
-        onSimulateBattle={handleSimulateBattle}
-      />
-    );
+    return layout({
+      occupantWord: "Crate",
+      occupant: (
+        <RelicCrateTilePanel
+          crateEntityId={isChest ? tile.occupier_id : null}
+          opening={crateOpening}
+          selectedHex={selectedHex}
+          coordsLabel={title("Relic Tile")}
+          headerAction={headerAction}
+        />
+      ),
+      biome: biomeCard,
+    });
   }
 
-  if (!hasOccupier) {
-    return <UnoccupiedTileQuadrants biome={biome} coordsLabel={coordsLabel} headerAction={headerAction} />;
+  // A shrine or well is used from Frontier's own card and a dormant spire offers nothing; here its tile reads like any
+  // other.
+  if (!hasOccupier || !(isSpire || isReservedHyperstructure || isStructure || isArmy)) {
+    return layout({
+      occupantWord: null,
+      occupant: null,
+      biome: (
+        <UnoccupiedTileQuadrants
+          biome={biome}
+          coordsLabel={title(hasOccupier ? `${TileOccupier[occupierType]} Tile` : "Biome")}
+          headerAction={headerAction}
+        />
+      ),
+    });
   }
 
   const occupierEntityId = tile.occupier_id;
-  const sharedDetailProps = {
-    compact: true,
-    layoutVariant: "banner",
-  } as const;
 
-  return (
-    <div className={occupiedEntityLayoutClass}>
-      {isSpire ? (
-        <div className={occupiedEntityLayoutClass}>
-          <TileChrome title={coordsLabel ?? "Spire tile"} headerAction={headerAction}>
-            <SpireTravelPanel mapLayer={mapLayer} onLookAtOtherLayer={lookAtOtherLayer} />
-          </TileChrome>
-          <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
-        </div>
-      ) : isReservedHyperstructure ? (
-        <div className={occupiedEntityLayoutClass}>
-          <TileChrome title={coordsLabel ?? "Hyperstructure tile"} headerAction={headerAction}>
-            <ReservedHyperstructurePanel selectedHex={selectedHex} />
-          </TileChrome>
-          <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
-        </div>
-      ) : isStructure ? (
-        <div className={occupiedEntityLayoutClass}>
-          <StructureBannerEntityDetail
-            structureEntityId={occupierEntityId}
-            maxInventory={14}
-            showButtons={false}
-            className={scrollableEntityDetailClass}
-            coordsLabel={coordsLabel}
-            headerAction={headerAction}
-            {...sharedDetailProps}
-          />
+  if (isSpire)
+    return layout({
+      occupantWord: "Spire",
+      occupant: (
+        <TileChrome title={title("Spire Tile")} headerAction={headerAction}>
+          <SpireTravelPanel mapLayer={mapLayer} onLookAtOtherLayer={lookAtOtherLayer} />
+        </TileChrome>
+      ),
+      biome: biomeCard,
+    });
 
-          <SelectedStructureActionPanel
-            structureEntityId={occupierEntityId}
-            biome={biome}
-            onSimulateBattle={handleSimulateBattle}
-          />
-        </div>
-      ) : isArmy ? (
-        <SelectedArmyTilePanel
-          armyEntityId={occupierEntityId}
-          biome={biome}
-          coordsLabel={coordsLabel}
+  if (isReservedHyperstructure)
+    return layout({
+      occupantWord: "Hyperstructure",
+      occupant: (
+        <TileChrome title={title("Unconstructed Hyperstructure")} headerAction={headerAction}>
+          <ReservedHyperstructurePanel selectedHex={selectedHex} />
+        </TileChrome>
+      ),
+      biome: biomeCard,
+    });
+
+  if (isStructure)
+    return layout({
+      occupantWord: "Structure",
+      occupant: (
+        <StructureBannerEntityDetail
+          structureEntityId={occupierEntityId}
+          maxInventory={14}
+          showButtons={false}
+          className={scrollableEntityDetailClass}
+          coordsLabel={title("Structure Tile")}
           headerAction={headerAction}
-          onSimulateBattle={handleSimulateBattle}
+          hideResources={hideHoldingResources && occupierEntityId === selectedHoldingId}
+          compact
+          layoutVariant="banner"
         />
-      ) : (
-        // A shrine or well is used from Frontier's own card and a dormant spire offers nothing; here its tile reads like
-        // any other.
-        <UnoccupiedTileQuadrants biome={biome} coordsLabel={coordsLabel} headerAction={headerAction} />
-      )}
-    </div>
-  );
+      ),
+      biome: <StructureBiomeCard structureEntityId={occupierEntityId} biomeCard={biomeCard} />,
+    });
+
+  return layout({
+    occupantWord: "Army",
+    occupant: (
+      <ArmyBannerEntityDetail
+        armyEntityId={occupierEntityId}
+        showButtons={false}
+        className={scrollableEntityDetailClass}
+        coordsLabel={title("Army Tile")}
+        headerAction={headerAction}
+        compact
+        layoutVariant="banner"
+      />
+    ),
+    biome: <ArmyBiomeCard armyEntityId={occupierEntityId} biome={biome} onSimulateBattle={handleSimulateBattle} />,
+  });
 };
 
 // The crate panel opens with the player's adjacent explorer; the contract accepts no other opener.
@@ -173,18 +225,14 @@ const RelicCrateTilePanel = ({
   crateEntityId,
   opening,
   selectedHex,
-  biome,
   coordsLabel,
   headerAction,
-  onSimulateBattle,
 }: {
   crateEntityId: ID | null;
   opening: ReturnType<typeof useRelicCrateOpening>;
   selectedHex: HexPosition;
-  biome: BiomeType;
   coordsLabel?: string;
   headerAction?: ReactNode;
-  onSimulateBattle: () => void;
 }) => {
   const account = useAccountStore((state) => state.account);
   const explorerId = useAdjacentOwnExplorer(selectedHex);
@@ -196,73 +244,45 @@ const RelicCrateTilePanel = ({
   return (
     <ChestTileDetails
       crateEntityId={crateEntityId}
-      biome={biome}
       coordsLabel={coordsLabel}
       headerAction={headerAction}
       opening={opening}
       onOpen={canOpen ? handleOpen : undefined}
       openBlockedReason={canOpen ? undefined : "Move one of your armies next to the crate."}
-      onSimulateBattle={onSimulateBattle}
     />
   );
 };
 
-// Army tile panel — reads the army to figure out which troop type belongs to
-// the selected explorer so the biome card can highlight the matching bonus row.
-const SelectedArmyTilePanel = ({
+/** An army's biome card, its own troop type's row lit. */
+const ArmyBiomeCard = ({
   armyEntityId,
   biome,
-  coordsLabel,
-  headerAction,
   onSimulateBattle,
 }: {
   armyEntityId: ID;
   biome: BiomeType;
-  coordsLabel?: string;
-  headerAction?: ReactNode;
   onSimulateBattle: () => void;
 }) => {
   const { explorer } = useArmyEntityDetail({ armyEntityId });
   const highlightTroopType =
     explorer?.troops?.category !== undefined ? (Number(explorer.troops.category) as unknown as TroopType) : undefined;
-
   return (
-    <div className={occupiedEntityLayoutClass}>
-      <ArmyBannerEntityDetail
-        armyEntityId={armyEntityId}
-        showButtons={false}
-        className={scrollableEntityDetailClass}
-        coordsLabel={coordsLabel}
-        headerAction={headerAction}
-        compact
-        layoutVariant="banner"
-      />
-
-      <BiomeSummaryCard
-        biome={biome}
-        showSimulateAction
-        onSimulateBattle={onSimulateBattle}
-        highlightTroopType={highlightTroopType}
-      />
-    </div>
+    <BiomeSummaryCard
+      biome={biome}
+      showSimulateAction
+      onSimulateBattle={onSimulateBattle}
+      highlightTroopType={highlightTroopType}
+    />
   );
 };
 
-const SelectedStructureActionPanel = ({
-  structureEntityId,
-  biome,
-  onSimulateBattle,
-}: {
-  structureEntityId: ID;
-  biome: BiomeType;
-  onSimulateBattle: () => void;
-}) => {
+/** A structure's biome card, once the structure has loaded. */
+const StructureBiomeCard = ({ structureEntityId, biomeCard }: { structureEntityId: ID; biomeCard: ReactNode }) => {
   const { isLoadingStructure } = useStructureEntityDetail({ structureEntityId });
   if (isLoadingStructure) {
     return <div className="flex h-full items-center justify-center text-xxs text-gold/70">Loading structure...</div>;
   }
-
-  return <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={onSimulateBattle} />;
+  return biomeCard;
 };
 
 /** The chrome every occupied tile shares: one surface, a header band with the coordinates, sections below. */

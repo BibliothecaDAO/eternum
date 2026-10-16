@@ -133,7 +133,7 @@ export const SelectRelic: React.FC<SelectRelicProps> = ({
         {selectedRelics.length > 0 && (
           <SemanticIcon
             name="close"
-            className="my-auto w-8 hover:opacity-50  hover:scale-125 hover:animate-pulse duration-300 transition-all cursor-pointer"
+            className="my-auto w-8 hover:opacity-50 hover:animate-pulse duration-300 transition-all cursor-pointer"
             onClick={clearSelection}
           />
         )}

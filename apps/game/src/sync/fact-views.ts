@@ -2,7 +2,6 @@ import { entityMapPosition, structureMapPosition } from "@bibliothecadao/eternum
 import { getActiveGameStore } from "@/sync/active-game-client";
 import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
-import type { PlayerRelicsData } from "@/types";
 import { readBlitzSettlementPlayerAddresses } from "@/services/blitz/blitz-settlement-players";
 import { getPlayerName, readPlayerProfile } from "@/services/identity/player-profiles";
 import { resolveFiniteSeasonEndAt, resolveSeasonStartTimestamp } from "@/ui/features/world/utils/season-timing";
@@ -88,40 +87,6 @@ const readSelectableArmies = (store: NativeFactStore, viewer: ContractAddress | 
 
 const RELIC_RESOURCES = { first: ResourcesIds.StaminaRelic1, last: ResourcesIds.TroopProductionRelic2 };
 
-// An entity whose resources this client cannot see shows no relics.
-const readRelicsOf = (store: NativeFactStore, entityId: number) =>
-  (new ResourceManager(store, entityId).balances() ?? []).filter(
-    ({ resourceId }) => resourceId >= RELIC_RESOURCES.first && resourceId <= RELIC_RESOURCES.last,
-  );
-
-const readPlayerRelics = (store: NativeFactStore, viewer: ContractAddress | null): PlayerRelicsData | null => {
-  if (viewer === null) return null;
-  const structures = readPlayerStructures(store, viewer).flatMap((structure) => {
-    const relics = readRelicsOf(store, structure.entityId);
-    if (relics.length === 0) return [];
-    const position = structureMapPosition(store, structure.structure);
-    if (!position) return [];
-    return [
-      {
-        entityId: structure.entityId,
-        position,
-        relics,
-        structureType: structure.structure.base.category,
-        type: EntityType.STRUCTURE,
-      },
-    ];
-  });
-  const armies = readSelectableArmies(store, viewer).flatMap(({ entityId }) => {
-    const relics = readRelicsOf(store, entityId);
-    const army = store.get("ExplorerTroops", { game_id: activeGameId(), explorer_id: entityId });
-    if (relics.length === 0 || !army) return [];
-    return [
-      { entityId, position: entityMapPosition(store, army.game_id, army.explorer_id), relics, type: EntityType.ARMY },
-    ];
-  });
-  return { structures, armies };
-};
-
 const readSeasonClock = () => {
   const config = ClientConfigManager.instance();
   const season = config.getSeasonConfig();
@@ -149,11 +114,6 @@ export const readActivePlayerStructures = (): Structure[] => {
 export const selectableArmiesView: FactView<Array<{ entityId: number }>> = {
   models: ["ExplorerTroops", "Structure", "TileOccupancy", "ResourceWeight", "EntityName"],
   read: readSelectableArmies,
-};
-
-export const playerRelicsView: FactView<PlayerRelicsData | null> = {
-  models: [...PLAYER_STRUCTURE_FACTS, "ExplorerTroops", ...RESOURCE_FACTS],
-  read: readPlayerRelics,
 };
 
 export const guildsView: FactView<ReturnType<typeof formatGuilds>> = {

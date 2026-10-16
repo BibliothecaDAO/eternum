@@ -53,11 +53,11 @@ const MapViewSwitch = ({
       type="button"
       aria-pressed={isLocalView}
       disabled={!canOpenLocal}
-      title={canOpenLocal ? undefined : "Select a structure to open its local view"}
+      title={canOpenLocal ? undefined : "Select a structure to open its realm view"}
       onClick={() => onNavigate(false)}
       className={cn(viewButtonClasses(isLocalView, compact), "disabled:cursor-not-allowed disabled:opacity-40")}
     >
-      Local
+      Realm
     </button>
     <button
       type="button"

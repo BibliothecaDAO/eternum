@@ -12,10 +12,17 @@ import { EntityType, ID, RelicRecipientType, Troops } from "@bibliothecadao/type
 
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
 import { isRelicCompatible, useRelicEssenceStatus, useRelicMetadata } from "../hooks/use-relic-activation";
-import type { RelicHolderPreview } from "./player-relic-tray";
 import { RelicEssenceRequirement, RelicIncompatibilityNotice, RelicSummary } from "./relic-activation-shared";
 import { accountAddress } from "@/hooks/store/use-account-store";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
+
+/** A structure or army holding a relic, with how many it holds: one choice of who activates it. */
+export interface RelicHolderPreview {
+  entityId: ID;
+  amount: number;
+  recipientType: RelicRecipientType;
+  entityType: EntityType;
+}
 
 interface RelicActivationSelectorProps {
   resourceId: ID;

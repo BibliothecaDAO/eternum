@@ -34,8 +34,7 @@ export const ActionFooter = ({
         "bg-gradient-to-br from-gold to-gold/80 hover:from-gold/90 hover:to-gold/70",
         "shadow-xl hover:shadow-xl hover:shadow-gold/50",
         "border-2 border-gold/60 hover:border-gold/80",
-        "transform hover:scale-[1.02]",
-        "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-md",
+        "disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-md",
       )}
     >
       <div className="flex items-center justify-center gap-2">

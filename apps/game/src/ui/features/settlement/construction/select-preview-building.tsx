@@ -1280,7 +1280,7 @@ export const BuildingCard = ({
             }}
             className={clsx(
               "inline-flex h-7 w-7 items-center justify-center rounded-md border border-amber-500/80 bg-amber-400/90 text-black shadow transition",
-              !buildDisabled && !isDisabled && "hover:translate-y-[-1px] hover:bg-amber-300",
+              !buildDisabled && !isDisabled && "hover:bg-amber-300",
               (buildDisabled || isDisabled) && "opacity-60 cursor-not-allowed",
             )}
             title="Build"
@@ -1306,7 +1306,6 @@ export const BuildingCard = ({
                 allPaused
                   ? "border-green-700/80 bg-green-900/90 hover:bg-green-800"
                   : "border-amber-700/80 bg-amber-900/90 hover:bg-amber-800",
-                !pauseResumeAllDisabled && "hover:translate-y-[-1px]",
                 pauseResumeAllDisabled && "opacity-60 cursor-not-allowed",
               )}
               title={allPaused ? "Resume all" : "Pause all"}
@@ -1332,7 +1331,7 @@ export const BuildingCard = ({
               }}
               className={clsx(
                 "inline-flex h-7 w-7 items-center justify-center rounded-md border border-red-700/80 bg-red-900/90 text-white shadow transition",
-                !destroyDisabled && "hover:translate-y-[-1px] hover:bg-red-800",
+                !destroyDisabled && "hover:bg-red-800",
                 destroyDisabled && "opacity-60 cursor-not-allowed",
               )}
               title="Destroy building"

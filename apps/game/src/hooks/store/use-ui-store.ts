@@ -87,9 +87,8 @@ interface UIStore {
   // panel opens straight to the send flow; the sidebar pill defaults to arrivals.
   logisticsActiveTab: "arrivals" | "transfer" | "automation" | "balances";
   setLogisticsActiveTab: (tab: "arrivals" | "transfer" | "automation" | "balances") => void;
-  // Cross-component signal: when a non-null id is set, the StructureEditPopup
-  // (mounted inside LeftCommandSidebar) opens for that structure. The picker
-  // popover writes this from the top-zone pills without needing prop-drilling.
+  // Cross-component signal: when a non-null id is set, the StructureEditPopup (mounted by LeftViewSurfaces) opens for
+  // that structure. The holding card's rename and the structure list's pencil write it.
   pendingRenameStructureEntityId: number | null;
   setPendingRenameStructureEntityId: (entityId: number | null) => void;
   // Force-refresh counter bumped after a rename writes to localStorage. Consumers

@@ -102,10 +102,9 @@ export const SelectResource: React.FC<SelectResourceProps> = ({
     <div className="flex items-center">
       <SemanticIcon
         name="close"
-        className={clsx(
-          "my-auto w-8 mx-auto hover:opacity-50  hover:scale-125 hover:animate-pulse duration-300 transition-all",
-          { "pointer-events-none opacity-50": !selectedResource },
-        )}
+        className={clsx("my-auto w-8 mx-auto hover:opacity-50 hover:animate-pulse duration-300 transition-all", {
+          "pointer-events-none opacity-50": !selectedResource,
+        })}
         onClick={() => {
           setSelectedResource("");
           onSelect(null);

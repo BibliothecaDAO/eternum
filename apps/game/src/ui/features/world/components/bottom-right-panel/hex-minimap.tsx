@@ -239,14 +239,33 @@ const resolveTileMarker = (tile: MinimapTile, markers: ReadonlyMap<string, Minim
   return null;
 };
 
+/**
+ * How the minimap draws. "classic" is the shipped look. "badges" (the HUD rework's) draws the hexes larger, so each
+ * occupant's painted badge fills its hex at a readable size, over terrain dimmed behind them.
+ */
+type MinimapLook = "classic" | "badges";
+
+const LOOKS: Record<MinimapLook, { zoom: number; terrainOpacity: number }> = {
+  classic: { zoom: 1, terrainOpacity: 0.92 },
+  badges: { zoom: 1.75, terrainOpacity: 0.5 },
+};
+
 interface HexMinimapProps {
   tiles: MinimapTile[];
   selectedHex: HexPosition | null;
   navigationTarget: HexPosition | null;
   cameraTargetHex: HexPosition | null;
+  look?: MinimapLook;
 }
 
-export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetHex }: HexMinimapProps) => {
+export const HexMinimap = ({
+  tiles,
+  selectedHex,
+  navigationTarget,
+  cameraTargetHex,
+  look = "classic",
+}: HexMinimapProps) => {
+  const { zoom, terrainOpacity } = LOOKS[look];
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [viewport, setViewport] = useState<{ width: number; height: number }>({ width: 800, height: 600 });
   const markers = useFactView(minimapMarkersView);
@@ -256,7 +275,7 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
 
   // Mount reads the camera's current state (position and distance); the store subscription carries updates.
   const initialView = useMemo(() => {
-    const scale = resolveMinimapScaleForCameraDistance(cameraDistance);
+    const scale = resolveMinimapScaleForCameraDistance(cameraDistance) * zoom;
     if (!tiles.length) {
       return { x: 0, y: 0, scale };
     }
@@ -274,7 +293,7 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
       y: (centeredIndex.bounds.minY + centeredIndex.bounds.maxY) / 2,
       scale,
     };
-  }, [tiles.length, cameraTargetHex, cameraDistance, navigationTarget, selectedHex, centeredIndex.bounds]);
+  }, [tiles.length, cameraTargetHex, cameraDistance, navigationTarget, selectedHex, centeredIndex.bounds, zoom]);
 
   const [view, setView] = useState<{ x: number; y: number; scale: number }>(initialView);
   const viewRef = useRef(view);
@@ -340,11 +359,11 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
 
   useEffect(() => {
     if (!cameraDistance) return;
-    const nextScale = resolveMinimapScaleForCameraDistance(cameraDistance);
+    const nextScale = resolveMinimapScaleForCameraDistance(cameraDistance) * zoom;
     const current = viewRef.current;
     if (Math.abs(current.scale - nextScale) < 0.01) return;
     scheduleViewUpdate({ ...current, scale: nextScale });
-  }, [cameraDistance, scheduleViewUpdate]);
+  }, [cameraDistance, scheduleViewUpdate, zoom]);
 
   const dispatchCameraMove = useCallback((centerX: number, centerY: number) => {
     if (typeof window === "undefined") return;
@@ -465,7 +484,7 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
         const occupierColor = getOccupierColor(tile);
         return (
           <g key={`${tile.col}:${tile.row}`}>
-            <polygon points={points} fill={fill} stroke="#1f130a" strokeWidth={0.6} fillOpacity={0.92} />
+            <polygon points={points} fill={fill} stroke="#1f130a" strokeWidth={0.6} fillOpacity={terrainOpacity} />
             {occupierColor && !marker && (
               <circle
                 cx={pixel.x}
@@ -480,7 +499,7 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
           </g>
         );
       }),
-    [visibleTiles, getTileMarker],
+    [visibleTiles, getTileMarker, terrainOpacity],
   );
 
   const dragRef = useRef<{

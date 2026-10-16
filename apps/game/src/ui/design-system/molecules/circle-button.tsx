@@ -173,14 +173,9 @@ const CircleButton = ({
                   "transition-all duration-150 hover:border-gold shadow-2xl hover:bg-gold border border-gold/40 btn-bronze",
                   active ? "bg-gold !border-gold sepia-0" : "bg-black/40",
                 ),
-          // Hover/active grow — makes the icons feel tactile and emphasizes the
-          // current selection without changing layout. Disabled icons stay flat.
-          !disabled && "hover:scale-110 active:scale-95",
-          active &&
-            !disabled &&
-            variant === "default" &&
-            "scale-110 ring-2 ring-gold/40 shadow-[0_0_18px_rgba(223,170,84,0.45)]",
-          active && !disabled && variant === "hud" && "scale-110",
+          // A lit icon recolours and rings; nothing grows under the pointer, so the HUD around it never shifts.
+          active && !disabled && variant === "default" && "ring-2 ring-gold/40 shadow-[0_0_18px_rgba(223,170,84,0.45)]",
+          active && !disabled && variant === "hud" && "ring-2 ring-gold/50",
           active && !disabled && variant === "action" && "ring-2 ring-gold/70 brightness-110",
           className,
           sizes[size],

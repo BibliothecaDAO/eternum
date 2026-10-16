@@ -76,7 +76,7 @@ const InviteRow = ({
             removePlayerFromWhitelist(player.address);
             setTooltip(null);
           }}
-          className={clsx("h-5 w-5 opacity-70 transition-all duration-200 hover:scale-110 hover:opacity-100", {
+          className={clsx("h-5 w-5 opacity-70 transition-all duration-200 hover:opacity-100", {
             "pointer-events-none opacity-50": isLoading,
             "cursor-pointer": !isLoading,
           })}

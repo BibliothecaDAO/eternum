@@ -170,7 +170,7 @@ export const BiomeInfoPanel = ({ biome, collapsed = false }: BiomeInfoPanelProps
               {troopBonuses.map(({ troopType, config, bonus, styles }) => (
                 <div
                   key={troopType}
-                  className={`group relative flex-1 rounded-lg border-2 px-2 py-2 shadow-lg transition-all duration-200 hover:scale-105 hover:shadow-xl ${styles.containerClass}`}
+                  className={`group relative flex-1 rounded-lg border-2 px-2 py-2 shadow-lg transition-all duration-200 hover:shadow-xl ${styles.containerClass}`}
                   role="tooltip"
                   aria-label={`${config.label}: ${formatBiomeBonus(bonus)} combat effectiveness`}
                 >

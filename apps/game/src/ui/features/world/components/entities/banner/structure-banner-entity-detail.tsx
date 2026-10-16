@@ -56,6 +56,8 @@ interface StructureBannerEntityDetailProps {
    * the action is ignored.
    */
   headerAction?: React.ReactNode;
+  /** Leave the resources out: the HUD's holding card already shows the selected holding's. */
+  hideResources?: boolean;
 }
 
 interface StructureBannerEntityDetailContentProps extends Omit<StructureBannerEntityDetailProps, "layoutVariant"> {
@@ -78,6 +80,7 @@ const StructureBannerEntityDetailContent = memo(
     hideOwner = false,
     coordsLabel,
     headerAction,
+    hideResources = false,
   }: StructureBannerEntityDetailContentProps) => {
     const {
       structure,
@@ -289,37 +292,39 @@ const StructureBannerEntityDetailContent = memo(
         {/* Merged production + balance — one token panel (like the Empire panel).
             Owners get a Transfer button (this realm as recipient) and the build
             "+" on each token. */}
-        <InfoBubble
-          variant="section"
-          title="Resources"
-          icon={"production" as const}
-          cue={
-            canOpenTransferPanel ? (
-              <button
-                type="button"
-                onClick={handleOpenTransferPanel}
-                className="inline-flex items-center justify-center rounded-md border border-gold/40 bg-gold/10 p-1 text-gold transition hover:border-gold hover:bg-gold/20"
-                title="Transfer resources from this structure"
-                aria-label="Transfer resources from this structure"
-              >
-                <SemanticIcon name="swap" className="h-3.5 w-3.5" />
-              </button>
-            ) : undefined
-          }
-        >
-          {resources ? (
-            <MergedResourcePanel
-              structureEntityId={structureEntityId}
-              resources={resources}
-              productionSummary={productionSummary}
-              canBuild={false}
-              isMine={isMine}
-              activeRelicIds={activeRelicIds}
-            />
-          ) : (
-            <p className={HUD_BODY_MUTED}>No resources stored.</p>
-          )}
-        </InfoBubble>
+        {!hideResources && (
+          <InfoBubble
+            variant="section"
+            title="Resources"
+            icon={"production" as const}
+            cue={
+              canOpenTransferPanel ? (
+                <button
+                  type="button"
+                  onClick={handleOpenTransferPanel}
+                  className="inline-flex items-center justify-center rounded-md border border-gold/40 bg-gold/10 p-1 text-gold transition hover:border-gold hover:bg-gold/20"
+                  title="Transfer resources from this structure"
+                  aria-label="Transfer resources from this structure"
+                >
+                  <SemanticIcon name="swap" className="h-3.5 w-3.5" />
+                </button>
+              ) : undefined
+            }
+          >
+            {resources ? (
+              <MergedResourcePanel
+                structureEntityId={structureEntityId}
+                resources={resources}
+                productionSummary={productionSummary}
+                canBuild={false}
+                isMine={isMine}
+                activeRelicIds={activeRelicIds}
+              />
+            ) : (
+              <p className={HUD_BODY_MUTED}>No resources stored.</p>
+            )}
+          </InfoBubble>
+        )}
 
         <BitcoinMiningActionPanel structureEntityId={structureEntityId} />
 
@@ -345,6 +350,7 @@ export const StructureBannerEntityDetail = memo(
     hideOwner = false,
     coordsLabel,
     headerAction,
+    hideResources = false,
   }: StructureBannerEntityDetailProps) => {
     const resolvedVariant: EntityDetailLayoutVariant = layoutVariant ?? (compact ? "default" : "banner");
 
@@ -357,6 +363,7 @@ export const StructureBannerEntityDetail = memo(
         compact={compact}
         variant={resolvedVariant}
         hideOwner={hideOwner}
+        hideResources={hideResources}
         coordsLabel={coordsLabel}
         headerAction={headerAction}
       />

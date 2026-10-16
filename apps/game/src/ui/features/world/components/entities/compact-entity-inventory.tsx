@@ -8,7 +8,7 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import type { RelicHolderPreview } from "@/ui/features/relics/components/player-relic-tray";
+import type { RelicHolderPreview } from "@/ui/features/relics/components/relic-activation-selector";
 import { RelicActivationSelector } from "@/ui/features/relics/components/relic-activation-selector";
 import { divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
 import {

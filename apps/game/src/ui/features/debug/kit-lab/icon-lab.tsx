@@ -55,7 +55,6 @@ export function IconLab() {
           {(["build", "production", "military", "transfer", "trade"] as const).map((id) => (
             <ActionTile
               key={id}
-              variant="panel"
               action={{
                 id,
                 label: iconDefinition(id).label,

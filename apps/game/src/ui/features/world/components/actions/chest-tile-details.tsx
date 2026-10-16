@@ -1,7 +1,6 @@
 import { Icon } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
 import {
-  type BiomeType,
   getRelicInfo,
   type ID,
   relicChestName,
@@ -18,30 +17,25 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import type { RelicCrateOpening } from "@/hooks/store/use-relic-crate-store";
 import { InfoBubble } from "../entities/collapsible-bubble";
 import { EntityDetailStat, EntityDetailStatList } from "../entities/layout";
-import { BiomeSummaryCard } from "./unoccupied-tile-quadrants";
 
 /**
- * The relic crate tile, in the structure tile's chrome: header, name row, the pack it holds with the Open action, then
- * the biome. Once the crate is opened the contents list the relics it yielded.
+ * The relic crate tile, in the structure tile's chrome: header, name row, the pack it holds with the Open action. Once
+ * the crate is opened the contents list the relics it yielded. Its biome is the tile panel's other part.
  */
 export function ChestTileDetails({
   crateEntityId,
-  biome,
   coordsLabel,
   headerAction,
   opening,
   onOpen,
   openBlockedReason,
-  onSimulateBattle,
 }: {
   crateEntityId: ID | null;
-  biome: BiomeType;
   coordsLabel?: string;
   headerAction?: ReactNode;
   opening: RelicCrateOpening | null;
   onOpen?: () => void;
   openBlockedReason?: string;
-  onSimulateBattle: () => void;
 }) {
   return (
     <div className="flex shrink-0 flex-col gap-2">
@@ -69,7 +63,6 @@ export function ChestTileDetails({
           )}
         </InfoBubble>
       </div>
-      <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={onSimulateBattle} />
     </div>
   );
 }

@@ -228,7 +228,7 @@ const StructureActionStrip = ({ lane }: { lane: CompactLane }) => {
         style={layout.actionsStyle}
       >
         {actions.map((action) => (
-          <ActionTile key={action.id} variant="compact" action={action} />
+          <ActionTile key={action.id} action={action} />
         ))}
       </nav>
     </>

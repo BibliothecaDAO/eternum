@@ -132,7 +132,7 @@ export const TroopSelectionGrid = ({
                       isSelected
                         ? "border-gold bg-gradient-to-br from-gold/20 to-gold/10 shadow-lg shadow-gold/30 scale-105"
                         : canSelect
-                          ? "border-brown/40 bg-gradient-to-br from-brown/10 to-brown/5 hover:border-gold/50 hover:shadow-md hover:scale-102"
+                          ? "border-brown/40 bg-gradient-to-br from-brown/10 to-brown/5 hover:border-gold/50 hover:shadow-md"
                           : "border-brown/20 bg-brown/5 opacity-60 cursor-not-allowed",
                       isLockedOption && "pointer-events-none",
                     )}

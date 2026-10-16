@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-16",
+    title: "A new HUD for Blitz and Eternum",
+    description:
+      "Your holdings sit on the left, one kind at a time under tabs. Star a realm to pin it to the top, and provision or level it up from its row. The selected realm's card shows its resources five to a row, its relics, population and automation, with a taller minimap under it. On the right, Next up tells you what to do next, the events stay on, and a picked tile shows its structure or army and its biome as tabs. The four orders are round buttons at the bottom.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-16",
     title: "Trade opens again",
     description:
       "Opening Trade in an Eternum game no longer stops the game: every resource and relic in the market shows its painting.",

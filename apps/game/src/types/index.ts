@@ -20,21 +20,3 @@ export type BattleViewInfo = {
   ownArmyEntityId: ID | undefined;
   targetArmy: ID | undefined;
 };
-
-export interface RelicInventory {
-  resourceId: ID;
-  amount: number;
-}
-
-export interface EntityWithRelics {
-  entityId: ID;
-  position: Position;
-  structureType?: StructureType;
-  type: EntityType;
-  relics: RelicInventory[];
-}
-
-export interface PlayerRelicsData {
-  structures: EntityWithRelics[];
-  armies: EntityWithRelics[];
-}
