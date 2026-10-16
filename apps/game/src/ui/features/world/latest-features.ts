@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-16",
+    title: "Readable menus in Safari",
+    description:
+      "The realm's production menu and the HUD's other drop-downs now draw in the game's dark style in Safari too, instead of a white box with pale text.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-16",
     title: "Clearer realm entrances",
     description:
       "Settlements use Canvas & Thatch with your Order and ownership colours. Terrace Forum has unobstructed upper windows and larger doors; Twin Ward has plain upper windows, cleaner lower walls and larger entrances.",
