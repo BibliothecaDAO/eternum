@@ -17,12 +17,12 @@ import {
 } from "../story-events/story-event-utils";
 import { transactionStatusLine, transferRowLabel } from "./event-feed-rows";
 import { formatFeedTime, type ImportantFeedRow } from "./important-feed-rows";
-import { resolveStoryEventPosition } from "./story-feed-row";
+import { useStoryOpener } from "./story-feed-row";
 
-/** One feed row in the Log button's translucent black, not the panels' surface: a fixed icon column, one line of
- *  text, the time flush right. */
+/** One feed row in the Log button's translucent black, not the panels' surface: a fixed icon column, up to two lines
+ *  of text (a row grows to fit them and never spills over the next), the time flush right. */
 export const FEED_ROW_CLASS =
-  "pointer-events-auto flex h-8 w-full items-center gap-2 rounded-md bg-black/50 px-2.5 text-xs text-gold backdrop-blur-[2px]";
+  "pointer-events-auto flex min-h-8 w-full items-center gap-2 overflow-hidden rounded-md bg-black/50 px-2.5 py-1 text-xs text-gold backdrop-blur-[2px]";
 const FEED_ROW_ICON_COLUMN_CLASS = "flex w-4 shrink-0 items-center justify-center";
 
 const HEADLINE_ICONS: Record<HeadlineType, IconMeaning> = {
@@ -41,18 +41,33 @@ export const HeadlineIcon = ({ type }: { type: HeadlineType }) => {
 };
 
 /** One feed row, quick feed or log: icon, one line of text, the time; a row with a place flies the camera. */
-export const FeedRowLine = ({ row, style }: { row: ImportantFeedRow; style?: CSSProperties }) => {
+/** One row of the feed: a story opens where it happened (its army for an opened crate), any other row flies to its place. */
+export const FeedRowLine = ({ row, style }: { row: ImportantFeedRow; style?: CSSProperties }) =>
+  row.kind === "story" ? <StoryRowLine row={row} style={style} /> : <PlacedRowLine row={row} style={style} />;
+
+const StoryRowLine = ({ row, style }: { row: Extract<ImportantFeedRow, { kind: "story" }>; style?: CSSProperties }) => (
+  <RowLine row={row} style={style} open={useStoryOpener(row.event)} />
+);
+
+const PlacedRowLine = ({ row, style }: { row: ImportantFeedRow; style?: CSSProperties }) => {
   const target = useFeedRowTarget(row);
   const navigate = useNavigateToMapView();
+  return <RowLine row={row} style={style} open={target ? () => navigate(target) : null} />;
+};
+
+/** The row itself: its words never cut to one line, so a sentence keeps where things went; whole on hover. */
+const RowLine = ({ row, style, open }: { row: ImportantFeedRow; style?: CSSProperties; open: (() => void) | null }) => {
   const { icon, text } = summarizeFeedRow(row);
   const content = (
     <>
       <span className={FEED_ROW_ICON_COLUMN_CLASS}>{icon}</span>
-      <span className="min-w-0 flex-1 truncate text-left">{text}</span>
+      <span className="line-clamp-2 min-w-0 flex-1 break-words text-left" title={text}>
+        {text}
+      </span>
       <span className="ml-auto shrink-0 text-right tabular-nums text-gold/50">{formatFeedTime(row.at)}</span>
     </>
   );
-  if (!target) {
+  if (!open) {
     return (
       <div className={FEED_ROW_CLASS} style={style}>
         {content}
@@ -62,7 +77,7 @@ export const FeedRowLine = ({ row, style }: { row: ImportantFeedRow; style?: CSS
   return (
     <button
       type="button"
-      onClick={() => navigate(target)}
+      onClick={open}
       className={cn(FEED_ROW_CLASS, "font-sans normal-case tracking-normal hover:bg-black/70")}
       style={style}
     >
@@ -84,7 +99,6 @@ function useFeedRowTarget(row: ImportantFeedRow): Position | null {
       ? Position.fromContract({ x: row.headline.location.x, y: row.headline.location.y })
       : null;
   }
-  if (row.kind === "story") return resolveStoryEventPosition(row.event, store);
   if (row.kind === "arrival") {
     const site = structure && structureMapPosition(store, structure);
     return site ? Position.fromContract(site) : null;
@@ -93,7 +107,7 @@ function useFeedRowTarget(row: ImportantFeedRow): Position | null {
   return null;
 }
 
-function summarizeFeedRow(row: ImportantFeedRow): { icon: ReactNode; text: ReactNode } {
+function summarizeFeedRow(row: ImportantFeedRow): { icon: ReactNode; text: string } {
   if (row.kind === "headline") {
     return { icon: <HeadlineIcon type={row.headline.type} />, text: row.headline.description };
   }

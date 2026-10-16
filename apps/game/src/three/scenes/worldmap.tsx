@@ -963,8 +963,6 @@ export default class WorldmapScene extends WarpTravel {
     if (parsePlayRoute(window.location)?.scene === "hex") return;
     this.clearSelection();
   };
-  private followCameraTimeout: ReturnType<typeof setTimeout> | null = null;
-  private notifiedBattleEvents = new Set<string>();
   private previouslyHoveredHex: HexPosition | null = null;
   private lastHoverReconciliation: WorldmapHoverReconciliationSnapshot | null = null;
 
@@ -1810,8 +1808,6 @@ export default class WorldmapScene extends WarpTravel {
           this.recalculateArrowsForEntity(attackerId);
           this.recalculateArrowsForEntity(defenderId);
         }
-
-        this.notifyArmyUnderAttack(update);
       }),
     );
   }
@@ -2188,25 +2184,6 @@ export default class WorldmapScene extends WarpTravel {
     );
   }
 
-  private focusCameraOnEvent(col: number, row: number, message: string) {
-    this.moveCameraToColRow(col, row, 2);
-
-    const uiStore = useUIStore.getState();
-    uiStore.setFollowingArmyMessage(message);
-    uiStore.setIsFollowingArmy(true);
-
-    if (this.followCameraTimeout) {
-      clearTimeout(this.followCameraTimeout);
-    }
-
-    this.followCameraTimeout = setTimeout(() => {
-      const store = useUIStore.getState();
-      store.setIsFollowingArmy(false);
-      store.setFollowingArmyMessage(null);
-      this.followCameraTimeout = null;
-    }, 3000);
-  }
-
   private getEntityOwnerAddress(entityId: ID): ContractAddress | undefined {
     if (this.worldSpatialProjection.getArmy(entityId)) return this.getArmyOwnerAddress(entityId);
 
@@ -2298,79 +2275,6 @@ export default class WorldmapScene extends WarpTravel {
 
   private isRewardDebugEnabled(): boolean {
     return Boolean((globalThis as { __ETERNUM_DEBUG_REWARD_EVENTS__?: boolean }).__ETERNUM_DEBUG_REWARD_EVENTS__);
-  }
-
-  private getEntityLabel(entityId: ID): string {
-    if (this.worldSpatialProjection.getArmy(entityId)) {
-      return `Army #${entityId}`;
-    }
-    if (this.worldSpatialProjection.getStructure(entityId)) {
-      return `Structure #${entityId}`;
-    }
-    return `Entity #${entityId}`;
-  }
-
-  private markBattleNotificationHandled(key: string) {
-    this.notifiedBattleEvents.add(key);
-    if (this.notifiedBattleEvents.size > 100) {
-      const iterator = this.notifiedBattleEvents.values().next();
-      if (!iterator.done) {
-        this.notifiedBattleEvents.delete(iterator.value);
-      }
-    }
-  }
-
-  private openBattleLogsPanel() {
-    const uiStore = useUIStore.getState();
-    uiStore.setLeftNavigationView(LeftView.StoryEvents);
-  }
-
-  private notifyArmyUnderAttack(update: BattleEventSystemUpdate) {
-    const defenderId = update.battleData.defenderId;
-    if (typeof defenderId !== "number") {
-      return;
-    }
-
-    const defenderOwner = this.getEntityOwnerAddress(defenderId);
-    if (!defenderOwner || !isAddressEqualToAccount(defenderOwner)) {
-      return;
-    }
-
-    const focusPosition = this.getArmyDisplayPosition(defenderId) ?? this.getStructureHexPosition(defenderId);
-
-    const notificationKey = `${update.entityId}-${update.battleData.timestamp}`;
-    if (this.notifiedBattleEvents.has(notificationKey)) {
-      return;
-    }
-
-    this.markBattleNotificationHandled(notificationKey);
-
-    const attackerId = update.battleData.attackerId;
-    const defenderLabel = this.getEntityLabel(defenderId);
-    const attackerLabel = typeof attackerId === "number" ? this.getEntityLabel(attackerId) : "Unknown attacker";
-
-    toast(
-      <div className="flex flex-col gap-2">
-        <div className="text-gold font-bold">⚠️ {defenderLabel} under attack</div>
-        <div className="text-light-pink">Engaged by {attackerLabel}.</div>
-        <div className="flex gap-2 mt-2">
-          <button
-            className="bg-gold text-brown font-semibold px-3 py-1 rounded"
-            onClick={() => this.openBattleLogsPanel()}
-          >
-            View logs
-          </button>
-          {focusPosition && (
-            <button
-              className="bg-gold text-brown font-semibold px-3 py-1 rounded"
-              onClick={() => this.focusCameraOnEvent(focusPosition.col, focusPosition.row, "Following Combat Alert")}
-            >
-              Focus camera
-            </button>
-          )}
-        </div>
-      </div>,
-    );
   }
 
   // methods needed to add worldmap specific behavior to the click events
@@ -4394,12 +4298,6 @@ export default class WorldmapScene extends WarpTravel {
     this.isSwitchedOff = runtimeState.isSwitchedOff;
     this.lastControlsCameraDistance = runtimeState.lastControlsCameraDistance;
     this.currentChunk = runtimeState.currentChunk;
-
-    // Clear follow camera timeout to prevent callback firing on destroyed UI store state
-    if (this.followCameraTimeout) {
-      clearTimeout(this.followCameraTimeout);
-      this.followCameraTimeout = null;
-    }
 
     // Cancel all travel effects and their internal timeouts (maxLifetimeTimeout up to 90s)
     this.travelEffects.forEach((cleanup) => cleanup());

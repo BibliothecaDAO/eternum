@@ -533,11 +533,18 @@ function structureDisplayName(components: NativeFactStore, structure: StructureR
  * explorer has no row, so the home structure from the payload stands in; with nothing to read it is "Army".
  */
 function describeExplorer(explorerId: unknown, components?: NativeFactStore, homeStructureId?: unknown): string {
+  const name = describeArmyName(explorerId, components, homeStructureId);
+  if (name) return `${name} army`;
+  const home = describeStructureName(readExplorer(explorerId, components)?.owner ?? homeStructureId, components);
+  return home ? `${home} army` : "Army";
+}
+
+/** An army's name, its home and tier ("Stolsli T1"); null without both. */
+function describeArmyName(explorerId: unknown, components?: NativeFactStore, homeStructureId?: unknown): string | null {
   const explorer = readExplorer(explorerId, components);
   const home = describeStructureName(explorer?.owner ?? homeStructureId, components);
   const tier = formatEnum(explorer?.troops?.tier);
-  const army = tier ? `${tier} army` : "army";
-  return home ? `${home} ${army}` : "Army";
+  return home && tier ? `${home} ${tier}` : null;
 }
 
 const chestRelics = (payload: Record<string, unknown>): ResourcesIds[] => {
@@ -553,7 +560,7 @@ export function describeRelicChestOpening(payload: Record<string, unknown>, comp
   const explorer = readExplorer(payload.explorer_id, components);
   const home = describeStructureName(explorer?.owner, components);
   const delivery = relicChestDelivery(chestRelics(payload), {
-    army: explorer && home ? describeExplorer(payload.explorer_id, components) : "the army",
+    army: explorer && home ? describeArmyName(payload.explorer_id, components) : null,
     home: home ?? "its realm",
   });
   return `${relicChestName(relicChestPack(payload.chest))}: ${delivery}`;

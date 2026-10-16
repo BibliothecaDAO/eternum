@@ -325,17 +325,19 @@ export const relicChestPack = (value: unknown): RelicChestPack => {
 const relicCount = (count: number): string => `${count} relic${count === 1 ? "" : "s"}`;
 
 /**
- * Where an opened chest's relics went, as the contract pays them: army relics stay with the army that opened it, the
- * rest go to its home ("3 relics to Stolsli", "1 relic to Stolsli T1 army, 2 to Stolsli").
+ * Where an opened chest's relics went, as the contract pays them, the army named first so it reads even when cut: army
+ * relics stay with the army that opened it, the rest go to its home ("3 relics to the army Stolsli T1", "1 relic to the
+ * army Stolsli T1, 2 to Stolsli", "3 relics to Stolsli"). `army` is the army's name ("Stolsli T1"), null when unknown.
  */
-export const relicChestDelivery = (relics: ResourcesIds[], to: { army: string; home: string }): string => {
+export const relicChestDelivery = (relics: ResourcesIds[], to: { army: string | null; home: string }): string => {
   const toArmy = relics.filter((id) => {
     const relic = getRelicInfo(id);
     if (!relic) throw new Error(`Resource ${id} is not a relic`);
     return relic.recipientType === RelicRecipientType.Explorer;
   }).length;
   const toHome = relics.length - toArmy;
-  if (toHome === 0) return `${relicCount(toArmy)} to ${to.army}`;
+  const army = to.army ? `the army ${to.army}` : "the army";
+  if (toHome === 0) return `${relicCount(toArmy)} to ${army}`;
   if (toArmy === 0) return `${relicCount(toHome)} to ${to.home}`;
-  return `${relicCount(toArmy)} to ${to.army}, ${toHome} to ${to.home}`;
+  return `${relicCount(toArmy)} to ${army}, ${toHome} to ${to.home}`;
 };

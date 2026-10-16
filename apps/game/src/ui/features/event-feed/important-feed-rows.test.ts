@@ -133,3 +133,9 @@ it("shows a completed send once its history story arrives as that story, which a
   // After a reload the session's sends are gone; the story is not.
   expect(selectImportantFeedRows([story], empty, "all", "0x1").map((row) => row.id)).toEqual(["story:up"]);
 });
+
+it("holds each event once, however many sources reach it", () => {
+  const send = { kind: "transaction", id: "0xexplore", at: 25, transaction: { hash: "0xexplore", status: "pending" } };
+  const feed = { ...empty, inFlight: [send], recent: [send] } as unknown as FeedRows;
+  expect(selectImportantFeedRows([], feed, "all", "0x1").map((row) => row.id)).toEqual(["0xexplore"]);
+});

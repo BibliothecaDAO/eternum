@@ -348,12 +348,12 @@ it("names an opened chest by its pack and where its relics went, and lists them 
       store,
     );
   expect(opened({ pack: "Explore", lucky: true })).toMatchObject({
-    title: "Explore pack · lucky: 3 relics to Stolsli T1 army",
+    title: "Explore pack · lucky: 3 relics to the army Stolsli T1",
     description: "Exploration Relic II, Exploration Reward Relic II, Stamina Relic II",
   });
   expect(opened({ pack: "Produce", lucky: false }).title).toBe("Produce pack: 3 relics to Stolsli");
   expect(opened({ pack: "Fortress", lucky: false }).title).toBe(
-    "Fortress pack: 1 relic to Stolsli T1 army, 2 to Stolsli",
+    "Fortress pack: 1 relic to the army Stolsli T1, 2 to Stolsli",
   );
 });
 

@@ -12,6 +12,8 @@ import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { Position, configManager, structureMapPosition, entityMapPosition } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useQuery } from "@/hooks/helpers/use-query";
+import { requestArmySelection } from "@/three/scenes/worldmap-army-select-request";
 import { formatFeedTime } from "./important-feed-rows";
 import { storyPayloadId } from "@/utils/native-id";
 
@@ -33,20 +35,44 @@ export function resolveStoryEventPosition(event: ProcessedStoryEvent, store: Nat
   return null;
 }
 
-export const StoryFeedRow = ({ event }: { event: ProcessedStoryEvent }) => {
+/** The army a story's relics went to, while it stands: an opened crate pays army relics to the army that opened it. */
+export function storyRelicArmy(event: ProcessedStoryEvent, store: NativeFactStore): number | null {
+  if (event.story !== "RelicChestOpened" || event.storyPayload.explorer_id == null) return null;
+  const explorerId = storyPayloadId(event.storyPayload.explorer_id);
+  return store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: explorerId })
+    ? explorerId
+    : null;
+}
+
+/**
+ * Opens a story where it happened, for the Events card and the log alike: an opened crate's row selects the army that
+ * holds its relics (on the world map; from the realm view it flies there), any other row, or a crate whose army is
+ * gone, flies to its tile. Null when the story has no place left to show.
+ */
+export function useStoryOpener(event: ProcessedStoryEvent): (() => void) | null {
   const {
     setup: { store },
   } = useGame();
   useNativeRevision(["Structure", "ExplorerTroops", "TileOccupancy"]);
   const navigate = useNavigateToMapView();
+  const { isMapView } = useQuery();
+  const army = storyRelicArmy(event, store);
   const position = resolveStoryEventPosition(event, store);
+  if (army !== null && isMapView) return () => requestArmySelection(army);
+  if (army !== null)
+    return () => navigate(Position.fromContract(entityMapPosition(store, configManager.getActiveGameId(), army)));
+  return position ? () => navigate(position) : null;
+}
+
+export const StoryFeedRow = ({ event }: { event: ProcessedStoryEvent }) => {
+  const open = useStoryOpener(event);
   const battle = event.story === "BattleEvent";
   return (
     <button
       type="button"
-      disabled={!position}
-      onClick={() => position && navigate(position)}
-      title={position ? event.presentation.description : "This event’s location is no longer available"}
+      disabled={!open}
+      onClick={() => open?.()}
+      title={open ? event.presentation.description : "This event’s location is no longer available"}
       className="block w-full px-3 py-2 text-left !font-sans !text-[11px] normal-case tracking-normal text-gold enabled:hover:bg-gold/10 disabled:cursor-default"
     >
       {battle ? (

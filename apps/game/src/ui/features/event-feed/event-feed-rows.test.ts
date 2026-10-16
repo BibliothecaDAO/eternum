@@ -35,6 +35,11 @@ const derive = (input: Partial<Parameters<typeof deriveFeedRows>[0]> = {}) =>
   });
 
 describe("deriveFeedRows", () => {
+  it("a send the store holds twice under one hash is one row", () => {
+    const rows = derive({ transactions: [transfer(), transfer({ submittedAt: NOW_MS - 400 })] });
+    expect(rows.inFlight.map((row) => row.id)).toEqual(["0xsend"]);
+  });
+
   it("a started transfer is an in-flight row from its pending transaction", () => {
     const rows = derive({ transactions: [transfer()] });
     expect(rows.inFlight).toMatchObject([{ kind: "transaction", id: "0xsend" }]);

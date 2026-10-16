@@ -66,7 +66,9 @@ export const deriveFeedRows = ({
   const arrived: FeedRow[] = [];
   const recent: FeedRow[] = [];
 
-  for (const transaction of transactions) {
+  // One row per transaction: a send the store holds twice (resent under the same hash) is one event.
+  const sends = new Map(transactions.map((transaction) => [transaction.hash, transaction]));
+  for (const transaction of sends.values()) {
     if (isTransactionInFlight(transaction)) {
       inFlight.push({ kind: "transaction", id: transaction.hash, at: transaction.submittedAt, transaction });
     } else {

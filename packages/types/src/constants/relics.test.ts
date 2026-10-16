@@ -49,22 +49,24 @@ describe("relic chest packs", () => {
 });
 
 describe("relic chest delivery", () => {
-  const to = { army: "Stolsli T1 army", home: "Stolsli" };
+  const to = { army: "Stolsli T1", home: "Stolsli" };
 
   it("says where each pack's relics went: army relics to the army, structure relics to its home", () => {
-    expect(relicChestDelivery(relicChestRelics({ pack: "War", lucky: false }), to)).toBe("3 relics to Stolsli T1 army");
+    expect(relicChestDelivery(relicChestRelics({ pack: "War", lucky: false }), to)).toBe(
+      "3 relics to the army Stolsli T1",
+    );
     expect(relicChestDelivery(relicChestRelics({ pack: "Explore", lucky: true }), to)).toBe(
-      "3 relics to Stolsli T1 army",
+      "3 relics to the army Stolsli T1",
     );
     expect(relicChestDelivery(relicChestRelics({ pack: "Produce", lucky: false }), to)).toBe("3 relics to Stolsli");
     expect(relicChestDelivery(relicChestRelics({ pack: "Fortress", lucky: true }), to)).toBe(
-      "1 relic to Stolsli T1 army, 2 to Stolsli",
+      "1 relic to the army Stolsli T1, 2 to Stolsli",
     );
     expect(() => relicChestDelivery([ResourcesIds.Wood], to)).toThrow("is not a relic");
   });
 
   it("sends to the army exactly the relics the contract pays the army (ids below 49)", () => {
-    const armyRelics = RELICS.filter((relic) => relicChestDelivery([relic.id], to).endsWith("army")).map(
+    const armyRelics = RELICS.filter((relic) => relicChestDelivery([relic.id], to).includes("the army")).map(
       ({ id }) => id,
     );
     expect(armyRelics).toEqual(RELICS.map(({ id }) => id).filter((id) => id < 49));

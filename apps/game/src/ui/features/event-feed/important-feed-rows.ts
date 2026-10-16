@@ -70,8 +70,14 @@ export function selectImportantFeedRows(
   rows.push(
     ...headlines.map((headline) => ({ kind: "headline" as const, id: headline.id, at: headline.timestamp, headline })),
   );
-  return rows.toSorted((left, right) => right.at - left.at);
+  return oneRowPerId(rows.toSorted((left, right) => right.at - left.at));
 }
+
+/** Each row once: the same event reached by two sources (a send listed twice, a headline told again) is one row. */
+const oneRowPerId = (rows: ImportantFeedRow[]): ImportantFeedRow[] => {
+  const seen = new Set<string>();
+  return rows.filter((row) => !seen.has(row.id) && seen.add(row.id) !== undefined);
+};
 
 /** A completed send whose story history holds: the story shows instead. */
 const isToldByStory = (row: FeedRow, told: Set<string>): boolean =>
