@@ -66,6 +66,28 @@ def compose_verb(command):
     """The compose subcommand of a `docker compose -f FILE ...` command."""
     return command[command.index("-f") + 2]
 
+
+class FakeCompose:
+    """`docker compose` at the subprocess boundary: the shard's containers hold their log until `down` removes them."""
+
+    LOG = "madara-1  | the node's last line\n"
+
+    def __init__(self, fail=()):
+        self.commands, self.fail, self.alive = [], set(fail), True
+
+    @property
+    def verbs(self):
+        return [compose_verb(command) for command in self.commands]
+
+    def __call__(self, command, **kwargs):
+        self.commands.append(command)
+        if compose_verb(command) in self.fail:
+            raise subprocess.CalledProcessError(1, command)
+        if compose_verb(command) == "logs" and self.alive:
+            kwargs["stdout"].write(self.LOG)
+        if compose_verb(command) == "down":
+            self.alive = False
+
 class ShardTest(unittest.TestCase):
     def test_runner_registers_pending_before_initialization_and_never_activates(self):
         events = []
@@ -93,11 +115,12 @@ class ShardTest(unittest.TestCase):
             with patch.object(shard, "run"), patch.object(shard, "wait_for_identity"), patch.object(shard, "directory_status", side_effect=lost_response):
                 with self.assertRaisesRegex(OSError, "response lost"):
                     shard.start_runner_stack(config, data, ["compose"])
-            events = []
+            compose = FakeCompose()
             shard.write_json(data / "configuration.json", config)
-            with patch.object(shard, "run", side_effect=lambda command, *_: events.append(compose_verb(command))), patch.object(shard, "directory_status", side_effect=lambda _, status: events.append(status)):
+            with patch.object(shard.subprocess, "run", side_effect=compose), patch.object(shard, "directory_status") as directory:
                 shard.remove_shard(data)
-            self.assertEqual(events, ["stop", "logs", "down"])
+            self.assertEqual(compose.verbs, ["stop", "logs", "down"])
+            directory.assert_not_called()
             self.assertFalse((data / "directory-registration-ack.json").exists())
 
     def test_failed_single_start_removes_the_shard_and_retires_its_registration(self):
@@ -111,17 +134,19 @@ class ShardTest(unittest.TestCase):
                 def fail_start(config, data, _):
                     shard.write_json(data / "directory-registration-ack.json", {"url": config["public_herald_url"], "chainId": "0x" + config["chain_id"].encode().hex(), "status": "pending"})
                     raise failure
-                events = []
+                compose = FakeCompose()
                 with (
                     patch.object(Path, "read_text", read), patch.object(shard, "ensure_fresh_project"),
                     patch.object(shard, "compose_configuration", return_value={"services": {"madara": {"image": NODE_IMAGE}}}),
                     patch.object(shard, "start_runner_stack", side_effect=fail_start),
-                    patch.object(shard, "run", side_effect=lambda command, *_: events.append(compose_verb(command))),
-                    patch.object(shard, "directory_status", side_effect=lambda _, status: events.append(status)),
+                    patch.object(shard.subprocess, "run", side_effect=compose),
+                    patch.object(shard, "directory_status") as directory_status,
                 ):
                     with self.assertRaises(type(failure)):
                         shard.start_shard(configuration(), directory)
-                self.assertEqual(events, ["stop", "logs", "down", "retired"])
+                self.assertEqual(compose.verbs, ["stop", "logs", "down"])
+                self.assertEqual([call.args[1] for call in directory_status.call_args_list], ["retired"])
+                self.assertEqual((directory / "shard-logs.log").read_text(), FakeCompose.LOG)
                 self.assertTrue((directory / "compose.json").exists())
                 self.assertTrue((directory / "directory-registration-ack.json").exists())
 
@@ -144,32 +169,63 @@ class ShardTest(unittest.TestCase):
         self.assertEqual(steps, ["stack", "readiness", ("measurement-roles", "measurement-roles")])
 
     def test_removing_a_registered_runner_keeps_its_logs_then_retires_without_activation(self):
-        events = []
+        compose = FakeCompose()
         with tempfile.TemporaryDirectory() as temporary:
             data = Path(temporary)
             config = configuration()
             shard.write_json(data / "configuration.json", config)
             shard.write_json(data / "directory-registration-ack.json", {"url": config["public_herald_url"], "chainId": "0x" + config["chain_id"].encode().hex(), "status": "pending"})
-            with patch.object(shard, "run", side_effect=lambda command, directory, name: events.append((compose_verb(command), name))), patch.object(shard, "directory_status", side_effect=lambda _, status: events.append(status)):
+            with patch.object(shard.subprocess, "run", side_effect=compose), patch.object(shard, "directory_status") as directory:
                 shard.remove_shard(data)
-        self.assertEqual(events, [("stop", "shard-stop"), ("logs", "shard-logs"), ("down", "shard-down"), "retired"])
+            self.assertEqual(compose.verbs, ["stop", "logs", "down"])
+            directory.assert_called_once_with(config, "retired")
+            self.assertEqual((data / "shard-logs.log").read_text(), FakeCompose.LOG)
 
-    def test_a_shard_whose_stop_fails_is_still_removed(self):
-        events = []
-
-        def run(command, *_):
-            events.append(compose_verb(command))
-            if compose_verb(command) == "stop":
-                raise subprocess.CalledProcessError(1, command)
-
+    def test_a_shard_whose_stop_fails_keeps_its_logs_and_is_still_removed(self):
+        compose = FakeCompose(fail={"stop"})
         with tempfile.TemporaryDirectory() as temporary:
             data = Path(temporary)
             shard.write_json(data / "configuration.json", configuration())
-            with patch.object(shard, "run", side_effect=run), patch.object(shard, "directory_status") as directory:
+            with patch.object(shard.subprocess, "run", side_effect=compose), patch.object(shard, "directory_status") as directory:
                 with self.assertRaises(subprocess.CalledProcessError):
                     shard.remove_shard(data)
-        self.assertEqual(events, ["stop", "down"])
+            self.assertEqual(compose.verbs, ["stop", "logs", "down"])
+            self.assertEqual((data / "shard-logs.log").read_text(), FakeCompose.LOG)
         directory.assert_not_called()
+
+    def test_removing_a_shard_again_keeps_the_logs_its_first_removal_read(self):
+        compose = FakeCompose()
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            shard.write_json(data / "configuration.json", configuration())
+            with patch.object(shard.subprocess, "run", side_effect=compose):
+                shard.remove_shard(data)
+                shard.remove_shard(data)
+            self.assertEqual(compose.verbs, ["stop", "logs", "down", "stop", "down"])
+            self.assertEqual((data / "shard-logs.log").read_text(), FakeCompose.LOG)
+
+    def test_a_matrix_arm_that_fails_to_start_is_removed_once_and_keeps_its_logs(self):
+        read_text = Path.read_text
+
+        def read(path, *args, **kwargs):
+            if str(path) == "/sys/fs/cgroup/athanor.slice/cpuset.cpus.effective": return "8-11,20-23"
+            return read_text(path, *args, **kwargs)
+
+        compose = FakeCompose()
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "matrix"
+            with (
+                patch.object(Path, "read_text", read), patch.object(shard, "ensure_fresh_project"),
+                patch.object(shard, "compose_configuration", return_value={"services": {"madara": {"image": NODE_IMAGE}}}),
+                patch.object(shard, "start_runner_stack", side_effect=RuntimeError("initialization failed")),
+                patch.object(shard.subprocess, "run", side_effect=compose),
+            ):
+                with self.assertRaisesRegex(RuntimeError, "initialization failed"):
+                    shard.run_matrix({"configurations": [configuration()], "workload": {"minutes": 1}}, output)
+            self.assertEqual(compose.verbs, ["stop", "logs", "down"])
+            self.assertEqual((output / "smoke" / "shard-logs.log").read_text(), FakeCompose.LOG)
+            self.assertEqual(json.loads((output / "smoke" / "matrix-result.json").read_text()),
+                             {"passed": False, "error": "initialization failed"})
 
     def test_resource_and_target_validation_precedes_deployment(self):
         config = configuration()
@@ -689,7 +745,7 @@ class ShardTest(unittest.TestCase):
                 measured = []
                 with patch.object(shard, "start_shard", side_effect=start), \
                      patch.object(shard.measures, "measure_workload", side_effect=measure), \
-                     patch.object(shard, "run") as stop, \
+                     patch.object(shard.subprocess, "run", side_effect=FakeCompose()) as docker, \
                      patch.object(shard, "directory_status") as directory_status, \
                      patch.object(shard, "run_workload", side_effect=failure) as workload:
                     output = root / "matrix"
@@ -703,7 +759,7 @@ class ShardTest(unittest.TestCase):
                     self.assertEqual(minutes, ["1"] if failure else ["1", "30"])
                     self.assertEqual(measured, [f"athanor-{name}-madara-1" for name in started])
                     self.assertEqual([call.args[1] for call in directory_status.call_args_list], ["retired"] * len(started))
-                    removals = [(call.args[0][call.args[0].index("-f") + 1], compose_verb(call.args[0])) for call in stop.call_args_list]
+                    removals = [(call.args[0][call.args[0].index("-f") + 1], compose_verb(call.args[0])) for call in docker.call_args_list]
                     self.assertEqual(removals, [(str(output / name / "compose.json"), verb)
                                                 for name in started for verb in ("stop", "logs", "down")])
                     for name in started:
@@ -857,7 +913,7 @@ class RegistrationAcknowledgementTest(unittest.TestCase):
             with self.subTest(status=status), tempfile.TemporaryDirectory() as temporary:
                 data = Path(temporary)
                 shard.write_json(data / "configuration.json", config)
-                with patch.object(shard, "run"), patch.object(shard, "wait_for_identity"), patch.object(shard, "directory_status", return_value={"status": status}) as directory:
+                with patch.object(shard, "run"), patch.object(shard, "keep_shard_logs"), patch.object(shard, "wait_for_identity"), patch.object(shard, "directory_status", return_value={"status": status}) as directory:
                     with self.assertRaisesRegex(RuntimeError, "must register PENDING"):
                         shard.start_runner_stack(config, data, ["compose"])
                     shard.remove_shard(data)
@@ -870,7 +926,7 @@ class RegistrationAcknowledgementTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             data = Path(temporary)
             shard.write_json(data / "configuration.json", config)
-            with patch.object(shard, "run"), patch.object(shard, "wait_for_identity"), patch.object(shard, "directory_status", side_effect=RuntimeError("pending POST failed")) as directory:
+            with patch.object(shard, "run"), patch.object(shard, "keep_shard_logs"), patch.object(shard, "wait_for_identity"), patch.object(shard, "directory_status", side_effect=RuntimeError("pending POST failed")) as directory:
                 try:
                     shard.start_runner_stack(config, data, ["compose"])
                 except RuntimeError as error:

@@ -430,11 +430,14 @@ def start_runner_stack(config, directory, command):
 
 def remove_shard(directory):
     """A runner shard is never started again: its containers' logs stay in its directory as shard-logs.log, then its
-    containers, volumes and network go, even when stopping or reading the logs fails."""
+    containers, volumes and network go. The logs are read even when stopping fails, and the shard goes even when
+    reading them fails."""
     command = [*DOCKER, "compose", "-f", str(directory / "compose.json")]
     try:
-        run([*command, "stop"], directory, "shard-stop")
-        run([*command, "logs", "--no-color"], directory, "shard-logs")
+        try:
+            run([*command, "stop"], directory, "shard-stop")
+        finally:
+            keep_shard_logs(directory, command)
     finally:
         run([*command, "down", "--volumes", "--remove-orphans"], directory, "shard-down")
     # Only an acknowledged PENDING registration belongs to this run; intent alone cannot retire a listing.
@@ -447,6 +450,15 @@ def remove_shard(directory):
                 or int(registered["chainId"], 16) != int(chain_id, 16)):
             raise RuntimeError("Directory registration differs from the runner's shard identity")
         directory_status(config, "retired")
+
+
+def keep_shard_logs(directory, command):
+    """Reads the containers' logs once: a removal repeated after the containers are gone keeps the first copy."""
+    kept = directory / "shard-logs.log"
+    if kept.exists():
+        return
+    run([*command, "logs", "--no-color"], directory, "shard-logs-reading")
+    (directory / "shard-logs-reading.log").rename(kept)
 
 
 # Each workload key is a harness option (underscores for dashes, true for a bare flag), so a matrix can run every shape
@@ -509,8 +521,11 @@ def run_matrix(matrix, directory):
         if target.exists():
             raise ValueError(f"duplicate run directory: {target}")
         result = {"passed": False}
+        started = False
         try:
+            # A start that fails removes its own shard; the arm removes only a shard that started.
             start_shard(config, target)
+            started = True
             environment = dict(os.environ)
             command = harness_container_command(target / "compose.json", command)
             result.update(measures.measure_workload(
@@ -523,6 +538,7 @@ def run_matrix(matrix, directory):
         finally:
             if (target / "compose.json").exists():
                 write_json(target / "matrix-result.json", result)
+            if started:
                 remove_shard(target)
     return {"passed": True, "directory": str(directory)}
 
