@@ -115,20 +115,18 @@ const ProceduralCharacterBenchmarkExperience = ({ mode }: { mode: BenchmarkExper
   const [ready, setReady] = useState(false);
   const [rendererError, setRendererError] = useState<string | null>(null);
 
-  useEffect(
-    () =>
-      mountBenchmarkRenderer(
-        containerRef,
-        rendererRef,
-        configRef,
-        statsRef,
-        worldGym ? "procedural-biomes" : "hex",
-        setReady,
-        setStats,
-        setRendererError,
-      ),
-    [worldGym],
-  );
+  useEffect(() => {
+    return mountBenchmarkRenderer(
+      containerRef,
+      rendererRef,
+      configRef,
+      statsRef,
+      worldGym ? "procedural-biomes" : "hex",
+      setReady,
+      setStats,
+      setRendererError,
+    );
+  }, [worldGym]);
 
   useEffect(() => {
     configRef.current = config;
@@ -161,20 +159,18 @@ const ProceduralCharacterBenchmarkExperience = ({ mode }: { mode: BenchmarkExper
     [],
   );
 
-  useEffect(
-    () =>
-      exposeBenchmarkDebugBridge(
-        configRef,
-        statsRef,
-        patchConfig,
-        applyWalkingPerformanceProfile,
-        startPerformanceEvaluation,
-        reset,
-        killBurst,
-        worldGym,
-      ),
-    [applyWalkingPerformanceProfile, killBurst, patchConfig, reset, startPerformanceEvaluation, worldGym],
-  );
+  useEffect(() => {
+    return exposeBenchmarkDebugBridge(
+      configRef,
+      statsRef,
+      patchConfig,
+      applyWalkingPerformanceProfile,
+      startPerformanceEvaluation,
+      reset,
+      killBurst,
+      worldGym,
+    );
+  }, [applyWalkingPerformanceProfile, killBurst, patchConfig, reset, startPerformanceEvaluation, worldGym]);
 
   const togglePaused = useCallback(() => {
     setPaused((current) => {

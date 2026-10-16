@@ -29,7 +29,9 @@ const usePublishShown = (step: NextStep | undefined) => {
   useEffect(() => {
     useNextUpShows.setState({ shown: showing ? { levelUpOf } : null });
   }, [showing, levelUpOf]);
-  useEffect(() => () => useNextUpShows.setState({ shown: null, act: null }), []);
+  useEffect(() => {
+    return () => useNextUpShows.setState({ shown: null, act: null });
+  }, []);
 };
 
 /** A realm's level-up, read and sent by the realm's own hook; or any other step, with its line and its one verb. */

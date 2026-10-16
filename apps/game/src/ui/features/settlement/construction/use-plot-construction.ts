@@ -53,7 +53,9 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const submitting = useRef(false);
-  useEffect(() => setError(null), [target.spot.col, target.spot.row, useSimpleCost]);
+  useEffect(() => {
+    setError(null);
+  }, [target.spot.col, target.spot.row, useSimpleCost]);
   const buildability = (buildingType: BuildingType) =>
     resolveConstructionBuildability({
       entityId: target.entityId,

@@ -163,21 +163,19 @@ export const ProceduralCharacterGymView = () => {
   const [captureBusy, setCaptureBusy] = useState(false);
   const [reviewBusy, setReviewBusy] = useState(false);
 
-  useEffect(
-    () =>
-      mountGymRenderer(
-        containerRef,
-        rendererRef,
-        configRef,
-        collisionConfigRef,
-        statsRef,
-        aimStatsRef,
-        setReady,
-        setStats,
-        setRendererError,
-      ),
-    [],
-  );
+  useEffect(() => {
+    return mountGymRenderer(
+      containerRef,
+      rendererRef,
+      configRef,
+      collisionConfigRef,
+      statsRef,
+      aimStatsRef,
+      setReady,
+      setStats,
+      setRendererError,
+    );
+  }, []);
 
   useEffect(() => {
     configRef.current = config;
@@ -316,40 +314,38 @@ export const ProceduralCharacterGymView = () => {
     setSelectedCaptureFrame(null);
   }, []);
 
-  useEffect(
-    () =>
-      exposeCharacterGymDebugBridge(
-        configRef,
-        collisionConfigRef,
-        statsRef,
-        aimStatsRef,
-        reset,
-        runSmoke,
-        fireArrow,
-        cancelArrow,
-        attackMelee,
-        cancelMelee,
-        captureFrames,
-        seekFrame,
-        captureResultRef,
-        patchConfig,
-        patchCollisionConfig,
-        loadReviewScenario,
-      ),
-    [
-      attackMelee,
-      cancelArrow,
-      cancelMelee,
-      captureFrames,
-      fireArrow,
-      patchCollisionConfig,
-      loadReviewScenario,
-      patchConfig,
+  useEffect(() => {
+    return exposeCharacterGymDebugBridge(
+      configRef,
+      collisionConfigRef,
+      statsRef,
+      aimStatsRef,
       reset,
       runSmoke,
+      fireArrow,
+      cancelArrow,
+      attackMelee,
+      cancelMelee,
+      captureFrames,
       seekFrame,
-    ],
-  );
+      captureResultRef,
+      patchConfig,
+      patchCollisionConfig,
+      loadReviewScenario,
+    );
+  }, [
+    attackMelee,
+    cancelArrow,
+    cancelMelee,
+    captureFrames,
+    fireArrow,
+    patchCollisionConfig,
+    loadReviewScenario,
+    patchConfig,
+    reset,
+    runSmoke,
+    seekFrame,
+  ]);
 
   const applyPreset = useCallback((presetId: ProceduralCharacterPresetId) => {
     setSelectedPreset(presetId);

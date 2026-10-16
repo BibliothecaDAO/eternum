@@ -10,13 +10,11 @@ import { useEffect } from "react";
  */
 export const RelicCrateOpenings = () => {
   const { setup } = useGame();
-  useEffect(
-    () =>
-      new WorldUpdateListener(setup).RelicChest.onRelicChestOpened((opening) => {
-        useRelicCrateStore.getState().recordOpening(opening);
-        toast.success(opening.title, { location: opening.hex });
-      }),
-    [setup],
-  );
+  useEffect(() => {
+    return new WorldUpdateListener(setup).RelicChest.onRelicChestOpened((opening) => {
+      useRelicCrateStore.getState().recordOpening(opening);
+      toast.success(opening.title, { location: opening.hex });
+    });
+  }, [setup]);
   return null;
 };

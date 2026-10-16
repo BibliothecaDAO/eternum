@@ -577,8 +577,8 @@ export const HexMinimap = ({
     scheduleViewUpdate({ ...initialView });
   }, [initialView, scheduleViewUpdate]);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    return () => {
       // StrictMode and Fast Refresh replay effects while preserving refs. A cancelled handle must not
       // keep the next effect from scheduling its animation.
       for (const frameRef of [followRafRef, rafRef, cameraMoveRafRef]) {
@@ -588,9 +588,8 @@ export const HexMinimap = ({
       followTargetRef.current = null;
       pendingViewRef.current = null;
       pendingCameraMoveRef.current = null;
-    },
-    [],
-  );
+    };
+  }, []);
 
   return (
     <svg

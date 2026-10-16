@@ -6,7 +6,9 @@ import { armWellRefill, REFILL_BEAT_MS, useWellRefill } from "./well-refill";
 const seen: Array<{ refilling: boolean; shown: number }> = [];
 const Bar = ({ explorerId, ratio }: { explorerId: number; ratio: number }) => {
   const refill = useWellRefill(explorerId, ratio);
-  useEffect(() => void seen.push(refill));
+  useEffect(() => {
+    seen.push(refill);
+  });
   return null;
 };
 

@@ -103,7 +103,9 @@ export const VirtualizedOrderList = memo(
     });
 
     // The row estimate is not one of the virtualizer's memo keys, so a lane change re-measures explicitly.
-    useEffect(() => virtualizer.measure(), [virtualizer, rowHeightPx]);
+    useEffect(() => {
+      virtualizer.measure();
+    }, [virtualizer, rowHeightPx]);
 
     return (
       <div ref={parentRef} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain">

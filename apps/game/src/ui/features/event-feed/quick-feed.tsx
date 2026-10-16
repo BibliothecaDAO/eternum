@@ -91,16 +91,14 @@ export const FeedNotices = ({ pinned }: { pinned: Headline[] }) => (
 
 /** Connection transitions become feed rows; the offline state is the pinned red row. */
 export function useConnectionNotices() {
-  useEffect(
-    () =>
-      useConnectionStore.subscribe((state, previous) => {
-        if (state.status === previous.status) return;
-        if (state.status === "connected") toast.success("Back online", { id: CONNECTION_NOTICE_ID });
-        else if (state.status === "degraded") toast.warning("Reconnecting…", { id: CONNECTION_NOTICE_ID });
-        else toast.dismiss(CONNECTION_NOTICE_ID);
-      }),
-    [],
-  );
+  useEffect(() => {
+    return useConnectionStore.subscribe((state, previous) => {
+      if (state.status === previous.status) return;
+      if (state.status === "connected") toast.success("Back online", { id: CONNECTION_NOTICE_ID });
+      else if (state.status === "degraded") toast.warning("Reconnecting…", { id: CONNECTION_NOTICE_ID });
+      else toast.dismiss(CONNECTION_NOTICE_ID);
+    });
+  }, []);
 }
 
 function OfflineRow() {

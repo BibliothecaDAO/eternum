@@ -82,7 +82,9 @@ export function NewsHeadlineBridge() {
     }
   }, []);
 
-  useEffect(() => () => useHeadlineFeedStore.setState({ headlines: [] }), []);
+  useEffect(() => {
+    return () => useHeadlineFeedStore.setState({ headlines: [] });
+  }, []);
 
   // --- Dismiss ---
   const dismiss = useCallback(() => {
