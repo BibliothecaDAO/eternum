@@ -42,12 +42,12 @@ it("launches a Blitz from its closed slot: creation parameters, settling time, o
       ({
         preset_id: BigInt(String(params!.preset_id)),
         seed: BigInt(String(params!.seed)),
-        ready: seated,
         start_settling_at: BigInt(String(params!.start_settling_at)),
         start_main_at: BigInt(String(params!.start_main_at)),
         end_at: 460n,
       }) as never,
   );
+  vi.spyOn(native, "rosterReady").mockImplementation(async () => seated);
   vi.spyOn(native, "roster").mockResolvedValue(roster);
   const head = vi.spyOn(native, "head").mockResolvedValue({ block_number: 10, block_hash: "0x10", timestamp: 99 });
   await expect(native.launchBlitz([launch])).rejects.toMatchObject({ _tag: "RegistrationOpen", secondsUntilClose: 1 });
@@ -159,12 +159,12 @@ const releasedShard = (existing: Record<string, number>, currentRelease: number)
           ({
             preset_id: 2n,
             seed: byId(id).seed,
-            ready: byId(id).ready,
             start_settling_at: 100n,
             start_main_at: 400n,
             end_at: 460n,
           }) as never,
       );
+      vi.spyOn(native, "rosterReady").mockImplementation(async (id) => byId(id).ready);
       vi.spyOn(native, "roster").mockResolvedValue(roster);
       vi.spyOn(native, "seaterAccount").mockReturnValue(native);
       vi.spyOn(native, "view").mockResolvedValue(0x5an);

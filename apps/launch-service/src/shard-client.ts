@@ -132,7 +132,7 @@ export class LaunchShard extends ShardOperator {
           throw new Error("game_seater_differs");
         await pinsOf(gameId);
       },
-      ready: async (gameId) => (await this.game(gameId)).ready,
+      ready: (gameId) => this.rosterReady(gameId),
       seats: (seater) => {
         if (!streams.has(seater)) streams.set(seater, this.seaterStream(seater, pinsOf));
         return streams.get(seater)!;

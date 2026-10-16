@@ -1,9 +1,9 @@
-import type { Abi, RpcProvider } from "starknet";
+import type { Abi, BlockIdentifier, RpcProvider } from "starknet";
 
 let cached: { hash: string; abi: Abi } | undefined;
 
 /** Class content is immutable; the address-to-class binding is checked at every requested block. */
-export async function readShardAbi(provider: RpcProvider, address: string, block: number): Promise<Abi> {
+export async function readShardAbi(provider: RpcProvider, address: string, block: BlockIdentifier): Promise<Abi> {
   const hash = BigInt(await provider.getClassHashAt(address, block)).toString(16);
   if (cached?.hash === hash) return cached.abi;
   const contract = await provider.getClassByHash(`0x${hash}`);

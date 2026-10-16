@@ -1,7 +1,7 @@
 import { DeviceSigner } from "@bibliothecadao/eternum/device-signer";
 import { batchRemaining } from "@bibliothecadao/provider/batch-progress";
 export { batchRemaining };
-import { Account, CallData, ec, RpcError, type RpcProvider } from "starknet";
+import { Account, CallData, ec, RpcError, type BlockIdentifier, type RpcProvider } from "starknet";
 import { encodeNativeCommand, gameplayRejection } from "@bibliothecadao/provider";
 import { resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum/shard-fees";
 import { readConfirmedLedgerHead } from "./codecs";
@@ -42,7 +42,7 @@ export class ShardOperator {
     return { block_number: block.number, block_hash: block.hash, timestamp: block.time };
   }
 
-  async view<A>(entrypoint: string, calldata: readonly (string | number | bigint)[], at?: number): Promise<A> {
+  async view<A>(entrypoint: string, calldata: readonly (string | number | bigint)[], at?: BlockIdentifier): Promise<A> {
     const head = at ?? (await this.head()).block_number;
     const codec = await this.codec(head);
     const fields = await this.provider.callContract(
@@ -113,7 +113,7 @@ export class ShardOperator {
   async seatOutcome(gameId: number, transactionHash: string): Promise<{ remaining: bigint } | "spent" | "missing"> {
     let receipt;
     try {
-      receipt = await pollReceipt(this.provider, transactionHash, ["PRE_CONFIRMED", ...CLOSED], 50, SEAT_WAIT_MS);
+      receipt = await pollReceipt(this.provider, transactionHash, SEAT_SETTLED, 50, SEAT_WAIT_MS);
     } catch (error) {
       if (error instanceof Error && error.message === "shard_receipt_unavailable") return "missing";
       if (error instanceof Error && error.message === "shard_invoke_reverted") return "spent";
@@ -123,10 +123,14 @@ export class ShardOperator {
     const scope = { gameId, missing: "reject" as const };
     return { remaining: batchRemaining(receipt.events, this.target.gamesAddress, transactionHash, scope) };
   }
+  /** Whether a fixed roster is wholly seated, read at the state its seats settle on, so the two always agree. */
+  async rosterReady(gameId: number): Promise<boolean> {
+    return (await this.view<{ ready: boolean }>("game", [gameId], SEAT_STATE)).ready;
+  }
   private play(pins: PlayPins, name: AdminPlay, receiptOf: ReceiptWait) {
     return this.invoke("play", playCalldata(pins, name), pins.l2GasBound, receiptOf);
   }
-  private async codec(head: number) {
+  private async codec(head: BlockIdentifier) {
     return new CallData(await readShardAbi(this.provider, this.target.gamesAddress, head));
   }
   private async invoke(entrypoint: string, calldata: string[], bound: bigint, receiptOf: ReceiptWait) {
@@ -170,6 +174,9 @@ type ReceiptWait = (provider: RpcProvider, transactionHash: string) => ReturnTyp
 const TRANSACTION_REFUSED = -32010;
 const OUTCOME_UNKNOWN = -32011;
 const CLOSED = ["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"] as const;
+/** A seat counts once the sequencer executed it, in the open block or a closed one; readiness reads that same state. */
+const SEAT_SETTLED = ["PRE_CONFIRMED", ...CLOSED] as const;
+const SEAT_STATE = "pre_confirmed";
 /** A queued seat runs behind at most a window of others at ~66 ms each; past this, a seat that never showed is a gap. */
 const SEAT_WAIT_MS = 10_000;
 const closedBlockReceipt: ReceiptWait = (provider, transactionHash) =>
