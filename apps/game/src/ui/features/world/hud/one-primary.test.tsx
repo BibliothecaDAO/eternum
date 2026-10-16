@@ -52,12 +52,9 @@ vi.mock("@/ui/features/world/containers/left-facets/use-suggestion-actions", () 
 }));
 vi.mock("@/ui/features/world/containers/left-facets/suggestions-panel", () => ({ SuggestionsPanel: () => null }));
 // Resources arrived at the selected realm (1); nothing is under attack.
+const attention = vi.hoisted(() => ({ targets: [{ entityId: 1, structure: {} }] }));
 vi.mock("@/ui/features/world/containers/top-header/use-structure-attention", () => ({
-  useStructureAttention: () => ({
-    attackedCount: 0,
-    attackedIds: new Set(),
-    targets: [{ entityId: 1, structure: {} }],
-  }),
+  useStructureAttention: () => ({ attackedCount: 0, attackedIds: new Set(), targets: attention.targets }),
 }));
 
 import { AttentionPill } from "@/ui/features/world/containers/top-header/attention-pill";
@@ -122,12 +119,21 @@ describe("one filled gold action at a time", () => {
     expect(filledGold()).toHaveLength(2);
   });
 
-  it("keeps the alerts and the realm's own step when tips are off in Settings", () => {
+  it("shows only the alerts when tips are off in Settings, and nothing when there are none", () => {
     useWorldAppearanceStore.getState().setNextUpTips(false);
-    act(() => root.render(<NextUp />));
-    const queue = host.querySelector('section[aria-label="Next up"]')!.textContent;
-    useWorldAppearanceStore.getState().setNextUpTips(true);
-    expect(queue).toContain("1 of 2");
-    expect(queue).toContain("Realm is ready to be provisioned.");
+    try {
+      act(() => root.render(<NextUp />));
+      const queue = host.querySelector('section[aria-label="Next up"]')!.textContent;
+      expect(queue).toContain("Resources arrived at Realm.");
+      expect(queue).not.toContain("provisioned");
+      expect(queue).not.toContain("1 of");
+
+      attention.targets = [];
+      act(() => root.render(<NextUp key="no-alerts" />));
+      expect(host.querySelector('section[aria-label="Next up"]')).toBeNull();
+    } finally {
+      attention.targets = [{ entityId: 1, structure: {} }];
+      useWorldAppearanceStore.getState().setNextUpTips(true);
+    }
   });
 });

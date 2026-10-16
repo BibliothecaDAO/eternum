@@ -157,8 +157,8 @@ function useNextSteps(): NextStep[] {
         },
       ]
     : [];
-  // With tips off (Settings), the suggestions go; the realm's own step and the alerts stay.
-  return [...levelUpStep, ...attention, ...(tips ? suggestions : [])];
+  // With tips off (Settings), Next up holds the alerts alone, and shows nothing without one.
+  return tips ? [...levelUpStep, ...attention, ...suggestions] : attention;
 }
 
 /** Structures under attack or with arrivals waiting, each as a step that shows it. */

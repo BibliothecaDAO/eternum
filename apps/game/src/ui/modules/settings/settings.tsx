@@ -265,7 +265,7 @@ function VideoSettings() {
   );
 }
 
-/** One switch for Next up's tips: off, it keeps the alerts and the selected realm's own step. */
+/** One switch for Next up's tips: off, Next up shows only alerts (attacks, arrivals), and nothing without one. */
 function NextUpSettings() {
   const { nextUpTips, setNextUpTips } = useWorldAppearanceStore();
   return (
