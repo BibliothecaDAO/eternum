@@ -9,24 +9,24 @@ preview callbacks to the same views. There is no separate A row, resource panel,
 `CurrentHudReference` retains the classic layout with origin's production components and Facets art; it is a reference
 reconstruction, not a second playable game. Historical classic and War room captures remain the pixel references.
 
-| Feature            | Reach it                                                                                                             |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| Comparison         | Current HUD / A; one canvas stays mounted                                                                            |
-| Structures         | 3, 25 or 220; painted category chips with counts; search; select a row                                               |
-| Categories         | Realm, village, camp, hyperstructure, mine, bank, bitcoin mine, rift, ruin, stragglers; only owned categories appear |
-| Upgrade            | Level beside the name; the available level-up action is separate from row selection                                  |
-| Grouping           | Rows / Upgrade groups; expand Other structures                                                                       |
-| Realm              | Automation dropdown in the name/type header; named production circles with held amounts                              |
-| Resource detail    | Hover or tap a circle; building count, supply and production details stay there                                      |
-| Commands           | Separate floating Build, Production, Military and Transfer bubbles; Trade follows the command mask                   |
-| Transfer           | Pack donkey; Move alone uses boots                                                                                   |
-| Settings           | Painted wheel in the top bar, beside VP and the clock                                                                |
-| Right column       | One next step, events, then selected tile; tap tile summary for details                                              |
-| Naming / placement | Three naming pairs and centered/right dock remain review choices                                                     |
-| Minimap            | Native terrain hexes, shared Facets hex badges, internal ownership shape and small external value                    |
-| Crowding           | The icon lab and HUD share the 4×3 sector grouping; click a sector to inspect it, Overview returns                   |
-| Phone              | Map / Holdings; search and production remain in Holdings                                                             |
-| Troop paintings    | Military preview shows the production TroopChip and resource token for all nine type/tier pairs                      |
+| Feature            | Reach it                                                                                                              |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| Comparison         | Current HUD / A; one canvas stays mounted                                                                             |
+| Structures         | 3, 25 or 220; painted category chips with counts; search; select a row                                                |
+| Categories         | Realm, village, camp, hyperstructure, mine, bank, bitcoin mine, rift, ruin, stragglers; only owned categories appear  |
+| Upgrade            | Level beside the name; the available level-up action is separate from row selection                                   |
+| Grouping           | Rows / Upgrade groups; expand Other structures                                                                        |
+| Realm              | Automation dropdown in the name/type header; named production circles with held amounts                               |
+| Resource detail    | Hover or tap a circle; building count, supply and production details stay there                                       |
+| Commands           | Separate floating Build, Production, Military and Transfer bubbles; Trade follows the command mask                    |
+| Transfer           | Pack donkey; Move alone uses boots                                                                                    |
+| Settings           | Painted wheel in the top bar, beside VP and the clock                                                                 |
+| Right column       | One next step, events, then the active scene’s selected tile; click a local building then tap its summary for details |
+| Naming / placement | Three naming pairs and centered/right dock remain review choices                                                      |
+| Minimap            | Native terrain hexes, shared Facets hex badges, internal ownership shape and small external value                     |
+| Crowding           | The icon lab and HUD share the 4×3 sector grouping; click a sector to inspect it, Overview returns                    |
+| Phone              | Map / Holdings; search and production remain in Holdings                                                              |
+| Troop paintings    | Military preview shows the production TroopChip and resource token for all nine type/tier pairs                       |
 
 ## Shared production components
 
@@ -82,3 +82,18 @@ ranges across fixtures, not performance timings. A noticed unit is a title, row,
 
 This change replaces the duplicate A presentation, old column/compact layout paths, attention strip, oversized marker
 chips and shared command panel. Its cost is view boundaries, fixture facts, production icon mappings and retained proof.
+
+## Seated player proof
+
+The connected tasks live in `scripts/game-tasks.mjs`, executed by the shared `game-task-proof.mjs` used by
+`prove:play --game`. Run `--tasks hud-holdings,hud-upgrade,hud-local,hud-automation,hud-commands,hud-minimap,blitz-farm`
+with the seated player's private browser profile and the current game. `hud-level-up` performs one available level-up
+when a subsequent unavailable level is needed for the upgrade inspection. Each task captures the view before input, each
+input's result, and its end-state check. Mutations must change their native reading; a refused send is a failure. The
+same asynchronous task executor can be bundled for the browser tool; the transport only maps browser commands. No
+separate HUD player steps exist in the lab proof.
+
+On the minimap, open a populated sector and **drag** its terrain to move the camera; Overview restores grouping.
+Occupancy comes from the native tile type, including spires, dormant spires, reserved hyperstructures, chests, shrines
+and wells with no entity ID. Crowded sectors count these as sites, not armies. Their badges use the shared semantic
+renderer, so the lab and game keep the same occupancy presentation.

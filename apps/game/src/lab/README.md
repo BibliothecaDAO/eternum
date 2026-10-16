@@ -108,3 +108,7 @@ camera and lighting. `capture=1` removes review controls for full-frame evidence
 [the HUD feature map](../ui/features/debug/kit-lab/hud-redesign/README.md) for all controls and the retained browser
 proof (`pnpm --dir apps/game prepare:hud-proof`; add `--watch <chain-id>:<game-id>` for live signed-out desktop/phone
 checks).
+
+Seated HUD interaction proof uses the shared `prove:play --game` tasks (`hud-holdings`, `hud-upgrade`, `hud-local`,
+`hud-automation`, `hud-commands`, `hud-minimap` and `blitz-farm`). The HUD feature map describes the player controls and
+before/action/result checks.

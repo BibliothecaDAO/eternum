@@ -9,9 +9,9 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { runAgentBrowser } from "./run-renderer-scene-smoke.mjs";
+export { sleep, waitFor } from "./proof-wait.mjs";
 
-export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+import { runAgentBrowser } from "./run-renderer-scene-smoke.mjs";
 
 /**
  * A session's commands over `run`, one agent-browser command for the session. A page script returns a plain value (an
@@ -25,16 +25,6 @@ export const commandsOf = (run) => ({
 });
 
 const browser = (session) => commandsOf((...args) => runAgentBrowser(session, args));
-
-/** Polls `js` in the page until it holds or the time runs out; whether it held. */
-export const waitFor = async (b, js, timeoutMs) => {
-  const until = Date.now() + timeoutMs;
-  while (Date.now() < until) {
-    if (b.evaluate(`Boolean(${js})`) === true) return true;
-    await sleep(300);
-  }
-  return false;
-};
 
 /** An address as a player reads it: its path and query, decoded. */
 export const pathOf = (url) => {

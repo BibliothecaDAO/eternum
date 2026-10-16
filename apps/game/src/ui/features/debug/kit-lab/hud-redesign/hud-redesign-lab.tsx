@@ -110,7 +110,7 @@ export function HudRedesignLab() {
           <label>
             List{" "}
             <select aria-label="List density" value={density} onChange={(e) => choose("density", e.target.value)}>
-              <option value="rows">Guard count</option>
+              <option value="rows">Rows</option>
               <option value="grouped">Upgrade groups</option>
             </select>
           </label>

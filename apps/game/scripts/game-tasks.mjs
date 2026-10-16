@@ -15,7 +15,7 @@ const sheetShows = (words) =>
 const PHONE_AND_DESKTOP = ["desktop", "phone"];
 
 const oneMore = (before, after) => after === before + 1;
-const STRUCTURE_ACTIONS = 'nav[aria-label="Structure actions"]';
+const STRUCTURE_ACTIONS = 'nav[aria-label="Realm actions"]';
 /** An open panel by its id: the strip's and a card's Build buttons carry the Build workspace's name, not its id. */
 const panel = (id) => `[data-popover-panel="${id}"]`;
 const BUILD_PANEL = panel("build");
@@ -36,7 +36,170 @@ const REFUSED_BEFORE_PLAY = {
   done: `document.body.innerText.includes("Starts in")`,
 };
 
+const holdingsOnPhone = { name: "Holdings", layout: "phone", text: "^Holdings$" };
+const chosenHolding = {
+  name: "the matching holding",
+  selector: ".holding-row",
+  check: `document.querySelector('.holding-row[aria-pressed="true"] .holding-name')?.textContent === document.querySelector('[aria-label="Find a structure"]').value && document.querySelector(".realm-panel")?.innerText.includes(document.querySelector('[aria-label="Find a structure"]').value)`,
+};
+const localFarm = {
+  name: "the farm beside the keep",
+  point: { desktop: [850, 440], phone: [315, 412] },
+  check: `document.querySelector(".tile-panel")?.innerText.includes("Realm tile")`,
+};
+const inspectTile = { name: "tile details", selector: ".tile-panel summary" };
+const noSheet = '!document.querySelector("[data-popover-panel]")';
+
 export const GAME_TASKS = {
+  "hud-holdings": {
+    goal: "Search, filter and select a holding through the connected HUD",
+    layouts: PHONE_AND_DESKTOP,
+    view: "map",
+    presses: [
+      holdingsOnPhone,
+      {
+        name: "All structures",
+        text: "^All structures$",
+        check: `document.querySelectorAll(".holding-row").length > 0`,
+      },
+      {
+        name: "find another holding",
+        fill: '[aria-label="Find a structure"]',
+        valueFrom: `document.querySelectorAll(".holding-name")[1].textContent`,
+        check: `document.querySelectorAll(".holding-row").length === 1`,
+      },
+      {
+        name: "Realms",
+        within: ".category-chips",
+        text: "^Realms$",
+        check: `document.querySelector('.category-chips [aria-label="Realms"]').getAttribute("aria-pressed") === "true"`,
+      },
+      chosenHolding,
+      {
+        name: "clear search",
+        fill: '[aria-label="Find a structure"]',
+        value: "",
+        check: `document.querySelectorAll(".holding-row").length > 1`,
+      },
+      {
+        name: "return to the first holding",
+        selector: ".holding-row",
+        check: `document.querySelector(".realm-panel")?.innerText.includes(document.querySelector(".holding-name").textContent)`,
+      },
+    ],
+    done: `document.querySelector('[aria-label="Production automation"]') !== null`,
+  },
+  "hud-level-up": {
+    goal: "Complete the first holding's available level-up",
+    layouts: ["desktop"],
+    view: "map",
+    presses: [
+      {
+        name: "the first realm's available level-up",
+        selector: '.holding-row:first-child button[aria-label^="Level up"]:not([disabled])',
+      },
+    ],
+    reading: `Number(document.querySelector(".holding-row .holding-level")?.textContent.replace(/[^0-9]/g, ""))`,
+    changes: "one realm level gained",
+    expect: (before, after) => after === before + 1,
+    done: `document.querySelector(".holding-row") !== null`,
+  },
+  "hud-upgrade": {
+    goal: "Inspect an unavailable level-up and its requirements without sending it",
+    layouts: PHONE_AND_DESKTOP,
+    view: "map",
+    presses: [
+      holdingsOnPhone,
+      {
+        name: "upgrade requirements",
+        selector:
+          '.holding-row:has(button[disabled][aria-label^="Level up"]) button[aria-label="View upgrade requirements"]',
+        check: `document.body.innerText.includes("Upgrade")`,
+      },
+    ],
+    done: `document.querySelector('.holding-row button[disabled][aria-label^="Level up"]') !== null && document.body.innerText.includes("Upgrade")`,
+  },
+  "hud-local": {
+    goal: "Inspect a local farm after direct realm entry, then switch scenes",
+    layouts: PHONE_AND_DESKTOP,
+    view: "realm",
+    presses: [
+      localFarm,
+      { ...inspectTile, check: `document.querySelector(".tile-panel")?.innerText.includes("Farm ·")` },
+      {
+        name: "read the building actions",
+        layout: "phone",
+        scroll: '.tile-panel button[aria-label="Stop"]',
+        check: `(() => { const b = document.querySelector('.tile-panel button[aria-label="Stop"]'); const r = b.getBoundingClientRect(); return !b.disabled && b.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)); })()`,
+      },
+      {
+        name: "World map",
+        within: "header",
+        text: "^World map$",
+        check: `!document.querySelector(".tile-panel")?.innerText.includes("Farm ·")`,
+      },
+      { name: "Realm", within: "header", text: "^Realm$", check: `location.pathname.endsWith("/hex")` },
+    ],
+    done: `location.pathname.endsWith("/hex")`,
+  },
+  "hud-automation": {
+    goal: "Change the selected realm to Idle, then restore Smart automation",
+    layouts: PHONE_AND_DESKTOP,
+    view: "map",
+    presses: [
+      holdingsOnPhone,
+      {
+        name: "Idle automation",
+        select: '[aria-label="Production automation"]',
+        value: "idle",
+        check: `document.querySelector('[aria-label="Production automation"]')?.value === "idle"`,
+      },
+      { name: "Smart automation", select: '[aria-label="Production automation"]', value: "smart" },
+    ],
+    reading: `document.querySelector('[aria-label="Production automation"]')?.value`,
+    changes: "automation from Idle to Smart",
+    expect: (before, after) => before === "idle" && after === "smart",
+    done: `document.querySelector('[aria-label="Production automation"]')?.value === "smart"`,
+  },
+  "hud-commands": {
+    goal: "Open every permitted Blitz command surface from its floating bubble",
+    layouts: PHONE_AND_DESKTOP,
+    view: "map",
+    presses: [
+      ...[
+        ["Build", "build"],
+        ["Production", "production"],
+        ["Military", "military"],
+        ["Transfer", "logistics"],
+      ].flatMap(([name, id]) => [
+        {
+          name,
+          within: STRUCTURE_ACTIONS,
+          text: `^${name}$`,
+          check: `document.querySelector('[data-popover-panel="${id}"]') !== null`,
+        },
+        { name: `close ${name}`, within: `[data-popover-panel="${id}"]`, text: "^Close$", check: noSheet },
+      ]),
+    ],
+    done: noSheet,
+  },
+  "hud-minimap": {
+    goal: "Open a crowded minimap sector and drag to navigate the map",
+    layouts: PHONE_AND_DESKTOP,
+    view: "map",
+    presses: [
+      {
+        name: "a populated sector",
+        selector: ".minimap [data-sector]:not([disabled])",
+        check: `document.querySelector('.minimap-field[data-grouped="false"]') !== null`,
+      },
+      { name: "drag the minimap", drag: ".minimap svg", delta: [40, 20] },
+    ],
+    reading: `document.querySelector(".minimap svg")?.getAttribute("viewBox")`,
+    changes: "the minimap view after dragging",
+    expect: (before, after) => before !== after,
+    done: `document.querySelector('.minimap-field[data-grouped="false"]') !== null`,
+  },
   "gate-build": {
     goal: "Before play opens: press Build on the action strip",
     layouts: PHONE_AND_DESKTOP,

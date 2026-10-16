@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-16",
+    title: "Inspect every discovered site",
+    description:
+      "Building details follow your current view. The minimap keeps spires, reserved sites and chests visible, including in crowded sectors.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-16",
     title: "Clear spectator controls",
     description: "Phone standings fit below the match header, and the desktop Chat button stays unobstructed.",
     type: "fix",
