@@ -161,8 +161,9 @@ to be the closest, into `<step>-frames/` with `<step>-changes.png`, each pixel's
 what a still view shimmers with, to compare two builds on the same view; `--steps blitz-still-map` the same in a Blitz
 game; `--steps still-map-frozen-sun` and `--steps blitz-still-map-frozen-sun` first tick the dev tools' Override Time to
 hold the sun, and are the only lists that open the page with the dev overlays on), `--out <root>` (default
-`.context/playtest`), `--trace` (a Chrome trace per run), `--compare <summary.json>` (fails when boot regresses),
-`--headed`. Paths are taken from where the command is run.
+`.context/playtest`), `--trace` (a Chrome trace of each run's boot, from before the game page opens to the world being
+interactive), `--compare <summary.json>` (fails when boot regresses), `--headed`. Paths are taken from where the command
+is run.
 
 Each invocation writes to a new directory, `<root>/<time>-<role>`, and never into an existing one:
 
