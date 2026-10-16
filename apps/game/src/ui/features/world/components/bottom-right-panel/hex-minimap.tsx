@@ -322,8 +322,6 @@ export const HexMinimap = ({
     () => (fitExplored && tiles.length > 0 ? fitExploredView(centeredIndex.bounds, viewport) : null),
     [fitExplored, tiles.length, centeredIndex.bounds, viewport],
   );
-  const fittedRef = useRef(fitted);
-  fittedRef.current = fitted;
   const [freeView, setView] = useState<{ x: number; y: number; scale: number }>(initialView);
   const view = fitted ?? freeView;
   const viewRef = useRef(view);
@@ -388,7 +386,7 @@ export const HexMinimap = ({
   }, []);
 
   useEffect(() => {
-    if (!cameraDistance || fittedRef.current) return;
+    if (!cameraDistance) return;
     const nextScale = fitExplored ? FIT_MIN_SCALE : resolveMinimapScaleForCameraDistance(cameraDistance) * zoom;
     const current = viewRef.current;
     if (Math.abs(current.scale - nextScale) < 0.01) return;
@@ -422,7 +420,7 @@ export const HexMinimap = ({
   const cameraCol = cameraTargetHex?.col;
   const cameraRow = cameraTargetHex?.row;
   useEffect(() => {
-    if (cameraCol === undefined || cameraRow === undefined || isDraggingRef.current || fittedRef.current) return;
+    if (cameraCol === undefined || cameraRow === undefined || isDraggingRef.current) return;
     const col = cameraCol - FELT_CENTER();
     const row = cameraRow - FELT_CENTER();
     const centerPixel = offsetToPixel(col, row);
