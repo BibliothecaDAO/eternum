@@ -1,0 +1,84 @@
+# On call
+
+The status monitor (`apps/status-monitor`) probes every public path once a minute. A component that stays down or
+degraded for two minutes is emailed to the address setup recorded (`alertEmail` in the private directory's
+`inputs.json`), and so is its recovery. The email names the component; find it below. Dev is `play.dev-realms.party` and
+the box's dev shard is `realms-dev`. Production is `play.realms.party`, and its Worker names drop `-staging`.
+
+Commands for the box run there (`ssh realms-dev`). Worker logs need the Cloudflare token:
+`pnpm --dir <app> exec wrangler tail <worker>`.
+
+## shard:<chain> — a world's Herald or node
+
+Herald is behind the node by more than 2 blocks (degraded) or more than 10 (down), or the node's head is older than 30 s
+(degraded) or 120 s (down). Players see stale or frozen state.
+
+1. `curl -s https://herald.dev-realms.party/health`: confirmed block, decoded models, undecodable events.
+2. `sudo docker ps -a --filter name=realms-dev- --format '{{.Names}} {{.Status}}'`: something restarting or exited.
+3. `sudo docker logs --since 15m realms-dev-madara-1 2>&1 | tail -50`, then the same for `realms-dev-herald-1`.
+
+## launch — game launches and seating
+
+The launch Worker reports a failed or stranded run, or a launcher or slot that could not join or freeze. A game is not
+being created or its players are not being seated. A failed run is not retried by itself.
+
+1. `curl -s https://play.dev-realms.party/api/factory/health`: `failedRuns`, `strandedRuns`, `joinFailures`,
+   `freezeFailures`, each with its game or slot and code.
+2. `pnpm --dir apps/launch-service exec wrangler tail realms-launch-staging`: the failing step, live.
+3. `sudo docker logs --since 30m realms-dev-rpc-1 2>&1 | grep rpc_refused | tail`: the RPC's refusals of the launcher's
+   or a seater's writes, each with its reason.
+
+## relay — value relay
+
+The value relay is halted on a row, its Frontier funding failed, or it has not checked in for five minutes. Rewards and
+chest payouts are not being relayed.
+
+1. `curl -s https://play.dev-realms.party/api/value/health`: each shard's `halted` row and `funding_error`.
+2. `pnpm --dir apps/value-relay exec wrangler tail realms-value-relay-staging`: why it halted.
+3. After fixing the cause, `POST /api/value/operator/reset` with the operator token and `{chainId,row,reason}`
+   (`apps/value-relay/README.md`); the ledger's claim identity prevents a second payment.
+
+## monitor — value monitor
+
+The ledger watcher has not checked in for five minutes or reports a fault. It is the component that pauses payouts on a
+mismatch.
+
+1. `curl -s https://play.dev-realms.party/api/operator/monitor/health`.
+2. `pnpm --dir apps/value-relay exec wrangler tail realms-value-monitor-staging`.
+3. Recover a recorded fault with `POST /api/operator/monitor/reset` and `{row,reason}` (`apps/value-relay/README.md`). A
+   reset never unpauses the ledger.
+
+## ledger — Starknet ledger
+
+The ledger's pause flag could not be read, payouts are paused (degraded), or Starknet's head is older than 30 s. A pause
+is deliberate until someone lifts it.
+
+1. Read the component's name on the status page: "payouts paused" means the flag is set.
+2. `pnpm --dir apps/value-relay exec wrangler tail realms-value-monitor-staging`: the monitor pauses on a mismatch.
+3. Check Starknet itself: the Alchemy dashboard, or `starknet_blockNumber` on the RPC in `inputs.json`.
+
+## play, accounts, directory, blitz, chat, guardian — public pages and APIs
+
+The page or API did not answer, answered with an error, or took over a second (degraded). `directory` is also down when
+any listed world is down.
+
+1. `curl -sI https://play.dev-realms.party/` (play), or the component's route: `/api/health/accounts`, `/api/directory`,
+   `/api/slots`, `/api/chat/health`, `/api/guardian`.
+2. `pnpm --dir apps/realms exec wrangler tail realms-identity-staging`: identity serves accounts, directory, chat and
+   the guardian.
+3. Cloudflare's status page, if several components fail together.
+
+## Refused plays
+
+A player's report that an action failed: every play the stamping RPC refuses is logged with its reason and sender.
+
+1. `sudo docker logs --since 1h realms-dev-rpc-1 2>&1 | grep rpc_refused | grep -i <account> | tail`
+2. Each `reason` is a rule in `packages/provider/src/play-refusal.ts`: `in-flight`, `nonce`, `deadline`, `stamp`,
+   `validation`, `unavailable`. Code `-32011` is a write whose outcome is unknown; `-32005` is the rate limit.
+3. `curl -s https://herald.dev-realms.party/health` if the reasons are `deadline` or `unavailable`: the node is slow.
+
+## Changing the alert address
+
+Edit `alertEmail` in the private directory's `inputs.json`. A new address does not replace an existing Worker secret:
+remove it first with `pnpm --dir apps/status-monitor exec wrangler secret delete ALERT_EMAIL --env staging`, then run
+`pnpm run deploy:cloudflare dev <private directory>`.

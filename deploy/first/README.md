@@ -144,6 +144,13 @@ python3 deploy/athanor/scripts/operator-command.py measure /opt/athanor/runs/dev
 When the launch Worker has created the game, add its `--game-id` to play that game. Funding, paid Blitz registration and
 payouts require the owner. The gameplay report never controls shard admission.
 
+## Alerts
+
+Setup asks for an alert email (`alertEmail` in `inputs.json`; add it there for a private directory set up before
+alerts). `deploy:cloudflare` gives it to the status monitor with the Resend key, and the monitor emails each component
+that stays down or degraded for two minutes, and its recovery. What each alert means and the first commands to run:
+[ON-CALL.md](./ON-CALL.md).
+
 ## Teardown
 
 ```sh
