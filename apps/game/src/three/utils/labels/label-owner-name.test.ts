@@ -1,16 +1,30 @@
+import { displayPlayerName } from "@bibliothecadao/eternum";
 import { describe, expect, it } from "vitest";
 import { resolveOwnerDisplayName } from "./owner-display-name";
 
 describe("resolveOwnerDisplayName", () => {
-  it("falls back to The Vanguard for unowned labels with empty names", () => {
-    expect(resolveOwnerDisplayName("", 0n, "The Vanguard")).toBe("The Vanguard");
+  it("names a structure no player holds the Vanguard, whatever name came with it", () => {
+    expect(resolveOwnerDisplayName("", 0n)).toBe("The Vanguard");
+    expect(resolveOwnerDisplayName("Alice", 0n)).toBe("The Vanguard");
   });
 
-  it("prefers explicit owner names", () => {
-    expect(resolveOwnerDisplayName("Alice", 0n, "The Vanguard")).toBe("Alice");
+  it("names a player by the claimed name, else Lord and the account's last four", () => {
+    expect(resolveOwnerDisplayName("Alice\0\0 ", 0x52c9n)).toBe("Alice");
+    expect(resolveOwnerDisplayName("", 0x52c9n)).toBe("Lord 52c9");
   });
 
-  it("keeps empty names for non-zero owners", () => {
-    expect(resolveOwnerDisplayName("", 123n, "The Vanguard")).toBe("");
+  it("shows only a cleaned name, or nothing, while the owner's address is unknown", () => {
+    expect(resolveOwnerDisplayName(" Alice\0", undefined)).toBe("Alice");
+    expect(resolveOwnerDisplayName(undefined, undefined)).toBe("");
+  });
+
+  it("agrees with the one owner rule for every known owner", () => {
+    for (const [name, address] of [
+      ["", 0n],
+      ["Alice", 0n],
+      ["Alice", 0x52c9n],
+      ["", 0x52c9n],
+    ] as const)
+      expect(resolveOwnerDisplayName(name, address)).toBe(displayPlayerName(address.toString(), name || null));
   });
 });

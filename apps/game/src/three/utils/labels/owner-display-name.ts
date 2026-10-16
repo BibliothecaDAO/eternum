@@ -1,3 +1,5 @@
+import { displayPlayerName } from "@bibliothecadao/eternum";
+
 const removeNullBytesAndTrim = (value?: string): string => {
   if (!value) {
     return "";
@@ -11,19 +13,12 @@ const removeNullBytesAndTrim = (value?: string): string => {
     .trim();
 };
 
-export const resolveOwnerDisplayName = (
-  ownerName: string | undefined,
-  ownerAddress: bigint | undefined,
-  unownedFallback: string,
-): string => {
+/**
+ * A label's owner as every surface names it, by the one owner rule (`displayPlayerName`: the Vanguard for the zero
+ * address, else the claimed name, else "Lord" and the last four), with a stored name's padding removed. Empty while
+ * the owner's address is unknown and no name came with it.
+ */
+export const resolveOwnerDisplayName = (ownerName: string | undefined, ownerAddress: bigint | undefined): string => {
   const cleanedName = removeNullBytesAndTrim(ownerName);
-  if (cleanedName) {
-    return cleanedName;
-  }
-
-  if (ownerAddress === 0n) {
-    return unownedFallback;
-  }
-
-  return "";
+  return ownerAddress === undefined ? cleanedName : displayPlayerName(ownerAddress.toString(), cleanedName || null);
 };

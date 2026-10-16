@@ -95,7 +95,7 @@ const ArmyBannerEntityDetailContent = memo(
     // Relics are only worth listing where the game lets an army apply them.
     const showRelicsInline =
       derivedData.isMine && inventoryCounts.relics > 0 && configManager.isCommandEnabled("ApplyRelic");
-    const ownerDisplay = derivedData.addressName ?? `Army Owner`;
+    const ownerDisplay = derivedData.addressName;
     const stationedDisplay = derivedData.structureOwnerName ?? "Field deployment";
     const ownerInitial = (ownerDisplay || "?").charAt(0).toUpperCase();
     const headerTitleClass = compact ? "text-sm" : "text-base";

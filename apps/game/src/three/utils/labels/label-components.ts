@@ -9,7 +9,7 @@ import {
 } from "@/ui/shared/lib/stamina-visuals";
 import { resolveStaminaDisplay } from "@/ui/shared/lib/stamina-display";
 import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
-import { NEUTRAL_OWNER_NAME, BuildingType, ResourcesIds, TroopTier } from "@bibliothecadao/types";
+import { BuildingType, ResourcesIds, TroopTier } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/camera-view";
 import { resolveOwnerDisplayName } from "./owner-display-name";
 import { resolveCameraView } from "./label-view";
@@ -222,7 +222,7 @@ export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLEle
   container.setAttribute("data-component", "owner");
 
   // Create name element with optional structure name
-  const displayName = resolveOwnerDisplayName(owner.ownerName, owner.address, NEUTRAL_OWNER_NAME);
+  const displayName = resolveOwnerDisplayName(owner.ownerName, owner.address);
   const nameSpan = document.createElement("span");
 
   let fullText = displayName;

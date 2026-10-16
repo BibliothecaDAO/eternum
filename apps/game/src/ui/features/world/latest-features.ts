@@ -37,7 +37,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-16",
     title: "Attack forecast names both sides",
     description:
-      "The attack forecast's title now reads you against the target's owner (or the Bandits), in full. What each side loses and who survives stays in the casualty lines, with the exchanges and stamina the fight takes just below them.",
+      "The attack forecast's title now reads you against the target's owner (or the Vanguard), in full. What each side loses and who survives stays in the casualty lines, with the exchanges and stamina the fight takes just below them.",
     type: "improvement",
   },
   {
