@@ -5,8 +5,11 @@ import net from "node:net";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { Cancelled } from "./run-owner.mjs";
+
 const GAME_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const VITE_BIN = join(GAME_DIR, "node_modules/vite/bin/vite.js");
+// The build and preview tool. PLAYTEST_VITE_BIN stands another in, as the runner's tests do with a build that never ends.
+const VITE_BIN = process.env.PLAYTEST_VITE_BIN ?? join(GAME_DIR, "node_modules/vite/bin/vite.js");
 const BUILDS_DIR = resolve(GAME_DIR, "../../.context/playtest-builds");
 const READY_TIMEOUT_MS = 60_000;
 const READY_POLL_MS = 500;
@@ -69,13 +72,17 @@ async function waitUntilServed({ baseUrl, owner, port, preview, logPath }) {
   }
 }
 
+/** Runs a process the owner holds; a cancel stops it at once instead of waiting for it to finish. */
 function runOwned(owner, name, args, logPath, env) {
   const run = spawnLogged(args, logPath, env);
   const release = owner.adopt(`${name} pid ${run.child.pid}`, () => stopProcess(run));
+  const withdraw = owner.onCancel(() => void release());
   return new Promise((resolveRun, reject) => {
     run.child.once("exit", (code, signal) => {
+      withdraw();
       void release();
-      if (code === 0) resolveRun();
+      if (owner.cancelledBy) reject(new Cancelled(owner.cancelledBy));
+      else if (code === 0) resolveRun();
       else reject(new Error(`${name} failed (${signal ?? code}):\n${tail(logPath)}`));
     });
   });

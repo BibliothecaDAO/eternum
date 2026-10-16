@@ -49,6 +49,16 @@ export function createRunOwner() {
     throwIfCancelled() {
       if (cancelledBy) throw new Cancelled(cancelledBy);
     },
+    /** Calls `stop` once the run is cancelled (at once if it already is); the returned function withdraws it. */
+    onCancel(stop) {
+      const once = () => {
+        cancelWaiters.delete(once);
+        stop();
+      };
+      cancelWaiters.add(once);
+      if (cancelledBy) once();
+      return () => cancelWaiters.delete(once);
+    },
     /** Waits `ms`, or less if the run is cancelled meanwhile, then throws if it was. */
     async sleep(ms) {
       await new Promise((resolveSleep) => {

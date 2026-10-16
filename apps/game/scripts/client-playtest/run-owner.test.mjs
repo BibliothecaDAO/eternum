@@ -31,6 +31,18 @@ describe("createRunOwner", () => {
     expect(releases).toBe(1);
   });
 
+  it("stops what waits on a cancel once, at the cancel or at once if already cancelled, unless withdrawn", () => {
+    const owner = createRunOwner();
+    const stopped = [];
+    owner.onCancel(() => stopped.push("build"));
+    const withdraw = owner.onCancel(() => stopped.push("withdrawn"));
+    withdraw();
+    owner.cancel("SIGTERM");
+    owner.cancel("SIGINT");
+    owner.onCancel(() => stopped.push("late"));
+    expect(stopped).toEqual(["build", "late"]);
+  });
+
   it("wakes a sleeping run when cancelled and throws at the next checkpoint", async () => {
     const owner = createRunOwner();
     const started = Date.now();

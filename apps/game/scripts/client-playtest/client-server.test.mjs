@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import net from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -23,16 +23,28 @@ const ask = (port) =>
     socket.on("end", () => resolveAnswer(answer));
     socket.on("error", reject);
   });
-const runRunner = (args, { signalAfterMs } = {}) =>
+const runRunner = (args, { env: extraEnv = {}, signalWhen } = {}) =>
   new Promise((resolveRun) => {
     // Vitest injects VITE_* values of its own; the command runs with the caller's environment, as from a shell.
     const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith("VITE_")));
-    const child = spawn(process.execPath, [RUNNER, ...args], { env, stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(process.execPath, [RUNNER, ...args], {
+      env: { ...env, ...extraEnv },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
     let output = "";
     child.stdout.on("data", (chunk) => (output += chunk));
     child.stderr.on("data", (chunk) => (output += chunk));
-    if (signalAfterMs) setTimeout(() => child.kill("SIGTERM"), signalAfterMs);
-    child.on("exit", (code) => resolveRun({ code, output }));
+    const poll = signalWhen
+      ? setInterval(() => {
+          if (!signalWhen()) return;
+          clearInterval(poll);
+          child.kill("SIGTERM");
+        }, 100)
+      : null;
+    child.on("exit", (code) => {
+      clearInterval(poll);
+      resolveRun({ code, output });
+    });
   });
 const onlyRunOf = (root) => {
   const [run] = readdirSync(root);
@@ -78,24 +90,34 @@ describe("the playtest command", () => {
     rmSync(root, { recursive: true });
   }, 30_000);
 
-  it("unwinds a SIGTERM during the build: summary written, its build process gone, nothing left held", async () => {
+  it("unwinds a SIGTERM during the build: summary written, its build process stopped, nothing left held", async () => {
     const free = await listenOn();
     const { port } = free.address();
     free.close();
     const root = mkdtempSync(join(tmpdir(), "playtest-cancelled-"));
+    // A build that never ends on its own: only the run's unwind can stop it.
+    const tools = mkdtempSync(join(tmpdir(), "playtest-stub-build-"));
+    const stubBuild = join(tools, "endless-build.mjs");
+    writeFileSync(stubBuild, "console.log(`stub build pid ${process.pid}`);\nsetInterval(() => {}, 1_000);\n");
+    const buildLog = () => {
+      const [run] = existsSync(root) ? readdirSync(root) : [];
+      const log = run && join(root, run, "client.log");
+      return log && existsSync(log) ? readFileSync(log, "utf8") : "";
+    };
 
     const { code } = await runRunner(["--port", String(port), "--out", root, "--iterations", "1"], {
-      signalAfterMs: 3_000,
+      env: { PLAYTEST_VITE_BIN: stubBuild },
+      signalWhen: () => buildLog().includes("stub build pid"),
     });
 
     expect(code).toBe(1);
-    const { dir, summary } = onlyRunOf(root);
+    const { summary } = onlyRunOf(root);
     expect(summary.failure.stage).toBe("starting the client");
     expect(summary.failure.cancelled).toBe("SIGTERM");
     expect(summary.released).toEqual({ failures: [], stillHeld: [] });
-    expect(readFileSync(join(dir, "client.log"), "utf8")).not.toBe("");
-    const buildPid = /client build pid (\d+)/.exec(JSON.stringify(summary))?.[1];
-    if (buildPid) expect(() => process.kill(Number(buildPid), 0)).toThrow();
+    const buildPid = Number(/stub build pid (\d+)/.exec(buildLog())[1]);
+    expect(() => process.kill(buildPid, 0)).toThrow();
     rmSync(root, { recursive: true });
-  }, 60_000);
+    rmSync(tools, { recursive: true });
+  }, 30_000);
 });

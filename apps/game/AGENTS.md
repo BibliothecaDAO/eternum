@@ -95,9 +95,9 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
   profile, and releases them last-acquired first, each awaited, on every exit. A port already in use fails the start
   before anything is built; the server holding it is never driven or stopped. The client counts as served only once its
   own preview announced the port, still runs, and answers. A preview that dies cancels the run.
-- **Cancelling.** SIGINT or SIGTERM cancels at the next checkpoint and unwinds through the same path as a normal end:
-  the current step is kept with what it attempted and the error, the run's transcript and `summary.json` are written,
-  and everything is released.
+- **Cancelling.** SIGINT or SIGTERM stops a client build in progress at once, otherwise cancels at the next checkpoint,
+  and unwinds through the same path as a normal end: the current step is kept with what it attempted and the error, the
+  run's transcript and `summary.json` are written, and everything is released.
 - **As a spectator** (default), from a fresh browser profile (cold cache): realm view, open the map, map idle, pan
   (WASD), zoom out and in, the menu, back to the realm and the map, then a minute of watching.
 - **As a player** (`--player <email>`), entering through the Frontier card's Resume or Play on the home page with the
