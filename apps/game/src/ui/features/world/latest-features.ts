@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-16",
+    title: "Crates say where relics went",
+    description:
+      "An opened relic crate's feed row and log line now name its pack and where its relics went: army relics to the army that opened it, realm relics to that army's home realm, where the realm's card lists them. A dormant spire now stands on its hex without a name over it.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-16",
     title: "Preview the building you place",
     description:
       "Construction cards now show the game’s building models, including farms, workshops and markets. Action and resource icons keep their painted artwork.",

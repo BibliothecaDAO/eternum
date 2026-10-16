@@ -1791,7 +1791,7 @@ export default class WorldmapScene extends WarpTravel {
     );
   }
 
-  // A flourish only, for crates inside the loaded chunk: the relics themselves land in native store on the explorer,
+  // A flourish only, for crates inside the loaded chunk: the relics themselves land in native store on the army or its home,
   // and the feed row (the UI's) covers every opening in the world.
   private registerRelicChestWorldUpdateSubscriptions(): void {
     this.addWorldUpdateSubscription(

@@ -4,6 +4,7 @@ import type { GameClientSetup } from "../client/game-client";
 import { configManager } from "../managers/config-manager";
 import { divideByPrecision } from "../utils/utils";
 import { siteKindOf } from "../utils/expeditions";
+import { describeRelicChestOpening } from "./story-event-formatter";
 import type {
   BattleEventSystemUpdate,
   BuildingSystemUpdate,
@@ -81,6 +82,7 @@ export class WorldUpdateListener {
           const coord = fields(payload.coord);
           if (!coord || !Array.isArray(payload.relics)) throw new Error("Malformed chest opening");
           callback({
+            title: describeRelicChestOpening(payload, this.setup.store),
             explorerId: integer(payload.explorer_id),
             hex: { x: integer(coord.x), y: integer(coord.y) },
             relics: payload.relics.map(integer) as ResourcesIds[],

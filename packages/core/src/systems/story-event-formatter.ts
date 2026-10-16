@@ -3,9 +3,11 @@ import {
   BuildingTypeToString,
   GuardSlot,
   RESOURCE_PRECISION,
+  relicChestDelivery,
   relicChestName,
   relicChestPack,
   resources,
+  type ResourcesIds,
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { getStructureName, type PlayerNameResolver } from "../utils/entities";
@@ -67,13 +69,10 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     icon: "prize",
   }),
   RelicChestOpened: (_event, payload, components) => ({
-    title: `${relicChestName(relicChestPack(payload.chest))} opened`,
-    description: joinPieces([
-      describeExplorer(payload.explorer_id, components),
-      Array.isArray(payload.relics)
-        ? payload.relics.map((relic) => getResourceName(Number(relic))).join(", ")
-        : undefined,
-    ]),
+    title: describeRelicChestOpening(payload, components),
+    description: chestRelics(payload)
+      .map((relic) => getResourceName(relic))
+      .join(", "),
     icon: "prize",
   }),
   RelicCrafted: (_event, payload) => ({
@@ -539,6 +538,25 @@ function describeExplorer(explorerId: unknown, components?: NativeFactStore, hom
   const tier = formatEnum(explorer?.troops?.tier);
   const army = tier ? `${tier} army` : "army";
   return home ? `${home} ${army}` : "Army";
+}
+
+const chestRelics = (payload: Record<string, unknown>): ResourcesIds[] => {
+  if (!Array.isArray(payload.relics)) throw new Error("Incomplete relic chest story");
+  return payload.relics.map((relic) => Number(relic) as ResourcesIds);
+};
+
+/**
+ * An opened chest as a player reads it: its pack and where its relics went ("Produce pack: 3 relics to Stolsli"). The
+ * home is the opening army's; once that army is gone its row no longer names it.
+ */
+export function describeRelicChestOpening(payload: Record<string, unknown>, components?: NativeFactStore): string {
+  const explorer = readExplorer(payload.explorer_id, components);
+  const home = describeStructureName(explorer?.owner, components);
+  const delivery = relicChestDelivery(chestRelics(payload), {
+    army: explorer && home ? describeExplorer(payload.explorer_id, components) : "the army",
+    home: home ?? "its realm",
+  });
+  return `${relicChestName(relicChestPack(payload.chest))}: ${delivery}`;
 }
 
 /** A structure by name, else an explorer by home and tier, else nothing. */

@@ -158,13 +158,20 @@ describe("native scene updates", () => {
         RelicChestOpened: {
           explorer_id: "0x7",
           coord: { alt: true, x: "0xa", y: "0x14" },
-          relics: ["0x27"],
+          chest: { pack: "War", lucky: false },
+          relics: ["0x29", "0x2b", "0x27"],
           points: "0x0",
         },
       },
     };
     store.applyEvent({ model: "StoryEvent", key: "0x1", value: opening });
-    expect(chest).toHaveBeenCalledWith({ explorerId: 7, hex: { x: 10, y: 20 }, relics: [39], timestamp: 100 });
+    expect(chest).toHaveBeenCalledWith({
+      title: "War pack: 3 relics to the army",
+      explorerId: 7,
+      hex: { x: 10, y: 20 },
+      relics: [41, 43, 39],
+      timestamp: 100,
+    });
     store.applyEvent({
       model: "StoryEvent",
       key: "0x2",

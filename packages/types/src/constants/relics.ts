@@ -321,3 +321,21 @@ export const relicChestPack = (value: unknown): RelicChestPack => {
     );
   return { pack: pack as RelicPackName, lucky: fields.lucky };
 };
+
+const relicCount = (count: number): string => `${count} relic${count === 1 ? "" : "s"}`;
+
+/**
+ * Where an opened chest's relics went, as the contract pays them: army relics stay with the army that opened it, the
+ * rest go to its home ("3 relics to Stolsli", "1 relic to Stolsli T1 army, 2 to Stolsli").
+ */
+export const relicChestDelivery = (relics: ResourcesIds[], to: { army: string; home: string }): string => {
+  const toArmy = relics.filter((id) => {
+    const relic = getRelicInfo(id);
+    if (!relic) throw new Error(`Resource ${id} is not a relic`);
+    return relic.recipientType === RelicRecipientType.Explorer;
+  }).length;
+  const toHome = relics.length - toArmy;
+  if (toHome === 0) return `${relicCount(toArmy)} to ${to.army}`;
+  if (toArmy === 0) return `${relicCount(toHome)} to ${to.home}`;
+  return `${relicCount(toArmy)} to ${to.army}, ${toHome} to ${to.home}`;
+};

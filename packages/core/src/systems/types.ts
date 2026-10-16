@@ -56,6 +56,8 @@ export type TierBoughtSystemUpdate = {
 };
 /** A relic crate opened by an explorer: the contract hex it stood on and the relics it yielded. */
 export type RelicChestOpenedSystemUpdate = {
+  /** The opening as the game's history titles it: its pack and where its relics went. */
+  title: string;
   explorerId: ID;
   hex: { x: number; y: number };
   relics: ResourcesIds[];
