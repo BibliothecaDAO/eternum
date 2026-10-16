@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { isAccountStatePrompt } from "@/hooks/context/gameplay-account-sync";
@@ -66,6 +66,11 @@ export const SettingsPage = () => (
 const Settings = () => {
   const { session } = useIdentitySession();
   const desktop = useLayout() === "desktop";
+  const { hash } = useLocation();
+  const deviceList = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (hash === "#devices") deviceList.current?.scrollIntoView({ block: "start" });
+  }, [hash, session, desktop]);
   if (!session) return null;
   const account = <AccountGroup session={session} />;
   const notifications = (
@@ -80,9 +85,11 @@ const Settings = () => {
     </SettingRows>
   );
   const devices = (
-    <Group title={PROFILE_WORDS.devices}>
-      <DevicesCard realmsId={session.user.realmsId} />
-    </Group>
+    <div id="devices" ref={deviceList} className="scroll-mt-4">
+      <Group title={PROFILE_WORDS.devices}>
+        <DevicesCard realmsId={session.user.realmsId} />
+      </Group>
+    </div>
   );
   return desktop ? (
     <div className="grid max-w-[74rem] grid-cols-2 items-start gap-6">

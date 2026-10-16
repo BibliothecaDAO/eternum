@@ -126,8 +126,8 @@ export const DOORWAY_WORDS = {
   signInToPlay: "Sign in to play.",
   notOnThisGame: "Not on this game.",
   ended: "This game has ended.",
-  deviceLimit: "Device limit reached.",
-  devices: "Devices",
+  deviceLimit: "This account is signed in on 8 devices.",
+  deviceLimitRecovery: "On an already signed-in device, open Settings → Devices and remove one. Then try again here.",
   /** A scene that could not be set up, named for what the player does not see; the cause is in the console. */
   mapNotDrawn: "The map could not be drawn.",
   realmNotDrawn: "The realm could not be drawn.",

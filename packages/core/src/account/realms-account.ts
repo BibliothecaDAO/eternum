@@ -189,7 +189,13 @@ async function joinOnce(
     const joining = realmsAccount(provider, address, device, await approval(counter));
     const joined = await joinStep("account_join_device_add_failed", () =>
       joining.execute(isDeviceCall(address, device.publicKey), accountTransactionDetails(shard)),
-    );
+    ).catch(async (error: unknown) => {
+      if (rpcErrorCode(error) === -32010) {
+        const devices = await joinStep("account_join_events_failed", () => listDevices(provider, address));
+        if (devices.length >= 8) throw new DeviceLimitError();
+      }
+      throw error;
+    });
     await joinStep("account_join_receipt_failed", () =>
       provider.waitForTransaction(joined.transaction_hash, { retryInterval: RECEIPT_POLL_MS }),
     );
@@ -214,6 +220,13 @@ async function joinStep<T>(code: (typeof accountJoinErrors)[number], run: () => 
     return await run();
   } catch (cause) {
     throw new Error(code, { cause });
+  }
+}
+
+/** A refused device addition confirmed against the account's active devices on this chain. */
+export class DeviceLimitError extends Error {
+  constructor() {
+    super("This account is signed in on 8 devices.");
   }
 }
 
@@ -410,6 +423,6 @@ function parseStoredDeviceKey(serialized: string): string {
 
 function rpcErrorCode(error: unknown): number | undefined {
   if (typeof error !== "object" || error === null) return undefined;
-  const value = error as { code?: unknown; baseError?: unknown };
-  return typeof value.code === "number" ? value.code : rpcErrorCode(value.baseError);
+  const value = error as { code?: unknown; baseError?: unknown; cause?: unknown };
+  return typeof value.code === "number" ? value.code : (rpcErrorCode(value.baseError) ?? rpcErrorCode(value.cause));
 }

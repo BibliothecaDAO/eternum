@@ -103,6 +103,7 @@ export const GameEntryModal = ({
   const requestSignIn = useRequestSignIn();
   const sessionStatus = useIdentitySessionStore((state) => state.status);
   const account = useAccountStore((state) => state.account);
+  const accountError = useAccountStore((state) => state.provisioningError);
   // The chain name written at registration is the identity username, when one was chosen.
   const accountName = useIdentitySessionStore((state) => identityUsername(state.session));
   const usernameFelt = useMemo(
@@ -581,6 +582,7 @@ export const GameEntryModal = ({
     phase,
     audience: isSpectateMode ? "spectator" : "player",
     signedIn: sessionStatus === "signed-in",
+    accountError,
     foundingFailed: settleStage === "error",
     blitzEntry,
   });
@@ -591,7 +593,13 @@ export const GameEntryModal = ({
       realm={realm}
       title={worldMeta ? modeLabel(worldMeta) : undefined}
       painting={worldMeta ? gamePainting(worldMeta) : undefined}
-      onRetry={settleStage === "error" ? () => void handleSettle() : handleRetry}
+      onRetry={
+        accountError
+          ? () => window.location.reload()
+          : settleStage === "error"
+            ? () => void handleSettle()
+            : handleRetry
+      }
       onSignIn={() => requestSignIn()}
       onSpectate={handleSpectate}
       results={resultsHref({ chainId: game.chainId, game_id: game.gameId })}

@@ -243,3 +243,9 @@ and must exit nonzero with that SVG marked unloaded. Live game proof still requi
 paintings (optional painting IDs export only those masters). `pnpm icons:measure <new-dir>` records individual-image and
 comparison-atlas byte counts after the client build. `pnpm icons:review <new-dir> <baseline-evidence-dir>` makes contact
 sheets.
+
+Device-limit recovery: game entry on a ninth device explains the eight-device limit after a refused join and a
+chain-local device count. Open `/profile/settings#devices` on an already signed-in device, remove a device with the
+existing confirmation, then press **Try again** at the original doorway. The link opens separately so the game entry
+remains available. Both `/g/:chain/:game` and its play routes use the same recovery. A ninth device cannot submit a
+revocation itself.

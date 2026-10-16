@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-16",
+    title: "Clear device limit recovery",
+    description:
+      "If eight devices already use your account, game entry explains how to remove one from a signed-in device and try again.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-16",
     title: "Shadows hold still",
     description:
       "The sun now lights the map from one direction all day, so shadows no longer creep and shimmer as the day turns. Day and night still colour the world.",

@@ -1,7 +1,8 @@
-import { Account, RpcProvider, hash, num, type ProviderInterface } from "starknet";
+import { Account, RpcError, RpcProvider, hash, num, type ProviderInterface } from "starknet";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   deviceKeyOf,
+  DeviceLimitError,
   joinBotAccount,
   joinRealmsAccount,
   readAccountDevices,
@@ -199,4 +200,52 @@ it("names the failing join read and keeps the underlying error out of its public
   );
   expect(error.message).toBe("account_join_read_failed");
   expect(error.cause).toBe(cause);
+});
+
+describe("device-limit join refusals", () => {
+  const refused = () =>
+    new RpcError({ code: -32010, message: "Transaction refused" } as never, "starknet_addInvokeTransaction", {});
+  const activeDevices = (count: number) => ({
+    events: Array.from({ length: count }, (_, index) => ({ keys: [DEVICE_ADDED, num.toHex(index + 100)] })),
+  });
+
+  it("recognizes a real join submission refusal only after counting this chain's active devices, then can retry", async () => {
+    const rpc = provider(true);
+    vi.mocked(rpc.getEvents).mockResolvedValue(activeDevices(8) as never);
+    const execute = vi.spyOn(Account.prototype, "execute").mockRejectedValueOnce(refused());
+    const input = { provider: rpc, shard, realmsId: "0x99", device, approve };
+    await expect(joinRealmsAccount(input)).rejects.toBeInstanceOf(DeviceLimitError);
+    expect(execute).toHaveBeenCalledOnce();
+    // A signed-in device removes one; the next join reads a fresh counter and submits again.
+    vi.mocked(rpc.getEvents).mockResolvedValue(activeDevices(7) as never);
+    execute.mockResolvedValue({ transaction_hash: "0x8" });
+    const account = await joinRealmsAccount(input);
+    expect(account.address).toMatch(/^0x/);
+    expect(execute).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not call every RPC refusal a device limit, including when revoked devices reduce the active count", async () => {
+    const rpc = provider(true);
+    const history = activeDevices(8);
+    history.events.push({ keys: [num.toHex(hash.starknetKeccak("DeviceRevoked")), "0x64"] });
+    vi.mocked(rpc.getEvents).mockResolvedValue(history as never);
+    const cause = refused();
+    vi.spyOn(Account.prototype, "execute").mockRejectedValue(cause);
+    await expect(joinRealmsAccount({ provider: rpc, shard, realmsId: "0x99", device, approve })).rejects.toMatchObject({
+      message: "account_join_device_add_failed",
+      cause,
+    });
+  });
+
+  it("keeps an unreadable device list as a read failure rather than claiming eight devices", async () => {
+    const rpc = provider(true);
+    vi.mocked(rpc.getEvents)
+      .mockResolvedValueOnce({ events: [] } as never)
+      .mockRejectedValue(new Error("offline"));
+    vi.spyOn(Account.prototype, "execute").mockRejectedValue(refused());
+    await expect(joinRealmsAccount({ provider: rpc, shard, realmsId: "0x99", device, approve })).rejects.toMatchObject({
+      message: "account_join_events_failed",
+      cause: new Error("offline"),
+    });
+  });
 });

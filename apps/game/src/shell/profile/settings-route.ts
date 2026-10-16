@@ -2,6 +2,7 @@ import { nextOf, safeNextPath } from "../sign-in/sign-in-route";
 
 /** Settings, under You: the account, the payout wallet, notifications, music and devices, on one page. */
 export const SETTINGS_PATH = "/profile/settings";
+export const DEVICES_PATH = `${SETTINGS_PATH}#devices`;
 
 /**
  * Settings opened to link the payout wallet from a page that needs one (a paid Blitz's lobby): it opens on the payout

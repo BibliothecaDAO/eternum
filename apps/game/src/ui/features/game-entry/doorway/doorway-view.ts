@@ -34,6 +34,7 @@ interface EntrySide {
   phase: GameEntryModalPhase;
   audience: DoorwayAudience;
   signedIn: boolean;
+  accountError?: string | null;
   /** Founding the realm failed; its detail is in the console. */
   foundingFailed?: boolean;
   blitzEntry?: BlitzEntry | null;
@@ -92,12 +93,12 @@ const place = (step: DoorwayStep, overrides: Partial<Place> = {}): Place => ({
   ...overrides,
 });
 
-const entryPlace = ({ phase, signedIn, foundingFailed = false, blitzEntry }: EntrySide): Place => {
+const entryPlace = ({ phase, signedIn, accountError, foundingFailed = false, blitzEntry }: EntrySide): Place => {
   switch (phase) {
     case "loading":
       return place("account");
     case "account":
-      return place("account", { blocker: signedIn ? null : SIGN_IN });
+      return place("account", { blocker: accountError ? accountBlocker(accountError) : signedIn ? null : SIGN_IN });
     case "settlement-waiting":
       return place("realm");
     case "settlement":

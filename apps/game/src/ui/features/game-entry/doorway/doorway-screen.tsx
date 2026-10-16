@@ -5,7 +5,7 @@ import { useLayout } from "@/shell/frame/layout";
 import { PageFrame } from "@/shell/frame/page-frame";
 import { StepVerb } from "@/shell/frame/step-verb";
 import type { Painting } from "@/shell/paintings";
-import { SETTINGS_PATH } from "@/shell/profile/settings-route";
+import { DEVICES_PATH } from "@/shell/profile/settings-route";
 import { DOORWAY_WORDS, WORDS } from "@/shell/words";
 import { Button } from "@/ui/design-system/kit/button";
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
@@ -155,9 +155,15 @@ const Hold = ({
         : plate(view.blocker.line, retry);
     }
     case "devices":
-      return plate(
-        DOORWAY_WORDS.deviceLimit,
-        <Button role="primary" word={DOORWAY_WORDS.devices} icon="monitor" onClick={() => navigate(SETTINGS_PATH)} />,
+      return (
+        <div className="flex w-full flex-col gap-3">
+          <ReasonPlate reason={{ kind: "failed", line: DOORWAY_WORDS.deviceLimit }} />
+          <p className="text-sm text-kit-cream">{DOORWAY_WORDS.deviceLimitRecovery}</p>
+          <a href={DEVICES_PATH} target="_blank" rel="noopener noreferrer" className="text-kit-gold underline">
+            Settings → Devices
+          </a>
+          <Button role="primary" word={TRY_AGAIN} icon="refresh" onClick={onRetry} />
+        </div>
       );
   }
   if (view.spectating === "watch" && onSpectate)
