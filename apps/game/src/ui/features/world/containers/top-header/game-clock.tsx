@@ -1,31 +1,24 @@
-import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { DAY_PHASES, resolveDayPhase, type DayPhaseName } from "@/utils/cycle-progress";
 import { useFactView } from "@/hooks/use-fact-view";
 import { seasonClockView } from "@/sync/fact-views";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { memo, useEffect } from "react";
 
 import { configManager } from "@bibliothecadao/eternum";
 import { TickIds } from "@bibliothecadao/types";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { TOP_PILL } from "./top-pill";
 import { GameFinishedPill } from "./game-finished-pill";
-import { formatGameClockDuration, resolveGameClock } from "./game-clock-policy";
+import { resolveGameClock } from "./game-clock-policy";
 
 const URGENCY_CLASSES = ["urgency-border-warning", "urgency-border-critical", "urgency-border-final"];
-const PHASE_ICONS: Record<DayPhaseName, IconMeaning> = {
-  Night: "moon" as const,
-  Dawn: "sun" as const,
-  Morning: "sun" as const,
-  Day: "sun" as const,
-  Dusk: "sun" as const,
-  Evening: "moon" as const,
-};
 
+/**
+ * The game's time left, with a hairline of the game spent. No rule reads the time of day (the renderer's six-tick day
+ * only lights the scene), so the clock carries no day phase.
+ */
 export const GameClock = memo(({ compact = false }: { compact?: boolean }) => {
-  const dayPhase = resolveDayPhase(useUIStore((state) => state.cycleProgress));
   const { gameStartMainAt: startAt, gameEndAt: endAt } = useFactView(seasonClockView);
   const now = useCurrentBlockTimestamp();
   const armyTickSeconds = configManager.getTick(TickIds.Armies);
@@ -38,20 +31,11 @@ export const GameClock = memo(({ compact = false }: { compact?: boolean }) => {
     return () => document.body.classList.remove(...URGENCY_CLASSES);
   }, [urgency]);
   if (clock.phase === "finished") return <GameFinishedPill />;
-  const PhaseIcon = PHASE_ICONS[dayPhase.name];
-  const phaseSecondsLeft = Math.round(((100 - dayPhase.progress) / 100) * armyTickSeconds);
-  const daySecondsLeft = phaseSecondsLeft + (DAY_PHASES.length - 1 - dayPhase.index) * armyTickSeconds;
-  // The title never carries the live countdown: a changing title attribute closes the native tooltip every second.
-  const breakdown = [
-    `${dayPhase.name} · phase ${dayPhase.index + 1} of ${DAY_PHASES.length}`,
-    `Day length ${formatGameClockDuration(armyTickSeconds * DAY_PHASES.length)}`,
-    "Countdown to the next day",
-  ].join("\n");
   return (
     <div
-      className={cn(TOP_PILL, "relative overflow-hidden", compact && "flex-col items-start justify-center gap-0 px-2")}
+      className={cn(TOP_PILL, "relative overflow-hidden", compact && "px-2")}
       aria-label="Game clock"
-      title={compact ? `${clock.label}\n${breakdown}` : breakdown}
+      title={compact ? clock.label : undefined}
     >
       <span className="flex items-center gap-1.5" aria-label={compact ? clock.label : undefined}>
         <SemanticIcon name="hourglass" className="h-3.5 w-3.5 shrink-0" />
@@ -61,39 +45,19 @@ export const GameClock = memo(({ compact = false }: { compact?: boolean }) => {
           {compact ? clock.compactLabel : clock.label}
         </span>
       </span>
-      {!compact && <span aria-hidden className="h-4 w-px bg-gold/25" />}
-      <span className="flex items-center gap-1.5">
-        <SemanticIcon name={PhaseIcon} className="h-3.5 w-3.5 shrink-0" aria-label={dayPhase.name} />
-        <span
-          className={cn(
-            HUD_LABEL_BRIGHT,
-            "whitespace-nowrap tabular-nums",
-            compact && "text-[10px] tracking-normal text-gold/75",
-          )}
-        >
-          {formatGameClockDuration(daySecondsLeft)}
-        </span>
-      </span>
       {clock.remainingRatio !== null && (
         <div
           role="progressbar"
-          aria-label={`${dayPhase.name} progress`}
+          aria-label="Game spent"
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-valuenow={Math.round(dayPhase.progress)}
-          className="absolute bottom-0 left-0 right-0 flex h-0.5 gap-px"
+          aria-valuenow={Math.round((1 - clock.remainingRatio) * 100)}
+          className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold/20"
         >
-          {DAY_PHASES.map((phase, index) => (
-            <span key={phase.name} className="relative flex-1 bg-gold/20">
-              {index < dayPhase.index && <span className="absolute inset-0 bg-gold/60" />}
-              {index === dayPhase.index && (
-                <span
-                  className="absolute inset-y-0 left-0 bg-gold"
-                  style={{ width: `${Math.round(dayPhase.progress)}%` }}
-                />
-              )}
-            </span>
-          ))}
+          <span
+            className="absolute inset-y-0 left-0 bg-gold"
+            style={{ width: `${Math.round((1 - clock.remainingRatio) * 100)}%` }}
+          />
         </div>
       )}
     </div>
