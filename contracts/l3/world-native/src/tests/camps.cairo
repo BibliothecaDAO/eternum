@@ -118,7 +118,7 @@ fn camp_lottery_obeys_discoverable_rules_after_mines() {
     assert_eq!(surface(config, 101, 0, 0, crate::rules::DISCOVER_HYPERSTRUCTURES), Discovery::Hyperstructure);
 }
 #[test]
-fn camps_grant_configured_resources_labor_and_one_crossbow_guard() {
+fn camps_grant_configured_resources_labor_and_one_seeded_t1_guard() {
     let (d, _) = setup(true);
     let key = create(d, coord());
     let structure = IStructureOperationsDispatcher { contract_address: d.games }.structure(key).unwrap();
@@ -144,7 +144,7 @@ fn camps_grant_configured_resources_labor_and_one_crossbow_guard() {
     assert_eq!(production.last_settled_at, 30);
     let guards = IGuardsDispatcher { contract_address: d.games };
     let guard = guards.guard(GuardKey { game_id: 3, structure_id: key.entity_id, slot: 0 });
-    assert_eq!(guard.troops.category, TroopType::Crossbowman);
+    assert_eq!(guard.troops.category, TroopType::Knight);
     assert_eq!(guard.troops.tier, TroopTier::T1);
     let bounds = rules(true).troop_limit_config;
     let expected = crate::random::range(
@@ -281,7 +281,7 @@ fn eternum_exploration_does_not_create_a_camp() {
 #[test]
 fn blitz_exploration_stores_both_inclusive_camp_guard_endpoints() {
     let (_, current) = super::preset_projection::current_definition("blitz");
-    for (root, expected) in array![(615_u256, 999_u128), (629, 1499)] {
+    for (root, expected, troop) in array![(615_u256, 999_u128, TroopType::Paladin), (629, 1499, TroopType::Knight)] {
         let mut preset = camp_preset(true);
         preset.rules.troop_limit_config = current.rules.troop_limit_config;
         let (d, home, _) = super::resource_commands::setup_with_preset(preset);
@@ -319,7 +319,7 @@ fn blitz_exploration_stores_both_inclusive_camp_guard_endpoints() {
         assert_eq!(occupancy.category, crate::taxonomy::CAMP_OCCUPIER);
         let guard = IGuardsDispatcher { contract_address: d.games }
             .guard(GuardKey { game_id: 3, structure_id: occupancy.entity_id, slot: 0 });
-        assert_eq!(guard.troops.category, TroopType::Crossbowman);
+        assert_eq!(guard.troops.category, troop);
         assert_eq!(guard.troops.tier, TroopTier::T1);
         assert_eq!(guard.troops.count, expected * RESOURCE_PRECISION);
     }

@@ -366,19 +366,23 @@ pub(crate) fn discovery_guards(
     };
     let mut guards = array![];
     for slot in 0_u8..count {
+        let guard_seed = seed + if three_guards {
+            Into::<u8, u256>::into(slot)
+        } else {
+            0
+        };
         let category = if light_guard {
-            TroopType::Crossbowman
+            match crate::random::range(guard_seed, 2, 3) {
+                0 => TroopType::Knight,
+                1 => TroopType::Paladin,
+                _ => TroopType::Crossbowman,
+            }
         } else {
             match slot {
                 1 => TroopType::Knight,
                 2 => TroopType::Crossbowman,
                 _ => TroopType::Paladin,
             }
-        };
-        let guard_seed = seed + if three_guards {
-            Into::<u8, u256>::into(slot)
-        } else {
-            0
         };
         let count = lower + crate::random::range(guard_seed, 1, upper - lower + 1);
         let troops = discovered_guard(category, tier, count, rules, timestamp);
