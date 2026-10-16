@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-10-17",
+    title: "A simpler deploy",
+    description:
+      "Deploying an army takes one row: type the amount or press Max, beside how many can go. Deploy shows what it costs, and when it cannot go it says why in a few words.",
+    type: "improvement",
+  },
+  {
     date: "2026-10-16",
     title: "Attack forecast names both sides",
     description:

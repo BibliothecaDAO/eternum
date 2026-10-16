@@ -37,7 +37,7 @@ interface ArmyCreationStatus extends TroopAvailabilityStatus {
   isLoading: boolean;
 }
 
-/** Why no troop can be chosen at all: the one reason the troop count controls are disabled. */
+/** Why no troop can be chosen at all, in a few words: the troop count is disabled and the order's button says why. */
 export function resolveTroopAvailabilityReason(status: TroopAvailabilityStatus): string | null {
   if (status.capacityRemaining === null) return "Army capacity is still loading.";
   if (status.capacityRemaining <= 0) return "Troop cap reached.";
@@ -61,14 +61,16 @@ export function resolveArmyCreationBlockedReason(status: ArmyCreationStatus): st
   return null;
 }
 
-/** What deploying the chosen troops costs beyond the troops, such as "Deploying costs 20 wheat."; null when nothing. */
+/** What deploying the chosen troops costs beyond the troops, such as "20 wheat"; null when it costs nothing yet. */
 export function describeTroopRaiseCost(costs: TroopRaiseCost[] | undefined): string | null {
-  if (!costs?.length) return null;
-  const amounts = costs.map(
-    ({ resource, amount }) =>
-      `${Math.ceil(Number(amount) / RESOURCE_PRECISION).toLocaleString()} ${ResourcesIds[resource].toLowerCase()}`,
-  );
-  return `Deploying costs ${amounts.join(" and ")}.`;
+  const paid = (costs ?? []).filter(({ amount }) => amount > 0n);
+  if (!paid.length) return null;
+  return paid
+    .map(
+      ({ resource, amount }) =>
+        `${Math.ceil(Number(amount) / RESOURCE_PRECISION).toLocaleString()} ${ResourcesIds[resource].toLowerCase()}`,
+    )
+    .join(" and ");
 }
 
 /** The training line while a barracks fills the next army; null when nothing trains the troop. */
@@ -79,11 +81,12 @@ export function describeTroopTraining(supply: TroopSupply): string | null {
   return `${rate}; a full army in ${formatTime(Math.ceil(supply.secondsToFullArmy)).trim()}.`;
 }
 
+/** None on hand: "No Knight T1 on hand.", or while a barracks trains them, when a full army is ready. */
 function describeEmptyTroop(supply: TroopSupply): string {
-  return (
-    describeTroopTraining(supply) ??
-    `No ${supply.name} troops. A ${supply.name} barracks on the realm board trains them.`
-  );
+  if (supply.perHour > 0 && supply.secondsToFullArmy !== null) {
+    return `No ${supply.name} yet: a full army in ${formatTime(Math.ceil(supply.secondsToFullArmy)).trim()}.`;
+  }
+  return `No ${supply.name} on hand.`;
 }
 
 /**

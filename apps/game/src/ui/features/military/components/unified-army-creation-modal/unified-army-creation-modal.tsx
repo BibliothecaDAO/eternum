@@ -8,7 +8,7 @@ import { ActionFooter } from "./action-footer";
 import { ArmyTypeToggle } from "./army-type-toggle";
 import { DefenseSlotSelection } from "./defense-slot-selection";
 import { RealmHexDeployMap } from "./realm-hex-deploy-map";
-import { TroopCountSelector } from "./troop-count-selector";
+import { TroopAmount } from "./troop-amount";
 import { TroopSelectionGrid } from "./troop-selection-grid";
 import { useArmyCreation } from "./use-army-creation";
 
@@ -129,14 +129,11 @@ export const UnifiedArmyCreationBody = ({
               bare
             />
             <div className="border-t border-gold/15" />
-            <TroopCountSelector
+            <TroopAmount
               troopCount={form.troopCount}
               maxAffordable={form.maxAffordable}
               onChange={form.handleTroopCountChange}
-              capacityRemaining={form.capacityRemainingForSelector}
-              troopMaxSize={form.troopCapacityLimit ?? undefined}
-              unavailableReason={form.troopAvailabilityReason}
-              embedded
+              disabled={form.troopAvailabilityReason !== null}
             />
             {form.troopCapacityLimit !== null && form.troopCapacityLimit !== undefined && (
               <>
@@ -155,10 +152,10 @@ export const UnifiedArmyCreationBody = ({
                 <p className="px-1 py-1 text-[11px] text-gold/70">{form.troopTrainingLine}</p>
               </>
             )}
-            {form.raiseCostLine && (
+            {form.raiseCost && (
               <>
                 <div className="border-t border-gold/15" />
-                <p className="px-1 py-1 text-[11px] text-gold/70">{form.raiseCostLine}</p>
+                <p className="px-1 py-1 text-[11px] text-gold/70">Deploying costs {form.raiseCost}.</p>
               </>
             )}
           </div>
@@ -212,7 +209,7 @@ export const UnifiedArmyCreationBody = ({
           label={form.actionLabel}
           isLoading={form.isLoading}
           isDisabled={form.isActionDisabled}
-          blockedReason={form.submitBlockedReason}
+          blockedReason={form.blockedReason}
           onSubmit={form.handleCreate}
           embedded
         />

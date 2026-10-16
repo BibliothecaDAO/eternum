@@ -7,7 +7,7 @@ interface ActionFooterProps {
   label: string;
   isLoading: boolean;
   isDisabled: boolean;
-  /** Why the button is disabled, when the form does not already say it next to the control that caused it. */
+  /** Why the button is disabled: the one place the form says it, in a few words under the button. */
   blockedReason: string | null;
   onSubmit: () => void;
   /** Embed mode: render just the button, no surrounding card chrome. */

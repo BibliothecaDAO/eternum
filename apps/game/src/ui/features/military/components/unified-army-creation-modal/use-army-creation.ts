@@ -460,8 +460,6 @@ export const useArmyCreation = ({
     isLoading,
   });
   const isActionDisabled = blockedReason !== null;
-  // The count controls already show the availability reason; the submit button names only a different one.
-  const submitBlockedReason = blockedReason === troopAvailabilityReason ? null : blockedReason;
 
   const handleCreate = async () => {
     if (activeStructureId === undefined || isActionDisabled || submittingRef.current) return;
@@ -534,10 +532,10 @@ export const useArmyCreation = ({
     isActionDisabled,
     handleCreate,
     troopAvailabilityReason,
-    submitBlockedReason,
-    // With no troop on hand the availability reason already carries the training line.
+    blockedReason,
+    // With no troop on hand the blocked reason already says when a full army is ready.
     troopTrainingLine: troopAvailabilityReason ? null : describeTroopTraining(troopSupply),
-    raiseCostLine: describeTroopRaiseCost(raiseCost),
+    raiseCost: describeTroopRaiseCost(raiseCost),
   };
 };
 

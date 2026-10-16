@@ -14,6 +14,7 @@ import { type ReactNode, useState } from "react";
 import { Route, Routes } from "react-router-dom";
 
 import { ConstructionLab } from "./construction-lab";
+import { DeployLab } from "./deploy-lab";
 import { IconLab } from "./icon-lab";
 import { Link } from "react-router-dom";
 
@@ -32,6 +33,7 @@ export const KitLabView = () => {
     <Routes>
       <Route path="construction" element={<ConstructionLab />} />
       <Route path="icons" element={<IconLab />} />
+      <Route path="deploy" element={<DeployLab />} />
       <Route path="hud/:state" element={<HudLab />} />
       <Route path="*" element={<Components />} />
     </Routes>
