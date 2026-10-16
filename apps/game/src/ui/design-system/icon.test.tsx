@@ -81,9 +81,9 @@ describe("semantic icons", () => {
 it("uses the unmodified LORDS token mark for resource, DOM and SVG consumers at every delivery size", () => {
   expect(resourceMeaning(37)).toBe("lords");
   for (const size of [64, 128, 256] as const) {
-    expect(iconUrl(resourceMeaning(37), size)).toBe("/tokens/lords.png");
+    expect(iconUrl(resourceMeaning(37), size)).toBe("/tokens/lords.svg");
     const html = renderToStaticMarkup(<Icon name="lords" size={size} />);
-    expect(html).toContain('src="/tokens/lords.png"');
+    expect(html).toContain('src="/tokens/lords.svg"');
     expect(html).not.toContain("rotate");
   }
   expect(
@@ -92,5 +92,5 @@ it("uses the unmodified LORDS token mark for resource, DOM and SVG consumers at 
         <SvgIcon name="lords" />
       </svg>,
     ),
-  ).toContain('href="/tokens/lords.png"');
+  ).toContain('href="/tokens/lords.svg"');
 });

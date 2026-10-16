@@ -350,13 +350,15 @@ minimap.
 
 ## LORDS token artwork
 
-LORDS uses the unmodified `/tokens/lords.png` through the shared `lords` meaning, including resource 37. The purse,
+LORDS uses the official vector `/tokens/lords.svg` through the shared `lords` meaning, including resource 37. The purse,
 entry fees, Frontier rewards, results, transfers and coin animations resolve that meaning through the same renderer. No
 Facets painting stands in for the token. The official source and verified file hash are recorded under `official/lords`
 in `asset-sources/facets/verdicts.json`; icon validation rejects the old painted coin and a redirected LORDS resource
-mapping.
+mapping. The SVG keeps the account portal's original paths and viewBox, with white currentColor for external image use.
+Its source commit is pinned in the SVG. The former 44 px PNG is deleted.
 
 In `/lab/kit/icons`, search **lords** to inspect the mark at 24/32/64 px. `/lab/kit/hud/value-hud`,
 `/lab/kit/hud/season-over` and `/lab/kit/hud/withdraw` show the purse, Frontier results and withdrawal with production
 components. `pnpm icons:prove <new-evidence-dir> https://127.0.0.1:4193 --lords` also checks the lobby entry and results
-fixtures at desktop and phone widths, requiring every LORDS image to decode from the official token path.
+fixtures at desktop and phone widths, requiring every LORDS image to decode from the official token path. It includes
+the 96 px token prize at `/lab/app/reward-lords/results/0x5245414c4d53-7?capture=1`.

@@ -14,6 +14,7 @@ const pages = [
   ["play", "/lab/app/home/?capture=1", "[data-layout]"],
   ["season", "/lab/app/season-running/season?capture=1", "[data-layout]"],
   ["results", "/lab/app/reward-sealed/results/0x5245414c4d53-7?capture=1", "[data-icon=lords]"],
+  ["lords-prize", "/lab/app/reward-lords/results/0x5245414c4d53-7?capture=1", 'img[data-icon=lords][width="96"]'],
   ["entry", "/lab/app/entry-choose/blitz/slot-blitz-1630?capture=1", "[data-icon=lords]"],
   ["account", "/lab/app/home/profile?capture=1", "[data-layout]"],
   ["settings", "/lab/app/home/profile/settings?capture=1", "[data-layout]"],
@@ -159,17 +160,27 @@ export async function proveIcons(b, out, records, baseUrl, onlyLayout, onlyPages
           state.icons.length > 0 &&
           state.icons.every(
             (i) =>
-              i.loaded && (i.meaning === "lords" ? i.url === "/tokens/lords.png" : i.url.startsWith("/icons/facets/")),
+              i.loaded && (i.meaning === "lords" ? i.url === "/tokens/lords.svg" : i.url.startsWith("/icons/facets/")),
           ),
       });
       const lords = state.icons.filter((icon) => icon.meaning === "lords");
-      if (["catalog", "purse", "frontier", "withdraw", "entry", "results"].includes(name)) {
+      if (["catalog", "purse", "frontier", "withdraw", "entry", "results", "lords-prize"].includes(name)) {
         record.checks.push({
           check: "LORDS displays the official token mark",
-          ok: lords.length > 0 && lords.every((icon) => icon.loaded && icon.url === "/tokens/lords.png"),
+          ok: lords.length > 0 && lords.every((icon) => icon.loaded && icon.url === "/tokens/lords.svg"),
         });
       }
       record.checks.push({ check: "Page fits viewport width", ok: !state.overflow });
+      if (name === "lords-prize") {
+        await b.run("scrollintoview", 'img[data-icon="lords"][width="96"]');
+        record.checks.push({
+          check: "Large LORDS reward uses the official SVG at 96px",
+          ok: await b.evaluate(`(() => {
+          const mark = document.querySelector('img[data-icon="lords"][width="96"]');
+          return mark?.getAttribute('src') === '/tokens/lords.svg' && mark.getBoundingClientRect().width === 96;
+        })()`),
+        });
+      }
       if (name === "catalog" || name === "results") await b.run("scrollintoview", '[data-icon="lords"]');
       await b.run("screenshot", join(out, `${record.name}.png`));
       if (missingSvg) return;
@@ -301,7 +312,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
             missingSvg || process.argv.includes("--catalog")
               ? ["catalog"]
               : process.argv.includes("--lords")
-                ? ["catalog", "purse", "frontier", "withdraw", "entry", "results"]
+                ? ["catalog", "purse", "frontier", "withdraw", "entry", "results", "lords-prize"]
                 : undefined,
             missingSvg,
           ),

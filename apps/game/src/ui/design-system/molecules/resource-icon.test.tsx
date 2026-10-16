@@ -23,6 +23,6 @@ describe("ResourceIcon", () => {
 
 it("shows the official LORDS mark in resource amounts and transfer rows", () => {
   const html = renderToStaticMarkup(<ResourceIcon resource={ResourcesIds.Lords} size="xl" />);
-  expect(html).toContain('src="/tokens/lords.png"');
+  expect(html).toContain('src="/tokens/lords.svg"');
   expect(html).not.toContain("/icons/facets/");
 });

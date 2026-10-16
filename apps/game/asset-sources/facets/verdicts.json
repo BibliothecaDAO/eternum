@@ -949,10 +949,10 @@
   },
   "official/lords": {
     "verdict": "beats shipped",
-    "reason": "Unmodified LORDS token monogram, matching the published token logo and the official account portal mark. Replaces the unrelated painted castle coin.",
+    "reason": "Official account portal SVG with unchanged path geometry. White currentColor preserves legibility when loaded as an external image. Replaces the low-resolution PNG.",
     "source": "https://www.coingecko.com/en/coins/lords",
     "publishedLogo": "https://assets.coingecko.com/coins/images/22171/standard/Frame_1.png?1696521515",
-    "officialSource": "https://github.com/BibliothecaDAO/account-portal/blob/main/apps/account-portal/src/components/icons/lords.svg",
-    "sha256": "85733ae2eefcc665bd797bee7cc9f768306a021bc4ec4b07104a10dbaf42a33c"
+    "officialSource": "https://github.com/BibliothecaDAO/account-portal/blob/e1b438f3da7f7573d2c754588d91fb315b77d520/apps/account-portal/src/components/icons/lords.svg",
+    "sha256": "b76b505ed14093b21d5c686670789d3f7e581bc3695e07374a2e0e8c90ca921d"
   }
 }

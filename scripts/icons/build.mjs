@@ -14,7 +14,7 @@ const [{ icons }, meanings, resources, verdicts] = await Promise.all([
   read("verdicts"),
 ]);
 validateIcons({ icons, meanings, resources, verdicts });
-await access(`${repo}/apps/game/public/tokens/lords.png`);
+await access(`${repo}/apps/game/public/tokens/lords.svg`);
 const output = `${repo}/apps/game/public/icons/facets`;
 await validateIconFiles(icons, source, process.argv.includes("--check") ? output : undefined);
 if (!process.argv.includes("--check")) {

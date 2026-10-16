@@ -37,7 +37,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-16",
     title: "Official LORDS token mark",
     description:
-      "LORDS amounts use the official token symbol in your purse, entry fees, rewards and resource transfers.",
+      "LORDS amounts use the official vector token symbol, sharp at every size, in your purse, entry fees, rewards and resource transfers.",
     type: "fix",
   },
   {

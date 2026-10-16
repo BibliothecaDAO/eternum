@@ -18,7 +18,7 @@ export function iconDefinition(name: IconMeaning): Meaning {
 
 export function iconUrl(name: IconMeaning, pixels: IconPixels = 64): string {
   const definition = iconDefinition(name);
-  return definition.token ? `/tokens/${definition.token}.png` : `/icons/facets/${pixels}/${definition.art}.webp`;
+  return definition.token ? `/tokens/${definition.token}.svg` : `/icons/facets/${pixels}/${definition.art}.webp`;
 }
 
 /** A resource's artwork, by its id: the one way to name a resource's icon (a display name is not a key). */
