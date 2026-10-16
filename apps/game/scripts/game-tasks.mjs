@@ -38,9 +38,10 @@ const sendWheat = (total) => [
 ];
 
 /**
- * A transfer sent: the chain took it (its toast, "Transfers sent." for several), and the window shows it, one more
- * delivery on the road or the source's wheat down (a delivery joining one already on the road to that holding adds no
- * row).
+ * A transfer sent: every shipment landed, so the window has let its destinations go and its Send asks for new ones
+ * (a refused one would stay chosen), and the window shows it, one more delivery on the road or the source's wheat
+ * down (a delivery joining one already on the road to that holding adds no row). The window, not a notice, because a
+ * phone's notices wait under its bell.
  */
 const TRANSFER_SENT = {
   reading: `(() => {
@@ -52,7 +53,7 @@ const TRANSFER_SENT = {
   })()`,
   changes: "one more delivery on the road or less wheat at the source",
   expect: (before, after) => after.arriving > before.arriving || after.wheat < before.wheat,
-  done: `/Transfers? sent\\./.test(document.body.innerText)`,
+  done: `document.querySelector(${JSON.stringify(TRANSFER_PANEL)})?.innerText.includes("Choose where to send") === true`,
 };
 
 /** How many order surfaces stand open: the workspaces and the popovers where an order is given. */
@@ -195,7 +196,8 @@ export const GAME_TASKS = {
   },
   "blitz-transfer-window": {
     goal: "Blitz: send a realm's wheat to two other holdings at once from the Transfer button",
-    layouts: ["desktop"],
+    // The window stacks its stages in a phone's sheet, upright and sideways; Send is scrolled to there.
+    layouts: ["desktop", "phone", "landscape"],
     view: "map",
     presses: [
       { name: "Transfer", within: STRUCTURE_ACTIONS, text: "^Transfer$" },
