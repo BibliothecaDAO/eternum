@@ -109,3 +109,11 @@ The driver closes its page on success or failure.
 The Facets catalog at `/lab/kit/icons` uses production artwork and the shared renderer. It includes size, family and
 search controls, action buttons, all nine soldier portraits and interactive hex minimap badges. Run
 `pnpm icons:prove <evidence-dir> https://127.0.0.1:<port>` to exercise it alongside the HUD and shell fixtures.
+
+## T1 Knight production review
+
+`/lab/models?family=knight&source=comparison&tier=1&compare=0&detail=crowd` shows the previous default GLB beside the
+production Knight, at a common inspection height. Choose **Skin detail → Near** to inspect the near export; only the
+selected LOD is requested. **Current character runtime** shows the production model alone; **Move** and **Run** inspect
+its procedural motion. Orbit and RTS scale share the environment and lighting. The terrain lab's **Army model →
+knight1** uses the actual map scale and automatic camera-distance LOD through the production character layer.

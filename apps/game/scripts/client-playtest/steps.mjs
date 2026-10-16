@@ -737,9 +737,48 @@ function judgeSentOrder(played) {
 
 const sameHex = (left, right) => left?.col === right?.col && left?.row === right?.row;
 
+/** Read the production renderer after user camera controls have requested each skin LOD. */
+const knightSteps = ({ opening, onMap }) => [
+  ...opening,
+  { name: "knight-gameplay", play: readKnightPresentation, settleMs: 0, verify: knightPresented(onMap) },
+  { name: "knight-zoom-close", play: zoomAllTheWayIn, settleMs: 3000, verify: zoomedAllTheWayIn(onMap) },
+  { name: "knight-close", play: readKnightPresentation, settleMs: 0, verify: knightPresented(onMap) },
+];
+
+async function readKnightPresentation({ browser }) {
+  await sleep(3000);
+  return {
+    stats: browser.read("window.getProceduralArmyProductionStats?.() ?? null"),
+    assets: browser.read(
+      "performance.getEntriesByType('resource').filter(e => e.name.includes('/models/characters/t1-knight-default/')).map(e => ({url:e.name, bytes:e.encodedBodySize}))",
+    ),
+  };
+}
+
+function knightPresented(onMap) {
+  return ({ seen, played }) => {
+    const scene = onMap({ seen });
+    if (scene.status !== "completed") return scene;
+    const stats = played.stats;
+    if (!stats) return failed("production character report missing");
+    if (stats.loadState === "failed") return failed("Knight asset loading failed", played);
+    if (stats.visibleArmyCount === 0) return blocked("no T1 Knights in this camera's view", played);
+    if (stats.fallbackRepresentationCount !== 0)
+      return failed("a visible Knight is still using the replaced model", played);
+    if (stats.nearKnightCount + stats.midKnightCount !== stats.actorCount)
+      return failed("Knight LOD count does not match actors", played);
+    const triangles = stats.nearKnightCount * 14999 + stats.midKnightCount * 5998;
+    return stats.meshDrawsPerPass === stats.actorCount * 3 && stats.trianglesPerPass === triangles
+      ? completed(played)
+      : failed("Knight render budget does not match the delivered meshes", played);
+  };
+}
+
 /** The step lists a run can play, by name, each with its game; a run plays its role's list unless it names another. */
 export const STEP_SETS = {
   spectator: { game: FRONTIER, steps: SPECTATOR_STEPS },
+  "knight-spectator": { game: FRONTIER, steps: knightSteps(FRONTIER_MAP) },
+  "knight-blitz-spectator": { game: BLITZ, steps: knightSteps(BLITZ_MAP) },
   player: { game: FRONTIER, steps: PLAYER_STEPS },
   "ownership-rings": { game: FRONTIER, steps: OWNERSHIP_RING_STEPS },
   "blitz-orders": { game: BLITZ, steps: BLITZ_ORDER_STEPS },

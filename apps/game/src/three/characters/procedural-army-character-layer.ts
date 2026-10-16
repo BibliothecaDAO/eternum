@@ -59,6 +59,8 @@ interface ProceduralArmyActorRecord {
   attackTargetEntityId?: number;
   collisionProfile: ProceduralCollisionProfile;
   configSignature: string;
+  renderDetail: "hero" | "crowd";
+  isT1Knight: boolean;
   hitTarget: Mesh;
   lastReactionStrength: number;
   unsubscribeActionEvents: () => void;
@@ -78,6 +80,10 @@ interface DefeatedProceduralArmyActor {
 
 export interface ProceduralArmyCharacterLayerStats {
   actorCount: number;
+  nearKnightCount: number;
+  midKnightCount: number;
+  meshDrawsPerPass: number;
+  trianglesPerPass: number;
   collisionBodyCount: number;
   collisionMaximumOffset: number;
   collisionPairCount: number;
@@ -95,6 +101,8 @@ export interface ProceduralArmyRaycastHit {
 }
 
 const WORLD_CHARACTER_SCALE = 0.72;
+// The authored Knight is 0.6135 units tall; keep the previous T1 footprint's 1.024-unit height.
+const T1_KNIGHT_WORLD_SCALE = 1.67;
 const MAX_ACTOR_CREATIONS_PER_SYNC = 4;
 const DEFEAT_LIFETIME_SECONDS = 2.6;
 const NAVAL_DEFEAT_LIFETIME_SECONDS = 5.2;
@@ -143,6 +151,7 @@ export class ProceduralArmyCharacterLayer {
   private characterModule?: CharacterModule;
   private runtime?: ProceduralUnitRuntime;
   private runtimePromise?: Promise<void>;
+  private preparingAssets?: Promise<void>;
   private latestPresentations: readonly ProceduralArmyCharacterPresentation[] = [];
   private loadError?: unknown;
   private generation = 0;
@@ -320,9 +329,28 @@ export class ProceduralArmyCharacterLayer {
   }
 
   public getStats(): ProceduralArmyCharacterLayerStats {
+    let nearKnightCount = 0,
+      midKnightCount = 0,
+      meshDrawsPerPass = 0,
+      trianglesPerPass = 0;
+    this.actors.forEach(({ actor, renderDetail, isT1Knight }) => {
+      if (isT1Knight) {
+        if (renderDetail === "hero") nearKnightCount++;
+        else midKnightCount++;
+      }
+      actor.object.traverseVisible((object) => {
+        if (!(object instanceof Mesh)) return;
+        meshDrawsPerPass += Array.isArray(object.material) ? object.geometry.groups.length : 1;
+        trianglesPerPass += (object.geometry.index?.count ?? object.geometry.attributes.position.count) / 3;
+      });
+    });
     const collision = this.separationSimulation.getStats();
     return {
       actorCount: this.actors.size,
+      nearKnightCount,
+      midKnightCount,
+      meshDrawsPerPass,
+      trianglesPerPass,
       collisionBodyCount: collision.bodyCount,
       collisionMaximumOffset: collision.maximumOffset,
       collisionPairCount: collision.resolvedPairCount,
@@ -544,69 +572,100 @@ export class ProceduralArmyCharacterLayer {
 
     const configSignature = resolveConfigSignature(presentation);
     let record = this.actors.get(presentation.entityId);
-    const desiredKind = resolveUnitKind(presentation);
-    const desiredActorFamily = resolveActorFamily(presentation);
-    if (!record) {
-      const actor = runtime.createActor(resolveUnitConfig(characterModule, presentation));
-      actor.object.name = `procedural-army-character:${presentation.entityId}`;
-      const hitTarget = this.createHitTarget(presentation);
-      actor.object.add(hitTarget);
-      const unsubscribeRanged = actor.onRangedRelease((event) => {
-        const attack = this.actors.get(presentation.entityId);
-        this.rangedReleaseListeners.forEach((listener) =>
-          listener(
-            presentation.entityId,
-            event,
-            attack?.attackTargetEntityId,
-            attack?.attackAuthority ?? "provisional",
-          ),
-        );
-      });
-      const unsubscribeMelee = actor.onMeleeContact((event) => {
-        const attack = this.actors.get(presentation.entityId);
-        this.meleeContactListeners.forEach((listener) =>
-          listener(
-            presentation.entityId,
-            event,
-            attack?.attackTargetEntityId,
-            attack?.attackAuthority ?? "provisional",
-          ),
-        );
-      });
-      this.applyActorShadowState(actor);
-      this.scene.add(actor.object);
-      record = {
-        actor,
-        actorFamily: desiredActorFamily,
-        attackAuthority: "provisional",
-        attackTargetEntityId: undefined,
-        collisionProfile: createProceduralCollisionProfile(
+    if (!record || record.configSignature !== configSignature) {
+      const config = resolveUnitConfig(characterModule, presentation);
+      if (!this.prepareActorAssets(runtime, config)) return;
+      const desiredKind = resolveUnitKind(presentation);
+      if (!record) {
+        record = this.createActorRecord(runtime, presentation, config, configSignature);
+        this.actors.set(presentation.entityId, record);
+      } else {
+        runtime.updateActorConfig(record.actor, config);
+        record.collisionProfile = createProceduralCollisionProfile(
           desiredKind,
           resolveWorldCharacterScale(presentation.category, presentation.isNaval),
-        ),
-        configSignature,
-        hitTarget,
-        lastReactionStrength: 0,
-        unsubscribeActionEvents: () => {
-          unsubscribeRanged();
-          unsubscribeMelee();
-        },
-        wasInContact: false,
-      };
-      this.actors.set(presentation.entityId, record);
-    } else if (record.configSignature !== configSignature) {
-      runtime.updateActorConfig(record.actor, resolveUnitConfig(characterModule, presentation));
-      record.collisionProfile = createProceduralCollisionProfile(
-        desiredKind,
-        resolveWorldCharacterScale(presentation.category, presentation.isNaval),
-      );
-      record.configSignature = configSignature;
+        );
+        record.configSignature = configSignature;
+        record.renderDetail = config.humanoid.renderDetail;
+        record.isT1Knight = isT1FootKnight(presentation);
+      }
     }
 
     configureHitTarget(record.hitTarget, presentation.category, presentation.isNaval);
-    if (record.actor.mode === "animated") {
-      record.actor.object.scale.setScalar(resolveWorldCharacterScale(presentation.category, presentation.isNaval));
+    if (isT1FootKnight(presentation)) {
+      record.hitTarget.position.set(0, 0.31, 0);
+      record.hitTarget.scale.set(0.45, 0.64, 0.3);
     }
+    if (record.actor.mode === "animated") {
+      record.actor.object.scale.setScalar(
+        isT1FootKnight(presentation)
+          ? T1_KNIGHT_WORLD_SCALE
+          : resolveWorldCharacterScale(presentation.category, presentation.isNaval),
+      );
+    }
+  }
+
+  private prepareActorAssets(runtime: ProceduralUnitRuntime, config: ProceduralUnitConfig): boolean {
+    if (runtime.areAssetsReady(config)) return true;
+    if (!this.preparingAssets && !this.loadError) {
+      this.preparingAssets = runtime
+        .prepareAssets(config)
+        .catch((error) => {
+          if (this.disposed) return;
+          this.loadError = error;
+          console.error("[ProceduralArmyCharacterLayer] Failed to load visible unit assets", error);
+        })
+        .finally(() => {
+          this.preparingAssets = undefined;
+        });
+    }
+    return false;
+  }
+
+  private createActorRecord(
+    runtime: ProceduralUnitRuntime,
+    presentation: ProceduralArmyCharacterPresentation,
+    config: ProceduralUnitConfig,
+    configSignature: string,
+  ): ProceduralArmyActorRecord {
+    const actor = runtime.createActor(config);
+    actor.object.name = `procedural-army-character:${presentation.entityId}`;
+    const hitTarget = this.createHitTarget(presentation);
+    actor.object.add(hitTarget);
+    const unsubscribeRanged = actor.onRangedRelease((event) => {
+      const attack = this.actors.get(presentation.entityId);
+      this.rangedReleaseListeners.forEach((listener) =>
+        listener(presentation.entityId, event, attack?.attackTargetEntityId, attack?.attackAuthority ?? "provisional"),
+      );
+    });
+    const unsubscribeMelee = actor.onMeleeContact((event) => {
+      const attack = this.actors.get(presentation.entityId);
+      this.meleeContactListeners.forEach((listener) =>
+        listener(presentation.entityId, event, attack?.attackTargetEntityId, attack?.attackAuthority ?? "provisional"),
+      );
+    });
+    this.applyActorShadowState(actor);
+    this.scene.add(actor.object);
+    return {
+      actor,
+      actorFamily: resolveActorFamily(presentation),
+      attackAuthority: "provisional",
+      attackTargetEntityId: undefined,
+      collisionProfile: createProceduralCollisionProfile(
+        resolveUnitKind(presentation),
+        resolveWorldCharacterScale(presentation.category, presentation.isNaval),
+      ),
+      configSignature,
+      renderDetail: config.humanoid.renderDetail,
+      isT1Knight: isT1FootKnight(presentation),
+      hitTarget,
+      lastReactionStrength: 0,
+      unsubscribeActionEvents: () => {
+        unsubscribeRanged();
+        unsubscribeMelee();
+      },
+      wasInContact: false,
+    };
   }
 
   private async requireActor(entityId: number): Promise<ProceduralUnitActor | undefined> {
@@ -820,7 +879,7 @@ function resolveUnitConfig(
       animationMode: kind === "paladin" ? "mounted" : presentation.isMoving ? "walk" : "idle",
       autoRotate: false,
       primaryColor: presentation.primaryColor,
-      renderDetail: "crowd",
+      renderDetail: resolveArmyRenderDetail(presentation),
       seed: resolveCharacterSeed(presentation.entityId),
       tier,
     },
@@ -829,14 +888,22 @@ function resolveUnitConfig(
       volleyCount: tier === 3 ? 7 : tier === 2 ? 5 : 3,
       volleySpreadDegrees: tier === 3 ? 1.2 : 0.8,
     },
-    melee: { detailedEquipment: false, ...resolveMeleeLoadout(presentation.attachments) },
+    melee: { detailedEquipment: kind === "knight" && tier === 1, ...resolveMeleeLoadout(presentation.attachments) },
   });
+}
+
+/** Near detail is reserved for close inspection; gameplay-distance armies use the mid mesh. */
+function resolveArmyRenderDetail(
+  presentation: Pick<ProceduralArmyCharacterPresentation, "distanceToViewCenterSquared">,
+): "hero" | "crowd" {
+  return (presentation.distanceToViewCenterSquared ?? Infinity) <= 12 * 12 ? "hero" : "crowd";
 }
 
 function resolveConfigSignature(presentation: ProceduralArmyCharacterPresentation): string {
   return [
     presentation.category,
     presentation.tier,
+    resolveArmyRenderDetail(presentation),
     presentation.isNaval ? "naval" : "land",
     presentation.primaryColor,
     presentation.isMoving ? "moving" : "idle",
@@ -905,4 +972,8 @@ function resolveActorFamily(
 function resolveWorldCharacterScale(category: TroopType, isNaval: boolean): number {
   if (isNaval) return 0.92;
   return category === TroopType.Paladin ? WORLD_CHARACTER_SCALE * 0.74 : WORLD_CHARACTER_SCALE;
+}
+
+function isT1FootKnight(presentation: ProceduralArmyCharacterPresentation): boolean {
+  return !presentation.isNaval && presentation.category === TroopType.Knight && presentation.tier === TroopTier.T1;
 }

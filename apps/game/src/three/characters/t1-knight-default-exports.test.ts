@@ -11,7 +11,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER } from "./t1-knight-default-humanoid-rig-adapter";
 import { resolveDrivenJointRotation } from "./procedural-character-driven-joints";
-import { loadT1KnightDefaultCharacterAssetTemplates } from "./t1-knight-default-character-assets";
+import { loadT1KnightDefaultCharacterAssetTemplate } from "./t1-knight-default-character-assets";
 import { ProceduralCharacterAvatar } from "./procedural-character-avatar";
 import { ProceduralCharacterLibrary } from "./procedural-character-assets";
 import { createDefaultProceduralCharacterConfig } from "./procedural-character-config";
@@ -22,10 +22,10 @@ import { parseTextureFreeGlb } from "../../../test-support/parse-texture-free-gl
 
 const PREFIX = "/models/characters/t1-knight-default/";
 const EXPORT_HASHES = {
-  "near/skin.glb": "7970274bd56f64480360ab7bc40e92b1395cf1ca3dc5ff82d2e9202cd6b8600c",
-  "mid/skin.glb": "134075965bce0687731613e02aaf27b0726010393109afc8322338b3c2c401a7",
-  "near/sword.glb": "1b278eb9e3f390ec921b6c0dfd93a4d1341cc4972b154fb07a4addccfd613401",
-  "near/shield.glb": "a5c5cc503fecf5f21d04e06eac56155f36e8b3b9c73899aa22fd27fe3b75f9f5",
+  "near/skin.glb": "8b2611cd72da2d48ce08a823db6e8b17fa466c718ea77e0ce8cadb14ce6ac912",
+  "mid/skin.glb": "c8ec804ca73679f7dc05f239934d2e55979a416557f6babefd48d6f26afde273",
+  "near/sword.glb": "44890d8b7104dbf00a3cebc42316ecf8fa99479b316d1675e1bb9b4536ad5ef0",
+  "near/shield.glb": "84cbd1730d84090ebd90ebdcc7cc92bee00709c61354bd84fac772010901d1c1",
 } as const;
 const SKIN_JOINT_COUNT = 31;
 
@@ -80,7 +80,12 @@ async function withKnightLibrary(run: (library: ProceduralCharacterLibrary) => P
     if (!gltf) throw new Error(`Unexpected Knight asset: ${String(url)}`);
     return gltf;
   });
-  const library = new ProceduralCharacterLibrary(await loadT1KnightDefaultCharacterAssetTemplates());
+  const library = new ProceduralCharacterLibrary(
+    await Promise.all([
+      loadT1KnightDefaultCharacterAssetTemplate("hero"),
+      loadT1KnightDefaultCharacterAssetTemplate("crowd"),
+    ]),
+  );
   try {
     await run(library);
   } finally {

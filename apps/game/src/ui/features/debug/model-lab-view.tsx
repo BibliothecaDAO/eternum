@@ -11,7 +11,6 @@ import {
   type ModelLabStats,
 } from "@/three/debug/model-lab/model-lab-renderer";
 import {
-  isSourceOffered,
   listModelLabActions,
   listModelLabBiomeIds,
   MODEL_LAB_BIOMES,
@@ -116,7 +115,7 @@ function UnitModelLabView() {
     const next = readModelLabSettings(writeModelLabSettings({ ...settingsRef.current, ...patch }));
     settingsRef.current = next;
     setCopied(false);
-    // Params the lab does not own (a review flag, capture=1) stay in the address.
+    // Params the lab does not own (capture=1) stay in the address.
     const search = new URLSearchParams(params);
     writeModelLabSettings(next).forEach((value, key) => search.set(key, value));
     setParams(search, { replace: true });
@@ -190,7 +189,7 @@ function UnitModelLabView() {
             className="ml-family"
             key={family}
             aria-pressed={settings.family === family}
-            onClick={() => change({ family, source: "default", action: "idle" })}
+            onClick={() => change({ family, source: "current", action: "idle" })}
           >
             <SemanticIcon name={resourceMeaning(CLASS_ICONS[family])} alt="" />
             <span>
@@ -228,11 +227,21 @@ function UnitModelLabView() {
             <option value="current">Current character runtime</option>
             <option value="default">Default game GLBs</option>
             <option value="legacy">Older alternatives</option>
-            {isSourceOffered("t1-knight-default", settings.family) && (
-              <option value="t1-knight-default">T1 Knight Default</option>
-            )}
+            {settings.family === "knight" && <option value="comparison">Previous / current side by side</option>}
           </select>
         </label>
+        {settings.family === "knight" && (
+          <label className="ml-field">
+            SKIN DETAIL
+            <select
+              value={settings.detail}
+              onChange={(event) => change({ detail: event.target.value as ModelLabSettings["detail"] })}
+            >
+              <option value="hero">Near — 13,499 triangles</option>
+              <option value="crowd">Mid — 4,498 triangles</option>
+            </select>
+          </label>
+        )}
         {isStudy && (
           <fieldset>
             <legend>SAIL IDENTITY & WIND</legend>

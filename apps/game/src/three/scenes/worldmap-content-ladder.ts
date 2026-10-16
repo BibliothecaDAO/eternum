@@ -16,9 +16,8 @@ export type WorldmapTextLabelTier = "full" | "priority" | "none";
  *   top of the mid band until a map-mode key asks for this band.
  *
  * Camera pages and their loading fog remain visible in every band.
- * Procedural army characters are off on every row while they are iterated on —
- * the legacy army models are the one representation; `?proceduralCharacters=1`
- * under dev mode re-enables them.
+ * T1 knights use their production articulated model whenever army models are visible.
+ * Other procedural families remain available through `?proceduralCharacters=1` under dev mode.
  */
 export interface WorldmapContentLadder {
   readonly band: CameraView;

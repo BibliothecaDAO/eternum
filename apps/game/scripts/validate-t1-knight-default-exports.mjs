@@ -1,5 +1,6 @@
 // Checks the four T1 Knight Default GLBs (structure, the 31 joints by name and order, weights, embedded KTX2 maps) and
 // prints one line per file. Any failed check exits non-zero.
+import { decodeModelGeometry } from "./lib/decode-model-geometry.mjs";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -217,16 +218,24 @@ function inspectTextures(document, binary, name) {
     assert(bytes.length > 28 && bytes.subarray(0, 12).equals(ktx2Identifier), name + ": invalid KTX2 map");
     const width = bytes.readUInt32LE(20);
     const height = bytes.readUInt32LE(24);
-    assert(width > 0 && height > 0, name + ": invalid KTX2 map size");
+    const mapSize = name === "near/skin.glb" ? 1024 : 512;
+    assert(width === mapSize && height === mapSize, name + ": incorrect KTX2 map size");
     textures.push({ role, width, height });
   }
   return textures;
 }
 
-function inspectFile(relativePath) {
+async function inspectFile(relativePath) {
   const bytes = readFileSync(resolve(assetRoot, relativePath));
   const name = relativePath;
-  const { document, binary } = parseGlb(bytes, name);
+  const delivered = parseGlb(bytes, name).document;
+  assert(
+    delivered.meshes.every((mesh) =>
+      mesh.primitives.every((primitive) => primitive.extensions?.KHR_draco_mesh_compression),
+    ),
+    name + ": compress every primitive with Draco",
+  );
+  const { document, binary } = parseGlb(await decodeModelGeometry(bytes), name);
   const skinned = relativePath.endsWith("skin.glb");
   assert(!document.animations || document.animations.length === 0, name + ": authored clips present");
   inspectScene(document, name);
@@ -245,7 +254,7 @@ function inspectFile(relativePath) {
 }
 
 const assets = [];
-for (const file of files) assets.push(inspectFile(file));
+for (const file of files) assets.push(await inspectFile(file));
 for (const asset of assets) {
   process.stdout.write(
     `${asset.file}: ok, ${asset.triangles} triangles, ${asset.vertices} vertices, ${asset.skinJoints} joints, ` +

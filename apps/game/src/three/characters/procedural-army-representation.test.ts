@@ -7,11 +7,14 @@ import {
 } from "./procedural-army-representation";
 
 describe("procedural army representation", () => {
-  it("routes land units and ships alike to procedural actors", () => {
+  it("ships only T1 Knights by default; other families stay in the development ladder", () => {
     expect(shouldPresentArmyProcedurally(ModelType.Knight1)).toBe(true);
-    expect(shouldPresentArmyProcedurally(ModelType.Crossbowman2)).toBe(true);
-    expect(shouldPresentArmyProcedurally(ModelType.Paladin3)).toBe(true);
-    expect(shouldPresentArmyProcedurally(ModelType.ShipKnight1)).toBe(true);
+    expect(shouldPresentArmyProcedurally(ModelType.Crossbowman2)).toBe(false);
+    expect(shouldPresentArmyProcedurally(ModelType.Crossbowman2, true)).toBe(true);
+    expect(shouldPresentArmyProcedurally(ModelType.Paladin3)).toBe(false);
+    expect(shouldPresentArmyProcedurally(ModelType.Paladin3, true)).toBe(true);
+    expect(shouldPresentArmyProcedurally(ModelType.ShipKnight1)).toBe(false);
+    expect(shouldPresentArmyProcedurally(ModelType.ShipKnight1, true)).toBe(true);
     expect(shouldPresentArmyProcedurally(undefined)).toBe(false);
   });
 

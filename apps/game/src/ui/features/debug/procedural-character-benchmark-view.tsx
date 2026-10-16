@@ -2,10 +2,7 @@ import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
 import { useCallback, useEffect, useRef, useState, type MutableRefObject, type ReactNode, type RefObject } from "react";
 
-import {
-  listOfferedProceduralCharacterAppearances,
-  resolveActiveProceduralCharacterReviewCapability,
-} from "@/three/characters/procedural-character-review-capability";
+import { listOfferedProceduralCharacterAppearances } from "@/three/characters/procedural-character-appearance";
 
 import {
   applyProceduralCharacterBenchmarkConfigPatch,
@@ -98,10 +95,7 @@ type BenchmarkExperienceMode = "characters" | "world";
 
 // The humanoid kinds the benchmark mixes: an appearance is offered only if all of them can use it.
 const BENCHMARK_HUMANOID_KINDS = ["knight", "archer", "crossbowman", "paladin"] as const;
-const offeredAppearances = listOfferedProceduralCharacterAppearances(
-  resolveActiveProceduralCharacterReviewCapability(),
-  BENCHMARK_HUMANOID_KINDS,
-);
+const offeredAppearances = listOfferedProceduralCharacterAppearances(BENCHMARK_HUMANOID_KINDS);
 
 export const ProceduralCharacterBenchmarkView = () => <ProceduralCharacterBenchmarkExperience mode="characters" />;
 

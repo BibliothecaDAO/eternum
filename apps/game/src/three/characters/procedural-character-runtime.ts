@@ -44,7 +44,6 @@ import { wrapUnitPhase } from "./procedural-motion-curves";
 export type ProceduralCharacterMode = "animated" | "ragdoll";
 
 export interface ProceduralCharacterRuntimeOptions {
-  includeT1KnightDefault?: boolean;
   physicsWorld?: JoltRagdollWorld;
   preloadPhysics?: boolean;
 }
@@ -93,7 +92,7 @@ export class ProceduralCharacterRuntime {
   ) {}
 
   public static async create(options: ProceduralCharacterRuntimeOptions = {}): Promise<ProceduralCharacterRuntime> {
-    const library = await loadProceduralCharacterLibrary({ includeT1KnightDefault: options.includeT1KnightDefault });
+    const library = await loadProceduralCharacterLibrary();
     try {
       if (options.preloadPhysics) await preloadProceduralCharacterPhysics();
       return new ProceduralCharacterRuntime(library, options.physicsWorld);
@@ -101,6 +100,14 @@ export class ProceduralCharacterRuntime {
       library.dispose();
       throw error;
     }
+  }
+
+  public prepareAssets(config: ProceduralCharacterConfig): Promise<void> {
+    return this.library.prepare(config);
+  }
+
+  public areAssetsReady(config: ProceduralCharacterConfig): boolean {
+    return this.library.isReady(config);
   }
 
   public createActor(config: ProceduralCharacterConfig): ProceduralCharacterActor {
@@ -223,10 +230,12 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
     const replacement = requiresModelSwap
       ? this.library.instantiate(normalized.appearanceId, normalized.tier, normalized.renderDetail)
       : undefined;
-    // A render-detail change that swaps the model rebuilds the rig like any model swap: ragdoll, plant controller,
-    // pose filter and gait phase restart. That is deliberate; detail is fixed per actor today, so nothing swaps live.
     const requiresRigRebuild = normalized.seed !== this.config.seed || requiresModelSwap;
-    const requiresPlantReset = requiresRigRebuild || normalized.animationMode !== this.config.animationMode;
+    const requiresPlantReset =
+      normalized.seed !== this.config.seed ||
+      normalized.appearanceId !== this.config.appearanceId ||
+      normalized.tier !== this.config.tier ||
+      normalized.animationMode !== this.config.animationMode;
     this.config = normalized;
     if (requiresPlantReset) {
       this.plantController.reset();

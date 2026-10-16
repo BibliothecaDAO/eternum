@@ -308,6 +308,17 @@ materials. Choose **Age**, **Series**, **Order**, **Ownership** and **Distance**
 an external reference directory in the URL, **Revision** offers Before, After and the pair. See
 [src/lab/README.md](src/lab/README.md#realm-revision-comparison) for the retained capture driver and reference setup.
 
+### T1 Knight
+
+Land T1 Knights use the new sword-and-shield model in every game mode. Near/mid skin detail follows camera distance; the
+far map keeps army icons. `/lab/models?family=knight&source=comparison&tier=1&compare=0&detail=crowd` compares the
+previous model and the production model. Skin detail selects Near or Mid; Idle, Move and Run exercise both skins. The
+terrain lab's Army model → knight1 previews the same production actor at its map scale.
+
+Live proof: `pnpm --dir apps/game playtest --port 4195 --steps knight-blitz-spectator --iterations 1` enters a running
+Blitz as a spectator and checks visible Knight representations and mesh budgets before and after zooming close.
+`--steps knight-spectator` exercises Frontier. A view without a T1 Knight is reported blocked, never passed.
+
 ## Realm level icons
 
 `/lab/kit/icons#realm-levels` compares all four realm levels with the current GLB renders and the previous paintings.

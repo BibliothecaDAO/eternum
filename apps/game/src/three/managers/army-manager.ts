@@ -2463,7 +2463,7 @@ export class ArmyManager {
     this.proceduralArmyPresentationBuffer.length = 0;
     this.desiredProceduralArmyEntityIds.clear();
 
-    if (this.contentLadder.proceduralCharacters) {
+    if (this.contentLadder.armyModels) {
       this.visibleArmies.forEach((army) => this.collectProceduralArmyPresentation(army, animationContext));
     }
     this.proceduralArmyCharacterLayer.sync(this.proceduralArmyPresentationBuffer, deltaTime);
@@ -2480,7 +2480,7 @@ export class ArmyManager {
     const modelType = this.armyModel.getAssignedModelType(entityId);
     if (
       !instance ||
-      !shouldPresentArmyProcedurally(modelType) ||
+      !shouldPresentArmyProcedurally(modelType, this.contentLadder.proceduralCharacters) ||
       !isAnimationPositionVisible(instance.position, animationContext)
     ) {
       return;

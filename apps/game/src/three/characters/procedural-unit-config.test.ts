@@ -3,6 +3,20 @@ import { describe, expect, it } from "vitest";
 import { applyProceduralUnitConfigPatch, createDefaultProceduralUnitConfig } from "./procedural-unit-config";
 
 describe("procedural unit configuration", () => {
+  it("chooses the production T1 skin and matching gear, then restores higher-tier defaults", () => {
+    const t1 = applyProceduralUnitConfigPatch(createDefaultProceduralUnitConfig(), {
+      kind: "knight",
+      humanoid: { tier: 1 },
+    });
+    expect(t1.humanoid.appearanceId).toBe("t1-knight-default");
+    expect(t1.melee).toMatchObject({ weaponId: "t1-knight-default-sword", offhandId: "t1-knight-default-shield" });
+    const t2 = applyProceduralUnitConfigPatch(t1, { humanoid: { tier: 2 } });
+    expect(t2.humanoid.appearanceId).toBe("modular-fantasy");
+    expect(t2.melee.weaponId).toBe("iron-longsword");
+    const returned = applyProceduralUnitConfigPatch(t2, { humanoid: { tier: 1 } });
+    expect(returned.humanoid.appearanceId).toBe("t1-knight-default");
+    expect(returned.melee.offhandId).toBe("t1-knight-default-shield");
+  });
   it("defaults to a mounted Paladin and keeps rider/mount tiers synchronized when patched", () => {
     const config = createDefaultProceduralUnitConfig();
     const upgraded = applyProceduralUnitConfigPatch(config, {

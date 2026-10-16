@@ -181,7 +181,7 @@ export const ProceduralCharacterGymView = () => {
 
   useEffect(() => {
     configRef.current = config;
-    rendererRef.current?.updateConfig(config);
+    void rendererRef.current?.updateConfig(config).catch((error) => setRendererError(String(error)));
   }, [config]);
 
   useEffect(() => {
@@ -292,8 +292,10 @@ export const ProceduralCharacterGymView = () => {
       setCollisionConfig(collision);
       setConfig(scenario.config);
       rendererRef.current?.updateCollisionConfig(collision);
-      rendererRef.current?.updateConfig(scenario.config);
-      rendererRef.current?.reset();
+      void rendererRef.current
+        ?.updateConfig(scenario.config)
+        .then(() => rendererRef.current?.reset())
+        .catch((error) => setRendererError(String(error)));
       closeCapture();
       return { sequence: resolveKnightReviewSequence(scenario.id), rootMotionSpeed: scenario.rootMotionSpeed };
     },
@@ -508,6 +510,9 @@ function mountGymRenderer(
     collisionConfig: collisionConfigRef.current,
     config: configRef.current,
     container,
+    onError: (error) => {
+      if (!cancelled) setRendererError(resolveRendererErrorMessage(error));
+    },
     onStats: (nextStats) => {
       statsRef.current = nextStats;
       if (nextStats.rangedPhase === "aim" && nextStats.previewArrowVisible) aimStatsRef.current = nextStats;

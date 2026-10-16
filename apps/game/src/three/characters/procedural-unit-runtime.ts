@@ -145,7 +145,7 @@ export class ProceduralUnitRuntime {
       ProceduralHorseRuntime.create(physicsWorld),
       ProceduralDragonRuntime.create(),
       ProceduralBoatRuntime.create(),
-      ProceduralMeleeWeaponLibrary.create({ includeT1KnightDefault: options.includeT1KnightDefault }),
+      ProceduralMeleeWeaponLibrary.create(),
     ] as const);
     const [characterResult, horseResult, dragonResult, boatResult, meleeResult] = results;
     if (
@@ -176,6 +176,21 @@ export class ProceduralUnitRuntime {
       physicsWorld,
       meleeResult.value,
     );
+  }
+
+  public areAssetsReady(config: ProceduralUnitConfig): boolean {
+    return (
+      this.characterRuntime.areAssetsReady(config.humanoid) && this.meleeLibrary.areFittedAssetsReady(config.melee)
+    );
+  }
+
+  /** Prepare only the appearance LOD and fitted equipment the caller will display. */
+  public async prepareAssets(config: ProceduralUnitConfig): Promise<void> {
+    const normalized = prepareProceduralUnitAssembly(config);
+    await Promise.all([
+      this.characterRuntime.prepareAssets(normalized.humanoid),
+      this.meleeLibrary.prepare(normalized.melee),
+    ]);
   }
 
   public createActor(config: ProceduralUnitConfig): ProceduralUnitActor {

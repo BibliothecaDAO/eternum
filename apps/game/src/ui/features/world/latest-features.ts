@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-16",
+    title: "New T1 Knight model",
+    description: "T1 Knights now carry the new armour, sword and shield, with lighter geometry at gameplay distance.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-16",
     title: "Blitz guards and spire jackpots",
     description:
       "Camps and Essence Rifts have one T1 guard of 999–1,499 troops, with equal chances of Knight, Paladin or Crossbowman. Each Hyperstructure has three T2 guards of 1,499–1,999 troops each. Dormant spires still appear on one explored hex in two hundred and pay a flat 1,000 Essence, plus your active Exploration relic bonus, regardless of army size or tier.",
