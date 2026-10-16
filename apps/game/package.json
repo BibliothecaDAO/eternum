@@ -140,7 +140,6 @@
     "vite": "catalog:game",
     "vite-plugin-mkcert": "^1.17.6",
     "vite-plugin-svgr": "^4.5.0",
-    "vite-plugin-top-level-await": "^1.4.1",
     "vite-plugin-wasm": "^3.3.0",
     "vitest": "2.1.9",
     "workbox-precaching": "7.4.0",

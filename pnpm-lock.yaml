@@ -497,9 +497,6 @@ importers:
       vite-plugin-svgr:
         specifier: ^4.5.0
         version: 4.5.0(rollup@2.79.2)(typescript@5.9.3)(vite@5.4.21(@types/node@20.19.33)(lightningcss@1.32.0)(terser@5.46.0))
-      vite-plugin-top-level-await:
-        specifier: ^1.4.1
-        version: 1.6.0(@swc/helpers@0.5.18)(rollup@2.79.2)(vite@5.4.21(@types/node@20.19.33)(lightningcss@1.32.0)(terser@5.46.0))
       vite-plugin-wasm:
         specifier: ^3.3.0
         version: 3.5.0(vite@5.4.21(@types/node@20.19.33)(lightningcss@1.32.0)(terser@5.46.0))
@@ -15973,11 +15970,6 @@ packages:
     resolution: {integrity: sha512-W+uoSpmVkSmNOGPSsDCWVW/DDAyv+9fap9AZXBvWiQqrboJ08j2vh0tFxTD/LjwqwAd3yYSVJgm54S/1GhbdnA==}
     peerDependencies:
       vite: '>=2.6.0'
-
-  vite-plugin-top-level-await@1.6.0:
-    resolution: {integrity: sha512-bNhUreLamTIkoulCR9aDXbTbhLk6n1YE8NJUTTxl5RYskNRtzOR0ASzSjBVRtNdjIfngDXo11qOsybGLNsrdww==}
-    peerDependencies:
-      vite: '>=2.8'
 
   vite-plugin-wasm@3.5.0:
     resolution: {integrity: sha512-X5VWgCnqiQEGb+omhlBVsvTfxikKtoOgAzQ95+BZ8gQ+VfMHIjSHr0wyvXFQCa0eKQ0fKyaL0kWcEnYqBac4lQ==}
@@ -36131,17 +36123,6 @@ snapshots:
       - rollup
       - supports-color
       - typescript
-
-  vite-plugin-top-level-await@1.6.0(@swc/helpers@0.5.18)(rollup@2.79.2)(vite@5.4.21(@types/node@20.19.33)(lightningcss@1.32.0)(terser@5.46.0)):
-    dependencies:
-      '@rollup/plugin-virtual': 3.0.2(rollup@2.79.2)
-      '@swc/core': 1.15.11(@swc/helpers@0.5.18)
-      '@swc/wasm': 1.15.11
-      uuid: 10.0.0
-      vite: 5.4.21(@types/node@20.19.33)(lightningcss@1.32.0)(terser@5.46.0)
-    transitivePeerDependencies:
-      - '@swc/helpers'
-      - rollup
 
   vite-plugin-wasm@3.5.0(vite@5.4.21(@types/node@20.19.33)(lightningcss@1.32.0)(terser@5.46.0)):
     dependencies:
