@@ -1,4 +1,5 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
+import type { GameType } from "@config";
 import React from "react";
 import { colors, icon, modifiers, section, table } from "./styles";
 
@@ -81,8 +82,9 @@ const getTroopIcon = (troopType: TroopType): string => {
   }
 };
 
-export const BiomeCombat = () => {
-  const config = ETERNUM_CONFIG();
+/** Its page names the mode: Blitz and Eternum each show their own modifiers. */
+export const BiomeCombat = ({ mode }: { mode: GameType }) => {
+  const config = ETERNUM_CONFIG(mode);
   const biomeBonusNum = config.troop.damage.damageBiomeBonusNum || 0;
   const biomeBonus = biomeBonusNum / 10_000;
 

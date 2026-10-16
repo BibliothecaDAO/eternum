@@ -1,14 +1,16 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
+import type { GameType } from "@config";
 import { BuildingType, resources } from "@bibliothecadao/types";
 import ResourceIcon from "./ResourceIcon";
 import { colors, formatAmount } from "./styles";
 
 type Props = {
   buildingType: BuildingType;
+  mode: GameType;
 };
 
-export default function BuildingCosts({ buildingType }: Props) {
-  const config = ETERNUM_CONFIG();
+export default function BuildingCosts({ buildingType, mode }: Props) {
+  const config = ETERNUM_CONFIG(mode);
 
   // Get costs directly from the config files
   const complexCosts = config.buildings.complexBuildingCosts[buildingType] || [];

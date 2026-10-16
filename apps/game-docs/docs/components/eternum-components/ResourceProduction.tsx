@@ -135,7 +135,7 @@ const componentStyles = {
 
 // Component for Simple Mode Resource Production
 export const SimpleResourceProduction = () => {
-  const config = ETERNUM_CONFIG();
+  const config = ETERNUM_CONFIG("eternum");
   const resourceInputSimpleMode = config.resources?.productionBySimpleRecipe || {};
   const resourceOutputSimpleMode = config.resources?.productionBySimpleRecipeOutputs || {};
 
@@ -213,7 +213,7 @@ export const SimpleResourceProduction = () => {
 
 // Component for Complex Mode Resource Production
 export const StandardResourceProduction = () => {
-  const config = ETERNUM_CONFIG();
+  const config = ETERNUM_CONFIG("eternum");
   const resourceInputComplexMode = config.resources?.productionByComplexRecipe || {};
   const resourceOutputComplexMode = config.resources?.productionByComplexRecipeOutputs || {};
 
@@ -291,7 +291,7 @@ export const StandardResourceProduction = () => {
 
 // Component for Simple Mode Troop Production
 export const SimpleTroopProduction = () => {
-  const config = ETERNUM_CONFIG();
+  const config = ETERNUM_CONFIG("eternum");
   const troopInputSimpleMode = config.resources?.productionBySimpleRecipe || {};
   const troopOutputSimpleMode = config.resources?.productionBySimpleRecipeOutputs || {};
 
@@ -363,7 +363,7 @@ export const SimpleTroopProduction = () => {
 
 // Component for Standard Mode Troop Production
 export const StandardTroopProduction = () => {
-  const config = ETERNUM_CONFIG();
+  const config = ETERNUM_CONFIG("eternum");
   const troopInputComplexMode = config.resources?.productionByComplexRecipe || {};
   const troopOutputComplexMode = config.resources?.productionByComplexRecipeOutputs || {};
 
@@ -492,7 +492,7 @@ export const StandardTroopProduction = () => {
 
 // Component for Labor Production
 export const LaborProduction = () => {
-  const config = ETERNUM_CONFIG();
+  const config = ETERNUM_CONFIG("eternum");
   const laborOutputPerSecond = config.resources?.productionByComplexRecipeOutputs?.[ResourcesIds.Labor] || 0;
 
   // Get resources that produce labor
@@ -560,7 +560,7 @@ export const LaborProduction = () => {
 };
 
 export const DonkeyProduction = () => {
-  const config = ETERNUM_CONFIG();
+  const config = ETERNUM_CONFIG("eternum");
   const donkeyOutput = config.resources?.productionBySimpleRecipeOutputs?.[ResourcesIds.Donkey] || 0;
   const donkeyInputs = config.resources?.productionByComplexRecipe?.[ResourcesIds.Donkey] || [];
 

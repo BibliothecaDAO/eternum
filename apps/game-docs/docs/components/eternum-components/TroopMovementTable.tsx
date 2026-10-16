@@ -20,7 +20,7 @@ export const getTroopName = (troopId: number) => {
 // Separate component for Max Stamina Table
 export const MaxStaminaTable = () => {
   const troopTypes = [ResourcesIds.Paladin, ResourcesIds.Knight, ResourcesIds.Crossbowman];
-  const config = ETERNUM_CONFIG();
+  const config = ETERNUM_CONFIG("eternum");
 
   return (
     <div style={section.commonCard}>
@@ -76,7 +76,7 @@ const StatItem = ({ label, value }: { label: string; value: React.ReactNode }) =
 );
 
 export default function TroopMovementTable() {
-  const config = ETERNUM_CONFIG();
+  const config = ETERNUM_CONFIG("eternum");
 
   return (
     <div style={section.wrapper}>

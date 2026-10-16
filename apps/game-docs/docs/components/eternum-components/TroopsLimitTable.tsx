@@ -3,7 +3,7 @@ import { formatNumberWithCommas } from "@/utils/formatting";
 import { icon, stats, troop } from "../styles";
 
 export default function TroopsLimitTable() {
-  const config = ETERNUM_CONFIG();
+  const config = ETERNUM_CONFIG("eternum");
 
   return (
     <div style={troop.limitsCard}>

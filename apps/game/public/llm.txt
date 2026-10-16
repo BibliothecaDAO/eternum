@@ -1679,7 +1679,7 @@ Hyperstructures is the decisive path that ultimately closes the chapter on each 
 
 Each Hyperstructure is unique, requiring varying quantities of all 22 resources (and Labor) for completion. To activate
 a Hyperstructure Foundation, all **{
-  formatNumberWithCommas(ETERNUM_CONFIG().hyperstructures.hyperstructureInitializationShardsCost.amount)} Ancient
+  formatNumberWithCommas(ETERNUM_CONFIG("eternum").hyperstructures.hyperstructureInitializationShardsCost.amount)} Ancient
 Fragments** must be deposited into the structures's balance, and then the owner of the mine must explicitly activate the
 foundation to begin construction. Upon activation, the exact quantity required for each resource is randomly determined
 within predefined minimum and maximum ranges shown below:
@@ -1703,7 +1703,7 @@ available to claim throughout the construction process.
 
 Separately, and in addition to the victory points awarded at completion, the owner of the Hyperstructure begins to
 accumulate
-**{formatNumberWithCommas(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsPerCycle)/HYPERSTRUCTURE_POINT_MULTIPLIER)}
+**{formatNumberWithCommas(Number(ETERNUM_CONFIG("eternum").hyperstructures.hyperstructurePointsPerCycle)/HYPERSTRUCTURE_POINT_MULTIPLIER)}
 victory points** for every second the structure remains under their control. These accumulating victory points can be
 shared among multiple Lords through a customizable share split, allowing the owner to distribute glory and reward
 cooperation. If a Hyperstructure is claimed by another Lord, future accumulated victory points are redirected to the new
@@ -1713,7 +1713,7 @@ owner, who may similarly decide on sharing arrangements.
 
 Victory points earned through construction contributions or accumulation cannot be lost once awarded. The first player
 to reach
-**{formatNumberWithCommas(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsForWin)/HYPERSTRUCTURE_POINT_MULTIPLIER)}
+**{formatNumberWithCommas(Number(ETERNUM_CONFIG("eternum").hyperstructures.hyperstructurePointsForWin)/HYPERSTRUCTURE_POINT_MULTIPLIER)}
 total victory points** unlocks the ability to select the ‘End Season’ option, concluding the current game season.
 
 <HyperstructurePointsTable />
@@ -3030,7 +3030,7 @@ water where their mounted capabilities are negated. They are the most advantaged
 type. In combination with the biome effects on stamina use, Paladins are less versatile than Knights or Crossbowmen, but
 are devastatingly effective in the right situations.
 
-<BiomeCombat />
+<BiomeCombat mode="blitz" />
 
 
 
@@ -3529,7 +3529,7 @@ All Realms start the game with a structure in the center of the buildable hexes,
 represents the central point of governance of the Realm, and facilitates key functions such as Realm upgrades and labor
 production. This building cannot be destroyed and provides a baseline population capacity of 6.
 
-<BuildingCard title="Keep" image="/images/buildings/construction/castleZero.png" buildingType={25} description={["Produces labor", "Provides a baseline population capacity of 6", "Cannot be constructed or destroyed"]} />
+<BuildingCard mode="blitz" title="Keep" image="/images/buildings/construction/castleZero.png" buildingType={25} description={["Produces labor", "Provides a baseline population capacity of 6", "Cannot be constructed or destroyed"]} />
 
 ### Resource Buildings
 
@@ -4143,7 +4143,7 @@ for the entire journey.
 The amount of stamina consumed when moving into an explored hex depends on both the biome of that hex and the type of
 troops within the army. The table below details biome-specific stamina costs for each troop type:
 
-<BiomeStamina />
+<BiomeStamina mode="blitz" />
 
 Troops also require Wheat to move. This is consumed from their home Realm when a movement order is executed. Each unit
 consumes **0.05** Wheat to move into an explored tile or **0.10** Wheat to explore a new tile.
@@ -4295,8 +4295,8 @@ engagement opportunities.
 Each Realm and Village has a limited number of guard and field armies The number of armies can be increased by upgrading
 the Realm / Village level as explained in the [Realms](/eternum/realm-and-villages/realm) section. Each military
 building constructed on a Realm or Village also increases total field armies by 1 (up to a maximum of
-**+{ETERNUM_CONFIG().troop.limit.explorerMaxPartyCount-4}**). Lords can deploy armies from the Military tab in the Local
-view. The maximum size of an army is **30,000**
+**+{ETERNUM_CONFIG("eternum").troop.limit.explorerMaxPartyCount-4}**). Lords can deploy armies from the Military tab in
+the Local view. The maximum size of an army is **30,000**
 
 ### Field Armies
 
@@ -4333,10 +4333,10 @@ Unlike Realms and Villages, world structures have a static number of defense slo
 
 When attacked, guard armies are targeted sequentially starting from the outermost occupied slot. If a guard army is
 destroyed, the slot that it occupied becomes unavailable for reinforcement for
-**{Math.floor(ETERNUM_CONFIG().troop.limit.guardResurrectionDelay / 3600)} hours**. Once all guard armies are defeated,
-the structure becomes vulnerable to being claimed by an adjacent field army (with the exception of Villages, which
-cannot be claimed). Lords can also direct their guard armies to launch attacks against adjacent hexes by selecting their
-structure on the worldmap, then right-clicking the target hex.
+**{Math.floor(ETERNUM_CONFIG("eternum").troop.limit.guardResurrectionDelay / 3600)} hours**. Once all guard armies are
+defeated, the structure becomes vulnerable to being claimed by an adjacent field army (with the exception of Villages,
+which cannot be claimed). Lords can also direct their guard armies to launch attacks against adjacent hexes by selecting
+their structure on the worldmap, then right-clicking the target hex.
 
 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
   <img src="/gifs/attack-from-structure.gif" alt="Attack field army" />
@@ -4441,7 +4441,7 @@ the 'raid' action when attacking an enemy structure.
 
 Before attempting a raid, your army must meet the following requirements:
 
-* Have at least **{ETERNUM_CONFIG().troop.stamina.staminaAttackReq}** stamina
+* Have at least **{ETERNUM_CONFIG("eternum").troop.stamina.staminaAttackReq}** stamina
 * Be adjacent to the target structure
 * Structure must contain raidable resources
 
@@ -4477,7 +4477,8 @@ only be stolen from another player by claiming a Realm into which tokens have be
 At the conclusion of a raid, regardless of whether it was successful or not, damage is calculated for both the raiding
 army and the guard armies. This damage is significantly reduced by a raid damage modifier, simulating the concept of a
 pillaging and looting event as opposed to a full-scale battle. The raid damage modifier reduces damage to
-**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of that which would be applied in an attack action.
+**{ETERNUM_CONFIG("eternum").troop.damage.damageRaidPercentNum/100}%** of that which would be applied in an attack
+action.
 
 Damage from a raiding action is calculated according to the following rules:
 
@@ -4500,9 +4501,9 @@ calculations result in the following:
 
 Applying the raid damage modifier, actual losses become:
 
-* Guards: Slot 1 loses **36** troops (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of 180), Slot 2
-  loses **30** troops (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of 150).
-* Raiders: Lose **64** troops total (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of 320).
+* Guards: Slot 1 loses **36** troops (**{ETERNUM_CONFIG("eternum").troop.damage.damageRaidPercentNum/100}%** of 180),
+  Slot 2 loses **30** troops (**{ETERNUM_CONFIG("eternum").troop.damage.damageRaidPercentNum/100}%** of 150).
+* Raiders: Lose **64** troops total (**{ETERNUM_CONFIG("eternum").troop.damage.damageRaidPercentNum/100}%** of 320).
 
 ## Raid Outcomes
 
@@ -4511,15 +4512,15 @@ After a raid attempt, one of two outcomes will occur:
 1. **Successful Raid**
    * Resources are transferred to your army's inventory
    * Resources are limited by your army's carrying capacity
-   * Both armies suffer reduced casualties (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of normal
-     combat damage)
-   * Your army's stamina is reduced by **{ETERNUM_CONFIG().troop.stamina.staminaAttackReq}**
+   * Both armies suffer reduced casualties (**{ETERNUM_CONFIG("eternum").troop.damage.damageRaidPercentNum/100}%** of
+     normal combat damage)
+   * Your army's stamina is reduced by **{ETERNUM_CONFIG("eternum").troop.stamina.staminaAttackReq}**
 
 2. **Failed Raid**
    * No resources are stolen
-   * Both armies still suffer reduced casualties (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of
-     normal combat damage)
-   * Your army's stamina is still reduced by **{ETERNUM_CONFIG().troop.stamina.staminaAttackReq}**
+   * Both armies still suffer reduced casualties (**{ETERNUM_CONFIG("eternum").troop.damage.damageRaidPercentNum/100}%**
+     of normal combat damage)
+   * Your army's stamina is still reduced by **{ETERNUM_CONFIG("eternum").troop.stamina.staminaAttackReq}**
 
 The outcome is determined by comparing your army's total damage output against the combined damage output of all guard
 armies present. If no guard armies are present, the raid automatically succeeds.
@@ -4590,7 +4591,7 @@ Crossbowmen, but are devastatingly effective in the right situations.
 **Note: The scorched biome applies +30% damage to all troop types, representing the additional casualties sustained from
 battling in an inhospitable environment.**
 
-<BiomeCombat />
+<BiomeCombat mode="eternum" />
 
 
 
@@ -4688,6 +4689,7 @@ functions such as Realm/Village upgrades and Labor production. This building can
 population capacity of 5.
 
 <BuildingCard
+  mode="eternum"
   title="Labor Camp"
   image="/images/buildings/construction/castleZero.png"
   buildingType={25}
@@ -4706,6 +4708,7 @@ have the same requirements in simple and standard mode.
 
 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
   <BuildingCard
+    mode="eternum"
     title="Lumber Camp"
     image="/images/buildings/construction/lumber_mill.png"
     buildingType={5}
@@ -4717,6 +4720,7 @@ have the same requirements in simple and standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Stone Quarry"
     image="/images/buildings/construction/mine.png"
     buildingType={3}
@@ -4728,6 +4732,7 @@ have the same requirements in simple and standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Coal Mine"
     image="/images/buildings/construction/mine.png"
     buildingType={4}
@@ -4739,6 +4744,7 @@ have the same requirements in simple and standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Copper Mine"
     image="/images/buildings/construction/forge.png"
     buildingType={6}
@@ -4750,6 +4756,7 @@ have the same requirements in simple and standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Obsidian Flows"
     image="/images/buildings/construction/mine.png"
     buildingType={8}
@@ -4761,6 +4768,7 @@ have the same requirements in simple and standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Silver Mine"
     image="/images/buildings/construction/forge.png"
     buildingType={10}
@@ -4772,6 +4780,7 @@ have the same requirements in simple and standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Ironwood Grove"
     image="/images/buildings/construction/lumber_mill.png"
     buildingType={7}
@@ -4783,6 +4792,7 @@ have the same requirements in simple and standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Cold Iron Foundry"
     image="/images/buildings/construction/forge.png"
     buildingType={13}
@@ -4794,6 +4804,7 @@ have the same requirements in simple and standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Gold Mine"
     image="/images/buildings/construction/forge.png"
     buildingType={9}
@@ -4805,6 +4816,7 @@ have the same requirements in simple and standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Hartwood Sanctuary"
     image="/images/buildings/construction/lumber_mill.png"
     buildingType={17}
@@ -4816,6 +4828,7 @@ have the same requirements in simple and standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Diamond Mine"
     image="/images/buildings/construction/mine.png"
     buildingType={16}
@@ -4827,6 +4840,7 @@ have the same requirements in simple and standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Sapphire Mine"
     image="/images/buildings/construction/mine.png"
     buildingType={22}
@@ -4838,6 +4852,7 @@ have the same requirements in simple and standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Ruby Mine"
     image="/images/buildings/construction/mine.png"
     buildingType={15}
@@ -4849,6 +4864,7 @@ have the same requirements in simple and standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Deep Crystal Cave"
     image="/images/buildings/construction/mine.png"
     buildingType={14}
@@ -4860,6 +4876,7 @@ have the same requirements in simple and standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Ignium Harvester"
     image="/images/buildings/construction/forge.png"
     buildingType={18}
@@ -4871,6 +4888,7 @@ have the same requirements in simple and standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Ethereal Silica Harvester"
     image="/images/buildings/construction/mine.png"
     buildingType={23}
@@ -4882,6 +4900,7 @@ have the same requirements in simple and standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="True Ice Harvester"
     image="/images/buildings/construction/mine.png"
     buildingType={20}
@@ -4893,6 +4912,7 @@ have the same requirements in simple and standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Twilight Quartz Mine"
     image="/images/buildings/construction/mine.png"
     buildingType={19}
@@ -4904,6 +4924,7 @@ have the same requirements in simple and standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Alchemical Workshop"
     image="/images/buildings/construction/forge.png"
     buildingType={12}
@@ -4915,6 +4936,7 @@ have the same requirements in simple and standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Adamantine Mine"
     image="/images/buildings/construction/forge.png"
     buildingType={21}
@@ -4926,6 +4948,7 @@ have the same requirements in simple and standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Mithral Forge"
     image="/images/buildings/construction/forge.png"
     buildingType={11}
@@ -4937,6 +4960,7 @@ have the same requirements in simple and standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Dragonhide Harvester"
     image="/images/buildings/construction/dragonhide.png"
     buildingType={24}
@@ -4959,6 +4983,7 @@ increase (Storehouse)]
 
 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
   <BuildingCard
+    mode="eternum"
     title="Worker's Hut"
     image="/images/buildings/construction/workers_hut.png"
     buildingType={1}
@@ -4969,17 +4994,19 @@ increase (Storehouse)]
   />
 
   <BuildingCard
+    mode="eternum"
     title="Storehouse"
     image="/images/buildings/construction/storehouse.png"
     buildingType={2}
     description={[
-  "Increases storage capacity by {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.Storehouse]/1000 )} kg for each material",
+  `Increases storage capacity by ${formatNumberWithCommas(ETERNUM_CONFIG("eternum").carryCapacityGram[CapacityConfig.Storehouse] / 1000)} kg for each material`,
   "Requires 2 population to be constructed",
   "Available in both simple and standard building modes",
 ]}
   />
 
   <BuildingCard
+    mode="eternum"
     title="Market"
     image="/images/buildings/construction/market.png"
     buildingType={27}
@@ -4991,6 +5018,7 @@ increase (Storehouse)]
   />
 
   <BuildingCard
+    mode="eternum"
     title="Farm"
     image="/images/buildings/construction/farm.png"
     buildingType={37}
@@ -5002,6 +5030,7 @@ increase (Storehouse)]
   />
 
   <BuildingCard
+    mode="eternum"
     title="Fishing Village"
     image="/images/buildings/construction/fishing_village.png"
     buildingType={38}
@@ -5024,6 +5053,7 @@ available for construction in standard mode.
 
 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
   <BuildingCard
+    mode="eternum"
     title="Footman Barracks (T1)"
     image="/images/buildings/construction/barracks.png"
     buildingType={28}
@@ -5035,6 +5065,7 @@ available for construction in standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Knight Quarters (T2)"
     image="/images/buildings/construction/barracks.png"
     buildingType={29}
@@ -5046,6 +5077,7 @@ available for construction in standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Guardian Sanctum (T3)"
     image="/images/buildings/construction/barracks.png"
     buildingType={30}
@@ -5057,6 +5089,7 @@ available for construction in standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Archery Range (T1)"
     image="/images/buildings/construction/archery.png"
     buildingType={31}
@@ -5068,6 +5101,7 @@ available for construction in standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Crossbow Garrison (T2)"
     image="/images/buildings/construction/archery.png"
     buildingType={32}
@@ -5079,6 +5113,7 @@ available for construction in standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Hunting Den (T3)"
     image="/images/buildings/construction/archery.png"
     buildingType={33}
@@ -5090,6 +5125,7 @@ available for construction in standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Horseman Stables (T1)"
     image="/images/buildings/construction/stable.png"
     buildingType={34}
@@ -5101,6 +5137,7 @@ available for construction in standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Paladin Sanctuary (T2)"
     image="/images/buildings/construction/stable.png"
     buildingType={35}
@@ -5112,6 +5149,7 @@ available for construction in standard mode.
   />
 
   <BuildingCard
+    mode="eternum"
     title="Dragon Pit (T3)"
     image="/images/buildings/construction/stable.png"
     buildingType={36}
@@ -5209,7 +5247,7 @@ explained in the [Movement & Exploration](/eternum/worldmap-movement/movement) s
 unit is determined by your Realm's biome, and is strategically chosen to have a combat advantage in that particular
 environment.
 
-<StartingMilitary amount={5000} structureType={StructureType.Realm} />
+<StartingMilitary mode="eternum" amount={5000} structureType={StructureType.Realm} />
 
 ### Realm Progression
 
@@ -5270,7 +5308,7 @@ process explained in the [Movement & Exploration](/eternum/worldmap-movement/mov
 military unit is determined by your Village's biome, and is strategically chosen to have a combat advantage in that
 particular environment.
 
-<StartingMilitary amount={1000} structureType={StructureType.Village} />
+<StartingMilitary mode="eternum" amount={1000} structureType={StructureType.Village} />
 
 ### Resource Roll
 
@@ -5877,8 +5915,8 @@ import { ETERNUM_CONFIG } from "@/utils/config";
 
 Your available storage limits the amount of materials your Realm or Village can hold. Effective management of your
 storage capacity is essential for successful development. Each Realm and Village begins with a base capacity of
-**{formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.Storehouse]/1000)} kg**. You'll need to
-construct storehouses to expand your storage capabilities.
+**{formatNumberWithCommas(ETERNUM_CONFIG("eternum").carryCapacityGram[CapacityConfig.Storehouse]/1000)} kg**. You'll
+need to construct storehouses to expand your storage capabilities.
 
 ## Material Weights
 
@@ -5891,7 +5929,8 @@ Materials in Eternum have different weights that affect storage:
 Expand your storage capacity to support your growing realm:
 
 * **Capacity**: Each storehouse adds
-  {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.Storehouse]/1000 )}kg of storage capacity.
+  {formatNumberWithCommas(ETERNUM_CONFIG("eternum").carryCapacityGram[CapacityConfig.Storehouse]/1000 )}kg of storage
+  capacity.
 
 * **Expansion**: Build additional storehouses to increase total storage.
 
@@ -5902,11 +5941,11 @@ Expand your storage capacity to support your growing realm:
 All world structures have set storage capacities **(that cannot be expanded through the use of storehouses)**. These
 capacities are as follows:
 
-| Structure Type | Storage Capacity                                                                                             |
-| -------------- | ------------------------------------------------------------------------------------------------------------ |
-| Hyperstructure | {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.HyperstructureStructure]/1000)} kg |
-| Bank           | {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.BankStructure]/1000)} kg           |
-| Fragment Mine  | {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.FragmentMineStructure]/1000)} kg   |
+| Structure Type | Storage Capacity                                                                                                      |
+| -------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Hyperstructure | {formatNumberWithCommas(ETERNUM_CONFIG("eternum").carryCapacityGram[CapacityConfig.HyperstructureStructure]/1000)} kg |
+| Bank           | {formatNumberWithCommas(ETERNUM_CONFIG("eternum").carryCapacityGram[CapacityConfig.BankStructure]/1000)} kg           |
+| Fragment Mine  | {formatNumberWithCommas(ETERNUM_CONFIG("eternum").carryCapacityGram[CapacityConfig.FragmentMineStructure]/1000)} kg   |
 
 ## Storage Management Tips
 
@@ -6045,7 +6084,7 @@ destination, and the army has sufficient stamina available for the entire journe
 The amount of stamina consumed when moving into a hex depends on both the biome of that hex and the type of troops
 within the army. The table below details biome-specific stamina costs for each troop type:
 
-<BiomeStamina />
+<BiomeStamina mode="eternum" />
 
 ## Exploring
 

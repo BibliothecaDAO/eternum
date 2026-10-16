@@ -1,4 +1,5 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
+import type { GameType } from "@config";
 import { useState } from "react";
 import ResourceIcon from "./ResourceIcon";
 import { StructureType } from "./eternum-components/StartingResources";
@@ -7,6 +8,8 @@ import { colors, formatNumber, resource, section } from "./styles";
 type Props = {
   amount: number;
   structureType: StructureType;
+  /** The page's mode: each starts its structures with its own troops. */
+  mode: GameType;
 };
 
 // Military resource IDs
@@ -59,8 +62,8 @@ const MilitaryResourceItem = ({ amount, structureType }: { amount: number; struc
   );
 };
 
-export const StartingMilitary = ({ amount, structureType }: Props) => {
-  const config = ETERNUM_CONFIG();
+export const StartingMilitary = ({ amount, structureType, mode }: Props) => {
+  const config = ETERNUM_CONFIG(mode);
   const allStartingResources =
     structureType === StructureType.Village ? config.villageStartingResources : config.startingResources;
 
