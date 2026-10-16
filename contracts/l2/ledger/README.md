@@ -50,6 +50,24 @@ chest bands share the tie-average percentile. Five bands cover 0–20%, 20–40%
 endpoint stays in the fifth band. A singleton belongs to the first band. Each season uses one immutable preset,
 including its games, so a chest needs only its band and season to identify its odds and entry-fee shares.
 
+`preview_mmr(slot, ranked)` is a public read-only view for a running game's leaderboard. Pass the actual game's complete
+roster of `{ wallet, rank }` rows, using the paying L2 wallets (not shard signer addresses), sorted by rank then numeric
+wallet address within ties. Ranks use competition positions: `1, 1, 3`, not `1, 1, 2`. The slot key selects the
+immutable MMR preset and each registration's sword/shield purchases; no game ID or caller account is needed. The roster
+may be a subset of the slot because a slot can contain several games.
+
+The result is an array, in input order, of `{ wallet, mmr_before: u128, mmr_after: u128, delta: i32 }`. Ratings and
+deltas are whole MMR points, after truncating the token's 18 decimal places, just as in settlement. `delta` is signed;
+use the ABI's signed-integer decoder (raw negative felts are field-modulus encoded). Disabled MMR and single-player
+games return zero deltas. The view uses the same calculation as settlement, including median, ties, regression, limits
+and purchased flags. It writes no state and emits no events.
+
+An empty or malformed ranking, duplicate/unregistered/refundable/already-settled wallet, or missing/cancelled slot
+reverts. The view intentionally does not enforce the settlement clock or operator role: it answers a hypothetical
+ranking before the game ends. It cannot verify shard scores or roster completeness. It reads current token ratings;
+settling another game can change a later preview. Equality with settlement assumes the same roster, ranks, preset, flags
+and token ratings at execution. After settlement, display `get_player_result` instead of previewing again.
+
 Chests are ordinary transferable NFTs. The holder approves the ledger, then calls `open_request(token_id)`. This burns
 the token permanently and records the requester and block B; burning removes custody and cancellation machinery. No
 request can be cancelled or repeated. Anyone calls `open_finish(token_id)` once the tip reaches B+11: it reads exactly

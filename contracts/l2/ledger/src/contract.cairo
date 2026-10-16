@@ -1,7 +1,7 @@
 use core::poseidon::poseidon_hash_span;
 use game_ledger::types::{
-    BlitzSeason, Chest, ChestBandPreset, Credits, FrontierSeason, GameKey, PlayerResult, Preset, RankedPlayer,
-    Registration, Slot, SlotKey, WithdrawalPayment,
+    BlitzSeason, Chest, ChestBandPreset, Credits, FrontierSeason, GameKey, MmrPreview, PlayerResult, Preset,
+    RankedPlayer, Registration, Slot, SlotKey, WithdrawalPayment,
 };
 use starknet::ContractAddress;
 
@@ -66,6 +66,7 @@ pub trait IGameLedger<TState> {
     fn mark_refundable(ref self: TState, key: SlotKey, wallets: Array<ContractAddress>);
     fn get_result_commitment(self: @TState, key: GameKey) -> felt252;
     fn apply_results(ref self: TState, key: SlotKey, game_id: u32, ranked: Array<RankedPlayer>);
+    fn preview_mmr(self: @TState, key: SlotKey, ranked: Array<RankedPlayer>) -> Array<MmrPreview>;
     fn open_request(ref self: TState, token_id: u256);
     fn open_finish(ref self: TState, token_id: u256);
     fn get_chest_band(self: @TState, preset_id: u32, band: u8) -> ChestBandPreset;
@@ -99,8 +100,8 @@ pub mod GameLedger {
     use game_ledger::chests::{draw_item_index, draw_outcome, outcome_weights, rank_band};
     use game_ledger::mmr::MmrCalculatorImpl;
     use game_ledger::types::{
-        BlitzSeason, Chest, ChestBandPreset, ChestContent, Credits, FrontierSeason, GameKey, PlayerResult, Preset,
-        RankedPlayer, Registration, Slot, SlotKey, WithdrawalPayment,
+        BlitzSeason, Chest, ChestBandPreset, ChestContent, Credits, FrontierSeason, GameKey, MmrPreview, PlayerResult,
+        Preset, RankedPlayer, Registration, Slot, SlotKey, WithdrawalPayment,
     };
     use openzeppelin::access::accesscontrol::{AccessControlComponent, DEFAULT_ADMIN_ROLE};
     use openzeppelin::introspection::src5::SRC5Component;
@@ -761,6 +762,16 @@ pub mod GameLedger {
                 );
         }
 
+        fn preview_mmr(self: @ContractState, key: SlotKey, ranked: Array<RankedPlayer>) -> Array<MmrPreview> {
+            let slot = self.get_slot(key);
+            assert!(slot.exists && !slot.cancelled, "Ledger: slot unavailable");
+            ResultsValidatorImpl::assert_ranked_players(ranked.span());
+            for row in ranked.span() {
+                self.unsettled_registration(key, *row.wallet);
+            }
+            self.calculate_mmr(key, ranked.span(), self.presets.entry(slot.preset_id).read())
+        }
+
         fn get_result_commitment(self: @ContractState, key: GameKey) -> felt252 {
             self.result_commitments.entry(key).read()
         }
@@ -1015,11 +1026,10 @@ pub mod GameLedger {
             self.send_lords(self.treasury.read(), treasury_cut);
         }
 
-        fn validate_and_record_results(
-            ref self: ContractState, slot_key: SlotKey, key: GameKey, ranked: Span<RankedPlayer>,
-        ) -> u256 {
+        fn assert_ranked_players(ranked: Span<RankedPlayer>) {
             assert!(!ranked.is_empty(), "Ledger: empty result");
-            let mut pool = 0;
+            let _: u16 = ranked.len().try_into().unwrap();
+            let mut seen: Felt252Dict<u8> = Default::default();
             for index in 0..ranked.len() {
                 let row = *ranked.at(index);
                 let expected_rank = if index == 0 {
@@ -1034,11 +1044,27 @@ pub mod GameLedger {
                     }
                 };
                 assert!(row.rank == expected_rank, "Ledger: invalid competition rank");
-                assert!(self.results.entry((key, row.wallet)).read().rank == 0, "Ledger: duplicate result owner");
-                let mut registration = self.registrations.entry((slot_key, row.wallet)).read();
-                assert!(registration.registered, "Ledger: unregistered result owner");
-                assert!(!registration.refundable, "Ledger: registration refundable");
-                assert!(registration.game_id == 0, "Ledger: registration already settled");
+                assert!(seen.get(row.wallet.into()) == 0, "Ledger: duplicate result owner");
+                seen.insert(row.wallet.into(), 1);
+            }
+        }
+
+        fn unsettled_registration(self: @ContractState, key: SlotKey, owner: ContractAddress) -> Registration {
+            let registration = self.registrations.entry((key, owner)).read();
+            assert!(registration.registered, "Ledger: unregistered result owner");
+            assert!(!registration.refundable, "Ledger: registration refundable");
+            assert!(registration.game_id == 0, "Ledger: registration already settled");
+            registration
+        }
+
+        fn validate_and_record_results(
+            ref self: ContractState, slot_key: SlotKey, key: GameKey, ranked: Span<RankedPlayer>,
+        ) -> u256 {
+            Self::assert_ranked_players(ranked);
+            let mut pool = 0;
+            for row in ranked {
+                let row = *row;
+                let mut registration = self.unsettled_registration(slot_key, row.wallet);
                 pool += registration.paid;
                 registration.game_id = key.game_id;
                 self.registrations.entry((slot_key, row.wallet)).write(registration);
@@ -1326,6 +1352,20 @@ pub mod GameLedger {
                 return;
             }
 
+            let mut updates = array![];
+            for preview in self.calculate_mmr(slot_key, ranked, preset) {
+                let mut result = self.results.entry((key, preview.wallet)).read();
+                result.mmr_before = preview.mmr_before;
+                result.mmr_after = preview.mmr_after;
+                self.results.entry((key, preview.wallet)).write(result);
+                updates.append((preview.wallet, preview.mmr_after.into() * MMR_PRECISION));
+            }
+            IMMRTokenDispatcher { contract_address: self.mmr_token.read() }.update_mmr_batch(updates);
+        }
+
+        fn calculate_mmr(
+            self: @ContractState, slot_key: SlotKey, ranked: Span<RankedPlayer>, preset: Preset,
+        ) -> Array<MmrPreview> {
             let mmr_token = IMMRTokenDispatcher { contract_address: self.mmr_token.read() };
             let mut current_mmrs: Array<u128> = array![];
             let mut sorted_mmrs: Felt252Dict<u128> = Default::default();
@@ -1337,30 +1377,39 @@ pub mod GameLedger {
                 Self::insert_sorted(ref sorted_mmrs, index, current_mmr);
                 index += 1;
             }
-            let median = Self::median(ref sorted_mmrs, ranked.len());
+            let median = if preset.mmr.enabled {
+                Self::median(ref sorted_mmrs, ranked.len())
+            } else {
+                0
+            };
 
-            let mut updates = array![];
+            let mut previews = array![];
             index = 0;
             while index < ranked.len() {
                 let owner = *ranked.at(index).wallet;
                 let rank = *ranked.at(index).rank;
                 let group_size = Self::tie_count(ranked, index, rank);
                 let current_mmr = *current_mmrs.at(index);
-                let calculated_mmr = MmrCalculatorImpl::calculate_player_mmr(
-                    preset.mmr, current_mmr, rank, group_size, ranked.len().try_into().unwrap(), median,
-                );
-                let registration = self.registrations.entry((slot_key, owner)).read();
-                let new_mmr = MmrCalculatorImpl::apply_flag_modifier(
-                    current_mmr, calculated_mmr, registration.sword, registration.shield,
-                );
-                let mut result = self.results.entry((key, owner)).read();
-                result.mmr_before = current_mmr;
-                result.mmr_after = new_mmr;
-                self.results.entry((key, owner)).write(result);
-                updates.append((owner, new_mmr.into() * MMR_PRECISION));
+                let new_mmr = if preset.mmr.enabled {
+                    let calculated_mmr = MmrCalculatorImpl::calculate_player_mmr(
+                        preset.mmr, current_mmr, rank, group_size, ranked.len().try_into().unwrap(), median,
+                    );
+                    let registration = self.registrations.entry((slot_key, owner)).read();
+                    MmrCalculatorImpl::apply_flag_modifier(
+                        current_mmr, calculated_mmr, registration.sword, registration.shield,
+                    )
+                } else {
+                    current_mmr
+                };
+                let delta: i32 = if new_mmr >= current_mmr {
+                    (new_mmr - current_mmr).try_into().unwrap()
+                } else {
+                    -(current_mmr - new_mmr).try_into().unwrap()
+                };
+                previews.append(MmrPreview { wallet: owner, mmr_before: current_mmr, mmr_after: new_mmr, delta });
                 index += 1;
             }
-            mmr_token.update_mmr_batch(updates);
+            previews
         }
 
         fn insert_sorted(ref values: Felt252Dict<u128>, length: u32, value: u128) {
