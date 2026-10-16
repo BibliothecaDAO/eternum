@@ -415,6 +415,9 @@
       right: 10px;
       width: auto;
       gap: 6px;
+      max-height: calc(100dvh - 480px);
+      overflow-y: auto;
+      overscroll-behavior: contain;
     }
     .guidance-rail [data-group] > div > div:first-child {
       padding: 5px 10px;

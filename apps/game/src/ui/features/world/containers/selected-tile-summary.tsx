@@ -1,3 +1,4 @@
+import { useSelectedTile } from "@/hooks/helpers/use-selected-tile";
 import { iconUrl } from "@/ui/design-system/icon-meaning";
 import type { ReactNode } from "react";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -30,11 +31,22 @@ export function SelectedTileSummaryView({
   );
 }
 export function SelectedTileSummary() {
-  const hex = useUIStore((state) => state.selectedHex);
+  const selection = useSelectedTile();
+  const hex = selection?.scene === "world" ? selection.hex : null;
   const layer = useUIStore((state) => state.mapLayer);
   const tile = useTileAt(hex?.col, hex?.row, layer);
   const biome = useStoredBiome(hex?.col, hex?.row, layer);
   const details = useSelectedTileDetails();
+  if (!selection) return null;
+  if (selection.scene === "local")
+    return (
+      <SelectedTileSummaryView
+        title={`Realm tile · (${selection.hex.innerCol}, ${selection.hex.innerRow})`}
+        description="Building details"
+        art={iconUrl("build")}
+        details={details}
+      />
+    );
   if (!hex) return null;
   const structure = tile && getStructureInfoFromTileOccupier(Number(tile.occupier_type));
   const category = structure ? categoryPaintings[structure.type] : null;

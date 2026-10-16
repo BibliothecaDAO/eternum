@@ -37,6 +37,7 @@ import {
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import { useGame } from "@/hooks/context/game-context";
 import { useQuery } from "@/hooks/helpers/use-query";
+import { useSelectedTile } from "@/hooks/helpers/use-selected-tile";
 import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
 import {
   BUILDINGS_CENTER,
@@ -730,10 +731,8 @@ export const MinimapPanel = () => {
 
 /** Local building selection never takes precedence over the world view. */
 export const useSelectedTileDetails = (): ReactNode => {
-  const { isMapView } = useQuery();
-  const selectedHex = useUIStore((state) => state.selectedHex);
-  const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
-  if (!isMapView && selectedBuildingHex) return <LocalTilePanel />;
-  if (selectedHex) return <MapTilePanel />;
+  const selection = useSelectedTile();
+  if (selection?.scene === "local") return <LocalTilePanel />;
+  if (selection?.scene === "world") return <MapTilePanel />;
   return null;
 };
