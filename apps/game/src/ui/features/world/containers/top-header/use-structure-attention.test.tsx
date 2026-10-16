@@ -7,7 +7,13 @@ const THEM = "0xdef";
 
 /** The chain's history as Herald serves it, and how its read is going. */
 const chain = vi.hoisted(() => ({
-  stories: [] as { story: string; timestamp: string; storyPayload: Record<string, unknown> }[],
+  stories: [] as {
+    story: string;
+    owner: string;
+    storyPayload: Record<string, unknown>;
+    position: { block: number; transactionIndex: number; eventIndex: number };
+    confirmation: { preconfirmed: boolean; confirmedAfterAttach: boolean };
+  }[],
   read: "success" as "pending" | "success" | "error",
 }));
 
@@ -47,7 +53,7 @@ vi.mock("@/hooks/store/use-story-events-store", () => ({
                 !owner ||
                 storyParticipants(event.storyPayload).owners.some((address) => BigInt(address) === BigInt(owner)),
             )
-            .toSorted((a, b) => Number(b.timestamp) - Number(a.timestamp))
+            .toSorted((a, b) => b.position.block - a.position.block)
             .slice(0, limit)
         : [],
   }),
@@ -55,9 +61,12 @@ vi.mock("@/hooks/store/use-story-events-store", () => ({
 
 import { useStructureAttention } from "./use-structure-attention";
 
-const battle = (at: number, defender: number, striker: string, holder: string) => ({
+/** A battle in `block`, delivered live this session unless read from history only. */
+const battle = (block: number, defender: number, striker: string, holder: string, live = true) => ({
   story: "BattleEvent",
-  timestamp: String(at),
+  owner: striker,
+  position: { block, transactionIndex: 0, eventIndex: 0 },
+  confirmation: { preconfirmed: false, confirmedAfterAttach: live },
   storyPayload: {
     attacker_id: 900,
     defender_id: defender,
@@ -90,7 +99,7 @@ it("flags nothing while the combat history loads or after its read fails, and fl
 });
 
 it("finds the hit behind the cooldown however many other battles the game has had since", () => {
-  const elsewhere = Array.from({ length: 120 }, (_, index) => battle(96 + index / 100, 500 + index, "0x7", "0x8"));
+  const elsewhere = Array.from({ length: 120 }, (_, index) => battle(96 + index, 500 + index, "0x7", "0x8"));
   chain.stories = [battle(95, 1, THEM, ME), ...elsewhere];
   expect(underAttack()).toBe("1");
 });
@@ -99,5 +108,12 @@ it("never flags the player's own capture, but flags a hostile hit after it", () 
   chain.stories = [battle(80, 1, THEM, "0xf0"), battle(95, 1, ME, "0xf0")];
   expect(underAttack()).toBe("");
   chain.stories = [battle(80, 1, ME, "0xf0"), battle(95, 1, THEM, ME)];
+  expect(underAttack()).toBe("1");
+});
+
+it("after a reload, stays silent on a hit read from history only until a hit arrives live", () => {
+  chain.stories = [battle(95, 1, THEM, ME, false)];
+  expect(underAttack()).toBe("");
+  chain.stories = [battle(95, 1, THEM, ME, false), battle(97, 1, THEM, ME)];
   expect(underAttack()).toBe("1");
 });

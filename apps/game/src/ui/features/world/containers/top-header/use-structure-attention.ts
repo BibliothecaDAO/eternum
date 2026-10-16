@@ -7,11 +7,11 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
-import { activeCombatRules, configManager } from "@bibliothecadao/eternum";
+import { configManager } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
-import { guardHits, resolveStructureAttention, type CombatHistory } from "./attention-policy";
+import { guardActions, resolveStructureAttention, type CombatHistory } from "./attention-policy";
 
-/** How much of the player's own combat each read keeps: battles and raids naming them, newest first. */
+/** How much of the player's own history each read keeps: battles, raids and troop moves naming them, newest first. */
 const COMBAT_HISTORY = 100;
 
 /**
@@ -38,21 +38,24 @@ export const useStructureAttention = () => {
   );
 };
 
-/** The battles and raids naming the player, once both are read; null while either is loading or has failed. */
+/**
+ * The actions on guards naming the player (battles, raids, troops moved into a guard), once every read is done; null
+ * while one is loading or has failed.
+ */
 const usePlayerCombatHistory = (): CombatHistory | null => {
   const player = useAccountStore((state) => state.account?.address);
   const battles = useStoryEvents(COMBAT_HISTORY, "BattleEvent", player);
   const raids = useStoryEvents(COMBAT_HISTORY, "RaidEvent", player);
-  const known = Boolean(player) && battles.isSuccess && raids.isSuccess;
+  const transfers = useStoryEvents(COMBAT_HISTORY, "TroopsTransferred", player);
+  const known = Boolean(player) && battles.isSuccess && raids.isSuccess && transfers.isSuccess;
   return useMemo(
     () =>
       known
         ? {
-            hits: guardHits([...battles.data, ...raids.data]),
-            cooldownSeconds: activeCombatRules().cooldownSeconds,
+            actions: guardActions([...battles.data, ...raids.data, ...transfers.data]),
             isPlayer: (address) => address !== null && isAddressEqualToAccount(address),
           }
         : null,
-    [known, battles.data, raids.data],
+    [known, battles.data, raids.data, transfers.data],
   );
 };
