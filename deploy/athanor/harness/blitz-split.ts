@@ -1,36 +1,30 @@
 import { parseArgs } from "node:util";
 import { hash } from "starknet";
+import { deviceKeyOf, joinBotAccount } from "@bibliothecadao/eternum";
 import { openShard } from "@bibliothecadao/eternum/game-client";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import type { NativeWorldManifest } from "../../../config/deployer/clean/world/native/types";
 import { nativePresetIdFor } from "../../../config/source/native";
 import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import { splitPlaytestRoster } from "../../../packages/value-ledger/src/blitz-roster";
-import { LaunchShard } from "../../../apps/launch-service/src/shard-client";
+import { BLITZ_SLOT_PREPARATION_SECONDS } from "../../../packages/value-ledger/src/blitz-slots";
+import { seaterLabels } from "../../../packages/value-ledger/src/shard-accounts";
+import { LaunchShard, type BlitzLaunch } from "../../../apps/launch-service/src/shard-client";
 import { RegistrationOpen } from "../../../apps/launch-service/src/blitz-roster";
+import { createHarnessAdminProvider } from "./game-setup";
 import { now, percentile, save } from "./burst-evidence";
 
 /**
- * How long the launcher takes to seat a frozen Blitz roster of PLAYERS: the roster is split into games by the
- * production rule, and each game is created and seated through the launch Worker's own `LaunchShard`, one game after
- * another, as its registrar runs them on one signing stream. Roster entries are synthetic addresses: the chain checks a
- * roster's size, not its accounts, and only the launcher transacts. Measurement shards only (the harness's operator is
- * their launcher). Usage: bun blitz-split.ts --players 2000 --out FILE, with HERALD_URL, NATIVE_WORLD_MANIFEST,
- * DEPLOYER_ACCOUNT_ADDRESS and DEPLOYER_PRIVATE_KEY.
+ * How long the launch Worker's own path takes to seat a frozen Blitz roster of PLAYERS: the roster is split into games
+ * by the production rule, the games are dealt to the seater pool round-robin by group index, and one
+ * `LaunchShard.launchBlitz` creates them all and seats each through its seater's pipeline, as the registrar does for a
+ * closed slot. The pool joins first, through the private node, with the operator's device as the Worker's. Roster
+ * entries are synthetic addresses: the chain checks a roster's size, not its accounts. Measurement shards only (the
+ * harness's operator is their launcher). Usage: bun blitz-split.ts --players 2000 --out FILE, with HERALD_URL,
+ * NATIVE_WORLD_MANIFEST, HARNESS_ADMIN_RPC_URL, IDENTITY_URL, OPERATOR_TOKEN, DEPLOYER_ACCOUNT_ADDRESS and
+ * DEPLOYER_PRIVATE_KEY.
  */
-const PREPARATION_MS = 300_000; // BLITZ_SLOT_PREPARATION_SECONDS: games are created when settling opens.
 const GAME_SECONDS = 3_600;
-
-/** The launcher, timing each SettleBlitzRoster it sends while seating. */
-class TimedLaunchShard extends LaunchShard {
-  settles: number[] = [];
-  override async playCommand(gameId: number, name: Parameters<LaunchShard["playCommand"]>[1]) {
-    const started = now();
-    const result = await super.playCommand(gameId, name);
-    if (name === "SettleBlitzRoster") this.settles.push(milliseconds(started));
-    return result;
-  }
-}
 
 async function main(): Promise<void> {
   const { values } = parseArgs({ options: { players: { type: "string" }, out: { type: "string" } } });
@@ -38,66 +32,93 @@ async function main(): Promise<void> {
   if (!Number.isInteger(players) || players < 1 || !values.out) throw new Error("Usage: --players N --out FILE");
   const manifest = readShardManifest<NativeWorldManifest>(required("NATIVE_WORLD_MANIFEST"));
   const shard = await openShard(required("HERALD_URL"), bindings.schemaIdentity);
-  const launcher = new TimedLaunchShard({
+  const operator = {
+    accountAddress: required("DEPLOYER_ACCOUNT_ADDRESS"),
+    privateKey: required("DEPLOYER_PRIVATE_KEY"),
+  };
+  const poolStarted = now();
+  const seaters = await joinSeaterPool(shard, operator.privateKey);
+  const poolJoinMs = milliseconds(poolStarted);
+  const launcher = new LaunchShard({
     rpcUrl: shard.rpcUrl,
     chainId: manifest.shard.chainId,
     gamesAddress: manifest.world.address,
-    accountAddress: required("DEPLOYER_ACCOUNT_ADDRESS"),
-    privateKey: required("DEPLOYER_PRIVATE_KEY"),
+    ...operator,
   });
-  const runStartedAt = Date.now();
-  const run = runStartedAt.toString(36);
-  const groups = splitPlaytestRoster(syntheticRoster(players, BigInt(runStartedAt)));
+  const launches = slotLaunches(players, seaters, Date.now());
   const startedAt = new Date().toISOString();
   const started = now();
-  const games = [];
-  for (const [index, roster] of groups.entries()) games.push(await seatGame(launcher, run, index, roster));
+  const { summaries, registrationWaitMs } = await launchWhenSettlingOpens(launcher, launches);
+  const wholeSplitMs = milliseconds(started);
+  const seats = summaries.map((summary) => summary.settlementTransactions ?? 0);
   save(values.out, {
     players,
-    games: games.length,
+    games: summaries.length,
+    seaters: seaters.length,
+    poolJoinMs,
     startedAt,
     endedAt: new Date().toISOString(),
-    wholeSplitMs: milliseconds(started),
-    transactions: { create: games.length, settle: launcher.settles.length },
-    perGame: summary(games.map((game) => game.createMs + game.seatMs)),
-    registrationWait: summary(games.map((game) => game.registrationWaitMs)),
-    perSettle: summary(launcher.settles),
-    gameDetails: games,
+    registrationWaitMs,
+    wholeSplitMs,
+    seatingMs: wholeSplitMs - registrationWaitMs,
+    transactions: { create: summaries.length, seat: seats.reduce((sum, count) => sum + count, 0) },
+    seatsPerGame: summary(seats),
+    gameDetails: summaries.map((game, index) => ({
+      gameId: game.gameId,
+      players: launches[index]!.players.length,
+      seater: launches[index]!.seater,
+      seats: seats[index],
+    })),
   });
 }
 
-async function seatGame(launcher: TimedLaunchShard, run: string, index: number, roster: string[]) {
-  const createStarted = now();
-  const created = await launcher.create(
-    {
+/** The pool the Worker seats from, joined as the Worker joins it: one bot account per seater label, the operator's device. */
+async function joinSeaterPool(shard: Awaited<ReturnType<typeof openShard>>, privateKey: string): Promise<string[]> {
+  const provider = createHarnessAdminProvider();
+  try {
+    const identity = { url: required("IDENTITY_URL"), operatorToken: required("OPERATOR_TOKEN") };
+    const device = deviceKeyOf(privateKey);
+    const accounts = await Promise.all(
+      seaterLabels.map((label) => joinBotAccount({ provider, shard, label, device, identity })),
+    );
+    return accounts.map((account) => account.address);
+  } finally {
+    provider.dispose();
+  }
+}
+
+/** A closed slot of PLAYERS as the Worker launches it: the production split, each group's seater dealt by its index. */
+export function slotLaunches(players: number, seaters: readonly string[], runStartedAt: number): BlitzLaunch[] {
+  const run = runStartedAt.toString(36);
+  return splitPlaytestRoster(syntheticRoster(players, BigInt(runStartedAt))).map((roster, groupIndex) =>
+    blitzLaunch(run, groupIndex, roster, seaters[groupIndex % seaters.length]!),
+  );
+}
+
+/** One game of the slot: settling opens now, play in the preparation window's length, as a closed slot's games do. */
+function blitzLaunch(run: string, groupIndex: number, roster: string[], seater: string): BlitzLaunch {
+  const startsAt = Math.ceil(Date.now() / 1000) + BLITZ_SLOT_PREPARATION_SECONDS;
+  return {
+    request: {
       environment: "madara.blitz",
       version: String(nativePresetIdFor("blitz")),
-      gameName: `split-${run}-${index + 1}`,
-      gameStartTime: new Date(Math.ceil((Date.now() + PREPARATION_MS) / 1000) * 1000).toISOString(),
+      gameName: `split-${run}-${groupIndex + 1}`,
+      gameStartTime: new Date(startsAt * 1000).toISOString(),
       durationSeconds: GAME_SECONDS,
     },
-    Date.now(),
-    undefined,
-    roster.map((account) => ({ account, wallet: account })),
-  );
-  const createMs = milliseconds(createStarted);
-  const gameId = created.gameId;
-  if (gameId === undefined) throw new Error(`Game ${index + 1} was created without an id`);
+    players: roster.map((account) => ({ account, wallet: account })),
+    createdAt: Date.now(),
+    seater,
+  };
+}
+
+/** The registrar's retry: a slot whose settling has not opened yet runs again once it has. */
+async function launchWhenSettlingOpens(launcher: LaunchShard, launches: BlitzLaunch[]) {
   let registrationWaitMs = 0;
   for (;;) {
-    const seatStarted = now();
     try {
-      const settleTransactions = await launcher.seat(gameId);
-      return {
-        gameId,
-        players: roster.length,
-        createMs,
-        registrationWaitMs,
-        seatMs: milliseconds(seatStarted),
-        settleTransactions,
-      };
+      return { summaries: await launcher.launchBlitz(launches), registrationWaitMs };
     } catch (error) {
-      // A new game's settling opens a moment after creation; the Worker's next run seats it then, and so does this.
       if (!(error instanceof RegistrationOpen)) throw error;
       registrationWaitMs += error.secondsUntilClose * 1_000;
       await Bun.sleep(error.secondsUntilClose * 1_000);
@@ -122,10 +143,10 @@ const summary = (values: number[]) => ({
 
 const milliseconds = (started: bigint) => Number(now() - started) / 1e6;
 
-function required(name: string): string {
+const required = (name: string) => {
   const value = process.env[name];
   if (!value) throw new Error(`${name} required for the Blitz split`);
   return value;
-}
+};
 
 if (import.meta.main) await main();
