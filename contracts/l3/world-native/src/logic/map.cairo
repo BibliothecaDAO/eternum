@@ -45,8 +45,9 @@ pub fn tile(key: TileKey) -> Option<TileOpt> {
     let state = crate::state::read();
     let storage_key = (key.game_id, key.alt, key.col, key.row);
     let occupier = occupancy(key);
-    if state.map.exists.read(storage_key) || occupier.is_some() {
-        Some(TileOpt { data: crate::map::coordinate_bits(key) + state.map.tiles.read(storage_key) })
+    let terrain = state.map.tiles.read(storage_key);
+    if terrain / crate::map::BIOME_SCALE % crate::map::BYTE_RANGE != 0 || occupier.is_some() {
+        Some(TileOpt { data: crate::map::coordinate_bits(key) + terrain })
     } else {
         None
     }
@@ -139,7 +140,6 @@ pub mod MapState {
         let state = crate::state::write();
         let storage_key = (key.game_id, key.alt, key.col, key.row);
         state.map.tiles.write(storage_key, data);
-        state.map.exists.write(storage_key, true);
         let mut keys = array![];
         key.serialize(ref keys);
         emit(

@@ -171,7 +171,6 @@ fn deploy_refuses_a_missing_neighbour_after_the_ring_is_materialized() {
         || {
             let state = crate::state::write();
             state.map.tiles.write((game_id, false, coord.x, coord.y), 0);
-            state.map.exists.write((game_id, false, coord.x, coord.y), false);
         },
     );
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
@@ -233,4 +232,44 @@ pub fn assert_biomes_match_terrain(d: super::Deployment, game_id: u32, coords: S
         }
     }
     revealed
+}
+
+#[test]
+fn tile_presence_follows_terrain_or_occupancy_on_both_layers() {
+    let d = super::registrar::setup();
+    for alt in array![false, true] {
+        interact_with_state(d.games, || {
+            let key = crate::map::TileKey { game_id: 7, alt, col: 120, row: 130 };
+            assert_eq!(crate::logic::map::tile(key), None);
+            crate::logic::map::MapState::occupy(key, 99, crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER, false);
+            assert_eq!(
+                crate::logic::map::tile(key), Some(crate::map::TileOpt { data: crate::map::coordinate_bits(key) }),
+            );
+            crate::logic::map::MapState::vacate(key, 99);
+            assert_eq!(crate::logic::map::tile(key), None);
+            crate::logic::map::MapState::reveal(key, 11);
+            let revealed = crate::map::TileOpt { data: crate::map::coordinate_bits(key) + 11 * crate::map::BIOME_SCALE };
+            assert_eq!(crate::logic::map::tile(key), Some(revealed));
+            crate::logic::map::MapState::reserve_hyperstructure(key);
+            crate::logic::map::MapState::release_hyperstructure(key);
+            assert_eq!(crate::logic::map::tile(key), Some(revealed));
+            assert_eq!(crate::logic::map::occupancy(key), None);
+            crate::logic::map::MapState::mark_reward_extracted(key);
+            assert_eq!(
+                crate::logic::map::tile(key),
+                Some(crate::map::TileOpt { data: revealed.data + crate::map::REWARD_EXTRACTED_FLAG }),
+            );
+        });
+    }
+}
+
+#[test]
+#[should_panic(expected: "tile already revealed")]
+fn revealing_a_stored_tile_twice_is_refused() {
+    let d = super::registrar::setup();
+    interact_with_state(d.games, || {
+        let key = crate::map::TileKey { game_id: 7, alt: false, col: 120, row: 130 };
+        crate::logic::map::MapState::reveal(key, 11);
+        crate::logic::map::MapState::reveal(key, 12);
+    });
 }

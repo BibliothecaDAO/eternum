@@ -265,10 +265,6 @@ pub mod SettlementLogic {
             self.settlements.data.settlements.progress.read(game_id)
         }
         #[cfg(test)]
-        fn player_has_settled(self: @ContractState, game_id: u32, player: ContractAddress) -> bool {
-            self.settlements.data.settlements.entered_players.read((game_id, player))
-        }
-        #[cfg(test)]
         fn player_entry(self: @ContractState, key: EntryKey) -> Option<PlayerEntry> {
             crate::logic::settlement::entry(key)
         }

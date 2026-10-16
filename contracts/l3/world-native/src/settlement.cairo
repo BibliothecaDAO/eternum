@@ -72,8 +72,6 @@ pub trait ISettlementViews<T> {
     #[cfg(test)]
     fn blitz_settlement_order(self: @T, game_id: u32) -> Span<u8>;
     #[cfg(test)]
-    fn player_has_settled(self: @T, game_id: u32, player: ContractAddress) -> bool;
-    #[cfg(test)]
     fn settlement_rules(self: @T, game_id: u32) -> SettlementRules;
     #[cfg(test)]
     fn realm_grants(self: @T, game_id: u32) -> RealmGrants;

@@ -26,7 +26,6 @@ mod TileLayoutFixture {
         fn write(ref self: ContractState, key: TileKey, value: u128) {
             let storage_key = (key.game_id, key.alt, key.col, key.row);
             self.data.map.tiles.write(storage_key, value);
-            self.data.map.exists.write(storage_key, true);
         }
 
         fn read(self: @ContractState, key: TileKey) -> u128 {

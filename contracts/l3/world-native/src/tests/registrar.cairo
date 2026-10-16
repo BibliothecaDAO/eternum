@@ -609,7 +609,10 @@ fn automatic_blitz_settlement_holds_play_for_its_last_seat_and_never_moves_the_s
             assert!(order == fixed_order, "retry reshuffled roster");
         }
         let player = *roster(3).at((*order.at(batch)).into());
-        assert!(views.player_has_settled(game_id, player.account));
+        assert_eq!(
+            views.player_entry(crate::settlement::EntryKey { game_id, owner: player.account }),
+            Some(crate::settlement::PlayerEntry { player: player.account }),
+        );
         assert!(views.settlement_progress(game_id).registered.into() == batch + 1);
         let mut dealt: core::dict::Felt252Dict<bool> = Default::default();
         for realm in 0_u32..3 {

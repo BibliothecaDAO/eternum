@@ -305,7 +305,6 @@ pub mod SettlementState {
         fn record_entry(ref self: ComponentState<TContractState>, key: EntryKey, player: starknet::ContractAddress) {
             assert!(key.owner.is_non_zero(), "gameplay account is not bound");
             self.data.settlements.entries.write((key.game_id, key.owner), Some(PlayerEntry { player }));
-            self.data.settlements.entered_players.write((key.game_id, player), true);
             self
                 .emit(
                     RowSet {

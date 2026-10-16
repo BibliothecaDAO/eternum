@@ -765,14 +765,6 @@ pub mod GamesFixture {
                 crate::settlement::ISettlementViewsLibraryDispatcher { class_hash: classes.settlement.read() }, game_id,
             )
         }
-        fn player_has_settled(self: @TContractState, game_id: u32, player: starknet::ContractAddress) -> bool {
-            let classes = fixture_classes(game_id);
-            crate::settlement::ISettlementViewsDispatcherTrait::player_has_settled(
-                crate::settlement::ISettlementViewsLibraryDispatcher { class_hash: classes.settlement.read() },
-                game_id,
-                player,
-            )
-        }
         fn settlement_rules(self: @TContractState, game_id: u32) -> crate::settlement::SettlementRules {
             let classes = fixture_classes(game_id);
             crate::settlement::ISettlementViewsDispatcherTrait::settlement_rules(
