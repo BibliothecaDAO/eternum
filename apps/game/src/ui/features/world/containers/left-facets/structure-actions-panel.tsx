@@ -45,13 +45,13 @@ const TILE_VARIANT_CLASS: Record<ActionTileVariant, { button: string; icon: stri
   panel: {
     button: "gap-1.5 px-0.5 py-2.5 first:rounded-l-xl last:rounded-r-xl hover:bg-gold/10",
     icon: "h-7 w-7",
-    label: "text-sm min-[1800px]:text-sm",
+    label: "text-[9px] tracking-[0.04em] min-[1800px]:text-[10px] min-[1800px]:tracking-[0.12em]",
   },
   compact: {
     button:
       "min-h-11 flex-1 justify-center gap-1 rounded-lg px-1 py-1.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:bg-gold/15",
     icon: "h-6 w-6",
-    label: "text-sm ",
+    label: "text-[11px] normal-case tracking-normal",
   },
 };
 
@@ -85,7 +85,7 @@ export const ActionTile = ({ action, variant }: { action: StructureAction; varia
             key={badge.tone}
             aria-label={`${badge.count} ${badge.tone}`}
             className={cn(
-              "absolute top-1 rounded-full px-1.5 text-sm font-semibold tabular-nums",
+              "absolute top-1 rounded-full px-1.5 text-[10px] font-semibold tabular-nums",
               index === 0 ? "right-1" : "left-1",
               BADGE_TONE_CLASS[badge.tone],
             )}

@@ -129,7 +129,9 @@ const PanelFrame = ({ title, children, headerAction, className, height }: PanelF
     style={{ height: height ?? BOTTOM_PANEL_HEIGHT }}
   >
     <header className="flex items-center justify-between gap-2 border-b border-gold/20 px-2 py-1 lg:px-3 lg:py-1.5">
-      <p className="min-w-0 flex-1 truncate text-sm font-semibold text-gold/70">{title}</p>
+      <p className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-[0.35em] text-gold/70">
+        {title}
+      </p>
       {headerAction ? <div className="shrink-0">{headerAction}</div> : null}
     </header>
     <div className="flex-1 min-h-0 overflow-hidden px-1.5 py-1 lg:px-2.5 lg:py-2">{children}</div>
@@ -441,7 +443,7 @@ const LocalTilePanel = () => {
   // build cost). The variant just colors the value text — the wrapper is
   // always the same etched-bronze chip so the rows read as one design.
   const chipBase =
-    "flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-1.5 py-1 text-sm font-semibold tabular-nums";
+    "flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-1.5 py-1 text-[11px] font-semibold tabular-nums";
   const valueClassFor = (variant: "neutral" | "good" | "bad" | "warn") => {
     switch (variant) {
       case "good":
@@ -495,14 +497,16 @@ const LocalTilePanel = () => {
         <div className="flex flex-col gap-2.5 divide-y divide-gold/10 [&>*:not(:first-child)]:pt-2.5">
           {isPaused && (
             <div className="flex items-center justify-between gap-2 rounded border border-red-400/40 bg-red-900/25 px-2 py-1.5">
-              <span className="text-sm font-semibold text-red-200">⚠️ Production paused</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-red-200">
+                ⚠️ Production paused
+              </span>
               {canManageBuilding && (
                 <Button
                   size="xs"
                   variant="outline"
                   disabled={isActionLoading}
                   onClick={handleToggleProduction}
-                  className="h-7 border-green/50 bg-green/20 px-2 text-sm hover:bg-green/40"
+                  className="h-7 border-green/50 bg-green/20 px-2 text-xxs hover:bg-green/40"
                 >
                   ▶ Resume
                 </Button>
@@ -523,7 +527,7 @@ const LocalTilePanel = () => {
                     position: "right",
                     content: (
                       <div className="space-y-2">
-                        <p className="text-sm text-kit-muted">Consumed by</p>
+                        <p className="text-xxs uppercase tracking-[0.25em] text-gold/60">Consumed by</p>
                         {consumedBy.length > 0 ? (
                           <div className="grid grid-cols-3 gap-2">
                             {consumedBy.map((resourceId) => {
@@ -534,13 +538,13 @@ const LocalTilePanel = () => {
                                   className="flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-2 py-1"
                                 >
                                   <ResourceIcon withTooltip={false} resource={name} size="xs" />
-                                  <span className="text-sm text-gold/80">{name}</span>
+                                  <span className="text-xxs text-gold/80">{name}</span>
                                 </div>
                               );
                             })}
                           </div>
                         ) : (
-                          <p className="text-sm text-kit-muted">Not consumed by other buildings.</p>
+                          <p className="text-xxs text-gold/60">Not consumed by other buildings.</p>
                         )}
                       </div>
                     ),
@@ -613,7 +617,7 @@ const LocalTilePanel = () => {
                       <span className={valueClassFor(hasEnough ? "neutral" : "bad")}>
                         {balance === undefined ? "—" : formatResourceAmount(balance)}
                       </span>
-                      <span className={hasEnough ? "text-kit-muted" : "text-red-300/80"}>/ {entry.amount}</span>
+                      <span className={hasEnough ? "text-gold/55" : "text-red-300/80"}>/ {entry.amount}</span>
                     </span>
                   );
                 })}
@@ -644,7 +648,7 @@ const LocalTilePanel = () => {
                           ? "border-emerald-400 bg-emerald-500/30 text-emerald-100 shadow-[0_0_10px_rgba(110,231,183,0.5)] animate-pulse"
                           : canBuildAnother
                             ? "border-amber-500/80 bg-amber-400/90 text-black hover:bg-amber-300"
-                            : "border-gold/20 bg-black/40 text-kit-muted cursor-not-allowed",
+                            : "border-gold/20 bg-black/40 text-gold/40 cursor-not-allowed",
                       )}
                       title={
                         isPreviewing
@@ -687,7 +691,7 @@ const LocalTilePanel = () => {
                 onClick={handleDestroy}
                 disabled={isActionLoading}
                 className={cn(
-                  "inline-flex h-7 items-center gap-1 rounded-md border border-red-700/80 bg-red-900/90 px-2 text-sm font-semibold text-white shadow transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60",
+                  "inline-flex h-7 items-center gap-1 rounded-md border border-red-700/80 bg-red-900/90 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-white shadow transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60",
                   !showDestroyConfirm && "w-7 justify-center px-0",
                 )}
                 title={showDestroyConfirm ? "Confirm delete" : "Delete"}

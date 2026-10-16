@@ -123,7 +123,7 @@ const IdentityChipTrigger = ({
         TOP_PILL,
         HUD_LABEL_BRIGHT,
         "identity-chip min-w-0 max-w-full whitespace-nowrap transition-colors hover:bg-gold/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold",
-        compact && "gap-1.5 px-2 font-sans text-sm ",
+        compact && "gap-1.5 px-2 font-sans text-xs normal-case tracking-normal",
         isOpen && "border-gold/60 bg-gold/15",
       )}
     >
@@ -209,7 +209,7 @@ const compactLabel = (kind: Exclude<IdentityChipState["kind"], "player">): strin
   }
 };
 
-const Separator = () => <span className="text-kit-muted">·</span>;
+const Separator = () => <span className="text-gold/50">·</span>;
 
 const IdentityChipPanelBody = ({ state }: { state: Exclude<IdentityChipState, { kind: "player" | "unnamed" }> }) => {
   switch (state.kind) {
@@ -227,7 +227,7 @@ const IdentityChipPanelBody = ({ state }: { state: Exclude<IdentityChipState, { 
           {isAccountStatePrompt(state.error) ? (
             <AccountStatePrompt />
           ) : (
-            state.error && <span className="text-sm text-danger">{state.error}</span>
+            state.error && <span className="text-xs text-danger">{state.error}</span>
           )}
         </div>
       );

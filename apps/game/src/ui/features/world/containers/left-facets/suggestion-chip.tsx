@@ -57,12 +57,14 @@ export const SuggestionChip = memo(({ suggestion, onClick, isPending, refusal }:
       />
       <span className="min-w-0 flex-1">
         <span className={cn("block truncate leading-tight", isPrimary ? HUD_VALUE : HUD_BODY)}>
-          <span className="text-kit-muted">{trimmedName}</span>
-          <span className="text-kit-muted"> · </span>
+          <span className="text-gold/55">{trimmedName}</span>
+          <span className="text-gold/40"> · </span>
           {suggestion.label}
         </span>
         {suggestion.reason && (
-          <span className={cn("block truncate leading-tight text-kit-muted", HUD_BODY_MUTED)}>{suggestion.reason}</span>
+          <span className={cn("block truncate leading-tight not-italic text-gold/55", HUD_BODY_MUTED)}>
+            {suggestion.reason}
+          </span>
         )}
       </span>
     </button>

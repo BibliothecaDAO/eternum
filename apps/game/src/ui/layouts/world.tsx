@@ -156,7 +156,7 @@ const ArenaHud = () => {
 };
 
 const VersionDisplay = () => (
-  <div className="absolute bottom-4 right-6 text-sm text-white/60 hover:text-white pointer-events-auto bg-white/20 rounded-lg p-1 max-lg:hidden">
+  <div className="absolute bottom-4 right-6 text-xs text-white/60 hover:text-white pointer-events-auto bg-white/20 rounded-lg p-1 max-lg:hidden">
     <a target="_blank" href={"https://github.com/BibliothecaDAO/eternum"} rel="noopener noreferrer">
       {env.VITE_PUBLIC_GAME_VERSION}
     </a>
