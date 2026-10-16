@@ -5,7 +5,7 @@ import {
 } from "@/ui/features/world/containers/left-facets/use-structure-actions";
 import { getShortcutManager } from "@/utils/shortcuts/centralized-shortcut-manager";
 import { useEffect, useRef } from "react";
-import { selectNextIdleArmy } from "./idle-armies";
+import { type IdleArmies, selectNextIdleArmy } from "./idle-armies";
 import { useNextUpShows } from "./next-up-shows";
 
 /** The four workspaces' keys, each the first letter of its order. */
@@ -21,9 +21,10 @@ const PREFIX = "hud.";
 /**
  * The desktop HUD's keys, in the shortcut store beside Tab, V, Esc and Enter (so Settings lists them, and none fires
  * while a field has the keyboard): B, P, M and T open the selected holding's workspaces as their bubbles do, Space
- * takes Next up's step, and I selects the next idle army. Each acts only while its control could be pressed.
+ * takes Next up's step, and I selects the next idle army (on the world map only). Each acts only while its control
+ * could be pressed.
  */
-export const useHudKeys = ({ idleArmies }: { idleArmies: readonly number[] }) => {
+export const useHudKeys = ({ idleArmies }: { idleArmies: IdleArmies }) => {
   const actions = useStructureActions();
   const latest = useRef({ actions, idleArmies });
   latest.current = { actions, idleArmies };
@@ -54,8 +55,8 @@ export const useHudKeys = ({ idleArmies }: { idleArmies: readonly number[] }) =>
       id: `${PREFIX}idle-army`,
       key: "i",
       description: "Select the next idle army",
-      condition: () => latest.current.idleArmies.length > 0,
-      action: () => selectNextIdleArmy(latest.current.idleArmies),
+      condition: () => latest.current.idleArmies.refusal === null,
+      action: () => selectNextIdleArmy(latest.current.idleArmies.ids),
     });
     return () => removeShortcutsByPrefix(PREFIX);
   }, []);

@@ -1,5 +1,6 @@
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { useQuery } from "@/hooks/helpers/use-query";
 import { useAllInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
@@ -28,6 +29,13 @@ export const idleArmyIds = (armies: readonly ArmyReading[]): number[] =>
     .filter(({ stamina, ordered }) => !ordered && stamina !== null && stamina.max > 0 && stamina.current >= stamina.max)
     .map(({ entityId }) => entityId);
 
+/** Why the idle armies cannot be selected now, if they cannot: armies are picked on the world map, and one must wait. */
+export const idleArmiesRefusal = (onWorldMap: boolean, idleCount: number): string | null => {
+  if (!onWorldMap) return "Armies are picked on the world map (V)";
+  if (idleCount === 0) return "No army waits at full stamina";
+  return null;
+};
+
 /** The army to select next: the idle one after the army selected now, or the first. */
 export const nextIdleArmy = (idle: readonly number[], selectedArmyId: number | null): number | null => {
   if (idle.length === 0) return null;
@@ -35,14 +43,23 @@ export const nextIdleArmy = (idle: readonly number[], selectedArmyId: number | n
   return idle[(at + 1) % idle.length];
 };
 
-/** The player's idle armies now, in the order Tab cycles them. */
-export const useIdleArmies = (): number[] => {
+/**
+ * The player's idle armies now, in the order Tab cycles them, and why they cannot be selected, if they cannot: armies
+ * are selected on the world map, so not from the realm view, and not while none waits.
+ */
+export interface IdleArmies {
+  ids: number[];
+  refusal: string | null;
+}
+
+export const useIdleArmies = (): IdleArmies => {
+  const { isMapView } = useQuery();
   const { setup } = useGame();
   const armies = useFactView(selectableArmiesView);
   const timestamp = useCurrentDefaultTick();
   const inFlight = useAllInFlight("army");
   const queued = useUIStore((state) => state.entityActions.nextOrder?.entityId ?? null);
-  return useMemo(
+  const ids = useMemo(
     () =>
       idleArmyIds(
         armies.map(({ entityId }) => {
@@ -62,6 +79,8 @@ export const useIdleArmies = (): number[] => {
       ),
     [armies, setup.store, timestamp, inFlight, queued],
   );
+  const refusal = idleArmiesRefusal(isMapView, ids.length);
+  return { ids, refusal };
 };
 
 /** Selects the next idle army as Tab selects an army: the camera goes to it and it is selected. */
@@ -71,21 +90,21 @@ export const selectNextIdleArmy = (idle: readonly number[]) => {
   if (next !== null) requestArmySelection(next);
 };
 
-/** The minimap's Idle armies button: how many wait, and `I` or a click selects the next one. */
-export const IdleArmiesButton = ({ idle, className }: { idle: readonly number[]; className?: string }) => (
+/** The minimap's Idle armies button: how many wait, and `I` or a click selects the next one; shut with its reason. */
+export const IdleArmiesButton = ({ idle, className }: { idle: IdleArmies; className?: string }) => (
   <button
     type="button"
-    disabled={idle.length === 0}
-    onClick={() => selectNextIdleArmy(idle)}
+    disabled={idle.refusal !== null}
+    onClick={() => selectNextIdleArmy(idle.ids)}
     aria-keyshortcuts="I"
-    title={idle.length === 0 ? "No army waits at full stamina" : "Select the next idle army (I)"}
+    title={idle.refusal ?? "Select the next idle army (I)"}
     className={cn(
       "pointer-events-auto flex h-9 items-center gap-1.5 rounded-full border border-kit-line2 bg-black/70 px-3 text-sm font-semibold text-kit-cream hover:border-kit-gold disabled:opacity-50",
       className,
     )}
   >
     <Icon name="military" size={18} />
-    Idle {idle.length}
+    Idle {idle.ids.length}
     <kbd className="hud-key">I</kbd>
   </button>
 );

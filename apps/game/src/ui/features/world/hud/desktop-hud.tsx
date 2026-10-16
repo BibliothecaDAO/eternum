@@ -8,7 +8,7 @@ import { GuidedRail } from "./guided-rail";
 import { HoldingsList, useHoldings } from "./holdings";
 import { HUD_PANEL } from "./hud-panel";
 import { useHudKeys } from "./hud-keys";
-import { IdleArmiesButton, useIdleArmies } from "./idle-armies";
+import { type IdleArmies, IdleArmiesButton, useIdleArmies } from "./idle-armies";
 import { HudMinimap } from "./minimap";
 import { RealmCard } from "./realm-card";
 
@@ -38,7 +38,7 @@ export const DesktopHud = () => {
   );
 };
 
-const HoldingsColumn = ({ idleArmies }: { idleArmies: readonly number[] }) => {
+const HoldingsColumn = ({ idleArmies }: { idleArmies: IdleArmies }) => {
   const ordersAllowed = useUIStore(canIssueOrders);
   const account = useAccountStore((state) => state.account);
   if (!ordersAllowed) return <SpectatorStandings />;
