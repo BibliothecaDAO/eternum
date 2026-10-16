@@ -47,9 +47,20 @@ const shards = new Map<string, Shard>();
 /** Chain ids arrive as felts in any hex spelling; one spelling keys URLs, storage and lookups. */
 const normalizeChainId = (chainId: string | bigint): string => `0x${BigInt(chainId).toString(16)}`;
 
-/** Read the manifest once; individual games resolve their own pins against its release catalogue. */
-export async function openShard(url: string, schemaHash: string, validate?: (shard: Shard) => void): Promise<Shard> {
-  const shard = await readShard(url);
+/**
+ * Open a shard from its manifest, read once: the one its listing already carries (the app's directory serves it, so
+ * entering a game does not wait on a second round trip to the shard), or else the shard's own. Individual games
+ * resolve their own pins against its release catalogue.
+ */
+export async function openShard(
+  url: string,
+  schemaHash: string,
+  validate?: (shard: Shard) => void,
+  listedManifest?: ShardManifest,
+): Promise<Shard> {
+  const shard = listedManifest
+    ? buildShard(resolveEndpoint(url, { name: "Shard URL" }), listedManifest)
+    : await readShard(url);
   if (!Object.values(shard.releaseSchemas).includes(schemaHash))
     throw new ShardReleaseMismatchError(shard.url, Object.keys(shard.releaseSchemas).join(", "));
   validate?.(shard);

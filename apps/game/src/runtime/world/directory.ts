@@ -1,4 +1,4 @@
-import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
+import type { HeraldGameDirectoryEntry, ShardManifest } from "@bibliothecadao/eternum/game-sync";
 import { fetchApi } from "@/runtime/app-api";
 
 /** A shard game whose launch records may temporarily be unavailable. */
@@ -10,12 +10,14 @@ export interface DirectoryEntry extends HeraldGameDirectoryEntry {
 
 export type DirectoryShardStatus = "active" | "draining" | "retired";
 
-/** One shard as our directory lists it; `games` is null when the Worker could not read that shard. */
+/** One shard as our directory lists it; `games` and `manifest` are null when the Worker could not read that shard. */
 export interface DirectoryShard {
   url: string;
   chainId: string;
   status: DirectoryShardStatus;
   games: DirectoryEntry[] | null;
+  /** The shard's manifest, which the app opens it from without asking the shard again. */
+  manifest: ShardManifest | null;
   error?: "unavailable";
 }
 

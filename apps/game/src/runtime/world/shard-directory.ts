@@ -1,5 +1,5 @@
 import { fetchHeraldGameDirectory, type GameRef } from "@bibliothecadao/eternum/shard";
-import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
+import type { HeraldGameDirectory, HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
 import { queryOptions } from "@tanstack/react-query";
 
 import { appQueryClient } from "../query-client";
@@ -15,13 +15,25 @@ export const shardDirectoryQuery = (chainId: string, player: string | null) =>
     queryFn: async () => fetchHeraldGameDirectory(await requireOpenShard(chainId), player ?? undefined),
   });
 
-const readShardDirectory = (chainId: string, player: string | null) =>
-  appQueryClient.fetchQuery(shardDirectoryQuery(chainId, player));
+const readShardDirectory = (chainId: string, player: string | null, maxAgeMs: number) =>
+  appQueryClient.fetchQuery({ ...shardDirectoryQuery(chainId, player), staleTime: maxAgeMs });
 
-/** A game's row in its shard's directory; a game its shard does not list is an error. */
-export const readGameEntry = async (game: GameRef, player: string | null): Promise<HeraldGameDirectoryEntry> => {
-  const directory = await readShardDirectory(game.chainId, player);
-  const entry = directory.games.find((candidate) => candidate.game_id === game.gameId);
+/**
+ * A game's row in its shard's directory; a game its shard does not list is an error. `maxAgeMs` is how old an answer
+ * already read may be (the default asks the shard afresh); readers asking at once share one request. An earlier answer
+ * vouches only for the games it lists: a game it does not list may be new, so the shard is asked again.
+ */
+export const readGameEntry = async (
+  game: GameRef,
+  player: string | null,
+  maxAgeMs = 0,
+): Promise<HeraldGameDirectoryEntry> => {
+  const entry =
+    findGame(await readShardDirectory(game.chainId, player, maxAgeMs), game) ??
+    (maxAgeMs > 0 ? findGame(await readShardDirectory(game.chainId, player, 0), game) : undefined);
   if (!entry) throw new Error(`Shard ${game.chainId} lists no game ${game.gameId}`);
   return entry;
 };
+
+const findGame = (directory: HeraldGameDirectory, game: GameRef) =>
+  directory.games.find((candidate) => candidate.game_id === game.gameId);

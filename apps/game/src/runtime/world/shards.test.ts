@@ -9,7 +9,12 @@ const registry = vi.hoisted(() => {
   };
   const open = new Map<string, { url: string; chainId: string }>();
   const openShard = vi.fn(
-    async (url: string, _schema: string, validate?: (shard: { url: string; chainId: string }) => void) => {
+    async (
+      url: string,
+      _schema: string,
+      validate?: (shard: { url: string; chainId: string }) => void,
+      _listedManifest?: unknown,
+    ) => {
       const chainId = manifests[url];
       if (!chainId) throw new Error(`Shard ${url} manifest failed: 503`);
       const shard = { url, chainId };
@@ -38,9 +43,12 @@ const loadShards = async () => {
   return import("./shards");
 };
 
+/** The manifest our directory carries for shard A, as the Worker read it from that shard. */
+const manifestA = { version: 1, chainId: "0xa", contracts: { games: "0x1" } };
+
 const directory = {
   shards: [
-    { url: "https://shard-a.test", chainId: "0xa", status: "active", games: [] },
+    { url: "https://shard-a.test", chainId: "0xa", status: "active", games: [], manifest: manifestA },
     { url: "https://shard-b.test", chainId: "0xb", status: "active", games: null, error: "unavailable" },
     { url: "https://old.test", chainId: "0xd", status: "retired", games: [] },
     // Listed for chain 0xe, its manifest claims shard A's chain.
@@ -62,6 +70,16 @@ it("opens a game's own shard from the route's chain id, taking shard URLs from o
   expect(shard).toEqual({ url: "https://shard-b.test", chainId: "0xb" });
   // Entering a game on shard B opened shard B alone; shard A's Herald was not contacted.
   expect(registry.openShard.mock.calls.map(([url]) => url)).toEqual(["https://shard-b.test"]);
+});
+
+it("opens a shard from the manifest our directory carries, and asks only a shard the directory could not read", async () => {
+  const { requireOpenShard } = await loadShards();
+  await requireOpenShard("0xa");
+  await requireOpenShard("0xb");
+  expect(registry.openShard.mock.calls.map(([url, , , manifest]) => [url, manifest])).toEqual([
+    ["https://shard-a.test", manifestA],
+    ["https://shard-b.test", undefined],
+  ]);
 });
 
 it("names the directory when it cannot be read, and opens no shard", async () => {
