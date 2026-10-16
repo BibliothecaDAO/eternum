@@ -16,6 +16,10 @@ import { type ArmyProgressFacts, xpGained } from "@/ui/features/frontier/attribu
 import { playArmyProgress } from "@/ui/features/frontier/attributes/progress-moment";
 import { canIssueOrders, refusedBeforePlay } from "@/utils/can-issue-orders";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
+import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
+import { isTransferPair } from "@/ui/features/economy/transfers/transfer-pair";
+import { transferGesture } from "./worldmap-transfer-gesture";
+import { publishMapSelection } from "@/observability/map-selection";
 import { resolveSpawnActionPath, showArmyDeploymentTooltip } from "./worldmap-army-deployment";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
@@ -2394,6 +2398,7 @@ export default class WorldmapScene extends WarpTravel {
       this.previouslyHoveredHex = null;
       this.showOrderUnderPointer(null);
       this.state.setHoveredHex(null);
+      publishMapSelection({ hovered: null });
       this.interactiveHexManager.applyHoverPalette(hoverPalette);
 
       // Reset cursor when leaving hex
@@ -2415,6 +2420,15 @@ export default class WorldmapScene extends WarpTravel {
       });
     }
     this.previouslyHoveredHex = hexCoords;
+    const { structure: hoveredStructure } = this.getHexagonEntity(hexCoords);
+    publishMapSelection({
+      hovered: hoveredStructure
+        ? {
+            id: Number(hoveredStructure.id),
+            ownedByViewer: hoveredStructure.owner !== undefined && isAddressEqualToAccount(hoveredStructure.owner),
+          }
+        : null,
+    });
 
     // Handle label expansion on hover
     this.currentHoverLabelHex = hexCoords;
@@ -2747,6 +2761,16 @@ export default class WorldmapScene extends WarpTravel {
     const isMineStructure = structure?.owner !== undefined ? isAddressEqualToAccount(structure.owner) : false;
 
     if (structure && isMineStructure && !hasActiveEntityAction) {
+      const transfer = transferGesture({
+        selection: useUIStore.getState().mapSelection,
+        clickedId: Number(structure.id),
+        canTransferBetween: isTransferPair,
+        transfersAllowed: configManager.isCommandEnabled("SendResources"),
+      });
+      if (transfer) {
+        openTransfer(transfer);
+        return;
+      }
       this.logInteractionDebug("opening_owned_structure_context_menu", {
         structureId: structure.id,
         hexCoords,

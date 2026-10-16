@@ -5,8 +5,7 @@ import { type LeftListFilter, useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { realmMeaning, structureMeaning } from "@/ui/design-system/domain-icon-meaning";
-import type { IconMeaning } from "@/ui/design-system/icon";
+import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon } from "@/ui/design-system/icon";
 import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
 import {
@@ -18,38 +17,11 @@ import { Position, structureMapPosition } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { type ID, StructureType } from "@bibliothecadao/types";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { holdingIcon, kindsHeld, listHoldings, needsSearch, shownKind } from "./holdings-model";
 import { HUD_PANEL } from "./hud-panel";
 import { Medallion } from "./medallion";
 
-/** Every kind a player can hold, in the order the filters show them. */
-const KINDS: Array<{ kind: StructureType; plural: string }> = [
-  { kind: StructureType.Realm, plural: "Realms" },
-  { kind: StructureType.Village, plural: "Villages" },
-  { kind: StructureType.Camp, plural: "Camps" },
-  { kind: StructureType.Mine, plural: "Mines" },
-  { kind: StructureType.Rift, plural: "Rifts" },
-  { kind: StructureType.BitcoinMine, plural: "Bitcoin mines" },
-  { kind: StructureType.Hyperstructure, plural: "Hyperstructures" },
-  { kind: StructureType.Bank, plural: "Banks" },
-  { kind: StructureType.Ruin, plural: "Ruins" },
-  { kind: StructureType.Stragglers, plural: "Stragglers" },
-];
-const KIND_RANK = new Map(KINDS.map(({ kind }, index) => [kind, index]));
-
-/** A search box earns its place once the kind shown no longer fits on one screen. */
-const SEARCH_FROM = 12;
-
 const hasLevels = (structure: StructureWithMetadata) => structure.realmLevelLabel !== null;
-
-/** A realm shows its age's painting; every other holding its kind's. */
-const holdingIcon = (structure: StructureWithMetadata): IconMeaning =>
-  structure.category === StructureType.Realm
-    ? realmMeaning(structure.realmLevel)
-    : structureMeaning(structure.category as StructureType);
-
-/** Never every holding at once: the saved kind while one is held, else the first held (realms come first). */
-const shownKind = (saved: LeftListFilter, held: ReadonlyArray<{ kind: StructureType }>): LeftListFilter =>
-  saved !== "all" && held.some(({ kind }) => kind === saved) ? saved : (held[0]?.kind ?? "all");
 
 /**
  * The player's holdings as the list shows them: the kinds held with their counts, the kind shown (`shownKind`) with
@@ -74,35 +46,16 @@ export const useHoldings = () => {
     nameUpdateVersion: nameVersion,
   });
 
-  const kinds = useMemo(() => {
-    const counts = new Map<StructureType, number>();
-    for (const structure of structures) {
-      const kind = structure.category as StructureType;
-      counts.set(kind, (counts.get(kind) ?? 0) + 1);
-    }
-    return KINDS.filter(({ kind }) => counts.has(kind)).map((entry) => ({ ...entry, count: counts.get(entry.kind)! }));
-  }, [structures]);
+  const kinds = useMemo(() => kindsHeld(structures), [structures]);
 
   const filter = shownKind(savedFilter, kinds);
-  const searchable = (kinds.find(({ kind }) => kind === filter)?.count ?? structures.length) >= SEARCH_FROM;
+  const searchable = needsSearch(kinds, filter, structures.length);
   // A search belongs to the kind it was typed in, and only while that kind's field shows: one typed elsewhere, or
   // hidden once the kind falls under SEARCH_FROM, filters nothing.
   const query = searchable && typed.kind === filter ? typed.text : "";
   const setQuery = useCallback((text: string) => setTyped({ kind: filter, text }), [filter]);
 
-  const visible = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    return structures
-      .filter((structure) => filter === "all" || structure.category === filter)
-      .filter((structure) => needle === "" || structure.displayName.toLowerCase().includes(needle))
-      .toSorted(
-        (a, b) =>
-          (KIND_RANK.get(a.category as StructureType) ?? 99) - (KIND_RANK.get(b.category as StructureType) ?? 99) ||
-          Number(b.isFavorite) - Number(a.isFavorite) ||
-          b.realmLevel - a.realmLevel ||
-          a.displayName.localeCompare(b.displayName),
-      );
-  }, [structures, filter, query]);
+  const visible = useMemo(() => listHoldings(structures, filter, query), [structures, filter, query]);
 
   const select = useCallback(
     (entityId: ID) => {

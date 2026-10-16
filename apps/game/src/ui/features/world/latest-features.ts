@@ -70,6 +70,13 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-10-16",
+    title: "One Transfer window",
+    description:
+      "Transfer (T) lists your holdings as the holdings list does, sends any goods to several holdings at once with each total split evenly, and opens from the map: select a holding, right-click another of yours. Arrivals, Automation and Balances are a click away.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-16",
     title: "Keys for the HUD",
     description:
       "B, P, M and T open Build, Production, Military and Transfer, Space takes Next up's step, and I selects your next idle army (full stamina, no order), as does the new Idle button on the minimap. No key fires while you type.",

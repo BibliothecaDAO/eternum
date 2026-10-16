@@ -14,6 +14,7 @@ import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstr
 import { HyperstructureConstruction } from "@/ui/features/world/components/hyperstructures/hyperstructure-construction";
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { buildVillageTimerSummary } from "@/ui/shared/lib/village-timers";
 import { ID, StructureType } from "@bibliothecadao/types";
@@ -102,8 +103,6 @@ const StructureBannerEntityDetailContent = memo(
     const isEternumMode = resolvedWorldMode === "eternum";
     const currentBlockTimestamp = useCurrentBlockTimestamp();
     const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
-    const setLogisticsActiveTab = useUIStore((state) => state.setLogisticsActiveTab);
-    const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
 
     const productionSummary = useStructureProductionSummary(structure, resources);
     const ownerAddress =
@@ -115,10 +114,8 @@ const StructureBannerEntityDetailContent = memo(
     const rawCategory = structure?.base?.category;
     const handleOpenTransferPanel = useCallback(() => {
       if (!structure?.entity_id) return;
-      setTransferPanelSourceId(safeInteger(structure.entity_id));
-      setLogisticsActiveTab("transfer");
-      setLeftNavigationView(LeftView.ResourceArrivals);
-    }, [setLeftNavigationView, setLogisticsActiveTab, setTransferPanelSourceId, structure?.entity_id]);
+      openTransfer({ sourceId: safeInteger(structure.entity_id), destinationIds: [] });
+    }, [structure?.entity_id]);
 
     if (isLoadingStructure) {
       return (

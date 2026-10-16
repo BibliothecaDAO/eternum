@@ -6,16 +6,14 @@ import { Tabs } from "@/ui/design-system/atoms/tab";
 import { EntityResourceTable } from "@/ui/features/economy/resources";
 import { ResourceArrivals } from "@/ui/features/economy/trading";
 import { TransferAutomationAdvancedModal } from "@/ui/features/economy/transfers/transfer-automation-modal";
-import { TransferAutomationPanel } from "@/ui/features/economy/transfers/transfer-automation-panel";
 import clsx from "clsx";
 import { useEffect, useState } from "react";
 import { HUD_BODY_MUTED } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { StructureSidebar } from "@/ui/features/world/containers/structure-sidebar";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { configManager } from "@bibliothecadao/eternum";
 
-const TAB_KEYS = ["arrivals", "transfer", "automation", "balances"] as const;
+const TAB_KEYS = ["arrivals", "automation", "balances"] as const;
 type LogisticsTab = (typeof TAB_KEYS)[number];
 
 const tabClass =
@@ -26,9 +24,9 @@ interface LogisticsViewProps {
 }
 
 /**
- * LogisticsView — unified replacement for the old "Resource Arrivals" sidebar
- * view and the centered "Transfers" modal. Renders inside the FloatingViewPanel
- * with four tabs: Arrivals · Transfer · Automation · All Balances.
+ * LogisticsView: what is on its way, the repeating transfers, and every holding's balances, as three tabs (Arrivals ·
+ * Automation · Balances). Sending lives in the one transfer window (economy/transfers/transfer-window), which links
+ * here.
  *
  * The initially-selected tab comes from useUIStore.logisticsActiveTab so
  * external triggers (e.g., WalletPill's swap chip) can open the panel directly
@@ -37,17 +35,13 @@ interface LogisticsViewProps {
 export const LogisticsView = ({ hasArrivals }: LogisticsViewProps) => {
   const activeTabKey = useUIStore((state) => state.logisticsActiveTab);
   const setActiveTabKey = useUIStore((state) => state.setLogisticsActiveTab);
-  const transferPanelSourceId = useUIStore((state) => state.transferPanelSourceId);
   const playerStructures = useFactView(playerStructuresView);
   const arrivedArrivalsNumber = useUIStore((state) => state.arrivedArrivalsNumber);
   const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
 
   const mode = useGameModeConfig();
-  const showTransfer = configManager.isCommandEnabled("SendResources");
   const showAutomation = mode.ui.showAutomation;
-  const tabKeys: readonly LogisticsTab[] = TAB_KEYS.filter(
-    (key) => (key !== "transfer" || showTransfer) && (key !== "automation" || showAutomation),
-  );
+  const tabKeys: readonly LogisticsTab[] = TAB_KEYS.filter((key) => key !== "automation" || showAutomation);
   const selectedIndex = Math.max(0, tabKeys.indexOf(activeTabKey));
   const totalArrivals = arrivedArrivalsNumber + pendingArrivalsNumber;
   // Ready-to-claim is more urgent (green) than still-in-flight (gold); pick the
@@ -61,7 +55,7 @@ export const LogisticsView = ({ hasArrivals }: LogisticsViewProps) => {
         onChange={(index) => setActiveTabKey(tabKeys[index] ?? "arrivals")}
         className="flex flex-1 flex-col gap-2 min-h-0"
       >
-        <Tabs.List className="grid grid-cols-2 gap-1 lg:grid-cols-4">
+        <Tabs.List className="grid grid-cols-3 gap-1">
           <Tabs.Tab className={tabClass}>
             <span className="inline-flex items-center gap-1.5">
               Arrivals
@@ -78,7 +72,6 @@ export const LogisticsView = ({ hasArrivals }: LogisticsViewProps) => {
               )}
             </span>
           </Tabs.Tab>
-          {showTransfer && <Tabs.Tab className={tabClass}>Transfer</Tabs.Tab>}
           {showAutomation && <Tabs.Tab className={tabClass}>Automation</Tabs.Tab>}
           <Tabs.Tab className={tabClass}>Balances</Tabs.Tab>
         </Tabs.List>
@@ -86,11 +79,6 @@ export const LogisticsView = ({ hasArrivals }: LogisticsViewProps) => {
           <Tabs.Panel className="h-full overflow-y-auto">
             <ResourceArrivals hasArrivals={hasArrivals} />
           </Tabs.Panel>
-          {showTransfer && (
-            <Tabs.Panel className="h-full overflow-y-auto">
-              <TransferAutomationPanel initialSourceId={transferPanelSourceId ?? undefined} />
-            </Tabs.Panel>
-          )}
           {showAutomation && (
             <Tabs.Panel className="h-full overflow-y-auto">
               <TransferAutomationAdvancedModal />
