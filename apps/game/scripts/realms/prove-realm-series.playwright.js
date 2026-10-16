@@ -55,12 +55,12 @@
   try {
     await page.setViewportSize({ width: 1800, height: 1100 });
     const comparisonQuery = reference ? `&reference=${encodeURIComponent(reference)}&comparison=pair` : "";
-    await page.goto(`${baseUrl}/lab/models?family=realms&level=0&distance=6${comparisonQuery}`);
+    await page.goto(`${baseUrl}/lab/models?family=realms&level=0&distance=20${comparisonQuery}`);
     await ready();
     if (reference) {
       for (const level of [0, 1, 2]) {
         await select("Age", level);
-        for (const distance of [6, 20, 45]) {
+        for (const distance of [20, 6, 45]) {
           await select("Distance", distance);
           for (const revision of ["before", "after", "pair"]) {
             await select("Revision", revision);
@@ -87,7 +87,7 @@
     }
     for (const level of [0, 1, 2, 3]) {
       await select("Age", level);
-      for (const distance of [6, 20, 45]) {
+      for (const distance of [20, 6, 45]) {
         await select("Distance", distance);
         await capture(`normal-${level}-${distance}`);
       }
@@ -103,7 +103,7 @@
     ]) {
       await select("Age", level);
       await select("Entity", seed);
-      for (const distance of [6, 20, 45]) {
+      for (const distance of [20, 6, 45]) {
         await select("Distance", distance);
         await capture(`wonder-${level}-${seed}-${distance}`);
       }

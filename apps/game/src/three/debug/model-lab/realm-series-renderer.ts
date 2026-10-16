@@ -9,6 +9,11 @@ import { ModelLabEnvironment } from "./model-lab-environment";
 import { readModelLabSettings } from "./model-lab-settings";
 import { updateGameEndFreeze } from "../../effects/game-end-freeze";
 
+import {
+  resolveWorldmapCameraFieldOfViewDegrees,
+  resolveWorldmapCameraPitchRadians,
+} from "../../scenes/worldmap-camera-view-profile";
+
 export interface RealmSeriesSettings {
   level: number;
   wonder: boolean;
@@ -31,7 +36,7 @@ export async function mountRealmSeries(container: HTMLElement, settings: RealmSe
   const scene = new Scene();
   scene.background = new Color(0x819997);
   const environment = new ModelLabEnvironment(scene);
-  const camera = new PerspectiveCamera(37, 1, 0.1, 150);
+  const camera = new PerspectiveCamera(resolveWorldmapCameraFieldOfViewDegrees(), 1, 0.1, 150);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.minDistance = 3;
@@ -93,9 +98,10 @@ export async function mountRealmSeries(container: HTMLElement, settings: RealmSe
       environment.terrain.sampleSurface(0, 0).height + (settings.distance <= 10 ? height / 2 : 0.5),
       0,
     );
+    const pitch = resolveWorldmapCameraPitchRadians(settings.distance);
     camera.position
       .copy(controls.target)
-      .add(new Vector3(0.18, 0.59, 0.79).normalize().multiplyScalar(settings.distance));
+      .add(new Vector3(0, Math.sin(pitch), Math.cos(pitch)).multiplyScalar(settings.distance));
     controls.update();
     const render = () => {
       if (signal.aborted) return;

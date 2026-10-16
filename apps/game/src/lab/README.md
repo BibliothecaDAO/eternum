@@ -79,8 +79,9 @@ performance on a live world. Live proof uses the existing `playtest` command aft
 
 Open **Models & motion → Realm ladder**, or `/lab/models?family=realms`. Age, normal/wonder, entity, Order and ownership
 controls exercise the same `SettlementModel` used by the world map. All ages compares the ladder at true scale; Close,
-Gameplay and Far use distances 6, 20 and 45. Drag to orbit and scroll to zoom. The entity picker exposes both city and
-kingdom designs and all seven imperial crowns. The separate sculpt is a study, not a runtime option.
+Gameplay and Far use distances 6, 20 and 45. The default is Gameplay; field of view and pitch come from the world-map
+camera profile, along +Z. Drag to orbit and scroll to zoom. The entity picker exposes both city and kingdom designs and
+all seven imperial crowns. The separate sculpt is a study, not a runtime option.
 
 `/lab/terrain-benchmark?realms=1` adds 48 production realm placements (24 normal, 24 wonder) to the existing terrain
 trace. The checkbox is also available in the benchmark UI. Its fingerprint ends in `:realms48`; compare identical

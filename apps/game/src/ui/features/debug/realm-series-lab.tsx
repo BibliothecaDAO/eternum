@@ -15,7 +15,7 @@ export function RealmSeriesLab() {
     seed,
     order: Number(params.get("order") ?? orders[0].orderId),
     owned: params.get("owned") !== "0",
-    distance: Number(params.get("distance") ?? 10),
+    distance: Number(params.get("distance") ?? 20),
     lineup: params.get("lineup") === "1",
     reference: params.get("wonder") === "1" ? undefined : (params.get("reference") ?? undefined),
     comparison:
