@@ -17,6 +17,9 @@ export function RealmSeriesLab() {
     owned: params.get("owned") !== "0",
     distance: Number(params.get("distance") ?? 10),
     lineup: params.get("lineup") === "1",
+    reference: params.get("wonder") === "1" ? undefined : (params.get("reference") ?? undefined),
+    comparison:
+      params.get("comparison") === "before" ? "before" : params.get("comparison") === "pair" ? "pair" : "after",
   };
   const signature = JSON.stringify(settings);
   useEffect(() => {
@@ -59,10 +62,24 @@ export function RealmSeriesLab() {
       <header style={{ padding: 16, display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
         <Link to="/lab">Lab</Link>
         <strong>Realms · production series</strong>
+        {settings.reference && (
+          <label>
+            Revision{" "}
+            <select
+              aria-label="Revision"
+              value={settings.comparison}
+              onChange={(e) => change("comparison", e.target.value)}
+            >
+              <option value="after">After</option>
+              <option value="before">Before</option>
+              <option value="pair">Before / After</option>
+            </select>
+          </label>
+        )}
         <label>
           Age{" "}
           <select aria-label="Age" value={settings.level} onChange={(e) => change("level", e.target.value)}>
-            {["Wellstead", "Terrace Forum", "Twin Ward", "Empire"].map((label, index) => (
+            {["Canvas & Thatch", "Terrace Forum", "Twin Ward", "Empire"].map((label, index) => (
               <option key={label} value={index}>
                 {label}
               </option>
@@ -128,6 +145,7 @@ export function RealmSeriesLab() {
           <input
             type="checkbox"
             checked={settings.lineup}
+            disabled={Boolean(settings.reference && settings.comparison !== "after")}
             onChange={(e) => change("lineup", e.target.checked ? "1" : "0")}
           />{" "}
           All ages
@@ -139,7 +157,7 @@ export function RealmSeriesLab() {
       <div
         ref={host}
         style={{ flex: 1, minHeight: 0 }}
-        data-realm-ready={loaded === signature && !status.startsWith("Error")}
+        data-realm-ready={loaded === signature && status !== "Loading" && !status.startsWith("Error")}
         data-realm-loaded={loaded}
       />
     </main>

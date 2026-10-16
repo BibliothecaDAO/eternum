@@ -90,6 +90,19 @@ fingerprints for regression claims. The terrain-only trace remains unchanged.
 heraldry and aura animation. Run its function with the connected browser and a fresh evidence directory; all pages are
 closed when it finishes. Live proof uses the client's existing `playtest` command after dev is available.
 
+### Realm revision comparison
+
+Preserve the previous `settlement.glb`, `city.glb`, `kingdom.glb` and `empire.glb` outside the checkout, then link that
+directory at `apps/game/public/.context/realm-review` (ignored). Open
+`/lab/models?family=realms&reference=/.context/realm-review&comparison=pair&level=1&distance=6`. **Revision** switches
+Before / After / Before–After; **Age** chooses the matching file in the reference directory. The two versions use the
+same scale, lighting, Order and ownership. Reference comparison is for normal realms; the wonder picker continues to use
+the delivered series. Old assets stay in review evidence, never in production.
+
+Pass `reference: "/.context/realm-review"` alongside `baseUrl` and `output` to the retained
+`prove-realm-series.playwright.js` driver to capture the three changed ages at 6/20/45, each revision, then the new
+settlement's first three Orders in owned/enemy colours. The driver closes its page on success or failure.
+
 ## Facets icons
 
 The Facets catalog at `/lab/kit/icons` uses production artwork and the shared renderer. It includes size, family and

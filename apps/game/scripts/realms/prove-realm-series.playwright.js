@@ -1,4 +1,4 @@
-(async function proveRealmSeries(shared, { baseUrl, output }) {
+(async function proveRealmSeries(shared, { baseUrl, output, reference }) {
   const page = await shared.context().newPage();
   const errors = [];
   const requests = new Set();
@@ -17,11 +17,13 @@
         if (!host?.dataset.realmLoaded) return false;
         const loaded = JSON.parse(host.dataset.realmLoaded);
         const params = new URL(location.href).searchParams;
-        return ["level", "wonder", "seed", "order", "owned", "distance", "lineup"].every((key) => {
-          const value = params.get(key);
-          if (value === null) return true;
-          return String(typeof loaded[key] === "boolean" ? Number(loaded[key]) : loaded[key]) === value;
-        });
+        return ["level", "wonder", "seed", "order", "owned", "distance", "lineup", "reference", "comparison"].every(
+          (key) => {
+            const value = params.get(key);
+            if (value === null) return true;
+            return String(typeof loaded[key] === "boolean" ? Number(loaded[key]) : loaded[key]) === value;
+          },
+        );
       },
       null,
       { timeout: 60000 },
@@ -29,7 +31,18 @@
     await page.waitForTimeout(350);
   }
   async function select(label, value) {
+    const key = {
+      Age: "level",
+      Distance: "distance",
+      Revision: "comparison",
+      Series: "wonder",
+      Entity: "seed",
+      Order: "order",
+      Ownership: "owned",
+    }[label];
+    if (!key) throw new Error(`Unknown realm control: ${label}`);
     await page.getByLabel(label, { exact: true }).selectOption(String(value));
+    await page.waitForURL((url) => url.searchParams.get(key) === String(value));
     await ready();
   }
   async function capture(name) {
@@ -41,8 +54,37 @@
   }
   try {
     await page.setViewportSize({ width: 1800, height: 1100 });
-    await page.goto(`${baseUrl}/lab/models?family=realms&level=0&distance=6`);
+    const comparisonQuery = reference ? `&reference=${encodeURIComponent(reference)}&comparison=pair` : "";
+    await page.goto(`${baseUrl}/lab/models?family=realms&level=0&distance=6${comparisonQuery}`);
     await ready();
+    if (reference) {
+      for (const level of [0, 1, 2]) {
+        await select("Age", level);
+        for (const distance of [6, 20, 45]) {
+          await select("Distance", distance);
+          for (const revision of ["before", "after", "pair"]) {
+            await select("Revision", revision);
+            await capture(`revision-${level}-${distance}-${revision}`);
+          }
+        }
+      }
+      await select("Revision", "after");
+      await select("Age", 0);
+      await select("Distance", 6);
+      const orders = await page
+        .getByLabel("Order", { exact: true })
+        .locator("option")
+        .evaluateAll((options) => options.slice(0, 3).map((option) => option.value));
+      for (const order of orders) {
+        await select("Order", order);
+        for (const owned of [0, 1]) {
+          await select("Ownership", owned);
+          await capture(`settlement-heraldry-${order}-${owned}`);
+        }
+      }
+      if (errors.length) throw new Error(errors.join("\n"));
+      return { captures, requests: [...requests], errors };
+    }
     for (const level of [0, 1, 2, 3]) {
       await select("Age", level);
       for (const distance of [6, 20, 45]) {

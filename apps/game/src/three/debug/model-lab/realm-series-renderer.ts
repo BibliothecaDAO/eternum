@@ -1,4 +1,4 @@
-import { Color, Matrix4, PerspectiveCamera, Scene, Vector3 } from "three";
+import { Box3, Color, Matrix4, PerspectiveCamera, Scene, Vector3 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { initializeProceduralCharacterRendererRuntime } from "../../characters/procedural-character-renderer-runtime";
 import { SettlementModel } from "../../structures/settlement-model";
@@ -17,6 +17,8 @@ export interface RealmSeriesSettings {
   owned: boolean;
   distance: number;
   lineup: boolean;
+  reference?: string;
+  comparison: "before" | "after" | "pair";
 }
 
 /** Uses the game's instanced models and heraldry, at model scale one on the client's terrain. */
@@ -61,11 +63,18 @@ export async function mountRealmSeries(container: HTMLElement, settings: RealmSe
     resize();
     await environment.update(readModelLabSettings(new URLSearchParams("family=knight&biome=grassland")));
     signal.throwIfAborted();
-    const levels = settings.lineup ? [0, 1, 2, 3] : [settings.level];
+    const comparing = Boolean(settings.reference && settings.comparison !== "after");
+    let levels = settings.lineup ? [0, 1, 2, 3] : [settings.level];
+    if (comparing) levels = settings.comparison === "pair" ? [settings.level, settings.level] : [settings.level];
     const labels: string[] = [];
+    let height = 0;
     for (const [slot, level] of levels.entries()) {
       const asset = REALM_ASSETS[realmModelIndex(level, settings.wonder, settings.seed)];
-      const gltf = await gltfLoader.loadAsync(asset.path);
+      const before = comparing && slot === 0;
+      const gltf = await gltfLoader.loadAsync(
+        before ? `${settings.reference!.replace(/\/$/, "")}/${asset.id}.glb` : asset.path,
+      );
+      height = Math.max(height, new Box3().setFromObject(gltf.scene).max.y);
       const model = new SettlementModel(gltf, 1, "realm", asset.wonder);
       models.push(model);
       await model.prepare();
@@ -77,9 +86,13 @@ export async function mountRealmSeries(container: HTMLElement, settings: RealmSe
       model.setRelationshipAt(0, settings.owned ? "owned" : "enemy");
       model.setWonderEntityAt(0, settings.seed);
       scene.add(model.group);
-      labels.push(asset.label);
+      labels.push(before ? "Before" : comparing ? `After · ${asset.label}` : asset.label);
     }
-    controls.target.set(0, environment.terrain.sampleSurface(0, 0).height + (settings.distance <= 10 ? 1.4 : 0.5), 0);
+    controls.target.set(
+      0,
+      environment.terrain.sampleSurface(0, 0).height + (settings.distance <= 10 ? height / 2 : 0.5),
+      0,
+    );
     camera.position
       .copy(controls.target)
       .add(new Vector3(0.18, 0.59, 0.79).normalize().multiplyScalar(settings.distance));

@@ -263,3 +263,10 @@ proof runner. `pnpm --dir apps/game render:building-thumbnails https://127.0.0.1
 transparent PNGs from the current compressed GLBs through the game's loader. Source/image hashes are recorded in
 `asset-sources/building-thumbnails.json`; the construction thumbnail test checks them against the files and checks every
 building's thumbnail against the scene's model selection.
+
+## Realm models
+
+`/lab` → **Models & motion** → **Realm ladder** shows the production settlement, city, kingdom and empire at true scale.
+Choose **Age**, **Series**, **Order**, **Ownership** and **Distance**; drag to orbit and scroll to zoom. With an
+external reference directory in the URL, **Revision** offers Before, After and the pair. See
+[src/lab/README.md](src/lab/README.md#realm-revision-comparison) for the retained capture driver and reference setup.
