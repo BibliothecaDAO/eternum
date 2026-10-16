@@ -3,16 +3,14 @@ import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
-import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { triggerConnectionForceReconnect } from "@/ui/features/world/components/network-status-retry";
 import { configManager } from "@bibliothecadao/eternum";
 import { TickIds } from "@bibliothecadao/types";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { orderHeadlineFeed, useHeadlineFeedStore } from "../news-headlines/headline-feed-store";
 import type { Headline } from "../news-headlines/headline-types";
-import { EventLogPanel } from "./event-log-panel";
 import { FEED_ROW_CLASS, FeedRowLine, HeadlineIcon } from "./feed-row-line";
 import { type ImportantFeedRow, selectImportantFeedRows, selectQuickFeedRows } from "./important-feed-rows";
 import { toast } from "./notify";
@@ -23,67 +21,8 @@ const QUICK_FEED_MAX_ROWS = 5;
 const QUICK_FEED_FADE_MS = 3_000;
 const CONNECTION_NOTICE_ID = "connection";
 
-/** Top of the right column: the Log button, then at most five one-line rows that fade after 20 s. */
-export const QuickFeed = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogToggle: () => void }) => (
-  <div aria-label="Quick feed" className="flex flex-col items-end gap-1">
-    <LogToggle
-      open={logOpen}
-      onToggle={onLogToggle}
-      className={cn(
-        "h-8 gap-1.5 rounded-md bg-black/50 px-2.5 font-sans backdrop-blur-[2px] hover:bg-black/70",
-        HUD_LABEL,
-      )}
-    >
-      <SemanticIcon name="chronicles" className="h-4 w-4" />
-      Log
-    </LogToggle>
-    <QuickFeedRows />
-  </div>
-);
-
-/**
- * The button that opens the event log, with its unread count, and the log panel anchored to it. Each layout dresses
- * it: the right column with its label, Frontier's strip as a glyph.
- */
-const LogToggle = ({
-  open,
-  onToggle,
-  className,
-  children,
-}: {
-  open: boolean;
-  onToggle: () => void;
-  className?: string;
-  children: React.ReactNode;
-}) => {
-  const { rows } = useImportantFeed();
-  const unread = useUnreadFeedCount(rows, open);
-  const button = useRef<HTMLButtonElement>(null);
-  return (
-    <>
-      <button
-        ref={button}
-        type="button"
-        aria-label="Log"
-        aria-expanded={open}
-        onClick={onToggle}
-        className={cn("pointer-events-auto inline-flex items-center", className, open && "text-gold")}
-      >
-        {children}
-        <UnreadFeedBadge count={unread} />
-      </button>
-      {open && (
-        <EventLogPanel
-          onDismiss={onToggle}
-          isInsideAnchor={(target) => target instanceof Node && Boolean(button.current?.contains(target))}
-        />
-      )}
-    </>
-  );
-};
-
 /** The feed's pinned notices and its latest rows, fading after 20 s. */
-const QuickFeedRows = () => {
+export const QuickFeedRows = () => {
   const { nowMs, rows, pinned } = useImportantFeed();
   const visible = selectQuickFeedRows(rows, nowMs, QUICK_FEED_WINDOW_MS, QUICK_FEED_MAX_ROWS);
   useConnectionNotices();

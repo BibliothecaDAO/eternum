@@ -1,34 +1,23 @@
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { EventLogPanel } from "@/ui/features/event-feed/event-log-panel";
-import { FeedRowLine } from "@/ui/features/event-feed/feed-row-line";
-import { selectQuickFeedRows } from "@/ui/features/event-feed/important-feed-rows";
 import {
-  FeedNotices,
+  QuickFeedRows,
   UnreadFeedBadge,
-  useConnectionNotices,
   useImportantFeed,
   useUnreadFeedCount,
 } from "@/ui/features/event-feed/quick-feed";
 import { useRef } from "react";
 
-const LATEST_ROWS = 3;
-
-/** The latest rows stay until newer ones replace them: the quick feed's selection with no time window. */
-const selectLatestFeedRows: typeof selectQuickFeedRows = (rows, nowMs, _window, maxRows) =>
-  selectQuickFeedRows(rows, nowMs, Number.POSITIVE_INFINITY, maxRows);
-
 /**
- * The rail's event log: the offline row and pinned headlines, then the three latest of what Events holds
- * (selectImportantFeedRows: battles, the player's realm news, caravans and this session's sends), which stay until
- * newer ones replace them. "All" opens the log, with what arrived since it was last read.
+ * The rail's events: the offline row and pinned headlines, then what Events holds (battles, the player's realm news,
+ * caravans and this session's sends) as it happens, each row fading after 20 s as the quick feed always did. "All"
+ * opens the log, with what arrived since it was last read.
  */
 export const EventsCard = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogToggle: () => void }) => {
-  const { nowMs, rows, pinned } = useImportantFeed();
+  const { rows } = useImportantFeed();
   const unread = useUnreadFeedCount(rows, logOpen);
   const button = useRef<HTMLButtonElement>(null);
-  const latest = selectLatestFeedRows(rows, nowMs, 0, LATEST_ROWS);
-  useConnectionNotices();
   return (
     <section
       aria-label="Events"
@@ -50,13 +39,7 @@ export const EventsCard = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogTo
           <UnreadFeedBadge count={unread} />
         </button>
       </div>
-      <FeedNotices pinned={pinned} />
-      {latest.map((row) => (
-        <FeedRowLine key={row.id} row={row} />
-      ))}
-      {latest.length === 0 && pinned.length === 0 && (
-        <p className="text-sm text-kit-muted">No battles or news from your realms yet.</p>
-      )}
+      <QuickFeedRows />
       {logOpen && (
         <EventLogPanel
           onDismiss={onLogToggle}
