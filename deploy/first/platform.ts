@@ -185,7 +185,9 @@ export class Platform {
     let page = 1;
     let cursor: string | undefined;
     for (let read = 0; read < PAGE_LIMIT; read++) {
-      const query = cursor ? { per_page: PER_PAGE, cursor } : { page, per_page: PER_PAGE };
+      const query: Record<string, string | number> = cursor
+        ? { per_page: PER_PAGE, cursor }
+        : { page, per_page: PER_PAGE };
       const { result, info } = await this.request<unknown>(withQuery(path, query), "GET");
       const batch = items(result);
       all.push(...batch);

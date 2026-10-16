@@ -181,6 +181,12 @@ When non-Cairo code changes, run these commands before finishing:
 - `pnpm run format`
 - `pnpm run knip`
 
+When `deploy/first`, `deploy/athanor`, `deploy/release` or `config` changes, also run the type-check CI runs for them;
+`bun test` strips types without checking them, so its passing proves nothing about types:
+
+- `pnpm exec tsc -p deploy/athanor/tsconfig.json` (covers `deploy/first`) and
+  `pnpm exec tsc -p config/tsconfig.json --noEmit`
+
 When Cairo code changes, do not build or test it while you write: read the code instead. GitHub compiles no world
 contracts, so the build runs once, when the pull request is ready to land:
 

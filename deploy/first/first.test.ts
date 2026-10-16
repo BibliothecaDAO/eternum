@@ -385,12 +385,12 @@ test("every service uses one RPC; deployer and cold admin keys never enter Worke
 
 test("the status monitor emails incidents through the identity Worker's Resend key, to the address setup recorded", () => {
   const status = workers.find((worker) => worker.id === "status")!;
-  expect(workerSecrets(status, { ...input, alertEmail: "oncall@example.test" }, secrets, keys)).toEqual({
+  expect(workerSecrets(status, { ...input, alertEmail: "oncall@example.test" }, secrets, keys, undefined)).toEqual({
     L2_RPC_URL: input.rpc,
     RESEND_API_KEY: input.resend,
     ALERT_EMAIL: "oncall@example.test",
   });
-  expect(workerSecrets(status, { ...input, alertEmail: undefined }, secrets, keys)).toEqual({
+  expect(workerSecrets(status, { ...input, alertEmail: undefined }, secrets, keys, undefined)).toEqual({
     L2_RPC_URL: input.rpc,
     RESEND_API_KEY: input.resend,
   });
