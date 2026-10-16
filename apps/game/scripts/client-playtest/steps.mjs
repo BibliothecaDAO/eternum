@@ -556,7 +556,7 @@ const ORDER_TOOLTIP_TITLE = `JSON.stringify((() => {
  * while the order was in flight, and after it, offered orders from the tile the order took it to; the order sent and
  * confirmed.
  */
-function keptThroughItsOutcome({ played, actionLatency, window }) {
+function keptThroughItsOutcome({ seen, played, actionLatency, window }) {
   const sent = judgeSentOrder(played);
   if (sent) return sent;
   const orders = describeOrders({ armyTrace: actionLatency.armyMovement, ...window });
@@ -564,15 +564,39 @@ function keptThroughItsOutcome({ played, actionLatency, window }) {
   if (confirmed !== 1) return failed(`${confirmed} orders were sent and confirmed, not 1`, { orders });
   const { before, after } = played;
   if (after?.id !== before.id) return failed("the army was not selected after its order's outcome", { before, after });
-  if (sameHex(after.hex, before.hex)) {
+  // A move always takes the army; an explore that reveals an occupant (a rift, a camp) leaves it where it stood.
+  if (played.target?.verb !== "Explore" && sameHex(after.hex, before.hex)) {
     return failed("the army is not offered orders from the tile its order took it to", { before, after });
   }
   if (!(after.orders > 0)) return failed("the army was offered no orders after its outcome", { before, after });
+  const reported = selectionOffTheArmy(seen, after);
+  if (reported) return reported;
   return completed({ before, inFlight: played.inFlight, after, target: played.target, orders });
 }
 
+/**
+ * The page's last selection report after the step, which the tile panel reads: the army the step ordered still
+ * selected, and the selected hex on that army's tile. This checks the reported selection the panel reads, not the
+ * panel's rendered title.
+ */
+function selectionOffTheArmy(seen, expected) {
+  const selection = seen.selection;
+  if (!selection) return failed("the page reported no map selection after the step");
+  const { hex, army } = selection;
+  if (!army) return failed(`the page's last report has no army selected, not army ${expected.id}`, { selection });
+  if (army.id !== expected.id) {
+    return failed(`the page's last report has army ${army.id} selected, not army ${expected.id}`, { selection });
+  }
+  if (sameHex(hex, army.hex)) return null;
+  return failed(
+    `the tile panel names ${hex ? `(${hex.col}, ${hex.row})` : "no tile"}, not the selected army's tile ` +
+      `(${army.hex.col}, ${army.hex.row})`,
+    { hex, army },
+  );
+}
+
 /** A refused order leaves the army selected where it stood, offered its orders again, and nothing confirmed. */
-function keptWhereItStood({ played, actionLatency, window }) {
+function keptWhereItStood({ seen, played, actionLatency, window }) {
   const sent = judgeSentOrder(played);
   if (sent) return sent;
   const orders = describeOrders({ armyTrace: actionLatency.armyMovement, ...window });
@@ -583,6 +607,8 @@ function keptWhereItStood({ played, actionLatency, window }) {
     return failed("the army was not selected after its order was refused", { before, after });
   if (!sameHex(after.hex, before.hex)) return failed("the army moved on a refused order", { before, after });
   if (!(after.orders > 0)) return failed("the army was offered no orders after the refusal", { before, after });
+  const reported = selectionOffTheArmy(seen, after);
+  if (reported) return reported;
   return completed({ before, after, orders });
 }
 

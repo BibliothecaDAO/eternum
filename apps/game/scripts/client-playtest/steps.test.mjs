@@ -198,8 +198,9 @@ describe("the Blitz order steps", () => {
       ...(confirmed ? [{ phase: "tx_confirmed", entityId: 7, wallTimeMs: 40 }] : []),
     ],
   });
-  const ordered = (played, { confirmed = true } = {}) => ({
-    seen: { ...onTheMap, selection: { hex: null, structure: null, ringedHexes: 0, army: played.after ?? null } },
+  // The tile panel's hex follows the selected army unless a case says where it stayed.
+  const ordered = (played, { confirmed = true, tile = played.after?.hex ?? null } = {}) => ({
+    seen: { ...onTheMap, selection: { hex: tile, structure: null, ringedHexes: 0, army: played.after ?? null } },
     played: {
       before: army(home, 6),
       target: { offset: [137, 0], verb: "Move" },
@@ -240,6 +241,50 @@ describe("the Blitz order steps", () => {
     expect(blitzStep("order-kept")(ordered({ after: army(moved, 5) }, { confirmed: false })).reason).toBe(
       "0 orders were sent and confirmed, not 1",
     );
+  });
+
+  it("fails an order whose army stayed selected while the tile panel stayed on the tile it left", () => {
+    expect(blitzStep("order-kept")(ordered({ after: army(moved, 5) }, { tile: home })).reason).toBe(
+      "the tile panel names (10, 10), not the selected army's tile (11, 10)",
+    );
+    expect(blitzStep("order-kept")(ordered({ after: army(moved, 5) }, { tile: null })).reason).toBe(
+      "the tile panel names no tile, not the selected army's tile (11, 10)",
+    );
+    expect(
+      blitzStep("order-refused")(ordered({ after: army(home, 6) }, { confirmed: false, tile: moved })).reason,
+    ).toBe("the tile panel names (11, 10), not the selected army's tile (10, 10)");
+  });
+
+  it("completes an explore that leaves the army where it stood, and fails a move that does", () => {
+    const explore = { target: { offset: [137, 0], verb: "Explore" } };
+    expect(blitzStep("order-kept")(ordered({ ...explore, after: army(home, 4) })).status).toBe("completed");
+    expect(blitzStep("order-kept")(ordered({ after: army(home, 4) })).reason).toBe(
+      "the army is not offered orders from the tile its order took it to",
+    );
+  });
+
+  it("fails each order step whose last report is missing, has no army, or another army selected", () => {
+    const withSelection = (step, played, selection, options) => {
+      const input = ordered(played, options);
+      return blitzStep(step)({ ...input, seen: { ...input.seen, selection } });
+    };
+    const cases = [
+      ["order-kept", { after: army(moved, 5) }, {}],
+      ["second-order", { after: army(moved, 5) }, {}],
+      ["order-refused", { after: army(home, 6) }, { confirmed: false }],
+    ];
+    for (const [step, played, options] of cases) {
+      const tile = played.after.hex;
+      expect(withSelection(step, played, undefined, options).reason).toBe(
+        "the page reported no map selection after the step",
+      );
+      expect(withSelection(step, played, { hex: tile, army: null }, options).reason).toBe(
+        "the page's last report has no army selected, not army 7",
+      );
+      expect(withSelection(step, played, { hex: tile, army: { id: 8, hex: tile, orders: 5 } }, options).reason).toBe(
+        "the page's last report has army 8 selected, not army 7",
+      );
+    }
   });
 
   it("is blocked, not passed, when no tile around the army offers it a move or an explore", () => {
