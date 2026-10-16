@@ -36,19 +36,13 @@ import {
   makeStructures,
   resources,
   troopFixtures,
-  viewNames,
 } from "./fixtures";
-import { CurrentHudReference } from "./current-hud-reference";
 import { readVisibleUnits } from "./sample.mjs";
 import "./hud-scene.css";
 
 type Props = {
   camera: { hex: { col: number; row: number }; distance: number };
-  layout?: "rails" | "current";
   count?: number;
-  density?: string;
-  placement?: string;
-  names?: readonly [string, string];
   onReadout?: (groups: { group: string; elements: string[] }[]) => void;
 };
 export function HudScene(props: Props) {
@@ -67,11 +61,11 @@ export function HudScene(props: Props) {
       window.removeEventListener("resize", update);
     };
   }, [onReadout]);
-  return props.layout === "current" ? <CurrentHudReference {...props} /> : <FixtureArenaHud {...props} />;
+  return <FixtureArenaHud {...props} />;
 }
 
 /** Fixtures provide facts and preview callbacks; all HUD presentation belongs to the game. */
-function FixtureArenaHud({ count = 3, density = "rows", placement = "center", names = viewNames[0], camera }: Props) {
+function FixtureArenaHud({ count = 3, camera }: Props) {
   const structures = makeStructures(count).map(currentStructure);
   const [selectedId, select] = useState(3);
   const selected = structures.find((row) => row.entityId === selectedId) ?? structures[0];
@@ -85,7 +79,6 @@ function FixtureArenaHud({ count = 3, density = "rows", placement = "center", na
   return (
     <>
       <ArenaHudView
-        placement={placement}
         header={
           <HudHeaderLayout
             lane={lane}
@@ -119,7 +112,6 @@ function FixtureArenaHud({ count = 3, density = "rows", placement = "center", na
             }
             viewControls={
               <MapViewControls
-                names={names}
                 compact={!!lane}
                 isLocalView={local}
                 canOpenLocal
@@ -139,7 +131,6 @@ function FixtureArenaHud({ count = 3, density = "rows", placement = "center", na
             filterValue={filter}
             onFilterChange={setFilter}
             onSelect={select}
-            density={density}
             renderActions={(id) => {
               const level = structures.find((row) => row.entityId === id)!.realmLevel;
               const nextName = ["Settlement", "City", "Kingdom", "Empire"][level + 1];

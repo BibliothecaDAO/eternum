@@ -75,7 +75,6 @@ export function StructureListColumnView({
   filterValue,
   onFilterChange,
   renderActions,
-  density = "rows",
 }: {
   structures: StructureWithMetadata[];
   selectedId: number;
@@ -83,10 +82,8 @@ export function StructureListColumnView({
   filterValue: LeftListFilter;
   onFilterChange: (filter: LeftListFilter) => void;
   renderActions: (id: number) => ReactNode;
-  density?: string;
 }) {
   const [query, setQuery] = useState("");
-  const [expanded, setExpanded] = useState(["Can level up"]);
   const counts = new Map<number, number>();
   for (const row of structures) counts.set(row.category, (counts.get(row.category) ?? 0) + 1);
   const visible = structures.filter(
@@ -94,13 +91,6 @@ export function StructureListColumnView({
       (filterValue === "all" || row.category === filterValue) &&
       row.displayName.toLowerCase().includes(query.toLowerCase()),
   );
-  const groups =
-    density === "grouped"
-      ? ["Can level up", "Other structures"].map((name) => ({
-          name,
-          rows: visible.filter((row) => row.canUpgrade === (name === "Can level up")),
-        }))
-      : [{ name: "", rows: visible }];
   return (
     <section className="holdings-panel" data-group="Structures">
       <InfoBubble title={<span data-notice>Your structures · {structures.length}</span>} collapsible={false}>
@@ -118,34 +108,15 @@ export function StructureListColumnView({
           onChange={(event) => setQuery(event.target.value)}
         />
         <div className="structure-scroll">
-          {groups.map((group) => (
-            <div key={group.name}>
-              {group.name && (
-                <button
-                  className="group-toggle"
-                  data-notice
-                  aria-expanded={expanded.includes(group.name) || !!query}
-                  onClick={() =>
-                    setExpanded((old) =>
-                      old.includes(group.name) ? old.filter((name) => name !== group.name) : [...old, group.name],
-                    )
-                  }
-                >
-                  {group.name} · {group.rows.length}
-                </button>
-              )}
-              {(!group.name || expanded.includes(group.name) || query) &&
-                group.rows.map((row) => (
-                  <StructureStatusRowView
-                    key={row.entityId}
-                    structure={row}
-                    isActive={row.entityId === selectedId}
-                    onSelect={onSelect}
-                    variant="guided"
-                    realmActions={renderActions(row.entityId)}
-                  />
-                ))}
-            </div>
+          {visible.map((row) => (
+            <StructureStatusRowView
+              key={row.entityId}
+              structure={row}
+              isActive={row.entityId === selectedId}
+              onSelect={onSelect}
+              variant="guided"
+              realmActions={renderActions(row.entityId)}
+            />
           ))}
           {visible.length === 0 && <p role="status">No matching structures</p>}
         </div>

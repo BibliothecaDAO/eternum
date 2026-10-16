@@ -1,32 +1,28 @@
-# HUD comparison
+# HUD fixtures
 
-Open `/lab/kit/hud/redesign?variant=rails&count=3`. The tool compares the production arena HUD views against the classic
-reference on one live terrain renderer. Switching preserves the camera and lighting. `capture=1` hides lab controls for
-a 1440×900 or 390×844 evidence frame.
+Open `/lab/kit/hud/redesign?count=3` to inspect the production HUD on fixture facts and one live terrain renderer. The
+chosen arrangement is fixed: Realm / World map, compact rows, and command bubbles at bottom centre. There are no layout,
+naming, grouping or placement settings. `capture=1` hides lab controls for full-frame evidence.
 
 The game entry is `ui/layouts/world.tsx` → `ArenaHud` → `ArenaHudView`. The fixture adapter supplies readings and
-preview callbacks to the same views. There is no separate A row, resource panel, command button or minimap renderer.
-`CurrentHudReference` retains the classic layout with origin's production components and Facets art; it is a reference
-reconstruction, not a second playable game. Historical classic and War room captures remain the pixel references.
+preview callbacks to those same views. Historical classic and War room captures remain evidence; their reconstructed
+comparison layout is deleted.
 
-| Feature            | Reach it                                                                                                              |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| Comparison         | Current HUD / A; one canvas stays mounted                                                                             |
-| Structures         | 3, 25 or 220; painted category chips with counts; search; select a row                                                |
-| Categories         | Realm, village, camp, hyperstructure, mine, bank, bitcoin mine, rift, ruin, stragglers; only owned categories appear  |
-| Upgrade            | Level beside the name; the available level-up action is separate from row selection                                   |
-| Grouping           | Rows / Upgrade groups; expand Other structures                                                                        |
-| Realm              | Automation dropdown in the name/type header; named production circles with held amounts                               |
-| Resource detail    | Hover or tap a circle; building count, supply and production details stay there                                       |
-| Commands           | Separate floating Build, Production, Military and Transfer bubbles; Trade follows the command mask                    |
-| Transfer           | Pack donkey; Move alone uses boots                                                                                    |
-| Settings           | Painted wheel in the top bar, beside VP and the clock                                                                 |
-| Right column       | One next step, events, then the active scene’s selected tile; click a local building then tap its summary for details |
-| Naming / placement | Three naming pairs and centered/right dock remain review choices                                                      |
-| Minimap            | Native terrain hexes, shared Facets hex badges, internal ownership shape and small external value                     |
-| Crowding           | The icon lab and HUD share the 4×3 sector grouping; click a sector to inspect it, Overview returns                    |
-| Phone              | Map / Holdings; search and production remain in Holdings                                                              |
-| Troop paintings    | Military preview shows the production TroopChip and resource token for all nine type/tier pairs                       |
+| Feature         | Reach it                                                                                                              |
+| --------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Structures      | 3, 25 or 220; painted category chips with counts; search; select a row                                                |
+| Categories      | Realm, village, camp, hyperstructure, mine, bank, bitcoin mine, rift, ruin, stragglers; only owned categories appear  |
+| Upgrade         | Level beside the name; the available level-up action is separate from row selection                                   |
+| Realm           | Automation dropdown in the name/type header; named production circles with held amounts                               |
+| Resource detail | Hover or tap a circle; building count, supply and production details stay there                                       |
+| Commands        | Separate floating Build, Production, Military and Transfer bubbles; Trade follows the command mask                    |
+| Transfer        | Pack donkey; Move alone uses boots                                                                                    |
+| Settings        | Painted wheel in the top bar, beside VP and the clock                                                                 |
+| Right column    | One next step, events, then the active scene’s selected tile; click a local building then tap its summary for details |
+| Minimap         | Native terrain hexes, shared Facets hex badges, internal ownership shape and small external value                     |
+| Crowding        | The icon lab and HUD share the 4×3 sector grouping; click a sector to inspect it, Overview returns                    |
+| Phone           | Map / Holdings; search and production remain in Holdings                                                              |
+| Troop paintings | Military preview shows the production TroopChip and resource token for all nine type/tier pairs                       |
 
 ## Shared production components
 
@@ -38,17 +34,15 @@ Production wrappers retain native facts, command guards, navigation and order ha
 terrain renderer. `HexMarker` and `MarkerClusters` are shared with `/lab/kit/icons`, including the value presentation.
 The production semantic icon renderer also covers game popovers and army resource icons.
 
-The production HUD and lab A therefore share rendering code. Lab facts are deterministic; the lab does not authenticate,
+The production HUD and lab therefore share rendering code. Lab facts are deterministic; the lab does not authenticate,
 model an economy or send commands. Its sheets preview callbacks. The 220 list does not imply 220 visible world models;
 the map fixture has three structures and two illustrative armies. Live game verification is separate from this proof.
 
 ## Paintings
 
-The production `Icon`, `iconUrl`, resource meanings and `HexMarker` own all artwork. Both Current and A now use the
-Facets art shipped on origin; the old gilded kit and study exports stay deleted. Current compares the classic layout,
-while the historical screenshots preserve its previous art. Coal, Copper, Production and Transfer now have dedicated
-paintings. All nine troop portraits resolve through the real resource and troop meanings. No HUD art provider or
-placeholder mapping remains. Category chips cover every structure type using the production semantic catalog.
+The production `Icon`, `iconUrl`, resource meanings and `HexMarker` own all Facets artwork. Coal, Copper, Production and
+Transfer have dedicated paintings. All nine troop portraits resolve through real resource and troop meanings. No HUD art
+provider or placeholder mapping remains. Category chips use the production semantic catalog.
 
 ## Proof
 
@@ -58,10 +52,11 @@ pnpm --dir apps/game prepare:hud-proof
 ```
 
 Run the emitted `evidence/hud/lab-proof-driver.js` with the Playwright browser tool's filename input. It drives the
-visible controls, captures desktop and phone states, checks category counts/search, automation detail, Settings, nine
-troop portraits, Trade's mask, floating bubble containment, native hexes and shared badges. It compares icon-lab markers
-and grouping and leaves screenshots in a new timestamped directory. Save the returned object as `proof.json` there. It
-navigates away from each WebGL page after capture and on failure.
+visible controls, captures desktop and phone states, checks category counts/search, automation detail, the fixed
+names/rows/centred dock, retired URL immunity, Settings, nine troop portraits, Trade's mask, floating bubble
+containment, native hexes and shared badges. It compares icon-lab markers and grouping and leaves screenshots in a new
+timestamped directory. Save the returned object as `proof.json` there. It navigates away from each WebGL page after
+capture and on failure.
 
 For a live signed-out Watch proof, extend that same command with `--watch <chain-id>:<game-id>`. Run the emitted
 `evidence/hud/live-proof-driver.js` with the same browser tool and save its returned object as `proof.json` in its

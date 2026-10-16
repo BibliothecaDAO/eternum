@@ -5,7 +5,6 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { TOP_PILL } from "./top-pill";
 
 interface MapViewControlsProps {
-  names?: readonly [string, string];
   compact: boolean;
   isLocalView: boolean;
   canOpenLocal: boolean;
@@ -17,7 +16,6 @@ interface MapViewControlsProps {
 
 /** Primary map navigation, with one space-saving layer toggle in the mobile HUD. */
 export function MapViewControls({
-  names = ["Realm", "World map"],
   compact,
   isLocalView,
   canOpenLocal,
@@ -28,13 +26,7 @@ export function MapViewControls({
 }: MapViewControlsProps) {
   return (
     <div className="flex min-w-0 items-center gap-2">
-      <MapViewSwitch
-        names={names}
-        compact={compact}
-        isLocalView={isLocalView}
-        canOpenLocal={canOpenLocal}
-        onNavigate={onNavigate}
-      />
+      <MapViewSwitch compact={compact} isLocalView={isLocalView} canOpenLocal={canOpenLocal} onNavigate={onNavigate} />
       {showLayerSwitch &&
         (compact ? (
           <CompactLayerSwitch mapLayer={mapLayer} onLayerChange={onLayerChange} />
@@ -46,13 +38,11 @@ export function MapViewControls({
 }
 
 const MapViewSwitch = ({
-  names,
   compact,
   isLocalView,
   canOpenLocal,
   onNavigate,
 }: {
-  names: readonly [string, string];
   compact: boolean;
   isLocalView: boolean;
   canOpenLocal: boolean;
@@ -68,7 +58,7 @@ const MapViewSwitch = ({
       onClick={() => onNavigate(false)}
       className={cn(viewButtonClasses(isLocalView, compact), "disabled:cursor-not-allowed disabled:opacity-40")}
     >
-      {names[0]}
+      Realm
     </button>
     <button
       type="button"
@@ -77,7 +67,7 @@ const MapViewSwitch = ({
       onClick={() => onNavigate(true)}
       className={viewButtonClasses(!isLocalView, compact)}
     >
-      {names[1]}
+      World map
     </button>
   </div>
 );

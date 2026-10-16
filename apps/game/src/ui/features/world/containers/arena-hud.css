@@ -203,14 +203,6 @@
     height: 24px;
     object-fit: contain;
   }
-  .structure-scroll .group-toggle {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: 7px;
-    background: var(--plate2);
-    font-size: 14px;
-  }
   .realm-panel > div > div:last-child {
     padding: 6px 10px 8px;
   }
@@ -315,11 +307,6 @@
   .action-dock button:hover .action-circle {
     border-color: #cfb684;
     background: #3f3422;
-  }
-  :scope.placement-right .action-dock {
-    left: auto;
-    right: 12px;
-    transform: none;
   }
   .minimap {
     position: absolute;
@@ -440,8 +427,7 @@
     .minimap-field {
       height: 110px;
     }
-    .action-dock,
-    :scope.placement-right .action-dock {
+    .action-dock {
       left: 6px;
       right: 6px;
       transform: none;
@@ -738,10 +724,6 @@
     bottom: 12px;
     width: 64px;
   }
-  :scope.placement-right .hud-chat,
-  :scope.placement-right .hud-log {
-    bottom: 116px;
-  }
   .map-legend [data-owner] {
     color: var(--owner);
   }
@@ -796,12 +778,8 @@
     gap: 4px;
     padding: 0 4px;
   }
-  :scope.placement-right .hud-chat-host {
-    bottom: 116px;
-  }
   @media (max-width: 700px) {
-    .hud-chat-host,
-    :scope.placement-right .hud-chat-host {
+    .hud-chat-host {
       bottom: 162px;
       right: auto;
       left: 10px;

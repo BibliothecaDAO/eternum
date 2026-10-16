@@ -58,99 +58,6 @@
   padding: 16px;
 }
 @scope (.hud-redesign) {
-  @media (min-width: 701px) {
-    .current .holdings-rail {
-      left: 12px;
-      right: auto;
-      top: 62px;
-      width: 320px;
-      gap: 12px;
-    }
-    .current .realm-panel {
-      height: 158px;
-    }
-    .current .realm-key {
-      display: none;
-    }
-    .current .resource-grid {
-      grid-template-columns: repeat(6, 1fr);
-      gap: 2px;
-      margin-top: 8px;
-    }
-    .current .resource-item > span {
-      display: none !important;
-    }
-    .current .resource-grid .resource-item {
-      padding: 8px 0;
-    }
-    .current .minimap {
-      width: 320px;
-      height: 300px;
-      top: 584px;
-      bottom: auto;
-    }
-    .current .minimap-field {
-      height: 226px;
-    }
-    .current .action-dock {
-      left: 12px;
-      right: auto;
-      top: 510px;
-      bottom: auto;
-      transform: none;
-      width: 320px;
-      height: 62px;
-      padding: 0;
-      gap: 0;
-      border-radius: 12px;
-    }
-    .current .action-dock > button {
-      flex: 1;
-      font-size: 14px;
-      gap: 0;
-      justify-content: center;
-    }
-    .current .action-circle {
-      width: 28px;
-      height: 28px;
-      border: 0;
-      border-radius: 0;
-      box-shadow: none;
-      background: none;
-    }
-    .current .action-circle img {
-      width: 28px;
-      height: 28px;
-    }
-  }
-}
-@scope (.hud-redesign) {
-  .current-holdings {
-    height: 268px;
-    border-radius: 12px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  .current-filter {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 12px;
-    border-bottom: 1px solid #66533866;
-  }
-  .current-structure-scroll {
-    flex: 1;
-    min-height: 0;
-    overflow: auto;
-    padding: 4px 12px 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-}
-
-@scope (.hud-redesign) {
   .hud-chat,
   .hud-log {
     position: absolute;
@@ -166,43 +73,14 @@
   .hud-log {
     right: 84px;
   }
-  .placement-right .hud-chat,
-  .placement-right .hud-log {
-    bottom: 116px;
-  }
-  @media (min-width: 701px) {
-    .current .match-bar {
-      width: 704px;
-      justify-content: space-between;
-    }
-    .current .hud-chat {
-      width: 288px;
-      text-align: left;
-      padding-left: 12px;
-      bottom: 16px;
-    }
-    .current .hud-log {
-      top: 60px;
-      bottom: auto;
-      right: 12px;
-      width: 68px;
-      height: 36px;
-    }
-    .current.placement-right .hud-chat {
-      bottom: 16px;
-    }
-  }
   @media (max-width: 700px) {
     .hud-chat,
-    .hud-log,
-    .placement-right .hud-chat,
-    .placement-right .hud-log {
+    .hud-log {
       bottom: 162px;
       right: auto;
       left: 10px;
     }
-    .hud-log,
-    .placement-right .hud-log {
+    .hud-log {
       left: 82px;
     }
     .phone-holdings .hud-chat,

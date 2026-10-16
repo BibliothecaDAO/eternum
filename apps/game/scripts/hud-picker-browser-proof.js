@@ -101,7 +101,7 @@ async (page) => {
         ["phone", 390, 844],
       ]) {
         await page.setViewportSize({ width, height });
-        await page.goto(`${origin}/lab/kit/hud/redesign?capture=1&variant=rails&count=${count}`);
+        await page.goto(`${origin}/lab/kit/hud/redesign?capture=1&count=${count}`);
         await ready();
         check(
           (await page.locator('[data-production-hud="ArenaHudView"]').count()) === 1,
@@ -187,40 +187,38 @@ async (page) => {
         await page.goto("about:blank");
       }
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto(`${origin}/lab/kit/hud/redesign?variant=rails&count=3`);
+    await page.goto(`${origin}/lab/kit/hud/redesign?count=3`);
     await ready();
+    check(
+      (await page.locator(".hud-lab-controls select").count()) === 1 &&
+        (await page.getByRole("button", { name: "Current HUD", exact: true }).count()) === 0,
+      "Fixture scale is the only HUD selector",
+    );
     const canvas = await page.locator(".hud-live-map canvas").elementHandle();
-    await page.getByRole("button", { name: "Current HUD", exact: true }).click();
-    await page.locator(".hud-scene.current").waitFor();
+    await page.getByLabel("Fixture scale").selectOption("220");
     check(
       await page.locator(".hud-live-map canvas").evaluate((el, old) => el === old, canvas),
-      "Switch preserves the renderer and camera",
+      "Fixture scale preserves the renderer and camera",
     );
-    check(
-      (await page.locator('.hud-scene img[src*="/icons/facets/"]').count()) > 0,
-      "Current uses the origin icon system",
-    );
-    await page.goto(`${origin}/lab/kit/hud/redesign?capture=1&variant=current&count=3`);
-    await ready();
-    await capture("current-desktop");
-    await page.goto("about:blank");
+    check((await page.locator(".holding-row").count()) === 220, "All holdings remain compact rows");
     await page.goto(
-      `${origin}/lab/kit/hud/redesign?capture=1&variant=rails&count=220&density=grouped&placement=right&names=2`,
+      `${origin}/lab/kit/hud/redesign?capture=1&variant=current&count=220&density=grouped&placement=right&names=2`,
     );
     await ready();
     check(
-      (await page.getByRole("button", { name: "Build view", exact: true }).count()) === 1,
-      "Naming options remain available",
+      (await page.getByRole("button", { name: "Realm", exact: true }).count()) === 1 &&
+        (await page.getByRole("button", { name: "World map", exact: true }).count()) === 1 &&
+        (await page.locator(".holding-row").count()) === 220,
+      "Retired option URLs cannot restore alternative names, layout or groups",
     );
-    await page.getByRole("button", { name: /Other structures ·/ }).click();
-    check((await page.locator(".holding-row").count()) === 220, "Grouped rows open without dropping structures");
     check(
-      await page
-        .locator(".action-dock")
-        .evaluate((el) => Math.abs(el.getBoundingClientRect().right - (innerWidth - 12)) < 1),
-      "Right dock placement",
+      await page.locator(".action-dock").evaluate((el) => {
+        const rect = el.getBoundingClientRect();
+        return Math.abs((rect.left + rect.right) / 2 - innerWidth / 2) < 1;
+      }),
+      "Commands stay at bottom centre",
     );
-    await capture("a-220-grouped-right");
+    await capture("hud-220-fixed-defaults");
     await page.locator(".minimap").screenshot({ path: `${out}/hud-minimap.png` });
     await page.goto("about:blank");
     await page.goto(`${origin}/lab/kit/icons`);

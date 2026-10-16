@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-16",
+    title: "A clearer realm command view",
+    description:
+      "Find holdings in compact rows, switch between Realm and World map, and open commands from floating bubbles at the bottom centre.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-16",
     title: "Inspect every discovered site",
     description:
       "Building details follow your current view. The minimap keeps spires, reserved sites and chests visible, including in crowded sectors.",

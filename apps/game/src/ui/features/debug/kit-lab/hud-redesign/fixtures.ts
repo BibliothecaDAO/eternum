@@ -5,12 +5,6 @@ import {
 } from "@/three/terrain/verification/terrain-verification-fixtures";
 import { BiomeTypeToId, StructureType, TileOccupier } from "@bibliothecadao/types";
 import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
-export const viewNames = [
-  ["Realm", "World map"],
-  ["Settlement", "World"],
-  ["Build view", "Explore view"],
-] as const;
-
 export function makeStructures(count: number) {
   return Array.from({ length: count }, (_, index) => ({
     id: index + 1,

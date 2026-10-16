@@ -5,16 +5,11 @@ import {
   type ProceduralTerrainDebugRendererHandle,
 } from "@/three/debug/procedural-terrain-debug-renderer";
 import { HudScene } from "./hud-scene";
-import { viewNames } from "./fixtures";
 
-/** Both layouts share one mounted renderer: changing the HUD preserves the camera, light and terrain. */
+/** Fixture scale changes preserve the mounted game renderer and camera. */
 export function HudRedesignLab() {
   const [params, setParams] = useSearchParams();
-  const variant = params.get("variant") === "rails" ? "rails" : "current";
   const count = [3, 25, 220].find((value) => value === Number(params.get("count"))) ?? 3;
-  const density = params.get("density") === "grouped" ? "grouped" : "rows";
-  const placement = params.get("placement") === "right" ? "right" : "center";
-  const nameIndex = [0, 1, 2].find((value) => value === Number(params.get("names"))) ?? 0;
   const capture = params.get("capture") === "1";
   const canvas = useRef<HTMLCanvasElement>(null);
   const renderer = useRef<ProceduralTerrainDebugRendererHandle | null>(null);
@@ -80,49 +75,13 @@ export function HudRedesignLab() {
   return (
     <div className="hud-redesign">
       {!capture && (
-        <div className="hud-lab-controls" aria-label="HUD comparison controls">
-          <div aria-label="HUD layout">
-            <button aria-pressed={variant === "current"} onClick={() => choose("variant", "current")}>
-              Current HUD
-            </button>
-            <button aria-pressed={variant === "rails"} onClick={() => choose("variant", "rails")}>
-              A · Guided rails
-            </button>
-          </div>
+        <div className="hud-lab-controls" aria-label="HUD fixture controls">
           <label>
             Structures{" "}
             <select aria-label="Fixture scale" value={count} onChange={(e) => choose("count", e.target.value)}>
               <option value="3">Blitz · 3</option>
               <option value="25">Blitz · 25</option>
               <option value="220">Eternum · 220</option>
-            </select>
-          </label>
-          <label>
-            Names{" "}
-            <select aria-label="View names" value={nameIndex} onChange={(e) => choose("names", e.target.value)}>
-              {viewNames.map((pair, index) => (
-                <option key={index} value={index}>
-                  {pair.join(" / ")}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            List{" "}
-            <select aria-label="List density" value={density} onChange={(e) => choose("density", e.target.value)}>
-              <option value="rows">Rows</option>
-              <option value="grouped">Upgrade groups</option>
-            </select>
-          </label>
-          <label>
-            Commands{" "}
-            <select
-              aria-label="Action placement"
-              value={placement}
-              onChange={(e) => choose("placement", e.target.value)}
-            >
-              <option value="center">Bottom centre</option>
-              <option value="right">Bottom right</option>
             </select>
           </label>
           <button onClick={() => renderer.current?.resetCamera()}>Reset camera</button>
@@ -142,16 +101,7 @@ export function HudRedesignLab() {
           {status !== "ready" && !error && <p role="status">{status}</p>}
           {error && <p role="alert">{error}</p>}
         </div>
-        <HudScene
-          key={count}
-          layout={variant}
-          count={count}
-          density={density}
-          placement={placement}
-          names={viewNames[nameIndex]}
-          camera={camera}
-          onReadout={setGroups}
-        />
+        <HudScene key={count} count={count} camera={camera} onReadout={setGroups} />
       </div>
     </div>
   );

@@ -34,7 +34,6 @@ export function ArenaHudView({
   commands,
   chat,
   log,
-  placement = "center",
 }: {
   header: ReactNode;
   structures: ReactNode;
@@ -46,12 +45,11 @@ export function ArenaHudView({
   commands: ReactNode;
   chat: ReactNode;
   log: ReactNode;
-  placement?: string;
 }) {
   const [phoneTab, setPhoneTab] = useState("Map");
   return (
     <main
-      className={`arena-hud hud-scene rails phone-${phoneTab.toLowerCase()} placement-${placement}`}
+      className={`arena-hud hud-scene rails phone-${phoneTab.toLowerCase()}`}
       data-layout="rails"
       data-production-hud="ArenaHudView"
     >
