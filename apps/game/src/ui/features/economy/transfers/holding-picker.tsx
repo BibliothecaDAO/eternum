@@ -32,15 +32,16 @@ export const HoldingPicker = ({
 }) => {
   const { setup } = useGame();
   const metadata = useStructuresWithMetadata({ structures: useFactView(playerStructuresView), store: setup.store });
-  const holdings = useMemo(
-    () =>
-      metadata.filter(
-        (holding) =>
-          resolveStructureUiCapabilities(holding.structure).canOpenTransferInventory &&
-          !otherEnd.includes(Number(holding.entityId)),
-      ),
-    [metadata, otherEnd.join(",")],
-  );
+  // The other end by value: its array is new on every render.
+  const otherEndKey = otherEnd.join(",");
+  const holdings = useMemo(() => {
+    const others = new Set(otherEndKey.split(",").filter(Boolean).map(Number));
+    return metadata.filter(
+      (holding) =>
+        resolveStructureUiCapabilities(holding.structure).canOpenTransferInventory &&
+        !others.has(Number(holding.entityId)),
+    );
+  }, [metadata, otherEndKey]);
   const firstChosen = holdings.find((holding) => Number(holding.entityId) === chosen[0]);
   const [asked, setAsked] = useState<LeftListFilter>(firstChosen?.category ?? "all");
   const [query, setQuery] = useState("");
@@ -52,9 +53,10 @@ export const HoldingPicker = ({
 
   // The first chosen holding stays in view, as the holdings panel keeps its selected row.
   const chosenRow = useRef<HTMLButtonElement>(null);
+  const firstChosenId = chosen[0];
   useEffect(() => {
     chosenRow.current?.scrollIntoView({ block: "nearest" });
-  }, [chosen[0], kind]);
+  }, [firstChosenId, kind]);
 
   return (
     <section aria-label={title} className="flex min-h-0 flex-col gap-2">
@@ -96,14 +98,17 @@ export const HoldingPicker = ({
           onKeyDown={(event) => event.stopPropagation()}
         />
       )}
-      <div role="tabpanel" className="-mx-1 min-h-0 overflow-y-auto overscroll-contain px-1 scrollbar-thin">
+      <div
+        role="tabpanel"
+        className="-mx-1 min-h-0 overflow-y-auto overscroll-contain px-1 scrollbar-thin max-lg:max-h-56"
+      >
         {rows.map((holding) => {
           const id = Number(holding.entityId);
           const picked = chosen.includes(id);
           return (
             <button
               key={id}
-              ref={id === chosen[0] ? chosenRow : undefined}
+              ref={id === firstChosenId ? chosenRow : undefined}
               type="button"
               aria-pressed={picked}
               onClick={() => onPick(id)}

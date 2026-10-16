@@ -38,8 +38,11 @@ export const useTransferSides = (sourceId: number | null, destinationIds: number
   const tick = useCurrentDefaultTick();
   const holdings = useFactView(playerStructuresView);
   const revision = useNativeRevision(["ResourceBalance", "ResourceProduction"]);
+  // The destinations by value: their array is new on every render.
+  const destinationKey = destinationIds.join(",");
 
   return useMemo(() => {
+    const destinationIds = destinationKey.split(",").filter(Boolean).map(Number);
     const find = (id: number) => holdings.find((holding) => Number(holding.entityId) === id);
     const source = sourceId === null ? undefined : find(sourceId);
     if (!source) return null;
@@ -78,5 +81,5 @@ export const useTransferSides = (sourceId: number | null, destinationIds: number
       donkeysHave: whole(held.find(({ resourceId }) => resourceId === ResourcesIds.Donkey)?.amount ?? 0),
       donkeyCapacityKg: configManager.getCapacityConfigKg(CapacityConfig.Donkey),
     };
-  }, [holdings, sourceId, destinationIds.join(","), setup.store, tick, mode, revision]);
+  }, [holdings, sourceId, destinationKey, setup.store, tick, mode, revision]);
 };

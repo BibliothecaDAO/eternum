@@ -5,7 +5,8 @@ import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { ResourceTransferPopover } from "@/ui/features/economy/resources/resource-transfer-popover";
+import { ResourceBurnPopover } from "@/ui/features/economy/resources/resource-burn-popover";
+import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
 import { ProductionModal } from "@/ui/features/settlement/production/production-modal";
 import { CountUpNumber } from "@/ui/shared";
 import { HUD_CUE, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
@@ -253,11 +254,31 @@ export const ResourceChip = ({
         </button>
       )}
       {showTransfer && (
-        <ResourceTransferPopover
-          resourceId={resourceId}
-          trigger={({ toggle }) => (
+        <button
+          data-tooltip-anchor
+          type="button"
+          aria-label="Transfer"
+          title="Transfer"
+          onClick={(event) => {
+            event.stopPropagation();
+            openTransfer({ sourceId: resourceManager.entityId, destinationIds: [], resource: resourceId });
+          }}
+          disabled={disableButtons}
+          className={actionButton}
+        >
+          <SemanticIcon name="swap" className="h-4 w-4" />
+        </button>
+      )}
+      {showTransfer && (balance ?? 0) > 0 && (
+        <ResourceBurnPopover
+          structureId={resourceManager.entityId}
+          resourceId={resourceEnumId}
+          trigger={(toggle) => (
             <button
               data-tooltip-anchor
+              type="button"
+              aria-label="Burn"
+              title="Burn"
               onClick={(event) => {
                 event.stopPropagation();
                 toggle();
@@ -265,20 +286,7 @@ export const ResourceChip = ({
               disabled={disableButtons}
               className={actionButton}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
-                />
-              </svg>
+              <SemanticIcon name="flame" className="h-4 w-4" />
             </button>
           )}
         />

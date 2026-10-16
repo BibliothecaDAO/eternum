@@ -2,9 +2,9 @@ import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { structureMapPosition } from "@bibliothecadao/eternum";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { ResourceTransferPopover } from "@/ui/features/economy/resources/resource-transfer-popover";
+import { ResourceBurnPopover } from "@/ui/features/economy/resources/resource-burn-popover";
+import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView, RESOURCE_FACTS } from "@/sync/fact-views";
 import { Button } from "@/ui/design-system/atoms";
@@ -153,7 +153,6 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
   const playerStructures = useFactView(playerStructuresView);
   const openSurface = usePopoverStore((state) => state.openSurface);
   const closeSurface = usePopoverStore((state) => state.closeSurface);
-  const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
   const { isMapView } = useQuery();
   const {
     setup,
@@ -347,12 +346,6 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     },
     [closeSurface, openSurface],
   );
-
-  // A transfer acts on the selected structure: select it before the cell's popover opens.
-  const selectStructureForTransfer = useCallback(() => {
-    if (!selectedStructureId) return;
-    setStructureEntityId(selectedStructureId);
-  }, [selectedStructureId, setStructureEntityId]);
 
   const getResourceBalance = useCallback(
     (structureId: number, resourceId: ResourcesIds) => {
@@ -945,7 +938,6 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                                       onManageProduction={() => handleManageProduction(structure.entityId, resourceId)}
                                       canCraftRelic={canCraftRelic}
                                       onCraftRelic={() => handleOpenCraftRelic(structure.entityId)}
-                                      onBeforeOpenTransfer={selectStructureForTransfer}
                                       onDragStart={handleDragStart}
                                       onDragEnd={handleDragEnd}
                                       onDoubleClick={handleDoubleClick}
@@ -1028,7 +1020,6 @@ interface TransferCellProps {
   isSelectedStructure: boolean;
   hasProductionBuilding: boolean;
   onManageProduction: () => void;
-  onBeforeOpenTransfer: () => void;
   canCraftRelic: boolean;
   onCraftRelic: () => void;
   onDragStart: (structureId: number, resourceId: ResourcesIds, amount: number) => void;
@@ -1055,7 +1046,6 @@ const TransferCell = React.memo((props: TransferCellProps) => {
     onManageProduction,
     canCraftRelic,
     onCraftRelic,
-    onBeforeOpenTransfer,
     onDragStart,
     onDragEnd,
     onDoubleClick,
@@ -1191,23 +1181,36 @@ const TransferCell = React.memo((props: TransferCellProps) => {
             )}
             {isSelectedStructure && (
               <>
-                <ResourceTransferPopover
-                  resourceId={resourceId}
-                  onBeforeOpen={onBeforeOpenTransfer}
-                  trigger={({ toggle }) => (
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        toggle();
-                      }}
-                      className="rounded border border-gold/20 bg-gold/10 p-0.5 text-gold transition hover:bg-gold/20 opacity-0 group-hover:opacity-100"
-                      title="Transfer"
-                    >
-                      <SemanticIcon name="swap" className="h-2.5 w-2.5" />
-                    </button>
-                  )}
-                />
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    openTransfer({ sourceId: structureId, destinationIds: [], resource: resourceId });
+                  }}
+                  className="rounded border border-gold/20 bg-gold/10 p-0.5 text-gold transition hover:bg-gold/20 opacity-0 group-hover:opacity-100"
+                  title="Transfer"
+                >
+                  <SemanticIcon name="swap" className="h-2.5 w-2.5" />
+                </button>
+                {cell.amount > 0 && (
+                  <ResourceBurnPopover
+                    structureId={structureId}
+                    resourceId={resourceId}
+                    trigger={(toggle) => (
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          toggle();
+                        }}
+                        className="rounded border border-gold/20 bg-gold/10 p-0.5 text-gold transition hover:bg-gold/20 opacity-0 group-hover:opacity-100"
+                        title="Burn"
+                      >
+                        <SemanticIcon name="flame" className="h-2.5 w-2.5" />
+                      </button>
+                    )}
+                  />
+                )}
                 {cell.amount > 0 && (
                   <button
                     type="button"

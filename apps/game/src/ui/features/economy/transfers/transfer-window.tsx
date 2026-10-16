@@ -13,13 +13,16 @@ import { computeTravelTime, configManager, ResourceManager } from "@bibliothecad
 import { EntityType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useState } from "react";
 import { HoldingPicker } from "./holding-picker";
+import { type Shipment, type ShipmentOutcome, sendShipments } from "./send-shipments";
 import {
-  donkeysTaken,
+  donkeysNeeded,
   type Good,
   type GoodPlan,
+  honouredShares,
   type Plans,
   plansOf,
   prefillTotals,
+  sentTotal,
   sharesOf,
   withoutShare,
   withShare,
@@ -30,6 +33,8 @@ import { type TransferSides, useTransferSides } from "./use-transfer-sides";
 interface TransferEnds {
   sourceId: number | null;
   destinationIds: number[];
+  /** The good it was opened for (a resource's own Transfer): its total is ready to type. */
+  resource?: number;
 }
 
 /**
@@ -40,7 +45,12 @@ export const openTransfer = (ends: TransferEnds) => {
   useUIStore.getState().setLeftNavigationView(LeftView.None);
   usePopoverStore.getState().openSurface({
     id: "transfer",
-    content: <TransferSurface key={`${ends.sourceId}:${ends.destinationIds.join(",")}`} initial={ends} />,
+    content: (
+      <TransferSurface
+        key={`${ends.sourceId}:${ends.destinationIds.join(",")}:${ends.resource ?? ""}`}
+        initial={ends}
+      />
+    ),
   });
 };
 
@@ -73,20 +83,23 @@ const TransferSurface = ({ initial }: { initial: TransferEnds }) => {
       icon={"transfer" as const}
       onClose={closeSurface}
       className={SURFACE_WORKSPACE_CLASS}
-      bodyClassName="overflow-hidden"
+      bodyClassName="lg:overflow-hidden"
     >
       <TransferWindow initial={initial} />
     </SurfaceFrame>
   );
 };
 
-/** Send from, Send to (one or several) and what goes to each, side by side; Logistics' other views a click away. */
+/**
+ * Send from, Send to (one or several) and what goes to each: side by side on a wide screen, one under the other in a
+ * phone's sheet, which scrolls. Logistics' other views are a click away.
+ */
 const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
   const [ends, setEnds] = useState(initial);
   return (
-    <div className="flex h-full min-h-0 flex-col gap-2 p-3">
+    <div className="flex flex-col gap-2 p-3 lg:h-full lg:min-h-0">
       <LogisticsLinks />
-      <div className="grid min-h-0 flex-1 grid-cols-[250px_auto_250px_1fr] gap-3">
+      <div className="flex flex-col gap-3 lg:grid lg:min-h-0 lg:flex-1 lg:grid-cols-[250px_auto_250px_1fr]">
         <HoldingPicker
           title="Send from"
           chosen={ends.sourceId === null ? [] : [ends.sourceId]}
@@ -100,7 +113,7 @@ const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
           title="Swap from and to"
           disabled={ends.destinationIds.length !== 1}
           onClick={() => setEnds(swapEnds(ends))}
-          className="self-center rounded border border-gold/40 px-2 py-1 text-gold disabled:opacity-40"
+          className="self-center rounded border border-gold/40 px-2 py-1 text-gold disabled:opacity-40 max-lg:rotate-90"
         >
           ⇄
         </button>
@@ -113,7 +126,13 @@ const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
         />
         <div className="flex min-h-0 flex-col gap-3">
           {ends.sourceId !== null && (
-            <Goods key={ends.sourceId} sourceId={ends.sourceId} destinationIds={ends.destinationIds} />
+            <Goods
+              key={ends.sourceId}
+              sourceId={ends.sourceId}
+              destinationIds={ends.destinationIds}
+              focus={initial.resource}
+              onLeft={(destinationIds) => setEnds({ ...ends, destinationIds })}
+            />
           )}
         </div>
       </div>
@@ -161,10 +180,22 @@ const RoadNote = ({ sourceId, id }: { sourceId: number | null; id: number }) => 
 };
 
 /**
- * What the source can send: one total per good, shared evenly by the destinations (the owner's prefill until the
- * player edits), the road, and the one Send.
+ * What the source can send: one total per good, shared by the destinations (the owner's prefill until the player
+ * edits), the road, and the one Send. Each destination's shipment lands or fails on its own: those that landed leave
+ * the window, and those refused stay chosen with their goods, so Send offers only them again.
  */
-const Goods = ({ sourceId, destinationIds }: { sourceId: number; destinationIds: number[] }) => {
+const Goods = ({
+  sourceId,
+  destinationIds,
+  focus,
+  onLeft,
+}: {
+  sourceId: number;
+  destinationIds: number[];
+  focus: number | undefined;
+  /** The destinations still to send to after a Send: the refused ones. */
+  onLeft: (destinationIds: number[]) => void;
+}) => {
   const sides = useTransferSides(sourceId, destinationIds);
   const [edited, setEdited] = useState<Plans | null>(null);
   const [repeat, setRepeat] = useState(false);
@@ -172,10 +203,19 @@ const Goods = ({ sourceId, destinationIds }: { sourceId: number; destinationIds:
   const send = useSend();
   if (!sides) return null;
   // Until the player edits, the plans follow the owner's rules for the ends chosen now, so adding a rift adds donkeys.
-  const plans = edited ?? plansOf(prefillTotals(sides.sourceRole, sides.destinationRoles, sides.goods));
-  const donkeys = donkeysTaken(plans, sides.goods, destinationIds, sides.donkeyCapacityKg);
-  const chosen = sides.goods.filter((good) => (plans.get(good.resource)?.total ?? 0) > 0).length;
+  const plans =
+    edited ?? plansOf(prefillTotals(sides.sourceRole, sides.destinationRoles, sides.goods, sides.donkeyCapacityKg));
+  const donkeys = donkeysNeeded(plans, sides.goods, destinationIds, sides.donkeyCapacityKg);
+  const chosen = sides.goods.filter((good) => sentTotal(plans.get(good.resource), good.have) > 0).length;
   const short = donkeys > sides.donkeysHave;
+
+  const sendNow = async () => {
+    const outcomes = await send.run({ sourceId, destinationIds, sides, plans, interval: repeat ? interval : null });
+    if (outcomes.length === 0) return;
+    const refused = outcomes.flatMap((outcome) => (outcome.status === "refused" ? [outcome.shipment] : []));
+    setEdited(plansFor(refused, sides.goods));
+    onLeft(refused.map((shipment) => shipment.destinationId));
+  };
 
   return (
     <>
@@ -189,17 +229,14 @@ const Goods = ({ sourceId, destinationIds }: { sourceId: number; destinationIds:
         plans={plans}
         destinationIds={destinationIds}
         destinationNames={sides.destinationNames}
+        focus={focus}
         onPlan={(resource, plan) => setEdited(new Map(plans).set(resource, plan))}
       />
       <button
         type="button"
         disabled={chosen === 0 || destinationIds.length === 0 || short || send.busy}
         title={short ? "Not enough donkeys for these loads" : undefined}
-        onClick={() =>
-          void send.run({ sourceId, destinationIds, sides, plans, interval: repeat ? interval : null }).then((sent) => {
-            if (sent) setEdited(new Map());
-          })
-        }
+        onClick={() => void sendNow()}
         className="rounded-md bg-gold px-4 py-3 text-base font-semibold text-kit-ink disabled:opacity-50"
       >
         {sendWords(chosen, destinationIds.length, sides.travelMinutes, repeat, interval)}
@@ -226,6 +263,22 @@ const Goods = ({ sourceId, destinationIds }: { sourceId: number; destinationIds:
   );
 };
 
+/** The plans that send the refused shipments again, each destination's goods exactly as they were. */
+const plansFor = (refused: Shipment[], goods: Good[]): Plans => {
+  const plans: Plans = new Map();
+  for (const good of goods) {
+    const shares = new Map(
+      refused.map((shipment) => [
+        shipment.destinationId,
+        shipment.lines.find((line) => line.resource === good.resource)?.amount ?? 0,
+      ]),
+    );
+    const total = [...shares.values()].reduce((sum, share) => sum + share, 0);
+    if (total > 0) plans.set(good.resource, { total, pinned: refused.length > 1 ? shares : new Map() });
+  }
+  return plans;
+};
+
 /** The Send button's words: what leaves, to how many, and when it lands; or what is still missing. */
 const sendWords = (goods: number, destinations: number, minutes: number, repeat: boolean, interval: number) => {
   if (destinations === 0) return "Choose where to send";
@@ -235,19 +288,24 @@ const sendWords = (goods: number, destinations: number, minutes: number, repeat:
   return `Send ${goods} ${goods === 1 ? "good" : "goods"}${to} · on the road ${travelText(minutes)}${every}`;
 };
 
-/** Each destination's goods, as the chain takes them: resource id then amount, at the resource precision. */
-const shipments = (destinationIds: number[], destinationNames: string[], goods: Good[], plans: Plans) =>
-  destinationIds.map((destinationId, index) => ({
-    destinationId,
-    destinationName: destinationNames[index],
-    lines: goods
-      .map((good) => ({ resource: good.resource, amount: sharesOf(plans.get(good.resource), destinationIds)[index] }))
-      .filter((line) => line.amount > 0),
-  }));
+/** Each destination's goods in whole units, as much as the source holds now. */
+const shipments = (destinationIds: number[], destinationNames: string[], goods: Good[], plans: Plans): Shipment[] =>
+  destinationIds
+    .map((destinationId, index) => ({
+      destinationId,
+      destinationName: destinationNames[index],
+      lines: goods
+        .map((good) => ({
+          resource: good.resource,
+          amount: sharesOf(plans.get(good.resource), destinationIds, good.have)[index],
+        }))
+        .filter((line) => line.amount > 0),
+    }))
+    .filter((shipment) => shipment.lines.length > 0);
 
 /**
- * Sends a transfer: one call per destination with its own goods, in one transaction. With an interval, each
- * destination also becomes a repeating transfer in Automation, sent once now as the old window did.
+ * Sends a transfer, one shipment per destination, and says how each ended. With an interval, each shipment that
+ * landed also becomes a repeating transfer in Automation, already run once now.
  */
 const useSend = () => {
   const {
@@ -268,27 +326,18 @@ const useSend = () => {
     sides: TransferSides;
     plans: Plans;
     interval: number | null;
-  }): Promise<boolean> => {
-    const loads = shipments(destinationIds, sides.destinationNames, sides.goods, plans).filter(
-      (load) => load.lines.length > 0,
-    );
-    if (loads.length === 0) return false;
+  }): Promise<ShipmentOutcome[]> => {
+    const loads = shipments(destinationIds, sides.destinationNames, sides.goods, plans);
+    if (loads.length === 0) return [];
     setBusy(true);
     try {
-      await systemCalls.send_resources_multiple({
-        signer: account,
-        calls: loads.map((load) => ({
-          sender_entity_id: BigInt(sourceId),
-          recipient_entity_id: BigInt(load.destinationId),
-          resources: load.lines.flatMap((line) => [line.resource, BigInt(line.amount) * BigInt(RESOURCE_PRECISION)]),
-        })),
-      });
-      if (interval !== null) scheduleRepeats(addScheduled, sourceId, sides.sourceName, loads, interval);
-      toast.success(loads.length > 1 ? "Transfers sent." : "Transfer sent.");
-      return true;
-    } catch (error) {
-      toast.failed(error, "Transfer failed.");
-      return false;
+      const outcomes = await sendShipments(sourceId, loads, (call) =>
+        systemCalls.send_resources_multiple({ signer: account, calls: [call] }),
+      );
+      const landed = outcomes.flatMap((outcome) => (outcome.status === "applied" ? [outcome.shipment] : []));
+      if (interval !== null) scheduleRepeats(addScheduled, sourceId, sides.sourceName, landed, interval);
+      tellOutcomes(outcomes);
+      return outcomes;
     } finally {
       setBusy(false);
     }
@@ -296,23 +345,37 @@ const useSend = () => {
   return { run, busy };
 };
 
-/** Each destination's goods as a repeating transfer in Automation, already run once now. */
+/** One notice for what landed, and one for each shipment that did not, saying whether Send can try it again. */
+const tellOutcomes = (outcomes: ShipmentOutcome[]) => {
+  const landed = outcomes.filter((outcome) => outcome.status === "applied");
+  if (landed.length > 0) toast.success(landed.length > 1 ? "Transfers sent." : "Transfer sent.");
+  for (const outcome of outcomes) {
+    const to = outcome.shipment.destinationName;
+    if (outcome.status === "refused")
+      toast.failed(outcome.error, "The game refused it.", { description: `${to} stays chosen: Send tries it again.` });
+    if (outcome.status === "unknown")
+      toast.warning(`No answer for ${to} yet: it may still arrive. Check Arrivals before sending it again.`);
+    if (outcome.status === "busy") toast.warning(`A transfer to ${to} is still on its way to the chain.`);
+  }
+};
+
+/** Each shipment that landed as a repeating transfer in Automation, already run once now. */
 const scheduleRepeats = (
   addScheduled: ReturnType<typeof useTransferAutomationStore.getState>["add"],
   sourceId: number,
   sourceName: string,
-  loads: ReturnType<typeof shipments>,
+  landed: Shipment[],
   interval: number,
 ) => {
   const now = Date.now();
-  loads.forEach((load) =>
+  landed.forEach((shipment) =>
     addScheduled({
       sourceEntityId: String(sourceId),
       sourceName,
-      destinationEntityId: String(load.destinationId),
-      destinationName: load.destinationName,
-      resourceIds: load.lines.map((line) => line.resource),
-      resourceConfigs: load.lines.map((line) => ({ resourceId: line.resource, amount: line.amount })),
+      destinationEntityId: String(shipment.destinationId),
+      destinationName: shipment.destinationName,
+      resourceIds: shipment.lines.map((line) => line.resource),
+      resourceConfigs: shipment.lines.map((line) => ({ resourceId: line.resource, amount: line.amount })),
       intervalMinutes: interval,
       active: true,
       lastRunAt: now,
@@ -331,12 +394,14 @@ const GoodsGrid = ({
   plans,
   destinationIds,
   destinationNames,
+  focus,
   onPlan,
 }: {
   goods: Good[];
   plans: Plans;
   destinationIds: number[];
   destinationNames: string[];
+  focus: number | undefined;
   onPlan: (resource: number, plan: GoodPlan) => void;
 }) => {
   const several = destinationIds.length > 1;
@@ -373,6 +438,7 @@ const GoodsGrid = ({
             destinationIds={destinationIds}
             destinationNames={destinationNames}
             template={template}
+            focused={good.resource === focus}
             onPlan={(plan) => onPlan(good.resource, plan)}
           />
         ))}
@@ -386,6 +452,7 @@ const GoodRow = ({
   destinationIds,
   destinationNames,
   template,
+  focused,
   onPlan,
 }: {
   good: Good;
@@ -393,9 +460,11 @@ const GoodRow = ({
   destinationIds: number[];
   destinationNames: string[];
   template: string;
+  focused: boolean;
   onPlan: (plan: GoodPlan) => void;
 }) => {
-  const shares = sharesOf(plan, destinationIds);
+  const shares = sharesOf(plan, destinationIds, good.have);
+  const honoured = honouredShares(plan, destinationIds, good.have);
   const name = resourceName(good.resource);
   return (
     <div
@@ -412,7 +481,9 @@ const GoodRow = ({
         aria-label={`${name}: total to send`}
         type="number"
         min={0}
-        value={plan?.total ?? 0}
+        step={1}
+        autoFocus={focused}
+        value={sentTotal(plan, good.have)}
         onChange={(event) => onPlan(withTotal(plan, Number(event.target.value), good.have))}
         className={cn(NUMBER_INPUT, "border-gold/30")}
       />
@@ -421,13 +492,14 @@ const GoodRow = ({
       </button>
       {destinationIds.length > 1 &&
         destinationIds.map((id, index) => {
-          const pinned = plan?.pinned.has(id) ?? false;
+          const pinned = honoured.has(id);
           return (
             <span key={id} className="relative">
               <input
                 aria-label={`${name} to ${destinationNames[index]}`}
                 type="number"
                 min={0}
+                step={1}
                 value={shares[index]}
                 onChange={(event) => onPlan(withShare(plan, id, Number(event.target.value), good.have, destinationIds))}
                 className={cn(NUMBER_INPUT, pinned ? "border-gold text-gold" : "border-gold/20")}

@@ -80,13 +80,6 @@ export type Tile = {
   reward_extracted: boolean;
 };
 
-export type PlayerStructure = {
-  entityId: ID;
-  structure: NativeRows["Structure"];
-  position: Position;
-  category: StructureType;
-  owner: ContractAddress;
-};
 export interface Building {
   name: string;
   category: BuildingType;
