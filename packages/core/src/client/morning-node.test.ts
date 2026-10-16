@@ -224,7 +224,8 @@ it.each([
       );
       expect(timeline.some((line) => line.startsWith("1.00s  send #2 at nonce 5"))).toBe(true);
     } else {
-      expect(timeline.some((line) => /^1[24]\.00s  send #2/.test(line))).toBe(true);
+      // The second play leaves at its click, at the nonce after the first's, whatever the first's outcome wait.
+      expect(timeline.some((line) => line.startsWith("1.00s  send #2 at nonce 6"))).toBe(true);
     }
   },
 );

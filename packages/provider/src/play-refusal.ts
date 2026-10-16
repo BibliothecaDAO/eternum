@@ -14,6 +14,12 @@ export const PLAY_REFUSALS = {
 
 export type PlayRefusalReason = keyof typeof PLAY_REFUSALS;
 
+/**
+ * How many of a player's plays the shard holds at once: the one at its account's current nonce and those just after
+ * it. The client numbers its plays and never has more than this many sent and not yet included.
+ */
+export const PLAYS_IN_FLIGHT = 4;
+
 /** The RPC's code for a play it refused before forwarding. */
 export const PLAY_REFUSED_CODE = -32010;
 

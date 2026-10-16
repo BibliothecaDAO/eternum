@@ -67,7 +67,7 @@ export {
 } from "./classify-transaction-error";
 export type { ClassifiedTransactionError } from "./classify-transaction-error";
 export { ACTION_CHECKING_AFTER_MS, TransactionNotSentError } from "./transaction-not-sent";
-export { PLAY_REFUSALS, playRefusalReasonOf, type PlayRefusalReason } from "./play-refusal";
+export { PLAY_REFUSALS, PLAYS_IN_FLIGHT, playRefusalReasonOf, type PlayRefusalReason } from "./play-refusal";
 export { TransactionType } from "./types";
 export type {
   TransactionFailedPayload,
@@ -104,11 +104,6 @@ const classifySubmitFailure = (
     hasTxHash: false,
     retrySafety: "unknown",
   };
-};
-
-type ActorExecutionLock = {
-  completed: Promise<void>;
-  resolve: () => void;
 };
 
 type TransactionFailureError = Error & {
@@ -172,7 +167,6 @@ export interface ProviderContracts {
 export class EternumProvider extends EventEmitter {
   readonly contracts: ProviderContracts;
   readonly provider: RpcProvider;
-  private pendingActorExecutionLocks = new Map<string, ActorExecutionLock>();
   private nativeSubmission?: NativeSubmission;
   private commandAbi?: Abi;
   private resolveOwnedStructure?: (actor: string) => number;
@@ -266,45 +260,6 @@ export class EternumProvider extends EventEmitter {
       ({ entrypoint }) => entrypoint === "Explore" || entrypoint === "Move",
     );
     return Array.isArray(call?.calldata) ? this.normalizeAddress(String(call.calldata[2])) : undefined;
-  }
-
-  private getTransactionSerializationKey(signer: Account | AccountInterface): string {
-    return `native:${this.gameId}:${this.normalizeAddress(signer.address)}`;
-  }
-
-  private createActorExecutionLock(): ActorExecutionLock {
-    let resolve!: () => void;
-    const completed = new Promise<void>((innerResolve) => {
-      resolve = innerResolve;
-    });
-
-    return { completed, resolve };
-  }
-
-  private async acquireActorExecutionLock(key: string): Promise<() => void> {
-    while (true) {
-      const existingLock = this.pendingActorExecutionLocks.get(key);
-      if (!existingLock) {
-        const lock = this.createActorExecutionLock();
-        this.pendingActorExecutionLocks.set(key, lock);
-
-        let released = false;
-        return () => {
-          if (released) {
-            return;
-          }
-          released = true;
-
-          const currentLock = this.pendingActorExecutionLocks.get(key);
-          if (currentLock === lock) {
-            this.pendingActorExecutionLocks.delete(key);
-          }
-          lock.resolve();
-        };
-      }
-
-      await existingLock.completed;
-    }
   }
 
   /** Every command is the player's own signed invoke of the shard's play entry; there is no other way to submit. */
@@ -424,19 +379,6 @@ export class EternumProvider extends EventEmitter {
       });
     }
 
-    // One action of a player at a time: the next command is sent only after Herald applies this one.
-    let releaseActorExecutionLock: (() => void) | undefined = await this.acquireActorExecutionLock(
-      this.getTransactionSerializationKey(signer),
-    );
-    if (txType === TransactionType.EXPLORE) {
-      this.emit("transactionProgress", {
-        stage: "explore_provider_lock_acquired",
-        type: txType,
-        explorerId: this.getExploreTransactionExplorerId(transactionDetails),
-        signerAddress: transactionMeta.signerAddress,
-      });
-    }
-
     let tx: SubmittedTransaction;
     // Admission to visible: from sending the invoke to the stream reporting its outcome with its facts applied.
     let submitStartedAt = 0;
@@ -455,8 +397,6 @@ export class EternumProvider extends EventEmitter {
       const error = attachTransactionFailureStage(cause, "submit");
       const message = extractErrorMessage(error);
       const submitFailure = classifySubmitFailure(error);
-      releaseActorExecutionLock?.();
-      releaseActorExecutionLock = undefined;
       this.emitTransactionFailure({
         ...transactionMeta,
         message: `Transaction failed to submit: ${message}`,
@@ -475,8 +415,6 @@ export class EternumProvider extends EventEmitter {
       transactionHash: tx.transaction_hash,
     };
     if (!this.transactionStreamWaiter) {
-      releaseActorExecutionLock?.();
-      releaseActorExecutionLock = undefined;
       this.emitTransactionPending(tx.transaction_hash, transactionMeta);
       return {
         statusReceipt: "PENDING",
@@ -497,16 +435,8 @@ export class EternumProvider extends EventEmitter {
       Math.max(0, submitStartedAt + ACTION_CHECKING_AFTER_MS - Date.now()),
     );
     void streamReceipt.catch(() => undefined).finally(() => clearTimeout(checking));
-    // The actor's next command is sent only after Herald applies this one, so its effects are visible first.
-    const waitPromise = releaseActorExecutionLock
-      ? streamReceipt.finally(() => {
-          releaseActorExecutionLock?.();
-          releaseActorExecutionLock = undefined;
-        })
-      : streamReceipt;
-
     this.emitTransactionPending(tx.transaction_hash, transactionMeta);
-    void waitPromise
+    void streamReceipt
       .then((receipt) => {
         this.emit("transactionComplete", {
           details: receipt,

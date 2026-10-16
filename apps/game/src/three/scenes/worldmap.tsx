@@ -626,7 +626,6 @@ function allocateWorldmapInteractionDebugInstanceId(): number {
 function resolveExploreClientLatencyPhase(stage: string | undefined): ClientActionLatencyPhase | undefined {
   if (stage === "explore_calls_built") return "calls_built";
   if (stage === "explore_submit_guard_released") return "submit_guard_released";
-  if (stage === "explore_provider_lock_acquired") return "provider_lock_acquired";
   if (stage === "explore_sign_send_started") return "sign_send_started";
   return undefined;
 }
@@ -1162,14 +1161,6 @@ export default class WorldmapScene extends WarpTravel {
       const phase = resolveExploreClientLatencyPhase(payload.stage);
       const pendingAction = this.pendingExploreLatencyActions.get(explorerId);
       if (phase && pendingAction) recordClientActionPhase(pendingAction.actionId, phase);
-
-      if (payload.stage === "explore_provider_lock_acquired") {
-        recordArmyMovementLatencyPhase({
-          phase: "explore_provider_lock_acquired",
-          source: "worldmap",
-          entityId: explorerId,
-        });
-      }
     };
 
     gameContext.network?.provider?.on("transactionProgress", this.handleTransactionProgress);

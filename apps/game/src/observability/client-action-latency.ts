@@ -4,7 +4,6 @@ export type ClientActionLatencyPhase =
   | "ghost_rendered"
   | "calls_built"
   | "submit_guard_released"
-  | "provider_lock_acquired"
   | "sign_send_started"
   | "submitted"
   | "pre_confirmed"

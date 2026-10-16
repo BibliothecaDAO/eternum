@@ -7,7 +7,11 @@ import { permitsAccountRequest, type ShardIdentity } from "./account-rpc-policy"
 import { accountRequestLimiter, rpcClientAddress } from "./rpc-client-limit";
 import { isDevShardChain } from "../../../packages/value-ledger/src/dev-shard";
 import { seaterAccountAddresses } from "../../../packages/value-ledger/src/shard-accounts";
-import { PLAY_REFUSED_CODE, type PlayRefusalReason } from "../../../packages/provider/src/play-refusal";
+import {
+  PLAY_REFUSED_CODE,
+  PLAYS_IN_FLIGHT,
+  type PlayRefusalReason,
+} from "../../../packages/provider/src/play-refusal";
 
 const READ_METHODS = new Set([
   "starknet_specVersion",
@@ -38,11 +42,13 @@ type Preparation = { signal: AbortSignal; deadline: number };
 type ProxyIdentity = ShardIdentity & PlayIdentity & { playerCapacity: number };
 type AccountClassReader = (sender: string, signal: AbortSignal) => Promise<string>;
 /**
- * A player stamps only its current nonce, so the mempool holds at most one of its plays and no stamp is speculative.
- * A seater, one of the pool accounts that seat fixed rosters, may queue its seats this far ahead: seating a split then
- * waits on execution, not on a round trip per seat.
+ * A player's play may run PLAYS_IN_FLIGHT - 1 nonces past its account's current one, so a burst of orders waits on a
+ * round trip per play, not on each play's inclusion; the mempool holds at most PLAYS_IN_FLIGHT of its plays. A stamp
+ * ahead of the current nonce is not readable before it executes: no public method returns a transaction's body. A
+ * seater, one of the pool accounts that seat fixed rosters, may queue its seats this far ahead.
  */
 const SEATER_NONCE_WINDOW = 48n;
+const PLAYER_NONCE_WINDOW = BigInt(PLAYS_IN_FLIGHT - 1);
 
 /** The preparation ran out of time before the play could be forwarded. */
 class PreparationExpired extends Error {}
@@ -471,7 +477,7 @@ async function forwardRequest(
 
 function admitsNonce(sent: bigint | undefined, current: bigint | undefined, isSeater: boolean): boolean {
   if (sent === undefined || current === undefined) return false;
-  return sent === current || (isSeater && sent > current && sent <= current + SEATER_NONCE_WINDOW);
+  return sent >= current && sent <= current + (isSeater ? SEATER_NONCE_WINDOW : PLAYER_NONCE_WINDOW);
 }
 
 async function assertChainIdentity(node: URL, identity: PlayIdentity, limit: bigint) {

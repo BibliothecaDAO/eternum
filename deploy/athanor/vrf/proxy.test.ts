@@ -5,6 +5,7 @@ import { startReadRpc } from "../scripts/read-rpc";
 import { identity, invoke } from "./fixtures";
 import { STAMP_TAG, type PlayInvoke } from "./transaction";
 import { launcherAccountAddress, seaterAccountAddresses } from "../../../packages/value-ledger/src/shard-accounts";
+import { PLAYS_IN_FLIGHT } from "../../../packages/provider/src/play-refusal";
 
 async function fixture(
   result: unknown = { transaction_hash: "0x777" },
@@ -126,7 +127,7 @@ test("one current-nonce play is stamped and only its hash reaches the device", a
     f.close();
   }
 });
-test("a seater may queue plays up to 48 nonces ahead; the launcher and players stamp only their current nonce", async () => {
+test("a seater may queue plays up to 48 nonces ahead; the launcher and players only within their plays in flight", async () => {
   const f = await fixture();
   const seaters = seaterAccountAddresses(identity);
   const play = (sender_address: string, nonce: number) => ({
@@ -148,9 +149,15 @@ test("a seater may queue plays up to 48 nonces ahead; the launcher and players s
       });
     for (const nonce of [9, 59])
       expect((await f.call("starknet_addInvokeTransaction", [play(seaters[0]!, nonce)])).error).toEqual(refused);
-    for (const sender of [launcherAccountAddress(identity), "0x42"])
-      expect((await f.call("starknet_addInvokeTransaction", [play(sender, 11)])).error).toEqual(refused);
-    expect(f.stamped.map((tx) => Number(tx.nonce))).toEqual([10, 11, 34, 58]);
+    const lastInFlight = 10 + PLAYS_IN_FLIGHT - 1;
+    for (const sender of [launcherAccountAddress(identity), "0x42"]) {
+      expect((await f.call("starknet_addInvokeTransaction", [play(sender, lastInFlight)])).result).toEqual({
+        transaction_hash: "0x777",
+      });
+      for (const nonce of [9, lastInFlight + 1])
+        expect((await f.call("starknet_addInvokeTransaction", [play(sender, nonce)])).error).toEqual(refused);
+    }
+    expect(f.stamped.map((tx) => Number(tx.nonce))).toEqual([10, 11, 34, 58, lastInFlight, lastInFlight]);
   } finally {
     f.close();
   }
@@ -167,7 +174,7 @@ test("node rejection never leaks a stamped body, proof or backend diagnostic", a
     f.close();
   }
 });
-test("estimates, simulation, future nonces, altered bounds, body and trace reads never get a proof", async () => {
+test("estimates, simulation, nonces past the plays in flight, altered bounds, body and trace reads never get a proof", async () => {
   const f = await fixture();
   try {
     for (const method of ["starknet_estimateFee", "starknet_simulateTransactions"])
@@ -182,7 +189,7 @@ test("estimates, simulation, future nonces, altered bounds, body and trace reads
     ])
       expect((await f.call(method, ["0x777"])).error).toBeDefined();
     for (const tx of [
-      { ...invoke(), nonce: "0x1" },
+      { ...invoke(), nonce: `0x${PLAYS_IN_FLIGHT.toString(16)}` },
       { ...invoke(), tip: "0x1" },
       { ...invoke(), calldata: ["0x2", ...invoke().calldata.slice(1)] },
     ])

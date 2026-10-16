@@ -11,7 +11,14 @@ import {
 } from "starknet";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { configureGameplayAccountSubmits, executeGameplayAccountTransaction, invalidateGameplayNonce } from "./submit";
+import { PLAYS_IN_FLIGHT } from "@bibliothecadao/provider";
+
+import {
+  configureGameplayAccountSubmits,
+  executeGameplayAccountTransaction,
+  invalidateGameplayNonce,
+  type SentGameplayTransaction,
+} from "./submit";
 
 const CALL = { contractAddress: "0x1", entrypoint: "play", calldata: [] };
 const OTHER_CALL = { contractAddress: "0x1", entrypoint: "play", calldata: ["0x2"] };
@@ -71,7 +78,7 @@ describe("gameplay account submits", () => {
     );
   });
 
-  it("Herald frees the next send at 300 ms using the spent nonce while node hash and nonce lag 19 s", async () => {
+  it("a play leaves at the next nonce at once while Herald settles the last at 300 ms and the node lags 19 s", async () => {
     vi.useFakeTimers();
     const shard = fakeShard("0x3030", (invoke) => ({ transaction_hash: invoke.hash }));
     const run = new AbortController();
@@ -90,15 +97,11 @@ describe("gameplay account submits", () => {
         waitForTransaction,
       });
     const first = await submit();
-    const next = submit();
-    await vi.advanceTimersByTimeAsync(299);
-    expect(shard.sentNonces()).toEqual(["0x7"]);
-    await vi.advanceTimersByTimeAsync(1);
-    await expect(first.inBlock).resolves.toBeUndefined();
-    const second = await next;
+    const second = await submit();
     expect(shard.sentNonces()).toEqual(["0x7", "0x8"]);
     expect(shard.nonce).toBe(7n);
     await vi.advanceTimersByTimeAsync(300);
+    await expect(first.inBlock).resolves.toBeUndefined();
     await expect(second.inBlock).resolves.toBeUndefined();
     const reads = shard.account.getTransactionStatus.mock.calls.length;
     await vi.advanceTimersByTimeAsync(19_000);
@@ -106,18 +109,19 @@ describe("gameplay account submits", () => {
     run.abort();
   });
 
-  it("returns the hash as soon as the send does, and reads the next nonce only after the first answer", async () => {
+  it("a burst leaves at consecutive nonces as each is answered, as many as the shard holds; then one per inclusion", async () => {
     const shard = fakeShard("0x999", (invoke) => shard.hold(invoke));
 
-    const first = await send(shard);
-    const second = send(shard);
+    const burst = Array.from({ length: PLAYS_IN_FLIGHT + 1 }, () => send(shard));
     await endOfMacrotask();
-    expect(shard.account.execute).toHaveBeenCalledOnce();
+    expect(shard.sentNonces()).toEqual(["0x7", "0x8", "0x9", "0xa"]);
+    expect(shard.account.getNonce).toHaveBeenCalledOnce();
 
+    const first = await burst[0]!;
     shard.include(first.transaction_hash);
     await expect(first.inBlock).resolves.toBeUndefined();
-    shard.include((await second).transaction_hash);
-    expect(shard.sentNonces()).toEqual(["0x7", "0x8"]);
+    await burst[PLAYS_IN_FLIGHT];
+    expect(shard.sentNonces()).toEqual(["0x7", "0x8", "0x9", "0xa", "0xb"]);
   });
 
   it("accepted, then the proxy's outcome unknown: reconciled into the block it landed in, never resent", async () => {
@@ -238,6 +242,44 @@ describe("gameplay account submits", () => {
     });
     await expect(sent.inBlock).resolves.toBeUndefined();
     expect(shard.account.getTransactionStatus).not.toHaveBeenCalled();
+  });
+
+  it("an answer that arrives after Herald reported its play leaves the later plays free to leave together", async () => {
+    const shard = fakeShard("0x1953", async (invoke) => {
+      if (shard.sent.length > 1) return shard.hold(invoke);
+      await endOfMacrotask();
+      throw Object.assign(new Error("Invalid transaction nonce"), { code: 52 });
+    });
+    const sent = await executeGameplayAccountTransaction({
+      account: shard.account,
+      calls: CALL,
+      shard: SHARD,
+      waitForTransaction: async (hash) => ({ hash, block: null, status: "PRE_CONFIRMED" }),
+    });
+    await sent.inBlock;
+    await endOfMacrotask();
+
+    void send(shard);
+    void send(shard, OTHER_CALL);
+    await endOfMacrotask();
+    expect(shard.sentNonces()).toEqual(["0x7", "0x8", "0x9"]);
+  });
+
+  it("a lost answer holds the next play until its own play settles", async () => {
+    const shard = fakeShard("0x1954", (invoke) => {
+      if (shard.sent.length > 1) return shard.hold(invoke);
+      shard.hold(invoke);
+      throw outcomeUnknown();
+    });
+
+    const first = await send(shard);
+    const next = send(shard, OTHER_CALL);
+    await endOfMacrotask();
+    expect(shard.sentNonces()).toEqual(["0x7"]);
+    shard.include(first.transaction_hash);
+    await first.inBlock;
+    await next;
+    expect(shard.sentNonces()).toEqual(["0x7", "0x8"]);
   });
 
   it("a duplicate transaction answer is reconciled, never called refused", async () => {
@@ -413,6 +455,219 @@ describe("gameplay account submits", () => {
     ).toThrow("configured for 0x1, not 0x2");
   });
 });
+
+describe("a burst against a node that holds one play per nonce", () => {
+  it("a refused middle play of a burst: its nonce goes to the next order, and no order meets a held nonce", async () => {
+    const node = fakeMempool("0xa01", (nonce, attempt) => nonce === 8n && attempt === 1);
+    const told = await playAll(node, [1, 2, 3, 4, 5]);
+    // 3 waited for 2's answer: refused, so the nonce was read again once 1 landed, and 3 took 8.
+    expect(node.sent()).toEqual([
+      [7n, 1],
+      [8n, 2],
+      [8n, 3],
+      [9n, 4],
+      [10n, 5],
+    ]);
+    expect(node.landed()).toEqual([
+      [7n, 1],
+      [8n, 3],
+      [9n, 4],
+      [10n, 5],
+    ]);
+    expect(told).toEqual({ 1: "landed", 2: "refused", 3: "landed", 4: "landed", 5: "landed" });
+    expect(node.safe()).toEqual({ nonceLandedTwice: false, orderLandedTwice: false, orderSentTwice: false });
+  });
+
+  it("two holes in one burst: each refused nonce goes to the next order, and the refused orders never land", async () => {
+    const node = fakeMempool("0xa02", (nonce, attempt) => (nonce === 8n || nonce === 10n) && attempt === 1);
+    const told = await playAll(node, [1, 2, 3, 4, 5, 6, 7]);
+    expect(node.landed()).toEqual([
+      [7n, 1],
+      [8n, 3],
+      [9n, 4],
+      [10n, 6],
+      [11n, 7],
+    ]);
+    expect(told).toEqual({
+      1: "landed",
+      2: "refused",
+      3: "landed",
+      4: "landed",
+      5: "refused",
+      6: "landed",
+      7: "landed",
+    });
+    expect(node.safe()).toEqual({ nonceLandedTwice: false, orderLandedTwice: false, orderSentTwice: false });
+  });
+
+  it("a middle play whose answer was lost, and which the node dropped, holds the next and is never sent again", async () => {
+    const node = fakeMempool("0xa03", () => false, 8n);
+    const told = await playAll(node, [1, 2, 3, 4]);
+    expect(node.sent()).toEqual([
+      [7n, 1],
+      [8n, 2],
+      [8n, 3],
+      [9n, 4],
+    ]);
+    expect(node.landed()).toEqual([
+      [7n, 1],
+      [8n, 3],
+      [9n, 4],
+    ]);
+    expect(told).toEqual({ 1: "landed", 2: "no answer", 3: "landed", 4: "landed" });
+    expect(node.safe()).toEqual({ nonceLandedTwice: false, orderLandedTwice: false, orderSentTwice: false });
+  });
+
+  // Tab B reads nonce 7 while A's 7 and 8 are held: the node rejects B's 7 after forwarding, so B never learns it was
+  // refused and is told no answer; its next play reads the nonce again.
+  it("two tabs of one account never put two plays at one nonce, and both go on sending", async () => {
+    const node = fakeMempool("0xa04", () => false);
+    const tabA = [1, 2].map((value) => order(node, value));
+    vi.resetModules();
+    const otherTab = await import("./submit");
+    const fromB = (value: number) =>
+      otherTab.executeGameplayAccountTransaction({ account: node.account, calls: valueCall(value), shard: SHARD });
+    const told = await outcomes([...tabA, fromB(11)], [1, 2, 11]);
+    Object.assign(told, await outcomes([fromB(12)], [12]));
+    expect(node.landed()).toEqual([
+      [7n, 1],
+      [8n, 2],
+      [9n, 12],
+    ]);
+    expect(told).toEqual({ 1: "landed", 2: "landed", 11: "no answer", 12: "landed" });
+    expect(node.safe()).toEqual({ nonceLandedTwice: false, orderLandedTwice: false, orderSentTwice: false });
+  });
+
+  it("plays sent before a disposal keep their nonces: the next client's plays never displace them", async () => {
+    const node = fakeMempool("0xa05", () => false, undefined, 2);
+    const disposed = new AbortController();
+    const before = [1, 2].map((value) => order(node, value, disposed.signal));
+    await Promise.all(before);
+    disposed.abort(new Error("Game client disposed"));
+    const told = await outcomes(before, [1, 2]);
+    Object.assign(told, await outcomes([order(node, 3)], [3]));
+    expect(node.landed()).toEqual([
+      [7n, 1],
+      [8n, 2],
+      [9n, 3],
+    ]);
+    expect(told).toEqual({ 1: "disposed", 2: "disposed", 3: "landed" });
+    expect(node.safe()).toEqual({ nonceLandedTwice: false, orderLandedTwice: false, orderSentTwice: false });
+  });
+});
+
+const valueCall = (value: number) => ({
+  contractAddress: "0x1",
+  entrypoint: "play",
+  calldata: [`0x${value.toString(16)}`],
+});
+const order = (node: FakeMempool, value: number, stopped?: AbortSignal) =>
+  executeGameplayAccountTransaction({ account: node.account, calls: valueCall(value), shard: SHARD, stopped });
+
+/** Sends a burst of orders at once and returns what each order's caller was finally told. */
+const playAll = (node: FakeMempool, burst: number[]) =>
+  outcomes(
+    burst.map((value) => order(node, value)),
+    burst,
+  );
+
+/** Runs the node's blocks until every order is settled: landed, refused, unanswered or disposed. */
+async function outcomes(orders: Promise<SentGameplayTransaction>[], values: number[]) {
+  const settled = orders.map((sent) =>
+    sent.then(
+      (play) =>
+        play.inBlock.then(
+          () => "landed",
+          (error: Error) => (error.name === "TransactionNoAnswerError" ? "no answer" : "disposed"),
+        ),
+      () => "refused",
+    ),
+  );
+  await vi.advanceTimersByTimeAsync(30_000);
+  const told = await Promise.all(settled);
+  return Object.fromEntries(values.map((value, index) => [value, told[index]]));
+}
+
+type FakeMempool = ReturnType<typeof fakeMempool>;
+
+/**
+ * One account behind the stamping RPC on a node that, as the pinned node does, holds one transaction per nonce and
+ * executes from the account's nonce upwards, a block every 250 ms. A spent nonce is refused before forwarding; a
+ * different play at an occupied nonce is forwarded, rejected by the node, and answered as an unknown outcome.
+ * `refuses(nonce, attempt)` plays an admission refusal; `drops` is a nonce whose first play the node takes, loses and
+ * never answers. The first `heldBlocks` blocks are empty.
+ */
+function fakeMempool(
+  address: string,
+  refuses: (nonce: bigint, attempt: number) => boolean,
+  drops?: bigint,
+  heldBlocks = 0,
+) {
+  vi.useFakeTimers();
+  let nonce = 7n;
+  let blocks = 0;
+  const held = new Map<bigint, { hash: string; value: number }>();
+  const landed: { nonce: bigint; hash: string; value: number }[] = [];
+  const sent: [bigint, number][] = [];
+  const attempts = new Map<bigint, number>();
+  const produceBlock = () => {
+    if ((blocks += 1) <= heldBlocks) return;
+    for (let play = held.get(nonce); play; play = held.get(nonce)) {
+      landed.push({ nonce, ...play });
+      held.delete(nonce);
+      nonce += 1n;
+    }
+  };
+  setInterval(produceBlock, 250);
+  return {
+    sent: () => sent,
+    landed: () => landed.map((play) => [play.nonce, play.value]),
+    /** What must hold whatever happened: no nonce or order landed twice, no order was sent twice. */
+    safe: () => ({
+      nonceLandedTwice: new Set(landed.map((play) => play.nonce)).size !== landed.length,
+      orderLandedTwice: new Set(landed.map((play) => play.value)).size !== landed.length,
+      orderSentTwice: new Set(sent.map(([, value]) => value)).size !== sent.length,
+    }),
+    account: {
+      address,
+      execute: vi.fn(async (calls: AllowArray<Call>, details?: UniversalDetails) => {
+        const at = BigInt(details!.nonce!);
+        const value = Number((calls as Call).calldata![0]);
+        const hash = invokeHash(address, calls, details!);
+        sent.push([at, value]);
+        const attempt = (attempts.get(at) ?? 0) + 1;
+        attempts.set(at, attempt);
+        if (refuses(at, attempt)) {
+          // The refusal comes back after a round trip, as later plays of the burst leave.
+          await new Promise((resolve) => setTimeout(resolve, 50));
+          throw Object.assign(new Error("Transaction refused"), {
+            baseError: { code: -32010, data: { reason: "stamp" } },
+          });
+        }
+        if (at < nonce) {
+          throw Object.assign(new Error("Transaction refused"), {
+            baseError: { code: -32010, data: { reason: "nonce" } },
+          });
+        }
+        // The node refuses a second play at an occupied nonce after the stamping RPC forwarded it: an unknown outcome.
+        if (held.has(at)) throw outcomeUnknown(hash);
+        if (at === drops && attempt === 1) {
+          // The reply is lost on the way back, after later plays have already left.
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          throw outcomeUnknown(hash);
+        }
+        held.set(at, { hash, value });
+        return { transaction_hash: hash };
+      }),
+      getNonce: vi.fn(async () => `0x${nonce.toString(16)}`),
+      getTransactionStatus: vi.fn(async (transactionHash: string) => {
+        if (landed.some((play) => play.hash === transactionHash)) return { finality_status: "PRE_CONFIRMED" };
+        if ([...held.values()].some((play) => play.hash === transactionHash)) return { finality_status: "RECEIVED" };
+        throw Object.assign(new Error("Transaction hash not found"), { baseError: { code: 29 } });
+      }),
+    },
+  };
+}
 
 const send = (shard: FakeShard, calls: Call = CALL, stopped?: AbortSignal) =>
   executeGameplayAccountTransaction({ account: shard.account, calls, shard: SHARD, stopped });

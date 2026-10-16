@@ -4,7 +4,6 @@ export type ArmyMovementLatencyPhase =
   | "move_requested"
   | "explore_intent_queued"
   | "explore_submit_started"
-  | "explore_provider_lock_acquired"
   | "explore_tx_hash_received"
   | "explore_next_safe_unblocked"
   | "tx_submitted"
