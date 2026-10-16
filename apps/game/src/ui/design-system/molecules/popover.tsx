@@ -106,10 +106,15 @@ export const PopoverPanel = ({
     const place = () =>
       setPanelStyle(resolvePanelStyle(resolveAnchorRef.current(), align, placement, panelRef.current));
     place();
+    // Content that grows or shrinks after opening (data arriving) moves a centred modal and a popover's fit.
+    const content = panelRef.current?.firstElementChild;
+    const contentResize = content && typeof ResizeObserver !== "undefined" ? new ResizeObserver(place) : null;
+    if (content) contentResize?.observe(content);
     window.addEventListener("resize", place);
     window.visualViewport?.addEventListener("resize", place);
     window.visualViewport?.addEventListener("scroll", place);
     return () => {
+      contentResize?.disconnect();
       window.removeEventListener("resize", place);
       window.visualViewport?.removeEventListener("resize", place);
       window.visualViewport?.removeEventListener("scroll", place);
@@ -233,7 +238,8 @@ export const Popover = ({ id, trigger, children, ariaLabel, align = "start", cla
 
 /**
  * Renders the store's surface — content handed to `openSurface` by a scene click or a plain button — through the
- * same panel, hanging from the rect it was opened at (or the top centre when it has none). Mounted once in the HUD.
+ * same panel: a popover hangs from the rect it was opened at (or the top centre when it has none), a full modal stands
+ * in the middle of the screen. Mounted once in the HUD.
  */
 export const SurfaceHost = () => {
   const surface = usePopoverStore((state) => state.surface);
@@ -305,7 +311,7 @@ interface SurfaceFrameProps {
   children: ReactNode;
 }
 
-/** A large surface's frame: the header strip over a scrolling body, with an optional footer. */
+/** A large surface's frame: the header strip over a scrolling body, with an optional footer. It is a full modal. */
 export const SurfaceFrame = ({
   title,
   icon,
@@ -315,7 +321,7 @@ export const SurfaceFrame = ({
   bodyClassName,
   children,
 }: SurfaceFrameProps) => (
-  <div className={cn("flex max-w-full min-h-0 flex-col", className)}>
+  <div data-surface-frame className={cn("flex max-w-full min-h-0 flex-col", className)}>
     <PopoverHeader title={title} icon={icon} onClose={onClose} />
     <div className={cn("min-h-0 flex-1 overflow-y-auto", bodyClassName)}>{children}</div>
     {footer && <div className="shrink-0 border-t border-gold/15 p-4 max-lg:p-2">{footer}</div>}
@@ -331,8 +337,9 @@ export const surfaceAnchorFrom = (element: Element): SurfaceAnchor => {
 /**
  * Where the panel sits. Below `lg` every anchor collapses: a phone has no room beside a trigger, so upright it is a
  * bottom sheet whose height budget is its content plus the safe-area strip, and sideways it is a drawer down the
- * right edge under the header, so a `SURFACE_WORKSPACE_CLASS` child fits exactly either way. Desktop placement
- * hangs from the anchor as before.
+ * right edge under the header, so a `SURFACE_WORKSPACE_CLASS` child fits exactly either way. On desktop a full modal
+ * stands in the middle of the screen, wherever it was opened from (a tile, a button), unless it is set against a side
+ * of the screen; a small popover hangs from its anchor.
  */
 const resolvePanelStyle = (
   anchor: PanelAnchor,
@@ -343,10 +350,30 @@ const resolvePanelStyle = (
   const lane = resolveCompactLane();
   if (lane === "portrait") return resolveCompactSheetStyle();
   if (lane === "landscape") return resolveCompactDrawerStyle();
+  if (isFullModal(panel) && !isSideEdge(anchor)) return resolveCentredPanelStyle(panel);
   if (placement === "beside" && typeof anchor !== "string") {
     return resolveBesidePanelStyle(anchor, panel) ?? resolveAnchoredPanelStyle(anchor, align, panel);
   }
   return resolveAnchoredPanelStyle(anchor, align, panel);
+};
+
+/** A full modal is a `SurfaceFrame`; anything else in a panel is a small popover. */
+const isFullModal = (panel: HTMLElement | null): boolean =>
+  panel?.querySelector(":scope > [data-surface-frame]") != null;
+
+const isSideEdge = (anchor: PanelAnchor): boolean => anchor === "right-edge" || anchor === "bottom-right";
+
+/** In the middle of the screen below the header, as far as its height allows. */
+const resolveCentredPanelStyle = (panel: HTMLElement | null): CSSProperties => {
+  const room = viewportHeightBelow(HEADER_CLEARANCE_PX);
+  const top = HEADER_CLEARANCE_PX + Math.max(0, (room - (panel?.scrollHeight ?? 0)) / 2);
+  return {
+    top,
+    left: "50%",
+    transform: "translateX(-50%)",
+    maxHeight: viewportHeightBelow(top),
+    maxWidth: Math.max(0, window.innerWidth - 2 * VIEWPORT_MARGIN_PX),
+  };
 };
 
 /**
