@@ -33,8 +33,8 @@ const WAR_CRATE_PAGES = {
   ],
 };
 
-/** The right column's quick feed as `QuickFeed` renders it with the log closed. */
-const QUICK_FEED = `<div aria-label="Quick feed"><button type="button" aria-label="Log" aria-expanded="false">Log</button></div>`;
+/** The right column's events as `EventsCard` renders them with the log closed. */
+const EVENTS_CARD = `<section aria-label="Events"><button type="button" aria-label="Log" aria-expanded="false">All</button></section>`;
 
 /** A War crate as the proof reads it: the closed panel's pack, the opened panel and the log after a reload. */
 const WAR_CRATE = {
@@ -55,9 +55,9 @@ const luckyFortress = (relics) => ({
 /**
  * A browser on a running game with a War crate in the middle of the map, whose page is a DOM every check of the proof
  * runs against: hovering names the crate, a click opens its panel, **Open** opens it, a reload shows the map with its
- * quick feed, and only a click on the feed's **Log** (when `logOpensHistory`) shows the history.
+ * Events card, and only a click on its **All** button (labelled Log) shows history when `logOpensHistory` is true.
  */
-const crateBrowser = ({ pages = WAR_CRATE_PAGES, feed = QUICK_FEED, logOpensHistory = true } = {}) => {
+const crateBrowser = ({ pages = WAR_CRATE_PAGES, feed = EVENTS_CARD, logOpensHistory = true } = {}) => {
   const { window } = new JSDOM("<!doctype html><body></body>");
   const { document } = window;
   // jsdom lays nothing out: a block's text is its children's, one per line, and every element has a size.
@@ -256,7 +256,7 @@ describe("a game's proof", () => {
   });
 
   it("opens history through the controls the game renders", () => {
-    const feed = readFileSync(new URL("../src/ui/features/event-feed/quick-feed.tsx", import.meta.url), "utf8");
+    const feed = readFileSync(new URL("../src/ui/features/world/hud/events-card.tsx", import.meta.url), "utf8");
     const panel = readFileSync(new URL("../src/ui/features/event-feed/event-log-panel.tsx", import.meta.url), "utf8");
     expect(LOG_BUTTON).toBe('button[aria-label="Log"]');
     expect(feed).toMatch(/<button[^>]*aria-label="Log"/);

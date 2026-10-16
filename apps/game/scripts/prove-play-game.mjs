@@ -136,7 +136,7 @@ const pressButton = (b, word, within = "body") => {
   return true;
 };
 
-/** The right column's **Log** button (`QuickFeed`'s `LogToggle`) and the history its panel opens on. */
+/** The right column's **All** button in `EventsCard`, labelled Log, and the history its panel opens on. */
 export const LOG_BUTTON = 'button[aria-label="Log"]';
 export const HISTORY = 'section[aria-label="World history"]';
 

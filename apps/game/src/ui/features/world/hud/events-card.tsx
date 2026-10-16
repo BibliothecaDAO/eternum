@@ -28,6 +28,7 @@ export const EventsCard = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogTo
         <button
           ref={button}
           type="button"
+          aria-label="Log"
           aria-expanded={logOpen}
           onClick={onLogToggle}
           className={cn(
