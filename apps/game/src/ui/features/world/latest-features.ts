@@ -90,6 +90,13 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-10-16",
+    title: "Explore with small armies, fight with big ones",
+    description:
+      "In Blitz, what a reveal finds now stops growing at 3,000 strength (3,000 T1, 1,000 T2 or 334 T3), and so does a dormant spire's Essence. A bigger army finds no more, so explore with small armies and keep the big ones for battle.",
+    type: "balance",
+  },
+  {
+    date: "2026-10-16",
     title: "Big Blitz armies eat on the march",
     description:
       "In Blitz, every troop now costs 0.05 wheat per hex it moves and 0.10 per hex it explores, up from 0.03. A 1,000-troop army pays 50 wheat a step; a 20,000-troop army pays 1,000, so moving a big army needs farms behind it.",

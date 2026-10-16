@@ -82,6 +82,7 @@ fn trooplimitconfig_packing_preserves_every_field(
         empire_guard_slots: t1_tier_modifier,
         starting_guard: city_deployment_cap,
         camp_armies: guard_resurrection_delay,
+        explore_reward_strength_cap: mercenaries_troop_upper_bound,
     };
     assert!(TroopLimitConfigPacking::unpack(TroopLimitConfigPacking::pack(value)) == value);
     assert!(Store::<TroopLimitConfig>::size() == 3);

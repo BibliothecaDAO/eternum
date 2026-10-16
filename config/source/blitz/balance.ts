@@ -136,6 +136,8 @@ export const blitzBalance: ConfigPatch = {
   },
   troop: {
     stamina: blitzStaminaConfig,
+    // A reveal pays on at most 3,000 strength: explore with small armies, fight with big ones.
+    limit: { exploreRewardStrengthCap: 3_000 },
   },
   victoryPoints: blitzVictoryPointConfig,
   buildings: {

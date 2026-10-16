@@ -83,6 +83,8 @@ export function buildTroopLimitConfig(config: Config) {
     empire_guard_slots: config.troop.limit.empireGuardSlots,
     starting_guard: config.troop.limit.startingGuard,
     camp_armies: config.troop.limit.campArmies,
+    // A preset that sets no cap pays exploration rewards on the whole army, which the contract reads as 0.
+    explore_reward_strength_cap: config.troop.limit.exploreRewardStrengthCap ?? 0,
 
     mercenaries_troop_lower_bound: config.troop.limit.mercenariesTroopLowerBound,
     mercenaries_troop_upper_bound: config.troop.limit.mercenariesTroopUpperBound,

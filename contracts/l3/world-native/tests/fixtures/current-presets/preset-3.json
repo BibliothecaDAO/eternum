@@ -71,6 +71,7 @@
       "empire_guard_slots": 4,
       "starting_guard": 1500,
       "camp_armies": 1,
+      "explore_reward_strength_cap": 0,
       "mercenaries_troop_lower_bound": 800,
       "mercenaries_troop_upper_bound": 1500,
       "settlement_deployment_cap": 3000,

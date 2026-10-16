@@ -143,6 +143,8 @@ pub struct TroopLimitConfig {
     pub empire_guard_slots: u8,
     pub starting_guard: u32,
     pub camp_armies: u16,
+    // The most army strength an exploration reward pays on, without precision; 0 leaves rewards uncapped.
+    pub explore_reward_strength_cap: u16,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -486,7 +488,8 @@ pub impl TroopLimitConfigPacking of starknet::storage_access::StorePacking<Troop
                 + value.mercenaries_troop_lower_bound.into() * 0x10000
                 + value.mercenaries_troop_upper_bound.into() * 0x100000000
                 + value.starting_guard.into() * 0x1000000000000
-                + value.settlement_deployment_cap.into() * 0x100000000000000000000,
+                + value.settlement_deployment_cap.into() * 0x100000000000000000000
+                + value.explore_reward_strength_cap.into() * 0x10000000000000000000000000000,
             second: value.city_deployment_cap.into()
                 + value.kingdom_deployment_cap.into() * 0x100000000
                 + value.empire_deployment_cap.into() * 0x10000000000000000
@@ -532,6 +535,7 @@ pub impl TroopLimitConfigPacking of starknet::storage_access::StorePacking<Troop
             empire_guard_slots: (value.third / 0x100000000000000000000000000 % 0x100).try_into().unwrap(),
             starting_guard: (value.first / 0x1000000000000 % 0x100000000).try_into().unwrap(),
             camp_armies: (value.third / 0x10000000000000000000000000000).try_into().unwrap(),
+            explore_reward_strength_cap: (value.first / 0x10000000000000000000000000000).try_into().unwrap(),
         }
     }
 }

@@ -708,7 +708,8 @@
       "t3TierStrength": 9,
       "t1TierModifier": 50,
       "t2TierModifier": 100,
-      "t3TierModifier": 150
+      "t3TierModifier": 150,
+      "exploreRewardStrengthCap": 3000
     }
   },
   "buildings": {

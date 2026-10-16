@@ -330,6 +330,8 @@ export interface Config {
       empireGuardSlots: number;
       startingGuard: number;
       campArmies: number;
+      /** The most army strength an exploration reward pays on; a preset without it pays on the whole army. */
+      exploreRewardStrengthCap?: number;
 
       mercenariesTroopLowerBound: number;
       mercenariesTroopUpperBound: number;

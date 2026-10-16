@@ -102,9 +102,9 @@ fn explore(d: super::Deployment, explorer: ExplorerKey, root: u256) -> bool {
     let command = Command::Explore(Explore { explorer_id: explorer.explorer_id, direction: 0 });
     play(d.games, TestAction { game_id: 3, actor: d.actor, command }, root, 140)
 }
-/// The spire grants told by one action's stories.
-fn spire_stories(ref spy: snforge_std::EventSpy, d: super::Deployment) -> Array<ExtractedReward> {
-    let mut grants = array![];
+/// The stories one action told.
+fn stories(ref spy: snforge_std::EventSpy, d: super::Deployment) -> Array<crate::ownership::Story> {
+    let mut told = array![];
     for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
         if *event.keys.at(0) != selector!("StoryEvent") {
             continue;
@@ -112,11 +112,29 @@ fn spire_stories(ref spy: snforge_std::EventSpy, d: super::Deployment) -> Array<
         let mut keys = event.keys.span().slice(1, event.keys.len() - 1);
         let mut data = event.data.span();
         let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
-        if let crate::ownership::Story::SpireDiscovered(grant) = story.story {
+        told.append(story.story);
+    }
+    told
+}
+/// The spire grants told by one action's stories.
+fn spire_stories(ref spy: snforge_std::EventSpy, d: super::Deployment) -> Array<ExtractedReward> {
+    let mut grants = array![];
+    for story in stories(ref spy, d) {
+        if let crate::ownership::Story::SpireDiscovered(grant) = story {
             grants.append(grant);
         }
     }
     grants
+}
+/// The reveal rewards told by one action's stories.
+fn reveal_stories(ref spy: snforge_std::EventSpy, d: super::Deployment) -> Array<ExtractedReward> {
+    let mut rewards = array![];
+    for story in stories(ref spy, d) {
+        if let crate::ownership::Story::ExplorationReward(reward) = story {
+            rewards.append(reward);
+        }
+    }
+    rewards
 }
 fn rejected_reason(d: super::Deployment, command: Command) -> ByteArray {
     let mut spy = snforge_std::spy_events();
@@ -173,4 +191,68 @@ fn a_dormant_spire_opens_no_portal_and_lets_no_army_onto_its_tile() {
     );
     assert_eq!(rejected_reason(d, Command::Explore(Explore { explorer_id: id, direction: 0 })), "destination occupied");
     assert_eq!(spire_stories(ref spy, d), array![]);
+}
+
+/// The reward strength cap the current Blitz preset registers.
+fn blitz_reward_cap() -> u16 {
+    let (_, blitz) = super::preset_projection::current_definition("blitz");
+    blitz.rules.troop_limit_config.explore_reward_strength_cap
+}
+
+/// A Blitz realm and its one army of `count` troops at `tier`, raised through the real command, under the Blitz
+/// preset's reward cap. The fixture realm is a Settlement, so its deployment cap is raised for one army to hold 20k T1,
+/// and its store to hold them; its explored tiles find nothing, so the army steps onto them and is paid there, on a 30
+/// percent Essence row.
+fn blitz_army_of(count: u128, tier: u8) -> (super::Deployment, ResourceKey, ExplorerKey) {
+    let mut rules = super::camps::rules(true);
+    rules.map_config.camp_win_probability = 0;
+    rules.map_config.camp_fail_probability = 1;
+    rules.troop_limit_config.explore_reward_strength_cap = blitz_reward_cap();
+    rules.troop_limit_config.settlement_deployment_cap = 40_000;
+    rules.troop_limit_config.t1_tier_modifier = 50;
+    rules.structure_capacity_config.realm_capacity = 1_000_000_000_000_000;
+    let mut preset = super::resource_commands::fixture_preset(rules);
+    preset.structures.board = None;
+    preset.exploration = essence_row(30);
+    let (d, home, _) = super::resource_commands::setup_with_preset(preset);
+    super::resource_commands::grant(d, home, 26 + tier, count * RESOURCE_PRECISION);
+    for food in array![35_u8, 36] {
+        super::resource_commands::grant(d, home, food, 100_000 * RESOURCE_PRECISION);
+    }
+    let raise = CreateExplorer {
+        structure_id: home.entity_id, category: 0, tier, amount: count * RESOURCE_PRECISION, direction: 0,
+    };
+    assert!(super::resource_commands::execute(d, Command::CreateExplorer(raise), 80));
+    let structures = crate::structures::IStructureOperationsDispatcher { contract_address: d.games };
+    (d, home, ExplorerKey { game_id: 3, explorer_id: *structures.home_armies(home).at(0) })
+}
+
+#[test]
+fn a_blitz_explore_pays_on_at_most_three_thousand_strength() {
+    assert_eq!(blitz_reward_cap(), 3000);
+    // (troops, tier, Essence on the 30 percent row). 334 T3 is strength 3,006. Uncapped this was 150, 300, 900, 6,000
+    // and 901.8.
+    let cases = array![(500_u128, 0_u8, 150_u128), (1_000, 0, 300), (3_000, 0, 900), (20_000, 0, 900), (334, 2, 900)];
+    for (count, tier, essence) in cases {
+        let (d, home, explorer) = blitz_army_of(count, tier);
+        let origin = GameState { contract_address: d.games }.explorer(explorer).unwrap().coord;
+        let mut spy = snforge_std::spy_events();
+        assert!(explore(d, explorer, NO_SPIRE_ROOT));
+        let paid = ExtractedReward {
+            explorer_id: explorer.explorer_id,
+            receiver: home.entity_id,
+            coord: neighbor(origin, 0),
+            resource_type: ESSENCE,
+            amount: essence * RESOURCE_PRECISION,
+        };
+        assert_eq!(reveal_stories(ref spy, d), array![paid]);
+    }
+}
+
+#[test]
+fn a_blitz_spire_pays_three_times_at_most_three_thousand_strength() {
+    let mut limits = limits();
+    limits.explore_reward_strength_cap = blitz_reward_cap();
+    assert_eq!(spire_reward(army(1, TroopTier::T1), limits, 40).amount, 3000 * RESOURCE_PRECISION);
+    assert_eq!(spire_reward(army(20, TroopTier::T1), limits, 40).amount, 9000 * RESOURCE_PRECISION);
 }

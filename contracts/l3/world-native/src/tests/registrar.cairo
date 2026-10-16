@@ -1686,6 +1686,18 @@ fn frontier_reveal_pays_equal_strength_on_ethereal_one() {
     assert_capture_with_reveal(1, 500 * RESOURCE_PRECISION, crate::troops::TroopTier::T2, 225 * RESOURCE_PRECISION);
 }
 
+#[test]
+fn frontier_and_eternum_set_no_reward_cap_so_a_frontier_reveal_still_pays_on_the_whole_army() {
+    for name in array!["frontier", "eternum"] {
+        let (_, preset) = super::preset_projection::current_definition(name);
+        assert_eq!(preset.rules.troop_limit_config.explore_reward_strength_cap, 0);
+    }
+    // 20k T1 at the surface's 10 percent, through the real explore: 2,000, as before the Blitz cap.
+    assert_capture_with_reveal(
+        0, 20_000 * RESOURCE_PRECISION, crate::troops::TroopTier::T1, 2_000 * RESOURCE_PRECISION,
+    );
+}
+
 fn assert_expedition_capture(depth: u8) {
     assert_capture_with_reveal(
         depth,
