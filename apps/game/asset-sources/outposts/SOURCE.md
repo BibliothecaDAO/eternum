@@ -29,7 +29,7 @@ verifier checks decoded Draco positions with a 0.001 tolerance. Production trans
 | Source                      | Runtime file   | Triangles | Primitives |  Bytes |
 | --------------------------- | -------------- | --------: | ---------: | -----: |
 | camp.blend                  | camp.glb       |      3047 |          4 |  91312 |
-| village-canvas-thatch.blend | village.glb    |      5953 |          3 | 212492 |
+| village-canvas-thatch.blend | village.glb    |      6149 |          3 | 213200 |
 | stragglers.blend            | stragglers.glb |      2963 |          5 |  93592 |
 | shrine.blend                | shrine.glb     |      1816 |          3 |  73524 |
 | well.blend                  | well.glb       |      5068 |          3 | 103684 |
@@ -71,22 +71,29 @@ unchanged; `pnpm --dir apps/game verify:fallen-realm` verifies zero triangle con
 ## Canvas & Thatch village
 
 `village/concept.png` is the selected Canvas & Thatch painting, originally
-`evidence/art/ages-picked-20261015-204500/paintings/settlement-new-2.png`. Wellstead is option 3 and belongs to the
-settlement tier. The village source records its painting path and SHA-256; export rejects a missing or changed painting.
+`evidence/art/ages-picked-20261015-204500/paintings/settlement-new-2.png`. Canvas & Thatch is selected for both villages
+and age-1 realm settlements. They share this packed source and export; realm wiring is maintained with the realm assets.
+The source records its painting path and SHA-256; export rejects a missing or changed painting.
 
 `village/painted-surfaces.png` supplies straw, oak, fieldstone and limewash. The village has a packed 480² color atlas,
 240² tangent normal atlas and vertex contact shading. Open thatch courses preserve their outward normals. Separate cloth
 retains ownership coloring on the standard and tent seams; the sun emblem keeps its own color. The editable collection
 preserves roof courses, timber, worn stone and canvas panels. There is no ground slab.
 
+The cottages flank the forward yard at local Blender positions (-0.52, -0.23) and (0.52, -0.23), close to the left and
+right stockade sides. The small tent sits beside the rear canvas shelter at (0.28, 0.27), slightly nearer the fence than
+its original (0.25, 0.22) position. The open centre keeps the tent and hearth visible from the default gameplay camera.
+The stockade follows the pointy hex with three spans per side and radius 0.96. Cottage dimensions, hearth and ownership
+material slots stay unchanged.
+
 The selected painting governs proportions. The village has 0.24-high walls and 0.18 roof rise, with door openings at 78%
 of wall height. Barrels are 0.12 high, stool seats 0.045 and bench seats 0.055 against the 0.187 door opening. Permanent
 cottages distinguish it from camp; there is no taller-than-camp requirement. Camp stays unchanged. The shared export
-preserves `_YARD_ARCHITECTURE` on walls, roofs, canvas and the standard. The delivery verifier measures those decoded
-vertices within radius 0.70; the fixed radius-0.81, sixteen-sided fence leaves at least 0.065 world units of clear
-ground beyond the overhangs, including compression tolerance. The attribute adds no primitive and is not read by
-gameplay. Proportions and layout still need the side-by-side painting review; this geometric check only enforces the
-yard.
+preserves `_YARD_ARCHITECTURE` on walls, roofs, canvas and the standard. `scripts/outposts/village-yard.json` supplies
+the fence radius, post thickness and 0.065 ground-clearance requirement to both source authoring and the verifier. The
+verifier measures decoded architecture against all six fence sides, allowing 0.001 compression tolerance. This replaces
+the circular radius check; the actual hexagonal fence provides the space. The marker adds no primitive and is not read
+by gameplay. Judge tent visibility at the default gameplay camera and distance 20 before checking the painting.
 
 Normal exports read the packed source. To intentionally rebuild the source from its retained surface inputs, run Blender
 with `--background --python apps/game/scripts/outposts/author-village.py` from the repository root, then use the export

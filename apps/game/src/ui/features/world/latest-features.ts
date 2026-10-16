@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-16",
+    title: "Village tents stay in view",
+    description:
+      "Village cottages sit toward the side fences, opening the hearth yard and the view of the small tent beside the rear canvas shelter.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-16",
     title: "Crates say where relics went",
     description:
       "An opened relic crate's feed row and log line now name its pack and where its relics went: army relics to the army that opened it, realm relics to that army's home realm, where the realm's card lists them. A dormant spire now stands on its hex without a name over it.",

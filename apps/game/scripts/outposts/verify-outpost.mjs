@@ -91,7 +91,11 @@ console.log(
 
 function verifyVillageYard(primitives) {
   let architectureVertices = 0;
-  let architectureRadius = 0;
+  const yard = JSON.parse(readFileSync(new URL("./village-yard.json", import.meta.url), "utf8"));
+  if (![yard.fenceRadius, yard.postRadius, yard.clearance].every((value) => Number.isFinite(value) && value > 0))
+    throw new Error("Set positive fenceRadius, postRadius and clearance in village-yard.json");
+  const fenceInnerApothem = (yard.fenceRadius * Math.sqrt(3)) / 2 - yard.postRadius;
+  let architectureApothem = 0;
   for (const primitive of primitives) {
     const marker = primitive.getAttribute("_YARD_ARCHITECTURE");
     const positions = primitive.getAttribute("POSITION");
@@ -100,12 +104,17 @@ function verifyVillageYard(primitives) {
       if (marker.getScalar(i) < 0.5) continue;
       architectureVertices++;
       const [x, , z] = positions.getElement(i, []);
-      architectureRadius = Math.max(architectureRadius, Math.hypot(x, z));
+      for (let side = 0; side < 6; side++)
+        architectureApothem = Math.max(
+          architectureApothem,
+          x * Math.cos((side * Math.PI) / 3) + z * Math.sin((side * Math.PI) / 3),
+        );
     }
   }
-  if (!architectureVertices || architectureRadius > 0.701)
+  const clearance = fenceInnerApothem - architectureApothem;
+  if (!architectureVertices || clearance < yard.clearance - 0.001)
     throw new Error(
-      `Move village walls, roofs and canvas inside radius 0.70 to preserve the fence-side yard. Got ${architectureRadius.toFixed(3)}.`,
+      `Move village architecture inside the fence with ${yard.clearance} ground clearance. Got ${clearance.toFixed(3)}.`,
     );
-  return { architectureVertices, architectureRadius };
+  return { architectureVertices, architectureApothem, fenceInnerApothem, clearance };
 }

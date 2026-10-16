@@ -12,6 +12,7 @@ from mathutils import Matrix, Vector
 
 SOURCE = Path(__file__).resolve().parents[2] / "asset-sources/outposts"
 PAINTING = SOURCE / "village/concept.png"
+YARD = json.loads(Path(__file__).with_name("village-yard.json").read_text())
 TILES = {"reed": (0, 1), "wood": (1, 1), "stone": (0, 0), "plaster": (1, 0)}
 
 
@@ -475,7 +476,9 @@ def pack_source(v):
         (SOURCE / scene["conceptPainting"]).read_bytes()
     ).hexdigest()
     scene["groundContact"] = "Local Z zero is terrain top; no plinth"
-    scene["sourceRole"] = "Canvas & Thatch village; export OUTPOST_PRODUCTION"
+    scene["sourceRole"] = (
+        "Canvas & Thatch village and age-1 settlement; export OUTPOST_PRODUCTION"
+    )
     bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.wm.save_as_mainfile(
         filepath=str(SOURCE / (v.name + ".blend")), compress=True
@@ -670,26 +673,35 @@ def canvas_tent(v):
         (0, depth / 2 + 0.03, peak),
         0.010,
     )
-    v.transform_new(before, 0.25, 0.22, 0)
+    v.transform_new(before, 0.28, 0.27, 0)
     v.mark_architecture(before)
 
 
 def yard_fence(v):
-    count, radius = 16, 0.81
+    radius = YARD["fenceRadius"]
+    corners = [
+        (
+            radius * math.cos(math.pi / 6 + i * math.pi / 3),
+            radius * math.sin(math.pi / 6 + i * math.pi / 3),
+        )
+        for i in range(6)
+    ]
     points = [
         (
-            radius * math.cos(i * math.tau / count),
-            radius * math.sin(i * math.tau / count),
+            x + (corners[(side + 1) % 6][0] - x) * step / 3,
+            y + (corners[(side + 1) % 6][1] - y) * step / 3,
         )
-        for i in range(count)
+        for side, (x, y) in enumerate(corners)
+        for step in range(3)
     ]
+    count = len(points)
     for index, (x, y) in enumerate(points):
         if index == 12:
             continue
         vertices = [
             (
-                x + 0.028 * math.cos(a * math.tau / 5),
-                y + 0.028 * math.sin(a * math.tau / 5),
+                x + YARD["postRadius"] * math.cos(a * math.tau / 5),
+                y + YARD["postRadius"] * math.sin(a * math.tau / 5),
                 z,
             )
             for z in (-0.01, 0.30)
@@ -775,8 +787,8 @@ def main():
             "Retain the selected Canvas & Thatch painting before authoring the village"
         )
     v = Village("village-canvas-thatch")
-    cottage(v, -0.44, -0.04, 0.30, 0.32, 0.24, 0.18, 0)
-    cottage(v, 0.42, -0.13, 0.29, 0.31, 0.24, 0.18, 0)
+    cottage(v, -0.52, -0.23, 0.30, 0.32, 0.24, 0.18, 0)
+    cottage(v, 0.52, -0.23, 0.29, 0.31, 0.24, 0.18, 0)
     canvas_shelter(v)
     canvas_tent(v)
     hearth_and_goods(v, -0.015, -0.24)
