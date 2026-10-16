@@ -1,4 +1,5 @@
 import {
+  gameSyncScopeKeys,
   isClientGameSyncModel,
   isSharedGameSyncModel,
   rowInGameSyncScope,
@@ -17,8 +18,9 @@ const scopeIdentity = (scope: GameSyncScope) =>
 
 /** Replaces game-wide delivery; retains membership keys, never a second copy of current facts. */
 export class GameSubscription {
+  /** The persistent rows the subscriber holds; each is in the published scope, with its current value. */
   private visible = new Map<string, FoldDelete>();
-  private publishedScopeKey?: string;
+  private publishedScope?: { scope: GameSyncScope; key: string };
   private knownScope?: { scope: GameSyncScope; inputs: ReadonlySet<string>; validUntil: number };
   private interestOf?: { scope: GameSyncScope; keys: ReadonlySet<string> };
   private readonly persistentModels: ReadonlySet<string>;
@@ -75,12 +77,15 @@ export class GameSubscription {
     if (body.type === "overlay_reset") return [body];
     if (body.type === "tx") return [body];
     const scope = this.scope();
-    if (this.publishedScopeKey !== scopeIdentity(scope)) return this.replaceScope(body, scope);
+    if (this.publishedScope?.key !== scopeIdentity(scope)) return this.replaceScope(body, scope);
     if (body.type === "head") return [body];
-    const set = body.set.filter(
-      (row) => rowInGameSyncScope(row.model, row.value, scope) && !this.repeatsShownRingRow(row),
-    );
+    const set: FoldSet[] = [];
     const del = body.del.filter((row) => this.visible.has(identity(row)));
+    for (const row of body.set)
+      if (rowInGameSyncScope(row.model, row.value, scope)) {
+        if (!this.repeatsShownRingRow(row)) set.push(row);
+        // A change that moves a held row out of the scope takes it from the subscriber.
+      } else if (this.visible.has(identity(row))) del.push({ model: row.model, key: row.key });
     this.track(set, del);
     return set.length || del.length ? [{ ...body, set, del }] : [];
   }
@@ -113,10 +118,65 @@ export class GameSubscription {
   }
 
   /**
-   * A scope change re-sends only the rows a scope decides: shared rows (the game's configuration) are in every scope,
-   * so the subscriber keeps the copies it holds and none is sent or deleted again.
+   * A scope change sends what it changes. Between two expedition scopes on one grid, the keys decide it (scopeChange);
+   * any other change re-sends the scope's rows (wholeScope).
    */
   private replaceScope(body: Extract<PublishedBody, { type: "diff" | "head" }>, scope: GameSyncScope): PublishedBody[] {
+    const from = this.publishedScope?.scope;
+    const { set, del } =
+      from && changesByKeys(from, scope) ? this.scopeChange(from, scope, body) : this.wholeScope(scope, body);
+    this.publishedScope = { scope, key: scopeIdentity(scope) };
+    this.track(set, del);
+    const diff: PublishedBody = {
+      type: "diff",
+      block: body.block,
+      preconfirmed: body.preconfirmed,
+      set,
+      del,
+      ...(body.type === "diff" && body.transaction_hash ? { transaction_hash: body.transaction_hash } : {}),
+    };
+    return body.type === "head" ? [diff, body] : [diff];
+  }
+
+  /**
+   * A row is in a scope when its keys meet the scope's, and every row the subscriber holds is in the published scope
+   * with its current value. So only the keys the scope gains bring rows, and only the keys it loses can take a held row
+   * away; the held rows that stay are not sent again. This diff's own rows go out as in any diff.
+   */
+  private scopeChange(from: GameSyncScope, to: GameSyncScope, body: Extract<PublishedBody, { type: "diff" | "head" }>) {
+    const fold = this.fold(true);
+    const spacing = to.expedition!.spacing;
+    const fromKeys = gameSyncScopeKeys(from);
+    const toKeys = gameSyncScopeKeys(to);
+    const gained = new Set([...toKeys].filter((key) => !fromKeys.has(key)));
+    const lost = new Set([...fromKeys].filter((key) => !toKeys.has(key)));
+    const set = new Map<string, FoldSet>();
+    const del = new Map<string, FoldDelete>();
+    for (const row of [
+      ...fold.scopeKeyRows(this.gameId, spacing, gained, this.scopedModels),
+      ...this.unwrittenRing(to),
+    ])
+      if (!this.visible.has(identity(row))) set.set(identity(row), row);
+    for (const row of [
+      ...fold.scopeKeyRows(this.gameId, spacing, lost, this.scopedModels),
+      ...this.unwrittenRing(from),
+    ])
+      if (this.visible.has(identity(row)) && !rowInGameSyncScope(row.model, row.value, to))
+        del.set(identity(row), { model: row.model, key: row.key });
+    if (body.type === "diff") {
+      for (const row of body.set)
+        if (rowInGameSyncScope(row.model, row.value, to)) set.set(identity(row), row);
+        else if (this.visible.has(identity(row))) del.set(identity(row), { model: row.model, key: row.key });
+      for (const row of body.del) if (this.visible.has(identity(row))) del.set(identity(row), row);
+    }
+    return { set: [...set.values()], del: [...del.values()] };
+  }
+
+  /**
+   * The scope's rows, re-sent: shared rows (the game's configuration) are in every scope, so the subscriber keeps the
+   * copies it holds and none is sent or deleted again.
+   */
+  private wholeScope(scope: GameSyncScope, body: Extract<PublishedBody, { type: "diff" | "head" }>) {
     const snapshot = this.scopeSnapshot(true, scope, this.scopedModels);
     const set = snapshot.models.flatMap(({ model, rows }) => rows.map((row) => ({ ...row, model })));
     const next = new Set(set.map(identity));
@@ -135,24 +195,14 @@ export class GameSubscription {
       for (const row of body.del)
         if (isSharedGameSyncModel(row.model) && this.visible.has(identity(row))) del.push(row);
     }
-    this.publishedScopeKey = scopeIdentity(scope);
-    this.track(set, del);
-    const diff: PublishedBody = {
-      type: "diff",
-      block: body.block,
-      preconfirmed: body.preconfirmed,
-      set,
-      del,
-      ...(body.type === "diff" && body.transaction_hash ? { transaction_hash: body.transaction_hash } : {}),
-    };
-    return body.type === "head" ? [diff, body] : [diff];
+    return { set, del };
   }
 
   private remember(snapshot: GameSnapshot, scope: GameSyncScope): void {
     this.visible.clear();
     for (const { model, rows } of snapshot.models)
       for (const row of rows) this.visible.set(identity({ model, key: row.key }), { model, key: row.key });
-    this.publishedScopeKey = scopeIdentity(scope);
+    this.publishedScope = { scope, key: scopeIdentity(scope) };
   }
 
   private track(set: FoldSet[], del: FoldDelete[]): void {
@@ -178,6 +228,14 @@ export class GameSubscription {
     return { ...snapshot, models };
   }
 
+  /** The scope's home-ring tiles the chain has not written yet; a written tile is a row of the fold. */
+  private unwrittenRing(scope: GameSyncScope): FoldSet[] {
+    const fold = this.fold(true);
+    return (this.ring?.rows(this.gameId, scope, this.timestamp()) ?? []).filter(
+      (row) => rowInGameSyncScope(row.model, row.value, scope) && fold.currentRow(row.model, row.key) === undefined,
+    );
+  }
+
   /** The chain writing a ring tile this subscription already shows, with the same value, changes nothing for it. */
   private repeatsShownRingRow(row: FoldSet): boolean {
     const ringRow = this.ring?.row(row.key);
@@ -190,3 +248,10 @@ export class GameSubscription {
 }
 
 const RING_MODEL = "TileOpt";
+
+/** Two expedition scopes on one grid hold rows by the same kind of keys, so the keys alone decide a change between them. */
+const changesByKeys = (from: GameSyncScope, to: GameSyncScope): boolean =>
+  from.expedition !== undefined &&
+  to.expedition !== undefined &&
+  from.expedition.spacing === to.expedition.spacing &&
+  from.actor === to.actor;
