@@ -524,12 +524,12 @@ pub mod ResourcesLogic {
                 };
                 // A realm never underpays a fraction of a recipe.
                 let cost = (amount * troops + per_troops - 1) / per_troops;
-                let mut stock = self
+                let (previous, mut stock) = self
                     .resources
                     .load_settled(key, *input.resource_type, unit_weight, now, game_context.production_start);
                 assert!(stock.balance >= cost, "realm cannot pay to raise troops");
                 crate::resources::spend(*input.resource_type, ref stock.balance, ref stock.weight, cost, unit_weight);
-                self.resources.commit_resource(key, *input.resource_type, stock);
+                self.resources.commit_resource(key, *input.resource_type, previous, stock);
             }
         }
 

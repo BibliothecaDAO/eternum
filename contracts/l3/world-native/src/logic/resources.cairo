@@ -85,7 +85,7 @@ pub fn production_start(game_id: u32, game_context: crate::commands::ExecutionCo
 
 #[starknet::component]
 pub mod ResourceState {
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerWriteAccess};
     use crate::events::{RowDeleted, RowSet};
     use crate::resources::{
         Production, ResourceKey, SettledResource, Weight, add, assert_production, has_production, settle, spend,
@@ -115,15 +115,23 @@ pub mod ResourceState {
             // Explicit burns spend the stored balance; they never harvest pending production.
             let mut balance = crate::logic::resources::balance(key, resource_type);
             let mut weight = crate::logic::resources::weight(key);
+            let previous_balance = balance;
+            let previous_weight = weight;
             spend(resource_type, ref balance, ref weight, amount, unit_weight);
-            self.write_balance(key, resource_type, balance);
-            self.write_weight(key, weight);
+            self.write_balance(key, resource_type, previous_balance, balance);
+            self.write_weight(key, previous_weight, weight);
         }
         fn destroy(ref self: ComponentState<TContractState>, key: ResourceKey) {
             crate::logic::resources::assert_exists(key);
             for resource_type in 1_u8..59 {
-                self.write_balance(key, resource_type, 0);
-                self.write_production(key, resource_type, Default::default());
+                let storage_key = (key.game_id, key.entity_id, resource_type);
+                self.write_balance(key, resource_type, self.data.resources.balances.read(storage_key), 0);
+                if has_production(resource_type) {
+                    self
+                        .write_production(
+                            key, resource_type, self.data.resources.productions.read(storage_key), Default::default(),
+                        );
+                }
             }
             self.data.resources.weights.write((key.game_id, key.entity_id), Default::default());
             self.data.resources.resource_exists.write((key.game_id, key.entity_id), false);
@@ -138,14 +146,15 @@ pub mod ResourceState {
         }
         fn change_capacity(ref self: ComponentState<TContractState>, key: ResourceKey, amount: u128, increase: bool) {
             crate::logic::resources::assert_exists(key);
-            let mut weight = self.data.resources.weights.read((key.game_id, key.entity_id));
+            let previous = self.data.resources.weights.read((key.game_id, key.entity_id));
+            let mut weight = previous;
             if weight.capacity != 0xffffffffffffffffffffffffffffffff {
                 weight.capacity = if increase {
                     weight.capacity + amount
                 } else {
                     weight.capacity - amount
                 };
-                self.write_weight(key, weight);
+                self.write_weight(key, previous, weight);
             }
         }
         fn initialize(ref self: ComponentState<TContractState>, key: ResourceKey, capacity: u128) {
@@ -168,8 +177,8 @@ pub mod ResourceState {
             now: u32,
             start_at: u32,
         ) -> u128 {
-            let resource = self.load_settled(key, resource_type, unit_weight, now, start_at);
-            self.commit_resource(key, resource_type, resource);
+            let (previous, resource) = self.load_settled(key, resource_type, unit_weight, now, start_at);
+            self.commit_resource(key, resource_type, previous, resource);
             resource.balance
         }
         // A rate or a storage limit applies from the moment it changes: what accrued before settles under the old one.
@@ -216,9 +225,9 @@ pub mod ResourceState {
             now: u32,
             start_at: u32,
         ) {
-            let mut resource = self.load_settled(key, resource_type, unit_weight, now, start_at);
+            let (previous, mut resource) = self.load_settled(key, resource_type, unit_weight, now, start_at);
             spend(resource_type, ref resource.balance, ref resource.weight, amount, unit_weight);
-            self.commit_resource(key, resource_type, resource);
+            self.commit_resource(key, resource_type, previous, resource);
         }
         fn grant_resource(
             ref self: ComponentState<TContractState>,
@@ -229,11 +238,11 @@ pub mod ResourceState {
             now: u32,
             start_at: u32,
         ) -> u128 {
-            let mut resource = self.load_settled(key, resource_type, unit_weight, now, start_at);
+            let (previous, mut resource) = self.load_settled(key, resource_type, unit_weight, now, start_at);
             let granted = add(
                 resource_type, ref resource.balance, ref resource.weight, amount, unit_weight, resource.limit,
             );
-            self.commit_resource(key, resource_type, resource);
+            self.commit_resource(key, resource_type, previous, resource);
             granted
         }
         fn refill_production(
@@ -246,11 +255,11 @@ pub mod ResourceState {
             start_at: u32,
         ) {
             assert_production(resource_type);
-            let mut resource = self.load_settled(key, resource_type, unit_weight, now, start_at);
+            let (previous, mut resource) = self.load_settled(key, resource_type, unit_weight, now, start_at);
             if !crate::resources::is_unlimited(resource.production.output_amount_left) {
                 resource.production.output_amount_left += output;
             }
-            self.commit_resource(key, resource_type, resource);
+            self.commit_resource(key, resource_type, previous, resource);
         }
         fn start_production(
             ref self: ComponentState<TContractState>,
@@ -263,7 +272,7 @@ pub mod ResourceState {
             start_at: u32,
         ) {
             assert_production(resource_type);
-            let mut resource = self.load_settled(key, resource_type, unit_weight, now, start_at);
+            let (previous, mut resource) = self.load_settled(key, resource_type, unit_weight, now, start_at);
             resource.production.building_count += 1;
             resource.production.production_rate += rate;
             if crate::resources::is_unlimited(output) {
@@ -271,7 +280,7 @@ pub mod ResourceState {
             } else if !crate::resources::is_unlimited(resource.production.output_amount_left) {
                 resource.production.output_amount_left += output;
             }
-            self.commit_resource(key, resource_type, resource);
+            self.commit_resource(key, resource_type, previous, resource);
         }
         fn stop_production(
             ref self: ComponentState<TContractState>,
@@ -283,10 +292,10 @@ pub mod ResourceState {
             start_at: u32,
         ) {
             assert_production(resource_type);
-            let mut resource = self.load_settled(key, resource_type, unit_weight, now, start_at);
+            let (previous, mut resource) = self.load_settled(key, resource_type, unit_weight, now, start_at);
             resource.production.building_count -= 1;
             resource.production.production_rate -= rate;
-            self.commit_resource(key, resource_type, resource);
+            self.commit_resource(key, resource_type, previous, resource);
         }
         fn change_structure_capacity(
             ref self: ComponentState<TContractState>,
@@ -302,7 +311,8 @@ pub mod ResourceState {
             }
             // Storage only caps what settles, so the old limit must cap what accrued under it.
             self.settle_production(key, now, start_at);
-            let mut weight = self.data.resources.weights.read((key.game_id, key.entity_id));
+            let previous = self.data.resources.weights.read((key.game_id, key.entity_id));
+            let mut weight = previous;
             weight.capacity = if adding {
                 weight.capacity + amount
             } else {
@@ -311,7 +321,7 @@ pub mod ResourceState {
             if !adding {
                 assert!(weight.weight <= weight.capacity, "structure exceeds reduced capacity");
             }
-            self.write_weight(key, weight);
+            self.write_weight(key, previous, weight);
         }
         fn load_settled(
             ref self: ComponentState<TContractState>,
@@ -320,13 +330,21 @@ pub mod ResourceState {
             unit_weight: u128,
             now: u32,
             start_at: u32,
-        ) -> SettledResource {
+        ) -> (SettledResource, SettledResource) {
+            super::assert_exists(key);
+            crate::resources::assert_resource(resource_type);
+            let storage_key = (key.game_id, key.entity_id, resource_type);
             let mut resource = SettledResource {
-                balance: crate::logic::resources::balance(key, resource_type),
-                production: crate::logic::resources::production(key, resource_type),
+                balance: self.data.resources.balances.read(storage_key),
+                production: if has_production(resource_type) {
+                    self.data.resources.productions.read(storage_key)
+                } else {
+                    Default::default()
+                },
                 weight: self.data.resources.weights.read((key.game_id, key.entity_id)),
                 limit: crate::logic::resources::store_limit(key, resource_type),
             };
+            let previous = resource;
             let since = core::cmp::max(resource.production.last_settled_at, core::cmp::min(now, start_at));
             resource.production.last_settled_at = since;
             if since != now {
@@ -340,20 +358,30 @@ pub mod ResourceState {
                     now,
                 );
             }
-            resource
+            (previous, resource)
         }
 
         fn commit_resource(
-            ref self: ComponentState<TContractState>, key: ResourceKey, resource_type: u8, resource: SettledResource,
+            ref self: ComponentState<TContractState>,
+            key: ResourceKey,
+            resource_type: u8,
+            previous: SettledResource,
+            resource: SettledResource,
         ) {
-            self.write_balance(key, resource_type, resource.balance);
-            self.write_production(key, resource_type, resource.production);
-            self.write_weight(key, resource.weight);
+            self.write_balance(key, resource_type, previous.balance, resource.balance);
+            self.write_production(key, resource_type, previous.production, resource.production);
+            self.write_weight(key, previous.weight, resource.weight);
         }
         #[inline(never)]
-        fn write_balance(ref self: ComponentState<TContractState>, key: ResourceKey, resource_type: u8, balance: u128) {
+        fn write_balance(
+            ref self: ComponentState<TContractState>,
+            key: ResourceKey,
+            resource_type: u8,
+            previous: u128,
+            balance: u128,
+        ) {
             let storage_key = (key.game_id, key.entity_id, resource_type);
-            if self.data.resources.balances.read(storage_key) == balance {
+            if previous == balance {
                 return;
             }
             self.data.resources.balances.write(storage_key, balance);
@@ -366,7 +394,11 @@ pub mod ResourceState {
         }
         #[inline(never)]
         fn write_production(
-            ref self: ComponentState<TContractState>, key: ResourceKey, resource_type: u8, production: Production,
+            ref self: ComponentState<TContractState>,
+            key: ResourceKey,
+            resource_type: u8,
+            previous: Production,
+            production: Production,
         ) {
             if !has_production(resource_type) {
                 return;
@@ -377,7 +409,7 @@ pub mod ResourceState {
                 production
             };
             let storage_key = (key.game_id, key.entity_id, resource_type);
-            if self.data.resources.productions.read(storage_key) == production {
+            if previous == production {
                 return;
             }
             self.data.resources.productions.write(storage_key, production);
@@ -391,11 +423,17 @@ pub mod ResourceState {
             }
         }
         #[inline(never)]
-        fn write_weight(ref self: ComponentState<TContractState>, key: ResourceKey, weight: Weight) {
-            if self.data.resources.weights.read((key.game_id, key.entity_id)) == weight {
+        fn write_weight(ref self: ComponentState<TContractState>, key: ResourceKey, previous: Weight, weight: Weight) {
+            if previous == weight {
                 return;
             }
-            self.data.resources.weights.write((key.game_id, key.entity_id), weight);
+            let stored = self.data.resources.weights.entry((key.game_id, key.entity_id));
+            if previous.capacity != weight.capacity {
+                stored.capacity.write(weight.capacity);
+            }
+            if previous.weight != weight.weight {
+                stored.weight.write(weight.weight);
+            }
             self.emit_weight(key, weight);
         }
         fn emit_weight(ref self: ComponentState<TContractState>, key: ResourceKey, weight: Weight) {
