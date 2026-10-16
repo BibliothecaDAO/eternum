@@ -749,9 +749,7 @@ async function readKnightPresentation({ browser }) {
   await sleep(3000);
   return {
     stats: browser.read("window.getProceduralArmyProductionStats?.() ?? null"),
-    assets: browser.read(
-      "performance.getEntriesByType('resource').filter(e => e.name.includes('/models/characters/t1-knight-default/')).map(e => ({url:e.name, bytes:e.encodedBodySize}))",
-    ),
+    assets: browser.read("JSON.parse(window.__playtest.read()).models"),
   };
 }
 
@@ -759,6 +757,10 @@ function knightPresented(onMap) {
   return ({ seen, played }) => {
     const scene = onMap({ seen });
     if (scene.status !== "completed") return scene;
+    const unrelated = played.assets.filter(
+      ({ url }) => isProceduralUnitAsset(url) && !url.includes("/t1-knight-default/"),
+    );
+    if (unrelated.length) return failed("Knight view fetched unrelated unit families", played);
     const stats = played.stats;
     if (!stats) return failed("production character report missing");
     if (stats.loadState === "failed") return failed("Knight asset loading failed", played);
@@ -774,9 +776,50 @@ function knightPresented(onMap) {
   };
 }
 
+async function openEmptyMap({ browser, devTools }) {
+  const target = new URL(browser.run(["get", "url"]));
+  target.pathname = target.pathname.replace(/\/hex$/, "/map");
+  target.searchParams.set("col", String(Number(target.searchParams.get("col")) + 24));
+  target.searchParams.set("row", String(Number(target.searchParams.get("row")) + 24));
+  target.searchParams.set("boot", "direct");
+  target.searchParams.delete("resumeScene");
+  await devTools.send("Network.clearBrowserCache");
+  browser.run(["open", target.href]);
+  await waitFor(browser, (seen) => seen.playable && isIn(seen, "Map", "map"), PLAYABLE_WAIT_MS);
+  return readKnightPresentation({ browser });
+}
+
+function noOffscreenUnitDownloads({ seen, played }) {
+  const scene = inScene("map")({ seen });
+  if (scene.status !== "completed") return scene;
+  if (!played.stats || played.stats.visibleArmyCount !== 0)
+    return failed("expected a map without visible Knights", played);
+  const families = played.assets.filter(({ url }) => isProceduralUnitAsset(url));
+  return families.length === 0 ? completed(played) : failed("off-screen unit families were fetched", played);
+}
+
+function noHiddenUnitDownloads({ seen, played }) {
+  const scene = inScene("hex")({ seen });
+  if (scene.status !== "completed") return scene;
+  const families = played.assets.filter(({ url }) => isProceduralUnitAsset(url));
+  return families.length === 0 ? completed(played) : failed("hidden map fetched unit families", played);
+}
+
+function isProceduralUnitAsset(url) {
+  return url.startsWith("/models/characters/") || url.startsWith("/models/boats/");
+}
+
 /** The step lists a run can play, by name, each with its game; a run plays its role's list unless it names another. */
 export const STEP_SETS = {
   spectator: { game: FRONTIER, steps: SPECTATOR_STEPS },
+  "unit-assets-spectator": {
+    game: FRONTIER,
+    steps: [
+      { name: "no-knight-realm", play: readKnightPresentation, settleMs: 0, verify: noHiddenUnitDownloads },
+      ...knightSteps({ opening: [FRONTIER_MAP.opening[1]], onMap: FRONTIER_MAP.onMap }),
+      { name: "no-knight-map", play: openEmptyMap, settleMs: 0, verify: noOffscreenUnitDownloads },
+    ],
+  },
   "knight-spectator": { game: FRONTIER, steps: knightSteps(FRONTIER_MAP) },
   "knight-blitz-spectator": { game: BLITZ, steps: knightSteps(BLITZ_MAP) },
   player: { game: FRONTIER, steps: PLAYER_STEPS },

@@ -1,3 +1,4 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { armyNumber, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { staminaFill } from "@/lib/army-stamina/segments";
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
@@ -2463,7 +2464,8 @@ export class ArmyManager {
     this.proceduralArmyPresentationBuffer.length = 0;
     this.desiredProceduralArmyEntityIds.clear();
 
-    if (this.contentLadder.armyModels) {
+    // Map-first boot prepares a hidden map before handing off to the requested scene.
+    if (this.contentLadder.armyModels && !useUIStore.getState().showBlankOverlay) {
       this.visibleArmies.forEach((army) => this.collectProceduralArmyPresentation(army, animationContext));
     }
     this.proceduralArmyCharacterLayer.sync(this.proceduralArmyPresentationBuffer, deltaTime);
@@ -2490,7 +2492,7 @@ export class ArmyManager {
     if (!presentation) {
       presentation = {
         category: army.category,
-        distanceToViewCenterSquared: animationContext?.cameraPosition?.distanceToSquared(instance.position),
+        distanceToCameraSquared: this.hexagonScene?.getCamera().position.distanceToSquared(instance.position),
         entityId,
         isNaval: isShipModel(modelType),
         isMoving: false,
@@ -2504,7 +2506,7 @@ export class ArmyManager {
 
     presentation.attachments = army.attachments;
     presentation.category = army.category;
-    presentation.distanceToViewCenterSquared = animationContext?.cameraPosition?.distanceToSquared(instance.position);
+    presentation.distanceToCameraSquared = this.hexagonScene?.getCamera().position.distanceToSquared(instance.position);
     presentation.isNaval = isShipModel(modelType);
     presentation.isMoving = this.armyModel.isEntityMoving(entityId);
     presentation.isSelected = this.selectedArmyForPath === army.entityId;

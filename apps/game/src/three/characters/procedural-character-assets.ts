@@ -11,7 +11,7 @@ import {
 } from "./procedural-character-appearance";
 import type { ProceduralCharacterRenderDetail, ProceduralCharacterTier } from "./procedural-character-config";
 import { loadT1KnightDefaultCharacterAssetTemplate } from "./t1-knight-default-character-assets";
-import { loadQuaterniusCharacterAssetTemplates } from "./quaternius-character-assets";
+import { loadQuaterniusCharacterAssetTemplate } from "./quaternius-character-assets";
 import { disposeSkinnedSceneTemplates, instantiateSkinnedScene } from "./skinned-asset-resources";
 
 export interface ProceduralCharacterAssetDefinition {
@@ -70,10 +70,17 @@ export class ProceduralCharacterLibrary {
     if (this.disposed) throw new Error("Cannot prepare a disposed character library");
     if (this.isReady(config)) return;
     const id = resolveProceduralCharacterAppearanceAssetId(config.appearanceId, config.tier, config.renderDetail);
-    if (config.appearanceId !== "t1-knight-default") throw new Error(`Missing character template ${id}`);
+    await this.prepareTemplate(id, config.renderDetail);
+  }
+
+  private async prepareTemplate(
+    id: ProceduralCharacterAssetId,
+    detail: ProceduralCharacterRenderDetail,
+  ): Promise<void> {
+    if (this.templates.has(id)) return;
     let pending = this.pending.get(id);
     if (!pending) {
-      pending = loadT1KnightDefaultCharacterAssetTemplate(config.renderDetail)
+      pending = this.loadTemplate(id, detail)
         .then((template) => {
           if (this.disposed) {
             disposeSkinnedSceneTemplates([template.gltf.scene]);
@@ -85,6 +92,20 @@ export class ProceduralCharacterLibrary {
       this.pending.set(id, pending);
     }
     await pending;
+  }
+
+  private async loadTemplate(
+    id: ProceduralCharacterAssetId,
+    detail: ProceduralCharacterRenderDetail,
+  ): Promise<LoadedProceduralCharacterAssetTemplate> {
+    if (id === "t1-knight-default-near" || id === "t1-knight-default-mid") {
+      return loadT1KnightDefaultCharacterAssetTemplate(detail);
+    }
+    if (id !== "base") {
+      await this.prepareTemplate("base", detail);
+      if (this.disposed) throw new Error("Character library closed during loading");
+    }
+    return loadQuaterniusCharacterAssetTemplate(id, this.templates.get("base"));
   }
 
   public instantiate(
@@ -122,5 +143,5 @@ export class ProceduralCharacterLibrary {
 }
 
 export async function loadProceduralCharacterLibrary(): Promise<ProceduralCharacterLibrary> {
-  return new ProceduralCharacterLibrary(await loadQuaterniusCharacterAssetTemplates());
+  return new ProceduralCharacterLibrary([]);
 }

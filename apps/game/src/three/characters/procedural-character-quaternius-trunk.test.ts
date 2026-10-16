@@ -9,7 +9,7 @@ import { ProceduralCharacterAvatar } from "./procedural-character-avatar";
 import { createDefaultProceduralCharacterConfig } from "./procedural-character-config";
 import { resolveProceduralCharacterPose, type ProceduralCharacterPose } from "./procedural-character-pose";
 import { applyCharacterRigLimbLengths, resolveCharacterRig } from "./procedural-character-rig";
-import { loadQuaterniusCharacterAssetTemplates } from "./quaternius-character-assets";
+import { loadQuaterniusCharacterAssetTemplates } from "../../../test-support/quaternius-templates";
 
 /**
  * The trunk of a `modular-fantasy` figure as the controller poses it, per pose `<mode>-<seconds>-<base|melee>`: pelvis,

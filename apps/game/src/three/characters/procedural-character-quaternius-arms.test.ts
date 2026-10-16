@@ -9,7 +9,7 @@ import { ProceduralCharacterAvatar } from "./procedural-character-avatar";
 import { createDefaultProceduralCharacterConfig } from "./procedural-character-config";
 import { resolveProceduralCharacterPose } from "./procedural-character-pose";
 import { applyCharacterRigLimbLengths, resolveCharacterRig } from "./procedural-character-rig";
-import { loadQuaterniusCharacterAssetTemplates } from "./quaternius-character-assets";
+import { loadQuaterniusCharacterAssetTemplates } from "../../../test-support/quaternius-templates";
 
 const ARM_BONES = ["upperarm_l", "lowerarm_l", "upperarm_r", "lowerarm_r"] as const;
 

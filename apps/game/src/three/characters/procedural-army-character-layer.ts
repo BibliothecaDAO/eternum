@@ -40,7 +40,7 @@ export interface ProceduralArmyCharacterPresentation {
   category: TroopType;
   attachments?: readonly CosmeticAttachmentTemplate[];
   entityId: number;
-  distanceToViewCenterSquared?: number;
+  distanceToCameraSquared?: number;
   isNaval: boolean;
   isMoving: boolean;
   isSelected?: boolean;
@@ -797,8 +797,8 @@ function compareCollisionPriority(
   const movingDifference = Number(right.isMoving) - Number(left.isMoving);
   if (movingDifference !== 0) return movingDifference;
   const distanceDifference =
-    (left.distanceToViewCenterSquared ?? Number.POSITIVE_INFINITY) -
-    (right.distanceToViewCenterSquared ?? Number.POSITIVE_INFINITY);
+    (left.distanceToCameraSquared ?? Number.POSITIVE_INFINITY) -
+    (right.distanceToCameraSquared ?? Number.POSITIVE_INFINITY);
   if (distanceDifference !== 0) return distanceDifference;
   return left.entityId - right.entityId;
 }
@@ -894,9 +894,9 @@ function resolveUnitConfig(
 
 /** Near detail is reserved for close inspection; gameplay-distance armies use the mid mesh. */
 function resolveArmyRenderDetail(
-  presentation: Pick<ProceduralArmyCharacterPresentation, "distanceToViewCenterSquared">,
+  presentation: Pick<ProceduralArmyCharacterPresentation, "distanceToCameraSquared">,
 ): "hero" | "crowd" {
-  return (presentation.distanceToViewCenterSquared ?? Infinity) <= 12 * 12 ? "hero" : "crowd";
+  return (presentation.distanceToCameraSquared ?? Infinity) <= 12 * 12 ? "hero" : "crowd";
 }
 
 function resolveConfigSignature(presentation: ProceduralArmyCharacterPresentation): string {

@@ -14,6 +14,7 @@
     inputs: [],
     loafs: [],
     messages: [],
+    models: [],
     steps: [],
   };
   let drawsThisFrame = 0;
@@ -66,6 +67,11 @@
       // An entry type this browser does not ship is reported as absent, not as zero.
     }
   };
+  observe("resource", {}, (entry) => {
+    if (new URL(entry.name).pathname.startsWith("/models/")) {
+      push(state.models, { url: new URL(entry.name).pathname, bytes: entry.encodedBodySize, start: entry.startTime });
+    }
+  });
   observe("long-animation-frame", {}, (entry) =>
     push(state.loafs, {
       blockingMs: entry.blockingDuration,
@@ -188,6 +194,7 @@
         inputs: after(state.inputs, (entry) => entry.t),
         loafs: after(state.loafs, (entry) => entry.start),
         messages: after(state.messages, (entry) => entry.arrived),
+        models: state.models,
         now: performance.now(),
         steps: after(state.steps, (entry) => entry.t),
         timeOrigin: performance.timeOrigin,

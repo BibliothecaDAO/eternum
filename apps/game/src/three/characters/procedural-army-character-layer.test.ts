@@ -5,7 +5,8 @@ import { ProceduralArmyCharacterLayer } from "./procedural-army-character-layer"
 import { applyProceduralUnitConfigPatch, createDefaultProceduralUnitConfig } from "./procedural-unit-config";
 import type { ProceduralUnitConfig } from "./procedural-unit-config";
 
-const { runtime } = vi.hoisted(() => ({
+const { runtime, createRuntime } = vi.hoisted(() => ({
+  createRuntime: vi.fn(),
   runtime: {
     createActor: vi.fn(),
     updateActorConfig: vi.fn(),
@@ -19,11 +20,54 @@ const { runtime } = vi.hoisted(() => ({
 vi.mock("@/three/characters", () => ({
   applyProceduralUnitConfigPatch,
   createDefaultProceduralUnitConfig,
-  ProceduralUnitRuntime: { create: async () => runtime },
+  ProceduralUnitRuntime: {
+    create: async () => {
+      await createRuntime();
+      return runtime;
+    },
+  },
 }));
 afterEach(() => vi.clearAllMocks());
 
 describe("production Knight presentation", () => {
+  it("does not prepare a family when its unit leaves before runtime startup completes", async () => {
+    let finish!: () => void;
+    createRuntime.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const layer = new ProceduralArmyCharacterLayer(new Scene());
+    try {
+      layer.sync([], 0);
+      expect(createRuntime).not.toHaveBeenCalled();
+      layer.sync(
+        [
+          {
+            entityId: 42,
+            category: TroopType.Knight,
+            tier: TroopTier.T1,
+            isNaval: false,
+            isMoving: false,
+            primaryColor: "#ffffff",
+            position: new Vector3(),
+            distanceToCameraSquared: 400,
+          },
+        ],
+        0,
+      );
+      await vi.waitFor(() => expect(createRuntime).toHaveBeenCalledOnce());
+      layer.sync([], 0);
+      finish();
+      await vi.waitFor(() => expect(layer.getStats().loadState).toBe("ready"));
+      expect(runtime.prepareAssets).not.toHaveBeenCalled();
+      expect(runtime.createActor).not.toHaveBeenCalled();
+    } finally {
+      layer.dispose();
+    }
+  });
+
   it("prepares only the visible LOD, reaches reconciliation after leaving during load, and switches at close range", async () => {
     const loaded = new Set<string>();
     let finish!: () => void;
@@ -58,7 +102,7 @@ describe("production Knight presentation", () => {
       isMoving: false,
       primaryColor: "#ffffff",
       position: new Vector3(),
-      distanceToViewCenterSquared: 400,
+      distanceToCameraSquared: 400,
     };
     try {
       layer.sync([army], 0);
@@ -77,13 +121,13 @@ describe("production Knight presentation", () => {
       expect(runtime.createActor).toHaveBeenCalledWith(
         expect.objectContaining({ humanoid: expect.objectContaining({ renderDetail: "crowd" }) }),
       );
-      layer.sync([{ ...army, distanceToViewCenterSquared: 100 }], 0);
+      layer.sync([{ ...army, distanceToCameraSquared: 100 }], 0);
       expect(runtime.prepareAssets).toHaveBeenCalledTimes(2);
       expect(runtime.prepareAssets.mock.calls[1][0].humanoid.renderDetail).toBe("hero");
       expect(runtime.updateActorConfig).not.toHaveBeenCalled();
       finish();
       await new Promise((resolve) => setTimeout(resolve, 0));
-      layer.sync([{ ...army, distanceToViewCenterSquared: 100 }], 0);
+      layer.sync([{ ...army, distanceToCameraSquared: 100 }], 0);
       expect(runtime.updateActorConfig).toHaveBeenCalledWith(
         actor,
         expect.objectContaining({ humanoid: expect.objectContaining({ renderDetail: "hero" }) }),

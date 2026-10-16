@@ -319,6 +319,12 @@ Live proof: `pnpm --dir apps/game playtest --port 4195 --steps knight-blitz-spec
 Blitz as a spectator and checks visible Knight representations and mesh budgets before and after zooming close.
 `--steps knight-spectator` exercises Frontier. A view without a T1 Knight is reported blocked, never passed.
 
+Unit download proof: `pnpm --dir apps/game playtest --port 4195 --steps unit-assets-spectator --iterations 2` opens
+Frontier's realm view first (no character or mount downloads behind the doorway), then clicks Map and zooms close. The
+transcript records every model URL and encoded byte count throughout the run. The Knight checks reject unrelated unit
+families and verify the drawn LOD's mesh counts. Family templates load on demand and are reused when returning to a
+previously visited view; gameplay distance uses the actual camera position.
+
 ## Realm level icons
 
 `/lab/kit/icons#realm-levels` compares all four realm levels with the current GLB renders and the previous paintings.

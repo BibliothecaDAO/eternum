@@ -143,7 +143,7 @@ export class TerrainLabInteraction {
               isNaval: false,
               isMoving: false,
               primaryColor: "#4268b5",
-              distanceToViewCenterSquared: this.camera.position.distanceToSquared(this.armyPosition),
+              distanceToCameraSquared: this.camera.position.distanceToSquared(this.armyPosition),
               position: this.armyPosition,
               rotation: this.armyRotation.set(0, this.spinAngle, 0),
             },
