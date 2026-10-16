@@ -110,6 +110,7 @@ export const HoldingPicker = ({
               key={id}
               ref={id === firstChosenId ? chosenRow : undefined}
               type="button"
+              value={id}
               aria-pressed={picked}
               onClick={() => onPick(id)}
               className={cn(

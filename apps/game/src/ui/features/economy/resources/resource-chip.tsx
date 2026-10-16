@@ -21,7 +21,14 @@ import {
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
-import { ID, RelicEffect, RelicRecipientType, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import {
+  findResourceById,
+  ID,
+  RelicEffect,
+  RelicRecipientType,
+  ResourcesIds,
+  StructureType,
+} from "@bibliothecadao/types";
 import { useCallback, useMemo } from "react";
 
 export const ResourceChip = ({
@@ -60,6 +67,7 @@ export const ResourceChip = ({
 
   const now = useCurrentDefaultTick();
   const resourceEnumId = resourceId as ResourcesIds;
+  const resourceName = findResourceById(resourceEnumId)?.trait ?? "resource";
 
   // Undefined when this client holds no resource owner for the structure: the chip then shows nothing.
   const production = useMemo(
@@ -257,7 +265,7 @@ export const ResourceChip = ({
         <button
           data-tooltip-anchor
           type="button"
-          aria-label="Transfer"
+          aria-label={`Transfer ${resourceName}`}
           title="Transfer"
           onClick={(event) => {
             event.stopPropagation();
@@ -277,7 +285,7 @@ export const ResourceChip = ({
             <button
               data-tooltip-anchor
               type="button"
-              aria-label="Burn"
+              aria-label={`Burn ${resourceName}`}
               title="Burn"
               onClick={(event) => {
                 event.stopPropagation();

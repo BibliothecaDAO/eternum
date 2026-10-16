@@ -59,6 +59,35 @@ const amountText = (value: number) => value.toLocaleString("en-US");
 /** The donkeys' road time: the travel helper counts whole minutes. */
 const travelText = (minutes: number) => (minutes < 1 ? "under a minute" : `${minutes} min`);
 
+/**
+ * What the window is about to send: its ends, the amounts the player set (null while the owner's prefill stands), and
+ * a revision every change bumps, so a send's outcome can tell whether the draft it was sent from is still the one shown.
+ */
+interface Draft {
+  ends: TransferEnds;
+  edited: Plans | null;
+  revision: number;
+}
+
+const revised = (draft: Draft, change: Partial<Omit<Draft, "revision">>): Draft => ({
+  ...draft,
+  ...change,
+  revision: draft.revision + 1,
+});
+
+/**
+ * A send's outcome on the draft it was sent from: what landed leaves, and the refused shipments stay with exactly their
+ * goods. A draft the player has changed since is theirs: the outcome leaves it as it is (its notices still say what
+ * landed).
+ */
+const settled = (draft: Draft, sentRevision: number, refused: Shipment[], goods: Good[]): Draft =>
+  draft.revision !== sentRevision
+    ? draft
+    : revised(draft, {
+        ends: { ...draft.ends, destinationIds: refused.map((shipment) => shipment.destinationId) },
+        edited: plansFor(refused, goods),
+      });
+
 /** The ends after a pick: a source moves off the destinations; a destination toggles. */
 const pickSource = (ends: TransferEnds, id: number): TransferEnds => ({
   sourceId: id,
@@ -95,7 +124,10 @@ const TransferSurface = ({ initial }: { initial: TransferEnds }) => {
  * phone's sheet, which scrolls. Logistics' other views are a click away.
  */
 const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
-  const [ends, setEnds] = useState(initial);
+  const [draft, setDraft] = useState<Draft>({ ends: initial, edited: null, revision: 0 });
+  const { ends } = draft;
+  // A new source, or swapped ends, start their own amounts.
+  const change = (next: Partial<Omit<Draft, "revision">>) => setDraft((current) => revised(current, next));
   return (
     <div className="flex flex-col gap-2 p-3 lg:h-full lg:min-h-0">
       <LogisticsLinks />
@@ -104,7 +136,7 @@ const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
           title="Send from"
           chosen={ends.sourceId === null ? [] : [ends.sourceId]}
           otherEnd={ends.destinationIds}
-          onPick={(id) => setEnds(pickSource(ends, id))}
+          onPick={(id) => change({ ends: pickSource(ends, id), edited: null })}
           note={(id) => <DonkeysNote id={id} />}
         />
         <button
@@ -112,7 +144,7 @@ const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
           aria-label="Swap from and to"
           title="Swap from and to"
           disabled={ends.destinationIds.length !== 1}
-          onClick={() => setEnds(swapEnds(ends))}
+          onClick={() => change({ ends: swapEnds(ends), edited: null })}
           className="self-center rounded border border-gold/40 px-2 py-1 text-gold disabled:opacity-40 max-lg:rotate-90"
         >
           ⇄
@@ -121,7 +153,7 @@ const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
           title="Send to"
           chosen={ends.destinationIds}
           otherEnd={ends.sourceId === null ? [] : [ends.sourceId]}
-          onPick={(id) => setEnds(toggleDestination(ends, id))}
+          onPick={(id) => change({ ends: toggleDestination(ends, id) })}
           note={(id) => <RoadNote sourceId={ends.sourceId} id={id} />}
         />
         <div className="flex min-h-0 flex-col gap-3">
@@ -130,8 +162,13 @@ const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
               key={ends.sourceId}
               sourceId={ends.sourceId}
               destinationIds={ends.destinationIds}
+              edited={draft.edited}
+              revision={draft.revision}
               focus={initial.resource}
-              onLeft={(destinationIds) => setEnds({ ...ends, destinationIds })}
+              onPlans={(edited) => change({ edited })}
+              onSettled={(sentRevision, refused, goods) =>
+                setDraft((current) => settled(current, sentRevision, refused, goods))
+              }
             />
           )}
         </div>
@@ -181,23 +218,28 @@ const RoadNote = ({ sourceId, id }: { sourceId: number | null; id: number }) => 
 
 /**
  * What the source can send: one total per good, shared by the destinations (the owner's prefill until the player
- * edits), the road, and the one Send. Each destination's shipment lands or fails on its own: those that landed leave
- * the window, and those refused stay chosen with their goods, so Send offers only them again.
+ * edits), the road, and the one Send. Each destination's shipment lands or fails on its own, and the outcome settles
+ * the draft it was sent from (`settled`).
  */
 const Goods = ({
   sourceId,
   destinationIds,
+  edited,
+  revision,
   focus,
-  onLeft,
+  onPlans,
+  onSettled,
 }: {
   sourceId: number;
   destinationIds: number[];
+  edited: Plans | null;
+  revision: number;
   focus: number | undefined;
-  /** The destinations still to send to after a Send: the refused ones. */
-  onLeft: (destinationIds: number[]) => void;
+  onPlans: (plans: Plans) => void;
+  /** A send's outcome, with the draft revision it was sent from and the shipments refused. */
+  onSettled: (sentRevision: number, refused: Shipment[], goods: Good[]) => void;
 }) => {
   const sides = useTransferSides(sourceId, destinationIds);
-  const [edited, setEdited] = useState<Plans | null>(null);
   const [repeat, setRepeat] = useState(false);
   const [interval, setInterval] = useState(5);
   const send = useSend();
@@ -210,11 +252,11 @@ const Goods = ({
   const short = donkeys > sides.donkeysHave;
 
   const sendNow = async () => {
+    const sentRevision = revision;
     const outcomes = await send.run({ sourceId, destinationIds, sides, plans, interval: repeat ? interval : null });
     if (outcomes.length === 0) return;
     const refused = outcomes.flatMap((outcome) => (outcome.status === "refused" ? [outcome.shipment] : []));
-    setEdited(plansFor(refused, sides.goods));
-    onLeft(refused.map((shipment) => shipment.destinationId));
+    onSettled(sentRevision, refused, sides.goods);
   };
 
   return (
@@ -230,7 +272,7 @@ const Goods = ({
         destinationIds={destinationIds}
         destinationNames={sides.destinationNames}
         focus={focus}
-        onPlan={(resource, plan) => setEdited(new Map(plans).set(resource, plan))}
+        onPlan={(resource, plan) => onPlans(new Map(plans).set(resource, plan))}
       />
       <button
         type="button"
@@ -352,7 +394,7 @@ const tellOutcomes = (outcomes: ShipmentOutcome[]) => {
   for (const outcome of outcomes) {
     const to = outcome.shipment.destinationName;
     if (outcome.status === "refused")
-      toast.failed(outcome.error, "The game refused it.", { description: `${to} stays chosen: Send tries it again.` });
+      toast.failed(outcome.error, "The game refused it.", { description: `Nothing reached ${to}.` });
     if (outcome.status === "unknown")
       toast.warning(`No answer for ${to} yet: it may still arrive. Check Arrivals before sending it again.`);
     if (outcome.status === "busy") toast.warning(`A transfer to ${to} is still on its way to the chain.`);

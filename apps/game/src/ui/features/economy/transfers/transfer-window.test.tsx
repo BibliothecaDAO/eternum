@@ -18,6 +18,8 @@ const world = vi.hoisted(() => ({
   scheduled: vi.fn(),
   notices: { success: vi.fn(), warning: vi.fn(), failed: vi.fn() },
   sides: { wheat: 100, donkeys: 10, listeners: new Set<() => void>() },
+  /** While set, the game's answers wait for it: a shipment the player can act around before its outcome. */
+  hold: null as Promise<void> | null,
 }));
 
 const A = 22;
@@ -51,6 +53,7 @@ vi.mock("@/hooks/context/game-context", () => ({
 vi.mock("@/sync/active-game-client", () => ({
   requireActiveGameClient: () => ({
     waitForAction: async (hash: string) => {
+      if (world.hold) await world.hold;
       const answer = world.answers.get(BigInt(hash)) ?? "applied";
       if (answer === "unknown") throw new Error("No answer from the shard yet; the action may still apply.");
       return { hash, block: 1, status: answer === "rejected" ? "REJECTED" : "SUCCEEDED", revertReason: "No room" };
@@ -142,6 +145,7 @@ beforeEach(() => {
   Object.values(world.notices).forEach((notice) => notice.mockClear());
   world.sides.wheat = 100;
   world.sides.donkeys = 10;
+  world.hold = null;
   host = document.createElement("div");
   root = createRoot(host);
 });
@@ -249,7 +253,7 @@ describe("the transfer window's send", () => {
     await send();
     expect(wheatSent()).toEqual([[A, 5]]);
     expect(world.notices.failed).toHaveBeenCalledWith(expect.any(Error), expect.any(String), {
-      description: "Beta stays chosen: Send tries it again.",
+      description: "Nothing reached Beta.",
     });
     // Beta stays chosen alone, with its own 5; Alpha has left the window.
     expect(field("Wheat to Alpha")).toBeNull();
@@ -299,5 +303,65 @@ describe("the transfer window's send", () => {
         resourceConfigs: [{ resourceId: ResourcesIds.Wheat, amount: 5 }],
       }),
     );
+  });
+});
+
+describe("a shipment's outcome and the draft shown meanwhile", () => {
+  /** Holds every answer until the returned release is called. */
+  const holdAnswers = () => {
+    let release!: () => void;
+    world.hold = new Promise<void>((resolve) => (release = resolve));
+    return async () => act(async () => release());
+  };
+  const pickSource = async (id: number) =>
+    act(async () => host.querySelector<HTMLButtonElement>(`[data-pick="Send from:${id}"]`)!.click());
+
+  it("leaves a newly chosen source and its amounts as the player set them", async () => {
+    const release = holdAnswers();
+    await open([A]);
+    await type("Wheat: total to send", "10");
+    await send();
+    expect(sendButton().disabled).toBe(true);
+    await pickSource(B);
+    await type("Wheat: total to send", "7");
+    await release();
+    expect(field("Wheat: total to send")!.value).toBe("7");
+    expect(sendButton().textContent).toMatch(/^Send 1 good/);
+    expect(host.querySelector('[data-pick="Send to:33"]')).toBeNull();
+    expect(wheatSent()).toEqual([[A, 10]]);
+  });
+
+  it("leaves amounts and destinations changed while waiting as they are, even when a shipment is refused", async () => {
+    world.answers.set(BigInt(B), "rejected");
+    const release = holdAnswers();
+    await open();
+    await type("Wheat: total to send", "10");
+    await send();
+    await type("Wheat: total to send", "4");
+    await toggle(B);
+    await release();
+    expect(field("Wheat: total to send")!.value).toBe("4");
+    expect(field("Wheat to Beta")).toBeNull();
+    expect(sendButton().textContent).toMatch(/^Send 1 good · /);
+    expect(world.notices.failed).toHaveBeenCalledWith(expect.any(Error), expect.any(String), {
+      description: "Nothing reached Beta.",
+    });
+  });
+
+  it("keeps a late refusal chosen with its goods when the player changed nothing", async () => {
+    world.answers.set(BigInt(B), "rejected");
+    const release = holdAnswers();
+    await open();
+    await type("Wheat: total to send", "10");
+    await send();
+    await release();
+    expect(field("Wheat to Alpha")).toBeNull();
+    expect(field("Wheat: total to send")!.value).toBe("5");
+    world.answers.set(BigInt(B), "applied");
+    await send();
+    expect(wheatSent()).toEqual([
+      [A, 5],
+      [B, 5],
+    ]);
   });
 });
