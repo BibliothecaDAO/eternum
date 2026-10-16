@@ -341,14 +341,17 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
     [dispatchCameraMove],
   );
 
+  // Follow the camera by its hex, not its object: a new object for the same hex must not pull back a dragged view.
+  const cameraCol = cameraTargetHex?.col;
+  const cameraRow = cameraTargetHex?.row;
   useEffect(() => {
-    if (!cameraTargetHex || isDraggingRef.current) return;
-    const col = cameraTargetHex.col - FELT_CENTER();
-    const row = cameraTargetHex.row - FELT_CENTER();
+    if (cameraCol === undefined || cameraRow === undefined || isDraggingRef.current) return;
+    const col = cameraCol - FELT_CENTER();
+    const row = cameraRow - FELT_CENTER();
     const centerPixel = offsetToPixel(col, row);
     followTargetRef.current = centerPixel;
     startFollowAnimation();
-  }, [cameraTargetHex, startFollowAnimation]);
+  }, [cameraCol, cameraRow, startFollowAnimation]);
 
   useEffect(() => {
     const svg = svgRef.current;
