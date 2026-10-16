@@ -444,7 +444,7 @@ const BLITZ_BURST_STEPS = [
     name: "burst",
     play: orderEveryArmyAtOnce,
     settleMs: 15_000,
-    verify: ({ played, actionLatency }) => judgeBurst(played, actionLatency.armyMovement),
+    verify: ({ played, actionLatency }) => judgeBurst(played, actionLatency),
   },
 ];
 

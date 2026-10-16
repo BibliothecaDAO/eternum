@@ -631,38 +631,47 @@ describe("assertInTargetGame", () => {
 });
 
 describe("judgeBurst", () => {
-  const trace = (sequence, entityId, phase, wallTimeMs) => ({ sequence, entityId, phase, wallTimeMs });
+  const trace = (sequence, entityId, phase, wallTimeMs, details) => ({
+    sequence,
+    entityId,
+    phase,
+    wallTimeMs,
+    details,
+  });
   const played = { startedAt: 1_000, targets: [{ army: 7 }, { army: 8 }], burst: [{ army: 7 }, { army: 8 }] };
   const armyMovement = [
-    trace(1, 7, "move_requested", 500),
-    trace(2, 7, "move_requested", 1_100),
-    trace(3, 8, "move_requested", 1_250),
+    trace(1, 7, "move_requested", 500, { actionType: "move" }),
+    trace(2, 7, "move_requested", 1_100, { actionType: "move" }),
+    trace(3, 8, "move_requested", 1_250, { actionType: "explore" }),
     trace(4, 7, "tx_response_received", 1_220),
     trace(5, 7, "tx_confirmed", 1_300),
     trace(6, 8, "tx_response_received", 1_370),
     trace(7, 7, "movement_started", 1_310),
     trace(8, 8, "tx_confirmed", 1_460),
-    trace(9, 8, "movement_started", 1_475),
+  ];
+  // An explore may leave its army where it stood: it shows as its reveal rendered.
+  const clientActions = [
+    { operation: "explore_reveal", entityId: 8, phases: { click: 400, rendered: 600 } },
+    { operation: "explore_reveal", entityId: 8, phases: { click: 1_250, rendered: 1_490 } },
   ];
 
-  it("times each army's order from its right-click in the burst to its answer, Herald's status and its move", () => {
-    expect(judgeBurst(played, armyMovement)).toEqual({
+  it("times each order from its right-click to its answer, Herald's status and its move or its reveal on screen", () => {
+    expect(judgeBurst(played, { armyMovement, clientActions })).toEqual({
       status: "completed",
       spanMs: 150,
       orders: [
-        { army: 7, requestedAt: 1_100, answeredMs: 120, confirmedMs: 200, movingMs: 210 },
-        { army: 8, requestedAt: 1_250, answeredMs: 120, confirmedMs: 210, movingMs: 225 },
+        { army: 7, order: "move", requestedAt: 1_100, answeredMs: 120, confirmedMs: 200, visibleMs: 210 },
+        { army: 8, order: "explore", requestedAt: 1_250, answeredMs: 120, confirmedMs: 210, visibleMs: 240 },
       ],
     });
   });
 
-  it("fails a burst whose order never moved its army, and blocks one with a single army", () => {
-    const stalled = armyMovement.filter(({ sequence }) => sequence !== 9);
-    expect(judgeBurst(played, stalled)).toMatchObject({
+  it("fails a burst whose explore never rendered its reveal, and blocks one with a single army", () => {
+    expect(judgeBurst(played, { armyMovement, clientActions: clientActions.slice(0, 1) })).toMatchObject({
       status: "failed",
-      reason: "army 8's order never moved it on screen",
+      reason: "army 8's order never showed on screen",
     });
-    expect(judgeBurst({ ...played, targets: [{ army: 7 }] }, armyMovement)).toMatchObject({
+    expect(judgeBurst({ ...played, targets: [{ army: 7 }] }, { armyMovement, clientActions })).toMatchObject({
       status: "blocked",
       reason: "1 armies offered an order: a burst needs two",
     });
