@@ -106,4 +106,5 @@ preserves the classic layout. Phone uses Map / Holdings. Choose 3, 25 or 220 str
 grouping and command placement. Drag the terrain or use the minimap to move the camera. The selected layout keeps the
 camera and lighting. `capture=1` removes review controls for full-frame evidence. See
 [the HUD feature map](../ui/features/debug/kit-lab/hud-redesign/README.md) for all controls and the retained browser
-proof (`pnpm --dir apps/game prepare:hud-proof`).
+proof (`pnpm --dir apps/game prepare:hud-proof`; add `--watch <chain-id>:<game-id>` for live signed-out desktop/phone
+checks).

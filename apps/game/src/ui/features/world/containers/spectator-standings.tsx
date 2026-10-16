@@ -12,29 +12,18 @@ import { displayPlayerName } from "@bibliothecadao/eternum";
 import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
-import { HUD_COLUMN_TOP, HUD_COLUMN_WIDTH } from "./hud-layout";
 import { advanceStandingsTick, selectSpectatorStandings, type StandingsTick } from "./spectator-standings-model";
 
-/** The desktop left column for a spectator: the standings table in its own fixed frame. */
+/** Standings fit the desktop rail or phone Holdings panel that hosts them. */
 export function SpectatorStandings() {
   return (
     <section
       aria-label="Spectator standings"
-      className={cn(
-        "fixed left-3 z-20 pointer-events-auto rounded-xl overflow-hidden",
-        HUD_COLUMN_TOP,
-        HUD_COLUMN_WIDTH,
-        OVERLAY_SURFACE_BASE,
-      )}
+      className={cn("w-full pointer-events-auto rounded-xl overflow-hidden", OVERLAY_SURFACE_BASE)}
     >
-      <SpectatorStandingsBody />
+      <StandingsRows key={configManager.getActiveGameId()} />
     </section>
   );
-}
-
-/** The standings table without a frame, so the desktop column and the compact sheet host the same rows. */
-function SpectatorStandingsBody() {
-  return <StandingsRows key={configManager.getActiveGameId()} />;
 }
 
 function StandingsRows() {

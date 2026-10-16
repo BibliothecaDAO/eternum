@@ -1,4 +1,8 @@
 async (page) => {
+  /* HUD_WATCH_URL */
+  /* HUD_LIVE_SAMPLE */
+  if (WATCH_URL) return watchLive(page);
+
   const origin = "https://127.0.0.1:4192";
   const out = `/home/djizus/projects/eternum-lanes/evidence/hud/proof-${new Date().toISOString().replaceAll(":", "-")}`;
   /* HUD_SAMPLER */
@@ -231,9 +235,121 @@ async (page) => {
       records,
       errors,
       reference: { current: coveredPixels(REFERENCE_FRAMES.current), warroom: coveredPixels(REFERENCE_FRAMES.warroom) },
-      liveGame: "Pending fresh-chain rollout",
+      liveGame: "Not exercised by fixtures; use prepare:hud-proof --watch <chain>:<game>",
     };
   } finally {
     await page.goto("about:blank");
+  }
+
+  async function watchLive(page) {
+    const out = `/home/djizus/projects/eternum-lanes/evidence/hud/live-${new Date().toISOString().replaceAll(":", "-")}`;
+    const context = await page.context().browser().newContext({ ignoreHTTPSErrors: true });
+    const live = await context.newPage();
+    const errors = [],
+      records = [],
+      failures = [],
+      connections = new Set();
+    let orderSends = 0;
+    live.on("pageerror", (error) => errors.push(error.message));
+    live.on("console", (message) => {
+      if (message.type() === "error") errors.push(message.text());
+    });
+    live.on("request", (request) => {
+      if (request.postData()?.includes("starknet_addInvokeTransaction")) orderSends += 1;
+      const url = new URL(request.url());
+      if (url.hostname.endsWith("dev-realms.party")) connections.add(url.origin);
+    });
+    const check = (ok, reason) => {
+      if (!ok) failures.push(reason);
+    };
+    async function capture(name) {
+      const reading = await live.evaluate(() => {
+        const hud = document.querySelector('[data-production-hud="ArenaHudView"]');
+        const box = (selector) => {
+          const element = document.querySelector(selector);
+          if (!element) return null;
+          const { x, y, width, height, bottom, right } = element.getBoundingClientRect();
+          return { x, y, width, height, bottom, right };
+        };
+        return {
+          url: location.href,
+          boot: document.documentElement.dataset.bootState,
+          hud: Boolean(hud),
+          identity: document.querySelector(".identity-chip")?.textContent,
+          text: hud?.textContent,
+          canvas: Boolean(document.querySelector("canvas")),
+          commands: hud?.querySelectorAll("[data-command]").length,
+          hexes: hud?.querySelectorAll("[data-terrain-hex]").length,
+          markers: [...(hud?.querySelectorAll("[data-marker]") ?? [])].map((marker) => ({
+            name: marker.getAttribute("data-marker"),
+            owner: marker.getAttribute("data-owner"),
+            value: marker.textContent,
+          })),
+          header: box('header[aria-label="Game controls"]'),
+          standings: box('[aria-label="Spectator standings"]'),
+          chat: box('.hud-chat-host button[aria-label="Chat"]'),
+          version: box('a[href="https://github.com/BibliothecaDAO/eternum"]'),
+          horizontalOverflow: document.documentElement.scrollWidth > innerWidth,
+        };
+      });
+      const sample = await live.evaluate(LIVE_SAMPLE);
+      await live.screenshot({ path: `${out}/${name}.png` });
+      records.push({ name, viewport: live.viewportSize(), reading, sample });
+      check(reading.identity === "Spectating", `${name}: signed-out spectator identity`);
+      check(reading.hud && reading.canvas && reading.hexes > 0, `${name}: native HUD/map not ready`);
+      check(reading.url.includes("spectate=true") && reading.commands === 0, `${name}: spectator command isolation`);
+      check(!reading.horizontalOverflow, `${name}: horizontal overflow`);
+      if (reading.chat && reading.version) {
+        const a = reading.chat,
+          b = reading.version;
+        check(!(a.x < b.right && b.x < a.right && a.y < b.bottom && b.y < a.bottom), `${name}: version overlaps Chat`);
+      }
+      if (name === "phone-holdings")
+        check(
+          Boolean(reading.standings && reading.header && reading.standings.y >= reading.header.bottom),
+          "Phone standings overlap the match header",
+        );
+    }
+    try {
+      for (const [device, width, height] of [
+        ["desktop", 1440, 900],
+        ["phone", 390, 844],
+      ]) {
+        await live.setViewportSize({ width, height });
+        await live.goto(WATCH_URL);
+        await live.locator('[data-production-hud="ArenaHudView"]').waitFor({ timeout: 60000 });
+        await live.locator("[data-terrain-hex]").first().waitFor({ timeout: 30000 });
+        await live.waitForTimeout(2000);
+        await capture(`${device}-map`);
+        await live.getByRole("button", { name: "Settings", exact: true }).click();
+        await live.getByRole("heading", { name: "Video & Graphics", exact: true }).waitFor();
+        await capture(`${device}-settings`);
+        await live.keyboard.press("Escape");
+        await live.getByRole("button", { name: "Log", exact: true }).click();
+        await live.locator('[aria-label="Event filters"]').waitFor();
+        await capture(`${device}-log`);
+        await live.keyboard.press("Escape");
+        if (device === "phone") {
+          await live.getByRole("button", { name: "Holdings", exact: true }).click();
+          await capture("phone-holdings");
+          await live.getByRole("button", { name: "Map", exact: true }).click();
+        }
+        await live.goto("about:blank");
+      }
+      check(errors.length === 0, "Browser errors occurred");
+      check(orderSends === 0, "Spectator sent an order");
+      return {
+        out,
+        watchUrl: WATCH_URL,
+        signedOutContext: true,
+        orderSends,
+        records,
+        connections: [...connections],
+        errors,
+        failures,
+      };
+    } finally {
+      await context.close();
+    }
   }
 };

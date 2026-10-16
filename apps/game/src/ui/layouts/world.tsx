@@ -2,7 +2,6 @@ import { ArenaHud } from "../features/world/containers/arena-hud";
 import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
 import { SentryUserSync } from "@/observability/sentry-user-sync";
 import { Leva } from "leva";
-import { env } from "../../../env";
 import { ArmyMovementLatencyOverlay } from "../debug/army-movement-latency-overlay";
 import { DevSyncOverlay } from "../debug/dev-sync-overlay";
 import { SurfaceHost } from "../design-system/molecules/popover";
@@ -55,7 +54,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         {/* Utility overlays */}
         <Leva hidden={!DEV_MODE_ENABLED} collapsed titleBar={{ position: { x: 0, y: 50 } }} />
         <Tooltip />
-        <VersionDisplay />
         <ArmyMovementLatencyOverlay />
         {DEV_MODE_ENABLED && <DevSyncOverlay />}
         <div id="labelrenderer" className="absolute top-0 pointer-events-none z-10" />
@@ -124,11 +122,3 @@ const HUD = () => {
     </>
   );
 };
-
-const VersionDisplay = () => (
-  <div className="absolute bottom-4 right-6 text-sm text-white/60 hover:text-white pointer-events-auto bg-white/20 rounded-lg p-1 max-lg:hidden">
-    <a target="_blank" href={"https://github.com/BibliothecaDAO/eternum"} rel="noopener noreferrer">
-      {env.VITE_PUBLIC_GAME_VERSION}
-    </a>
-  </div>
-);

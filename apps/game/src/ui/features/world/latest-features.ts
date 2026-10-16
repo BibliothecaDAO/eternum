@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-16",
+    title: "Clear spectator controls",
+    description: "Phone standings fit below the match header, and the desktop Chat button stays unobstructed.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-16",
     title: "Guided arena HUD",
     description:
       "Find holdings with category filters and search, review the next step beside the map, and open commands from floating painted bubbles.",

@@ -61,8 +61,18 @@ Run the emitted `evidence/hud/lab-proof-driver.js` with the Playwright browser t
 visible controls, captures desktop and phone states, checks category counts/search, automation detail, Settings, nine
 troop portraits, Trade's mask, floating bubble containment, native hexes and shared badges. It compares icon-lab markers
 and grouping and leaves screenshots in a new timestamped directory. Save the returned object as `proof.json` there. It
-navigates away from each WebGL page after capture and on failure. The game proof remains `prove:play --game …` after the
-fresh-chain rollout.
+navigates away from each WebGL page after capture and on failure.
+
+For a live signed-out Watch proof, extend that same command with `--watch <chain-id>:<game-id>`. Run the emitted
+`evidence/hud/live-proof-driver.js` with the same browser tool and save its returned object as `proof.json` in its
+reported directory. It opens an isolated browser context on port 4192, using the dev stack configured for that client.
+It captures 1440×900 and 390×844 map, Settings and Log states, plus phone Holdings, through visible controls. Assertions
+cover spectator identity, native HUD/minimap, no command buttons or order sends, no horizontal overflow, Chat clearance,
+and standings below the phone header. It closes the isolated context on every exit. These are visual/interaction checks;
+the client `playtest` command owns performance runs.
+
+In a live spectator game, Settings and Log are in the header; on phone, Holdings opens the standings and Map restores
+the map. Owned resources, automation and command bubbles require a seated player and are not covered by Watch proof.
 
 The coverage gate uses the clipped union of visible frame rectangles over 1,296,000 pixels. Empty dock/header gaps,
 shadows and lab controls do not count; each floating command's full button rectangle does count, conservatively.
