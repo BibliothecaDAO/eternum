@@ -91,7 +91,8 @@ The compose services restart on failure. Initializer logs and `harness.env` are 
 | Measurement runner  | PENDING before enrolment; retires on stop; never activates               | `operator-command.py runner CONFIGURATION RUNNER_DATA_DIRECTORY --matrix` |
 
 Run each command above as `python3 deploy/athanor/scripts/operator-command.py ...`. The wrapper reads the box's
-protected token file; ops provisions it. Use `stop.py` for a manually started runner so its directory entry is retired.
+protected token file; ops provisions it. Use `stop.py` for a manually started runner: it keeps the runner's logs,
+removes its containers and volumes, and retires its directory entry.
 
 ## Operations: back up and restore
 

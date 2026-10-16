@@ -381,7 +381,7 @@ def start_shard(config, directory):
         grant_measurement_roles(directory, command)
         return readiness
     except BaseException:
-        stop_shard(directory)
+        remove_shard(directory)
         raise
 
 
@@ -428,9 +428,15 @@ def start_runner_stack(config, directory, command):
         raise RuntimeError("initialization failed; read private deployment logs")
 
 
-def stop_shard(directory):
+def remove_shard(directory):
+    """A runner shard is never started again: its containers' logs stay in its directory as shard-logs.log, then its
+    containers, volumes and network go, even when stopping or reading the logs fails."""
     command = [*DOCKER, "compose", "-f", str(directory / "compose.json")]
-    run([*command, "stop"], directory, "shard-stop")
+    try:
+        run([*command, "stop"], directory, "shard-stop")
+        run([*command, "logs", "--no-color"], directory, "shard-logs")
+    finally:
+        run([*command, "down", "--volumes", "--remove-orphans"], directory, "shard-down")
     # Only an acknowledged PENDING registration belongs to this run; intent alone cannot retire a listing.
     receipt = directory / "directory-registration-ack.json"
     if receipt.exists():
@@ -517,7 +523,7 @@ def run_matrix(matrix, directory):
         finally:
             if (target / "compose.json").exists():
                 write_json(target / "matrix-result.json", result)
-                stop_shard(target)
+                remove_shard(target)
     return {"passed": True, "directory": str(directory)}
 
 

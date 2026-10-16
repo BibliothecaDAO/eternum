@@ -155,7 +155,8 @@ game: it stays PENDING. After its readiness probe the runner makes the harness's
 operator (`scripts/measurement-roles.ts`, refused on any chain named after a deployment environment), so the harness
 creates its own games there. Eternum runs create theirs as always; a Frontier run or the 2,000-player wave takes
 `--create-game`. Matrix workloads name the shard's own endpoints, `"rpc_url": "http://rpc:8080/rpc/v0_10_2"` and
-`"herald_url": "http://herald:3003"`, with `public_rpc_url` set to the same RPC URL. Retire a stopped runner shard's
-containers and volumes with `docker compose -f DIRECTORY/SHARD/compose.json down --volumes`.
+`"herald_url": "http://herald:3003"`, with `public_rpc_url` set to the same RPC URL. When an arm ends, passed or failed,
+the runner keeps its containers' logs in `DIRECTORY/SHARD/shard-logs.log` and removes the shard's containers, volumes
+and network; the images it ran stay for the next arm.
 
 Preserve the baseline image and chain data until final acceptance and the approved cutover.

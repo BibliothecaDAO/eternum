@@ -61,6 +61,11 @@ def load_package_script(name):
     return script
 
 
+
+def compose_verb(command):
+    """The compose subcommand of a `docker compose -f FILE ...` command."""
+    return command[command.index("-f") + 2]
+
 class ShardTest(unittest.TestCase):
     def test_runner_registers_pending_before_initialization_and_never_activates(self):
         events = []
@@ -90,12 +95,12 @@ class ShardTest(unittest.TestCase):
                     shard.start_runner_stack(config, data, ["compose"])
             events = []
             shard.write_json(data / "configuration.json", config)
-            with patch.object(shard, "run", side_effect=lambda *_: events.append("stop")), patch.object(shard, "directory_status", side_effect=lambda _, status: events.append(status)):
-                shard.stop_shard(data)
-            self.assertEqual(events, ["stop"])
+            with patch.object(shard, "run", side_effect=lambda command, *_: events.append(compose_verb(command))), patch.object(shard, "directory_status", side_effect=lambda _, status: events.append(status)):
+                shard.remove_shard(data)
+            self.assertEqual(events, ["stop", "logs", "down"])
             self.assertFalse((data / "directory-registration-ack.json").exists())
 
-    def test_failed_single_start_stops_and_retires_its_registration(self):
+    def test_failed_single_start_removes_the_shard_and_retires_its_registration(self):
         for failure in (RuntimeError("init failed"), KeyboardInterrupt()):
             with self.subTest(failure=type(failure).__name__), tempfile.TemporaryDirectory() as temporary:
                 directory = Path(temporary) / "trial"
@@ -111,12 +116,12 @@ class ShardTest(unittest.TestCase):
                     patch.object(Path, "read_text", read), patch.object(shard, "ensure_fresh_project"),
                     patch.object(shard, "compose_configuration", return_value={"services": {"madara": {"image": NODE_IMAGE}}}),
                     patch.object(shard, "start_runner_stack", side_effect=fail_start),
-                    patch.object(shard, "run", side_effect=lambda *_: events.append("stop")),
+                    patch.object(shard, "run", side_effect=lambda command, *_: events.append(compose_verb(command))),
                     patch.object(shard, "directory_status", side_effect=lambda _, status: events.append(status)),
                 ):
                     with self.assertRaises(type(failure)):
                         shard.start_shard(configuration(), directory)
-                self.assertEqual(events, ["stop", "retired"])
+                self.assertEqual(events, ["stop", "logs", "down", "retired"])
                 self.assertTrue((directory / "compose.json").exists())
                 self.assertTrue((directory / "directory-registration-ack.json").exists())
 
@@ -138,16 +143,33 @@ class ShardTest(unittest.TestCase):
                 shard.start_shard(configuration(), directory)
         self.assertEqual(steps, ["stack", "readiness", ("measurement-roles", "measurement-roles")])
 
-    def test_stopping_a_registered_runner_retires_after_stop_without_activation(self):
+    def test_removing_a_registered_runner_keeps_its_logs_then_retires_without_activation(self):
         events = []
         with tempfile.TemporaryDirectory() as temporary:
             data = Path(temporary)
             config = configuration()
             shard.write_json(data / "configuration.json", config)
             shard.write_json(data / "directory-registration-ack.json", {"url": config["public_herald_url"], "chainId": "0x" + config["chain_id"].encode().hex(), "status": "pending"})
-            with patch.object(shard, "run", side_effect=lambda *_: events.append("stop")), patch.object(shard, "directory_status", side_effect=lambda _, status: events.append(status)):
-                shard.stop_shard(data)
-        self.assertEqual(events, ["stop", "retired"])
+            with patch.object(shard, "run", side_effect=lambda command, directory, name: events.append((compose_verb(command), name))), patch.object(shard, "directory_status", side_effect=lambda _, status: events.append(status)):
+                shard.remove_shard(data)
+        self.assertEqual(events, [("stop", "shard-stop"), ("logs", "shard-logs"), ("down", "shard-down"), "retired"])
+
+    def test_a_shard_whose_stop_fails_is_still_removed(self):
+        events = []
+
+        def run(command, *_):
+            events.append(compose_verb(command))
+            if compose_verb(command) == "stop":
+                raise subprocess.CalledProcessError(1, command)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            shard.write_json(data / "configuration.json", configuration())
+            with patch.object(shard, "run", side_effect=run), patch.object(shard, "directory_status") as directory:
+                with self.assertRaises(subprocess.CalledProcessError):
+                    shard.remove_shard(data)
+        self.assertEqual(events, ["stop", "down"])
+        directory.assert_not_called()
 
     def test_resource_and_target_validation_precedes_deployment(self):
         config = configuration()
@@ -639,7 +661,7 @@ class ShardTest(unittest.TestCase):
                 "shard": "test", **{f"{name}_image": digest for name, digest in images.items()}})
             build.assert_called_once_with()
 
-    def test_matrix_runs_in_order_and_stops_only_its_own_projects(self):
+    def test_matrix_runs_in_order_and_removes_only_its_own_projects(self):
         for failure in (None, RuntimeError("workload failed")):
             with self.subTest(failure=failure), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
@@ -681,8 +703,10 @@ class ShardTest(unittest.TestCase):
                     self.assertEqual(minutes, ["1"] if failure else ["1", "30"])
                     self.assertEqual(measured, [f"athanor-{name}-madara-1" for name in started])
                     self.assertEqual([call.args[1] for call in directory_status.call_args_list], ["retired"] * len(started))
-                    for call, name in zip(stop.call_args_list, started):
-                        self.assertEqual(call.args[0][-2:], [str(output / name / "compose.json"), "stop"])
+                    removals = [(call.args[0][call.args[0].index("-f") + 1], compose_verb(call.args[0])) for call in stop.call_args_list]
+                    self.assertEqual(removals, [(str(output / name / "compose.json"), verb)
+                                                for name in started for verb in ("stop", "logs", "down")])
+                    for name in started:
                         result = json.loads((output / name / "matrix-result.json").read_text())
                         self.assertEqual(result["passed"], failure is None)
 
@@ -836,7 +860,7 @@ class RegistrationAcknowledgementTest(unittest.TestCase):
                 with patch.object(shard, "run"), patch.object(shard, "wait_for_identity"), patch.object(shard, "directory_status", return_value={"status": status}) as directory:
                     with self.assertRaisesRegex(RuntimeError, "must register PENDING"):
                         shard.start_runner_stack(config, data, ["compose"])
-                    shard.stop_shard(data)
+                    shard.remove_shard(data)
                 directory.assert_called_once_with(config, "pending")
                 self.assertTrue((data / "directory-registration.json").exists())
                 self.assertFalse((data / "directory-registration-ack.json").exists())
@@ -850,7 +874,7 @@ class RegistrationAcknowledgementTest(unittest.TestCase):
                 try:
                     shard.start_runner_stack(config, data, ["compose"])
                 except RuntimeError as error:
-                    shard.stop_shard(data)
+                    shard.remove_shard(data)
                     self.assertEqual(str(error), "pending POST failed")
                 else:
                     self.fail("pending POST should fail")
