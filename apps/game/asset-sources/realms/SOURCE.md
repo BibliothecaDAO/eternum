@@ -62,3 +62,22 @@ The outposts-15 source places the cottages toward the side fences and the small 
 shelter. The settlement uses that exact layout. Its Order plaque locates the actual left entrance post; the source check
 reads the shared hex-fence radius, post thickness and minimum clearance. No second layout or circular yard constraint is
 maintained for realms.
+
+## Solid doors and window studies
+
+`revise-realm-accents.py` adds the Forum's opposite standard by duplicating its anchored banner into the existing cloth
+batch, and replaces Twin Ward's two copper tips with faceted teal gems. The gems share one Refined essence material;
+kingdom now uses eight materials, within the existing cap. Height and architecture remain unchanged.
+
+`revise-realm-doors.py` fits opaque oak leaves and iron bands/studs to each existing door contour, removes the imperial
+vertical bars, and merges the new faces into existing production materials. Both edits are idempotent and save the
+packed source when invoked directly with Blender. The canonical Canvas & Thatch source already has closed plank doors;
+the realm adapter adds its iron hardware in memory, preserving the shared village source. Run the normal family export
+to regenerate all normal and wonder variants. Door faces carry `_SOLID_REALM_DOOR`; the imperial passage check must hit
+the closed door through its stone frame.
+
+The optional lab export `export-window-study.py` tags authored window infill for five material treatments. It never
+writes the packed source or production GLBs. The city, kingdom and empire retain their current window treatment until a
+choice is made. Study panels reuse existing material draws and one 256px atlas; A/D emission increases at dusk, B uses
+painted sky variation, C uses closed wood, and E adds deep stone reveals/sills where they were absent. The empire
+already has modeled frames/sills. See `src/lab/README.md` for the picker and runtime capture command.

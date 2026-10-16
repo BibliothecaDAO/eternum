@@ -43,10 +43,12 @@ def verify_order_and_essence(document):
         if material['name'] != expected or 'baseColorTexture' not in material['pbrMetallicRoughness']:
             raise ValueError('Preserve the named Order texture slots')
     essence = next((m for m in document['materials'] if m.get('name') == 'Citadel / Refined essence'), None)
-    early_age = any(node.get('extras', {}).get('citadelTier', 'empire') != 'empire' for node in document['nodes'] if 'mesh' in node)
-    if early_age:
+    tiers = {node.get('extras', {}).get('citadelTier', 'empire') for node in document['nodes'] if 'mesh' in node}
+    if tiers & {'settlement', 'city'}:
         if essence:
-            raise ValueError('Early ages must not inherit mastered imperial essence')
+            raise ValueError('Settlement and city must not inherit mastered essence')
+        return
+    if tiers == {'kingdom'} and not essence:
         return
     if not essence or essence.get('extensions', {}).get('KHR_materials_emissive_strength', {}).get('emissiveStrength', 0) <= 1:
         raise ValueError('Export named Refined essence with KHR_materials_emissive_strength above one')

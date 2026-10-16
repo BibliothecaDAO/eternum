@@ -210,9 +210,10 @@ def validate_corner_passage(objects, gate):
         raise ValueError('Face the gate imprint toward the front camera, not into the bastion')
     architecture = next(obj for obj in objects if not obj.get('citadelOrderSurface'))
     hit, point, _, face = architecture.ray_cast(Vector((.04, -1.2, .25)), Vector((0, 1, 0)))
-    material = architecture.data.materials[architecture.data.polygons[face].material_index] if hit else None
-    if not material or 'Dark details' not in material.name or point.y > -.80:
-        raise ValueError('Cut the front-corner arch through the stone to expose the recessed door')
+    marker = architecture.data.attributes.get('_SOLID_REALM_DOOR')
+    solid = hit and marker and all(marker.data[i].value > .5 for i in architecture.data.polygons[face].vertices)
+    if not solid or point.y > -.80:
+        raise ValueError('Fill the corner arch with the solid oak door, visible through its stone frame')
 
 
 def validate_essence():
@@ -409,6 +410,10 @@ def export(output, design=None):
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         module.prepare()
+        spec = importlib.util.spec_from_file_location('realm_doors', Path(__file__).with_name('revise-realm-doors.py'))
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        module.revise()
     objects = production_meshes(design['crown'] if design else None)
     if 'citadelTier' in bpy.context.scene:
         for obj in objects:

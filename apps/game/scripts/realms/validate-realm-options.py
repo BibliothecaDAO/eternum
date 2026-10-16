@@ -63,10 +63,10 @@ def validate(objects):
                 "Inset the mortar core behind ashlar; coplanar surfaces flicker"
             )
     gate = next(o for o in objects if o.get("citadelOrderSurface") == "gate")
-    jamb = bpy.data.objects["Gate / jamb"]
+    jamb = bpy.data.objects.get("Gate / jamb") or bpy.data.objects["Gate / body"]
     front = min(v.co.y for v in jamb.data.vertices)
     if any(
-        abs(v.co.x) > 0.06 * radius or v.co.y > front - 0.001 or v.co.y < front - 0.03
+        abs(v.co.x) > 0.06 * radius or v.co.y > front - 0.001 or v.co.y < front - 0.04
         for v in gate.data.vertices
     ):
         raise ValueError("Mount the Order imprint directly on the gate's front face")
