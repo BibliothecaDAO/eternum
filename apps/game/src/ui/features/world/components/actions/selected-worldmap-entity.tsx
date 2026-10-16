@@ -40,65 +40,33 @@ import { toast } from "@/ui/features/event-feed/notify";
 const occupiedEntityLayoutClass = "flex min-w-0 shrink-0 flex-col gap-2 pointer-events-auto";
 const scrollableEntityDetailClass = "h-auto min-w-0 overflow-visible";
 
-/**
- * What a picked map tile shows, in two parts a HUD lays out: what stands on it (none on a bare tile), named in a word,
- * and its biome with what it does to each troop.
- */
-export interface MapTileParts {
-  occupantWord: string | null;
-  occupant: ReactNode | null;
-  biome: ReactNode;
-}
-
-const stackParts = ({ occupant, biome }: MapTileParts) => (
+/** What a picked map tile shows, stacked: what stands on it (none on a bare tile), then its biome. */
+const stackParts = ({ occupant, biome }: { occupant: ReactNode | null; biome: ReactNode }) => (
   <div className={occupiedEntityLayoutClass}>
     {occupant}
     {biome}
   </div>
 );
 
-/**
- * The selected map tile's panel. `layout` arranges its parts (stacked by default); `hideHoldingResources` leaves a
- * structure's resources out when it is the selected holding, whose card already shows them.
- */
-export const SelectedWorldmapEntity = ({
-  headerAction,
-  layout = stackParts,
-  hideHoldingResources = false,
-}: {
-  headerAction?: ReactNode;
-  layout?: (parts: MapTileParts) => ReactNode;
-  hideHoldingResources?: boolean;
-} = {}) => {
+/** The selected map tile's panel: what stands on it, then its biome. */
+export const SelectedWorldmapEntity = ({ headerAction }: { headerAction?: ReactNode } = {}) => {
   const selectedHex = useUIStore((state) => state.selectedHex);
 
   if (!selectedHex) {
     return null;
   }
 
-  return (
-    <SelectedWorldmapEntityContent
-      selectedHex={selectedHex}
-      headerAction={headerAction}
-      layout={layout}
-      hideHoldingResources={hideHoldingResources}
-    />
-  );
+  return <SelectedWorldmapEntityContent selectedHex={selectedHex} headerAction={headerAction} />;
 };
 
 const SelectedWorldmapEntityContent = ({
   selectedHex,
   headerAction,
-  layout,
-  hideHoldingResources,
 }: {
   selectedHex: HexPosition;
   headerAction?: ReactNode;
-  layout: (parts: MapTileParts) => ReactNode;
-  hideHoldingResources: boolean;
 }) => {
   const openSurface = usePopoverStore((state) => state.openSurface);
-  const selectedHoldingId = useUIStore((state) => state.structureEntityId);
 
   const tile = useTileAt(selectedHex.col, selectedHex.row);
   const crateOpening = useRelicCrateOpening(selectedHex);
@@ -129,8 +97,7 @@ const SelectedWorldmapEntityContent = ({
 
   // A crate opened this session keeps its panel after the tile empties, now listing what it yielded.
   if (isChest || crateOpening) {
-    return layout({
-      occupantWord: "Crate",
+    return stackParts({
       occupant: (
         <RelicCrateTilePanel
           crateEntityId={isChest ? tile.occupier_id : null}
@@ -147,8 +114,7 @@ const SelectedWorldmapEntityContent = ({
   // A shrine or well is used from Frontier's own card and a dormant spire offers nothing; here its tile reads like any
   // other.
   if (!hasOccupier || !(isSpire || isReservedHyperstructure || isStructure || isArmy)) {
-    return layout({
-      occupantWord: null,
+    return stackParts({
       occupant: null,
       biome: (
         <UnoccupiedTileQuadrants
@@ -163,8 +129,7 @@ const SelectedWorldmapEntityContent = ({
   const occupierEntityId = tile.occupier_id;
 
   if (isSpire)
-    return layout({
-      occupantWord: "Spire",
+    return stackParts({
       occupant: (
         <TileChrome title={title("Spire Tile")} headerAction={headerAction}>
           <SpireTravelPanel mapLayer={mapLayer} onLookAtOtherLayer={lookAtOtherLayer} />
@@ -174,8 +139,7 @@ const SelectedWorldmapEntityContent = ({
     });
 
   if (isReservedHyperstructure)
-    return layout({
-      occupantWord: "Hyperstructure",
+    return stackParts({
       occupant: (
         <TileChrome title={title("Unconstructed Hyperstructure")} headerAction={headerAction}>
           <ReservedHyperstructurePanel selectedHex={selectedHex} />
@@ -185,8 +149,7 @@ const SelectedWorldmapEntityContent = ({
     });
 
   if (isStructure)
-    return layout({
-      occupantWord: "Structure",
+    return stackParts({
       occupant: (
         <StructureBannerEntityDetail
           structureEntityId={occupierEntityId}
@@ -195,7 +158,6 @@ const SelectedWorldmapEntityContent = ({
           className={scrollableEntityDetailClass}
           coordsLabel={title("Structure Tile")}
           headerAction={headerAction}
-          hideResources={hideHoldingResources && occupierEntityId === selectedHoldingId}
           compact
           layoutVariant="banner"
         />
@@ -203,8 +165,7 @@ const SelectedWorldmapEntityContent = ({
       biome: <StructureBiomeCard structureEntityId={occupierEntityId} biomeCard={biomeCard} />,
     });
 
-  return layout({
-    occupantWord: "Army",
+  return stackParts({
     occupant: (
       <ArmyBannerEntityDetail
         armyEntityId={occupierEntityId}
