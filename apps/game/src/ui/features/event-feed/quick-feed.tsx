@@ -8,7 +8,7 @@ import { triggerConnectionForceReconnect } from "@/ui/features/world/components/
 import { configManager } from "@bibliothecadao/eternum";
 import { TickIds } from "@bibliothecadao/types";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { orderHeadlineFeed, useHeadlineFeedStore } from "../news-headlines/headline-feed-store";
 import type { Headline } from "../news-headlines/headline-types";
 import { FEED_ROW_CLASS, FeedRowLine, HeadlineIcon } from "./feed-row-line";
@@ -55,10 +55,21 @@ export function useImportantFeed() {
   const address = useAccountStore((state) => state.account?.address ?? null);
   const headlines = useHeadlineFeedStore((state) => state.headlines);
   const headlineFeed = orderHeadlineFeed(headlines, nowMs, tickSeconds);
-  const { data: stories } = useStoryEvents(350, "BattleEvent");
+  const stories = useEventsStories(address);
   const feed = useFeedRows();
   const rows = selectImportantFeedRows(stories, feed, "all", address, headlineFeed.recent);
   return { nowMs, rows, pinned: headlineFeed.pinned };
+}
+
+/**
+ * The stories the Events card tells, each from a read that holds them: every battle and raid, and the crates the player
+ * opened (where its relics went).
+ */
+function useEventsStories(address: string | null) {
+  const { data: battles } = useStoryEvents(350, "BattleEvent");
+  const { data: raids } = useStoryEvents(100, "RaidEvent");
+  const { data: crates } = useStoryEvents(50, "RelicChestOpened", address ?? undefined);
+  return useMemo(() => [...battles, ...raids, ...crates], [battles, raids, crates]);
 }
 
 /** Rows that arrived since the log was last open; zero while it is open. */

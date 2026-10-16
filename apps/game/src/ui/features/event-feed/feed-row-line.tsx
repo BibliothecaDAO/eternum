@@ -1,6 +1,6 @@
 import { TransactionType } from "@bibliothecadao/provider";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { structureMapPosition } from "@bibliothecadao/eternum";
+import { getEntityName, getIsBlitz, structureMapPosition } from "@bibliothecadao/eternum";
 
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -15,7 +15,7 @@ import {
   formatWinnerName,
   parsePresentationDescription,
 } from "../story-events/story-event-utils";
-import { transactionStatusLine, transferRowLabel } from "./event-feed-rows";
+import { arrivalLabel, transactionStatusLine, transferRowLabel } from "./event-feed-rows";
 import { formatFeedTime, type ImportantFeedRow } from "./important-feed-rows";
 import { useStoryOpener } from "./story-feed-row";
 
@@ -46,18 +46,28 @@ export const FeedRowLine = ({ row, style }: { row: ImportantFeedRow; style?: CSS
   row.kind === "story" ? <StoryRowLine row={row} style={style} /> : <PlacedRowLine row={row} style={style} />;
 
 const StoryRowLine = ({ row, style }: { row: Extract<ImportantFeedRow, { kind: "story" }>; style?: CSSProperties }) => (
-  <RowLine row={row} style={style} open={useStoryOpener(row.event)} />
+  <RowLine row={row} style={style} open={useStoryOpener(row.event)} recipient={null} />
 );
 
 const PlacedRowLine = ({ row, style }: { row: ImportantFeedRow; style?: CSSProperties }) => {
-  const target = useFeedRowTarget(row);
+  const { target, recipient } = useFeedRowPlace(row);
   const navigate = useNavigateToMapView();
-  return <RowLine row={row} style={style} open={target ? () => navigate(target) : null} />;
+  return <RowLine row={row} style={style} open={target ? () => navigate(target) : null} recipient={recipient} />;
 };
 
 /** The row itself: its words never cut to one line, so a sentence keeps where things went; whole on hover. */
-const RowLine = ({ row, style, open }: { row: ImportantFeedRow; style?: CSSProperties; open: (() => void) | null }) => {
-  const { icon, text } = summarizeFeedRow(row);
+const RowLine = ({
+  row,
+  style,
+  open,
+  recipient,
+}: {
+  row: ImportantFeedRow;
+  style?: CSSProperties;
+  open: (() => void) | null;
+  recipient: string | null;
+}) => {
+  const { icon, text } = summarizeFeedRow(row, recipient);
   const content = (
     <>
       <span className={FEED_ROW_ICON_COLUMN_CLASS}>{icon}</span>
@@ -86,7 +96,8 @@ const RowLine = ({ row, style, open }: { row: ImportantFeedRow; style?: CSSPrope
   );
 };
 
-function useFeedRowTarget(row: ImportantFeedRow): Position | null {
+/** Where a row's camera flies, and whom it names: an arrival's structure, by its shared name. */
+function useFeedRowPlace(row: ImportantFeedRow): { target: Position | null; recipient: string | null } {
   const {
     setup: { store },
   } = useGame();
@@ -95,19 +106,23 @@ function useFeedRowTarget(row: ImportantFeedRow): Position | null {
     row.kind === "arrival" ? { game_id: configManager.getActiveGameId(), entity_id: row.structureEntityId } : undefined,
   );
   if (row.kind === "headline") {
-    return row.headline.location
-      ? Position.fromContract({ x: row.headline.location.x, y: row.headline.location.y })
-      : null;
+    const { location } = row.headline;
+    return { target: location ? Position.fromContract({ x: location.x, y: location.y }) : null, recipient: null };
   }
   if (row.kind === "arrival") {
     const site = structure && structureMapPosition(store, structure);
-    return site ? Position.fromContract(site) : null;
+    return {
+      target: site ? Position.fromContract(site) : null,
+      recipient: getEntityName(row.structureEntityId, store, getIsBlitz()) ?? null,
+    };
   }
-  if (row.kind === "notice") return row.notice.location ? Position.fromContract(row.notice.location) : null;
-  return null;
+  if (row.kind === "notice") {
+    return { target: row.notice.location ? Position.fromContract(row.notice.location) : null, recipient: null };
+  }
+  return { target: null, recipient: null };
 }
 
-function summarizeFeedRow(row: ImportantFeedRow): { icon: ReactNode; text: string } {
+function summarizeFeedRow(row: ImportantFeedRow, recipient: string | null): { icon: ReactNode; text: string } {
   if (row.kind === "headline") {
     return { icon: <HeadlineIcon type={row.headline.type} />, text: row.headline.description };
   }
@@ -115,7 +130,7 @@ function summarizeFeedRow(row: ImportantFeedRow): { icon: ReactNode; text: strin
   if (row.kind === "arrival") {
     return {
       icon: <SemanticIcon name="transfer" className="h-4 w-4 shrink-0" />,
-      text: `${transferRowLabel(row)} · #${row.structureEntityId}`,
+      text: recipient ? `${arrivalLabel(row)} · ${recipient}` : arrivalLabel(row),
     };
   }
   if (row.kind === "transaction") {

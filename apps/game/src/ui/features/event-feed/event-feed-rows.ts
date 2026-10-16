@@ -109,8 +109,12 @@ export const selectTickerRows = (rows: FeedRows, nowMs: number, windowMs: number
     .sort(byNewest);
 
 /** Transfer language is shared by every Events rendering, including Log. */
+/** A caravan to the player's structure: still on the road, or arrived. */
+export const arrivalLabel = (row: Extract<FeedRow, { kind: "arrival" }>): string =>
+  row.remainingSeconds > 0 ? "Caravan sent" : "Caravan arrived";
+
 export function transferRowLabel(row: FeedRow): string | null {
-  if (row.kind === "arrival") return row.remainingSeconds > 0 ? "Caravan sent" : "Caravan arrived";
+  if (row.kind === "arrival") return arrivalLabel(row);
   if (
     row.kind === "transaction" &&
     row.transaction.type === TransactionType.SEND &&

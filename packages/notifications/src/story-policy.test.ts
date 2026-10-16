@@ -18,6 +18,7 @@ it("covers every native story and tests every cumulative level", () => {
       "BuildingPlacementStory",
       "StructureLevelUpStory",
       "ResourceReceiveArrivalStory",
+      "RelicChestOpened",
     ],
     all: [
       "ProductionStory",
@@ -37,7 +38,6 @@ it("covers every native story and tests every cumulative level", () => {
       "BankSwap",
       "BankLiquidity",
       "HyperstructurePoints",
-      "RelicChestOpened",
       "TierBought",
       "SitePayout",
       "ExplorationReward",
