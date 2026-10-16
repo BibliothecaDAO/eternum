@@ -4,7 +4,6 @@ import { useActNowRefusal } from "@/utils/can-issue-orders";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import type { ID } from "@bibliothecadao/types";
 import { sendRealmLevelUp, sendRealmProvision } from "../realm-castle-sends";
-import { resolveRealmBootstrapErrorMessage } from "./realm-bootstrap-error";
 import { useBlitzRealmProvision } from "./use-blitz-realm-provision";
 import { useStructureUpgrade } from "./use-structure-upgrade";
 
@@ -72,12 +71,10 @@ export const useRealmLevelUp = (structureEntityId: ID | null): RealmLevelUp | nu
   const signer = account.account;
   const provisionRealm = () =>
     sendRealmProvision(setup.systemCalls, signer, entityId, upgrade.canUpgrade).catch((error) =>
-      toast.error(resolveRealmBootstrapErrorMessage(error)),
+      toast.failed(error, "Realm setup failed. Wait a moment and try again."),
     );
   const levelUp = () =>
-    sendRealmLevelUp(setup.systemCalls, signer, entityId).catch((error) =>
-      toast.error(extractReadableErrorMessage(error, "Level up failed.")),
-    );
+    sendRealmLevelUp(setup.systemCalls, signer, entityId).catch((error) => toast.failed(error, "Level up failed."));
 
   return {
     ...step,

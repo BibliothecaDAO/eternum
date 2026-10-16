@@ -15,7 +15,7 @@ const state = vi.hoisted(() => ({
   pruneForGame: vi.fn(),
   balance: vi.fn(),
   over: false,
-  toast: { error: vi.fn(), warning: vi.fn(), success: vi.fn() },
+  toast: { error: vi.fn(), failed: vi.fn(), warning: vi.fn(), success: vi.fn() },
 }));
 const identity = vi.hoisted(() => ({ gameId: 1, shard: { chainId: "0x1", worldAddress: "0xabc" } }));
 vi.mock("@/sync/active-game-client", () => ({ requireActiveGameClient: () => identity }));
@@ -146,7 +146,7 @@ it("blocks a missing balance rather than sending from a fabricated zero", async 
   await mount();
   await tick();
   expect(state.systemCalls.send_resources_multiple).not.toHaveBeenCalled();
-  expect(state.toast.error).toHaveBeenCalledTimes(1);
+  expect(state.toast.failed).toHaveBeenCalledTimes(1);
   expect(state.update).not.toHaveBeenCalled();
   vi.restoreAllMocks();
 });

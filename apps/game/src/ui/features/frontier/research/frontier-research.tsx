@@ -68,7 +68,7 @@ export const FrontierResearch = ({ rules, realm }: { rules: ExpeditionRules; rea
       // The sheet offers no choice yet: a tier takes its first side (Fields, Tools, Drill, camps).
       await sendResearch(setup.systemCalls, account.account, realm, { row: node.row, choice: 0 }, () => setOpen(null));
     } catch (error) {
-      toast.error(extractReadableErrorMessage(error, "The research could not be sent."));
+      toast.failed(error, "The research could not be sent.");
     }
   };
 

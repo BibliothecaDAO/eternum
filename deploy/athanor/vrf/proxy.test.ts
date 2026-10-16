@@ -119,6 +119,7 @@ test("one current-nonce play is stamped and only its hash reaches the device", a
     expect((await f.call("starknet_addInvokeTransaction", [invoke()])).error).toEqual({
       code: -32010,
       message: "Transaction refused",
+      data: { reason: "nonce" },
     });
     expect(f.stamped).toHaveLength(1);
   } finally {
@@ -133,7 +134,7 @@ test("a seater may queue plays up to 48 nonces ahead; the launcher and players s
     sender_address,
     nonce: `0x${nonce.toString(16)}`,
   });
-  const refused = { code: -32010, message: "Transaction refused" };
+  const refused = { code: -32010, message: "Transaction refused", data: { reason: "nonce" } };
   try {
     f.setNonce("0xa");
     for (const [seater, nonce] of [
@@ -258,6 +259,7 @@ test("one pending dispatch per account refuses overlap while another account pro
     expect((await f.call("starknet_addInvokeTransaction", [invoke()])).error).toEqual({
       code: -32010,
       message: "Transaction refused",
+      data: { reason: "in-flight" },
     });
     expect(
       (await f.call("starknet_addInvokeTransaction", [{ ...invoke(), sender_address: "0x43" }])).result

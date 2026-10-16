@@ -101,7 +101,7 @@ export const TransferAutomationAdvancedModal = () => {
         toast.success("Transfer executed.");
       } catch (e) {
         console.error(e);
-        toast.error("Execution failed.");
+        toast.failed(e, "Execution failed.");
       }
     },
     [store, systemCalls, account, update],

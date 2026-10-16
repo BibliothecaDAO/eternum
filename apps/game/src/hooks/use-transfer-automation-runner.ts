@@ -218,7 +218,7 @@ export const useTransferAutomationRunner = () => {
                 }
                 console.error("Transfer automation: execution failed", err);
                 scheduleNext(entry.id, nowMs);
-                toast.error(err instanceof Error ? err.message : "Scheduled transfer failed.");
+                toast.failed(err, "Scheduled transfer failed.");
               }
             }
           },

@@ -69,7 +69,7 @@ export const FrontierArmy = ({ realm, onClose }: { realm: NativeRows["Structure"
         }),
       );
     } catch (error) {
-      toast.error(extractReadableErrorMessage(error, "The Upgrade could not be sent."));
+      toast.failed(error, "The Upgrade could not be sent.");
     }
   };
 

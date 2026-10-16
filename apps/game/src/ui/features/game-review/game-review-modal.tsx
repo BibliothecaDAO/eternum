@@ -356,7 +356,7 @@ export const GameReviewModal = ({ isOpen, world, nextGame, onClose }: GameReview
       toast.success("Step image copied to clipboard.");
     } catch (caughtError) {
       console.error("Failed to copy review step image", caughtError);
-      toast.error("Could not copy the image.");
+      toast.failed(caughtError, "Could not copy the image.");
     } finally {
       setIsCopying(false);
     }

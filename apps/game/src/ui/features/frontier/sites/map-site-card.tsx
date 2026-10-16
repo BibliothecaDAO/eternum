@@ -83,7 +83,7 @@ export const MapSiteCard = ({
         return sent;
       });
     } catch (error) {
-      toast.error(extractReadableErrorMessage(error, "The site could not be used."));
+      toast.failed(error, "The site could not be used.");
     }
   };
 

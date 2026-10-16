@@ -14,7 +14,7 @@ import {
   type InvocationsSignerDetails,
 } from "starknet";
 
-import { TransactionNotSentError } from "@bibliothecadao/provider";
+import { playRefusalReasonOf, TransactionNotSentError } from "@bibliothecadao/provider";
 
 import { pause, transactionAnswer, TransactionNoAnswerError } from "./transaction-answer";
 
@@ -191,7 +191,7 @@ async function sendAndReconcile(
       (response) => response.transaction_hash,
       (error: unknown) => {
         if (isAdmissionRefused(error) && !heraldReported) {
-          throw new TransactionNotSentError(expectedHash, { cause: error });
+          throw new TransactionNotSentError(expectedHash, { cause: error, reason: playRefusalReasonOf(error) });
         }
         // Anything after forwarding began proves nothing (-32011, a lost reply): reconcile, never resend.
         return hashOfUnansweredSend(error) ?? expectedHash;

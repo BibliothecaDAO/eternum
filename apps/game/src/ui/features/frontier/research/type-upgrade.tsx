@@ -118,7 +118,7 @@ export const TypeUpgrade = ({
     try {
       await sendResearch(setup.systemCalls, account.account, realm, { row: view.row, choice }, onClose);
     } catch (error) {
-      toast.error(extractReadableErrorMessage(error, "The Upgrade could not be sent."));
+      toast.failed(error, "The Upgrade could not be sent.");
     }
   };
 

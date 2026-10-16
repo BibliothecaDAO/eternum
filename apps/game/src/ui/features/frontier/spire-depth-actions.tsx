@@ -60,7 +60,7 @@ export const SpireDepthActions = ({ armyEntityId }: { armyEntityId: ID }) => {
         systemCalls.enter_depth({ signer: account as unknown as Account, explorerId: armyEntityId, depth }),
       );
     } catch (error) {
-      toast.error(extractReadableErrorMessage(error, "The army could not enter the spire."));
+      toast.failed(error, "The army could not enter the spire.");
     } finally {
       setPending(null);
     }

@@ -46,7 +46,7 @@ export const GuardDismissal = ({
       toast.success("Guard dismissed");
       onDismissed();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not dismiss guard");
+      toast.failed(error, "Could not dismiss guard");
     } finally {
       submitting.current = false;
       setPending(false);

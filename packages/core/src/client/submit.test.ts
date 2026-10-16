@@ -154,9 +154,34 @@ describe("gameplay account submits", () => {
       return shard.land(invoke);
     });
 
-    await expect(send(shard)).rejects.toThrow(notSent("refused"));
+    await expect(send(shard)).rejects.toThrow("The shard refused this action. Try again.");
     expect((await send(shard)).transaction_hash).toBe(shard.hashAt(1));
     expect(shard.sentNonces()).toEqual(["0x7", "0x7"]);
+  });
+
+  it.each([
+    ["in-flight", "Another of your actions was still being sent. Try again."],
+    ["nonce", "Another action from this account was sent first, perhaps from another tab. Try again."],
+    ["deadline", "The shard took too long to accept this action. Try again."],
+    ["stamp", "The shard could not seal this action. Try again."],
+    ["validation", "The shard does not accept this action from this account."],
+    ["unavailable", "The shard could not reach its node. Try again."],
+  ])("a refusal naming %s is not sent, and says why", async (reason, sentence) => {
+    const shard = fakeShard(`0x7a${reason.length}`, (invoke) => {
+      if (shard.sent.length === 1) {
+        throw Object.assign(new Error("Transaction refused"), { baseError: { code: -32010, data: { reason } } });
+      }
+      return shard.land(invoke);
+    });
+
+    await expect(send(shard)).rejects.toMatchObject({ name: "TransactionNotSentError", message: sentence });
+  });
+
+  it("a refusal naming no reason it knows says only that the shard refused", async () => {
+    const shard = fakeShard("0x7b1", () => {
+      throw Object.assign(new Error("Transaction refused"), { baseError: { code: -32010, data: { reason: "debug" } } });
+    });
+    await expect(send(shard)).rejects.toThrow(/^The shard refused this action\. Try again\.$/);
   });
 
   it.each([false, true])("a 19 s visibility gap releases as no answer, never not sent: %s", async (advanced) => {
@@ -471,8 +496,6 @@ function invokeHash(address: string, calls: AllowArray<Call>, details: Universal
   });
 }
 
-/** The message of an action proven not sent for this reason. */
-const notSent = (reason: string) => new RegExp(`Transaction 0x[0-9a-f]+ not sent \\(${reason}\\)$`);
 /** The stamping proxy tried to forward this invoke and cannot say whether the node took it. */
 const outcomeUnknown = (transactionHash?: string) =>
   Object.assign(new Error("Transaction outcome unknown"), {

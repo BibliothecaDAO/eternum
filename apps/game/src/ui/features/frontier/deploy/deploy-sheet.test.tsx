@@ -138,7 +138,7 @@ describe("the Deploy sheet", () => {
       true,
     );
     await act(async () => settle({ hash: "0x1", block: 9, status: "REJECTED", revertReason: "No open army slot" }));
-    expect(refused).toHaveBeenCalledWith("No open army slot");
+    expect(refused.mock.lastCall?.[0]).toBe("No open army slot");
     expect(inFlight("deploy", 7)).toBeUndefined();
     expect(deployButton(host)?.disabled).toBe(false);
     act(() => root.unmount());

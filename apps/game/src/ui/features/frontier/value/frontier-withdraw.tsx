@@ -58,7 +58,7 @@ export const FrontierWithdraw = ({ realm, onClose }: { realm: NativeRows["Struct
       });
       setSent({ amount, claimId: receipt.transaction_hash, fromBlock });
     } catch (error) {
-      toast.error(extractReadableErrorMessage(error, "The withdrawal could not be sent."));
+      toast.failed(error, "The withdrawal could not be sent.");
     } finally {
       setSending(null);
     }

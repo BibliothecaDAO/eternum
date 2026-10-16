@@ -75,14 +75,18 @@ async function fixture(
   };
 }
 
-test("a failed stamp or private preflight refuses before any write reaches the node", async () => {
-  for (const options of [{ stampFails: true }, { admissionFails: true }, { accountClass: "0x999" }]) {
+test("a failed stamp or private preflight refuses before any write reaches the node, naming why", async () => {
+  for (const [options, reason] of [
+    [{ stampFails: true }, "stamp"],
+    [{ admissionFails: true }, "unavailable"],
+    [{ accountClass: "0x999" }, "validation"],
+  ] as const) {
     const f = await fixture(options);
     try {
       expect(await f.call("starknet_addInvokeTransaction", [invoke()])).toEqual({
         jsonrpc: "2.0",
         id: 42,
-        error: { code: -32010, message: "Transaction refused" },
+        error: { code: -32010, message: "Transaction refused", data: { reason } },
       });
       expect(f.writes).toHaveLength(0);
     } finally {
@@ -158,7 +162,7 @@ test("a write the account's own validation refuses is refused, with no hash and 
       expect(await f.call("starknet_addInvokeTransaction", [transaction])).toEqual({
         jsonrpc: "2.0",
         id: 42,
-        error: { code: -32010, message: "Transaction refused" },
+        error: { code: -32010, message: "Transaction refused", data: { reason: "validation" } },
       });
   } finally {
     intercepted.mockRestore();
@@ -273,7 +277,7 @@ test("an unavailable account-class lookup refuses the whole batch before forward
     expect(await f.call("starknet_addInvokeTransaction", [transaction])).toEqual({
       jsonrpc: "2.0",
       id: null,
-      error: { code: -32010, message: "Transaction refused" },
+      error: { code: -32010, message: "Transaction refused", data: { reason: "unavailable" } },
     });
     expect(f.writes).toHaveLength(0);
   } finally {
@@ -429,6 +433,7 @@ for (const phase of ["admission", "preflight"] as const) {
       expect((await f.call("starknet_addInvokeTransaction", [transaction])).error).toEqual({
         code: -32010,
         message: "Transaction refused",
+        data: { reason: "deadline" },
       });
       release();
       await Bun.sleep(20);

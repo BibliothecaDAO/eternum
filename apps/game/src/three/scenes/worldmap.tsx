@@ -2529,7 +2529,7 @@ export default class WorldmapScene extends WarpTravel {
       toast.success("Creating Hyperstructure...", { location: contract });
     } catch (error) {
       console.error("[Worldmap] Failed to create reserved hyperstructure", error);
-      toast.error("Unable to create this Hyperstructure right now.");
+      toast.failed(error, "Unable to create this Hyperstructure right now.");
     }
   }
 
@@ -3112,7 +3112,7 @@ export default class WorldmapScene extends WarpTravel {
           this.pendingExploreLatencyActions.delete(selectedEntityId);
           this.handlePendingArmyMovementFailure(selectedEntityId, cleanup);
           console.error("Army movement failed:", error);
-          toast.error(extractReadableErrorMessage(error, "The order was not sent."));
+          toast.failed(error, "The order was not sent.");
         },
       });
       return;

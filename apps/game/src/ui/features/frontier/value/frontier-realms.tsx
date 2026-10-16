@@ -34,7 +34,7 @@ export const FrontierRealms = ({
     try {
       await labor.claim(labor.plan.rows.filter((row) => row.state === "ready").map((row) => row.realm.realmId));
     } catch (error) {
-      toast.error(extractReadableErrorMessage(error, "The labor could not be claimed."));
+      toast.failed(error, "The labor could not be claimed.");
     } finally {
       setSending(false);
     }

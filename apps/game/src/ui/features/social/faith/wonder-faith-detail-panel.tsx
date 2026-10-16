@@ -59,7 +59,7 @@ export const WonderFaithDetailPanel = ({
       if (kind === "wonder") await systemCalls.claim_wonder_points({ signer: account, value: wonderId });
       else await systemCalls.claim_player_faith_points({ signer: account, value });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Faith claim failed");
+      toast.failed(error, "Faith claim failed");
     } finally {
       setClaiming(false);
     }

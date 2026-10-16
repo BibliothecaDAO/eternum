@@ -31,7 +31,7 @@ const OCCUPIED_SPACE_REASON = "space is occupied";
 export class OccupiedSpaceError extends Error {
   readonly _tag = "OccupiedSpaceError";
   constructor() {
-    super(OCCUPIED_SPACE_REASON);
+    super("This tile is occupied. Try another.");
     this.name = "OccupiedSpaceError";
   }
 }

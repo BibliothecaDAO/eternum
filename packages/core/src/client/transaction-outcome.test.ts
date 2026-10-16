@@ -95,7 +95,7 @@ describe("an action's outcome", () => {
     const rpc = { getTransactionReceipt: vi.fn(() => new Promise<never>(() => {})) };
     await expect(
       waitForActionOutcome(runtime, rpc, GAMES, TX, running, Promise.reject(new TransactionNotSentError(TX))),
-    ).rejects.toThrow("not sent (refused)");
+    ).rejects.toThrow("The shard refused this action.");
   });
 
   it("ends a reverted action with its revert reason, without waiting for Herald", async () => {

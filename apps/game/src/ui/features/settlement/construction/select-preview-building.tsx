@@ -270,7 +270,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         }
       } catch (error) {
         console.error("Failed to destroy building", error);
-        toast.error("Destroy failed. Please try again.");
+        toast.failed(error, "Destroy failed. Please try again.");
       } finally {
         setPendingAction(null);
       }
@@ -314,7 +314,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         );
       } catch (error) {
         console.error(`Failed to ${action} production`, error);
-        toast.error(`Failed to ${action} production. Please try again.`);
+        toast.failed(error, `Failed to ${action} production. Please try again.`);
       } finally {
         setPendingAction(null);
       }

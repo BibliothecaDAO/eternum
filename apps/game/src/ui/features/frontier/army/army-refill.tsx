@@ -32,7 +32,7 @@ export const ArmyRefill = ({ army, realm }: { army: DockArmy; realm: NativeRows[
         return sent;
       });
     } catch (error) {
-      toast.error(extractReadableErrorMessage(error, "The refill could not be sent."));
+      toast.failed(error, "The refill could not be sent.");
     }
   };
 

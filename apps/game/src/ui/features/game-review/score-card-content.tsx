@@ -110,7 +110,7 @@ export const ScoreCardContent = ({
       }
     } catch (caughtError) {
       console.error("Failed to copy highlight image", caughtError);
-      toast.error("Copy failed. Please try again.");
+      toast.failed(caughtError, "Copy failed. Please try again.");
     } finally {
       setIsCopyingImage(false);
     }
@@ -134,7 +134,7 @@ export const ScoreCardContent = ({
     navigator.clipboard
       .writeText(shareMessage)
       .then(() => toast.success("Message copied to clipboard!"))
-      .catch(() => toast.error("Failed to copy message"));
+      .catch((error) => toast.failed(error, "Failed to copy message"));
   }, [shareMessage]);
 
   if (isLoading) {

@@ -145,7 +145,7 @@ export const BuildSheet = ({
         return sent;
       });
     } catch (error) {
-      toast.error(extractReadableErrorMessage(error, "The building could not be placed."));
+      toast.failed(error, "The building could not be placed.");
     }
   };
 

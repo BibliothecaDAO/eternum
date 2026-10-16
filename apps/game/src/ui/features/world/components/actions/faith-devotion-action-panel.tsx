@@ -378,7 +378,7 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
       toast.success("Devotion updated.");
       closeModal();
     } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to update devotion."));
+      toast.failed(error, "Failed to update devotion.");
     } finally {
       setIsSubmitting(false);
     }

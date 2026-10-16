@@ -139,7 +139,7 @@ describe("the build sheet", () => {
     const { build, draw, unmount, settle } = buildInFlight();
     await act(async () => build()!.click());
     await settle({ hash: "0x1", block: 9, status: "REJECTED", revertReason: "Not enough population" });
-    expect(refused).toHaveBeenCalledWith("Not enough population");
+    expect(refused.mock.lastCall?.[0]).toBe("Not enough population");
     expect(ghost()).toBeNull();
     draw(true);
     expect(build()?.disabled).toBe(false);

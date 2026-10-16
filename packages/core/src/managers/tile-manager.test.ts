@@ -30,7 +30,10 @@ describe("building occupancy errors", () => {
   it("tags the occupied-space rejection at the provider boundary", async () => {
     const { create_building, place } = setup();
     create_building.mockRejectedValueOnce(new Error("execution reverted: space is occupied"));
-    await expect(place()).rejects.toMatchObject({ _tag: "OccupiedSpaceError", message: "space is occupied" });
+    await expect(place()).rejects.toMatchObject({
+      _tag: "OccupiedSpaceError",
+      message: "This tile is occupied. Try another.",
+    });
   });
   it("preserves unrelated failures and successful transaction results", async () => {
     const { create_building, place } = setup();

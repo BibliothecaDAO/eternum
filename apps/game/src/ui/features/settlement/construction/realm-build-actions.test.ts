@@ -25,7 +25,7 @@ vi.mock("@bibliothecadao/eternum", () => ({
   buildableRadius: () => 1,
   OccupiedSpaceError: class OccupiedSpaceError extends Error {},
 }));
-vi.mock("@/ui/features/event-feed/notify", () => ({ toast: { error: state.error } }));
+vi.mock("@/ui/features/event-feed/notify", () => ({ toast: { error: state.error, failed: state.error } }));
 vi.mock("@/sync/active-game-client", () => ({
   requireActiveGameClient: () => activeClient,
   getActiveGameStore: () => activeClient?.setup.store ?? null,

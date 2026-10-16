@@ -219,7 +219,9 @@ it.each([
       expect(reads.status).toBe(0);
       expect(reads.receipt).toBe(0);
     } else if (name.includes("same address again")) {
-      expect(timeline.some((line) => line.startsWith("0.00s") && line.includes("not sent (refused)"))).toBe(true);
+      expect(timeline.some((line) => line.startsWith("0.00s") && line.includes("The shard refused this action."))).toBe(
+        true,
+      );
       expect(timeline.some((line) => line.startsWith("1.00s  send #2 at nonce 5"))).toBe(true);
     } else {
       expect(timeline.some((line) => /^1[24]\.00s  send #2/.test(line))).toBe(true);

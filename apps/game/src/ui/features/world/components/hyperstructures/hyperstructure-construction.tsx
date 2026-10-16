@@ -101,7 +101,7 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
       setAmounts({});
       toast.success(message);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Construction action failed");
+      toast.failed(error, "Construction action failed");
     } finally {
       setPending(false);
     }

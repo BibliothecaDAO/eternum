@@ -7,6 +7,7 @@ import { permitsAccountRequest, type ShardIdentity } from "./account-rpc-policy"
 import { accountRequestLimiter, rpcClientAddress } from "./rpc-client-limit";
 import { isDevShardChain } from "../../../packages/value-ledger/src/dev-shard";
 import { seaterAccountAddresses } from "../../../packages/value-ledger/src/shard-accounts";
+import { PLAY_REFUSED_CODE, type PlayRefusalReason } from "../../../packages/provider/src/play-refusal";
 
 const READ_METHODS = new Set([
   "starknet_specVersion",
@@ -43,11 +44,18 @@ type AccountClassReader = (sender: string, signal: AbortSignal) => Promise<strin
  */
 const SEATER_NONCE_WINDOW = 48n;
 
+/** The preparation ran out of time before the play could be forwarded. */
+class PreparationExpired extends Error {}
+
 function assertBeforeForward(preparation: Preparation) {
-  preparation.signal.throwIfAborted();
+  if (preparation.signal.aborted) throw new PreparationExpired();
   // A busy event loop can delay the abort event; elapsed time still refuses a late forward.
-  if (performance.now() >= preparation.deadline) throw new Error("Transaction refused");
+  if (performance.now() >= preparation.deadline) throw new PreparationExpired();
 }
+
+/** A refusal before forwarding was the preparation's deadline when it ran out of time; otherwise `otherwise`. */
+const refusalOf = (error: unknown, preparation: Preparation, otherwise: PlayRefusalReason): PlayRefusalReason =>
+  error instanceof PreparationExpired || preparation.signal.aborted ? "deadline" : otherwise;
 
 function untilAborted<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -89,8 +97,16 @@ function isRead(call: unknown): boolean {
   return request.jsonrpc === "2.0" && typeof request.method === "string" && READ_METHODS.has(request.method);
 }
 
-function refuse(code: number, message: string, status = 200): Response {
-  return Response.json({ jsonrpc: "2.0", id: null, error: { code, message } }, { status, headers: CORS });
+function refuse(code: number, message: string, status = 200, data?: object): Response {
+  return Response.json(
+    { jsonrpc: "2.0", id: null, error: { code, message, ...(data ? { data } : {}) } },
+    { status, headers: CORS },
+  );
+}
+
+/** A write refused before the node took it, naming the rule (play-refusal.ts): never a detail of the box. */
+function refuseTransaction(reason: PlayRefusalReason, status: number): Response {
+  return refuse(PLAY_REFUSED_CODE, "Transaction refused", status, { reason });
 }
 
 function privateNode(upstream: string): URL {
@@ -210,7 +226,7 @@ async function handlePublicRequest(
   let payload: unknown;
   try {
     const raw = await untilAborted(request.arrayBuffer(), preparation.signal);
-    if (raw.byteLength > MAX_TRANSACTION_BYTES) return refuse(-32010, "Transaction refused", 413);
+    if (raw.byteLength > MAX_TRANSACTION_BYTES) return refuseTransaction("validation", 413);
     payload = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(raw));
   } catch {
     return refuse(-32700, "Invalid JSON", 400);
@@ -232,9 +248,9 @@ async function handlePublicRequest(
       Promise.all(calls.map((call) => admitRequest(call, identity, preparation.signal, readAccountClass))),
       preparation.signal,
     );
-  } catch {
+  } catch (error) {
     return calls.some(isWrite)
-      ? refuse(-32010, "Transaction refused", 502)
+      ? refuseTransaction(refusalOf(error, preparation, "unavailable"), 502)
       : refuse(-32012, "RPC read unavailable", 502);
   }
   if (admitted.some((call) => !call)) return refuse(-32601, "RPC method is not public");
@@ -309,15 +325,20 @@ async function nodeCall(
   if (!response.ok || value.result === undefined || Object.hasOwn(value, "error")) throw new Error("Node unavailable");
   return value.result;
 }
-function transactionRefused(id: unknown) {
-  return rpcError(id, -32010, "Transaction refused");
+function transactionRefused(id: unknown, reason: PlayRefusalReason) {
+  return rpcError(id, PLAY_REFUSED_CODE, "Transaction refused", { reason });
 }
-function rpcError(id: unknown, code: number, message: string, transactionHash?: string) {
-  return {
-    jsonrpc: "2.0",
-    id: id ?? null,
-    error: { code, message, ...(transactionHash ? { data: { transaction_hash: transactionHash } } : {}) },
-  };
+function rpcError(id: unknown, code: number, message: string, data?: object) {
+  return { jsonrpc: "2.0", id: id ?? null, error: { code, message, ...(data ? { data } : {}) } };
+}
+/** The proxy tried to forward and cannot say whether the node took the write: the hash it computed, if any. */
+function outcomeUnknown(id: unknown, transactionHash?: string) {
+  return rpcError(
+    id,
+    -32011,
+    "Transaction outcome unknown",
+    transactionHash ? { transaction_hash: transactionHash } : undefined,
+  );
 }
 function isWrite(value: unknown): boolean {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
@@ -364,9 +385,10 @@ const VALIDATION_FAILURE = 55;
 function writeAnswer(answer: NodeAnswer, call: RpcCall, expectedHash?: string): unknown {
   const result = answer.result as { transaction_hash?: unknown; contract_address?: unknown } | undefined;
   const hash = felt(result?.transaction_hash);
-  if (answer.error?.code === VALIDATION_FAILURE && !Object.hasOwn(answer, "result")) return transactionRefused(call.id);
+  if (answer.error?.code === VALIDATION_FAILURE && !Object.hasOwn(answer, "result"))
+    return transactionRefused(call.id, "validation");
   if (Object.hasOwn(answer, "error") || hash === undefined || (expectedHash && hash !== felt(expectedHash)))
-    return rpcError(call.id, -32011, "Transaction outcome unknown", expectedHash);
+    return outcomeUnknown(call.id, expectedHash);
   const contract = call.method === "starknet_addDeployAccountTransaction" ? felt(result?.contract_address) : undefined;
   return {
     jsonrpc: "2.0",
@@ -392,10 +414,12 @@ async function forwardRequest(
   const { call, game } = admitted;
   const play = game?.entrypoint.stamp ? game.transaction : undefined;
   const account = play ? felt(play.sender_address)!.toString() : undefined;
-  if (account && inFlightAccounts.has(account)) return transactionRefused(call.id);
+  if (account && inFlightAccounts.has(account)) return transactionRefused(call.id, "in-flight");
   if (account) inFlightAccounts.add(account);
   let forwarded = false;
   let expectedHash: string | undefined;
+  // What a failure before forwarding refuses for, as the preparation moves on: reading the node, then stamping.
+  let stage: PlayRefusalReason = "unavailable";
   try {
     assertBeforeForward(preparation);
     let outgoing = game ? { ...call, params: [game.transaction] } : call;
@@ -408,15 +432,15 @@ async function forwardRequest(
         preparation.signal,
       );
       // Retrying the same accepted transaction uses the same root.
-      if (
-        !admitsNonce(felt(play.nonce), felt(nonce), seaters.has(felt(play.sender_address)!)) ||
-        felt(accountClass) !== felt(identity.accountClassHash)
-      )
-        return transactionRefused(call.id);
+      if (felt(accountClass) !== felt(identity.accountClassHash)) return transactionRefused(call.id, "validation");
+      if (!admitsNonce(felt(play.nonce), felt(nonce), seaters.has(felt(play.sender_address)!)))
+        return transactionRefused(call.id, "nonce");
       assertBeforeForward(preparation);
+      stage = "stamp";
       const stamp = stamper.stamp(play);
       const hash = felt(stamp.transactionHash);
-      if (hash === undefined) return transactionRefused(call.id);
+      if (hash === undefined) return transactionRefused(call.id, "stamp");
+      stage = "unavailable";
       expectedHash = `0x${hash.toString(16)}`;
       outgoing = { ...call, params: [{ ...play, signature: [...play.signature, ...stamp.suffix] }] };
     }
@@ -435,11 +459,11 @@ async function forwardRequest(
     const answer: unknown = await untilAborted(response.json(), forwardSignal);
     if (!response.ok || !validReply(answer, call)) throw new Error("Invalid private node reply");
     return isWrite(call) ? writeAnswer(answer, call, expectedHash) : readAnswer(answer, call);
-  } catch {
+  } catch (error) {
     if (!isWrite(call)) return rpcError(call.id, -32012, "RPC read unavailable");
     return forwarded
-      ? rpcError(call.id, -32011, "Transaction outcome unknown", expectedHash)
-      : transactionRefused(call.id);
+      ? outcomeUnknown(call.id, expectedHash)
+      : transactionRefused(call.id, refusalOf(error, preparation, stage));
   } finally {
     if (account) inFlightAccounts.delete(account);
   }

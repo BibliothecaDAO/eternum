@@ -290,13 +290,9 @@ const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition
       await createHyperstructure();
     } catch (error) {
       console.error("[ReservedHyperstructurePanel] Failed to create reserved hyperstructure", error);
-      const raw = error instanceof Error ? error.message : String(error);
-      // A stale tile can still show "reserved" after someone created it —
-      // translate the contract revert instead of dumping the paymaster error.
-      const message = raw.includes("already been created")
-        ? "This hyperstructure was already created — the map is catching up."
-        : raw || "Failed to create the hyperstructure.";
-      toast.error(message, { location: { x: selectedHex.col, y: selectedHex.row } });
+      toast.failed(error, "Failed to create the hyperstructure.", {
+        location: { x: selectedHex.col, y: selectedHex.row },
+      });
     }
   }, [createHyperstructure, selectedHex.col, selectedHex.row]);
 

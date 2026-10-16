@@ -198,11 +198,7 @@ const submitRealmBuilding = async (
   } catch (error) {
     if (signal?.aborted || !isCurrentGame()) return false;
     console.error("Failed to auto-build", error);
-    if (error instanceof OccupiedSpaceError) {
-      toast.error("This tile is occupied. Please try again.");
-    } else {
-      toast.error("Building failed. Please try again.");
-    }
+    toast.failed(error, "Building failed. Please try again.");
     return false;
   }
 };

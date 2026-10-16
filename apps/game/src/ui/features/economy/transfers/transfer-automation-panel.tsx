@@ -610,7 +610,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
         setStatusMessage(resolvedDestinationIds.length > 1 ? "Transfers started" : "Transfer started");
       } catch (e) {
         console.error(e);
-        toast.error("Transfer failed.");
+        toast.failed(e, "Transfer failed.");
         setStatusMessage("Transfer failed");
       } finally {
         setIsSubmitting(false);
@@ -646,7 +646,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       }
     } catch (e) {
       console.error(e);
-      toast.error("Immediate run failed. Scheduled for later.");
+      toast.failed(e, "Immediate run failed.", { description: "Scheduled for later." });
       setStatusMessage("Scheduled; immediate run failed");
     }
 
