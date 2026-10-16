@@ -1,3 +1,5 @@
+import type { AlertState } from "./alerts";
+
 export type Status = "up" | "degraded" | "down";
 export interface Probe {
   id: string;
@@ -40,8 +42,8 @@ export interface MonitorState {
   document: StatusDocument;
   targets: Target[];
   counters: Record<string, Counter[]>;
-  /** Incidents emailed and not yet resolved (alerts.ts); a state written before alerts holds none. */
-  told?: string[];
+  /** The incidents told and the notices not yet confirmed sent (alerts.ts); a state written before alerts holds none. */
+  alerts?: AlertState;
 }
 export const STATE_KEY = "state.json";
 

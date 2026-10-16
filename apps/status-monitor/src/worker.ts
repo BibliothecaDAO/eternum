@@ -1,6 +1,6 @@
 import { environmentL2, type ValueEnvironment } from "@realms-world/chain";
 import { Effect } from "effect";
-import { tellPeople, type Alerting } from "./alerts";
+import { NO_ALERTS, recordNotices, sendNotices, type Alerting } from "./alerts";
 import { isStatusDocument, STATE_KEY, type MonitorState } from "./model";
 import { probeServices, type PublicValueTargets } from "./probes";
 import { nextMonitorState } from "./state";
@@ -16,8 +16,10 @@ interface Env {
 }
 
 /**
- * The monitor publishes one conditional object: counters, public document and the incidents already emailed cannot
- * diverge after a crash.
+ * The monitor publishes one conditional object: counters, public document and alert notices cannot diverge after a
+ * crash. A notice is recorded in that object before it is sent, and only an observation whose write won sends: an
+ * overlapping, superseded run sends nothing. A send whose confirmation is not written is retried, exactly as recorded,
+ * under its idempotency key.
  */
 export const monitor = (
   bucket: R2Bucket,
@@ -33,9 +35,20 @@ export const monitor = (
       const result = yield* Effect.promise(() => probeServices(network, now, previous?.targets ?? [], targets));
       const next = nextMonitorState(previous, now, result.probes, result.targets);
       if (!next) return;
-      next.told = yield* Effect.promise(() => tellPeople(next.document, previous?.told ?? [], alerting, network));
-      yield* Effect.promise(() => publishObservation(bucket, object, next));
+      next.alerts = recordNotices(next.document, previous?.alerts ?? NO_ALERTS, alerting);
+      const written = yield* Effect.promise(() => publishObservation(bucket, object, next));
+      if (!alerting || next.alerts.outbox.length === 0) return;
+      const sent = yield* Effect.promise(() => sendNotices(next.alerts!.outbox, alerting.apiKey, network));
+      if (sent.size === 0) return;
+      const outbox = next.alerts.outbox.filter((notice) => !sent.has(notice.key));
+      yield* Effect.promise(() => recordSent(bucket, written, { ...next, alerts: { ...next.alerts!, outbox } }));
     }),
+  );
+
+/** A newer observation already holds these notices; it confirms them itself, and Resend drops the repeated keys. */
+const recordSent = (bucket: R2Bucket, written: { etag: string }, next: MonitorState) =>
+  publishObservation(bucket, written, next).catch(() =>
+    console.error(JSON.stringify({ event: "status_alert_confirmation_superseded" })),
   );
 
 const readMonitorState = async (bucket: R2Bucket) => {
@@ -46,17 +59,19 @@ const readMonitorState = async (bucket: R2Bucket) => {
     (!isStatusDocument(previous.document) ||
       !Array.isArray(previous.targets) ||
       !previous.counters ||
-      (previous.told !== undefined && !Array.isArray(previous.told)))
+      (previous.alerts !== undefined &&
+        (!Array.isArray(previous.alerts.told) || !Array.isArray(previous.alerts.outbox))))
   )
     throw new Error("Invalid monitor state");
   return { object, previous };
 };
-const publishObservation = async (bucket: R2Bucket, object: R2ObjectBody | null, next: MonitorState) => {
+const publishObservation = async (bucket: R2Bucket, object: { etag: string } | null, next: MonitorState) => {
   const written = await bucket.put(STATE_KEY, JSON.stringify(next), {
     onlyIf: object ? { etagMatches: object.etag } : { etagDoesNotMatch: "*" },
     httpMetadata: { contentType: "application/json", cacheControl: "no-store" },
   });
   if (!written) throw new Error("Monitor observation superseded; conditional publication refused");
+  return written;
 };
 
 export default {

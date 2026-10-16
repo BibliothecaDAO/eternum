@@ -2,8 +2,11 @@
 
 The status monitor (`apps/status-monitor`) probes every public path once a minute. A component that stays down or
 degraded for two minutes is emailed to the address setup recorded (`alertEmail` in the private directory's
-`inputs.json`), and so is its recovery. The email names the component; find it below. Dev is `play.dev-realms.party` and
-the box's dev shard is `realms-dev`. Production is `play.realms.party`, and its Worker names drop `-staging`.
+`inputs.json`), and so is its recovery, each exactly once. Each email is recorded in the monitor's state before it is
+sent and retried as recorded until Resend confirms it; one Resend has not confirmed within 23 hours is dropped and
+logged as `status_alert_expired` (the status page still shows the incident), because past Resend's 24-hour key a resend
+could be a second email. The email names the component; find it below. Dev is `play.dev-realms.party` and the box's dev
+shard is `realms-dev`. Production is `play.realms.party`, and its Worker names drop `-staging`.
 
 Commands for the box run there (`ssh realms-dev`). Worker logs need the Cloudflare token:
 `pnpm --dir <app> exec wrangler tail <worker>`.
