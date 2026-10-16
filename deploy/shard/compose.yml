@@ -2,8 +2,15 @@ name: ${SHARD_NAME:?Choose a unique shard name}
 
 x-madara-image: &madara-image ghcr.io/madara-alliance/madara@sha256:40934db1cdcd0e37058531c9bda152b336a0b594e349cbf2578f3893e0cc20e2
 
+# Docker keeps container logs without limit by default; the node alone writes about 400 MB a day while idle. Each
+# container keeps at most five 100 MB files.
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "100m", max-file: "5" }
+
 x-init: &init
   image: ${SHARD_INIT_IMAGE:?Use the published init image digest}
+  logging: *logging
   volumes:
     - ${SHARD_DATA:-./data}:/data
     - public-config:/public
@@ -34,6 +41,7 @@ services:
     <<: *init
     command: ["prepare"]
   madara:
+    logging: *logging
     image: *madara-image
     entrypoint: ["tini", "--", "/bin/madara"]
     command:
@@ -67,6 +75,7 @@ services:
       madara: { condition: service_started }
       herald: { condition: service_started }
   postgres:
+    logging: *logging
     image: postgres@sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73
     environment:
       POSTGRES_USER: herald
@@ -82,6 +91,7 @@ services:
       timeout: 3s
       retries: 30
   herald:
+    logging: *logging
     image: ${SHARD_HERALD_IMAGE:?Use the published Herald image digest}
     entrypoint: ["/bin/sh", "-ec", "set -a; . /runtime/herald.env; exec bun /app/herald.js"]
     volumes: ["public-config:/config:ro", "herald-config:/runtime:ro"]
@@ -92,6 +102,7 @@ services:
       madara: { condition: service_started }
       postgres: { condition: service_healthy }
   rpc:
+    logging: *logging
     image: ${SHARD_HERALD_IMAGE:?Use the published Herald image digest}
     entrypoint: ["/bin/sh", "-ec", "set -a; . /config/proxy.env; exec bun /app/read-rpc.js"]
     environment:
@@ -116,6 +127,7 @@ services:
   # The gameplay harness against this shard, from its network, as the host user, so its reports in data/ are the
   # user's: docker compose run --rm harness OPTIONS.
   harness:
+    logging: *logging
     <<: *init
     profiles: [harness]
     entrypoint: ["python3", "/app/deploy/shard/init.py", "harness"]
@@ -124,6 +136,7 @@ services:
   # The shard's own metrics: the node's OTLP export, every container's CPU, as JSON
   # lines under data/metrics. Each file rotates at 100 MB and keeps two older files, 600 MB at most.
   metrics:
+    logging: *logging
     image: ${SHARD_METRICS_IMAGE:?Use the published metrics image digest}
     command: ["--config=/config/collector.json"]
     user: "${HOST_UID:?}:${HOST_GID:?}"
