@@ -37,7 +37,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-16",
     title: "Full windows open centred",
     description:
-      "Windows such as Transfer Troops & Relics, spire travel, relic crafting and battle details now open in the middle of the screen instead of next to the army or button that opened them, so they no longer spill off the edge.",
+      "Windows such as Transfer Troops & Relics, spire travel, relic crafting and battle details now open in the middle of the screen instead of next to the army or button that opened them, so they no longer spill off the edge. Every full window, Build and Production included, opens there each time, even after you dragged one aside.",
     type: "fix",
   },
   {

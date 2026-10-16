@@ -3,9 +3,13 @@ import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { COMPACT_HUD_MEDIA_QUERY } from "@/hooks/helpers/use-compact-hud";
-import type { SurfaceAnchor } from "@/hooks/store/use-popover-store";
+import { type SurfaceAnchor, usePopoverStore } from "@/hooks/store/use-popover-store";
 
-import { PopoverPanel, SurfaceFrame } from "./popover";
+import { PopoverPanel, SurfaceFrame, SurfaceHost } from "./popover";
+
+// Play is open, and the HUD's sounds are not this test's business.
+vi.mock("@/utils/can-issue-orders", () => ({ refusedBeforePlay: () => false }));
+vi.mock("@/audio/hooks/useAudio", () => ({ useAudio: () => ({ play: () => {} }) }));
 
 /** Where an order was given on the map: a tile low on the right of a 1440×900 screen. */
 const TILE: SurfaceAnchor = { left: 1200, right: 1200, top: 700, bottom: 700 };
@@ -117,5 +121,58 @@ describe("on a phone", () => {
     const popover = await placedStyle(TILE, smallPopover);
     expect([modal.left, modal.right, modal.top]).toEqual(["0px", "0px", ""]);
     expect([popover.left, popover.right, popover.top]).toEqual(["0px", "0px", ""]);
+  });
+});
+
+describe("a desk the player dragged, opened again", () => {
+  beforeEach(() => useScreen(1440, 900));
+  afterEach(() => window.localStorage.clear());
+
+  /** The HUD's one surface host, and Production opened through the store as the action strip opens it. */
+  const mountHost = async () => {
+    const root = createRoot(document.createElement("div"));
+    await act(async () => root.render(<SurfaceHost />));
+    return { unmount: () => act(async () => root.unmount()) };
+  };
+  const openProduction = () =>
+    act(async () =>
+      usePopoverStore.getState().openSurface({
+        id: "production",
+        content: (
+          <SurfaceFrame title="Production" onClose={() => {}}>
+            <p>Farm</p>
+          </SurfaceFrame>
+        ),
+      }),
+    );
+  const productionPanel = () => document.querySelector<HTMLElement>('[data-popover-panel="production"]');
+  const dragHeader = async (by: { x: number; y: number }) => {
+    const panel = productionPanel();
+    const header = panel?.querySelector("[data-popover-drag-handle]");
+    const pointer = (type: string, at: { x: number; y: number }) =>
+      new MouseEvent(type, { bubbles: true, clientX: at.x, clientY: at.y });
+    await act(async () => header?.dispatchEvent(pointer("pointerdown", { x: 100, y: 100 })));
+    await act(async () => panel?.dispatchEvent(pointer("pointermove", { x: 100 + by.x, y: 100 + by.y })));
+    await act(async () => panel?.dispatchEvent(pointer("pointerup", { x: 100 + by.x, y: 100 + by.y })));
+  };
+
+  it("moves with the drag while open, and opens centred again after it is closed", async () => {
+    const host = await mountHost();
+    await openProduction();
+    await dragHeader({ x: 300, y: 200 });
+    expect(productionPanel()?.style.transform).toBe("translateX(-50%) translate(300px, 200px)");
+    await act(async () => usePopoverStore.getState().close("production"));
+    await openProduction();
+    expect([productionPanel()?.style.transform, productionPanel()?.style.top]).toEqual(["translateX(-50%)", "274px"]);
+    await host.unmount();
+  });
+
+  it("opens centred for a player whose browser still holds a position saved by an older client", async () => {
+    window.localStorage.setItem("eternum.free-surface-offset", JSON.stringify({ x: 300, y: 200 }));
+    const host = await mountHost();
+    await openProduction();
+    expect([productionPanel()?.style.transform, productionPanel()?.style.top]).toEqual(["translateX(-50%)", "274px"]);
+    await act(async () => usePopoverStore.getState().close("production"));
+    await host.unmount();
   });
 });

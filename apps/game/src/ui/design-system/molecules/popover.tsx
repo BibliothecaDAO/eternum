@@ -64,8 +64,6 @@ interface PopoverPanelProps {
   mapClick?: PopoverMapClick;
   /** Pointer-downs inside the anchor are the trigger's own clicks, never an outside dismiss. */
   isInsideAnchor?: (target: EventTarget | null) => boolean;
-  /** A desk the player can move: it opens where the last remembered desk was left. */
-  rememberPosition?: boolean;
 }
 
 const neverInsideAnchor = () => false;
@@ -86,12 +84,11 @@ export const PopoverPanel = ({
   onDismiss,
   isInsideAnchor = neverInsideAnchor,
   mapClick = "dismiss",
-  rememberPosition = false,
 }: PopoverPanelProps) => {
   const panelRef = useRef<HTMLDivElement>(null);
   const [panelStyle, setPanelStyle] = useState<CSSProperties | null>(null);
   const lane = useCompactLane();
-  const drag = useSurfaceDrag(rememberPosition, lane === null);
+  const drag = useSurfaceDrag(lane === null);
   const resolveAnchor = typeof anchor === "function" ? anchor : () => anchor;
   const resolveAnchorRef = useRef(resolveAnchor);
   resolveAnchorRef.current = resolveAnchor;
@@ -261,7 +258,6 @@ export const SurfaceHost = () => {
       id={surface.id}
       ariaLabel={surface.id}
       anchor={surface.anchor ?? "top-center"}
-      rememberPosition={surface.anchor === null}
       placement={surface.placement}
       mapClick={surface.mapClick}
       className="w-auto p-0"
@@ -473,33 +469,11 @@ const resolveAnchoredPanelStyle = (
 
 const viewportHeightBelow = (top: number): number => Math.max(0, window.innerHeight - top - VIEWPORT_MARGIN_PX);
 
-const FREE_SURFACE_OFFSET_KEY = "eternum.free-surface-offset";
-
-/** Where the player last left a free-floating desk; every desk (Build, Production, Military, Transfer) opens there. */
-const readFreeSurfaceOffset = (): { x: number; y: number } => {
-  try {
-    const stored = JSON.parse(window.localStorage.getItem(FREE_SURFACE_OFFSET_KEY) ?? "null");
-    if (stored && Number.isFinite(stored.x) && Number.isFinite(stored.y)) return { x: stored.x, y: stored.y };
-  } catch {
-    // No stored position: the desk opens where it is placed.
-  }
-  return { x: 0, y: 0 };
-};
-
-const writeFreeSurfaceOffset = (offset: { x: number; y: number }): void => {
-  try {
-    window.localStorage.setItem(FREE_SURFACE_OFFSET_KEY, JSON.stringify(offset));
-  } catch {
-    // Storage refused: the position still holds for this open.
-  }
-};
-
 /**
- * A surface with a header can be dragged by it. An anchored popover keeps its offset until it closes; a free desk
- * remembers where it was left and every free desk opens there.
+ * A surface with a header can be dragged by it while it is open; it opens where its placement puts it every time.
  */
-function useSurfaceDrag(isFreeSurface: boolean, enabled: boolean) {
-  const [offset, setOffset] = useState(() => (isFreeSurface ? readFreeSurfaceOffset() : { x: 0, y: 0 }));
+function useSurfaceDrag(enabled: boolean) {
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
   const dragStart = useRef<{ pointerX: number; pointerY: number; offsetX: number; offsetY: number } | null>(null);
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!enabled) return;
@@ -516,7 +490,6 @@ function useSurfaceDrag(isFreeSurface: boolean, enabled: boolean) {
       y: start.offsetY + event.clientY - start.pointerY,
     };
     setOffset(next);
-    if (isFreeSurface) writeFreeSurfaceOffset(next);
   };
   const onPointerUp = () => {
     dragStart.current = null;
