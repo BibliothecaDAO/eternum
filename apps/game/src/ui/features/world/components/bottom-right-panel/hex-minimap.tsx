@@ -211,6 +211,34 @@ const resolveMinimapScaleForCameraDistance = (cameraDistance: number | null | un
     ? clamp((MINIMAP_SCALE_REFERENCE * WORLD_CAMERA_DISTANCE_REFERENCE) / cameraDistance, 0.4, 4)
     : MINIMAP_SCALE_REFERENCE;
 
+/** Sites the world places with no entity of their own: the tile's occupier alone names them. */
+const SITE_MEANINGS: Partial<Record<number, MinimapMarker["name"]>> = {
+  [TileOccupier.Spire]: "spire",
+  [TileOccupier.DormantSpire]: "spire",
+  [TileOccupier.Shrine]: "shrine",
+  [TileOccupier.Well]: "well",
+  [TileOccupier.ReservedHyperstructure]: "hyperstructure",
+  [TileOccupier.Chest]: "chest",
+};
+
+/**
+ * A tile's marker, read from what occupies it first: an empty tile has none, whatever entity id it still carries; a
+ * known entity's own marker; else the occupier's meaning. A zero or missing id is no entity, so never looked up.
+ */
+const resolveTileMarker = (tile: MinimapTile, markers: ReadonlyMap<string, MinimapMarker>): MinimapMarker | null => {
+  const type = tile.occupier_type ?? 0;
+  if (!hasTileOccupier(type)) return null;
+  const id = tile.occupier_id ?? "";
+  const known = id && id !== "0" ? markers.get(id) : undefined;
+  if (known) return known;
+  const site = SITE_MEANINGS[type];
+  if (site) return { name: site, owner: "neutral" };
+  const structure = getStructureInfoFromTileOccupier(type);
+  if (structure) return { name: structureMeaning(structure.type), owner: "neutral" };
+  if (getExplorerInfoFromTileOccupier(type)) return { name: "map-army", owner: "neutral" };
+  return null;
+};
+
 interface HexMinimapProps {
   tiles: MinimapTile[];
   selectedHex: HexPosition | null;
@@ -427,19 +455,7 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
     return result;
   }, [tiles.length, centeredIndex.byCol, minX, maxX, minY, maxY]);
 
-  const getTileMarker = useCallback(
-    (tile: MinimapTile): MinimapMarker | null => {
-      const known = markers.get(tile.occupier_id ?? "");
-      if (known) return known;
-      const type = tile.occupier_type ?? 0;
-      if (type === TileOccupier.Chest) return { name: "chest", owner: "neutral" };
-      const structure = getStructureInfoFromTileOccupier(type);
-      if (structure) return { name: structureMeaning(structure.type), owner: "neutral" };
-      if (getExplorerInfoFromTileOccupier(type)) return { name: "map-army", owner: "neutral" };
-      return null;
-    },
-    [markers],
-  );
+  const getTileMarker = useCallback((tile: MinimapTile) => resolveTileMarker(tile, markers), [markers]);
 
   const tileElements = useMemo(
     () =>
