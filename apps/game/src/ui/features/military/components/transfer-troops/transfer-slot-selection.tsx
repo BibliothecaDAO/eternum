@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { GuardCooldownBadge } from "../guard-cooldown-badge";
 import { GuardStaminaBar } from "../guard-stamina-bar";
 import { TransferDirection } from "./transfer-direction";
+import { acceptsTroops } from "./transfer-eligibility";
 import { TroopBadge } from "./transfer-troop-badge";
 
 interface SlotTroopInfo {
@@ -133,14 +134,10 @@ export const TransferSlotSelection = ({
 
           const isMismatch =
             transferDirection === TransferDirection.ExplorerToStructure
-              ? troopInfo?.count !== 0 &&
-                selectedTroop &&
-                (selectedTroop.tier !== troopInfo?.tier || selectedTroop.category !== troopInfo?.category)
+              ? !!selectedTroop && !acceptsTroops(troopInfo, selectedTroop)
               : transferDirection === TransferDirection.StructureToExplorer &&
-                targetTroop &&
-                targetTroop.count !== 0 &&
-                troopInfo &&
-                (targetTroop.tier !== troopInfo.tier || targetTroop.category !== troopInfo.category);
+                !!troopInfo &&
+                !acceptsTroops(targetTroop, troopInfo);
 
           const isSlotDisabled = isSourceSlotOutOfTroops || isCooldownLocked;
 

@@ -22,6 +22,21 @@ const idsMatch = (left: ID | bigint | null | undefined, right: ID | bigint | nul
   return String(left) === String(right);
 };
 
+interface TroopKind {
+  tier?: unknown;
+  category?: unknown;
+  count?: number | bigint;
+}
+
+/**
+ * The chain's merge rule (`transfer_troops`, `add_guard_troops`): troops join an army or guard slot that holds none,
+ * whatever their type, or one that holds the same tier and type. An empty slot has no type to compare against.
+ */
+export const acceptsTroops = (holder: TroopKind | null | undefined, incoming: TroopKind | null | undefined): boolean =>
+  !holder ||
+  Number(holder.count ?? 0) === 0 ||
+  (!!incoming && holder.tier === incoming.tier && holder.category === incoming.category);
+
 /** Armies of one owner merge across realms; the chain still refuses mixed troop types. */
 export const getTroopTransferBlockReason = ({
   transferDirection,
