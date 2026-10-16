@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-16",
+    title: "Recognize each realm level",
+    description:
+      "Realm portraits and minimap badges now follow each level’s buildings: canvas and thatch, the city forum, twin towers and the imperial spire.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-16",
     title: "The command sidebar is back",
     description:
       "Blitz and Eternum use the command sidebar again: your structures and the selected one's panel and actions on the left, events and the selected tile on the right, and the Empire, Map, Log, Chat and Details tabs on a phone.",

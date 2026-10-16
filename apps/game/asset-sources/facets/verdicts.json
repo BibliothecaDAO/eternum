@@ -756,16 +756,16 @@
     "reason": "Bitcoin Mine: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
   },
   "faceted/realm-0": {
-    "verdict": "equal",
-    "reason": "Settlement: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+    "verdict": "beats shipped",
+    "reason": "At 24/32 px the straw and canvas masses distinguish the low settlement from stone realms; the former stone keep did not match Canvas & Thatch."
   },
   "faceted/realm-1": {
-    "verdict": "equal",
-    "reason": "City: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+    "verdict": "beats shipped",
+    "reason": "The broad orange gable and stepped ivory body match Terrace Forum and distinguish City from both teal-roof levels at 24/32 px."
   },
   "faceted/realm-3": {
     "verdict": "equal",
-    "reason": "Empire: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+    "reason": "The narrow central cone and rounded tower match Empire and distinguish it from the paired Kingdom peaks. At 24 px the side turrets merge; the tall single peak remains clear."
   },
   "faceted/farm": {
     "verdict": "equal",
@@ -930,5 +930,25 @@
   "faceted/twitter": {
     "verdict": "equal",
     "reason": "The familiar bird silhouette is retained with a clean blue painted volume; no border or plaque."
+  },
+  "faceted/map-realm-0": {
+    "verdict": "beats shipped",
+    "reason": "Ivory canvas over straw gives Settlement its own warm low silhouette at 18/24 px; the shipped universal castle could not communicate this level."
+  },
+  "faceted/map-realm-1": {
+    "verdict": "beats shipped",
+    "reason": "A single orange gable and dark portico distinguish City at 18/24 px, retaining the Forum roof and columns with less detail."
+  },
+  "faceted/realm-2": {
+    "verdict": "equal",
+    "reason": "The two teal peaks and tall square towers match Twin Ward. At 24 px court masonry merges, as in the former keep; at 32/64 px the twin-tower identity and gate remain clear."
+  },
+  "faceted/map-realm-2": {
+    "verdict": "beats shipped",
+    "reason": "Two broad teal caps and a dark central gateway preserve the Twin Ward silhouette inside the existing ownership hex at 18/24 px."
+  },
+  "faceted/map-realm-3": {
+    "verdict": "beats shipped",
+    "reason": "A dominant teal cone above short round turrets distinguishes Empire from the paired Kingdom peaks inside a small ownership hex."
   }
 }

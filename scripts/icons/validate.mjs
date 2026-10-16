@@ -18,6 +18,11 @@ export function validateIcons({ icons, meanings, resources, verdicts }) {
   for (const kind of ["knight", "crossbowman", "paladin"])
     for (const tier of [1, 2, 3])
       if (!paintings.has(`${kind}-t${tier}`)) throw new Error(`Missing soldier portrait: ${kind} T${tier}`);
+  for (const level of [0, 1, 2, 3]) {
+    for (const name of [`realm-${level}`, `map-realm-${level}`]) {
+      if (meanings[name]?.art !== name) throw new Error(`${name} must use its own level painting`);
+    }
+  }
   for (const icon of icons) {
     const review = verdicts[`faceted/${icon.id}`];
     if (!review || !["equal", "beats shipped"].includes(review.verdict) || !review.reason?.trim())

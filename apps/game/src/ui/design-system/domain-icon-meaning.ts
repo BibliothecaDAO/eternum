@@ -75,8 +75,14 @@ export function mineMeaning(kind: number): IconMeaning {
   if (kind === 2) return "mine";
   throw new Error(`Unknown mine icon: ${kind}`);
 }
-export function realmMeaning(level: number): IconMeaning {
-  return (["realm-0", "realm-1", "realm-2", "realm-3"] as const)[Math.min(3, Math.max(0, Math.floor(level)))];
+export function realmMeaning(level: number) {
+  const meaning = (["realm-0", "realm-1", "realm-2", "realm-3"] as const)[level];
+  if (!meaning) throw new Error(`Unknown realm level: ${level}`);
+  return meaning;
+}
+
+export function realmMarkerMeaning(level: number) {
+  return `map-${realmMeaning(level)}` as const;
 }
 
 export function troopMeaning(troops: { category: string; tier: string }): IconMeaning {

@@ -28,6 +28,16 @@ test("missing paintings fail validation", () => {
   input.icons = input.icons.filter(({ id }) => id !== "production");
   assert.throws(() => validateIcons(input), /Missing painting for production/);
 });
+test("realm levels reject the former shared castle and shared minimap emblem", () => {
+  for (const [name, art] of [
+    ["realm-2", "realm"],
+    ["map-realm-3", "map-realm"],
+  ]) {
+    const input = valid();
+    input.meanings[name].art = art;
+    assert.throws(() => validateIcons(input), new RegExp(`${name} must use its own level painting`));
+  }
+});
 test("missing resource meanings fail validation", () => {
   const input = valid();
   delete input.resources[58];

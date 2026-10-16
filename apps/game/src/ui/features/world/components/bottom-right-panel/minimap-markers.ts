@@ -2,7 +2,7 @@ import { configManager, getExplorerOwner } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import type { FactView } from "@/sync/fact-views";
 import { arePlayersAllied } from "@/utils/entity-ownership";
-import { mineMeaning, structureMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { mineMeaning, structureMeaning, realmMarkerMeaning } from "@/ui/design-system/domain-icon-meaning";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import type { MarkerOwner } from "@/ui/design-system/hex-marker";
 export interface MinimapMarker {
@@ -27,7 +27,7 @@ export const minimapMarkersView: FactView<Map<string, MinimapMarker>> = {
       const category = row.base.category;
       const name =
         category === StructureType.Realm
-          ? "map-realm"
+          ? realmMarkerMeaning(row.base.level)
           : category === StructureType.Village
             ? "map-village"
             : category === StructureType.Mine

@@ -306,3 +306,15 @@ baked into the three production models; there is no window-treatment selector. S
 materials. Choose **Age**, **Series**, **Order**, **Ownership** and **Distance**; drag to orbit and scroll to zoom. With
 an external reference directory in the URL, **Revision** offers Before, After and the pair. See
 [src/lab/README.md](src/lab/README.md#realm-revision-comparison) for the retained capture driver and reference setup.
+
+## Realm level icons
+
+`/lab/kit/icons#realm-levels` compares all four realm levels with the current GLB renders and the previous paintings.
+Use **Shipped / By level** to switch the portraits and hex badges, and **24 / 32 / 64 px** to inspect the delivered
+sizes. Each level shows all four ownership cues and its value badge.
+`pnpm icons:prove <evidence-dir> https://127.0.0.1:<port> --catalog` drives those controls and decodes both HTML and SVG
+artwork at desktop and phone sizes.
+
+The production entity portrait and castle upgrade use `realmMeaning(level)`; the native minimap selects
+`realmMarkerMeaning(level)` in `minimap-markers.ts`. Category-only realm symbols remain generic. The four reference
+renders use the shipped GLBs named in `realm-model-references.json`, with source and render hashes.

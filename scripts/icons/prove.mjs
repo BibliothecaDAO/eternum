@@ -73,7 +73,47 @@ export async function proveIcons(b, out, records, baseUrl, onlyLayout, onlyPages
       if (name !== "catalog") continue;
       const check = async (label, expression) =>
         record.checks.push({ check: label, ok: (await b.evaluate(expression)) === true });
-      await check("All 252 meanings are visible", "document.querySelectorAll('.icon-card').length===252");
+      await check(
+        "Every delivered meaning is visible",
+        `(async () => {
+        const {meanings} = await (await fetch('/icons/facets/manifest.json')).json();
+        const shown = [...document.querySelectorAll('.icon-card')].map(card => card.dataset.meaning);
+        return shown.length === Object.keys(meanings).length && shown.every(name => meanings[name]);
+      })()`,
+      );
+      await check(
+        "Four current model renders and shipped comparisons decode",
+        `(async () => {
+        const rows = [...document.querySelectorAll('[data-realm-level]')];
+        if (rows.length !== 4) return false;
+        try {
+          await Promise.all(rows.flatMap(row => [...row.querySelectorAll('img')]).map(image => image.decode()));
+          return rows.every(row => [...row.querySelectorAll('img')].every(image => image.naturalWidth > 0));
+        } catch { return false; }
+      })()`,
+      );
+      await b.run("click", "[data-realm-art='shipped']");
+      await check(
+        "Shipped switch restores the old icons and universal hex emblem",
+        "document.querySelectorAll('[data-realm-preview=shipped]').length===4 && document.querySelectorAll('#realm-levels [data-marker=map-realm]').length===16",
+      );
+      await b.run("click", "[data-realm-art='levels']");
+      await check(
+        "Every level has its own painting and four ownership hex badges",
+        "[0,1,2,3].every(level=>document.querySelector('[data-realm-level=\"'+level+'\"] [data-icon=realm-'+level+']') && document.querySelectorAll('#realm-levels [data-marker=map-realm-'+level+']').length===4)",
+      );
+      for (const size of [24, 32, 64]) {
+        await b.run("click", `[data-realm-size='${size}']`);
+        await check(
+          `Realm portraits display at ${size}px`,
+          `[...document.querySelectorAll('[data-realm-preview] img')].every(image=>image.width===${size})`,
+        );
+      }
+      await b.run("click", "[data-realm-size='32']");
+      for (const level of [0, 1, 2, 3]) {
+        await b.run("scrollintoview", `[data-realm-level='${level}']`);
+        await b.run("screenshot", join(out, `${layout}-realm-${level}.png`));
+      }
       for (const size of [24, 32, 64]) {
         await b.run("click", `[data-size='${size}']`);
         await check(
@@ -129,7 +169,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
         records,
         baseUrl,
         missingSvg ? "desktop" : undefined,
-        missingSvg ? ["catalog"] : undefined,
+        missingSvg || process.argv.includes("--catalog") ? ["catalog"] : undefined,
         missingSvg,
       ),
   );

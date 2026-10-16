@@ -1145,7 +1145,7 @@
       "family": "Minimap"
     },
     "realm-2": {
-      "art": "realm",
+      "art": "realm-2",
       "label": "Kingdom",
       "family": "Structures"
     },
@@ -1340,6 +1340,26 @@
       "art": "twitter",
       "label": "Twitter",
       "family": "HUD"
+    },
+    "map-realm-0": {
+      "art": "map-realm-0",
+      "label": "Settlement hex emblem",
+      "family": "Minimap"
+    },
+    "map-realm-1": {
+      "art": "map-realm-1",
+      "label": "City hex emblem",
+      "family": "Minimap"
+    },
+    "map-realm-2": {
+      "art": "map-realm-2",
+      "label": "Kingdom hex emblem",
+      "family": "Minimap"
+    },
+    "map-realm-3": {
+      "art": "map-realm-3",
+      "label": "Empire hex emblem",
+      "family": "Minimap"
     }
   },
   "resources": {

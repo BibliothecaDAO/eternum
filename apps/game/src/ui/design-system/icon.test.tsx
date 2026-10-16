@@ -5,8 +5,23 @@ import { describe, expect, it } from "vitest";
 import { Icon, SvgIcon } from "./icon";
 import { iconDefinition, iconMeanings, iconUrl, orderMeaning, resourceMeaning, type IconMeaning } from "./icon-meaning";
 import { HexMarker } from "./hex-marker";
+import { realmMeaning, realmMarkerMeaning } from "./domain-icon-meaning";
 
 describe("semantic painted icons", () => {
+  it("gives every realm level its own portrait and hex emblem", () => {
+    for (const level of [0, 1, 2, 3]) {
+      expect(iconDefinition(realmMeaning(level)).art).toBe(`realm-${level}`);
+      const badge = renderToStaticMarkup(
+        <svg>
+          <HexMarker name={realmMarkerMeaning(level)} owner="you" value={String(level)} />
+        </svg>,
+      );
+      expect(badge).toContain(`/icons/facets/64/map-realm-${level}.webp`);
+      expect(badge).toContain(`>${level}</text>`);
+      expect(badge).toContain("#66ddab");
+    }
+    for (const invalid of [-1, 4, 1.5, NaN]) expect(() => realmMeaning(invalid)).toThrow("Unknown realm level");
+  });
   it.each(iconMeanings)("renders %s with shipped artwork", (name) => {
     const html = renderToStaticMarkup(<Icon name={name} size={32} />);
     const img = new DOMParser().parseFromString(html, "text/html").querySelector("img")!;
