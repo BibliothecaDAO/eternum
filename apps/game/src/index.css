@@ -429,16 +429,19 @@ html.scene-viewport body {
   --overlay-surface-to: rgba(16, 12, 8, 0.99);
 }
 
-/* The Blitz and Eternum HUD's own type (classic-hud on <html>, set while that HUD is mounted): IM FELL English SC labels
-   and buttons with Atkinson figures (--font-ui), caps and tracking where a component asks, italics, and the teal
-   overlay surface. Its display choices are one class each (hud-typography.ts). */
+/* The Blitz and Eternum HUD's type (classic-hud on <html>, set while that HUD is mounted): its War room skin, which the
+   owner approved on 16 October 2026. Exo 2 for everything read (--font-ui), Cinzel capitals for its panel titles only
+   (--font-hud-title, hud/hud.css), and otherwise the readable rules: sentence case, upright, untracked, nothing under
+   14 px, on the teal overlay surface. */
 html.classic-hud {
   --overlay-surface-from: #192930;
   --overlay-surface-to: #101c23;
 }
-:where(html.classic-hud) .font-ui {
+:where(html.classic-hud) :is(body, button, .font-sans, .font-ui) {
   font-family: var(--font-ui);
 }
+/* The HUD typography's display choices are one class each (hud-typography.ts); outside the two match HUDs they set
+   their caps, tracking and italics. */
 .hud-caps {
   text-transform: uppercase;
   letter-spacing: 0.2em;
@@ -453,29 +456,29 @@ html.classic-hud {
 .hud-caps-button {
   text-transform: uppercase;
 }
-/* Parts the Frontier HUD shares with the Blitz and Eternum HUD (chat, settings, army creation) read there as Frontier
-   does: sentence case, upright and untracked, at its sizes (frontier-hud on <html>, set while that HUD is mounted). */
-html.frontier-hud .uppercase {
+/* Both match HUDs read in sentence case, upright and untracked, whatever a shared part asks for (frontier-hud and
+   classic-hud on <html>, each set while its HUD is mounted). */
+html:is(.frontier-hud, .classic-hud) .uppercase {
   text-transform: none;
 }
-html.frontier-hud .italic {
+html:is(.frontier-hud, .classic-hud) .italic {
   font-style: normal;
 }
-html.frontier-hud [class*="tracking-"] {
+html:is(.frontier-hud, .classic-hud) [class*="tracking-"] {
   letter-spacing: normal;
 }
-html.frontier-hud :is(.hud-caps, .hud-caps-tight) {
+html:is(.frontier-hud, .classic-hud) :is(.hud-caps, .hud-caps-tight) {
   text-transform: none;
   letter-spacing: normal;
   font-size: 0.8125rem;
 }
-html.frontier-hud .hud-caps-button {
+html:is(.frontier-hud, .classic-hud) .hud-caps-button {
   text-transform: none;
 }
-html.frontier-hud .hud-muted {
+html:is(.frontier-hud, .classic-hud) .hud-muted {
   font-style: normal;
 }
-html.frontier-hud .hud-body {
+html:is(.frontier-hud, .classic-hud) .hud-body {
   font-size: 1rem;
 }
 html.frontier-hud .hud-value {
@@ -483,6 +486,18 @@ html.frontier-hud .hud-value {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   font-size: 0.9375rem;
+}
+html.classic-hud .hud-value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9375rem;
+}
+/* Nothing in the Blitz and Eternum HUD reads under 14 px: the small sizes its parts were drawn at read at 14. */
+html.classic-hud :is(.hud-caps, .hud-caps-tight, .text-xxs, [class*="text-[8px]"], [class*="text-[9px]"]),
+html.classic-hud :is([class*="text-[10px]"], [class*="text-[0.5"]),
+html.classic-hud :is([class*="text-[11px]"], [class*="text-[12px]"], [class*="text-[13px]"], [class*="text-[0.6"]),
+html.classic-hud :is([class*="text-[0.7"], [class*="text-[0.8"]) {
+  font-size: 0.875rem;
 }
 .frontier-sheet {
   /* An opaque base under the translucent gradient: nothing beneath a sheet shows through it. */
@@ -657,7 +672,7 @@ h6,
 .h4,
 .h5,
 .h6 {
-  /* --font-ui exists only under html.classic-hud: the Blitz and Eternum HUD's label face. */
+  /* --font-ui exists only under html.classic-hud: the Blitz and Eternum HUD's face. */
   font-family: var(--font-ui, var(--font-body));
 }
 @keyframes dotAnimation {
@@ -760,9 +775,6 @@ h5 {
 }
 h6 {
   @apply text-sm sm:text-base md:text-lg;
-}
-:where(html.classic-hud) h6 {
-  text-transform: uppercase;
 }
 .fade-in {
   animation: fadeIn 1s;

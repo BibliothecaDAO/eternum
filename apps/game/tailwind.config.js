@@ -1,6 +1,6 @@
 const plugin = require("tailwindcss/plugin");
 
-import { CLASSIC_HUD_UI_FONT, COLORS, FONT_FACES, FONTS } from "./src/tokens";
+import { CLASSIC_HUD_FONTS, COLORS, FONT_FACES, FONTS } from "./src/tokens";
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -345,7 +345,9 @@ export default {
           ...Object.fromEntries(Object.entries(COLORS).map(([name, value]) => [`--${name}`, value])),
           ...Object.fromEntries(Object.entries(FONTS).map(([name, value]) => [`--font-${name}`, value])),
         },
-        "html.classic-hud": { "--font-ui": CLASSIC_HUD_UI_FONT },
+        "html.classic-hud": Object.fromEntries(
+          Object.entries(CLASSIC_HUD_FONTS).map(([name, value]) => [`--font-${name}`, value]),
+        ),
       });
     }),
     plugin(function ({ addUtilities, theme, e }) {
