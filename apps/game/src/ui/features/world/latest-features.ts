@@ -77,6 +77,13 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-10-16",
+    title: "A tighter HUD",
+    description:
+      "Panels fit their contents and read at the top bar's size, the minimap is taller and fits what you have explored, and every resource ring shows its buildings top-left and its amount below. The picked tile shows its structure and biome together, events take two lines and fade, an opened crate's event selects the army holding its relics, relics read larger, the clock shows only the game's time left, and Next up's tips can be turned off in Settings.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-16",
     title: "Keys for the HUD",
     description:
       "B, P, M and T open Build, Production, Military and Transfer, Space takes Next up's step, and I selects your next idle army (full stamina, no order), as does the new Idle button on the minimap. No key fires while you type.",

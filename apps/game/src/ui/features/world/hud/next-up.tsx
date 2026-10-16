@@ -1,8 +1,6 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGame } from "@/hooks/context/game-context";
-import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
@@ -16,10 +14,11 @@ import {
 } from "@/ui/features/world/containers/left-facets/use-suggestion-actions";
 import { type RealmLevelUp, useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import { configManager, Position, structureMapPosition } from "@bibliothecadao/eternum";
+import { Position, structureMapPosition } from "@bibliothecadao/eternum";
 import type { ID, Structure } from "@bibliothecadao/types";
-import { useEffect, useMemo, useState } from "react";
-import { resolveStructureAttention } from "@/ui/features/world/containers/top-header/attention-policy";
+import { useEffect, useState } from "react";
+import { useStructureAttention } from "@/ui/features/world/containers/top-header/use-structure-attention";
+import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { useNextUpShows } from "./next-up-shows";
 
 /** Tells the screen whether Next up shows a step, and that it shows none once it unmounts. */
@@ -53,20 +52,15 @@ export const NextUp = () => {
   return (
     <section
       aria-label="Next up"
-      className={cn(OVERLAY_SURFACE_BASE, "pointer-events-auto flex flex-col gap-2 rounded-xl p-3")}
+      className={cn(OVERLAY_SURFACE_BASE, "pointer-events-auto flex flex-col gap-1.5 rounded-xl px-3 py-2")}
     >
       <div className="flex items-center justify-between gap-2">
-        <h2 className="hud-panel-title flex items-center gap-2">
-          Next up
-          <kbd className="hud-key" title="Space does it">
-            Space
-          </kbd>
-        </h2>
+        <h2 className="hud-panel-title">Next up</h2>
         {steps.length > 1 && (
           <button
             type="button"
             onClick={() => setCursor(index + 1)}
-            className="h-9 rounded-md px-2 text-sm font-semibold text-kit-cream hover:text-gold"
+            className="h-7 rounded-md px-1 text-sm font-semibold text-kit-cream hover:text-gold"
           >
             {index + 1} of {steps.length} ›
           </button>
@@ -97,14 +91,14 @@ const StepBody = ({
   usePublishAct(busy || disabled ? null : run);
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-base text-kit-cream">{line}</p>
+      <p className="text-sm text-kit-cream">{line}</p>
       <Button
         role="primary"
         word={verb}
         loading={busy ? "Sending…" : undefined}
         disabled={disabled}
         onClick={run}
-        className="w-full"
+        className="!h-10 w-full"
       />
     </div>
   );
@@ -146,6 +140,7 @@ function useNextSteps(): NextStep[] {
   const levelUp = useRealmLevelUp(structureEntityId);
   const attention = useAttentionSteps();
   const suggestions = useSuggestionSteps(structureEntityId);
+  const tips = useWorldAppearanceStore((state) => state.nextUpTips);
   const structures = useFactView(playerStructuresView);
   const mode = useGameModeConfig();
   if (!ordersAllowed) return [];
@@ -162,7 +157,8 @@ function useNextSteps(): NextStep[] {
         },
       ]
     : [];
-  return [...levelUpStep, ...attention, ...suggestions];
+  // With tips off (Settings), the suggestions go; the realm's own step and the alerts stay.
+  return [...levelUpStep, ...attention, ...(tips ? suggestions : [])];
 }
 
 /** Structures under attack or with arrivals waiting, each as a step that shows it. */
@@ -170,17 +166,7 @@ function useAttentionSteps(): NextStep[] {
   const { setup } = useGame();
   const mode = useGameModeConfig();
   const goToStructure = useGoToStructure(setup);
-  const structures = useFactView(playerStructuresView);
-  const arrivedIds = useUIStore((state) => state.arrivedArrivalStructureIds);
-  const now = Math.floor(useNowMs() / 1000);
-  const revision = useNativeRevision(["Guard"]);
-  const { attackedIds, targets } = useMemo(
-    () =>
-      resolveStructureAttention(structures, arrivedIds, now, [
-        ...setup.store.inGame("Guard", configManager.getActiveGameId()),
-      ]),
-    [structures, arrivedIds, now, setup.store, revision],
-  );
+  const { attackedIds, targets } = useStructureAttention();
   // Those under attack first, then those with arrivals.
   const attention = [
     ...targets

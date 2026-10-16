@@ -43,6 +43,7 @@ export const SettingsPanel = () => (
     <ProfileHeader />
     <AudioSettings />
     <VideoSettings />
+    <NextUpSettings />
     <NotificationsCard />
     <ShortcutsSection />
     <PwaInstallControl />
@@ -258,6 +259,20 @@ function VideoSettings() {
         </SelectedOption>
         <SelectedOption selected={haptics} onClick={() => setHaptics(!haptics)}>
           Haptics
+        </SelectedOption>
+      </div>
+    </SettingsSection>
+  );
+}
+
+/** One switch for Next up's tips: off, it keeps the alerts and the selected realm's own step. */
+function NextUpSettings() {
+  const { nextUpTips, setNextUpTips } = useWorldAppearanceStore();
+  return (
+    <SettingsSection title="Next up">
+      <div className="flex flex-wrap gap-2">
+        <SelectedOption selected={nextUpTips} onClick={() => setNextUpTips(!nextUpTips)}>
+          Tips
         </SelectedOption>
       </div>
     </SettingsSection>

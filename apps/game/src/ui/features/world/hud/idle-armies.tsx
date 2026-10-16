@@ -31,7 +31,7 @@ export const idleArmyIds = (armies: readonly ArmyReading[]): number[] =>
 
 /** Why the idle armies cannot be selected now, if they cannot: armies are picked on the world map, and one must wait. */
 export const idleArmiesRefusal = (onWorldMap: boolean, idleCount: number): string | null => {
-  if (!onWorldMap) return "Armies are picked on the world map (V)";
+  if (!onWorldMap) return "Armies are picked on the world map";
   if (idleCount === 0) return "No army waits at full stamina";
   return null;
 };
@@ -97,7 +97,7 @@ export const IdleArmiesButton = ({ idle, className }: { idle: IdleArmies; classN
     disabled={idle.refusal !== null}
     onClick={() => selectNextIdleArmy(idle.ids)}
     aria-keyshortcuts="I"
-    title={idle.refusal ?? "Select the next idle army (I)"}
+    title={idle.refusal ?? "Select the next idle army"}
     className={cn(
       "pointer-events-auto flex h-9 items-center gap-1.5 rounded-full border border-kit-line2 bg-black/70 px-3 text-sm font-semibold text-kit-cream hover:border-kit-gold disabled:opacity-50",
       className,
@@ -105,6 +105,5 @@ export const IdleArmiesButton = ({ idle, className }: { idle: IdleArmies; classN
   >
     <Icon name="military" size={18} />
     Idle {idle.ids.length}
-    <kbd className="hud-key">I</kbd>
   </button>
 );

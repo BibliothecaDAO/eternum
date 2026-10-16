@@ -102,7 +102,6 @@
 
 /* A round command bubble with its word under it. */
 .hud-bubble {
-  position: relative;
   pointer-events: auto;
   display: flex;
   width: 76px;
@@ -167,33 +166,30 @@
    Cinzel, larger and untracked. */
 .hud-panel-title {
   font-family: var(--font-hud-title, var(--font-display));
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #d6bd84;
 }
 .hud-card-title {
   font-family: var(--font-hud-title, var(--font-display));
-  font-size: 18px;
+  font-size: 16px;
   letter-spacing: 0.06em;
   line-height: 1.2;
   color: #f1dfb0;
 }
 
-/* Tabs: a tab per kind held (its painting and count) or per part of the picked tile (a word); the lit one is shown. */
+/* Tabs: a tab per kind held, its painting and its count; the lit one is the list shown. */
 .hud-tabs {
   display: flex;
   border-bottom: 1px solid rgba(116, 168, 170, 0.28);
-}
-.hud-tabs--words {
-  border-bottom: 0;
 }
 .hud-tab {
   display: inline-flex;
   flex: 1 1 0;
   min-width: 0;
-  height: 38px;
+  height: 32px;
   align-items: center;
   justify-content: center;
   gap: 6px;
@@ -205,40 +201,10 @@
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
-.hud-tabs--words .hud-tab {
-  height: 42px;
-  font-size: 15px;
-}
 .hud-tab:hover {
   color: #f1dfb0;
 }
 .hud-tab[aria-selected="true"] {
   border-bottom-color: #f3d08a;
   color: #f3d08a;
-}
-
-/* A key's cap beside the control it presses: the HUD tells each key where it acts. */
-.hud-key {
-  display: inline-flex;
-  min-width: 20px;
-  height: 20px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(243, 208, 138, 0.45);
-  border-radius: 5px;
-  padding: 0 4px;
-  font-family: var(--font-ui, var(--font-body));
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: 0;
-  text-transform: none;
-  color: #d6bd84;
-}
-.hud-bubble__key {
-  position: absolute;
-  top: -4px;
-  left: 2px;
-  z-index: 2;
-  background: #0d171b;
 }

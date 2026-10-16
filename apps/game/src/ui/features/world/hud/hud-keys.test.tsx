@@ -129,7 +129,7 @@ describe("the desktop HUD's keys", () => {
     expect(selected.ids).toEqual([]);
     expect(key.defaultPrevented).toBe(false);
     expect(idleButton().disabled).toBe(true);
-    expect(idleButton().title).toBe("Armies are picked on the world map (V)");
+    expect(idleButton().title).toBe("Armies are picked on the world map");
   });
 });
 

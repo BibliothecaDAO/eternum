@@ -42,7 +42,7 @@ const ActionBubble = ({ action }: { action: StructureAction }) => {
       aria-label={action.label}
       aria-pressed={action.active}
       disabled={action.refusal !== null}
-      title={action.refusal ?? (key ? `${action.label} (${key})` : action.label)}
+      title={action.refusal ?? action.label}
       aria-keyshortcuts={key}
       onClick={action.onClick}
       className="hud-bubble"
@@ -53,7 +53,6 @@ const ActionBubble = ({ action }: { action: StructureAction }) => {
         tone={action.active ? "lit" : ready > 0 ? "ready" : "plain"}
         corner={ready > 0 ? ready : pending > 0 ? pending : undefined}
       />
-      {key && <kbd className="hud-key hud-bubble__key">{key}</kbd>}
       <span>{action.label}</span>
     </button>
   );

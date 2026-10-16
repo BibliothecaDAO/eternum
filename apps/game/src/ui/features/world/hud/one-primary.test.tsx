@@ -51,9 +51,18 @@ vi.mock("@/ui/features/world/containers/left-facets/use-suggestion-actions", () 
   useSuggestionActions: () => ({ handleSuggestionClick: vi.fn(), pendingSuggestionIds: [] }),
 }));
 vi.mock("@/ui/features/world/containers/left-facets/suggestions-panel", () => ({ SuggestionsPanel: () => null }));
+// Resources arrived at the selected realm (1); nothing is under attack.
+vi.mock("@/ui/features/world/containers/top-header/use-structure-attention", () => ({
+  useStructureAttention: () => ({
+    attackedCount: 0,
+    attackedIds: new Set(),
+    targets: [{ entityId: 1, structure: {} }],
+  }),
+}));
 
 import { AttentionPill } from "@/ui/features/world/containers/top-header/attention-pill";
 import { RealmUpgradeCompact } from "@/ui/modules/entity-details/realm/realm-details";
+import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { NextUp } from "./next-up";
 
 let host: HTMLDivElement;
@@ -111,5 +120,14 @@ describe("one filled gold action at a time", () => {
       ),
     );
     expect(filledGold()).toHaveLength(2);
+  });
+
+  it("keeps the alerts and the realm's own step when tips are off in Settings", () => {
+    useWorldAppearanceStore.getState().setNextUpTips(false);
+    act(() => root.render(<NextUp />));
+    const queue = host.querySelector('section[aria-label="Next up"]')!.textContent;
+    useWorldAppearanceStore.getState().setNextUpTips(true);
+    expect(queue).toContain("1 of 2");
+    expect(queue).toContain("Realm is ready to be provisioned.");
   });
 });

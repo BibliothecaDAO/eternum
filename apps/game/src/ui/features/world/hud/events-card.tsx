@@ -11,8 +11,8 @@ import { useRef } from "react";
 
 /**
  * The rail's events: the offline row and pinned headlines, then what Events holds (battles, the player's realm news,
- * caravans and this session's sends) as it happens, each row fading after 20 s as the quick feed always did. "All"
- * opens the log, with what arrived since it was last read.
+ * caravans and this session's sends) as it happens, each row fading after 20 s as the quick feed always did. With
+ * nothing recent it is one strip, the chat strip's height. "All" opens the log, with what arrived since it was read.
  */
 export const EventsCard = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogToggle: () => void }) => {
   const { rows } = useImportantFeed();
@@ -21,9 +21,9 @@ export const EventsCard = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogTo
   return (
     <section
       aria-label="Events"
-      className={cn(OVERLAY_SURFACE_BASE, "pointer-events-auto flex flex-col gap-1.5 rounded-xl p-3")}
+      className={cn(OVERLAY_SURFACE_BASE, "pointer-events-auto flex flex-col gap-1 rounded-xl px-3 py-1")}
     >
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex h-7 items-center justify-between gap-2">
         <h2 className="hud-panel-title">Events</h2>
         <button
           ref={button}
@@ -32,7 +32,7 @@ export const EventsCard = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogTo
           aria-expanded={logOpen}
           onClick={onLogToggle}
           className={cn(
-            "inline-flex h-9 items-center gap-1.5 rounded-md px-2 text-sm font-semibold text-kit-cream hover:text-gold",
+            "inline-flex h-7 items-center gap-1.5 rounded-md px-1 text-sm font-semibold text-kit-cream hover:text-gold",
             logOpen && "text-gold",
           )}
         >

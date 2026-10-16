@@ -431,8 +431,8 @@ html.scene-viewport body {
 
 /* The Blitz and Eternum HUD's type (classic-hud on <html>, set while that HUD is mounted): its War room skin, which the
    owner approved on 16 October 2026. Exo 2 for everything read (--font-ui), Cinzel capitals for its panel titles only
-   (--font-hud-title, hud/hud.css), and otherwise the readable rules: sentence case, upright, untracked, nothing under
-   14 px, on the teal overlay surface. */
+   (--font-hud-title, hud/hud.css), and otherwise the readable rules: sentence case, upright and untracked, on the teal
+   overlay surface. */
 html.classic-hud {
   --overlay-surface-from: #192930;
   --overlay-surface-to: #101c23;
@@ -492,11 +492,8 @@ html.classic-hud .hud-value {
   font-variant-numeric: tabular-nums;
   font-size: 0.9375rem;
 }
-/* Nothing in the Blitz and Eternum HUD reads under 14 px: the small sizes its parts were drawn at read at 14. */
-html.classic-hud :is(.hud-caps, .hud-caps-tight, .text-xxs, [class*="text-[8px]"], [class*="text-[9px]"]),
-html.classic-hud :is([class*="text-[10px]"], [class*="text-[0.5"]),
-html.classic-hud :is([class*="text-[11px]"], [class*="text-[12px]"], [class*="text-[13px]"], [class*="text-[0.6"]),
-html.classic-hud :is([class*="text-[0.7"], [class*="text-[0.8"]) {
+/* The Blitz and Eternum HUD's labels (the top bar's among them) read at 14 px, as its chat strip does. */
+html.classic-hud :is(.hud-caps, .hud-caps-tight) {
   font-size: 0.875rem;
 }
 .frontier-sheet {

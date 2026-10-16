@@ -107,7 +107,7 @@ export const HoldingsList = ({ holdings }: { holdings: Holdings }) => {
   const { toggleFavorite } = useFavoriteStructures();
   const kind = holdings.kinds.find((entry) => entry.kind === holdings.filter);
   return (
-    <section className={cn(HUD_PANEL, "flex min-h-[252px] flex-1 flex-col gap-2")}>
+    <section className={cn(HUD_PANEL, "flex max-h-[40vh] shrink-0 flex-col gap-1.5")}>
       {holdings.kinds.length > 1 && (
         <div role="tablist" aria-label="Holdings by kind" className="hud-tabs">
           {holdings.kinds.map((entry) => (
@@ -174,7 +174,7 @@ const HoldingRow = memo(
       <div
         ref={row}
         className={cn(
-          "flex h-11 w-full items-center gap-1.5 rounded-lg border px-1.5 transition-colors",
+          "flex h-10 w-full items-center gap-1.5 rounded-lg border px-1.5 transition-colors",
           selected ? "border-gold/60 bg-gold/10" : "border-transparent hover:border-gold/30",
         )}
       >
@@ -203,9 +203,7 @@ const HoldingRow = memo(
             tone={selected ? "lit" : "plain"}
             corner={hasLevels(structure) ? structure.realmLevel + 1 : undefined}
           />
-          <span className="min-w-0 flex-1 truncate text-base font-semibold text-kit-cream">
-            {structure.displayName}
-          </span>
+          <span className="min-w-0 flex-1 truncate text-sm font-semibold text-kit-cream">{structure.displayName}</span>
         </button>
         {structure.category === StructureType.Realm && (
           <StructureRealmActions structureEntityId={structure.entityId} className="shrink-0" />
