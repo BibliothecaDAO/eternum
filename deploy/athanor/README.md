@@ -14,17 +14,17 @@ directory, launches and the other central services are the environment's Workers
 ## Runtime and deployment
 
 The shard package in [deploy/shard](../shard/README.md) owns Madara, PostgreSQL, Herald, one stamping RPC and metrics.
-The init image carries the compiled contracts and native verifier; the Herald image also carries the stamping bundle,
-worker and native prover. The box builds init, Herald and metrics images from its checkout. There is no gateway image or
-service.
+The init image carries the compiled contracts and native verifier; the Herald image also carries the stamping bundle and
+native prover. The RPC stamps each play inline. The box builds init, Herald and metrics images from its checkout. There
+is no gateway image or service.
 
 For first deployment and updates use `python3 deploy/athanor/scripts/operator-command.py deploy ENVIRONMENT DIRECTORY`.
 `deploy/release/ENVIRONMENT.json` is the reviewed input source. The deployer builds its images under the shared Cairo
 lock, with compilation pinned to cores 8–11. For measurements use the existing
 `python3 deploy/athanor/scripts/shard.py CONFIGURATION DIRECTORY` runner with explicit local image digests, unique chain
-identity, official RPC/Herald URLs, guardian, presets, worker count and fixed play bound. The runner writes its resolved
-Compose file and public deployment manifest alongside private initialization logs. Both paths register PENDING before
-enrolment. Only official deployment runs the activation gate; measurement runners stay hidden and retire on stop.
+identity, official RPC/Herald URLs, guardian, presets and fixed play bound. The runner writes its resolved Compose file
+and public deployment manifest alongside private initialization logs. Both paths register PENDING before enrolment. Only
+official deployment runs the activation gate; measurement runners stay hidden and retire on stop.
 
 The dev node belongs to the operator running its trials. Deployment and workload commands take
 `/opt/athanor/isolated-stack.lock` themselves; do not hold it around those commands. No command should target the
