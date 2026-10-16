@@ -316,7 +316,16 @@ export const HexMinimap = ({
     };
   }, [tiles.length, cameraTargetHex, cameraDistance, navigationTarget, selectedHex, centeredIndex.bounds, zoom]);
 
-  const [view, setView] = useState<{ x: number; y: number; scale: number }>(initialView);
+  // Fitted to what is explored, the box holds the whole explored area, wherever the camera is and however far it is:
+  // the fit is the view itself, not a copy kept in state. Otherwise the camera and drags move the free view.
+  const fitted = useMemo(
+    () => (fitExplored && tiles.length > 0 ? fitExploredView(centeredIndex.bounds, viewport) : null),
+    [fitExplored, tiles.length, centeredIndex.bounds, viewport],
+  );
+  const fittedRef = useRef(fitted);
+  fittedRef.current = fitted;
+  const [freeView, setView] = useState<{ x: number; y: number; scale: number }>(initialView);
+  const view = fitted ?? freeView;
   const viewRef = useRef(view);
   viewRef.current = view;
   const isDraggingRef = useRef(false);
@@ -377,17 +386,6 @@ export const HexMinimap = ({
       }
     });
   }, []);
-
-  // Fitted to what is explored, the box holds the whole explored area, wherever the camera is and however far it is.
-  const fitted = useMemo(
-    () => (fitExplored && tiles.length > 0 ? fitExploredView(centeredIndex.bounds, viewport) : null),
-    [fitExplored, tiles.length, centeredIndex.bounds, viewport],
-  );
-  const fittedRef = useRef(fitted);
-  fittedRef.current = fitted;
-  useEffect(() => {
-    if (fitted && !isDraggingRef.current) scheduleViewUpdate(fitted);
-  }, [fitted, scheduleViewUpdate]);
 
   useEffect(() => {
     if (!cameraDistance || fittedRef.current) return;
