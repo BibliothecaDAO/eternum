@@ -1,5 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { command, requireInstalledDependencies } from "./process";
 import { PrivateStore } from "./private-store";
@@ -7,6 +6,12 @@ import { archivedRevision, deploymentRevision } from "./revision";
 import { environments, root, type Inputs } from "./settings";
 import { deploymentEnvironment, reportFailure } from "./deploy";
 import { PublicError, deploymentStage } from "./errors";
+
+/**
+ * Where a commit is exported, installed and built: several GB, so on the checkout's own disk. The system temp directory
+ * can be a small tmpfs that other work shares, and a full one stops the publish part-way.
+ */
+const EXPORTS = join(root, ".context", "deploy-exports");
 
 async function publish(environment: string | undefined, directory: string | undefined, revision: string | undefined) {
   const target = deploymentEnvironment(environment);
@@ -40,7 +45,8 @@ async function main() {
     throw new PublicError("Usage: pnpm run deploy:cloudflare <dev|production> /absolute/private-directory");
   const commit = await deploymentRevision(target);
   if (archivedRevision()) return publish(target, directory, commit);
-  const exported = mkdtempSync(join(tmpdir(), "realms-deploy-"));
+  mkdirSync(EXPORTS, { recursive: true });
+  const exported = mkdtempSync(join(EXPORTS, "realms-deploy-"));
   try {
     await command({ argv: ["git", "archive", "--format=tar", "--output", join(exported, "source.tar"), commit] });
     await command({ argv: ["tar", "-xf", "source.tar"], cwd: exported });
