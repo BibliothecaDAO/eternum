@@ -37,23 +37,35 @@ const sendWheat = (total) => [
   { name: "Send", within: TRANSFER_PANEL, text: "^Send " },
 ];
 
+/** Wheat's resource id, as the game numbers it. */
+const WHEAT = 35;
+
 /**
- * A transfer sent: every shipment landed, so the window has let its destinations go and its Send asks for new ones
- * (a refused one would stay chosen), and the window shows it, one more delivery on the road or the source's wheat
- * down (a delivery joining one already on the road to that holding adds no row). The window, not a notice, because a
- * phone's notices wait under its bell.
+ * A transfer sent: the window has let its destinations go, and the game's facts show every chosen holding's wheat
+ * (held, and on the road to it) up by at least its share of the total. Read from the facts, not the window, so a
+ * shipment that landed nowhere or got no answer fails the task, and a delivery merging into one already on the road
+ * still counts. Each holding row carries its id as its button's value.
  */
 const TRANSFER_SENT = {
   reading: `(() => {
     const surface = document.querySelector(${JSON.stringify(TRANSFER_PANEL)});
-    const wheat = surface?.querySelector('input[aria-label="Wheat: total to send"]')?.closest("[role=row]");
-    if (!wheat) return null;
-    const arrivals = surface.querySelector('nav[aria-label="Logistics"]').innerText.match(/Arrivals \\((\\d+)\\)/);
-    return { arriving: Number(arrivals?.[1] ?? 0), wheat: Number(wheat.children[1].innerText.replace(/,/g, "")) };
+    const total = surface?.querySelector('input[aria-label="Wheat: total to send"]');
+    const stock = window.__eternumHoldingGoods?.(${WHEAT});
+    if (!total || !stock) return null;
+    const rows = surface.querySelectorAll('section[aria-label="Send to"] button[aria-pressed="true"]');
+    return { total: Number(total.value), chosen: [...rows].map((row) => Number(row.value)), stock };
   })()`,
-  changes: "one more delivery on the road or less wheat at the source",
-  expect: (before, after) => after.arriving > before.arriving || after.wheat < before.wheat,
+  changes: "every chosen holding's wheat up by its share",
+  expect: (before, after) => everyShareArrived(before, after),
   done: `document.querySelector(${JSON.stringify(TRANSFER_PANEL)})?.innerText.includes("Choose where to send") === true`,
+};
+
+/** Whether each holding chosen before Send holds at least its even share more wheat after it. */
+const everyShareArrived = (before, after) => {
+  if (!Array.isArray(before?.chosen) || before.chosen.length === 0 || !(before.total > 0) || !after?.stock)
+    return false;
+  const share = Math.floor(before.total / before.chosen.length);
+  return before.chosen.every((id) => (after.stock[id] ?? 0) - (before.stock[id] ?? 0) >= share);
 };
 
 /** How many order surfaces stand open: the workspaces and the popovers where an order is given. */
@@ -201,7 +213,21 @@ export const GAME_TASKS = {
     view: "map",
     presses: [
       { name: "Transfer", within: STRUCTURE_ACTIONS, text: "^Transfer$" },
-      // Two destinations: the wheat total splits evenly between them, one call each in one transaction.
+      // Two destinations: the wheat total splits evenly between them, a shipment each.
+      { name: "a holding to send to", within: SEND_TO_UNPICKED, text: "." },
+      { name: "a second holding to send to", within: SEND_TO_UNPICKED, text: "." },
+      ...sendWheat(2),
+    ],
+    ...TRANSFER_SENT,
+  },
+  "blitz-transfer-balances": {
+    goal: "Blitz: send wheat to two holdings from Logistics' Balances, through the one Transfer window",
+    layouts: ["desktop"],
+    view: "map",
+    presses: [
+      { name: "Transfer", within: STRUCTURE_ACTIONS, text: "^Transfer$" },
+      { name: "Balances", within: `${TRANSFER_PANEL} nav[aria-label="Logistics"]`, text: "^Balances$" },
+      { name: "the wheat's Transfer in Balances", text: "^Transfer Wheat$" },
       { name: "a holding to send to", within: SEND_TO_UNPICKED, text: "." },
       { name: "a second holding to send to", within: SEND_TO_UNPICKED, text: "." },
       ...sendWheat(2),
