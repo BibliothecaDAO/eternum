@@ -72,8 +72,14 @@ const neverInsideAnchor = () => false;
  * The one panel: portaled to the body, capped to the viewport, closed by Escape or a pointer-down outside. It is
  * store-free — whoever mounts it owns its open state — so a view-driven surface (the sidebar's Build, Military,
  * Logistics and Chat), a store popover and a store surface all render through exactly this.
+ *
+ * A surface's life is its id: a panel that goes on to show another surface (Production replaced by the leaderboard,
+ * Build by Military) starts afresh, placed by the rule and undragged. The same surface aimed again (another tile for
+ * the same order) stays where the player left it.
  */
-export const PopoverPanel = ({
+export const PopoverPanel = (props: PopoverPanelProps) => <OpenPanel key={props.id} {...props} />;
+
+const OpenPanel = ({
   id,
   ariaLabel,
   anchor,

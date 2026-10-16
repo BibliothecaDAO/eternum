@@ -6,6 +6,7 @@ import { COMPACT_HUD_MEDIA_QUERY } from "@/hooks/helpers/use-compact-hud";
 import { type SurfaceAnchor, usePopoverStore } from "@/hooks/store/use-popover-store";
 
 import { PopoverPanel, SurfaceFrame, SurfaceHost } from "./popover";
+import { dragHeader, panelOf, placementOf } from "./surface-panel-testing";
 
 // Play is open, and the HUD's sounds are not this test's business.
 vi.mock("@/utils/can-issue-orders", () => ({ refusedBeforePlay: () => false }));
@@ -125,54 +126,67 @@ describe("on a phone", () => {
 });
 
 describe("a desk the player dragged, opened again", () => {
+  const hosts: Array<ReturnType<typeof createRoot>> = [];
   beforeEach(() => useScreen(1440, 900));
-  afterEach(() => window.localStorage.clear());
+  afterEach(async () => {
+    await act(async () => usePopoverStore.getState().close());
+    await act(async () => hosts.splice(0).forEach((host) => host.unmount()));
+    window.localStorage.clear();
+  });
 
-  /** The HUD's one surface host, and Production opened through the store as the action strip opens it. */
+  const CENTRED = ["translateX(-50%)", "274px"];
+  const DRAGGED = ["translateX(-50%) translate(300px, 200px)", "274px"];
+
+  /** The HUD's one surface host. */
   const mountHost = async () => {
     const root = createRoot(document.createElement("div"));
+    hosts.push(root);
     await act(async () => root.render(<SurfaceHost />));
-    return { unmount: () => act(async () => root.unmount()) };
   };
-  const openProduction = () =>
+  /** A full modal opened through the store, as the action strip opens Production and the name chip the leaderboard. */
+  const openDesk = (id: string, body = id) =>
     act(async () =>
       usePopoverStore.getState().openSurface({
-        id: "production",
+        id,
         content: (
-          <SurfaceFrame title="Production" onClose={() => {}}>
-            <p>Farm</p>
+          <SurfaceFrame title={id} onClose={() => {}}>
+            <p>{body}</p>
           </SurfaceFrame>
         ),
       }),
     );
-  const productionPanel = () => document.querySelector<HTMLElement>('[data-popover-panel="production"]');
-  const dragHeader = async (by: { x: number; y: number }) => {
-    const panel = productionPanel();
-    const header = panel?.querySelector("[data-popover-drag-handle]");
-    const pointer = (type: string, at: { x: number; y: number }) =>
-      new MouseEvent(type, { bubbles: true, clientX: at.x, clientY: at.y });
-    await act(async () => header?.dispatchEvent(pointer("pointerdown", { x: 100, y: 100 })));
-    await act(async () => panel?.dispatchEvent(pointer("pointermove", { x: 100 + by.x, y: 100 + by.y })));
-    await act(async () => panel?.dispatchEvent(pointer("pointerup", { x: 100 + by.x, y: 100 + by.y })));
-  };
+  const closeDesk = (id: string) => act(async () => usePopoverStore.getState().close(id));
 
   it("moves with the drag while open, and opens centred again after it is closed", async () => {
-    const host = await mountHost();
-    await openProduction();
-    await dragHeader({ x: 300, y: 200 });
-    expect(productionPanel()?.style.transform).toBe("translateX(-50%) translate(300px, 200px)");
-    await act(async () => usePopoverStore.getState().close("production"));
-    await openProduction();
-    expect([productionPanel()?.style.transform, productionPanel()?.style.top]).toEqual(["translateX(-50%)", "274px"]);
-    await host.unmount();
+    await mountHost();
+    await openDesk("production");
+    await dragHeader("production", { x: 300, y: 200 });
+    expect(placementOf("production")).toEqual(DRAGGED);
+    await closeDesk("production");
+    await openDesk("production");
+    expect(placementOf("production")).toEqual(CENTRED);
+  });
+
+  it("opens the desk that replaces a dragged one centred, with no close between them", async () => {
+    await mountHost();
+    await openDesk("production");
+    await dragHeader("production", { x: 300, y: 200 });
+    await openDesk("leaderboard");
+    expect([panelOf("production"), placementOf("leaderboard")]).toEqual([null, CENTRED]);
+  });
+
+  it("keeps a dragged desk where it was when the same surface is aimed again", async () => {
+    await mountHost();
+    await openDesk("help", "the realm");
+    await dragHeader("help", { x: 300, y: 200 });
+    await openDesk("help", "another army");
+    expect([panelOf("help")?.textContent?.includes("another army"), placementOf("help")]).toEqual([true, DRAGGED]);
   });
 
   it("opens centred for a player whose browser still holds a position saved by an older client", async () => {
     window.localStorage.setItem("eternum.free-surface-offset", JSON.stringify({ x: 300, y: 200 }));
-    const host = await mountHost();
-    await openProduction();
-    expect([productionPanel()?.style.transform, productionPanel()?.style.top]).toEqual(["translateX(-50%)", "274px"]);
-    await act(async () => usePopoverStore.getState().close("production"));
-    await host.unmount();
+    await mountHost();
+    await openDesk("production");
+    expect(placementOf("production")).toEqual(CENTRED);
   });
 });
