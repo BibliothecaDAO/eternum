@@ -74,7 +74,7 @@ export const ResourceCost = ({
       <ResourceIcon
         className="self-center justify-center"
         withTooltip={withTooltip}
-        resource={ResourcesIds[resourceId]}
+        resource={resourceId}
         size={size}
       />
       <div className={contentClasses}>

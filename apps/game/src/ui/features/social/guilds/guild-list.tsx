@@ -43,7 +43,7 @@ export const GuildListHeader = ({
         label: (
           <div className="flex w-full items-center justify-center gap-1">
             LORDS
-            <ResourceIcon size="md" resource={ResourcesIds[ResourcesIds.Lords]} className="h-4 w-4" />
+            <ResourceIcon size="md" resource={ResourcesIds.Lords} className="h-4 w-4" />
           </div>
         ),
         sortKey: "prize.lords",
@@ -53,7 +53,7 @@ export const GuildListHeader = ({
         label: (
           <div className="flex w-full items-center justify-center gap-1">
             STRK
-            <ResourceIcon size="md" resource={"Strk"} className="h-4 w-4" />
+            <SemanticIcon name="strk" size={16} className="h-4 w-4" />
           </div>
         ),
         sortKey: "prize.strk",
@@ -129,11 +129,11 @@ export const GuildRow = ({ guild, onClick }: { guild: GuildCustom; onClick: () =
         </p>
         <div className="flex items-center justify-center gap-1 text-sm font-medium text-gold/90">
           {guild.prize === null ? "—" : currencyIntlFormat(guild.prize.lords)}
-          <ResourceIcon size="md" resource={ResourcesIds[ResourcesIds.Lords]} className="h-4 w-4" withTooltip={false} />
+          <ResourceIcon size="md" resource={ResourcesIds.Lords} className="h-4 w-4" withTooltip={false} />
         </div>
         <div className="flex items-center justify-center gap-1 text-sm font-medium text-gold/90">
           {guild.prize === null ? "—" : currencyIntlFormat(guild.prize.strk)}
-          <ResourceIcon size="md" resource={"Strk"} className="h-4 w-4" withTooltip={false} />
+          <SemanticIcon name="strk" size={16} className="h-4 w-4" />
         </div>
       </div>
     </div>

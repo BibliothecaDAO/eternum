@@ -43,7 +43,7 @@ const LaborRateRow = ({ structureId }: { structureId: ID }) => {
         <span className="text-emerald-300">
           {perHour === undefined ? "—" : `+${Math.round(perHour).toLocaleString()}`}
         </span>
-        <ResourceIcon withTooltip={false} resource={ResourcesIds[ResourcesIds.Labor]} size="xs" />
+        <ResourceIcon withTooltip={false} resource={ResourcesIds.Labor} size="xs" />
       </span>
     </SectionRow>
   );

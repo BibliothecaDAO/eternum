@@ -490,7 +490,7 @@ export const TransferResourcesContainer = ({
       >
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center">
-            <ResourceIcon resource={ResourcesIds[resource.resourceId]} size="sm" withTooltip={false} />
+            <ResourceIcon resource={resource.resourceId} size="sm" withTooltip={false} />
             <span className="ml-2 font-medium">{ResourcesIds[resource.resourceId]}</span>
           </div>
           <button

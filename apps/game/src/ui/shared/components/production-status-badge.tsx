@@ -10,23 +10,17 @@ const PRODUCTION_DEPLETION_WINDOW_SECONDS = 10 * 60;
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
-const resolveResourceIdFromLabel = (label: string): ResourcesIds | undefined => {
-  const maybeId = (ResourcesIds as unknown as Record<string, ResourcesIds | string>)[label];
-  return typeof maybeId === "number" ? maybeId : undefined;
-};
-
 const PRODUCING_COLOR: [number, number, number] = [52, 211, 153]; // emerald
 const IDLE_COLOR: [number, number, number] = [251, 191, 36]; // amber
 
 interface ProductionStatusBadgeProps {
-  resourceLabel: string;
+  resource: ResourcesIds;
   tooltipText: string;
   isProducing: boolean;
   timeRemainingSeconds: number | null;
   totalCount?: number;
   size?: "sm" | "md" | "xs";
   onClick?: () => void;
-  resourceId?: ResourcesIds;
   showInputIcons?: boolean;
   className?: string;
   showTooltip?: boolean;
@@ -43,14 +37,13 @@ interface ProductionStatusBadgeProps {
 }
 
 export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
-  resourceLabel,
+  resource,
   tooltipText,
   isProducing,
   timeRemainingSeconds,
   totalCount = 0,
   size = "sm",
   onClick,
-  resourceId,
   showInputIcons = false,
   className,
   showTooltip = true,
@@ -110,7 +103,7 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
       }
     : undefined;
 
-  const resolvedResourceId = showInputIcons ? (resourceId ?? resolveResourceIdFromLabel(resourceLabel)) : undefined;
+  const resolvedResourceId = showInputIcons ? resource : undefined;
   const inputDefinitions =
     resolvedResourceId !== undefined ? configManager.getResourceProductionResourceInputs(resolvedResourceId) : [];
   const arcSpan = Math.PI / 2;
@@ -142,12 +135,7 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
               className="absolute flex h-4 w-4 items-center justify-center rounded-full border border-black/30 bg-[#120b07]/90 shadow-[0_0_6px_rgba(0,0,0,0.45)]"
               style={{ transform: `translate(-50%, -50%) translate(${x}px, ${y}px)` }}
             >
-              <ResourceIcon
-                resource={ResourcesIds[input.resource]}
-                size="xs"
-                withTooltip={false}
-                className="!h-3 !w-3"
-              />
+              <ResourceIcon resource={input.resource} size="xs" withTooltip={false} className="!h-3 !w-3" />
             </span>
           ))}
         </div>
@@ -187,7 +175,7 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
             : "0 0 8px rgba(0,0,0,0.45)",
         }}
       >
-        <ResourceIcon resource={resourceLabel} size={preset.icon} tooltipText={tooltipText} withTooltip={showTooltip} />
+        <ResourceIcon resource={resource} size={preset.icon} tooltipText={tooltipText} withTooltip={showTooltip} />
       </div>
       {cornerTopLeft && (
         <span className="absolute -top-1.5 -left-1.5 z-10 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-black/85 px-1.5 text-[10px] font-semibold text-gold/90 shadow-md border border-gold/40">

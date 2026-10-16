@@ -79,8 +79,8 @@ const ResourceWeight = ({ className }: { className?: string }) => {
         <div className="p-1.5 border border-gold/20 rounded-md bg-brown-900/30">
           <div className="text-center text-gold/90 text-xs font-medium">0 kg/unit</div>
           <div className="flex items-center justify-center gap-1.5">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="sm" />
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Donkey]} size="sm" />
+            <ResourceIcon resource={ResourcesIds.Lords} size="sm" />
+            <ResourceIcon resource={ResourcesIds.Donkey} size="sm" />
           </div>
         </div>
 
@@ -88,7 +88,7 @@ const ResourceWeight = ({ className }: { className?: string }) => {
         <div className="p-1.5 border border-gold/20 rounded-md bg-brown-900/30">
           <div className="text-center text-gold/90 text-xs font-medium">0.1 kg/unit</div>
           <div className="flex items-center justify-center">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.AncientFragment]} size="sm" />
+            <ResourceIcon resource={ResourcesIds.AncientFragment} size="sm" />
             <span className="ml-1 text-2xs">(Fragment)</span>
           </div>
         </div>
@@ -97,8 +97,8 @@ const ResourceWeight = ({ className }: { className?: string }) => {
         <div className="p-1.5 border border-gold/20 rounded-md bg-brown-900/30">
           <div className="text-center text-gold/90 text-xs font-medium">0.1 kg/unit</div>
           <div className="flex items-center justify-center gap-1.5">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Wheat]} size="sm" />
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Fish]} size="sm" />
+            <ResourceIcon resource={ResourcesIds.Wheat} size="sm" />
+            <ResourceIcon resource={ResourcesIds.Fish} size="sm" />
             <span className="ml-1 text-2xs">(Food)</span>
           </div>
         </div>
@@ -107,9 +107,9 @@ const ResourceWeight = ({ className }: { className?: string }) => {
         <div className="p-1.5 border border-gold/20 rounded-md bg-brown-900/30">
           <div className="text-center text-gold/90 text-xs font-medium">1 kg/unit</div>
           <div className="flex items-center justify-center">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Wood]} size="xs" />
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Stone]} size="xs" />
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Gold]} size="xs" />
+            <ResourceIcon resource={ResourcesIds.Wood} size="xs" />
+            <ResourceIcon resource={ResourcesIds.Stone} size="xs" />
+            <ResourceIcon resource={ResourcesIds.Gold} size="xs" />
             <span className="ml-1 text-2xs">(Resources)</span>
           </div>
         </div>
@@ -118,9 +118,9 @@ const ResourceWeight = ({ className }: { className?: string }) => {
         <div className="p-1.5 border border-gold/20 rounded-md bg-brown-900/30 col-span-2">
           <div className="text-center text-gold/90 text-xs font-medium">5 kg/unit (All Troops)</div>
           <div className="flex items-center justify-center gap-1.5">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Knight]} size="sm" />
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Crossbowman]} size="sm" />
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Paladin]} size="sm" />
+            <ResourceIcon resource={ResourcesIds.Knight} size="sm" />
+            <ResourceIcon resource={ResourcesIds.Crossbowman} size="sm" />
+            <ResourceIcon resource={ResourcesIds.Paladin} size="sm" />
           </div>
         </div>
       </div>

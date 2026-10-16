@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-16",
+    title: "Trade opens again",
+    description:
+      "Opening Trade in an Eternum game no longer stops the game: every resource and relic in the market shows its painting.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-16",
     title: "A leaner leaderboard",
     description:
       "The in-game leaderboard is one ranked list of every player, kept current as points land: the search field, the refresh button and the Results tab are gone.",

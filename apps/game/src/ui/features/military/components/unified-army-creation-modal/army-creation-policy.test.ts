@@ -8,7 +8,7 @@ import {
   resolveSpawnDirection,
   resolveTroopAvailabilityReason,
 } from "./army-creation-policy";
-import { TroopTier, TroopType } from "@bibliothecadao/types";
+import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 
 const noBarracks = { name: "Knight T1", perHour: 0, secondsToFullArmy: null };
 const training = { name: "Knight T1", perHour: 250, secondsToFullArmy: 7_800 };
@@ -112,9 +112,13 @@ describe("initial troop", () => {
     {
       type: TroopType.Crossbowman,
       label: "Crossbow",
-      tiers: [{ tier: TroopTier.T1, available: crossbows, resourceTrait: "" }],
+      tiers: [{ tier: TroopTier.T1, available: crossbows, resourceId: ResourcesIds.Crossbowman }],
     },
-    { type: TroopType.Knight, label: "Knight", tiers: [{ tier: TroopTier.T1, available: knights, resourceTrait: "" }] },
+    {
+      type: TroopType.Knight,
+      label: "Knight",
+      tiers: [{ tier: TroopTier.T1, available: knights, resourceId: ResourcesIds.Knight }],
+    },
   ];
   const knightsOnly = (troop: { type: TroopType }) => troop.type === TroopType.Knight;
 

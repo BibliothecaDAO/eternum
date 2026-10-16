@@ -36,7 +36,7 @@ export const RequirementChips = ({
           className={REQUIREMENT_CHIP}
           title={`${ResourcesIds[req.resource] ?? `Resource ${req.resource}`} — need ${req.amount.toLocaleString()}${incomingTitle}`}
         >
-          <ResourceIcon withTooltip={false} resource={ResourcesIds[req.resource]} size="xs" />
+          <ResourceIcon withTooltip={false} resource={req.resource} size="xs" />
           <span className={isMet ? "text-gold" : "text-red-300"}>
             {req.current === undefined ? "—" : Math.floor(req.current).toLocaleString()}
           </span>

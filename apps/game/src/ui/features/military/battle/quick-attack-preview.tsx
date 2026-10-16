@@ -252,8 +252,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       const isActive = index === 0;
       const remaining = isActive ? defenderRemaining : Number(snapshot.count) / RESOURCE_PRECISION;
       const resourceId = getTroopResourceId(snapshot.category, snapshot.tier);
-      const trait = resources.find((resource) => resource.id === resourceId)?.trait ?? "";
-      return { tier: snapshot.tier, trait, remaining, isActive, eliminated: remaining <= 0 };
+      return { tier: snapshot.tier, resourceId, remaining, isActive, eliminated: remaining <= 0 };
     });
   }, [isStructureTarget, targetTroopSnapshots, defenderRemaining]);
 
@@ -560,9 +559,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
                     >
                       {slot.tier}
                     </span>
-                    {slot.trait && (
-                      <ResourceIcon withTooltip={false} resource={slot.trait} size="sm" className="shrink-0" />
-                    )}
+                    <ResourceIcon withTooltip={false} resource={slot.resourceId} size="sm" className="shrink-0" />
                     <span
                       className={cn(
                         "tabular-nums",

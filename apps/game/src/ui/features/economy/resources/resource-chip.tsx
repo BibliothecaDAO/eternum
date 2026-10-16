@@ -85,7 +85,7 @@ export const ResourceChip = ({
   }, [resourceManager, now]);
 
   const icon = useMemo(() => {
-    return <ResourceIcon withTooltip={false} resource={ResourcesIds[resourceId]} size="sm" className="self-center" />;
+    return <ResourceIcon withTooltip={false} resource={resourceId} size="sm" className="self-center" />;
   }, [resourceId, size]);
 
   const handleMouseLeave = useCallback(() => setTooltip(null), [setTooltip]);

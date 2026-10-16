@@ -80,11 +80,10 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
   const staminaTone =
     staminaPercent > 66 ? "bg-emerald-400/80" : staminaPercent > 33 ? "bg-amber-400/80" : "bg-rose-400/80";
 
-  const troopResourceTrait = useMemo(() => {
-    if (!army.troops) return "";
-    const id = getTroopResourceId(army.troops.category as TroopType, army.troops.tier as TroopTier);
-    return resources.find((resource) => resource.id === id)?.trait ?? "";
-  }, [army.troops]);
+  const troopResource = useMemo(
+    () => (army.troops ? getTroopResourceId(army.troops.category as TroopType, army.troops.tier as TroopTier) : null),
+    [army.troops],
+  );
 
   const handleJump = () => {
     selectOnMap({ kind: "hex", hex: { col: Number(army.position.x), row: Number(army.position.y) } });
@@ -118,8 +117,8 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
       >
         {army.troops?.tier ?? "—"}
       </span>
-      {troopResourceTrait && (
-        <ResourceIcon withTooltip={false} resource={troopResourceTrait} size="sm" className="shrink-0" />
+      {troopResource !== null && (
+        <ResourceIcon withTooltip={false} resource={troopResource} size="sm" className="shrink-0" />
       )}
       <span className="text-[12px] font-semibold tabular-nums text-gold">{currencyFormat(rawCount, 0)}</span>
       {maxStamina > 0 && stamina && (

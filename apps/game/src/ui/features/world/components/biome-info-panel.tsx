@@ -1,3 +1,4 @@
+import { ResourcesIds } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useEffect, useMemo, useState } from "react";
 
@@ -46,15 +47,15 @@ const formatBiomeLabel = (biome: BiomeType | string) => {
 // Troop type configuration with resource names for ResourceIcon
 const troopConfig = {
   [TroopType.Knight]: {
-    resourceName: "Knight",
+    resourceId: ResourcesIds.Knight,
     label: "Knights",
   },
   [TroopType.Crossbowman]: {
-    resourceName: "Crossbowman",
+    resourceId: ResourcesIds.Crossbowman,
     label: "Crossbowmen",
   },
   [TroopType.Paladin]: {
-    resourceName: "Paladin",
+    resourceId: ResourcesIds.Paladin,
     label: "Paladins",
   },
 };
@@ -129,7 +130,7 @@ export const BiomeInfoPanel = ({ biome, collapsed = false }: BiomeInfoPanelProps
         <div className="flex items-center gap-2">
           {troopBonuses.map(({ troopType, config, bonus, summaryTextClass }) => (
             <div key={troopType} className="flex items-center gap-1 rounded-md bg-dark/60 px-1.5 py-0.5">
-              <ResourceIcon resource={config.resourceName} size="xs" withTooltip={false} />
+              <ResourceIcon resource={config.resourceId} size="xs" withTooltip={false} />
               <span className={`text-[11px] font-semibold leading-none ${summaryTextClass}`}>
                 {formatBiomeBonus(bonus)}
               </span>
@@ -174,7 +175,7 @@ export const BiomeInfoPanel = ({ biome, collapsed = false }: BiomeInfoPanelProps
                   aria-label={`${config.label}: ${formatBiomeBonus(bonus)} combat effectiveness`}
                 >
                   <div className="mb-1.5 flex justify-center">
-                    <ResourceIcon resource={config.resourceName} size="lg" withTooltip={false} className="opacity-90" />
+                    <ResourceIcon resource={config.resourceId} size="lg" withTooltip={false} className="opacity-90" />
                   </div>
                   <div className={`text-sm font-bold text-center ${styles.textClass}`}>{formatBiomeBonus(bonus)}</div>
                   {bonus !== 1 && (

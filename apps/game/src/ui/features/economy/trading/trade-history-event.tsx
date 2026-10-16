@@ -64,15 +64,15 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
       </span>
       <span className="truncate">{taker}</span>
       <span className="flex items-center gap-1">
-        <ResourceIcon resource={ResourcesIds[Number(resourceGiven.resourceId)]} size="xs" withTooltip={false} />
+        <ResourceIcon resource={Number(resourceGiven.resourceId)} size="xs" withTooltip={false} />
         {currencyIntlFormat(divideByPrecision(resourceGiven.amount), 2)}
         <span className="text-gold/50">→</span>
-        <ResourceIcon resource={ResourcesIds[Number(resourceTaken.resourceId)]} size="xs" withTooltip={false} />
+        <ResourceIcon resource={Number(resourceTaken.resourceId)} size="xs" withTooltip={false} />
         {currencyIntlFormat(divideByPrecision(resourceTaken.amount), 2)}
       </span>
       <span className="flex items-center justify-end gap-1 font-semibold">
         {formatNumber(price, 4)}
-        <ResourceIcon resource={ResourcesIds[Number(tradedResourceId)]} size="xs" withTooltip={false} />
+        <ResourceIcon resource={Number(tradedResourceId)} size="xs" withTooltip={false} />
       </span>
     </div>
   );

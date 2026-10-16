@@ -220,7 +220,7 @@ export const MergedResourcePanel = memo(
         return (
           <div key={resourceId} className="relative inline-flex h-12 w-12 shrink-0">
             <ProductionStatusBadge
-              resourceLabel={label}
+              resource={resourceId}
               tooltipText={tooltipParts.join(" • ")}
               isProducing={Boolean(item?.isProducing)}
               timeRemainingSeconds={effectiveRemaining}

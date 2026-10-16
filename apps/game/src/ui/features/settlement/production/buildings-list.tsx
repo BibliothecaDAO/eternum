@@ -75,7 +75,7 @@ export const BuildingsList = ({
     return (
       <div className="flex items-center justify-between gap-3 rounded-lg border border-gold/15 bg-black/25 px-3 py-2">
         <div className="flex min-w-0 items-center gap-2">
-          <ResourceIcon resource={ResourcesIds[selectedProduction.resource]} size="md" />
+          <ResourceIcon resource={selectedProduction.resource} size="md" />
           <div className="min-w-0">
             <h4 className={cn(HUD_HEADLINE, "truncate")}>{ResourcesIds[selectedProduction.resource]}</h4>
             <span className={HUD_BODY}>
@@ -116,7 +116,7 @@ export const BuildingsList = ({
               className="flex cursor-pointer items-center gap-3 rounded-lg border border-gold/15 bg-black/25 px-3 py-2 transition hover:border-gold/40 focus:outline-none focus:ring-2 focus:ring-gold/60"
             >
               <div className="flex min-w-0 flex-1 items-center gap-2">
-                <ResourceIcon resource={ResourcesIds[production.resource]} size="md" />
+                <ResourceIcon resource={production.resource} size="md" />
                 <div className="min-w-0">
                   <h4 className={cn(HUD_HEADLINE, "truncate")}>{ResourcesIds[production.resource]}</h4>
                   <span className={HUD_BODY}>

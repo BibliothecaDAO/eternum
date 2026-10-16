@@ -518,7 +518,7 @@ const LocalTilePanel = () => {
             <SectionRow label="Produces / sec">
               <span className={chipBase} title={producedResourceName}>
                 <span className={valueClassFor("good")}>+{producedPerTick}</span>
-                <ResourceIcon withTooltip={false} resource={producedResourceName} size="xs" />
+                <ResourceIcon withTooltip={false} resource={producedResource} size="xs" />
               </span>
               <button
                 type="button"
@@ -537,7 +537,7 @@ const LocalTilePanel = () => {
                                   key={resourceId}
                                   className="flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-2 py-1"
                                 >
-                                  <ResourceIcon withTooltip={false} resource={name} size="xs" />
+                                  <ResourceIcon withTooltip={false} resource={Number(resourceId)} size="xs" />
                                   <span className="text-xxs text-gold/80">{name}</span>
                                 </div>
                               );
@@ -571,7 +571,7 @@ const LocalTilePanel = () => {
                 return (
                   <span key={`${entry.resource}-${index}`} className={chipBase} title={name}>
                     <span className={valueClassFor("bad")}>-{entry.amount}</span>
-                    <ResourceIcon withTooltip={false} resource={name} size="xs" />
+                    <ResourceIcon withTooltip={false} resource={entry.resource} size="xs" />
                   </span>
                 );
               })}
@@ -613,7 +613,7 @@ const LocalTilePanel = () => {
                   const hasEnough = balance !== undefined && balance >= entry.amount;
                   return (
                     <span key={`build-cost-${entry.resource}-${index}`} className={chipBase} title={name}>
-                      <ResourceIcon withTooltip={false} resource={name} size="xs" />
+                      <ResourceIcon withTooltip={false} resource={entry.resource} size="xs" />
                       <span className={valueClassFor(hasEnough ? "neutral" : "bad")}>
                         {balance === undefined ? "—" : formatResourceAmount(balance)}
                       </span>

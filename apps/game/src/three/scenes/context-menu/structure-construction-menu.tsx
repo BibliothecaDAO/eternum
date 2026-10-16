@@ -3,7 +3,7 @@ import { LeftView } from "@/types";
 import { getGameModeConfig } from "@/config/game-modes";
 import { ContextMenuAction } from "@/types/context-menu";
 import type { ReactNode } from "react";
-import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import { getRealmInfo, configManager, resolveUseSimpleCost } from "@bibliothecadao/eternum";
@@ -64,30 +64,13 @@ const militaryTierConfig: Array<{
 
 const toSlug = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
-const createResourceIconComponent = (
-  resource: string | ResourcesIds | null | undefined,
-  isDisabled: boolean = false,
-): ReactNode => {
-  if (resource === undefined || resource === null) {
-    return undefined;
-  }
-
-  const resourceName =
-    typeof resource === "number" ? (findResourceById(resource)?.trait ?? ResourcesIds[resource]) : resource;
-
-  if (!resourceName) {
-    return undefined;
-  }
-
-  return (
-    <ResourceIcon
-      resource={resourceName}
-      size="sm"
-      withTooltip={false}
-      className={`pointer-events-none ${isDisabled ? "opacity-40 grayscale" : ""}`}
-    />
-  );
-};
+const createResourceIconComponent = (meaning: IconMeaning, isDisabled: boolean = false): ReactNode => (
+  <Icon
+    name={meaning}
+    size={24}
+    className={`pointer-events-none h-4 w-4 md:h-6 md:w-6 ${isDisabled ? "opacity-40 grayscale" : ""}`}
+  />
+);
 
 const createTierIconComponent = (tierLabel: string): ReactNode => (
   <span className="pointer-events-none text-xs font-semibold uppercase text-gold">{tierLabel}</span>
@@ -155,7 +138,7 @@ export const createConstructionMenu = ({
     icon?: string;
     building: BuildingType;
     resource?: ResourcesIds;
-    iconResource?: string | ResourcesIds | null;
+    iconResource: IconMeaning;
   }): ContextMenuAction | null => {
     const buildability = resolveConstructionBuildability({
       entityId: structureEntityId,
@@ -167,8 +150,6 @@ export const createConstructionMenu = ({
     });
     const canBuild = buildability.canSubmit;
 
-    const iconDescriptor = iconResource ?? resource ?? label;
-
     return makeBuildingAction({
       suffix,
       label,
@@ -176,7 +157,7 @@ export const createConstructionMenu = ({
       building,
       view: LeftView.ConstructionView,
       resource,
-      iconComponent: createResourceIconComponent(iconDescriptor, !canBuild),
+      iconComponent: createResourceIconComponent(iconResource, !canBuild),
       disabled: !canBuild,
       hint: buildability.reason,
     });
@@ -200,39 +181,41 @@ export const createConstructionMenu = ({
         icon,
         building,
         resource: typedResourceId,
-        iconResource: typedResourceId,
+        iconResource: resourceMeaning(typedResourceId),
       });
     })
     .filter((action): action is ContextMenuAction => action !== null);
 
-  const economicActions: ContextMenuAction[] = [
-    {
-      suffix: "economic-farm",
-      label: "Farm",
-      building: BuildingType.ResourceWheat,
-      resource: ResourcesIds.Wheat,
-      iconResource: ResourcesIds.Wheat,
-    },
-    {
-      suffix: "economic-workers-hut",
-      label: "Workers Hut",
-      building: BuildingType.WorkersHut,
-      iconResource: ResourcesIds.Labor,
-    },
-    {
-      suffix: "economic-storehouse",
-      label: "Storehouse",
-      building: BuildingType.Storehouse,
-      iconResource: "Silo",
-    },
-    {
-      suffix: "economic-market",
-      label: "Market",
-      building: BuildingType.ResourceDonkey,
-      resource: ResourcesIds.Donkey,
-      iconResource: ResourcesIds.Donkey,
-    },
-  ]
+  const economicActions: ContextMenuAction[] = (
+    [
+      {
+        suffix: "economic-farm",
+        label: "Farm",
+        building: BuildingType.ResourceWheat,
+        resource: ResourcesIds.Wheat,
+        iconResource: resourceMeaning(ResourcesIds.Wheat),
+      },
+      {
+        suffix: "economic-workers-hut",
+        label: "Workers Hut",
+        building: BuildingType.WorkersHut,
+        iconResource: resourceMeaning(ResourcesIds.Labor),
+      },
+      {
+        suffix: "economic-storehouse",
+        label: "Storehouse",
+        building: BuildingType.Storehouse,
+        iconResource: "granary",
+      },
+      {
+        suffix: "economic-market",
+        label: "Market",
+        building: BuildingType.ResourceDonkey,
+        resource: ResourcesIds.Donkey,
+        iconResource: resourceMeaning(ResourcesIds.Donkey),
+      },
+    ] satisfies Parameters<typeof createActionWithAvailability>[0][]
+  )
     .map((config) => createActionWithAvailability(config))
     .filter((action): action is ContextMenuAction => action !== null);
 
@@ -255,16 +238,13 @@ export const createConstructionMenu = ({
       hint: tierDisabled ? "Unavailable in labor cost mode" : undefined,
       children: units
         .map(({ label: unitLabel, building, resource }) => {
-          const resourceInfo = findResourceById(resource);
-          const iconResource = resourceInfo?.trait ?? ResourcesIds[resource];
-
           return createActionWithAvailability({
             suffix: `military-${suffix}-${toSlug(unitLabel)}`,
             label: unitLabel,
             icon: iconUrl(resourceMeaning(resource)),
             building,
             resource,
-            iconResource,
+            iconResource: resourceMeaning(resource),
           });
         })
         .filter((action): action is ContextMenuAction => action !== null),

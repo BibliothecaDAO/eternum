@@ -192,7 +192,7 @@ const SidebarRealm = ({
                 return (
                   <ProductionStatusBadge
                     key={summary.resourceId}
-                    resourceLabel={resourceLabel}
+                    resource={summary.resourceId}
                     tooltipText={tooltipParts.filter(Boolean).join(" • ")}
                     isProducing={summary.isProducing}
                     timeRemainingSeconds={effectiveRemainingSeconds}

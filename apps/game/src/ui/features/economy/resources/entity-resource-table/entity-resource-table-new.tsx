@@ -876,7 +876,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                           >
                             <td className="px-3 py-2 border-r border-gold/[0.07] sticky left-0 bg-brown/95 backdrop-blur z-10 shadow-sm">
                               <div className="flex items-center gap-2">
-                                <ResourceIcon resource={resourceKey} size="md" />
+                                <ResourceIcon resource={resourceId} size="md" />
                                 <span className="text-[11px] font-semibold text-gold/90">{resourceKey}</span>
                               </div>
                             </td>
@@ -1400,7 +1400,7 @@ const TransferCartItem = React.memo(
         />
         <div className="flex-1 space-y-1">
           <div className="flex items-center gap-2 text-sm text-gold">
-            <ResourceIcon resource={resourceKey} size="sm" />
+            <ResourceIcon resource={draft.resourceId} size="sm" />
             <span className="font-semibold">{draft.amount.toLocaleString()}</span>
             <span className="text-xs text-gold/60">{resourceKey}</span>
           </div>
@@ -1509,7 +1509,6 @@ const DragDropAmountDialog = React.memo(
     const recipientBalance = knownBalance(recipientResources.balance(dragData.resourceId));
 
     const canCarry = availableDonkeys >= neededDonkeys;
-    const donkeyTrait = findResourceById(ResourcesIds.Donkey)?.trait as string;
 
     const isValidTransfer = amount > 0 && amount <= dragData.maxAmount && canCarry;
     const [isLoading, setIsLoading] = useState(false);
@@ -1560,7 +1559,7 @@ const DragDropAmountDialog = React.memo(
           bodyClassName="p-4"
         >
           <div className="flex items-center gap-2">
-            <ResourceIcon resource={resourceKey} size="lg" />
+            <ResourceIcon resource={dragData.resourceId} size="lg" />
             <div>
               <p className="text-xs text-gold/60">
                 {fromStructure?.label} → {toStructure?.label}
@@ -1593,7 +1592,7 @@ const DragDropAmountDialog = React.memo(
             {amount > 0 && (
               <div className="bg-brown/10 rounded p-2 border border-gold/20">
                 <div className="flex items-center gap-1.5 mb-1.5">
-                  <ResourceIcon resource={resourceKey} size="sm" withTooltip={false} />
+                  <ResourceIcon resource={dragData.resourceId} size="sm" withTooltip={false} />
                   <span className="text-xs font-medium text-gold/90">Balance Preview</span>
                 </div>
                 <div className="space-y-1 text-xs">
@@ -1616,7 +1615,7 @@ const DragDropAmountDialog = React.memo(
             {/* Donkey Requirements */}
             <div className="bg-brown/10 rounded p-3 border border-gold/20">
               <div className="flex items-center gap-2 mb-2">
-                <ResourceIcon resource={donkeyTrait} size="sm" withTooltip={false} />
+                <ResourceIcon resource={ResourcesIds.Donkey} size="sm" withTooltip={false} />
                 <span className="text-sm font-medium text-gold/90">Transport</span>
               </div>
 

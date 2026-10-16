@@ -137,7 +137,7 @@ export const SelectResource: React.FC<SelectResourceProps> = ({
           {filteredResourceIds.map((resourceId) => (
             <SelectItem key={resourceId} value={resourceId.toString()}>
               <div className="flex items-center">
-                <ResourceIcon resource={ResourcesIds[resourceId]} size="md" />
+                <ResourceIcon resource={resourceId} size="md" />
                 <span className="ml-2">{ResourcesIds[resourceId]}</span>
               </div>
             </SelectItem>

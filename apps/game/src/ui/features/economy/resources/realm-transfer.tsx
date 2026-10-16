@@ -112,7 +112,6 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
 
   const resourceData = useMemo(() => findResourceById(resource), [resource]);
   const resourceLabel = (resourceData?.trait as string) || "";
-  const donkeyTrait = useMemo(() => findResourceById(ResourcesIds.Donkey)?.trait as string, []);
   // A balance this client cannot see burns nothing.
   const burnSliderMax = (balance ?? 0) / RESOURCE_PRECISION;
   const normalizedSearchTerm = useMemo(() => {
@@ -253,12 +252,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
       <header className="rounded-lg border border-gold/30 bg-black/40 p-3 md:p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3 md:gap-4">
-            <ResourceIcon
-              withTooltip={false}
-              resource={resourceLabel || (findResourceById(resource)?.trait as string)}
-              size="xl"
-              className="shrink-0"
-            />
+            <ResourceIcon withTooltip={false} resource={resource} size="xl" className="shrink-0" />
             <div className="flex flex-col">
               <span className="text-xxs uppercase tracking-wide text-gold/60">Available</span>
               <span className="text-2xl font-semibold leading-tight text-gold">{currencyFormat(balance, 2)}</span>
@@ -434,11 +428,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
             <div className="flex flex-wrap items-center gap-2 text-sm font-semibold uppercase tracking-wide text-gold">
               Transfers Queue ({calls.length})
               <span className="inline-flex items-center gap-2 rounded-full bg-brown/40 px-2 py-1 text-xs font-normal normal-case text-gold/80">
-                <ResourceIcon
-                  resource={donkeyTrait || (findResourceById(ResourcesIds.Donkey)?.trait as string)}
-                  size="sm"
-                  withTooltip={false}
-                />
+                <ResourceIcon resource={ResourcesIds.Donkey} size="sm" withTooltip={false} />
                 {totalNeededDonkeys.toString()} 🐴
               </span>
             </div>

@@ -219,7 +219,7 @@ export const OrderBookSideHeader = ({
       )}
     >
       <span className="flex items-center gap-2">
-        <ResourceIcon withTooltip={false} size="sm" resource={trait} />
+        <ResourceIcon withTooltip={false} size="sm" resource={resourceId} />
         <span className={HUD_LABEL}>{isBuy ? "Sell to" : "Buy from"}</span>
         <span className={cn(HUD_VALUE, isBuy ? "text-red" : "text-green")}>{formatNumber(bestPrice, 4)}</span>
         <span className={HUD_CUE}>Lords each</span>
@@ -247,7 +247,7 @@ export const OrderRowHeader = memo(({ resourceId, isBuy }: { resourceId?: number
       <span className="flex items-center justify-center gap-0.5">
         {resourceId && (
           <>
-            <ResourceIcon size="xs" resource="Lords" withTooltip={false} />
+            <ResourceIcon size="xs" resource={ResourcesIds.Lords} withTooltip={false} />
             <span>/</span>
             <ResourceIcon size="xs" resource={resourceId} withTooltip={false} />
           </>
@@ -423,7 +423,7 @@ export const OrderRow = memo(
         </span>
         <span className="text-center text-gold">{formatNumber(offer.perLords, 4)}</span>
         <span className={cn("flex items-center justify-center gap-1", isBuy ? "text-green" : "text-red")}>
-          <ResourceIcon withTooltip={false} size="xs" resource="Lords" />
+          <ResourceIcon withTooltip={false} size="xs" resource={ResourcesIds.Lords} />
           {currencyFormat(getTotalLords, 0)}
         </span>
         <button
@@ -743,7 +743,7 @@ export const OrderCreation = memo(
     const trait = findResourceById(resourceId)?.trait ?? "";
 
     const amountField = (
-      <OrderField label={isBuy ? "Buy" : "Sell"} icon={trait} available={currencyFormat(resourceBalance, 0)}>
+      <OrderField label={isBuy ? "Buy" : "Sell"} icon={resourceId} available={currencyFormat(resourceBalance, 0)}>
         <NumberInput
           value={resource}
           className={COMPACT_NUMBER_INPUT}
@@ -753,7 +753,7 @@ export const OrderCreation = memo(
       </OrderField>
     );
     const priceField = (
-      <OrderField label={`Lords / ${trait}`} icon="Lords">
+      <OrderField label={`Lords / ${trait}`} icon={ResourcesIds.Lords}>
         <NumberInput
           allowDecimals={true}
           value={Number(bid)}
@@ -764,7 +764,7 @@ export const OrderCreation = memo(
       </OrderField>
     );
     const lordsField = (
-      <OrderField label={isBuy ? "Cost" : "Gain"} icon="Lords" available={currencyFormat(lordsBalance, 0)}>
+      <OrderField label={isBuy ? "Cost" : "Gain"} icon={ResourcesIds.Lords} available={currencyFormat(lordsBalance, 0)}>
         <NumberInput
           value={lords}
           className={COMPACT_NUMBER_INPUT}
@@ -779,7 +779,7 @@ export const OrderCreation = memo(
           className={cn("donkeys-used-selector", REQUIREMENT_CHIP, enoughDonkeys ? "text-gold" : "text-red")}
           title="Donkeys needed / available"
         >
-          <ResourceIcon resource="Donkey" size="xs" withTooltip={false} />
+          <ResourceIcon resource={ResourcesIds.Donkey} size="xs" withTooltip={false} />
           {donkeysNeeded.toLocaleString()} / {currencyFormat(donkeyBalance, 0)}
         </span>
         <span className={cn(REQUIREMENT_CHIP, "text-gold/70")} title="Weight">
@@ -839,7 +839,7 @@ export const OrderCreation = memo(
 /** The compact form's third value as a line instead of an input: the Lords the order costs or gains. */
 const LordsTotal = ({ isBuy, lords, available }: { isBuy: boolean; lords: number; available: string }) => (
   <span className="flex items-center gap-1" title={`${isBuy ? "Cost" : "Gain"} / Lords available`}>
-    <ResourceIcon withTooltip={false} size="xs" resource="Lords" />
+    <ResourceIcon withTooltip={false} size="xs" resource={ResourcesIds.Lords} />
     <span className={HUD_LABEL}>{isBuy ? "Cost" : "Gain"}</span>
     <span className={HUD_VALUE}>{lords.toLocaleString()}</span>
     <span className={HUD_CUE}>/ {available}</span>
@@ -853,7 +853,7 @@ const OrderField = ({
   children,
 }: {
   label: string;
-  icon: string;
+  icon: ResourcesIds;
   available?: string;
   children: ReactNode;
 }) => (

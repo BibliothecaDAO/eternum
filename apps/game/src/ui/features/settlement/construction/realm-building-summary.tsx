@@ -9,7 +9,7 @@ import {
   ResourcesIds,
 } from "@bibliothecadao/types";
 
-import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { resourceMeaning, type IconMeaning } from "@/ui/design-system/icon-meaning";
 
 // Paladins (Stable) → Knights (Barracks) → Crossbowmen (Archery). Player
 // preference: heavier infantry / cavalry surface first in the military tab.
@@ -20,7 +20,7 @@ type MilitaryBuildingGroup = (typeof MILITARY_BUILDING_GROUP_ORDER)[number];
 type RealmBuildingSummaryItem = {
   buildingId: BuildingType;
   label: string;
-  iconResource: string;
+  icon: IconMeaning;
   count: number;
 };
 
@@ -82,17 +82,12 @@ const resolveRealmBuildingSummaryOrder = (realmResourceIds: ResourcesIds[], allo
 
 const toSummaryLabel = (buildingType: BuildingType) => BuildingTypeToString[buildingType] ?? "Building";
 
-const toSummaryIconResource = (buildingType: BuildingType) => {
-  if (buildingType === BuildingType.WorkersHut) return "House";
-  if (buildingType === BuildingType.Storehouse) return "Silo";
-  if (buildingType === BuildingType.ResourceDonkey) return "Donkey";
-
+/** A building's painting in the summary: the resource it makes, else its own (a hut is a home, a storehouse a granary). */
+const toSummaryIcon = (buildingType: BuildingType): IconMeaning => {
+  if (buildingType === BuildingType.Storehouse) return "granary";
+  if (buildingType === BuildingType.ResourceDonkey) return resourceMeaning(ResourcesIds.Donkey);
   const producedResource = getProducedResource(buildingType);
-  if (producedResource !== undefined) {
-    return ResourcesIds[producedResource];
-  }
-
-  return "House";
+  return producedResource !== undefined ? resourceMeaning(producedResource) : "home";
 };
 
 export const buildRealmBuildingSummary = ({
@@ -108,7 +103,7 @@ export const buildRealmBuildingSummary = ({
       items.push({
         buildingId: buildingType,
         label: toSummaryLabel(buildingType),
-        iconResource: toSummaryIconResource(buildingType),
+        icon: toSummaryIcon(buildingType),
         count,
       });
       return items;
@@ -161,7 +156,7 @@ export const RealmBuildingSummary = ({
                     T{military.tier}
                   </span>
                 )}
-                <ResourceIcon resource={item.iconResource} size="xs" withTooltip={false} />
+                <SemanticIcon name={item.icon} size={16} className="h-4 w-4" />
                 <span className="font-semibold tabular-nums text-gold">{item.count}</span>
                 {buildAction && (
                   <button

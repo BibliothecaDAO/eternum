@@ -606,7 +606,7 @@ export const RealmAutomationPanel = ({
                 >
                   <div className="flex items-start gap-2">
                     <div className="shrink-0">
-                      <ResourceIcon resource={ResourcesIds[resourceId as ResourcesIds]} size="xs" />
+                      <ResourceIcon resource={resourceId as ResourcesIds} size="xs" />
                     </div>
                     <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex items-start justify-between gap-2">
@@ -686,7 +686,7 @@ export const RealmAutomationPanel = ({
                             className="flex items-center justify-center rounded border border-gold/20 bg-black/10 p-2"
                             title={resolveResourceLabel(impacted)}
                           >
-                            <ResourceIcon resource={ResourcesIds[impacted as ResourcesIds]} size="sm" />
+                            <ResourceIcon resource={impacted as ResourcesIds} size="sm" />
                           </div>
                         ))}
                       </div>
@@ -720,7 +720,7 @@ export const RealmAutomationPanel = ({
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    <ResourceIcon resource={ResourcesIds[resourceId as ResourcesIds]} size="sm" />
+                    <ResourceIcon resource={resourceId as ResourcesIds} size="sm" />
                     <div>
                       <div className="text-sm font-semibold text-gold">{label}</div>
                       {resourceOverBudget && (

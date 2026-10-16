@@ -225,8 +225,8 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
     const warningMessage = `Warning: not enough donkeys to transport ${isBuyResource ? chosenResourceName : "Lords"}`;
     const negativeAmount = isBuyResource ? lordsAmount + ownerFee : resourceAmount;
     const positiveAmount = isBuyResource ? resourceAmount : lordsAmount;
-    const negativeResource = isBuyResource ? "Lords" : chosenResourceName || "";
-    const positiveResource = isBuyResource ? chosenResourceName || "" : "Lords";
+    const negativeResource = isBuyResource ? ResourcesIds.Lords : resourceId;
+    const positiveResource = isBuyResource ? resourceId : ResourcesIds.Lords;
     const resourcesToTransport = isBuyResource
       ? [{ resourceId: Number(resourceId), amount: resourceAmount }]
       : [{ resourceId: ResourcesIds.Lords, amount: lordsAmount }];

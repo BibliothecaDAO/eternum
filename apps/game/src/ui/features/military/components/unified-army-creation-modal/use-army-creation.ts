@@ -126,7 +126,7 @@ export const useArmyCreation = ({
       return TROOP_TYPES.map((type) => ({
         type,
         label: formatTroopTypeLabel(type),
-        tiers: TROOP_TIERS.map((tier) => ({ tier, available: 0, resourceTrait: "" })),
+        tiers: TROOP_TIERS.map((tier) => ({ tier, available: 0, resourceId: getTroopResourceId(type, tier) })),
       }));
     }
 
@@ -138,14 +138,7 @@ export const useArmyCreation = ({
         // Troops this client cannot see can't be added to an army.
         const available =
           knownBalance(getBalance(activeStructureId, resourceId, currentDefaultTick, store).balance) ?? 0;
-        const resource = resources.find((item) => item.id === resourceId);
-        if (!resource) throw new Error(`Missing troop resource ${resourceId}`);
-
-        return {
-          tier,
-          available,
-          resourceTrait: resource.trait,
-        };
+        return { tier, available, resourceId };
       }),
     }));
   }, [activeStructureId, currentDefaultTick, store, revision]);

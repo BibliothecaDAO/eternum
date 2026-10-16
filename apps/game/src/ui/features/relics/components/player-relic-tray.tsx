@@ -7,8 +7,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import type { EntityWithRelics, PlayerRelicsData } from "@/types";
-import { EntityType, ID, RelicRecipientType } from "@bibliothecadao/types";
-import { resolveRelicResourceKey } from "../hooks/use-relic-activation";
+import { EntityType, ID, RelicRecipientType, ResourcesIds } from "@bibliothecadao/types";
 
 export interface RelicHolderPreview {
   entityId: ID;
@@ -106,14 +105,13 @@ const aggregateRelics = (playerRelics: PlayerRelicsData | null): AggregatedRelic
 const RelicGrid = ({ relics, gridClass, iconSize, onRelicClick }: RelicGridProps) => (
   <div className={gridClass}>
     {relics.map((relic) => {
-      const resourceKey = resolveRelicResourceKey(relic.resourceId);
       return (
         <div
           key={`${relic.resourceId}`}
           className={cn(RELIC_ITEM_CLASSES, RELIC_ITEM_THEME, RELIC_ITEM_INTERACTIVE)}
           onClick={() => onRelicClick(relic)}
         >
-          <ResourceIcon resource={resourceKey} size={iconSize} />
+          <ResourceIcon resource={Number(relic.resourceId) as ResourcesIds} size={iconSize} />
           <span className={RELIC_AMOUNT_CLASS}>{relic.displayAmount}</span>
         </div>
       );

@@ -307,11 +307,7 @@ export const CompactEntityInventory = memo(
 
       const itemContent = (
         <>
-          <ResourceIcon
-            resource={ResourcesIds[item.resourceId]}
-            size={options.hero ? heroIconSize : iconSize}
-            withTooltip={false}
-          />
+          <ResourceIcon resource={item.resourceId} size={options.hero ? heroIconSize : iconSize} withTooltip={false} />
           <span className={cn(options.hero ? heroAmountClass : amountClass, "font-semibold leading-none text-gold/95")}>
             {formatInventoryAmount(item.amount, { compact: !options.hero })}
           </span>

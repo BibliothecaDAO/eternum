@@ -1,10 +1,11 @@
+import { ResourcesIds } from "@bibliothecadao/types";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 
 export const TheWorld = () => {
   const chapters = [
     {
       title: "Time to Build",
-      icon: <ResourceIcon size="xl" resource="Ancient Fragment" />,
+      icon: <ResourceIcon size="xl" resource={ResourcesIds.AncientFragment} />,
       content:
         "You have been chosen to lead your people to greatness. You must build your empire, forge alliances, and conquer your enemies. Only the strong will survive in the lands of Realms.",
     },

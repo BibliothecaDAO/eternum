@@ -1,3 +1,4 @@
+import { ResourcesIds } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { type ReactNode, useCallback, useMemo } from "react";
 
@@ -17,20 +18,20 @@ const unoccupiedTileTroopTypes: TroopType[] = [TroopType.Knight, TroopType.Cross
 const unoccupiedTileTroopConfig: Record<
   TroopType,
   {
-    resourceName: string;
+    resourceId: ResourcesIds;
     label: string;
   }
 > = {
   [TroopType.Knight]: {
-    resourceName: "Knight",
+    resourceId: ResourcesIds.Knight,
     label: "Knights",
   },
   [TroopType.Crossbowman]: {
-    resourceName: "Crossbowman",
+    resourceId: ResourcesIds.Crossbowman,
     label: "Crossbowmen",
   },
   [TroopType.Paladin]: {
-    resourceName: "Paladin",
+    resourceId: ResourcesIds.Paladin,
     label: "Paladins",
   },
 };
@@ -175,7 +176,7 @@ export const BiomeSummaryCard = ({
                   <div
                     className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md border ${tone.iconWrapClassName}`}
                   >
-                    <ResourceIcon resource={config.resourceName} size="sm" withTooltip={false} />
+                    <ResourceIcon resource={config.resourceId} size="sm" withTooltip={false} />
                   </div>
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className={cn("flex items-center gap-1 break-words leading-[1.05]", HUD_LABEL)}>

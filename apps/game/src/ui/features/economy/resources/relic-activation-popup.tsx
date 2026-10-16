@@ -39,7 +39,7 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
     account: { account },
   } = useGame();
 
-  const { relicInfo, resourceName, resourceKey, essenceCost } = useRelicMetadata(relicId);
+  const { relicInfo, resourceName, resourceId: relicResourceId, essenceCost } = useRelicMetadata(relicId);
   const { essenceBalance, hasEnoughEssence, shortfall } = useRelicEssenceStatus(entityOwnerId, essenceCost);
   const compatible = isRelicCompatible(relicInfo, recipientType);
 
@@ -107,7 +107,7 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
   return (
     <SurfaceFrame title="Activate Relic" onClose={onClose} footer={footer} className="w-[560px]" bodyClassName="p-4">
       <RelicSummary
-        resourceKey={resourceKey}
+        resourceId={relicResourceId}
         title={resourceName}
         subtitle={`Available: ${relicBalance}`}
         layout="vertical"

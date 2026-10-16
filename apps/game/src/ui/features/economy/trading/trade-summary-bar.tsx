@@ -1,3 +1,4 @@
+import { ResourcesIds } from "@bibliothecadao/types";
 import { filterPendingOrders } from "@/hooks/helpers/use-pending-orders";
 import { HUD_CUE, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -29,7 +30,7 @@ export const TradeSummaryBar = memo(({ bidOffers, askOffers, entityId }: TradeSu
       <span className="flex items-center gap-1">
         <span className={HUD_CUE}>Locked</span>
         <span className={HUD_VALUE}>{currencyFormat(totalLordsLocked, 0)}</span>
-        <ResourceIcon resource="Lords" size="xs" withTooltip={false} />
+        <ResourceIcon resource={ResourcesIds.Lords} size="xs" withTooltip={false} />
       </span>
     </div>
   );

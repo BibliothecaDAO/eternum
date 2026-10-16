@@ -15,31 +15,6 @@ import {
 
 export type RelicInfoResult = ReturnType<typeof getRelicInfo> | undefined;
 
-export const resolveRelicResourceKey = (resourceId: ID): string => {
-  if (typeof resourceId === "number") {
-    const key = ResourcesIds[resourceId];
-    if (typeof key === "string") {
-      return key;
-    }
-  }
-
-  if (typeof resourceId === "string") {
-    const numericId = Number(resourceId);
-    if (!Number.isNaN(numericId)) {
-      const key = ResourcesIds[numericId];
-      if (typeof key === "string") {
-        return key;
-      }
-    }
-
-    if (resourceId in ResourcesIds) {
-      return resourceId;
-    }
-  }
-
-  return resourceId.toString();
-};
-
 const getEssenceCostForRelic = (relicInfo: RelicInfoResult): number => {
   if (!relicInfo) {
     return 0;
@@ -64,13 +39,12 @@ export const useRelicMetadata = (relicId: ID) => {
     };
   }, [relicId, rules, preset]);
   const resourceName = useMemo(() => findResourceById(relicId)?.trait ?? "Unknown Relic", [relicId]);
-  const resourceKey = useMemo(() => resolveRelicResourceKey(relicId), [relicId]);
   const essenceCost = useMemo(() => getEssenceCostForRelic(relicInfo), [relicInfo]);
 
   return {
     relicInfo,
     resourceName,
-    resourceKey,
+    resourceId: Number(relicId) as ResourcesIds,
     essenceCost,
   } as const;
 };

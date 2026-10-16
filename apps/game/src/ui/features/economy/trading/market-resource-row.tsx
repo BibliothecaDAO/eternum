@@ -42,7 +42,7 @@ export const MarketResourceRow = memo(
         )}
       >
         <span className="flex min-w-0 items-center gap-1.5">
-          <ResourceIcon size="xs" resource={trait} withTooltip={false} />
+          <ResourceIcon size="xs" resource={resourceId} withTooltip={false} />
           <span className="truncate text-[11px] text-gold">{trait}</span>
           <span className={cn(HUD_CUE, "shrink-0 tracking-normal")}>{currencyFormat(balance, 0)}</span>
         </span>

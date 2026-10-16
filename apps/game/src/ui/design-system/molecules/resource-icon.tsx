@@ -1,9 +1,10 @@
+import type { ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { Icon } from "../icon";
 import { iconDefinition, resourceMeaning } from "../icon-meaning";
 
 type Props = {
-  resource: string | number;
+  resource: ResourcesIds;
   size: keyof (typeof STYLES)["size"];
   className?: string;
   label?: boolean;

@@ -105,7 +105,7 @@ export const ActiveRelicEffects = ({
               className={`flex max-w-full items-center gap-1.5 rounded border ${border} ${bg} px-2 py-1`}
               title={`${effect.relicInfo.name}: ${effect.relicInfo.effect}`}
             >
-              <ResourceIcon resource={ResourcesIds[effect.resourceId]} size="xs" withTooltip={false} />
+              <ResourceIcon resource={effect.resourceId} size="xs" withTooltip={false} />
               <span className={`truncate text-[11px] font-semibold ${text}`}>{effect.bonusText}</span>
               <span className={`shrink-0 text-[10px] font-medium ${timerColor}`}>
                 {formatTime(effect.remainingSeconds)}
@@ -146,7 +146,7 @@ export const ActiveRelicEffects = ({
                 className={`flex items-center gap-1.5 rounded border ${border} ${bg} px-2 py-1`}
                 title={`${effect.relicInfo.name}: ${effect.relicInfo.effect}`}
               >
-                <ResourceIcon resource={ResourcesIds[effect.resourceId]} size="xs" withTooltip={false} />
+                <ResourceIcon resource={effect.resourceId} size="xs" withTooltip={false} />
                 <span className={`text-[11px] font-semibold ${text}`}>{effect.bonusText}</span>
                 <span className={`text-[10px] font-medium ${timerColor}`}>{formatTime(effect.remainingSeconds)}</span>
               </div>
@@ -179,7 +179,7 @@ export const ActiveRelicEffects = ({
               title={`${effect.relicInfo.name}: ${effect.relicInfo.effect}`}
             >
               <div className="flex items-start gap-2">
-                <ResourceIcon resource={ResourcesIds[effect.resourceId]} size="sm" withTooltip={false} />
+                <ResourceIcon resource={effect.resourceId} size="sm" withTooltip={false} />
                 <div className="flex flex-col gap-0.5">
                   <span className={`text-sm font-semibold ${text}`}>{effect.relicInfo.name}</span>
                   <span className="text-xs text-gold/70">{effect.bonusText}</span>

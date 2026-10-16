@@ -250,7 +250,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
   const actionHint = canCraft
     ? `Burn ${currencyFormat(configuredResearchCost, 0)} research to mint one random relic.`
     : (preflightErrors[0] ?? "Cannot craft relic right now.");
-  const researchResourceKey = ResourcesIds[ResourcesIds.Research];
+
   const craftButtonLabel = craftedRelicId || craftedWithoutReveal ? "Craft Again" : "Craft Relic";
 
   useEffect(() => {
@@ -296,7 +296,6 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
   const craftedRelicName = craftedRelicId
     ? (findResourceById(craftedRelicId)?.trait ?? ResourcesIds[craftedRelicId])
     : null;
-  const craftedRelicResourceKey = craftedRelicId ? ResourcesIds[craftedRelicId] : null;
 
   const footer = (
     <>
@@ -334,7 +333,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
               <p className="text-xs uppercase tracking-[0.18em] text-relic2/90">Relic Forge</p>
               <p className="mt-2 text-sm text-gold/90">Burn research to craft one random relic.</p>
             </div>
-            <ResourceIcon resource={researchResourceKey} size="md" withTooltip={false} />
+            <ResourceIcon resource={ResourcesIds.Research} size="md" withTooltip={false} />
           </div>
 
           {shouldShowResearchProgress && (
@@ -413,11 +412,11 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
           </div>
         )}
 
-        {craftedRelicId && craftedRelicResourceKey && (
+        {craftedRelicId && (
           <div className="rounded border border-relic/50 bg-relic/15 p-4 text-center">
             <p className="text-xs uppercase tracking-[0.2em] text-relic2">Relic Crafted</p>
             <div className="mt-3 flex items-center justify-center gap-3">
-              <ResourceIcon resource={craftedRelicResourceKey} size="lg" />
+              <ResourceIcon resource={craftedRelicId} size="lg" />
               <p className="text-sm font-semibold text-relic2">{craftedRelicName ?? "Unknown Relic"}</p>
             </div>
             <p className="mt-2 text-[11px] text-relic2/90">

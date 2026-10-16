@@ -68,11 +68,7 @@ export const DefenseSlotSelection = ({
           const guardStaminaCurrent = guardInfo?.troops?.staminaCurrent;
           const guardStaminaMax = guardInfo?.troops?.staminaMax;
           const guardCountLabel = guardCount !== undefined ? guardCount.toLocaleString() : null;
-          const troopResourceTrait = guardCategory
-            ? (resources.find(
-                (resource) => resource.id === getTroopResourceId(guardCategory, guardTier ?? TroopTier.T1),
-              )?.trait ?? null)
-            : null;
+          const troopResource = guardCategory ? getTroopResourceId(guardCategory, guardTier ?? TroopTier.T1) : null;
           // A wiped slot keeps its troop row at count 0 on chain; it reads as empty here, or as rebuilding.
           const hasGuard = (guardCount ?? 0) > 0;
           const cooldownSeconds = guardInfo?.cooldownRemaining ?? 0;
@@ -100,9 +96,9 @@ export const DefenseSlotSelection = ({
                 {displayedSlotNumber}
               </div>
 
-              {hasGuard && troopResourceTrait && (
+              {hasGuard && troopResource !== null && (
                 <div className="flex-shrink-0">
-                  <ResourceIcon resource={troopResourceTrait} size="sm" withTooltip={false} />
+                  <ResourceIcon resource={troopResource} size="sm" withTooltip={false} />
                 </div>
               )}
 

@@ -78,7 +78,7 @@ type ArmyGroup = {
 // T2 troop resources in Paladin/Knight/Crossbow order, then T3 in the same
 // order. Each entry carries the troop hint we render on the card so the
 // player sees "this resource feeds Paladin T2" at a glance.
-type ResourceTroopHint = { tier: 2 | 3; troopResource: string; troopLabel: string };
+type ResourceTroopHint = { tier: 2 | 3; troopResource: ResourcesIds; troopLabel: string };
 type ResourceTierSlot = {
   resourceId: ResourcesIds;
   troopHint?: ResourceTroopHint;
@@ -101,15 +101,15 @@ const RESOURCE_TIER_GROUPS: ResourceTierGroup[] = [
     slots: [
       {
         resourceId: ResourcesIds.Gold,
-        troopHint: { tier: 2, troopResource: ResourcesIds[ResourcesIds.Paladin], troopLabel: "Paladin" },
+        troopHint: { tier: 2, troopResource: ResourcesIds.Paladin, troopLabel: "Paladin" },
       },
       {
         resourceId: ResourcesIds.ColdIron,
-        troopHint: { tier: 2, troopResource: ResourcesIds[ResourcesIds.Knight], troopLabel: "Knight" },
+        troopHint: { tier: 2, troopResource: ResourcesIds.Knight, troopLabel: "Knight" },
       },
       {
         resourceId: ResourcesIds.Ironwood,
-        troopHint: { tier: 2, troopResource: ResourcesIds[ResourcesIds.Crossbowman], troopLabel: "Crossbowman" },
+        troopHint: { tier: 2, troopResource: ResourcesIds.Crossbowman, troopLabel: "Crossbowman" },
       },
     ],
   },
@@ -119,15 +119,15 @@ const RESOURCE_TIER_GROUPS: ResourceTierGroup[] = [
     slots: [
       {
         resourceId: ResourcesIds.Dragonhide,
-        troopHint: { tier: 3, troopResource: ResourcesIds[ResourcesIds.Paladin], troopLabel: "Paladin" },
+        troopHint: { tier: 3, troopResource: ResourcesIds.Paladin, troopLabel: "Paladin" },
       },
       {
         resourceId: ResourcesIds.Mithral,
-        troopHint: { tier: 3, troopResource: ResourcesIds[ResourcesIds.Knight], troopLabel: "Knight" },
+        troopHint: { tier: 3, troopResource: ResourcesIds.Knight, troopLabel: "Knight" },
       },
       {
         resourceId: ResourcesIds.Adamantine,
-        troopHint: { tier: 3, troopResource: ResourcesIds[ResourcesIds.Crossbowman], troopLabel: "Crossbowman" },
+        troopHint: { tier: 3, troopResource: ResourcesIds.Crossbowman, troopLabel: "Crossbowman" },
       },
     ],
   },
@@ -642,7 +642,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             }}
                             active={previewBuilding?.resource === resourceId}
                             buildingName={resource?.trait}
-                            resourceName={resource?.trait}
+                            resource={resourceId}
                             productionStatus={productionStatus}
                             troopHint={troopHint}
                             toolTip={
@@ -728,7 +728,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             }}
                             active={previewBuilding?.resource === resourceId}
                             buildingName={resource?.trait}
-                            resourceName={resource?.trait}
+                            resource={resourceId}
                             productionStatus={productionStatus}
                             toolTip={
                               <ResourceInfo
@@ -845,11 +845,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     }}
                     active={previewBuilding?.type === building}
                     buildingName={BuildingTypeToString[building]}
-                    resourceName={
-                      configManager.getResourceBuildingProduced(building)
-                        ? (getProducedResourceName(building) as keyof typeof ResourcesIds)
-                        : undefined
-                    }
+                    resource={configManager.getResourceBuildingProduced(building)}
                     isWorkersHut={isWorkersHut}
                     productionStatus={productionStatus}
                     toolTip={<BuildingInfo buildingId={building} entityId={entityId} useSimpleCost={useSimpleCost} />}
@@ -982,7 +978,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                 }}
                                 active={previewBuilding?.type === building}
                                 buildingName={`${BuildingTypeToString[building]}`}
-                                resourceName={getProducedResourceName(building) as keyof typeof ResourcesIds}
+                                resource={configManager.getResourceBuildingProduced(building)}
                                 productionStatus={productionStatus}
                                 toolTip={
                                   <BuildingInfo
@@ -1118,7 +1114,7 @@ export const BuildingCard = ({
   onClick,
   active,
   buildingName,
-  resourceName,
+  resource,
   isWorkersHut,
   productionStatus,
   toolTip,
@@ -1145,7 +1141,7 @@ export const BuildingCard = ({
   onClick: () => void;
   active: boolean;
   buildingName: string;
-  resourceName?: string;
+  resource?: ResourcesIds;
   isWorkersHut?: boolean;
   productionStatus?: ResourceProductionStatus;
   toolTip: React.ReactElement;
@@ -1156,7 +1152,7 @@ export const BuildingCard = ({
    * resource cards. Rendered as a tiny chip in the corner so the player
    * can tell at a glance which troop the resource unlocks.
    */
-  troopHint?: { tier: 2 | 3; troopResource: string; troopLabel: string };
+  troopHint?: ResourceTroopHint;
   className?: string;
   disabled?: boolean;
   disabledReason?: string;
@@ -1195,9 +1191,9 @@ export const BuildingCard = ({
       ? formatTimeRemaining(Math.ceil(effectiveRemainingSeconds))
       : null;
   const productionBadge =
-    productionStatus && resourceName ? (
+    productionStatus && resource !== undefined ? (
       <ProductionStatusBadge
-        resourceLabel={resourceName}
+        resource={resource}
         tooltipText={
           productionStatus.isProducing
             ? `${activeProductionBuildings}/${totalProductionBuildings} producing${
@@ -1357,9 +1353,9 @@ export const BuildingCard = ({
             </span>
           )}
           {productionBadge ||
-            (resourceName && (
+            (resource !== undefined && (
               <div className="rounded p-1 bg-brown/40">
-                <ResourceIcon withTooltip={false} resource={resourceName} size="lg" />
+                <ResourceIcon withTooltip={false} resource={resource} size="lg" />
               </div>
             ))}
           {badge && <div>{badge}</div>}
@@ -1665,12 +1661,12 @@ const BuildingInfo = ({
           )}
         </div>
         <div>
-          {resourceProducedName && perTick !== 0 && (
+          {resourceProduced !== undefined && resourceProducedName && perTick !== 0 && (
             <div>
               <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Produced</h6>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-lg font-semibold text-green-400">+{perTick}</span>
-                <ResourceIcon withTooltip={false} className="self-center" resource={resourceProducedName} size="sm" />
+                <ResourceIcon withTooltip={false} className="self-center" resource={resourceProduced} size="sm" />
                 <span className="text-gold/80">{resourceProducedName}</span>
               </div>
             </div>
@@ -1746,8 +1742,3 @@ const BuildingInfo = ({
     </div>
   );
 };
-
-function getProducedResourceName(building: BuildingType): string | undefined {
-  const resource = configManager.getResourceBuildingProduced(building);
-  return resource === undefined ? undefined : ResourcesIds[resource];
-}

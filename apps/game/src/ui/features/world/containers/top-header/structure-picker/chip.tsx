@@ -118,7 +118,7 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
                 )}
               >
                 <div className="flex items-center gap-2">
-                  <ResourceIcon resource={ResourcesIds[req.resource]} size="xs" withTooltip={false} />
+                  <ResourceIcon resource={req.resource} size="xs" withTooltip={false} />
                   <span className="flex-1 text-xs text-gold/80">{ResourcesIds[req.resource]}</span>
                   <span className={clsx("text-xs font-semibold", isMet ? "text-gold" : "text-red-300")}>
                     {req.current === undefined ? "—" : Math.floor(req.current).toLocaleString()} /{" "}

@@ -786,7 +786,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                 className={`min-h-11 min-w-0 px-2 py-1 rounded border text-sm flex items-center gap-1 ${sel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
                 title={ResourcesIds[resourceId] as string}
               >
-                <ResourceIcon resource={ResourcesIds[resourceId]} size="xs" />
+                <ResourceIcon resource={resourceId} size="xs" />
                 <span className="truncate">{ResourcesIds[resourceId]}</span>
                 <span className="ml-auto shrink-0 text-[10px] text-gold/60">({totalHuman.toLocaleString()})</span>
               </button>
@@ -860,7 +860,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                 <div key={`cfg-${rid}`} className="rounded border border-gold/20 bg-black/20 p-2">
                   <div className="flex items-center justify-between gap-2 mb-1">
                     <div className="flex min-w-0 items-center gap-2 text-xs text-gold/80">
-                      <ResourceIcon resource={ResourcesIds[rid]} size="xs" />
+                      <ResourceIcon resource={rid} size="xs" />
                       <div className="truncate font-semibold" title={ResourcesIds[rid] as string}>
                         {ResourcesIds[rid]}
                       </div>

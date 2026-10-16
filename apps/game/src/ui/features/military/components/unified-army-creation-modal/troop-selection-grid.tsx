@@ -64,7 +64,7 @@ export const TroopSelectionGrid = ({
                 onClick={() => onSelect(option.type, tier.tier)}
               >
                 <span className="absolute top-0.5 right-1 text-[10px]">{tier.tier}</span>
-                <ResourceIcon resource={tier.resourceTrait} size="lg" className="!h-10 !w-10" withTooltip={false} />
+                <ResourceIcon resource={tier.resourceId} size="lg" className="!h-10 !w-10" withTooltip={false} />
                 <span className="max-w-full truncate rounded bg-black/40 px-1 text-[10px]">
                   {tier.available.toLocaleString()}
                 </span>
@@ -116,7 +116,7 @@ export const TroopSelectionGrid = ({
                       >
                         {tierOption.tier}
                       </div>
-                      <ResourceIcon resource={tierOption.resourceTrait} size="xs" withTooltip={false} />
+                      <ResourceIcon resource={tierOption.resourceId} size="xs" withTooltip={false} />
                       <span className="text-xs text-gray-600 font-semibold ml-auto">0</span>
                     </div>
                   );
@@ -153,7 +153,7 @@ export const TroopSelectionGrid = ({
 
                       {/* Resource Icon */}
                       <div className="flex-shrink-0">
-                        <ResourceIcon resource={tierOption.resourceTrait} size="sm" withTooltip={false} />
+                        <ResourceIcon resource={tierOption.resourceId} size="sm" withTooltip={false} />
                       </div>
 
                       {/* Count — min-w-0 + truncate so a large value can never

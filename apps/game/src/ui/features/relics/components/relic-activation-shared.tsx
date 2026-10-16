@@ -6,7 +6,7 @@ import { RelicRecipientType, ResourcesIds } from "@bibliothecadao/types";
 import { RelicInfoResult } from "../hooks/use-relic-activation";
 
 interface RelicSummaryProps {
-  resourceKey: string;
+  resourceId: ResourcesIds;
   title: string;
   subtitle?: string;
   description?: string;
@@ -17,7 +17,7 @@ interface RelicSummaryProps {
 }
 
 export const RelicSummary = ({
-  resourceKey,
+  resourceId,
   title,
   subtitle,
   description,
@@ -32,7 +32,7 @@ export const RelicSummary = ({
     <div
       className={cn(vertical ? "flex flex-col items-center gap-3 text-center" : "flex items-center gap-3", className)}
     >
-      <ResourceIcon resource={resourceKey} size={iconSize} withTooltip={false} className="shrink-0" />
+      <ResourceIcon resource={resourceId} size={iconSize} withTooltip={false} className="shrink-0" />
       <div className={cn("space-y-1", vertical ? "max-w-[280px]" : "")}>
         <p className="text-base font-semibold text-gold">{title}</p>
         {subtitle && <p className="text-xs text-gold/70">{subtitle}</p>}
@@ -70,14 +70,14 @@ export const RelicEssenceRequirement = ({
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-semibold text-gold/80">{costLabel}:</span>
         <div className="flex items-center gap-2">
-          <ResourceIcon resource={ResourcesIds[ResourcesIds.Essence]} size="sm" withTooltip={false} />
+          <ResourceIcon resource={ResourcesIds.Essence} size="sm" withTooltip={false} />
           <span className="text-sm font-bold">{essenceCost.toLocaleString()}</span>
         </div>
       </div>
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold text-gold/80">{balanceLabel}:</span>
         <div className="flex items-center gap-2">
-          <ResourceIcon resource={ResourcesIds[ResourcesIds.Essence]} size="sm" withTooltip={false} />
+          <ResourceIcon resource={ResourcesIds.Essence} size="sm" withTooltip={false} />
           <span className={`text-sm font-bold ${hasEnoughEssence ? "text-emerald-300" : "text-red-400"}`}>
             {essenceBalance?.toLocaleString() ?? "—"}
           </span>

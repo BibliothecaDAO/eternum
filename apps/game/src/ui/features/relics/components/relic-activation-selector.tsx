@@ -208,7 +208,7 @@ export const RelicActivationSelector = ({
     return map;
   }, [mode, playerStructures]);
 
-  const { relicInfo, resourceName, resourceKey, essenceCost } = useRelicMetadata(resourceId);
+  const { relicInfo, resourceName, resourceId: relicResourceId, essenceCost } = useRelicMetadata(resourceId);
 
   const relicDescription = useMemo(() => {
     if (!relicInfo) {
@@ -321,7 +321,7 @@ export const RelicActivationSelector = ({
     <SurfaceFrame title="Select Activation Target" onClose={onClose} className="w-[560px]" bodyClassName="p-4">
       <div className="space-y-5">
         <RelicSummary
-          resourceKey={resourceKey}
+          resourceId={relicResourceId}
           title={resourceName}
           subtitle={`Total available: ${visibleDisplayAmount}`}
           description={relicDescription}

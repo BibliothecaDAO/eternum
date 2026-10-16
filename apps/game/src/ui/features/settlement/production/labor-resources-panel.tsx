@@ -62,7 +62,7 @@ export const LaborResourcesPanel = ({
         const isShort = balance < needed;
         return (
           <div key={input.resource} className="flex items-center gap-2 py-0.5">
-            <ResourceIcon resource={ResourcesIds[input.resource]} size="sm" withTooltip={false} />
+            <ResourceIcon resource={input.resource} size="sm" withTooltip={false} />
             <span className={cn(HUD_VALUE, "w-24 shrink-0 tabular-nums", isShort && "text-red-300")}>
               {balance.toLocaleString()}
             </span>

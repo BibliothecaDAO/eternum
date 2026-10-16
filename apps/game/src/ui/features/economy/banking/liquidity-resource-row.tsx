@@ -56,9 +56,9 @@ export const LiquidityResourceRow = ({
   const pair = useMemo(
     () => (
       <div className="flex flex-row items-center">
-        <ResourceIcon resource={"Lords"} size="md" />
+        <ResourceIcon resource={ResourcesIds.Lords} size="md" />
         {" / "}
-        {resource?.trait && <ResourceIcon resource={resource.trait} size="md" />}
+        {resource && <ResourceIcon resource={resourceId} size="md" />}
       </div>
     ),
     [resource],
@@ -210,7 +210,7 @@ export const LiquidityResourceRow = ({
           onMouseEnter={() => setShowInputResourcesPrice(true)}
           onMouseLeave={() => setShowInputResourcesPrice(false)}
         >
-          {formatNumber(marketManager.getMarketPrice(), 4)} <ResourceIcon resource="Lords" size="sm" />
+          {formatNumber(marketManager.getMarketPrice(), 4)} <ResourceIcon resource={ResourcesIds.Lords} size="sm" />
           {showInputResourcesPrice && (
             <div className={`${isFirst ? "top-10" : "bottom-10"} absolute left-0 z-[100] pointer-events-none`}>
               <InputResourcesPrice marketManager={marketManager} />
@@ -258,12 +258,12 @@ const TotalLiquidity = ({
     <div className="flex flex-col col-span-2 justify-center">
       <div className="flex">
         <div>{divideByPrecision(totalLords).toLocaleString()}</div>
-        <ResourceIcon resource="Lords" size="sm" />
+        <ResourceIcon resource={ResourcesIds.Lords} size="sm" />
       </div>
 
       <div className="flex">
         <div>{divideByPrecision(totalResource).toLocaleString()}</div>
-        <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" />
+        <ResourceIcon resource={resourceId} size="sm" />
       </div>
     </div>
   );
@@ -319,7 +319,7 @@ const MyLiquidity = ({
     <div className="flex flex-col col-span-2">
       <div className="flex">
         <div>{divideByPrecision(lordsAmount).toLocaleString()}</div>
-        <ResourceIcon resource="Lords" size="sm" />
+        <ResourceIcon resource={ResourcesIds.Lords} size="sm" />
         {playerLiquidityInfo && lordsAmount > 0 && (
           <span className={`ml-1 text-xs ${lordsDifferencePercentage >= 0 ? "text-green" : "text-red"}`}>
             ({lordsDifferencePercentage > 0 ? "+" : ""}
@@ -330,7 +330,7 @@ const MyLiquidity = ({
 
       <div className="flex">
         <div>{divideByPrecision(resourceAmount).toLocaleString()}</div>
-        <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" />
+        <ResourceIcon resource={resourceId} size="sm" />
         {playerLiquidityInfo && resourceAmount > 0 && (
           <span className={`ml-1 text-xs ${resourceDifferencePercentage >= 0 ? "text-green" : "text-red"}`}>
             ({resourceDifferencePercentage > 0 ? "+" : ""}
@@ -371,7 +371,7 @@ const InputResourcesPrice = ({ marketManager }: { marketManager: MarketManager }
         {inputResources.map(({ resource }, index) => (
           <React.Fragment key={index}>
             {index > 0 && <span className="mx-1">+</span>}
-            <ResourceIcon key={resource} resource={ResourcesIds[resource]} size="sm" />
+            <ResourceIcon key={resource} resource={resource} size="sm" />
           </React.Fragment>
         ))}
       </div>
@@ -379,7 +379,7 @@ const InputResourcesPrice = ({ marketManager }: { marketManager: MarketManager }
         <span className="mr-1 whitespace-nowrap">production cost:</span>
         <div className="flex items-center space-x-1">
           <span className="font-semibold ">{formatNumber(totalPrice, 4)}</span>
-          <ResourceIcon resource="Lords" size="xs" />
+          <ResourceIcon resource={ResourcesIds.Lords} size="xs" />
         </div>
       </div>
     </div>

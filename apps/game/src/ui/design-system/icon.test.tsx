@@ -6,6 +6,7 @@ import { Icon, SvgIcon } from "./icon";
 import { iconDefinition, iconMeanings, iconUrl, orderMeaning, resourceMeaning, type IconMeaning } from "./icon-meaning";
 import { HexMarker } from "./hex-marker";
 import { realmMeaning, realmMarkerMeaning } from "./domain-icon-meaning";
+import type { ResourcesIds } from "@bibliothecadao/types";
 
 describe("semantic painted icons", () => {
   it("gives every realm level its own portrait and hex emblem", () => {
@@ -43,7 +44,7 @@ describe("semantic painted icons", () => {
   it("resolves every resource ID and all Orders", () => {
     for (let id = 1; id <= 58; id++) expect(iconDefinition(resourceMeaning(id)).label.length).toBeGreaterThan(0);
     for (let id = 0; id < 17; id++) expect(orderMeaning(id)).toMatch(/^order-/);
-    expect(() => resourceMeaning(999)).toThrow("Unknown resource icon");
+    expect(() => resourceMeaning(999 as ResourcesIds)).toThrow("Unknown resource icon");
     expect(() => orderMeaning(999)).toThrow("Unknown Order icon");
   });
   it("selects a larger export for a large portrait and preserves its accessible label", () => {

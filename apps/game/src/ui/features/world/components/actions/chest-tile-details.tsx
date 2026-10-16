@@ -101,7 +101,7 @@ const RelicList = ({ relics }: { relics: ResourcesIds[] }) => (
   <ul aria-label="Relics" className="flex flex-col gap-1">
     {relics.map((relicId, index) => (
       <li key={`${relicId}-${index}`} className={cn("flex items-center gap-2", HUD_BODY)}>
-        <ResourceIcon resource={ResourcesIds[relicId]} size="sm" withTooltip={false} />
+        <ResourceIcon resource={relicId} size="sm" withTooltip={false} />
         <span className="truncate">{getRelicInfo(relicId)?.name ?? ResourcesIds[relicId]}</span>
       </li>
     ))}

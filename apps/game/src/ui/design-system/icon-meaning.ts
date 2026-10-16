@@ -1,5 +1,6 @@
 import meanings from "../../../asset-sources/facets/semantic-map.json";
 import resources from "../../../asset-sources/facets/resources.json";
+import type { ResourcesIds } from "@bibliothecadao/types";
 
 export type IconMeaning = keyof typeof meanings;
 export type IconPixels = 64 | 128 | 256;
@@ -16,21 +17,11 @@ export function iconUrl(name: IconMeaning, pixels: IconPixels = 64): string {
   return `/icons/facets/${pixels}/${iconDefinition(name).art}.webp`;
 }
 
-const resourceNames = Object.fromEntries(
-  Object.values(resources).map(({ name, meaning }) => [name.toLowerCase(), meaning as IconMeaning]),
-);
-const resourceLabels: Record<string, IconMeaning> = {
-  strk: "strk",
-  house: "home",
-  silo: "granary",
-  timeglass: "hourglass",
-};
-export function resourceMeaning(resource: number | string): IconMeaning {
-  const id = resources[String(resource) as keyof typeof resources];
-  const name = String(resource).replace(/[\s']/g, "").toLowerCase();
-  const meaning = id?.meaning ?? resourceNames[name] ?? resourceLabels[name];
-  if (!meaning) throw new Error(`Unknown resource icon: ${resource}`);
-  return meaning as IconMeaning;
+/** A resource's painting, by its id: the one way to name a resource's icon (a display name is not a key). */
+export function resourceMeaning(resource: ResourcesIds): IconMeaning {
+  const entry = resources[String(resource) as keyof typeof resources];
+  if (!entry) throw new Error(`Unknown resource icon: ${resource}`);
+  return entry.meaning as IconMeaning;
 }
 
 const orderMeanings = new Map(

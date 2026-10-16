@@ -181,7 +181,7 @@ export const SelectRelic: React.FC<SelectRelicProps> = ({
                     >
                       <div className="flex items-center justify-between w-full gap-2">
                         <div className="flex items-center gap-2">
-                          <ResourceIcon resource={ResourcesIds[relic.id]} size="sm" />
+                          <ResourceIcon resource={relic.id} size="sm" />
                           <div className="flex flex-col">
                             <span className="font-medium">{relic.name}</span>
                             <span className={clsx("text-xs", getRelicTypeColor(relic.type))}>{relic.effect}</span>
@@ -213,7 +213,7 @@ export const SelectRelic: React.FC<SelectRelicProps> = ({
               key={relic.id}
               className="flex items-center gap-1 px-2 py-1 bg-gold/10 border border-gold/20 rounded text-sm"
             >
-              <ResourceIcon resource={ResourcesIds[relic.id]} size="xs" />
+              <ResourceIcon resource={relic.id} size="xs" />
               <span>{relic.name}</span>
               <span className={clsx("text-xs", getRelicTypeColor(relic.type))}>
                 (

@@ -234,13 +234,7 @@ export const CompactDefenseDisplay = ({
               </span>
               <ResourceIcon
                 withTooltip={false}
-                resource={
-                  resources.find(
-                    (r) =>
-                      r.id ===
-                      getTroopResourceId(defense.troops.category as TroopType, defense.troops.tier as TroopTier),
-                  )?.trait || ""
-                }
+                resource={getTroopResourceId(defense.troops.category as TroopType, defense.troops.tier as TroopTier)}
                 size={isBanner ? "xs" : "sm"}
                 className="shrink-0"
               />
