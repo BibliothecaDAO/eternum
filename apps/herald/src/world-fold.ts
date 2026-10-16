@@ -146,7 +146,7 @@ export class WorldFold {
 
   /**
    * Built for a game on its first expedition scope and kept current as rows change, so a scope and a scoped snapshot
-   * cost the scope's own rows.
+   * cost the scope's own rows. An overlay's index holds only the rows the overlay itself changed.
    */
   private readonly scopeIndexes = new Map<string, ScopeIndex>();
 
@@ -264,6 +264,7 @@ export class WorldFold {
     if (event.kind === "delete" && !existing) return undefined;
 
     const previous = this.currentRow(event.model.name, event.entityId);
+    const own = rows.get(event.entityId) ?? undefined;
     if (event.kind === "set") {
       rows.set(event.entityId, { key: event.key, value: event.value });
     } else if (event.kind === "delete") {
@@ -282,7 +283,7 @@ export class WorldFold {
 
     this.updateGameIndex(event.model.name, event.entityId, existing, rows.get(event.entityId) ?? undefined);
     this.updateDirectoryIndex(event.model.name, event.entityId, existing, rows.get(event.entityId) ?? undefined);
-    if (!this.parent) this.updateScopeIndex(event.model.name, event.entityId, existing, rows.get(event.entityId));
+    this.updateScopeIndex(event.model.name, event.entityId, own, rows.get(event.entityId));
 
     if (event.kind === "delete") return { del: { key: event.entityId, model: event.model.name }, gameId, previous };
     return { gameId, set: this.currentRow(event.model.name, event.entityId)!, previous };
@@ -548,22 +549,15 @@ export class WorldFold {
 
   /** Entity ids of a model's rows, in a game or deployment-wide, with any of these index keys. */
   private scopeEntityIds(model: string, owner: string, spacing: number, keys: ReadonlySet<string>): Set<string> {
-    if (!this.parent) {
-      const index = this.scopeIndex(owner, spacing);
-      const entityIds = new Set<string>();
-      for (const key of keys) for (const entityId of index.get(`${model}|${key}`) ?? []) entityIds.add(entityId);
-      return entityIds;
+    const index = this.scopeIndex(owner, spacing);
+    const entityIds = new Set<string>();
+    // An overlay indexes only the rows it changed; for every other entity its parent's answer stands.
+    if (this.parent) {
+      const changed = this.rowsByModel.get(model)!;
+      for (const entityId of this.parent.scopeEntityIds(model, owner, spacing, keys))
+        if (!changed.has(entityId)) entityIds.add(entityId);
     }
-    // An overlay corrects its parent's answer with the few rows it changed.
-    const entityIds = this.parent.scopeEntityIds(model, owner, spacing, keys);
-    const rows = this.rowsByModel.get(model)!;
-    const changed =
-      owner === DEPLOYMENT_ROWS ? rows.keys() : (this.entityIdsByGameByModel.get(model)?.get(owner) ?? []);
-    for (const entityId of changed) {
-      const row = rows.get(entityId);
-      entityIds.delete(entityId);
-      if (row && indexKeys(model, row, spacing).some((key) => keys.has(key))) entityIds.add(entityId);
-    }
+    for (const key of keys) for (const entityId of index.get(`${model}|${key}`) ?? []) entityIds.add(entityId);
     return entityIds;
   }
 
@@ -576,13 +570,21 @@ export class WorldFold {
     for (const { definition } of this.registry.persistent) {
       if (!isScopedGameSyncModel(definition.name, true)) continue;
       if ((definition.scope === "deployment") !== (owner === DEPLOYMENT_ROWS)) continue;
-      const rows =
-        owner === DEPLOYMENT_ROWS
-          ? this.materializedRows(definition.name)
-          : this.materializedGameRows(definition.name, BigInt(owner));
-      for (const [entityId, row] of rows) this.addToScopeIndex(definition.name, entityId, row);
+      for (const [entityId, row] of this.ownRows(definition.name, owner))
+        this.addToScopeIndex(definition.name, entityId, row);
     }
     return index.entityIds;
+  }
+
+  /** The rows of a model this fold holds itself for an index owner: an overlay holds only the rows it changed. */
+  private *ownRows(model: string, owner: string): Iterable<[string, StoredModelRow]> {
+    const rows = this.rowsByModel.get(model)!;
+    const entityIds =
+      owner === DEPLOYMENT_ROWS ? rows.keys() : (this.entityIdsByGameByModel.get(model)?.get(owner) ?? []);
+    for (const entityId of entityIds) {
+      const row = rows.get(entityId);
+      if (row && this.scopeIndexOwner(model, row) === owner) yield [entityId, row];
+    }
   }
 
   private updateScopeIndex(

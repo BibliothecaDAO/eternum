@@ -667,6 +667,46 @@ describe("client and Herald subscription scope parity", () => {
     runtime.dispose();
   });
 
+  it("answers an overlay's scope with the rows it changes after the scope was first read", () => {
+    const { native, fold } = frontierWorld();
+    const { native: twinNative, fold: twin } = frontierWorld();
+    const overlay = fold.overlay();
+    const scopedSnapshot = (world: WorldFold) =>
+      world.subscriptionSnapshot("1", 11, world.subscriptionScope("1", "0xa", MID_DAY));
+    expect(scopedSnapshot(overlay)).toEqual(scopedSnapshot(twin));
+
+    const occupy = (col: string, entityId: number) =>
+      rowEvent("TileOccupancy", ["1", "0", col, "50"], {
+        entity_id: entityId,
+        category: entityId === 0 ? 0 : 15,
+        is_structure: false,
+      });
+    const army = explorerValue("1", 10_000_000_000n);
+    const muster = receipt(
+      [
+        rowEvent("ArmySlot", ["1", "1", String(TODAY.index), "0"], {
+          epoch: TODAY.index,
+          explorer_id: 20,
+          stamina: { amount: 30, settled_at: 1, remainder: 0 },
+        }),
+        rowEvent("ExplorerTroops", ["1", "20"], {
+          ...army,
+          troops: { ...(army.troops as Record<string, unknown>), stamina: new CairoCustomEnum({ Slot: 0 }) },
+        }),
+        occupy("51", 20),
+      ],
+      "0x57",
+    );
+    const move = receipt([occupy("51", 0), occupy("52", 20)], "0x58");
+    for (const step of [muster, move]) {
+      native.applyReceipt(overlay, step, null, 0);
+      twinNative.applyReceipt(twin, step, 11, 0);
+      expect(scopedSnapshot(overlay)).toEqual(scopedSnapshot(twin));
+    }
+    expect(fold.subscriptionScope("1", "0xa", MID_DAY).expedition?.entities.has("20")).toBe(false);
+    expect(overlay.subscriptionScope("1", "0xa", MID_DAY).expedition?.entities.has("20")).toBe(true);
+  });
+
   it("keeps Frontier absence unknown across actor, overlay and day boundaries", () => {
     const { native, fold } = frontierWorld();
     const overlay = fold.overlay();
