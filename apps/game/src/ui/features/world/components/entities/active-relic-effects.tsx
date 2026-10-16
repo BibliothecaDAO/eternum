@@ -105,9 +105,9 @@ export const ActiveRelicEffects = ({
               className={`flex max-w-full items-center gap-1.5 rounded border ${border} ${bg} px-2 py-1`}
               title={`${effect.relicInfo.name}: ${effect.relicInfo.effect}`}
             >
-              <ResourceIcon resource={effect.resourceId} size="xs" withTooltip={false} />
-              <span className={`truncate text-[11px] font-semibold ${text}`}>{effect.bonusText}</span>
-              <span className={`shrink-0 text-[10px] font-medium ${timerColor}`}>
+              <ResourceIcon resource={effect.resourceId} size="md" withTooltip={false} />
+              <span className={`truncate text-sm font-semibold ${text}`}>{effect.bonusText}</span>
+              <span className={`shrink-0 text-xs font-medium ${timerColor}`}>
                 {formatTime(effect.remainingSeconds)}
               </span>
             </div>
@@ -146,9 +146,9 @@ export const ActiveRelicEffects = ({
                 className={`flex items-center gap-1.5 rounded border ${border} ${bg} px-2 py-1`}
                 title={`${effect.relicInfo.name}: ${effect.relicInfo.effect}`}
               >
-                <ResourceIcon resource={effect.resourceId} size="xs" withTooltip={false} />
-                <span className={`text-[11px] font-semibold ${text}`}>{effect.bonusText}</span>
-                <span className={`text-[10px] font-medium ${timerColor}`}>{formatTime(effect.remainingSeconds)}</span>
+                <ResourceIcon resource={effect.resourceId} size="md" withTooltip={false} />
+                <span className={`text-sm font-semibold ${text}`}>{effect.bonusText}</span>
+                <span className={`text-xs font-medium ${timerColor}`}>{formatTime(effect.remainingSeconds)}</span>
               </div>
             );
           })}

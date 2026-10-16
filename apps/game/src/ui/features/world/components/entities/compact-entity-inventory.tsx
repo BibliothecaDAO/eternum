@@ -186,6 +186,10 @@ const getResourceItemClass = (variant: InventoryItemVariant) =>
     ? "border-gold/45 bg-[linear-gradient(180deg,rgba(56,40,14,0.95),rgba(10,10,10,0.96))]"
     : "border-gold/25 bg-[linear-gradient(180deg,rgba(28,21,9,0.9),rgba(8,8,8,0.95))]";
 
+/** A relic reads at a glance wherever its chip shows: its painting large, its count at 14 px. */
+const RELIC_ICON_SIZE = "lg";
+const RELIC_COUNT_CLASS = "text-sm";
+
 const getRelicItemClass = (item: DisplayItem) => {
   if (item.isActive) {
     return "border-relic2/70 bg-[linear-gradient(180deg,rgba(165,124,255,0.2),rgba(14,10,22,0.92))] shadow-[inset_0_1px_0_rgba(210,185,255,0.18),0_0_12px_rgba(165,124,255,0.16)]";
@@ -307,8 +311,17 @@ export const CompactEntityInventory = memo(
 
       const itemContent = (
         <>
-          <ResourceIcon resource={item.resourceId} size={options.hero ? heroIconSize : iconSize} withTooltip={false} />
-          <span className={cn(options.hero ? heroAmountClass : amountClass, "font-semibold leading-none text-gold/95")}>
+          <ResourceIcon
+            resource={item.resourceId}
+            size={options.hero ? heroIconSize : item.isRelic ? RELIC_ICON_SIZE : iconSize}
+            withTooltip={false}
+          />
+          <span
+            className={cn(
+              options.hero ? heroAmountClass : item.isRelic ? RELIC_COUNT_CLASS : amountClass,
+              "font-semibold leading-none text-gold/95",
+            )}
+          >
             {formatInventoryAmount(item.amount, { compact: !options.hero })}
           </span>
           {showLabels && resourceDef && (
