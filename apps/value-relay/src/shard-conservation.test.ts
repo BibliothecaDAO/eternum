@@ -213,8 +213,10 @@ const monitorFixture = () => {
     ledger: {
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
       pause: vi.fn(() => Effect.void),
-      paidClaims: () => Effect.succeed({ rows: [], next: null, head: 1000 }),
-      postedResults: () => Effect.succeed({ rows: [], next: null, head: 1000 }),
+      paidClaims: () =>
+        Effect.succeed({ rows: [], next: null, head: 1000, anchor: { number: 1000, hash: "0xa" }, rewind: false }),
+      postedResults: () =>
+        Effect.succeed({ rows: [], next: null, head: 1000, anchor: { number: 1000, hash: "0xa" }, rewind: false }),
     },
   };
   const store = {
@@ -237,7 +239,13 @@ it("still detects a posted-result mismatch when conservation and paid-claim read
   f.ports.shard.conservation = () => Effect.fail(new RelayFailure({ operation: "source_missing" }));
   f.ports.ledger.paidClaims = () => Effect.fail(new RelayFailure({ operation: "binding_missing" }));
   f.ports.ledger.postedResults = () =>
-    Effect.succeed({ rows: [{ chainId: "0x1", gameId: 8, commitment: "0xabc" }], next: null, head: 1000 });
+    Effect.succeed({
+      rows: [{ chainId: "0x1", gameId: 8, commitment: "0xabc" }],
+      next: null,
+      head: 1000,
+      anchor: { number: 1000, hash: "0xa" },
+      rewind: false,
+    });
   expect(await Effect.runPromise(runMonitor(f.ports, f.store))).toMatchObject({ halted: "blitz_result_mismatch:8" });
   expect(f.ports.ledger.pause).toHaveBeenCalledOnce();
 });

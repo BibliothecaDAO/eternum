@@ -23,7 +23,13 @@ const fixture = () => {
   };
   const ports: ChestPorts = {
     changes: (from) =>
-      Effect.succeed({ rows: from === 0 ? [{ kind: "requested", request }] : [], head: 110, next: null }),
+      Effect.succeed({
+        rows: from === 0 ? [{ kind: "requested", request }] : [],
+        head: 110,
+        anchor: { number: 110, hash: "0xa" },
+        rewind: false,
+        next: null,
+      }),
     head: () => Effect.succeed(110),
     chest: () => Effect.succeed({ requested: true, finished: false, requester: "0x123", requestBlock: 100 }),
     finish: vi.fn(() => Effect.void),
@@ -60,23 +66,15 @@ it("completed historical events leave no pending work", async () => {
         { kind: "finished", tokenId: "7" },
       ],
       head: 111,
+      anchor: { number: 111, hash: "0xa" },
+      rewind: false,
       next: null,
     });
   await Effect.runPromise(finishRequestedChests(f.ports, f.store));
   expect(f.ports.finish).not.toHaveBeenCalled();
 });
 it("finishes two pages across a restart without losing queued requests or rereading history", async () => {
-  const data = new Map<string, unknown>();
-  const storage = {
-    get: async (key: string) => data.get(key),
-    put: async (key: string, value: unknown) => {
-      data.set(key, value);
-    },
-    delete: async (key: string) => data.delete(key),
-    list: async ({ prefix, limit }: { prefix: string; limit: number }) =>
-      new Map([...data].filter(([key]) => key.startsWith(prefix)).slice(0, limit)),
-    transaction: async (run: (tx: unknown) => Promise<void>) => run(storage),
-  };
+  const { data, storage } = storageFixture();
   const f = fixture();
   f.ports.head = () => Effect.succeed(111);
   f.ports.changes = vi.fn((_from, token) =>
@@ -86,6 +84,8 @@ it("finishes two pages across a restart without losing queued requests or reread
         request: { ...f.request, tokenId: String(index + (token ? 20 : 0)) },
       })),
       head: 111,
+      anchor: { number: 111, hash: "0xa" },
+      rewind: false,
       next: token ? null : "next-page",
     }),
   );
@@ -97,11 +97,11 @@ it("finishes two pages across a restart without losing queued requests or reread
   await Effect.runPromise(
     finishRequestedChests(f.ports, new DurableChestStore(storage as unknown as DurableObjectStorage)),
   );
-  expect(f.ports.changes).toHaveBeenLastCalledWith(0, "next-page");
+  expect(f.ports.changes).toHaveBeenLastCalledWith(0, "next-page", { number: 111, hash: "0xa" });
   expect(f.ports.finish).toHaveBeenCalledTimes(40);
   expect(new Set(vi.mocked(f.ports.finish).mock.calls.map(([id]) => id)).size).toBe(40);
   expect([...data.keys()].some((key) => key.startsWith("chests:request:"))).toBe(false);
-  expect(data.get("chests:cursor")).toEqual({ fromBlock: 112, page: null });
+  expect(data.get("chests:cursor")).toEqual({ fromBlock: 112, page: null, anchor: { number: 111, hash: "0xa" } });
 });
 
 it("rotates a bounded pending page through a large backlog after recreation", async () => {
@@ -130,4 +130,53 @@ it("rotates a bounded pending page through a large backlog after recreation", as
   expect(first).toHaveLength(25);
   expect(second).toHaveLength(25);
   expect(first.some((row) => second.some((next) => next.tokenId === row.tokenId))).toBe(false);
+});
+
+const storageFixture = () => {
+  const data = new Map<string, unknown>();
+  const storage = {
+    get: async (key: string) => data.get(key),
+    put: async (key: string, value: unknown) => {
+      data.set(key, value);
+    },
+    delete: async (key: string) => data.delete(key),
+    list: async ({ prefix, limit }: { prefix: string; limit: number }) =>
+      new Map([...data].filter(([key]) => key.startsWith(prefix)).slice(0, limit)),
+    transaction: async (run: (tx: unknown) => Promise<void>) => run(storage),
+  };
+  return { data, storage };
+};
+
+it("rebuilds the pending queue from canonical events after a rewrite, across a restart", async () => {
+  const { data, storage } = storageFixture();
+  const f = fixture();
+  data.set("chests:cursor", { fromBlock: 1001, page: null, anchor: { number: 1000, hash: "0xdead" } });
+  data.set("chests:request:orphan", { ...f.request, tokenId: "orphan" });
+  data.set("chests:queue-cursor", "chests:request:orphan");
+  f.ports.head = () => Effect.succeed(111);
+  f.ports.changes = vi.fn((_from, page) =>
+    Effect.succeed({
+      rows: [{ kind: "requested" as const, request: { ...f.request, tokenId: page ? "8" : "7" } }],
+      head: 111,
+      anchor: { number: 111, hash: "0xa" },
+      rewind: page === null,
+      next: page === null ? "canonical-page2" : null,
+    }),
+  );
+  await Effect.runPromise(
+    finishRequestedChests(f.ports, new DurableChestStore(storage as unknown as DurableObjectStorage)),
+  );
+  expect(data.has("chests:request:orphan")).toBe(false);
+  expect(data.get("chests:cursor")).toEqual({
+    fromBlock: 0,
+    page: "canonical-page2",
+    anchor: { number: 111, hash: "0xa" },
+  });
+  await Effect.runPromise(
+    finishRequestedChests(f.ports, new DurableChestStore(storage as unknown as DurableObjectStorage)),
+  );
+  expect(f.ports.finish).toHaveBeenNthCalledWith(1, "7");
+  expect(f.ports.finish).toHaveBeenNthCalledWith(2, "8");
+  expect(f.ports.finish).toHaveBeenCalledTimes(2);
+  expect(data.get("chests:cursor")).toEqual({ fromBlock: 112, page: null, anchor: { number: 111, hash: "0xa" } });
 });

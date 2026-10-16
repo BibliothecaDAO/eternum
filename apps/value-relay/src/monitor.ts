@@ -7,6 +7,7 @@ import type {
   Withdrawal,
   BlitzResult,
   RelayEffect,
+  LedgerAnchor,
 } from "./ports";
 import { RelayFailure, relayOperation } from "./ports";
 
@@ -14,6 +15,7 @@ interface AuditCursor {
   fromBlock: number;
   page: string | null;
   offset?: number;
+  anchor?: LedgerAnchor;
 }
 interface FaultRow {
   row: string;
@@ -123,7 +125,7 @@ const checkPostedResults = (ports: MonitorPorts, store: MonitorStore) =>
 /** A tick checks at most one 100-event page per stream; only verified pages advance the durable cursor. */
 const checkLedgerPage = <A>(
   stream: "paidClaims" | "postedResults",
-  read: (cursor: string | null, fromBlock?: number) => RelayEffect<LedgerPage<A>>,
+  read: (cursor: string | null, fromBlock?: number, anchor?: LedgerAnchor) => RelayEffect<LedgerPage<A>>,
   key: (row: A) => string,
   check: (row: A) => RelayEffect<string | null>,
   store: MonitorStore,
@@ -131,16 +133,17 @@ const checkLedgerPage = <A>(
   Effect.gen(function* () {
     const progress = yield* relayOperation("read ledger audit cursor", () => store.load());
     const cursor = progress.cursors?.[stream] ?? { fromBlock: 0, page: null };
-    const page = yield* read(cursor.page, cursor.fromBlock);
+    const page = yield* read(cursor.page, cursor.fromBlock, cursor.anchor);
+    const fromBlock = page.rewind ? 0 : cursor.fromBlock;
     if (
       !Number.isSafeInteger(page.head) ||
-      page.head < cursor.fromBlock - 1 ||
+      page.head < fromBlock - 1 ||
       page.rows.length > 100 ||
-      (page.rows.length > 0 && page.head < cursor.fromBlock) ||
-      (page.next !== null && page.next === cursor.page)
+      (page.rows.length > 0 && page.head < fromBlock) ||
+      (!page.rewind && page.next !== null && page.next === cursor.page)
     )
       return yield* Effect.fail(new RelayFailure({ operation: "invalid_ledger_audit_page" }));
-    for (let index = cursor.offset ?? 0; index < page.rows.length; index++) {
+    for (let index = page.rewind ? 0 : (cursor.offset ?? 0); index < page.rows.length; index++) {
       const row = page.rows[index]!;
       const observation = yield* Effect.result(check(row));
       if (Result.isFailure(observation)) return yield* Effect.fail(observation.failure);
@@ -148,14 +151,23 @@ const checkLedgerPage = <A>(
         yield* recordFault(store, {
           row: key(row),
           stream,
-          cursor: { fromBlock: cursor.fromBlock, page: cursor.page ?? JSON.stringify({ head: page.head, token: "" }) },
+          cursor: {
+            fromBlock,
+            anchor: page.anchor,
+            page:
+              !page.rewind && cursor.page !== null
+                ? cursor.page
+                : JSON.stringify({ head: page.head, hash: page.anchor.hash, token: "" }),
+          },
           offset: index,
         });
         return observation.success;
       }
     }
     const next =
-      page.next === null ? { fromBlock: page.head + 1, page: null } : { fromBlock: cursor.fromBlock, page: page.next };
+      page.next === null
+        ? { fromBlock: page.head + 1, page: null, anchor: page.anchor }
+        : { fromBlock, page: page.next, anchor: page.anchor };
     yield* relayOperation("persist checked ledger page", async () => {
       const latest = await store.load();
       await store.save({ ...latest, cursors: { ...latest.cursors, [stream]: next } });

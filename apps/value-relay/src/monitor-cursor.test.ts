@@ -21,8 +21,10 @@ it("keeps checked-through block and page continuation across ticks without rerea
             rows: [{ ...receipt, paymentTransactionHash: "0xdef", paidAt: 1, wallet: "0x123" }],
             next: "pinned-page2",
             head: 10,
+            anchor: { number: 10, hash: "0xa" },
+            rewind: false,
           }
-        : { rows: [], next: null, head: 10 },
+        : { rows: [], next: null, head: 10, anchor: { number: 10, hash: "0xa" }, rewind: false },
     ),
   );
   const ports: MonitorPorts = {
@@ -31,7 +33,8 @@ it("keeps checked-through block and page continuation across ticks without rerea
     ledger: {
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
       paidClaims,
-      postedResults: () => Effect.succeed({ rows: [], next: null, head: 10 }),
+      postedResults: () =>
+        Effect.succeed({ rows: [], next: null, head: 10, anchor: { number: 10, hash: "0xa" }, rewind: false }),
       pause: () => Effect.void,
     },
   };
@@ -47,7 +50,7 @@ it("keeps checked-through block and page continuation across ticks without rerea
   expect(paidClaims.mock.calls[1]![0]).toBe("pinned-page2");
   expect(withdrawal).toHaveBeenCalledOnce();
   await Effect.runPromise(runMonitor(ports, store));
-  expect(paidClaims.mock.calls[2]).toEqual([null, 11]);
+  expect(paidClaims.mock.calls[2]).toEqual([null, 11, { number: 10, hash: "0xa" }]);
 });
 
 it("an exact row reset skips only that claim and still faults on the next unchecked claim", async () => {
@@ -75,8 +78,10 @@ it("an exact row reset skips only that claim and still faults on the next unchec
     shard: { conservation: () => Effect.succeed([]), withdrawal: checked, result: () => Effect.succeed(null) },
     ledger: {
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
-      paidClaims: () => Effect.succeed({ rows, head: 10, next: null }),
-      postedResults: () => Effect.succeed({ rows: [], head: 10, next: null }),
+      paidClaims: () =>
+        Effect.succeed({ rows, head: 10, anchor: { number: 10, hash: "0xa" }, rewind: false, next: null }),
+      postedResults: () =>
+        Effect.succeed({ rows: [], head: 10, anchor: { number: 10, hash: "0xa" }, rewind: false, next: null }),
       pause: () => Effect.void,
     },
   };
@@ -92,4 +97,10 @@ it("an exact row reset skips only that claim and still faults on the next unchec
   await Effect.runPromise(runMonitor(ports, store));
   expect(progress.fault?.row).toBe("paidClaims:0x1:0xdef");
   expect(checked.mock.calls.map((call) => call[1])).toEqual(["0xabc", "0xdef"]);
+  progress = resetMonitorRow(progress, "paidClaims:0x1:0xdef");
+  ports.ledger.paidClaims = () =>
+    Effect.succeed({ rows, head: 10, next: null, anchor: { number: 10, hash: "0xb" }, rewind: true });
+  await Effect.runPromise(runMonitor(ports, store));
+  expect(progress.fault?.row).toBe("paidClaims:0x1:0xabc");
+  expect(checked.mock.calls.map((call) => call[1])).toEqual(["0xabc", "0xdef", "0xabc"]);
 });
