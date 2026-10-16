@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -14,7 +15,68 @@ def snapshot_export(count):
     }]}]}]}
 
 
+ROOT = Path(__file__).resolve().parents[3]
+SPLIT = ROOT / "deploy/athanor/harness/blitz-split.ts"
+
+
+def write_split_report(path, outcome):
+    """The Blitz split's report as its own builder writes it: a launch of 2,000 players, or one that threw."""
+    script = f"""
+      import {{ writeFileSync }} from "node:fs";
+      import {{ failedSplitReport, slotLaunches, splitReport }} from {json.dumps(str(SPLIT))};
+      const seaters = Array.from({{ length: 16 }}, (_, index) => "0x" + (index + 1).toString(16));
+      const launches = slotLaunches(2000, seaters, 1792118000000);
+      const window = {{ startedAt: "2026-10-16T02:39:47.370Z", endedAt: "2026-10-16T02:41:04.396Z" }};
+      const report = {json.dumps(outcome)} === "launched"
+        ? splitReport({{ launches, summaries: launches.map((launch, index) => ({{ gameId: index + 1,
+            settlementTransactions: launch.players.length }})), seaters: 16, poolJoinMs: 2500, registrationWaitMs: 3000,
+            wholeSplitMs: 77026, ...window }})
+        : failedSplitReport({{ players: 2000, ...window, error: new Error("roster_seating_did_not_progress") }});
+      writeFileSync({json.dumps(str(path))}, JSON.stringify(report));
+    """
+    subprocess.run(["bun", "-e", script], cwd=ROOT, check=True, capture_output=True)
+
+
 class MeasuresTests(unittest.TestCase):
+    def test_a_launched_blitz_split_completes_the_shared_measurement_without_inventing_gas_or_actions(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            workload = Path(temporary) / "workload"
+            workload.mkdir()
+            stats = {"blocks": {"count": 73, "first": 120, "last": 192}, "transactions": {"l2GasConsumed": 900}}
+            with patch.object(measures, "host_state", return_value={"load": 1}), \
+                 patch.object(measures, "sample_node"), \
+                 patch.object(measures, "block_statistics", side_effect=lambda _n, _m, window: {**stats, "window": window}):
+                evidence = measures.measure_workload(
+                    ["docker"], lambda: write_split_report(workload / "split.json", "launched") or True, "node",
+                    Path("m"), Path("c"), workload)
+            self.assertTrue(evidence["workloadPassed"])
+            self.assertEqual(evidence["blockStats"]["window"],
+                             {"since": "2026-10-16T02:39:47.370Z", "until": "2026-10-16T02:41:04.396Z"})
+            self.assertEqual(evidence["gasReconciliation"], {
+                "nodeBlocks": {"first": 120, "last": 192}, "nodeL2Gas": 900, "status": "unavailable",
+                "reason": "the workload reports no per-block gas"})
+            self.assertEqual(evidence["admission"],
+                             {"status": "unavailable", "reason": "the workload reports no per-action observations"})
+            report = json.loads((workload / "split.json").read_text())
+            self.assertEqual((report["passed"], report["players"], report["games"], report["transactions"]),
+                             (True, 2000, 84, {"create": 84, "seat": 2000}))
+
+    def test_a_failed_blitz_split_stays_failed_and_keeps_its_report(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            workload = Path(temporary)
+
+            def failing():
+                write_split_report(workload / "split.json", "threw")
+                raise subprocess.CalledProcessError(1, ["bun", "blitz-split.ts"])
+
+            with patch.object(measures, "host_state", return_value={"load": 1}), patch.object(measures, "sample_node"), \
+                 self.assertRaises(subprocess.CalledProcessError):
+                measures.measure_workload(["docker"], failing, "node", Path("m"), Path("c"), workload)
+            report = json.loads((workload / "split.json").read_text())
+            self.assertEqual(report, {
+                "passed": False, "players": 2000, "error": "Error: roster_seating_did_not_progress",
+                "workload": {"startedAt": "2026-10-16T02:39:47.370Z", "endedAt": "2026-10-16T02:41:04.396Z"}})
+
     def test_snapshot_count_uses_the_latest_complete_export_including_the_first(self):
         with tempfile.TemporaryDirectory() as temporary:
             metrics = Path(temporary) / "metrics.jsonl"

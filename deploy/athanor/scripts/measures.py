@@ -36,6 +36,12 @@ NEIGHBOUR_WINDOW_MS = 500
 SAMPLE_SECONDS = 15
 
 
+# The one report contract every workload writes into its directory: a JSON object whose `workload` holds the span it
+# ran, `startedAt` and `endedAt` (ISO 8601). It may also carry `workload.actions` (per-action observations) and
+# `gas.l2GasByBlock`. A report that omits one did not measure it: the collector reports it unavailable, never zero.
+UNAVAILABLE = "unavailable"
+
+
 def percentile(values, p):
     ordered = sorted(values)
     return ordered[max(0, math.ceil(p / 100 * len(ordered)) - 1)] if ordered else None
@@ -47,11 +53,10 @@ def iso_ms(value):
 
 
 def reported_actions(directory):
-    for path in Path(directory).rglob("*.json"):
-        report = json.loads(path.read_text())
-        workload = report.get("workload") if isinstance(report, dict) else None
-        if isinstance(workload, dict):
-            yield from workload.get("actions", [])
+    """Every action the reports observed, or None when no report observes actions."""
+    observed = [report["workload"]["actions"] for report in workload_reports(directory)
+                if isinstance(report.get("workload"), dict) and "actions" in report["workload"]]
+    return [action for actions in observed for action in actions] if observed else None
 
 
 def phases(group):
@@ -66,7 +71,9 @@ def phases(group):
 
 def admission_split(directory):
     """Completed actions' admission-to-visible latency, overall, in bursts (many submissions around it) and in calm."""
-    actions = list(reported_actions(directory))
+    actions = reported_actions(directory)
+    if actions is None:
+        return {"status": UNAVAILABLE, "reason": "the workload reports no per-action observations"}
     done = [a for a in actions if a.get("outcome") == "completed"]
     for action in done:
         required = ("submitStartedAt", "submittedAt", "visibleAt", "submitMs", "admissionToVisibleMs")
@@ -161,10 +168,14 @@ def block_statistics(container, metrics, window):
 def gas_reconciliation(directory, stats):
     """The harness's L2 gas in the node's closed blocks against the node's own total for them."""
     blocks = {"first": stats["blocks"]["first"], "last": stats["blocks"]["last"]}
-    harness = sum(gas for report in workload_reports(directory)
-                  for block, gas in report.get("gas", {}).get("l2GasByBlock", {}).items()
-                  if blocks["first"] <= int(block) <= blocks["last"])
     node = stats["transactions"]["l2GasConsumed"]
+    reported = [report["gas"]["l2GasByBlock"] for report in workload_reports(directory)
+                if isinstance(report.get("gas"), dict) and "l2GasByBlock" in report["gas"]]
+    if not reported:
+        return {"nodeBlocks": blocks, "nodeL2Gas": node, "status": UNAVAILABLE,
+                "reason": "the workload reports no per-block gas"}
+    harness = sum(gas for by_block in reported for block, gas in by_block.items()
+                  if blocks["first"] <= int(block) <= blocks["last"])
     return {"nodeBlocks": blocks, "nodeL2Gas": node, "harnessL2GasInNodeBlocks": harness,
             "deltaL2Gas": node - harness, "reconciled": node == harness}
 

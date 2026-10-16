@@ -48,28 +48,73 @@ async function main(): Promise<void> {
   const launches = slotLaunches(players, seaters, Date.now());
   const startedAt = new Date().toISOString();
   const started = now();
-  const { summaries, registrationWaitMs } = await launchWhenSettlingOpens(launcher, launches);
-  const wholeSplitMs = milliseconds(started);
-  const seats = summaries.map((summary) => summary.settlementTransactions ?? 0);
-  save(values.out, {
-    players,
-    games: summaries.length,
-    seaters: seaters.length,
-    poolJoinMs,
-    startedAt,
-    endedAt: new Date().toISOString(),
-    registrationWaitMs,
-    wholeSplitMs,
-    seatingMs: wholeSplitMs - registrationWaitMs,
-    transactions: { create: summaries.length, seat: seats.reduce((sum, count) => sum + count, 0) },
+  try {
+    const { summaries, registrationWaitMs } = await launchWhenSettlingOpens(launcher, launches);
+    save(
+      values.out,
+      splitReport({
+        launches,
+        summaries,
+        seaters: seaters.length,
+        poolJoinMs,
+        registrationWaitMs,
+        startedAt,
+        endedAt: new Date().toISOString(),
+        wholeSplitMs: milliseconds(started),
+      }),
+    );
+  } catch (error) {
+    // A failed or partial launch keeps its window and its cause, and the run still fails.
+    save(values.out, failedSplitReport({ players, startedAt, endedAt: new Date().toISOString(), error }));
+    throw error;
+  }
+}
+
+/**
+ * The split's report in the runner's one report contract (`measures.py`): its window under `workload`, and nothing it
+ * did not observe. It records no per-action observations and no per-block gas, so those keys are absent and the
+ * collector reports them as unavailable, not as a measured zero.
+ */
+export function splitReport(input: {
+  launches: readonly BlitzLaunch[];
+  summaries: readonly { gameId?: number; settlementTransactions?: number }[];
+  seaters: number;
+  poolJoinMs: number;
+  registrationWaitMs: number;
+  startedAt: string;
+  endedAt: string;
+  wholeSplitMs: number;
+}) {
+  const seats = input.summaries.map((summary) => summary.settlementTransactions ?? 0);
+  return {
+    passed: true,
+    workload: { startedAt: input.startedAt, endedAt: input.endedAt },
+    players: input.launches.reduce((sum, launch) => sum + launch.players.length, 0),
+    games: input.summaries.length,
+    seaters: input.seaters,
+    poolJoinMs: input.poolJoinMs,
+    registrationWaitMs: input.registrationWaitMs,
+    wholeSplitMs: input.wholeSplitMs,
+    seatingMs: input.wholeSplitMs - input.registrationWaitMs,
+    transactions: { create: input.summaries.length, seat: seats.reduce((sum, count) => sum + count, 0) },
     seatsPerGame: summary(seats),
-    gameDetails: summaries.map((game, index) => ({
+    gameDetails: input.summaries.map((game, index) => ({
       gameId: game.gameId,
-      players: launches[index]!.players.length,
-      seater: launches[index]!.seater,
+      players: input.launches[index]!.players.length,
+      seater: input.launches[index]!.seater,
       seats: seats[index],
     })),
-  });
+  };
+}
+
+/** A launch that threw: its window and its error's name and message, in the same contract. */
+export function failedSplitReport(input: { players: number; startedAt: string; endedAt: string; error: unknown }) {
+  return {
+    passed: false,
+    workload: { startedAt: input.startedAt, endedAt: input.endedAt },
+    players: input.players,
+    error: input.error instanceof Error ? `${input.error.name}: ${input.error.message}` : String(input.error),
+  };
 }
 
 /** The pool the Worker seats from, joined as the Worker joins it: one bot account per seater label, the operator's device. */

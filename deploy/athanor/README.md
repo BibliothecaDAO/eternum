@@ -135,7 +135,9 @@ it, by one function in `scripts/measures.py` that a runner trial and a package s
 after (`host-state.sh`), the node's anonymous memory and kept RocksDB snapshots every 15 s, read from the cgroup Docker
 placed the node in, and, over the workload window the harness's reports span, the node's closed blocks from its logs and
 its metrics export (`block-stats.sh`) and the harness's gas per block reconciled against them. Block statistics are the
-run's close-cost evidence: a window without a closed block fails the run.
+run's close-cost evidence: a window without a closed block fails the run. Every workload report gives its window as
+`workload.startedAt`/`endedAt`; one that observes no per-action outcomes or per-block gas omits them, and the result
+names those measurements unavailable rather than zero.
 
 Measure one of our package shards from its deploy directory:
 
