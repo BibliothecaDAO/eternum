@@ -37,7 +37,14 @@ function cloudflare({ organization = true } = {}) {
   let query = new URLSearchParams();
   const listed = (items: unknown[]) => {
     const page = Number(query.get("page") ?? 1);
-    const perPage = Math.min(Number(query.get("per_page") ?? PAGE_SIZE), PAGE_SIZE);
+    const asked = Number(query.get("per_page") ?? PAGE_SIZE);
+    // As Cloudflare's Pages lists do: a page size over 10 is refused, not shortened.
+    if (asked > 10)
+      return Response.json(
+        { success: false, errors: [{ code: 8000024, message: "Invalid list options" }] },
+        { status: 400 },
+      );
+    const perPage = Math.min(asked, PAGE_SIZE);
     const result = items.slice((page - 1) * perPage, page * perPage);
     const total_pages = Math.max(1, Math.ceil(items.length / perPage));
     return Response.json({

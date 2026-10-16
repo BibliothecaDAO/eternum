@@ -215,7 +215,10 @@ function crowdedAccount() {
     requests.push(`${method} ${bare(url).split("/client/v4")[1]}`);
     if (method !== "GET") return Response.json({ success: true, result: {} });
     const path = bare(url).split("/client/v4")[1]!;
-    const perPage = Math.min(Number(parsed.searchParams.get("per_page") ?? 5), 5);
+    const asked = Number(parsed.searchParams.get("per_page") ?? 5);
+    // As Cloudflare's Pages lists do: a page size over 10 is refused, not shortened.
+    if (asked > 10) return refused(400, 8000024);
+    const perPage = Math.min(asked, 5);
     if (path === `/accounts/${account}/r2/buckets`) {
       const start = Number(parsed.searchParams.get("cursor") ?? 0);
       const end = start + perPage;

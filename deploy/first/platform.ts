@@ -114,7 +114,8 @@ interface ListPage {
   total_count?: number;
   cursor?: string;
 }
-const PER_PAGE = 50;
+// Cloudflare's Pages lists refuse a page size over 10 (400, 8000024); one size every list accepts.
+const PER_PAGE = 10;
 const PAGE_LIMIT = 1000;
 const withQuery = (path: string, query: Record<string, string | number>) =>
   `${path}${path.includes("?") ? "&" : "?"}${new URLSearchParams(Object.entries(query).map(([k, v]) => [k, String(v)]))}`;
