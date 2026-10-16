@@ -206,10 +206,12 @@ export class Platform {
   async deployedVersion(worker: Worker) {
     const name = worker.name + this.target.workerSuffix;
     if (!(await this.scripts()).some((script) => script.id === name)) return undefined;
-    const deployments = await this.cf<{ deployments: { versions: { version_id: string; percentage: number }[] }[] }>(
+    // Cloudflare lists a script's deployments newest first, ten a page; the first is the one serving.
+    const deployments = await this.cfList<{ versions: { version_id: string; percentage: number }[] }>(
       `/accounts/${await this.accountId()}/workers/scripts/${name}/deployments`,
+      (result) => (result as { deployments: { versions: { version_id: string; percentage: number }[] }[] }).deployments,
     );
-    const versions = deployments.deployments[0]?.versions;
+    const versions = deployments[0]?.versions;
     if (versions?.length !== 1 || versions[0]?.percentage !== 100) return undefined;
     const version = await this.cf<{ annotations?: Record<string, string> }>(
       `/accounts/${await this.accountId()}/workers/scripts/${name}/versions/${versions[0].version_id}`,

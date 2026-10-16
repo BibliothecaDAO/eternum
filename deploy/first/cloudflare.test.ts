@@ -1,7 +1,7 @@
 import { afterEach, expect, test } from "bun:test";
 import { PublicError } from "./errors";
 import { preparationSteps, type Deployment } from "./main";
-import { Platform } from "./platform";
+import { Platform, workers } from "./platform";
 import type { PrivateStore } from "./private-store";
 import { runSteps } from "./run";
 import { environments, type Inputs } from "./settings";
@@ -81,6 +81,34 @@ test("bootstrap PUT shares the sanitized Workers refusal", async () => {
   }) as typeof fetch;
   await expect(platform(true).bootstrapWorkers()).rejects.toThrow(namedError("Workers scripts", 403, 10000));
   expect(methods).toEqual(["GET", "GET", "PUT"]);
+});
+
+test("a Worker's serving version is its newest deployment, read across a deployment history of many pages", async () => {
+  const guardian = workers.find((worker) => worker.id === "guardian")!;
+  const script = guardian.name + environments.dev.workerSuffix;
+  // Newest first, as Cloudflare lists them; 25 deployments, ten a page.
+  const deployments = Array.from({ length: 25 }, (_, index) => ({
+    versions: [{ version_id: `v${25 - index}`, percentage: 100 }],
+  }));
+  globalThis.fetch = (async (url) => {
+    const parsed = new URL(String(url));
+    const path = bare(url).split("/client/v4")[1]!;
+    if (path === "/accounts") return Response.json({ success: true, result: [{ id: account }] });
+    if (path === `/accounts/${account}/workers/scripts`)
+      return Response.json({ success: true, result: [{ id: script }] });
+    if (path === `/accounts/${account}/workers/scripts/${script}/versions/v25`)
+      return Response.json({ success: true, result: { annotations: { "workers/tag": "a".repeat(40) } } });
+    if (path !== `/accounts/${account}/workers/scripts/${script}/deployments`) return refused(404, 7003);
+    const page = Number(parsed.searchParams.get("page") ?? 1);
+    const perPage = Number(parsed.searchParams.get("per_page") ?? 10);
+    if (perPage > 10) return refused(400, 8000024);
+    return Response.json({
+      success: true,
+      result: { deployments: deployments.slice((page - 1) * perPage, page * perPage) },
+      result_info: { page, per_page: perPage, total_count: 25, total_pages: Math.ceil(25 / perPage) },
+    });
+  }) as typeof fetch;
+  await expect(platform().deployedVersion(guardian)).resolves.toEqual({ id: "v25", revision: "a".repeat(40) });
 });
 
 test("prerequisites read each required family once, using GET only", async () => {
