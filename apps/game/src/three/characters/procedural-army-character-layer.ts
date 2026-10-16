@@ -153,7 +153,8 @@ export class ProceduralArmyCharacterLayer {
   private runtimePromise?: Promise<void>;
   private preparingAssets?: Promise<void>;
   private latestPresentations: readonly ProceduralArmyCharacterPresentation[] = [];
-  private loadError?: unknown;
+  private readonly assetNeeds = new Map<string, { failed: boolean }>();
+  private readonly desiredAssetSignatures = new Set<string>();
   private generation = 0;
   private shadowsEnabled = false;
   private elapsedSeconds = 0;
@@ -163,13 +164,13 @@ export class ProceduralArmyCharacterLayer {
 
   public sync(presentations: readonly ProceduralArmyCharacterPresentation[], deltaSeconds: number): void {
     if (this.disposed) return;
+    this.syncAssetNeeds(presentations);
 
     if (!this.runtime || !this.characterModule) {
       if (presentations.length === 0) {
         this.latestPresentations = [];
         return;
       }
-      if (this.loadError) return;
       this.latestPresentations = presentations.map(clonePresentation);
       this.startRuntimeLoad();
       return;
@@ -356,7 +357,13 @@ export class ProceduralArmyCharacterLayer {
       collisionPairCount: collision.resolvedPairCount,
       defeatedActorCount: this.defeatedActors.length,
       hitTargetCount: this.actors.size,
-      loadState: this.loadError ? "failed" : this.runtime ? "ready" : this.runtimePromise ? "loading" : "idle",
+      loadState: [...this.assetNeeds.values()].some((need) => need.failed)
+        ? "failed"
+        : this.runtime
+          ? "ready"
+          : this.runtimePromise
+            ? "loading"
+            : "idle",
       pendingImpactCount: this.impactRegistry.getStats().activeCount,
       ragdollCount:
         [...this.actors.values()].filter(({ actor }) => actor.mode === "ragdoll").length +
@@ -396,6 +403,8 @@ export class ProceduralArmyCharacterLayer {
     if (this.disposed) return;
     this.disposed = true;
     this.generation += 1;
+    this.assetNeeds.clear();
+    this.desiredAssetSignatures.clear();
     this.latestPresentations = [];
     this.separationSimulation.reset();
     this.impactRegistry.reset();
@@ -411,8 +420,22 @@ export class ProceduralArmyCharacterLayer {
     this.hitTargetMaterial.dispose();
   }
 
+  /** A failure belongs to this continuous need; leaving it permits a fresh attempt on return. */
+  private syncAssetNeeds(presentations: readonly ProceduralArmyCharacterPresentation[]): void {
+    this.desiredAssetSignatures.clear();
+    presentations.forEach((presentation) => {
+      const signature = resolveAssetSignature(presentation);
+      this.desiredAssetSignatures.add(signature);
+      if (!this.assetNeeds.has(signature)) this.assetNeeds.set(signature, { failed: false });
+    });
+    this.assetNeeds.forEach((_need, signature) => {
+      if (!this.desiredAssetSignatures.has(signature)) this.assetNeeds.delete(signature);
+    });
+  }
+
   private startRuntimeLoad(): void {
-    if (this.runtimePromise || this.loadError) return;
+    const needs = [...this.assetNeeds.values()];
+    if (this.runtimePromise || !needs.some((need) => !need.failed)) return;
     const generation = this.generation;
     this.runtimePromise = import("@/three/characters")
       .then(async (characterModule) => {
@@ -429,7 +452,10 @@ export class ProceduralArmyCharacterLayer {
         this.syncReadyPresentations(pendingPresentations, 0);
       })
       .catch((error: unknown) => {
-        this.loadError = error;
+        if (this.disposed || generation !== this.generation) return;
+        needs.forEach((need) => {
+          need.failed = true;
+        });
         console.error("[ProceduralArmyCharacterLayer] Failed to load the procedural unit runtime", error);
       })
       .finally(() => {
@@ -574,7 +600,7 @@ export class ProceduralArmyCharacterLayer {
     let record = this.actors.get(presentation.entityId);
     if (!record || record.configSignature !== configSignature) {
       const config = resolveUnitConfig(characterModule, presentation);
-      if (!this.prepareActorAssets(runtime, config)) return;
+      if (!this.prepareActorAssets(runtime, config, resolveAssetSignature(presentation))) return;
       const desiredKind = resolveUnitKind(presentation);
       if (!record) {
         record = this.createActorRecord(runtime, presentation, config, configSignature);
@@ -605,14 +631,19 @@ export class ProceduralArmyCharacterLayer {
     }
   }
 
-  private prepareActorAssets(runtime: ProceduralUnitRuntime, config: ProceduralUnitConfig): boolean {
-    if (runtime.areAssetsReady(config)) return true;
-    if (!this.preparingAssets && !this.loadError) {
+  private prepareActorAssets(runtime: ProceduralUnitRuntime, config: ProceduralUnitConfig, signature: string): boolean {
+    const need = this.assetNeeds.get(signature);
+    if (!need) return false;
+    if (runtime.areAssetsReady(config)) {
+      need.failed = false;
+      return true;
+    }
+    if (!this.preparingAssets && !need.failed) {
       this.preparingAssets = runtime
         .prepareAssets(config)
         .catch((error) => {
           if (this.disposed) return;
-          this.loadError = error;
+          need.failed = true;
           console.error("[ProceduralArmyCharacterLayer] Failed to load visible unit assets", error);
         })
         .finally(() => {
@@ -669,12 +700,11 @@ export class ProceduralArmyCharacterLayer {
   }
 
   private async requireActor(entityId: number): Promise<ProceduralUnitActor | undefined> {
-    if (this.disposed || this.loadError) return undefined;
-    if (!this.runtime) {
-      this.startRuntimeLoad();
-      await this.runtimePromise;
-    }
-    return this.actors.get(entityId)?.actor;
+    if (this.disposed) return undefined;
+    const actor = this.actors.get(entityId)?.actor;
+    if (actor) return actor;
+    await this.runtimePromise;
+    return this.disposed ? undefined : this.actors.get(entityId)?.actor;
   }
 
   private clearActors(): void {
@@ -901,12 +931,18 @@ function resolveArmyRenderDetail(
 
 function resolveConfigSignature(presentation: ProceduralArmyCharacterPresentation): string {
   return [
+    resolveAssetSignature(presentation),
+    presentation.primaryColor,
+    presentation.isMoving ? "moving" : "idle",
+  ].join(":");
+}
+
+function resolveAssetSignature(presentation: ProceduralArmyCharacterPresentation): string {
+  return [
     presentation.category,
     presentation.tier,
     resolveArmyRenderDetail(presentation),
     presentation.isNaval ? "naval" : "land",
-    presentation.primaryColor,
-    presentation.isMoving ? "moving" : "idle",
     resolveAttachmentSignature(presentation.attachments),
   ].join(":");
 }
