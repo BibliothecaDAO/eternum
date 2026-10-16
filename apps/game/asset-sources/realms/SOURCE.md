@@ -56,14 +56,14 @@ flock /tmp/eternum-lanes-heavy.lock /path/to/blender-5.2.1 --background apps/gam
 
 Use the Forum source path for the city. Export remains the command above, with `--asset kingdom` or `--asset city`. The
 retained bakes follow the edited geometry through its original UVs; these small doorway edits do not introduce new
-textures. The empire retains its existing glass treatment.
+textures. The approved window revision below replaces the plain and stained infill.
 
 The outposts-15 source places the cottages toward the side fences and the small tent at the rear-right beside the canvas
 shelter. The settlement uses that exact layout. Its Order plaque locates the actual left entrance post; the source check
 reads the shared hex-fence radius, post thickness and minimum clearance. No second layout or circular yard constraint is
 maintained for realms.
 
-## Solid doors and window studies
+## Solid doors and occupied windows
 
 `revise-realm-accents.py` adds the Forum's opposite standard by duplicating its anchored banner into the existing cloth
 batch, and replaces Twin Ward's two copper tips with faceted teal gems. The gems share one Refined essence material;
@@ -76,8 +76,15 @@ the realm adapter adds its iron hardware in memory, preserving the shared villag
 to regenerate all normal and wonder variants. Door faces carry `_SOLID_REALM_DOOR`; the imperial passage check must hit
 the closed door through its stone frame.
 
-The optional lab export `export-window-study.py` tags authored window infill for five material treatments. It never
-writes the packed source or production GLBs. The city, kingdom and empire retain their current window treatment until a
-choice is made. Study panels reuse existing material draws and one 256px atlas; A/D emission increases at dusk, B uses
-painted sky variation, C uses closed wood, and E adds deep stone reveals/sills where they were absent. The empire
-already has modeled frames/sills. See `src/lab/README.md` for the picker and runtime capture command.
+`revise-realm-windows.py` applies the approved lower oak shutters and warm upper glass to the three normal stone realms.
+City and kingdom retain only upper windows; empire has four lower shutters and six upper glass panels. The idempotent
+edit updates both editable panels and production meshes, packs two 256px base/emission atlases, and replaces the
+empire's retired glass texture. It adds a dedicated UV set while preserving the original contact and normal bakes.
+Non-window faces sample white base/black emission swatches, so doors and stone do not acquire window light. No material,
+primitive, triangle, render pass or runtime option is added. Each asset uses six textures, within the existing cap. Warm
+glass uses standard glTF emission at 0.25; its contrast rises naturally in darker lighting.
+
+Run the revision with Blender 5.2.1 as for the entrance script above, using the Forum, Twin Ward and empire paths from
+the manifest. Then export each with `--asset city`, `--asset kingdom`, or `--asset empire` into a fresh directory. The
+delivery verifier checks the infill's base/emission textures and their dedicated UV set. The normal lab comparison shows
+the previous GLB beside the delivered model; there is no window-treatment selector.

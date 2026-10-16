@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-16",
+    title: "Warm windows in realms",
+    description:
+      "City and kingdom windows glow with warm glass. Imperial upper windows share that light, with wooden shutters on the lower floor.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-16",
     title: "Readable menus in Safari",
     description:
       "The realm's production menu and the HUD's other drop-downs now draw in the game's dark style in Safari too, instead of a white box with pale text.",

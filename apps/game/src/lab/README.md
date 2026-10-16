@@ -101,8 +101,8 @@ same scale, lighting, Order and ownership. Reference comparison is for normal re
 the delivered series. Old assets stay in review evidence, never in production.
 
 Pass `reference: "/.context/realm-review"` alongside `baseUrl` and `output` to the retained
-`prove-realm-series.playwright.js` driver to capture the three changed ages at 6/20/45, each revision, then the new
-settlement's first three Orders in owned/enemy colours. The driver closes its page on success or failure.
+`prove-realm-series.playwright.js` driver to capture city, kingdom and empire before/after pairs at distances 6 and 20.
+The driver closes its page on success or failure.
 
 ## Facets icons
 

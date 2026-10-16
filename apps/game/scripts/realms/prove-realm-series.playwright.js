@@ -55,31 +55,14 @@
   try {
     await page.setViewportSize({ width: 1800, height: 1100 });
     const comparisonQuery = reference ? `&reference=${encodeURIComponent(reference)}&comparison=pair` : "";
-    await page.goto(`${baseUrl}/lab/models?family=realms&level=0&distance=20${comparisonQuery}`);
+    await page.goto(`${baseUrl}/lab/models?family=realms&level=${reference ? 1 : 0}&distance=20${comparisonQuery}`);
     await ready();
     if (reference) {
-      for (const level of [0, 1, 2]) {
+      for (const level of [1, 2, 3]) {
         await select("Age", level);
-        for (const distance of [20, 6, 45]) {
+        for (const distance of [20, 6]) {
           await select("Distance", distance);
-          for (const revision of ["before", "after", "pair"]) {
-            await select("Revision", revision);
-            await capture(`revision-${level}-${distance}-${revision}`);
-          }
-        }
-      }
-      await select("Revision", "after");
-      await select("Age", 0);
-      await select("Distance", 6);
-      const orders = await page
-        .getByLabel("Order", { exact: true })
-        .locator("option")
-        .evaluateAll((options) => options.slice(0, 3).map((option) => option.value));
-      for (const order of orders) {
-        await select("Order", order);
-        for (const owned of [0, 1]) {
-          await select("Ownership", owned);
-          await capture(`settlement-heraldry-${order}-${owned}`);
+          await capture(`revision-${level}-${distance}-pair`);
         }
       }
       if (errors.length) throw new Error(errors.join("\n"));

@@ -57,9 +57,29 @@ def verify_order_and_essence(document):
         raise ValueError('Mastered essence must remain teal after export')
 
 
+def verify_window_infill(document, asset):
+    if asset not in ('city', 'kingdom', 'empire'):
+        return
+    infill = [(index, material) for index, material in enumerate(document['materials'])
+              if material.get('extras', {}).get('realmWindowTreatment') == 'shutters-below-warm-glass-above']
+    if len(infill) != 1:
+        raise ValueError('Bake the approved shutters and warm glass into the existing detail material')
+    index, material = infill[0]
+    base = material['pbrMetallicRoughness'].get('baseColorTexture', {})
+    emission = material.get('emissiveTexture', {})
+    if base.get('texCoord') != 2 or emission.get('texCoord') != 2 or base.get('index') == emission.get('index'):
+        raise ValueError('Use separate base and masked light atlases on the authored window UVs')
+    if any(value <= 0 for value in material.get('emissiveFactor', [0, 0, 0])):
+        raise ValueError('Retain warm window emission in the delivered material')
+    primitives = [p for mesh in document['meshes'] for p in mesh['primitives'] if p['material'] == index]
+    if not primitives or any('TEXCOORD_2' not in p['attributes'] for p in primitives):
+        raise ValueError('Export the dedicated window UVs with the existing detail primitive')
+
+
 def verify(path):
     document, binary, byte_count = read_glb(path)
     verify_order_and_essence(document)
+    verify_window_infill(document, path.stem)
     primitives = [primitive for mesh in document['meshes'] for primitive in mesh['primitives']]
     positions = [document['accessors'][p['attributes']['POSITION']] for p in primitives]
     height = max(p['max'][1] for p in positions) - min(p['min'][1] for p in positions)
