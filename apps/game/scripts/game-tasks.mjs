@@ -51,6 +51,15 @@ const inspectTile = { name: "tile details", selector: ".tile-panel summary" };
 const noSheet = '!document.querySelector("[data-popover-panel]")';
 
 export const GAME_TASKS = {
+  // The boot smoke: a signed-in player enters, the HUD and its lazy chat load, and the page raises no error (every
+  // step fails on one). A rollout runs it against the deployed build.
+  boot: {
+    goal: "Enter the game signed in and open Chat: the HUD and its lazy parts load without an error",
+    layouts: PHONE_AND_DESKTOP,
+    view: "map",
+    presses: [{ name: "Chat", text: "^Chat$" }],
+    done: `document.querySelector('section[aria-label="Chat"]') !== null`,
+  },
   "hud-holdings": {
     goal: "Search, filter and select a holding through the connected HUD",
     layouts: PHONE_AND_DESKTOP,

@@ -343,7 +343,7 @@ const SCREEN = { innerWidth: 1440, innerHeight: 900 };
  * A browser on a live map whose page is `page()`, markup read again at each evaluation and queried as the runner's
  * selectors query it, and whose clicks and keys run `onPress`: what a task's presses change is up to each test.
  */
-const liveMapBrowser = ({ page, onPress = () => {} }) => ({
+const liveMapBrowser = ({ page, onPress = () => {}, consoleErrors = [] }) => ({
   run: (command, ...args) => {
     if (
       (command === "mouse" && args[0] === "up") ||
@@ -351,7 +351,10 @@ const liveMapBrowser = ({ page, onPress = () => {} }) => ({
     )
       onPress(command, ...args);
     if (command === "errors") return JSON.stringify({ success: true, data: { errors: [] } });
-    if (command === "console") return JSON.stringify({ success: true, data: { messages: [] } });
+    if (command === "console") {
+      const messages = consoleErrors.map((text) => ({ type: "error", text }));
+      return JSON.stringify({ success: true, data: { messages } });
+    }
     return "";
   },
   evaluate: (js) => {
@@ -447,6 +450,43 @@ describe("a task that changes the game", () => {
       ["desktop", 2, ["Build", "Farm"], undefined, { before: 3, after: 4 }],
       ["phone", 2, ["Build", "Farm's Build"], undefined, { before: 4, after: 5 }],
     ]);
+  });
+});
+
+describe("the boot smoke", () => {
+  const CHAT_TRIGGER = `<button aria-label="Chat" aria-expanded="false">Chat</button>`;
+
+  it("passes when the signed-in HUD opens its chat and the page raised nothing", async () => {
+    let open = false;
+    const records = await proveTask(
+      liveMapBrowser({
+        page: () => `${CHAT_TRIGGER}${open ? '<section aria-label="Chat">Global</section>' : ""}`,
+        onPress: () => (open = true),
+      }),
+      "boot",
+    );
+    expect(records.map((record) => [record.layout, record.clicks, record.problem])).toEqual([
+      ["desktop", 1, undefined],
+      ["phone", 1, undefined],
+    ]);
+  });
+
+  it("fails when the page logged an error, though the chat opened", async () => {
+    let open = false;
+    const records = await proveTask(
+      liveMapBrowser({
+        page: () => `${CHAT_TRIGGER}${open ? '<section aria-label="Chat">Global</section>' : ""}`,
+        onPress: () => (open = true),
+        consoleErrors: ["BootCrashBoundary caught an error: TypeError: Cannot convert undefined or null to object"],
+      }),
+      "boot",
+    );
+    expect(records[0].problem).toBe("the page raised errors");
+  });
+
+  it("fails a boot that crashed before the HUD drew, as the chat window's chunk did on 16 Oct", async () => {
+    const records = await proveTask(liveMapBrowser({ page: () => "" }), "boot");
+    expect(records[0].problem).toBe("the task's end state did not show");
   });
 });
 
