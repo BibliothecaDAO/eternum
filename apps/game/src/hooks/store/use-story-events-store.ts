@@ -1,5 +1,5 @@
 import { getPlayerName } from "@/hooks/use-player-profile";
-import { fetchHeraldGameHistory, requireShard } from "@bibliothecadao/eternum/game-client";
+import { fetchHeraldGameHistory, requireShard, storyParticipants } from "@bibliothecadao/eternum/game-client";
 import { storyPayloadId } from "@/utils/native-id";
 import { getActiveGame } from "@/runtime/world";
 import { buildStoryEventPresentation, configManager, hasStoryPresentation } from "@bibliothecadao/eternum";
@@ -32,6 +32,8 @@ interface StoryEventData {
   entity_id: number | null;
   event_id: string;
   owner: string | null;
+  /** Every player the story names (`storyParticipants`), the set Herald's history filters a player's read by. */
+  participants: string[];
   story: string;
   storyPayload: Record<string, unknown>;
   timestamp: string;
@@ -118,6 +120,7 @@ const storyEventFromValue = (
     confirmation: confirmation ?? null,
     position: chainPosition,
     owner: owner === null || owner === undefined ? null : String(owner),
+    participants: storyParticipants(value).owners,
     entity_id: storyEntityId(value.entity_id ?? value.explorer_id ?? value.attacker_id),
     tx_hash: transactionHash,
     story: variant.type,
@@ -214,10 +217,14 @@ const processStoryEvent = (
 /** What one story read asks for: its game's scope, and optionally one story and one owner. */
 type StoryRead = { scopeKey: string; story?: string; owner?: string };
 
+/** Whether a story belongs to a read, by the same rule Herald's history applies: a player read keeps every story naming them. */
 const matchesRead = (event: StoryEventData, read: StoryRead): boolean =>
   event.scopeKey === read.scopeKey &&
   (!read.story || event.story === read.story) &&
-  (!read.owner || (event.owner !== null && BigInt(event.owner) === BigInt(read.owner)));
+  (!read.owner || namesPlayer(event, BigInt(read.owner)));
+
+const namesPlayer = (event: StoryEventData, player: bigint): boolean =>
+  [event.owner, ...event.participants].some((address) => address !== null && BigInt(address) === player);
 
 /**
  * Newest first by place on the chain: a pre-confirmed story (no block yet) above every block, then block, transaction
