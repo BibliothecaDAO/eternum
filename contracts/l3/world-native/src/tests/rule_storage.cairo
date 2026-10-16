@@ -45,8 +45,10 @@ fn troopstaminaconfig_packing_preserves_every_field(
 #[fuzzer(runs: 256)]
 fn trooplimitconfig_packing_preserves_every_field(
     guard_resurrection_delay: u16,
-    mercenaries_troop_lower_bound: u16,
-    mercenaries_troop_upper_bound: u16,
+    light_guard_lower_bound: u16,
+    light_guard_upper_bound: u16,
+    heavy_guard_lower_bound: u16,
+    heavy_guard_upper_bound: u16,
     settlement_deployment_cap: u32,
     city_deployment_cap: u32,
     kingdom_deployment_cap: u32,
@@ -60,8 +62,10 @@ fn trooplimitconfig_packing_preserves_every_field(
 ) {
     let value = TroopLimitConfig {
         guard_resurrection_delay,
-        mercenaries_troop_lower_bound,
-        mercenaries_troop_upper_bound,
+        light_guard_lower_bound,
+        light_guard_upper_bound,
+        heavy_guard_lower_bound,
+        heavy_guard_upper_bound,
         settlement_deployment_cap,
         city_deployment_cap,
         kingdom_deployment_cap,
@@ -73,8 +77,8 @@ fn trooplimitconfig_packing_preserves_every_field(
         t2_tier_modifier,
         t3_tier_modifier,
         settlement_armies: guard_resurrection_delay,
-        city_armies: mercenaries_troop_lower_bound,
-        kingdom_armies: mercenaries_troop_upper_bound,
+        city_armies: light_guard_lower_bound,
+        kingdom_armies: light_guard_upper_bound,
         empire_armies: guard_resurrection_delay,
         settlement_guard_slots: t1_tier_strength,
         city_guard_slots: t2_tier_strength,
@@ -82,10 +86,10 @@ fn trooplimitconfig_packing_preserves_every_field(
         empire_guard_slots: t1_tier_modifier,
         starting_guard: city_deployment_cap,
         camp_armies: guard_resurrection_delay,
-        explore_reward_strength_cap: mercenaries_troop_upper_bound,
+        explore_reward_strength_cap: light_guard_upper_bound,
     };
     assert!(TroopLimitConfigPacking::unpack(TroopLimitConfigPacking::pack(value)) == value);
-    assert!(Store::<TroopLimitConfig>::size() == 3);
+    assert!(Store::<TroopLimitConfig>::size() == 4);
 }
 
 #[test]

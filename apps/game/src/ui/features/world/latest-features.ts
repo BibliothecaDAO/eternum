@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-16",
+    title: "Blitz guards and spire jackpots",
+    description:
+      "Camps and Essence Rifts have one T1 Crossbowman guard of 999–1,499 troops. Each Hyperstructure has three T2 guards of 1,499–1,999 troops each. Dormant spires still appear on one explored hex in two hundred and pay a flat 1,000 Essence, plus your active Exploration relic bonus, regardless of army size or tier.",
+    type: "balance",
+    gameSlug: "blitz",
+  },
+  {
+    date: "2026-10-16",
     title: "Larger realm minimap emblems",
     description: "Realm paintings fill more of their minimap hex, with ownership colours and level numbers kept clear.",
     type: "improvement",
@@ -182,7 +190,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-15",
     title: "Bigger armies find more",
     description:
-      "In Blitz, what a reveal finds now grows with the army that explores: a share of its troops times their tier (1 for T1, 3 for T2, 9 for T3), so a 1,000-troop T1 army finds what every army found before. One reveal in two hundred finds a dormant spire: your realm receives three times the army's strength in Essence, and the spire stays on its hex, blocking it and doing nothing else.",
+      "In Blitz, what a reveal finds now grows with the army that explores: a share of its troops times their tier (1 for T1, 3 for T2, 9 for T3), so a 1,000-troop T1 army finds what every army found before. One reveal in two hundred finds a dormant spire: your realm receives a flat 1,000 Essence plus any active Exploration relic bonus, and the spire stays on its hex, blocking it and doing nothing else.",
     type: "balance",
   },
   {

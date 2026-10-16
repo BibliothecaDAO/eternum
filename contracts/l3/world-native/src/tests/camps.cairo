@@ -148,9 +148,9 @@ fn camps_grant_configured_resources_labor_and_one_crossbow_guard() {
     assert_eq!(guard.troops.tier, TroopTier::T1);
     let bounds = rules(true).troop_limit_config;
     let expected = crate::random::range(
-        101, 1, Into::<u16, u128>::into(bounds.mercenaries_troop_upper_bound - bounds.mercenaries_troop_lower_bound),
+        101, 1, Into::<u16, u128>::into(bounds.light_guard_upper_bound - bounds.light_guard_lower_bound) + 1,
     )
-        + bounds.mercenaries_troop_lower_bound.into();
+        + bounds.light_guard_lower_bound.into();
     assert_eq!(guard.troops.count, expected * RESOURCE_PRECISION);
     for slot in 1_u8..4 {
         assert_eq!(guards.guard(GuardKey { game_id: 3, structure_id: key.entity_id, slot }), Default::default());
@@ -276,4 +276,51 @@ fn eternum_exploration_does_not_create_a_camp() {
     assert!(!occupant.is_structure);
     assert_eq!(occupant.entity_id, explorer_id);
     assert_eq!(troops.explorer(key).unwrap().coord, destination);
+}
+
+#[test]
+fn blitz_exploration_stores_both_inclusive_camp_guard_endpoints() {
+    let (_, current) = super::preset_projection::current_definition("blitz");
+    for (root, expected) in array![(615_u256, 999_u128), (629, 1499)] {
+        let mut preset = camp_preset(true);
+        preset.rules.troop_limit_config = current.rules.troop_limit_config;
+        let (d, home, _) = super::resource_commands::setup_with_preset(preset);
+        for resource in array![26_u8, 35, 36] {
+            grant(d, home, resource, 100 * RESOURCE_PRECISION);
+        }
+        assert!(
+            execute(
+                d,
+                Command::CreateExplorer(
+                    CreateExplorer {
+                        structure_id: home.entity_id, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 0,
+                    },
+                ),
+                80,
+            ),
+        );
+        let structures = IStructureOperationsDispatcher { contract_address: d.games };
+        let explorer_id = *structures.home_armies(home).at(0);
+        let explorer = GameState { contract_address: d.games }
+            .explorer(ExplorerKey { game_id: 3, explorer_id })
+            .unwrap();
+        let destination = neighbor(explorer.coord, 0);
+        assert!(
+            super::play_fixture::play(
+                d.games,
+                super::play_fixture::TestAction {
+                    game_id: 3, actor: d.actor, command: Command::Explore(Explore { explorer_id, direction: 0 }),
+                },
+                root,
+                140,
+            ),
+        );
+        let occupancy = IMapLogicDispatcher { contract_address: d.games }.occupancy(tile_key(3, destination)).unwrap();
+        assert_eq!(occupancy.category, crate::taxonomy::CAMP_OCCUPIER);
+        let guard = IGuardsDispatcher { contract_address: d.games }
+            .guard(GuardKey { game_id: 3, structure_id: occupancy.entity_id, slot: 0 });
+        assert_eq!(guard.troops.category, TroopType::Crossbowman);
+        assert_eq!(guard.troops.tier, TroopTier::T1);
+        assert_eq!(guard.troops.count, expected * RESOURCE_PRECISION);
+    }
 }

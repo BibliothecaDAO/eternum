@@ -33,6 +33,7 @@ mod camps;
 mod combat_actions;
 mod combat_formula;
 mod days;
+mod discovery_guards;
 mod entity_ids;
 mod entry;
 mod explore_rewards;

@@ -55,7 +55,8 @@ function conformancePreset(definition: Awaited<ReturnType<typeof currentPresetFi
 /** Fixture encoding can follow source edits before the single landing compile; production bindings still require ABI. */
 function presetFixtureSchema(): NativeSchema {
   const schema = structuredClone(compiledSchema);
-  for (const module of ["entry", "presets", "relics", "registrar", "blitz_results"]) readStructs(schema, module);
+  for (const module of ["rules", "entry", "presets", "relics", "registrar", "blitz_results"])
+    readStructs(schema, module);
   schema.models = defineFactModels({
     struct: (name: string) => {
       const type = schema.types[`world_native::${name}`];
@@ -105,11 +106,11 @@ function fixtureModel(
 }
 
 function readStructs(schema: NativeSchema, module: string): void {
-  const source = readFileSync(new URL(`../src/${module}.cairo`, import.meta.url), "utf8");
+  const source = readFileSync(new URL(`../src/${module}.cairo`, import.meta.url), "utf8").replace(/\/\/[^\n]*/g, "");
   for (const declaration of source.matchAll(/pub struct (\w+)\s*\{([^}]+)\}/g)) {
     const name = `world_native::${module}::${declaration[1]}`;
     const previous = schema.types[name];
-    const fields = [...declaration[2].matchAll(/pub (\w+):\s*([^\n]+),/g)];
+    const fields = [...declaration[2].matchAll(/pub (\w+):\s*([^\n]+?),?\s*$/gm)];
     const declaredFields = [...declaration[2].matchAll(/\bpub\s+\w+\s*:/g)].length;
     if (!fields.length || fields.length !== declaredFields) throw new Error(`Unsupported fixture declaration ${name}`);
     schema.types[name] = {

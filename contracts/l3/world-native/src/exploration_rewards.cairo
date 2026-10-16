@@ -1,8 +1,8 @@
 use starknet::ContractAddress;
 use crate::resources::{ESSENCE, LABOR, ResourceKey};
 
-// A dormant spire pays its finder three times its army's reward strength in Essence, once.
-pub const SPIRE_ESSENCE_PERCENT: u128 = 300;
+// A dormant spire pays a flat Essence jackpot before the active Exploration relic bonus.
+pub const SPIRE_ESSENCE_AMOUNT: u128 = 1000 * crate::rules::RESOURCE_PRECISION;
 
 // A pool row pays a percent of the revealing army's reward strength; the row's own range picks that percent.
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -118,13 +118,10 @@ pub fn reveal_reward(
     }
 }
 
-/// A dormant spire's one grant: Essence on the same reward strength as any reveal, boosted like a pool reveal.
-pub fn spire_reward(
-    troops: crate::troops::Troops, limits: crate::rules::TroopLimitConfig, timestamp: u64,
-) -> crate::resources::ResourceAmount {
+/// A dormant spire's one grant, independent of army size, tier and the reveal cap.
+pub fn spire_reward(boosts: crate::troops::TroopBoosts, timestamp: u64) -> crate::resources::ResourceAmount {
     crate::resources::ResourceAmount {
-        resource_type: ESSENCE,
-        amount: boosted_amount(reward_strength(troops, limits) * SPIRE_ESSENCE_PERCENT / 100, troops.boosts, timestamp),
+        resource_type: ESSENCE, amount: boosted_amount(SPIRE_ESSENCE_AMOUNT, boosts, timestamp),
     }
 }
 

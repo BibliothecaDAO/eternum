@@ -342,6 +342,14 @@ pub(crate) fn discovery_guards(
 ) -> Span<Troops> {
     use crate::troops::{TroopTier, TroopType};
     let light_guard = category == crate::taxonomy::MINE_CATEGORY || category == crate::taxonomy::CAMP_CATEGORY;
+    let limits = rules.troop_limit_config;
+    let (lower, upper) = if light_guard {
+        (limits.light_guard_lower_bound, limits.light_guard_upper_bound)
+    } else {
+        (limits.heavy_guard_lower_bound, limits.heavy_guard_upper_bound)
+    };
+    let lower: u128 = lower.into();
+    let upper: u128 = upper.into();
     let three_guards = category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY
         || category == crate::taxonomy::BANK_CATEGORY;
     let count = if light_guard {
@@ -372,23 +380,11 @@ pub(crate) fn discovery_guards(
         } else {
             0
         };
-        let troops = discovery_guard(category, tier, guard_seed, rules, timestamp);
+        let count = lower + crate::random::range(guard_seed, 1, upper - lower + 1);
+        let troops = discovered_guard(category, tier, count, rules, timestamp);
         guards.append(troops);
     }
     guards.span()
-}
-
-pub(crate) fn discovery_guard(
-    category: crate::troops::TroopType,
-    tier: crate::troops::TroopTier,
-    seed: u256,
-    rules: crate::rules::SliceRules,
-    timestamp: u64,
-) -> Troops {
-    let lower: u128 = rules.troop_limit_config.mercenaries_troop_lower_bound.into();
-    let upper: u128 = rules.troop_limit_config.mercenaries_troop_upper_bound.into();
-    let count = lower + crate::random::range(seed, 1, upper - lower);
-    discovered_guard(category, tier, count, rules, timestamp)
 }
 
 // Camps, rifts and ruins are guarded by Knight beasts. Only stragglers draw among the three troop categories and

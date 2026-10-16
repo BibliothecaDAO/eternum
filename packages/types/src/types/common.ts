@@ -333,8 +333,11 @@ export interface Config {
       /** The most army strength an exploration reward pays on; a preset without it pays on the whole army. */
       exploreRewardStrengthCap?: number;
 
-      mercenariesTroopLowerBound: number;
-      mercenariesTroopUpperBound: number;
+      /** Inclusive discovery guard bounds, in whole troops. */
+      lightGuardLowerBound: number;
+      lightGuardUpperBound: number;
+      heavyGuardLowerBound: number;
+      heavyGuardUpperBound: number;
       settlementDeploymentCap: number;
       cityDeploymentCap: number;
       kingdomDeploymentCap: number;

@@ -36,8 +36,8 @@ const TROOP_EXPLORE_STAMINA_COST = 30;
 
 // Troop limit config
 const TROOP_GUARD_RESURRECTION_DELAY = 60 * 10; // 10 minutes
-const TROOP_MERCENARIES_TROOP_LOWER_BOUND = 800;
-const TROOP_MERCENARIES_TROOP_UPPER_BOUND = 1_600;
+const TROOP_GUARD_LOWER_BOUND = 800;
+const TROOP_GUARD_UPPER_BOUND = 1_599;
 
 // Army Strength: Army_Strength = Troop_Amount * Tier_Strength
 // Max_Army_Size = (Deployment_Cap / Tier_Strength) * Tier_Modifier
@@ -91,8 +91,10 @@ export const arenaTroopConfig: ConfigPatch = {
       startingGuard: ARENA_STARTING_TROOPS,
       campArmies: 1,
 
-      mercenariesTroopLowerBound: TROOP_MERCENARIES_TROOP_LOWER_BOUND,
-      mercenariesTroopUpperBound: TROOP_MERCENARIES_TROOP_UPPER_BOUND,
+      lightGuardLowerBound: TROOP_GUARD_LOWER_BOUND,
+      lightGuardUpperBound: TROOP_GUARD_UPPER_BOUND,
+      heavyGuardLowerBound: TROOP_GUARD_LOWER_BOUND,
+      heavyGuardUpperBound: TROOP_GUARD_UPPER_BOUND,
       settlementDeploymentCap: TROOP_SETTLEMENT_DEPLOYMENT_CAP,
       cityDeploymentCap: TROOP_CITY_DEPLOYMENT_CAP,
       kingdomDeploymentCap: TROOP_KINGDOM_DEPLOYMENT_CAP,
