@@ -1,3 +1,4 @@
+import { hasTileOccupier, isTileOccupierArmy } from "@bibliothecadao/eternum";
 import { useState, type ComponentProps } from "react";
 import { HexMarker } from "@/ui/design-system/hex-marker";
 import { resolveMinimapMarker } from "./minimap-markers";
@@ -7,7 +8,7 @@ import { HexMinimapView } from "./hex-minimap";
 type Props = ComponentProps<typeof HexMinimapView>;
 export function PaintedMinimapView(props: Props) {
   const [sector, setSector] = useState<number>();
-  const occupied = props.tiles.filter((tile) => tile.occupier_id && tile.occupier_id !== "0");
+  const occupied = props.tiles.filter((tile) => hasTileOccupier(tile.occupier_type ?? 0));
   let minCol = Infinity,
     minRow = Infinity,
     maxCol = -Infinity,
@@ -24,7 +25,7 @@ export function PaintedMinimapView(props: Props) {
     tile,
     owner:
       resolveMinimapMarker(tile, props.markers, props.ownedStructureIds, props.ownedExplorerIds)?.owner ?? "neutral",
-    army: !tile.occupier_is_structure,
+    army: isTileOccupierArmy(tile.occupier_type ?? 0),
     sector:
       Math.min(3, Math.floor(((tile.col - minCol) / width) * 4)) +
       4 * Math.min(2, Math.floor(((tile.row - minRow) / height) * 3)),
@@ -48,9 +49,9 @@ export function PaintedMinimapView(props: Props) {
           cameraDistance={sector === undefined ? props.cameraDistance : 8}
           cameraTargetHex={target ? { col: target.col, row: target.row } : props.cameraTargetHex}
           renderMarker={(tile, pixel) => {
-            if (!tile.occupier_id || tile.occupier_id === "0" || grouped) return <g />;
+            if (grouped) return <g />;
             const badge = resolveMinimapMarker(tile, props.markers, props.ownedStructureIds, props.ownedExplorerIds);
-            if (!badge) return <g />;
+            if (!badge) return null;
             return (
               <g data-entity-id={tile.occupier_id} data-marker-kind={badge.name} data-marker-hex-radius="7">
                 <HexMarker {...badge} x={pixel.x} y={pixel.y} radius={6.5} />

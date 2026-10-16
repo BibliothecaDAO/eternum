@@ -377,14 +377,16 @@ export const HexMinimapView = ({
     [dispatchCameraMove],
   );
 
+  const cameraCol = cameraTargetHex?.col;
+  const cameraRow = cameraTargetHex?.row;
   useEffect(() => {
-    if (!cameraTargetHex || isDraggingRef.current) return;
-    const col = cameraTargetHex.col - mapCenter;
-    const row = cameraTargetHex.row - mapCenter;
+    if (cameraCol === undefined || cameraRow === undefined || isDraggingRef.current) return;
+    const col = cameraCol - mapCenter;
+    const row = cameraRow - mapCenter;
     const centerPixel = offsetToPixel(col, row);
     followTargetRef.current = centerPixel;
     startFollowAnimation();
-  }, [cameraTargetHex, startFollowAnimation, mapCenter]);
+  }, [cameraCol, cameraRow, startFollowAnimation, mapCenter]);
 
   useEffect(() => {
     const svg = svgRef.current;
@@ -477,7 +479,7 @@ export const HexMinimapView = ({
               strokeWidth={0.6}
               fillOpacity={0.92}
             />
-            {occupierColor && !marker && !renderMarker && (
+            {occupierColor && !marker && customMarker == null && (
               <circle
                 cx={pixel.x}
                 cy={pixel.y}

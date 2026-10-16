@@ -1,4 +1,8 @@
-import { getStructureInfoFromTileOccupier, getExplorerInfoFromTileOccupier } from "@bibliothecadao/eternum";
+import {
+  hasTileOccupier,
+  getStructureInfoFromTileOccupier,
+  getExplorerInfoFromTileOccupier,
+} from "@bibliothecadao/eternum";
 import { TileOccupier } from "@bibliothecadao/types";
 import type { MinimapTile } from "./hex-minimap";
 import { configManager, getExplorerOwner } from "@bibliothecadao/eternum";
@@ -61,11 +65,16 @@ export function resolveMinimapMarker(
   ownedStructures: ReadonlySet<string> = new Set(),
   ownedArmies: ReadonlySet<string> = new Set(),
 ): MinimapMarker | null {
+  const type = tile.occupier_type ?? 0;
+  if (!hasTileOccupier(type)) return null;
   const id = tile.occupier_id ?? "";
-  const known = markers?.get(id);
+  const known = id && id !== "0" ? markers?.get(id) : undefined;
   if (known) return known;
   const owner = tile.ownerCue ?? (ownedStructures.has(id) || ownedArmies.has(id) ? "you" : "neutral");
-  const type = tile.occupier_type ?? 0;
+  if (type === TileOccupier.Spire || type === TileOccupier.DormantSpire) return { name: "spire", owner };
+  if (type === TileOccupier.Shrine) return { name: "shrine", owner };
+  if (type === TileOccupier.Well) return { name: "well", owner };
+  if (type === TileOccupier.ReservedHyperstructure) return { name: "hyperstructure", owner };
   if (type === TileOccupier.Chest) return { name: "chest", owner };
   const structure = getStructureInfoFromTileOccupier(type);
   if (structure)
