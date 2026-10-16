@@ -1,3 +1,7 @@
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { readNodeHealth } from "./node-health";
 import { describe, expect, it, vi } from "vitest";
 
 import { buildNativeDirectory, buildNativeLeaderboard } from "./native/read-models";
@@ -122,6 +126,20 @@ describe("herald HTTP", () => {
     // Startup replay counts belong to the herald_ready log line; health reports only live facts.
     expect(health).not.toHaveProperty("metrics");
     expect(health.node).toBeNull();
+    // A sample file holding something other than a sample is no sample: /health still answers, with node null.
+    const directory = mkdtempSync(join(tmpdir(), "node-health-"));
+    try {
+      writeFileSync(join(directory, "node-health.json"), "null");
+      const unreadable = createHeraldRequestHandler({
+        ...httpState,
+        nodeHealth: () => readNodeHealth(join(directory, "node-health.json")),
+      });
+      const answer = await unreadable(new Request("http://herald/health"));
+      expect(answer.status).toBe(200);
+      await expect(answer.json()).resolves.toMatchObject({ success: true, confirmed_block: 12, node: null });
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
     const sampled = { sampled_at: 1_800_000_000, memory_bytes: 1_900_000_000, host_memory_bytes: 96_000_000_000 };
     const withNode = createHeraldRequestHandler({ ...httpState, nodeHealth: () => sampled });
     await expect((await withNode(new Request("http://herald/health"))).json()).resolves.toMatchObject({

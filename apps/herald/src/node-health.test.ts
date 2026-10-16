@@ -24,4 +24,5 @@ it("reads the collector's sample, a stopped node's included, and reads nothing i
   expect(readNodeHealth(sampleFile("{"))).toBeNull();
   expect(readNodeHealth(sampleFile(JSON.stringify({ ...sample, memory_bytes: -1 })))).toBeNull();
   expect(readNodeHealth(sampleFile(JSON.stringify({ memory_bytes: 1 })))).toBeNull();
+  for (const notASample of ["null", "[]", '"sample"', "7"]) expect(readNodeHealth(sampleFile(notASample))).toBeNull();
 });
