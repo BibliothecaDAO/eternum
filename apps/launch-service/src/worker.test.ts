@@ -232,7 +232,7 @@ beforeAll(async () => {
         serviceBindings: {
           IDENTITY: { name: "directory", entrypoint: "ValueIdentity" },
           VALUE_RELAY: { name: "directory", entrypoint: "ValueRelay" },
-          IDENTITY_HTTP: (request) => {
+          IDENTITY_HTTP: (request: Request) => {
             if (new URL(request.url).pathname !== "/api/devices/bots") redirectRequests++;
             approvalRequests++;
             if (!freshAccount)
