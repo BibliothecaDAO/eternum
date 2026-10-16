@@ -1,4 +1,9 @@
-import { rowInGameSyncScope, type GameSyncScope } from "@bibliothecadao/eternum/game-sync-models";
+import {
+  isClientGameSyncModel,
+  isSharedGameSyncModel,
+  rowInGameSyncScope,
+  type GameSyncScope,
+} from "@bibliothecadao/eternum/game-sync-models";
 import type { PublishedBody, SnapshotOverlayDiff } from "./game-stream";
 import type { FoldDelete, FoldSet, GameSnapshot } from "./types";
 import type { HomeRing } from "./home-ring";
@@ -17,6 +22,8 @@ export class GameSubscription {
   private knownScope?: { scope: GameSyncScope; inputs: ReadonlySet<string>; validUntil: number };
   private interestOf?: { scope: GameSyncScope; keys: ReadonlySet<string> };
   private readonly persistentModels: ReadonlySet<string>;
+  /** The client models whose rows depend on the scope: every one but the shared configuration. */
+  private readonly scopedModels: readonly string[];
 
   constructor(
     private readonly gameId: string,
@@ -33,6 +40,9 @@ export class GameSubscription {
         .filter(({ definition }) => definition.deletion === "component")
         .map(({ definition }) => definition.name),
     );
+    this.scopedModels = registry.persistent
+      .map(({ definition }) => definition.name)
+      .filter((model) => isClientGameSyncModel(model) && !isSharedGameSyncModel(model));
   }
 
   public snapshot(): GameSnapshot {
@@ -102,15 +112,29 @@ export class GameSubscription {
     if (moved) this.knownScope = undefined;
   }
 
+  /**
+   * A scope change re-sends only the rows a scope decides: shared rows (the game's configuration) are in every scope,
+   * so the subscriber keeps the copies it holds and none is sent or deleted again.
+   */
   private replaceScope(body: Extract<PublishedBody, { type: "diff" | "head" }>, scope: GameSyncScope): PublishedBody[] {
-    const snapshot = this.scopeSnapshot(true, scope);
+    const snapshot = this.scopeSnapshot(true, scope, this.scopedModels);
     const set = snapshot.models.flatMap(({ model, rows }) => rows.map((row) => ({ ...row, model })));
     const next = new Set(set.map(identity));
-    const del = [...this.visible.entries()].filter(([key]) => !next.has(key)).map(([, row]) => row);
-    // Events are not snapshot rows; keep this receipt's scoped ephemera beside its atomic state update.
-    if (body.type === "diff")
+    const del = [...this.visible.entries()]
+      .filter(([key, row]) => !isSharedGameSyncModel(row.model) && !next.has(key))
+      .map(([, row]) => row);
+    if (body.type === "diff") {
+      // Events are not snapshot rows; keep this receipt's scoped ephemera beside its atomic state update. Shared rows
+      // this diff changes reach every scope, so they pass through as in any diff.
       for (const row of body.set)
-        if (!this.persistentModels.has(row.model) && rowInGameSyncScope(row.model, row.value, scope)) set.push(row);
+        if (
+          isSharedGameSyncModel(row.model) ||
+          (!this.persistentModels.has(row.model) && rowInGameSyncScope(row.model, row.value, scope))
+        )
+          set.push(row);
+      for (const row of body.del)
+        if (isSharedGameSyncModel(row.model) && this.visible.has(identity(row))) del.push(row);
+    }
     this.publishedScopeKey = scopeIdentity(scope);
     this.track(set, del);
     const diff: PublishedBody = {
@@ -138,8 +162,8 @@ export class GameSubscription {
   }
 
   /** The fold's snapshot for this scope, with the home-ring tiles the chain has not written yet. */
-  private scopeSnapshot(preconfirmed: boolean, scope: GameSyncScope): GameSnapshot {
-    const snapshot = this.fold(preconfirmed).subscriptionSnapshot(this.gameId, this.block(), scope);
+  private scopeSnapshot(preconfirmed: boolean, scope: GameSyncScope, only?: readonly string[]): GameSnapshot {
+    const snapshot = this.fold(preconfirmed).subscriptionSnapshot(this.gameId, this.block(), scope, only);
     const ring = (this.ring?.rows(this.gameId, scope, this.timestamp()) ?? []).filter((row) =>
       rowInGameSyncScope(row.model, row.value, scope),
     );

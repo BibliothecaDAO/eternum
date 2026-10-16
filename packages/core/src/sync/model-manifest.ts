@@ -45,6 +45,11 @@ export function isClientGameSyncModel(model: string): boolean {
   return syncRule(model) !== "internal";
 }
 
+/** A shared model's rows are in every subscription's scope, whatever the scope: a scope change never adds or drops one. */
+export function isSharedGameSyncModel(model: string): boolean {
+  return syncRule(model) === "shared";
+}
+
 /** Actor changes replace these rows atomically while retaining shared game configuration. */
 export function isScopedGameSyncModel(model: string, expedition: boolean): boolean {
   const rule = syncRule(model);

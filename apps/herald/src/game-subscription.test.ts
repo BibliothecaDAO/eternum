@@ -161,6 +161,57 @@ describe("GameSubscription", () => {
     ).toBe(true);
   });
 
+  it("re-sends only the rows a scope decides when the scope changes, keeping the shared rows the subscriber holds", () => {
+    const initial = expeditionScope();
+    let scope = initial;
+    const rules = { key: "rules", value: { game_id: "2" } };
+    const structure = { key: "2:9", value: { game_id: "2", entity_id: "9" } };
+    const subscriptionSnapshot = vi.fn((_game: string, _block: number, _scope: GameSyncScope, only?: string[]) => ({
+      confirmed_block: 1,
+      game_id: "2",
+      models: [
+        ...(only === undefined || only.includes("SliceRules") ? [{ model: "SliceRules", rows: [rules] }] : []),
+        { model: "Structure", rows: [structure] },
+      ],
+    }));
+    const fold = {
+      subscriptionScope: () => scope,
+      scopeValidUntil: () => 86_400,
+      subscriptionSnapshot,
+      currentRow: () => undefined,
+    } as unknown as WorldFold;
+    const subscription = new GameSubscription(
+      "2",
+      "0x111",
+      () => fold,
+      () => 1,
+      () => 100,
+      setup().decoder.registry,
+    );
+    subscription.snapshot();
+    expect(subscriptionSnapshot.mock.calls[0]![3]).toBeUndefined();
+
+    scope = { ...initial, expedition: { ...initial.expedition!, entities: new Set(["7", "70", "80"]) } };
+    // An army of the player's own entity moves the scope, so the next projection replaces it; the same diff changes a
+    // shared row, which passes through as in any diff.
+    const changedRules = { model: "SliceRules", key: "rules", value: { game_id: "2", changed: true } };
+    const [replaced] = subscription.project({
+      type: "diff",
+      block: 2,
+      preconfirmed: true,
+      set: [army("7", "70"), changedRules],
+      del: [],
+    });
+    const only = subscriptionSnapshot.mock.calls[1]![3]!;
+    expect(only).toContain("Structure");
+    expect(only).not.toContain("SliceRules");
+    expect(replaced).toMatchObject({ type: "diff", del: [] });
+    expect(replaced!.type === "diff" && replaced!.set.map(({ model, key }) => `${model}:${key}`)).toEqual([
+      "Structure:2:9",
+      "SliceRules:rules",
+    ]);
+  });
+
   it("shows a home-ring tile once, and the chain writing the same tile changes nothing until it differs", () => {
     const tile = (data: string) => ({
       model: "TileOpt",
