@@ -167,8 +167,7 @@ fn deploy_refuses_a_missing_neighbour_after_the_ring_is_materialized() {
     let (coord, _) = *ring.at(1);
     let key = crate::geometry::tile_key(game_id, coord);
     interact_with_state(
-        d.games,
-        || {
+        d.games, || {
             let state = crate::state::write();
             state.map.tiles.write((game_id, false, coord.x, coord.y), 0);
         },
@@ -238,28 +237,33 @@ pub fn assert_biomes_match_terrain(d: super::Deployment, game_id: u32, coords: S
 fn tile_presence_follows_terrain_or_occupancy_on_both_layers() {
     let d = super::registrar::setup();
     for alt in array![false, true] {
-        interact_with_state(d.games, || {
-            let key = crate::map::TileKey { game_id: 7, alt, col: 120, row: 130 };
-            assert_eq!(crate::logic::map::tile(key), None);
-            crate::logic::map::MapState::occupy(key, 99, crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER, false);
-            assert_eq!(
-                crate::logic::map::tile(key), Some(crate::map::TileOpt { data: crate::map::coordinate_bits(key) }),
-            );
-            crate::logic::map::MapState::vacate(key, 99);
-            assert_eq!(crate::logic::map::tile(key), None);
-            crate::logic::map::MapState::reveal(key, 11);
-            let revealed = crate::map::TileOpt { data: crate::map::coordinate_bits(key) + 11 * crate::map::BIOME_SCALE };
-            assert_eq!(crate::logic::map::tile(key), Some(revealed));
-            crate::logic::map::MapState::reserve_hyperstructure(key);
-            crate::logic::map::MapState::release_hyperstructure(key);
-            assert_eq!(crate::logic::map::tile(key), Some(revealed));
-            assert_eq!(crate::logic::map::occupancy(key), None);
-            crate::logic::map::MapState::mark_reward_extracted(key);
-            assert_eq!(
-                crate::logic::map::tile(key),
-                Some(crate::map::TileOpt { data: revealed.data + crate::map::REWARD_EXTRACTED_FLAG }),
-            );
-        });
+        interact_with_state(
+            d.games,
+            || {
+                let key = crate::map::TileKey { game_id: 7, alt, col: 120, row: 130 };
+                assert_eq!(crate::logic::map::tile(key), None);
+                crate::logic::map::MapState::occupy(key, 99, crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER, false);
+                assert_eq!(
+                    crate::logic::map::tile(key), Some(crate::map::TileOpt { data: crate::map::coordinate_bits(key) }),
+                );
+                crate::logic::map::MapState::vacate(key, 99);
+                assert_eq!(crate::logic::map::tile(key), None);
+                crate::logic::map::MapState::reveal(key, 11);
+                let revealed = crate::map::TileOpt {
+                    data: crate::map::coordinate_bits(key) + 11 * crate::map::BIOME_SCALE,
+                };
+                assert_eq!(crate::logic::map::tile(key), Some(revealed));
+                crate::logic::map::MapState::reserve_hyperstructure(key);
+                crate::logic::map::MapState::release_hyperstructure(key);
+                assert_eq!(crate::logic::map::tile(key), Some(revealed));
+                assert_eq!(crate::logic::map::occupancy(key), None);
+                crate::logic::map::MapState::mark_reward_extracted(key);
+                assert_eq!(
+                    crate::logic::map::tile(key),
+                    Some(crate::map::TileOpt { data: revealed.data + crate::map::REWARD_EXTRACTED_FLAG }),
+                );
+            },
+        );
     }
 }
 
@@ -267,9 +271,90 @@ fn tile_presence_follows_terrain_or_occupancy_on_both_layers() {
 #[should_panic(expected: "tile already revealed")]
 fn revealing_a_stored_tile_twice_is_refused() {
     let d = super::registrar::setup();
-    interact_with_state(d.games, || {
-        let key = crate::map::TileKey { game_id: 7, alt: false, col: 120, row: 130 };
-        crate::logic::map::MapState::reveal(key, 11);
-        crate::logic::map::MapState::reveal(key, 12);
-    });
+    interact_with_state(
+        d.games,
+        || {
+            let key = crate::map::TileKey { game_id: 7, alt: false, col: 120, row: 130 };
+            crate::logic::map::MapState::reveal(key, 11);
+            crate::logic::map::MapState::reveal(key, 12);
+        },
+    );
+}
+
+#[test]
+fn reverse_positions_preserve_origin_full_coordinates_and_clear_on_vacate() {
+    let d = super::registrar::setup();
+    interact_with_state(
+        d.games,
+        || {
+            let entity = ResourceKey { game_id: 7, entity_id: 99 };
+            assert_eq!(crate::logic::map::entity_coord(entity), None);
+            for alt in array![false, true] {
+                for x in array![0_u32, 1, 0xffffffff] {
+                    for y in array![0_u32, 1, 0xffffffff] {
+                        let coord = crate::troops::Coord { alt, x, y };
+                        let key = crate::geometry::tile_key(entity.game_id, coord);
+                        crate::logic::map::MapState::occupy(
+                            key, entity.entity_id, crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER, false,
+                        );
+                        assert_eq!(crate::logic::map::entity_coord(entity), Some(coord));
+                        crate::logic::map::MapState::vacate(key, entity.entity_id);
+                        assert_eq!(crate::logic::map::entity_coord(entity), None);
+                        assert_eq!(crate::logic::map::occupancy(key), None);
+                    }
+                }
+            }
+            let surface = crate::troops::Coord { alt: false, x: 0, y: 0 };
+            let alternate = crate::troops::Coord { alt: true, x: 0xffffffff, y: 0xffffffff };
+            crate::logic::map::MapState::occupy(
+                crate::geometry::tile_key(entity.game_id, surface),
+                entity.entity_id,
+                crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER,
+                false,
+            );
+            crate::logic::map::MapState::relocate_fixture(
+                entity, alternate, crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER, false,
+            );
+            assert_eq!(crate::logic::map::entity_coord(entity), Some(alternate));
+            assert_eq!(crate::logic::map::occupancy(crate::geometry::tile_key(entity.game_id, surface)), None);
+        },
+    );
+}
+
+#[test]
+fn tile_only_occupants_and_reservations_have_no_reverse_position() {
+    let d = super::registrar::setup();
+    interact_with_state(
+        d.games,
+        || {
+            let key = crate::map::TileKey { game_id: 7, alt: false, col: 120, row: 130 };
+            for category in array![crate::taxonomy::CHEST_OCCUPIER, crate::taxonomy::SPIRE_OCCUPIER] {
+                crate::logic::map::MapState::occupy(key, 99, category, false);
+                assert_eq!(crate::logic::map::entity_coord(ResourceKey { game_id: 7, entity_id: 99 }), None);
+                assert!(crate::logic::map::occupancy(key).is_some());
+                crate::logic::map::MapState::vacate(key, 99);
+            }
+            crate::logic::map::MapState::reveal(key, 11);
+            crate::logic::map::MapState::reserve_hyperstructure(key);
+            assert_eq!(crate::logic::map::entity_coord(ResourceKey { game_id: 7, entity_id: 0 }), None);
+            crate::logic::map::MapState::release_hyperstructure(key);
+            assert_eq!(crate::logic::map::occupancy(key), None);
+        },
+    );
+}
+
+#[test]
+#[should_panic(expected: "entity already placed")]
+fn an_entity_at_the_origin_cannot_be_placed_twice() {
+    let d = super::registrar::setup();
+    interact_with_state(
+        d.games,
+        || {
+            let origin = crate::map::TileKey { game_id: 7, alt: false, col: 0, row: 0 };
+            crate::logic::map::MapState::occupy(origin, 99, crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER, false);
+            crate::logic::map::MapState::occupy(
+                crate::map::TileKey { col: 1, ..origin }, 99, crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER, false,
+            );
+        },
+    );
 }

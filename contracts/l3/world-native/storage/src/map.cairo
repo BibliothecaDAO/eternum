@@ -4,7 +4,7 @@ use starknet::storage::Map;
 pub struct MapStateStorage {
     pub tiles: Map<(u32, bool, u32, u32), u128>,
     pub occupancy: Map<(u32, bool, u32, u32), u128>,
-    pub entity_tiles: Map<(u32, u64), Option<(bool, u32, u32)>>,
+    pub entity_tiles: Map<(u32, u64), u128>,
 }
 
 #[starknet::storage_node]

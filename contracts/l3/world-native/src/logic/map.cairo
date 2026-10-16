@@ -31,14 +31,7 @@ pub fn occupancy(key: TileKey) -> Option<crate::map::TileOccupancy> {
 
 pub fn entity_coord(key: crate::resources::ResourceKey) -> Option<crate::troops::Coord> {
     let state = crate::state::read();
-    state
-        .map
-        .entity_tiles
-        .read((key.game_id, key.entity_id))
-        .map(|tile| {
-            let (alt, x, y) = tile;
-            crate::troops::Coord { alt, x, y }
-        })
+    crate::map::position_from_bits(state.map.entity_tiles.read((key.game_id, key.entity_id)))
 }
 
 pub fn tile(key: TileKey) -> Option<TileOpt> {
@@ -163,15 +156,19 @@ pub mod MapState {
         let previous = crate::logic::map::occupancy(key);
         if let Some(occupier) = previous {
             if has_single_position(occupier) {
-                state.map.entity_tiles.write((key.game_id, occupier.entity_id), None);
+                state.map.entity_tiles.write((key.game_id, occupier.entity_id), 0);
             }
         }
         if let Some(occupier) = next {
             if has_single_position(occupier) {
-                assert!(
-                    state.map.entity_tiles.read((key.game_id, occupier.entity_id)).is_none(), "entity already placed",
-                );
-                state.map.entity_tiles.write((key.game_id, occupier.entity_id), Some((key.alt, key.col, key.row)));
+                assert!(state.map.entity_tiles.read((key.game_id, occupier.entity_id)) == 0, "entity already placed");
+                state
+                    .map
+                    .entity_tiles
+                    .write(
+                        (key.game_id, occupier.entity_id),
+                        crate::map::position_bits(crate::troops::Coord { alt: key.alt, x: key.col, y: key.row }),
+                    );
             }
         }
         state
