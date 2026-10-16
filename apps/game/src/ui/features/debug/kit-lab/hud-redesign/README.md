@@ -66,8 +66,9 @@ cover spectator identity, native HUD/minimap, no command buttons or order sends,
 and standings below the phone header. It closes the isolated context on every exit. These are visual/interaction checks;
 the client `playtest` command owns performance runs.
 
-In a live spectator game, Settings and Log are in the header; on phone, Holdings opens the standings and Map restores
-the map. Owned resources, automation and command bubbles require a seated player and are not covered by Watch proof.
+In a live spectator game, Settings is in the header and Log sits beside Chat at the bottom right. On phone, Log and Chat
+are on Map above the command bubbles; Holdings opens the standings and Map restores the map. Owned resources, automation
+and command bubbles require a seated player and are not covered by Watch proof.
 
 The coverage gate uses the clipped union of visible frame rectangles over 1,296,000 pixels. Empty dock/header gaps,
 shadows and lab controls do not count; each floating command's full button rectangle does count, conservatively.

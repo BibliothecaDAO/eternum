@@ -26,15 +26,14 @@ effects are protected against duplicate execution.
 ## Tests and generated artifacts
 
 Use the versions in `contracts/l3/world-native/.tool-versions` for native contracts and the protocol package. The native
-suite uses Foundry's supported partition controls through its existing test command:
+gate runs once on the final tree, from the repository root:
 
 ```sh
-cd contracts/l3/world-native
-scarb fmt
-scarb build
-scarb test
-bun scripts/generate-schema.mjs --check
+bash contracts/l3/check-native.sh
 ```
+
+It builds the contracts, checks class sizes and ABI/schema/format drift, and runs the native suite with its pinned
+Foundry toolchain.
 
 When a declaration changes, run `scarb run schema` and review the generated ABI, row and command changes together with
 their callers. Test expected gameplay values and rejections directly. Every class must stay below 75,366 CASM felts for

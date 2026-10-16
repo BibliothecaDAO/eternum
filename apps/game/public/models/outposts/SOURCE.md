@@ -1,19 +1,20 @@
 # Outposts
 
-The approved camp, longhouse village, stragglers, shrine, well and ruin use packed Blender sources in
+The approved camp, Canvas & Thatch village, stragglers, shrine, well and ruin use packed Blender sources in
 [asset-sources/outposts](../../../asset-sources/outposts/SOURCE.md).
 
-| Runtime file   | Source                  | Triangles | Primitives |   Bytes |
-| -------------- | ----------------------- | --------: | ---------: | ------: |
-| camp.glb       | camp.blend              |     3,047 |          4 |  91,312 |
-| village.glb    | village-longhouse.blend |     5,886 |          4 | 115,500 |
-| stragglers.glb | stragglers.blend        |     2,963 |          5 |  93,592 |
-| shrine.glb     | shrine.blend            |     1,816 |          3 |  73,524 |
-| well.glb       | well.blend              |     5,068 |          3 | 103,684 |
-| ruin.glb       | ruin.blend              |      3752 |          3 |  101536 |
+| Runtime file   | Source                      | Triangles | Primitives |   Bytes |
+| -------------- | --------------------------- | --------: | ---------: | ------: |
+| camp.glb       | camp.blend                  |     3,047 |          4 |  91,312 |
+| village.glb    | village-canvas-thatch.blend |     6,149 |          3 | 213,200 |
+| stragglers.glb | stragglers.blend            |     2,963 |          5 |  93,592 |
+| shrine.glb     | shrine.blend                |     1,816 |          3 |  73,524 |
+| well.glb       | well.blend                  |     5,068 |          3 | 103,684 |
+| ruin.glb       | ruin.blend                  |      3752 |          3 |  101536 |
 
-These are decoded asset counts, not frame measurements. Each has two packed textures: 480² contact shading and 128²
-normal detail. ETC1S color, UASTC normals and Draco geometry use the existing outpost pipeline.
+These are decoded asset counts, not frame measurements. The village has a 480² painted color atlas, 240² tangent normal
+atlas and vertex contact shading. The other outposts use 480² contact shading and 128² normal detail. ETC1S color, UASTC
+normals and Draco geometry use the existing outpost pipeline.
 
 Blender Z=0 exports as glTF Y=0, at the sampled terrain top; scale is one inside a radius-one pointy hex. Production
 transforms are identity. All six are static. The well has modeled water ripples and highlights; MapSiteManager does not

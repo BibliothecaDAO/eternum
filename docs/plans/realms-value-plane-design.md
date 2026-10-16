@@ -1,9 +1,9 @@
 # Realms value plane — both formats on the L2/L3 split
 
-Design, 2026-08-29. Written from a repo baseline taken the same day (every number below cites its file); it extends
-section B of `realms-phase-2-brief.md` from "Blitz ledger" to the whole value plane — Blitz and Eternum, names,
-collectibles, bridge, AMM, prediction market — so the tuning pass and the contract work start from one design instead of
-five. Nothing here is built yet; the owner decisions it needs are listed at the end.
+Design, 2026-08-29. Written from a repo baseline taken the same day (every number below cites its file); it extends the
+historical phase-2 design from "Blitz ledger" to the whole value plane — Blitz and Eternum, names, collectibles, bridge,
+AMM, prediction market — so the tuning pass and the contract work start from one design instead of five. Nothing here is
+built yet; the owner decisions it needs are listed at the end.
 
 ## 0. What the baseline actually is (facts that shape the design)
 

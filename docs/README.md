@@ -16,40 +16,41 @@ Read [`AGENTS.md`](../AGENTS.md) first. It is the coding and review standard for
 
 - Contributing: [`CONTRIBUTING.md`](../CONTRIBUTING.md)
 - Chain and box infrastructure (the self-hosted Madara L3): [`deploy/athanor/README.md`](../deploy/athanor/README.md)
-- Game launch and balance config: [`config/deployer/clean/README.md`](../config/deployer/clean/README.md) and
-  [`config/README.md`](../config/README.md)
+- Environment setup, deploy and season operations: [operator runbook](../deploy/first/README.md)
+- Balance sources and generated presets: [`config/source`](../config/source) and
+  [`config/generated`](../config/generated); regenerate with `pnpm run config:generate`
 - Herald (block folding, snapshots, ordered diffs): [`apps/herald/README.md`](../apps/herald/README.md)
 - Launch service: [`apps/launch-service/README.md`](../apps/launch-service/README.md)
 - Contracts: [`contracts/l3/world-native`](../contracts/l3/world-native) (native game domains) and
   [`contracts/l2`](../contracts/l2) (ledger, tokens, collectibles)
 - Packages and SDK: [`packages/README.md`](../packages/README.md)
-- Game client: [`apps/game/README.md`](../apps/game/README.md) and
-  [`apps/game/src/three/README.md`](../apps/game/src/three/README.md)
+- Game client: [setup](../apps/game/README.md), [renderer](../apps/game/src/three/README.md),
+  [features and connected proofs](../apps/game/FEATURE-MAP.md) and [lab tools](../apps/game/src/lab/README.md)
 
-### Architecture (`docs/architecture`)
+### Architecture and verification
 
-- [AI-first harness architecture](./architecture/ai-first-harness-architecture.md)
+- [Workflow responsibilities](./architecture/ai-first-harness-architecture.md)
 - [Herald fold and recovery](../apps/herald/README.md) and [shared native client](../packages/core/readme.md)
-- [Procedural character pipeline](./architecture/procedural-character-pipeline.md): model onboarding, gym evaluation,
-  game promotion. The `procedural-*-research.md` files beside it are the research behind it.
+- [Procedural character pipeline](./architecture/procedural-character-pipeline.md): model onboarding and promotion
+- [Motion evaluation](./architecture/animation-evaluation.md),
+  [frame inspector](./architecture/procedural-animation-frame-inspector.md) and
+  [character performance gate](./architecture/procedural-character-performance-evaluation.md)
+- [Native toolchain](../contracts/l3/world-native/TOOLCHAIN.md); final-tree validation:
+  `bash contracts/l3/check-native.sh`
+- [AMMv2 contracts and fees](../contracts/l2/ammv2/README.md)
 
-### Plans (`docs/plans`)
+### Retained design work
 
-Implementation briefs. Each item states its evidence, the fix, and a verifiable gate.
+These documents retain unresolved scope or decisions. They are historical proposals, not current deployment or player
+instructions; consult the component guides above for shipped behavior.
 
-- [Realms phase 1](./plans/realms-phase-1-brief.md): one repo, one login, Madara without Cartridge
-- [Realms phase 2](./plans/realms-phase-2-brief.md): own the data plane, take value seriously
-- [Realms phase 3, backend](./plans/realms-phase-3-backend-brief.md) with the
-  [value-plane design](./plans/realms-value-plane-design.md)
-- [Realms game client](./plans/realms-client-brief.md): the 96-player client rebuild and its ledger
-- [Realms web app](./plans/realms-webapp-brief.md): one app for everything but the map
-
-Codex briefs for in-flight work sit beside them as `*-codex-brief.md`. A brief is deleted once its gates are closed and
-what it decided lives in code or in an architecture doc.
-
-### Other
-
-- [The Agora, the Eternum AMM](./agora.md)
+- [Hired-player architecture](./plans/hired-agents-architecture-brief.md) and
+  [milestones](./plans/hired-agents-milestones.md)
+- [Mobile scope](./plans/mobile-client-scope.md)
+- Chat scope remains in the [retained plans directory](./plans).
+- [Value-plane decisions](./plans/realms-value-plane-design.md) and
+  [open audit dispositions](./plans/value-plane-loop-audit-2026-08-31.md)
+- [Character source pipeline decisions](./architecture/procedural-character-model-generation-pipeline-research.md)
 
 ## Running the docs site locally
 

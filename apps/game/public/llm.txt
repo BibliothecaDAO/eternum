@@ -125,7 +125,7 @@ divided into six 'phases'.
 * **Simplified Food**: Only 1 food type - Wheat.
 * **Essence**: New material found by exploring the map and interacting with World Structures, required for some
   production, buildings and upgrades.
-* **Labor**: Produced by each Realm at a fixed rate, required for all construction and 'labor mode' production.
+* **Labor**: Produced by each Realm at a fixed rate, required for construction.
 * **Donkeys**: Required for moving materials around the world, essential for logistics.
 * **Troops**: 3 types (Knights, Crossbowmen, Paladins), 3 tiers (T1, T2, T3).
 * **Restricted Bridging**: Players may only bridge Relics into the game (not out). Other materials can't be bridged.
@@ -148,7 +148,7 @@ divided into six 'phases'.
 
 * **Production Types**:
   * **Food**: Wheat can be produced without inputs.
-  * **Resources**: Require combinations of other resources (resource mode) or labor (labor mode).
+  * **Resources**: Require combinations of other resources.
   * **Labor**: Produced by the Keep at a steady rate.
   * **Troops**: Essential for exploration and warfare, with production of higher tier troops requiring lower tier troops
     as inputs.
@@ -341,8 +341,8 @@ and donkeys. This is not to be confused with 'resources', which specifically ref
 ## Cost of Production
 
 With the exception of food and labor, nothing in Blitz is produced for free; every unit of production demands an
-input—food, labor, resources, or some combination of the three. Lords must consider these costs and effectively balance
-production to ensure they can maximize their Score within the 60-minute game window.
+input—food, resources, or a combination of the two. Lords must consider these costs and effectively balance production
+to ensure they can maximize their Score within the 60-minute game window.
 
 ## Travel
 
@@ -966,7 +966,7 @@ meta: {
 * [Buildings](/blitz/realms/buildings): Building construction costs updated; labor vs. resource requirements now
   explicitly documented (standard/simple → resource/labor).
 * [Realm Upgrades](/blitz/realms/realm): Reduced labor, resource, and essence requirements.
-* [Army Size](blitz/military/armies): Maximum army size reduced from 100,000 to 30,000.
+* [Army Size](/blitz/military/armies): Maximum army size reduced from 100,000 to 30,000.
 * Exploration & Rewards: Relic Crates grant 1,000 VP; minor movement/map clarifications; troop exploration bundles
   reduced (2,500 → 1,000). See [World Map & Movement](/blitz/worldmap-movement/movement) and [Victory](/blitz/victory).
 * Discovery Rates: Essence Rifts and Camps discovery chances adjusted from 1/20 to 1/30. See
@@ -1136,15 +1136,14 @@ effects are protected against duplicate execution.
 ## Tests and generated artifacts
 
 Use the versions in `contracts/l3/world-native/.tool-versions` for native contracts and the protocol package. The native
-suite uses Foundry's supported partition controls through its existing test command:
+gate runs once on the final tree, from the repository root:
 
 ```sh
-cd contracts/l3/world-native
-scarb fmt
-scarb build
-scarb test
-bun scripts/generate-schema.mjs --check
+bash contracts/l3/check-native.sh
 ```
+
+It builds the contracts, checks class sizes and ABI/schema/format drift, and runs the native suite with its pinned
+Foundry toolchain.
 
 When a declaration changes, run `scarb run schema` and review the generated ABI, row and command changes together with
 their callers. Test expected gameplay values and rejections directly. Every class must stay below 75,366 CASM felts for
@@ -1202,7 +1201,13 @@ pnpm run format
 pnpm run knip
 ```
 
-Run `scarb fmt`, `scarb build` and `scarb test` from `contracts/l3/world-native` for native contract changes. The
+For native contract changes, run the combined gate once on the final tree:
+
+```sh
+bash contracts/l3/check-native.sh
+```
+
+It checks the build, class sizes, ABI, schema and format drift, and the native test suite. The
 [contract guide](/development/contracts) covers generated artifacts and domain rules.
 
 ## Project structure
@@ -3086,9 +3091,9 @@ recomputing the entire plan from those percentages every loop.
 **Key Features:**
 
 * **Every minute**: the client starts up production plans for any owned entity with a valid setup.
-* **Per-resource percentages**: Each tracked resource has sliders for complex and simple recipes.
-* **Presets**: “Labor”, “Resource”, “Custom”, and “Idle” presets instantly distribute percentages across every resource
-  with active buildings, respecting entity type and recipe availability.
+* **Per-resource percentages**: Each tracked resource has a slider for resource recipes.
+* **Presets**: “Resource” and “Idle” presets instantly distribute percentages across every resource with active
+  buildings, respecting entity type and recipe availability.
 * **Supply margins**: Inputs are capped at 90% of the live balance.
 * **Local persistence**: Configurations are saved per game in your browser so refreshes keep the latest sliders and
   last-run summaries.
@@ -3101,7 +3106,7 @@ Production automation runs a global loop that goes through every owned realm and
 2. **Resource scan**: Any resource with buildings or an active recipe is auto-added to bootstrap production, even if you
    never touch the sliders.
 3. **Budgeting**: Each resource receives 90% of its current balance as a budget. Sliders dictate how much of that budget
-   the loop can spend on complex vs. simple recipes.
+   the loop can spend on resource recipes.
 4. **Plan generation**: Recipes reserve inputs according to your percentages and their per-cycle requirements. Recipes
    without enough inputs are skipped and reported in the summary.
 5. **Execution**: If at least one recipe has non-zero cycles, the automation is submitted for that entity.
@@ -3115,29 +3120,20 @@ Production automation runs a global loop that goes through every owned realm and
 
 ## Production Types
 
-There are still two production paths, now governed by slider percentages:
-
-1. **Complex (Resource → Resource)**:
-   * Burns existing resources to craft another according to the `Resource → Resource` slider.
-   * Example: Spend Wood + Coal to produce Copper.
-2. **Simple (Labor → Resource)**:
-   * Spends Labor to produce a resource using the `Labor → Resource` slider.
-   * Example: Spending Labor to produce Coal.
+Blitz automation uses the `Resource → Resource` slider to spend existing resources according to each recipe. For
+example, spend Wood + Coal to produce Copper.
 
 ## Allocation & Execution Rules
 
 * **Percentages replace orders**: Every loop recomputes usage based on sliders, entity type, and building activity.
-* **Per-resource budgets**: Complex and labor sliders consume independent portions of the 90% resource budget; zeroing a
-  slider skips that recipe.
+* **Per-resource budgets**: Resource sliders allocate the 90% resource budget; zeroing a slider skips that recipe.
 * **5% increments & clamping**: Sliders move in 5% increments and stay within the 0–90% range.
 * **Auto-managed lists**: Any resource with active production is auto-added so presets work the moment new buildings are
   created. Removing the building later prunes the entry automatically.
 
 ## Presets
 
-* `Labor:` Spreads up to 10% labor burn across eligible outputs while respecting shared inputs.
-* `Resource:` Pushes complex crafting to the ceiling.
-* `Custom:` Combines resource + labor preset.
+* `Resource:` Sets resource production to the maximum allocation.
 * `Idle:` Drops every slider to 0%, effectively pausing production for that entity.
 
 ## Managing Automation Orders (UI)
@@ -3148,9 +3144,7 @@ There are still two production paths, now governed by slider percentages:
 2. **Click modify** to open up the production setup.
 3. **Adjust percentages**:
    * `Resource → Resource`: How much of that resource’s complex inputs to burn per loop.
-   * `Labor → Resource`: How much labor-based production to run (disabled for Donkeys and military-only recipes).
-4. **Apply presets** (optional): Labor, Resource, Custom, and Idle presets instantly redistribute sliders across the
-   entity.
+4. **Apply presets** (optional): Resource and Idle presets instantly redistribute sliders across the entity.
 5. **Repeat for other entities**. Changes save instantly and feed into the next global loop.
 
 #### Auto-balancing & Maintenance
@@ -3163,7 +3157,7 @@ There are still two production paths, now governed by slider percentages:
 
 You can pause production at different levels:
 
-1. **Individual Resource**: Set both sliders to 0% for a single resource.
+1. **Individual Resource**: Set the slider to 0% for a single resource.
 2. **Entity-wide**: Apply the Idle preset to drop all sliders to 0% until you are ready to resume.
 
 ## Execution Summaries
@@ -3172,10 +3166,10 @@ After each loop the realm panel shows:
 
 * **Timestamp** of the last run.
 * **Produced/Consumed totals** grouped by resource so you can see net flows.
-* **Skipped recipes** plus reasons (missing inputs, missing labor recipe, etc.).
-* **Total cycles** executed across complex and simple recipes.
+* **Skipped recipes** plus reasons (missing inputs, missing recipe, etc.).
+* **Total cycles** executed across resource recipes.
 
-Use this view to verify slider settings or debug why a resource isn’t running (e.g., depleted labor inputs).
+Use this view to verify slider settings or debug why a resource isn’t running (e.g., depleted resource inputs).
 
 ## Important Considerations
 
@@ -3194,8 +3188,7 @@ Use this view to verify slider settings or debug why a resource isn’t running 
 
 1. **Start conservative**: Begin with low percentages to watch how inputs drain.
 2. **Monitor early loops**: Use execution summaries after the first few runs to confirm cycle counts and skips.
-3. **Lean on presets**: Labor/Resource/Idle presets are the fastest way to reorient an entity without endless slider
-   drags.
+3. **Lean on presets**: Resource/Idle presets are the fastest way to reorient an entity without endless slider drags.
 
 
 
@@ -3227,33 +3220,17 @@ meta: {}
 import {
   BlitzDonkeyProduction,
   BlitzStandardTroopProduction,
-  BlitzSimpleTroopProduction,
-  BlitzSimpleResourceProduction,
   BlitzStandardResourceProduction,
-  BlitzLaborProduction,
 } from "@/components/blitz-components/ResourceProduction";
 
 # Production
 
-## Resource Mode vs. Labor Mode
+## Resource Production
 
-As is the case for building construction, Lords can choose between resource-based and labor-based production systems
-when deciding how they wish to produce their materials. This can be done by selecting the appropriate panel when making
-an order in the production screen.
+Blitz uses resource recipes for resource and troop production. Producing resources or troops from Labor is disabled.
 
-*Note: Lords must commit the full material requirements to the production order upfront. The output is then produced at
-a given rate per second.*
-
-### Resource Mode
-
-The classic production system—every resource and troop production order requires food and a combination of other
-resources as inputs. As with buildings, resource mode is the more complex but efficient way to produce materials.
-
-### Labor Mode
-
-Labor mode reduces the requirements for a production order to food and labor. This is, once again, less efficient in
-both time and resources—but it allows Lords to produce resources on their Realm even if they haven't yet acquired the
-input resources required for resource mode production.
+Lords must commit the full material requirements to the production order upfront. The output is then produced at a given
+rate per second.
 
 ## Materials Production
 
@@ -3265,31 +3242,23 @@ produce food indefinitely. Each Farm produces 6 Wheat per second.
 ### Resources
 
 The 9 resources found in Blitz are the backbone of the economy. Producing one resource requires the input of two other
-resources (resource mode), or labor (labor mode). Resources are also the main components in building construction and
-troop production - so mastery of these assets is key to success and security.
+resources. Resources are also the main components in building construction and troop production - so mastery of these
+assets is key to success and security.
 
 ![Produce from building](/gifs/produce-from-building-click.gif)
-
-<BlitzSimpleResourceProduction />
 
 <BlitzStandardResourceProduction />
 
 ### Labor
 
-Labor is the primary input for construction and production in simple mode, but is also required in resource mode for
-building construction and Realm upgrades. It is produced automatically by the Keep, creating a steady stream at a fixed
-rate of 2 labor per second.
+Labor is used for building construction and Realm upgrades. It is produced automatically by the Keep, creating a steady
+stream at a fixed rate of 2 labor per second.
 
 ### Troops
 
 Troops are essential for exploration, defending your lands and conquering your enemies. Every Lord will be required to
 produce troops to ensure they remain a relevant force throughout the game. Three troop tiers are available, each
 requiring a combination of food, rare resources, and troops of the previous tier as input for production.
-
-*Note: Only T1 troops can be produced in both resource and labor mode. T2 and T3 troops can only be produced in resource
-mode.*
-
-<BlitzSimpleTroopProduction />
 
 <BlitzStandardTroopProduction />
 
@@ -3309,7 +3278,7 @@ steady stream of food to produce.
 file: docs/pages/blitz/materials/relics.mdx
 meta: {}
 
-import RelicTable from "@/components/blitz-components/RelicTable";
+import RelicTable, { RelicPackTable } from "@/components/blitz-components/RelicTable";
 
 # Relics
 
@@ -3322,13 +3291,16 @@ Timed relic effects last **3 Eternum Days (18 minutes)**.
 
 There are currently nine relic types, each with two levels. A level 2 relic is simply a more powerful version of the
 level 1 counterpart. Every relic type has a distinct effect, which determines whether it can be activated by a Realm or
-an army. To activate a relic and gain the desired effect, the army or Realm must pay an amount of Essence. These
-details, as well as the discovery chance of each relic in a Relic Crate, are defined in the table below:
+an army. To activate a relic and gain the desired effect, the army or Realm must pay an amount of Essence. These details
+are defined in the table below:
 
 <RelicTable />
 
-Each Relic Crate yields three relics. For every crate, the chances in the table above are rolled three separate times,
-so you may receive duplicates in a single crate.
+Each Relic Crate holds one themed pack of three relics, chosen when the crate appears, so a crate's tile names its pack
+before anyone opens it. The army that opens the crate keeps the army relics; the Realm relics go to that army's home
+Realm.
+
+<RelicPackTable />
 
 *Note: Relics are still under development. Initial versions of Blitz will limit their scope to within the game instance.
 However, it is expected that relics will have a much broader presence and impact in the Realms ecosystem. Keep an eye
@@ -3356,7 +3328,7 @@ Materials encompass all transportable assets in Blitz, including:
 * **Food**: Essential Wheat that fuels production and troop movement.
 * **Troops**: Military units (Knights, Crossbowmen, Paladins) that can be assigned to armies.
 * **Donkeys**: One-time-use transport units required for moving materials across the world.
-* **Labor**: A special material that enables construction and production.
+* **Labor**: A special material that enables construction.
 * **Essence**: A new strategic resource found through exploration and required for building, production, and upgrades.
 
 While all materials can be transported within the game, **no materials can be bridged out** of Blitz.
@@ -3426,8 +3398,7 @@ are consumed after a single journey.
   <ResourceIcon name="Labor" id={ResourcesIds.Labor} />
 </div>
 
-Labor is a key component in the construction of all buildings and required for 'labor mode' production. In Blitz, it is
-produced freely in the Keep of each Realm.
+Labor is a key component in building construction. In Blitz, it is produced freely in the Keep of each Realm.
 
 ### Essence
 
@@ -3772,7 +3743,7 @@ available for construction in resource mode.
     buildingType={28}
     description={[
   "Produces T1 Knights",
-  "Available in both labor and resource modes"
+  "Can be constructed in both labor and resource modes"
 ]}
     laborCosts={[
   { resource: ResourcesIds.Labor, amount: 1200 } // Labor
@@ -3828,7 +3799,7 @@ available for construction in resource mode.
     title="Archery Range (T1)"
     image="/images/buildings/construction/archery.png"
     buildingType={31}
-    description={["Produces T1 Crossbowmen", "Available in both labor and resource modes"]}
+    description={["Produces T1 Crossbowmen", "Can be constructed in both labor and resource modes"]}
     laborCosts={[
   { resource: ResourcesIds.Labor, amount: 1200 }, // Labor
 ]}
@@ -3883,7 +3854,7 @@ available for construction in resource mode.
     title="Stables (T1)"
     image="/images/buildings/construction/stable.png"
     buildingType={34}
-    description={["Produces T1 Paladins", "Available in both labor and resource modes"]}
+    description={["Produces T1 Paladins", "Can be constructed in both labor and resource modes"]}
     laborCosts={[
   { resource: ResourcesIds.Labor, amount: 1200 }, // Labor
 ]}
@@ -4175,7 +4146,7 @@ troops within the army. The table below details biome-specific stamina costs for
 <BiomeStamina />
 
 Troops also require Wheat to move. This is consumed from their home Realm when a movement order is executed. Each unit
-consumes **0.03** Wheat to traverse or explore a new tile.
+consumes **0.05** Wheat to move into an explored tile or **0.10** Wheat to explore a new tile.
 
 ## Exploring
 
@@ -4188,9 +4159,15 @@ the known boundaries of the world. If the newly explored hex contains a World St
 automatically be pushed back to the hex from which they started without any additional stamina penalty.
 
 During exploration, armies gather any valuables they encounter, receiving the goods directly into their inventory. The
-reward chances for any explored hex are as follows:
+find depends on chance and its size on the army: a reveal pays a share of the army's strength, its troop count times its
+tier's strength (1 for T1, 3 for T2, 9 for T3), capped at **3,000 reward strength** in Blitz. An Exploration relic adds
+its bonus after that cap. The reward chances for any explored hex are as follows:
 
 <ExplorationRewards />
+
+One explored hex in two hundred holds a dormant spire. Its finder's realm receives Essence equal to three times the
+army's capped reward strength, once, with an active Exploration relic's bonus applied afterward. The spire then stands
+on its hex for the rest of the game, blocking it and doing nothing else.
 
 Exploration rewards are automatically sent back to the home Realm of the exploring army, so armies aren't limited by
 their carry capacity in Blitz. However, the mist is a scary place and troops don't like to delve into it alone, so a
