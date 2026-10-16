@@ -76,7 +76,7 @@ export class HexHoverLabel {
       "border",
       "border-gold/40",
       "text-gold",
-      "text-sm",
+      "text-xs",
       "shadow-md",
       "backdrop-blur-sm",
       "-translate-x-1/2",

@@ -321,7 +321,7 @@ const MyLiquidity = ({
         <div>{divideByPrecision(lordsAmount).toLocaleString()}</div>
         <ResourceIcon resource="Lords" size="sm" />
         {playerLiquidityInfo && lordsAmount > 0 && (
-          <span className={`ml-1 text-sm ${lordsDifferencePercentage >= 0 ? "text-green" : "text-red"}`}>
+          <span className={`ml-1 text-xs ${lordsDifferencePercentage >= 0 ? "text-green" : "text-red"}`}>
             ({lordsDifferencePercentage > 0 ? "+" : ""}
             {formatNumber(lordsDifferencePercentage, 4)}%)
           </span>
@@ -332,7 +332,7 @@ const MyLiquidity = ({
         <div>{divideByPrecision(resourceAmount).toLocaleString()}</div>
         <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" />
         {playerLiquidityInfo && resourceAmount > 0 && (
-          <span className={`ml-1 text-sm ${resourceDifferencePercentage >= 0 ? "text-green" : "text-red"}`}>
+          <span className={`ml-1 text-xs ${resourceDifferencePercentage >= 0 ? "text-green" : "text-red"}`}>
             ({resourceDifferencePercentage > 0 ? "+" : ""}
             {formatNumber(resourceDifferencePercentage, 4)}%)
           </span>
@@ -341,7 +341,7 @@ const MyLiquidity = ({
 
       {totalValueDifferenceInLords !== 0 && (
         <div className="flex mt-1">
-          <span className={`text-sm ${totalValueDifferenceInLords >= 0 ? "text-green" : "text-red"}`}>
+          <span className={`text-xs ${totalValueDifferenceInLords >= 0 ? "text-green" : "text-red"}`}>
             {totalValueDifferenceInLords >= 0 ? "+" : "-"}
             {formatNumber(Math.abs(totalValueDifferenceInLords), 4)} Lords (uPNL)
           </span>
@@ -375,7 +375,7 @@ const InputResourcesPrice = ({ marketManager }: { marketManager: MarketManager }
           </React.Fragment>
         ))}
       </div>
-      <div className="flex flex-row text-sm text-gold w-full items-center justify-between mt-1">
+      <div className="flex flex-row text-xxs text-gold w-full items-center justify-between mt-1">
         <span className="mr-1 whitespace-nowrap">production cost:</span>
         <div className="flex items-center space-x-1">
           <span className="font-semibold ">{formatNumber(totalPrice, 4)}</span>

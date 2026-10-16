@@ -39,8 +39,8 @@ export const COLORS = {
 
 /**
  * The app's two faces (decisions-1, 14 October 2026): Bokor for page and card titles only, and Atkinson Hyperlegible
- * Next for everything read (labels, buttons, text, numbers), in sentence case, upright and untracked. IM FELL English SC
- * survives only inside the lockup (an SVG), so the app ships no IM FELL file. Cinzel stays banned.
+ * Next for everything read (labels, buttons, text, numbers), in sentence case, upright and untracked. The Blitz and
+ * Eternum HUD keeps its own label face (CLASSIC_HUD_UI_FONT). Cinzel stays banned.
  */
 export const FONTS = {
   /** Titles: page and card titles, the one display line of a page. */
@@ -48,6 +48,16 @@ export const FONTS = {
   /** Everything read. */
   body: '"Atkinson Hyperlegible Next", system-ui, sans-serif',
 } as const;
+
+/**
+ * The Blitz and Eternum HUD's labels and buttons (Type 2, 8 October 2026), as `font-ui` and --font-ui under
+ * html.classic-hud only: one family drawn from two files, its letters IM FELL English SC, its figures and the marks
+ * around them Atkinson's, so a label and its number need no second class.
+ */
+export const CLASSIC_HUD_UI_FONT = '"Realms UI", "Atkinson Hyperlegible Next", system-ui, sans-serif';
+
+/** Figures and the marks that travel with them: digits, , . : % + × − (Atkinson's in the Realms UI family). */
+const FIGURES = "U+0025, U+002B-002E, U+0030-003A, U+00D7, U+2212";
 
 /**
  * Served from the app (public/fonts), each file as the brand kit or Google Fonts ships it with its licence beside it
@@ -65,6 +75,21 @@ export const FONT_FACES = [
     fontFamily: '"Bokor"',
     src: 'url("/fonts/bokor-regular.ttf") format("truetype")',
     fontWeight: "100 900",
+    fontDisplay: "swap",
+  },
+  {
+    fontFamily: '"Realms UI"',
+    src: 'url("/fonts/im-fell-english-sc-regular.ttf") format("truetype")',
+    fontWeight: "100 900",
+    fontDisplay: "swap",
+  },
+  // Declared after the letters, so the figures resolve to Atkinson. The browser joins the two files into one family
+  // only when their descriptors match, so the figures claim the same weights as the letters.
+  {
+    fontFamily: '"Realms UI"',
+    src: 'url("/fonts/atkinson-hyperlegible-next.woff2") format("woff2")',
+    fontWeight: "100 900",
+    unicodeRange: FIGURES,
     fontDisplay: "swap",
   },
 ] as const;

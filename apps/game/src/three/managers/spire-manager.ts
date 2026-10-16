@@ -132,7 +132,7 @@ export class SpireManager {
   private addLabel(position: Vector3): CSS2DObject {
     const element = document.createElement("div");
     element.textContent = "Spire";
-    element.className = "rounded-md px-2 py-1 text-sm text-gold bg-dark-brown/90 border border-gold/30";
+    element.className = "rounded-md px-2 py-1 text-xs text-gold bg-dark-brown/90 border border-gold/30";
     element.style.pointerEvents = "none";
     const label = new CSS2DObject(element);
     label.position.copy(position);

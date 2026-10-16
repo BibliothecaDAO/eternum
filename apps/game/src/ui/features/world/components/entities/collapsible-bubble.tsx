@@ -85,10 +85,7 @@ export const InfoBubble = ({
           {collapsible && (
             <SemanticIcon
               name="chevron-down"
-              className={cn(
-                "h-3.5 w-3.5 flex-shrink-0 text-kit-muted transition-transform",
-                isCollapsed && "-rotate-90",
-              )}
+              className={cn("h-3.5 w-3.5 flex-shrink-0 text-gold/60 transition-transform", isCollapsed && "-rotate-90")}
             />
           )}
           {Icon && <SemanticIcon name={Icon} className="h-3.5 w-3.5 flex-shrink-0 text-gold/70" />}

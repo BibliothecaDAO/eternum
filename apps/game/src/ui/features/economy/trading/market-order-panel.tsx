@@ -412,7 +412,7 @@ export const OrderRow = memo(
       <div
         className={cn(
           ORDER_GRID,
-          "h-9 border-b border-gold/10 px-2 text-sm tabular-nums transition-colors hover:bg-gold/10 max-lg:h-11",
+          "h-9 border-b border-gold/10 px-2 text-[11px] tabular-nums transition-colors hover:bg-gold/10 max-lg:h-11",
           isSelf && "bg-blueish/10",
         )}
         title={`Expires ${new Date(offer.expiresAt * 1000).toLocaleString()}`}

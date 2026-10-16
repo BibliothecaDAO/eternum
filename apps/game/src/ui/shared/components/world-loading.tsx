@@ -33,7 +33,7 @@ export const WorldLoading = () => {
           role="status"
         >
           <img alt="" src="/images/logos/eternum-loader.png" className="w-10" />
-          <div className="ml-4 text-sm">{loadingItems.join(", ")}</div>
+          <div className="ml-4 text-xs">{loadingItems.join(", ")}</div>
         </div>
       )}
     </div>

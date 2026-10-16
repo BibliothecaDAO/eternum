@@ -141,8 +141,8 @@ export const UnifiedArmyCreationBody = ({
             {form.troopCapacityLimit !== null && form.troopCapacityLimit !== undefined && (
               <>
                 <div className="border-t border-gold/15" />
-                <div className="flex items-center justify-between px-1 py-0.5 text-sm">
-                  <span className="text-kit-muted">Max troops</span>
+                <div className="flex items-center justify-between px-1 py-0.5 text-[11px]">
+                  <span className="uppercase tracking-wider text-gold/55">Max troops</span>
                   <span className="font-semibold tabular-nums text-gold">
                     {form.troopCapacityLimit.toLocaleString()}
                   </span>
@@ -152,13 +152,13 @@ export const UnifiedArmyCreationBody = ({
             {form.troopTrainingLine && (
               <>
                 <div className="border-t border-gold/15" />
-                <p className="px-1 py-1 text-sm text-gold/70">{form.troopTrainingLine}</p>
+                <p className="px-1 py-1 text-[11px] text-gold/70">{form.troopTrainingLine}</p>
               </>
             )}
             {form.raiseCostLine && (
               <>
                 <div className="border-t border-gold/15" />
-                <p className="px-1 py-1 text-sm text-gold/70">{form.raiseCostLine}</p>
+                <p className="px-1 py-1 text-[11px] text-gold/70">{form.raiseCostLine}</p>
               </>
             )}
           </div>

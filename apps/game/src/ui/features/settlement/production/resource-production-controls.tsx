@@ -238,7 +238,7 @@ export const ResourceProductionControls = ({
 
   if (compact)
     return (
-      <section aria-label={`${ResourcesIds[selectedResource]} production`} className="space-y-2 text-sm">
+      <section aria-label={`${ResourcesIds[selectedResource]} production`} className="space-y-2 text-xs">
         {canUseLabor && (
           <div role="group" aria-label="Production recipe" className="flex gap-1">
             <button
@@ -352,7 +352,7 @@ export const ResourceProductionControls = ({
       </div>
 
       {error && (
-        <p role="status" className="text-sm text-danger">
+        <p role="status" className="text-xs text-danger">
           {error}
         </p>
       )}

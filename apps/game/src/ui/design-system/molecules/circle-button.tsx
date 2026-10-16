@@ -124,7 +124,7 @@ const CircleButton = ({
   const setTooltip = useTooltipStore((state) => state.setTooltip);
 
   const tooltipContent = useMemo(
-    () => (label ? <span className="whitespace-nowrap pointer-events-none text-sm md:text-base">{label}</span> : null),
+    () => (label ? <span className="whitespace-nowrap pointer-events-none text-xs md:text-base">{label}</span> : null),
     [label],
   );
 
@@ -200,7 +200,7 @@ const CircleButton = ({
       {primaryNotification && primaryNotification.value > 0 && !disabled && (
         <div
           className={clsx(
-            "absolute min-w-[16px] h-[16px] px-1 flex items-center justify-center rounded-full border text-sm leading-none z-[100] font-bold animate-bounce transition-shadow duration-200",
+            "absolute min-w-[16px] h-[16px] px-1 flex items-center justify-center rounded-full border text-[9px] leading-none z-[100] font-bold animate-bounce transition-shadow duration-200",
             notificationPositions[primaryNotification.location || "topleft"],
             getToneClasses(primaryNotification.color, "green"),
           )}
@@ -211,7 +211,7 @@ const CircleButton = ({
       {secondaryNotification && secondaryNotification.value > 0 && !disabled && (
         <div
           className={clsx(
-            "absolute min-w-[16px] h-[16px] px-1 flex items-center justify-center rounded-full border text-sm leading-none z-[100] font-bold animate-bounce transition-shadow duration-200",
+            "absolute min-w-[16px] h-[16px] px-1 flex items-center justify-center rounded-full border text-[9px] leading-none z-[100] font-bold animate-bounce transition-shadow duration-200",
             notificationPositions[secondaryNotification.location || "topright"],
             getToneClasses(secondaryNotification.color, "blue"),
           )}

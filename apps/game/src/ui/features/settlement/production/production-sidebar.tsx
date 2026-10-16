@@ -154,7 +154,7 @@ const SidebarRealm = ({
               <div className="flex gap-1 shrink-0">
                 {activeRelics.length > 0 && (
                   <div className="bg-relic-activated/20 p-1 rounded" title={`${activeRelics.length} Active Relics`}>
-                    <span className="text-sm font-bold text-relic-activated">{activeRelics.length}</span>
+                    <span className="text-xs font-bold text-relic-activated">{activeRelics.length}</span>
                   </div>
                 )}
               </div>
@@ -379,10 +379,10 @@ export const ProductionSidebar = memo(
                     "rounded-md border px-2.5 py-1 transition",
                     HUD_LABEL_BRIGHT,
                     disabled
-                      ? "cursor-not-allowed border-gold/10 text-kit-muted"
+                      ? "cursor-not-allowed border-gold/10 text-gold/30"
                       : isActive
                         ? "border-gold/60 bg-gold/15 text-gold"
-                        : "border-gold/15 bg-black/20 text-kit-muted hover:border-gold/40 hover:text-gold",
+                        : "border-gold/15 bg-black/20 text-gold/65 hover:border-gold/40 hover:text-gold",
                   )}
                 >
                   {tab.label} ({tab.count})
@@ -404,9 +404,9 @@ export const ProductionSidebar = memo(
                       type="button"
                       onClick={() => handleStagePreset(preset.id)}
                       className={clsx(
-                        "rounded-md border px-2 py-0.5 text-sm font-semibold transition-colors",
+                        "rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] transition-colors",
                         activeStructures.length === 0
-                          ? "cursor-not-allowed border-gold/10 text-kit-muted"
+                          ? "cursor-not-allowed border-gold/10 text-gold/30"
                           : isPending
                             ? "border-gold text-gold bg-gold/10"
                             : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold",

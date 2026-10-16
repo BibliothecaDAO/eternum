@@ -90,7 +90,7 @@ const createResourceIconComponent = (
 };
 
 const createTierIconComponent = (tierLabel: string): ReactNode => (
-  <span className="pointer-events-none text-sm font-semibold text-gold">{tierLabel}</span>
+  <span className="pointer-events-none text-xs font-semibold uppercase text-gold">{tierLabel}</span>
 );
 
 export const createConstructionMenu = ({

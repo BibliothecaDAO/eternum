@@ -13,7 +13,7 @@ export interface ResourceRequirement {
 }
 
 export const REQUIREMENT_CHIP =
-  "flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-1.5 py-1 text-sm font-semibold tabular-nums";
+  "flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-1.5 py-1 text-[11px] font-semibold tabular-nums";
 
 /** Every cost the HUD shows reads the same way: held / needed per resource, red while short. */
 export const RequirementChips = ({
@@ -40,7 +40,7 @@ export const RequirementChips = ({
           <span className={isMet ? "text-gold" : "text-red-300"}>
             {req.current === undefined ? "—" : Math.floor(req.current).toLocaleString()}
           </span>
-          <span className={isMet ? "text-kit-muted" : "text-red-300/80"}>/ {req.amount.toLocaleString()}</span>
+          <span className={isMet ? "text-gold/55" : "text-red-300/80"}>/ {req.amount.toLocaleString()}</span>
           {req.incoming && <span className="text-emerald-300/90">↑</span>}
         </span>
       );

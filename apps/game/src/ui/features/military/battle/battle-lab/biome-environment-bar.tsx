@@ -56,12 +56,12 @@ export const BiomeEnvironmentBar = ({
         <div className="flex flex-1 items-center justify-around gap-2 rounded-lg border border-gold/15 bg-black/25 px-3 py-2">
           {TROOPS.map(({ type, resourceId, label }) => {
             const bonus = neutral ? 1 : configManager.getBiomeCombatBonus(type, biome);
-            const tone = bonus > 1 ? "text-order-brilliance" : bonus < 1 ? "text-order-giants" : "text-kit-muted";
+            const tone = bonus > 1 ? "text-order-brilliance" : bonus < 1 ? "text-order-giants" : "text-gold/45";
             return (
               <div key={type} className="flex items-center gap-2">
                 <ResourceIcon withTooltip={false} resource={resourceId} size="sm" />
                 <div className="flex flex-col leading-none">
-                  <span className={cn(HUD_CUE, "text-kit-muted")}>{label}</span>
+                  <span className={cn(HUD_CUE, "text-gold/55")}>{label}</span>
                   <span className={cn("text-sm font-bold tabular-nums", tone)}>{formatBonus(bonus)}</span>
                 </div>
               </div>

@@ -113,9 +113,13 @@ export function NewsHeadlineBanner({ headline, onDismiss, onNavigate }: NewsHead
               </div>
 
               <div className="min-w-0">
-                <div className={cn("text-sm font-semibold ", theme.accentTextClassName)}>{theme.eyebrow}</div>
-                <div className="mt-1 font-body text-sm font-semibold text-gold">{headline.title}</div>
-                <div className="mt-1 text-sm leading-[1.35] text-gold/78">{description}</div>
+                <div className={cn("text-[9px] font-semibold uppercase tracking-[0.38em]", theme.accentTextClassName)}>
+                  {theme.eyebrow}
+                </div>
+                <div className="mt-1 font-ui text-sm font-semibold uppercase tracking-[0.2em] text-gold">
+                  {headline.title}
+                </div>
+                <div className="mt-1 text-[12px] leading-[1.35] text-gold/78">{description}</div>
               </div>
 
               <div className="relative flex min-h-[52px] flex-col items-center justify-center gap-1.5 before:absolute before:inset-y-1 before:left-0 before:w-px before:bg-gold/10">
@@ -128,7 +132,7 @@ export function NewsHeadlineBanner({ headline, onDismiss, onNavigate }: NewsHead
                       onNavigate(navigationLocation);
                     }}
                     className={cn(
-                      "btn-bronze inline-flex h-9 w-11 flex-col items-center justify-center gap-0.5 rounded-md border text-sm font-semibold transition-colors",
+                      "btn-bronze inline-flex h-9 w-11 flex-col items-center justify-center gap-0.5 rounded-md border text-[8px] font-semibold uppercase tracking-[0.16em] transition-colors",
                       "border-gold/25 bg-black/20 text-gold hover:border-gold/45 hover:bg-black/35",
                     )}
                   >
@@ -139,7 +143,7 @@ export function NewsHeadlineBanner({ headline, onDismiss, onNavigate }: NewsHead
                 <button
                   type="button"
                   onClick={onDismiss}
-                  className="btn-bronze inline-flex h-7 w-7 items-center justify-center rounded-full border-gold/15 bg-black/20 p-0 text-kit-muted hover:bg-black/35 hover:text-gold"
+                  className="btn-bronze inline-flex h-7 w-7 items-center justify-center rounded-full border-gold/15 bg-black/20 p-0 text-gold/45 hover:bg-black/35 hover:text-gold"
                 >
                   <SemanticIcon name="close" className="h-3.5 w-3.5" />
                 </button>

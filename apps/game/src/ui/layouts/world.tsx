@@ -16,6 +16,7 @@ import { LeftCommandSidebar } from "../features/world/containers/left-command-si
 import { LeftViewSurfaces } from "../features/world/containers/left-view-surfaces";
 import { TopHeader } from "../features/world/containers/top-header/top-header";
 import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
+import { useDocumentClass } from "@/hooks/use-document-class";
 import { GameCycleEffects } from "../shared/components/game-cycle-effects";
 import { BlockTimestampPoller } from "../shared/components/block-timestamp-poller";
 import { ActionRunners } from "../action-runners";
@@ -137,6 +138,8 @@ const HUD = () => {
 };
 
 const ArenaHud = () => {
+  // The Blitz and Eternum HUD keeps its own type: IM FELL labels and buttons, caps, the teal surfaces (index.css).
+  useDocumentClass("classic-hud");
   const lane = useCompactLane();
   return (
     <>

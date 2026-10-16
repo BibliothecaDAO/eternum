@@ -195,7 +195,7 @@ const getRelicItemClass = (item: DisplayItem) => {
     return "border-gold/80 bg-[linear-gradient(180deg,rgba(166,117,34,0.22),rgba(22,12,30,0.94))] shadow-[inset_0_1px_0_rgba(255,214,102,0.22),0_0_14px_rgba(223,170,84,0.16)]";
   }
 
-  return "border-dashed border-relic2/25 bg-[linear-gradient(180deg,rgba(100,76,160,0.08),rgba(10,8,16,0.94))] text-kit-muted";
+  return "border-dashed border-relic2/25 bg-[linear-gradient(180deg,rgba(100,76,160,0.08),rgba(10,8,16,0.94))] text-gold/65";
 };
 
 const getInventoryItemClass = (item: DisplayItem, variant: InventoryItemVariant) =>
@@ -262,7 +262,7 @@ export const CompactEntityInventory = memo(
     );
 
     if (displayItems.length === 0) {
-      return <p className="text-sm text-kit-muted">{emptyMessage}</p>;
+      return <p className="text-xxs text-gold/60 italic">{emptyMessage}</p>;
     }
 
     // Tight tiles are a fixed width in a wrapping row so they stay the same size
@@ -275,7 +275,7 @@ export const CompactEntityInventory = memo(
 
     const compactItemClass = variant === "tight" ? "px-1.5 py-1.5" : "px-1.5 py-1";
     const iconSize = variant === "tight" ? "xs" : "sm";
-    const amountClass = variant === "tight" ? "text-sm" : "text-sm";
+    const amountClass = variant === "tight" ? "text-xs" : "text-xxs";
 
     const effectiveHeroCount = Math.max(0, Math.min(heroCount, visibleItems.length));
     const heroItems = effectiveHeroCount > 0 ? visibleItems.slice(0, effectiveHeroCount) : [];
@@ -297,7 +297,7 @@ export const CompactEntityInventory = memo(
       const widthClass = variant === "tight" && !options.hero ? "w-14" : "w-full";
 
       const itemClasses = cn(
-        "flex h-full appearance-none flex-col items-center justify-center rounded-xl border text-center [font:inherit] [letter-spacing:inherit] shadow-[inset_0_1px_0_rgba(255,214,102,0.08)]",
+        "flex h-full appearance-none flex-col items-center justify-center rounded-xl border text-center normal-case [font:inherit] [letter-spacing:inherit] shadow-[inset_0_1px_0_rgba(255,214,102,0.08)]",
         widthClass,
         options.hero ? heroPadding : compactItemClass,
         getInventoryItemClass(item, itemVariant),
@@ -316,7 +316,7 @@ export const CompactEntityInventory = memo(
             {formatInventoryAmount(item.amount, { compact: !options.hero })}
           </span>
           {showLabels && resourceDef && (
-            <span className="mt-0.5 text-sm text-kit-muted truncate" title={resourceDef.trait}>
+            <span className="mt-0.5 text-[10px] text-gold/65 truncate" title={resourceDef.trait}>
               {resourceDef.ticker ?? resourceDef.trait}
             </span>
           )}
@@ -359,7 +359,7 @@ export const CompactEntityInventory = memo(
           <div className={cn(baseGrid)}>{regularItems.map((item) => renderItem(item, { hero: false }))}</div>
         )}
         {showHiddenCount && hiddenCount > 0 && (
-          <span className="text-sm text-kit-muted">
+          <span className="text-[10px] text-gold/60">
             Showing {visibleItems.length} of {displayItems.length}
           </span>
         )}

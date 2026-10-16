@@ -1315,10 +1315,10 @@ export const TransferTroopsContainer = ({
                     </div>
                     {capacityNotice && (
                       <div
-                        className={`rounded-md border px-3 py-2 text-sm ${
+                        className={`rounded-md border px-3 py-2 text-xs ${
                           capacityNotice.tone === "danger"
                             ? "border-danger/40 bg-danger/10 text-danger"
-                            : "border-gold/30 text-kit-muted"
+                            : "border-gold/30 text-gold/60"
                         }`}
                       >
                         {capacityNotice.message}
@@ -1326,7 +1326,7 @@ export const TransferTroopsContainer = ({
                     )}
                     {quickAmountOptions.length > 0 && (
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm text-kit-muted">Quick set:</span>
+                        <span className="text-xs text-gold/60">Quick set:</span>
                         {quickAmountOptions.map((option) => {
                           const isActive = troopAmount === option.value;
                           if (!guardFactsKnown) return <LoadingAnimation />;
@@ -1336,7 +1336,7 @@ export const TransferTroopsContainer = ({
                               key={option.label}
                               type="button"
                               onClick={() => handleQuickAmountSelect(option.value)}
-                              className={`rounded-md border px-3 py-1 text-sm font-medium transition-colors ${
+                              className={`rounded-md border px-3 py-1 text-xs font-medium transition-colors ${
                                 isActive
                                   ? "border-gold bg-gold/20 text-gold"
                                   : "border-gold/30 bg-dark-brown text-gold/70 hover:bg-gold/10"
@@ -1356,7 +1356,7 @@ export const TransferTroopsContainer = ({
 
               <div className="flex-1 min-w-0 space-y-4 rounded-md border border-gold/30 bg-dark-brown/60 p-4">
                 <div className="rounded-md border border-gold/40 bg-dark-brown/50 p-3">
-                  <div className="text-sm text-kit-muted">Transfer direction</div>
+                  <div className="text-[10px] uppercase tracking-wide text-gold/60">Transfer direction</div>
                   <div className="mt-2 flex items-center justify-between gap-3">
                     <span className="text-base font-semibold text-gold">{directionLabel}</span>
                     {onToggleDirection ? (
@@ -1365,6 +1365,7 @@ export const TransferTroopsContainer = ({
                         variant="outline"
                         size="xs"
                         disabled={!canToggleDirection}
+                        forceUppercase={false}
                         className="flex items-center gap-2"
                       >
                         <SemanticIcon name="swap" className="h-3 w-3" />

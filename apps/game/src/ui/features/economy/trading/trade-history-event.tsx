@@ -55,18 +55,18 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
     <div
       className={cn(
         HISTORY_GRID,
-        "h-8 border-b border-gold/10 text-sm tabular-nums",
+        "h-8 border-b border-gold/10 text-[11px] tabular-nums",
         trade.event.isYours ? "bg-blueish/10 text-gold" : "text-gold/85",
       )}
     >
-      <span className="text-kit-muted" title={fullDateTime}>
+      <span className="text-gold/60" title={fullDateTime}>
         {getRelativeTimeString(trade.event.eventTime)}
       </span>
       <span className="truncate">{taker}</span>
       <span className="flex items-center gap-1">
         <ResourceIcon resource={ResourcesIds[Number(resourceGiven.resourceId)]} size="xs" withTooltip={false} />
         {currencyIntlFormat(divideByPrecision(resourceGiven.amount), 2)}
-        <span className="text-kit-muted">→</span>
+        <span className="text-gold/50">→</span>
         <ResourceIcon resource={ResourcesIds[Number(resourceTaken.resourceId)]} size="xs" withTooltip={false} />
         {currencyIntlFormat(divideByPrecision(resourceTaken.amount), 2)}
       </span>

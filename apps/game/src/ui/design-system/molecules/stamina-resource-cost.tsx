@@ -59,14 +59,14 @@ const StaminaResourceCost = ({
 
   return (
     pathInfo && (
-      <div className="flex flex-row p-1 text-sm">
+      <div className="flex flex-row p-1 text-xs">
         <div className="text-lg p-1 pr-3">⚡️</div>
         <div className="flex flex-col">
           <div>
             {pathInfo.isExplored ? pathInfo.totalCost : configManager.getExploreStaminaCost()}{" "}
             <span className={clsx(pathInfo.balanceColor, "font-normal")}>({Number(pathInfo.balance)})</span>
           </div>
-          <div className="text-sm opacity-75">
+          <div className="text-xs opacity-75">
             {pathInfo.isExplored ? (
               pathInfo.groupedBiomes.map((group, index) => (
                 <div key={index}>

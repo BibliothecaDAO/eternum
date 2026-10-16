@@ -134,7 +134,9 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <h2 className="truncate text-lg font-semibold text-gold">{selectedGuild?.name || "Tribe"}</h2>
-            <p className="mt-1 text-sm text-kit-muted">{selectedGuild?.isPublic ? "Public Tribe" : "Private Tribe"}</p>
+            <p className="mt-1 text-[0.7rem] uppercase tracking-[0.16em] text-gold/65">
+              {selectedGuild?.isPublic ? "Public Tribe" : "Private Tribe"}
+            </p>
           </div>
           {socialsText && <TwitterShareButton text={socialsText} />}
         </div>
@@ -222,10 +224,10 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
 };
 
 const GuildMetaPill = ({ icon: Icon, label, value }: { icon: IconMeaning; label: string; value: string }) => (
-  <div className="rounded-md border border-gold/15 bg-black/25 px-2 py-1.5 text-sm">
-    <div className="flex items-center gap-1 text-kit-muted">
+  <div className="rounded-md border border-gold/15 bg-black/25 px-2 py-1.5 text-xs">
+    <div className="flex items-center gap-1 text-gold/65">
       <SemanticIcon name={Icon} className="h-3.5 w-3.5" />
-      <span className="">{label}</span>
+      <span className="uppercase tracking-[0.14em]">{label}</span>
     </div>
     <div className="mt-1 truncate font-semibold text-gold">{value}</div>
   </div>

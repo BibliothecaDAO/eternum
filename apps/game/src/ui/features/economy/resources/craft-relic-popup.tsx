@@ -304,11 +304,17 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
         <Button variant="default" onClick={onClose} disabled={isCrafting}>
           Close
         </Button>
-        <Button variant="gold" onClick={handleCraftRelic} isLoading={isCrafting} disabled={isCrafting || !canCraft}>
+        <Button
+          variant="gold"
+          onClick={handleCraftRelic}
+          isLoading={isCrafting}
+          disabled={isCrafting || !canCraft}
+          forceUppercase={false}
+        >
           {craftButtonLabel}
         </Button>
       </div>
-      <div className="mt-3 px-3 text-center text-sm text-gold/70">
+      <div className="mt-3 px-3 text-center text-[11px] text-gold/70">
         {isCrafting ? "Submitting crafting transaction..." : actionHint}
       </div>
       {error && (
@@ -325,7 +331,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
         <div className="rounded border border-relic/40 bg-gradient-to-b from-relic/20 to-dark-brown/30 p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-sm text-relic2/90">Relic Forge</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-relic2/90">Relic Forge</p>
               <p className="mt-2 text-sm text-gold/90">Burn research to craft one random relic.</p>
             </div>
             <ResourceIcon resource={researchResourceKey} size="md" withTooltip={false} />
@@ -333,7 +339,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
 
           {shouldShowResearchProgress && (
             <div className="mt-3">
-              <div className="flex items-center justify-between text-sm text-gold/70">
+              <div className="flex items-center justify-between text-[11px] text-gold/70">
                 <span>Research ready</span>
                 <span>
                   {currencyFormat(researchBalance, 0)} / {currencyFormat(configuredResearchCost, 0)}
@@ -346,7 +352,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
                 />
               </div>
               {!hasEnoughResearch && (
-                <p className="mt-1 text-sm text-danger">
+                <p className="mt-1 text-[11px] text-danger">
                   {missingResearch === undefined
                     ? "Research balance unknown."
                     : `Need ${currencyFormat(missingResearch, 0)} more research.`}
@@ -358,9 +364,9 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
 
         <div className="rounded border border-gold/20 bg-dark-brown/30 p-4">
           <p className="text-sm font-semibold text-gold">{structureName}</p>
-          <p className="text-sm text-gold/70">Structure #{structureId}</p>
+          <p className="text-xs text-gold/70">Structure #{structureId}</p>
 
-          <div className="mt-3 space-y-2 text-sm text-gold/80">
+          <div className="mt-3 space-y-2 text-xs text-gold/80">
             <div className="flex items-center justify-between">
               <span>Research Balance</span>
               <span className="font-semibold text-gold">{currencyFormat(researchBalance, 0)}</span>
@@ -382,16 +388,16 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
         </div>
 
         <div className="rounded border border-gold/20 bg-dark-brown/30 p-4">
-          <p className="text-sm text-gold/70">Crafting Requirements</p>
-          <ul className="mt-2 space-y-1.5 text-sm">
+          <p className="text-xs uppercase tracking-[0.18em] text-gold/70">Crafting Requirements</p>
+          <ul className="mt-2 space-y-1.5 text-xs">
             {craftingRequirements.map((requirement) => (
               <li key={requirement.id} className="flex items-center justify-between gap-3">
                 <span className={requirement.satisfied ? "text-gold/85" : "text-danger"}>{requirement.label}</span>
                 <span
                   className={
                     requirement.satisfied
-                      ? "rounded bg-green/20 px-1.5 py-0.5 text-sm font-semibold text-green"
-                      : "rounded bg-danger/20 px-1.5 py-0.5 text-sm font-semibold text-danger"
+                      ? "rounded bg-green/20 px-1.5 py-0.5 text-[10px] font-semibold text-green"
+                      : "rounded bg-danger/20 px-1.5 py-0.5 text-[10px] font-semibold text-danger"
                   }
                 >
                   {requirement.satisfied ? "READY" : "BLOCKED"}
@@ -402,19 +408,19 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
         </div>
 
         {isCrafting && (
-          <div className="rounded border border-gold/20 bg-gold/10 p-3 text-center text-sm text-gold/80">
+          <div className="rounded border border-gold/20 bg-gold/10 p-3 text-center text-xs text-gold/80">
             Forging relic on-chain...
           </div>
         )}
 
         {craftedRelicId && craftedRelicResourceKey && (
           <div className="rounded border border-relic/50 bg-relic/15 p-4 text-center">
-            <p className="text-sm text-relic2">Relic Crafted</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-relic2">Relic Crafted</p>
             <div className="mt-3 flex items-center justify-center gap-3">
               <ResourceIcon resource={craftedRelicResourceKey} size="lg" />
               <p className="text-sm font-semibold text-relic2">{craftedRelicName ?? "Unknown Relic"}</p>
             </div>
-            <p className="mt-2 text-sm text-relic2/90">
+            <p className="mt-2 text-[11px] text-relic2/90">
               Added to your relic inventory. Open the relic action to activate it.
             </p>
           </div>

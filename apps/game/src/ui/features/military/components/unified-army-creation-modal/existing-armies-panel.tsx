@@ -32,13 +32,13 @@ export const ExistingArmiesPanel = memo(({ structureId, className }: ExistingArm
     <div className={cn("rounded-md border border-gold/25 bg-black/25 px-2.5 py-2", className)}>
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <span className={cn("flex items-center gap-1.5", HUD_LABEL, "text-gold/75")}>
-          <SemanticIcon name="target" className="h-3 w-3 text-kit-muted" />
+          <SemanticIcon name="target" className="h-3 w-3 text-gold/65" />
           Existing armies
         </span>
-        <span className={cn(HUD_LABEL, "text-kit-muted")}>{ownedArmies.length}</span>
+        <span className={cn(HUD_LABEL, "text-gold/55")}>{ownedArmies.length}</span>
       </div>
       {ownedArmies.length === 0 ? (
-        <p className={cn(HUD_BODY_MUTED, "text-sm")}>None deployed yet.</p>
+        <p className={cn(HUD_BODY_MUTED, "text-[11px]")}>None deployed yet.</p>
       ) : (
         <ul className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-1.5 lg:max-h-[220px] overflow-y-auto pr-0.5 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
           {ownedArmies.map((army) => (
@@ -112,7 +112,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
     <li className="flex items-center gap-2 rounded-md border border-gold/20 bg-black/30 px-2 py-1.5" title={army.name}>
       <span
         className={cn(
-          "shrink-0 rounded px-1.5 py-0.5 text-sm font-bold border leading-none",
+          "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold border leading-none",
           getTierStyle(army.troops?.tier as TroopTier),
         )}
       >
@@ -121,7 +121,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
       {troopResourceTrait && (
         <ResourceIcon withTooltip={false} resource={troopResourceTrait} size="sm" className="shrink-0" />
       )}
-      <span className="text-sm font-semibold tabular-nums text-gold">{currencyFormat(rawCount, 0)}</span>
+      <span className="text-[12px] font-semibold tabular-nums text-gold">{currencyFormat(rawCount, 0)}</span>
       {maxStamina > 0 && stamina && (
         <div
           className="flex min-w-0 flex-1 items-center gap-1.5"
@@ -130,7 +130,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
           <div className="relative h-2 flex-1 min-w-0 overflow-hidden rounded-sm bg-black/40">
             <div className={cn("absolute inset-y-0 left-0", staminaTone)} style={{ width: `${staminaPercent}%` }} />
           </div>
-          <span className="shrink-0 text-sm tabular-nums text-kit-muted">
+          <span className="shrink-0 text-[10px] tabular-nums text-gold/65">
             {Number(stamina.amount)}/{maxStamina}
           </span>
         </div>

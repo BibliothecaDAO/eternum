@@ -131,7 +131,7 @@ export const BiomeSummaryCard = ({
       <button
         type="button"
         onClick={onSimulateBattle}
-        className="inline-flex items-center gap-1 rounded-md border border-gold/40 bg-gold/10 px-2 py-0.5 text-sm font-semibold text-gold transition hover:border-gold hover:bg-gold/20"
+        className="inline-flex items-center gap-1 rounded-md border border-gold/40 bg-gold/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold transition hover:border-gold hover:bg-gold/20"
         title="Simulate a battle in this biome"
         aria-label="Simulate battle"
       >
@@ -181,7 +181,7 @@ export const BiomeSummaryCard = ({
                     <span className={cn("flex items-center gap-1 break-words leading-[1.05]", HUD_LABEL)}>
                       {config.label}
                       {isHighlighted && (
-                        <span className="rounded-sm border border-gold/50 bg-gold/15 px-1 text-sm text-gold">
+                        <span className="rounded-sm border border-gold/50 bg-gold/15 px-1 text-[8px] uppercase tracking-[0.18em] text-gold">
                           Your army
                         </span>
                       )}

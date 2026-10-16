@@ -24,6 +24,13 @@ export const OutcomeBanner = ({ outcomes }: { outcomes: { worst: BattleOutcome; 
           className: COPY.Draw.className,
         };
   return (
-    <div className={cn("rounded-lg border px-4 py-2.5 text-center text-sm font-semibold ", className)}>{label}</div>
+    <div
+      className={cn(
+        "rounded-lg border px-4 py-2.5 text-center text-sm font-semibold uppercase tracking-wide",
+        className,
+      )}
+    >
+      {label}
+    </div>
   );
 };

@@ -125,8 +125,8 @@ export const CompactDefenseDisplay = ({
   const hasSlotInfo = slotCapForDisplay !== undefined;
   const showHeaderRow = hasSlotInfo || totalTroopCount > 0;
 
-  const labelTextClass = isBanner ? "text-sm" : "text-sm";
-  const valueTextClass = isBanner ? "text-sm" : "text-sm";
+  const labelTextClass = isBanner ? "text-[9px]" : "text-[10px]";
+  const valueTextClass = isBanner ? "text-[10px]" : "text-[11px]";
   const slotWidthClass = "w-full";
   const slotGapClass = isBanner ? "gap-0" : "gap-1.5";
   const slotHeightClass = isBanner ? "min-h-[36px]" : "min-h-[48px]";
@@ -214,7 +214,13 @@ export const CompactDefenseDisplay = ({
         ) : isEmptySlot ? (
           <>
             {isSlotInteractive && <SemanticIcon name="plus" className="h-3.5 w-3.5 text-gold" />}
-            <span className={cn(labelTextClass, isSlotInteractive ? "text-gold" : "text-kit-muted", "font-semibold ")}>
+            <span
+              className={cn(
+                labelTextClass,
+                isSlotInteractive ? "text-gold" : "text-gold/60",
+                "font-semibold uppercase tracking-wide",
+              )}
+            >
               {isSlotInteractive ? "Add" : isBanner ? "Empty" : "Empty Slot"}
             </span>
           </>
@@ -222,7 +228,7 @@ export const CompactDefenseDisplay = ({
           <div className="flex min-w-0 w-full flex-col gap-0.5">
             <div className="flex items-center gap-1 min-w-0">
               <span
-                className={`px-1 py-0.5 rounded text-sm font-bold border relative ${getTierStyle(defense.troops.tier)}`}
+                className={`px-1 py-0.5 rounded text-[10px] font-bold border relative ${getTierStyle(defense.troops.tier)}`}
               >
                 <span className="relative z-10">{defense.troops.tier}</span>
               </span>
@@ -275,7 +281,7 @@ export const CompactDefenseDisplay = ({
                   slotWidthClass,
                 )}
               >
-                <span className={cn(labelTextClass, "text-gold/70 font-semibold")}>Slots</span>
+                <span className={cn(labelTextClass, "uppercase tracking-wide text-gold/70 font-semibold")}>Slots</span>
                 <span className={cn(valueTextClass, "text-gold font-bold")}>
                   {effectiveSlotsUsed}/{slotCapForDisplay}
                 </span>
@@ -288,7 +294,7 @@ export const CompactDefenseDisplay = ({
                   slotWidthClass,
                 )}
               >
-                <span className={cn(labelTextClass, "text-gold/70 font-semibold")}>Total</span>
+                <span className={cn(labelTextClass, "uppercase tracking-wide text-gold/70 font-semibold")}>Total</span>
                 <span className={cn(valueTextClass, "text-gold font-bold")}>{currencyFormat(totalTroopCount, 0)}</span>
               </div>
             )}
@@ -312,7 +318,7 @@ export const CompactDefenseDisplay = ({
                 slotWidthClass,
               )}
             >
-              <span className={cn(labelTextClass, "text-gold/70 font-semibold")}>
+              <span className={cn(labelTextClass, "uppercase tracking-wide text-gold/70 font-semibold")}>
                 {isBanner ? "Slots" : "Defense Slots"}
               </span>
               <span className={cn(valueTextClass, "text-gold font-bold")}>
@@ -327,7 +333,7 @@ export const CompactDefenseDisplay = ({
                 slotWidthClass,
               )}
             >
-              <span className={cn(labelTextClass, "text-gold/70 font-semibold")}>
+              <span className={cn(labelTextClass, "uppercase tracking-wide text-gold/70 font-semibold")}>
                 {isBanner ? "Total" : "Total Troops"}
               </span>
               <span className={cn(valueTextClass, "text-gold font-bold")}>{currencyFormat(totalTroopCount, 0)}</span>
@@ -345,7 +351,7 @@ export const CompactDefenseDisplay = ({
               slotWidthClass,
             )}
           >
-            <span className={cn(labelTextClass, "text-gold/70")}>Incoming</span>
+            <span className={cn(labelTextClass, "uppercase tracking-wide text-gold/70")}>Incoming</span>
             <div
               className="rounded-full border border-gold/40 flex items-center justify-center bg-brown-900/50"
               style={{
@@ -355,7 +361,7 @@ export const CompactDefenseDisplay = ({
             >
               <SemanticIcon name="arrow-left" className={cn(isBanner ? "w-4 h-4" : "w-5 h-5", "text-gold/80")} />
             </div>
-            <span className={cn(isBanner ? "text-sm" : "text-sm", "text-kit-muted")}>Enemy</span>
+            <span className={cn(isBanner ? "text-[9px]" : "text-[10px]", "text-gold/60")}>Enemy</span>
           </div>
         )}
       </div>

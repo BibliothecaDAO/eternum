@@ -592,7 +592,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 return (
                   <div key={group.tier} className="rounded-md border border-gold/15">
                     <div className="border-b border-gold/10 px-3 py-1.5">
-                      <span className="text-sm font-semibold text-gold/80">{group.label}</span>
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold/80">
+                        {group.label}
+                      </span>
                     </div>
                     <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] lg:grid-cols-3 gap-2 p-2">
                       {slots.map(({ resourceId, troopHint }) => {
@@ -681,7 +683,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 return (
                   <div className="rounded-md border border-gold/15">
                     <div className="border-b border-gold/10 px-3 py-1.5">
-                      <span className="text-sm font-semibold text-gold/80">Other</span>
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold/80">Other</span>
                     </div>
                     <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] lg:grid-cols-3 gap-2 p-2">
                       {others.map((resourceId) => {
@@ -878,7 +880,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         ),
         component: () => {
           if (armyGroups.length === 0) {
-            return <div className="p-2 text-sm text-kit-muted">No military buildings available.</div>;
+            return <div className="p-2 text-xs text-gold/60">No military buildings available.</div>;
           }
 
           // With the wider Build modal all three tiers fit in one row, so we
@@ -903,7 +905,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                       )}
                     >
                       <div className="flex items-center justify-between gap-2 border-b border-gold/10 px-3 py-2">
-                        <span className="text-sm font-semibold text-gold/85">{group.armyType}</span>
+                        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-gold/85">
+                          {group.armyType}
+                        </span>
                         <span
                           className={clsx(
                             "rounded-md border px-2 py-0.5 text-sm font-bold tabular-nums",
@@ -1051,7 +1055,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         <div className="flex items-center gap-2">
           {configManager.buildingCostMode === "choice" && (
             <label className="inline-flex min-h-11 items-center cursor-pointer">
-              <span className={`mr-2 text-sm ${useSimpleCost ? "text-kit-muted" : ""}`}>Resource</span>
+              <span className={`mr-2 text-xs ${useSimpleCost ? "text-gold/50" : ""}`}>Resource</span>
               <div className="relative">
                 <input
                   type="checkbox"
@@ -1061,7 +1065,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 />
                 <div className="w-9 h-5 bg-brown/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gold/30"></div>
               </div>
-              <span className={`ml-2 text-sm ${useSimpleCost ? "" : "text-kit-muted"}`}>Labor</span>
+              <span className={`ml-2 text-xs ${useSimpleCost ? "" : "text-gold/50"}`}>Labor</span>
             </label>
           )}
         </div>
@@ -1287,7 +1291,7 @@ export const BuildingCard = ({
             aria-label="Build"
           >
             {buildLoading ? (
-              <span className="text-sm font-bold">…</span>
+              <span className="text-[10px] font-bold">…</span>
             ) : (
               <SemanticIcon name="build" className="h-3.5 w-3.5" />
             )}
@@ -1313,7 +1317,7 @@ export const BuildingCard = ({
               aria-label={allPaused ? "Resume all" : "Pause all"}
             >
               {pauseResumeAllLoading ? (
-                <span className="text-sm font-bold">…</span>
+                <span className="text-[10px] font-bold">…</span>
               ) : allPaused ? (
                 <SemanticIcon name="play" className="h-3.5 w-3.5" />
               ) : (
@@ -1339,7 +1343,7 @@ export const BuildingCard = ({
               aria-label="Destroy building"
             >
               {destroyLoading ? (
-                <span className="text-sm font-bold">…</span>
+                <span className="text-[10px] font-bold">…</span>
               ) : (
                 <SemanticIcon name="trash" className="h-3.5 w-3.5" />
               )}
@@ -1348,7 +1352,7 @@ export const BuildingCard = ({
         </div>
         <div className="ml-auto flex items-center gap-2">
           {isWorkersHut && (
-            <span className="inline-flex items-center justify-center rounded-full bg-black/80 px-2 py-0.5 text-sm font-semibold text-gold/90 shadow-md border border-gold/30">
+            <span className="inline-flex items-center justify-center rounded-full bg-black/80 px-2 py-0.5 text-[10px] font-semibold text-gold/90 shadow-md border border-gold/30">
               {count}
             </span>
           )}
@@ -1362,7 +1366,7 @@ export const BuildingCard = ({
         </div>
       </div>
       {showDisabledMessage && (
-        <div className="absolute inset-0 bg-brown/60 p-4 text-sm flex justify-center text-center">
+        <div className="absolute inset-0 bg-brown/60 p-4 text-xs flex justify-center text-center">
           <div className="self-center text-gold/90 leading-tight">{disabledReason}</div>
         </div>
       )}
@@ -1372,7 +1376,7 @@ export const BuildingCard = ({
           <div className="flex items-center gap-1.5">
             {troopHint && (
               <span
-                className="inline-flex items-center gap-1 rounded-md border border-gold/40 bg-black/60 px-1.5 py-0.5 text-sm font-semibold text-gold/90 shadow-md"
+                className="inline-flex items-center gap-1 rounded-md border border-gold/40 bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gold/90 shadow-md"
                 title={`T${troopHint.tier} ${troopHint.troopLabel}`}
                 aria-label={`T${troopHint.tier} ${troopHint.troopLabel}`}
               >
@@ -1469,7 +1473,7 @@ const ResourceInfo = ({
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {resourceById && (
           <div>
-            <h6 className="text-gold/70 text-sm mb-1">Produces</h6>
+            <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Produces</h6>
             <div className="flex items-center gap-2 mt-1">
               <h6 className="text-lg font-semibold text-green-400">+{amountProducedPerTick}</h6>
               <ResourceIcon className="self-center" resource={resourceId} size="xl" />
@@ -1480,14 +1484,14 @@ const ResourceInfo = ({
         <div>
           {population !== 0 && (
             <div className="mb-2">
-              <h6 className="text-gold/70 text-sm mb-1">Population Cost</h6>
+              <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Population Cost</h6>
               <h6 className="text-gold text-lg font-semibold">+{population}</h6>
             </div>
           )}
 
           {capacity !== 0 && (
             <div>
-              <h6 className="text-gold/70 text-sm mb-1">Max Pop. Capacity Grant</h6>
+              <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Max Pop. Capacity Grant</h6>
               <h6 className="text-gold text-lg font-semibold">+{capacity}</h6>
             </div>
           )}
@@ -1496,13 +1500,13 @@ const ResourceInfo = ({
 
       {cost === undefined ? (
         <>
-          <h6 className="text-gold/70 text-sm pt-2 border-t border-gold/10">Cost</h6>
+          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">Cost</h6>
           <p className="text-gold/70">—</p>
         </>
       ) : (
         cost.length > 0 && (
           <>
-            <h6 className="text-gold/70 text-sm pt-2 border-t border-gold/10">Cost</h6>
+            <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">Cost</h6>
             <div className="grid grid-cols-2 gap-2">
               {Object.keys(cost).map((resourceId) => {
                 const balance = getBalance(
@@ -1530,7 +1534,9 @@ const ResourceInfo = ({
       {buildingCost === undefined && <p>Building Creation Cost: —</p>}
       {buildingCost && buildingCost.length > 0 && (
         <>
-          <h6 className="text-gold/70 text-sm pt-2 border-t border-gold/10">Building Creation Cost</h6>
+          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">
+            Building Creation Cost
+          </h6>
           <div className="grid grid-cols-2 gap-2">
             {Object.keys(buildingCost).map((resourceId, index) => {
               const balance = getBalance(
@@ -1556,7 +1562,7 @@ const ResourceInfo = ({
 
       {consumedBy.length > 0 && (
         <>
-          <h6 className="text-gold/70 text-sm pt-2 border-t border-gold/10 flex items-center gap-2">
+          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10 flex items-center gap-2">
             <ResourceIcon className="self-center" resource={resourceId} size="lg" /> Consumed By
           </h6>
           <div className="flex flex-row space-x-2 mt-1">
@@ -1647,13 +1653,13 @@ const BuildingInfo = ({
         <div>
           {population !== 0 && (
             <div className="mb-2">
-              <h6 className="text-gold/70 text-sm mb-1">Population Cost</h6>
+              <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Population Cost</h6>
               <span className="text-gold text-lg font-semibold">+{population}</span>
             </div>
           )}
           {capacity !== 0 && (
             <div>
-              <h6 className="text-gold/70 text-sm mb-1">Max Population Grant</h6>
+              <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Max Population Grant</h6>
               <span className="text-gold text-lg font-semibold">+{capacity}</span>
             </div>
           )}
@@ -1661,7 +1667,7 @@ const BuildingInfo = ({
         <div>
           {resourceProducedName && perTick !== 0 && (
             <div>
-              <h6 className="text-gold/70 text-sm mb-1">Produced</h6>
+              <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Produced</h6>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-lg font-semibold text-green-400">+{perTick}</span>
                 <ResourceIcon withTooltip={false} className="self-center" resource={resourceProducedName} size="sm" />
@@ -1674,7 +1680,7 @@ const BuildingInfo = ({
 
       {Array.isArray(ongoingCost) && ongoingCost.length > 0 ? (
         <>
-          <h6 className="text-gold/70 text-sm pt-2 border-t border-gold/10">Cost</h6>
+          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">Cost</h6>
           <div className="grid grid-cols-2 gap-2">
             {ongoingCost.map((costItem, index) => {
               if (!costItem || costItem.resource === undefined) return null; // Add check for undefined
@@ -1683,7 +1689,7 @@ const BuildingInfo = ({
                 <ResourceCost
                   key={`ongoing-cost-${index}`}
                   type="horizontal"
-                  className="!text-sm"
+                  className="!text-xs"
                   resourceId={costItem.resource}
                   amount={costItem.amount}
                   balance={balance.balance}
@@ -1693,13 +1699,17 @@ const BuildingInfo = ({
           </div>
         </>
       ) : resourceProduced !== undefined && !useSimpleCost ? ( // Show only if production exists and not labor mode
-        <div className="text-gold/70 text-sm pt-2 border-t border-gold/10">No ongoing resource costs in this mode.</div>
+        <div className="text-gold/70 italic text-xs pt-2 border-t border-gold/10">
+          No ongoing resource costs in this mode.
+        </div>
       ) : null}
 
       {buildingCost === undefined && <p>Building Creation Cost: —</p>}
       {buildingCost && buildingCost.length > 0 && (
         <>
-          <h6 className="text-gold/70 text-sm pt-2 border-t border-gold/10">Building Creation Cost</h6>
+          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">
+            Building Creation Cost
+          </h6>
           <div className="grid grid-cols-2 gap-2">
             {Object.keys(buildingCost).map((resourceId, index) => {
               const balance = getBalance(
@@ -1712,7 +1722,7 @@ const BuildingInfo = ({
                 <ResourceCost
                   key={`fixed-cost-${index}`}
                   type="horizontal"
-                  className="!text-sm"
+                  className="!text-xs"
                   resourceId={buildingCost[Number(resourceId)].resource}
                   amount={buildingCost[Number(resourceId)].amount}
                   balance={balance.balance}
@@ -1725,7 +1735,7 @@ const BuildingInfo = ({
 
       {usedIn.length > 0 && (
         <>
-          <h6 className="text-gold/70 text-sm pt-2 border-t border-gold/10">Consumed By</h6>
+          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">Consumed By</h6>
           <div className="flex flex-row space-x-2 mt-1">
             {React.Children.toArray(
               usedIn.map((resourceId) => <ResourceIcon key={resourceId} resource={resourceId} size="sm" />),

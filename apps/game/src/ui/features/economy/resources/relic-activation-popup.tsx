@@ -127,21 +127,21 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
       {relicInfo && (
         <div className="w-full mb-6 rounded bg-dark-brown/50 p-4">
           <p className="text-sm font-semibold mb-2">{relicInfo.name}</p>
-          <p className="text-sm text-gold/80 mb-2">
+          <p className="text-xs text-gold/80 mb-2">
             {relicInfo.effect}
             {relicInfo.duration ? ` for ${relicInfo.duration}` : ""}
           </p>
           <div className="flex items-center gap-2">
-            <span className={`px-2 py-1 rounded text-sm font-semibold ${getRelicTypeColor(relicInfo.type)}`}>
+            <span className={`px-2 py-1 rounded text-xs font-semibold ${getRelicTypeColor(relicInfo.type)}`}>
               {relicInfo.type}
             </span>
             <span
-              className={`px-2 py-1 rounded text-sm font-semibold ${getRecipientTypeColor(relicInfo.recipientType)}`}
+              className={`px-2 py-1 rounded text-xs font-semibold ${getRecipientTypeColor(relicInfo.recipientType)}`}
             >
               {relicInfo.recipientType}
             </span>
             <span
-              className={`px-2 py-1 rounded text-sm font-bold ${
+              className={`px-2 py-1 rounded text-xs font-bold ${
                 relicInfo.level === 2 ? "bg-purple-600/20 text-purple-400" : "bg-blue-600/20 text-blue-400"
               }`}
             >

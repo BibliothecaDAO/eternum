@@ -403,20 +403,20 @@ html.scene-viewport body {
   -webkit-touch-callout: none;
   user-select: none;
 }
-/* One readable type for every surface (decisions-1, 14 October 2026): Atkinson Hyperlegible Next for everything read,
-   upright, sentence case and untracked; Bokor only where a component asks for font-display. Semantic italics read
-   upright too. Numbers set bold and tabular, so a rolling count never jitters and a number and its unit read in one
-   face ("7h 14m", "18.3K"). */
-body,
-button,
-.font-sans,
-:is(.font-mono, code, kbd, samp) {
+/* One readable type for every surface but the Blitz and Eternum HUD (decisions-1, 14 October 2026): Atkinson
+   Hyperlegible Next for everything read, upright, sentence case and untracked; Bokor only where a component asks for
+   font-display. Semantic italics read upright too. Numbers set bold and tabular, so a rolling count never jitters and a
+   number and its unit read in one face ("7h 14m", "18.3K"). The :where scope adds no specificity. */
+:where(html:not(.classic-hud)) body,
+:where(html:not(.classic-hud)) button,
+:where(html:not(.classic-hud)) .font-sans,
+:where(html:not(.classic-hud)) :is(.font-mono, code, kbd, samp) {
   font-family: var(--font-body);
 }
-:is(em, i, cite) {
+:where(html:not(.classic-hud)) :is(em, i, cite) {
   font-style: normal;
 }
-.tabular-nums {
+:where(html:not(.classic-hud)) .tabular-nums {
   font-family: var(--font-body);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -427,6 +427,62 @@ button,
 :root {
   --overlay-surface-from: rgba(38, 29, 17, 0.98);
   --overlay-surface-to: rgba(16, 12, 8, 0.99);
+}
+
+/* The Blitz and Eternum HUD's own type (classic-hud on <html>, set while that HUD is mounted): IM FELL English SC labels
+   and buttons with Atkinson figures (--font-ui), caps and tracking where a component asks, italics, and the teal
+   overlay surface. Its display choices are one class each (hud-typography.ts). */
+html.classic-hud {
+  --overlay-surface-from: #192930;
+  --overlay-surface-to: #101c23;
+}
+:where(html.classic-hud) .font-ui {
+  font-family: var(--font-ui);
+}
+.hud-caps {
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+}
+.hud-caps-tight {
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+.hud-muted {
+  font-style: italic;
+}
+.hud-caps-button {
+  text-transform: uppercase;
+}
+/* Parts the Frontier HUD shares with the Blitz and Eternum HUD (chat, settings, army creation) read there as Frontier
+   does: sentence case, upright and untracked, at its sizes (frontier-hud on <html>, set while that HUD is mounted). */
+html.frontier-hud .uppercase {
+  text-transform: none;
+}
+html.frontier-hud .italic {
+  font-style: normal;
+}
+html.frontier-hud [class*="tracking-"] {
+  letter-spacing: normal;
+}
+html.frontier-hud :is(.hud-caps, .hud-caps-tight) {
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 0.8125rem;
+}
+html.frontier-hud .hud-caps-button {
+  text-transform: none;
+}
+html.frontier-hud .hud-muted {
+  font-style: normal;
+}
+html.frontier-hud .hud-body {
+  font-size: 1rem;
+}
+html.frontier-hud .hud-value {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9375rem;
 }
 .frontier-sheet {
   /* An opaque base under the translucent gradient: nothing beneath a sheet shows through it. */
@@ -601,7 +657,8 @@ h6,
 .h4,
 .h5,
 .h6 {
-  font-family: var(--font-body);
+  /* --font-ui exists only under html.classic-hud: the Blitz and Eternum HUD's label face. */
+  font-family: var(--font-ui, var(--font-body));
 }
 @keyframes dotAnimation {
   0%,
@@ -703,6 +760,9 @@ h5 {
 }
 h6 {
   @apply text-sm sm:text-base md:text-lg;
+}
+:where(html.classic-hud) h6 {
+  text-transform: uppercase;
 }
 .fade-in {
   animation: fadeIn 1s;
@@ -819,7 +879,7 @@ canvas {
 }
 
 button {
-  font-family: var(--font-body);
+  font-family: var(--font-ui, var(--font-body));
 }
 
 .button-gold {

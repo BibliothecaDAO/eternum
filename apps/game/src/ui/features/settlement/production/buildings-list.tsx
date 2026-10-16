@@ -87,7 +87,7 @@ export const BuildingsList = ({
         <button
           type="button"
           onClick={() => onSelectProduction(null)}
-          className="rounded-md border border-gold/25 px-2.5 py-1 text-sm font-semibold text-gold/80 transition hover:border-gold/50 hover:text-gold"
+          className="rounded-md border border-gold/25 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-gold/80 transition hover:border-gold/50 hover:text-gold"
         >
           Change resource
         </button>

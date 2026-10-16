@@ -57,7 +57,7 @@ export const GuardDismissal = ({
     <div className="space-y-2 border-t border-gold/20 pt-2">
       {confirming ? (
         <>
-          <p className="text-sm">
+          <p className="text-xs">
             Dismiss guard in slot {DISPLAYED_SLOT_NUMBER_MAP[slot as GuardSlot]}? All its troops are permanently lost.
           </p>
           <div className="flex gap-2">

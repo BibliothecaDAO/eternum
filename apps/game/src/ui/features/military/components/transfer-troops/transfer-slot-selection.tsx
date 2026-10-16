@@ -69,7 +69,7 @@ export const TransferSlotSelection = ({
       return (
         <div className="flex flex-col gap-1">
           <div className="text-sm font-bold text-gold/70 leading-none">Empty</div>
-          <div className="text-sm text-kit-muted">No troops</div>
+          <div className="text-xxs uppercase tracking-wide text-gold/50">No troops</div>
         </div>
       );
     }
@@ -83,7 +83,7 @@ export const TransferSlotSelection = ({
           <TroopBadge category={troop.category} tier={troop.tier} emphasize />
           <span className="text-sm font-bold text-gold leading-none">{countLabel}</span>
         </div>
-        <div className="text-sm text-gold/70">{String(troop.category)}</div>
+        <div className="text-xxs uppercase tracking-wide text-gold/70">{String(troop.category)}</div>
         <GuardStaminaBar current={troop.staminaCurrent} max={troop.staminaMax} className="mt-1" />
       </div>
     );
@@ -105,11 +105,11 @@ export const TransferSlotSelection = ({
               balanceOption.disabled && "opacity-60 cursor-not-allowed bg-brown/5 border-brown/30",
             )}
           >
-            <div className="absolute top-0.5 right-0.5 bg-gold/30 text-gold text-sm px-1 rounded font-bold">0</div>
-            <div className="text-sm font-bold truncate text-gold/80">Balance</div>
+            <div className="absolute top-0.5 right-0.5 bg-gold/30 text-gold text-xxs px-1 rounded font-bold">0</div>
+            <div className="text-xs font-bold truncate text-gold/80">Balance</div>
             {renderTroopPill(balanceOption.troop)}
             {balanceOption.disabledReason && (
-              <span className="self-start border border-danger/60 bg-danger/10 text-danger px-1.5 py-0.5 rounded text-sm font-semibold flex items-center gap-1.5">
+              <span className="self-start border border-danger/60 bg-danger/10 text-danger px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wide font-semibold flex items-center gap-1.5">
                 <SemanticIcon name="warning" className="w-3 h-3" />
                 Explorer not owned by this structure
               </span>
@@ -149,12 +149,12 @@ export const TransferSlotSelection = ({
           const isFrontline = frontlineSlot === slotId;
           const isFinalLine = lastGuardSlot === slotId;
           const orderBadgeClass = clsx(
-            "border rounded px-1.5 py-0.5 text-sm font-semibold",
+            "border rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wide font-semibold",
             isFrontline
               ? "border-danger/50 bg-danger/10 text-danger/80"
               : isFinalLine
                 ? "border-gold/40 bg-gold/10 text-gold/80"
-                : "border-gold/20 bg-dark-brown/60 text-kit-muted",
+                : "border-gold/20 bg-dark-brown/60 text-gold/60",
           );
           const orderBadgeText = (() => {
             if (isFrontline) return "Hit first";
@@ -188,11 +188,11 @@ export const TransferSlotSelection = ({
               aria-pressed={isActive}
               className={cardClasses}
             >
-              <div className="absolute top-0.5 right-0.5 bg-gold/30 text-gold text-sm px-1 rounded font-bold">
+              <div className="absolute top-0.5 right-0.5 bg-gold/30 text-gold text-xxs px-1 rounded font-bold">
                 {displayedSlotNumber}
               </div>
 
-              <div className="text-sm font-bold truncate text-gold/80">{slotLabel}</div>
+              <div className="text-xs font-bold truncate text-gold/80">{slotLabel}</div>
 
               {renderTroopPill(troopInfo)}
 

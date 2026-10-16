@@ -181,7 +181,7 @@ export const TransferAutomationAdvancedModal = () => {
       <div className="mb-3 flex flex-col gap-2">
         <input
           type="text"
-          className="w-full px-2 py-1 text-sm rounded border border-gold/30 bg-black/30 text-gold/80 outline-none"
+          className="w-full px-2 py-1 text-xs rounded border border-gold/30 bg-black/30 text-gold/80 outline-none"
           placeholder="Filter by source/destination"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
@@ -204,12 +204,12 @@ export const TransferAutomationAdvancedModal = () => {
         </div>
       </div>
       {filtered.length === 0 ? (
-        <div className="text-sm text-kit-muted">No scheduled transfers.</div>
+        <div className="text-xxs text-gold/60">No scheduled transfers.</div>
       ) : (
         <div className="space-y-2">
           {filtered.map((e) => (
             <div key={e.id} className="flex items-center justify-between rounded border border-gold/20 bg-black/30 p-2">
-              <div className="flex flex-col text-sm text-gold/80">
+              <div className="flex flex-col text-xs text-gold/80">
                 <div className="font-semibold text-gold/90">
                   {e.sourceName ?? e.sourceEntityId} → {e.destinationName ?? e.destinationEntityId}
                 </div>
@@ -217,7 +217,7 @@ export const TransferAutomationAdvancedModal = () => {
                   {formatResourceSummary(e)}
                   {e.active ? ` • every ${e.intervalMinutes}m` : " • paused"}
                   {typeof e.lastRunAt === "number" && (
-                    <span className="text-kit-muted"> • last run {formatLastRun(e.lastRunAt)}</span>
+                    <span className="text-gold/60"> • last run {formatLastRun(e.lastRunAt)}</span>
                   )}
                 </div>
               </div>

@@ -67,7 +67,7 @@ const CategoryFilterChips = ({
             className={`inline-flex h-6 w-6 max-lg:h-11 max-lg:w-11 flex-shrink-0 items-center justify-center rounded-md border transition ${
               isActive
                 ? "border-gold/60 bg-gold/15 text-gold shadow-[0_0_6px_rgba(223,170,84,0.22)]"
-                : "border-gold/15 bg-black/20 text-kit-muted hover:border-gold/40 hover:text-gold"
+                : "border-gold/15 bg-black/20 text-gold/65 hover:border-gold/40 hover:text-gold"
             }`}
             aria-pressed={isActive}
             aria-label={option.label}
@@ -742,7 +742,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       <section className="space-y-2">
         <h3 className="text-sm font-semibold text-gold">2. Resources</h3>
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1 rounded-full border border-gold/40 bg-brown/40 px-1 py-0.5 text-sm font-semibold ">
+          <div className="flex items-center gap-1 rounded-full border border-gold/40 bg-brown/40 px-1 py-0.5 text-xxs font-semibold uppercase tracking-widest">
             <button
               type="button"
               onClick={() => setResourceFilter("all")}
@@ -765,7 +765,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
               Military
             </button>
           </div>
-          <Button variant="outline" size="xs" onClick={resetPanel}>
+          <Button variant="outline" size="xs" forceUppercase={false} onClick={resetPanel}>
             Reset
           </Button>
         </div>
@@ -788,7 +788,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
               >
                 <ResourceIcon resource={ResourcesIds[resourceId]} size="xs" />
                 <span className="truncate">{ResourcesIds[resourceId]}</span>
-                <span className="ml-auto shrink-0 text-sm text-kit-muted">({totalHuman.toLocaleString()})</span>
+                <span className="ml-auto shrink-0 text-[10px] text-gold/60">({totalHuman.toLocaleString()})</span>
               </button>
             );
           })}
@@ -799,7 +799,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
         <section className="space-y-2">
           <h3 className="text-sm font-semibold text-gold">3. Destination</h3>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap items-center gap-3 text-sm text-kit-muted">
+            <div className="flex flex-wrap items-center gap-3 text-xxs text-gold/60">
               <CategoryFilterChips
                 categories={destinationCategories}
                 selected={destCategoryFilter}
@@ -810,7 +810,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                 Owned only
               </label>
             </div>
-            <div className="text-sm text-gold/70">
+            <div className="text-xs text-gold/70">
               {allowMultiDestination && actualDestinationCount > 0 ? `${actualDestinationCount} selected` : ""}
             </div>
           </div>
@@ -859,16 +859,16 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
               return (
                 <div key={`cfg-${rid}`} className="rounded border border-gold/20 bg-black/20 p-2">
                   <div className="flex items-center justify-between gap-2 mb-1">
-                    <div className="flex min-w-0 items-center gap-2 text-sm text-gold/80">
+                    <div className="flex min-w-0 items-center gap-2 text-xs text-gold/80">
                       <ResourceIcon resource={ResourcesIds[rid]} size="xs" />
                       <div className="truncate font-semibold" title={ResourcesIds[rid] as string}>
                         {ResourcesIds[rid]}
                       </div>
                     </div>
-                    <div className="shrink-0 text-sm text-kit-muted">Avail: {available.toLocaleString()}</div>
+                    <div className="shrink-0 text-xxs text-gold/60">Avail: {available.toLocaleString()}</div>
                   </div>
                   <div>
-                    <div className="flex items-center justify-between mb-1 text-sm text-kit-muted">
+                    <div className="flex items-center justify-between mb-1 text-xxs text-gold/60">
                       <span>
                         Selected: {selectedAmount.toLocaleString()} / {maxAmount.toLocaleString()}
                       </span>
@@ -918,7 +918,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                           [rid]: { amount: Math.max(0, Math.min(maxAmount, nextValue)) },
                         }));
                       }}
-                      className="mt-2 w-full rounded border border-gold/30 bg-black/40 px-2 py-1 text-sm max-lg:min-h-11 max-lg:text-base text-gold/80 placeholder:text-kit-muted focus:border-gold/60 focus:outline-none disabled:opacity-50"
+                      className="mt-2 w-full rounded border border-gold/30 bg-black/40 px-2 py-1 text-xs max-lg:min-h-11 max-lg:text-base text-gold/80 placeholder:text-gold/40 focus:border-gold/60 focus:outline-none disabled:opacity-50"
                       disabled={maxAmount === 0}
                     />
                   </div>
@@ -927,7 +927,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
             })}
           </div>
           {transferPreview && (
-            <div className="space-y-1 text-sm text-kit-muted">
+            <div className="space-y-1 text-xxs text-gold/60">
               <span className={donkeyShortage ? "text-danger/80" : "text-gold/70"}>
                 Donkeys {aggregatedDonkeyNeed.toLocaleString()} used / {transferPreview.donkeys.have.toLocaleString()}{" "}
                 available
@@ -936,7 +936,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
           )}
 
           {transferPreview && donkeyShortage && (
-            <div className="flex items-start gap-2 rounded-md border border-danger/40 bg-danger/10 p-2 text-sm text-danger/80">
+            <div className="flex items-start gap-2 rounded-md border border-danger/40 bg-danger/10 p-2 text-xs text-danger/80">
               <span>
                 Insufficient donkeys to cover all selected destinations. Reduce the load or add more donkeys at the
                 source.
@@ -948,7 +948,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
 
       {selectedResources.length > 0 && selectedSourceId && (
         <section className="space-y-2">
-          <div className="flex flex-wrap items-center gap-3 text-sm text-gold/70">
+          <div className="flex flex-wrap items-center gap-3 text-xs text-gold/70">
             <label className="flex items-center gap-2">
               <input type="radio" name="freq" checked={!repeat} onChange={() => setRepeat(false)} /> One-off
             </label>
@@ -983,9 +983,9 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                       const nextValue = Number.isFinite(rawValue) ? rawValue : 1;
                       setIntervalMinutes(Math.max(1, Math.min(30, nextValue)));
                     }}
-                    className="w-16 rounded border border-gold/30 bg-black/40 px-2 py-1 text-sm text-gold/80 placeholder:text-kit-muted focus:border-gold/60 focus:outline-none"
+                    className="w-16 rounded border border-gold/30 bg-black/40 px-2 py-1 text-xxs text-gold/80 placeholder:text-gold/40 focus:border-gold/60 focus:outline-none"
                   />
-                  <span className="text-sm text-kit-muted">min</span>
+                  <span className="text-xxs text-gold/60">min</span>
                 </>
               )}
             </div>

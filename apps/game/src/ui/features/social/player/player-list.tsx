@@ -228,7 +228,7 @@ export const PlayerList = ({
             );
           })
         ) : (
-          <div className="flex flex-col items-center justify-center h-32 text-kit-muted">
+          <div className="flex flex-col items-center justify-center h-32 text-gold/60">
             <SemanticIcon name="person" className="w-8 h-8 mb-2 opacity-50" />
             <p className="text-sm">No players found</p>
           </div>
@@ -280,7 +280,13 @@ const PlayerListHeader = ({
       )}
     >
       {columns.map(({ label, align }) => (
-        <div key={label} className={clsx("w-full items-center text-sm font-semibold text-gold/70", align)}>
+        <div
+          key={label}
+          className={clsx(
+            "w-full items-center text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-gold/70",
+            align,
+          )}
+        >
           {label}
         </div>
       ))}
@@ -351,7 +357,7 @@ const PlayerRow = ({
       )}
       <div
         className={clsx(
-          "grid w-full cursor-pointer items-center gap-x-3 px-3 py-2 text-sm transition-colors md:gap-x-4 md:px-4",
+          "grid w-full cursor-pointer items-center gap-x-3 px-3 py-2 text-xs transition-colors md:gap-x-4 md:px-4",
           gridTemplateClass,
         )}
         onClick={onSelect}
@@ -360,7 +366,7 @@ const PlayerRow = ({
           <span
             className={clsx(
               "font-medium transition-colors",
-              !isUnranked && "",
+              !isUnranked && "italic",
               isUnranked ? "text-red-400" : isSelected ? "text-lightest" : "text-gold/90",
             )}
           >
@@ -387,7 +393,7 @@ const PlayerRow = ({
             {player.isUser && (
               <span
                 title={`0x${BigInt(player.address).toString(16)}`}
-                className="block truncate font-mono text-sm text-kit-muted"
+                className="block truncate font-mono text-[10px] text-gold/60"
               >{`0x${BigInt(player.address).toString(16)}`}</span>
             )}
             {activitySummary && <span className="block text-sm text-kit-muted md:hidden">{activitySummary}</span>}
@@ -395,11 +401,11 @@ const PlayerRow = ({
         </div>
         {showTribeDetails ? (
           <div
-            className={clsx("hidden min-w-0 truncate text-sm transition-colors md:block", {
+            className={clsx("hidden min-w-0 truncate text-xs transition-colors md:block", {
               "text-emerald-300/90": player.guild && !isSelected,
               "text-emerald-200": player.guild && isSelected,
-              "text-kit-muted": !player.guild && !isSelected,
-              "text-gold/70": !player.guild && isSelected,
+              "text-gold/50 italic": !player.guild && !isSelected,
+              "text-gold/70 italic": !player.guild && isSelected,
             })}
           >
             {player.guild ? player.guild.name : "No Tribe"}
@@ -455,7 +461,7 @@ const PlayerRow = ({
           <span>{player.points === null ? "—" : currencyIntlFormat(player.points)}</span>
           {hasShareholderPoints && (
             <span
-              className="text-order-brilliance text-sm"
+              className="text-order-brilliance text-xs"
               onMouseEnter={() =>
                 setTooltip({
                   content: <div className="text-gold">Includes real-time hyperstructure shareholder points</div>,

@@ -136,7 +136,7 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
   };
 
   return (
-    <section className="space-y-3 p-3 text-sm text-gold" aria-label="Hyperstructure construction">
+    <section className="space-y-3 p-3 text-xs text-gold" aria-label="Hyperstructure construction">
       <h4>Construction</h4>
       {hyperstructure.stage === "Foundation" ? (
         <>

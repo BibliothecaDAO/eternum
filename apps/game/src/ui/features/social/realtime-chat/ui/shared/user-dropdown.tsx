@@ -55,7 +55,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({
           <span className="text-sm truncate text-white">{displayLabel}</span>
           {!isOffline && <div className="ml-auto w-2 h-2 bg-green-500 rounded-full" />}
           {unreadCount > 0 && (
-            <span className="ml-1 animate-pulse bg-red-500 text-white text-sm font-bold px-2 py-0.5 bg-red/30 rounded-full">
+            <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 py-0.5 bg-red/30 rounded-full">
               {unreadCount}
             </span>
           )}
@@ -66,7 +66,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({
               e.stopPropagation();
               onTogglePin(user.playerId);
             }}
-            className={`ml-2 p-1 rounded hover:bg-gold/20 transition-colors ${isPinned ? "text-gold" : "text-kit-muted"}`}
+            className={`ml-2 p-1 rounded hover:bg-gold/20 transition-colors ${isPinned ? "text-gold" : "text-gold/30"}`}
             title={isPinned ? "Unpin user" : "Pin user"}
           >
             <SemanticIcon name="pin" className={`h-3 w-3 ${isPinned ? "opacity-100" : "opacity-40"}`} />
@@ -104,26 +104,32 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({
       <div className="overflow-y-auto max-h-[320px]">
         {usersWithUnread.length > 0 && (
           <section className="mb-2 px-2 py-2">
-            <h3 className="px-1 pb-1 text-sm font-semibold text-gold/70">Unread Messages ({usersWithUnread.length})</h3>
+            <h3 className="px-1 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gold/70">
+              Unread Messages ({usersWithUnread.length})
+            </h3>
             <ul className="flex flex-col">{usersWithUnread.map((user) => renderUserItem(user, !user.isOnline))}</ul>
           </section>
         )}
 
         {onlineUsers.length > 0 && (
           <section className="mb-2 px-2 py-2">
-            <h3 className="px-1 pb-1 text-sm font-semibold text-gold/70">Online Lords ({onlineUsers.length})</h3>
+            <h3 className="px-1 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gold/70">
+              Online Lords ({onlineUsers.length})
+            </h3>
             <ul className="flex flex-col">{onlineUsers.map((user) => renderUserItem(user, false))}</ul>
           </section>
         )}
 
         {offlineUsers.length > 0 && (
           <section className="mb-2 px-2 py-2">
-            <h3 className="px-1 pb-1 text-sm font-semibold text-gold/70">Offline ({offlineUsers.length})</h3>
+            <h3 className="px-1 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gold/70">
+              Offline ({offlineUsers.length})
+            </h3>
             <ul className="flex flex-col">{offlineUsers.map((user) => renderUserItem(user, true))}</ul>
           </section>
         )}
 
-        {filteredUsers.length === 0 && <p className="px-3 py-4 text-sm text-kit-muted text-center">No users found.</p>}
+        {filteredUsers.length === 0 && <p className="px-3 py-4 text-sm text-gold/50 text-center">No users found.</p>}
       </div>
     </div>
   );

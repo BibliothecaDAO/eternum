@@ -64,8 +64,8 @@ interface StructureBannerEntityDetailContentProps extends Omit<StructureBannerEn
 
 const VillageTimerChip = ({ label, value, title }: { label: string; value: string; title?: string }) => (
   <div className="rounded border border-gold/15 bg-black/25 px-1.5 py-1" title={title}>
-    <div className="text-sm leading-tight text-kit-muted">{label}</div>
-    <div className="mt-0.5 text-sm font-semibold leading-none text-gold">{value}</div>
+    <div className="text-[9px] uppercase tracking-[0.06em] leading-tight text-gold/65">{label}</div>
+    <div className="mt-0.5 text-xs font-semibold leading-none text-gold">{value}</div>
   </div>
 );
 
@@ -216,6 +216,7 @@ const StructureBannerEntityDetailContent = memo(
                 <Button
                   size="xs"
                   variant="outline"
+                  forceUppercase={false}
                   className="border-gold/30 bg-dark/40 text-gold hover:bg-dark/60 !px-2 !py-1 min-w-0"
                   onClick={handleOpenTransferPanel}
                   aria-label="Open transfer panel"

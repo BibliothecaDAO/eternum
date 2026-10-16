@@ -23,15 +23,16 @@ type ButtonProps = {
   isLoading?: boolean;
   withoutSound?: boolean;
   size?: "xs" | "md" | "lg";
+  forceUppercase?: boolean;
 } & React.ComponentPropsWithRef<"button">;
 
 const STYLES = {
   baseStyle:
     "inline-flex whitespace-nowrap transition-all duration-300 items-center justify-center p-2 font-medium text-gold btn-bronze ",
   primary:
-    "px-6 py-2 bg-brown from-yellow-600 to-yellow-700  font-semibold text-lg shadow-md hover:from-yellow-700 hover:to-yellow-800 focus:outline-none border-2  outline-gold hover:bg-gold hover:text-brown  border-y hover:border-gold ",
+    "px-6 py-2 bg-brown from-yellow-600 to-yellow-700  font-semibold text-lg tracking-wider  shadow-md hover:from-yellow-700 hover:to-yellow-800 focus:outline-none border-2  outline-gold hover:bg-gold hover:text-brown  border-y hover:border-gold ",
   primarySelected:
-    "px-6 py-2 bg-gold from-yellow-600 to-yellow-700 font-semibold text-lg shadow-md focus:outline-none border-2 outline-gold !text-brown border-y border-gold",
+    "px-6 py-2 bg-gold from-yellow-600 to-yellow-700 font-semibold text-lg tracking-wider shadow-md focus:outline-none border-2 outline-gold !text-brown border-y border-gold",
   default: "bg-brown px-6 py-2 text-gold",
   enabledStyle: "bg-brown/10 hover:bg-brown/30 focus:outline-none",
   disabledStyle: "cursor-not-allowed !border-gray-gold !text-gray-gold",
@@ -41,15 +42,15 @@ const STYLES = {
   danger: "border border-red-500 bg-red-700 text-white hover:bg-red-600",
   secondary: "border border-orange text-orange bg-transparent hover:bg-orange/10",
   opaque:
-    "px-6 py-2 bg-brown/90 font-semibold text-lg shadow-md hover:from-yellow-700 hover:to-yellow-800 focus:outline-none border-2 outline-gold hover:bg-gold border-y hover:border-gold hover:text-black/90",
-  gold: "px-6 py-2 bg-gold  font-semibold text-lg shadow-md focus:outline-none border-2 border-brown button-gold hover:bg-[#d4b61e] !text-brown",
+    "px-6 py-2 bg-brown/90 font-semibold text-lg tracking-wider shadow-md hover:from-yellow-700 hover:to-yellow-800 focus:outline-none border-2 outline-gold hover:bg-gold border-y hover:border-gold hover:text-black/90",
+  gold: "px-6 py-2 bg-gold  font-semibold text-lg tracking-wider shadow-md focus:outline-none border-2 border-brown button-gold hover:bg-[#d4b61e] !text-brown",
   loadingStyle: "relative",
 };
 
 // Added responsive classes for different breakpoints (now includes `md:` variants as well)
 const SIZES = {
-  xs: "text-sm sm:text-sm md:text-sm h-4 sm:h-5 md:h-6 px-2 sm:px-3 md:px-4",
-  md: "text-sm sm:text-sm md:text-base lg:text-base px-3 sm:px-4 md:px-6 lg:px-6 py-1 sm:py-2 md:py-2",
+  xs: "text-xxs sm:text-xs md:text-sm h-4 sm:h-5 md:h-6 px-2 sm:px-3 md:px-4",
+  md: "text-xs sm:text-sm md:text-base lg:text-base px-3 sm:px-4 md:px-6 lg:px-6 py-1 sm:py-2 md:py-2",
   lg: "text-sm sm:text-lg md:text-xl px-4 sm:px-6 md:px-8 lg:px-8 py-2 sm:py-1 md:py-2",
 };
 
@@ -63,9 +64,12 @@ const Button: React.FC<ButtonProps> = ({
   isLoading = false,
   withoutSound = false,
   size = "md",
+  forceUppercase = true,
   ...props
 }) => {
   const playClick = useUISound("ui.click");
+  // hud-caps-button, not "uppercase": a mode that reads in sentence case restyles it in one place (index.css).
+  const casingClass = forceUppercase ? "hud-caps-button" : "normal-case";
 
   return (
     <button
@@ -76,7 +80,7 @@ const Button: React.FC<ButtonProps> = ({
           !withoutSound && playClick();
         }
       }}
-      className={` ${STYLES.baseStyle} ${STYLES[variant]} ${
+      className={` ${STYLES.baseStyle} ${STYLES[variant]} ${casingClass} ${
         isLoading ? STYLES.loadingStyle : ""
       } ${isPulsing ? "animate-pulse" : ""} ${SIZES[size]} ${disabled ? STYLES.disabledStyle : ""} ${className}`}
       disabled={disabled || isLoading}

@@ -21,7 +21,7 @@ export function IncomingCaravans({ structureId, isOwner }: { structureId: number
   const incoming = isOwner ? summarizeIncomingCaravans(arrivals, structureId, now) : null;
   if (!incoming) return null;
   return (
-    <p className="px-3 py-2 text-sm text-gold" aria-label="Incoming caravans">
+    <p className="px-3 py-2 text-xs text-gold" aria-label="Incoming caravans">
       Incoming · {incoming.count} {incoming.count === 1 ? "caravan" : "caravans"} · next in{" "}
       {formatTime(incoming.nextInSeconds)}
     </p>

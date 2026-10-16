@@ -226,25 +226,25 @@ export const PlayersPanel = ({
             </button>
             {showPointsBreakdown && (
               <div className="border-t border-gold/15 px-3 pb-3 pt-2">
-                <div className="flex flex-col gap-1 text-sm">
+                <div className="flex flex-col gap-1 text-xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-kit-muted">Explore a tile</span>
+                    <span className="text-gold/50">Explore a tile</span>
                     <span className="text-gold font-semibold">{grants.exploreTile} VP</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-kit-muted">Claim an Essence Rift or Camp from {BANDITS_NAME}</span>
+                    <span className="text-gold/50">Claim an Essence Rift or Camp from {BANDITS_NAME}</span>
                     <span className="text-gold font-semibold">{grants.claimCampFromBandits} VP</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-kit-muted">Claim a Hyperstructure from {BANDITS_NAME}</span>
+                    <span className="text-gold/50">Claim a Hyperstructure from {BANDITS_NAME}</span>
                     <span className="text-gold font-semibold">{grants.claimHyperstructureFromBandits} VP</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-kit-muted">Open a Relic Crate</span>
+                    <span className="text-gold/50">Open a Relic Crate</span>
                     <span className="text-gold font-semibold">{grants.openRelicCrate} VP</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-kit-muted">Control a Hyperstructure, per realm settled within 8 tiles</span>
+                    <span className="text-gold/50">Control a Hyperstructure, per realm settled within 8 tiles</span>
                     <span className="text-gold font-semibold">{grants.hyperstructurePerRealmPerSecond} VP/s</span>
                   </div>
                 </div>
