@@ -40,6 +40,8 @@ export interface MonitorState {
   document: StatusDocument;
   targets: Target[];
   counters: Record<string, Counter[]>;
+  /** Incidents emailed and not yet resolved (alerts.ts); a state written before alerts holds none. */
+  told?: string[];
 }
 export const STATE_KEY = "state.json";
 

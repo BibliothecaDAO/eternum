@@ -373,6 +373,19 @@ test("every service uses one RPC; deployer and cold admin keys never enter Worke
   expect(map.launch!.LAUNCH_DEPLOYER_PRIVATE_KEY).toBe(keys.launcher);
 });
 
+test("the status monitor emails incidents through the identity Worker's Resend key, to the address setup recorded", () => {
+  const status = workers.find((worker) => worker.id === "status")!;
+  expect(workerSecrets(status, { ...input, alertEmail: "oncall@example.test" }, secrets, keys)).toEqual({
+    L2_RPC_URL: input.rpc,
+    RESEND_API_KEY: input.resend,
+    ALERT_EMAIL: "oncall@example.test",
+  });
+  expect(workerSecrets(status, { ...input, alertEmail: undefined }, secrets, keys)).toEqual({
+    L2_RPC_URL: input.rpc,
+    RESEND_API_KEY: input.resend,
+  });
+});
+
 test("dry platform refuses every write entry before any network or subprocess call", async () => {
   const { store } = storage(false);
   const platform = new Platform(environments.dev, input, store, false);

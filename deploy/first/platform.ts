@@ -64,7 +64,12 @@ export function workerSecrets(worker: Worker, inputs: Inputs, secrets: Secrets, 
         PAUSER_ACCOUNT_ADDRESS: accountIdentity(keys.monitor).address,
       };
     case "status":
-      return { L2_RPC_URL: inputs.rpc };
+      // Alerts go out through the identity Worker's Resend account, to the address setup recorded.
+      return {
+        L2_RPC_URL: inputs.rpc,
+        RESEND_API_KEY: inputs.resend,
+        ...(inputs.alertEmail ? { ALERT_EMAIL: inputs.alertEmail } : {}),
+      };
   }
 }
 function cloudflareFamily(path: string) {

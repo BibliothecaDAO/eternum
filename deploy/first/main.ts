@@ -104,6 +104,7 @@ async function collectInputs(context: Deployment) {
     cloudflareToken: await prompt("Cloudflare token"),
     rpc: await prompt("Alchemy mainnet URL"),
     resend: await prompt("Resend key"),
+    alertEmail: await prompt("Alert email (where the status monitor reports incidents)"),
     amount: await prompt("Frontier deposit in whole tokens"),
     frontierStart: await prompt("Frontier start, YYYY-MM-DDTHH:MM:SSZ"),
     frontierEnd: await prompt("Frontier end, YYYY-MM-DDTHH:MM:SSZ"),

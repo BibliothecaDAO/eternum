@@ -16,7 +16,7 @@ const IS_PAUSED = "0x238d7ea31550fece8f0a8a601e3ae1a7c59cb3b6cc976ceb721e31ebd9c
 export async function probeServices(network: typeof fetch, now: number, known: Target[], value: PublicValueTargets) {
   let targets = known;
   let directoryReadable = false;
-  const [play, accounts, directory, blitz, chat, guardian, relay, monitor, ledger] = await Promise.all([
+  const [play, accounts, directory, blitz, launch, chat, guardian, relay, monitor, ledger] = await Promise.all([
     measure("play", "Play", network, (read) => probePlay(read, value.playUrl)),
     measure("accounts", "Sign in and accounts", network, (read) => probeAccounts(read, value.playUrl)),
     measure("directory", "Games list", network, async (read) => {
@@ -26,6 +26,7 @@ export async function probeServices(network: typeof fetch, now: number, known: T
       return listing.available ? "up" : "down";
     }),
     measure("blitz", "Blitz lobbies", network, (read) => probeSlots(read, value.playUrl)),
+    measure("launch", "Game launches and seating", network, (read) => probeLaunch(read, value.playUrl)),
     measure("chat", "Chat", network, (read) => probeChat(read, value.playUrl)),
     measure("guardian", "Device guardian", network, (read) => probeGuardian(read, value.playUrl + "/api/guardian")),
     measure("relay", "Value relay", network, (read) =>
@@ -41,7 +42,10 @@ export async function probeServices(network: typeof fetch, now: number, known: T
     directory.status = "down";
     directory.latency_ms = null;
   } else if (directoryReadable && worlds.some((world) => world.status === "degraded")) directory.status = "degraded";
-  return { targets, probes: [play, accounts, directory, blitz, chat, guardian, relay, monitor, ledger, ...worlds] };
+  return {
+    targets,
+    probes: [play, accounts, directory, blitz, launch, chat, guardian, relay, monitor, ledger, ...worlds],
+  };
 }
 
 async function probePlay(read: Reader, playUrl: string): Promise<Status> {
@@ -139,6 +143,13 @@ async function readDirectory(read: Reader, playUrl: string) {
 async function probeSlots(read: Reader, playUrl: string): Promise<Status> {
   const slots = await body(read, playUrl + "/api/slots");
   if (!Array.isArray(slots.slots)) throw new Error("Slots missing");
+  return "up";
+}
+
+/** The launch Worker answers 503 while any run has failed or is stranded, or a launcher or slot could not join or freeze. */
+async function probeLaunch(read: Reader, playUrl: string): Promise<Status> {
+  if ((await body(read, playUrl + "/api/factory/health")).service !== "launch")
+    throw new Error("Launch health missing");
   return "up";
 }
 

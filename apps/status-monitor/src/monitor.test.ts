@@ -5,6 +5,7 @@ import { Miniflare } from "miniflare";
 import worker, { monitor } from "./worker";
 import { probeServices } from "./probes";
 import { nextMonitorState } from "./state";
+import { SUSTAINED_SECONDS, tellPeople } from "./alerts";
 import { onRequestGet } from "../../status/functions/status.json";
 
 const now = 1791456000;
@@ -35,6 +36,8 @@ const network =
     }
     if (url.endsWith("/api/directory")) return response({ shards: [{ ...world, games: [] }] });
     if (url.endsWith("/api/slots")) return response({ slots: [] });
+    if (url.endsWith("/api/factory/health"))
+      return response({ service: "launch", failedRuns: [], joinFailures: [], freezeFailures: [], strandedRuns: [] });
     if (url.endsWith("/api/guardian")) return response({ publicKey: "0x1", accountClassHash: "0x2" });
     if (url.endsWith("/api/health/accounts") || url.endsWith("/api/chat/health")) return response({ success: true });
     if (url.endsWith("/manifest"))
@@ -59,6 +62,7 @@ it("probes every public path and world, not merely a directory200", async () => 
     ["accounts", "up"],
     ["directory", "up"],
     ["blitz", "up"],
+    ["launch", "up"],
     ["chat", "up"],
     ["guardian", "up"],
     ["relay", "up"],
@@ -371,4 +375,101 @@ it.each([
 ] as const)("reports malformed or stale %s health as down", async (id, path, body) => {
   const result = await probeServices(network({ [valueTargets.playUrl + path]: response(body) }), now, [], valueTargets);
   expect(result.probes.find((probe) => probe.id === id)!.status).toBe("down");
+});
+
+it("reports game launches down while a run has failed or is stranded", async () => {
+  const stranded = await probeServices(
+    network({
+      "https://play.realms.party/api/factory/health": Response.json(
+        { service: "launch", failedRuns: [], joinFailures: [], freezeFailures: [], strandedRuns: [{ id: 7 }] },
+        { status: 503 },
+      ),
+    }),
+    now,
+    [],
+    valueTargets,
+  );
+  expect(stranded.probes.find((p) => p.id === "launch")).toMatchObject({ status: "down", latency_ms: null });
+});
+
+/** Resend at the network boundary: every email it accepts, by idempotency key, the way Resend drops a repeated key. */
+const mailbox = (refuse = false) => {
+  const sent = new Map<string, { to: string[]; subject: string; text: string }>();
+  const attempts: string[] = [];
+  const send: typeof fetch = async (input, init) => {
+    expect(String(input)).toBe("https://api.resend.com/emails");
+    if (refuse) return new Response(null, { status: 500 });
+    const key = new Headers(init?.headers).get("idempotency-key")!;
+    attempts.push(key);
+    if (!sent.has(key)) sent.set(key, JSON.parse(String(init?.body)));
+    return Response.json({ id: key });
+  };
+  return { sent, attempts, send };
+};
+const alerting = { apiKey: "re_test", to: "oncall@example.test", environment: "staging" };
+const chatDown = [{ id: "chat", name: "Chat", status: "down" as const, latency_ms: null }];
+
+it("emails an incident once it lasts two minutes, once, and again when it resolves", async () => {
+  const { sent, send } = mailbox();
+  let state = nextMonitorState(null, now, chatDown, [])!;
+  let told = await tellPeople(state.document, [], alerting, send);
+  expect(sent.size).toBe(0);
+  for (const minute of [1, 2, 3]) {
+    state = nextMonitorState(state, now + minute * 60, chatDown, [])!;
+    told = await tellPeople(state.document, told, alerting, send);
+  }
+  expect(SUSTAINED_SECONDS).toBe(120);
+  expect([...sent.values()]).toEqual([
+    expect.objectContaining({ to: ["oncall@example.test"], subject: "[staging] Chat: unavailable" }),
+  ]);
+  expect(told).toEqual([`chat:${now}`]);
+  state = nextMonitorState(state, now + 240, [{ ...chatDown[0]!, status: "up", latency_ms: 10 }], [])!;
+  told = await tellPeople(state.document, told, alerting, send);
+  expect([...sent.keys()]).toEqual([`staging:chat:${now}:opened`, `staging:chat:${now}:resolved`]);
+  expect([...sent.values()][1]!.subject).toBe("[staging] Resolved: Chat: unavailable");
+  expect(told).toEqual([]);
+});
+
+it("keeps an alert untold until a send succeeds, and sends none when alerts are not configured", async () => {
+  let state = nextMonitorState(null, now, chatDown, [])!;
+  state = nextMonitorState(state, now + 120, chatDown, [])!;
+  const refused = mailbox(true);
+  const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  try {
+    expect(await tellPeople(state.document, [], alerting, refused.send)).toEqual([]);
+    expect(await tellPeople(state.document, [], undefined, refused.send)).toEqual([]);
+    expect(errors.mock.calls.map(([line]) => JSON.parse(String(line)).event)).toEqual([
+      "status_alert_refused",
+      "status_alerts_unconfigured",
+    ]);
+  } finally {
+    errors.mockRestore();
+  }
+  const working = mailbox();
+  expect(await tellPeople(state.document, [], alerting, working.send)).toEqual([`chat:${now}`]);
+  expect(working.sent.size).toBe(1);
+});
+
+it("records the incidents it emailed in the published state, so the next minute does not repeat them", async () => {
+  const mf = new Miniflare({
+    modules: true,
+    script: "export default {fetch(){return new Response('ok')}}",
+    r2Buckets: ["STATUS_BUCKET"],
+    compatibilityDate: "2026-07-30",
+  });
+  try {
+    const bucket = (await mf.getR2Bucket("STATUS_BUCKET")) as unknown as R2Bucket;
+    const { sent, attempts, send } = mailbox();
+    const chatFails = network({ "https://play.realms.party/api/chat/health": response({ success: false }) });
+    const both: typeof fetch = (input, init) =>
+      String(input) === "https://api.resend.com/emails" ? send(input, init) : chatFails(input, init);
+    for (const minute of [0, 1, 2, 3]) await monitor(bucket, both, now + minute * 60, valueTargets, alerting);
+    // The stand-in node's head keeps its first timestamp, so its world and the ledger also go stale and alert.
+    const state = await (await bucket.get("state.json"))!.json<{ told: string[] }>();
+    expect(state.told).toContain(`chat:${now}`);
+    expect(attempts.filter((key) => key.includes(":chat:"))).toEqual([`staging:chat:${now}:opened`]);
+    expect([...sent.keys()].sort()).toEqual(state.told.map((id) => `staging:${id}:opened`).sort());
+  } finally {
+    await disposeWorker(mf);
+  }
 });
