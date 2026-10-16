@@ -538,6 +538,27 @@ describe("a burst against a node that holds one play per nonce", () => {
     expect(node.safe()).toEqual({ nonceLandedTwice: false, orderLandedTwice: false, orderSentTwice: false });
   });
 
+  it("an account configured while an earlier play is held reads no nonce until the account is idle", async () => {
+    // Order 1 is held at 7 for eight blocks; order 2 is refused at 8. A new account object for the same address (a new
+    // identity session) is configured while 1 is still held: its order must take 8, not the held 7.
+    const node = fakeMempool("0xa06", (nonce, attempt) => nonce === 8n && attempt === 1, undefined, 8);
+    const first = order(node, 1);
+    const second = order(node, 2);
+    void second.catch(() => {});
+    await vi.advanceTimersByTimeAsync(60);
+    await expect(second).rejects.toMatchObject({ name: "TransactionNotSentError" });
+    const reconfigured = configureGameplayAccountSubmits({ ...node.account } as unknown as AccountInterface, SHARD);
+    const third = reconfigured.execute(valueCall(3)) as Promise<SentGameplayTransaction>;
+    const told = await outcomes([first, second, third], [1, 2, 3]);
+    expect(node.sent()).toEqual([
+      [7n, 1],
+      [8n, 2],
+      [8n, 3],
+    ]);
+    expect(told).toEqual({ 1: "landed", 2: "refused", 3: "landed" });
+    expect(node.safe()).toEqual({ nonceLandedTwice: false, orderLandedTwice: false, orderSentTwice: false });
+  });
+
   it("plays sent before a disposal keep their nonces: the next client's plays never displace them", async () => {
     const node = fakeMempool("0xa05", () => false, undefined, 2);
     const disposed = new AbortController();

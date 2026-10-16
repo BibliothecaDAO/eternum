@@ -104,12 +104,17 @@ export function configureGameplayAccountSubmits<TAccount extends AccountInterfac
   return account;
 }
 
-/** The first action of a session leaves without a nonce round trip: the read happens before the player acts. */
+/**
+ * The first action of a session leaves without a nonce round trip: the read happens before the player acts. As every
+ * read of an unknown nonce, it happens only with none of the account's plays in flight; a busy account's next send
+ * reads it once idle.
+ */
 function readNonceAhead(account: GameplaySubmitAccount, shard: GameplayShard): void {
   const submission = submissionOf(shard.chainId, account.address);
   submission.pending = submission.pending
     .then(async () => {
-      if (submission.nextNonce === undefined) submission.nextNonce = BigInt(await account.getNonce(ACCOUNT_NONCE));
+      if (submission.nextNonce !== undefined || submission.inFlight.size > 0) return;
+      submission.nextNonce = BigInt(await account.getNonce(ACCOUNT_NONCE));
     })
     // An unread nonce is read again by the first send.
     .catch(() => undefined);
