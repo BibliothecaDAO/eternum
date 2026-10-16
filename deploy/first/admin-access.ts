@@ -89,7 +89,8 @@ const sameMembers = (policy: Policy, members: string[]) =>
 /**
  * Makes Access hold the admin's login method, operators' policy and application, and records what it holds with the
  * writers. With `write` false it only reads and answers whether anything differs; with `write` true it changes only
- * what differs, so a second run writes nothing. Removing an operator also ends that person's open sessions.
+ * what differs, so a second run writes nothing. Removing an operator also ends that person's Access sessions
+ * account-wide (Cloudflare revokes a user for every application, not one).
  */
 export async function syncAdminAccess(
   platform: Platform,
@@ -110,11 +111,11 @@ export async function syncAdminAccess(
   if (!organization.auth_domain)
     throw new PublicError("Turn on Cloudflare Zero Trust once for this account; Access needs its team domain");
 
-  const providers = await platform.cf<{ type: string }[]>(`${account}/identity_providers`);
+  const providers = await platform.cfList<{ type: string }>(`${account}/identity_providers`);
   if (!providers.some((provider) => provider.type === "onetimepin"))
     await change(`${account}/identity_providers`, "POST", { name: "One-time PIN", type: "onetimepin", config: {} });
 
-  const policies = await platform.cf<Policy[]>(`${account}/policies`);
+  const policies = await platform.cfList<Policy>(`${account}/policies`);
   const ensurePolicy = async (name: string, members: string[]) => {
     const existing = policies.find((policy) => policy.name === name);
     if (existing && sameMembers(existing, members)) return existing.id;
@@ -124,7 +125,7 @@ export async function syncAdminAccess(
     return saved?.id ?? existing?.id;
   };
 
-  const apps = await platform.cf<App[]>(`${account}/apps`);
+  const apps = await platform.cfList<App>(`${account}/apps`);
   const ensureApp = async (name: string, domain: string, policy: string | undefined) => {
     const existing = apps.find((app) => app.name === name);
     const body = {

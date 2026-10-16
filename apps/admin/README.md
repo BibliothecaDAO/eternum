@@ -12,7 +12,8 @@ environment's admin.
 | Deploys | Show what runs, and the deploy commands           | launch `GET /api/factory/version` (its published revision), the client's `/sw.js` release, R2 shard list  |
 | Audit   | Show who did what                                 | this Worker's D1 `actions`                                                                                |
 
-Actions, all under `/api/actions/`, each logged before it is sent and completed after:
+Actions, all under `/api/actions/`, each logged before it is sent and completed after (an action whose answer was lost
+and is sent again is logged, and sent, twice):
 
 | Action                  | Launch route                                                         | Environments |
 | ----------------------- | -------------------------------------------------------------------- | ------------ |
@@ -39,7 +40,7 @@ match them (README step 9):
   which could not follow a second application's sign-in.
 
 To grant, add the email and rerun setup with `--apply`. To revoke, remove it and rerun: setup also ends that person's
-sessions.
+Access sessions, on every application of the account (Cloudflare revokes a user account-wide).
 
 ## Secrets
 

@@ -90,8 +90,9 @@ lockfiles and compiler versions key Docker's Cairo layers; changes to Herald or 
 9. Make Cloudflare Access hold the admin page's operators from the private directory's `admin-access.json`, written by
    the owner (mode 0600): `{"operators": ["you@example.com"]}` on dev; production adds `"writers"` (each also an
    operator), who alone may act there. It ensures the one-time PIN login, one allow policy and one application on the
-   environment's admin hostname. It changes only what differs and ends the sessions of anyone removed from the
-   operators. The team domain, the application's audience and the writers are saved as `admin-access-applied.json`.
+   environment's admin hostname. It reads every Access list to its last page, changes only what differs, and ends the
+   Access sessions, on every application of the account, of anyone removed from the operators. The team domain, the
+   application's audience and the writers are saved as `admin-access-applied.json`.
 10. Deliver each Worker's generated secrets directly to that Worker on standard input; the admin's are its environment's
     operator token, the saved Access settings and, on production, its writers. An existing secret name alone cannot
     prove its value: local upload fingerprints plus remote names determine which uploads need repeating. Guardian is the

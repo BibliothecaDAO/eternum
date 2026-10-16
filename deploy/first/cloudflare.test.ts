@@ -21,6 +21,20 @@ function refused(status: number, code: number) {
     { status },
   );
 }
+/** A request's URL without the page a list read asks for, so a fake can match the resource it names. */
+function bare(url: unknown) {
+  const parsed = new URL(String(url));
+  for (const key of ["page", "per_page", "cursor"]) parsed.searchParams.delete(key);
+  return parsed.toString();
+}
+/** What a fake Cloudflare answers a successful read of this path with: the one account, the zone, or an empty list. */
+function listed(url: unknown) {
+  const path = bare(url);
+  if (path.endsWith("/accounts")) return [{ id: account }];
+  if (path.includes("/zones?")) return [{ id: "test-zone" }];
+  if (path.endsWith("/r2/buckets")) return { buckets: [] };
+  return [];
+}
 function namedError(family: string, status: number, code?: number) {
   return `Cloudflare refused ${family}: ${status}${code === undefined ? "" : ` (${code})`}. Check that the token has this permission and that the product is enabled on the account.`;
 }
@@ -63,7 +77,7 @@ test("bootstrap PUT shares the sanitized Workers refusal", async () => {
   globalThis.fetch = (async (url, init) => {
     methods.push(init?.method ?? "GET");
     if (init?.method === "PUT") return refused(403, 10000);
-    return Response.json({ success: true, result: String(url).endsWith("/accounts") ? [{ id: account }] : [] });
+    return Response.json({ success: true, result: listed(url) });
   }) as typeof fetch;
   await expect(platform(true).bootstrapWorkers()).rejects.toThrow(namedError("Workers scripts", 403, 10000));
   expect(methods).toEqual(["GET", "GET", "PUT"]);
@@ -73,12 +87,9 @@ test("prerequisites read each required family once, using GET only", async () =>
   const paths: string[] = [];
   globalThis.fetch = (async (url, init) => {
     expect(init?.method).toBe("GET");
-    const path = String(url).split("/client/v4")[1]!;
+    const path = bare(url).split("/client/v4")[1]!;
     paths.push(path);
-    return Response.json({
-      success: true,
-      result: path === "/accounts" ? [{ id: account }] : path.startsWith("/zones?") ? [{ id: "test-zone" }] : [],
-    });
+    return Response.json({ success: true, result: listed(url) });
   }) as typeof fetch;
   await platform().checkAccess();
   expect(paths.sort()).toEqual(
@@ -102,15 +113,8 @@ test.each([
   async (suffix, family, code) => {
     globalThis.fetch = (async (url, init) => {
       expect(init?.method).toBe("GET");
-      if (String(url).endsWith(suffix)) return refused(403, code);
-      return Response.json({
-        success: true,
-        result: String(url).endsWith("/accounts")
-          ? [{ id: account }]
-          : String(url).includes("/zones?")
-            ? [{ id: "test-zone" }]
-            : [],
-      });
+      if (bare(url).endsWith(suffix)) return refused(403, code);
+      return Response.json({ success: true, result: listed(url) });
     }) as typeof fetch;
     const steps = preparationSteps({ target: environments.dev, platform: platform(true) } as Deployment);
     const index = steps.findIndex((step) => step.name === "Deployment prerequisites");
@@ -171,9 +175,92 @@ test("dry-run output keeps the sanitized refusal instead of hiding its cause", a
 test("a zone not visible to the token refuses the cache rules probe", async () => {
   const paths: string[] = [];
   globalThis.fetch = (async (url, _init) => {
-    paths.push(String(url));
-    return Response.json({ success: true, result: String(url).endsWith("/accounts") ? [{ id: account }] : [] });
+    paths.push(bare(url));
+    return Response.json({ success: true, result: bare(url).includes("/zones?") ? [] : listed(url) });
   }) as typeof fetch;
   await expect(platform().checkAccess()).rejects.toThrow("Cloudflare zone unavailable; check Zone read permission");
   expect(paths.some((path) => path.endsWith("/rulesets"))).toBe(false);
+});
+
+/**
+ * A Cloudflare account whose every list is long: each answers at most 5 per page, by page number, or by cursor for R2,
+ * with the deploy's own resources last. Records every request.
+ */
+function crowdedAccount() {
+  const requests: string[] = [];
+  const others = (prefix: string) =>
+    Array.from({ length: 12 }, (_, i) => ({ id: `${prefix}-${i}`, name: `${prefix}-${i}` }));
+  const target = environments.dev;
+  const lists: Record<string, unknown[]> = {
+    "/accounts": [{ id: account }],
+    [`/accounts/${account}/d1/database`]: [
+      ...others("db"),
+      ...["realms-identity", "realms-launch", "realms-admin"].map((name) => ({ name: `${name}-${target.worker}` })),
+    ],
+    [`/accounts/${account}/pages/projects`]: [...others("project"), { name: target.pages }],
+    [`/accounts/${account}/pages/projects/${target.pages}/domains`]: [
+      ...others("domain"),
+      { name: new URL(target.origin).hostname },
+    ],
+    [`/zones?name=${target.zone}`]: [{ id: "test-zone" }],
+    [`/zones/test-zone/dns_records?name=${new URL(target.origin).hostname}`]: [
+      { type: "CNAME", content: `${target.pages}.pages.dev` },
+    ],
+    [`/accounts/${account}/workers/scripts`]: [],
+  };
+  const buckets = [...others("bucket"), { name: target.statusBucket }];
+  globalThis.fetch = (async (url, init) => {
+    const method = init?.method ?? "GET";
+    const parsed = new URL(String(url));
+    requests.push(`${method} ${bare(url).split("/client/v4")[1]}`);
+    if (method !== "GET") return Response.json({ success: true, result: {} });
+    const path = bare(url).split("/client/v4")[1]!;
+    const perPage = Math.min(Number(parsed.searchParams.get("per_page") ?? 5), 5);
+    if (path === `/accounts/${account}/r2/buckets`) {
+      const start = Number(parsed.searchParams.get("cursor") ?? 0);
+      const end = start + perPage;
+      return Response.json({
+        success: true,
+        result: { buckets: buckets.slice(start, end) },
+        result_info: { per_page: perPage, ...(end < buckets.length ? { cursor: String(end) } : {}) },
+      });
+    }
+    const items = lists[path];
+    if (!items) return refused(404, 7003);
+    const page = Number(parsed.searchParams.get("page") ?? 1);
+    const result = items.slice((page - 1) * perPage, page * perPage);
+    return Response.json({
+      success: true,
+      result,
+      result_info: {
+        page,
+        per_page: perPage,
+        count: result.length,
+        total_count: items.length,
+        total_pages: Math.ceil(items.length / perPage) || 1,
+      },
+    });
+  }) as typeof fetch;
+  return requests;
+}
+
+test("a list Cloudflare answers in part is refused as a single read, and read whole as a list", async () => {
+  crowdedAccount();
+  const value = platform();
+  await expect(value.cf(`/accounts/${account}/d1/database`)).rejects.toThrow("Cloudflare listed only part of D1");
+  expect((await value.cfList<{ name: string }>(`/accounts/${account}/d1/database`)).map(({ name }) => name)).toEqual([
+    ...Array.from({ length: 12 }, (_, i) => `db-${i}`),
+    "realms-identity-staging",
+    "realms-launch-staging",
+    "realms-admin-staging",
+  ]);
+});
+
+test("setup finds its databases, project, bucket, domain and DNS on later pages, and creates nothing", async () => {
+  const requests = crowdedAccount();
+  const value = platform(true);
+  expect(await value.resourcesPresent()).toBe(true);
+  await value.prepareResources();
+  expect(requests.filter((request) => !request.startsWith("GET"))).toEqual([]);
+  expect(requests.filter((request) => request.endsWith("/r2/buckets")).length).toBeGreaterThan(2);
 });
