@@ -45,7 +45,7 @@ describe("readPlaytestOptions", () => {
       "--cpu-throttle must be an integer of at least 1",
     );
     expect(() => readPlaytestOptions(["--steps", "burst"])).toThrow(
-      '--steps takes spectator, player, ownership-rings, blitz-orders, blitz-spectator, still-map, still-map-frozen-sun, blitz-still-map, blitz-still-map-frozen-sun, not "burst"',
+      '--steps takes spectator, player, ownership-rings, blitz-orders, blitz-spectator, blitz-burst, still-map, still-map-frozen-sun, blitz-still-map, blitz-still-map-frozen-sun, not "burst"',
     );
     expect(() => readPlaytestOptions(["--player", ".context/playtest-profiles/clientlane"])).toThrow(
       '--player takes an email, not ".context/playtest-profiles/clientlane"',

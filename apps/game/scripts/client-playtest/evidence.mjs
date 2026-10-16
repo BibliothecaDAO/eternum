@@ -209,6 +209,45 @@ export function judgeExplore(played, clientActions) {
 }
 
 /**
+ * A burst is evidence only when at least two armies took an order back to back and every order was sent, confirmed and
+ * started its army moving. Each order is timed from the right-click the client recorded (`move_requested`) to its
+ * send's answer, Herald's status and the army moving on screen, in the page's clock.
+ */
+export function judgeBurst(played, armyMovement) {
+  if ((played.targets?.length ?? 0) < 2) {
+    return blocked(`${played.targets?.length ?? 0} armies offered an order: a burst needs two`, {
+      targets: played.targets,
+    });
+  }
+  const orders = played.burst.map(({ army }) => timeOrder(army, played.startedAt, armyMovement));
+  const unfinished = orders.find((order) => order.confirmedMs === undefined || order.movingMs === undefined);
+  if (unfinished) return failed(`army ${unfinished.army}'s order never moved it on screen`, { orders });
+  if (orders.length < played.targets.length) {
+    return failed(`${orders.length} of ${played.targets.length} armies took their order`, { orders });
+  }
+  const requested = orders.map(({ requestedAt }) => requestedAt);
+  return completed({ orders, spanMs: round(Math.max(...requested) - Math.min(...requested)) });
+}
+
+/** One army's order in the burst, from its right-click to each phase after it; a phase missing stays undefined. */
+function timeOrder(army, since, armyMovement) {
+  const entries = armyMovement.filter((entry) => entry.entityId === army && entry.wallTimeMs >= since);
+  const requested = entries.find((entry) => entry.phase === "move_requested");
+  const after = (phase) => {
+    const entry =
+      requested && entries.find((candidate) => candidate.phase === phase && candidate.sequence > requested.sequence);
+    return entry ? round(entry.wallTimeMs - requested.wallTimeMs) : undefined;
+  };
+  return {
+    army,
+    requestedAt: requested?.wallTimeMs,
+    answeredMs: after("tx_response_received"),
+    confirmedMs: after("tx_confirmed"),
+    movingMs: after("movement_started"),
+  };
+}
+
+/**
  * A next order's life is evidence only when it went the way its step expects while the order before it was held in
  * flight: the order bar showed it queued, its steps (queued, run, dropped and why) came in the expected sequence, the
  * expected number of orders were sent with a hash and confirmed, and an order that ran is the tile last queued.

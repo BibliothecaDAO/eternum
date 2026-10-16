@@ -19,6 +19,7 @@ import {
   gameOfPath,
   judgeNextOrder,
   judgeExplore,
+  judgeBurst,
 } from "./evidence.mjs";
 
 describe("buildPlaytestUrl", () => {
@@ -626,5 +627,44 @@ describe("assertInTargetGame", () => {
     );
     expect(() => assertInTargetGame("/sign-in", frontier)).toThrow("entered /sign-in, not the target game 1");
     expect(assertInTargetGame("/g/0x004445/1/map", frontier)).toEqual({ chainId: "0x004445", gameId: 1 });
+  });
+});
+
+describe("judgeBurst", () => {
+  const trace = (sequence, entityId, phase, wallTimeMs) => ({ sequence, entityId, phase, wallTimeMs });
+  const played = { startedAt: 1_000, targets: [{ army: 7 }, { army: 8 }], burst: [{ army: 7 }, { army: 8 }] };
+  const armyMovement = [
+    trace(1, 7, "move_requested", 500),
+    trace(2, 7, "move_requested", 1_100),
+    trace(3, 8, "move_requested", 1_250),
+    trace(4, 7, "tx_response_received", 1_220),
+    trace(5, 7, "tx_confirmed", 1_300),
+    trace(6, 8, "tx_response_received", 1_370),
+    trace(7, 7, "movement_started", 1_310),
+    trace(8, 8, "tx_confirmed", 1_460),
+    trace(9, 8, "movement_started", 1_475),
+  ];
+
+  it("times each army's order from its right-click in the burst to its answer, Herald's status and its move", () => {
+    expect(judgeBurst(played, armyMovement)).toEqual({
+      status: "completed",
+      spanMs: 150,
+      orders: [
+        { army: 7, requestedAt: 1_100, answeredMs: 120, confirmedMs: 200, movingMs: 210 },
+        { army: 8, requestedAt: 1_250, answeredMs: 120, confirmedMs: 210, movingMs: 225 },
+      ],
+    });
+  });
+
+  it("fails a burst whose order never moved its army, and blocks one with a single army", () => {
+    const stalled = armyMovement.filter(({ sequence }) => sequence !== 9);
+    expect(judgeBurst(played, stalled)).toMatchObject({
+      status: "failed",
+      reason: "army 8's order never moved it on screen",
+    });
+    expect(judgeBurst({ ...played, targets: [{ army: 7 }] }, armyMovement)).toMatchObject({
+      status: "blocked",
+      reason: "1 armies offered an order: a burst needs two",
+    });
   });
 });

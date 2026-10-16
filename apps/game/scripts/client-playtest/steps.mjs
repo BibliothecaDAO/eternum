@@ -5,6 +5,7 @@ import {
   completed,
   describeOrders,
   failed,
+  judgeBurst,
   judgeExplore,
   judgeNextOrder,
   refusalErrors,
@@ -43,6 +44,9 @@ const ZOOM_IN_NOTCHES = 15;
 export const CLOSEST_CAMERA_DISTANCE = 10;
 const CLOSEST_DISTANCE_TOLERANCE = 0.05;
 // A still map's frames: long enough to span several of the sun's shadow steps, few enough to keep as evidence.
+const BURST_ARMIES_MAX = 6;
+const BURST_SELECT_WAIT_MS = 5_000;
+const BURST_POLL_MS = 10;
 const STILL_FRAMES_MS = 6_000;
 const STILL_FRAMES_MIN = 30;
 // The army's six neighbours on screen, in pixels from the centre, at the map's default zoom (a player run never zooms),
@@ -430,6 +434,20 @@ const BLITZ_ORDER_STEPS = [
   { name: "deselect-in-flight", play: deselectWhileInFlight, settleMs: 20_000, verify: notSelectedAgain },
 ];
 
+/**
+ * Orders as fast as a player's keys: every army's order tile is found first, then each army is taken with Tab and
+ * ordered with a right-click, back to back through DevTools input, nothing held. Each order is timed to its army moving.
+ */
+const BLITZ_BURST_STEPS = [
+  { name: "open-world", play: toTheWorldMap, settleMs: 3_000, verify: drawn("map") },
+  {
+    name: "burst",
+    play: orderEveryArmyAtOnce,
+    settleMs: 15_000,
+    verify: ({ played, actionLatency }) => judgeBurst(played, actionLatency.armyMovement),
+  },
+];
+
 /** What a Blitz spectator does: the world map, idle, panned, zoomed out and in, then a minute of watching. */
 const BLITZ_SPECTATOR_STEPS = [
   { name: "open-world", play: toTheWorldMap, settleMs: 3_000, verify: drawn("map") },
@@ -525,6 +543,82 @@ async function orderTheSelectedArmy({ browser, devTools, awaitsOutcome = true },
   } finally {
     await gate.close();
   }
+}
+
+async function orderEveryArmyAtOnce({ browser, devTools }) {
+  const targets = await findEveryArmysOrderTile(browser);
+  const startedAt = browser.observe().now;
+  const burst = [];
+  for (const { army, offset } of targets) {
+    if (!(await tabToArmy(devTools, army, targets.length))) break;
+    await rightClickThroughDevTools(devTools, offset);
+    burst.push({ army, offset });
+  }
+  return { targets, startedAt, burst };
+}
+
+/** Each army Tab lands on, once round the cycle, with a tile it can be ordered to. */
+async function findEveryArmysOrderTile(browser) {
+  const targets = [];
+  const visited = new Set();
+  for (let tabs = 0; tabs < BURST_ARMIES_MAX; tabs += 1) {
+    const before = browser.observe().selection?.army?.id ?? null;
+    browser.press("Tab");
+    const landed = (seen) => seen.selection?.army?.id !== before && seen.selection?.army?.orders > 0;
+    if (!(await waitFor(browser, landed, BURST_SELECT_WAIT_MS))) break;
+    const army = browser.observe().selection.army.id;
+    if (visited.has(army)) break;
+    visited.add(army);
+    const { target } = await findOrderTile(browser);
+    if (target) targets.push({ army, offset: target.offset });
+  }
+  return targets;
+}
+
+/** Presses Tab until it lands on `army` with its orders planned, as fast as the page selects. */
+async function tabToArmy(devTools, army, tabsMax) {
+  for (let tabs = 0; tabs < tabsMax; tabs += 1) {
+    const before = (await selectedArmy(devTools))?.id ?? null;
+    await pressThroughDevTools(devTools, "Tab", 9);
+    const landed = await pollDevTools(async () => {
+      const selected = await selectedArmy(devTools);
+      return selected?.id !== before && selected?.orders > 0 ? selected : null;
+    }, BURST_SELECT_WAIT_MS);
+    if (landed?.id === army) return true;
+  }
+  return false;
+}
+
+const selectedArmy = async (devTools) => {
+  const { result } = await devTools.send("Runtime.evaluate", {
+    expression: "window.__eternumMapSelection?.army ?? null",
+    returnByValue: true,
+  });
+  return result.value;
+};
+
+async function pressThroughDevTools(devTools, key, keyCode) {
+  for (const type of ["keyDown", "keyUp"]) {
+    await devTools.send("Input.dispatchKeyEvent", { type, key, code: key, windowsVirtualKeyCode: keyCode });
+  }
+}
+
+async function rightClickThroughDevTools(devTools, [dx, dy]) {
+  const point = { x: VIEWPORT.width / 2 + dx, y: VIEWPORT.height / 2 + dy };
+  await devTools.send("Input.dispatchMouseEvent", { type: "mouseMoved", ...point });
+  for (const type of ["mousePressed", "mouseReleased"]) {
+    await devTools.send("Input.dispatchMouseEvent", { type, ...point, button: "right", buttons: 2, clickCount: 1 });
+  }
+}
+
+async function pollDevTools(read, timeoutMs) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeoutMs) {
+    const value = await read();
+    if (value) return value;
+    await sleep(BURST_POLL_MS);
+  }
+  return null;
 }
 
 /** Hovers tiles around the army until one's tooltip offers it a move or an explore, as a player reads it. */
@@ -650,6 +744,7 @@ export const STEP_SETS = {
   "ownership-rings": { game: FRONTIER, steps: OWNERSHIP_RING_STEPS },
   "blitz-orders": { game: BLITZ, steps: BLITZ_ORDER_STEPS },
   "blitz-spectator": { game: BLITZ, steps: BLITZ_SPECTATOR_STEPS },
+  "blitz-burst": { game: BLITZ, steps: BLITZ_BURST_STEPS },
   "still-map": { game: FRONTIER, steps: stillMapSteps(FRONTIER_MAP) },
   "still-map-frozen-sun": { game: FRONTIER, steps: frozenSunStillMapSteps(FRONTIER_MAP), devOverlays: true },
   "blitz-still-map": { game: BLITZ, steps: stillMapSteps(BLITZ_MAP) },

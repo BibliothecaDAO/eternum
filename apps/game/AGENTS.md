@@ -150,16 +150,19 @@ right-click on a tile whose hover tooltip offers Move or Explore, each held at t
 the army stays selected through an order's confirmation and is offered orders from its new tile, the tile panel's
 selected hex on that tile, a second order goes without selecting it again, a refused one leaves it selected where it
 stood, and one deselected with Escape while its order is in flight is not selected again; the army's id, hex and order
-count come from the same report), `--steps blitz-spectator` (the spectator's map steps in a Blitz game: the world map,
-idle, pan, zoom, a minute of watching; the matched frame-time run for Blitz), `--steps still-map` (a Frontier
-spectator's map with nothing pressed, its frames recorded for 6 s at the default view and again at the closest, the
-camera distance read and required to be the closest, into `<step>-frames/` with `<step>-changes.png`, each pixel's share
-of frame pairs it changed in: what a still view shimmers with, to compare two builds on the same view;
-`--steps blitz-still-map` the same in a Blitz game; `--steps still-map-frozen-sun` and
-`--steps blitz-still-map-frozen-sun` first tick the dev tools' Override Time to hold the sun, and are the only lists
-that open the page with the dev overlays on), `--out <root>` (default `.context/playtest`), `--trace` (a Chrome trace
-per run), `--compare <summary.json>` (fails when boot regresses), `--headed`. Paths are taken from where the command is
-run.
+count come from the same report), `--steps blitz-burst` (a seated Blitz player's orders as fast as keys allow: each army
+Tab lands on gets a tile whose tooltip offers Move or Explore, then every army is taken with Tab and ordered with a
+right-click back to back through DevTools input, nothing held; each order is timed from the click the client recorded to
+its send's answer, Herald's status and its army moving, from `__armyMovementLatencyTraceEntries`; needs two armies that
+can act), `--steps blitz-spectator` (the spectator's map steps in a Blitz game: the world map, idle, pan, zoom, a minute
+of watching; the matched frame-time run for Blitz), `--steps still-map` (a Frontier spectator's map with nothing
+pressed, its frames recorded for 6 s at the default view and again at the closest, the camera distance read and required
+to be the closest, into `<step>-frames/` with `<step>-changes.png`, each pixel's share of frame pairs it changed in:
+what a still view shimmers with, to compare two builds on the same view; `--steps blitz-still-map` the same in a Blitz
+game; `--steps still-map-frozen-sun` and `--steps blitz-still-map-frozen-sun` first tick the dev tools' Override Time to
+hold the sun, and are the only lists that open the page with the dev overlays on), `--out <root>` (default
+`.context/playtest`), `--trace` (a Chrome trace per run), `--compare <summary.json>` (fails when boot regresses),
+`--headed`. Paths are taken from where the command is run.
 
 Each invocation writes to a new directory, `<root>/<time>-<role>`, and never into an existing one:
 
