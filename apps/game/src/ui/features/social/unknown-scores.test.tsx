@@ -30,6 +30,7 @@ const player: PlayerCustom = {
   guild: undefined,
   activityBreakdown: null,
   includesLiveShareholderPoints: false,
+  mmrDelta: null,
 };
 
 const grants: VictoryPointGrants = {
@@ -46,6 +47,7 @@ describe("the leaderboard's columns", () => {
       <PlayerList
         players={[player]}
         grants={grants}
+        mmr="off"
         viewPlayerInfo={() => {}}
         whitelistPlayer={() => {}}
         isLoading={false}
@@ -64,12 +66,44 @@ describe("the leaderboard's columns", () => {
   });
 });
 
+describe("the MMR column", () => {
+  const rows = (mmr: "off" | "ready" | "unavailable", players: PlayerCustom[]) =>
+    renderToStaticMarkup(
+      <PlayerList
+        players={players}
+        grants={grants}
+        mmr={mmr}
+        viewPlayerInfo={() => {}}
+        whitelistPlayer={() => {}}
+        isLoading={false}
+      />,
+    );
+
+  it("shows each player's gain or loss if the game ended now, and is absent from an unrated game", () => {
+    const players = [
+      { ...player, address: 1n, name: "Winner", points: 900, rank: 1, mmrDelta: 26 },
+      { ...player, address: 2n, name: "Middle", points: 500, rank: 2, mmrDelta: 0 },
+      { ...player, address: 3n, name: "Loser", points: 100, rank: 3, mmrDelta: -11 },
+      { ...player, address: 4n, name: "Unanswered", points: 0, rank: 4, mmrDelta: null },
+    ];
+    const rated = rows("ready", players);
+    expect(rated).toContain("<span>MMR</span>");
+    expect(rated).toContain("if it ended now");
+    const cells = [...rated.matchAll(/tabular-nums[^"]*">([^<]*)</g)].map(([, text]) => text);
+    expect(cells).toEqual(["+26", "±0", "−11", "—"]);
+
+    expect(rows("off", players)).not.toContain("MMR");
+    expect(rows("unavailable", players)).toContain("unavailable");
+  });
+});
+
 describe("unknown subscription scores", () => {
   it("shows a dash for a player's unknown score without giving a rank", () => {
     const html = renderToStaticMarkup(
       <PlayerList
         players={[player]}
         grants={grants}
+        mmr="off"
         viewPlayerInfo={() => {}}
         whitelistPlayer={() => {}}
         isLoading={false}

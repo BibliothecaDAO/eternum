@@ -12,6 +12,7 @@ import clsx from "clsx";
 import gsap from "gsap";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { LeaderboardEffectsOverlay } from "./leaderboard-effects";
+import type { MmrForecast } from "./mmr-forecast";
 import { PlayerEffect, useLeaderboardEffects } from "./use-leaderboard-effects";
 
 const COUNT_FORMATTER = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
@@ -23,6 +24,8 @@ export interface PlayerCustom extends PlayerInfo {
   guild: GuildInfo | undefined;
   activityBreakdown: PlayerActivityBreakdown | null;
   includesLiveShareholderPoints: boolean;
+  /** The MMR the player would gain or lose if the game ended now; null where the ledger gave none. */
+  mmrDelta: number | null;
 }
 
 /** The points each activity grants, as the game's rules give them. */
@@ -31,6 +34,8 @@ export type VictoryPointGrants = ReturnType<typeof configManager.getVictoryPoint
 interface PlayerListProps {
   players: PlayerCustom[];
   grants: VictoryPointGrants;
+  /** Whether the MMR column shows (a rated game), and what it says while the ledger has no answer. */
+  mmr: MmrForecast["status"];
   focusOwnPlayer?: boolean;
   viewPlayerInfo: (playerAddress: ContractAddress) => void;
   whitelistPlayer: (address: ContractAddress) => void;
@@ -59,6 +64,27 @@ const formatActivityValue = (count: number, points: number): string => {
   if (points > 0) return `${currencyIntlFormat(points)} pts`;
   return "—";
 };
+
+/** The table's columns: fixed widths on wide screens, so the window is exactly the table's width; MMR adds one. */
+const GRID_TEMPLATES = {
+  plain: "grid-cols-[44px_minmax(0,_1fr)_auto] md:grid-cols-[48px_220px_repeat(5,_96px)_80px]",
+  plainMmr: "grid-cols-[44px_minmax(0,_1fr)_auto_auto] md:grid-cols-[48px_220px_repeat(5,_96px)_80px_80px]",
+  tribe: "grid-cols-[44px_minmax(0,_1fr)_auto] md:grid-cols-[48px_200px_120px_repeat(5,_96px)_80px]",
+  tribeMmr: "grid-cols-[44px_minmax(0,_1fr)_auto_auto] md:grid-cols-[48px_200px_120px_repeat(5,_96px)_80px_80px]",
+} as const;
+
+/** A rating change as a player reads it: +26 in green, −11 in red, ±0, or a dash where the ledger gave none. */
+const MmrDeltaCell = ({ delta }: { delta: number | null }) => (
+  <div
+    className={clsx("text-right text-sm font-semibold tabular-nums md:text-center", {
+      "text-emerald-300": delta !== null && delta > 0,
+      "text-red-300": delta !== null && delta < 0,
+      "text-gold/60": delta === null || delta === 0,
+    })}
+  >
+    {delta === null ? "—" : delta > 0 ? `+${delta}` : delta < 0 ? `−${-delta}` : "±0"}
+  </div>
+);
 
 /** A column only wide screens have room for; a narrow row says it under the name instead. */
 const WIDE_ONLY = "hidden md:flex";
@@ -97,6 +123,7 @@ const resolvePlayerActivityStats = (player: PlayerCustom): PlayerWithActivitySta
 export const PlayerList = ({
   players,
   grants,
+  mmr,
   viewPlayerInfo,
   whitelistPlayer,
   isLoading,
@@ -106,13 +133,8 @@ export const PlayerList = ({
   const mode = useGameModeConfig();
   const showTribeDetails = mode.ui.showGuildsTab;
   const [prevPositions, setPrevPositions] = useState<Map<string, number>>(new Map());
-  const leaderboardGridTemplate = useMemo(
-    () =>
-      showTribeDetails
-        ? "grid-cols-[44px_minmax(0,_1fr)_auto] md:grid-cols-[48px_200px_120px_repeat(5,_96px)_80px]"
-        : "grid-cols-[44px_minmax(0,_1fr)_auto] md:grid-cols-[48px_220px_repeat(5,_96px)_80px]",
-    [showTribeDetails],
-  );
+  const showMmr = mmr !== "off";
+  const leaderboardGridTemplate = GRID_TEMPLATES[`${showTribeDetails ? "tribe" : "plain"}${showMmr ? "Mmr" : ""}`];
 
   useEffect(() => {
     if (!selectedPlayerAddress) {
@@ -210,6 +232,7 @@ export const PlayerList = ({
       <PlayerListHeader
         showTribeDetails={showTribeDetails}
         grants={grants}
+        mmr={mmr}
         gridTemplateClass={leaderboardGridTemplate}
       />
 
@@ -229,6 +252,7 @@ export const PlayerList = ({
                 whitelistPlayer={whitelistPlayer}
                 isLoading={isLoading}
                 showTribeDetails={showTribeDetails}
+                showMmr={showMmr}
                 gridTemplateClass={leaderboardGridTemplate}
                 isSelected={selectedPlayerAddress === normalizedAddress}
                 effect={playerEffect}
@@ -259,7 +283,11 @@ interface PlayerListColumn {
 }
 
 /** Each activity column carries its grant under its name: the game's scoring table, where the points it counts are. */
-const resolveColumns = (showTribeDetails: boolean, grants: VictoryPointGrants): PlayerListColumn[] => {
+const resolveColumns = (
+  showTribeDetails: boolean,
+  grants: VictoryPointGrants,
+  mmr: MmrForecast["status"],
+): PlayerListColumn[] => {
   const each = (points: number) => `${currencyIntlFormat(points)} each`;
   const activity = `${WIDE_ONLY} flex-col justify-center text-center`;
   return [
@@ -287,20 +315,32 @@ const resolveColumns = (showTribeDetails: boolean, grants: VictoryPointGrants): 
       rule: "Control a Hyperstructure: points every second for each realm settled within 8 tiles of it",
     },
     { label: "Points", align: "justify-end text-right md:justify-center md:text-center" },
+    ...(mmr === "off"
+      ? []
+      : [
+          {
+            label: "MMR",
+            align: "flex flex-col justify-center text-center",
+            grant: mmr === "unavailable" ? "unavailable" : "if it ended now",
+            rule: "The rating each player would gain or lose if the game ended with these standings, as the ledger settles it",
+          },
+        ]),
   ];
 };
 
 const PlayerListHeader = ({
   showTribeDetails,
   grants,
+  mmr,
   gridTemplateClass,
 }: {
   showTribeDetails: boolean;
   grants: VictoryPointGrants;
+  mmr: MmrForecast["status"];
   gridTemplateClass: string;
 }) => {
   const setTooltip = useTooltipStore((state) => state.setTooltip);
-  const columns = useMemo(() => resolveColumns(showTribeDetails, grants), [showTribeDetails, grants]);
+  const columns = useMemo(() => resolveColumns(showTribeDetails, grants, mmr), [showTribeDetails, grants, mmr]);
 
   return (
     // Opaque, on the window's own surface, so the sticky header never shows the rows scrolling under it.
@@ -334,6 +374,7 @@ const PlayerRow = ({
   whitelistPlayer,
   isLoading,
   showTribeDetails,
+  showMmr,
   gridTemplateClass,
   isSelected,
   effect,
@@ -345,6 +386,7 @@ const PlayerRow = ({
   whitelistPlayer: (address: ContractAddress) => void;
   isLoading: boolean;
   showTribeDetails: boolean;
+  showMmr: boolean;
   gridTemplateClass: string;
   isSelected: boolean;
   effect?: PlayerEffect;
@@ -512,6 +554,7 @@ const PlayerRow = ({
             <span onClick={(event) => event.stopPropagation()}></span>
           )}
         </div>
+        {showMmr && <MmrDeltaCell delta={player.mmrDelta} />}
       </div>
 
       {showTribeDetails ? (

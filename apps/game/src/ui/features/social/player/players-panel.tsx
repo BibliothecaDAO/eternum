@@ -6,6 +6,7 @@ import { EndSeasonButton } from "../components/end-season-button";
 import { PlayerList, type PlayerCustom } from "./player-list";
 import { normalizeLeaderboardAddress } from "./finalized-blitz-leaderboard";
 import { useInGameLeaderboard } from "./use-in-game-leaderboard";
+import { useMmrForecast } from "./mmr-forecast";
 import { configManager, getGuildFromPlayerAddress, isViewerOwner } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -36,6 +37,7 @@ export const PlayersPanel = ({
 
   const userGuild = getGuildFromPlayerAddress(ContractAddress(account.address), store);
   const { isFinalized, standingsByAddress } = useInGameLeaderboard();
+  const mmr = useMmrForecast(standingsByAddress);
 
   const [isLoading, setIsLoading] = useState(false);
   const { data: activityEntries, error: activityError } = useLeaderboardActivity();
@@ -85,6 +87,10 @@ export const PlayersPanel = ({
           guild,
           activityBreakdown: activityEntry?.activityBreakdown ?? null,
           includesLiveShareholderPoints,
+          mmrDelta:
+            mmr.status === "ready"
+              ? (mmr.deltaByAccount.get(normalizeLeaderboardAddress(player.address)) ?? null)
+              : null,
         };
       });
     return leaderboardPlayers;
@@ -94,6 +100,7 @@ export const PlayersPanel = ({
     activityBreakdownsByAddress,
     store,
     isFinalized,
+    mmr,
     players,
     standingsByAddress,
     userGuild,
@@ -120,6 +127,7 @@ export const PlayersPanel = ({
       <PlayerList
         players={leaderboardPlayers}
         grants={configManager.getVictoryPointGrants()}
+        mmr={mmr.status}
         focusOwnPlayer={focusOwnPlayer}
         viewPlayerInfo={viewPlayerInfo}
         whitelistPlayer={whitelistPlayer}

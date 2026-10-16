@@ -9,6 +9,7 @@ import {
   decodeBlitzSeason,
   decodeLedgerPreset,
   decodeLedgerSlot,
+  decodeMmrPreviews,
   decodePlayerResult,
   decodeRegistration,
   decodeSeasonWinner,
@@ -60,6 +61,12 @@ export interface EntrySplit {
 export interface SlotKey {
   shard: string;
   slotId: number;
+}
+
+/** A wallet's place in a ranking the ledger is asked to rate: competition ranks (1, 1, 3), ties by wallet number. */
+export interface RankedWallet {
+  wallet: string;
+  rank: number;
 }
 
 /** A played game on the ledger, for its result and chests: its shard's chain id and its game id there. */
@@ -187,6 +194,23 @@ export const ledgerReader = (provider: ProviderInterface, ledger: string) => {
       return slot.exists ? slot : null;
     },
     preset: async (presetId: number) => presetTermsOf(decodeLedgerPreset(await view("get_preset", [String(presetId)]))),
+    /** Whether a slot's games are rated: its preset's MMR switch. A slot the ledger does not hold is not. */
+    rated: async (key: SlotKey) => {
+      const slot = decodeLedgerSlot(await view("get_slot", keyCalldata(key)));
+      return slot.exists && decodeLedgerPreset(await view("get_preset", [String(slot.presetId)])).rated;
+    },
+    /**
+     * Each wallet's rating if the slot's game ended in this ranking, in its order: the ledger's own calculation, the one
+     * settlement applies (preview_mmr), from the ratings its token holds now.
+     */
+    previewMmr: async (key: SlotKey, ranked: readonly RankedWallet[]) =>
+      decodeMmrPreviews(
+        await view("preview_mmr", [
+          ...keyCalldata(key),
+          String(ranked.length),
+          ...ranked.flatMap(({ wallet, rank }) => [wallet, String(rank)]),
+        ]),
+      ),
     season: async (seasonId: number) => blitzSeasonOf(decodeBlitzSeason(await view("get_season", [String(seasonId)]))),
     seasonWinner: async (seasonId: number, index: number) =>
       decodeSeasonWinner(await view("get_season_winner", [String(seasonId), String(index)])),

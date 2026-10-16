@@ -56,6 +56,13 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-10-16",
+    title: "Your MMR if the game ended now",
+    description:
+      "In a paid, rated Blitz the leaderboard shows each player's rating gain or loss if the game ended with the standings as they are, worked out by the ledger exactly as it settles the result. Free games show no MMR.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-16",
     title: "A leaderboard that fits",
     description:
       "The leaderboard window is as large as its table and rows, in the HUD's teal and type. Each activity column shows the points it grants under its name; hover it for the rule in full.",

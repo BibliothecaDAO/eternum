@@ -1,3 +1,4 @@
+import { CallData, type Abi } from "starknet";
 import { expect, it } from "vitest";
 
 import {
@@ -8,6 +9,7 @@ import {
   decodeFrontierSeason,
   decodeLedgerPreset,
   decodeLedgerSlot,
+  decodeMmrPreviews,
   decodeBlitzSeason,
   decodePlayerResult,
   decodeRegistration,
@@ -114,7 +116,12 @@ it("decodes the Frontier backing and preset calendar once with exact widths and 
   preset[4] = "2000";
   preset[16] = "60";
   preset[17] = "3600";
-  expect(decodeLedgerPreset(preset)).toMatchObject({ paidFraction: 2000, dayUnit: 60, claimWindow: 3600 });
+  expect(decodeLedgerPreset(preset)).toMatchObject({
+    paidFraction: 2000,
+    rated: false,
+    dayUnit: 60,
+    claimWindow: 3600,
+  });
   expect(() => decodeLedgerPreset(preset.slice(1))).toThrow();
 });
 
@@ -222,4 +229,45 @@ it.each([
   { block_number: 12, block_hash: "0xab", timestamp: 100, status: [] },
 ])("refuses a malformed or preconfirmed header %j", async (block) => {
   await expect(readConfirmedLedgerHead({ getBlock: async () => block })).rejects.toThrow("ledger_head_unconfirmed");
+});
+
+// preview_mmr's return type (mmr-1), encoded by starknet.js itself: the decoder must read what the library writes.
+const MMR_PREVIEW_ABI: Abi = [
+  {
+    type: "struct",
+    name: "game_ledger::types::MmrPreview",
+    members: [
+      { name: "wallet", type: "core::starknet::contract_address::ContractAddress" },
+      { name: "mmr_before", type: "core::integer::u128" },
+      { name: "mmr_after", type: "core::integer::u128" },
+      { name: "delta", type: "core::integer::i32" },
+    ],
+  },
+  {
+    type: "function",
+    name: "previews",
+    inputs: [{ name: "previews", type: "core::array::Array::<game_ledger::types::MmrPreview>" }],
+    outputs: [],
+    state_mutability: "view",
+  },
+];
+
+it("reads each wallet's rating change from preview_mmr, a loss as a negative number", () => {
+  // The ledger's golden tie deltas: [26, 7, 7, -11].
+  const previews = [
+    { wallet: "0xa1", mmr_before: 1000, mmr_after: 1026, delta: 26 },
+    { wallet: "0xb2", mmr_before: 1000, mmr_after: 1007, delta: 7 },
+    { wallet: "0xc3", mmr_before: 1000, mmr_after: 1007, delta: 7 },
+    { wallet: "0xd4", mmr_before: 1000, mmr_after: 989, delta: -11 },
+  ];
+  const fields = new CallData(MMR_PREVIEW_ABI).compile("previews", { previews }).map(String);
+  expect(decodeMmrPreviews(fields)).toEqual([
+    { wallet: "0xa1", mmrBefore: 1000, mmrAfter: 1026, delta: 26 },
+    { wallet: "0xb2", mmrBefore: 1000, mmrAfter: 1007, delta: 7 },
+    { wallet: "0xc3", mmrBefore: 1000, mmrAfter: 1007, delta: 7 },
+    { wallet: "0xd4", mmrBefore: 1000, mmrAfter: 989, delta: -11 },
+  ]);
+  expect(decodeMmrPreviews(["0"])).toEqual([]);
+  expect(() => decodeMmrPreviews(fields.slice(0, -1))).toThrow("invalid_mmr_preview");
+  expect(() => decodeMmrPreviews(["1", "0xa1", "1000", "1000", String(2n ** 31n)])).toThrow("invalid_ledger_i32");
 });
