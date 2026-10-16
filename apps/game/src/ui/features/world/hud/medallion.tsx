@@ -1,4 +1,3 @@
-import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
@@ -48,19 +47,3 @@ export const Medallion = ({
     {foot !== undefined && <span className="hud-badge hud-badge--foot">{foot}</span>}
   </span>
 );
-
-/**
- * What a medallion means, on hover or focus, floated by the HUD's one tooltip layer so nothing in the HUD moves.
- * Touch reads it from the long press the browser turns into focus.
- */
-export const useHoverNote = () => {
-  const setTooltip = useTooltipStore((state) => state.setTooltip);
-  return (content: ReactNode) => ({
-    onMouseEnter: (event: React.MouseEvent<HTMLElement>) =>
-      setTooltip({ anchorElement: event.currentTarget, position: "top", content }),
-    onFocus: (event: React.FocusEvent<HTMLElement>) =>
-      setTooltip({ anchorElement: event.currentTarget, position: "top", content }),
-    onMouseLeave: () => setTooltip(null),
-    onBlur: () => setTooltip(null),
-  });
-};

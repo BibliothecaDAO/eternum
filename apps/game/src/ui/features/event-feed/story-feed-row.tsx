@@ -17,7 +17,7 @@ import { requestArmySelection } from "@/three/scenes/worldmap-army-select-reques
 import { formatFeedTime } from "./important-feed-rows";
 import { storyPayloadId } from "@/utils/native-id";
 
-export function resolveStoryEventPosition(event: ProcessedStoryEvent, store: NativeFactStore): Position | null {
+function resolveStoryEventPosition(event: ProcessedStoryEvent, store: NativeFactStore): Position | null {
   const coord = event.storyPayload.end_coord ?? event.storyPayload.coord;
   if (coord && typeof coord === "object" && "x" in coord && "y" in coord) {
     return Position.fromContract({ x: Number(coord.x), y: Number(coord.y) });
@@ -36,7 +36,7 @@ export function resolveStoryEventPosition(event: ProcessedStoryEvent, store: Nat
 }
 
 /** The army a story's relics went to, while it stands: an opened crate pays army relics to the army that opened it. */
-export function storyRelicArmy(event: ProcessedStoryEvent, store: NativeFactStore): number | null {
+function storyRelicArmy(event: ProcessedStoryEvent, store: NativeFactStore): number | null {
   if (event.story !== "RelicChestOpened" || event.storyPayload.explorer_id == null) return null;
   const explorerId = storyPayloadId(event.storyPayload.explorer_id);
   return store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: explorerId })
