@@ -222,11 +222,8 @@ fn each_blitz_row_pays_its_percent_of_strength_up_to_three_thousand() {
         (20000, TroopTier::T1), (334, TroopTier::T3),
     ];
     let paid = array![
-        array![5_u128, 10, 20, 10, 20, 10],
-        array![25, 50, 100, 50, 100, 50],
-        array![50, 100, 200, 100, 200, 100],
-        array![150, 300, 600, 300, 600, 300],
-        array![150, 300, 600, 300, 600, 300],
+        array![5_u128, 10, 20, 10, 20, 10], array![25, 50, 100, 50, 100, 50], array![50, 100, 200, 100, 200, 100],
+        array![150, 300, 600, 300, 600, 300], array![150, 300, 600, 300, 600, 300],
         array![150, 300, 600, 300, 600, 300],
     ];
     for index in 0..table.len() {

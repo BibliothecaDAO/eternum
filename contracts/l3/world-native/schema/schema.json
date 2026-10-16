@@ -6143,7 +6143,7 @@
           "name": "troop_limit_config",
           "type": "world_native::rules::TroopLimitConfig",
           "id": "0x74726f6f705f6c696d69745f636f6e666967",
-          "feltLength": 23
+          "feltLength": 24
         },
         {
           "name": "capacity_config",
@@ -6225,7 +6225,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 100,
+      "valueLength": 101,
       "derivedFrom": "preset"
     },
     {
@@ -11697,6 +11697,10 @@
         {
           "name": "camp_armies",
           "type": "core::integer::u16"
+        },
+        {
+          "name": "explore_reward_strength_cap",
+          "type": "core::integer::u16"
         }
       ]
     },
@@ -12913,5 +12917,5 @@
       ]
     }
   },
-  "identity": "a1253e21cef394350080d0d4e8e71785c132254f3b68ba20379ac7d6f5bab3bf"
+  "identity": "706b281be1c8da6c91df2cf8856fa91981c9a779882440e7fbccf8f3c85844ac"
 }
