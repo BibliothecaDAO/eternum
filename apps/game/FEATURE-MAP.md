@@ -30,9 +30,10 @@ the game's own sign-in, kept outside the repo): `--crate <col>,<row>` finds a cr
 pointer, reads the pack its panel names, opens it and reads the same relics back from the history **Log** opens after a
 reload; `--until-end <minutes>` stays on the map until the game ends and leaves through **Game finished** → **See the
 results**, checking the page logged no "No game client is active"; `--ended` presses **Results** on the ended game's
-doorway and on its map address, at desktop and phone (`scripts/prove-play-game.mjs`, writing `game-proof.json` and
-screenshots into a new directory per run). The outpost proof below drives the runtime lab; live actions still need an
-eligible player.
+doorway and on its map address, at desktop and phone; `--at-rest --watch` opens the map and realm as a spectator, so a
+live game the profile holds no seat in shows its HUD at both sizes (`scripts/prove-play-game.mjs`, writing
+`game-proof.json` and screenshots into a new directory per run). The outpost proof below drives the runtime lab; live
+actions still need an eligible player.
 
 Inside a Frontier match, `pnpm --dir apps/game playtest [--player <email>]` plays it as a spectator or a signed-in
 player and judges each step by what the page shows (`apps/game/AGENTS.md`).

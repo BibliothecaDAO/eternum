@@ -159,13 +159,31 @@ describe("a game's proof", () => {
       realm: "/g/0xa/7/hex",
       results: "/results/0xa-7",
     });
+    expect(gameAddresses("0xa:7", { watch: true })).toEqual({
+      doorway: "/g/0xa/7",
+      map: "/g/0xa/7/map?spectate=true",
+      realm: "/g/0xa/7/hex?spectate=true",
+      results: "/results/0xa-7",
+    });
     expect(() => gameAddresses("0xa")).toThrow("--game expects <chain>:<game>");
   });
 
   it("needs a signed-in profile for a game", () => {
     expect(() => parseArgs(["--game", "0xa:7"])).toThrow("--game needs --profile");
     expect(
-      parseArgs(["--game", "0xa:7", "--profile", "/p", "--at-rest", "--crate", "3,11", "--until-end", "40", "--ended"]),
+      parseArgs([
+        "--game",
+        "0xa:7",
+        "--profile",
+        "/p",
+        "--at-rest",
+        "--watch",
+        "--crate",
+        "3,11",
+        "--until-end",
+        "40",
+        "--ended",
+      ]),
     ).toMatchObject({
       game: "0xa:7",
       profile: "/p",
@@ -173,6 +191,7 @@ describe("a game's proof", () => {
       untilEndMinutes: 40,
       ended: true,
       atRest: true,
+      watch: true,
     });
   });
 
