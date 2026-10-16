@@ -65,8 +65,7 @@
     "typecheck": "NODE_OPTIONS=\"--max-old-space-size=8192\" tsc --pretty false",
     "verify:pwa": "node scripts/verify-pwa-build.mjs dist",
     "optimize:outposts": "node scripts/outposts/optimize-outpost.mjs",
-    "verify:outposts": "node scripts/outposts/verify-outpost.mjs",
-    "prepare:hud-proof": "node scripts/prepare-hud-proof.mjs"
+    "verify:outposts": "node scripts/outposts/verify-outpost.mjs"
   },
   "dependencies": {
     "@bibliothecadao/ammv2-sdk": "workspace:*",

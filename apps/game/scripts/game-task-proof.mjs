@@ -28,39 +28,6 @@ export const spiralPoints = ([cx, cy], { radius, step }) => {
  * the element showing that word, as agent-browser finds it. False when nothing matched.
  */
 const pressStep = async (b, press, layout) => {
-  if (press.scroll) {
-    await b.run("scrollintoview", press.scroll);
-    return true;
-  }
-  if (press.drag) {
-    const box = await b.evaluate(
-      `(() => { const r = document.querySelector(${JSON.stringify(press.drag)}).getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2}; })()`,
-    );
-    await b.run("mouse", "move", String(box.x), String(box.y));
-    await b.run("mouse", "down", "left");
-    await b.run("mouse", "move", String(box.x + press.delta[0]), String(box.y + press.delta[1]));
-    await b.run("mouse", "up", "left");
-    return true;
-  }
-  if (press.fill) {
-    await b.run("fill", press.fill, press.valueFrom ? await b.evaluate(press.valueFrom) : press.value);
-    return true;
-  }
-  if (press.select) {
-    await b.run("select", press.select, press.value);
-    return true;
-  }
-  if (press.selector) {
-    await b.run("click", press.selector);
-    return true;
-  }
-  if (press.point) {
-    const point = press.point[layout];
-    await b.run("mouse", "move", ...point.map(String));
-    await b.run("mouse", "down", "left");
-    await b.run("mouse", "up", "left");
-    return true;
-  }
   if (press.key) {
     await b.run("press", press.key);
     return true;
@@ -133,8 +100,6 @@ export const proveTask = async (b, base, addresses, name, layout, out) => {
     record.inputs.push({ ...press, pressed });
     record.screenshots.push(await shot(b, out, `task-${name}-${layout}-${record.inputs.length}.png`));
     if (!pressed) return { ...record, problem: `nothing to press for ${press.name}` };
-    if (press.check && !(await waitFor(b, press.check, STEP_TIMEOUT_MS)))
-      return { ...record, problem: `after ${press.name}: expected result did not show` };
   }
   record.clicks = record.inputs.length;
   const outcome = await waitForOutcome(b, task, before);

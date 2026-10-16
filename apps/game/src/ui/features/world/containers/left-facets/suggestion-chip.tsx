@@ -1,0 +1,72 @@
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import {
+  OVERLAY_SURFACE_BASE,
+  OVERLAY_SURFACE_ACTIVE,
+  OVERLAY_SURFACE_HOVER,
+} from "@/ui/design-system/atoms/overlay-surface";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HUD_BODY, HUD_BODY_MUTED, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
+
+import { memo } from "react";
+import type { EmpireSuggestion } from "./use-empire-suggestions";
+
+const TITLE_LINE_MAX = 30;
+const SEPARATOR = " · ";
+
+// Truncate the realm name so `name · label` fits a single chip line. The label
+// is fixed copy so we shrink the name (player-controlled) instead.
+const trimRealmName = (realmName: string, label: string): string => {
+  const budget = TITLE_LINE_MAX - SEPARATOR.length - label.length;
+  if (realmName.length <= budget) return realmName;
+  if (budget <= 1) return realmName.slice(0, 1) + "…";
+  return realmName.slice(0, budget - 1) + "…";
+};
+
+interface SuggestionChipProps {
+  suggestion: EmpireSuggestion;
+  onClick: (suggestion: EmpireSuggestion) => void;
+  isPending: boolean;
+  /** Why it cannot be taken now (before play opens), or null. */
+  refusal: string | null;
+}
+
+export const SuggestionChip = memo(({ suggestion, onClick, isPending, refusal }: SuggestionChipProps) => {
+  const Icon = isPending ? ("refresh" as const) : suggestion.icon;
+  const isPrimary = suggestion.emphasis === "primary";
+  const trimmedName = trimRealmName(suggestion.realmName, suggestion.label);
+
+  return (
+    <button
+      type="button"
+      onClick={() => onClick(suggestion)}
+      disabled={isPending || refusal !== null}
+      title={
+        refusal ?? `${suggestion.realmName} · ${suggestion.label}${suggestion.reason ? ` — ${suggestion.reason}` : ""}`
+      }
+      className={cn(
+        "flex w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition",
+        OVERLAY_SURFACE_BASE,
+        OVERLAY_SURFACE_HOVER,
+        isPrimary && OVERLAY_SURFACE_ACTIVE,
+        (isPending || refusal !== null) && "cursor-not-allowed opacity-60 hover:bg-transparent",
+      )}
+    >
+      <SemanticIcon
+        name={Icon}
+        className={cn("h-4 w-4 flex-shrink-0", isPrimary ? "text-gold" : "text-gold/70", isPending && "animate-spin")}
+      />
+      <span className="min-w-0 flex-1">
+        <span className={cn("block truncate leading-tight", isPrimary ? HUD_VALUE : HUD_BODY)}>
+          <span className="text-kit-muted">{trimmedName}</span>
+          <span className="text-kit-muted"> · </span>
+          {suggestion.label}
+        </span>
+        {suggestion.reason && (
+          <span className={cn("block truncate leading-tight text-kit-muted", HUD_BODY_MUTED)}>{suggestion.reason}</span>
+        )}
+      </span>
+    </button>
+  );
+});
+
+SuggestionChip.displayName = "SuggestionChip";

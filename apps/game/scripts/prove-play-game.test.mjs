@@ -13,7 +13,6 @@ import {
   spiralPoints,
 } from "./prove-play-game.mjs";
 import { parseArgs } from "./prove-play.mjs";
-import { proveTask as proveSharedTask } from "./game-task-proof.mjs";
 
 const WAR_RELICS = ["Damage Relic I", "Damage Reduction Relic I", "Stamina Relic I"];
 const LUCKY_FORTRESS_RELICS = ["Structure Defense Relic II", "Damage Reduction Relic II", "Troop Production Relic II"];
@@ -345,10 +344,7 @@ const SCREEN = { innerWidth: 1440, innerHeight: 900 };
  */
 const liveMapBrowser = ({ page, onPress = () => {}, consoleErrors = [] }) => ({
   run: (command, ...args) => {
-    if (
-      (command === "mouse" && args[0] === "up") ||
-      ["press", "find", "click", "dblclick", "select", "fill"].includes(command)
-    )
+    if ((command === "mouse" && args[0] === "up") || ["press", "find", "click", "dblclick"].includes(command))
       onPress(command, ...args);
     if (command === "errors") return JSON.stringify({ success: true, data: { errors: [] } });
     if (command === "console") {
@@ -371,7 +367,7 @@ const liveMapBrowser = ({ page, onPress = () => {}, consoleErrors = [] }) => ({
 });
 
 /** The action strip as the HUD renders it: its Build button carries the Build workspace's name. */
-const STRIP = `<nav aria-label="Realm actions"><button aria-label="Build">Build</button></nav>`;
+const STRIP = `<nav aria-label="Structure actions"><button aria-label="Build">Build</button></nav>`;
 
 const proveTask = async (browser, task) => {
   vi.useFakeTimers();
@@ -534,53 +530,5 @@ describe("an action tried before play opens", () => {
       "gate-production",
     );
     expect(records[0].problem).toBe("expected no order surface to open, read 0 → 1");
-  });
-});
-
-describe("connected HUD task outcomes", () => {
-  const automationPage = (value) =>
-    `<select aria-label="Production automation"><option value="idle" ${value === "idle" ? "selected" : ""}>Idle</option><option value="smart" ${value === "smart" ? "selected" : ""}>Smart</option></select>`;
-  it("fails when selecting Idle leaves Smart in place", async () => {
-    const records = await proveTask(liveMapBrowser({ page: () => automationPage("smart") }), "hud-automation");
-    expect(records.map((record) => record.problem)).toEqual([
-      "after Idle automation: expected result did not show",
-      "after Idle automation: expected result did not show",
-    ]);
-  });
-  it("awaits the browser's controls and reads the restored automation on both sizes", async () => {
-    let value = "smart";
-    const browser = liveMapBrowser({
-      page: () => automationPage(value),
-      onPress: (command, selector, next) => {
-        if (command === "select") value = next;
-      },
-    });
-    vi.useFakeTimers();
-    const transport = {
-      run: async (...args) => {
-        await Promise.resolve();
-        return browser.run(...args);
-      },
-      evaluate: async (...args) => browser.evaluate(...args),
-    };
-    const records = [];
-    for (const layout of ["desktop", "phone"]) {
-      const proof = proveSharedTask(
-        transport,
-        "https://proof.test",
-        gameAddresses("0xa:11"),
-        "hud-automation",
-        layout,
-        "/proof",
-      );
-      await vi.runAllTimersAsync();
-      records.push(await proof);
-    }
-    expect(records.map((record) => record.reading)).toEqual([
-      { before: "idle", after: "smart" },
-      { before: "idle", after: "smart" },
-    ]);
-    expect(records.every((record) => record.done && !record.problem)).toBe(true);
-    expect(value).toBe("smart");
   });
 });

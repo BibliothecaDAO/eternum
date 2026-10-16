@@ -13,21 +13,21 @@ fixtures restore their network and identity overrides when you leave them.
 The users and routes below were inventoried before the tools were moved. Terrain and model review keep their URLs; the
 former `/debug` tools now live under `/lab`. Their runners and links use the new routes.
 
-| Tool                | Route                      | Users and workflow                                                                                                                                    |
-| ------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Terrain & buildings | `/lab`                     | Art: terrain gallery, material/biome inspection, gallery verification and captures                                                                    |
-| Models & motion     | `/lab/models`              | Art: model review, animation inspection and captures                                                                                                  |
-| Rewards             | `/lab/rewards`             | Art: reward and chest review with capture controls                                                                                                    |
-| Terrain props       | `/lab/terrain-props`       | Art: biome prop and material review                                                                                                                   |
-| World FX            | `/lab/world-fx`            | Art: world effects and capture controls                                                                                                               |
-| Character review    | `/lab/characters`          | Character art and animation: frame inspector, smoke checks and animation captures                                                                     |
-| Character benchmark | `/lab/character-benchmark` | Performance: character benchmark smoke and performance runners                                                                                        |
-| World integration   | `/lab/world`               | Performance and character integration: world gym smoke runner                                                                                         |
-| Chunk fixtures      | `/lab/chunks`              | Renderer: baseline, dense and stress fixtures, renderer smoke runner                                                                                  |
-| Terrain benchmark   | `/lab/terrain-benchmark`   | Performance: terrain benchmark runner                                                                                                                 |
-| Motion primitives   | `/lab/motion`              | UI: motion intensity, reduced motion and site-clear demo                                                                                              |
-| UI kit & HUD        | `/lab/kit/*`               | UI: component states, `/lab/kit/hud/:state` fixtures and `/lab/kit/icons` production icon catalog and `/lab/kit/hud/redesign` production HUD fixtures |
-| App fixtures        | `/lab/app/:screen/*`       | UI: game, lobby, profile and account states                                                                                                           |
+| Tool                | Route                      | Users and workflow                                                                                |
+| ------------------- | -------------------------- | ------------------------------------------------------------------------------------------------- |
+| Terrain & buildings | `/lab`                     | Art: terrain gallery, material/biome inspection, gallery verification and captures                |
+| Models & motion     | `/lab/models`              | Art: model review, animation inspection and captures                                              |
+| Rewards             | `/lab/rewards`             | Art: reward and chest review with capture controls                                                |
+| Terrain props       | `/lab/terrain-props`       | Art: biome prop and material review                                                               |
+| World FX            | `/lab/world-fx`            | Art: world effects and capture controls                                                           |
+| Character review    | `/lab/characters`          | Character art and animation: frame inspector, smoke checks and animation captures                 |
+| Character benchmark | `/lab/character-benchmark` | Performance: character benchmark smoke and performance runners                                    |
+| World integration   | `/lab/world`               | Performance and character integration: world gym smoke runner                                     |
+| Chunk fixtures      | `/lab/chunks`              | Renderer: baseline, dense and stress fixtures, renderer smoke runner                              |
+| Terrain benchmark   | `/lab/terrain-benchmark`   | Performance: terrain benchmark runner                                                             |
+| Motion primitives   | `/lab/motion`              | UI: motion intensity, reduced motion and site-clear demo                                          |
+| UI kit & HUD        | `/lab/kit/*`               | UI: component states, `/lab/kit/hud/:state` fixtures and `/lab/kit/icons` production icon catalog |
+| App fixtures        | `/lab/app/:screen/*`       | UI: game, lobby, profile and account states                                                       |
 
 The in-game battle calculator stays in the player interface. Physics behavior is unchanged.
 
@@ -109,17 +109,3 @@ The driver closes its page on success or failure.
 The Facets catalog at `/lab/kit/icons` uses production artwork and the shared renderer. It includes size, family and
 search controls, action buttons, all nine soldier portraits and interactive hex minimap badges. Run
 `pnpm icons:prove <evidence-dir> https://127.0.0.1:<port>` to exercise it alongside the HUD and shell fixtures.
-
-## HUD fixtures
-
-`/lab/kit/hud/redesign` mounts the production `ArenaHudView` and its panel views on fixture facts. Holdings and realm
-resources are on the left; suggestion, events and selected tile are on the right. Realm / World map, compact rows and
-bottom-centre command bubbles are fixed. No Current layout or alternative presentation settings remain. Settings, VP and
-the clock stay in the header; the phone uses Map / Holdings. Choose 3, 25 or 220 structures; drag the terrain or use the
-minimap to move the camera. `capture=1` removes lab controls for full-frame evidence. See
-[the HUD feature map](../ui/features/debug/kit-lab/hud-redesign/README.md) and `pnpm --dir apps/game prepare:hud-proof`
-(add `--watch <chain-id>:<game-id>` for live signed-out desktop/phone checks).
-
-Seated HUD interaction proof uses the shared `prove:play --game` tasks (`hud-holdings`, `hud-upgrade`, `hud-local`,
-`hud-automation`, `hud-commands`, `hud-minimap` and `blitz-farm`). The HUD feature map describes the player controls and
-before/action/result checks.

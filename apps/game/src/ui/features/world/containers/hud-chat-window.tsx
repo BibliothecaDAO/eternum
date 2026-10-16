@@ -129,54 +129,28 @@ export function HudChatWindow({
           />
         </section>
       )}
-      <HudChatTrigger
-        open={open}
+      <button
+        type="button"
+        aria-label="Chat strip"
+        aria-expanded={open}
         disabled={status === "loading"}
-        compact={foldToIcon}
-        stripText={stripText}
-        unread={initializer ? unread : 0}
+        // A signed-out spectator's strip is their way into the sign-in flow, which brings them back to this game.
         onClick={() => (initializer ? onOpenChange(!open) : requestSignIn())}
-      />
+        className={cn(
+          "pointer-events-auto flex h-8 w-full shrink-0 items-center gap-2 rounded-xl px-3 text-left font-sans ",
+          OVERLAY_SURFACE_BASE,
+          "hover:border-gold/50",
+          foldToIcon && "portrait:w-auto portrait:self-start",
+        )}
+      >
+        <SemanticIcon name="chat" className="h-3.5 w-3.5 shrink-0 text-gold/70" />
+        <span className={cn("min-w-0 flex-1 truncate", HUD_BODY, foldToIcon && "portrait:sr-only")}>{stripText}</span>
+        {initializer && !open && unread > 0 && (
+          <span aria-label="Unread chat messages" className="rounded-full bg-gold px-1.5 text-sm text-dark-brown">
+            {unread}
+          </span>
+        )}
+      </button>
     </div>
-  );
-}
-
-export function HudChatTrigger({
-  open,
-  disabled = false,
-  compact = false,
-  stripText,
-  unread = 0,
-  onClick,
-}: {
-  open: boolean;
-  disabled?: boolean;
-  compact?: boolean;
-  stripText: string;
-  unread?: number;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      data-notice
-      className={cn(
-        "hud-chat-trigger pointer-events-auto flex h-8 w-full shrink-0 items-center gap-2 rounded-xl px-3 text-left font-sans hover:border-gold/50",
-        OVERLAY_SURFACE_BASE,
-      )}
-      aria-label="Chat"
-      aria-expanded={open}
-      title={stripText}
-      disabled={disabled}
-      onClick={onClick}
-    >
-      <SemanticIcon name="chat" className="h-3.5 w-3.5 shrink-0 text-gold/70" />
-      <span className={cn("min-w-0 flex-1 truncate", HUD_BODY)}>{compact ? "Chat" : stripText}</span>
-      {!open && unread > 0 && (
-        <span aria-label="Unread chat messages" className="rounded-full bg-gold px-1.5 text-sm text-dark-brown">
-          {unread}
-        </span>
-      )}
-    </button>
   );
 }

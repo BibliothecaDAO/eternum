@@ -5,7 +5,6 @@ import { ActionTile } from "@/ui/features/world/containers/left-facets/structure
 import { Button } from "@/ui/design-system/kit/button";
 import { IconMinimap } from "./icon-minimap";
 import "./icon-lab.css";
-import "@/ui/features/world/containers/arena-hud.css";
 const families = [...new Set(iconMeanings.map((name) => iconDefinition(name).family))];
 export function IconLab() {
   const [size, setSize] = useState(32);
@@ -49,7 +48,7 @@ export function IconLab() {
         </button>
       </div>
       <section aria-label="Action meanings">
-        <div className="icon-controls arena-hud">
+        <div className="icon-controls">
           {(["build", "production", "military", "transfer", "trade"] as const).map((id) => (
             <ActionTile
               key={id}

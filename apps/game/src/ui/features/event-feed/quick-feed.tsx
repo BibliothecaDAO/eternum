@@ -3,25 +3,40 @@ import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
+import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { triggerConnectionForceReconnect } from "@/ui/features/world/components/network-status-retry";
 import { configManager } from "@bibliothecadao/eternum";
 import { TickIds } from "@bibliothecadao/types";
+
 import { useEffect, useRef, useState } from "react";
 import { orderHeadlineFeed, useHeadlineFeedStore } from "../news-headlines/headline-feed-store";
 import type { Headline } from "../news-headlines/headline-types";
 import { EventLogPanel } from "./event-log-panel";
-import { FEED_ROW_CLASS, HeadlineIcon } from "./feed-row-line";
-import { type ImportantFeedRow, selectImportantFeedRows } from "./important-feed-rows";
+import { FEED_ROW_CLASS, FeedRowLine, HeadlineIcon } from "./feed-row-line";
+import { type ImportantFeedRow, selectImportantFeedRows, selectQuickFeedRows } from "./important-feed-rows";
 import { toast } from "./notify";
 import { useFeedRows } from "./use-feed-rows";
+import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 
+const QUICK_FEED_WINDOW_MS = 20_000;
+const QUICK_FEED_MAX_ROWS = 5;
+const QUICK_FEED_FADE_MS = 3_000;
 const CONNECTION_NOTICE_ID = "connection";
 
-export const HudLog = ({ open, onToggle }: { open: boolean; onToggle: () => void }) => (
-  <LogToggle open={open} onToggle={onToggle} className="hud-log">
-    Log
-  </LogToggle>
+/** Top of the right column: the Log button, then at most five one-line rows that fade after 20 s. */
+export const QuickFeed = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogToggle: () => void }) => (
+  <div aria-label="Quick feed" className="flex flex-col items-end gap-1">
+    <LogToggle
+      open={logOpen}
+      onToggle={onLogToggle}
+      className={cn("h-9 gap-1.5 rounded-md px-2.5 font-sans hover:border-gold/50", OVERLAY_SURFACE_BASE, HUD_LABEL)}
+    >
+      <SemanticIcon name="chronicles" className="h-4 w-4" />
+      Log
+    </LogToggle>
+    <QuickFeedRows />
+  </div>
 );
 
 /**
@@ -65,6 +80,33 @@ const LogToggle = ({
   );
 };
 
+/** The feed's pinned notices and its latest rows, fading after 20 s. */
+const QuickFeedRows = () => {
+  const { nowMs, rows, pinned } = useImportantFeed();
+  const visible = selectQuickFeedRows(rows, nowMs, QUICK_FEED_WINDOW_MS, QUICK_FEED_MAX_ROWS);
+  useConnectionNotices();
+  return (
+    <>
+      <FeedNotices pinned={pinned} />
+      {visible.map((row) => (
+        <QuickFeedRow key={row.id} row={row} />
+      ))}
+    </>
+  );
+};
+
+/** A row fades out over its last seconds on the compositor: the delay is fixed at mount, so the once-a-second
+ *  clock that removes it never restarts or steps the fade. */
+const QuickFeedRow = ({ row }: { row: ImportantFeedRow }) => {
+  const [delayMs] = useState(() => Math.max(0, row.at + QUICK_FEED_WINDOW_MS - QUICK_FEED_FADE_MS - Date.now()));
+  return (
+    <FeedRowLine
+      row={row}
+      style={{ animation: `quickFeedFade ${QUICK_FEED_FADE_MS}ms linear ${delayMs}ms forwards` }}
+    />
+  );
+};
+
 /** The important rows every layout counts and previews, plus the headlines pinned for the current tick. */
 export function useImportantFeed() {
   const nowMs = useNowMs();
@@ -86,7 +128,7 @@ export function useUnreadFeedCount(rows: ImportantFeedRow[], logOpen: boolean): 
   return logOpen ? 0 : rows.filter((row) => row.at > seen.at).length;
 }
 
-const UnreadFeedBadge = ({ count }: { count: number }) =>
+export const UnreadFeedBadge = ({ count }: { count: number }) =>
   count > 0 ? (
     <span aria-label="Unread events" className="rounded-full bg-gold px-1.5 text-sm text-dark-brown">
       {count}

@@ -10,7 +10,7 @@ import { StoreBar } from "@/ui/design-system/kit/store-bar";
 import { TierChip } from "@/ui/design-system/kit/tier-chip";
 import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
 import { OFFLINE, TRY_AGAIN, YOU } from "@/ui/design-system/kit/words";
-import { type ReactNode, lazy, useState } from "react";
+import { type ReactNode, useState } from "react";
 import { Route, Routes } from "react-router-dom";
 
 import { ConstructionLab } from "./construction-lab";
@@ -18,9 +18,6 @@ import { IconLab } from "./icon-lab";
 import { Link } from "react-router-dom";
 
 import { HudLab } from "./hud-lab";
-const HudRedesignLab = lazy(() =>
-  import("./hud-redesign/hud-redesign-lab").then((module) => ({ default: module.HudRedesignLab })),
-);
 
 const HOUR = 3600;
 /** The handoff's one fiction: Day 12, today ends at 21:40 with 7h 14m left, tomorrow lasts 12h. */
@@ -35,7 +32,6 @@ export const KitLabView = () => {
     <Routes>
       <Route path="construction" element={<ConstructionLab />} />
       <Route path="icons" element={<IconLab />} />
-      <Route path="hud/redesign" element={<HudRedesignLab />} />
       <Route path="hud/:state" element={<HudLab />} />
       <Route path="*" element={<Components />} />
     </Routes>
@@ -45,9 +41,6 @@ export const KitLabView = () => {
 const Components = () => {
   return (
     <main className="min-h-dvh bg-kit-ground px-4 py-6 font-sans text-kit-cream">
-      <a className="block p-3 text-gold underline" href="/lab/kit/hud/redesign">
-        Compare Current HUD / Guided rails
-      </a>
       <div className="mx-auto flex max-w-[390px] flex-col gap-8 lg:max-w-5xl lg:flex-row lg:flex-wrap">
         <Link to="/lab/kit/icons">Facets icon catalog</Link>
         <Link to="/lab/kit/construction">Construction models</Link>

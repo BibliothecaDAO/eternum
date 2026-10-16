@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Position, configManager, structureMapPosition } from "@bibliothecadao/eternum";
 import { StructureType } from "@bibliothecadao/types";
 import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
@@ -12,18 +12,29 @@ import { displayPlayerName } from "@bibliothecadao/eternum";
 import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
+import { HUD_COLUMN_TOP, HUD_COLUMN_WIDTH } from "./hud-layout";
 import { advanceStandingsTick, selectSpectatorStandings, type StandingsTick } from "./spectator-standings-model";
 
-/** Standings fit the desktop rail or phone Holdings panel that hosts them. */
+/** The desktop left column for a spectator: the standings table in its own fixed frame. */
 export function SpectatorStandings() {
   return (
     <section
       aria-label="Spectator standings"
-      className={cn("w-full pointer-events-auto rounded-xl overflow-hidden", OVERLAY_SURFACE_BASE)}
+      className={cn(
+        "fixed left-3 z-20 pointer-events-auto rounded-xl overflow-hidden",
+        HUD_COLUMN_TOP,
+        HUD_COLUMN_WIDTH,
+        OVERLAY_SURFACE_BASE,
+      )}
     >
-      <StandingsRows key={configManager.getActiveGameId()} />
+      <SpectatorStandingsBody />
     </section>
   );
+}
+
+/** The standings table without a frame, so the desktop column and the compact sheet host the same rows. */
+export function SpectatorStandingsBody() {
+  return <StandingsRows key={configManager.getActiveGameId()} />;
 }
 
 function StandingsRows() {
@@ -38,11 +49,7 @@ function StandingsRows() {
     [standingsByAddress],
   );
   const tick = useCurrentArmiesTick();
-  const [history, setHistory] = useState<{ tick: number; entries: typeof standings; snapshot: StandingsTick }>({
-    tick,
-    entries: standings,
-    snapshot: advanceStandingsTick(null, tick, standings),
-  });
+  const [history, setHistory] = useState<StandingsTick | null>(null);
   const structures = useFactView(gameStructuresView);
   const {
     setup: { store },
@@ -50,10 +57,11 @@ function StandingsRows() {
   const players = usePlayers();
   const selectedId = useUIStore((state) => state.structureEntityId);
   const navigate = useNavigateToMapView();
-  if (history.tick !== tick || history.entries !== standings)
-    setHistory({ tick, entries: standings, snapshot: advanceStandingsTick(history.snapshot, tick, standings) });
+  useEffect(() => {
+    setHistory((previous) => advanceStandingsTick(previous, tick, standings));
+  }, [standings, tick]);
   const selectedOwner = structures.find((structure) => structure.entity_id === BigInt(selectedId))?.owner;
-  const rows = selectSpectatorStandings(standings, selectedOwner, history.snapshot);
+  const rows = selectSpectatorStandings(standings, selectedOwner, history);
 
   return (
     <>

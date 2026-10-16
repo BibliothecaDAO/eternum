@@ -35,17 +35,17 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-16",
-    title: "Warm windows in realms",
+    title: "The command sidebar is back",
     description:
-      "City and kingdom windows glow with warm glass. Imperial upper windows share that light, with wooden shutters on the lower floor.",
+      "Blitz and Eternum use the command sidebar again: your structures and the selected one's panel and actions on the left, events and the selected tile on the right, and the Empire, Map, Log, Chat and Details tabs on a phone.",
     type: "improvement",
   },
   {
     date: "2026-10-16",
-    title: "Readable menus in Safari",
+    title: "Warm windows in realms",
     description:
-      "The realm's production menu and the HUD's other drop-downs now draw in the game's dark style in Safari too, instead of a white box with pale text.",
-    type: "fix",
+      "City and kingdom windows glow with warm glass. Imperial upper windows share that light, with wooden shutters on the lower floor.",
+    type: "improvement",
   },
   {
     date: "2026-10-16",
@@ -81,33 +81,6 @@ const allLatestFeatures: LatestFeature[] = [
     description:
       "Construction cards now show the game’s building models, including farms, workshops and markets. Action and resource icons keep their painted artwork.",
     type: "fix",
-  },
-  {
-    date: "2026-10-16",
-    title: "A clearer realm command view",
-    description:
-      "Find holdings in compact rows, switch between Realm and World map, and open commands from floating bubbles at the bottom centre.",
-    type: "improvement",
-  },
-  {
-    date: "2026-10-16",
-    title: "Inspect every discovered site",
-    description:
-      "Building details follow your current view. The minimap keeps spires, reserved sites and chests visible, including in crowded sectors.",
-    type: "fix",
-  },
-  {
-    date: "2026-10-16",
-    title: "Clear spectator controls",
-    description: "Phone standings fit below the match header, and the desktop Chat button stays unobstructed.",
-    type: "fix",
-  },
-  {
-    date: "2026-10-16",
-    title: "Guided arena HUD",
-    description:
-      "Find holdings with category filters and search, review the next step beside the map, and open commands from floating painted bubbles.",
-    type: "improvement",
   },
   {
     date: "2026-10-16",

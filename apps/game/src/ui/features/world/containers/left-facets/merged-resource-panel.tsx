@@ -1,11 +1,12 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { ResourceToken } from "./resource-token";
-import { memo, useCallback, useMemo } from "react";
+
+import { memo, useCallback, useMemo, useRef } from "react";
 
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { ProductionStatusBadge } from "@/ui/shared";
 import { formatInventoryAmount } from "@/ui/features/world/components/entities/compact-entity-inventory";
 import type { StructureProductionSummary } from "@/ui/features/world/components/entities/structure-production-summary";
 import { formatTimeRemaining } from "@/ui/features/economy/resources/entity-resource-table/utils";
@@ -36,6 +37,8 @@ import { getPlayerName } from "@/services/identity/player-profiles";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 type ProductionItem = StructureProductionSummary["items"][number];
+
+const ACCRUAL_SWEEP_INTERVAL_MS = 60_000;
 
 interface MergedResourcePanelProps {
   structureEntityId: ID;
@@ -83,6 +86,23 @@ export const MergedResourcePanel = memo(
 
     const now = useCurrentDefaultTick();
     const currentTime = now * 1000;
+
+    // Limit the accrual animation to one sweep per minute as confirmed production arrives.
+    const accrualSweeps = useRef(new Map<ResourcesIds, { label: string | undefined; at: number; key: number }>());
+    const resolveAccrualKey = (resourceId: ResourcesIds, label: string | undefined): number => {
+      const previous = accrualSweeps.current.get(resourceId);
+      if (!previous) {
+        accrualSweeps.current.set(resourceId, { label, at: currentTime, key: 0 });
+        return 0;
+      }
+      if (label === previous.label || currentTime - previous.at < ACCRUAL_SWEEP_INTERVAL_MS) {
+        previous.label = label;
+        return previous.key;
+      }
+      const next = { label, at: currentTime, key: previous.key + 1 };
+      accrualSweeps.current.set(resourceId, next);
+      return next.key;
+    };
 
     const balanceMap = useMemo(() => {
       const map = new Map<number, number>();
@@ -134,7 +154,7 @@ export const MergedResourcePanel = memo(
         realmPosition: realm.position,
       });
       // the clock keeps this fresh as synced building occupancy changes.
-    }, [realm, entityId, currentTime]);
+    }, [realm?.position, entityId, currentTime]);
 
     const handleAutoBuild = useCallback(
       async (buildingType: BuildingType, resourceId: ResourcesIds) => {
@@ -198,15 +218,18 @@ export const MergedResourcePanel = memo(
         if (balanceLabel) tooltipParts.push(`${balanceLabel} held`);
 
         return (
-          <div key={resourceId} className="relative">
-            <ResourceToken
-              label={label}
-              amount={balanceLabel ?? "0"}
-              detail={tooltipParts.join(" • ")}
-              producing={Boolean(item?.isProducing)}
-              seconds={effectiveRemaining}
-              buildings={count}
-              accrualTime={currentTime}
+          <div key={resourceId} className="relative inline-flex h-12 w-12 shrink-0">
+            <ProductionStatusBadge
+              resourceLabel={label}
+              tooltipText={tooltipParts.join(" • ")}
+              isProducing={Boolean(item?.isProducing)}
+              timeRemainingSeconds={effectiveRemaining}
+              size="sm"
+              showTooltip
+              cornerTopLeft={count}
+              cornerTopRight={balanceLabel}
+              cornerBottomRight={timer}
+              accrualKey={resolveAccrualKey(resourceId, balanceLabel)}
             />
             {isBuildable && canBuild && (
               <button
@@ -279,7 +302,7 @@ export const MergedResourcePanel = memo(
         {tokens.length > 0 && (
           // Two token rows stay visible; more scroll inside. The inner padding keeps rings and badges off the clip edge.
           <div className="max-h-[164px] overflow-y-auto overscroll-contain">
-            <div className="resource-grid simple">{tokens}</div>
+            <div className="flex max-w-full flex-wrap justify-start gap-x-4 gap-y-5 px-5 pb-3 pt-3">{tokens}</div>
           </div>
         )}
       </div>

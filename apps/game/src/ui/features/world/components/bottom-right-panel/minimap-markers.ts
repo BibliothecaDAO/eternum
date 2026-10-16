@@ -1,10 +1,3 @@
-import {
-  hasTileOccupier,
-  getStructureInfoFromTileOccupier,
-  getExplorerInfoFromTileOccupier,
-} from "@bibliothecadao/eternum";
-import { TileOccupier } from "@bibliothecadao/types";
-import type { MinimapTile } from "./hex-minimap";
 import { configManager, getExplorerOwner } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import type { FactView } from "@/sync/fact-views";
@@ -57,47 +50,3 @@ export const minimapMarkersView: FactView<Map<string, MinimapMarker>> = {
     return markers;
   },
 };
-
-/** Native facts win; fixture tiles supply the same readings at the renderer boundary. */
-export function resolveMinimapMarker(
-  tile: MinimapTile,
-  markers?: ReadonlyMap<string, MinimapMarker>,
-  ownedStructures: ReadonlySet<string> = new Set(),
-  ownedArmies: ReadonlySet<string> = new Set(),
-): MinimapMarker | null {
-  const type = tile.occupier_type ?? 0;
-  if (!hasTileOccupier(type)) return null;
-  const id = tile.occupier_id ?? "";
-  const known = id && id !== "0" ? markers?.get(id) : undefined;
-  if (known) return known;
-  const owner = tile.ownerCue ?? (ownedStructures.has(id) || ownedArmies.has(id) ? "you" : "neutral");
-  if (type === TileOccupier.Spire || type === TileOccupier.DormantSpire) return { name: "spire", owner };
-  if (type === TileOccupier.Shrine) return { name: "shrine", owner };
-  if (type === TileOccupier.Well) return { name: "well", owner };
-  if (type === TileOccupier.ReservedHyperstructure) return { name: "hyperstructure", owner };
-  if (type === TileOccupier.Chest) return { name: "chest", owner };
-  const structure = getStructureInfoFromTileOccupier(type);
-  if (structure)
-    return {
-      name:
-        structure.type === StructureType.Realm
-          ? "map-realm"
-          : structure.type === StructureType.Village
-            ? "map-village"
-            : structure.type === StructureType.Mine
-              ? tile.mineKind === undefined
-                ? "map-mine"
-                : mineMeaning(tile.mineKind)
-              : structureMeaning(structure.type),
-      owner,
-      value: structure.type === StructureType.Realm ? String(structure.level) : undefined,
-    };
-  if (getExplorerInfoFromTileOccupier(type))
-    return {
-      name: "map-army",
-      owner,
-      value:
-        tile.strength === undefined ? undefined : tile.strength < 1000 ? "•" : tile.strength <= 5000 ? "••" : "•••",
-    };
-  return null;
-}

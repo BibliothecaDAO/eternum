@@ -1,7 +1,7 @@
 import { TransactionType } from "@bibliothecadao/provider";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { iconUrl } from "@/ui/design-system/icon-meaning";
 import { structureMapPosition } from "@bibliothecadao/eternum";
+
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { configManager, Position } from "@bibliothecadao/eternum";
@@ -45,56 +45,31 @@ export const FeedRowLine = ({ row, style }: { row: ImportantFeedRow; style?: CSS
   const target = useFeedRowTarget(row);
   const navigate = useNavigateToMapView();
   const { icon, text } = summarizeFeedRow(row);
-  return (
-    <FeedRowLineView
-      icon={icon}
-      text={text}
-      time={formatFeedTime(row.at)}
-      style={style}
-      onClick={target ? () => navigate(target) : undefined}
-    />
-  );
-};
-
-export function FeedRowLineView({
-  icon,
-  text,
-  time,
-  style,
-  onClick,
-}: {
-  icon: ReactNode;
-  text: ReactNode;
-  time: string;
-  style?: CSSProperties;
-  onClick?: () => void;
-}) {
   const content = (
     <>
       <span className={FEED_ROW_ICON_COLUMN_CLASS}>{icon}</span>
       <span className="min-w-0 flex-1 truncate text-left">{text}</span>
-      <span className="ml-auto shrink-0 text-right tabular-nums text-kit-muted">{time}</span>
+      <span className="ml-auto shrink-0 text-right tabular-nums text-kit-muted">{formatFeedTime(row.at)}</span>
     </>
   );
-  if (!onClick) {
+  if (!target) {
     return (
-      <div data-notice className={FEED_ROW_CLASS} style={style}>
+      <div className={FEED_ROW_CLASS} style={style}>
         {content}
       </div>
     );
   }
   return (
     <button
-      data-notice
       type="button"
-      onClick={onClick}
+      onClick={() => navigate(target)}
       className={cn(FEED_ROW_CLASS, "font-sans hover:bg-black/70")}
       style={style}
     >
       {content}
     </button>
   );
-}
+};
 
 function useFeedRowTarget(row: ImportantFeedRow): Position | null {
   const {
@@ -125,7 +100,7 @@ function summarizeFeedRow(row: ImportantFeedRow): { icon: ReactNode; text: React
   if (row.kind === "story") return { icon: <StoryIcon story={row.event.story} />, text: summarizeStory(row) };
   if (row.kind === "arrival") {
     return {
-      icon: <img src={iconUrl("donkey")} alt="" className="h-5 w-5 shrink-0" />,
+      icon: <SemanticIcon name="transfer" className="h-4 w-4 shrink-0" />,
       text: `${transferRowLabel(row)} · #${row.structureEntityId}`,
     };
   }
@@ -154,20 +129,16 @@ function summarizeFeedRow(row: ImportantFeedRow): { icon: ReactNode; text: React
   return { icon: <SemanticIcon name={Icon} className="h-4 w-4 shrink-0" />, text: row.notice.title };
 }
 
-/** A fight's swords; a delivery's package; any other news of the player's realms, their castle. */
-const StoryIcon = ({ story }: { story: string }) => (
-  <img
-    src={iconUrl(
-      story === "ResourceReceiveArrivalStory"
-        ? "donkey"
-        : story === "BattleEvent" || story === "RaidEvent"
-          ? "attack"
-          : "realm",
-    )}
-    alt=""
-    className="h-5 w-5 shrink-0"
-  />
-);
+/** A fight's swords; a delivery's donkey; any other news of the player's realms, their castle. */
+const StoryIcon = ({ story }: { story: string }) => {
+  const Icon =
+    story === "BattleEvent" || story === "RaidEvent"
+      ? ("military" as const)
+      : story === "ResourceReceiveArrivalStory"
+        ? ("transfer" as const)
+        : ("realm" as const);
+  return <SemanticIcon name={Icon} className="h-4 w-4 shrink-0" />;
+};
 
 function summarizeStory(row: Extract<ImportantFeedRow, { kind: "story" }>): string {
   const { event } = row;

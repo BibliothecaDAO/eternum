@@ -1,5 +1,5 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { categoryPaintings } from "@/ui/design-system/painted/hud-art";
+
 import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
@@ -14,7 +14,7 @@ import {
 } from "@/ui/features/world/containers/structure-status";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
 import { type ID, StructureType } from "@bibliothecadao/types";
-import { memo, useCallback, type ReactNode } from "react";
+import { memo, useCallback } from "react";
 
 const getCategoryIcon = (category: StructureType | number | undefined): IconMeaning =>
   category === undefined ? "realm" : structureMeaning(category);
@@ -72,7 +72,7 @@ interface StructureStatusRowProps {
    * "full" → left rail (favorite star, level, pop, tiles, realm actions, pencil).
    * "compact" → modal sidebar (star + icon + name + level + attention dot).
    */
-  variant?: "full" | "compact" | "guided";
+  variant?: "full" | "compact";
   onToggleFavorite?: (entityId: ID) => void;
   onRequestRename?: (entityId: ID) => void;
   /**
@@ -95,16 +95,7 @@ interface StructureStatusRowProps {
  * stays identical so a player who jumps between Build / Military / Production
  * modals sees the same row in the same order in the same place every time.
  */
-export const StructureStatusRow = memo((props: StructureStatusRowProps) => (
-  <StructureStatusRowView
-    {...props}
-    realmActions={<StructureRealmActions structureEntityId={props.structure.entityId} />}
-  />
-));
-
-StructureStatusRow.displayName = "StructureStatusRow";
-
-export const StructureStatusRowView = memo(
+export const StructureStatusRow = memo(
   ({
     structure,
     isActive,
@@ -114,8 +105,7 @@ export const StructureStatusRowView = memo(
     onRequestRename,
     hasAttention,
     statsVariant = "default",
-    realmActions,
-  }: StructureStatusRowProps & { realmActions: ReactNode }) => {
+  }: StructureStatusRowProps) => {
     const capabilities = resolveStructureUiCapabilities(structure.structure);
     const groupConfig = structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor] : null;
     const statusTone = resolveStatusTone(structure);
@@ -169,32 +159,6 @@ export const StructureStatusRowView = memo(
     const starTone = statusTone ? STATUS_TONE_TEXT[statusTone.tone] : "text-kit-muted";
     const starTitle = statusTone?.title ?? (isFavorite ? "Remove from favorites" : "Favorite structure");
 
-    if (variant === "guided")
-      return (
-        <div
-          data-notice
-          className="holding-row"
-          role="button"
-          tabIndex={0}
-          aria-label={`Select ${structure.displayName}`}
-          aria-pressed={isActive}
-          onClick={handleCardClick}
-          onKeyDown={handleKeyDown}
-        >
-          <img className="holding-mark" src={categoryPaintings[structure.category as StructureType].art} alt="" />
-          <span className="holding-name">{structure.displayName}</span>
-          {isRealm && <span className="holding-level">Lv {structure.realmLevel}</span>}
-          {structure.canUpgrade && (
-            <span
-              className="row-upgrade"
-              onClick={(event) => event.stopPropagation()}
-              onKeyDown={(event) => event.stopPropagation()}
-            >
-              {realmActions}
-            </span>
-          )}
-        </div>
-      );
     return (
       <div
         role="button"
@@ -270,7 +234,7 @@ export const StructureStatusRowView = memo(
           )}
           {isFull && isRealm && (
             <div className="flex-shrink-0" onClick={(event) => event.stopPropagation()}>
-              {realmActions}
+              <StructureRealmActions structureEntityId={structure.entityId} />
             </div>
           )}
         </div>
@@ -305,4 +269,4 @@ export const StructureStatusRowView = memo(
   },
 );
 
-StructureStatusRowView.displayName = "StructureStatusRowView";
+StructureStatusRow.displayName = "StructureStatusRow";

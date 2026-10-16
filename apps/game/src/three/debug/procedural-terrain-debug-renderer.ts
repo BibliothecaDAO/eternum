@@ -31,7 +31,6 @@ import type { RendererSurfaceLike } from "@/three/renderer-backend";
 import { getStructureModelPaths } from "@/three/constants/scene-constants";
 import InstancedModel from "@/three/managers/instanced-model";
 import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
-import { latticeHexAt } from "@/three/utils/hex-lattice";
 import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
 import type { TerrainQualityTier } from "@/three/terrain/terrain-quality";
 import type { PreparedTerrainPage } from "@/three/terrain/terrain-types";
@@ -125,8 +124,6 @@ export interface ProceduralTerrainDebugRendererHandle {
   dispose(): void;
   getStats(): ProceduralTerrainDebugStats;
   resetCamera(): void;
-  moveCameraToHex(hex: { col: number; row: number }): void;
-  zoomCamera(out: boolean): void;
   focusSelection(): void;
   previewExploration(entryEdge: number): Promise<void>;
   placeBuilding(
@@ -158,7 +155,6 @@ interface MountProceduralTerrainDebugRendererInput {
   texturedGround: boolean;
   onError(error: unknown): void;
   onReady(stats: ProceduralTerrainDebugStats): void;
-  onCameraChange?(camera: { hex: { col: number; row: number }; distance: number }): void;
 }
 
 interface TerrainDebugRendererSurface extends RendererSurfaceLike {
@@ -218,13 +214,6 @@ export async function mountProceduralTerrainDebugRenderer(
 
   try {
     const runtime = await createRuntime(input);
-    const readCamera = () =>
-      input.onCameraChange?.({
-        hex: latticeHexAt(runtime.controls.target.x, runtime.controls.target.z),
-        distance: runtime.camera.position.distanceTo(runtime.controls.target),
-      });
-    runtime.controls.addEventListener("change", readCamera);
-    readCamera();
     const resizeObserver = observeCanvas(input.canvas, runtime);
     const stopAnimation = startAnimation(runtime, input);
     const stats = readStats(runtime, input.forceWebGL, input.texturedGround);
@@ -241,7 +230,6 @@ export async function mountProceduralTerrainDebugRenderer(
         stopAnimation();
         updateGameEndFreeze(0, false, 0);
         resizeObserver.disconnect();
-        runtime.controls.removeEventListener("change", readCamera);
         runtime.controls.dispose();
         runtime.interaction.dispose();
         runtime.realmModel?.dispose();
@@ -253,20 +241,6 @@ export async function mountProceduralTerrainDebugRenderer(
       },
       getStats: () => readStats(runtime, input.forceWebGL, input.texturedGround),
       resetCamera: () => positionCamera(runtime.camera, runtime.controls, runtime.cameraFrame),
-      moveCameraToHex: (hex) => {
-        const world = terrainHexToWorld(hex.col, hex.row);
-        const target = new Vector3(world.x, 0, world.z);
-        const offset = runtime.camera.position.clone().sub(runtime.controls.target);
-        positionCamera(runtime.camera, runtime.controls, { target, position: target.clone().add(offset) });
-      },
-      zoomCamera: (out) => {
-        const offset = runtime.camera.position.clone().sub(runtime.controls.target);
-        offset.setLength(Math.max(8, Math.min(100, offset.length() * (out ? 1.15 : 1 / 1.15))));
-        positionCamera(runtime.camera, runtime.controls, {
-          target: runtime.controls.target.clone(),
-          position: runtime.controls.target.clone().add(offset),
-        });
-      },
       previewExploration: (entryEdge) => runtime.interaction.previewExploration(entryEdge),
       placeBuilding: (path, yaw, id, progress, dormant) =>
         runtime.interaction.placeBuilding(path, yaw, id, progress, dormant),

@@ -1,23 +1,35 @@
-import type { StructureWithMetadata } from "../top-header/structure-picker/chip";
-import type { LeftListFilter } from "@/hooks/store/use-ui-store";
-import { StructureRealmActions } from "../top-header/structure-picker/chip";
-import { InfoBubble } from "../../components/entities/collapsible-bubble";
+import { HUD_SECTION_HEIGHT } from "../hud-layout";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { StructureStatusRowView } from "@/ui/features/world/components/structure-status-row/structure-status-row";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HUD_BODY_MUTED, HUD_CUE } from "@/ui/design-system/atoms/hud-typography";
+import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
+import { StructureStatusRow } from "@/ui/features/world/components/structure-status-row/structure-status-row";
+import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
 import { useStructuresWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/use-structures-with-metadata";
 import {
   FilterChipsRow,
   useStructureCategoryFilter,
 } from "@/ui/features/world/containers/left-facets/structure-category-filter";
+import { filterStructures, sortStructures } from "@/ui/features/world/containers/structure-list-utils";
 import { Position, structureMapPosition } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useQuery } from "@/hooks/helpers/use-query";
-import { type ID, StructureType } from "@bibliothecadao/types";
-import { memo, useCallback, useState, type ReactNode } from "react";
+import { type ID } from "@bibliothecadao/types";
+import { memo, useCallback, useMemo } from "react";
 
+/**
+ * The left rail. A flat, filterable list of every owned structure with the
+ * Empire-wide Suggested Actions panel pinned below. Default filter is
+ * realms-only; ordering is always "favorites" (starred first, then alphabetical)
+ * — there's no sort control, so the row stays compact.
+ *
+ * Active structure always renders at the top regardless of order, so the
+ * player's current focus is consistently the first row. The list fits three
+ * full realm rows before scrolling for larger empires.
+ */
 export const StructureListColumn = memo(() => {
   const { setup } = useGame();
   const store = setup.store;
@@ -27,8 +39,10 @@ export const StructureListColumn = memo(() => {
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
   const playerStructures = useFactView(playerStructuresView);
   const structureNameVersion = useUIStore((state) => state.structureNameVersion);
+  const setPendingRenameStructureEntityId = useUIStore((state) => state.setPendingRenameStructureEntityId);
 
   const goToStructure = useGoToStructure(setup);
+  const { favorites, toggleFavorite } = useFavoriteStructures();
 
   const allStructures = useStructuresWithMetadata({
     structures: playerStructures,
@@ -36,7 +50,17 @@ export const StructureListColumn = memo(() => {
     nameUpdateVersion: structureNameVersion,
   });
 
-  const { effectiveFilter, setFilter } = useStructureCategoryFilter(allStructures);
+  const favoriteOrder = useMemo(() => new Map(favorites.map((id, index) => [id, index] as const)), [favorites]);
+
+  // Shared category-filter (includes Camps); same store value as the modal
+  // structure sidebar so the chosen category stays consistent.
+  const { availableCategories, effectiveFilter, setFilter } = useStructureCategoryFilter(allStructures);
+
+  const visibleStructures = useMemo(() => {
+    const filtered = filterStructures(allStructures, effectiveFilter);
+    // Ordering is fixed to "favorites" — favorites pinned, then alphabetical.
+    return sortStructures(filtered, "favorites", structureEntityId, favoriteOrder);
+  }, [allStructures, effectiveFilter, structureEntityId, favoriteOrder]);
 
   const handleSelectStructure = useCallback(
     (entityId: ID) => {
@@ -49,78 +73,52 @@ export const StructureListColumn = memo(() => {
         setStructureEntityId(entityId);
       }
     },
-    [goToStructure, isMapView, playerStructures, setStructureEntityId, store],
+    [goToStructure, isMapView, playerStructures, setStructureEntityId],
+  );
+
+  const handleRequestRename = useCallback(
+    (entityId: ID) => setPendingRenameStructureEntityId(entityId),
+    [setPendingRenameStructureEntityId],
   );
 
   if (allStructures.length === 0) return null;
 
   return (
-    <StructureListColumnView
-      structures={allStructures}
-      selectedId={structureEntityId}
-      filterValue={effectiveFilter}
-      onFilterChange={setFilter}
-      onSelect={handleSelectStructure}
-      renderActions={(id) => <StructureRealmActions structureEntityId={id} />}
-    />
+    <div className="flex min-w-0 shrink-0 flex-col" style={{ height: HUD_SECTION_HEIGHT }}>
+      {/* Header: single-line category filter on the left, owned count on the
+          right. No label (the active chip is highlighted) and no sort control. */}
+      <div className={cn(OVERLAY_SURFACE_BASE, "pointer-events-auto flex h-full min-h-0 flex-col rounded-xl")}>
+        <div className="flex items-center justify-between gap-2 border-b border-gold/15 px-3 py-2">
+          <FilterChipsRow
+            availableCategories={availableCategories}
+            filterValue={effectiveFilter}
+            onFilterChange={setFilter}
+          />
+          <span className={cn(HUD_CUE, "flex-shrink-0")}>{visibleStructures.length}</span>
+        </div>
+        <div className="min-h-0 flex-1 overflow-hidden px-3 pb-3 pt-1">
+          {visibleStructures.length === 0 ? (
+            <p className={cn(HUD_BODY_MUTED)}>No structures match this filter.</p>
+          ) : (
+            // Fit three full realm rows; scroll only for larger empires.
+            <div className="flex h-full flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+              {visibleStructures.map((structure) => (
+                <StructureStatusRow
+                  key={structure.entityId}
+                  structure={structure}
+                  isActive={structure.entityId === structureEntityId}
+                  onSelect={handleSelectStructure}
+                  variant="full"
+                  onToggleFavorite={toggleFavorite}
+                  onRequestRename={handleRequestRename}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 });
 
 StructureListColumn.displayName = "StructureListColumn";
-
-export function StructureListColumnView({
-  structures,
-  selectedId,
-  onSelect,
-  filterValue,
-  onFilterChange,
-  renderActions,
-}: {
-  structures: StructureWithMetadata[];
-  selectedId: number;
-  onSelect: (id: number) => void;
-  filterValue: LeftListFilter;
-  onFilterChange: (filter: LeftListFilter) => void;
-  renderActions: (id: number) => ReactNode;
-}) {
-  const [query, setQuery] = useState("");
-  const counts = new Map<number, number>();
-  for (const row of structures) counts.set(row.category, (counts.get(row.category) ?? 0) + 1);
-  const visible = structures.filter(
-    (row) =>
-      (filterValue === "all" || row.category === filterValue) &&
-      row.displayName.toLowerCase().includes(query.toLowerCase()),
-  );
-  return (
-    <section className="holdings-panel" data-group="Structures">
-      <InfoBubble title={<span data-notice>Your structures · {structures.length}</span>} collapsible={false}>
-        <FilterChipsRow
-          availableCategories={[...counts.keys()] as StructureType[]}
-          filterValue={filterValue}
-          onFilterChange={onFilterChange}
-          counts={counts}
-        />
-        <input
-          data-notice
-          aria-label="Find a structure"
-          placeholder="Find a structure…"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-        />
-        <div className="structure-scroll">
-          {visible.map((row) => (
-            <StructureStatusRowView
-              key={row.entityId}
-              structure={row}
-              isActive={row.entityId === selectedId}
-              onSelect={onSelect}
-              variant="guided"
-              realmActions={renderActions(row.entityId)}
-            />
-          ))}
-          {visible.length === 0 && <p role="status">No matching structures</p>}
-        </div>
-      </InfoBubble>
-    </section>
-  );
-}

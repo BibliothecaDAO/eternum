@@ -7,17 +7,16 @@ import { useStructureProductionSummary } from "@/ui/features/world/components/en
 import { MergedResourcePanel } from "@/ui/features/world/containers/left-facets/merged-resource-panel";
 
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { memo, type ReactNode } from "react";
+import { memo } from "react";
 
 // Always-on panel for the active owned structure: one merged panel of resource tokens, rendered below the
 // actions bubble in the left rail.
 export const EmpireCockpit = memo(() => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
-  const { structure, resources, isMine, isLoadingStructure, typeLabel, structureName, relicEffects } =
-    useStructureEntityDetail({
-      structureEntityId,
-    });
+  const { structure, resources, isMine, isLoadingStructure, typeLabel, relicEffects } = useStructureEntityDetail({
+    structureEntityId,
+  });
   const productionSummary = useStructureProductionSummary(structure, resources);
   const showAutomation = useGameModeConfig().ui.showAutomation;
   const activeRelicIds = relicEffects.map((effect) => Number(effect.id));
@@ -30,8 +29,9 @@ export const EmpireCockpit = memo(() => {
   return (
     // Title is the structure's own type (Realm / Village / Camp / …) rather than
     // a generic "Empire" — it names exactly what the token panel is showing.
-    <EmpireCockpitView
-      title={`${structureName} · ${typeLabel ?? "Structure"}`}
+    <InfoBubble
+      title={typeLabel ?? "Structure"}
+      icon={"production" as const}
       cue={
         showAutomation ? (
           <AutomationPresetSwitch
@@ -40,6 +40,7 @@ export const EmpireCockpit = memo(() => {
           />
         ) : undefined
       }
+      collapsible
     >
       <MergedResourcePanel
         structureEntityId={structureEntityId}
@@ -49,18 +50,8 @@ export const EmpireCockpit = memo(() => {
         isMine={isMine}
         activeRelicIds={activeRelicIds}
       />
-    </EmpireCockpitView>
+    </InfoBubble>
   );
 });
 
 EmpireCockpit.displayName = "EmpireCockpit";
-
-export function EmpireCockpitView({ title, cue, children }: { title: string; cue?: ReactNode; children: ReactNode }) {
-  return (
-    <section className="realm-panel" data-group="Realm">
-      <InfoBubble title={<span data-notice>{title}</span>} cue={cue} collapsible={false}>
-        {children}
-      </InfoBubble>
-    </section>
-  );
-}

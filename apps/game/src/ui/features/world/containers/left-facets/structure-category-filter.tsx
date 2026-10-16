@@ -1,5 +1,4 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { categoryPaintings } from "@/ui/design-system/painted/hud-art";
 import { useUIStore, type LeftListFilter } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CATEGORY_FILTER_OPTIONS } from "@/ui/features/world/containers/structure-list-utils";
@@ -10,7 +9,13 @@ import { memo, useMemo } from "react";
 // Display order of the category chips. The rail/sidebar only renders chips for
 // categories the player actually owns (and, when given, within the allowed
 // universe), so this list is just the ordering.
-const CATEGORY_ORDER = Object.keys(categoryPaintings).map(Number) as StructureType[];
+const CATEGORY_ORDER: StructureType[] = [
+  StructureType.Realm,
+  StructureType.Village,
+  StructureType.Camp,
+  StructureType.Mine,
+  StructureType.Hyperstructure,
+];
 
 /**
  * Shared category-filter state for the structure list (left rail) and the modal
@@ -40,8 +45,7 @@ export const useStructureCategoryFilter = (structures: StructureWithMetadata[], 
   // the shorthand return would drop "all" — making `=== "all"` look impossible
   // at every call site. Forcing <LeftListFilter> keeps the union intact.
   const effectiveFilter = useMemo<LeftListFilter>(() => {
-    if (leftListFilter === "all") return "all";
-    if (availableCategories.includes(leftListFilter as StructureType)) {
+    if (leftListFilter !== "all" && availableCategories.includes(leftListFilter as StructureType)) {
       return leftListFilter;
     }
     return availableCategories[0] ?? "all";
@@ -54,65 +58,36 @@ interface FilterChipsRowProps {
   availableCategories: StructureType[];
   filterValue: LeftListFilter;
   onFilterChange: (filter: LeftListFilter) => void;
-  counts?: ReadonlyMap<number, number>;
 }
 
 // Single-line category filter row. The active category is gold-highlighted so
 // it doubles as the "which list am I looking at" label — no separate text.
-export const FilterChipsRow = memo(
-  ({ availableCategories, filterValue, onFilterChange, counts }: FilterChipsRowProps) => {
-    if (counts)
-      return (
-        <div className="category-chips" aria-label="Structure categories">
+export const FilterChipsRow = memo(({ availableCategories, filterValue, onFilterChange }: FilterChipsRowProps) => {
+  return (
+    <div className="flex items-center gap-1">
+      {CATEGORY_FILTER_OPTIONS.filter((option) => availableCategories.includes(option.value)).map((option) => {
+        const isActive = option.value === filterValue;
+        const Icon = option.icon;
+        return (
           <button
-            data-notice
-            aria-label="All structures"
-            aria-pressed={filterValue === "all"}
-            onClick={() => onFilterChange("all")}
+            key={String(option.value)}
+            type="button"
+            onClick={() => onFilterChange(option.value)}
+            className={cn(
+              "inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md border transition",
+              isActive
+                ? "border-gold/60 bg-gold/15 text-gold shadow-[0_0_6px_rgba(223,170,84,0.22)]"
+                : "border-gold/15 bg-black/20 text-kit-muted hover:border-gold/40 hover:text-gold",
+            )}
+            aria-pressed={isActive}
+            aria-label={option.label}
+            title={option.label}
           >
-            All <b>{[...counts.values()].reduce((a, b) => a + b, 0)}</b>
+            <SemanticIcon name={Icon} className="h-4 w-4" />
           </button>
-          {availableCategories.map((category) => (
-            <button
-              data-notice
-              key={category}
-              aria-label={categoryPaintings[category].name}
-              title={`${categoryPaintings[category].name}: ${counts.get(category) ?? 0}`}
-              aria-pressed={filterValue === category}
-              onClick={() => onFilterChange(category)}
-            >
-              <img src={categoryPaintings[category].art} alt="" />
-              <b>{counts.get(category) ?? 0}</b>
-            </button>
-          ))}
-        </div>
-      );
-    return (
-      <div className="flex items-center gap-1">
-        {CATEGORY_FILTER_OPTIONS.filter((option) => availableCategories.includes(option.value)).map((option) => {
-          const isActive = option.value === filterValue;
-          const Icon = option.icon;
-          return (
-            <button
-              key={String(option.value)}
-              type="button"
-              onClick={() => onFilterChange(option.value)}
-              className={cn(
-                "inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md border transition",
-                isActive
-                  ? "border-gold/60 bg-gold/15 text-gold shadow-[0_0_6px_rgba(223,170,84,0.22)]"
-                  : "border-gold/15 bg-black/20 text-kit-muted hover:border-gold/40 hover:text-gold",
-              )}
-              aria-pressed={isActive}
-              aria-label={option.label}
-              title={option.label}
-            >
-              <SemanticIcon name={Icon} className="h-4 w-4" />
-            </button>
-          );
-        })}
-      </div>
-    );
-  },
-);
+        );
+      })}
+    </div>
+  );
+});
 FilterChipsRow.displayName = "FilterChipsRow";

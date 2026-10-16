@@ -16,7 +16,6 @@ export function HudHeaderLayout({ lane, identity, clock, viewControls, attention
     return (
       <header
         aria-label="Game controls"
-        data-group="Match"
         className="pointer-events-none fixed inset-x-0 top-0 z-20 flex h-11 items-center justify-center gap-2 px-3"
       >
         {identity}
@@ -32,7 +31,6 @@ export function HudHeaderLayout({ lane, identity, clock, viewControls, attention
     return (
       <header
         aria-label="Game controls"
-        data-group="Match"
         className="pointer-events-none fixed inset-x-0 z-20 flex flex-col gap-1.5"
         style={{
           top: "max(0.5rem, env(safe-area-inset-top))",
@@ -59,7 +57,6 @@ export function HudHeaderLayout({ lane, identity, clock, viewControls, attention
   return (
     <header
       aria-label="Game controls"
-      data-group="Match"
       className="pointer-events-none fixed inset-x-0 z-20 flex items-start gap-1.5"
       style={{
         top: "max(0.5rem, env(safe-area-inset-top))",
