@@ -7,7 +7,7 @@ export default {
     if (!new URL(request.url).pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
     return adminApp({
       config: adminConfigOf(env),
-      audit: new AuditLog(env.AUDIT),
+      audit: new AuditLog(env.DB),
       send: (input, init) => fetch(input, init),
       now: () => Date.now(),
     }).fetch(request);

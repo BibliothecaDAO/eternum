@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { setTimeout } from "node:timers/promises";
 import { l2EnvironmentProblem } from "../../apps/game/src/runtime/l2-environment";
 import { command } from "./process";
-import { Platform, workers, type Worker } from "./platform";
+import { Platform, databaseWorkers, workers, type Worker } from "./platform";
 
 async function workerReady(platform: Platform, worker: Worker, revision: string) {
   const version = await platform.deployedVersion(worker);
@@ -26,7 +26,7 @@ export async function deployWorkers(platform: Platform, revision: string) {
   for (const worker of workers) {
     deploymentStage(`publish ${worker.id}`);
     if ((await platform.deployedRevision(worker)) !== revision) {
-      if (["identity", "launch"].includes(worker.id))
+      if (databaseWorkers.some((id) => id === worker.id))
         await platform.wrangler(worker, ["d1", "migrations", "apply", "DB", "--remote"]);
       await platform.wrangler(worker, ["deploy", "--tag", revision]);
     }

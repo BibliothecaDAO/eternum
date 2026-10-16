@@ -169,14 +169,27 @@ const write = (environment, route, body) => {
   return json({ status: "queued" }, 202);
 };
 
+// Each environment has its own admin; the lab plays either, named by `?environment=`, and links to the other.
+const environment = new URLSearchParams(location.search).get("environment") === "production" ? "production" : "dev";
+const other = environment === "dev" ? "production" : "dev";
+
 window.fetch = async (input, init = {}) => {
   const path = new URL(input, location.href).pathname;
   const method = init.method ?? "GET";
-  if (path === "/api/audit") return json({ actions: audit });
-  const [, , environment, ...route] = path.split("/");
-  if (!ENVIRONMENTS[environment]) return json({ error: "Not Found" }, 404);
-  if (method === "GET" && route[0] === "session") return json({ email: "owner@realms.world" });
-  if (method === "GET" && route[0] === "games") return json(games(environment));
-  if (method === "GET" && route[0] === "deploys") return json(deploys(environment));
-  return write(environment, route, init.body ? JSON.parse(init.body) : undefined);
+  if (path === "/api/session")
+    return json({
+      email: "owner@realms.world",
+      environment,
+      other: { environment: other, url: `?environment=${other}` },
+    });
+  if (path === "/api/audit") return json({ actions: audit.filter((row) => row.environment === environment) });
+  if (path === "/api/games") return json(games(environment));
+  if (path === "/api/deploys") return json(deploys(environment));
+  if (method !== "GET" && path.startsWith("/api/actions/"))
+    return write(
+      environment,
+      path.slice("/api/actions/".length).split("/"),
+      init.body ? JSON.parse(init.body) : undefined,
+    );
+  return json({ error: "Not Found" }, 404);
 };

@@ -5,6 +5,7 @@ import { root, type Inputs, type Target } from "./settings";
 import type { PrivateStore } from "./private-store";
 import { command } from "./process";
 import { PublicError } from "./errors";
+import type { AdminAccess } from "./admin-access";
 
 export const workers = [
   { id: "guardian", directory: "apps/guardian", config: "wrangler.jsonc", name: "realms-guardian" },
@@ -13,7 +14,12 @@ export const workers = [
   { id: "monitor", directory: "apps/value-relay", config: "monitor.wrangler.jsonc", name: "realms-value-monitor" },
   { id: "launch", directory: "apps/launch-service", config: "wrangler.jsonc", name: "realms-launch" },
   { id: "status", directory: "apps/status-monitor", config: "wrangler.jsonc", name: "realms-status-monitor" },
+  { id: "admin", directory: "apps/admin", config: "wrangler.jsonc", name: "realms-admin" },
 ] as const;
+/** The Workers whose D1 database the deploy creates and migrates, each bound as `DB`. */
+export const databaseWorkers = ["identity", "launch", "admin"] as const;
+const databaseName = (worker: (typeof databaseWorkers)[number], target: Target) =>
+  `${workers.find((entry) => entry.id === worker)!.name}-${target.worker}`;
 export type Worker = (typeof workers)[number];
 export interface Secrets {
   operator: string;
@@ -33,7 +39,23 @@ export function generateSecrets(guardianExists: boolean): Secrets {
     ...(guardianExists ? {} : { guardian: newKey() }),
   };
 }
-export function workerSecrets(worker: Worker, inputs: Inputs, secrets: Secrets, keys: Keys): Record<string, string> {
+/** The admin page's settings from Access, as its Worker reads them; refused until setup has made Access. */
+function adminSecrets(secrets: Secrets, access: AdminAccess | undefined): Record<string, string> {
+  if (!access?.audience) throw new PublicError("Admin access is not set up yet; run setup with --apply");
+  return {
+    OPERATOR_TOKEN: secrets.operator,
+    ACCESS_TEAM_DOMAIN: access.teamDomain,
+    ACCESS_AUD: access.audience,
+    ...(access.writers.length ? { ADMIN_WRITERS: access.writers.join(",") } : {}),
+  };
+}
+export function workerSecrets(
+  worker: Worker,
+  inputs: Inputs,
+  secrets: Secrets,
+  keys: Keys,
+  access: AdminAccess | undefined,
+): Record<string, string> {
   switch (worker.id) {
     case "guardian":
       return secrets.guardian ? { GUARDIAN_PRIVATE_KEY: secrets.guardian } : {};
@@ -70,6 +92,8 @@ export function workerSecrets(worker: Worker, inputs: Inputs, secrets: Secrets, 
         RESEND_API_KEY: inputs.resend,
         ...(inputs.alertEmail ? { ALERT_EMAIL: inputs.alertEmail } : {}),
       };
+    case "admin":
+      return adminSecrets(secrets, access);
   }
 }
 function cloudflareFamily(path: string) {
@@ -77,6 +101,7 @@ function cloudflareFamily(path: string) {
   if (/^\/accounts\/[^/]+\/d1(?:\/|$)/.test(path)) return "D1";
   if (/^\/accounts\/[^/]+\/r2(?:\/|$)/.test(path)) return "R2 buckets";
   if (/^\/accounts\/[^/]+\/pages(?:\/|$)/.test(path)) return "Pages";
+  if (/^\/accounts\/[^/]+\/access(?:\/|$)/.test(path)) return "Access";
   if (/^\/zones\/[^/]+\/dns_records(?:[/?]|$)/.test(path)) return "DNS";
   if (/^\/zones\/[^/]+\/rulesets(?:[/?]|$)/.test(path)) return "Cache Rules";
   if (/^\/zones(?:[/?]|$)/.test(path)) return "zone";
@@ -268,9 +293,7 @@ export class RelayDiagnostics extends WorkerEntrypoint {}`;
   async resourcesPresent() {
     const { id, databases, pages, buckets, zones } = await this.readResources();
     const baseReady =
-      ["realms-identity", "realms-launch"].every((name) =>
-        databases.some((db) => db.name === `${name}-${this.target.worker}`),
-      ) &&
+      databaseWorkers.every((worker) => databases.some((db) => db.name === databaseName(worker, this.target))) &&
       pages.some((page) => page.name === this.target.pages) &&
       buckets.buckets.some((bucket) => bucket.name === this.target.statusBucket);
     if (!baseReady) return false;
@@ -289,9 +312,9 @@ export class RelayDiagnostics extends WorkerEntrypoint {}`;
     if (!this.apply) throw new PublicError("Dry run cannot create deployment resources");
     const id = await this.accountId();
     const databases = await this.cf<{ name: string }[]>(`/accounts/${id}/d1/database`);
-    for (const name of ["realms-identity", "realms-launch"])
-      if (!databases.some((db) => db.name === `${name}-${this.target.worker}`))
-        await this.cf(`/accounts/${id}/d1/database`, "POST", { name: `${name}-${this.target.worker}` });
+    for (const worker of databaseWorkers)
+      if (!databases.some((db) => db.name === databaseName(worker, this.target)))
+        await this.cf(`/accounts/${id}/d1/database`, "POST", { name: databaseName(worker, this.target) });
     const pages = await this.cf<{ name: string }[]>(`/accounts/${id}/pages/projects`);
     if (!pages.some((page) => page.name === this.target.pages))
       await this.cf(`/accounts/${id}/pages/projects`, "POST", { name: this.target.pages, production_branch: "main" });

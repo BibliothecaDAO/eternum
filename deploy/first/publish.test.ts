@@ -101,7 +101,7 @@ test("wrong client chain/RPC stops before a build or upload", async () => {
     value.inputs.rpc = "https://starknet-mainnet.g.alchemy.com/v2/throwaway";
   }
 });
-test("all six Workers deploy locally, migrations precede code, and public versions must match", async () => {
+test("every Worker deploys locally, migrations precede code, and public versions must match", async () => {
   const value = platform();
   const calls = commands();
   const deployed = new Set<string>();
@@ -116,8 +116,8 @@ test("all six Workers deploy locally, migrations precede code, and public versio
     Response.json({ environment: "staging", version: String(url).endsWith("/api/health") ? "identity" : "launch" }),
   ) as unknown as typeof fetch;
   await deployWorkers(value, revision);
-  expect(deployed.size).toBe(6);
-  for (const name of ["identity", "launch"])
+  expect([...deployed]).toEqual(workers.map((worker) => worker.id));
+  for (const name of ["identity", "launch", "admin"])
     expect(actions.indexOf(`${name}:d1 migrations apply DB --remote`)).toBeLessThan(
       actions.indexOf(`${name}:deploy --tag ${revision}`),
     );
@@ -136,13 +136,14 @@ test("Worker secrets go only to their own Worker through stdin", async () => {
     vapidPrivate: "test-private",
     guardian: "0x128",
   } as Secrets;
+  const access = { teamDomain: "t.cloudflareaccess.com", audience: "aud", operators: ["o@x.io"], writers: [] };
   value.secretNames = async () => [];
   value.wrangler = async (worker, args, body) => {
     expect(args).toEqual(["secret", "bulk"]);
-    expect(JSON.parse(body!)).toEqual(workerSecrets(worker, input, secrets, keys));
+    expect(JSON.parse(body!)).toEqual(workerSecrets(worker, input, secrets, keys, access));
     return "";
   };
-  for (const worker of workers) await value.installSecrets(worker, workerSecrets(worker, input, secrets, keys));
+  for (const worker of workers) await value.installSecrets(worker, workerSecrets(worker, input, secrets, keys, access));
 });
 test("dry publish refuses every write before commands or transports", async () => {
   const value = platform("dev", false);

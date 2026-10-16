@@ -11,7 +11,7 @@ import {
   type Probe,
   type Target as Shard,
 } from "@realms-world/status-monitor/model";
-import type { Environment, Target } from "./env";
+import type { AdminConfig, Environment } from "./env";
 import type { LaunchService } from "./launch";
 
 /** A part of a screen, read on its own: one that fails shows its error and leaves the others standing. */
@@ -26,7 +26,7 @@ const part = async <T>(read: () => Promise<T>): Promise<Part<T>> => {
 };
 
 /** What status-monitor last wrote for the environment: its probes and the shards it watches. */
-const monitorState = async (target: Target): Promise<MonitorState> => {
+const monitorState = async (target: AdminConfig): Promise<MonitorState> => {
   const object = await target.status.get(STATE_KEY);
   if (!object) throw new Error("status-monitor has written no state");
   const state = (await object.json()) as MonitorState;
@@ -44,7 +44,7 @@ interface GamesView {
   runs: Part<FactoryRunRecord[]>;
 }
 
-export const gamesView = async (target: Target, launch: LaunchService): Promise<GamesView> => {
+export const gamesView = async (target: AdminConfig, launch: LaunchService): Promise<GamesView> => {
   const [status, calendar, slots, runs] = await Promise.all([
     part(async () => {
       const { document } = await monitorState(target);
@@ -70,7 +70,7 @@ export const gamesView = async (target: Target, launch: LaunchService): Promise<
 const RELEASE_LINE = /^self\.REALMS_RELEASE = "([^"]*)";/;
 
 /** The client's release, which the build stamps on the first line of its service worker. */
-const clientRelease = async (target: Target, send: typeof fetch): Promise<string> => {
+const clientRelease = async (target: AdminConfig, send: typeof fetch): Promise<string> => {
   const response = await send(`${target.origin}/sw.js`, { redirect: "manual" });
   if (!response.ok) throw new Error(`/sw.js answered ${response.status}`);
   const release = RELEASE_LINE.exec(await response.text())?.[1];
@@ -93,7 +93,11 @@ interface DeploysView {
   commands: ReturnType<typeof deployCommands>;
 }
 
-export const deploysView = async (target: Target, launch: LaunchService, send: typeof fetch): Promise<DeploysView> => {
+export const deploysView = async (
+  target: AdminConfig,
+  launch: LaunchService,
+  send: typeof fetch,
+): Promise<DeploysView> => {
   const [workers, client, shards] = await Promise.all([
     part(async () => {
       const { version, revision } = await launch.read<{ version: string; revision: string }>("/api/factory/version");

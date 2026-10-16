@@ -1,5 +1,5 @@
 import { operatorRequest } from "@bibliothecadao/eternum/realms-account";
-import type { Target } from "./env";
+import type { AdminConfig } from "./env";
 
 type Send = (url: string, init?: RequestInit) => Promise<Response>;
 
@@ -9,10 +9,10 @@ export interface LaunchAnswer {
   body: string;
 }
 
-/** The launch service of one environment: public reads, and writes under that environment's operator token. */
+/** The environment's launch service: public reads, and writes under its operator token. */
 export class LaunchService {
   constructor(
-    private readonly target: Target,
+    private readonly target: Pick<AdminConfig, "origin" | "operatorToken">,
     private readonly send: Send,
   ) {}
 

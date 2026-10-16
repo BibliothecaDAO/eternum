@@ -1,8 +1,9 @@
-// The operator page: three screens over the admin Worker's API. It holds no credential; the Access cookie is the only
-// thing the browser sends, and every write goes through the Worker, which logs it under the signed-in name.
+// The operator page of one environment: three screens over its admin Worker's API. It holds no credential; the Access
+// cookie is the only thing the browser sends, and every write goes through the Worker, which logs it under the
+// signed-in name. The other environment has its own admin, which the environment switch opens.
 
 const SCREENS = { games: "Games", deploys: "Deploys", audit: "Audit" };
-const state = { screen: "games", environment: "dev", origin: "" };
+const state = { screen: "games", environment: "", origin: "", other: null };
 
 const $ = (selector) => document.querySelector(selector);
 const esc = (value) =>
@@ -143,15 +144,10 @@ async function load() {
   $("#env-badge").textContent = environment === "production" ? "Prod" : "Dev";
   $("#env-badge").classList.toggle("production", environment === "production");
   $("#prod-banner").hidden = environment !== "production" || state.screen === "audit";
-  const path = state.screen === "audit" ? "/api/audit" : `/api/${environment}/${state.screen}`;
-  const { ok, status, data } = await api("GET", path);
-  const denied = !ok && status === 403;
-  $("#denied").hidden = !denied && ok;
-  $("#denied").textContent = denied
-    ? environment === "production"
-      ? "Production is open to the owner only. The owner adds people to its Access list."
-      : `Access refused: ${data.error ?? status}`
-    : `Could not load: ${data.error ?? status}`;
+  const { ok, status, data } = await api("GET", `/api/${state.screen}`);
+  $("#denied").hidden = ok;
+  $("#denied").textContent =
+    status === 403 ? `Access refused: ${data.error ?? status}` : `Could not load: ${data.error ?? status}`;
   document.querySelectorAll("[data-panel]").forEach((panel) => {
     panel.hidden = !ok || panel.dataset.panel !== state.screen;
   });
@@ -186,9 +182,9 @@ function openAction({ title, fields = [], method, route, launchPath, body, note 
   $("#action-form").oninput = preview;
   preview();
   $("#action-send").onclick = async () => {
-    const { ok, data } = await api(method, `/api/${state.environment}/${route}`, body?.(values()));
+    const { ok, status, data } = await api(method, `/api/actions/${route}`, body?.(values()));
     if (!ok) {
-      $("#action-error").textContent = data.error ?? JSON.stringify(data);
+      $("#action-error").textContent = data.error ?? `Refused (${status})`;
       $("#action-error").hidden = false;
       return;
     }
@@ -251,11 +247,7 @@ document.addEventListener("click", (event) => {
       .forEach((place) => place.setAttribute("aria-current", place === button ? "page" : "false"));
     load();
   }
-  if (button.dataset.env) {
-    state.environment = button.dataset.env;
-    document.querySelectorAll("[data-env]").forEach((env) => env.setAttribute("aria-pressed", String(env === button)));
-    load();
-  }
+  if (button.dataset.env && button.dataset.env !== state.environment && state.other) location.assign(state.other.url);
   if (button.dataset.close !== undefined) button.closest("dialog").close();
   if (button.id === "new-game") $("#kind-dialog").showModal();
   if (button.dataset.kind) {
@@ -284,7 +276,11 @@ document.addEventListener("click", (event) => {
 });
 
 (async () => {
-  const { ok, data } = await api("GET", "/api/dev/session");
+  const { ok, data } = await api("GET", "/api/session");
   $("#who").textContent = ok ? data.email : "Not signed in";
+  if (ok) Object.assign(state, { environment: data.environment, other: data.other });
+  document
+    .querySelectorAll("[data-env]")
+    .forEach((env) => env.setAttribute("aria-pressed", String(env.dataset.env === state.environment)));
   load();
 })();

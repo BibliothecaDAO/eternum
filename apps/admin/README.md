@@ -1,16 +1,18 @@
 # Admin
 
-One operator page for dev and production, at `ADMIN_HOSTNAME` (`admin.realms.party`). It reads each environment's launch
-service and status-monitor record, sends the launch service's operator actions with that environment's operator token,
-and logs every action with the Cloudflare Access identity that sent it. It deploys nothing.
+The operator page of one environment, at its admin hostname in `deploy/first/environments.json` (`admin`):
+`admin.dev-realms.party` for dev, `admin.realms.party` for production. It reads the environment's launch service and
+status-monitor record, sends the launch service's operator actions with the environment's operator token, and logs every
+action with the Cloudflare Access identity that sent it. It deploys nothing. The page's Dev/Prod switch opens the other
+environment's admin.
 
-| Screen  | Its job                                          | What it calls                                                                                             |
-| ------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| Games   | See an environment's health and games, start one | status-monitor's `state.json` (R2); launch `GET /api/factory/calendar`, `/api/slots`, `/api/factory/runs` |
-| Deploys | Show what runs where, and the deploy commands    | launch `GET /api/factory/version` (its published revision), the client's `/sw.js` release, R2 shard list  |
-| Audit   | Show who did what                                | this Worker's D1 `actions`                                                                                |
+| Screen  | Its job                                           | What it calls                                                                                             |
+| ------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Games   | See the environment's health and games, start one | status-monitor's `state.json` (R2); launch `GET /api/factory/calendar`, `/api/slots`, `/api/factory/runs` |
+| Deploys | Show what runs, and the deploy commands           | launch `GET /api/factory/version` (its published revision), the client's `/sw.js` release, R2 shard list  |
+| Audit   | Show who did what                                 | this Worker's D1 `actions`                                                                                |
 
-Actions (each on the environment the page shows, each logged before it is sent and completed after):
+Actions, all under `/api/actions/`, each logged before it is sent and completed after:
 
 | Action                  | Launch route                                                         | Environments |
 | ----------------------- | -------------------------------------------------------------------- | ------------ |
@@ -26,29 +28,25 @@ The request and answer types come from `@bibliothecadao/launch-service/operator-
 
 ## Who may use it
 
-Cloudflare Access decides, and the Worker checks again on every API call:
+Cloudflare Access decides, and the Worker checks again on every API call: the `Cf-Access-Jwt-Assertion` token's RS256
+signature against the team's published keys, its issuer, the route's audience and its expiry; the operator's email comes
+from it. The lists live in the environment's private directory as `admin-access.json`; `deploy/first` setup makes Access
+match them (README step 9):
 
-- An Access application on `ADMIN_HOSTNAME` whose allow policy is the list of operators. Its audience tag is
-  `ACCESS_AUD`.
-- A second Access application on the path `ADMIN_HOSTNAME/api/production/*` whose list is the owner alone. Its audience
-  tag is `ACCESS_PRODUCTION_AUD`. Production screens and actions answer 403 to anyone else.
-- `ACCESS_TEAM_DOMAIN` is the team's `<team>.cloudflareaccess.com`.
+- `operators` may open the page. On dev they may also act.
+- `writers` (production only, each also an operator) alone may act on production. The Worker holds this list and checks
+  the verified email on every `/api/actions/` call. One Access application covers the page: its writes are fetches,
+  which could not follow a second application's sign-in.
 
-The Worker verifies the `Cf-Access-Jwt-Assertion` token's RS256 signature against the team's published keys, its issuer,
-the route's audience and its expiry, and takes the operator's email from it. To grant access, add the email to the list.
-To revoke it, remove the email and revoke the user's sessions in Zero Trust → Users.
+To grant, add the email and rerun setup with `--apply`. To revoke, remove it and rerun: setup also ends that person's
+sessions.
 
 ## Secrets
 
-Only the two operator tokens, as Worker secrets, never in the repo, the page or the browser:
-
-```sh
-pnpm --dir apps/admin exec wrangler secret put OPERATOR_TOKEN_DEV --env production
-pnpm --dir apps/admin exec wrangler secret put OPERATOR_TOKEN_PRODUCTION --env production
-```
-
-The Worker refuses every call while any setting is blank. Deploy credentials stay on the owner's machine; the Deploys
-screen shows the commands to run there.
+Setup installs them as Worker secrets, never in the repo, the page or the browser: `OPERATOR_TOKEN` (the environment's
+own, from its private directory), `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD` and, on production, `ADMIN_WRITERS`. The Worker
+refuses every call while one is blank. `deploy:cloudflare` creates nothing for it beyond what setup made: it migrates
+its D1 database and publishes it with the other Workers.
 
 ## Lab
 
@@ -56,9 +54,5 @@ screen shows the commands to run there.
 node apps/admin/scripts/lab.mjs <directory>   # then serve <directory> with any static server
 ```
 
-It writes the page as the Worker serves it, with `lab/fixtures.js` answering its API calls from fixtures.
-
-## Not done yet
-
-Nothing creates the Access applications, the D1 database `realms-admin`, or the Worker. This app is not in
-`deploy/first/platform.ts`, so no deploy publishes it.
+It writes the page as the Worker serves it, with `lab/fixtures.js` answering its API calls from fixtures for either
+environment (`?environment=production`).

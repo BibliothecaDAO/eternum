@@ -2,7 +2,7 @@ import { Hono, type Context } from "hono";
 import { GAME_ENVIRONMENTS } from "@bibliothecadao/launch-service/operator-api";
 import { AccessDenied, verifyAccess, type AccessIdentity } from "./access";
 import type { AuditLog } from "./audit";
-import { ENVIRONMENTS, type AdminConfig, type Environment } from "./env";
+import type { AdminConfig } from "./env";
 import { LaunchService } from "./launch";
 import { deploysView, gamesView } from "./views";
 
@@ -15,6 +15,8 @@ interface AdminDependencies {
 
 type AdminContext = Context<{ Variables: { identity: AccessIdentity } }>;
 
+/** Every write lives under this path. */
+const ACTIONS = "/api/actions/";
 const BODY_LIMIT = 16_000;
 const NAME = /^[a-z0-9-]{1,64}$/;
 
@@ -29,7 +31,7 @@ interface Action {
 const isGameEnvironment = (value: string | undefined) => GAME_ENVIRONMENTS.some((id) => id === value);
 const named = (value: string | undefined): value is string => value !== undefined && NAME.test(value);
 
-const ACTIONS: Record<string, Action> = {
+const WRITES: Record<string, Action> = {
   "test-blitz": {
     method: "POST",
     devOnly: true,
@@ -66,9 +68,6 @@ const ACTIONS: Record<string, Action> = {
   },
 };
 
-const environmentOf = (value: string | undefined): Environment | null =>
-  ENVIRONMENTS.find((environment) => environment === value) ?? null;
-
 /** A request's body as the launch service will read it: absent, or one JSON object within the limit. */
 const readBody = async (context: AdminContext, carriesBody: boolean): Promise<string | null> => {
   if (!carriesBody) return null;
@@ -82,20 +81,23 @@ const readBody = async (context: AdminContext, carriesBody: boolean): Promise<st
 
 export const adminApp = ({ config, audit, send, now }: AdminDependencies) => {
   const app = new Hono<{ Variables: { identity: AccessIdentity } }>();
-  const launchOf = (environment: Environment) => new LaunchService(config.targets[environment], send);
+  const launch = new LaunchService(config, send);
 
-  // Every API call proves its Access identity: production paths against the production application, the rest
-  // against the page's own.
+  // Every API call proves its Access identity; on production, a write also needs its sender among the writers.
   app.use("/api/*", async (context, next) => {
-    const production = context.req.path.startsWith("/api/production/");
-    const audience = production ? config.access.productionAudience : config.access.audience;
     try {
       const identity = await verifyAccess(
         context.req.header("cf-access-jwt-assertion") ?? null,
-        { teamDomain: config.access.teamDomain, audience },
+        config.access,
         send,
         now(),
       );
+      if (
+        context.req.path.startsWith(ACTIONS) &&
+        config.writers &&
+        !config.writers.includes(identity.email.toLowerCase())
+      )
+        throw new AccessDenied("Production actions are open to the owner's list only");
       context.set("identity", identity);
     } catch (error) {
       if (error instanceof AccessDenied) return context.json({ error: error.message }, 403);
@@ -103,33 +105,19 @@ export const adminApp = ({ config, audit, send, now }: AdminDependencies) => {
     }
     await next();
   });
-
   app.notFound((context) => context.json({ error: "Not Found" }, 404));
 
+  app.get("/api/session", (context) =>
+    context.json({ email: context.get("identity").email, environment: config.environment, other: config.other }),
+  );
+  app.get("/api/games", async (context) => context.json(await gamesView(config, launch)));
+  app.get("/api/deploys", async (context) => context.json(await deploysView(config, launch, send)));
   app.get("/api/audit", async (context) => context.json({ actions: await audit.latest(100) }));
 
-  app.get("/api/:environment/session", (context) => {
-    if (!environmentOf(context.req.param("environment"))) return context.notFound();
-    return context.json({ email: context.get("identity").email });
-  });
-
-  app.get("/api/:environment/games", async (context) => {
-    const environment = environmentOf(context.req.param("environment"));
-    if (!environment) return context.notFound();
-    return context.json(await gamesView(config.targets[environment], launchOf(environment)));
-  });
-
-  app.get("/api/:environment/deploys", async (context) => {
-    const environment = environmentOf(context.req.param("environment"));
-    if (!environment) return context.notFound();
-    return context.json(await deploysView(config.targets[environment], launchOf(environment), send));
-  });
-
-  const write = (name: keyof typeof ACTIONS) => async (context: AdminContext) => {
-    const environment = environmentOf(context.req.param("environment"));
-    const action = ACTIONS[name]!;
+  const write = (name: keyof typeof WRITES) => async (context: AdminContext) => {
+    const action = WRITES[name]!;
     const route = action.route(context.req.param());
-    if (!environment || !route || (action.devOnly && environment !== "dev")) return context.notFound();
+    if (!route || (action.devOnly && config.environment !== "dev")) return context.notFound();
     let body: string | null;
     try {
       body = await readBody(context, action.carriesBody);
@@ -139,14 +127,14 @@ export const adminApp = ({ config, audit, send, now }: AdminDependencies) => {
     const id = await audit.sent(
       {
         email: context.get("identity").email,
-        environment,
+        environment: config.environment,
         action: route.action,
         request: JSON.stringify({ method: action.method, path: route.path, body: body && JSON.parse(body) }),
       },
       now(),
     );
     try {
-      const answer = await launchOf(environment).write(action.method, route.path, body);
+      const answer = await launch.write(action.method, route.path, body);
       await audit.answered(id, answer.status, answer.body);
       return new Response(answer.body, { status: answer.status, headers: { "content-type": "application/json" } });
     } catch (error) {
@@ -156,11 +144,11 @@ export const adminApp = ({ config, audit, send, now }: AdminDependencies) => {
     }
   };
 
-  app.post("/api/:environment/test-blitz", write("test-blitz"));
-  app.post("/api/:environment/slots", write("open-slot"));
-  app.post("/api/:environment/slots/:name/refund", write("refund-slot"));
-  app.put("/api/:environment/calendar/:phase", write("set-phase"));
-  app.post("/api/:environment/:kind/:game/:name/:verb", write("run-action"));
+  app.post(`${ACTIONS}test-blitz`, write("test-blitz"));
+  app.post(`${ACTIONS}slots`, write("open-slot"));
+  app.post(`${ACTIONS}slots/:name/refund`, write("refund-slot"));
+  app.put(`${ACTIONS}calendar/:phase`, write("set-phase"));
+  app.post(`${ACTIONS}:kind/:game/:name/:verb`, write("run-action"));
 
   return app;
 };
