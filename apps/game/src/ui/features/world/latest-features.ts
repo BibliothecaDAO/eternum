@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-16",
+    title: "Preview the building you place",
+    description:
+      "Construction cards now show the game’s building models, including farms, workshops and markets. Action and resource icons keep their painted artwork.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-16",
     title: "A clearer realm command view",
     description:
       "Find holdings in compact rows, switch between Realm and World map, and open commands from floating bubbles at the bottom centre.",

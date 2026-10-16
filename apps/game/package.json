@@ -53,6 +53,8 @@
     "verify:terrain:contact-sheet": "node ./scripts/terrain-verification/create-terrain-contact-sheet.mjs",
     "prove:play": "node ./scripts/prove-play.mjs",
     "prove:shell": "node ./scripts/prove-shell.mjs",
+    "prove:construction": "node ./scripts/prove-building-thumbnails.mjs",
+    "render:building-thumbnails": "node ./scripts/render-building-thumbnails.mjs",
     "test": "node ./scripts/run-vitest.mjs",
     "verify:assets": "vitest run --config vitest.assets.config.ts",
     "test:three:changed-guard": "node ./scripts/check-three-changed-tests.mjs",

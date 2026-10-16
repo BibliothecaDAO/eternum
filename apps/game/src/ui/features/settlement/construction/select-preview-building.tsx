@@ -10,7 +10,7 @@ import { AudioManager } from "@/audio/core/AudioManager";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
-import { buildingMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { BuildingThumbnail } from "./building-thumbnail";
 import { formatTimeRemaining } from "@/ui/features/economy/resources/entity-resource-table/utils";
 
 import Button from "@/ui/design-system/atoms/button";
@@ -42,7 +42,6 @@ import {
   getConsumedBy,
   getRealmInfo,
   ResourceManager,
-  ResourceIdToMiningType,
   resolveUseSimpleCost,
 } from "@bibliothecadao/eternum";
 import { requireActiveGameClient } from "@/sync/active-game-client";
@@ -58,7 +57,6 @@ import {
   getBuildingFromResource,
   ID,
   isEconomyBuilding,
-  ResourceMiningTypes,
   ResourcesIds,
   TroopType,
 } from "@bibliothecadao/types";
@@ -634,7 +632,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                               useSimpleCost,
                               currentDefaultTick,
                             )}
-                            resourceId={resourceId}
                             onClick={() => {
                               if (!canBuild) return;
                               selectBuildingCard({ type: building, resource: resourceId }, () =>
@@ -721,7 +718,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                               useSimpleCost,
                               currentDefaultTick,
                             )}
-                            resourceId={resourceId}
                             onClick={() => {
                               if (!canBuild) return;
                               selectBuildingCard({ type: building, resource: resourceId }, () =>
@@ -1112,7 +1108,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   );
 };
 
-const BuildingCard = ({
+export const BuildingCard = ({
   canPlaceOnMap = false,
   buildingId,
   onClick,
@@ -1123,7 +1119,6 @@ const BuildingCard = ({
   productionStatus,
   toolTip,
   requirements,
-  resourceId,
   className,
   disabled = false,
   disabledReason,
@@ -1152,7 +1147,6 @@ const BuildingCard = ({
   toolTip: React.ReactElement;
   /** Held / needed per resource, shown while the card is hovered. */
   requirements: ResourceRequirement[] | undefined;
-  resourceId?: ResourcesIds;
   /**
    * Optional "this resource feeds X troop tier" hint for the blitz T2/T3
    * resource cards. Rendered as a tiny chip in the corner so the player
@@ -1221,11 +1215,7 @@ const BuildingCard = ({
     return (
       <CompactBuildingCard
         name={buildingName}
-        image={
-          resourceId
-            ? buildingMeaning(ResourceIdToMiningType[resourceId] as ResourceMiningTypes)
-            : buildingMeaning(buildingId)
-        }
+        building={buildingId}
         count={count}
         status={
           productionStatus
@@ -1270,12 +1260,8 @@ const BuildingCard = ({
         className,
       )}
     >
-      <SemanticIcon
-        name={
-          resourceId
-            ? buildingMeaning(ResourceIdToMiningType[resourceId as ResourcesIds] as ResourceMiningTypes)
-            : buildingMeaning(buildingId)
-        }
+      <BuildingThumbnail
+        building={buildingId}
         alt={buildingName}
         className="absolute inset-0 w-full h-full object-contain"
       />

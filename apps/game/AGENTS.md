@@ -310,6 +310,10 @@ Order and building inputs resolve through the central meaning helpers. Action bu
 ID. Do not choose an unrelated action's art: Transfer is the pack donkey, Move the boots, Production the forge, and
 Settings the wheel. Do not add icon paths or independent icon components.
 
+Construction card artwork uses `BuildingThumbnail`: a render of the current building GLB, not a semantic icon. Its
+source and image hashes live in `asset-sources/building-thumbnails.json`; regenerate after a model changes with
+`scripts/render-building-thumbnails.mjs`. Actions and resource costs on those cards still use `Icon`.
+
 | Rule                                           | Enforcement                                                         |
 | ---------------------------------------------- | ------------------------------------------------------------------- |
 | Named artwork, no arbitrary image path         | `IconMeaning` and the renderer's props                              |

@@ -249,3 +249,16 @@ chain-local device count. Open `/profile/settings#devices` on an already signed-
 existing confirmation, then press **Try again** at the original doorway. The link opens separately so the game entry
 remains available. Both `/g/:chain/:game` and its play routes use the same recovery. A ninth device cannot submit a
 revocation itself.
+
+## Construction model thumbnails
+
+In a match, select a realm → Build: desktop cards, compact cards, and empty-plot choices show the current building
+model. Action buttons and resource costs retain Facets icons. `/lab/kit/construction` exercises the real responsive
+cards with local counts and one example of each model; Build changes the preview count without sending a transaction.
+
+Against the running client, `pnpm --dir apps/game prove:construction https://127.0.0.1:<port> <evidence-dir>` checks
+desktop and phone cards, decodes every image, presses Build, and saves screenshots and a JSON result using the shared
+proof runner. `pnpm --dir apps/game render:building-thumbnails https://127.0.0.1:<port> <evidence-dir>` regenerates the
+transparent PNGs from the current compressed GLBs through the game's loader. Source/image hashes are recorded in
+`asset-sources/building-thumbnails.json`; the construction thumbnail test checks them against the files and checks every
+building's thumbnail against the scene's model selection.

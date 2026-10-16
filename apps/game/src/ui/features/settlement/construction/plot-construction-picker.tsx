@@ -1,6 +1,6 @@
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { buildingMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { BuildingThumbnail } from "./building-thumbnail";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useEffect } from "react";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -59,7 +59,7 @@ export function PlotConstructionPicker(target: PlotConstructionTarget) {
                   onMouseLeave={() => setTooltip(null)}
                   className="relative min-w-0 overflow-hidden rounded border border-gold/25 p-1 text-center text-sm"
                 >
-                  <SemanticIcon name={buildingMeaning(building.type)} alt="" className="h-16 w-full object-contain" />
+                  <BuildingThumbnail building={building.type} alt="" className="h-16 w-full object-contain" />
                   <span className="block font-semibold">{building.label}</span>
                   <span className="flex flex-wrap justify-center gap-x-2 gap-y-1 py-1 text-sm tabular-nums">
                     {building.requirements === undefined && "—"}

@@ -13,6 +13,7 @@ import { OFFLINE, TRY_AGAIN, YOU } from "@/ui/design-system/kit/words";
 import { type ReactNode, lazy, useState } from "react";
 import { Route, Routes } from "react-router-dom";
 
+import { ConstructionLab } from "./construction-lab";
 import { IconLab } from "./icon-lab";
 import { Link } from "react-router-dom";
 
@@ -32,6 +33,7 @@ const ENDS_AT = new Date(2026, 9, 7, 21, 40).getTime() / 1000;
 export const KitLabView = () => {
   return (
     <Routes>
+      <Route path="construction" element={<ConstructionLab />} />
       <Route path="icons" element={<IconLab />} />
       <Route path="hud/redesign" element={<HudRedesignLab />} />
       <Route path="hud/:state" element={<HudLab />} />
@@ -48,6 +50,7 @@ const Components = () => {
       </a>
       <div className="mx-auto flex max-w-[390px] flex-col gap-8 lg:max-w-5xl lg:flex-row lg:flex-wrap">
         <Link to="/lab/kit/icons">Facets icon catalog</Link>
+        <Link to="/lab/kit/construction">Construction models</Link>
         <ClockSection />
         <StoresSection />
         <ButtonsSection />
