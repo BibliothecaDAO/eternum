@@ -21,7 +21,7 @@ vi.mock("@/ui/features/social/player/use-in-game-leaderboard", () => ({
 }));
 vi.mock("@/ui/features/social/components/social-board", () => ({
   LEADERBOARD_POPOVER_ID: "leaderboard",
-  SocialBoard: () => null,
+  LeaderboardSurface: () => null,
 }));
 
 import { usePopoverStore } from "@/hooks/store/use-popover-store";

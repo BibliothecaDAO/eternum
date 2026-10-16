@@ -34,6 +34,20 @@ const ORDER_SURFACES = `document.querySelectorAll(${JSON.stringify(
     .join(", "),
 )}).length`;
 
+/**
+ * The leaderboard's window fits what it shows: its body leaves no empty room under the rows (it scrolls only when they
+ * outgrow the screen), and the table's header row spans the body, leaving no empty strip beside it.
+ */
+const LEADERBOARD_FITS = `(() => {
+  const frame = document.querySelector('[data-popover-panel="leaderboard"] [data-surface-frame]');
+  const body = frame?.children[1];
+  const header = body?.querySelector(".sticky");
+  if (!body || !header) return false;
+  const content = body.firstElementChild.getBoundingClientRect();
+  const room = body.getBoundingClientRect();
+  return content.height >= room.height - 2 && room.right - header.getBoundingClientRect().right <= 16;
+})()`;
+
 /** Before play opens: the entrance is pressed, nothing opens and the player is told when play opens. */
 const REFUSED_BEFORE_PLAY = {
   view: "map",
@@ -152,11 +166,11 @@ export const GAME_TASKS = {
     })()`,
   },
   "blitz-standings": {
-    goal: "Blitz: see the standings",
+    goal: "Blitz: see the standings, in a window as large as its table and rows",
     layouts: PHONE_AND_DESKTOP,
     view: "map",
     presses: [{ name: "your name chip", text: "^Identity$" }],
-    done: `/Leaderboard|Standings/.test(document.body.innerText)`,
+    done: LEADERBOARD_FITS,
   },
   production: {
     goal: "Read the realm's production: each store's rate an hour against its limit",

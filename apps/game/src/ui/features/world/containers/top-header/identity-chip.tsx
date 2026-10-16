@@ -15,7 +15,7 @@ import { getActiveGame } from "@/runtime/world";
 import Button from "@/ui/design-system/atoms/button";
 import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Popover, SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
+import { Popover } from "@/ui/design-system/molecules/popover";
 import { normalizeLeaderboardAddress } from "@/ui/features/social/player/finalized-blitz-leaderboard";
 import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
@@ -29,7 +29,7 @@ import {
   NO_OWNED_STRUCTURES,
   resolveIdentityChipState,
 } from "./identity-chip-state";
-import { LEADERBOARD_POPOVER_ID, SocialBoard } from "@/ui/features/social/components/social-board";
+import { LEADERBOARD_POPOVER_ID, LeaderboardSurface } from "@/ui/features/social/components/social-board";
 import { useSocialStore } from "@/ui/features/social/components/use-social-store";
 import { TOP_PILL } from "./top-pill";
 
@@ -78,18 +78,6 @@ export const IdentityChip = ({ compact = false }: { compact?: boolean }) => {
     </Popover>
   );
 };
-
-/** The leaderboard hangs from the top centre as a framed, draggable surface instead of a side panel. */
-const LeaderboardSurface = () => (
-  <SurfaceFrame
-    title="Leaderboard"
-    icon={"victory" as const}
-    onClose={() => usePopoverStore.getState().close(LEADERBOARD_POPOVER_ID)}
-    className={SURFACE_WORKSPACE_CLASS}
-  >
-    <SocialBoard focusOwnPlayer />
-  </SurfaceFrame>
-);
 
 const IdentityChipTrigger = ({
   state,

@@ -6,7 +6,8 @@ import { playerAvatarUrl } from "@/hooks/use-player-profile";
 import { ENABLE_LEADERBOARD_EFFECTS_MOCKUP } from "@/ui/constants";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import type { PlayerActivityBreakdown } from "@/services/leaderboard/player-activity-breakdown-service";
-import { ContractAddress, GuildInfo, PlayerInfo } from "@bibliothecadao/types";
+import type { configManager } from "@bibliothecadao/eternum";
+import { NEUTRAL_OWNER_NAME, ContractAddress, GuildInfo, PlayerInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
 import gsap from "gsap";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -24,8 +25,12 @@ export interface PlayerCustom extends PlayerInfo {
   includesLiveShareholderPoints: boolean;
 }
 
+/** The points each activity grants, as the game's rules give them. */
+export type VictoryPointGrants = ReturnType<typeof configManager.getVictoryPointGrants>;
+
 interface PlayerListProps {
   players: PlayerCustom[];
+  grants: VictoryPointGrants;
   focusOwnPlayer?: boolean;
   viewPlayerInfo: (playerAddress: ContractAddress) => void;
   whitelistPlayer: (address: ContractAddress) => void;
@@ -91,6 +96,7 @@ const resolvePlayerActivityStats = (player: PlayerCustom): PlayerWithActivitySta
 
 export const PlayerList = ({
   players,
+  grants,
   viewPlayerInfo,
   whitelistPlayer,
   isLoading,
@@ -103,8 +109,8 @@ export const PlayerList = ({
   const leaderboardGridTemplate = useMemo(
     () =>
       showTribeDetails
-        ? "grid-cols-[44px_minmax(0,_1fr)_auto] md:grid-cols-[68px_minmax(0,_1.25fr)_minmax(0,_1.1fr)_minmax(0,_0.8fr)_minmax(0,_0.8fr)_minmax(0,_0.85fr)_minmax(0,_0.9fr)_minmax(0,_0.95fr)_minmax(0,_1fr)]"
-        : "grid-cols-[44px_minmax(0,_1fr)_auto] md:grid-cols-[68px_minmax(0,_1.7fr)_minmax(0,_0.9fr)_minmax(0,_0.9fr)_minmax(0,_0.95fr)_minmax(0,_0.95fr)_minmax(0,_1.05fr)_minmax(0,_1.1fr)]",
+        ? "grid-cols-[44px_minmax(0,_1fr)_auto] md:grid-cols-[48px_200px_120px_repeat(5,_96px)_80px]"
+        : "grid-cols-[44px_minmax(0,_1fr)_auto] md:grid-cols-[48px_220px_repeat(5,_96px)_80px]",
     [showTribeDetails],
   );
 
@@ -200,10 +206,14 @@ export const PlayerList = ({
   );
 
   return (
-    <div className="flex flex-col h-full">
-      <PlayerListHeader showTribeDetails={showTribeDetails} gridTemplateClass={leaderboardGridTemplate} />
+    <div className="flex flex-col">
+      <PlayerListHeader
+        showTribeDetails={showTribeDetails}
+        grants={grants}
+        gridTemplateClass={leaderboardGridTemplate}
+      />
 
-      <div className="mt-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent flex-1">
+      <div className="mt-2">
         {sortedPlayers.length > 0 ? (
           sortedPlayers.map((player) => {
             const normalizedAddress = String(player.address);
@@ -240,53 +250,77 @@ export const PlayerList = ({
   );
 };
 
+/** A column of the table: its name, and for an activity the points it grants, with the rule in full on hover. */
+interface PlayerListColumn {
+  label: string;
+  align: string;
+  grant?: string;
+  rule?: string;
+}
+
+/** Each activity column carries its grant under its name: the game's scoring table, where the points it counts are. */
+const resolveColumns = (showTribeDetails: boolean, grants: VictoryPointGrants): PlayerListColumn[] => {
+  const each = (points: number) => `${currencyIntlFormat(points)} each`;
+  const activity = `${WIDE_ONLY} flex-col justify-center text-center`;
+  return [
+    { label: "Rank", align: "justify-center text-center" },
+    { label: "Name", align: "justify-start text-left" },
+    ...(showTribeDetails ? [{ label: "Tribe", align: "hidden text-left md:block" }] : []),
+    { label: "Tiles", align: activity, grant: each(grants.exploreTile), rule: "Explore a tile" },
+    { label: "Crates", align: activity, grant: each(grants.openRelicCrate), rule: "Open a relic crate" },
+    {
+      label: "Rifts/Camps",
+      align: activity,
+      grant: each(grants.claimCampFromBandits),
+      rule: `Claim an Essence Rift or Camp from ${NEUTRAL_OWNER_NAME}`,
+    },
+    {
+      label: "HS Taken",
+      align: activity,
+      grant: each(grants.claimHyperstructureFromBandits),
+      rule: `Claim a Hyperstructure from ${NEUTRAL_OWNER_NAME}`,
+    },
+    {
+      label: "HS Held",
+      align: activity,
+      grant: `${currencyIntlFormat(grants.hyperstructurePerRealmPerSecond)}/s a realm`,
+      rule: "Control a Hyperstructure: points every second for each realm settled within 8 tiles of it",
+    },
+    { label: "Points", align: "justify-end text-right md:justify-center md:text-center" },
+  ];
+};
+
 const PlayerListHeader = ({
   showTribeDetails,
+  grants,
   gridTemplateClass,
 }: {
   showTribeDetails: boolean;
+  grants: VictoryPointGrants;
   gridTemplateClass: string;
 }) => {
-  const columns = useMemo(() => {
-    const params: Array<{ label: string; align: string }> = [
-      { label: "Rank", align: "justify-center text-center" },
-      { label: "Name", align: "justify-start text-left" },
-    ];
-
-    if (showTribeDetails) {
-      params.push({ label: "Tribe", align: "hidden text-left md:block" });
-    }
-
-    params.push(
-      { label: "Tiles", align: `${WIDE_ONLY} justify-center text-center` },
-      { label: "Crates", align: `${WIDE_ONLY} justify-center text-center` },
-      { label: "Rifts/Camps", align: `${WIDE_ONLY} justify-center text-center` },
-      { label: "HS Taken", align: `${WIDE_ONLY} justify-center text-center` },
-      { label: "HS Held", align: `${WIDE_ONLY} justify-center text-center` },
-      { label: "Points", align: "justify-end text-right md:justify-center md:text-center" },
-    );
-
-    return params;
-  }, [showTribeDetails]);
+  const setTooltip = useTooltipStore((state) => state.setTooltip);
+  const columns = useMemo(() => resolveColumns(showTribeDetails, grants), [showTribeDetails, grants]);
 
   return (
-    // Solid opaque background + z-20 so the sticky header never shows the rows
-    // bleeding through as it scrolls under it.
+    // Opaque, on the window's own surface, so the sticky header never shows the rows scrolling under it.
     <div
       className={clsx(
-        "grid gap-x-3 items-center py-3 px-3 border-b border-gold/25 sticky top-0 z-20 bg-[#1a1410] md:gap-x-4 md:px-4",
+        "grid gap-x-3 items-center py-2 px-3 border-b border-gold/25 sticky top-0 z-20 bg-[var(--overlay-surface-from)] md:gap-x-4 md:px-4",
         gridTemplateClass,
       )}
     >
-      {columns.map(({ label, align }) => (
+      {columns.map(({ label, align, grant, rule }) => (
         <div
           key={label}
-          className={clsx(
-            "w-full items-center text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-gold/70",
-            align,
-          )}
+          className={clsx("w-full items-center text-sm font-semibold text-gold/80", align)}
+          onMouseEnter={
+            rule ? () => setTooltip({ content: <div className="text-gold">{rule}</div>, position: "top" }) : undefined
+          }
+          onMouseLeave={rule ? () => setTooltip(null) : undefined}
         >
-          {label}
+          <span>{label}</span>
+          {grant && <span className="text-xs font-normal text-gold/55">{grant}</span>}
         </div>
       ))}
     </div>
@@ -337,7 +371,7 @@ const PlayerRow = ({
       data-player-address={String(player.address)}
       aria-current={isSelected ? "true" : undefined}
       className={clsx(
-        "relative flex w-full mb-1 overflow-visible rounded-lg border border-transparent bg-dark/40 backdrop-blur-sm transition-all duration-200",
+        "relative flex w-full mb-1 overflow-visible rounded-lg border border-transparent bg-black/20 transition-all duration-200",
         player.isUser && !isSelected && "border-gold/50 bg-gold/20",
         !isSelected && !hasRankUp && !hasRankDown && "hover:border-gold/20 hover:bg-brown/40",
         isSelected && "border-amber-300/80 bg-amber-400/20 shadow-[0_0_14px_rgba(223,170,84,0.45)]",
@@ -392,7 +426,7 @@ const PlayerRow = ({
             {player.isUser && (
               <span
                 title={`0x${BigInt(player.address).toString(16)}`}
-                className="block truncate font-mono text-[10px] text-gold/60"
+                className="block truncate font-mono text-xs text-gold/60"
               >{`0x${BigInt(player.address).toString(16)}`}</span>
             )}
             {activitySummary && <span className="block text-sm text-kit-muted md:hidden">{activitySummary}</span>}

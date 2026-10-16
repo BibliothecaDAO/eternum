@@ -5,8 +5,10 @@ import { usePlayers } from "@/hooks/use-player-profile";
 import { gameStructuresView, settlementPlayersView } from "@/sync/fact-views";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { filterPlayersByBlitzSettlement } from "@/services/blitz/blitz-settlement-players";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Tabs } from "@/ui/design-system/atoms/tab";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
+import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
+import "@/ui/features/world/hud/hud.css";
 import { getPlayerInfo } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
@@ -56,10 +58,29 @@ const countStructuresByOwner = (structures: NativeRows["Structure"][]) =>
 export const LEADERBOARD_POPOVER_ID = "leaderboard";
 
 /**
+ * The leaderboard's window takes its content's size: as wide as its table and as tall as its rows (24 players at most),
+ * capped by the screen with its body scrolling under the title. A phone keeps the bottom sheet's width and height cap.
+ */
+const LEADERBOARD_FRAME_CLASS =
+  "w-fit lg:max-h-[inherit] max-lg:w-screen max-lg:max-h-[min(85dvh,calc(var(--surface-viewport-height,100dvh)-4rem))] max-lg:landscape:w-[min(60vw,640px)] max-lg:landscape:max-h-[calc(var(--surface-viewport-height,100dvh)-3.5rem-max(1rem,env(safe-area-inset-bottom))-2px)]";
+
+/** The leaderboard hangs from the top centre as a framed, draggable surface, titled as the HUD's panels are. */
+export const LeaderboardSurface = () => (
+  <SurfaceFrame
+    title={<span className="hud-panel-title">Leaderboard</span>}
+    icon={"victory" as const}
+    onClose={() => usePopoverStore.getState().close(LEADERBOARD_POPOVER_ID)}
+    className={LEADERBOARD_FRAME_CLASS}
+  >
+    <SocialBoard focusOwnPlayer />
+  </SurfaceFrame>
+);
+
+/**
  * The social board: players, tribes and faith tabs with the expandable player / tribe detail column. It
  * renders inside the identity chip's popover; its world-slice subscriptions exist only while that is open.
  */
-export const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) => {
+const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) => {
   const {
     account: { account },
     setup: { store },
@@ -211,13 +232,8 @@ export const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boole
   }, [activeTabIndex, selectedTab, setSelectedTab, tabsLength]);
 
   return (
-    <div
-      className={cn(
-        "flex h-[720px] max-h-[calc(100vh-7rem)] max-w-full overflow-hidden",
-        isExpanded ? "w-[1400px]" : "w-[1000px]",
-      )}
-    >
-      <div className="flex-1 min-w-0 overflow-hidden">
+    <div className="flex max-w-full">
+      <div className="min-w-0 flex-1">
         {tabsLength === 1 ? (
           tabs[0].component
         ) : (
@@ -252,7 +268,7 @@ export const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boole
         )}
       </div>
       {isExpanded && (
-        <div className="w-[400px] shrink-0 overflow-auto border-l border-gold/15">
+        <div className="w-[400px] shrink-0 border-l border-gold/15">
           {tabs[activeTabIndex]?.expandedContent ?? null}
         </div>
       )}

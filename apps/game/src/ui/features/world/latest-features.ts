@@ -56,6 +56,13 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-10-16",
+    title: "A leaderboard that fits",
+    description:
+      "The leaderboard window is as large as its table and rows, in the HUD's teal and type. Each activity column shows the points it grants under its name; hover it for the rule in full.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-16",
     title: "Keys for the HUD",
     description:
       "B, P, M and T open Build, Production, Military and Transfer, Space takes Next up's step, and I selects your next idle army (full stamina, no order), as does the new Idle button on the minimap. No key fires while you type.",

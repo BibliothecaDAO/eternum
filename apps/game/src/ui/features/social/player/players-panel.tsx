@@ -1,5 +1,3 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-
 import { useLeaderboardActivity } from "@/hooks/use-leaderboard-activity";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -11,7 +9,7 @@ import { useInGameLeaderboard } from "./use-in-game-leaderboard";
 import { configManager, getGuildFromPlayerAddress, isViewerOwner } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { ContractAddress, NEUTRAL_OWNER_NAME, PlayerInfo } from "@bibliothecadao/types";
+import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
 
 const buildActivityBreakdownLookup = (entries: PlayerLeaderboardActivityEntry[]) =>
@@ -40,8 +38,6 @@ export const PlayersPanel = ({
   const { isFinalized, standingsByAddress } = useInGameLeaderboard();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [showPointsBreakdown, setShowPointsBreakdown] = useState(false);
-  const grants = configManager.getVictoryPointGrants();
   const { data: activityEntries, error: activityError } = useLeaderboardActivity();
   const activityBreakdownsByAddress = useMemo(
     () => buildActivityBreakdownLookup(activityEntries ?? []),
@@ -114,70 +110,21 @@ export const PlayersPanel = ({
   };
 
   return (
-    <div className="flex flex-col min-h-72 p-2 h-full w-full overflow-hidden">
-      <div className="flex flex-col gap-2 mb-4">
-        {activityError && (
-          <p role="alert" className="text-sm text-danger">
-            Points breakdown is unavailable. It is read again when points change.
-          </p>
-        )}
-        <>
-          <div className="mb-3 overflow-hidden rounded-lg border border-gold/20 bg-gradient-to-r from-gold/5 via-gold/10 to-gold/5">
-            <button
-              onClick={() => setShowPointsBreakdown(!showPointsBreakdown)}
-              className="flex w-full items-center justify-between p-3 transition-colors cursor-pointer hover:bg-gold/5"
-            >
-              <span className="text-gold font-semibold text-sm">Points Breakdown</span>
-              {showPointsBreakdown ? (
-                <SemanticIcon name="chevron-up" size={16} className="text-gold" />
-              ) : (
-                <SemanticIcon name="chevron-down" size={16} className="text-gold" />
-              )}
-            </button>
-            {showPointsBreakdown && (
-              <div className="border-t border-gold/15 px-3 pb-3 pt-2">
-                <div className="flex flex-col gap-1 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gold/50">Explore a tile</span>
-                    <span className="text-gold font-semibold">{grants.exploreTile} VP</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gold/50">Claim an Essence Rift or Camp from {NEUTRAL_OWNER_NAME}</span>
-                    <span className="text-gold font-semibold">{grants.claimCampFromBandits} VP</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gold/50">Claim a Hyperstructure from {NEUTRAL_OWNER_NAME}</span>
-                    <span className="text-gold font-semibold">{grants.claimHyperstructureFromBandits} VP</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gold/50">Open a Relic Crate</span>
-                    <span className="text-gold font-semibold">{grants.openRelicCrate} VP</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gold/50">Control a Hyperstructure, per realm settled within 8 tiles</span>
-                    <span className="text-gold font-semibold">{grants.hyperstructurePerRealmPerSecond} VP/s</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          {mode.ui.showEndSeasonButton && (
-            <div className="flex justify-center">
-              <EndSeasonButton className="flex-1" />
-            </div>
-          )}
-        </>
-      </div>
-
-      <div className="flex-1 min-h-0">
-        <PlayerList
-          players={leaderboardPlayers}
-          focusOwnPlayer={focusOwnPlayer}
-          viewPlayerInfo={viewPlayerInfo}
-          whitelistPlayer={whitelistPlayer}
-          isLoading={isLoading}
-        />
-      </div>
+    <div className="flex flex-col p-2">
+      {activityError && (
+        <p role="alert" className="mb-2 text-sm text-danger">
+          Points breakdown is unavailable. It is read again when points change.
+        </p>
+      )}
+      {mode.ui.showEndSeasonButton && <EndSeasonButton className="mb-2 w-full" />}
+      <PlayerList
+        players={leaderboardPlayers}
+        grants={configManager.getVictoryPointGrants()}
+        focusOwnPlayer={focusOwnPlayer}
+        viewPlayerInfo={viewPlayerInfo}
+        whitelistPlayer={whitelistPlayer}
+        isLoading={isLoading}
+      />
     </div>
   );
 };
