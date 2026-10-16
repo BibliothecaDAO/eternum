@@ -78,7 +78,7 @@ export const getEntityInfo = (
 
 export const getArmyName = (armyEntityId: ID, store: NativeFactStore) => {
   const named = store.get("EntityName", { game_id: configManager.getActiveGameId(), entity_id: armyEntityId });
-  return named && named.name !== 0n ? shortString.decodeShortString(named.name.toString()) : `Army ${armyEntityId}`;
+  return named && named.name !== 0n ? shortString.decodeShortString(named.name.toString()) : unnamedEntityName("Army");
 };
 
 const getRealmName = (structure: NativeRows["Structure"]) => {
@@ -97,10 +97,27 @@ export const getStructureName = (structure: NativeRows["Structure"], isBlitz: bo
   } else {
     const structureTypeName =
       getStructureTypeName(structure.base.category as StructureType, presentedMineKind(structure)) || "Structure";
-    originalName = `${structureTypeName} ${structure.entity_id}`;
+    originalName = unnamedEntityName(structureTypeName);
   }
 
   return { name: cachedName || originalName, originalName };
+};
+
+/**
+ * What an army or a structure without a given name is called, wherever a player reads it (its map label, event text):
+ * its kind. Never its entity id, which is a storage key, not a name.
+ */
+const unnamedEntityName = (kind: string): string => kind;
+
+/**
+ * The one name a player reads for an army or a structure, on the map and in event text: its given name, else what
+ * `unnamedEntityName` calls it. Undefined when the store holds neither (an army already gone): the caller words that.
+ */
+export const getEntityName = (entityId: ID, store: NativeFactStore, isBlitz: boolean): string | undefined => {
+  const game_id = configManager.getActiveGameId();
+  if (store.get("ExplorerTroops", { game_id, explorer_id: entityId })) return getArmyName(entityId, store);
+  const structure = store.get("Structure", { game_id, entity_id: entityId });
+  return structure ? getStructureName(structure, isBlitz).name : undefined;
 };
 
 export const setEntityNameLocalStorage = (entityId: ID, name: string) => {

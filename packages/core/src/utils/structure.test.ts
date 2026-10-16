@@ -20,14 +20,14 @@ const mine = (entityId: number, mineKind: number) =>
 describe("the mine kind a structure is drawn as", () => {
   it("draws a mine by its own kind and gives other structures none", () => {
     expect(presentedMineKind(mine(8, 2))).toBe(2);
-    expect(getStructureName(mine(8, 2), false).name).toBe("Fragment Mine 8");
+    expect(getStructureName(mine(8, 2), false).name).toBe("Fragment Mine");
     const realm = { ...(mine(9, 0) as object), base: { category: StructureType.Realm, level: 0 } };
     expect(presentedMineKind(realm as never)).toBeUndefined();
   });
 
-  it("names a Frontier rift by its own category, not as a mine", () => {
+  it("names a Frontier rift by its own category, not as a mine, and never by its id", () => {
     const rift = { ...(mine(7, 0) as object), base: { category: StructureType.Rift, level: 0 } };
     expect(presentedMineKind(rift as never)).toBeUndefined();
-    expect(getStructureName(rift as never, false).name).toBe("Rift 7");
+    expect(getStructureName(rift as never, false).name).toBe("Rift");
   });
 });
