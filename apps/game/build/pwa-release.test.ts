@@ -1,9 +1,10 @@
 // @vitest-environment node
 import { fileURLToPath } from "node:url";
-import { build } from "vite";
+import { build, type Rollup } from "vite";
 import { expect, it } from "vitest";
 import { createPwaReleasePlugin } from "./pwa-release";
 
+/** The worker's minified production build, stamped with this release. */
 async function buildWorker(release: string): Promise<string> {
   const result = await build({
     configFile: false,
@@ -25,6 +26,14 @@ async function buildWorker(release: string): Promise<string> {
   return worker.code;
 }
 
+/** The plugin's stamp on a built worker entry, as Rollup hands it the bundle. */
+function stampBuiltWorker(release: string, code: string): string {
+  const bundle = { "sw.js": { type: "chunk", isEntry: true, code } } as unknown as Rollup.OutputBundle;
+  const plugin = createPwaReleasePlugin(release);
+  (plugin.generateBundle as (options: unknown, bundle: Rollup.OutputBundle) => void)({}, bundle);
+  return (bundle["sw.js"] as { code: string }).code;
+}
+
 /** Runs the worker's first line, the release stamp, against a stand-in worker scope. */
 function stampedRelease(code: string): unknown {
   const self: { REALMS_RELEASE?: unknown } = {};
@@ -32,13 +41,19 @@ function stampedRelease(code: string): unknown {
   return self.REALMS_RELEASE;
 }
 
-it("keeps minified worker releases distinct without production logging", async () => {
-  const first = await buildWorker("release-a");
-  const repeat = await buildWorker("release-a");
-  const next = await buildWorker("release-b */ arbitrary label");
-  expect(first).toBe(repeat);
+const body = (code: string) => code.split("\n").slice(1).join("\n");
+
+it("makes each release's worker distinct by its stamp alone, whatever the release label", () => {
+  const built = "self.addEventListener('install',()=>{});";
+  const first = stampBuiltWorker("release-a", built);
+  const next = stampBuiltWorker("release-b */ arbitrary label", built);
   expect(first).not.toBe(next);
-  expect(first.split("\n").slice(1).join("\n")).toBe(next.split("\n").slice(1).join("\n"));
-  expect(stampedRelease(next)).toBe("release-b */ arbitrary label");
-  expect(next).not.toContain("pwa_worker_installed");
+  expect([body(first), body(next)]).toEqual([built, built]);
+  expect([stampedRelease(first), stampedRelease(next)]).toEqual(["release-a", "release-b */ arbitrary label"]);
+});
+
+it("stamps the minified production worker, which carries no production logging", async () => {
+  const worker = await buildWorker("release-a");
+  expect(stampedRelease(worker)).toBe("release-a");
+  expect(worker).not.toContain("pwa_worker_installed");
 });
