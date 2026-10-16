@@ -158,8 +158,8 @@ pnpm --dir apps/game prove:play --base-url <url> --game <chain>:<game> --profile
 
 The **boot** task enters the game and opens Chat at desktop and phone sizes. It requires the rendered map and Chat, and
 fails on page or console errors. It is a signed-in game proof, separate from the signed-out Play/shell fixtures. The
-same runner's `blitz-farm,blitz-army,blitz-explore,blitz-transfer,blitz-standings` tasks play a seated Blitz player's
-orders through the HUD, and `gate-build,gate-production` check that nothing acts before play opens
+same runner's `blitz-farm,blitz-army,blitz-deploy,blitz-explore,blitz-transfer,blitz-standings` tasks play a seated
+Blitz player's orders through the HUD, and `gate-build,gate-production` check that nothing acts before play opens
 (`scripts/game-tasks.mjs`).
 
 For a seated Blitz player with at least two armies able to act:

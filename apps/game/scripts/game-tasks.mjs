@@ -19,6 +19,13 @@ const STRUCTURE_ACTIONS = 'nav[aria-label="Structure actions"]';
 /** An open panel by its id: the strip's and a card's Build buttons carry the Build workspace's name, not its id. */
 const panel = (id) => `[data-popover-panel="${id}"]`;
 const BUILD_PANEL = panel("build");
+const DEPLOY_PANEL = panel("army-deployment");
+
+/** The troops the selected realm holds, every kind and tier, as its card's resources name them ("KnightT2 · 300 held"). */
+const TROOPS_HELD = `[...document.querySelectorAll('section[aria-label="Selected holding"] ul[aria-label="Resources"] li')]
+  .map((el) => el.getAttribute("aria-label")?.match(/^(?:Knight|Crossbowman|Paladin)(?:T[23])? · ([\\d,]+) held/)?.[1])
+  .filter(Boolean)
+  .reduce((sum, held) => sum + Number(held.replaceAll(",", "")), 0)`;
 
 /** How many order surfaces stand open: the workspaces and the popovers where an order is given. */
 const ORDER_SURFACES = `document.querySelectorAll(${JSON.stringify(
@@ -85,7 +92,7 @@ export const GAME_TASKS = {
     view: "map",
     presses: [
       { name: "Military", within: STRUCTURE_ACTIONS, text: "^Military$" },
-      { name: "MAX", text: "^MAX$" },
+      { name: "Max", text: "^Max$" },
       { name: "Create field army", text: "^Create field army$" },
     ],
     reading: `(() => {
@@ -95,6 +102,22 @@ export const GAME_TASKS = {
     changes: "one more army",
     expect: oneMore,
     done: `document.body.innerText.includes("Existing armies")`,
+  },
+  "blitz-deploy": {
+    goal: "Blitz: deploy a field army from a free tile beside a structure, all its troops of one kind",
+    layouts: ["desktop"],
+    view: "map",
+    presses: [
+      // The structure selected on the map: its free neighbours then offer Create Army.
+      { name: "the next structure", key: "Shift+Tab" },
+      { name: "a free tile beside it, right-clicked", tile: "Create Army", button: "right" },
+      { name: "Max", within: DEPLOY_PANEL, text: "^Max$" },
+      { name: "Deploy", within: DEPLOY_PANEL, text: "^Deploy" },
+    ],
+    reading: TROOPS_HELD,
+    changes: "fewer troops held in the realm",
+    expect: (before, after) => after < before,
+    done: `!document.querySelector(${JSON.stringify(DEPLOY_PANEL)})`,
   },
   "blitz-explore": {
     goal: "Blitz: send an army to explore",
