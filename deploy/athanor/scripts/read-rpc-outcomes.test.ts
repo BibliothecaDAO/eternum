@@ -116,7 +116,7 @@ for (const [name, answer] of [
       Response.json({
         jsonrpc: "2.0",
         id: 42,
-        error: { code: 55, message: "internal diagnostic", data: { signature: [STAMP_TAG, "0x9"] } },
+        error: { code: 59, message: "internal diagnostic", data: { signature: [STAMP_TAG, "0x9"] } },
       }),
   ],
   [
@@ -140,6 +140,33 @@ for (const [name, answer] of [
     }
   });
 }
+
+test("a write the account's own validation refuses is refused, with no hash and none of the node's diagnostic", async () => {
+  const f = await fixture();
+  const intercepted = f.intercept(async (call) =>
+    Response.json({
+      jsonrpc: "2.0",
+      id: call.id,
+      error: { code: 55, message: "Account validation failed", data: "device limit" },
+    }),
+  );
+  try {
+    const deviceAdd = {
+      ...invoke(),
+      calldata: ["0x1", invoke().sender_address, hash.getSelectorFromName("is_device"), "0x1", "0x1"],
+      signature: ["0x1", "0x2", "0x3", "0x4", "0x5"],
+    };
+    for (const transaction of [invoke(), deviceAdd])
+      expect(await f.call("starknet_addInvokeTransaction", [transaction])).toEqual({
+        jsonrpc: "2.0",
+        id: 42,
+        error: { code: -32010, message: "Transaction refused" },
+      });
+  } finally {
+    intercepted.mockRestore();
+    f.close();
+  }
+});
 
 test("an ambiguous unstamped administrative write omits the unknown hash", async () => {
   const f = await fixture();

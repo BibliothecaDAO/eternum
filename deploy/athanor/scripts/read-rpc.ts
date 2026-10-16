@@ -361,9 +361,12 @@ function readAnswer(answer: NodeAnswer, call: RpcCall): unknown {
   }
   return rpcError(call.id, -32012, "RPC read unavailable");
 }
+// Starknet's VALIDATION_FAILURE: the account's own validation refused the transaction at admission, so it never applies.
+const VALIDATION_FAILURE = 55;
 function writeAnswer(answer: NodeAnswer, call: RpcCall, expectedHash?: string): unknown {
   const result = answer.result as { transaction_hash?: unknown; contract_address?: unknown } | undefined;
   const hash = felt(result?.transaction_hash);
+  if (answer.error?.code === VALIDATION_FAILURE && !Object.hasOwn(answer, "result")) return transactionRefused(call.id);
   if (Object.hasOwn(answer, "error") || hash === undefined || (expectedHash && hash !== felt(expectedHash)))
     return rpcError(call.id, -32011, "Transaction outcome unknown", expectedHash);
   const contract = call.method === "starknet_addDeployAccountTransaction" ? felt(result?.contract_address) : undefined;
