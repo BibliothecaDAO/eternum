@@ -7,16 +7,22 @@ export const wholeTroops = (scaled: bigint): number => Number(scaled / BigInt(RE
 const exchanges = (count: number) => (count === 1 ? "1 exchange" : `${count} exchanges`);
 
 /**
- * The whole fight in one line, exact because every exchange is the contract's own result: "Wins in 2 exchanges ·
- * loses 420 · 60 stamina". Null when the first attack cannot be made at all.
+ * What the whole fight takes, the one part of it the casualty lines do not show: "2 exchanges · 60 stamina", "Out of
+ * stamina after 5 exchanges", or "One attack, then cooldown · 30 stamina". Null when the first attack cannot be made.
  */
-export const describeFight = (forecast: FightForecast): string | null => {
+export const describeFightCost = (forecast: FightForecast): string | null => {
   if (forecast.outcome === "refused") return null;
   const cost = `${forecast.staminaSpent} stamina`;
-  const lost = wholeTroops(forecast.attackerLoss).toLocaleString();
-  if (forecast.outcome === "wins") return `Wins in ${exchanges(forecast.exchanges)} · loses ${lost} · ${cost}`;
-  if (forecast.outcome === "loses") return `Falls in ${exchanges(forecast.exchanges)} · ${cost}`;
-  const standing = wholeTroops(forecast.defender.count).toLocaleString();
-  if (forecast.stoppedBy === "cooldown") return `This attack · ${standing} still defend · loses ${lost} · ${cost}`;
-  return `Out of stamina after ${exchanges(forecast.exchanges)} · ${standing} still defend · loses ${lost}`;
+  if (forecast.outcome === "stalls" && forecast.stoppedBy === "cooldown") return `One attack, then cooldown · ${cost}`;
+  if (forecast.outcome === "stalls") return `Out of stamina after ${exchanges(forecast.exchanges)}`;
+  return `${exchanges(forecast.exchanges)} · ${cost}`;
+};
+
+/**
+ * A combat panel's title: the two sides, as the battle lab and raid results name them. An unowned target is the
+ * Bandits; before the target is known, the attacker alone.
+ */
+export const combatTitle = (attacker: string | null, target: { loaded: boolean; owner: string | null }): string => {
+  const you = attacker || "Your army";
+  return target.loaded ? `${you} vs ${target.owner ?? "Bandits"}` : you;
 };

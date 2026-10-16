@@ -33,7 +33,7 @@ import { buildAttackStaminaRequirementLabel, resolveAttackStaminaState } from ".
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots } from "../utils/defense-slot-utils";
 import { formatAcross, survivalOf, type SideRange } from "./battle-range";
 import { CombatModal } from "./combat-modal";
-import { describeFight, wholeTroops } from "./fight-forecast";
+import { combatTitle, describeFightCost, wholeTroops } from "./fight-forecast";
 import { useAttackTargetData } from "./hooks/use-attack-target";
 import { AttackTarget, TargetType } from "./types";
 
@@ -115,6 +115,8 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const executionSecond = useCurrentDefaultTick();
 
   const { target: targetData, targetResources, isLoading } = useAttackTargetData(attacker.id, target.hex, target.alt);
+  const targetOwner = targetData?.addressOwner ? BigInt(targetData.addressOwner) : 0n;
+  const targetOwnerName = usePlayerDisplayName(targetOwner === 0n ? null : targetOwner);
 
   const combatConfig = useMemo(() => configManager.getCombatConfig(), []);
   const ethereal = target.alt;
@@ -186,7 +188,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   );
 
   const totalGuardCount = isStructureTarget ? targetTroopSnapshots.length : 0;
-  const hasQueuedGuards = totalGuardCount > 1;
 
   // Every exchange is the contract's own arithmetic on both sides' troops, stamina and boosts at chain time: this
   // attack and the whole fight as successive attacks now. Where the game rolls dice, both at the attacker's worst roll
@@ -333,26 +334,12 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     return attackStaminaState.actionLabel;
   })();
 
-  const outcomeLabel = (() => {
-    if (!fight) {
-      if (isStructureTarget && hasQueuedGuards) return `${totalGuardCount} guards defending`;
-      return "No defenders";
-    }
-
-    const [worst, best] = [describeFight(fight.worst.forecast), describeFight(fight.best.forecast)];
-    const baseLabel = worst === best ? (worst ?? "—") : `Worst roll: ${worst ?? "—"} · best: ${best ?? "—"}`;
-
-    if (!isStructureTarget || !hasQueuedGuards) {
-      return baseLabel;
-    }
-
-    if (defenderRemaining <= 0) {
-      const remaining = queuedTargetGuards.length;
-      const suffix = remaining === 1 ? "1 guard remains" : `${remaining} guards remain`;
-      return `${baseLabel} • ${suffix}`;
-    }
-
-    return `${baseLabel} • Guard 1/${totalGuardCount}`;
+  // Who survives and what each side loses are the casualty lines below; the title only names the sides.
+  const title = combatTitle(accountName, { loaded: Boolean(targetData), owner: targetOwnerName });
+  const fightCost = (() => {
+    if (!fight) return null;
+    const [worst, best] = [describeFightCost(fight.worst.forecast), describeFightCost(fight.best.forecast)];
+    return worst === best ? worst : `Worst roll: ${worst ?? "—"} · best: ${best ?? "—"}`;
   })();
 
   // Shared submit pipeline: guards, pending worldmap FX, sound, and teardown are identical across
@@ -500,19 +487,16 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
   return (
     <div className="w-[280px] max-w-[85vw] px-3 py-2.5 text-gold">
-      <div className="mb-1.5 flex items-center justify-between gap-2">
-        <span className={cn("truncate", HUD_LABEL)}>{accountName || "Your army"}</span>
-        <div className="flex items-center gap-2">
-          <span className={cn("shrink-0", HUD_CUE)}>{outcomeLabel}</span>
-          <button
-            type="button"
-            aria-label="Close attack preview"
-            className="rounded-full border border-gold/30 bg-transparent p-1 text-gold transition hover:bg-gold/10"
-            onClick={closeSurface}
-          >
-            <SemanticIcon name="close" className="h-3 w-3" />
-          </button>
-        </div>
+      <div className="mb-1.5 flex items-start justify-between gap-2">
+        <span className={cn("min-w-0 break-words", HUD_LABEL)}>{title}</span>
+        <button
+          type="button"
+          aria-label="Close attack preview"
+          className="shrink-0 rounded-full border border-gold/30 bg-transparent p-1 text-gold transition hover:bg-gold/10"
+          onClick={closeSurface}
+        >
+          <SemanticIcon name="close" className="h-3 w-3" />
+        </button>
       </div>
 
       {isLoading ? (
@@ -532,6 +516,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
               <>
                 {casualtyLine("Your forces", attackerSide)}
                 {casualtyLine(isStructureTarget ? "Active guard" : "Enemy army", defenderSide)}
+                {fightCost && <p className={HUD_CUE}>{fightCost}</p>}
               </>
             )
           ) : (

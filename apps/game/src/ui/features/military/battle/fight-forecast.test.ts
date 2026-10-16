@@ -1,6 +1,6 @@
 import type { FightForecast } from "@bibliothecadao/eternum";
 import { describe, expect, it } from "vitest";
-import { describeFight, wholeTroops } from "./fight-forecast";
+import { combatTitle, describeFightCost, wholeTroops } from "./fight-forecast";
 
 const troops = (whole: number) => ({ count: BigInt(whole) * 1_000_000_000n }) as never;
 
@@ -18,34 +18,42 @@ const fight = (overrides: Partial<FoughtForecast>): FightForecast => ({
   ...overrides,
 });
 
-describe("describeFight", () => {
-  it("names a win by its exchanges, its losses and its stamina", () => {
-    expect(describeFight(fight({}))).toBe("Wins in 2 exchanges · loses 420 · 60 stamina");
-    expect(describeFight(fight({ exchanges: 1, staminaSpent: 30n }))).toBe(
-      "Wins in 1 exchange · loses 420 · 30 stamina",
+describe("combatTitle", () => {
+  it("names the two sides in full, an unowned target as the Bandits", () => {
+    expect(combatTitle("djizus", { loaded: true, owner: "Stolsli of the North" })).toBe(
+      "djizus vs Stolsli of the North",
     );
+    expect(combatTitle("djizus", { loaded: true, owner: null })).toBe("djizus vs Bandits");
+    expect(combatTitle(null, { loaded: true, owner: "Stolsli" })).toBe("Your army vs Stolsli");
   });
 
-  it("names a loss and a fight the attacker cannot finish", () => {
-    expect(describeFight(fight({ outcome: "loses", exchanges: 1, staminaSpent: 30n }))).toBe(
-      "Falls in 1 exchange · 30 stamina",
-    );
-    expect(describeFight(fight({ outcome: "stalls", exchanges: 5, defender: troops(300) }))).toBe(
-      "Out of stamina after 5 exchanges · 300 still defend · loses 420",
-    );
-  });
-
-  it("has nothing to say when the first attack cannot be made", () => {
-    expect(describeFight({ outcome: "refused", refusal: "insufficient-stamina" })).toBeNull();
-  });
-
-  it("counts whole troops as the contract does", () => {
-    expect(wholeTroops(1_999_999_999n)).toBe(1);
+  it("names only the attacker before the target is known, and never the fight's outcome", () => {
+    expect(combatTitle("djizus", { loaded: false, owner: null })).toBe("djizus");
   });
 });
 
-it("describes a cooldown stop as this attack, without claiming stamina ran out", () => {
-  expect(describeFight(fight({ outcome: "stalls", exchanges: 1, stoppedBy: "cooldown", defender: troops(300) }))).toBe(
-    "This attack · 300 still defend · loses 420 · 60 stamina",
-  );
+describe("describeFightCost", () => {
+  it("counts a finished fight's exchanges and stamina, whoever wins", () => {
+    expect(describeFightCost(fight({}))).toBe("2 exchanges · 60 stamina");
+    expect(describeFightCost(fight({ outcome: "loses", exchanges: 1, staminaSpent: 30n }))).toBe(
+      "1 exchange · 30 stamina",
+    );
+  });
+
+  it("says when the fight stops before it is decided, by stamina or by cooldown", () => {
+    expect(describeFightCost(fight({ outcome: "stalls", exchanges: 5, defender: troops(300) }))).toBe(
+      "Out of stamina after 5 exchanges",
+    );
+    expect(
+      describeFightCost(fight({ outcome: "stalls", exchanges: 1, stoppedBy: "cooldown", staminaSpent: 30n })),
+    ).toBe("One attack, then cooldown · 30 stamina");
+  });
+
+  it("has nothing to say when the first attack cannot be made", () => {
+    expect(describeFightCost({ outcome: "refused", refusal: "insufficient-stamina" })).toBeNull();
+  });
+});
+
+it("counts whole troops as the contract does", () => {
+  expect(wholeTroops(1_999_999_999n)).toBe(1);
 });
