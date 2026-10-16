@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { expect, it } from "vitest";
 import type { Structure } from "@bibliothecadao/types";
-import { resolveStructureAttention, nextAttentionItem } from "./attention-policy";
+import { nextAttentionItem, ownBattleStructures, resolveStructureAttention } from "./attention-policy";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 const structure = (entityId: number) => ({ entityId }) as Structure;
 const guard = (entityId: number, end: number) =>
@@ -26,4 +26,24 @@ it("cycles attention before suggestions and recovers when an item disappears", (
   expect(nextAttentionItem(items, "suggestion:1")?.key).toBe("attention:1");
   expect(nextAttentionItem(items, "removed")?.key).toBe("attention:1");
   expect(nextAttentionItem([], null)).toBeUndefined();
+});
+it("never flags a structure the player just captured, or attacked themselves, as under attack", () => {
+  // Newest battle first: the player (0xme) captured 7; someone else attacked 8; 9 was attacked by someone else after
+  // the player's own earlier attack there.
+  const battles = [
+    { storyPayload: { defender_id: 7, attacker: { player: "0xme" } } },
+    { storyPayload: { defender_id: 8, attacker: { player: "0xthem" } } },
+    { storyPayload: { defender_id: 9, attacker: { player: "0xthem" } } },
+    { storyPayload: { defender_id: 9, attacker: { player: "0xme" } } },
+  ];
+  const own = ownBattleStructures(battles, (address) => address === "0xme");
+  expect([...own]).toEqual([7]);
+  const result = resolveStructureAttention(
+    [structure(7), structure(8), structure(9)],
+    [],
+    100,
+    [guard(7, 120), guard(8, 120), guard(9, 120)],
+    own,
+  );
+  expect([...result.attackedIds].toSorted()).toEqual([8, 9]);
 });
