@@ -564,10 +564,8 @@ export const TransferResourcesContainer = ({
 
   const formatActorLabel = (actorType?: ActorType, entityId?: ID, entityName?: string | null) => {
     if (actorType === undefined || !entityId) return "Unknown";
-    if (actorType === ActorType.Explorer) return `Explorer ${entityId}`;
-    if (actorType === ActorType.Structure && entityName) return entityName;
-    if (actorType === ActorType.Structure) return `Structure ${entityId}`;
-    return `Entity ${entityId}`;
+    if (actorType === ActorType.Structure) return entityName || "Structure";
+    return actorType === ActorType.Explorer ? "Army" : "Unknown";
   };
 
   const selectedStructureName = useMemo(() => {

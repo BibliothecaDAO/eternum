@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { configManager, getHyperstructureTotalContributableAmounts, ResourceManager } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  getHyperstructureTotalContributableAmounts,
+  getIsBlitz,
+  getStructureName,
+  ResourceManager,
+} from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
@@ -190,7 +196,7 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
                 )}
                 {sources.map((row) => (
                   <option key={row.entity_id} value={row.entity_id.toString()}>
-                    Structure #{row.entity_id.toString()}
+                    {getStructureName(row, getIsBlitz()).name}
                   </option>
                 ))}
               </select>

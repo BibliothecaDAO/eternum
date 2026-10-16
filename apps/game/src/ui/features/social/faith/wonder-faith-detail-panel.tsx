@@ -76,7 +76,7 @@ export const WonderFaithDetailPanel = ({
   }
 
   const followers = wonderDetail.followers;
-  const wonderName = wonderDetail.wonderName || fallbackWonderName || `Wonder #${wonderDetail.wonderId.toString()}`;
+  const wonderName = wonderDetail.wonderName || fallbackWonderName || "Wonder";
 
   if (compact) {
     return (

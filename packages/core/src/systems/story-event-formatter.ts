@@ -465,9 +465,7 @@ function describeArmy(value: unknown, event: StoryEventSystemUpdate, components?
   if (army.Explorer !== undefined) return describeExplorer(army.Explorer, components);
   if (!army.Guard || typeof army.Guard !== "object") throw new Error("Unknown troop transfer participant");
   const guard = army.Guard as Record<string, unknown>;
-  const structure =
-    describeStructureDetails(event, components, undefined, guard.structure_id) ??
-    `Structure ${formatNumber(guard.structure_id)}`;
+  const structure = describeStructureDetails(event, components, undefined, guard.structure_id) ?? "Structure";
   return `${structure} · ${formatSlotLabel(guard.slot)}`;
 }
 

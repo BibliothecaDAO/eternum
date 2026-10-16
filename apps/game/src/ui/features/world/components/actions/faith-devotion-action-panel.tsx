@@ -143,17 +143,14 @@ export const FaithDevotionActionPanel = ({ structureEntityId, className }: Faith
       return currentWonderEntry.wonderName;
     }
 
-    return `Wonder #${devotionStatus.wonderId.toString()}`;
+    return "Wonder";
   }, [currentWonderEntry, devotionStatus]);
 
   const openDevotionModal = useCallback(() => {
     openSurface({
       id: "faith-devotion",
       content: (
-        <FaithDevotionModal
-          structureEntityId={structureEntityId}
-          structureLabel={structureName ?? `Structure #${String(structureEntityId)}`}
-        />
+        <FaithDevotionModal structureEntityId={structureEntityId} structureLabel={structureName ?? "Structure"} />
       ),
     });
   }, [structureEntityId, structureName, openSurface]);
@@ -164,7 +161,7 @@ export const FaithDevotionActionPanel = ({ structureEntityId, className }: Faith
       content: (
         <WonderFaithDetailModal
           wonderId={structureEntityId}
-          fallbackWonderName={structureName ?? `Wonder #${String(structureEntityId)}`}
+          fallbackWonderName={structureName ?? "Wonder"}
           onClose={closeSurface}
         />
       ),
@@ -211,7 +208,7 @@ export const FaithDevotionActionPanel = ({ structureEntityId, className }: Faith
       <div className={cn("flex flex-col gap-2", className)}>
         <WonderFaithDetailPanel
           wonderId={structureEntityId}
-          fallbackWonderName={structureName ?? `Wonder #${String(structureEntityId)}`}
+          fallbackWonderName={structureName ?? "Wonder"}
           compact
           className="min-h-0 flex-none"
         />
@@ -399,7 +396,9 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
           <p className="mt-1">
             Current devotion:{" "}
             <span className="font-semibold text-gold">
-              {devotionStatus ? `Wonder #${devotionStatus.wonderId.toString()}` : "None"}
+              {devotionStatus
+                ? (wonderEntries.find((entry) => entry.wonderId === devotionStatus.wonderId)?.wonderName ?? "Wonder")
+                : "None"}
             </span>
           </p>
         </div>

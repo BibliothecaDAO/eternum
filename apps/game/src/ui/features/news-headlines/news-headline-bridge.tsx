@@ -162,7 +162,7 @@ export function NewsHeadlineBridge() {
         if (!buildingName) continue;
         const structureId = safeInteger(current.structure_id);
         const structure = entityReader?.getStructure(structureId);
-        const realmName = structure?.structureName || `Realm #${structureId}`;
+        const realmName = structure?.structureName || "A realm";
         enqueue({
           id: `t3-building:${structureId}`,
           type: "t3-building",

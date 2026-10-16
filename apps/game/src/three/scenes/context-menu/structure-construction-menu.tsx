@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
-import { getRealmInfo, configManager, resolveUseSimpleCost } from "@bibliothecadao/eternum";
+import { getRealmInfo, configManager, getEntityName, getIsBlitz, resolveUseSimpleCost } from "@bibliothecadao/eternum";
 import {
   BuildingType,
   HexEntityInfo,
@@ -89,6 +89,7 @@ export const createConstructionMenu = ({
   const simpleCostEnabled = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
 
   const realmInfo = getRealmInfo(structureEntityId, store, getPlayerName);
+  const structureName = getEntityName(structureEntityId, store, getIsBlitz()) ?? "Realm";
 
   const makeBuildingAction = ({
     suffix,
@@ -232,7 +233,7 @@ export const createConstructionMenu = ({
       label,
       iconComponent: createTierIconComponent(tierLabel),
       childTitle: `${label} Units`,
-      childSubtitle: `Realm ${idString}`,
+      childSubtitle: structureName,
       onSelect: () => {},
       disabled: tierDisabled,
       hint: tierDisabled ? "Unavailable in labor cost mode" : undefined,
@@ -257,7 +258,7 @@ export const createConstructionMenu = ({
       label: "Resource Buildings",
       icon: iconUrl("resources"),
       childTitle: "Resource Buildings",
-      childSubtitle: `Realm ${idString}`,
+      childSubtitle: structureName,
       onSelect: () => {},
       children: realmResourceActions.length > 0 ? realmResourceActions : undefined,
       disabled: realmResourceActions.length === 0,
@@ -267,7 +268,7 @@ export const createConstructionMenu = ({
       label: "Economic Buildings",
       icon: iconUrl("build"),
       childTitle: "Economic Buildings",
-      childSubtitle: `Realm ${idString}`,
+      childSubtitle: structureName,
       onSelect: () => {},
       children: economicActions,
     },
@@ -276,7 +277,7 @@ export const createConstructionMenu = ({
       label: "Military Buildings",
       icon: iconUrl("military"),
       childTitle: "Select Tier",
-      childSubtitle: `Realm ${idString}`,
+      childSubtitle: structureName,
       onSelect: () => {},
       children: militaryTierActions,
     },
@@ -287,7 +288,7 @@ export const createConstructionMenu = ({
     label: "Construction",
     icon: iconUrl("build"),
     childTitle: "Select Building Category",
-    childSubtitle: `Realm ${idString}`,
+    childSubtitle: structureName,
     children: constructionCategories,
     onSelect: () => {},
   };

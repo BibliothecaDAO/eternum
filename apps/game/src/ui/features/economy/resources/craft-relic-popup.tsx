@@ -5,7 +5,7 @@ import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { extractReadableErrorMessage } from "@/utils/error-message";
-import { configManager } from "@bibliothecadao/eternum";
+import { configManager, getEntityName, getIsBlitz } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -205,7 +205,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
   );
 
   const structureCategory = structureInfo.structureCategory;
-  const structureName = structureInfo.name?.name ?? `Structure #${structureId}`;
+  const structureName = getEntityName(structureId, store, getIsBlitz()) ?? "Structure";
 
   const configuredResearchCost = configManager.getArtificerConfig().research_cost_for_relic;
 
@@ -363,7 +363,6 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
 
         <div className="rounded border border-gold/20 bg-dark-brown/30 p-4">
           <p className="text-sm font-semibold text-gold">{structureName}</p>
-          <p className="text-xs text-gold/70">Structure #{structureId}</p>
 
           <div className="mt-3 space-y-2 text-xs text-gold/80">
             <div className="flex items-center justify-between">

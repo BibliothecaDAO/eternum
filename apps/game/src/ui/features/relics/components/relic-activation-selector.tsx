@@ -68,16 +68,8 @@ const RelicActivationHolderCard = ({
   const compatible = isRelicCompatible(relicInfo, holder.recipientType);
   const isArmyHolder = holder.entityType === EntityType.ARMY || holder.recipientType === RelicRecipientType.Explorer;
   const parentRealmLabel = (() => {
-    if (holder.parentStructureName) {
-      const suffix = holder.parentStructureId != null ? ` (#${holder.parentStructureId})` : "";
-      return `${holder.parentStructureName}${suffix}`;
-    }
-
-    if (holder.parentStructureId != null) {
-      return `Realm #${holder.parentStructureId}`;
-    }
-
-    return null;
+    if (holder.parentStructureName) return holder.parentStructureName;
+    return holder.parentStructureId != null ? "Realm" : null;
   })();
 
   return (
@@ -208,7 +200,7 @@ export const RelicActivationSelector = ({
         const name = mode.structure.getName(structure.structure).name;
         map.set(String(id), name);
       } catch {
-        map.set(String(id), `Realm #${id}`);
+        map.set(String(id), "Structure");
       }
     });
 
@@ -250,9 +242,9 @@ export const RelicActivationSelector = ({
 
     return holders.map((holder) => {
       const entityInfo = mode.structure.getEntityInfo(holder.entityId, null, store);
-      const entityName = entityInfo?.name?.name ?? `Entity ${holder.entityId}`;
-      const selfId = toEntityId(holder.entityId, holder.entityId);
       const isArmy = holder.entityType === EntityType.ARMY || holder.recipientType === RelicRecipientType.Explorer;
+      const entityName = entityInfo?.name?.name ?? (isArmy ? "Army" : "Structure");
+      const selfId = toEntityId(holder.entityId, holder.entityId);
       const explorerOwnerRaw = isArmy ? entityInfo?.explorer?.owner : undefined;
       const entityOwnerId = isArmy ? toEntityId(explorerOwnerRaw, selfId) : selfId;
       const hasParentStructure = isArmy && entityOwnerId !== selfId;

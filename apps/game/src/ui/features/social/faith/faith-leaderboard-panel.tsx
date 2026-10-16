@@ -99,7 +99,6 @@ export const FaithLeaderboardPanel = () => {
                   <td className="px-3 py-2">
                     <div className="flex flex-col">
                       <span className="font-semibold text-gold">{entry.wonderName}</span>
-                      <span className="text-[11px] text-gold/60">Wonder #{entry.wonderId.toString()}</span>
                     </div>
                   </td>
                   <td className="px-3 py-2">

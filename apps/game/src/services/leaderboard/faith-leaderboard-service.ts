@@ -93,7 +93,7 @@ const address = (value: unknown): string => {
 
 const wonderName = (wonderId: bigint, realmId: number): string => {
   const realmName = realmId > 0 ? getRealmNameById(realmId) : undefined;
-  return realmName ? `Wonder - ${realmName}` : `Wonder #${realmId > 0 ? realmId : wonderId.toString()}`;
+  return realmName ? `Wonder - ${realmName}` : "Wonder";
 };
 
 const currentFaithPoints = (row: ReadModelRow, nowInSeconds: bigint): bigint => {
@@ -128,7 +128,7 @@ const structureLabel = (structureId: bigint, structureType: number, realmId: num
     const realmName = getRealmNameById(realmId);
     return realmName ? `Realm - ${realmName}` : `Realm #${realmId}`;
   }
-  return `${structureTypeLabel(structureType)} #${structureId.toString()}`;
+  return structureTypeLabel(structureType);
 };
 
 const followerEntries = (rows: FaithReadModels, wonderId: bigint): WonderFaithFollowerEntry[] =>

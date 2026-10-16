@@ -10,7 +10,14 @@ import { gameStructuresView } from "@/sync/fact-views";
 import { Button } from "@/ui/design-system/atoms";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules";
 import { NavigateToPositionIcon } from "@/ui/design-system/molecules/navigate-to-position-icon";
-import { configManager, getRealmNameById, LeaderboardManager, toHexString } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  getEntityName,
+  getIsBlitz,
+  getRealmNameById,
+  LeaderboardManager,
+  toHexString,
+} from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
@@ -175,7 +182,7 @@ export const PlayerId = ({
                   >
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-xs font-medium text-blue-300/90">
-                        Hyperstructure #{breakdown.hyperstructureId}
+                        {getEntityName(breakdown.hyperstructureId, store, getIsBlitz()) ?? "Hyperstructure"}
                       </span>
                       <span className="text-xs text-blue-300/80"></span>
                     </div>
