@@ -112,7 +112,9 @@ export function NewsHeadlineBridge() {
         const isHyperstructure = current.base.category === StructureType.Hyperstructure;
         const player = address ? BigInt(address) : null;
         const structureId = safeInteger(current.entity_id);
-        const structureName = entityReader.getStructure(structureId)?.structureName ?? `#${structureId}`;
+        const structureName =
+          entityReader.getStructure(structureId)?.structureName ??
+          (isHyperstructure ? "a hyperstructure" : "a structure");
         const captor = entityReader.getPlayerName(ContractAddress(current.owner).toString());
         const previousOwner = entityReader.getPlayerName(ContractAddress(previous.owner).toString());
         const site = structureMapPosition(setup.store, current);

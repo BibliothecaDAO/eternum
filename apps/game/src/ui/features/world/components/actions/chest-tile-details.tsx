@@ -43,9 +43,7 @@ export function ChestTileDetails({
         <InfoBubble variant="section" title={coordsLabel ?? "Relic tile"} cue={headerAction} bodyClassName="pt-0">
           <div className="flex items-center gap-2 text-gold">
             <Icon name="chest" alt="" className="h-9 w-9 shrink-0 object-contain" />
-            <p className={cn("truncate", HUD_HEADLINE)}>
-              {opening ? "Crate opened" : crateEntityId === null ? "Crate" : `Crate #${crateEntityId}`}
-            </p>
+            <p className={cn("truncate", HUD_HEADLINE)}>{opening ? "Crate opened" : "Crate"}</p>
           </div>
         </InfoBubble>
         <InfoBubble variant="section" title="Contents" icon={"chest" as const}>
