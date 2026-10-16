@@ -7,7 +7,6 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { filterPlayersByBlitzSettlement } from "@/services/blitz/blitz-settlement-players";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Tabs } from "@/ui/design-system/atoms/tab";
-import { ResultsPanel } from "@/ui/features/results";
 import { getPlayerInfo } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
@@ -57,7 +56,7 @@ const countStructuresByOwner = (structures: NativeRows["Structure"][]) =>
 export const LEADERBOARD_POPOVER_ID = "leaderboard";
 
 /**
- * The social board: players, tribes, faith and prize tabs with the expandable player / tribe detail column. It
+ * The social board: players, tribes and faith tabs with the expandable player / tribe detail column. It
  * renders inside the identity chip's popover; its world-slice subscriptions exist only while that is open.
  */
 export const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) => {
@@ -190,25 +189,11 @@ export const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boole
       });
     }
 
-    if (isBlitzMode) {
-      baseTabs.push({
-        key: "Results",
-        label: (
-          <div className="flex items-center gap-2">
-            <span>Results</span>
-          </div>
-        ),
-        component: <ResultsPanel />,
-        expandedContent: null,
-      });
-    }
-
     return baseTabs;
   }, [
     focusOwnPlayer,
     showGuildsTab,
     isEternumMode,
-    isBlitzMode,
     selectedGuild,
     selectedPlayer,
     playerInfo,
@@ -233,34 +218,38 @@ export const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boole
       )}
     >
       <div className="flex-1 min-w-0 overflow-hidden">
-        <Tabs
-          size="small"
-          selectedIndex={activeTabIndex}
-          onChange={(index: number) => {
-            setSelectedTab(index);
-            setIsExpanded(false);
-            setSelectedPlayer(0n);
-          }}
-          className="h-full"
-        >
-          <div className="flex flex-col h-full">
-            <Tabs.List className="">
-              {tabs.map((tab) => (
-                <Tabs.Tab key={tab.key} className="py-3 px-6 flex items-center justify-center">
-                  {tab.label}
-                </Tabs.Tab>
-              ))}
-            </Tabs.List>
+        {tabsLength === 1 ? (
+          tabs[0].component
+        ) : (
+          <Tabs
+            size="small"
+            selectedIndex={activeTabIndex}
+            onChange={(index: number) => {
+              setSelectedTab(index);
+              setIsExpanded(false);
+              setSelectedPlayer(0n);
+            }}
+            className="h-full"
+          >
+            <div className="flex flex-col h-full">
+              <Tabs.List className="">
+                {tabs.map((tab) => (
+                  <Tabs.Tab key={tab.key} className="py-3 px-6 flex items-center justify-center">
+                    {tab.label}
+                  </Tabs.Tab>
+                ))}
+              </Tabs.List>
 
-            <Tabs.Panels className="overflow-hidden flex-1">
-              {tabs.map((tab) => (
-                <Tabs.Panel key={tab.key} className="h-full">
-                  {tab.component}
-                </Tabs.Panel>
-              ))}
-            </Tabs.Panels>
-          </div>
-        </Tabs>
+              <Tabs.Panels className="overflow-hidden flex-1">
+                {tabs.map((tab) => (
+                  <Tabs.Panel key={tab.key} className="h-full">
+                    {tab.component}
+                  </Tabs.Panel>
+                ))}
+              </Tabs.Panels>
+            </div>
+          </Tabs>
+        )}
       </div>
       {isExpanded && (
         <div className="w-[400px] shrink-0 overflow-auto border-l border-gold/15">

@@ -25,7 +25,6 @@ const player: PlayerCustom = {
   banks: 0,
   isAlive: true,
   guildName: "",
-  structures: [],
   isUser: false,
   isInvited: false,
   guild: undefined,

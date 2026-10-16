@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-16",
+    title: "A leaner leaderboard",
+    description:
+      "The in-game leaderboard is one ranked list of every player, kept current as points land: the search field, the refresh button and the Results tab are gone.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-16",
     title: "New T1 Knight model",
     description: "T1 Knights now carry the new armour, sword and shield, with lighter geometry at gameplay distance.",
     type: "improvement",

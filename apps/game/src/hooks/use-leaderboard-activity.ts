@@ -9,7 +9,7 @@ import { fetchLeaderboardActivityBreakdowns } from "@/services/leaderboard/playe
 
 /**
  * The points breakdown by activity, read from Herald's history for the panel that shows it: fetched when that panel
- * opens, and again at the first confirmed head after a player's points change while it stays open. Standings
+ * opens, and again at the first confirmed head after a player's points change while it stays open, a failed read too. Standings
  * themselves come from the native store (useInGameLeaderboard); this is history, never a second copy of them.
  */
 export function useLeaderboardActivity() {
@@ -24,12 +24,12 @@ export function useLeaderboardActivity() {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
-  useRefetchAfterPointsChange(query.refetch, query.isError);
+  useRefetchAfterPointsChange(query.refetch);
   return query;
 }
 
 // Herald commits a head's history before it publishes the head, so a points change is read at the next confirmed one.
-function useRefetchAfterPointsChange(refetch: () => Promise<unknown>, isError: boolean) {
+function useRefetchAfterPointsChange(refetch: () => Promise<unknown>) {
   const pointsRevision = useNativeRevision(["PlayerPoints"]);
   const confirmedBlock = useConnectionStore((state) => state.lastConfirmedBlock);
   const fetchedAtRevision = useRef(pointsRevision);
@@ -37,8 +37,8 @@ function useRefetchAfterPointsChange(refetch: () => Promise<unknown>, isError: b
   useEffect(() => {
     if (confirmedBlock === lastConfirmedBlock.current) return;
     lastConfirmedBlock.current = confirmedBlock;
-    if (isError || pointsRevision === fetchedAtRevision.current) return; // after a failure, the panel owns retry
+    if (pointsRevision === fetchedAtRevision.current) return;
     fetchedAtRevision.current = pointsRevision;
     void refetch();
-  }, [confirmedBlock, pointsRevision, isError, refetch]);
+  }, [confirmedBlock, pointsRevision, refetch]);
 }

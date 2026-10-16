@@ -17,7 +17,6 @@ const COUNT_FORMATTER = new Intl.NumberFormat("en-US", { maximumFractionDigits: 
 const ROW_HEIGHT = 44; // Approximate row height in pixels
 
 export interface PlayerCustom extends PlayerInfo {
-  structures: string[];
   isUser: boolean;
   isInvited: boolean;
   guild: GuildInfo | undefined;

@@ -4,19 +4,15 @@ import { useLeaderboardActivity } from "@/hooks/use-leaderboard-activity";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { type PlayerLeaderboardActivityEntry } from "@/services/leaderboard/player-activity-breakdown-service";
-import Button from "@/ui/design-system/atoms/button";
-import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
-import TextInput from "@/ui/design-system/atoms/text-input";
 import { EndSeasonButton } from "../components/end-season-button";
 import { PlayerList, type PlayerCustom } from "./player-list";
 import { normalizeLeaderboardAddress } from "./finalized-blitz-leaderboard";
 import { useInGameLeaderboard } from "./use-in-game-leaderboard";
-import { getEntityIdFromKeys, normalizeDiacriticalMarks } from "@/ui/utils/utils";
 import { configManager, getGuildFromPlayerAddress, isViewerOwner } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, BANDITS_NAME, PlayerInfo } from "@bibliothecadao/types";
-import { KeyboardEvent, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 const buildActivityBreakdownLookup = (entries: PlayerLeaderboardActivityEntry[]) =>
   new Map(entries.map((entry) => [normalizeLeaderboardAddress(entry.address), entry]));
@@ -44,41 +40,20 @@ export const PlayersPanel = ({
   const { isFinalized, standingsByAddress } = useInGameLeaderboard();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [inputValue, setInputValue] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
   const [showPointsBreakdown, setShowPointsBreakdown] = useState(false);
   const grants = configManager.getVictoryPointGrants();
-  const {
-    data: activityEntries,
-    isFetching: isActivityBreakdownFetching,
-    error: activityError,
-    refetch: refreshActivityBreakdowns,
-  } = useLeaderboardActivity();
+  const { data: activityEntries, error: activityError } = useLeaderboardActivity();
   const activityBreakdownsByAddress = useMemo(
     () => buildActivityBreakdownLookup(activityEntries ?? []),
     [activityEntries],
   );
   const mode = useGameModeConfig();
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setSearchTerm(inputValue);
-    }, 300); // 300ms debounce delay
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [inputValue]);
-
-  const playersWithStructures: PlayerCustom[] = useMemo(() => {
-    const playersWithStructures = players
+  const leaderboardPlayers: PlayerCustom[] = useMemo(() => {
+    const leaderboardPlayers = players
       // filter out players with no address
       .filter((player) => player.address !== 0n)
       .map((player) => {
-        const structures = [...store.structuresOwnedBy(configManager.getActiveGameId(), player.address)].map(
-          (structure) => mode.structure.getName(structure).name,
-        );
-
         const guild = getGuildFromPlayerAddress(player.address, store);
 
         const isInvited = userGuild
@@ -107,7 +82,6 @@ export const PlayersPanel = ({
 
         return {
           ...player,
-          structures,
           isUser: isViewerOwner(player.address, ContractAddress(account.address)),
           points,
           rank,
@@ -117,40 +91,17 @@ export const PlayersPanel = ({
           includesLiveShareholderPoints,
         };
       });
-    return playersWithStructures;
+    return leaderboardPlayers;
   }, [
     revision,
     account.address,
     activityBreakdownsByAddress,
     store,
     isFinalized,
-    mode,
     players,
     standingsByAddress,
     userGuild,
   ]);
-
-  const filteredPlayers = useMemo(() => {
-    const normalizedTerm = normalizeDiacriticalMarks(searchTerm.toLowerCase());
-
-    let filteredList = playersWithStructures;
-
-    if (searchTerm !== "") {
-      filteredList = filteredList.filter((player) => {
-        const nameMatch = normalizeDiacriticalMarks(player.name.toLowerCase()).includes(normalizedTerm);
-        if (nameMatch) return true;
-
-        const addressMatch = normalizeLeaderboardAddress(player.address).includes(normalizedTerm);
-        if (addressMatch) return true;
-
-        return player.structures.some(
-          (structure) => structure && normalizeDiacriticalMarks(structure.toLowerCase()).includes(normalizedTerm),
-        );
-      });
-    }
-
-    return filteredList;
-  }, [playersWithStructures, searchTerm]);
 
   const whitelistPlayer = (address: ContractAddress) => {
     if (!canIssueOrders()) return;
@@ -162,54 +113,13 @@ export const PlayersPanel = ({
     }).finally(() => setIsLoading(false));
   };
 
-  const handleSearch = () => {
-    setSearchTerm(inputValue);
-  };
-
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
-  };
-
   return (
     <div className="flex flex-col min-h-72 p-2 h-full w-full overflow-hidden">
       <div className="flex flex-col gap-2 mb-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-1 items-center gap-2">
-            <TextInput
-              placeholder="Search players/realms/structures..."
-              onChange={(value) => setInputValue(value)}
-              onKeyDown={handleKeyDown}
-              className="flex-1 btn-bronze"
-            />
-            <Button onClick={handleSearch} variant="primary" className="flex items-center gap-1 px-4">
-              <SemanticIcon name="search" size={14} />
-              <span>Search</span>
-            </Button>
-          </div>
-          <RefreshButton
-            onClick={() => {
-              void refreshActivityBreakdowns();
-            }}
-            isLoading={isActivityBreakdownFetching}
-            disabled={isActivityBreakdownFetching}
-            size="md"
-            aria-label="Refresh activity breakdown"
-          />
-        </div>
-
         {activityError && (
           <p role="alert" className="text-sm text-danger">
-            Points breakdown is unavailable. Use refresh to retry.
+            Points breakdown is unavailable. It is read again when points change.
           </p>
-        )}
-        {userGuild?.isOwner && (
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-gold/80">
-              {filteredPlayers.length} player{filteredPlayers.length !== 1 ? "s" : ""} found
-            </div>
-          </div>
         )}
         <>
           <div className="mb-3 overflow-hidden rounded-lg border border-gold/20 bg-gradient-to-r from-gold/5 via-gold/10 to-gold/5">
@@ -261,7 +171,7 @@ export const PlayersPanel = ({
 
       <div className="flex-1 min-h-0">
         <PlayerList
-          players={filteredPlayers}
+          players={leaderboardPlayers}
           focusOwnPlayer={focusOwnPlayer}
           viewPlayerInfo={viewPlayerInfo}
           whitelistPlayer={whitelistPlayer}
