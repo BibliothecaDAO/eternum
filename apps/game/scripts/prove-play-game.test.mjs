@@ -450,7 +450,7 @@ describe("a task that changes the game", () => {
 });
 
 describe("the boot smoke", () => {
-  const CHAT_TRIGGER = `<button aria-label="Chat" aria-expanded="false">Chat</button>`;
+  const CHAT_TRIGGER = `<button aria-label="Chat strip" aria-expanded="false">No messages yet</button>`;
 
   it("passes when the signed-in HUD opens its chat and the page raised nothing", async () => {
     let open = false;
