@@ -16,7 +16,6 @@ import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { SuggestionsPanel } from "../left-facets/suggestions-panel";
 import { useEmpireSuggestions } from "../left-facets/use-empire-suggestions";
-import { useNextUpOffersAction } from "@/ui/features/world/hud/next-up-shows";
 import { TOP_PILL } from "./top-pill";
 import { nextAttentionItem, resolveStructureAttention } from "./attention-policy";
 
@@ -33,8 +32,6 @@ function AttentionCycle() {
   const arrivedIds = useUIStore((state) => state.arrivedArrivalStructureIds);
   const suggestions = useEmpireSuggestions();
   const previousKey = useRef<string | null>(null);
-  // While Next up offers an action, its button is the screen's one filled gold; Attention keeps its count, outlined.
-  const nextUpOffersAction = useNextUpOffersAction();
   const now = Math.floor(useNowMs() / 1000);
   const revision = useNativeRevision(["Guard"]);
   const { targets } = useMemo(
@@ -80,22 +77,14 @@ function AttentionCycle() {
   return (
     <button
       type="button"
-      className={cn(
-        TOP_PILL,
-        "relative",
-        items.length > 0 && !nextUpOffersAction && "border-gold bg-none bg-gold text-dark-brown",
-      )}
+      className={cn(TOP_PILL, "relative", items.length > 0 && "border-gold bg-none bg-gold text-dark-brown")}
       onClick={goToNext}
       disabled={items.length === 0}
       aria-label={`Attention: ${items.length}. Go to next item`}
       title={`${targets.length} locations need attention · ${suggestions.length} suggested actions`}
     >
       <SemanticIcon name="notifications" className="h-3.5 w-3.5" />
-      <span
-        className={cn(HUD_LABEL_BRIGHT, "max-lg:hidden", items.length > 0 && !nextUpOffersAction && "text-dark-brown")}
-      >
-        Attention
-      </span>
+      <span className={cn(HUD_LABEL_BRIGHT, "max-lg:hidden", items.length > 0 && "text-dark-brown")}>Attention</span>
       {items.length > 0 && (
         <span className="absolute -bottom-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold tabular-nums text-white shadow">
           {items.length}

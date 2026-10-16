@@ -12,9 +12,6 @@ type NextUpShown = {
 
 export const useNextUpShows = create<{ shown: NextUpShown }>(() => ({ shown: null }));
 
-/** Whether Next up is offering an action now: an alert's own control (Attention) then reads as secondary. */
-export const useNextUpOffersAction = () => useNextUpShows((state) => state.shown !== null);
-
 /** Whether Next up is offering this realm's Provision or Level up, which any other of its buttons then leaves to it. */
 export const useNextUpOffersLevelUp = (realmId: ID | null) =>
   useNextUpShows((state) => realmId !== null && state.shown?.levelUpOf === realmId);

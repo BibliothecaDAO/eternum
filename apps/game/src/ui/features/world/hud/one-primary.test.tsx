@@ -73,11 +73,10 @@ describe("one filled gold action at a time", () => {
   });
   afterEach(() => act(() => root.unmount()));
 
-  it("leaves the ready Castle's Provision and Attention outlined while Next up offers the Provision", () => {
+  it("leaves the ready Castle's Provision outlined while Next up offers it, as on a desktop", () => {
     act(() =>
       root.render(
         <>
-          <AttentionPill />
           <NextUp />
           <RealmUpgradeCompact />
         </>,
