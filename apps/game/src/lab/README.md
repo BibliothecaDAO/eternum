@@ -13,22 +13,22 @@ fixtures restore their network and identity overrides when you leave them.
 The users and routes below were inventoried before the tools were moved. Terrain and model review keep their URLs; the
 former `/debug` tools now live under `/lab`. Their runners and links use the new routes.
 
-| Tool                | Route                      | Users and workflow                                                                                  |
-| ------------------- | -------------------------- | --------------------------------------------------------------------------------------------------- |
-| Terrain & buildings | `/lab`                     | Art: terrain gallery, material/biome inspection, gallery verification and captures                  |
-| Models & motion     | `/lab/models`              | Art: model review, animation inspection and captures                                                |
-| Rewards             | `/lab/rewards`             | Art: reward and chest review with capture controls                                                  |
-| Terrain props       | `/lab/terrain-props`       | Art: biome prop and material review                                                                 |
-| World FX            | `/lab/world-fx`            | Art: world effects and capture controls                                                             |
-| Character review    | `/lab/characters`          | Character art and animation: frame inspector, smoke checks and animation captures                   |
-| Character benchmark | `/lab/character-benchmark` | Performance: character benchmark smoke and performance runners                                      |
-| World integration   | `/lab/world`               | Performance and character integration: world gym smoke runner                                       |
-| Chunk fixtures      | `/lab/chunks`              | Renderer: baseline, dense and stress fixtures, renderer smoke runner                                |
-| Terrain benchmark   | `/lab/terrain-benchmark`   | Performance: terrain benchmark runner                                                               |
-| Map labels          | `/lab/map-labels`          | UI: map label and hover drafts on the real terrain and models (`system`, `naming`, `zoom`, `hover`) |
-| Motion primitives   | `/lab/motion`              | UI: motion intensity, reduced motion and site-clear demo                                            |
-| UI kit & HUD        | `/lab/kit/*`               | UI: component states, `/lab/kit/hud/:state` fixtures and `/lab/kit/icons` production icon catalog   |
-| App fixtures        | `/lab/app/:screen/*`       | UI: game, lobby, profile and account states                                                         |
+| Tool                | Route                      | Users and workflow                                                                                |
+| ------------------- | -------------------------- | ------------------------------------------------------------------------------------------------- |
+| Terrain & buildings | `/lab`                     | Art: terrain gallery, material/biome inspection, gallery verification and captures                |
+| Models & motion     | `/lab/models`              | Art: model review, animation inspection and captures                                              |
+| Rewards             | `/lab/rewards`             | Art: reward and chest review with capture controls                                                |
+| Terrain props       | `/lab/terrain-props`       | Art: biome prop and material review                                                               |
+| World FX            | `/lab/world-fx`            | Art: world effects and capture controls                                                           |
+| Character review    | `/lab/characters`          | Character art and animation: frame inspector, smoke checks and animation captures                 |
+| Character benchmark | `/lab/character-benchmark` | Performance: character benchmark smoke and performance runners                                    |
+| World integration   | `/lab/world`               | Performance and character integration: world gym smoke runner                                     |
+| Chunk fixtures      | `/lab/chunks`              | Renderer: baseline, dense and stress fixtures, renderer smoke runner                              |
+| Terrain benchmark   | `/lab/terrain-benchmark`   | Performance: terrain benchmark runner                                                             |
+| Map labels          | `/lab/map-labels`          | UI: map plates on the real terrain and models (`zoom`, `hover`, `select`, `focus`)                |
+| Motion primitives   | `/lab/motion`              | UI: motion intensity, reduced motion and site-clear demo                                          |
+| UI kit & HUD        | `/lab/kit/*`               | UI: component states, `/lab/kit/hud/:state` fixtures and `/lab/kit/icons` production icon catalog |
+| App fixtures        | `/lab/app/:screen/*`       | UI: game, lobby, profile and account states                                                       |
 
 The in-game battle calculator stays in the player interface. Physics behavior is unchanged.
 

@@ -10,19 +10,17 @@ import {
 import { PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER } from "@/three/terrain/terrain-props";
 
 import "./map-label-lab.css";
-import { NAMING_SCHEMES, type NamingScheme } from "./map-label-naming";
-import { LABEL_SYSTEMS, MapLabels, type LabelSystem, type MapZoom, type ProjectedEntity } from "./map-label-systems";
+import { MapPlates, PLATE_RULES, type MapZoom, type ProjectedEntity } from "./map-label-plates";
+import { formatCount, strongestOwnArmy } from "./map-label-reading";
 
 /**
- * The map label lab (`/lab/map-labels`): the three label systems and the three naming schemes on the real map renderer,
+ * The map label lab (`/lab/map-labels`): the owner's pick (plates that open, short code names) on the real map renderer,
  * over a fixture world (48 real realms in a dense block, real camp, rift, hyperstructure and knight models between them).
- * The address holds the view, so a capture is reproducible: `system`, `naming`, `zoom` (play or close), and `hover` or
- * `select` an entity by its id. Pointer hover and click work too; Escape clears the selection.
+ * The address holds the view, so a capture is reproducible: `zoom` (play or close), `hover` or `select` an entity by its
+ * id, and `focus` one to centre the camera on it (a hovered one is centred too). Pointer hover and click work too; Escape clears the selection.
  */
 export const MapLabelLabView = () => {
   const [params, setParams] = useSearchParams();
-  const system = pick(params.get("system"), LABEL_SYSTEMS, "banner");
-  const naming = pick(params.get("naming"), NAMING_SCHEMES, "owner");
   const zoom: MapZoom = params.get("zoom") === "close" ? "close" : "play";
   const selected = params.get("select");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -31,9 +29,9 @@ export const MapLabelLabView = () => {
   const [pointerHover, setPointerHover] = useState<string | null>(null);
   const hovered = pointerHover ?? params.get("hover");
   const items = useProjectedEntities(world, canvasRef.current);
-  const view = { width: canvasRef.current?.clientWidth ?? 0, height: canvasRef.current?.clientHeight ?? 0 };
+  const mine = world ? strongestOwnArmy(world.entities) : 0;
   useMapWorld(canvasRef, setWorld, setError);
-  useZoom(world, zoom);
+  useZoom(world, zoom, params.get("focus") ?? params.get("hover"));
   const set = (key: string, value: string | null) => {
     const next = new URLSearchParams(params);
     if (value === null) next.delete(key);
@@ -54,18 +52,10 @@ export const MapLabelLabView = () => {
         onPointerLeave={() => setPointerHover(null)}
         onClick={() => set("select", pointerHover)}
       />
-      <div className="mll" data-system={system}>
-        <MapLabels
-          system={system}
-          items={items}
-          zoom={zoom}
-          naming={naming}
-          hovered={hovered}
-          selected={selected}
-          view={view}
-        />
+      <div className="mll">
+        <MapPlates items={items} hovered={hovered} selected={selected} mine={mine} />
       </div>
-      <LabPanel system={system} naming={naming} zoom={zoom} items={items} set={set} />
+      <LabPanel zoom={zoom} mine={mine} items={items} set={set} />
       {error && <p className="absolute left-4 top-4 z-10 rounded bg-black/80 p-3 text-red-300">{error}</p>}
       {!world && !error && (
         <p role="status" className="absolute left-4 top-4 z-10 rounded bg-black/70 p-3 text-white">
@@ -76,25 +66,20 @@ export const MapLabelLabView = () => {
   );
 };
 
-/** The controls, the chosen system's three rules, and what is on screen now (marks and DOM nodes). */
+/** The zoom, the system's rules, the yardstick, and how many things are on screen now. */
 const LabPanel = ({
-  system,
-  naming,
   zoom,
+  mine,
   items,
   set,
 }: {
-  system: LabelSystem;
-  naming: NamingScheme;
   zoom: MapZoom;
+  mine: number;
   items: readonly ProjectedEntity[];
   set: (key: string, value: string | null) => void;
 }) => {
-  const nodes = document.querySelectorAll(".mll *").length;
   return (
     <aside className="absolute right-3 top-3 z-10 w-[19rem] rounded-lg border border-white/20 bg-black/90 p-3 text-sm text-white">
-      <Choice label="System" value={system} options={LABEL_SYSTEMS} onPick={(value) => set("system", value)} />
-      <Choice label="Naming" value={naming} options={NAMING_SCHEMES} onPick={(value) => set("naming", value)} />
       <Choice
         label="Zoom"
         value={zoom}
@@ -103,16 +88,18 @@ const LabPanel = ({
       />
       <dl className="mt-2 flex flex-col gap-1.5 leading-snug">
         <dt className="font-bold">At rest</dt>
-        <dd>{LABEL_SYSTEMS[system].rest}</dd>
+        <dd>{PLATE_RULES.rest}</dd>
+        <dt className="font-bold">At a glance</dt>
+        <dd>
+          {PLATE_RULES.standing} Your strongest army: {formatCount(mine)} (troops × 1 / 3 / 9 by tier).
+        </dd>
         <dt className="font-bold">Hover</dt>
-        <dd>{LABEL_SYSTEMS[system].hover}</dd>
+        <dd>{PLATE_RULES.hover}</dd>
         <dt className="font-bold">Selected</dt>
-        <dd>{LABEL_SYSTEMS[system].selected}</dd>
-        <dt className="font-bold">Naming</dt>
-        <dd>{NAMING_SCHEMES[naming].line}</dd>
+        <dd>{PLATE_RULES.selected}</dd>
       </dl>
       <p className="mt-2 opacity-80" data-role="label-counts">
-        {items.length} on screen · {nodes} label DOM nodes
+        {items.length} on screen
       </p>
     </aside>
   );
@@ -173,6 +160,9 @@ const useMapWorld = (
         traceMode: "performance",
         variant: "production",
       });
+      // A mount already left (development renders effects twice) builds nothing on its scene: the hyperstructure
+      // model's shared resources would stay bound to that renderer's device.
+      if (disposed) return handle.dispose();
       const fixture = await createMapLabelFixture(
         handle.stage.scene,
         handle.stage.terrain,
@@ -196,11 +186,16 @@ const useMapWorld = (
 const ZOOM_DISTANCE: Record<MapZoom, number> = { play: 22, close: 12 };
 const PITCH = Math.PI / 3;
 
-const useZoom = (world: { stage: TerrainBenchmarkStage; entities: MapLabelEntity[] } | null, zoom: MapZoom) => {
+const useZoom = (
+  world: { stage: TerrainBenchmarkStage; entities: MapLabelEntity[] } | null,
+  zoom: MapZoom,
+  focus: string | null,
+) => {
   useEffect(() => {
     if (!world) return;
     const { camera, controls } = world.stage;
-    const target = centerOf(world.entities);
+    const focused = world.entities.find((entity) => String(entity.entityId) === focus);
+    const target = focused ? focused.anchor.clone().setY(0) : centerOf(world.entities);
     camera.fov = 45;
     camera.updateProjectionMatrix();
     const offset = new Vector3(0, Math.sin(PITCH), Math.cos(PITCH)).multiplyScalar(ZOOM_DISTANCE[zoom]);
@@ -208,7 +203,7 @@ const useZoom = (world: { stage: TerrainBenchmarkStage; entities: MapLabelEntity
     controls.target.copy(target);
     camera.lookAt(target);
     controls.update();
-  }, [world, zoom]);
+  }, [world, zoom, focus]);
 };
 
 const centerOf = (entities: readonly MapLabelEntity[]) => {
@@ -262,6 +257,3 @@ const nearest = (items: readonly ProjectedEntity[], x: number, y: number): strin
   }
   return best?.key ?? null;
 };
-
-const pick = <T extends string>(value: string | null, options: Record<T, unknown>, fallback: T): T =>
-  value !== null && Object.hasOwn(options, value) ? (value as T) : fallback;

@@ -94,7 +94,7 @@ it.each([
   ["/lab/world", "world"],
   ["/lab/chunks", "chunks"],
   ["/lab/terrain-benchmark", "terrain-benchmark"],
-  ["/lab/map-labels?system=pins&zoom=close", "map-labels"],
+  ["/lab/map-labels?zoom=close&hover=28", "map-labels"],
   ["/lab/motion", "motion"],
   ["/lab/kit/hud/live", "kit"],
   ["/lab/app/home/profile", "app"],

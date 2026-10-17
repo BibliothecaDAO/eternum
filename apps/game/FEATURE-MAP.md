@@ -229,8 +229,8 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
   (`src/three/scenes/worldmap-selection-follow.ts`).
 - **Labels**: a plate over each realm, structure and army, and a card on hover. An unnamed army or structure is called
   by its kind ("Camp", "Army"), never by its entity id (`getEntityName`, `packages/core/src/utils/entities.ts`), the
-  same name the attack toast uses. Drafts of a new label and hover system are in the dev build's lab, `/lab/map-labels`
-  (`system`, `naming`, `zoom`, `hover`, `select` in the address).
+  same name the attack toast uses. The new plates (the owner's pick, in progress) are in the dev build's lab,
+  `/lab/map-labels` (`zoom`, `hover`, `select`, `focus` in the address).
 
 ## Outposts
 

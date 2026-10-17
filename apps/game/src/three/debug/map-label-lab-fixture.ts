@@ -1,8 +1,10 @@
 import { getRealmNameById } from "@bibliothecadao/eternum";
-import { type Object3D, type Scene, Vector3 } from "three";
+import { ResourcesIds } from "@bibliothecadao/types";
+import { Box3, Matrix4, type Object3D, type Scene, Vector3 } from "three";
 
 import { CAMP_MODEL_PATH, RiftModelPath } from "../constants/scene-constants";
-import { createHyperstructureKit } from "../structures/hyperstructure-kit";
+import { HYPERSTRUCTURE_HEIGHT } from "../structures/hyperstructure-design";
+import { HyperstructureModel } from "../structures/hyperstructure-model";
 import type { WorldmapProceduralTerrain } from "../terrain/worldmap-procedural-terrain";
 import { gltfLoader } from "../utils/utils";
 
@@ -10,25 +12,31 @@ import { gltfLoader } from "../utils/utils";
 export type MapLabelKind = "realm" | "camp" | "rift" | "hyperstructure" | "army";
 export type MapLabelRelation = "own" | "ally" | "enemy" | "neutral";
 
+/** A troop stack: a guard slot, or an army's troops. */
+export interface MapLabelTroops {
+  tier: 1 | 2 | 3;
+  count: number;
+}
+
 /** One labelled thing on the fixture map, with the facts a label or hover card may show. */
 export interface MapLabelEntity {
   /** Its entity id as the contracts allocate it: the home realm's namespace above a serial (`home * 2^32 + n`). */
   entityId: number;
   kind: MapLabelKind;
   relation: MapLabelRelation;
-  /** The owner's display name; null for an unowned site (bandits). */
+  /** The owner's display name; null for an unowned thing. */
   owner: string | null;
   /** Where its label stands: above the model's top. */
   anchor: Vector3;
   /** A realm's own name; empty for anything a player cannot name. */
   name: string;
-  /** The realm whose namespace allocated it: a camp's or an army's home. */
-  homeName: string;
   level: number;
-  /** Guards, or an army's troops: the count and the tier. */
-  troops: { count: number; tier: 1 | 2 | 3 };
-  /** An army's number among its owner's armies, and its stamina. */
-  army?: { number: number; stamina: number; staminaMax: number };
+  /** A structure's guard slots, in slot order; empty when it stands open. */
+  guards: readonly MapLabelTroops[];
+  /** What a camp or a rift gives to the army that takes it. */
+  reward?: { resource: ResourcesIds; amount: number };
+  /** An army's troops and stamina. */
+  army?: { troops: MapLabelTroops; stamina: number; staminaMax: number };
 }
 
 const LOCAL_RANGE = 2 ** 32;
@@ -38,18 +46,16 @@ const ROW_HEIGHT = 1.5;
 const PLAYERS = ["Ravero", "Kestrel", "Moonhand", "Lord 3f2a", "Tamsin", "Orrin", "Vexa", "Bran"] as const;
 const OWN = "djizus";
 
-/** The label's height above each kind's ground, over its model (the production plates stand about this high). */
-const LABEL_HEIGHT: Record<MapLabelKind, number> = {
-  realm: 2.5,
-  camp: 1.5,
-  rift: 1.7,
-  hyperstructure: 4.3,
-  army: 1.45,
-};
+/** A realm's plate height above its ground (the realm models are placed by the benchmark, not here). */
+const REALM_PLATE_HEIGHT = 2.5;
+/** A plate's clearance above a placed model's top. */
+const PLATE_CLEARANCE = 0.3;
 
 /**
  * The lab's map: the benchmark's 48 real realms (a dense block on two-hex spacing) and, in the hexes between them, real
- * camp, rift, hyperstructure and knight models. Three realms are the viewer's, as a Blitz player starts with three.
+ * camp, rift, hyperstructure and knight models. Three realms are the viewer's, as a Blitz player starts with three. The
+ * guards, rewards and armies spread over what a player must tell apart at a glance: stronger, even or weaker than their
+ * own strongest army, guarded or open, worth taking or not.
  */
 export async function createMapLabelFixture(
   scene: Scene,
@@ -65,14 +71,14 @@ export async function createMapLabelFixture(
     return new Vector3(x, terrain.sampleSurface(x, z).height, z);
   };
   const placed: Object3D[] = [];
-  const place = async (path: string | "hyperstructure", position: Vector3, scale = 1) => {
-    const source =
-      path === "hyperstructure" ? createHyperstructureKit().scene : (await gltfLoader.loadAsync(path)).scene;
-    const model = source.clone();
+  // Places a model and returns where its plate stands: just above the model's own top.
+  const place = async (path: string, position: Vector3, scale = 1) => {
+    const model = (await gltfLoader.loadAsync(path)).scene.clone();
     model.position.copy(position);
     model.scale.setScalar(scale);
     scene.add(model);
     placed.push(model);
+    return position.clone().setY(new Box3().setFromObject(model).max.y + PLATE_CLEARANCE);
   };
   // A thing's home is a realm of its owner (the namespace its id came from); an unowned one has none.
   const homeOf = (slot: number, relation: MapLabelRelation) =>
@@ -82,123 +88,159 @@ export async function createMapLabelFixture(
         ? realms[slot]
         : (realms.find((realm) => realm.relation === relation) ?? null);
   const sites: MapLabelEntity[] = [];
-  for (const [slot, relation] of CAMP_SLOTS) {
-    const position = beside(slot, 1);
-    await place(CAMP_MODEL_PATH, position);
-    sites.push(siteEntity("camp", position, homeOf(slot, relation), relation, slot));
+  for (const camp of CAMPS) {
+    const anchor = await place(CAMP_MODEL_PATH, beside(camp.slot, 1));
+    sites.push(siteEntity("camp", anchor, homeOf(camp.slot, camp.relation), camp));
   }
-  for (const slot of RIFT_SLOTS) {
-    const position = beside(slot, 1);
-    await place(RiftModelPath, position);
-    sites.push(siteEntity("rift", position, null, "neutral", slot));
+  for (const rift of RIFTS) {
+    const anchor = await place(RiftModelPath, beside(rift.slot, 1));
+    sites.push(siteEntity("rift", anchor, null, rift));
   }
-  const hyperPosition = beside(HYPERSTRUCTURE_SLOT, 1);
-  await place("hyperstructure", hyperPosition, 0.6);
-  sites.push(hyperstructureEntity(hyperPosition));
-  const knight = (await gltfLoader.loadAsync("/models/units/default_knight_lvl1.glb")).scene;
-  const armies = ARMY_SLOTS.map(([slot, relation], index) => {
-    const position = beside(slot, -1);
-    const model = knight.clone();
-    model.position.copy(position);
-    model.scale.setScalar(0.6);
-    scene.add(model);
-    placed.push(model);
-    return armyEntity(position, homeOf(slot, relation) ?? realms[slot], relation, index);
-  });
+  // Hyperstructures are the production model's instances: each its own design, completed.
+  const towers = new HyperstructureModel(HYPERSTRUCTURES.length);
+  scene.add(towers.group);
+  for (const [index, hyperstructure] of HYPERSTRUCTURES.entries()) {
+    const position = beside(hyperstructure.slot, 1);
+    const entity = hyperstructureEntity(
+      position.clone().setY(position.y + HYPERSTRUCTURE_HEIGHT + PLATE_CLEARANCE),
+      homeOf(hyperstructure.slot, hyperstructure.relation),
+      hyperstructure,
+    );
+    towers.setMatrixAt(index, new Matrix4().makeTranslation(position.x, position.y, position.z));
+    towers.setConstructionAt(index, { entityId: entity.entityId, progress: 100, completed: true });
+    sites.push(entity);
+  }
+  towers.setCount(HYPERSTRUCTURES.length);
+  const armies: MapLabelEntity[] = [];
+  for (const [index, army] of ARMIES.entries()) {
+    const anchor = await place("/models/units/default_knight_lvl1.glb", beside(army.slot, -1), 0.6);
+    armies.push(armyEntity(anchor, homeOf(army.slot, army.relation) ?? realms[army.slot], army, index));
+  }
   return {
     entities: [...realms, ...sites, ...armies],
-    dispose: () => placed.forEach((model) => model.removeFromParent()),
+    dispose: () => {
+      placed.forEach((model) => model.removeFromParent());
+      towers.group.removeFromParent();
+      towers.dispose();
+    },
   };
 }
 
-/** Camps by the realm they sit beside (south-east of it): the viewer's, other players', and unowned ones. */
-const CAMP_SLOTS: readonly (readonly [number, MapLabelRelation])[] = [
-  [18, "own"],
-  [9, "enemy"],
-  [12, "enemy"],
-  [26, "enemy"],
-  [29, "neutral"],
-  [36, "neutral"],
-  [41, "ally"],
+type Placement = { slot: number; relation: MapLabelRelation };
+
+/** Camps beside realms (south-east of them): the viewer's, other players', an ally's, and bandit camps. */
+const CAMPS: readonly (Placement & { guard: MapLabelTroops; reward: number })[] = [
+  { slot: 18, relation: "own", guard: { tier: 1, count: 300 }, reward: 550 },
+  { slot: 9, relation: "enemy", guard: { tier: 3, count: 400 }, reward: 900 },
+  { slot: 12, relation: "enemy", guard: { tier: 2, count: 350 }, reward: 700 },
+  { slot: 26, relation: "enemy", guard: { tier: 1, count: 500 }, reward: 650 },
+  { slot: 29, relation: "neutral", guard: { tier: 1, count: 250 }, reward: 1200 },
+  { slot: 36, relation: "neutral", guard: { tier: 2, count: 1100 }, reward: 800 },
+  { slot: 41, relation: "ally", guard: { tier: 1, count: 450 }, reward: 600 },
 ];
-const RIFT_SLOTS = [3, 33] as const;
-const HYPERSTRUCTURE_SLOT = 19;
-/** Armies by the realm they stand beside (south-west of it): three of the viewer's around their realms, the rest at war. */
-const ARMY_SLOTS: readonly (readonly [number, MapLabelRelation])[] = [
-  [18, "own"],
-  [20, "own"],
-  [10, "own"],
-  [11, "enemy"],
-  [19, "enemy"],
-  [27, "enemy"],
-  [28, "ally"],
-  [35, "enemy"],
+/** Rifts: unowned, guarded, each holding essence. */
+const RIFTS: readonly (Placement & { guard: MapLabelTroops; reward: number })[] = [
+  { slot: 3, relation: "neutral", guard: { tier: 2, count: 300 }, reward: 1200 },
+  { slot: 33, relation: "neutral", guard: { tier: 3, count: 500 }, reward: 3000 },
+];
+/** Two hyperstructures: one an enemy holds behind four guard slots, one unclaimed and open. */
+const HYPERSTRUCTURES: readonly (Placement & { guards: MapLabelTroops[] })[] = [
+  {
+    slot: 21,
+    relation: "enemy",
+    guards: [
+      { tier: 1, count: 900 },
+      { tier: 2, count: 500 },
+      { tier: 3, count: 300 },
+      { tier: 3, count: 300 },
+    ],
+  },
+  { slot: 37, relation: "neutral", guards: [] },
+];
+/** Armies beside realms (south-west of them). The viewer's strongest is 2,700 strong (T2 900 or T3 300). */
+const ARMIES: readonly (Placement & { troops: MapLabelTroops; stamina: number })[] = [
+  { slot: 18, relation: "own", troops: { tier: 2, count: 900 }, stamina: 96 },
+  { slot: 20, relation: "own", troops: { tier: 1, count: 1400 }, stamina: 40 },
+  { slot: 10, relation: "own", troops: { tier: 3, count: 300 }, stamina: 118 },
+  { slot: 11, relation: "enemy", troops: { tier: 3, count: 600 }, stamina: 77 },
+  { slot: 19, relation: "enemy", troops: { tier: 2, count: 950 }, stamina: 120 },
+  { slot: 27, relation: "enemy", troops: { tier: 1, count: 800 }, stamina: 30 },
+  { slot: 28, relation: "ally", troops: { tier: 2, count: 700 }, stamina: 60 },
+  { slot: 35, relation: "enemy", troops: { tier: 2, count: 400 }, stamina: 110 },
 ];
 
 const OWN_REALMS = new Set([18, 19, 20]);
 const ALLY_REALMS = new Set([28, 41]);
 
+/** A realm's guard slots: one per level (a level-0 settlement holds one), some realms left open. */
+const realmGuards = (index: number): MapLabelTroops[] =>
+  index % 7 === 3
+    ? []
+    : Array.from({ length: 1 + (index % 4) }, (_, slot) => ({
+        tier: (1 + ((index + slot) % 3)) as 1 | 2 | 3,
+        count: 150 + ((index * 137 + slot * 61) % 700),
+      }));
+
 const realmEntity = (position: Vector3, index: number): MapLabelEntity => {
   const relation: MapLabelRelation = OWN_REALMS.has(index) ? "own" : ALLY_REALMS.has(index) ? "ally" : "enemy";
-  const realmId = 1 + ((index * 167) % 8000);
   return {
     entityId: index + 1,
     kind: "realm",
     relation,
     owner: relation === "own" ? OWN : PLAYERS[index % PLAYERS.length],
-    anchor: position.clone().setY(position.y + LABEL_HEIGHT.realm),
-    name: getRealmNameById(realmId),
-    homeName: getRealmNameById(realmId),
+    anchor: position.clone().setY(position.y + REALM_PLATE_HEIGHT),
+    name: getRealmNameById(1 + ((index * 167) % 8000)),
     level: index % 4,
-    troops: { count: 400 + ((index * 137) % 1600), tier: (1 + (index % 3)) as 1 | 2 | 3 },
+    guards: realmGuards(index),
   };
 };
 
 const siteEntity = (
   kind: "camp" | "rift",
-  position: Vector3,
+  anchor: Vector3,
   home: MapLabelEntity | null,
-  relation: MapLabelRelation,
-  slot: number,
+  site: Placement & { guard: MapLabelTroops; reward: number },
 ): MapLabelEntity => ({
   // An unowned site is the world's: allocated in the administrative namespace, zero, after the realms' setup ids.
-  entityId: home ? home.entityId * LOCAL_RANGE + 3 + slot : 100 + slot,
+  entityId: home ? home.entityId * LOCAL_RANGE + 3 + site.slot : 100 + site.slot,
   kind,
-  relation,
+  relation: site.relation,
   owner: home?.owner ?? null,
-  anchor: position.clone().setY(position.y + LABEL_HEIGHT[kind]),
+  anchor,
   name: "",
-  homeName: home?.name ?? "",
   level: 0,
-  troops: { count: 120 + slot * 40, tier: kind === "rift" ? 2 : 1 },
+  guards: [site.guard],
+  reward: { resource: kind === "rift" ? ResourcesIds.Essence : ResourcesIds.Labor, amount: site.reward },
 });
 
-const hyperstructureEntity = (position: Vector3): MapLabelEntity => ({
-  entityId: 7 * LOCAL_RANGE + 1,
+const hyperstructureEntity = (
+  anchor: Vector3,
+  home: MapLabelEntity | null,
+  hyperstructure: Placement & { guards: MapLabelTroops[] },
+): MapLabelEntity => ({
+  entityId: home ? home.entityId * LOCAL_RANGE + 40 + hyperstructure.slot : 200 + hyperstructure.slot,
   kind: "hyperstructure",
-  relation: "neutral",
-  owner: null,
-  anchor: position.clone().setY(position.y + LABEL_HEIGHT.hyperstructure),
-  name: "Hyperstructure",
-  homeName: "",
+  relation: hyperstructure.relation,
+  owner: home?.owner ?? null,
+  anchor,
+  name: "",
   level: 0,
-  troops: { count: 3000, tier: 3 },
+  guards: hyperstructure.guards,
 });
 
 const armyEntity = (
-  position: Vector3,
+  anchor: Vector3,
   home: MapLabelEntity,
-  relation: MapLabelRelation,
+  army: Placement & { troops: MapLabelTroops; stamina: number },
   index: number,
 ): MapLabelEntity => ({
   entityId: home.entityId * LOCAL_RANGE + 10 + index,
   kind: "army",
-  relation,
+  relation: army.relation,
   owner: home.owner,
-  anchor: position.clone().setY(position.y + LABEL_HEIGHT.army),
+  anchor,
   name: "",
-  homeName: home.name,
   level: 0,
-  troops: { count: 600 + index * 410, tier: (1 + (index % 3)) as 1 | 2 | 3 },
-  army: { number: index + 1, stamina: 40 + ((index * 23) % 80), staminaMax: 120 },
+  guards: [],
+  army: { troops: army.troops, stamina: army.stamina, staminaMax: 120 },
 });
