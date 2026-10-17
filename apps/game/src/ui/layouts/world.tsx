@@ -4,6 +4,7 @@ import { Leva } from "leva";
 import { env } from "../../../env";
 import { ArmyMovementLatencyOverlay } from "../debug/army-movement-latency-overlay";
 import { DevSyncOverlay } from "../debug/dev-sync-overlay";
+import { ActionTimelineOverlay } from "../debug/action-timeline-overlay";
 import { SurfaceHost } from "../design-system/molecules/popover";
 import { Tooltip } from "../design-system/molecules/tooltip";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
@@ -61,6 +62,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         <Tooltip />
         <VersionDisplay />
         <ArmyMovementLatencyOverlay />
+        <ActionTimelineOverlay />
         {DEV_MODE_ENABLED && <DevSyncOverlay />}
         <div id="labelrenderer" className="absolute top-0 pointer-events-none z-10" />
       </div>

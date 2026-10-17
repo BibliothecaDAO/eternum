@@ -174,7 +174,14 @@ const startSync = async (
   // Chain time must be known before the first spatial projection reads it.
   await runtime.waitForConfirmedHead();
   const submit = nativePlay(
-    { bindings: input.bindings, release, shard: input.shard, stopped: outcomes.signal, runtime },
+    {
+      bindings: input.bindings,
+      release,
+      shard: input.shard,
+      stopped: outcomes.signal,
+      runtime,
+      onSendStage: input.observer?.onSendStage,
+    },
     setupResult.store,
     input.gameId,
     input.shard.worldAddress,

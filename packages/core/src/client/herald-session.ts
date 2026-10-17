@@ -1,5 +1,6 @@
 import type { GameSyncModelDefinition } from "../sync/model-manifest";
 import type { GameClientSetup } from "./game-client";
+import type { SendStage } from "./submit";
 
 import type {
   GameSyncEvent,
@@ -39,6 +40,11 @@ export interface GameClientObserver {
   onHead?: (head: GameSyncHead) => void;
   /** Herald reported a transaction's status, pre-confirmed first and then confirmed with its block. */
   onTransaction?: (transaction: GameSyncTransaction) => void;
+  /**
+   * A command this client was handed reached a stage on its way to the chain (see SendStage), with its transaction's
+   * hash once known. Sends count from 1 for each client.
+   */
+  onSendStage?: (send: number, stage: SendStage, detail?: string, transactionHash?: string) => void;
   /** A story event row arrived on the live stream, scoped to the chain, world and game it belongs to. */
   onStoryEvent?: (event: GameSyncEvent, scope: StoryEventScope, confirmation: GameSyncEventConfirmation) => void;
   /** A new session starts; story events from the previous one are stale. */

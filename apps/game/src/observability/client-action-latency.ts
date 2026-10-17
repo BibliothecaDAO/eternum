@@ -1,3 +1,5 @@
+import type { SendStage } from "@bibliothecadao/eternum/game-client";
+
 export type ClientActionLatencyPhase =
   | "click"
   /** The local pending state (ghost, highlighted path, selected destination) is on screen — same frame as the click. */
@@ -20,6 +22,11 @@ export interface ClientActionLatencyMeasurement {
   transactionHash?: string;
   phases: Partial<Record<ClientActionLatencyPhase, number>>;
   failedReason?: string;
+  /**
+   * The send this action made, as the game client reported it: each stage it reached, once. A send no action claims
+   * is its own record (operation "send", surface "unattributed"): automation, a background or an uninstrumented order.
+   */
+  send?: { key: string; stages: Array<{ stage: SendStage; at: number; detail?: string }> };
 }
 
 export interface ClientActionLatencySummary {
@@ -42,6 +49,7 @@ const MAX_MEASUREMENTS = 400;
 let nextActionSequence = 0;
 let measurements: ClientActionLatencyMeasurement[] = [];
 let admissionToVisibleMs: number[] = [];
+const listeners = new Set<() => void>();
 
 const now = (): number => (typeof performance === "undefined" ? Date.now() : performance.now());
 
@@ -59,7 +67,77 @@ const publish = (): void => {
   target.__clientActionLatencyMeasurements = snapshotClientActionLatency();
   target.__clientActionLatencySummary = summarizeClientActionLatency("explore_reveal");
   target.__admissionToVisibleMs = [...admissionToVisibleMs];
+  for (const listener of listeners) listener();
 };
+
+/** The records as they stand, for a view that subscribes: the same array until the next change. */
+export function readClientActionRecords(): readonly ClientActionLatencyMeasurement[] {
+  return measurements;
+}
+
+export function subscribeClientActionRecords(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+const UNATTRIBUTED = "unattributed";
+
+/**
+ * A send's stage, under a key unique for this page (its client and its number there). Only its command admits a
+ * record, so a stage of a send already evicted is dropped; each stage is kept once. Once the send names its hash, it
+ * joins the action that sent that hash.
+ */
+export function recordClientActionSendStage(
+  sendKey: string,
+  stage: SendStage,
+  detail?: string,
+  transactionHash?: string,
+): void {
+  const reached = { stage, at: now(), ...(detail !== undefined ? { detail } : {}) };
+  const record = measurements.find((measurement) => measurement.send?.key === sendKey);
+  if (!record) {
+    if (stage !== "command") return;
+    measurements = [
+      ...measurements,
+      {
+        actionId: `send:${sendKey}`,
+        operation: "send",
+        surface: UNATTRIBUTED,
+        phases: {},
+        send: { key: sendKey, stages: [reached] },
+      },
+    ].slice(-MAX_MEASUREMENTS);
+    publish();
+    return;
+  }
+  if (record.send!.stages.some((each) => each.stage === stage)) return;
+  measurements = measurements.map((measurement) =>
+    measurement === record
+      ? {
+          ...measurement,
+          ...(transactionHash && !measurement.transactionHash ? { transactionHash } : {}),
+          send: { key: sendKey, stages: [...measurement.send!.stages, reached] },
+        }
+      : measurement,
+  );
+  if (transactionHash) joinSendToAction(transactionHash);
+  publish();
+}
+
+/** An unattributed send and the action that sent the same transaction become one record: the action, with its send. */
+function joinSendToAction(transactionHash: string): void {
+  const hash = normalizeTransactionHash(transactionHash);
+  const sameHash = (measurement: ClientActionLatencyMeasurement) =>
+    measurement.transactionHash !== undefined && normalizeTransactionHash(measurement.transactionHash) === hash;
+  const send = measurements.find((measurement) => measurement.surface === UNATTRIBUTED && sameHash(measurement));
+  const action = measurements.find(
+    (measurement) => measurement.surface !== UNATTRIBUTED && measurement.send === undefined && sameHash(measurement),
+  );
+  if (!send || !action) return;
+  measurements = measurements
+    .filter((measurement) => measurement !== send)
+    .map((measurement) => (measurement === action ? { ...measurement, send: send.send } : measurement));
+}
 
 /**
  * Every action's admission to visible, as the provider measures it: from sending the invoke to the stream reporting
@@ -113,11 +191,13 @@ export function beginClientActionLatency(input: {
 }
 
 export function recordClientActionSubmitted(actionId: string, transactionHash: string): void {
-  updateMeasurement(actionId, (measurement) => ({
-    ...measurement,
-    transactionHash,
-    phases: { ...measurement.phases, submitted: now() },
-  }));
+  measurements = measurements.map((measurement) =>
+    measurement.actionId === actionId
+      ? { ...measurement, transactionHash, phases: { ...measurement.phases, submitted: now() } }
+      : measurement,
+  );
+  joinSendToAction(transactionHash);
+  publish();
 }
 
 export function recordClientActionPhase(actionId: string, phase: ClientActionLatencyPhase): void {
@@ -166,6 +246,7 @@ export function snapshotClientActionLatency(): ClientActionLatencyMeasurement[] 
     ...measurement,
     targetHex: measurement.targetHex ? { ...measurement.targetHex } : undefined,
     phases: { ...measurement.phases },
+    ...(measurement.send ? { send: { key: measurement.send.key, stages: [...measurement.send.stages] } } : {}),
   }));
 }
 

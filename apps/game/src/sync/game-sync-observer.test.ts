@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
+import { clearClientActionLatency, snapshotClientActionLatency } from "@/observability/client-action-latency";
 import { describe, expect, it } from "vitest";
 
 import { createGameSyncObserver as createObserver } from "./game-sync-observer";
@@ -20,6 +21,24 @@ const withStoreSnapshot = (run: () => void) => {
 };
 
 describe("createGameSyncObserver", () => {
+  it("keeps each game client's sends apart, though every client numbers its sends from 1", () => {
+    clearClientActionLatency();
+    for (let entry = 0; entry < 3; entry += 1) {
+      const observer = createGameSyncObserver();
+      observer.onSendStage?.(1, "command");
+      observer.onSendStage?.(1, "settled");
+    }
+
+    const sends = snapshotClientActionLatency().map((record) => record.send);
+    expect(sends.map((send) => send?.stages.map(({ stage }) => stage))).toEqual([
+      ["command", "settled"],
+      ["command", "settled"],
+      ["command", "settled"],
+    ]);
+    expect(new Set(sends.map((send) => send?.key)).size).toBe(3);
+    clearClientActionLatency();
+  });
+
   it("keeps the previous game's clock readable during a switch, then anchors the new game's at its first head", () => {
     withStoreSnapshot(() => {
       createGameSyncObserver().onHead?.({ block: 900, preconfirmed: false, timestamp: 2_000 });
