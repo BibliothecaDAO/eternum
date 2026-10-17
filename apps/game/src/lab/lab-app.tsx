@@ -47,6 +47,13 @@ const TOOLS = [
   },
   {
     group: "Art",
+    label: "Endgame mist",
+    path: "/lab/endgame",
+    route: "endgame",
+    View: lazy(() => import("./endgame-mist/view").then((module) => ({ default: module.EndgameMistLabView }))),
+  },
+  {
+    group: "Art",
     label: "World FX",
     path: "/lab/world-fx",
     route: "world-fx",

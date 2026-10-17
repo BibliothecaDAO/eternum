@@ -22,6 +22,7 @@ vi.mock("../ui/features/debug/procedural-terrain-debug-view", () => ({
 vi.mock("../ui/features/debug/model-lab-view", () => ({ ModelLabView: () => <Tool name="models" /> }));
 vi.mock("../ui/features/debug/reward-lab-view", () => ({ RewardLabView: () => <Tool name="rewards" /> }));
 vi.mock("../ui/features/debug/terrain-prop-debug-view", () => ({ TerrainPropDebugView: () => <Tool name="props" /> }));
+vi.mock("./endgame-mist/view", () => ({ EndgameMistLabView: () => <Tool name="endgame" /> }));
 vi.mock("../ui/features/debug/world-fx-gym-view", () => ({ WorldFxGymView: () => <Tool name="fx" /> }));
 vi.mock("../ui/features/debug/procedural-character-gym-view", () => ({
   ProceduralCharacterGymView: () => <Tool name="characters" />,
@@ -89,6 +90,7 @@ it.each([
   ["/lab/rewards", "rewards"],
   ["/lab/terrain-props", "props"],
   ["/lab/world-fx", "fx"],
+  ["/lab/endgame?variation=tide&gameMode=frontier", "endgame"],
   ["/lab/characters", "characters"],
   ["/lab/character-benchmark", "benchmark"],
   ["/lab/world", "world"],

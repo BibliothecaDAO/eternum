@@ -385,3 +385,15 @@ In `/lab/kit/icons`, search **lords** to inspect the mark at 24/32/64 px. `/lab/
 components. `pnpm icons:prove <new-evidence-dir> https://127.0.0.1:4193 --lords` also checks the lobby entry and results
 fixtures at desktop and phone widths, requiring every LORDS image to decode from the official token path. It includes
 the 96 px token prize at `/lab/app/reward-lords/results/0x5245414c4d53-7?capture=1`.
+
+## Endgame mist preview
+
+Dev lab only: `/lab/endgame` → **Sequence** compares the shipped end freeze with Spire surge (7 s), Choking tide (11 s)
+and Fractured veil (9 s). Choose **Spire entrance** for discovered awakening or undiscovered fixture emergence, and
+**World mode** for Blitz (all hexes freeze) or Frontier (the central realm hex is spared). **End game preview** starts
+the event; **Shipped / reset** restores the scene. **See the results** opens the labelled fixture immediately;
+**Escape** skips to the frozen map. The live end-of-game and Results paths are unchanged pending owner selection.
+
+`pnpm --dir apps/game prove:endgame --port 4199 --mode gallery --out <fresh-directory>` starts the app, drives these
+controls, records captures and cleans up its browser and server. `--mode cost --iterations 3` measures the busy fixture
+on WebGPU and WebGL at 1920×1080; see `src/lab/README.md` for parameters and measurement limits.
